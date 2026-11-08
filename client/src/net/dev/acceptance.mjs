@@ -225,6 +225,17 @@ try {
     await sleep(600);
     await a.screenshot({ path: path.join(EVIDENCE, `wp06-${mode}-a.png`) });
     await b.screenshot({ path: path.join(EVIDENCE, `wp06-${mode}-b.png`) });
+    // Activity flags: B jumps; A should draw B airborne (chip on the
+    // nameplate) once its interpolation delay has passed.
+    await b.keyboard.down('Space');
+    await sleep(80);
+    await b.keyboard.up('Space');
+    let airborneSeen = false;
+    for (let k = 0; k < 20 && !airborneSeen; k++) {
+      await sleep(40);
+      airborneSeen = await a.evaluate(() => window.__lodestone.netDebug().remotes.some((r) => r.name === 'Bruno' && (r.activity & 128) !== 0));
+    }
+    if (airborneSeen) await a.screenshot({ path: path.join(EVIDENCE, `wp06-${mode}-activity.png`) });
     const pa = await player(a);
     const pb = await player(b);
     const remB = (await debug(a)).remotes.find((r) => r.name === 'Bruno');
@@ -271,6 +282,7 @@ try {
     summary.push(result);
 
     check(!!remB && !!remA, 'each browser draws the other player (by name)', { 'A->Bruno': fa, 'B->Alyssa': fb });
+    check(airborneSeen, "A sees B's airborne activity flag when B jumps (nameplate chip)");
     check(result.local.A.over5cm === 0 && result.local.B.over5cm === 0, 'no local correction over 5 cm while walking', { A: result.local.A, B: result.local.B });
     check(d.A.teleports === 0 && d.B.teleports === 0, 'no remote teleports');
     check(result.remote['A sees B'].maxJumpCm < 30 && result.remote['B sees A'].maxJumpCm < 30, 'no remote discontinuity over 30 cm (each eased over 70 ms)', {

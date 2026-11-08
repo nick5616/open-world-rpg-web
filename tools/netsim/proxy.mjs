@@ -36,6 +36,7 @@
  */
 import dgram from 'node:dgram';
 import http from 'node:http';
+import { clearInterval, setInterval } from 'node:timers';
 import { pathToFileURL } from 'node:url';
 import { WebSocket, WebSocketServer } from 'ws';
 import { delaySample, resolveConfig, spikeHoldUntil } from './profiles.mjs';

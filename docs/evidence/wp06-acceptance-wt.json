@@ -2,32 +2,32 @@
   "mode": "wt",
   "profile": "thailand",
   "transport": "webtransport",
-  "walkSeconds": 18.657,
+  "walkSeconds": 18.986,
   "rttMs": {
-    "A": 172.302001953125,
-    "B": 235
+    "A": 169,
+    "B": 160
   },
   "bandwidthKbps": {
     "A": {
-      "downKbps": 12.760957975609475,
-      "upKbps": 20.126525079095114
+      "downKbps": 14.377094121252334,
+      "upKbps": 19.85176160019249
     },
     "B": {
-      "downKbps": 13.81294964031996,
-      "upKbps": 19.968720675679943
+      "downKbps": 13.938382152103156,
+      "upKbps": 20.098143370309025
     }
   },
   "local": {
     "A": {
-      "reconciles": 1,
-      "agreements": 275,
-      "corrMaxCm": 13.161964664132682,
-      "corrP95Cm": 13.161964664132682,
-      "over5cm": 1
+      "reconciles": 0,
+      "agreements": 289,
+      "corrMaxCm": 0,
+      "corrP95Cm": 0,
+      "over5cm": 0
     },
     "B": {
       "reconciles": 0,
-      "agreements": 290,
+      "agreements": 288,
       "corrMaxCm": 0,
       "corrP95Cm": 0,
       "over5cm": 0
@@ -35,123 +35,112 @@
   },
   "remote": {
     "A sees B": {
-      "reconciles": 1,
-      "agreements": 275,
-      "logLen": 1,
-      "extrapEvents": 1,
-      "extrapFrames": 1,
+      "reconciles": 0,
+      "agreements": 289,
+      "logLen": 0,
+      "extrapEvents": 0,
+      "extrapFrames": 0,
       "frozenFrames": 0,
-      "interpFrames": 543,
+      "interpFrames": 578,
       "visibleJumps": 0,
       "teleports": 0,
-      "extrapPctFrames": 0.18382352941176472,
+      "extrapPctFrames": 0,
       "maxJumpCm": 0,
       "maxHandbackCm": 0,
-      "linkDelayMs": 183.23964993000808,
+      "linkDelayMs": 194.92752305223658,
       "arrival": {
-        "baseLag": 36.117919921875,
-        "p50": 62.802001953125,
-        "p95": 105.886962890625,
-        "max": 138.926025390625,
-        "delay": 183.23964993000808,
+        "baseLag": 29.510009765625,
+        "p50": 66.81103515625,
+        "p95": 108.169921875,
+        "max": 175.06689453125,
+        "delay": 194.92752305223658,
         "n": 256
       }
     },
     "B sees A": {
       "reconciles": 0,
-      "agreements": 290,
+      "agreements": 288,
       "logLen": 0,
       "extrapEvents": 0,
       "extrapFrames": 0,
       "frozenFrames": 0,
-      "interpFrames": 539,
+      "interpFrames": 580,
       "visibleJumps": 0,
       "teleports": 0,
       "extrapPctFrames": 0,
-      "maxJumpCm": 1.6114818842575873,
+      "maxJumpCm": 0,
       "maxHandbackCm": 0,
-      "linkDelayMs": 234.8730223537241,
+      "linkDelayMs": 201.26875641052652,
       "arrival": {
-        "baseLag": 35.322021484375,
-        "p50": 65.2919921875,
-        "p95": 110.533203125,
-        "max": 171.076171875,
-        "delay": 234.8730223537241,
+        "baseLag": 36.83203125,
+        "p50": 64.762939453125,
+        "p95": 111.39404296875,
+        "max": 145.3291015625,
+        "delay": 201.26875641052652,
         "n": 256
       }
     }
   },
   "screenshots": {
     "A": {
-      "dist": 28.707585019723652,
+      "dist": 28.478832064046546,
       "lod": 1,
       "mode": "interp",
-      "delayMs": 183.23964993000808
+      "delayMs": 194.92752305223658
     },
     "B": {
-      "dist": 28.71089668144449,
+      "dist": 28.475847754224777,
       "lod": 1,
       "mode": "interp",
-      "delayMs": 234.8730223537241
+      "delayMs": 201.26875641052652
     }
   },
   "drawnVsTrue": {
-    "B drawn by A vs B true (m)": 0.0053782502240558505,
-    "A drawn by B vs A true (m)": 0.006672335331449802
+    "B drawn by A vs B true (m)": 0.00781819849349172,
+    "A drawn by B vs A true (m)": 0.004693477437564656
   },
   "stats": {
     "A": {
-      "snapshots": 550,
-      "stale": 78,
+      "snapshots": 563,
+      "stale": 79,
       "noBaseline": 0,
-      "inputPackets": 642,
-      "framesSent": 1462,
+      "inputPackets": 677,
+      "framesSent": 1499,
       "decodeErrors": 0,
       "earlySnapshots": 1
     },
     "B": {
-      "snapshots": 553,
-      "stale": 85,
+      "snapshots": 562,
+      "stale": 75,
       "noBaseline": 0,
-      "inputPackets": 651,
-      "framesSent": 1464,
+      "inputPackets": 668,
+      "framesSent": 1491,
       "decodeErrors": 0,
-      "earlySnapshots": 0
+      "earlySnapshots": 2
     }
   },
   "zoneMetrics": [
-    "zone_budget_records_sent_total 2420",
-    "zone_client_down_kbps{q=\"avg\"} 13.19",
-    "zone_client_down_kbps{q=\"max\"} 13.22",
-    "zone_client_down_kbps{q=\"p50\"} 13.22",
-    "zone_client_down_kbps{q=\"p99\"} 13.22",
-    "zone_client_up_kbps{q=\"avg\"} 19.27",
-    "zone_client_up_kbps{q=\"max\"} 19.33",
-    "zone_client_up_kbps{q=\"p50\"} 19.33",
-    "zone_client_up_kbps{q=\"p99\"} 19.33",
-    "zone_input_frames_dropped_total 9",
+    "zone_budget_records_sent_total 2497",
+    "zone_client_down_kbps{q=\"avg\"} 13.04",
+    "zone_client_down_kbps{q=\"max\"} 13.3",
+    "zone_client_down_kbps{q=\"p50\"} 13.3",
+    "zone_client_down_kbps{q=\"p99\"} 13.3",
+    "zone_client_up_kbps{q=\"avg\"} 19.78",
+    "zone_client_up_kbps{q=\"max\"} 19.8",
+    "zone_client_up_kbps{q=\"p50\"} 19.8",
+    "zone_client_up_kbps{q=\"p99\"} 19.8",
     "zone_input_frames_synthesized_total 3",
     "zone_sessions{transport=\"webtransport\"} 2",
-    "zone_snapshots_shed_total 345"
+    "zone_snapshots_shed_total 304"
   ],
   "jumps": {
     "A sees B": [],
     "B sees A": []
   },
   "correctionLog": {
-    "A": [
-      {
-        "t": 14582.5,
-        "magnitude": 0.13161964664132683,
-        "unacked": 12,
-        "ackSeq": 741,
-        "knownAck": true
-      }
-    ],
+    "A": [],
     "B": []
   },
-  "correctionsA": [
-    0.13161964664132683
-  ],
+  "correctionsA": [],
   "correctionsB": []
 }

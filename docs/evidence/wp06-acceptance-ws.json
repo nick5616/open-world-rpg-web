@@ -2,189 +2,144 @@
   "mode": "ws",
   "profile": "thailand",
   "transport": "websocket",
-  "walkSeconds": 18.508,
+  "walkSeconds": 18.382,
   "rttMs": {
     "A": 163,
-    "B": 212
+    "B": 158
   },
   "bandwidthKbps": {
     "A": {
-      "downKbps": 7.33530886711982,
-      "upKbps": 14.948712103968855
+      "downKbps": 9.394793192824299,
+      "upKbps": 15.453623351728261
     },
     "B": {
-      "downKbps": 6.875715266674859,
-      "upKbps": 15.010299839831465
+      "downKbps": 7.573157081173027,
+      "upKbps": 15.534353179455707
     }
   },
   "local": {
     "A": {
       "reconciles": 0,
-      "agreements": 275,
+      "agreements": 273,
       "corrMaxCm": 0,
       "corrP95Cm": 0,
       "over5cm": 0
     },
     "B": {
-      "reconciles": 1,
-      "agreements": 259,
-      "corrMaxCm": 8.162275010706662,
-      "corrP95Cm": 8.162275010706662,
-      "over5cm": 1
+      "reconciles": 0,
+      "agreements": 261,
+      "corrMaxCm": 0,
+      "corrP95Cm": 0,
+      "over5cm": 0
     }
   },
   "remote": {
     "A sees B": {
       "reconciles": 0,
-      "agreements": 275,
+      "agreements": 273,
       "logLen": 0,
-      "extrapEvents": 6,
-      "extrapFrames": 13,
+      "extrapEvents": 0,
+      "extrapFrames": 0,
       "frozenFrames": 0,
-      "interpFrames": 570,
-      "visibleJumps": 1,
+      "interpFrames": 575,
+      "visibleJumps": 0,
       "teleports": 0,
-      "extrapPctFrames": 2.229845626072041,
-      "maxJumpCm": 15.380820632159258,
-      "maxHandbackCm": 15.380820632159258,
-      "linkDelayMs": 328.64835345452474,
+      "extrapPctFrames": 0,
+      "maxJumpCm": 3.4429083798992344,
+      "maxHandbackCm": 0,
+      "linkDelayMs": 349.74989989927997,
       "arrival": {
-        "baseLag": 60.571044921875,
-        "p50": 70.512939453125,
-        "p95": 291.265869140625,
-        "max": 371.19091796875,
-        "delay": 328.64835345452474,
+        "baseLag": 71.430908203125,
+        "p50": 73.35791015625,
+        "p95": 289.677001953125,
+        "max": 352.468017578125,
+        "delay": 349.74989989927997,
         "n": 256
       }
     },
     "B sees A": {
-      "reconciles": 1,
-      "agreements": 259,
-      "logLen": 1,
-      "extrapEvents": 1,
-      "extrapFrames": 2,
+      "reconciles": 0,
+      "agreements": 261,
+      "logLen": 0,
+      "extrapEvents": 0,
+      "extrapFrames": 0,
       "frozenFrames": 0,
-      "interpFrames": 578,
-      "visibleJumps": 3,
+      "interpFrames": 579,
+      "visibleJumps": 0,
       "teleports": 0,
-      "extrapPctFrames": 0.3448275862068966,
-      "maxJumpCm": 16.70282881130842,
+      "extrapPctFrames": 0,
+      "maxJumpCm": 0,
       "maxHandbackCm": 0,
-      "linkDelayMs": 356.7294675519675,
+      "linkDelayMs": 326.59444505414945,
       "arrival": {
-        "baseLag": 67.9560546875,
-        "p50": 71.781005859375,
-        "p95": 307.2880859375,
-        "max": 366.866943359375,
-        "delay": 356.7294675519675,
+        "baseLag": 63.37890625,
+        "p50": 65.22216796875,
+        "p95": 252.0439453125,
+        "max": 323.35107421875,
+        "delay": 326.59444505414945,
         "n": 256
       }
     }
   },
   "screenshots": {
     "A": {
-      "dist": 14.302538091634405,
+      "dist": 14.249886917932919,
       "lod": 0,
       "mode": "interp",
-      "delayMs": 328.64835345452474
+      "delayMs": 349.34698398143377
     },
     "B": {
-      "dist": 14.298974889756575,
+      "dist": 14.246346607102758,
       "lod": 0,
       "mode": "interp",
-      "delayMs": 356.7294675519675
+      "delayMs": 328.1904125483626
     }
   },
   "drawnVsTrue": {
-    "B drawn by A vs B true (m)": 0.004354481938057922,
-    "A drawn by B vs A true (m)": 0.004078366959304953
+    "B drawn by A vs B true (m)": 0.004459234312481325,
+    "A drawn by B vs A true (m)": 0.0005931385034164647
   },
   "stats": {
     "A": {
-      "snapshots": 691,
+      "snapshots": 686,
       "stale": 0,
       "noBaseline": 0,
-      "inputPackets": 641,
-      "framesSent": 1462,
+      "inputPackets": 644,
+      "framesSent": 1449,
       "decodeErrors": 0,
       "earlySnapshots": 0
     },
     "B": {
-      "snapshots": 689,
+      "snapshots": 679,
       "stale": 0,
       "noBaseline": 0,
-      "inputPackets": 647,
-      "framesSent": 1469,
+      "inputPackets": 644,
+      "framesSent": 1459,
       "decodeErrors": 0,
       "earlySnapshots": 0
     }
   },
   "zoneMetrics": [
-    "zone_budget_records_sent_total 1215",
-    "zone_client_down_kbps{q=\"avg\"} 5.6",
-    "zone_client_down_kbps{q=\"max\"} 6.18",
-    "zone_client_down_kbps{q=\"p50\"} 6.18",
-    "zone_client_down_kbps{q=\"p99\"} 6.18",
-    "zone_client_up_kbps{q=\"avg\"} 15.57",
-    "zone_client_up_kbps{q=\"max\"} 15.77",
-    "zone_client_up_kbps{q=\"p50\"} 15.77",
-    "zone_client_up_kbps{q=\"p99\"} 15.77",
-    "zone_input_frames_dropped_total 1",
+    "zone_budget_records_sent_total 1212",
+    "zone_client_down_kbps{q=\"avg\"} 8.38",
+    "zone_client_down_kbps{q=\"max\"} 8.62",
+    "zone_client_down_kbps{q=\"p50\"} 8.62",
+    "zone_client_down_kbps{q=\"p99\"} 8.62",
+    "zone_client_up_kbps{q=\"avg\"} 15.55",
+    "zone_client_up_kbps{q=\"max\"} 15.68",
+    "zone_client_up_kbps{q=\"p50\"} 15.68",
+    "zone_client_up_kbps{q=\"p99\"} 15.68",
     "zone_sessions{transport=\"websocket\"} 2",
-    "zone_snapshots_shed_total 148"
+    "zone_snapshots_shed_total 92"
   ],
   "jumps": {
-    "A sees B": [
-      {
-        "atMs": 1794142331556,
-        "cm": 15.4,
-        "dtMs": 31,
-        "mode": "interp",
-        "handback": true,
-        "id": 1
-      }
-    ],
-    "B sees A": [
-      {
-        "atMs": 1794142322810,
-        "cm": 16.7,
-        "dtMs": 34,
-        "mode": "interp",
-        "handback": false,
-        "id": 2
-      },
-      {
-        "atMs": 1794142331688,
-        "cm": 9.5,
-        "dtMs": 29,
-        "mode": "interp",
-        "handback": false,
-        "id": 2
-      },
-      {
-        "atMs": 1794142331748,
-        "cm": 10.4,
-        "dtMs": 29,
-        "mode": "interp",
-        "handback": false,
-        "id": 2
-      }
-    ]
+    "A sees B": [],
+    "B sees A": []
   },
   "correctionLog": {
     "A": [],
-    "B": [
-      {
-        "t": 14483.29999999702,
-        "magnitude": 0.08162275010706661,
-        "unacked": 10,
-        "ackSeq": 767,
-        "knownAck": true
-      }
-    ]
+    "B": []
   },
   "correctionsA": [],
-  "correctionsB": [
-    0.08162275010706661
-  ]
+  "correctionsB": []
 }

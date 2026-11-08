@@ -158,10 +158,12 @@ export class Avatar {
     this.limbs[2].rotation.x = airborne ? -0.6 : -s;
     this.limbs[3].rotation.x = airborne ? -0.3 : s;
 
+    // Roughly constant on-screen size (about a fifth of the view width at
+    // 75 degrees FOV), never smaller than 1.6 m up close.
     const d = camera.position.distanceTo(this.root.position);
-    const scale = Math.min(8, Math.max(1, d / 14));
-    this.plate.scale.set(2.0 * scale, 0.5 * scale, 1);
-    this.plate.position.y = NAMEPLATE_Y + (scale - 1) * 0.25;
+    const w = Math.min(160, Math.max(1.6, d * 0.32));
+    this.plate.scale.set(w, w / 4, 1);
+    this.plate.position.y = NAMEPLATE_Y + w / 8;
     this.drawPlate(v);
   }
 
