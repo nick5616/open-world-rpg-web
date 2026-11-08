@@ -32,6 +32,8 @@ export const netStats = {
   upKbps: null as number | null,
   chunkQueue: null as number | null,
   chunksLoaded: null as number | null,
+  /** WP06: one-line sync summary (tick, remotes, interp delay, corrections, extrapolations). */
+  sync: null as string | null,
 };
 
 /**

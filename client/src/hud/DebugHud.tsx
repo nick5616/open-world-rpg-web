@@ -61,6 +61,7 @@ export function DebugHud() {
           `time  ${clock(worldClock.timeOfDayS)}${dbg.freezeTime ? ' (frozen)' : ''}  quality ${useQualityStore.getState().tier}`,
           `net   ${dash(netStats.transport)}  rtt ${dash(netStats.rttMs, ' ms')}  ↓${dash(netStats.downKbps, ' kbps')} ↑${dash(netStats.upKbps, ' kbps')}`,
           `chunk queue ${dash(netStats.chunkQueue)}  loaded ${dash(netStats.chunksLoaded)}`,
+          ...(netStats.sync ? [`sync  ${netStats.sync}`] : []),
         ].join('\n');
       }
       raf = requestAnimationFrame(tick);
