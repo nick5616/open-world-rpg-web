@@ -5,22 +5,22 @@
 [B] debug: [vite] connected.
 [B] info: %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
 [A] warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
-[B] warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
-[A] warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
-[A] warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
-[B] warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
 [A] warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
 [A] warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
 [A] warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
 [A] warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
 [A] warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
-[B] warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
-[B] warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
-[B] warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
-[B] warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
-[B] warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
-[B] warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
 [A] warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+[A] warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+[A] warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+[B] warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+[B] warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+[B] warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+[B] warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+[B] warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+[B] warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+[B] warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+[B] warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
 [B] warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
 [A] error: WebSocket connection to 'ws://localhost:8093/ws' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED
 [B] error: WebSocket connection to 'ws://localhost:8093/ws' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED
@@ -28,5 +28,5 @@
 [B] error: WebSocket connection to 'ws://localhost:8093/ws' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED
 [A] error: WebSocket connection to 'ws://localhost:8093/ws' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED
 [B] error: WebSocket connection to 'ws://localhost:8093/ws' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED
-[B] error: WebSocket connection to 'ws://localhost:8093/ws' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED
 [A] error: WebSocket connection to 'ws://localhost:8093/ws' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED
+[B] error: WebSocket connection to 'ws://localhost:8093/ws' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED
