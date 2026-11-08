@@ -5,6 +5,7 @@ go 1.27
 require (
 	github.com/jackc/pgx/v5 v5.12.0
 	github.com/redis/go-redis/v9 v9.23.0
+	github.com/tetratelabs/wazero v1.12.0
 )
 
 require (
