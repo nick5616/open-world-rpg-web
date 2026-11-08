@@ -19,6 +19,8 @@ import { ExplorationHud } from '../ui/map/ExplorationHud';
 import { CombatHud } from '../combat/CombatHud';
 // WP11: renders nothing until NetPlay starts voice (client/src/voice/README.md).
 import { VoiceHud } from '../voice';
+// WP14: inventory (I), crafting panel (forge/cook stations), loot toasts, Bitchin' banner, [E] containers/pickups (client/src/ui/inventory/README.md).
+import { CraftPanel, InventoryScreen, LootHud } from '../ui/inventory';
 
 function DebugLayer() {
   useDebugHotkeys();
@@ -46,6 +48,10 @@ export default function PlayScreen() {
       <ExplorationHud />
       <CombatHud />
       <VoiceHud />
+      {/* WP14 */}
+      <LootHud />
+      <InventoryScreen />
+      <CraftPanel />
     </>
   );
 }

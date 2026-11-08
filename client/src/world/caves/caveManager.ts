@@ -659,6 +659,7 @@ export class CaveManager {
       const seen = new Set<number>();
       for (const e of s.latestFrame.ents) {
         if (e.kind !== 4) continue; // EntityKind.pickup
+        if (!e.name.startsWith('ore:') && !e.name.startsWith('gem:')) continue; // WP14: other items are drawn by ui/inventory/LootLayer
         seen.add(e.id);
         if (!this.pickups.some((p) => p.serverId === e.id)) this.spawnPickup(e.x / 100, e.y / 100, e.z / 100, e.name, e.level, e.id);
       }

@@ -157,13 +157,13 @@ export interface ItemDef {
   weapon?: string; armor?: 'head' | 'body' | 'legs'; material?: string; health?: number; armorPct?: number; heal?: number; arrow?: string;
   gem?: string; cut?: string; element?: number; metal?: string; recipe?: string;
 }
-export interface AffixDef { key: string; name: string; stat: ItemStat; min: number; max: number; slots: string[]; weight: number; elements: number[]; themes: string[] }
+export interface ItemAffixDef { key: string; name: string; stat: ItemStat; min: number; max: number; slots: string[]; weight: number; elements: number[]; themes: string[] }
 export interface UniqueDef { key: string; name: string; stats: Partial<Record<ItemStat, number>> }
 export interface RecipeDef { key: string; id: number; station: 'forge' | 'cook'; inputs: { item: string; qty: number }[]; output: string; qty: number; sockets: number; blueprint: string | null; xp: number }
 export interface ItemDefs {
   version: number; rarities: RarityDef[]; luckCap: number; materials: MaterialDef[]; gems: GemDef[]; cuts: CutDef[]; combineCount: number; ores: OreDef[];
   stacks: Record<string, number>; pouches: Record<string, string>; items: ItemDef[]; tome: { name: string; value: number };
-  affixes: AffixDef[]; uniques: UniqueDef[]; names: { first: string[]; second: string[] }; recipes: RecipeDef[];
+  affixes: ItemAffixDef[]; uniques: UniqueDef[]; names: { first: string[]; second: string[] }; recipes: RecipeDef[];
   starter: { item: string; qty: number }[]; loot: Record<string, unknown>; stats: ItemStat[];
 }
 `;
