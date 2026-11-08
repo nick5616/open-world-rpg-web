@@ -96,6 +96,7 @@ func (e *Entity) applyFrame(f proto.InputFrame, g movement.Ground) bool {
 	e.Yaw = proto.U16ToYaw(f.Yaw)
 	e.Pitch = proto.I16ToPitch(f.Pitch)
 	e.LastSeq = f.Seq
+	vertOK := verticalOK(e.Move, next, g) // WP07, terrain.go; before the clamp
 
 	// World bounds: the v1 world spans [0, WORLD_SIZE_M) on x and z. The
 	// client does not clamp, so a player pressing into the edge gets a
@@ -114,7 +115,7 @@ func (e *Entity) applyFrame(f proto.InputFrame, g movement.Ground) bool {
 	// this only trips on bugs or on modes the server doesn't simulate yet;
 	// the violator snaps back to the last valid state with no horizontal
 	// momentum, and the client's reconciliation shows that as a correction.
-	if movement.HorizontalSpeed(next) > movement.MaxLegitHorizontalSpeed || math.IsNaN(next.Pos.X+next.Pos.Y+next.Pos.Z) {
+	if !vertOK || movement.HorizontalSpeed(next) > movement.MaxLegitHorizontalSpeed || math.IsNaN(next.Pos.X+next.Pos.Y+next.Pos.Z) {
 		e.Move = e.prevValid
 		e.Move.Vel.X, e.Move.Vel.Z = 0, 0
 		return false

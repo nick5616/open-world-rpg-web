@@ -8,7 +8,7 @@
 //	LODESTONE_ZONE_ID            zone-dev-1   (tickets must name this audience)
 //	LODESTONE_WORLD_ID           unset: the official world row (WP04), else 00000000-0000-0000-0000-000000000001
 //	LODESTONE_WORLD_SEED         1     (only used with LODESTONE_WORLD_ID or the dev fallback)
-//	LODESTONE_GEN_VERSION        dev   (same)
+//	LODESTONE_GEN_VERSION        dev   (same; "dev" = derive the spec from the seed with the loaded wasm)
 //	LODESTONE_ZONE_PUBLIC_URL    ws://localhost:<port>/ws (announced to the director)
 //	LODESTONE_ZONE_MAX_PLAYERS   400
 //	LODESTONE_ZONE_DEV_SPAWN     1 to honor /ws?spawn=x,z (default: on only with the dev ticket key)
@@ -17,6 +17,9 @@
 //	LODESTONE_ZONE_WT_ADDR       WebTransport UDP address (stub: logs "not implemented")
 //	LODESTONE_ZONE_NO_DB / _NO_REDIS  1 to run without Postgres / Redis
 //	LODESTONE_TICKET_PUBLIC_KEY  base64 Ed25519 key (dev key + warning when unset)
+//	LODESTONE_WORLDGEN_WASM      worldgen/pkg/worldgen.wasm (WP07 terrain; see terrain.go for the rest)
+//	LODESTONE_ZONE_REQUIRE_TERRAIN 1 to refuse flat ground when the wasm is missing (implied by LODESTONE_ENV=production)
+//	LODESTONE_ZONE_CHUNK_CACHE / _CHUNK_WORKERS / _WASM_INSTANCES  terrain cache size (3072 chunks), generators, query instances
 //	LODESTONE_PG_URL, LODESTONE_REDIS_ADDR
 package main
 
@@ -36,7 +39,6 @@ import (
 
 	"lodestone/server/pkg/env"
 	"lodestone/server/pkg/gameloop"
-	"lodestone/server/pkg/movement"
 	"lodestone/server/pkg/svc"
 	"lodestone/server/pkg/ticket"
 	"lodestone/server/pkg/transport"
@@ -88,6 +90,11 @@ func main() {
 	queue.Log = log
 
 	world := resolveWorld(ctx, pool, log)
+	ground, terrain, world, err := loadTerrain(ctx, world, log)
+	if err != nil {
+		log.Error("terrain: refusing to serve this world", "world", world.ID, "err", err)
+		os.Exit(1)
+	}
 	cfg := game.Config{
 		ZoneID:     env.Str("LODESTONE_ZONE_ID", defaultZoneID),
 		WorldID:    world.ID,
@@ -96,7 +103,7 @@ func main() {
 		MaxPlayers: env.Int("LODESTONE_ZONE_MAX_PLAYERS", 400),
 		DevSpawn:   env.Bool("LODESTONE_ZONE_DEV_SPAWN", devKey),
 		TicketKey:  pub,
-		Ground:     movement.Flat{}, // WP07 replaces with the wasm terrain
+		Ground:     ground, // WP07: wasm terrain (terrain.go), flat only without worldgen.wasm
 		SpinTail:   gameloop.DefaultSpinTail(),
 		Store:      store,
 		Queue:      queue,
@@ -112,7 +119,7 @@ func main() {
 	// the right audience and world without flags.
 	s.Mux.HandleFunc("GET /debug/zone", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]any{"zoneId": cfg.ZoneID, "worldId": cfg.WorldID, "seed": cfg.Seed, "genVersion": cfg.GenVersion, "players": zone.Players()})
+		_ = json.NewEncoder(w).Encode(map[string]any{"zoneId": cfg.ZoneID, "worldId": cfg.WorldID, "seed": cfg.Seed, "genVersion": cfg.GenVersion, "spec": json.RawMessage(nonEmptyJSON(world.Spec)), "atlasHash": world.AtlasHash, "players": zone.Players()})
 	})
 	s.Mux.HandleFunc("GET /debug/tickstats", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -131,6 +138,10 @@ func main() {
 	queueCtx, stopQueue := context.WithCancel(context.Background())
 	go queue.Run(queueCtx)
 	zone.Start()
+	if terrain != nil {
+		defer terrain.Close()
+		serveTerrain(ctx, s, terrain)
+	}
 	go zone.RunMetrics(ctx, queue.Depth, func(m *svc.Metrics) {
 		st := &queue.Stats
 		m.SetInt("zone_writebehind_enqueued_total", st.Enqueued.Load())

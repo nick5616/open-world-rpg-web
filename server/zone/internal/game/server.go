@@ -207,6 +207,7 @@ func (s *Server) onTick() {
 		s.drain(sess, now)
 		i++
 	}
+	s.terrainTick(tick) // WP07: chunk cache interest (terrain.go)
 
 	// Quantize once per entity and rebuild the grid; every client's snapshot
 	// reads these.
