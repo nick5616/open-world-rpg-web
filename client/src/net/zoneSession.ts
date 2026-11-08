@@ -462,7 +462,9 @@ export class ZoneSession {
     // skips those it already has (its state is at the old zone's last seq).
     const pending = this.frames.filter((f) => f.seq > this.prediction.ackSeq);
     for (let i = 0; i < pending.length; i += 16) {
-      tr.sendUnreliable(encodeMessage({ type: 'Input', ackTick: 0, frames: pending.slice(i, i + 16) }));
+      // Reliable: these frames have no later repeats (WebTransport datagrams
+      // could drop them, leaving the new zone a gap it would fill by guessing).
+      tr.sendReliable(encodeMessage({ type: 'Input', ackTick: 0, frames: pending.slice(i, i + 16) }));
       this.stats.resent += Math.min(16, pending.length - i);
     }
     this.unsent = 0;

@@ -273,7 +273,9 @@ func (b *bot) switchTo(bc *botConn, w *proto.Welcome) {
 	}
 	for len(frames) > 0 {
 		n := min(16, len(frames))
-		_ = bc.conn.SendUnreliable(proto.Encode(&proto.Input{Frames: frames[:n]}))
+		// Reliable: an unreliable send may be shed when the queue is full,
+		// and these frames have no later repeats to cover for them.
+		_ = bc.conn.SendReliable(proto.Encode(&proto.Input{Frames: frames[:n]}))
 		frames = frames[n:]
 	}
 }
