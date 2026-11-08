@@ -15,7 +15,7 @@ startVoice({
   requestToken: () => requestVoiceToken(),            // voice_token over the social socket
   listenOnly: () => socialStore.me?.isLocalProfile ?? ready.isLocalProfile,
   partyIds: () => socialStore.party?.members.map((m) => m.characterId) ?? [],
-  ground: DEFAULT_GROUND,                               // occlusion samples it (WP05 swaps in real terrain)
+  ground,                                               // NetPlay's forwarding ground: the terrain the player walks on
 });
 // every movement frame: flags | voiceInputFlags()     (InputFlag.speaking -> Activity.speaking for others)
 ```

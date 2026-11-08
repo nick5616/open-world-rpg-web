@@ -380,3 +380,72 @@ Assumptions:
 - Revealed regions are derived from unlocked towers (no extra column); `last_waypoint` stores the site's stable id as int64 bits.
 - Fast travel has a 2 s cooldown and works anywhere (no combat yet); towers arrive on the top centre, waypoints 2.5 m in front of the stone.
 - Shared files touched: `client/src/net/zoneSession.ts` (callbacks + `sendInteract`), `client/src/net/NetPlay.tsx` (2 lines), `client/src/world/core/runtime.ts` (ground = overlay), `client/src/world/WorldCanvas.tsx` (mount `StructuresLayer`), `client/src/screens/PlayScreen.tsx` (mount `ExplorationHud`), `server/zone/{main.go, internal/game/server.go, session.go, entity.go}` (hooks, a few lines each), `server/pkg/localsave/state.go` (optional `Pins`), `tools/bots/{bot.go,main.go,terrain.go}` (predict on the overlay), `contracts/events.md`, new `contracts/migrations/0012_exploration_pins.sql`, `docs/cr/003-exploration.md`, README rows in `server/pkg/README.md` and `client/src/world/README.md`, a section in `server/zone/README.md`. No `protocol.yaml`, `social.yaml`, constants or worldgen change.
+
+## WP11: Proximity voice ✅
+
+Branch `wp/11-voice`. Decisions: `docs/decisions/0011-proximity-voice.md`. Contract change: `docs/cr/004-voice-speaking-and-earshot.md` (protocol v2 `InputFlag.speaking`; earshot message on Redis `voice:{worldId}`). Package docs: `server/social/voice/README.md`, `server/social/voice/voicebots/README.md`, `client/src/voice/README.md`, `server/zone/README.md` (Proximity voice: earshot).
+
+Works:
+- **Earshot in the zone** (`server/zone/internal/voice`, `internal/game/earshot.go`, `voice.go`): every 250 ms the tick copies positions and a runner goroutine computes the sets: 3D distance, join 40 m / leave 48 m, at most 12 nearest with an 8 m head start for current members (no top-12 swapping in a crowd), cave rule ready for WP09 (`Player.Cave`). Published to `voice:{worldId}` (full every 2 s, deltas only on change, `gone`). Off the tick: 300 players packed together cost ~1.5 ms on the runner and microseconds on the tick. `InputFlag.speaking` is mirrored into `Activity.speaking` (never for local profiles).
+- **Social service** (`server/social/voice`, wired in `internal/social/voice.go` and `voicecfg.go`): `voice_token` returns the LiveKit URL, the world's room and an HS256 join token (identity = character id, name = character name; `canPublish` false for local profiles and moderator-muted players; microphone only; no data channel). One reconciler per world (Redis lease `voicelead:{worldId}`): earshot ∪ party − blocks (both ways) − mutes (one way), mapped to the room roster's audio tracks and diffed against what was applied (keyed by participant and track sid, so reconnects and republishes heal), applied with `UpdateSubscriptions` over LiveKit's Twirp API (no SDK). A heal pass runs every 10 s; a silent zone's sets are dropped after 6 s. Metrics `voice_*`, `/debug/voice`.
+- **Client** (`client/src/voice`): livekit-client with auto-subscribe off and one AudioContext. Per speaker: gain (per-player volume/mute) → occlusion low-pass (terrain between the heads, checked 4 times a second per speaker on the ground the player walks on) → HRTF `PannerNode` at the speaker's interpolated head every frame (inverse, ref 2 m, max 40 m). Party members beyond earshot crossfade to a flat radio branch (300 Hz-3 kHz, soft clip). Push-to-talk on V: the mic is requested at the first push, never at connect. Voice activation is an opt-in setting. Local profiles see a listen-only HUD. Speaking indicators port the-circle `audio.ts`: an analyser per track writes `--lvl`/`data-speaking` to DOM nodes outside React. Nameplates show "speaking" from the local analyser or the zone bit. The HUD (bottom right) shows PTT state, who you hear with level bars, and settings (talk mode, master volume, per-player volume and mute, saved locally). Debug: `window.__lodestone.voiceDebug()`.
+- **Acceptance, voice soak scenario 3** (`server/social/voice/voicebots`, `docs/evidence/wp11-voice-soak-50.txt|json`): 50 Go/pion bots, each a zone player, a social session and a LiveKit participant publishing synthetic Opus speech, cluster within 14 m, walk out for 20 s, stand, then walk back.
+  - **872 earshot changes, 872 reflected at the listener, 0 missed, 0 extra, 0 flaps (listener and zone), at most 3 changes per pair.**
+  - Zone decision → listener hears (TrackSubscribed) or stops hearing (forwarding stopped): **p50 32, p99 269, max 306 ms; 100 % within 500 ms.** Subscribe p99 275 ms, unsubscribe p99 70 ms.
+  - Distance crossing → listener: p50 168, p99 343, max 414 ms. Zone decision → LiveKit answered: p50 4.9 ms.
+  - 1.47 M audio packets received; zone tick p99 2.8 ms with 50 players.
+- **Acceptance, two people walking apart** (`node client/src/voice/dev/walkapart.mjs`, `docs/evidence/wp11-walkapart.txt|json`, `wp11-walkapart-*.png`). The run used real account, director, zone, social and LiveKit services, plus two Chromium processes with a fake microphone (a steady harmonic tone). Both players held V while B walked ahead of A, then 62 m to A's right, then back across to A's left, then (after a `/invite`) on to 80 m as a party member. A's actual audio output was measured. **ALL PASS**:
+  - **Fade:** B is 18.8 dB quieter at 30-40 m than at 3-7 m (the model predicts 17.2 dB); Spearman(distance, level) is −0.994.
+  - **Pan:** the right ear is +4.0 dB louder when B is on A's right, the left ear +4.3 dB when B is on the left, and the louder ear was on B's side in 121/121 off-centre samples.
+  - **Earshot:** A's output was silent in all 40 samples past 51.5 m and A was unsubscribed past 56.6 m. A was subscribed in all 132 samples inside 38 m.
+  - **Panner position:** it sits on B's drawn head (p95 0.34 m) and trails B's true head by the interpolation delay (p95 1.95 m).
+  - **Speaking indicators:** A's DOM level bar showed `data-speaking` in 203 samples, and the zone's speaking bit was seen in all 256.
+  - **Party radio:** past 56 m B stayed subscribed in radio mode, audible and flat (|R−L| = 0 dB).
+  - The microphone was not requested before the first push.
+  - No page errors.
+
+  This run predates merging main (flat ground on both sides). After the merge (WP05 terrain client, WP12) the walk-apart test now runs on real terrain with GPU flags and reports occlusion separately. The post-merge rerun could not finish: once the walk was too slow under SwiftShader, and once Docker Desktop's port forwarding to Postgres, Redis and LiveKit hung on this machine. I did not restart Docker Desktop, because other agents share it. After merge, the client tests (128), tsc, eslint and the zone and social builds and vets pass. Rerun `walkapart.mjs` once infra is healthy (gap below).
+- Tests:
+  - Go unit:
+    - `zone/internal/voice`: hysteresis, cap with incumbency, 3D, caves, deltas, no flapping in a jittery crowd, grid = brute force, runner messages.
+    - `zone/internal/game/earshot_test.go`: cadence, speaking bit including local profiles.
+    - `social/voice`: grants; reconcile rules including party, blocks, mutes, roster, heal, handoff and expiry; LiveKit API smoke against the real SFU.
+    - `voicebots`: verdict logic.
+  - Process boundaries:
+    - `server/zone/zone_earshot_integration_test.go`: zone binary → Redis (sets, 2 s fulls, a sprinting player leaves earshot after ~5 s).
+    - `server/social/voice/voice_integration_test.go`: two social binaries, scratch Postgres, Redis and a fake LiveKit API (token grants, one leader, earshot → UpdateSubscriptions in under 1 ms, deltas, block both ways).
+  - Vitest (12 tests): spatial maths, prefs, push-to-talk rules.
+  - eslint, tsc, go vet and gofmt are clean; `voicebots` is vetted separately (`GOWORK=off`).
+
+Known gaps:
+- **The two-browser test has not been rerun since merging main into this branch** (WP05 terrain client, WP12), because Docker Desktop's port forwarding hung at the end of the session. On real terrain, expect some occluded samples (they are reported separately). Run `node client/src/voice/dev/walkapart.mjs` after recreating LiveKit with the new compose config.
+- **Trust:** server-side subscriptions need `canSubscribe` in the token, so a modified client could subscribe itself to any track in its world's room. Fix: publishers set per-track subscription permissions from a server-sent allow list, or rooms are sharded by region (0011).
+- LiveKit's `TrackUnsubscribed` arrives ~1 s after an unsubscribe (server 1.8 `flushTimeout`, not configurable). Audio stops at once: soak p99 70 ms, and the two-browser test is silent past 48 m + 0.5 s of walking.
+- **The shared LiveKit container still runs the old port-range config.** I did not recreate it while other agents were using it. With that config a room fits ~25 participants: bots 26-49 never connected (`docs/evidence/wp11-voice-soak-compose-port-range.txt`). `infra/docker-compose.yml` now uses the UDP mux (7882); after merging, run `docker compose -f infra/docker-compose.yml up -d livekit`. The passing soak ran on a private container with the same config (udp 17882 / tcp 17881).
+- livekit-client is pinned to 2.15.16: 2.20+ cannot publish to LiveKit server 1.8.4 ("negotiation timed out"). Upgrading the client needs a newer server image too.
+- The roster is polled (ListParticipants every 500 ms, every 1.5 s while a room is empty). A speaker's first push can be heard up to ~0.5 s late, and a pair that joins already in earshot is subscribed p50 1.1 s after both are voice-ready. LiveKit webhooks would remove the poll (needs LiveKit config and a reachable URL).
+- Occlusion samples the ground heightfield between the heads, which is exact for terrain. Caves need the wasm raycast, and the cave reverb send is not built (WP09). The cave earshot rule waits for WP09 to set `Player.Cave`.
+- Earshot is per zone: players on two sides of a zone boundary don't hear each other until zones mirror the ghost band (spec 9).
+- One LiveKit room per world, measured at 50 participants only; spec 10's region sharding is not needed at that scale. Re-measure in WP19's 1,000-player soak.
+- Every social process campaigns for every world in `social:worlds`, including stale dev worlds (an idle leader polls an empty room every 1.5 s).
+- Voice activation's gate uses the-circle's level threshold with no noise-floor calibration.
+
+Assumptions:
+- Party members are added by the social service, which owns parties, not by the zone's earshot computation.
+- Per-player mute in the voice settings is local to this device; `/mute Name` is the server-side mute (chat and voice).
+- A moderator mute makes voice listen-only, as it does chat ("can read, can't send").
+- The speaking bit means transmitting with the local level above the speaking threshold, so holding V in silence shows nothing. The zone strips local profiles' bit.
+- Fade/pan acceptance compares A's actual audio output levels (left/right RMS), not just the panner parameters. "Within 500 ms" is measured from the zone's earshot decision; the geometric latency, which adds the 250 ms interval, is reported too.
+- Shared files touched:
+  - `contracts/protocol.yaml`, plus regenerated `contracts/ts/src/gen/protocol.ts`, `server/pkg/proto/protocol_gen.go` and `contracts/golden/protocol_vectors.json`.
+  - New `server/pkg/earshot`, plus a row in `server/pkg/README.md`.
+  - `server/zone`: `main.go` (3 lines), `internal/game/server.go` (3 lines), `internal/game/entity.go` (2 lines), `README.md` (section).
+  - `server/social`: `main.go`, `internal/social/hub.go`, `session.go`, `friends.go` (a few lines each), `README.md` (2 rows).
+  - `client/src/net/NetPlay.tsx` (start/stop voice, speaking flag) and `client/src/net/avatar.ts` (3 lines).
+  - `client/src/screens/PlayScreen.tsx` (mount `VoiceHud`).
+  - `client/src/social/session.ts` and `index.ts` (`onSocialMessage`).
+  - `client/src/devHandle.ts` (`voiceDebug`).
+  - `client/src/hud/useDebugHotkeys.ts` and `DebugHud.tsx` (V is push-to-talk online).
+  - `client/package.json` and `package-lock.json` (livekit-client 2.15.16).
+  - `infra/docker-compose.yml` (LiveKit UDP mux) and `README.md` (port row).
+  - `docs/cr/004-*`.
