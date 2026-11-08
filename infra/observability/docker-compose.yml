@@ -20,7 +20,7 @@ services:
       - --web.listen-address=:9390
       - --web.enable-lifecycle
     ports:
-      - "${LODESTONE_PROMETHEUS_PORT:-9390}:9390"
+      - "127.0.0.1:${LODESTONE_PROMETHEUS_PORT:-9390}:9390"
     extra_hosts:
       - "host.docker.internal:host-gateway"   # Linux; Docker Desktop has it built in
     volumes:
@@ -41,7 +41,7 @@ services:
       GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
       GF_NEWS_NEWS_FEED_ENABLED: "false"
     ports:
-      - "${LODESTONE_GRAFANA_PORT:-3390}:3000"
+      - "127.0.0.1:${LODESTONE_GRAFANA_PORT:-3390}:3000"
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
       - ./grafana/dashboards:/var/lib/grafana/dashboards:ro

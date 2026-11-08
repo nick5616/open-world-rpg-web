@@ -6,7 +6,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { mustRun, root } from '../scripts/lib.mjs';
+import { mustRun, root, run } from '../scripts/lib.mjs';
 
 const dir = path.join(root, 'infra', 'observability');
 const compose = ['compose', '-p', 'lodestone-obs', '-f', path.join(dir, 'docker-compose.yml')];
@@ -18,7 +18,12 @@ if (cmd === 'up') {
   const rehearsalToken = path.join(os.tmpdir(), 'lodestone-rehearsal', 'metrics-token');
   const token = fs.existsSync(rehearsalToken) ? fs.readFileSync(rehearsalToken, 'utf8').trim() : 'none';
   fs.writeFileSync(path.join(dir, 'metrics-token'), token);
-  mustRun('docker', [...compose, 'up', '-d']);
+  // Docker Desktop on Windows sometimes still holds a just-released host port
+  // ("Only one usage of each socket address"); one retry clears it.
+  if (run('docker', [...compose, 'up', '-d']) !== 0) {
+    await new Promise((r) => setTimeout(r, 3000));
+    mustRun('docker', [...compose, 'up', '-d']);
+  }
   console.log('Prometheus http://localhost:9390   Grafana http://localhost:3390 (dashboards: Lodestone overview, Lodestone cost per player)');
 } else if (cmd === 'down') {
   mustRun('docker', [...compose, 'down', '-v']);

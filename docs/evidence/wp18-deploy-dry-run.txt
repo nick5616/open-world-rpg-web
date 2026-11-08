@@ -1,0 +1,201 @@
+Lodestone deploy: target gcp, DRY RUN (nothing is executed; probes are assumed to find nothing, so this is the plan for an empty project)
+Legend: "= cmd" local tool check (runs), "? cmd" read-only probe, "+ cmd" change, "#" note, "!!" manual console step.
+
+━━ preflight (local tools; no cloud calls)
+= gcloud --version  ->  Google Cloud SDK 580.0.0
+= netlify --version  ->  netlify-cli/26.2.0 win32-x64 node-v20.18.0
+= docker version --format '{{.Server.Version}}'  ->  28.1.1
+# project lodestone-example, region us-central1, zone us-central1-a, tag e5eb455a5316
+# gcloud configuration is never changed: every command passes --project explicitly.
+
+━━ enable APIs
++ gcloud services enable run.googleapis.com compute.googleapis.com artifactregistry.googleapis.com secretmanager.googleapis.com cloudscheduler.googleapis.com storage.googleapis.com iam.googleapis.com iap.googleapis.com --project lodestone-example
+
+━━ Artifact Registry (docker images)
+? gcloud artifacts repositories describe lodestone --location us-central1 --project lodestone-example
++ gcloud artifacts repositories create lodestone --repository-format docker --location us-central1 --description 'Lodestone service images' --project lodestone-example
+
+━━ service accounts and the VM power role
+? gcloud iam service-accounts describe lodestone-vm@lodestone-example.iam.gserviceaccount.com --project lodestone-example
++ gcloud iam service-accounts create lodestone-vm --display-name 'Lodestone game VM' --project lodestone-example
+? gcloud iam service-accounts describe lodestone-run@lodestone-example.iam.gserviceaccount.com --project lodestone-example
++ gcloud iam service-accounts create lodestone-run --display-name 'Lodestone Cloud Run (account, creator)' --project lodestone-example
+? gcloud iam service-accounts describe lodestone-director@lodestone-example.iam.gserviceaccount.com --project lodestone-example
++ gcloud iam service-accounts create lodestone-director --display-name 'Lodestone director (wakes the game VM)' --project lodestone-example
++ gcloud projects add-iam-policy-binding lodestone-example --member serviceAccount:lodestone-vm@lodestone-example.iam.gserviceaccount.com --role roles/logging.logWriter --condition None --quiet
++ gcloud projects add-iam-policy-binding lodestone-example --member serviceAccount:lodestone-vm@lodestone-example.iam.gserviceaccount.com --role roles/monitoring.metricWriter --condition None --quiet
++ gcloud artifacts repositories add-iam-policy-binding lodestone --location us-central1 --member serviceAccount:lodestone-vm@lodestone-example.iam.gserviceaccount.com --role roles/artifactregistry.reader --project lodestone-example
+? gcloud iam roles describe lodestoneVmPower --project lodestone-example
++ gcloud iam roles create lodestoneVmPower --project lodestone-example --title 'Lodestone VM power' --description 'Start and stop the Lodestone game VM (wake on demand)' --permissions compute.instances.get,compute.instances.start,compute.instances.stop,compute.instances.resume --stage GA
+
+━━ network: static addresses and firewall
+? gcloud compute addresses describe lodestone-game-ip --region us-central1 --project lodestone-example
++ gcloud compute addresses create lodestone-game-ip --region us-central1 --project lodestone-example
+? gcloud compute addresses describe lodestone-game-ip --region us-central1 --project lodestone-example --format 'value(address)'
+? gcloud compute addresses describe lodestone-game-internal-ip --region us-central1 --project lodestone-example
++ gcloud compute addresses create lodestone-game-internal-ip --region us-central1 --subnet default --project lodestone-example
+? gcloud compute addresses describe lodestone-game-internal-ip --region us-central1 --project lodestone-example --format 'value(address)'
+# lodestone-game-public: browsers: Caddy (wss), WebTransport, LiveKit media
+? gcloud compute firewall-rules describe lodestone-game-public --project lodestone-example
++ gcloud compute firewall-rules create lodestone-game-public --network default --direction INGRESS --action ALLOW --rules tcp:80,tcp:443,udp:443,udp:4433,tcp:7881,udp:7882 --source-ranges 0.0.0.0/0 --target-tags lodestone-game --project lodestone-example
+# lodestone-game-internal: Cloud Run (Direct VPC egress, network tag) -> Postgres, Redis, zone/social health+metrics
+? gcloud compute firewall-rules describe lodestone-game-internal --project lodestone-example
++ gcloud compute firewall-rules create lodestone-game-internal --network default --direction INGRESS --action ALLOW --rules tcp:5432,tcp:6379,tcp:8092,tcp:8093 --source-tags lodestone-run --target-tags lodestone-game --project lodestone-example
+# lodestone-game-iap-ssh: gcloud compute ssh --tunnel-through-iap (deploy updates)
+? gcloud compute firewall-rules describe lodestone-game-iap-ssh --project lodestone-example
++ gcloud compute firewall-rules create lodestone-game-iap-ssh --network default --direction INGRESS --action ALLOW --rules tcp:22 --source-ranges 35.235.240.0/20 --target-tags lodestone-game --project lodestone-example
+
+━━ Secret Manager (generated once, never rotated by a deploy)
+? gcloud secrets describe lodestone-ticket-private-key --project lodestone-example
+? gcloud secrets describe lodestone-ticket-public-key --project lodestone-example
+? gcloud secrets describe lodestone-session-private-key --project lodestone-example
+? gcloud secrets describe lodestone-session-public-key --project lodestone-example
+? gcloud secrets describe lodestone-save-private-key --project lodestone-example
+? gcloud secrets describe lodestone-save-public-key --project lodestone-example
+? gcloud secrets describe lodestone-pg-password --project lodestone-example
+? gcloud secrets describe lodestone-livekit-key --project lodestone-example
+? gcloud secrets describe lodestone-livekit-secret --project lodestone-example
+? gcloud secrets describe lodestone-wake-cron-token --project lodestone-example
+? gcloud secrets describe lodestone-metrics-token --project lodestone-example
+? gcloud secrets describe lodestone-creator-token --project lodestone-example
+? gcloud secrets describe lodestone-anthropic-api-key --project lodestone-example
+? gcloud secrets describe lodestone-pg-url --project lodestone-example
++ gcloud secrets create lodestone-ticket-private-key --replication-policy automatic --data-file=- --project lodestone-example <<< <redacted>
++ gcloud secrets create lodestone-ticket-public-key --replication-policy automatic --data-file=- --project lodestone-example <<< <redacted>
++ gcloud secrets create lodestone-session-private-key --replication-policy automatic --data-file=- --project lodestone-example <<< <redacted>
++ gcloud secrets create lodestone-session-public-key --replication-policy automatic --data-file=- --project lodestone-example <<< <redacted>
++ gcloud secrets create lodestone-save-private-key --replication-policy automatic --data-file=- --project lodestone-example <<< <redacted>
++ gcloud secrets create lodestone-save-public-key --replication-policy automatic --data-file=- --project lodestone-example <<< <redacted>
++ gcloud secrets create lodestone-pg-password --replication-policy automatic --data-file=- --project lodestone-example <<< <redacted>
++ gcloud secrets create lodestone-livekit-key --replication-policy automatic --data-file=- --project lodestone-example <<< <redacted>
++ gcloud secrets create lodestone-livekit-secret --replication-policy automatic --data-file=- --project lodestone-example <<< <redacted>
++ gcloud secrets create lodestone-wake-cron-token --replication-policy automatic --data-file=- --project lodestone-example <<< <redacted>
++ gcloud secrets create lodestone-metrics-token --replication-policy automatic --data-file=- --project lodestone-example <<< <redacted>
++ gcloud secrets create lodestone-creator-token --replication-policy automatic --data-file=- --project lodestone-example <<< <redacted>
+# lodestone-pg-url = postgres://lodestone:<pg-password>@10.128.0.50:5432/lodestone?sslmode=disable (VPC-internal)
++ gcloud secrets create lodestone-pg-url --replication-policy automatic --data-file=- --project lodestone-example <<< <redacted>
++ gcloud secrets add-iam-policy-binding lodestone-ticket-private-key --member serviceAccount:lodestone-director@lodestone-example.iam.gserviceaccount.com --role roles/secretmanager.secretAccessor --project lodestone-example --quiet
++ gcloud secrets add-iam-policy-binding lodestone-ticket-public-key --member serviceAccount:lodestone-vm@lodestone-example.iam.gserviceaccount.com --role roles/secretmanager.secretAccessor --project lodestone-example --quiet
++ gcloud secrets add-iam-policy-binding lodestone-session-private-key --member serviceAccount:lodestone-run@lodestone-example.iam.gserviceaccount.com --role roles/secretmanager.secretAccessor --project lodestone-example --quiet
++ gcloud secrets add-iam-policy-binding lodestone-session-public-key --member serviceAccount:lodestone-director@lodestone-example.iam.gserviceaccount.com --role roles/secretmanager.secretAccessor --project lodestone-example --quiet
++ gcloud secrets add-iam-policy-binding lodestone-save-private-key --member serviceAccount:lodestone-run@lodestone-example.iam.gserviceaccount.com --role roles/secretmanager.secretAccessor --project lodestone-example --quiet
++ gcloud secrets add-iam-policy-binding lodestone-save-private-key --member serviceAccount:lodestone-vm@lodestone-example.iam.gserviceaccount.com --role roles/secretmanager.secretAccessor --project lodestone-example --quiet
++ gcloud secrets add-iam-policy-binding lodestone-save-public-key --member serviceAccount:lodestone-director@lodestone-example.iam.gserviceaccount.com --role roles/secretmanager.secretAccessor --project lodestone-example --quiet
++ gcloud secrets add-iam-policy-binding lodestone-save-public-key --member serviceAccount:lodestone-vm@lodestone-example.iam.gserviceaccount.com --role roles/secretmanager.secretAccessor --project lodestone-example --quiet
++ gcloud secrets add-iam-policy-binding lodestone-pg-password --member serviceAccount:lodestone-vm@lodestone-example.iam.gserviceaccount.com --role roles/secretmanager.secretAccessor --project lodestone-example --quiet
++ gcloud secrets add-iam-policy-binding lodestone-pg-url --member serviceAccount:lodestone-run@lodestone-example.iam.gserviceaccount.com --role roles/secretmanager.secretAccessor --project lodestone-example --quiet
++ gcloud secrets add-iam-policy-binding lodestone-pg-url --member serviceAccount:lodestone-director@lodestone-example.iam.gserviceaccount.com --role roles/secretmanager.secretAccessor --project lodestone-example --quiet
++ gcloud secrets add-iam-policy-binding lodestone-livekit-key --member serviceAccount:lodestone-vm@lodestone-example.iam.gserviceaccount.com --role roles/secretmanager.secretAccessor --project lodestone-example --quiet
++ gcloud secrets add-iam-policy-binding lodestone-livekit-secret --member serviceAccount:lodestone-vm@lodestone-example.iam.gserviceaccount.com --role roles/secretmanager.secretAccessor --project lodestone-example --quiet
++ gcloud secrets add-iam-policy-binding lodestone-wake-cron-token --member serviceAccount:lodestone-director@lodestone-example.iam.gserviceaccount.com --role roles/secretmanager.secretAccessor --project lodestone-example --quiet
++ gcloud secrets add-iam-policy-binding lodestone-metrics-token --member serviceAccount:lodestone-vm@lodestone-example.iam.gserviceaccount.com --role roles/secretmanager.secretAccessor --project lodestone-example --quiet
++ gcloud secrets add-iam-policy-binding lodestone-metrics-token --member serviceAccount:lodestone-run@lodestone-example.iam.gserviceaccount.com --role roles/secretmanager.secretAccessor --project lodestone-example --quiet
++ gcloud secrets add-iam-policy-binding lodestone-metrics-token --member serviceAccount:lodestone-director@lodestone-example.iam.gserviceaccount.com --role roles/secretmanager.secretAccessor --project lodestone-example --quiet
++ gcloud secrets add-iam-policy-binding lodestone-creator-token --member serviceAccount:lodestone-run@lodestone-example.iam.gserviceaccount.com --role roles/secretmanager.secretAccessor --project lodestone-example --quiet
+
+━━ Cloud Storage: Postgres backups, worldgen wasm archive
+? gcloud storage buckets describe gs://lodestone-example-lodestone-backups --project lodestone-example
++ gcloud storage buckets create gs://lodestone-example-lodestone-backups --location us-central1 --uniform-bucket-level-access --public-access-prevention --project lodestone-example
+# backups: timestamped dumps deleted after 60 days; pg/latest.sql.gz is overwritten, never deleted
++ gcloud storage buckets update gs://lodestone-example-lodestone-backups --lifecycle-file infra/gcp/backup-lifecycle.json --project lodestone-example
++ gcloud storage buckets add-iam-policy-binding gs://lodestone-example-lodestone-backups --member serviceAccount:lodestone-vm@lodestone-example.iam.gserviceaccount.com --role roles/storage.objectAdmin --project lodestone-example
+? gcloud storage buckets describe gs://lodestone-example-lodestone-worldgen --project lodestone-example
++ gcloud storage buckets create gs://lodestone-example-lodestone-worldgen --location us-central1 --uniform-bucket-level-access --project lodestone-example
+# worldgen archive: public read, CORS for browsers, no lifecycle rule (kept forever)
++ gcloud storage buckets add-iam-policy-binding gs://lodestone-example-lodestone-worldgen --member allUsers --role roles/storage.objectViewer --project lodestone-example
++ gcloud storage buckets update gs://lodestone-example-lodestone-worldgen --cors-file infra/gcp/wasm-cors.json --project lodestone-example
+
+━━ worldgen.wasm (content-hashed)
++ node worldgen/scripts/build-wasm.mjs
+
+━━ container images (us-central1-docker.pkg.dev/lodestone-example/lodestone/<service>:e5eb455a5316)
++ docker build -f infra/docker/director.Dockerfile --build-arg VERSION=e5eb455a5316 -t us-central1-docker.pkg.dev/lodestone-example/lodestone/director:e5eb455a5316 .
++ docker build -f infra/docker/account.Dockerfile --build-arg VERSION=e5eb455a5316 -t us-central1-docker.pkg.dev/lodestone-example/lodestone/account:e5eb455a5316 .
++ docker build -f infra/docker/zone.Dockerfile --build-arg VERSION=e5eb455a5316 -t us-central1-docker.pkg.dev/lodestone-example/lodestone/zone:e5eb455a5316 .
++ docker build -f infra/docker/social.Dockerfile --build-arg VERSION=e5eb455a5316 -t us-central1-docker.pkg.dev/lodestone-example/lodestone/social:e5eb455a5316 .
++ docker build -f infra/docker/creator.Dockerfile --build-arg VERSION=e5eb455a5316 -t us-central1-docker.pkg.dev/lodestone-example/lodestone/creator:e5eb455a5316 .
++ gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
+
+━━ push images to Artifact Registry
++ docker push us-central1-docker.pkg.dev/lodestone-example/lodestone/director:e5eb455a5316
++ docker push us-central1-docker.pkg.dev/lodestone-example/lodestone/account:e5eb455a5316
++ docker push us-central1-docker.pkg.dev/lodestone-example/lodestone/zone:e5eb455a5316
++ docker push us-central1-docker.pkg.dev/lodestone-example/lodestone/social:e5eb455a5316
++ docker push us-central1-docker.pkg.dev/lodestone-example/lodestone/creator:e5eb455a5316
+
+━━ publish worldgen wasm by content hash (immutable, never overwritten)
++ gcloud storage cp --no-clobber --cache-control 'public, max-age=31536000, immutable' --content-type application/wasm worldgen/pkg/worldgen-d38abb3027caa709.wasm gs://lodestone-example-lodestone-worldgen/worldgen/worldgen-d38abb3027caa709.wasm --project lodestone-example
++ gcloud storage cp --no-clobber --cache-control 'public, max-age=31536000, immutable' --content-type application/json worldgen/pkg/manifest.json gs://lodestone-example-lodestone-worldgen/worldgen/worldgen-d38abb3027caa709.json --project lodestone-example
+
+━━ game VM lodestone-game (e2-standard-2, started on demand)
+# instance metadata lodestone-env (non-secret):
+#   LODESTONE_ENV=production
+#   LODESTONE_TAG=e5eb455a5316
+#   LODESTONE_REGISTRY=us-central1-docker.pkg.dev/lodestone-example/lodestone
+#   LODESTONE_GAME_HOST=203-0-113-10.sslip.io
+#   LODESTONE_CORS_ORIGIN=https://lodestone-example-client.netlify.app
+#   LODESTONE_ZONE_ID=zone-1
+#   LODESTONE_WORLD_SEED=20261108
+#   LODESTONE_LIVEKIT_EXTERNAL_IP=true
+# instance metadata lodestone-secrets (ENV=secret name; values fetched on the VM at boot):
+#   POSTGRES_PASSWORD=lodestone-pg-password
+#   LODESTONE_TICKET_PUBLIC_KEY=lodestone-ticket-public-key
+#   LODESTONE_SAVE_PRIVATE_KEY=lodestone-save-private-key
+#   LODESTONE_SAVE_PUBLIC_KEY=lodestone-save-public-key
+#   LODESTONE_LIVEKIT_KEY=lodestone-livekit-key
+#   LODESTONE_LIVEKIT_SECRET=lodestone-livekit-secret
+#   LODESTONE_METRICS_TOKEN=lodestone-metrics-token
+? gcloud compute disks describe lodestone-data --zone us-central1-a --project lodestone-example
++ gcloud compute disks create lodestone-data --size 20GB --type pd-balanced --zone us-central1-a --project lodestone-example
+? gcloud compute instances describe lodestone-game --zone us-central1-a --project lodestone-example
++ gcloud compute instances create lodestone-game --zone us-central1-a --project lodestone-example --machine-type e2-standard-2 --image-family debian-12 --image-project debian-cloud --boot-disk-size 20GB --boot-disk-type pd-balanced --disk name=lodestone-data,device-name=lodestone-data,mode=rw,boot=no,auto-delete=no --address 203.0.113.10 --subnet default --private-network-ip 10.128.0.50 --tags lodestone-game --service-account lodestone-vm@lodestone-example.iam.gserviceaccount.com --scopes cloud-platform --shielded-secure-boot --shielded-vtpm --metadata-from-file 'startup-script=infra/vm/startup.sh,shutdown-script=infra/vm/shutdown.sh,lodestone-compose=infra/vm/docker-compose.vm.yml,lodestone-caddyfile=infra/vm/Caddyfile,lodestone-prometheus=infra/vm/prometheus.vm.yml,lodestone-backup=infra/vm/pg-backup.sh,lodestone-env=<staging>/vm.env,lodestone-secrets=<staging>/vm.secrets' --metadata lodestone-registry-host=us-central1-docker.pkg.dev,lodestone-backup-bucket=lodestone-example-lodestone-backups
+# first boot installs Docker and pulls the images (~2 min); the director stops it again after 15 idle minutes
++ gcloud compute instances add-iam-policy-binding lodestone-game --zone us-central1-a --project lodestone-example --member serviceAccount:lodestone-director@lodestone-example.iam.gserviceaccount.com --role projects/lodestone-example/roles/lodestoneVmPower
+
+━━ Cloud Run (min instances 0): director, account, creator
++ gcloud run deploy lodestone-director --region us-central1 --project lodestone-example --platform managed --allow-unauthenticated --min-instances 0 --max-instances 4 --port 8090 --cpu 1 --memory 512Mi --concurrency 80 --timeout 60 --service-account lodestone-director@lodestone-example.iam.gserviceaccount.com --network default --subnet default --vpc-egress private-ranges-only --network-tags lodestone-run --image us-central1-docker.pkg.dev/lodestone-example/lodestone/director:e5eb455a5316 --set-env-vars ^@^LODESTONE_ENV=production@LODESTONE_LAZY_DEPS=1@LODESTONE_REDIS_ADDR=10.128.0.50:6379@LODESTONE_CORS_ORIGIN=https://lodestone-example-client.netlify.app@LODESTONE_SOCIAL_URL=wss://203-0-113-10.sslip.io/social/ws@LODESTONE_WAKE_PROVIDER=gce@LODESTONE_WAKE_GCE_PROJECT=lodestone-example@LODESTONE_WAKE_GCE_ZONE=us-central1-a@LODESTONE_WAKE_GCE_INSTANCE=lodestone-game@LODESTONE_WAKE_IDLE=15m@LODESTONE_WAKE_READY_URLS=http://10.128.0.50:8092/healthz,http://10.128.0.50:8093/healthz --set-secrets LODESTONE_PG_URL=lodestone-pg-url:latest,LODESTONE_TICKET_PRIVATE_KEY=lodestone-ticket-private-key:latest,LODESTONE_SESSION_PUBLIC_KEY=lodestone-session-public-key:latest,LODESTONE_SAVE_PUBLIC_KEY=lodestone-save-public-key:latest,LODESTONE_WAKE_CRON_TOKEN=lodestone-wake-cron-token:latest,LODESTONE_METRICS_TOKEN=lodestone-metrics-token:latest
++ gcloud run deploy lodestone-account --region us-central1 --project lodestone-example --platform managed --allow-unauthenticated --min-instances 0 --max-instances 4 --port 8091 --cpu 1 --memory 1Gi --concurrency 80 --timeout 60 --service-account lodestone-run@lodestone-example.iam.gserviceaccount.com --network default --subnet default --vpc-egress private-ranges-only --network-tags lodestone-run --image us-central1-docker.pkg.dev/lodestone-example/lodestone/account:e5eb455a5316 --set-env-vars ^@^LODESTONE_ENV=production@LODESTONE_LAZY_DEPS=1@LODESTONE_REDIS_ADDR=10.128.0.50:6379@LODESTONE_CORS_ORIGIN=https://lodestone-example-client.netlify.app@LODESTONE_FIREBASE_PROJECT_ID=lodestone-example@LODESTONE_WORLD_SEED=20261108 --set-secrets LODESTONE_PG_URL=lodestone-pg-url:latest,LODESTONE_SESSION_PRIVATE_KEY=lodestone-session-private-key:latest,LODESTONE_SAVE_PRIVATE_KEY=lodestone-save-private-key:latest,LODESTONE_METRICS_TOKEN=lodestone-metrics-token:latest
++ gcloud run deploy lodestone-creator --region us-central1 --project lodestone-example --platform managed --allow-unauthenticated --min-instances 0 --max-instances 4 --port 8094 --cpu 1 --memory 1Gi --concurrency 80 --timeout 60 --service-account lodestone-run@lodestone-example.iam.gserviceaccount.com --network default --subnet default --vpc-egress private-ranges-only --network-tags lodestone-run --image us-central1-docker.pkg.dev/lodestone-example/lodestone/creator:e5eb455a5316 --set-env-vars ^@^LODESTONE_ENV=production@LODESTONE_LAZY_DEPS=1@LODESTONE_REDIS_ADDR=10.128.0.50:6379@LODESTONE_CORS_ORIGIN=https://lodestone-example-creator.netlify.app@LODESTONE_CREATOR_LLM=0 --set-secrets LODESTONE_PG_URL=lodestone-pg-url:latest,LODESTONE_CREATOR_TOKEN=lodestone-creator-token:latest,LODESTONE_METRICS_TOKEN=lodestone-metrics-token:latest
+? gcloud run services describe lodestone-director --region us-central1 --project lodestone-example --format 'value(status.url)'
+? gcloud run services describe lodestone-account --region us-central1 --project lodestone-example --format 'value(status.url)'
+? gcloud run services describe lodestone-creator --region us-central1 --project lodestone-example --format 'value(status.url)'
+
+━━ Cloud Scheduler: idle check every 5 minutes (the director scales to zero)
+? gcloud secrets versions access latest --secret lodestone-wake-cron-token --project lodestone-example
+? gcloud scheduler jobs describe lodestone-wake-tick --location us-central1 --project lodestone-example
++ gcloud scheduler jobs create http lodestone-wake-tick --location us-central1 --project lodestone-example --schedule '*/5 * * * *' --uri 'https://lodestone-director-<hash>-uc.a.run.app/internal/wake/tick' --http-method POST --attempt-deadline 60s --headers 'Authorization=Bearer <redacted>'
+
+━━ client build (static, for Netlify)
+# env: VITE_DIRECTOR_URL=https://lodestone-director-<hash>-uc.a.run.app VITE_ACCOUNT_URL=https://lodestone-account-<hash>-uc.a.run.app VITE_WORLD_SEED=20261108
++ npm run build -w client
+# copy infra/netlify/client._headers -> client\dist/_headers
+
+━━ creator web build (static, for Netlify)
++ npm run build -w @lodestone/creator
+# copy infra/netlify/creator._headers -> tools\creator\dist/_headers
+# write tools/creator/dist/_redirects: /v1/* -> https://lodestone-creator-<hash>-uc.a.run.app/v1/:splat (200 proxy)
+
+━━ Netlify (static; creates each site on first deploy)
++ netlify deploy --prod --no-build --dir 'C:\Users\nickb\repos\open-world-rpg-web\.claude\worktrees\agent-a9ae3f2efa59a42d7\client\dist' --site-name lodestone-example-client --message 'lodestone e5eb455a5316'
++ netlify deploy --prod --no-build --dir 'C:\Users\nickb\repos\open-world-rpg-web\.claude\worktrees\agent-a9ae3f2efa59a42d7\tools\creator\dist' --site-name lodestone-example-creator --message 'lodestone e5eb455a5316'
+
+!! MANUAL STEP: Google sign-in (Firebase Auth) for player accounts
+!!   Local profiles work without this. For account sign-in:
+!!     1. https://console.firebase.google.com > Add project > pick the existing GCP project "lodestone-example" > Continue (Analytics off is fine).
+!!     2. Build > Authentication > Get started > Sign-in method > Google > Enable > Save.
+!!     3. Authentication > Settings > Authorized domains > Add domain > lodestone-example-client.netlify.app
+!!     4. Project settings (gear) > General > Your apps > Web (</>) > register "lodestone-client" (no hosting).
+!!     5. Copy apiKey and appId into the deploy environment and re-run:
+!!          VITE_FIREBASE_API_KEY=<apiKey> VITE_FIREBASE_APP_ID=<appId> npm run deploy
+
+━━ summary
+# client          https://lodestone-example-client.netlify.app
+# creator         https://lodestone-example-creator.netlify.app  (token: Secret Manager lodestone-creator-token)
+# director        https://lodestone-director-<hash>-uc.a.run.app
+# account         https://lodestone-account-<hash>-uc.a.run.app
+# game VM         lodestone-game at 203.0.113.10 -> wss://203-0-113-10.sslip.io/zone/ws, /social/ws, /livekit; WebTransport https://203-0-113-10.sslip.io:4433/wt
+# worldgen wasm   https://storage.googleapis.com/lodestone-example-lodestone-worldgen/worldgen/worldgen-d38abb3027caa709.wasm
+# backups         gs://lodestone-example-lodestone-backups/pg/ (nightly + every stop)
+# wake on demand  the first sign-in starts the VM; it stops 15 min after the last player leaves
+
+✓ plan complete: 76 change steps

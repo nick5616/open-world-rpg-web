@@ -106,7 +106,13 @@ export async function rehearse(r, flags) {
   r.section(`up (compose project ${PROJECT})`);
   // Leftovers from an interrupted rehearsal: own project only.
   r.run([...compose, 'down', '-v', '--remove-orphans'], { allowFail: true });
-  r.run([...compose, 'up', '-d']);
+  // Docker Desktop on Windows can briefly hold host ports released by the
+  // `down` above ("Only one usage of each socket address"): retry once.
+  if (r.run([...compose, 'up', '-d'], { allowFail: true }).code !== 0) {
+    r.note('compose up failed; retrying once in 5 s (Docker Desktop port release)');
+    await new Promise((res) => setTimeout(res, 5000));
+    r.run([...compose, 'up', '-d']);
+  }
 
   let ok = false;
   try {

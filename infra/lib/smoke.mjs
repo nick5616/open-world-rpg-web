@@ -1,3 +1,4 @@
+/* global AbortSignal, Headers */
 // Smoke tests for a running deployment (WP18): used by the local rehearsal.
 // Every check prints one ✓/✗ line; the function returns true only if all
 // passed. Metric dumps and screenshots go to evidenceDir when given.

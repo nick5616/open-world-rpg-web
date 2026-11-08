@@ -1,0 +1,35 @@
+# HELP go_gc_cycles_total Completed GC cycles.
+# HELP go_goroutines Live goroutines.
+# HELP go_heap_bytes Bytes in live and unswept heap objects.
+# HELP http_request_duration_seconds Plain HTTP request latency histogram.
+# HELP http_requests_total Plain HTTP requests by status class (WebSocket upgrades excluded).
+# HELP lodestone_build_info Always 1; labels name the build (LODESTONE_VERSION) and Go version.
+# HELP process_uptime_seconds Seconds since the service started.
+director_tickets_issued_total{kind="local"} 1
+director_wake_players_online 1
+director_wake_starts_total 1
+go_gc_cycles_total 0
+go_goroutines 20
+go_heap_bytes 882144
+http_request_duration_seconds_bucket{le="+Inf"} 9
+http_request_duration_seconds_bucket{le="0.001"} 5
+http_request_duration_seconds_bucket{le="0.005"} 8
+http_request_duration_seconds_bucket{le="0.01"} 8
+http_request_duration_seconds_bucket{le="0.025"} 9
+http_request_duration_seconds_bucket{le="0.05"} 9
+http_request_duration_seconds_bucket{le="0.1"} 9
+http_request_duration_seconds_bucket{le="0.25"} 9
+http_request_duration_seconds_bucket{le="0.5"} 9
+http_request_duration_seconds_bucket{le="1"} 9
+http_request_duration_seconds_bucket{le="2.5"} 9
+http_request_duration_seconds_bucket{le="5"} 9
+http_request_duration_seconds_count 9
+http_request_duration_seconds_sum 0.019871
+http_requests_total{code="1xx"} 0
+http_requests_total{code="2xx"} 8
+http_requests_total{code="3xx"} 0
+http_requests_total{code="4xx"} 1
+http_requests_total{code="5xx"} 0
+lodestone_build_info{version="rehearsal-e5eb455a5316",go="go1.27.3"} 1
+process_uptime_seconds 67
+svc_dep_unreachable_at_start_total{dep="postgres"} 1

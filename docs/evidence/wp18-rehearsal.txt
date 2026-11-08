@@ -1,0 +1,134 @@
+Lodestone deploy: target local (rehearsal), project lodestone-rehearsal, tag rehearsal-e5eb455a5316
+
+━━ preflight
+= docker version --format '{{.Server.Version}}'  ->  28.1.1
+= docker compose version --short  ->  2.35.1-desktop.1
+
+━━ worldgen.wasm (content-hashed)
++ node worldgen/scripts/build-wasm.mjs
+# worldgen worldgen-d38abb3027caa709.wasm sha256 d38abb3027caa709d41501cd700d2efa006cf3522047952ac49c5227d29026a3 genVersion 1
+
+━━ container images (lodestone-rehearsal/<service>:rehearsal-e5eb455a5316)
++ docker build -f infra/docker/director.Dockerfile --build-arg VERSION=rehearsal-e5eb455a5316 -t lodestone-rehearsal/director:rehearsal-e5eb455a5316 .
++ docker build -f infra/docker/account.Dockerfile --build-arg VERSION=rehearsal-e5eb455a5316 -t lodestone-rehearsal/account:rehearsal-e5eb455a5316 .
++ docker build -f infra/docker/zone.Dockerfile --build-arg VERSION=rehearsal-e5eb455a5316 -t lodestone-rehearsal/zone:rehearsal-e5eb455a5316 .
++ docker build -f infra/docker/social.Dockerfile --build-arg VERSION=rehearsal-e5eb455a5316 -t lodestone-rehearsal/social:rehearsal-e5eb455a5316 .
++ docker build -f infra/docker/creator.Dockerfile --build-arg VERSION=rehearsal-e5eb455a5316 -t lodestone-rehearsal/creator:rehearsal-e5eb455a5316 .
+
+━━ client build (static, for Netlify)
+# env: VITE_DIRECTOR_URL=http://localhost:28090 VITE_ACCOUNT_URL=http://localhost:28091 VITE_WORLD_SEED=20261108
++ npm run build -w client
+# copy infra/netlify/client._headers -> client\dist/_headers
+
+━━ creator web build (static, for Netlify)
++ npm run build -w @lodestone/creator
+# copy infra/netlify/creator._headers -> tools\creator\dist/_headers
+
+━━ stage C:\Users\nickb\AppData\Local\Temp\lodestone-rehearsal (the VM's /opt/lodestone, plus the rehearsal overlay)
+# infra/vm/docker-compose.vm.yml -> docker-compose.yml
+# infra/vm/Caddyfile -> Caddyfile
+# infra/vm/prometheus.vm.yml -> prometheus.vm.yml
+# infra/rehearsal/docker-compose.rehearsal.yml -> docker-compose.rehearsal.yml
+# infra/rehearsal/Caddyfile.static -> Caddyfile.static
+# .env: LODESTONE_ENV=production, generated Ed25519 keys and tokens (values not shown), rehearsal ports
+
+━━ up (compose project lodestone-rehearsal)
++ docker compose -p lodestone-rehearsal -f 'C:\Users\nickb\AppData\Local\Temp\lodestone-rehearsal\docker-compose.yml' -f 'C:\Users\nickb\AppData\Local\Temp\lodestone-rehearsal\docker-compose.rehearsal.yml' down -v --remove-orphans
++ docker compose -p lodestone-rehearsal -f 'C:\Users\nickb\AppData\Local\Temp\lodestone-rehearsal\docker-compose.yml' -f 'C:\Users\nickb\AppData\Local\Temp\lodestone-rehearsal\docker-compose.rehearsal.yml' up -d
+
+━━ healthz on every service (first boot builds the atlas and mints the world)
+✓ director /healthz  {"ok":true,"svc":"director","uptimeS":43} (0.0 s)
+✓ account /healthz  {"ok":true,"svc":"account","uptimeS":1} (0.0 s)
+✓ creator /healthz  {"ok":true,"svc":"creator","uptimeS":1} (0.0 s)
+✓ zone /healthz  {"ok":true,"svc":"zone","uptimeS":1} (0.0 s)
+✓ social /healthz  {"ok":true,"svc":"social","uptimeS":4} (0.0 s)
+✓ caddy edge /healthz (the VM's public entry)  ok
+✓ edge does not expose /metrics  HTTP 404
+
+━━ static builds (Netlify stand-in)
+✓ client index.html  HTTP 200, 690 bytes
+✓ client hashed asset is cached forever  /assets/index-B2YPbn_C.js -> public, max-age=31536000, immutable
+✓ creator web index.html  HTTP 200
+✓ creator /v1 proxied to the creator endpoint (Netlify _redirects stand-in)  HTTP 200 {"auth":true,"genVersion":"1","llm":false,"model":"","specVersion":1,"wasmSha256":"d38abb3027caa709d41501cd700d2efa006cf
+
+━━ metrics (Prometheus text, guarded by LODESTONE_METRICS_TOKEN)
+✓ director /metrics without token refused  HTTP 401
+✓ director /metrics with token  33 lines
+✓ account /metrics without token refused  HTTP 401
+✓ account /metrics with token  32 lines
+✓ creator /metrics without token refused  HTTP 401
+✓ creator /metrics with token  35 lines
+✓ zone /metrics without token refused  HTTP 401
+✓ zone /metrics with token  108 lines
+✓ social /metrics without token refused  HTTP 401
+✓ social /metrics with token  35 lines
+
+━━ browser: the production client build, end to end (headless Chromium)
+✓ "waking the world" screen while the VM boots  state starting
+✓ world awake, account screen shown  8.5 s after the waking screen
+✓ client connected to the zone through the director ticket  {"phase":"playing","transport":"websocket","entityId":1,"name":"Rehearsalclvmf","rttMs":1.9931640625,"tick":530,"bytes":{"in":5865,"out":1851}}
+✓ debug HUD: fps, transport, RTT, bandwidth, chunk queue  4 FPS | net   websocket  rtt 2 ms  ↓1.9 kbps ↑1.1 kbps | chunk queue 1162  loaded 4
+✓ zone metrics see the player  zone_players 1, zone_bytes_out_total 12676
+✓ director woke the VM once and issued tickets  director_wake_starts_total 1
+✓ no page errors
+
+━━ containers
+  account	running	Up 31 seconds
+  caddy	running	Up 29 seconds
+  client	running	Up About a minute
+  creator	running	Up 31 seconds
+  director	running	Up About a minute
+  livekit	running	Up About a minute
+  migrate	exited	Exited (0) 36 seconds ago
+  mint	exited	Exited (0) 33 seconds ago
+  postgres	running	Up About a minute (healthy)
+  redis	running	Up About a minute (healthy)
+  social	running	Up 34 seconds
+  zone	running	Up 31 seconds
+
+━━ smoke: 28/28 checks passed
+
+━━ logs (last lines per service)
+  director-1  | {"time":"2026-11-08T15:27:02.425644768Z","level":"WARN","msg":"dependency unreachable at startup; serving anyway (LODESTONE_LAZY_DEPS)","svc":"director","dep":"postgres","err":"failed to connect to `user=lo…
+  director-1  | {"time":"2026-11-08T15:27:02.427774338Z","level":"INFO","msg":"wake on demand","svc":"director","provider":"fake","idleAfter":"15m0s"}
+  director-1  | {"time":"2026-11-08T15:27:02.427800103Z","level":"INFO","msg":"director ready","svc":"director","social":"ws://localhost:28080/social/ws","production":true}
+  director-1  | {"time":"2026-11-08T15:27:02.428237588Z","level":"INFO","msg":"listening","svc":"director","addr":":8090"}
+  director-1  | {"time":"2026-11-08T15:27:45.058965254Z","level":"INFO","msg":"wake: starting the game VM","svc":"director","provider":"fake"}
+  director-1  | {"time":"2026-11-08T15:27:54.854675733Z","level":"INFO","msg":"ticket issued","svc":"director","character":"55db644d-f088-4b50-acaf-564275191a67","zone":"zone-1","region":{"x":2,"z":2},"local":true}
+  account-1  | {"time":"2026-11-08T15:27:40.314655394Z","level":"INFO","msg":"official world","svc":"account","id":"212e7e39-4f37-4c73-b045-1281e32c8fc1","seed":"20261108","genVersion":"1","atlasHash":"50ae4562cfd25265","a…
+  account-1  | {"time":"2026-11-08T15:27:40.314775915Z","level":"INFO","msg":"account ready","svc":"account","firebase":true,"devAuth":false,"production":true}
+  account-1  | {"time":"2026-11-08T15:27:40.315148003Z","level":"INFO","msg":"listening","svc":"account","addr":":8091"}
+  zone-1  | {"time":"2026-11-08T15:27:41.627279063Z","level":"INFO","msg":"zone config","svc":"zone","zone":"zone-1","world":"212e7e39-4f37-4c73-b045-1281e32c8fc1","seed":20261108,"genVersion":"1","devSpawn":false}
+  zone-1  | {"time":"2026-11-08T15:27:41.627549994Z","level":"INFO","msg":"listening","svc":"zone","addr":":8092"}
+  zone-1  | {"time":"2026-11-08T15:27:55.292265114Z","level":"INFO","msg":"join","svc":"zone","entity":1,"character":"55db644d-f088-4b50-acaf-564275191a67","name":"Rehearsalclvmf","remote":"172.21.0.11:42708","x":1923.5,"z…
+  zone-1  | {"time":"2026-11-08T15:27:55.292343946Z","level":"INFO","msg":"exploration","svc":"zone","character":"55db644d-f088-4b50-acaf-564275191a67","kind":602,"site":9,"name":"Draedmore","xp":100}
+  zone-1  | {"time":"2026-11-08T15:28:06.292322208Z","level":"INFO","msg":"leave","svc":"zone","entity":1,"character":"55db644d-f088-4b50-acaf-564275191a67"}
+  zone-1  | {"time":"2026-11-08T15:28:06.293608114Z","level":"INFO","msg":"checkpoint skipped: no character row (WP04 creates characters)","svc":"zone","character":"55db644d-f088-4b50-acaf-564275191a67"}
+  social-1  | {"time":"2026-11-08T15:27:37.127192226Z","level":"INFO","msg":"social hub started","svc":"social","node":"social-cfe68781"}
+  social-1  | {"time":"2026-11-08T15:27:37.127581514Z","level":"INFO","msg":"listening","svc":"social","addr":":8093"}
+  social-1  | {"time":"2026-11-08T15:27:55.251803622Z","level":"INFO","msg":"session","svc":"social","char":"55db644d-f088-4b50-acaf-564275191a67","name":"Rehearsalclvmf","world":"212e7e39-4f37-4c73-b045-1281e32c8fc1","loc…
+  creator-1  | {"time":"2026-11-08T15:27:40.999703255Z","level":"INFO","msg":"worldgen loaded","svc":"creator","wasm":"/app/worldgen/worldgen.wasm","sha256":"d38abb3027caa709","genVersion":1}
+  creator-1  | {"time":"2026-11-08T15:27:41.004795816Z","level":"INFO","msg":"creator ready","svc":"creator","llm":false,"auth":true}
+  creator-1  | {"time":"2026-11-08T15:27:41.005101489Z","level":"INFO","msg":"listening","svc":"creator","addr":":8094"}
+  mint-1  |     "temperatureBias": -0.009,
+  mint-1  |     "structureDensity": 0.664,
+  mint-1  |     "settlementDensity": 0.595
+  mint-1  |   },
+  mint-1  |   "wasmSha256": "d38abb3027caa709d41501cd700d2efa006cf3522047952ac49c5227d29026a3"
+  mint-1  | }
+  migrate-1  | migrate: applied 0001_init.sql
+  migrate-1  | migrate: applied 0002_local_profiles.sql
+  migrate-1  | migrate: applied 0003_social.sql
+  migrate-1  | migrate: applied 0012_exploration_pins.sql
+  caddy-1  | {"level":"info","ts":1794151661.999094,"logger":"tls","msg":"cleaning storage unit","storage":"FileStorage:/data/caddy"}
+  caddy-1  | {"level":"info","ts":1794151662.009042,"logger":"http.log.access.log0","msg":"handled request","request":{"remote_ip":"172.21.0.1","remote_port":"52816","client_ip":"172.21.0.1","proto":"HTTP/1.1","method":"GE…
+  caddy-1  | {"level":"info","ts":1794151662.0124571,"logger":"http.log.access.log0","msg":"handled request","request":{"remote_ip":"172.21.0.1","remote_port":"52826","client_ip":"172.21.0.1","proto":"HTTP/1.1","method":"G…
+  caddy-1  | {"level":"info","ts":1794151662.041931,"logger":"tls","msg":"finished cleaning storage units"}
+  caddy-1  | {"level":"info","ts":1794151686.2800877,"logger":"http.log.access.log0","msg":"handled request","request":{"remote_ip":"172.21.0.1","remote_port":"48428","client_ip":"172.21.0.1","proto":"HTTP/1.1","method":"G…
+  caddy-1  | {"level":"info","ts":1794151686.2801294,"logger":"http.log.access.log0","msg":"handled request","request":{"remote_ip":"172.21.0.1","remote_port":"48420","client_ip":"172.21.0.1","proto":"HTTP/1.1","method":"G…
+
+━━ kept running (--keep)
+# stop with: docker compose -p lodestone-rehearsal -f C:\Users\nickb\AppData\Local\Temp\lodestone-rehearsal\docker-compose.yml -f C:\Users\nickb\AppData\Local\Temp\lodestone-rehearsal\docker-compose.rehearsal.yml down -v
+# client http://localhost:28173/?debug=1   creator http://localhost:28177   metrics: Bearer token in C:\Users\nickb\AppData\Local\Temp\lodestone-rehearsal\metrics-token
+
+✓ rehearsal PASS: every service healthy, metrics exported, a browser played through the production build

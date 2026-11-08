@@ -77,7 +77,7 @@ function stat(title, expr, { x, y, w = 4, h = 4, unit = 'short', thresholds = nu
       },
       overrides: [],
     },
-    options: { reduceOptions: { calcs: [reduce], fields: '', values: false }, colorMode: thresholds ? 'value' : 'none', graphMode: 'area', textMode: 'value_and_name', justifyMode: 'auto' },
+    options: { reduceOptions: { calcs: [reduce], fields: '', values: false }, colorMode: thresholds ? 'value' : 'none', graphMode: 'area', textMode: 'value', justifyMode: 'auto' },
   };
 }
 
