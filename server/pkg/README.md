@@ -11,5 +11,7 @@ Shared Go packages for every service (module `lodestone/server/pkg`).
 | `env` | Env-var config with local defaults |
 | `svc` | Service shell: JSON logs, `/healthz`, `/metrics`, graceful shutdown, CORS |
 | `migrate`, `cmd/migrate` | Applies `contracts/migrations` (`npm run migrate`) |
+| `ticket` | Ed25519 connect tickets (director signs, zone/social verify); dev key when env unset |
+| `zoneregistry` | Redis `zones:{worldId}` registry: zones announce, director picks |
 
 Test: `go test ./...` (includes the protocol golden vectors).
