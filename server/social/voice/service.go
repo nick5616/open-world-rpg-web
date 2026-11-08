@@ -336,8 +336,9 @@ func (s *Service) lead(ctx context.Context, w *world) {
 	var rosterAt time.Time
 	refreshRoster := func() {
 		// An empty room (a world with players but nobody in voice yet) is
-		// polled every 5 s instead of twice a second.
-		if len(rec.parts) == 0 && time.Since(rosterAt) < 5*time.Second && !rosterAt.IsZero() {
+		// polled every 1.5 s instead of twice a second. Only the very first
+		// joiner waits for it, and there is nobody to hear yet.
+		if len(rec.parts) == 0 && time.Since(rosterAt) < 1500*time.Millisecond && !rosterAt.IsZero() {
 			return
 		}
 		rosterAt = time.Now()
