@@ -225,11 +225,11 @@ export function WorldScene({ runtime }: Props) {
     world.hemi.color.copy(L.skyColor);
     world.hemi.groundColor.copy(L.groundColor);
     // Underground: no sun or sky light, ambient near black (spec 7).
-    world.hemi.intensity = L.hemiIntensity * (1 - 0.97 * under);
+    world.hemi.intensity = L.hemiIntensity * (1 - 0.9 * under);
     const w = world.waterU;
     w.uSunDir.value.copy(L.sunDir);
     w.uLightColor.value.copy(L.lightColor).multiplyScalar(L.lightIntensity / 3);
-    w.uAmbient.value.copy(L.skyColor).multiplyScalar(L.hemiIntensity * (1 - 0.97 * under));
+    w.uAmbient.value.copy(L.skyColor).multiplyScalar(L.hemiIntensity * (1 - 0.9 * under));
     w.uTime.value += dt;
     world.sea.position.set(Math.round(camera.position.x / 64) * 64, runtime.seaY, Math.round(camera.position.z / 64) * 64);
     world.sea.updateMatrixWorld();
@@ -248,7 +248,7 @@ export function WorldScene({ runtime }: Props) {
       fogU.u('uFogFalloff').value = 1 / 38;
       fogU.u('uFogBase').value = runtime.seaY + 18;
       fogU.u('uHaze').value = (1 / 14000) * (1 - under);
-      fogU.u('uExposure').value = (1.0 + (1 - L.day) * 1.6) * (1 - under) + 1.25 * under;
+      fogU.u('uExposure').value = (1.0 + (1 - L.day) * 1.6) * (1 - under) + 1.6 * under;
       // Grade: time of day, then the biome under the player (eased, so crossing a border is a drift, not a cut).
       const g = f.post.grade;
       const day = L.day;

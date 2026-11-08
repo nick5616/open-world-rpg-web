@@ -47,8 +47,25 @@ export function holeIndex(openings: readonly CaveOpening[], cx: number, cz: numb
       }
     }
   }
+  // Skirts hang below tile edges; one crossing the hole would show as a
+  // curtain inside the mouth. Per edge cell t the quads are west, east,
+  // north, south (tileIndex order), 6 indices each.
   const grid = CELLS * CELLS * 6;
-  out.set(base.subarray(grid), n); // skirts unchanged
-  n += base.length - grid;
+  const edge = 64 * step;
+  for (let t = 0; t < CELLS; t++) {
+    const m = (t + 0.5) * step;
+    const mids: [number, number][] = [
+      [x0, z0 + m],
+      [x0 + edge, z0 + m],
+      [x0 + m, z0],
+      [x0 + m, z0 + edge],
+    ];
+    for (let side = 0; side < 4; side++) {
+      const o = grid + (t * 4 + side) * 6;
+      if (masked(mids[side][0], mids[side][1])) continue;
+      out.set(base.subarray(o, o + 6), n);
+      n += 6;
+    }
+  }
   return out.slice(0, n);
 }

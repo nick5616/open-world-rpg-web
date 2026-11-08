@@ -1,0 +1,27 @@
+# WP09 cave walk (headless Chromium, ANGLE (NVIDIA, NVIDIA GeForce RTX 3070 (0x00002488) Direct3D11 vs_5_0 ps_5_0, D3D11))
+date: 2026-11-08T14:46:45.474Z; playable after 5768 ms
+system 0: mouth (512.5, 102.3, 800.1), deepest chamber floor -79.0 m (181 m below the mouth), 9 chambers, 24 veins; route 19 waypoints
+screenshot docs/evidence/wp09-mouth-approach.png
+screenshot docs/evidence/wp09-mouth.png
+  t=  0 s  (503.2, 94.4, 798.1)  waypoint 0/19  underground 0.00  cave meshes 7  lights 3
+  t=  6 s  (532.0, 92.7, 805.0)  waypoint 4/19  underground 1.00  cave meshes 7  lights 3
+  t= 12 s  (560.7, 74.5, 814.7)  waypoint 5/19  underground 1.00  cave meshes 11  lights 1
+  t= 19 s  (590.8, 54.1, 814.8)  waypoint 6/19  underground 1.00  cave meshes 9  lights 5
+  t= 25 s  (619.5, 38.0, 821.0)  waypoint 8/19  underground 1.00  cave meshes 12  lights 4
+  t= 31 s  (650.0, 18.5, 820.6)  waypoint 10/19  underground 1.00  cave meshes 10  lights 4
+  t= 37 s  (623.1, 2.2, 831.9)  waypoint 11/19  underground 1.00  cave meshes 14  lights 8
+  t= 43 s  (595.9, -16.1, 838.0)  waypoint 13/19  underground 1.00  cave meshes 13  lights 8
+  t= 50 s  (576.0, -33.3, 815.7)  waypoint 14/19  underground 1.00  cave meshes 13  lights 1
+  t= 56 s  (561.0, -53.8, 788.6)  waypoint 15/19  underground 1.00  cave meshes 9  lights 8
+  t= 62 s  (541.0, -69.2, 765.6)  waypoint 17/19  underground 1.00  cave meshes 9  lights 8
+walk: REACHED the deepest chamber in 65.6 s of real time; end (533.91, -79.36, 750.51), chamber floor -78.99; 181.6 m below the mouth
+frames while walking: 3707, mean 17.68 ms, p50 16.70, p95 33.30, p99 33.40 ms
+screenshot docs/evidence/wp09-deepest-chamber.png
+gem chamber: system 1 chamber 7 (depth 152 m, radius 7.6 m) with 3 gem veins
+screenshot docs/evidence/wp09-gem-chamber.png
+screenshot docs/evidence/wp09-vein-before.png
+screenshot docs/evidence/wp09-vein-mining.png
+screenshot docs/evidence/wp09-vein-mined.png
+mined: target ruby fff4e9de2eebc68e after 7 swings (solo: local rules; online the zone decides, see wp09-mining-respawn.txt)
+cave cells built in workers: 124 (mean 1.58 ms, max 28.90 ms; spec budget 12 ms), main-thread sync builds 4, cells kept 128, meshes drawn 6, pooled lights lit 8
+page errors: none

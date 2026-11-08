@@ -191,6 +191,10 @@ export class CaveManager {
       this.group.add(l);
     }
     this.group.add(this.buildArches());
+    // Compile the spark program during the load veil, not on the first swing.
+    const warm = new THREE.Points(new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(new Float32Array(3), 3)), this.sparkMat);
+    warm.frustumCulled = false;
+    this.group.add(warm);
     window.addEventListener('keydown', this.onKey);
     window.addEventListener('mousedown', this.onMouse);
     installCaveDebug(this, this.graph);
@@ -201,6 +205,8 @@ export class CaveManager {
     return [this.archMat];
   }
   private archMat = archRockMaterial();
+  private readonly pickupGem = rupeeGeometry(0.18, 0.32);
+  private readonly pickupOre = nuggetGeometry(7);
 
   dispose(): void {
     window.removeEventListener('keydown', this.onKey);
@@ -356,7 +362,7 @@ export class CaveManager {
           target.setMatrixAt(counts[v.material]++, tmpM);
         }
         if (gem) {
-          emitters.push({ x: v.x + v.nx * 0.6, y: v.y + v.ny * 0.6, z: v.z + v.nz * 0.6, color: new THREE.Color(GEM_COLORS[v.material][1]), intensity: 14, distance: 11 });
+          emitters.push({ x: v.x + v.nx * 0.6, y: v.y + v.ny * 0.6, z: v.z + v.nz * 0.6, color: new THREE.Color(GEM_COLORS[v.material][1]), intensity: 10, distance: 10 });
         } else if (ORE_LOOKS[v.material].glow > 0.4) {
           emitters.push({ x: v.x + v.nx * 0.6, y: v.y + v.ny * 0.6, z: v.z + v.nz * 0.6, color: new THREE.Color(ORE_LOOKS[v.material].emissive), intensity: 9, distance: 8 });
         }
@@ -369,7 +375,7 @@ export class CaveManager {
         for (let i = 0; i < n && fc < FUNGUS_INSTANCES; i++) {
           const a = r() * Math.PI * 2;
           const rad = i === 0 ? 0 : 0.15 + r() * 0.45;
-          const sc = ((d.scale / 255) * 1.4 + 0.5) * (0.6 + r() * 0.8) * (d.kind === 1 ? 1.6 : 1);
+          const sc = ((d.scale / 255) * 0.9 + 0.45) * (0.7 + r() * 0.6) * (d.kind === 1 ? 1.5 : 1);
           tmpQ.setFromAxisAngle(UP, r() * 6.28);
           tmpS.set(sc, sc * (d.kind === 1 ? 2.2 : 1), sc);
           tmpM.compose(new THREE.Vector3(d.x + Math.cos(a) * rad, d.y, d.z + Math.sin(a) * rad), tmpQ, tmpS);
@@ -398,10 +404,14 @@ export class CaveManager {
   private updateLights(cam: THREE.Vector3, forward: THREE.Vector3): void {
     // Light 0: the player's lantern glow underground (staff glow, spec 7).
     const lantern = this.lights[0];
-    lantern.position.copy(cam).addScaledVector(forward, 0.6).add(tmpV.set(0, -0.35, 0));
+    // A wisp floating ahead and above the eye. At the hands it blew the
+    // first-person arms out to white while walls 4 m away stayed dark
+    // (inverse square); out here the arms are ~1.7 m from it and the walls
+    // ahead 2-4 m, and the light grazes the rock so its facets read.
+    lantern.position.copy(cam).addScaledVector(forward, 1.6).add(tmpV.set(0, 0.8, 0));
     lantern.color.set(0xffd9a8);
-    lantern.distance = 16;
-    lantern.intensity = 22 * this.underground;
+    lantern.distance = 26;
+    lantern.intensity = 18 * this.underground;
     const near = this.emitters
       .map((e) => ({ e, d: (e.x - cam.x) ** 2 + (e.y - cam.y) ** 2 + (e.z - cam.z) ** 2 }))
       .filter((x) => x.d < 32 * 32)
@@ -528,21 +538,33 @@ export class CaveManager {
     this.toast(`${veinMaterialName(v)} ${v.kind === 'gem' ? 'cluster' : 'vein'} broken`);
   }
 
+  /** One-instance InstancedMesh: same shader program as the vein clusters (a plain Mesh would compile a non-instanced variant mid-game). */
+  private single(g: THREE.BufferGeometry, m: THREE.Material | THREE.Material[]): THREE.Mesh {
+    const im = new THREE.InstancedMesh(g, m, 1);
+    im.setMatrixAt(0, new THREE.Matrix4());
+    im.frustumCulled = false;
+    return im;
+  }
+
   private spawnPickup(x: number, y: number, z: number, item: string, qty: number, serverId: number | null): void {
     const [kind, name] = item.split(':');
     let mesh: THREE.Mesh;
     if (kind === 'gem') {
       const gi = ['ruby', 'sapphire', 'topaz', 'emerald', 'aquamarine', 'sunstone', 'onyx', 'amethyst', 'opal', 'moonstone'].indexOf(name);
-      mesh = new THREE.Mesh(rupeeGeometry(0.18, 0.32), gemMaterial(Math.max(0, gi)));
+      // Reuse the instanced meshes' materials: a fresh physical material
+      // compiled a new program on every break (a 180 ms hitch).
+      mesh = this.single(this.pickupGem, this.gemMeshes[Math.max(0, gi)].material);
     } else {
       const oi = ['copper', 'iron', 'silver', 'sunsteel', 'starmetal', 'voidglass'].indexOf(name);
-      mesh = new THREE.Mesh(nuggetGeometry(7), oreMaterial(Math.max(0, oi)));
+      mesh = this.single(this.pickupOre, this.oreMeshes[Math.max(0, oi)].material);
     }
     mesh.position.set(x, y, z);
     mesh.name = `pickup ${item}`;
     this.group.add(mesh);
     this.pickups.push({ id: this.nextPickupId++, mesh, item, qty, t: 0, serverId });
   }
+
+  private readonly sparkMat = new THREE.PointsMaterial({ size: 0.06, transparent: true, opacity: 1, depthWrite: false });
 
   private spark(v: CaveVein): void {
     const n = 24;
@@ -556,7 +578,9 @@ export class CaveManager {
     g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
     g.userData.vel = vel;
     const color = v.kind === 'gem' ? GEM_COLORS[v.material][1] : '#ffcf8a';
-    const pts = new THREE.Points(g, new THREE.PointsMaterial({ color, size: 0.06, transparent: true, opacity: 1, depthWrite: false }));
+    const mat = this.sparkMat.clone(); // same program, own color/opacity
+    mat.color.set(color);
+    const pts = new THREE.Points(g, mat);
     this.group.add(pts);
     this.sparks.push({ mesh: pts, t: 0 });
   }
@@ -660,10 +684,7 @@ export class CaveManager {
         p.mesh.position.y += Math.sin(p.t * 3) * dt * 0.15;
       }
     }
-    for (const p of this.pickups.filter((x) => x.t >= 2e6)) {
-      this.group.remove(p.mesh);
-      p.mesh.geometry.dispose();
-    }
+    for (const p of this.pickups.filter((x) => x.t >= 2e6)) this.group.remove(p.mesh); // shared geometry and material
     this.pickups = this.pickups.filter((x) => x.t < 2e6);
     for (const sp of this.sparks) {
       sp.t += dt;

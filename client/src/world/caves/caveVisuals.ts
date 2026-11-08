@@ -116,13 +116,15 @@ export function boulderGeometry(): THREE.BufferGeometry {
 }
 
 /**
- * Cave rock: dark, rough, varied by a cheap 3D value noise in world space
+ * Cave rock: dark, rough, flat-shaded (faceted, like the rest of the
+ * low-poly world, and it makes the 2 m surface-nets shape read under a
+ * single light), varied by a cheap 3D value noise in world space
  * (triplanar-free: the noise is volumetric, so walls never stretch), banded
  * strata, damp floors, and colder, darker stone in deeper bands (the
  * per-vertex band byte the generator writes).
  */
 export function caveRockMaterial(): THREE.MeshStandardMaterial {
-  const m = new THREE.MeshStandardMaterial({ color: 0x7a7066, roughness: 0.93, metalness: 0.0 });
+  const m = new THREE.MeshStandardMaterial({ color: 0x8c8176, roughness: 0.93, metalness: 0.0, flatShading: true });
   m.onBeforeCompile = (sh) => {
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', '#include <common>\nattribute float aBand;\nvarying vec3 vCaveWorld;\nvarying vec3 vCaveN;\nvarying float vBand;')
@@ -145,7 +147,7 @@ float caveNoise(vec3 x) {
         '#include <color_fragment>',
         `#include <color_fragment>
 {
-  float n = caveNoise(vCaveWorld * 0.9) * 0.6 + caveNoise(vCaveWorld * 3.7) * 0.4;
+  float n = caveNoise(vCaveWorld * 1.7) * 0.45 + caveNoise(vCaveWorld * 5.3) * 0.35 + caveNoise(vCaveWorld * 0.4) * 0.2;
   float strata = 0.5 + 0.5 * sin(vCaveWorld.y * 1.3 + caveNoise(vCaveWorld * 0.35) * 5.0);
   vec3 col = diffuseColor.rgb * (0.55 + 0.6 * n) * (0.85 + 0.25 * strata);
   float band = clamp(vBand * 127.0 / 2.0, 0.0, 1.0);
@@ -196,7 +198,7 @@ export function fungusMaterial(): THREE.MeshStandardMaterial {
       .replace('#include <begin_vertex>', '#include <begin_vertex>\nvGlow = aGlow;\n#ifdef USE_INSTANCING_COLOR\nvTint = instanceColor;\n#else\nvTint = vec3(1.0);\n#endif');
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', '#include <common>\nvarying float vGlow;\nvarying vec3 vTint;')
-      .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance = vTint * emissiveIntensity * vGlow;');
+      .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance = vTint * emissive * vGlow;');
   };
   m.customProgramCacheKey = () => 'lodestone-cave-fungus-1';
   return m;
