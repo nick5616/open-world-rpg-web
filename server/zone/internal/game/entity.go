@@ -39,6 +39,8 @@ type Entity struct {
 	applied   int // frames applied this tick
 	guess     int // guessed steps the view runs ahead of Move
 	view      movement.State
+	viewRaw   movement.State // view before easing (carried forward next tick)
+	viewOff   movement.Vec3  // decaying horizontal easing offset
 }
 
 // stepsPerTick: 60 Hz input frames, 30 Hz ticks.
@@ -74,15 +76,50 @@ func (e *Entity) updateView(g movement.Ground) {
 		e.guess--
 	}
 	e.guess = max(0, min(maxGuessSteps, e.guess))
+	prev := e.viewRaw
 	e.view = e.Move
-	if e.guess == 0 || e.LastSeq == 0 {
+	if e.guess > 0 && e.LastSeq != 0 {
+		f := e.lastFrame
+		f.Flags &^= proto.InputFlagJump | proto.InputFlagJumpEdge
+		for i := 0; i < e.guess; i++ {
+			e.view = movement.StepFrame(e.view, f, g)
+		}
+	}
+	e.easeView(prev)
+}
+
+// View easing: when a guess turns out wrong (the player turned a corner
+// during an input stall) the view would jump by up to a metre in one tick.
+// Instead the difference between where observers expected the player (the
+// previous view carried forward by its velocity) and the corrected view
+// becomes an offset that decays with a 50 ms time constant, so the
+// correction plays out as a quick curve over ~4 ticks. Measured in the
+// two-browser "thailand" run: a 55 cm one-tick jump before this. Steady
+// walking carries forward exactly (offset 0); discontinuities over 3 m
+// (snap-back, respawn) are shown as they are.
+const viewEaseDecay = 0.513 // exp(-33.3 ms / 50 ms)
+
+func (e *Entity) easeView(prev movement.State) {
+	e.viewRaw = e.view
+	if e.LastSeq == 0 || prev == (movement.State{}) {
 		return
 	}
-	f := e.lastFrame
-	f.Flags &^= proto.InputFlagJump | proto.InputFlagJumpEdge
-	for i := 0; i < e.guess; i++ {
-		e.view = movement.StepFrame(e.view, f, g)
+	// Horizontal only: gravity and landings make vertical carry-forward
+	// noisy, and corner guesses are a horizontal error.
+	dt := 1.0 / float64(constants.TickRateHz)
+	dx := prev.Pos.X + prev.Vel.X*dt - e.view.Pos.X
+	dz := prev.Pos.Z + prev.Vel.Z*dt - e.view.Pos.Z
+	if d := math.Hypot(dx, dz); d > 0.05 && d < 3 {
+		e.viewOff.X += dx
+		e.viewOff.Z += dz
 	}
+	e.viewOff.X *= viewEaseDecay
+	e.viewOff.Z *= viewEaseDecay
+	if math.Hypot(e.viewOff.X, e.viewOff.Z) > 3 {
+		e.viewOff = movement.Vec3{}
+	}
+	e.view.Pos.X += e.viewOff.X
+	e.view.Pos.Z += e.viewOff.Z
 }
 
 // quantize refreshes the wire view others see (spec 9 quantization), from

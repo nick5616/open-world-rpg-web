@@ -137,4 +137,4 @@ teleport is left for a later package.
 
 Acceptance and integration runs use private ports so a running dev stack,
 or another agent's, is untouched: account 18191, director 18190, zone 18192
-(tcp+udp), netsim 8095 (WS) and 8096 (UDP), Vite 5176. All are overridable.
+(tcp+udp), netsim 8095 (WS) and 8096 (UDP), Vite 5191 (5176 collided with another agent). The script refuses to start if any of them is taken.

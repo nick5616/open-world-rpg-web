@@ -33,7 +33,7 @@ const EVIDENCE = path.join(root, 'docs', 'evidence');
 const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'lodestone-wp06-'));
 // devdb (WP04) only creates and drops lodestone_wp04_* scratch databases.
 const DB = 'lodestone_wp04_wp06e2e';
-const PORT = { account: 18191, director: 18190, zone: 18192, proxyWs: 8095, proxyUdp: 8096, vite: 5176 };
+const PORT = { account: 18191, director: 18190, zone: 18192, proxyWs: 8095, proxyUdp: 8096, vite: 5191 };
 const EXE = process.platform === 'win32' ? '.exe' : '';
 const ZONE_ID = 'zone-wp06-e2e';
 
@@ -69,7 +69,8 @@ function start(name, cmd, args, extra, cwd = root) {
 }
 
 async function signInAndPlay(page, user, charName) {
-  await page.getByTestId('auth-dev-username').waitFor({ timeout: 30000 });
+  // Generous: Vite may still be pre-bundling deps on a cold start.
+  await page.getByTestId('auth-dev-username').waitFor({ timeout: 90000 });
   await page.getByTestId('auth-dev-username').fill(user);
   await page.getByTestId('auth-dev-submit').click();
   await page.getByTestId('char-name').waitFor();
@@ -140,6 +141,12 @@ let browsers = [];
 const summary = [];
 try {
   step(`WP06 acceptance: profile ${PROFILE}, modes ${MODES.join(', ')}`);
+  // Other agents/dev stacks run on this machine: a port someone else holds
+  // would make the health checks pass against the wrong server.
+  for (const [name, port] of Object.entries(PORT)) {
+    const busy = await fetch(`http://localhost:${port}/`).then(() => true, () => false);
+    if (busy) throw new Error(`port ${port} (${name}) is already in use; free it or edit PORT in this script`);
+  }
   const pgUrl = goSync(['run', './server/account/cmd/devdb', 'create', DB]).trim().split('\n').pop();
   step(`scratch database ${DB}`);
   for (const [name, pkg] of [['account', './server/account'], ['director', './server/director'], ['zone', './server/zone']]) goSync(['build', '-o', path.join(TMP, name + EXE), pkg]);
