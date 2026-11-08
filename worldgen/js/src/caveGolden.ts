@@ -3,7 +3,7 @@
 // Shared by Node (vitest) and the Chromium worker through runGolden; the Go
 // host checks the same entries in worldgen/harness/go (hashes) and
 // server/pkg/caves (collision vectors, with the Go port of the queries).
-import { CaveGroundCore, caveCellBytes, caveCellKey, caveCellValid, caveGraphBytes, caveMaskBytes, caveSystemAt, parseCaveGraph, wasmCellSource, type CaveGraph } from './cave';
+import { CaveGroundCore, caveCellBytes, caveCellKey, caveCellValid, caveGraphBytes, caveMaskBytes, caveRaycast, caveSystemAt, parseCaveGraph, wasmCellSource, type CaveGraph } from './cave';
 import { hex64 } from './format';
 import type { AtlasHandle, Worldgen } from './index';
 
@@ -25,6 +25,8 @@ export interface GoldenCaves {
   /** "xbits,ybits,zbits,ceiling" of CaveGroundCore.collide(x, y, z). */
   collide: { x: number; y: number; z: number; out: string }[];
   systemAt: { x: number; y: number; z: number; s: number }[];
+  /** f64 bits of caveRaycast(o, d, max) over the generated cells (optional: added after the first cave table). */
+  rays?: { o: [number, number, number]; d: [number, number, number]; max: number; t: string }[];
 }
 
 interface Counters {
@@ -76,6 +78,11 @@ export function checkCaves(wg: Worldgen, atlas: AtlasHandle, label: string, g: G
     const o = ground.collideNew(c.x, c.y, c.z);
     const s = `${bits(o.x)},${bits(o.y)},${bits(o.z)},${o.ceiling ? 1 : 0}`;
     if (s !== c.out) r.failures.push(`${label}: cave collide (${c.x}, ${c.y}, ${c.z}) ${s} != ${c.out}`);
+    r.caveQueries++;
+  }
+  for (const ray of g.rays ?? []) {
+    const t = bits(caveRaycast(ground.cells, ray.o[0], ray.o[1], ray.o[2], ray.d[0], ray.d[1], ray.d[2], ray.max));
+    if (t !== ray.t) r.failures.push(`${label}: cave ray (${ray.o}) -> (${ray.d}) ${t} != ${ray.t}`);
     r.caveQueries++;
   }
   for (const p of g.systemAt) {
@@ -134,6 +141,7 @@ export function generateCaves(wg: Worldgen, atlas: AtlasHandle): GoldenCaves {
   const floors: GoldenCaves['floors'] = [];
   const collide: GoldenCaves['collide'] = [];
   const systemAt: GoldenCaves['systemAt'] = [];
+  const rays: NonNullable<GoldenCaves['rays']> = [];
   for (const s of systems.slice(0, 3)) {
     const o = graph.openings[s.firstOpening];
     for (const [dx, dz] of [[0, 0], [1.3, -0.7], [-2.1, 1.9]]) {
@@ -152,6 +160,12 @@ export function generateCaves(wg: Worldgen, atlas: AtlasHandle): GoldenCaves {
         collide.push({ x: wx, y: wy, z: wz, out: `${bits(r.x)},${bits(r.y)},${bits(r.z)},${r.ceiling ? 1 : 0}` });
       }
       systemAt.push({ x: q(c.x), y: q(c.floor + 1), z: q(c.z), s: caveSystemAt(graph, q(c.x), q(c.floor + 1), q(c.z)) });
+      for (let a = 0; a < 3; a++) {
+        const ang = a * 2.1 + k * 0.7;
+        const o: [number, number, number] = [q(c.x), q(c.floor + 1.6), q(c.z)];
+        const d: [number, number, number] = [q(Math.cos(ang)), q(a === 2 ? 0.8 : -0.15), q(Math.sin(ang))];
+        rays.push({ o, d, max: 40, t: bits(caveRaycast(ground.cells, o[0], o[1], o[2], d[0], d[1], d[2], 40)) });
+      }
     }
     systemAt.push({ x: q(o.x), y: q(o.y + 40), z: q(o.z), s: caveSystemAt(graph, q(o.x), q(o.y + 40), q(o.z)) });
   }
@@ -163,6 +177,7 @@ export function generateCaves(wg: Worldgen, atlas: AtlasHandle): GoldenCaves {
     floors,
     collide,
     systemAt,
+    rays,
   };
 }
 

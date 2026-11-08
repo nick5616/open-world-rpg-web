@@ -138,6 +138,8 @@ const golden: GoldenFile = { hashAlgo: 'fnv1a64', genVersion: wg.genVersion, abi
 const json = JSON.stringify(golden, null, 1)
   .replace(/\{\n\s+"cx": (-?\d+),\n\s+"cz": (-?\d+),\n\s+"lod": (\d+),\n\s+"tag": ("[^"]*"),\n\s+"hash": ("[0-9a-f]+")\n\s+\}/g, '{"cx":$1,"cz":$2,"lod":$3,"tag":$4,"hash":$5}')
   .replace(/\{\n\s+"x": ([-\d.e]+),\n\s+"z": ([-\d.e]+),\n\s+"h": ("[0-9a-f]+")\n\s+\}/g, '{"x":$1,"z":$2,"h":$3}')
+  // WP09 cave rays: one per line.
+  .replace(/\{\n\s+"o": \[[^\]]*\],\n\s+"d": \[[^\]]*\],\n\s+"max": [\d.]+,\n\s+"t": "[0-9a-f]+"\n\s+\}/g, (m) => m.replace(/\s+/g, ''))
   // WP09 cave entries: any object of plain values (cells, floors, masks...) on one line.
   .replace(/\{\n\s+"(?:cx|x|veinId)": (?:"[^"\n]*"|-?[\d.e+-]+),\n(?:\s+"[A-Za-z]+": (?:"[^"\n]*"|-?[\d.e+-]+),?\n)+\s+\}/g, (m) => m.replace(/\n\s*/g, '').replace(/": /g, '":'));
 fs.writeFileSync(path.join(here, 'golden.json'), json + '\n');

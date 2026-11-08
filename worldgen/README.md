@@ -445,6 +445,10 @@ wall = triangle normal y < cos 50 deg (0.6428), ceiling = normal y <= -0.5.
   xz part of (center - closest) by (radius - distance) (along the
   triangle's normal xz if that is degenerate). Then one ceiling pass with
   the high sphere: overlap pushes y down and reports `ceiling`.
+- `raycast(o, d, max)`: probes every 1.5 m along the ray gather the
+  triangles within 1.2 m (same candidate order as `collide`) and test
+  them two-sided (Moller-Trumbore); the nearest hit, stopping once it lies
+  behind the probes; -1 for none. Line of sight, aim and spell impacts.
 - Ground dispatch (`CaveGroundCore` / `caves.Ground`): in a mouth hole
   (point masked) or more than 1 m under the heightfield = "in a cave" ->
   cave floor (heightfield if no cave floor is found); otherwise the

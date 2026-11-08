@@ -1,7 +1,7 @@
 # server/pkg/caves
 
 Pure-Go readers for worldgen's cave buffers and the cave queries the zone
-needs (WP09): `ParseCell`, `ParseGraph`, `FloorAt`, `Collide`, `Masked` /
+needs (WP09): `ParseCell`, `ParseGraph`, `FloorAt`, `Collide`, `Raycast`, `Masked` /
 `TriMasked` (mouth masks), `Graph.SystemAt` (cave-system id: AOI clipping
 and WP11's voice "same cave system" rule), `Graph.Vein` (vein registry),
 `EncodeEdits` / `Edit.Touches`, and `Ground`, the cave-aware
@@ -23,8 +23,8 @@ npm run build:wasm
 cd server/pkg && go test ./caves     # golden cave vectors (bit-exact vs TS) + the golden cave walk (TS frames replayed in Go)
 ```
 
-- `TestGoldenCaveQueries`: 585 floor heights, 540 collide results and 150
-  system ids from `worldgen/golden/golden.json`, bit for bit.
+- `TestGoldenCaveQueries`: 585 floor heights, 540 collide results, 405
+  ray distances and 150 system ids from `worldgen/golden/golden.json`, bit for bit.
 - `TestGoldenCavePath`: the TS walker's 3,922 frames from in front of a
   mouth to the deepest chamber (181 m down) replayed through the Go step on
   the Go cave ground: max |Go - TS| 2.7e-15 m over 131 sampled states (93

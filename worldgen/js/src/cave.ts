@@ -720,6 +720,54 @@ function closest(px: number, py: number, pz: number, ax: number, ay: number, az:
   out[2] = az + abz * v + acz * w;
 }
 
+/** Step between ray probes; each probe gathers triangles within CAVE_RAY_PROBE_R, so consecutive probes overlap and no triangle the ray crosses is missed. */
+export const CAVE_RAY_STEP = 1.5;
+export const CAVE_RAY_PROBE_R = 1.2;
+
+/**
+ * Ray against loaded cave triangles (both faces): distance along the
+ * normalized direction to the first hit, or -1 within maxDist. For line of
+ * sight (WP13 hit validation), aim and spell impacts. Probes every
+ * CAVE_RAY_STEP m gather candidate triangles near the ray and test them
+ * (Moller-Trumbore); stops once the nearest hit lies behind the probes.
+ * Go twin: caves.Raycast (same order, same results).
+ */
+export function caveRaycast(src: CaveCellSource, ox: number, oy: number, oz: number, dx: number, dy: number, dz: number, maxDist: number): number {
+  const len = Math.sqrt(dx * dx + dy * dy + dz * dz);
+  if (!(len > 0)) return -1;
+  dx = dx / len;
+  dy = dy / len;
+  dz = dz / len;
+  let best = Infinity;
+  const steps = Math.ceil(maxDist / CAVE_RAY_STEP);
+  for (let k = 0; k <= steps; k++) {
+    const t0 = Math.min(k * CAVE_RAY_STEP, maxDist);
+    forEachTri(src, ox + dx * t0, oy + dy * t0, oz + dz * t0, CAVE_RAY_PROBE_R, (ax, ay, az, bx, by, bz, cx, cy, cz) => {
+      const t = rayTri(ox, oy, oz, dx, dy, dz, ax, ay, az, bx, by, bz, cx, cy, cz);
+      if (t >= 0 && t <= maxDist && t < best) best = t;
+    });
+    if (best <= t0) break;
+  }
+  return best === Infinity ? -1 : best;
+}
+
+function rayTri(ox: number, oy: number, oz: number, dx: number, dy: number, dz: number, ax: number, ay: number, az: number, bx: number, by: number, bz: number, cx: number, cy: number, cz: number): number {
+  const e1x = bx - ax, e1y = by - ay, e1z = bz - az;
+  const e2x = cx - ax, e2y = cy - ay, e2z = cz - az;
+  const px = dy * e2z - dz * e2y, py = dz * e2x - dx * e2z, pz = dx * e2y - dy * e2x;
+  const det = e1x * px + e1y * py + e1z * pz;
+  if (Math.abs(det) < 1e-12) return -1;
+  const inv = 1 / det;
+  const sx = ox - ax, sy = oy - ay, sz = oz - az;
+  const u = (sx * px + sy * py + sz * pz) * inv;
+  if (u < 0 || u > 1) return -1;
+  const qx = sy * e1z - sz * e1y, qy = sz * e1x - sx * e1z, qz = sx * e1y - sy * e1x;
+  const v = (dx * qx + dy * qy + dz * qz) * inv;
+  if (v < 0 || u + v > 1) return -1;
+  const t = (e2x * qx + e2y * qy + e2z * qz) * inv;
+  return t >= 0 ? t : -1;
+}
+
 /** Below the heightfield by more than this (and not in a mouth hole) counts as underground. */
 export const CAVE_UNDER_M = 1;
 

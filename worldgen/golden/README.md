@@ -27,7 +27,7 @@ f64 bit patterns) at random points.
 }
 ```
 
-Caves (WP09, `caves` per world): the cave graph hash, ~30-50 cave cells per world (237 in all) tagged by what they hold (`mouth`, `mouth-below`, `sinkhole`, `band:shallow|mid|deep`, `deepest`, `empty`), two edited cells (a mined vein: carve + flag), six mouth masks, and collision vectors produced by the TS cave queries: 585 `floorAt` heights (f64 bits), 540 `collide` results and 150 cave-system ids. Node and Chromium check everything through `runGolden` (`js/src/caveGolden.ts`); Go/wazero (`harness/go/caves.go`) and native Rust check the hashes; the Go port of the queries replays the vectors in `server/pkg/caves` (`TestGoldenCaveQueries`). The caves were added to genVersion 1 without changing any existing entry (docs/cr/003-cave-exports.md).
+Caves (WP09, `caves` per world): the cave graph hash, ~30-50 cave cells per world (237 in all) tagged by what they hold (`mouth`, `mouth-below`, `sinkhole`, `band:shallow|mid|deep`, `deepest`, `empty`), two edited cells (a mined vein: carve + flag), six mouth masks, and collision vectors produced by the TS cave queries: 585 `floorAt` heights (f64 bits), 540 `collide` results, 405 `caveRaycast` distances and 150 cave-system ids. Node and Chromium check everything through `runGolden` (`js/src/caveGolden.ts`); Go/wazero (`harness/go/caves.go`) and native Rust check the hashes; the Go port of the queries replays the vectors in `server/pkg/caves` (`TestGoldenCaveQueries`). The caves were added to genVersion 1 without changing any existing entry (docs/cr/003-cave-exports.md).
 
 Regenerate with `npm run golden:update` (`generate.ts`, run by vite-node).
 Once a world is minted on genVersion N, its table must never change: an

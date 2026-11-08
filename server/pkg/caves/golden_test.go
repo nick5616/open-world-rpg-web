@@ -36,6 +36,11 @@ type goldenFile struct {
 				X, Y, Z float64
 				S       int
 			} `json:"systemAt"`
+			Rays []struct {
+				O, D [3]float64
+				Max  float64
+				T    string
+			} `json:"rays"`
 		} `json:"caves"`
 	} `json:"worlds"`
 }
@@ -89,7 +94,7 @@ func TestGoldenCaveQueries(t *testing.T) {
 	if err := json.Unmarshal(raw, &g); err != nil {
 		t.Fatal(err)
 	}
-	var floors, collides, systems, fails int
+	var floors, collides, systems, rays, fails int
 	for _, w := range g.Worlds {
 		if w.Caves == nil {
 			continue
@@ -136,9 +141,16 @@ func TestGoldenCaveQueries(t *testing.T) {
 			}
 			systems++
 		}
+		for _, r := range w.Caves.Rays {
+			if got := bits(caves.Raycast(src, r.O[0], r.O[1], r.O[2], r.D[0], r.D[1], r.D[2], r.Max)); got != r.T {
+				t.Errorf("%s: ray %v -> %v %s != %s", w.Label, r.O, r.D, got, r.T)
+				fails++
+			}
+			rays++
+		}
 		world.Close()
 	}
-	fmt.Printf("[golden:go] cave queries (server/pkg/caves): %d floors, %d collides, %d system ids, %d failures\n", floors, collides, systems, fails)
+	fmt.Printf("[golden:go] cave queries (server/pkg/caves): %d floors, %d collides, %d system ids, %d rays, %d failures\n", floors, collides, systems, rays, fails)
 	if floors < 100 || collides < 100 {
 		t.Fatalf("too few cave vectors: %d floors, %d collides", floors, collides)
 	}

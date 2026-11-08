@@ -265,6 +265,72 @@ func Collide(src CellSource, x, y, z float64) movement.CollideResult {
 	return movement.CollideResult{X: x, Y: y, Z: z, PushX: x - x0, PushZ: z - z0, Ceiling: ceiling}
 }
 
+// Ray probes (same constants as cave.ts).
+const (
+	RayStep   = 1.5
+	RayProbeR = 1.2
+)
+
+// Raycast is the ray against loaded cave triangles (both faces): distance
+// along the normalized direction to the first hit, or -1 within maxDist.
+// Line of sight (WP13 hit validation), aim and spell impacts. Same probes
+// and order as caveRaycast in cave.ts.
+func Raycast(src CellSource, ox, oy, oz, dx, dy, dz, maxDist float64) float64 {
+	l := math.Sqrt(float64(float64(dx*dx)+float64(dy*dy)) + float64(dz*dz))
+	if !(l > 0) {
+		return -1
+	}
+	dx, dy, dz = dx/l, dy/l, dz/l
+	best := math.Inf(1)
+	var seen []uint32
+	steps := int(math.Ceil(maxDist / RayStep))
+	for k := 0; k <= steps; k++ {
+		t0 := math.Min(float64(k)*RayStep, maxDist)
+		forEachTri(src, ox+float64(dx*t0), oy+float64(dy*t0), oz+float64(dz*t0), RayProbeR, &seen, func(ax, ay, az, bx, by, bz, cx, cy, cz float64) {
+			if t := rayTri(ox, oy, oz, dx, dy, dz, ax, ay, az, bx, by, bz, cx, cy, cz); t >= 0 && t <= maxDist && t < best {
+				best = t
+			}
+		})
+		if best <= t0 {
+			break
+		}
+	}
+	if math.IsInf(best, 1) {
+		return -1
+	}
+	return best
+}
+
+func rayTri(ox, oy, oz, dx, dy, dz, ax, ay, az, bx, by, bz, cx, cy, cz float64) float64 {
+	e1x, e1y, e1z := bx-ax, by-ay, bz-az
+	e2x, e2y, e2z := cx-ax, cy-ay, cz-az
+	px := float64(dy*e2z) - float64(dz*e2y)
+	py := float64(dz*e2x) - float64(dx*e2z)
+	pz := float64(dx*e2y) - float64(dy*e2x)
+	det := dot3(e1x, e1y, e1z, px, py, pz)
+	if math.Abs(det) < 1e-12 {
+		return -1
+	}
+	inv := 1 / det
+	sx, sy, sz := ox-ax, oy-ay, oz-az
+	u := float64(dot3(sx, sy, sz, px, py, pz) * inv)
+	if u < 0 || u > 1 {
+		return -1
+	}
+	qx := float64(sy*e1z) - float64(sz*e1y)
+	qy := float64(sz*e1x) - float64(sx*e1z)
+	qz := float64(sx*e1y) - float64(sy*e1x)
+	v := float64(dot3(dx, dy, dz, qx, qy, qz) * inv)
+	if v < 0 || u+v > 1 {
+		return -1
+	}
+	t := float64(dot3(e2x, e2y, e2z, qx, qy, qz) * inv)
+	if t >= 0 {
+		return t
+	}
+	return -1
+}
+
 // Ground is the cave-aware movement ground (README "Ground dispatch"):
 // heightfield on the open surface, cave triangles in mouth holes and
 // underground. It implements movement.CaveGround.
