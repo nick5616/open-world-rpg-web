@@ -161,3 +161,34 @@ Assumptions:
 - Friend requests count toward the 200 cap; online status/region is shown for accepted friends only.
 - System channel stores service notices (friend requests, party disbanded/removed, declined invites) per player; transient replies ("Invited Bob") are `system` frames, shown inline.
 - Shared files touched: `client/src/screens/PlayScreen.tsx` (import + `<SocialOverlay />`), `contracts/social.yaml` + regenerated `contracts/ts/src/gen/social.ts` and `server/pkg/socialproto/social_gen.go`, new `contracts/migrations/0003_social.sql` (applied to the shared dev DB with `npm run migrate`), `docs/cr/`, this section.
+
+## WP17: WorldSpec creator tool ✅
+
+Branch `wp/17-creator`. Details: `tools/creator/README.md`, `tools/creator/server/README.md`, decisions `docs/decisions/0017-creator-tool.md`.
+
+Works:
+- Web app (`tools/creator/web`, Vite on 5177, `/v1` proxied to the endpoint): seed field with Random and **From seed** (spec_from_seed via the wasm, the default path; minting sends only the seed), name field, 7 presets (Archipelago, Highland, Badlands + original Frostreach, Mirewood, Verdant Vale, Starfall Wilds) laid over the seed's spec, a slider for every numeric field from `WORLDSPEC_RANGES` (weights grouped with share %), palette / name grammar pickers, loot theme chips capped at 4, vibe box (disabled with a notice when the server's flag is off), mint button, minted-world list.
+- Live 2D atlas preview built by worldgen.wasm in a Web Worker (debounced 200 ms, latest-wins): biomes with hillshade, sea/lakes, rivers, region grid with names and elements, towers, settlements to scale with names, structures, cave mouths, waypoints, landmarks, camps, spawn; stats (atlas hash, ms, size, land %, sea level, peak, 800 m POI coverage, site counts by kind, biome shares) and a region table. Rendering adapted from `worldgen/debug/`.
+- Normalize gate identical in TS (`web/src/spec/normalize.ts`, ajv 2020) and Go (`server/internal/spec`, santhosh-tekuri/jsonschema): structural validation against the contract schema minus the clampable constraints, clamp (ranges, half-up integer rounding, weights / max, name cleaning + word-prefix blocklist, canonical uint64 seed, unknown/duplicate/surplus loot tags dropped), strict validation. 42 shared fixtures (`tools/creator/fixtures/normalize.json`) replayed by Go with exact float equality; idempotence tested.
+- Go endpoint (`tools/creator/server`, :8094): `GET /v1/config`, `GET /v1/worlds`, `POST /v1/normalize`, `POST /v1/mint` (`{seed}` = spec_from_seed untouched; `{spec}` = normalized) -> wazero atlas_build -> `worlds` row `(name, seed, canonical spec, gen_version "1", atlas_hash 16 hex, official=false)`, same format as WP07's worldhost; re-minting the same world returns the existing row. Bearer token option (required in production). Metrics.
+- Vibe path behind `LODESTONE_CREATOR_LLM=1` + `ANTHROPIC_API_KEY`: one plain net/http Messages API call (`claude-haiku-5-5`, `output_config.format` JSON schema, effort low), normalize, at most one retry, creator's seed always wins, Redis cache by sha256(normalized prompt + specVersion). With the flag off the model client is never constructed (`TestFlagOffNeverReachesModel` + the process test count zero requests on an injected transport and a reachable fake API).
+- Tests: Go unit (normalize/fixtures, model schema, wazero host vs golden atlas hashes, store with concurrent dedupe on a scratch DB, vibe client/service against the fake API incl. retry, refusal, 500, cache), `creator_integration_test.go` (builds and runs the binary: mint from seed (golden hash for seed 1234), sliders and vibe, rows in Postgres, cache in Redis, restart flag off = 0 model requests); 12 vitest tests (fixtures fresh, clamps, presets in range and through the wasm, slider coverage). eslint, tsc, go vet, gofmt clean.
+
+Evidence (`npm run e2e -w @lodestone/creator`: built endpoint + fake Messages API + Vite + headless Chromium, scratch DB):
+- `docs/evidence/wp17-e2e.txt`: 20 checks, ALL PASS. Mints from seed only, Archipelago preset, slider edits (source "sliders") and vibe text (fake model; caveDensity 1.4 -> 1, caveMaxDepth 300 -> 256, tag "gothic" dropped), and with the flag off a Frostreach preset mint; every server atlas hash equals the browser preview's; repeat vibe served from cache; flag off: vibe button disabled + notice, `POST /v1/vibe` 503, fake model request count unchanged.
+- Mint logs `docs/evidence/wp17-mint-flag-on.txt`, `wp17-mint-flag-off.txt`, fake model log `wp17-fake-model.txt`, rows `wp17-worlds.json`, test run `wp17-tests.txt`.
+- Screenshots `docs/evidence/wp17-01-seed-only.png`, `wp17-02-preset-archipelago.png`, `wp17-03-sliders.png`, `wp17-04-preset-highland.png`, `wp17-04-preset-badlands.png`, `wp17-05-vibe.png`, `wp17-06-flag-off-frostreach.png`.
+
+Known gaps:
+- The real Messages API was never called (no key in this run, and tests must not): the request shape follows the current docs (`output_config.format` json_schema, `anthropic-version: 2026-10-21`) but is verified only against the fake. First real use should check one response by hand.
+- Uses its own wazero host (`internal/worldgen`, adapted from the golden harness) because WP07's `server/pkg/worldhost` was not on main; switch to it after WP07 merges (row format already matches).
+- No world deletion, renaming or "make official" in the tool; minted worlds are `official=false` and show up in the account/director world list immediately. Nothing stops a creator from minting many worlds (admin tool; protect it with `LODESTONE_CREATOR_TOKEN` and keep it off the public internet).
+- `npm run dev` does not start the creator (run `npm run server` + `npm run dev` in `tools/creator`); not wired into CI beyond the workspace test/lint runs (the Go process test skips without infra/wasm unless `LODESTONE_REQUIRE_*`).
+- The vibe cache in local Redis is lost on restart (no persistence); it only costs a model call.
+
+Assumptions:
+- "Validate then reject" applies to structure; ranges and tags are clamped (decision 0017). Unknown palette / nameGrammar values and extra keys are rejected, not guessed.
+- "Renormalize weights" = divide each group by its max (the generator's own normalization), all-zero -> all 1. Seed-only mints are stored exactly as spec_from_seed returns them.
+- The model never chooses the seed; `specVersion` is clamped to 1.
+- Creator names use the worldgen blocklist per word prefix; a name that cleans to under 3 characters is rejected.
+- Shared files touched: `go.work` (+ `./tools/creator/server`), `package-lock.json` (new workspace `@lodestone/creator` with `ajv@8`). No root `package.json` change (`tools/*` already a workspace glob), no contract or migration change.
