@@ -210,6 +210,7 @@ func (inv *Inventory) Add(it *Item, d *Delta) int {
 			}
 			n := min(left, def.Stack-s.Qty)
 			s.Qty += n
+			s.Prov = MergeProv(s.Prov, it.Prov)
 			left -= n
 			d.Update(s)
 		}
@@ -233,6 +234,19 @@ func (inv *Inventory) Add(it *Item, d *Delta) int {
 		left -= n
 	}
 	return left
+}
+
+// maxProv bounds a merged stack's provenance: commodity stacks absorb the
+// history of every stack merged into them, newest kept.
+const maxProv = 32
+
+// MergeProv appends incoming provenance to a stack's (bounded, newest kept).
+func MergeProv(have, in []Prov) []Prov {
+	out := append(have, in...)
+	if len(out) > maxProv {
+		out = append([]Prov(nil), out[len(out)-maxProv:]...)
+	}
+	return out
 }
 
 // CanFit reports whether qty of base would fit right now.
