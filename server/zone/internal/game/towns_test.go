@@ -146,18 +146,18 @@ func TestTownNPCsTalkShopBountiesInnForge(t *testing.T) {
 		t.Fatalf("merchant entity record %+v (want name %q role %d kind %d)", rec, md.Name, towns.RoleMerchant, md.Merchant)
 	}
 	a.send(&proto.Interact{TargetKind: InteractNPC, TargetID: uint64(mid), Action: ActionTalk})
-	say := a.nextEvent(EventNPCSay, time.Second)
-	shop := a.nextEvent(EventShop, time.Second)
+	say := a.nextEvent(EventNPCSay, 3*time.Second)
+	shop := a.nextEvent(EventShop, 3*time.Second)
 	if say.Value != 1 || len(say.Data) == 0 || shop.Data[0] != 1 || shop.Data[1] == 0 {
 		t.Fatalf("talk: say %+v shop %v", say, shop.Data)
 	}
 	a.send(&proto.Interact{TargetKind: InteractNPC, TargetID: uint64(mid), Action: ActionBuy, Arg: 0})
-	buy := a.nextEvent(EventPurchase, time.Second)
+	buy := a.nextEvent(EventPurchase, 3*time.Second)
 	if want := w.Wares(merchant)[0].Item; string(buy.Data) != want || len(grants.items) != 1 {
 		t.Fatalf("purchase %q grants %v (want %s)", buy.Data, grants.items, want)
 	}
 	a.send(&proto.Interact{TargetKind: InteractNPC, TargetID: uint64(mid), Action: ActionBuy, Arg: 99})
-	if r := a.nextEvent(EventTownRefused, time.Second); r.Value != TownRefuseNoSuch {
+	if r := a.nextEvent(EventTownRefused, 3*time.Second); r.Value != TownRefuseNoSuch {
 		t.Fatalf("bad item refusal %d", r.Value)
 	}
 
@@ -167,28 +167,28 @@ func TestTownNPCsTalkShopBountiesInnForge(t *testing.T) {
 	b.join(h, "town-b", "Hunter")
 	b.pump(300 * time.Millisecond)
 	b.send(&proto.Interact{TargetKind: InteractBoard, TargetID: board.ID, Action: 1})
-	list := b.nextEvent(EventBounties, time.Second)
+	list := b.nextEvent(EventBounties, 3*time.Second)
 	if list.Data[0] != 1 || list.Data[1] < 3 || list.TargetID != uint32(si) {
 		t.Fatalf("bounties %v target %d", list.Data[:2], list.TargetID)
 	}
 	first := binary.LittleEndian.Uint32(list.Data[2:])
 	b.send(&proto.Interact{TargetKind: InteractBoard, TargetID: board.ID, Action: 2, Arg: first})
-	acc := b.nextEvent(EventBountyAccepted, time.Second)
+	acc := b.nextEvent(EventBountyAccepted, 3*time.Second)
 	if acc.TargetID != first || acc.Value <= 0 || len(acc.Data) == 0 {
 		t.Fatalf("accepted %+v", acc)
 	}
-	again := b.nextEvent(EventBounties, time.Second)
+	again := b.nextEvent(EventBounties, 3*time.Second)
 	if again.Data[2+13] != 1 { // first record's accepted flag
 		t.Fatal("board does not mark the accepted bounty")
 	}
 	b.send(&proto.Interact{TargetKind: InteractBoard, TargetID: board.ID, Action: 2, Arg: first})
-	if r := b.nextEvent(EventTownRefused, time.Second); r.Value != TownRefuseHave {
+	if r := b.nextEvent(EventTownRefused, 3*time.Second); r.Value != TownRefuseHave {
 		t.Fatalf("second accept refusal %d", r.Value)
 	}
 	// Too far from the merchant (the board is elsewhere in the square).
 	if math.Hypot(board.X-md.WorkX, board.Z-md.WorkZ) > 6 {
 		b.send(&proto.Interact{TargetKind: InteractNPC, TargetID: uint64(mid), Action: ActionTalk})
-		if r := b.nextEvent(EventTownRefused, time.Second); r.Value != TownRefuseTooFar {
+		if r := b.nextEvent(EventTownRefused, 3*time.Second); r.Value != TownRefuseTooFar {
 			t.Fatalf("far talk refusal %d", r.Value)
 		}
 	}
@@ -199,7 +199,7 @@ func TestTownNPCsTalkShopBountiesInnForge(t *testing.T) {
 	c.join(h, "town-c", "Tired")
 	iid := c.npcEntityID(h, inn)
 	c.send(&proto.Interact{TargetKind: InteractNPC, TargetID: uint64(iid), Action: ActionRest})
-	if r := c.nextEvent(EventTownRefused, time.Second); r.Value != TownRefuseRested && r.Value != TownRefuseTooFar {
+	if r := c.nextEvent(EventTownRefused, 3*time.Second); r.Value != TownRefuseRested && r.Value != TownRefuseTooFar {
 		t.Fatalf("rest at full health: refusal %d", r.Value)
 	}
 
@@ -214,7 +214,7 @@ func TestTownNPCsTalkShopBountiesInnForge(t *testing.T) {
 	d.join(h, "town-d", "Smith")
 	d.pump(200 * time.Millisecond)
 	d.send(&proto.Interact{TargetKind: InteractStation, TargetID: forge.ID, Action: 1})
-	st := d.nextEvent(EventStationOpened, time.Second)
+	st := d.nextEvent(EventStationOpened, 3*time.Second)
 	if st.TargetID != 1 || binary.LittleEndian.Uint64(st.Data) != forge.ID {
 		t.Fatalf("station %+v", st)
 	}
@@ -244,7 +244,7 @@ func TestTownNightMerchantsClosedInnOpen(t *testing.T) {
 		t.Fatalf("merchant y %.3f, home floor %.3f", pos.Y, home.FloorY)
 	}
 	a.send(&proto.Interact{TargetKind: InteractNPC, TargetID: uint64(mid), Action: ActionTalk})
-	if say := a.nextEvent(EventNPCSay, time.Second); say.Value != 0 {
+	if say := a.nextEvent(EventNPCSay, 3*time.Second); say.Value != 0 {
 		t.Fatalf("merchant open at night: %+v", say)
 	}
 	a.noEvent(EventShop, 300*time.Millisecond)

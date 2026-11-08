@@ -122,7 +122,9 @@ pub fn build_settlements(a: &Atlas, net: &Net, t: &mut Towns) {
         }
         // Ring street (villages and towns).
         if size >= site::SIZE_VILLAGE {
-            let rr = square + (r - square) * 0.5;
+            // Close enough to the square that the core reads as a town, not
+            // a ring of houses at the edge (towns: 46 m, villages: 41 m).
+            let rr = square + ((r - square) * 0.5).min(28.0);
             let n = libm::ceil(TAU * rr / 4.0) as usize;
             let ri = t.roads.len() as u16;
             let mut pts = Vec::with_capacity(n + 1);
@@ -252,7 +254,12 @@ pub fn build_settlements(a: &Atlas, net: &Net, t: &mut Towns) {
             prop_n: &mut prop_n,
         };
         let mut local = 0u32;
-        let mut cursor = (seq.next_u64() % slots.len().max(1) as u64) as usize;
+        // Houses fill the plots nearest the square first (6 m distance bands,
+        // streets interleaved within a band by a hash of the slot), so towns
+        // grow a dense core with fields and open ground toward the edge.
+        let band = |sl: &Slot| (dist(sl.x, sl.z, s.x, s.z) / 6.0) as i64;
+        let mut by_dist: Vec<usize> = (0..slots.len()).collect();
+        by_dist.sort_by_key(|&i| (band(&slots[i]), crate::rng::mix64(i as u64 ^ s.seed as u64)));
         // Plot tolerance passes: lattice range under the footprint (m), and
         // whether back-lane plots are allowed. Required buildings get a
         // last, steep pass (their floor then sits on a taller plinth).
@@ -268,7 +275,6 @@ pub fn build_settlements(a: &Atlas, net: &Net, t: &mut Towns) {
             let back = kit::field_depth(rl);
             let required = matches!(rl, role::INN | role::FORGE);
             let mut done = false;
-            let n = slots.len();
             for (pass, &(tol, use_back)) in PASSES.iter().enumerate() {
                 if pass == 3 && !required {
                     break;
@@ -286,14 +292,10 @@ pub fn build_settlements(a: &Atlas, net: &Net, t: &mut Towns) {
                     near.sort_by(|p, q| p.along.partial_cmp(&q.along).unwrap());
                     order.extend(near);
                 } else {
-                    for k in 0..n {
-                        order.push(&slots[(cursor + k * 7) % n]);
-                    }
+                    order.extend(by_dist.iter().map(|&i| &slots[i]));
                     order.extend(square_slots.iter());
                     if use_back {
-                        for k in 0..n {
-                            order.push(&back_slots[(cursor + k * 7) % n]);
-                        }
+                        order.extend(by_dist.iter().map(|&i| &back_slots[i]));
                     }
                 }
                 for sl in order {
@@ -319,10 +321,6 @@ pub fn build_settlements(a: &Atlas, net: &Net, t: &mut Towns) {
                     break;
                 }
             }
-            if !done && !required {
-                cursor = (cursor + 13) % n.max(1);
-            }
-            cursor = (cursor + 5) % n.max(1);
             // Top up to the spec's minimum for the settlement size with
             // small houses (bounded: a cramped site may stay below it).
             if ri == roles.len() && houses < min_count && extra < 24 {
