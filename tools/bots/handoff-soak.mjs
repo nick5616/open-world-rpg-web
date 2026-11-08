@@ -84,10 +84,6 @@ try {
   const chars = spawnSync(path.join(TMP, 'bots' + EXE), ['-print-characters', '-n', String(BOTS)], { cwd: root, env: env(), encoding: 'utf8', maxBuffer: 64 << 20 }).stdout;
   step(spawnSync(path.join(TMP, 'seedbots' + EXE), [], { cwd: root, env: env(dbEnv), input: chars, encoding: 'utf8' }).stdout.trim());
 
-  start('director', path.join(TMP, 'director' + EXE), [], { ...dbEnv, LODESTONE_DIRECTOR_PORT: String(ports.director), LODESTONE_DIRECTOR_ASSIGN_EVERY: '1s' });
-  if (!(await waitHttp(`http://127.0.0.1:${ports.director}/healthz`, 30000))) throw new Error('director not healthy');
-  step(`director (assigner) on :${ports.director}`);
-
   const zones = [];
   for (let i = 0; i < ZONES; i++) {
     const id = i === 0 ? 'zone-primary' : `zone-pool-${i}`;
@@ -116,6 +112,12 @@ try {
     zones.push(z);
     step(`${id} on :${port}${PROFILE !== 'clean' ? ` behind netsim "${PROFILE}" :${proxyPort}` : ''}`);
   }
+  // The director starts after the zones, so its first plan sees every pool
+  // zone at once and splits the world evenly (zoneregistry.Plan).
+  start('director', path.join(TMP, 'director' + EXE), [], { ...dbEnv, LODESTONE_DIRECTOR_PORT: String(ports.director), LODESTONE_DIRECTOR_ASSIGN_EVERY: '1s' });
+  if (!(await waitHttp(`http://127.0.0.1:${ports.director}/healthz`, 30000))) throw new Error('director not healthy');
+  step(`director (assigner) on :${ports.director}`);
+
   // Wait for the director's split to reach every zone.
   let owners;
   for (let t = 0; t < 60; t++) {

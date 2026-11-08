@@ -667,3 +667,16 @@ func TestReadmissionTakesHandedOverProgress(t *testing.T) {
 		t.Fatalf("re-admitted session kept stale progress: %+v", sess.x)
 	}
 }
+
+// Regression (browser border run): walking exactly along a region line that
+// separates two regions of the SAME zone must not block the transfer.
+func TestTransferDepthIgnoresLinesInsideOneZone(t *testing.T) {
+	_, a, _ := twoZones(t, nil)
+	p := newHoClient(t, a, "char-p", "Pat", 2030, 2048) // z = 2048: the line between regions z=1 and z=2
+	for i := 0; i < 12 && p.active != "zone-b"; i++ {
+		p.walk(30, proto.InputFlagForward, eastYaw)
+	}
+	if p.active != "zone-b" {
+		t.Fatalf("no handoff walking along z = 2048 (x now %.1f)", p.sim.Pos.X)
+	}
+}

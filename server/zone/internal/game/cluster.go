@@ -107,30 +107,11 @@ func (o *Owners) OwnerAt(x, z float64) string {
 	return o.Region[r.X][r.Z]
 }
 
-// Depth is how far (x, z) lies inside its region (distance to the nearest
-// region edge that borders another region; the world edge doesn't count).
-func Depth(x, z float64) float64 {
-	r := zoneregistry.RegionAt(x, z)
-	size := zoneregistry.RegionSizeM
-	d := math.Inf(1)
-	if r.X > 0 {
-		d = math.Min(d, x-float64(r.X)*size)
-	}
-	if r.X < constants.WorldRegions-1 {
-		d = math.Min(d, float64(r.X+1)*size-x)
-	}
-	if r.Z > 0 {
-		d = math.Min(d, z-float64(r.Z)*size)
-	}
-	if r.Z < constants.WorldRegions-1 {
-		d = math.Min(d, float64(r.Z+1)*size-z)
-	}
-	return d
-}
-
 // NearestForeign returns the closest region owned by a zone other than not
 // (and not unowned), with its owner and the horizontal distance from (x, z)
-// to that region (0 when standing in it).
+// to that region (0 when standing in it). With not = the zone owning (x, z)
+// it is the distance to the nearest border with another zone; with not =
+// another zone, how deep (x, z) lies inside that zone's territory.
 func (o *Owners) NearestForeign(x, z float64, not string) (zone string, dist float64) {
 	size := zoneregistry.RegionSizeM
 	dist = math.Inf(1)

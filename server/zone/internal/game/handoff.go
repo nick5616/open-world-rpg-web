@@ -370,7 +370,9 @@ func (s *Server) handoffCheck(sess *session, own *Owners, now time.Time) {
 		return // nobody owns where they stand (no primary live): keep them
 	}
 	if owner != s.cl.self {
-		if Depth(p.X, p.Z) >= transferDepthM && h.ready[owner] {
+		// Depth into the new owner's territory: distance to the nearest region
+		// it does NOT own (a line between two of its own regions is no border).
+		if _, depth := own.NearestForeign(p.X, p.Z, owner); depth >= transferDepthM && h.ready[owner] {
 			if _, live := own.Zones[owner]; live {
 				s.transferOut(sess, owner, now)
 				return
@@ -607,6 +609,7 @@ func (s *Server) joinStandby(sess *session) {
 	sess.ho.since = time.Now()
 	s.cl.standby[char] = sess
 	s.cl.stats.standbys.Add(1)
+	s.log.Info("standby joined", "character", char, "owner", sess.ho.owner)
 	s.sendCtl(sess.ho.owner, ctlMsg{T: ctlReady, Char: char})
 	if p, ok := s.cl.pending[char]; ok {
 		// A transfer arrived before this connection did (reconnect race).
@@ -624,7 +627,9 @@ func (s *Server) dropStandbyConn(sess *session) {
 func (s *Server) handleCtl(m ctlMsg, now time.Time) {
 	switch m.T {
 	case ctlReady, ctlUnready:
-		if sess := s.byChar[m.Char]; sess != nil && sess.ent != nil {
+		sess := s.byChar[m.Char]
+		s.log.Info("handoff "+m.T, "character", m.Char, "zone", m.From, "here", sess != nil && sess.ent != nil)
+		if sess != nil && sess.ent != nil {
 			h := sess.handoffState()
 			if m.T == ctlReady {
 				h.ready[m.From] = true

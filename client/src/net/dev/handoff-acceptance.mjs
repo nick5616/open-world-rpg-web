@@ -94,8 +94,12 @@ function counters(d) {
   return { reconciles: d.prediction.reconciles, logLen: d.prediction.log.length, teleports: d.interp.teleports, visibleJumps: d.interp.visibleJumps, extrapEvents: d.interp.extrapEvents, transfers: d.transfers.length };
 }
 
-/** Both hold W along yaw for ms, sampling visibility of each other every 150 ms. */
-async function walkTogether(a, b, yaw, ms, samples) {
+/**
+ * Both hold W along yaw until done(sample) or ms passed, sampling visibility
+ * of each other every 150 ms (headless frame rates vary, so the walk ends on
+ * position, not on time).
+ */
+async function walkTogether(a, b, yaw, ms, samples, done = () => false) {
   await a.evaluate((y) => window.__lodestone.setLook(y, 0), yaw);
   await b.evaluate((y) => window.__lodestone.setLook(y, 0), yaw);
   await Promise.all([a.keyboard.down('KeyW'), b.keyboard.down('KeyW')]);
@@ -103,6 +107,7 @@ async function walkTogether(a, b, yaw, ms, samples) {
   while (Date.now() - t0 < ms) {
     const [s] = await Promise.all([sample(a, b), sleep(150)]);
     samples.push(s);
+    if (done(s)) break;
   }
   await Promise.all([a.keyboard.up('KeyW'), b.keyboard.up('KeyW')]);
 }
@@ -158,11 +163,14 @@ try {
   check(owners[1][0] === 'zone-west' && owners[2][0] === 'zone-east', 'director assigned x < 2048 to zone-west, the rest stays with zone-east (primary)', owners);
   const crossing = JSON.parse(runBin('bots', ['-url', `ws://127.0.0.1:${PORT.zoneA}/ws`, '-terrain', 'on', '-find-border', String(BORDER_X)]));
   step(`walkable crossing of x = ${BORDER_X}: ${JSON.stringify(crossing)}`);
-  start('vite', process.execPath, [path.join(root, 'node_modules', 'vite', 'bin', 'vite.js'), '--port', String(PORT.vite), '--strictPort'], { VITE_ACCOUNT_URL: `http://127.0.0.1:${PORT.account}`, VITE_DIRECTOR_URL: `http://127.0.0.1:${PORT.director}`, VITE_SOLO: '0' }, path.join(root, 'client'));
+  start('vite', process.execPath, [path.join(root, 'node_modules', 'vite', 'bin', 'vite.js'), '--port', String(PORT.vite), '--strictPort', '--host', '127.0.0.1'], { VITE_ACCOUNT_URL: `http://127.0.0.1:${PORT.account}`, VITE_DIRECTOR_URL: `http://127.0.0.1:${PORT.director}`, VITE_SOLO: '0' }, path.join(root, 'client'));
   check(await waitHttp(`http://127.0.0.1:${PORT.vite}/`, 60000), `vite on :${PORT.vite}`);
 
   const consoleLog = [];
-  browsers = [await chromium.launch(), await chromium.launch()];
+  // Real GPU through ANGLE (as the WP09/WP12 runs): SwiftShader renders the
+  // world at a few fps, which slows the 60 Hz sim (8-step backlog cap).
+  const GPU_ARGS = ['--use-angle=d3d11', '--enable-gpu', '--ignore-gpu-blocklist'];
+  browsers = [await chromium.launch({ args: GPU_ARGS }), await chromium.launch({ args: GPU_ARGS })];
   const pages = [];
   for (const [i, br] of browsers.entries()) {
     const ctx = await br.newContext({ viewport: { width: 960, height: 600 } });
@@ -176,7 +184,7 @@ try {
   const [a, b] = pages;
   await Promise.all([signIn(a, 'wp16alice', 'Alyssa'), signIn(b, 'wp16bruno', 'Bruno')]);
   // Place both 25 m west of the line, 4 m apart, on the walkable crossing.
-  const sx = BORDER_X - 25;
+  const sx = BORDER_X - 20;
   step(runBin('seedbots', ['-move', `Alyssa:${sx},${crossing.z};Bruno:${sx},${crossing.z + 4}`], { LODESTONE_PG_URL: pgUrl }).replace(/\n/g, ' | '));
   await Promise.all([play(a, 'Alyssa'), play(b, 'Bruno')]);
   await sleep(4000); // clock sync, jitter window, first pre-connects
@@ -189,12 +197,12 @@ try {
   const samples = [];
   const t0 = Date.now();
   // East across the line (yaw -pi/2 faces +x), stand, then back west.
-  await walkTogether(a, b, -Math.PI / 2, 11000, samples);
+  await walkTogether(a, b, -Math.PI / 2, 45000, samples, (s) => s.A.x > BORDER_X + 15 && s.B.x > BORDER_X + 15);
   await sleep(1500);
   samples.push(await sample(a, b));
   const mid = [await debug(a), await debug(b)];
   await a.screenshot({ path: path.join(EVIDENCE, 'wp16-border-east-a.png') });
-  await walkTogether(a, b, Math.PI / 2, 11000, samples);
+  await walkTogether(a, b, Math.PI / 2, 45000, samples, (s) => s.A.x < BORDER_X - 15 && s.B.x < BORDER_X - 15);
   await sleep(1500);
   samples.push(await sample(a, b));
   const walkS = (Date.now() - t0) / 1000;
