@@ -27,6 +27,7 @@ import (
 	"lodestone/server/pkg/localsave"
 	"lodestone/server/pkg/movement"
 	"lodestone/server/pkg/proto"
+	"lodestone/server/pkg/snapshot"
 	"lodestone/server/pkg/svc"
 	"lodestone/server/pkg/transport"
 	"lodestone/server/pkg/writebehind"
@@ -121,6 +122,8 @@ type Server struct {
 	// they are never sent beyond the mid ring, so clients query it 200 m out.
 	gridOthers *aoi.Grid
 	snapScr    []*snapScratch // WP19: one per snapshot worker (snapshots.go)
+	views      []entView      // WP19: per grid index, this tick (snapshots.go buildViews)
+	qs         []snapshot.EntState
 	saveDiv    uint32
 	mine       mining              // WP09 (mining.go)
 	calls      chan func()         // run on the tick goroutine (Do, caves.go)

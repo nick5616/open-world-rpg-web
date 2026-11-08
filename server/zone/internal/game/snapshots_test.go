@@ -99,6 +99,7 @@ func TestGatherInterestMatchesReference(t *testing.T) {
 			s.gridFor(e).Insert(int32(i), e.Move.Pos.X, e.Move.Pos.Z)
 		}
 		s.gridRemotes()
+		s.buildViews()
 		sc := &snapScratch{}
 		// What can end up in a snapshot: Classify with known = true (the
 		// widest hysteresis) must keep the same entities in the same order.

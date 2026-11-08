@@ -210,21 +210,35 @@ func (e *Enemy) leash() float64 {
 func (w *World) acquire(e *Enemy, mult float64) *Player {
 	var best *Player
 	bestScore := -1.0
-	for _, p := range w.players {
+	consider := func(p *Player) {
 		if p.Downed {
-			continue
+			return
 		}
 		d := hdist(p.Pos, e.Pos)
 		if math.Abs(p.Pos.Y-e.Pos.Y) > 12 || hdist(p.Pos, e.Home) > e.leash()+e.Def.Aggro {
-			continue
+			return
 		}
 		th := e.threat[p.ID]
 		if d > e.Def.Aggro*mult && th == 0 {
-			continue
+			return
 		}
 		score := th + 100/(d+1)
 		if score > bestScore || (score == bestScore && best != nil && p.ID < best.ID) {
 			best, bestScore = p, score
+		}
+	}
+	// WP19: only players within aggro range (the player grid) or holding
+	// threat can pass the test above, so look at just those. The pick is the
+	// best (score, then lowest id), which no visit order can change; a
+	// player seen twice is the same candidate twice.
+	w.eachPlayerNear(e.Pos.X, e.Pos.Z, e.Def.Aggro*mult, consider)
+	if w.pg.valid {
+		for id, th := range e.threat {
+			if th != 0 {
+				if p := w.players[id]; p != nil {
+					consider(p)
+				}
+			}
 		}
 	}
 	return best

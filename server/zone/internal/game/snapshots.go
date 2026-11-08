@@ -76,6 +76,7 @@ func (s *Server) snapshotWorkers() int {
 
 // sendSnapshots builds and queues every client's snapshot for this tick.
 func (s *Server) sendSnapshots(tick uint32, serverTime float64) {
+	s.buildViews()
 	n := len(s.sessions)
 	workers := s.snapshotWorkers()
 	if workers > (n+snapChunk-1)/snapChunk {
@@ -129,6 +130,41 @@ func (s *Server) sendSnapshots(tick uint32, serverTime float64) {
 		t.maxSet = max(t.maxSet, sc.sum.maxSet)
 	}
 	s.m.aoiAccum(n, t.near, t.mid, t.far, t.party, t.maxSet, t.bytes)
+}
+
+// entView is what a client's interest loop needs from an entity, copied
+// once per tick into one array indexed like the grid (s.views), with the
+// quantized states alongside (s.qs). WP19: reading these through *Entity
+// (big structs scattered over the heap) was a cache miss per candidate per
+// client, the largest single cost left in the snapshot phase; the arrays
+// are walked in index order, which is id order, so they stream.
+type entView struct {
+	x, z    float64
+	id      uint32
+	owner   uint32
+	partyID uint32
+	kind    proto.EntityKind
+}
+
+// buildViews fills s.views and s.qs for every grid index (after the grid
+// and mirrors are placed; read-only during the snapshot phase).
+func (s *Server) buildViews() {
+	n := len(s.ents) + len(s.cl.remote)
+	if cap(s.views) < n {
+		s.views = make([]entView, n, n+n/4)
+		s.qs = make([]snapshot.EntState, n, n+n/4)
+	}
+	s.views, s.qs = s.views[:n], s.qs[:n]
+	put := func(i int, e *Entity) {
+		s.views[i] = entView{x: e.Move.Pos.X, z: e.Move.Pos.Z, id: e.ID, owner: e.Owner, partyID: e.PartyID, kind: e.Kind}
+		s.qs[i] = e.q
+	}
+	for i, e := range s.ents {
+		put(i, e)
+	}
+	for j, r := range s.cl.remote {
+		put(len(s.ents)+j, r)
+	}
 }
 
 // gridFor is the AOI grid an entity goes in this tick: players (and
@@ -201,7 +237,7 @@ func (s *Server) gatherInterest(sc *snapScratch, e *Entity) {
 	// the old (id, index) sort did).
 	a, b := 0, 0
 	for a < len(loc) || b < len(rem) {
-		if b >= len(rem) || (a < len(loc) && s.ents[loc[a]].ID <= s.cl.remote[int(rem[b])-nLocal].ID) {
+		if b >= len(rem) || (a < len(loc) && s.views[loc[a]].id <= s.views[rem[b]].id) {
 			idxs = append(idxs, loc[a])
 			a++
 		} else {
@@ -229,23 +265,23 @@ func (s *Server) sendSnapshot(sc *snapScratch, sess *session, tick uint32, serve
 	sc.cands = sc.cands[:0]
 	cw := s.caves()
 	for _, i := range sc.idxs {
-		o := s.entAt(i)
+		o := &s.views[i]
 		// Personal pickups: only their owner sees them (WP09).
-		if o.Kind == proto.EntityKindPickup && o.Owner != e.ID {
+		if o.kind == proto.EntityKindPickup && o.owner != e.ID {
 			continue
 		}
 		// Underground interest clipping (spec 9, WP09 caves.go).
-		if cw != nil && !(e.PartyID != 0 && o.PartyID == e.PartyID) && !s.caveVisible(cw, e, o) {
+		if cw != nil && !(e.PartyID != 0 && o.partyID == e.PartyID) && !s.caveVisible(cw, e, s.entAt(i)) {
 			continue
 		}
-		dx, dz := o.Move.Pos.X-px, o.Move.Pos.Z-pz
+		dx, dz := o.x-px, o.z-pz
 		d := math.Sqrt(dx*dx + dz*dz)
-		for kp < len(lastEnts) && lastEnts[kp].ID < o.ID {
+		for kp < len(lastEnts) && lastEnts[kp].ID < o.id {
 			kp++
 		}
-		known := kp < len(lastEnts) && lastEnts[kp].ID == o.ID
-		sameParty := e.PartyID != 0 && o.PartyID == e.PartyID
-		r := aoi.Classify(d, o.Kind, known, sameParty)
+		known := kp < len(lastEnts) && lastEnts[kp].ID == o.id
+		sameParty := e.PartyID != 0 && o.partyID == e.PartyID
+		r := aoi.Classify(d, o.kind, known, sameParty)
 		switch r {
 		case aoi.None:
 			continue
@@ -258,7 +294,7 @@ func (s *Server) sendSnapshot(sc *snapScratch, sess *session, tick uint32, serve
 		case aoi.Party:
 			party++
 		}
-		sc.cands = append(sc.cands, snapshot.Candidate{State: &o.q, Due: aoi.Due(r, tick, o.ID), Weight: priorityWeight(d, sameParty)})
+		sc.cands = append(sc.cands, snapshot.Candidate{State: &s.qs[i], Due: aoi.Due(r, tick, o.id), Weight: priorityWeight(d, sameParty)})
 	}
 
 	st := e.selfState(s.cfg.Ground)
