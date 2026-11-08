@@ -16,6 +16,7 @@ import (
 
 	"lodestone/server/pkg/movement"
 	"lodestone/server/pkg/structures"
+	"lodestone/server/pkg/towns"
 	"lodestone/server/pkg/worldhost"
 )
 
@@ -72,8 +73,9 @@ func withStructures(t *worldhost.Terrain) movement.Ground {
 	return structures.Wrap(t, o)
 }
 
-// ground is what prediction steps on: the terrain with the towers (WP12)
-// and caves under it (WP09), or WP03's flat plane.
+// ground is what prediction steps on: the terrain with the towers (WP12),
+// caves under it (WP09) and the towns' buildings on top (WP20), or WP03's
+// flat plane.
 func (c *botConfig) ground() movement.Ground {
 	if c.terrain == nil {
 		return movement.Flat{}
@@ -93,6 +95,13 @@ func (c *botConfig) ground() movement.Ground {
 	g := surface
 	if cv, err := worldhost.NewCaves(c.terrain.World(), worldhost.CaveOptions{Workers: 1}); err == nil {
 		g = worldhost.NewCaveTerrain(c.terrain, surface, cv)
+	}
+	// WP20: buildings, bridges and structures on top, as the zone does
+	// (server/zone/towns.go), so a bot walking into a town bumps the same walls.
+	if b, err := c.terrain.World().TownsBytes(); err == nil {
+		if tw, err := towns.Parse(b); err == nil {
+			g = towns.NewGround(g, tw)
+		}
 	}
 	actual, _ := caveGrounds.LoadOrStore(c.terrain, g)
 	return actual.(movement.Ground)
