@@ -6,9 +6,9 @@
 //
 //	LODESTONE_ZONE_PORT          8092
 //	LODESTONE_ZONE_ID            zone-dev-1   (tickets must name this audience)
-//	LODESTONE_WORLD_ID           00000000-0000-0000-0000-000000000001
-//	LODESTONE_WORLD_SEED         1
-//	LODESTONE_GEN_VERSION        dev
+//	LODESTONE_WORLD_ID           unset: the official world row (WP04), else 00000000-0000-0000-0000-000000000001
+//	LODESTONE_WORLD_SEED         1     (only used with LODESTONE_WORLD_ID or the dev fallback)
+//	LODESTONE_GEN_VERSION        dev   (same)
 //	LODESTONE_ZONE_PUBLIC_URL    ws://localhost:<port>/ws (announced to the director)
 //	LODESTONE_ZONE_MAX_PLAYERS   400
 //	LODESTONE_ZONE_DEV_SPAWN     1 to honor /ws?spawn=x,z (default: on only with the dev ticket key)
@@ -27,6 +27,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -86,11 +87,12 @@ func main() {
 	queue := writebehind.New(env.Int("LODESTONE_WRITEBEHIND_MAX", 10000))
 	queue.Log = log
 
+	world := resolveWorld(ctx, pool, log)
 	cfg := game.Config{
 		ZoneID:     env.Str("LODESTONE_ZONE_ID", defaultZoneID),
-		WorldID:    env.Str("LODESTONE_WORLD_ID", defaultWorldID),
-		Seed:       uint64(env.Int("LODESTONE_WORLD_SEED", 1)),
-		GenVersion: env.Str("LODESTONE_GEN_VERSION", "dev"),
+		WorldID:    world.ID,
+		Seed:       world.Seed,
+		GenVersion: world.GenVersion,
 		MaxPlayers: env.Int("LODESTONE_ZONE_MAX_PLAYERS", 400),
 		DevSpawn:   env.Bool("LODESTONE_ZONE_DEV_SPAWN", devKey),
 		TicketKey:  pub,
@@ -106,6 +108,12 @@ func main() {
 	origins := strings.Split(env.Str("LODESTONE_CORS_ORIGIN", "*"), ",")
 	ws := &transport.WebSocket{OriginPatterns: origins}
 	s.Mux.Handle("GET /ws", zone.Handler(ws))
+	// Identity for tools: bots read it so their self-signed dev tickets name
+	// the right audience and world without flags.
+	s.Mux.HandleFunc("GET /debug/zone", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{"zoneId": cfg.ZoneID, "worldId": cfg.WorldID, "seed": cfg.Seed, "genVersion": cfg.GenVersion, "players": zone.Players()})
+	})
 	s.Mux.HandleFunc("GET /debug/tickstats", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{"players": zone.Players(), "tick": zone.TickStats(), "clock": gameloop.PreciseClock})
@@ -165,6 +173,42 @@ func main() {
 		log.Error("exit", "err", runErr)
 		os.Exit(1)
 	}
+}
+
+// resolveWorld picks the world this zone serves. Precedence:
+//  1. LODESTONE_WORLD_ID set: env for id, seed and genVersion.
+//  2. Otherwise the official world row WP04's account service seeds
+//     (`worlds.official`): the director routes players to zones announced
+//     under that id, so a bare `go run ./server/zone` next to `npm run dev`
+//     just works. Its seed and gen_version are authoritative.
+//  3. No database or no official row: the dev defaults.
+func resolveWorld(ctx context.Context, pool *pgxpool.Pool, log *slog.Logger) game.World {
+	seed, err := strconv.ParseUint(env.Str("LODESTONE_WORLD_SEED", "1"), 10, 64)
+	if err != nil {
+		log.Warn("LODESTONE_WORLD_SEED is not a uint64; using 1", "err", err)
+		seed = 1
+	}
+	w := game.World{ID: env.Str("LODESTONE_WORLD_ID", ""), Seed: seed, GenVersion: env.Str("LODESTONE_GEN_VERSION", "dev")}
+	if w.ID != "" {
+		return w
+	}
+	w.ID = defaultWorldID
+	if pool == nil {
+		return w
+	}
+	qctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+	ow, ok, err := (&game.PGStore{Pool: pool}).OfficialWorld(qctx)
+	switch {
+	case err != nil:
+		log.Warn("official world lookup failed; using the dev world id", "err", err, "world", w.ID)
+	case !ok:
+		log.Info("no official world row; using the dev world id", "world", w.ID)
+	default:
+		log.Info("serving the official world", "world", ow.ID, "seed", ow.Seed, "genVersion", ow.GenVersion)
+		return ow
+	}
+	return w
 }
 
 // announce heartbeats the zone registry (zones:{worldId}) every

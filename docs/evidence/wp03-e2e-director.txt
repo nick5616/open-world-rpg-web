@@ -1,0 +1,47 @@
+# WP03 x WP04 end to end: a director ticket accepted by the real zone
+# 2026-11-08, Windows 11, shared docker Postgres/Redis. Binaries built from
+# wp/03-zone-skeleton after merging main (WP04). Ports: account 18191,
+# director 18190, zone 18096 with LODESTONE_ZONE_ID=zone-wp03-e2e and NO
+# LODESTONE_WORLD_ID (the zone looks up the official world row).
+# Session tokens and tickets omitted.
+
+## zone startup
+{"level":"INFO","msg":"serving the official world","svc":"zone","world":"36b6018e-aa4b-49c1-9987-ea3223d5f94e","seed":20261108,"genVersion":"placeholder"}
+{"level":"INFO","msg":"zone config","svc":"zone","zone":"zone-wp03-e2e","world":"36b6018e-aa4b-49c1-9987-ea3223d5f94e","seed":20261108,"genVersion":"placeholder","devSpawn":true}
+
+## redis HGETALL zones:36b6018e-aa4b-49c1-9987-ea3223d5f94e (zone heartbeat)
+zone-wp03-e2e
+{"zoneId":"zone-wp03-e2e","endpoint":"ws://localhost:18096/ws","regions":null,"players":0,"heartbeatMs":1794138119911}
+
+## POST account /v1/auth/dev {"username":"wp03e2e"} -> 200 {"session":"lss1....", ...}
+
+## POST account /v1/characters {"worldId":"36b6018e-...","name":"Zonewalker"}
+{"character":{"id":"ebc7090b-eaaf-4da8-9ddd-2a46eefe59bb","worldId":"36b6018e-aa4b-49c1-9987-ea3223d5f94e","name":"Zonewalker","level":1,"xp":0,"position":{"x":2048,"y":0,"z":2048},"local":false,"accountId":"2b80f2d4-c3dc-4cdb-904c-0b378d0482e0","createdAt":"2026-11-08T03:42:05.924604-08:00"}}
+
+## POST director /v1/connect {"characterId":"ebc7090b-..."} -> 200
+{"zone":{"zoneId":"zone-wp03-e2e","endpoint":"ws://localhost:18096/ws"},"worldId":"36b6018e-aa4b-49c1-9987-ea3223d5f94e","region":{"x":2,"z":2}, "ticket":"<omitted>", ...}
+
+## go run ./tools/bots -url ws://localhost:18096/ws -ticket @director-ticket.txt -duration 35s -warmup 3s
+bots: 1 connecting in spread mode, playing 35s
+== bots: spread, 1/1 connected, 35 s wall (windows/amd64, go1.27.3)
+downlink kbps   avg    9.91  p50    9.91  p95    9.91  max    9.91   (budget 64)
+uplink kbps     avg   11.17  p50   11.17  p95   11.17  max   11.17   (budget 24)
+entities/view   avg     0.0  p50     0.0  p95     0.0  max     0.0
+snapshot bytes  avg    38.4  p50    38.4  p95    38.4  max    38.4
+snapshots 1050 (full 2), decode errors 0, apply errors 0
+prediction: 1048 checks, max error 0 cm, 0 resyncs
+personas map[jumper:1] kicks map[] errors map[]
+PASS
+
+## zone log (spawn came from characters.position, not a dev spawn)
+{"time":"2026-11-08T03:42:39.0821755-08:00","level":"INFO","msg":"join","svc":"zone","entity":1,"character":"ebc7090b-eaaf-4da8-9ddd-2a46eefe59bb","name":"Zonewalker","remote":"[::1]:60142","x":2048,"z":2048}
+{"time":"2026-11-08T03:43:14.0865051-08:00","level":"INFO","msg":"leave","svc":"zone","entity":1,"character":"ebc7090b-eaaf-4da8-9ddd-2a46eefe59bb"}
+{"time":"2026-11-08T03:43:19.9014444-08:00","level":"INFO","msg":"shutting down","svc":"zone"}
+{"time":"2026-11-08T03:43:19.9015907-08:00","level":"INFO","msg":"write-behind flushed","svc":"zone"}
+{"time":"2026-11-08T03:43:19.9024792-08:00","level":"INFO","msg":"zone stopped","svc":"zone","writebehindLeft":0}
+
+## psql: characters row after the logout checkpoint (write-behind queue)
+Zonewalker|{"x": 2205.457053979206, "y": 0, "z": 2049.7658920579593}|2026-11-08 11:43:14.087095+00
+
+## redis HGET zones:36b6018e-... zone-wp03-e2e after shutdown
+(nil)

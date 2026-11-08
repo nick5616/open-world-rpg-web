@@ -82,12 +82,23 @@ Bots need to place themselves (spread vs clustered). The zone honors
 `/ws?spawn=x,z` only when it runs with the development ticket key or
 `LODESTONE_ZONE_DEV_SPAWN=1`. Real spawns come from `characters.position`.
 
-## Dev defaults
+## Which world a zone serves
 
-Zone id `zone-dev-1`; world id `00000000-0000-0000-0000-000000000001`
-(uuid-shaped so a dev row can be inserted into `worlds`), seed 1, genVersion
-`dev`. WP04's director must mint tickets with audience `zone:zone-dev-1` (or
-set `LODESTONE_ZONE_ID`) and the zone's world id.
+WP04's director routes players to zones announced in
+`zones:{officialWorldId}` and signs tickets for `zone:<announced zoneId>`, and
+the official world's id is a generated uuid. So when `LODESTONE_WORLD_ID` is
+unset the zone reads `worlds WHERE official` at startup (id, seed,
+gen_version; the row is authoritative). With no database or no official row
+it falls back to dev defaults: world `00000000-0000-0000-0000-000000000001`,
+seed 1, genVersion `dev`. Zone id defaults to `zone-dev-1`. Verified end to
+end against WP04's account service and director:
+`docs/evidence/wp03-e2e-director.txt`.
+
+## Movement agrees with WP02's TypeScript port
+
+`server/pkg/movement` replays WP02's goldens (`client/src/sim/golden`, 690
+frames each on flat and tilted ground): max difference 1.4e-14 m
+(`TestReplaysClientGoldens`).
 
 ## Budget gap at extreme density
 

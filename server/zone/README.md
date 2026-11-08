@@ -31,7 +31,9 @@ curl localhost:8092/debug/tickstats # scheduler summary as JSON
 Configuration is env only; every variable and default is listed in the
 `main.go` header. The ones you will touch: `LODESTONE_ZONE_PORT` (8092),
 `LODESTONE_ZONE_ID` (`zone-dev-1`, tickets must target `zone:<id>`),
-`LODESTONE_WORLD_ID` / `_WORLD_SEED` / `_GEN_VERSION` (sent in Welcome),
+`LODESTONE_WORLD_ID` / `_WORLD_SEED` / `_GEN_VERSION` (sent in Welcome; when
+the id is unset the zone serves WP04's official world row, which is what the
+director routes to, else a dev world),
 `LODESTONE_SPIN_MS` (scheduler spin tail), `LODESTONE_ZONE_EXIT_AFTER`
 (graceful exit after a duration, for soaks: Windows can't send SIGINT to a
 background process).

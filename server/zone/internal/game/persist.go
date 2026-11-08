@@ -63,6 +63,34 @@ func (p *PGStore) LoadPosition(ctx context.Context, id string) (movement.Vec3, b
 	return movement.Vec3{X: pj.X, Y: pj.Y, Z: pj.Z}, true, nil
 }
 
+// World is the subset of a `worlds` row the zone announces and sends in
+// Welcome.
+type World struct {
+	ID         string
+	Seed       uint64
+	GenVersion string
+}
+
+// OfficialWorld returns the world WP04's account service marks official
+// (`worlds.official`, migration 0002). The director routes players to zones
+// announced under that id, so a zone started without LODESTONE_WORLD_ID uses
+// it. ok=false when there is none (or the column doesn't exist yet).
+func (p *PGStore) OfficialWorld(ctx context.Context) (World, bool, error) {
+	var w World
+	var seed string
+	err := p.Pool.QueryRow(ctx, `SELECT id::text, seed::text, gen_version FROM worlds WHERE official ORDER BY created_at LIMIT 1`).Scan(&w.ID, &seed, &w.GenVersion)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return World{}, false, nil
+	}
+	if err != nil {
+		return World{}, false, err
+	}
+	if _, err := fmt.Sscan(seed, &w.Seed); err != nil {
+		return World{}, false, fmt.Errorf("world seed %q: %w", seed, err)
+	}
+	return w, true, nil
+}
+
 // SavePosition implements CharacterStore.
 func (p *PGStore) SavePosition(ctx context.Context, id string, pos movement.Vec3) error {
 	if !uuidRe.MatchString(id) {

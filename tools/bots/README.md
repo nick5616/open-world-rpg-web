@@ -21,6 +21,7 @@ The zone must run with the dev ticket key (the default when
 
 ```
 go run ./server/zone
+npm run bots -- -n 20                      # same as go run ./tools/bots -n 20
 go run ./tools/bots -n 150 -mode spread    -duration 75s -json spread.json    -metrics-out spread.prom
 go run ./tools/bots -n 150 -mode clustered -radius 300 -duration 75s -json clustered.json
 ```
@@ -34,7 +35,8 @@ go run ./tools/bots -n 150 -mode clustered -radius 300 -duration 75s -json clust
 | `-duration` | 60s | play time after connecting |
 | `-warmup` | 8s | excluded from bandwidth rates (connect ramp, first full snapshots) |
 | `-ramp` | 4s | connects spread over this long |
-| `-zone`, `-world` | env `LODESTONE_ZONE_ID` / `LODESTONE_WORLD_ID` or zone defaults | ticket audience and world |
+| `-zone`, `-world` | env `LODESTONE_ZONE_ID` / `LODESTONE_WORLD_ID`, else read from the zone's `GET /debug/zone` | ticket audience and world (the zone may serve WP04's official world, a generated uuid) |
+| `-ticket` | | connect ONE bot with this ticket, or `@file`, e.g. from the director's `POST /v1/connect` (no dev spawn: the character row decides) |
 | `-json` | | write the summary (plus per-bot rows) as JSON |
 | `-metrics`, `-metrics-out` | derived from `-url` | scrape the zone's `/metrics` before disconnecting and save it |
 

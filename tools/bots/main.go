@@ -45,12 +45,13 @@ func main() {
 		duration   = flag.Duration("duration", 60*time.Second, "how long to play after the ramp")
 		warmup     = flag.Duration("warmup", 8*time.Second, "excluded from rate measurements")
 		ramp       = flag.Duration("ramp", 4*time.Second, "spread connects over this long")
-		zoneID     = flag.String("zone", envOr("LODESTONE_ZONE_ID", "zone-dev-1"), "zone id (ticket audience)")
-		worldID    = flag.String("world", envOr("LODESTONE_WORLD_ID", "00000000-0000-0000-0000-000000000001"), "world id")
+		zoneID     = flag.String("zone", os.Getenv("LODESTONE_ZONE_ID"), "zone id for the ticket audience (default: ask the zone's /debug/zone)")
+		worldID    = flag.String("world", os.Getenv("LODESTONE_WORLD_ID"), "world id (default: ask the zone's /debug/zone)")
 		seed       = flag.Int64("seed", 1, "random seed (spawns, personas)")
 		jsonOut    = flag.String("json", "", "write the summary as JSON here")
 		metricsURL = flag.String("metrics", "", "zone /metrics URL to scrape before disconnecting (default derived from -url)")
 		metricsOut = flag.String("metrics-out", "", "save the scrape here")
+		ticketArg  = flag.String("ticket", "", "connect ONE bot with this ticket, or @file (e.g. from the director POST /v1/connect), instead of a self-signed dev ticket")
 	)
 	flag.Parse()
 
@@ -64,9 +65,31 @@ func main() {
 	}
 	cx, cz := 2048.0, 2048.0
 	fmt.Sscanf(*center, "%f,%f", &cx, &cz)
+	if *zoneID == "" || *worldID == "" {
+		// The zone may serve the official world (a generated uuid), so ask it
+		// rather than guess; fall back to the zone's dev defaults.
+		z, w := zoneIdentity(*zoneURL)
+		if *zoneID == "" {
+			*zoneID = z
+		}
+		if *worldID == "" {
+			*worldID = w
+		}
+	}
 
 	cfg := &botConfig{url: *zoneURL, zoneID: *zoneID, worldID: *worldID, priv: priv, centerX: cx, centerZ: cz,
-		worldM: constants.WorldSizeM, warmup: *warmup, pingPeriod: time.Second}
+		worldM: constants.WorldSizeM, warmup: *warmup, pingPeriod: time.Second, ticket: *ticketArg}
+	if strings.HasPrefix(cfg.ticket, "@") {
+		b, err := os.ReadFile(cfg.ticket[1:])
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		cfg.ticket = strings.TrimSpace(string(b))
+	}
+	if cfg.ticket != "" {
+		*n = 1
+	}
 	if *mode == "clustered" {
 		cfg.radius = *radius
 	} else if *mode != "spread" {
@@ -139,11 +162,17 @@ func main() {
 	}
 }
 
-func envOr(k, def string) string {
-	if v := os.Getenv(k); v != "" {
-		return v
+// zoneIdentity reads {zoneId, worldId} from the zone's /debug/zone, or
+// returns the zone's dev defaults if that fails.
+func zoneIdentity(ws string) (zoneID, worldID string) {
+	zoneID, worldID = "zone-dev-1", "00000000-0000-0000-0000-000000000001"
+	u := strings.TrimSuffix(deriveMetricsURL(ws), "/metrics") + "/debug/zone"
+	var id struct{ ZoneID, WorldID string }
+	if body := fetch(u); body != "" && json.Unmarshal([]byte(body), &id) == nil && id.ZoneID != "" {
+		return id.ZoneID, id.WorldID
 	}
-	return def
+	fmt.Fprintln(os.Stderr, "bots: could not read", u, "; using dev zone/world ids")
+	return zoneID, worldID
 }
 
 func deriveMetricsURL(ws string) string {

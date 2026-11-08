@@ -44,6 +44,7 @@ type botConfig struct {
 	worldM     float64
 	warmup     time.Duration
 	pingPeriod time.Duration
+	ticket     string // use this ticket (e.g. from the director) instead of signing one
 }
 
 // bot is one headless player: it signs a dev ticket, connects, runs Hello,
@@ -145,6 +146,9 @@ func uuidish(rng *rand.Rand) string {
 func (b *bot) run(ctx context.Context) {
 	dctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	url := fmt.Sprintf("%s?spawn=%.2f,%.2f", b.cfg.url, b.spawnX, b.spawnZ)
+	if b.cfg.ticket != "" {
+		url = b.cfg.url // a real character spawns where its row says
+	}
 	c, err := transport.DialWebSocket(dctx, url)
 	cancel()
 	if err != nil {
@@ -164,6 +168,9 @@ func (b *bot) run(ctx context.Context) {
 		WorldID:       b.cfg.worldID,
 		Audience:      ticket.AudienceZone(b.cfg.zoneID),
 	})
+	if b.cfg.ticket != "" {
+		tk = b.cfg.ticket
+	}
 	_ = c.SendReliable(proto.Encode(&proto.Hello{ProtocolVersion: proto.ProtocolVersion, Ticket: []byte(tk),
 		ClientTime: nowMs(), Transport: proto.TransportWebsocket}))
 
