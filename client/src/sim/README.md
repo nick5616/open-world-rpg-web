@@ -15,7 +15,7 @@ reproduce.
 | `weather.ts` | Rain stub `isRaining(seed, worldTime)` until WP15 (Go twin `server/pkg/weather`). |
 | `updraft.ts` | `UpdraftColumns` (debug implementation of the updraft hook) and the `x,z,r,top,lift` parser. |
 | `stepEnv.ts` | Where the client's StepEnv comes from (synced server time online, `?rain=`, `?updraft=`). |
-| `dev/` | Node acceptance harness (`traversalRun.ts`, `traversal-acceptance.ts`), browser run (`traversal-browser.ts`), `?ground=worldgen` debug play (`WorldgenDebugCanvas`, `DebugTerrain`), divergence probe. |
+| `dev/` | Node acceptance harness (`traversalRun.ts`, `traversal-acceptance.ts`), browser run (`traversal-browser.ts`), divergence probe (`window.__lodestone.probe()`). |
 | `inputFrame.ts` | Held keys to InputFrame flags, jump-edge latch, yaw/pitch quantization. |
 | `fixedStep.ts` | Render-frame to fixed-step accumulator with a capped backlog. |
 | `localSim.ts` | Per-frame driver: latch edges, run steps, interpolate the render pose. |

@@ -69,7 +69,7 @@ groups:
     STAMINA_CLIMB_PER_S: {type: f64, value: 10, doc: "Drain while climbing."}
     STAMINA_GLIDE_PER_S: {type: f64, value: 6, doc: "Drain while gliding."}
     STAMINA_SWIM_PER_S: {type: f64, value: 8, doc: "Drain while swimming."}
-    # ---- WP10 (CR 003): climb / glide / swim / slope tuning. Every value
+    # ---- WP10 (CR 004): climb / glide / swim / slope tuning. Every value
     # below feeds the shared step in client/src/sim/movement.ts and
     # server/pkg/movement; the algorithm is in client/src/sim/README.md.
     WALKABLE_TAN_SQ: {type: f64, value: 1.4202766254612063, doc: "tan(WALKABLE_SLOPE_DEG)^2 as a literal, so TS and Go compare slopes against the identical double (Math.tan and Go's math.Tan may differ in the last ulp). Tests on both sides check it against the degrees."}

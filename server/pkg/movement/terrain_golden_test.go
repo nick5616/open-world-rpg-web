@@ -21,6 +21,7 @@ import (
 
 	"lodestone/server/pkg/movement"
 	"lodestone/server/pkg/proto"
+	"lodestone/server/pkg/structures"
 	"lodestone/server/pkg/worldhost"
 )
 
@@ -36,6 +37,7 @@ type wp10Golden struct {
 	Ground   struct {
 		Kind       string `json:"kind"`
 		Seed       string `json:"seed"`
+		Structures string `json:"structures"` // "towers": terrain + WP12's tower overlay
 		GenVersion uint32 `json:"genVersion"`
 	} `json:"ground"`
 	Env struct {
@@ -114,11 +116,25 @@ func TestReplaysClientTerrainGoldens(t *testing.T) {
 		}
 		// Replay twice: on the wasm itself and on the zone's cached-chunk fast
 		// path (what the zone really runs; bitwise equal by WP07's proof).
-		for _, ground := range []struct {
+		grounds := []struct {
 			name string
 			g    movement.Ground
-		}{{"wasm", wasmGround{w}}, {"terrain", tr}} {
-			if ground.name == "terrain" {
+		}{{"wasm", wasmGround{w}}, {"terrain", tr}}
+		if g.Ground.Structures == "towers" {
+			// The ground the zone runs since WP12: towers over the terrain
+			// (structures.Towers samples the plain terrain; same bits either way).
+			a, err := structures.ParseAtlas(w.Atlas)
+			if err != nil {
+				t.Fatal(err)
+			}
+			for i := range grounds {
+				o, _ := structures.Towers(a, grounds[i].g)
+				grounds[i].g = structures.Wrap(grounds[i].g, o)
+				grounds[i].name += "+towers"
+			}
+		}
+		for _, ground := range grounds {
+			if ground.name != "wasm" && ground.name != "wasm+towers" {
 				for _, r := range g.States {
 					tr.Want(r[0], r[2], 4)
 				}

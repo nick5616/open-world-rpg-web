@@ -40,6 +40,8 @@ func newHarness(t *testing.T, mod func(*Config)) *harness {
 	pub, _, _ := ticket.PublicKeyFromEnv()
 	cfg := Config{ZoneID: testZone, WorldID: testWorld, Seed: 42, GenVersion: "g1", TicketKey: pub, DevSpawn: true,
 		SpinTail: time.Millisecond, Log: slog.New(slog.NewTextHandler(io.Discard, nil))}
+	dry := false
+	cfg.Rain = &dry // WP10: deterministic weather (the stub would follow the wall clock)
 	if mod != nil {
 		mod(&cfg)
 	}

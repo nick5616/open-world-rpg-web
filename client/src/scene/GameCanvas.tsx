@@ -28,6 +28,10 @@ interface Props {
   driver?: PlayerDriver;
   /** Extra scene content (remote players). */
   children?: ReactNode;
+  /** Replaces the placeholder sky and sun (WP05 brings its own; pass false for none). */
+  environment?: ReactNode;
+  /** The world renders through its own post chain with its own MSAA, so the canvas skips MSAA. */
+  ownComposer?: boolean;
 }
 
 /** The view model is parented to the camera, so the camera must be in the scene graph. */
@@ -36,7 +40,7 @@ function CameraInScene() {
   return <primitive object={camera} />;
 }
 
-export function GameCanvas({ ground = DEFAULT_GROUND, terrain, onStep, driver, children }: Props) {
+export function GameCanvas({ ground = DEFAULT_GROUND, terrain, onStep, driver, children, environment, ownComposer }: Props) {
   const tier = useQualityStore((s) => s.tier);
   const preset = QUALITY_PRESETS[tier];
   const showCells = useDebugStore((s) => s.showCells);
@@ -48,7 +52,7 @@ export function GameCanvas({ ground = DEFAULT_GROUND, terrain, onStep, driver, c
       camera={{ fov: 75, near: 0.05, far: preset.viewDistance }}
       // MSAA is fixed at context creation (the tier at first mount decides);
       // 'high-performance' asks hybrid-GPU laptops for the discrete GPU.
-      gl={{ antialias: preset.antialias, powerPreference: 'high-performance' }}
+      gl={{ antialias: ownComposer ? false : preset.antialias, powerPreference: 'high-performance' }}
       // Cap the backing-store scale: a 2-3x hi-dpi display otherwise renders
       // 4-9x the pixels. The monitor lowers it further (via the tier) when frames run long.
       dpr={[1, preset.dpr]}
@@ -68,7 +72,7 @@ export function GameCanvas({ ground = DEFAULT_GROUND, terrain, onStep, driver, c
       <GroundContext.Provider value={ground}>
         <CameraInScene />
         <Suspense fallback={null}>
-          <SkyAndSun />
+          {environment === undefined ? <SkyAndSun /> : environment}
           {terrain ?? <FlatTerrain height={ground.heightAt(0, 0)} />}
           {DEBUG && showCells && <CellBorders />}
         </Suspense>

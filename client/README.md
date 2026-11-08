@@ -20,8 +20,7 @@ the crosshair while it is not full (WP10). Debug builds (dev, solo, or
 `?debug=1`): F3 HUD, backquote debug panel (teleport, fly, freeze time, time of
 day, borders, quality), V fly (Space up, Ctrl/C down), F4 cell/chunk/region
 borders. `?autoplay=1` skips the title screen. WP10 dev params:
-`?ground=worldgen` walks on worldgen.wasm's terrain with a debug heightfield
-visual (offline: `&spawn=x,z`), `?rain=1|0`, `?updraft=x,z,r,top,lift`.
+`?rain=1|0`, `?updraft=x,z,r,top,lift`.
 Traversal acceptance: `npm run traversal:accept -w client` (Node client vs
 the zone binary) and `npm run traversal:browser -w client` (headless
 Chromium); see `src/sim/README.md`.

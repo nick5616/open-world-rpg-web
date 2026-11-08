@@ -12,6 +12,7 @@ import (
 	"lodestone/server/pkg/constants"
 	"lodestone/server/pkg/movement"
 	"lodestone/server/pkg/proto"
+	"lodestone/server/pkg/structures"
 )
 
 // TestValidationPassesEveryLegitMode feeds the WP10 golden inputs (climb,
@@ -33,7 +34,10 @@ func TestValidationPassesEveryLegitMode(t *testing.T) {
 		}
 		var g struct {
 			Scenario string `json:"scenario"`
-			Env      struct {
+			Ground   struct {
+				Structures string `json:"structures"`
+			} `json:"ground"`
+			Env struct {
 				Raining  bool         `json:"raining"`
 				Updrafts [][5]float64 `json:"updrafts"`
 			} `json:"env"`
@@ -61,12 +65,21 @@ func TestValidationPassesEveryLegitMode(t *testing.T) {
 		if len(cs) > 0 {
 			env.Updraft = cs
 		}
+		var ground movement.Ground = tr
+		if g.Ground.Structures == "towers" {
+			a, err := structures.ParseAtlas(tr.World().Atlas)
+			if err != nil {
+				t.Fatal(err)
+			}
+			o, _ := structures.Towers(a, tr)
+			ground = structures.Wrap(tr, o) // what the zone runs since WP12
+		}
 		r := g.Initial
 		e := &Entity{Move: movement.State{Pos: movement.Vec3{X: r[0], Y: r[1], Z: r[2]}, Mode: int(r[7]), Stamina: int(r[8]), StaminaMax: g.StaminaMax, Flags: uint8(r[11])}}
 		e.prevValid = e.Move
 		respawns := 0
 		for i, fr := range g.Frames {
-			if !e.applyFrame(proto.InputFrame{Seq: uint32(fr[0]), Flags: uint16(fr[1]), Yaw: uint16(fr[2]), Pitch: int16(fr[3])}, tr, env) {
+			if !e.applyFrame(proto.InputFrame{Seq: uint32(fr[0]), Flags: uint16(fr[1]), Yaw: uint16(fr[2]), Pitch: int16(fr[3])}, ground, env) {
 				t.Fatalf("%s frame %d rejected by validation: %+v", g.Scenario, i, e.Move)
 			}
 			if e.drownedEvent {

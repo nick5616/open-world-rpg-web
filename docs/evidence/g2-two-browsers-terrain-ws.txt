@@ -1,0 +1,22 @@
+[2026-11-08T13:23:11.599Z] WP06 acceptance: profile thailand, modes ws
+[2026-11-08T13:23:14.959Z] scratch database lodestone_wp04_wp06e2e
+[2026-11-08T13:23:23.520Z] built account, director, zone
+[2026-11-08T13:23:25.201Z] PASS account healthy on :18191
+[2026-11-08T13:23:26.315Z] PASS director healthy on :18190
+[2026-11-08T13:23:26.830Z] PASS netsim "thailand" on ws :8095 and udp :8096
+[2026-11-08T13:23:26.834Z] netsim config {"latency":80,"jitter":20,"loss":0.03,"bw":0,"spikeEvery":0,"spikeMs":0,"dropAfter":0}
+[2026-11-08T13:23:28.554Z] PASS zone healthy on :18192
+[2026-11-08T13:23:28.556Z] zone wtEndpoint https://localhost:8096/wt#certHash=Ja+HyptXnyvEBSrSowVrUo7ArX4+R/8RYK2Ox4F4IxY=
+[2026-11-08T13:23:29.094Z] PASS vite on :5191
+[2026-11-08T13:23:35.097Z] --- WebSocket (TCP proxy) ---
+[2026-11-08T13:23:37.296Z] PASS both connected over websocket  {"A":[{"kind":"websocket","ok":true,"ms":18}],"B":[{"kind":"websocket","ok":true,"ms":19.700000002980232}]}
+[2026-11-08T13:24:37.766Z] PASS each browser draws the other player (by name)  {"A->Bruno":{"dist":1.8826888830629207,"lod":0,"mode":"interp","delayMs":400},"B->Alyssa":{"dist":1.8836817899375717,"lod":0,"mode":"interp","delayMs":400}}
+[2026-11-08T13:24:37.766Z] PASS A sees B's airborne activity flag when B jumps (nameplate chip)
+[2026-11-08T13:24:37.766Z] PASS no local correction over 5 cm while walking  {"A":{"reconciles":0,"agreements":87,"corrMaxCm":0,"corrP95Cm":0,"over5cm":0},"B":{"reconciles":0,"agreements":78,"corrMaxCm":0,"corrP95Cm":0,"over5cm":0}}
+[2026-11-08T13:24:37.767Z] PASS no remote teleports
+[2026-11-08T13:24:37.767Z] PASS no remote discontinuity over 30 cm (each eased over 70 ms)  {"A sees B":{"jumps":0,"maxCm":0,"extrapEvents":7},"B sees A":{"jumps":0,"maxCm":0,"extrapEvents":9}}
+[2026-11-08T13:24:37.767Z] PASS uplink within 24 kbps  {"A":{"downKbps":11.471078619993007,"upKbps":1.3954084904463764},"B":{"downKbps":8.488379299659126,"upKbps":1.3486210102262164}}
+[2026-11-08T13:24:37.767Z] rtt A 421 ms, B 382 ms; walked 25.6 s
+[2026-11-08T13:24:38.068Z] PASS no page errors in either browser  ["[ws B] error: WebSocket connection to 'ws://localhost:8093/ws' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED","[ws A] error: WebSocket connection to 'ws://localhost:8093/ws' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED","[ws B] error: WebSocket connection to 'ws://localhost:8093/ws' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED","[ws A] error: WebSocket connection to 'ws://localhost:8093/ws' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED","[ws A] error: WebSocket connection to 'ws://localhost:8093/ws' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"]
+[2026-11-08T13:24:39.860Z] dropped lodestone_wp04_wp06e2e
+[2026-11-08T13:24:39.860Z] ALL PASS

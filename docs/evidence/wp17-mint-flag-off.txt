@@ -1,0 +1,4 @@
+{"time":"2026-11-08T05:20:09.502292-08:00","level":"INFO","msg":"worldgen loaded","svc":"creator","wasm":"C:\\Users\\nickb\\repos\\open-world-rpg-web\\.claude\\worktrees\\agent-ad033dba8ad6bdb2f\\worldgen\\pkg\\worldgen.wasm","sha256":"d38abb3027caa709","genVersion":1}
+{"time":"2026-11-08T05:20:09.526378-08:00","level":"INFO","msg":"creator ready","svc":"creator","llm":false,"auth":false}
+{"time":"2026-11-08T05:20:09.526378-08:00","level":"INFO","msg":"listening","svc":"creator","addr":":18194"}
+{"time":"2026-11-08T05:20:12.3866676-08:00","level":"INFO","msg":"minted world","svc":"creator","source":"preset","id":"bf378055-a804-4f8f-aec9-fc766b89a6ba","name":"Skugreltmark","seed":"777","genVersion":"1","atlasHash":"47ab199960df3ddc","existed":false,"atlasBytes":313336,"sites":187,"atlasMs":702,"totalMs":742,"clampChanges":0,"wasmSha256":"d38abb3027caa709"}

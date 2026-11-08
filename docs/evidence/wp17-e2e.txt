@@ -1,0 +1,28 @@
+[2026-11-08T13:19:49.460Z] build creator + fakeclaude binaries
+[2026-11-08T13:19:57.452Z] scratch database lodestone_wp04_wp17e2e
+[2026-11-08T13:19:59.349Z] PASS creator endpoint up (LODESTONE_CREATOR_LLM=1, fake Messages API)
+[2026-11-08T13:19:59.467Z] vite on 15177
+[2026-11-08T13:20:01.154Z] PASS page opens in seed-only mode  {"seed":"20261108","previewHash":"50ae4562cfd25265"}
+[2026-11-08T13:20:02.078Z] PASS seed-only mint: server atlas hash == browser preview hash  {"id":"69244f09-cf41-45a6-b55c-83aa925cf713","atlasHash":"50ae4562cfd25265","matches":true,"text":"Minted “Highmarch of Beigleifeild” (seed) id 69244f09-cf41-45a6-b55c-83aa925cf713 seed 20261108 · genVersion 1 · atlasHash 50ae4562cfd25265 Server atlas hash matches the browser preview. Server atlas 689 ms, 194 sites."}
+[2026-11-08T13:20:02.727Z] PASS Archipelago preset applied, preview regenerated  {"previewHash":"47488c4551b05a9d"}
+[2026-11-08T13:20:03.431Z] PASS preset mint: hashes match  {"id":"35a3c036-2415-4628-a631-efe70db41a23","atlasHash":"47488c4551b05a9d","matches":true,"text":"Minted “Highmarch of Beigleifeild” (preset) id 35a3c036-2415-4628-a631-efe70db41a23 seed 20261108 · genVersion 1 · atlasHash 47488c4551b05a9d Server atlas hash matches the browser preview. Server atlas 491 ms, 149 sites."}
+[2026-11-08T13:20:04.928Z] PASS slider edits switch the spec to "edited" and normalize it  "Clamped before preview and mint:elementWeights renormalized (strongest = 1, as the generator reads them)"
+[2026-11-08T13:20:05.936Z] PASS slider mint: hashes match  {"id":"15744155-1cba-40c4-b977-a3010ea0c496","atlasHash":"08da46628a4fce95","matches":true,"text":"Minted “Crown of Spires” (sliders) id 15744155-1cba-40c4-b977-a3010ea0c496 seed 20261108 · genVersion 1 · atlasHash 08da46628a4fce95 Server atlas hash matches the browser preview. Server atlas 775 ms, 201 sites."}
+[2026-11-08T13:20:06.923Z] highland preview b7d80ad28105bb49
+[2026-11-08T13:20:07.943Z] badlands preview e20e42678c3c2756
+[2026-11-08T13:20:08.428Z] PASS vibe filled the sliders; clamp notice shown  "From claude-haiku-5-5 (1 call): the sliders now show the result; adjust anything before minting.caveDensity clamped 1.4 → 1caveMaxDepth clamped 300 → 256lootThemes: dropped unknown tag \"gothic\""
+[2026-11-08T13:20:08.430Z] PASS vibe name in the name field
+[2026-11-08T13:20:09.142Z] PASS vibe mint: hashes match  {"id":"442b66fa-b7bf-4cde-91ee-d6564f4f7d4c","atlasHash":"a36fa22a676532b0","matches":true,"text":"Minted “The Drowned Cathedral Archipelago” (vibe) id 442b66fa-b7bf-4cde-91ee-d6564f4f7d4c seed 20261108 · genVersion 1 · atlasHash a36fa22a676532b0 Server atlas hash matches the browser preview. Server atlas 478 ms, 153 sites."}
+[2026-11-08T13:20:09.188Z] repeat vibe served from cache
+[2026-11-08T13:20:09.189Z] PASS fake Messages API saw exactly one request (second vibe was cached)  {"fakeCallsFlagOn":1}
+[2026-11-08T13:20:09.879Z] PASS creator endpoint restarted with LODESTONE_CREATOR_LLM=0 (key still set)
+[2026-11-08T13:20:10.799Z] PASS vibe button disabled with the flag off
+[2026-11-08T13:20:10.805Z] PASS flag-off notice shown  "Vibe text is off on this server (LODESTONE_CREATOR_LLM unset). Presets and sliders do everything."
+[2026-11-08T13:20:10.811Z] PASS POST /v1/vibe with the flag off -> 503 llm_disabled  {"status":503,"body":{"error":"llm_disabled","message":"vibe text is disabled (set LODESTONE_CREATOR_LLM=1 and ANTHROPIC_API_KEY on the creator server)"}}
+[2026-11-08T13:20:12.537Z] PASS flag off: preset mint still works  {"id":"bf378055-a804-4f8f-aec9-fc766b89a6ba","atlasHash":"47ab199960df3ddc","matches":true,"text":"Minted “Skugreltmark” (preset) id bf378055-a804-4f8f-aec9-fc766b89a6ba seed 777 · genVersion 1 · atlasHash 47ab199960df3ddc Server atlas hash matches the browser preview. Server atlas 702 ms, 187 sites."}
+[2026-11-08T13:20:12.538Z] PASS flag off: zero requests reached the (fake) model  {"fakeCallsAfter":1}
+[2026-11-08T13:20:12.543Z] PASS worlds table has one row per mint  ["Skugreltmark seed=777 gen=1 atlas=47ab199960df3ddc","The Drowned Cathedral Archipelago seed=20261108 gen=1 atlas=a36fa22a676532b0","Crown of Spires seed=20261108 gen=1 atlas=08da46628a4fce95","Highmarch of Beigleifeild seed=20261108 gen=1 atlas=47488c4551b05a9d","Highmarch of Beigleifeild seed=20261108 gen=1 atlas=50ae4562cfd25265"]
+[2026-11-08T13:20:12.543Z] PASS no page errors  []
+[2026-11-08T13:20:12.658Z] ALL PASS
+[2026-11-08T13:20:12.931Z] vibe cache cleanup: DEL creator:vibe:e6b33780ee730e1a... -> 1
+[2026-11-08T13:20:13.915Z] dropped lodestone_wp04_wp17e2e

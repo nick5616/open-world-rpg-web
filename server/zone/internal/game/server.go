@@ -23,6 +23,7 @@ import (
 
 	"lodestone/server/pkg/constants"
 	"lodestone/server/pkg/gameloop"
+	"lodestone/server/pkg/localsave"
 	"lodestone/server/pkg/movement"
 	"lodestone/server/pkg/proto"
 	"lodestone/server/pkg/snapshot"
@@ -30,6 +31,7 @@ import (
 	"lodestone/server/pkg/transport"
 	"lodestone/server/pkg/writebehind"
 	"lodestone/server/zone/internal/aoi"
+	"lodestone/server/zone/internal/explore"
 )
 
 // Config is everything a zone needs; main.go fills it from env.
@@ -59,6 +61,13 @@ type Config struct {
 	Queue          *writebehind.Queue
 	Metrics        *svc.Metrics
 	Log            *slog.Logger
+	// WP12 exploration (explore.go, party.go): the world's sites and towers
+	// (nil: no exploration, e.g. flat ground), the social service's parties
+	// (nil: no party ring) and the local-profile save store (nil: blobs in
+	// Hello are ignored, as before WP12).
+	Explore *explore.World
+	Parties PartyDirectory
+	Saves   *localsave.Store
 	// Now is the wall clock (tickets, server time); tests override it.
 	Now func() time.Time
 }
@@ -88,7 +97,9 @@ type Server struct {
 	cands    []snapshot.Candidate
 	w        proto.Writer
 	saveDiv  uint32
-	env      movement.Env // WP10: this tick's movement env (stepEnv)
+	env      movement.Env        // WP10: this tick's movement env (stepEnv)
+	hap      []explore.Happening // scratch for exploreTick
+	party    partyState
 
 	// Shared with the metrics goroutine.
 	connsMu sync.Mutex
@@ -142,6 +153,7 @@ func New(cfg Config) *Server {
 func (s *Server) Start() {
 	s.sched = gameloop.New(s.cfg.SpinTail)
 	s.sched.Add(s.loop)
+	s.startParties()
 	s.log.Info("zone ticking", "hz", constants.TickRateHz, "spinTail", s.cfg.SpinTail.String(), "clock", gameloop.PreciseClock)
 }
 
@@ -219,6 +231,7 @@ func (s *Server) onTick() {
 		i++
 	}
 	s.terrainTick(tick) // WP07: chunk cache interest (terrain.go)
+	s.exploreTick(tick) // WP12: towers, waypoints, discoveries, party ring (explore.go)
 
 	// Quantize once per entity and rebuild the grid; every client's snapshot
 	// reads these.
@@ -337,6 +350,7 @@ func (s *Server) join(sess *session) {
 	if err := sess.conn.SendReliable(proto.Encode(welcome)); err != nil {
 		sess.closed.Store(true)
 	}
+	s.exploreJoin(sess) // WP12: progress, pins (after Welcome, which the client needs first)
 	s.log.Info("join", "entity", e.ID, "character", e.CharacterID, "name", e.Name, "remote", sess.conn.RemoteAddr(),
 		"x", math.Round(spawn.X*100)/100, "z", math.Round(spawn.Z*100)/100)
 }
@@ -379,6 +393,7 @@ func (s *Server) leave(sess *session) {
 			delete(s.parties, e.PartyID)
 		}
 	}
+	s.exploreLeave(sess) // WP12: progress save
 	if s.cfg.Queue != nil {
 		s.checkpoint(e)
 	}
@@ -387,6 +402,7 @@ func (s *Server) leave(sess *session) {
 
 // checkpoint queues a position save (never blocks).
 func (s *Server) checkpoint(e *Entity) {
+	s.exploreCheckpoint(e) // WP12: changed progress rides the same cadence
 	if s.cfg.Store == nil || s.cfg.Queue == nil {
 		return
 	}

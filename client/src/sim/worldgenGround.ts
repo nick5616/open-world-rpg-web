@@ -1,10 +1,8 @@
 // A GroundQuery straight on worldgen.wasm (WP10): heightAt = collision_height,
 // waterAt = water_height, i.e. the exact functions the zone's
 // worldhost.Terrain evaluates (its cached fast path is bitwise equal). Used by
-// the movement goldens, the Node acceptance client and the debug
-// ?ground=worldgen mode. WP05's streamed terrain should answer the same
-// queries from LOD 0 chunks with chunkSurfaceHeight / chunkWaterHeight (same
-// bits, no wasm call per query).
+// the movement goldens and the Node acceptance client (the game itself uses
+// WP05's WorldGround, the same wasm calls, under WP12's StructureGround).
 //
 // Cost: ~1.7 us per collision_height and a few us per water_height from JS;
 // a walking step asks ~10 of them, a replay of 30 steps well under 1 ms.

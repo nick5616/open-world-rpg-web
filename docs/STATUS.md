@@ -1,7 +1,13 @@
 # Status
 
 One section per work package (spec 15). Each package edits only its own section.
-Gates: G0 ✅ · G1 ⏳ · G2 ⏳ · G3 ⏳ · G4 ⏳ · G5 ⏳
+Gates: G0 ✅ · G1 ✅ · G2 ✅ · G3 ⏳ · G4 ⏳ · G5 ⏳
+
+## Gate evidence (orchestrator)
+
+- **G0**: docs/evidence/wp00-dev-smoke.log.
+- **G1**: same chunk hashes in Node, Chromium and Go/wazero (docs/evidence/wp01-golden.txt, re-run on main after merge); one player walks generated terrain solo in `npm run dev:solo` (docs/evidence/wp05-*).
+- **G2**: two browsers see each other on *generated terrain* over the binary protocol under "thailand": docs/evidence/g2-two-browsers-terrain-ws.txt and g2-terrain-ws-*.png (run on main after the WP05 merge: 0 local corrections, 0 remote teleports; a first run on a heavily loaded machine (2 fps headless) logged one 58 cm eased remote jump, the re-run had none). 150-bot soaks within budget: wp03-soak-*, wp07-soak-spread.*. Chat and whispers: wp08-e2e.txt. Known gap: the WP06 acceptance harness doesn't start the social service, so its browsers log refused social sockets (harmless; WP08's e2e covers social).
 
 ## WP00: Monorepo scaffold and contracts ✅
 
@@ -266,3 +272,111 @@ Assumptions:
   - `server/pkg/go.mod/go.sum`: webtransport-go.
   - `server/pkg/README.md`.
   - `server/zone` (owned).
+
+## WP05: Chunk streaming, terrain rendering and textures ✅
+
+Branch `wp/05-terrain`. Details: `client/src/world/README.md`, decisions `docs/decisions/0009-world-rendering.md`, texture pipeline `tools/textures/README.md`.
+
+Works:
+- `npm run dev:solo` → Play: the solo player spawns on land at the atlas spawn (seed 20261108, same as WP04's official world; `?seed=` for others) and walks generated terrain. Ground = `WorldGround` straight over the wasm `collision_height` (the function WP07 runs): unit-tested bit-equal to the wasm and to `chunkSurfaceHeight` at 2,000 points; the lod-0 tile mesh is the same surface (same lattice, same diagonal, tested). The Vite config builds `worldgen.wasm` on first start if missing.
+- Workers: `min(hardwareConcurrency - 2, 4)` running worldgen.wasm (one compiled `Module` shared), priority queue with dedupe/cancel, transferred buffers; jobs for tiles, scatter, grass, atlas, hash, LRU eviction. Atlas built in a worker (~0.55 s) or loaded from IndexedDB (verified by hash); built tile meshes cached in IndexedDB keyed (atlasHash, genVersion, mesh format, lod, cx, cz), LRU cap 500 MB, read/written inside workers. Stores live in WP04's `lodestone` DB as `cache:atlas`, `cache:terrain-mesh`, `cache:terrain-meta` (prefix `cache:`, so `clearCaches()` never touches saves).
+- Terrain: plain three.js chunk manager. Quadtree of worldgen's own chunk tiles (65 × 65 at 2^lod m), split by distance with hysteresis, balanced to one level; predictive streaming (current view + 2.5 s along velocity + 60 m along the look direction + an idle "next ring"); uploads time-sliced (≤ 4 tiles and ≤ 5 ms per frame on high). Geomorphing: tiles replacing their parent ease out of the parent's shape over 0.6 s, merges ease in before the swap, edges bordering coarser tiles are stitched exactly to the coarser lattice, skirts cover transients. Distant terrain beyond the streamed tiles is one mesh straight from the atlas heightmap (coverage texture keeps the two from overlapping).
+- Splat shader on `MeshStandardMaterial`: 9 texture-array layers (grass, dirt, highland rock, snow, sand, mud, forest floor, cliff, badlands cliff) blended by the generator's 6 splat weights + biome, height-blended, triplanar rock on slopes > ~50°, anti-tiling second sample, moisture/biome grass tint, flat measured mean colours until the arrays arrive (pbrMaterial rule), normal maps off on low.
+- Textures: 11 CC0 sets downloaded from 3dtextures.me by `tools/textures/fetch-sets.mjs` (reads each post's Drive folder) + 2 reused from refs/3d-portfolio-website (only marble-white and stone-column existed there; no terrain sets). `tools/textures/build-textures.mjs` (port of build-textures.mjs): per-set color/normal/ORM WebP, and KTX2 (Basis Universal, `ktx2-encoder` npm package driven in 2D-array mode) arrays: color 900 KB, normal 2.36 MB, ORM 378 KB. `pbrMaterial.ts` rules applied in the terrain loader. `CREDITS.md`.
+- Scatter: procedural trees (3 archetypes × 2 mesh LODs + runtime-rendered impostor billboards beyond 200 m), rocks, bushes, grass tufts from the generator records, plus dense grass clumps from workers; world-wide InstancedMeshes re-binned by distance, per-instance dithered LOD cross-fades and far-edge fade-in on the GPU; stable ids kept per instance (`idAt`, `hide(id)`).
+- Shared wind field `client/src/world/wind.ts` (CPU `windAt`/`windGust` + `WIND_GLSL`, from WorldSpec windDirection) drives grass, leaves, bushes, clouds.
+- Sky: analytic single scattering (Rayleigh + Mie, Kasten–Young airmass) driven by the world clock, sun disk, moon, stars, drifting clouds; sun/moon light colour and sky ambient from the same model. Water: tile water with exact per-vertex depth fade + camera-following sea plane, sky reflection, moving normals, glints, foam. Shadows: CSM, 3 cascades high / 2 medium / none low, patched so other packages' plain materials use cascade 0 only. Post: height fog with sun in-scattering from depth, god rays at half res (high), bloom (medium/high), ACES, lift/gamma/gain grade per time of day and biome. Every effect has a tier switch (`client/src/world/config.ts` WORLD_TIERS + WP02 presets).
+- Debug: HUD chunk queue / loaded filled; F4 adds terrain tile outlines coloured by LOD; debug panel World section: "Regenerate chunk + compare hash" (worker build, main-thread build and the hash the loaded mesh was built from: MATCH in the benchmark) and per-biome teleports; `window.__lodestoneWorld`.
+- Traversal benchmark `client/src/world/bench/traversal.mjs` (`npm run bench -w client`, against the production build): headless Chromium on the real GPU via ANGLE/D3D11 (an RTX 3070, the spec's high-tier reference class), 20 s walk + a 43 s flight at 80 m/s through forest → highlands → snowpeak → badlands → wetland → meadow, then beauty shots. Results (`docs/evidence/wp05-traversal.md`, `wp05-traversal-{high,low}.json`, log `wp05-traversal-run.txt`):
+
+  | Budget | High 1920×1080 | Low 1280×720 |
+  | --- | --- | --- |
+  | Draw calls ≤ 400 | max 215 | max 79 |
+  | Triangles ≤ 1.5 M | max 1.46 M all passes (1.01 M visible + shadow maps) | max 0.47 M (no shadows on low) |
+  | Long tasks > 50 ms | 0 | 0 |
+  | JS heap ≤ 600 MB | max 73 MB | max 61 MB |
+  | Chunk generation ≤ 8 ms (worker, wasm) | p95 5.8 ms, mean 3.3 ms (mesh build +2.5 ms) | p95 6.4 ms, mean 4.3 ms |
+  | Download before first playable ≤ 15 MB gz | 4.3 MB (JS 0.41, wasm 0.38, KTX2 3.7) | 2.0 MB (no normal array on low) |
+  | Frame time (16.6 / 33 ms) | p99 16.8 ms at vsync, 0 dropped; uncapped (`LODESTONE_BENCH_UNCAPPED=1`, earlier build) p50 1.7–2.3 ms, p99 9 ms | p99 16.8 ms at vsync |
+  | First playable | 3.05 s after navigation (local preview server) | 1.85 s |
+
+- Screenshots: `docs/evidence/wp05-meadow.png`, `wp05-forest.png`, `wp05-snowpeak.png`, `wp05-valley-sunset.png`, `wp05-dawn-fog.png`, `wp05-lod-tiles.png` (LOD outlines), `wp05-debug-panel.png` (hash MATCH).
+- Tests: 34 vitest tests in `client/src/world` (quadtree coverage/balance/hysteresis/fallback, tile index diagonal, lod-0 mesh = collision surface, full morph = parent lattice, skirt/face orientation, water depth, worker pool priorities/cancel, LRU, ground = wasm, spawn on land, grass determinism, wind convention, atmosphere colours, CSM patch, texture manifest contract); `node --test` for tools/textures. tsc/eslint clean.
+
+Known gaps:
+- Frame-time budgets are verified only on an RTX 3070 (headless, real GPU). The low tier's "integrated GPU at 720p" budget is not measured on integrated hardware; SwiftShader (software GL) is far slower than any GPU and not representative. Medium tier not benchmarked separately.
+- "No visible pops at walking speed" is by construction (time-based geomorphs, stitched edges, dithered scatter LODs) and checked by eye in captures; there is no automated pixel-pop metric.
+- Trees, rocks and bushes are procedural low-poly meshes; impostors are single-view billboards rendered at load, not baked octahedral impostors; leaves are solid canopies (shadows dapple per canopy, not per leaf; no alpha-tested leaf cards).
+- Not built (spec 12 extras outside the WP05 list): SSAO, cloud shadows, weather particles, rain wetness (a `uWet` uniform exists in the terrain shader), snow accumulation, fireflies/dust motes, ambient soundscapes, LUT files (grading is parametric), dynamic resolution, far cascades updated every few frames, shader warmup for world materials (programs compile during the loading veil instead).
+- Horizon tiles per region are not baked at mint: the distant mesh is built on the client from the atlas heightmap (one 129 × 129 mesh, cheap).
+- Water has no refraction or reflections of terrain (by spec), and river surfaces follow the 2 m water lattice.
+- The mesh cache key adds the atlas hash and a mesh-format version to the spec's (genVersion, chunk, lod).
+- The texture pipeline needs `npm install` of `sharp` and `ktx2-encoder` (devDependencies of `tools/textures`); built outputs are committed.
+
+Assumptions:
+- Solo world = `spec_from_seed(20261108)` regenerated locally (no server to download the atlas from); online, WP06 should pass the world's seed/atlas.
+- Spawn: solo teleports to the atlas spawn via the debug-store teleport (the controller's hard-move API); online spawn stays with the zone server (`WorldCanvas spawnOnLand` defaults to SOLO).
+- Shared files touched (minimal): `client/src/scene/GameCanvas.tsx` (`environment` and `ownComposer` props), `client/src/screens/PlayScreen.tsx` (`<WorldCanvas />` instead of `<GameCanvas />`; takes the same props, so WP06's `onStep` moves over unchanged), `client/src/hud/DebugPanel.tsx` (mounts the World section), `client/vite.config.ts` (build wasm if missing; ES-module workers), `client/package.json` (`bench` script), `package-lock.json` (new `tools/textures` workspace), `CREDITS.md` (new, root), `docs/decisions/0009-world-rendering.md` (new). No contract or worldgen changes.
+
+## WP17: WorldSpec creator tool ✅
+
+Branch `wp/17-creator`. Details: `tools/creator/README.md`, `tools/creator/server/README.md`, decisions `docs/decisions/0017-creator-tool.md`.
+
+Works:
+- Web app (`tools/creator/web`, Vite on 5177, `/v1` proxied to the endpoint): seed field with Random and **From seed** (spec_from_seed via the wasm, the default path; minting sends only the seed), name field, 7 presets (Archipelago, Highland, Badlands + original Frostreach, Mirewood, Verdant Vale, Starfall Wilds) laid over the seed's spec, a slider for every numeric field from `WORLDSPEC_RANGES` (weights grouped with share %), palette / name grammar pickers, loot theme chips capped at 4, vibe box (disabled with a notice when the server's flag is off), mint button, minted-world list.
+- Live 2D atlas preview built by worldgen.wasm in a Web Worker (debounced 200 ms, latest-wins): biomes with hillshade, sea/lakes, rivers, region grid with names and elements, towers, settlements to scale with names, structures, cave mouths, waypoints, landmarks, camps, spawn; stats (atlas hash, ms, size, land %, sea level, peak, 800 m POI coverage, site counts by kind, biome shares) and a region table. Rendering adapted from `worldgen/debug/`.
+- Normalize gate identical in TS (`web/src/spec/normalize.ts`, ajv 2020) and Go (`server/internal/spec`, santhosh-tekuri/jsonschema): structural validation against the contract schema minus the clampable constraints, clamp (ranges, half-up integer rounding, weights / max, name cleaning + word-prefix blocklist, canonical uint64 seed, unknown/duplicate/surplus loot tags dropped), strict validation. 42 shared fixtures (`tools/creator/fixtures/normalize.json`) replayed by Go with exact float equality; idempotence tested.
+- Go endpoint (`tools/creator/server`, :8094): `GET /v1/config`, `GET /v1/worlds`, `POST /v1/normalize`, `POST /v1/mint` (`{seed}` = spec_from_seed untouched; `{spec}` = normalized) -> wazero atlas_build -> `worlds` row `(name, seed, canonical spec, gen_version "1", atlas_hash 16 hex, official=false)`, same format as WP07's worldhost; re-minting the same world returns the existing row. Bearer token option (required in production). Metrics.
+- Vibe path behind `LODESTONE_CREATOR_LLM=1` + `ANTHROPIC_API_KEY`: one plain net/http Messages API call (`claude-haiku-5-5`, `output_config.format` JSON schema, effort low), normalize, at most one retry, creator's seed always wins, Redis cache by sha256(normalized prompt + specVersion). With the flag off the model client is never constructed (`TestFlagOffNeverReachesModel` + the process test count zero requests on an injected transport and a reachable fake API).
+- Tests: Go unit (normalize/fixtures, model schema, wazero host vs golden atlas hashes, store with concurrent dedupe on a scratch DB, vibe client/service against the fake API incl. retry, refusal, 500, cache), `creator_integration_test.go` (builds and runs the binary: mint from seed (golden hash for seed 1234), sliders and vibe, rows in Postgres, cache in Redis, restart flag off = 0 model requests); 12 vitest tests (fixtures fresh, clamps, presets in range and through the wasm, slider coverage). eslint, tsc, go vet, gofmt clean.
+
+Evidence (`npm run e2e -w @lodestone/creator`: built endpoint + fake Messages API + Vite + headless Chromium, scratch DB):
+- `docs/evidence/wp17-e2e.txt`: 20 checks, ALL PASS. Mints from seed only, Archipelago preset, slider edits (source "sliders") and vibe text (fake model; caveDensity 1.4 -> 1, caveMaxDepth 300 -> 256, tag "gothic" dropped), and with the flag off a Frostreach preset mint; every server atlas hash equals the browser preview's; repeat vibe served from cache; flag off: vibe button disabled + notice, `POST /v1/vibe` 503, fake model request count unchanged.
+- Mint logs `docs/evidence/wp17-mint-flag-on.txt`, `wp17-mint-flag-off.txt`, fake model log `wp17-fake-model.txt`, rows `wp17-worlds.json`, test run `wp17-tests.txt`.
+- Screenshots `docs/evidence/wp17-01-seed-only.png`, `wp17-02-preset-archipelago.png`, `wp17-03-sliders.png`, `wp17-04-preset-highland.png`, `wp17-04-preset-badlands.png`, `wp17-05-vibe.png`, `wp17-06-flag-off-frostreach.png`.
+
+Known gaps:
+- The real Messages API was never called (no key in this run, and tests must not): the request shape follows the current docs (`output_config.format` json_schema, `anthropic-version: 2026-10-21`) but is verified only against the fake. First real use should check one response by hand.
+- Uses its own wazero host (`internal/worldgen`, adapted from the golden harness) because WP07's `server/pkg/worldhost` was not on main; switch to it after WP07 merges (row format already matches).
+- No world deletion, renaming or "make official" in the tool; minted worlds are `official=false` and show up in the account/director world list immediately. Nothing stops a creator from minting many worlds (admin tool; protect it with `LODESTONE_CREATOR_TOKEN` and keep it off the public internet).
+- `npm run dev` does not start the creator (run `npm run server` + `npm run dev` in `tools/creator`); not wired into CI beyond the workspace test/lint runs (the Go process test skips without infra/wasm unless `LODESTONE_REQUIRE_*`).
+- The vibe cache in local Redis is lost on restart (no persistence); it only costs a model call.
+
+Assumptions:
+- "Validate then reject" applies to structure; ranges and tags are clamped (decision 0017). Unknown palette / nameGrammar values and extra keys are rejected, not guessed.
+- "Renormalize weights" = divide each group by its max (the generator's own normalization), all-zero -> all 1. Seed-only mints are stored exactly as spec_from_seed returns them.
+- The model never chooses the seed; `specVersion` is clamped to 1.
+- Creator names use the worldgen blocklist per word prefix; a name that cleans to under 3 characters is rejected.
+- Shared files touched: `go.work` (+ `./tools/creator/server`), `package-lock.json` (new workspace `@lodestone/creator` with `ajv@8`). No root `package.json` change (`tools/*` already a workspace glob), no contract or migration change.
+
+## WP12: Towers, waypoints and the map ✅
+
+Branch `wp/12-map`. Decisions: `docs/decisions/0012-exploration.md`. Contract change: `docs/cr/003-exploration.md`. Package docs: `client/src/world/structures/README.md` (structure overlay interface for WP20), `server/pkg/structures/README.md`, `server/zone/internal/explore/README.md`, `client/src/ui/map/README.md`, `server/zone/README.md` (Exploration).
+
+Works:
+- **Structure overlay on the ground query** (TS `client/src/world/structures/overlay.ts`, Go `server/pkg/structures`): `ground = max(terrain, structures)`. Towers are solids of revolution built from every atlas tower site: 4 m top, 13 m upper wall, 1.4 m rest ledge, lower wall down to the terrain, 80° walls, top 28 m above the highest ground under it. Bit-identical: a Go-generated golden file (~4,400 points incl. the real seed-20261108 world over wasm terrain: heights, structure index, normals) is replayed by vitest. `WorldRuntime.ground`, the zone's movement ground and the bots' prediction ground all include it. Until WP10 adds slope rules the ground snap carries walkers up the walls; the zone process test walks up a tower (41.5 m) predicting on the client-side overlay and agrees with the zone binary **to the centimetre**.
+- **Visuals**: towers as one merged mesh of the exact collision profile (procedural dressed stone, merlons, flagstone top, floating lodestone crystal amber → cyan when unlocked, light pillar over unlocked towers); instanced waypoint stones with a rune lit when activated. 1 + 4 draw calls for all of them.
+- **Zone exploration** (`server/zone/internal/explore`, glue in `internal/game/{explore,party,persist_progress}.go`), server-validated at 10 Hz from position only: tower top (the overlay says you stand on that tower's platform) unlocks the tower, reveals its region and grants 150 XP once; waypoint touch (3 m) activates it and sets the respawn point; a discovery radius per site kind (settlements, structures, towers, caves, landmarks) grants XP once per character; wizard-wars level curve. Fast travel (`Interact` site) to unlocked towers/waypoints with a cooldown and denial reasons; `Server.Teleport` + teleport Event (kind 2) to self and observers; `Server.RespawnPoint` hook for WP13. Personal pins (10) and one party pin per member.
+- **Party ring** (was a stub): the zone polls the social service's `partyof:{id}` keys every 2 s and sets the snapshot `partyId`; party members see each other at any distance (compass, map). Party pins are relayed by the zone and stored in Redis (`partypins:{worldId}:{partyId}`).
+- **Persistence**: accounts in `characters.level/xp/last_waypoint` + `character_progress` bitsets + a new `pins` column (migration `0012_exploration_pins.sql`), one transaction through the write-behind queue on change/checkpoint/logout; the session is read-only for progress if the login read fails. Local profiles: the zone verifies `Hello.saveBlob` (localsave), loads progress and position from it, and re-issues `SaveBlob` on change (at most every 5 s) and at checkpoints; the client stores it in IndexedDB.
+- **Client** (`client/src/ui/map`): map on M (paper for unrevealed regions, atlas terrain with contours for revealed ones, sites by visibility, pins, party members, player arrow, zoom/pan, select + "Fast travel here", right-click pin, Shift+right-click party pin), compass strip (heading, party members, pins, distances), discovery/tower/waypoint/level toasts, `window.__lodestoneMap` debug handle. `zoneSession` gained `onEvent`/`onSaveBlob`/`sendInteract`.
+- Tests: Go unit (`structures`; `explore`: rules, levels, pins, payload vectors), in-process zone sessions (tower climb → unlock → fast travel + cooldown, waypoint/respawn, party ring + party pins + leaving, progress save/reload with no double XP, local-profile blob round trip on real Redis), `server/zone/zone_explore_integration_test.go` (zone binary); vitest (overlay golden, payload vectors from Go, reducer, compass maths, map visibility). `npm run lint` clean (eslint, tsc, go vet, gofmt, clippy).
+
+Evidence (`node client/src/ui/map/dev/acceptance.mjs`: real account + director + zone + social on private ports and a scratch DB, two headless Chromium processes on the GPU, dev auth): `docs/evidence/wp12-acceptance.txt`, ALL PASS. Party via `/invite` + the party frame; both on each other's compass; waypoint touch; a 511 m sprint + climb of "The Forgotten Spire" → region 5 revealed, +190 XP for the tower (40 discovery + 150 climb) and +50 for a mine passed on the way; Alyssa's party pin (map UI) on Bruno's map and compass; a personal pin stays personal; fast travel waypoint → tower through the map UI (2 teleport Events, lands on the top); no XP granted twice; a reload restores revealed regions/XP/unlocks/pins from Postgres; no page errors. Also `wp12-acceptance.json`, zone log `wp12-zone-exploration.log`, screenshots `wp12-tower.png`, `wp12-tower-top.png`, `wp12-map-revealed.png`, `wp12-map-pins.png`, `wp12-map-bruno.png`, `wp12-compass.png`, `wp12-compass-strip.png`, `wp12-fast-travel-top.png`.
+
+Known gaps:
+- Climbing proper is WP10's: today the ground snap walks up the 80° walls (no stamina, instant). WP10's slope rules apply to tower walls unchanged, but WP10 must read normals/slopes through the combined ground (`normalAt`/`slopeAt` on `StructureGround` in TS, `NormalAt` on `structures.Ground` in Go), not the bare terrain. `verticalOK` already accepts snapping up a tower wall.
+- If WP09/WP20 change generator output (new genVersion), regenerate the overlay golden (`go test ./structures -run Golden -update` in `server/pkg`); the TS test re-checks it.
+- Tower merlons are visual only (a heightfield has no parapets); waypoint stones have no collision.
+- Party pins on another zone arrive on the next 2 s poll; the party ring is per zone (the cross-zone far ring is spec 9's `worldpos` feed, not built).
+- Local profiles: a blob issued while the socket is open but lost before IndexedDB stores it leaves the stored blob stale (spec 11's scheme has no ack). Pins in a local blob are not copied into `character_progress.pins` on upgrade (account service, WP04).
+- Offline (`dev:solo`) the map and compass work but nothing reveals (progress is the server's).
+- Migration 0012 was applied only to the scratch acceptance DB, not the shared dev DB: run `npm run migrate` after merge (until then progress saves fail and retry, logged).
+- `client/src/input/useMouseLook.ts` grabs pointer lock on a mousedown on any canvas; the map canvas stops that event. Other packages adding canvases in overlays need the same.
+
+Assumptions:
+- Discovery set = settlements, structures, towers, cave mouths, landmarks (not waypoints, not enemy camps); XP values and radii in `explore.go`. Climbing a tower gives its own 150 XP on top of the discovery.
+- One party pin per member; a member can remove only their own.
+- Revealed regions are derived from unlocked towers (no extra column); `last_waypoint` stores the site's stable id as int64 bits.
+- Fast travel has a 2 s cooldown and works anywhere (no combat yet); towers arrive on the top centre, waypoints 2.5 m in front of the stone.
+- Shared files touched: `client/src/net/zoneSession.ts` (callbacks + `sendInteract`), `client/src/net/NetPlay.tsx` (2 lines), `client/src/world/core/runtime.ts` (ground = overlay), `client/src/world/WorldCanvas.tsx` (mount `StructuresLayer`), `client/src/screens/PlayScreen.tsx` (mount `ExplorationHud`), `server/zone/{main.go, internal/game/server.go, session.go, entity.go}` (hooks, a few lines each), `server/pkg/localsave/state.go` (optional `Pins`), `tools/bots/{bot.go,main.go,terrain.go}` (predict on the overlay), `contracts/events.md`, new `contracts/migrations/0012_exploration_pins.sql`, `docs/cr/003-exploration.md`, README rows in `server/pkg/README.md` and `client/src/world/README.md`, a section in `server/zone/README.md`. No `protocol.yaml`, `social.yaml`, constants or worldgen change.

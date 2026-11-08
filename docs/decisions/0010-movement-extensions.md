@@ -49,7 +49,7 @@ toggling can never chain double jumps. Requiring `vy < 0` keeps WP02's
 ## Stamina as integers, the wire carries it exactly
 
 Stamina is integer fine units (60 per point) so 10/s is exactly 10 per step;
-`SelfState.stamina` (x10) cannot carry that, so CR 003 appends `moveExt`
+`SelfState.stamina` (x10) cannot carry that, so CR 004 appends `moveExt`
 (stamina + mode timer). Without exact stamina a replay from a snapshot would
 run out a step early or late and turn one correction into a chain.
 
@@ -78,10 +78,11 @@ legal upward speed of any mode (jump, carried vy, strongest updraft, lunge) or
 onto the ground / float level, and a drowning respawn must land on dry
 ground. All eight terrain goldens pass it frame by frame.
 
-## Browser debug ground
+## Towers are just ground
 
-WP05 owns streamed terrain and will plug its ground into the client. To run
-the real game client against the zone on generated terrain before that,
-`?ground=worldgen` (dev only) loads worldgen.wasm in the page, predicts on it
-and draws a crude heightfield patch. It sits in `client/src/sim/dev/` behind a
-two-line hook in `PlayScreen`/`NetPlay` so WP05 can drop it.
+WP12's towers are a structure overlay combined with the terrain by max
+(`StructureGround` / `structures.Ground`), with 80° walls and a walkable
+ledge. The step reads only `heightAt`/`waterAt` of whatever ground it is
+given, so on the combined ground towers are climbed with stamina (resting on
+the ledge refills the wheel), mantled, and glided from, with no
+tower-specific code. Water passes through to the terrain's.

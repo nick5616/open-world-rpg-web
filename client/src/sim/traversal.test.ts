@@ -39,7 +39,7 @@ import { fromSelf, packFlags, packMoveExt, selfFields } from './moveWire';
 import { parseUpdrafts, UpdraftColumns } from './updraft';
 import { isRaining, weatherHash } from './weather';
 import { goldenPath, wasmPath } from './golden/io';
-import { runWp10, WP10_SCENARIOS, WP10_SEED, type Wp10Golden } from './golden/wp10';
+import { runWp10, scenarioGround, WP10_SCENARIOS, WP10_SEED, type Wp10Golden } from './golden/wp10';
 import { loadWorldgenGround } from './worldgenGround';
 
 /** Yaw (u16) whose forward is -x (west): forward = (-sin, -cos) = (-1, 0). */
@@ -367,7 +367,7 @@ describe.skipIf(!haveWasm)('WP10 terrain goldens (worldgen.wasm, seed 20261108)'
   for (const sc of WP10_SCENARIOS) {
     it(`${sc.name}: stepMovement reproduces the committed golden bit-exactly`, () => {
       const file = JSON.parse(readFileSync(goldenPath(`wp10_${sc.name}`), 'utf8')) as Wp10Golden;
-      const fresh = runWp10(sc, ground!, ground!.wg.genVersion);
+      const fresh = runWp10(sc, scenarioGround(sc, ground!), ground!.wg.genVersion);
       expect(file.frames).toEqual(fresh.frames);
       expect(file.initial).toEqual(fresh.initial);
       for (let i = 0; i < fresh.states.length; i++) {

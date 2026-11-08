@@ -5,7 +5,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { SCENARIOS, runScenario } from './scenarios';
 import { goldenPath, serializeGolden, wasmPath } from './io';
 import { loadWorldgenGround } from '../worldgenGround';
-import { runWp10, summarize, WP10_SCENARIOS, WP10_SEED } from './wp10';
+import { runWp10, scenarioGround, summarize, WP10_SCENARIOS, WP10_SEED } from './wp10';
 
 for (const sc of SCENARIOS) {
   const g = runScenario(sc);
@@ -18,7 +18,7 @@ if (!existsSync(wasmPath)) {
 } else {
   const ground = await loadWorldgenGround(readFileSync(wasmPath), WP10_SEED);
   for (const sc of WP10_SCENARIOS) {
-    const g = runWp10(sc, ground, ground.wg.genVersion);
+    const g = runWp10(sc, scenarioGround(sc, ground), ground.wg.genVersion);
     const p = goldenPath(`wp10_${sc.name}`);
     writeFileSync(p, serializeGolden(g));
     console.log(`wrote ${p}

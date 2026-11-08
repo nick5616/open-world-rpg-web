@@ -1,8 +1,8 @@
 // In-world screen: the canvas plus DOM overlays. Lazy-loaded by App so the
 // title screen doesn't pull in three.js. Online (WP06) when the account
-// screen handed over a ReadySession, else the offline placeholder world
-// (solo builds, "continue offline").
-import { GameCanvas } from '../scene/GameCanvas';
+// screen handed over a ReadySession, else the generated world offline
+// (solo builds, "continue offline"); both render through WP05's WorldCanvas.
+import { WorldCanvas } from '../world/WorldCanvas';
 import { DebugHud } from '../hud/DebugHud';
 import { DebugPanel } from '../hud/DebugPanel';
 import { Crosshair, LockHint } from '../hud/Overlays';
@@ -13,9 +13,8 @@ import { NetPlay, useOnlineSession } from '../net/NetPlay';
 import { DEBUG, SOLO } from '../config';
 // WP08: renders nothing until the play flow calls startSocial() (client/src/social/README.md).
 import { SocialOverlay } from '../social';
-// WP10 dev: ?ground=worldgen walks on generated ground offline too.
-import { wantsWorldgenGround } from '../sim/dev/debugWorldgen';
-import { WorldgenDebugCanvas } from '../sim/dev/WorldgenDebugCanvas';
+// WP12: compass, discovery toasts, map (M).
+import { ExplorationHud } from '../ui/map/ExplorationHud';
 
 function DebugLayer() {
   useDebugHotkeys();
@@ -34,12 +33,13 @@ export default function PlayScreen() {
   const online = !SOLO && ready !== null;
   return (
     <>
-      {online ? <NetPlay ready={ready} /> : wantsWorldgenGround() ? <WorldgenDebugCanvas /> : <GameCanvas />}
+      {online ? <NetPlay ready={ready} /> : <WorldCanvas />}
       <Crosshair />
       <StaminaWheel />
       <LockHint />
       {DEBUG && <DebugLayer />}
       <SocialOverlay />
+      <ExplorationHud />
     </>
   );
 }

@@ -1,0 +1,108 @@
+{
+  "tower": {
+    "site": 35,
+    "region": 5,
+    "name": "The Forgotten Spire",
+    "x": 1888,
+    "z": 1760,
+    "topY": 188.94663892311667,
+    "maxR": 11.14662317019444,
+    "ledgeR": 7.692250749210045,
+    "unlocked": false,
+    "d": 511.13647883906697
+  },
+  "waypoint": {
+    "index": 145,
+    "kind": "waypoint",
+    "name": null,
+    "region": 9,
+    "x": 1920,
+    "z": 2272,
+    "d": 6.670832032063167
+  },
+  "alyssa": {
+    "level": 3,
+    "xp": 340,
+    "revealed": 32,
+    "lastWaypoint": 145,
+    "towersUnlocked": 1,
+    "waypointsUnlocked": 1,
+    "discoveries": 3,
+    "pins": [
+      {
+        "party": false,
+        "slot": 0,
+        "color": 0,
+        "x": 1587.2,
+        "z": 1854.58,
+        "owner": ""
+      },
+      {
+        "party": true,
+        "slot": 0,
+        "color": 0,
+        "x": 2144.71,
+        "z": 1939.91,
+        "owner": "Alyssa"
+      }
+    ],
+    "partyId": 1679697870,
+    "stats": {
+      "events": 4,
+      "discoveries": 0,
+      "towers": 0,
+      "xpGained": 0,
+      "teleports": 0
+    },
+    "toasts": [],
+    "mapOpen": false,
+    "online": true
+  },
+  "bruno": {
+    "level": 2,
+    "xp": 100,
+    "revealed": 0,
+    "lastWaypoint": -1,
+    "towersUnlocked": 0,
+    "waypointsUnlocked": 0,
+    "discoveries": 1,
+    "pins": [
+      {
+        "party": true,
+        "slot": 0,
+        "color": 0,
+        "x": 2144.71,
+        "z": 1939.91,
+        "owner": "Alyssa"
+      }
+    ],
+    "partyId": 1679697870,
+    "stats": {
+      "events": 10,
+      "discoveries": 1,
+      "towers": 0,
+      "xpGained": 100,
+      "teleports": 2
+    },
+    "toasts": [],
+    "mapOpen": false,
+    "online": true
+  },
+  "xpGained": 240,
+  "compassBruno": [
+    {
+      "rel": 0.2499691163304849,
+      "dist": 506.3770864681774,
+      "color": "#4cc9f0",
+      "label": "Alyssa",
+      "kind": "party"
+    },
+    {
+      "rel": 0.9139010548312196,
+      "dist": 395.84402509069145,
+      "color": "#ff5a5f",
+      "label": "Alyssa",
+      "kind": "pin"
+    }
+  ]
+}

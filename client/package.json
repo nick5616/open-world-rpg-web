@@ -15,7 +15,8 @@
     "net:accept": "node src/net/dev/acceptance.mjs",
     "net:solo-smoke": "node src/net/dev/solo-smoke.mjs",
     "traversal:accept": "vite-node src/sim/dev/traversal-acceptance.ts",
-    "traversal:browser": "vite-node src/sim/dev/traversal-browser.ts"
+    "traversal:browser": "vite-node src/sim/dev/traversal-browser.ts",
+    "bench": "node src/world/bench/traversal.mjs"
   },
   "dependencies": {
     "@lodestone/contracts": "*",

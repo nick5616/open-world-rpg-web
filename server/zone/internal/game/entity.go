@@ -19,7 +19,8 @@ type Entity struct {
 	Name        string
 	CharacterID string
 	Level       uint8
-	PartyID     uint32 // 0 = none; party ids arrive with WP08 (stub field)
+	PartyID     uint32        // 0 = none; WP12 sets it from the social service's party (party.go)
+	x           *exploreState // WP12 exploration progress (explore.go), shared with the session
 
 	Move       movement.State
 	Yaw, Pitch float64 // radians, from the newest applied input

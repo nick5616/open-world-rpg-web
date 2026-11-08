@@ -7,7 +7,7 @@ import (
 	"lodestone/server/pkg/proto"
 )
 
-// SelfState packing (protocol.yaml v2, CR 003). Position and velocity are
+// SelfState packing (protocol.yaml v2, CR 004). Position and velocity are
 // cm-quantized as before; the WP10 state travels exactly: flags bits 0-3 are
 // Flag*, bits 4-7 the lunge counter; moveExt is stamina (fine units) in bits
 // 0-15 and the mode timer in bits 16-23. The TS twin is client/src/sim/moveWire.ts.
