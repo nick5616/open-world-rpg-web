@@ -292,12 +292,18 @@ func (b *bot) run(ctx context.Context) {
 				}
 			}
 			ack := b.dec.Latest()
-			b.mu.Unlock()
 			// Keep only the newest INPUT_REDUNDANCY frames.
 			if len(frames) > constants.InputRedundancy {
 				frames = frames[len(frames)-constants.InputRedundancy:]
 			}
-			_ = a.conn.SendUnreliable(proto.Encode(&proto.Input{AckTick: ack, Frames: frames}))
+			// WP16: send to whoever is active NOW, under the lock switchTo takes:
+			// frames go either to the old owner before the switch (and switchTo
+			// resends them from b.sent) or to the new one after it, never lost
+			// in between.
+			if a := b.active; a != nil {
+				_ = a.conn.SendUnreliable(proto.Encode(&proto.Input{AckTick: ack, Frames: frames}))
+			}
+			b.mu.Unlock()
 		}
 	}
 }
