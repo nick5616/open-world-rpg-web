@@ -62,8 +62,8 @@ func Duration(key string, def time.Duration) time.Duration {
 // stock Postgres/Redis ports are commonly taken on dev machines, so local
 // infra listens on 55432/56379.
 const (
-	DefaultPostgresURL  = "postgres://lodestone:lodestone@localhost:55432/lodestone?sslmode=disable"
-	DefaultRedisAddr    = "localhost:56379"
+	DefaultPostgresURL  = "postgres://lodestone:lodestone@127.0.0.1:55432/lodestone?sslmode=disable"
+	DefaultRedisAddr    = "127.0.0.1:56379"
 	DefaultDirectorPort = 8090
 	DefaultAccountPort  = 8091
 	DefaultZonePort     = 8092

@@ -74,7 +74,7 @@ func main() {
 	flag.StringVar(&cfg.zoneID, "zone-id", "zone-voicesoak", "zone id (ticket audience)")
 	flag.StringVar(&cfg.socialURL, "social", "", "social ws URL (default from -spawn)")
 	flag.StringVar(&cfg.worldID, "world", "00000000-0000-4000-8000-00000000b011", "world id (uuid)")
-	flag.StringVar(&cfg.redisAddr, "redis", envOr("LODESTONE_REDIS_ADDR", "localhost:56379"), "redis")
+	flag.StringVar(&cfg.redisAddr, "redis", envOr("LODESTONE_REDIS_ADDR", "127.0.0.1:56379"), "redis")
 	flag.Float64Var(&cfg.clusterR, "cluster", 14, "cluster radius, m")
 	flag.BoolVar(&cfg.speakFlag, "speaking-flag", true, "set InputFlag.speaking while publishing")
 	flag.IntVar(&cfg.traceBot, "trace-bot", -1, "log one bot's LiveKit SDK debug output (SDP timing)")
