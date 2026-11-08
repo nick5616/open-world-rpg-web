@@ -318,6 +318,7 @@ func (b *bot) failover(ctx context.Context) bool {
 				b.mu.Lock()
 				b.active = bc
 				b.st.Failovers++
+				b.failedOverAt = time.Now()
 				b.st.FailoverMs = append(b.st.FailoverMs, float64(time.Since(start).Milliseconds()))
 				b.st.FailoverRewindM = append(b.st.FailoverRewindM, math.Hypot(b.state.Pos.X-last.X, b.state.Pos.Z-last.Z))
 				b.mu.Unlock()

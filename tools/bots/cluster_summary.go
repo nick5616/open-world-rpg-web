@@ -45,6 +45,7 @@ type ClusterSummary struct {
 	GaveUp            int                `json:"failoversGaveUp"`
 	Discoveries       int                `json:"discoveries"`
 	DupDiscoveries    int                `json:"duplicateDiscoveries"`
+	Regranted         int                `json:"regrantedAfterFailover"`
 	Ownership         *ownershipStats    `json:"ownership,omitempty"`
 	Zones             []map[string]any   `json:"zones"`
 	ZoneTick          map[string]float64 `json:"zoneTickP99Ms"`
@@ -104,6 +105,7 @@ func clusterVerdict(s *Summary, bots []*bot, own *ownershipStats, zones []map[st
 		}
 		c.Discoveries += st.Discoveries
 		c.DupDiscoveries += st.DupDiscoveries
+		c.Regranted += st.RegrantedAfterFailover
 	}
 	c.HandoffGapMs, c.FailoverMs, c.FailoverRewindM = dist(gaps), dist(fo), dist(rw)
 	fail := func(f string, a ...any) { s.Failures = append(s.Failures, fmt.Sprintf(f, a...)) }
@@ -155,7 +157,7 @@ func printCluster(c *ClusterSummary) {
 		c.Handoffs, c.BotsThatCrossed, c.HandoffGapMs.P50, c.HandoffGapMs.P95, c.HandoffGapMs.Max, c.HandoffChecks, c.HandoffMismatches, c.HandoffMaxErrCm, c.HandoffIDChanges)
 	fmt.Printf("pre-connects %d (failed %d), standby kicks %d, drops %d, failovers %d (gave up %d), failover ms p50 %.0f max %.0f, rewind m p50 %.1f max %.1f\n",
 		c.Preconnects, c.PreconnectFails, c.StandbyKicks, c.Drops, c.Failovers, c.GaveUp, c.FailoverMs.P50, c.FailoverMs.Max, c.FailoverRewindM.P50, c.FailoverRewindM.Max)
-	fmt.Printf("discoveries %d, duplicated %d\n", c.Discoveries, c.DupDiscoveries)
+	fmt.Printf("discoveries %d, duplicated %d, re-granted after a failover (lost with the dead zone's unsaved queue) %d\n", c.Discoveries, c.DupDiscoveries, c.Regranted)
 	if o := c.Ownership; o != nil {
 		fmt.Printf("ownership: %d samples, listed twice across a handoff %d, truly owned twice %d, max playing-but-unowned %d, unowned two samples running %d, last %v\n",
 			o.Samples, o.InFlight, o.MaxDuplicated, o.MaxUnowned, o.UnownedSustain, o.OwnedPerZone)

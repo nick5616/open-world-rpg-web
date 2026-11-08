@@ -99,14 +99,15 @@ type bot struct {
 	lastFrame   proto.InputFrame
 	terrainAt   time.Time // next chunk-interest / water check
 	// WP16
-	entityID    uint32
-	lastAckSeq  uint32
-	lastSnapAt  time.Time
-	sent        []proto.InputFrame // newest frames (resent to a new owner)
-	postSwitch  int                // prediction checks after a switch still to count as handoff checks
-	target      *movement.Vec3     // cross persona: where to walk
-	crosser     bool               // WP16 -mode cross: this bot keeps crossing borders
-	discoveries map[uint32]int     // discovery Events per site (a repeat = a duplicated grant)
+	entityID     uint32
+	lastAckSeq   uint32
+	lastSnapAt   time.Time
+	sent         []proto.InputFrame   // newest frames (resent to a new owner)
+	postSwitch   int                  // prediction checks after a switch still to count as handoff checks
+	target       *movement.Vec3       // cross persona: where to walk
+	crosser      bool                 // WP16 -mode cross: this bot keeps crossing borders
+	discoveries  map[uint32]time.Time // first discovery Event per site (a repeat = a duplicated grant)
+	failedOverAt time.Time            // last successful failover
 
 	// stats (reader goroutine writes under mu)
 	st botStats
@@ -131,25 +132,26 @@ type botStats struct {
 	PredResyncs   int     `json:"predResyncs"`
 	PredMismatch  int     `json:"predMismatches"`
 	// WP16 multiple zones.
-	Handoffs         int       `json:"handoffs,omitempty"`
-	HandoffGapsMs    []float64 `json:"-"`
-	HandoffChecks    int       `json:"handoffChecks,omitempty"`
-	HandoffMismatch  int       `json:"handoffMismatches,omitempty"`
-	HandoffMaxErrCm  int32     `json:"handoffMaxErrCm,omitempty"`
-	HandoffIDChanges int       `json:"handoffIdChanges,omitempty"`
-	Preconnects      int       `json:"preconnects,omitempty"`
-	PreconnectFails  int       `json:"preconnectFails,omitempty"`
-	StandbyKicks     int       `json:"standbyKicks,omitempty"`
-	DropsSeen        int       `json:"drops,omitempty"`
-	Failovers        int       `json:"failovers,omitempty"`
-	FailoverMs       []float64 `json:"-"`
-	FailoverRewindM  []float64 `json:"-"`
-	Discoveries      int       `json:"discoveries,omitempty"`
-	DupDiscoveries   int       `json:"duplicateDiscoveries,omitempty"` // checks differing by >= 1 cm while still exact, i.e. before this bot's first resync (after one, the bot replays from cm-quantized state and 1 cm rounding noise is expected)
-	RTTs             []float64 `json:"-"`
-	RTTp50           float64   `json:"rttP50Ms"`
-	DownKbps         float64   `json:"downKbps"`
-	UpKbps           float64   `json:"upKbps"`
+	Handoffs               int       `json:"handoffs,omitempty"`
+	HandoffGapsMs          []float64 `json:"-"`
+	HandoffChecks          int       `json:"handoffChecks,omitempty"`
+	HandoffMismatch        int       `json:"handoffMismatches,omitempty"`
+	HandoffMaxErrCm        int32     `json:"handoffMaxErrCm,omitempty"`
+	HandoffIDChanges       int       `json:"handoffIdChanges,omitempty"`
+	Preconnects            int       `json:"preconnects,omitempty"`
+	PreconnectFails        int       `json:"preconnectFails,omitempty"`
+	StandbyKicks           int       `json:"standbyKicks,omitempty"`
+	DropsSeen              int       `json:"drops,omitempty"`
+	Failovers              int       `json:"failovers,omitempty"`
+	FailoverMs             []float64 `json:"-"`
+	FailoverRewindM        []float64 `json:"-"`
+	Discoveries            int       `json:"discoveries,omitempty"`
+	DupDiscoveries         int       `json:"duplicateDiscoveries,omitempty"`
+	RegrantedAfterFailover int       `json:"regrantedAfterFailover,omitempty"` // checks differing by >= 1 cm while still exact, i.e. before this bot's first resync (after one, the bot replays from cm-quantized state and 1 cm rounding noise is expected)
+	RTTs                   []float64 `json:"-"`
+	RTTp50                 float64   `json:"rttP50Ms"`
+	DownKbps               float64   `json:"downKbps"`
+	UpKbps                 float64   `json:"upKbps"`
 
 	warmIn, warmOut int64
 	warmAt          time.Time
@@ -157,7 +159,7 @@ type botStats struct {
 
 func newBot(id int, cfg *botConfig, seed int64, x, z float64) *bot {
 	rng := rand.New(rand.NewSource(seed))
-	b := &bot{id: id, cfg: cfg, rng: rng, spawnX: x, spawnZ: z, standby: map[string]*botConn{}, discoveries: map[uint32]int{}}
+	b := &bot{id: id, cfg: cfg, rng: rng, spawnX: x, spawnZ: z, standby: map[string]*botConn{}, discoveries: map[uint32]time.Time{}}
 	r := rng.Float64()
 	switch {
 	case r < 0.40:
@@ -477,9 +479,17 @@ func (b *bot) reader(bc *botConn) {
 		case *proto.Event:
 			if msg.Kind == 602 { // WP12 discovery: granted once per character, ever
 				b.st.Discoveries++
-				b.discoveries[msg.TargetID]++
-				if b.discoveries[msg.TargetID] > 1 {
-					b.st.DupDiscoveries++
+				if first, seen := b.discoveries[msg.TargetID]; seen {
+					if !b.failedOverAt.IsZero() && first.Before(b.failedOverAt) {
+						// Granted on a zone that then died before its write-behind
+						// queue saved it: the survivor loaded the older checkpoint.
+						// Lost by the crash, granted once in durable state.
+						b.st.RegrantedAfterFailover++
+					} else {
+						b.st.DupDiscoveries++
+					}
+				} else {
+					b.discoveries[msg.TargetID] = time.Now()
 				}
 			}
 		case *proto.ClockPong:
