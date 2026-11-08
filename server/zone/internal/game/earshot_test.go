@@ -116,3 +116,42 @@ func TestSpeakingFlagMirroredIntoActivity(t *testing.T) {
 		}
 	}
 }
+
+// G3 (WP09 x WP11): the earshot hand-off carries the cave system, so the
+// voice rules (30 m in the same system, nobody through the rock above, the
+// mouth refinement) see what interest clipping sees.
+func TestEarshotCarriesCaveSystem(t *testing.T) {
+	ct := testCaveTerrain(t)
+	fe := &fakeEarshot{}
+	h := newHarness(t, func(c *Config) { c.Ground = ct; c.Earshot = fe })
+	g := ct.CaveGraph()
+	const si = 0
+	s := g.Systems[si]
+	deep := g.Chambers[s.FirstChamber+s.Deepest]
+	o := g.SystemOpenings(si)[0]
+	ct.Caves.Ensure(deep.X, deep.Floor, deep.Z, 48)
+	in := h.dial("?spawn=" + ftoa(deep.X) + "," + ftoa(deep.Floor+1) + "," + ftoa(deep.Z))
+	in.join(h, "char-in", "Dweller")
+	mouth := h.dial("?spawn=" + ftoa(o.X+o.RMask+6) + "," + ftoa(o.Z))
+	mouth.join(h, "char-mouth", "Watcher")
+	far := h.dial("?spawn=" + ftoa(o.X+400) + "," + ftoa(o.Z+400))
+	far.join(h, "char-far", "Walker")
+	time.Sleep(900 * time.Millisecond)
+	batches, _ := fe.snapshot()
+	if len(batches) == 0 {
+		t.Fatal("no earshot hand-off")
+	}
+	got := map[string]voice.Player{}
+	for _, p := range batches[len(batches)-1] {
+		got[p.ID] = p
+	}
+	if p := got["char-in"]; p.Cave != si+1 || p.Mouth != 0 {
+		t.Fatalf("player in the deepest chamber of system %d: %+v", si, p)
+	}
+	if p := got["char-mouth"]; p.Cave != 0 || p.Mouth != si+1 {
+		t.Fatalf("player at the system's opening: %+v", p)
+	}
+	if p := got["char-far"]; p.Cave != 0 || p.Mouth != 0 {
+		t.Fatalf("player far away in open air: %+v", p)
+	}
+}

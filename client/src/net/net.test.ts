@@ -142,6 +142,32 @@ describe('ClientPrediction', () => {
     expect(p.log.length).toBe(1);
   });
 
+  it('replays a grounded server state from the ground, not from its cm-rounded y (G3)', () => {
+    // Standing on ground whose height is not a whole centimetre: the wire y
+    // is 0.44 cm above it. The replay must keep the WP10 timer in step with
+    // the server, or every later snapshot disagrees again.
+    const g = new FlatGround(100.3456);
+    const idle: MoveInput = { flags: 0, yaw: 0, pitch: 0 };
+    let server: MoveState = newMoveState({ x: 10, y: 100.3456, z: 10 });
+    const p = new ClientPrediction(g);
+    let client: MoveState = { ...newMoveState({ x: 10, y: 100.3456, z: 10 }), timer: 7 }; // out of step (as after a teleport)
+    const serverAt: MoveState[] = [];
+    for (let seq = 1; seq <= 12; seq++) {
+      server = stepMovement(server, idle, g, STEP_DT);
+      serverAt.push(server);
+      client = stepMovement(client, idle, g, STEP_DT);
+      p.store({ seq, input: idle, state: client });
+      p.notePredicted(client);
+    }
+    const c = p.reconcile(quant(serverAt[3]), 4);
+    expect(c).not.toBeNull();
+    expect(c!.state.timer).toBe(serverAt[11].timer);
+    expect(c!.state.mode).toBe(serverAt[11].mode);
+    // The replayed history now matches the server: the next ack agrees.
+    expect(p.reconcile(quant(serverAt[7]), 8)).toBeNull();
+    expect(p.reconciles).toBe(1);
+  });
+
   it('ignores older acks and the spawn snapshot before any input is applied', () => {
     const p = new ClientPrediction(ground);
     expect(p.reconcile(quant(newMoveState({ x: 1, y: 0, z: 1 })), 0)).toBeNull();

@@ -106,6 +106,26 @@ func TestCaveRule(t *testing.T) {
 	}
 }
 
+// G3: someone in open air at one of a system's openings (Mouth) hears that
+// system's dwellers with the cave radii; elsewhere in open air, nobody below.
+func TestCaveMouthRule(t *testing.T) {
+	c := NewComputer()
+	ps := []Player{{ID: "in", Cave: 7}, {ID: "mouth", X: 20, Mouth: 7}, {ID: "other-mouth", X: 5, Mouth: 9}, {ID: "meadow", X: 10}, {ID: "near", X: 25}}
+	c.Step(ps, brute(ps), false)
+	if got := c.Current("in"); !slices.Equal(got, []string{"mouth"}) {
+		t.Fatalf("cave dweller hears only the player at its own mouth, got %v", got)
+	}
+	if got := c.Current("mouth"); !slices.Equal(got, []string{"in", "meadow", "near", "other-mouth"}) {
+		t.Fatalf("the mouth player hears the dweller and everyone in open air, got %v", got)
+	}
+	ps[1].X = 31 // past the 30 m cave join radius
+	c2 := NewComputer()
+	c2.Step(ps, brute(ps), false)
+	if got := c2.Current("in"); len(got) != 0 {
+		t.Fatalf("mouth player 31 m away (cave join 30 m) must not be heard, got %v", got)
+	}
+}
+
 func TestDeltasFullAndGone(t *testing.T) {
 	c := NewComputer()
 	ps := []Player{at("a", 0, 0), at("b", 10, 0), at("c", 500, 0)}
