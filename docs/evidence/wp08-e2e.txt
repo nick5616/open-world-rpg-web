@@ -1,0 +1,45 @@
+[2026-11-08T12:32:50.040Z] scratch database lodestone_wp04_wp08e2e
+[2026-11-08T12:32:53.604Z] building account, director, social, e2ezones, admin, flood
+[2026-11-08T12:33:07.175Z] PASS account healthy on :18191
+[2026-11-08T12:33:08.641Z] PASS social healthy on :18193
+[2026-11-08T12:33:09.649Z] PASS director healthy on :18190
+[2026-11-08T12:33:09.803Z] moved Bob to (500, 500): 1 row(s)
+[2026-11-08T12:33:10.346Z] PASS vite serving http://localhost:5175/social-dev.html
+[2026-11-08T12:33:10.785Z] --- connect: real director tickets, two zones ---
+[2026-11-08T12:33:11.587Z] PASS director assigned Alice and Bob to different zones  {"alice":{"zone":"zone-east","region":{"x":2,"z":2},"local":false,"name":"Alice"},"bob":{"zone":"zone-west","region":{"x":0,"z":0},"local":false,"name":"Bob"}}
+[2026-11-08T12:33:11.587Z] PASS Lina is a local profile on zone-east  {"zone":"zone-east","region":{"x":2,"z":2},"local":true,"name":"Lina"}
+[2026-11-08T12:33:12.797Z] --- global ---
+[2026-11-08T12:33:12.919Z] PASS global: Alice (zone-east) -> Bob (zone-west) and Lina
+[2026-11-08T12:33:12.940Z] PASS global slow mode: second message within 10 s refused and not delivered
+[2026-11-08T12:33:13.053Z] PASS local profile cannot send global chat (but reads it)
+[2026-11-08T12:33:13.107Z] --- zone ---
+[2026-11-08T12:33:13.633Z] PASS zone: reaches Lina (same region), not Bob (region 0,0)
+[2026-11-08T12:33:13.633Z] --- local + speech bubbles ---
+[2026-11-08T12:33:14.168Z] PASS local: reaches Lina 10 m away (with a speech bubble), not Bob 2 km away
+[2026-11-08T12:33:14.216Z] --- whispers across zones ---
+[2026-11-08T12:33:14.248Z] PASS whisper zone-east -> zone-west delivered; toast while Bob's chat is closed
+[2026-11-08T12:33:14.252Z] PASS unread count on the closed chat button  "Chat (Enter) · 2 new"
+[2026-11-08T12:33:14.327Z] PASS whisper tab "Alice" shows 1 unread
+[2026-11-08T12:33:14.467Z] PASS /r reply zone-west -> zone-east
+[2026-11-08T12:33:14.494Z] PASS whisper to unknown name -> "There is no one called ..."
+[2026-11-08T12:33:14.494Z] --- party across zones ---
+[2026-11-08T12:33:15.030Z] PASS party chat reaches Bob across zones, not Lina
+[2026-11-08T12:33:15.031Z] PASS party frame shows members online with regions  [{"characterId":"a4f9cbc2-c869-45f4-92d6-ddc51a614478","name":"Alice","online":true,"region":"2,2"},{"characterId":"c67b2181-d145-48fb-852c-7002703d6a97","name":"Bob","online":true,"region":"0,0"}]
+[2026-11-08T12:33:15.094Z] --- friends + local-profile rules ---
+[2026-11-08T12:33:15.139Z] PASS local profile cannot whisper a stranger
+[2026-11-08T12:33:15.363Z] PASS friend request -> accept; friends list shows Lina online in region 2,2
+[2026-11-08T12:33:15.461Z] PASS local profile whispers a friend
+[2026-11-08T12:33:15.461Z] --- block ---
+[2026-11-08T12:33:16.378Z] PASS blocked: Bob sees his own line and no offline/blocked notice (status "delivered")  ["hello Lina","are you ignoring me?"]
+[2026-11-08T12:33:16.380Z] PASS blocked: Lina never receives the whisper
+[2026-11-08T12:33:16.808Z] PASS blocked: Bob's global chat hidden from Lina
+[2026-11-08T12:33:16.879Z] --- report + admin CLI ---
+[2026-11-08T12:33:17.612Z] PASS report stored in Postgres with the whisper conversation as context
+[2026-11-08T12:33:17.753Z] PASS admin mute applies live: Bob cannot send
+[2026-11-08T12:33:17.990Z] PASS admin CLI: reports, report, mute, unmute, resolve (docs/evidence/wp08-admin.txt)
+[2026-11-08T12:33:18.057Z] --- reconnect keeps party; history on join ---
+[2026-11-08T12:33:18.149Z] PASS reload: party kept, global and whisper history restored  {"global":2,"whisper":["meet me at the tower","on my way"]}
+[2026-11-08T12:33:18.230Z] PASS no page errors  []
+[2026-11-08T12:33:18.242Z] --- bot flood against the same social process ---
+[2026-11-08T12:33:42.004Z] PASS flood: rate limits held (docs/evidence/wp08-flood.txt)  ["global        8000       100      7900     1.2%            3.0          2","local         8000      1200      6800    15.0%           25.0         24","party         8000      1350      6650    16.9%           28.0         27","whisper       8000      1200      6800    15.0%           25.0         24","zone          8000       650      7350     8.1%           14.0         13","PASS: no client exceeded its per-channel bound"]
+[2026-11-08T12:33:42.004Z] ALL PASS

@@ -1,0 +1,29 @@
+flooding: 50 clients x 40 msg/s for 20s on [global zone local party whisper] (world 0a84fed2-a963-495d-a13e-dc3f7a4cf082)
+elapsed 20.0s, connect failures 0
+channel       sent  accepted  rejected  accept%   bound/client max/client
+global        8000       100      7900     1.2%            3.0          2
+local         8000      1200      6800    15.0%           25.0         24
+party         8000      1350      6650    16.9%           28.0         27
+whisper       8000      1200      6800    15.0%           25.0         24
+zone          8000       650      7350     8.1%           14.0         13
+observer received: map[global:100 local:1200 whisper:1200 zone:650]
+error frames (throttled to 1/s per client per code): map[rate_limited:1000 slow_mode:879]
+PASS: no client exceeded its per-channel bound
+
+--- social /metrics after the flood ---
+social_bus_events_total 4794
+social_chat_accepted_total{channel="global"} 102
+social_chat_accepted_total{channel="local"} 1201
+social_chat_accepted_total{channel="party"} 1351
+social_chat_accepted_total{channel="whisper"} 1204
+social_chat_accepted_total{channel="zone"} 651
+social_chat_rejected_total{reason="muted"} 1
+social_chat_rejected_total{reason="not_allowed"} 1
+social_chat_rejected_total{reason="rate_limited"} 32125
+social_chat_rejected_total{reason="slow_mode"} 3376
+social_chat_rejected_total{reason="unknown_target"} 1
+social_party_grace_expired_total 38
+social_reports_total 1
+social_sessions 0
+social_whispers_total{status="delivered"} 1204
+social_whispers_total{status="dropped_blocked"} 1

@@ -4,13 +4,13 @@
 # Generated into contracts/ts/src/social.ts and server/pkg/socialproto/social.go.
 # Field types: string, int, number, bool, any struct/enum name, T[] for arrays.
 # A trailing "?" marks an optional field (omitted when empty).
-version: 1
+version: 2   # v2 (docs/cr/002-social-protocol-v2.md): relations message; muted/banned/replaced error codes
 
 enums:
   Channel: [global, zone, local, party, whisper, system]
   WhisperStatus: [delivered, offline, blocked_you, not_allowed]
   FriendState: [pending_out, pending_in, accepted]
-  ErrorCode: [bad_auth, rate_limited, slow_mode, too_long, unknown_target, not_allowed, party_full, not_leader, internal]
+  ErrorCode: [bad_auth, rate_limited, slow_mode, too_long, unknown_target, not_allowed, party_full, not_leader, internal, muted, banned, replaced]
 
 structs:
   ChatMessage:
@@ -72,3 +72,7 @@ messages:
     system: {text: string}
     voice_token: {url: string, token: string, room: string}
     pong: {t: number, serverTime: number}
+    # v2: who I muted/blocked (names) and my profanity filter setting. Sent after
+    # welcome and after every block/unblock/mute/unmute/set_filter, so the client
+    # shows the server's truth instead of keeping its own copy.
+    relations: {muted: "string[]", blocked: "string[]", profanityFilter: bool}

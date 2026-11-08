@@ -7,6 +7,8 @@ import { Crosshair, LockHint } from '../hud/Overlays';
 import { useDebugHotkeys } from '../hud/useDebugHotkeys';
 import { useAppStore } from '../stores/appStore';
 import { DEBUG } from '../config';
+// WP08: renders nothing until the play flow calls startSocial() (client/src/social/README.md).
+import { SocialOverlay } from '../social';
 
 function DebugLayer() {
   useDebugHotkeys();
@@ -27,6 +29,7 @@ export default function PlayScreen() {
       <Crosshair />
       <LockHint />
       {DEBUG && <DebugLayer />}
+      <SocialOverlay />
     </>
   );
 }

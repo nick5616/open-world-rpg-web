@@ -124,3 +124,40 @@ Known gaps / assumptions:
 - No rate limiting on sign-in endpoints yet (profile secrets are 256-bit, Firebase tokens are signed; add token buckets with WP08's limiter).
 - New character spawn is the world centre with y = 0 ("snap to ground") until worldgen supplies a spawn.
 - Character names have a reserved list but no profanity filter (spec 10's filter lands with WP08).
+
+## WP08: Social service ✅
+
+Branch `wp/08-social`. Details: `server/social/README.md`, `client/src/social/README.md`, decisions `docs/decisions/0008-social-service.md`, contract changes `docs/cr/001-social-relations-by-character.md` (migration 0003) and `docs/cr/002-social-protocol-v2.md` (social.yaml v2).
+
+Works:
+- `server/social` (:8093, `/ws`): social-ticket auth (`ticket.AudienceSocial`; suspended/banned owners refused), presence `presence:{charId}` (TTL 30 s, server heartbeat 10 s, WebSocket ping 20 s), `online:{worldId}` + reaper for sessions of dead processes (the-circle `reap_dead`), `name:{worldId}:{lower}` resolution with Postgres fallback, duplicate login (newest wins, across processes).
+- Channels per spec 10: global (200), zone by region (100), local 30 m from presence positions with x/z for bubbles (no history), party (100), whisper (100 per conversation, 24 h), system (50, per player; `Hub.SystemMessage` and a documented bus envelope for zones). Capped lists `chat:{worldId}:{channel}[:scope]`; history on join (global, system, whispers; zone on first presence; party on join/rejoin).
+- Whispers: `/w`, `/r`, case-insensitive names, offline -> `whisper_status offline` and nothing stored, unknown name -> error, blocked -> sender sees own echo + `delivered`, target gets nothing, nothing stored; local profiles whisper friends/party only and cannot send global (they read it).
+- Parties (max 4; invite/accept/decline/leave/kick/promote; leadership passes to the first online member; party of one disbands; Redis state with WATCH/MULTI; 5 min reconnect grace), friends (requests, accept by asking back, remove, cap 200 incl. pending, online + region for accepted friends only), mute, block (= mute + no whispers/invites, ends friendship), reports with the last 50 messages of that channel or conversation (local: what the reporter received) into `reports`.
+- Moderation: per-channel token buckets + per-frame gate, global slow mode 1/10 s, 280 characters (code points), control characters stripped, profanity filter on by default for global/zone (applied per reader; raw text stored; `set_filter` opt-out; allow-list incl. the "Bitchin'" rarity), admin CLI `server/social/cmd/admin` (reports, report, resolve, mute/unmute/suspend/ban/unban by character name, whois; logged to `moderation_log`; applied live over the bus).
+- Pub/sub `social:{worldId}` carries every delivery, so several social processes share a world; whispers between players presenting different zones (and on different processes) work.
+- `client/src/social`: socket client (auth, reconnect 1 -> 30 s backoff with fresh director tickets, queue until welcome, stop on `replaced`/`banned`), zustand store with a pure reducer, chat panel (channel tabs, whisper tabs with unread counts and close, `/g /z /s /p /w /r` + social verbs + `/help`, Tab name autocomplete, toasts while closed, Enter/Escape, click-a-name menu), party frame (online, region, leader controls, invites; `healthOf` slot for the zone's party ring), friends list (online + region, requests, whisper/invite/remove), speech-bubble store (`getSpeechBubble`/`useSpeechBubble` by name), presence at 2 Hz from a position source. `<SocialOverlay />` mounted in `PlayScreen` (renders nothing until `startSocial`). Dev page `client/social-dev.html` (:5175).
+- Tests: Go unit (filter, limits, radius, party records), in-process integration on real Redis + scratch Postgres (every channel, whisper rules, rate limits, history/filter/mute, party lifecycle + grace, friends, reports, duplicate login, bad tickets, admin mute/ban), and `server/social/social_integration_test.go` building the binary and running two processes (global/whisper/reply/party across processes and zones, block across processes, reaping a killed process); 17 vitest tests (parser, completion, reducer, bubbles, socket reconnect with a fake WebSocket).
+
+Evidence (`node client/src/social/dev/e2e.mjs`: account + director + social + two stand-in zones on a scratch DB, three Chromium contexts with real director tickets via dev auth and a local profile):
+- `docs/evidence/wp08-e2e.txt`: Alice (zone-east, region 2,2) and Bob (zone-west, region 0,0) chat in global, zone, local, party, whisper and `/r`; Lina (local profile, 10 m from Alice) gets local + bubble and zone but not Bob's; slow mode; local profile refused global and stranger whispers, allowed to a friend; friend request/accept with online + region; Lina blocks Bob -> Bob's whisper shows "delivered", Lina receives nothing, Bob's global hidden from her; report + admin CLI mute applied live; reload keeps party and restores history. Screenshots `wp08-01…09-*.png`; admin transcript `wp08-admin.txt`.
+- Bot flood (`server/social/cmd/flood`, 50 clients x 40 msg/s x 20 s over 5 channels, 40,000 messages): accepted global 100 / zone 650 / local 1,200 / party 1,350 / whisper 1,200, rejected 33,500; no client beat its bucket bound (max per client = bound - 1 on every channel); the observer saw exactly the accepted lines; `wp08-flood.txt|json` (+ server metrics).
+
+Known gaps:
+- Local and zone routing trust the client's `presence` positions; prefer spec 11's zone-written `worldpos:{worldId}` once a zone writes it (no zone does yet).
+- Speech bubbles are a data store only: rendering above remote players needs WP06's nameplates (`getSpeechBubble(name)` / `useSpeechBubble`). Nothing calls `startSocial` in the real play flow yet; WP06's title -> account -> play wiring should (snippet in `client/src/social/README.md`).
+- `voice_token` answers "Voice is not available yet" (LiveKit, earshot sets and voice block are the voice package's).
+- Party ids are strings in Redis; the zone's party ring still uses its stub party id (WP03 gap); a zone needs `partyof:{charId}` to map members.
+- Fast travel to a friend/party member (spec 10) needs waypoints (gameplay packages); the friends list has no Travel button yet.
+- Account names used by the admin CLI must belong to real character rows; ticket-only characters (bots) cannot be moderated.
+- Local-profile sanctions (`social_sanctions`) are enforced by social only; the director does not check them at connect.
+- The profanity list is short and English only; it does not yet filter character names (WP04 gap).
+- 0001's `friends`/`blocks` tables are now unused (kept: additive rule).
+
+Assumptions:
+- "Can't use global chat" for local profiles = can read, cannot send (like listen-only voice). The whisper restriction applies to local senders only.
+- Zone chat is scoped by the presence region string (`"x,z"` of 1024 m regions), not by zone server id, per spec 10 "everyone in your current region".
+- Local chat has no stored history (spec 10 table); reports on local chat capture what the reporter's session received.
+- Friend requests count toward the 200 cap; online status/region is shown for accepted friends only.
+- System channel stores service notices (friend requests, party disbanded/removed, declined invites) per player; transient replies ("Invited Bob") are `system` frames, shown inline.
+- Shared files touched: `client/src/screens/PlayScreen.tsx` (import + `<SocialOverlay />`), `contracts/social.yaml` + regenerated `contracts/ts/src/gen/social.ts` and `server/pkg/socialproto/social_gen.go`, new `contracts/migrations/0003_social.sql` (applied to the shared dev DB with `npm run migrate`), `docs/cr/`, this section.
