@@ -4,29 +4,29 @@
 [ws B] debug: [vite] connecting...
 [ws B] debug: [vite] connected.
 [ws B] info: %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
-[ws A] warning: [GroupMarkerNotSet(crbug.com/242999)!:A070300014700000]Automatic fallback to software WebGL has been deprecated. Please use the --enable-unsafe-swiftshader flag to opt in to lower security guarantees for trusted content.
-[ws A] warning: [.WebGL-0x22c401ce0600]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
-[ws B] warning: [GroupMarkerNotSet(crbug.com/242999)!:A0303000FC1D0000]Automatic fallback to software WebGL has been deprecated. Please use the --enable-unsafe-swiftshader flag to opt in to lower security guarantees for trusted content.
-[ws B] warning: [.WebGL-0x428c01a52900]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
-[ws A] warning: [.WebGL-0x22c401ce0600]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
-[ws A] warning: [.WebGL-0x22c401ce0600]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
-[ws A] warning: [.WebGL-0x22c401ce0600]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)
-[ws B] warning: [.WebGL-0x428c01a52900]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
-[ws B] warning: [.WebGL-0x428c01a52900]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
-[ws B] warning: [.WebGL-0x428c01a52900]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)
+[ws B] warning: [GroupMarkerNotSet(crbug.com/242999)!:A030300094290000]Automatic fallback to software WebGL has been deprecated. Please use the --enable-unsafe-swiftshader flag to opt in to lower security guarantees for trusted content.
+[ws B] warning: [.WebGL-0x3ebc0115d400]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
+[ws A] warning: [GroupMarkerNotSet(crbug.com/242999)!:A0303000D4280000]Automatic fallback to software WebGL has been deprecated. Please use the --enable-unsafe-swiftshader flag to opt in to lower security guarantees for trusted content.
+[ws A] warning: [.WebGL-0x78b400116a00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
+[ws B] warning: [.WebGL-0x3ebc0115d400]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
+[ws A] warning: [.WebGL-0x78b400116a00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
+[ws B] warning: [.WebGL-0x3ebc0115d400]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
+[ws B] warning: [.WebGL-0x3ebc0115d400]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)
+[ws A] warning: [.WebGL-0x78b400116a00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
+[ws A] warning: [.WebGL-0x78b400116a00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)
 [wt A] debug: [vite] connecting...
 [wt A] debug: [vite] connected.
 [wt A] info: %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
 [wt B] debug: [vite] connecting...
 [wt B] debug: [vite] connected.
 [wt B] info: %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
-[wt A] warning: [GroupMarkerNotSet(crbug.com/242999)!:A0F02F006C700000]Automatic fallback to software WebGL has been deprecated. Please use the --enable-unsafe-swiftshader flag to opt in to lower security guarantees for trusted content.
-[wt A] warning: [.WebGL-0x1494010a2900]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
-[wt B] warning: [GroupMarkerNotSet(crbug.com/242999)!:A0F02F0084750000]Automatic fallback to software WebGL has been deprecated. Please use the --enable-unsafe-swiftshader flag to opt in to lower security guarantees for trusted content.
-[wt B] warning: [.WebGL-0x726c01668600]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
-[wt A] warning: [.WebGL-0x1494010a2900]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
-[wt B] warning: [.WebGL-0x726c01668600]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
-[wt A] warning: [.WebGL-0x1494010a2900]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
-[wt A] warning: [.WebGL-0x1494010a2900]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)
-[wt B] warning: [.WebGL-0x726c01668600]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
-[wt B] warning: [.WebGL-0x726c01668600]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)
+[wt B] warning: [GroupMarkerNotSet(crbug.com/242999)!:A0F02F00CC370000]Automatic fallback to software WebGL has been deprecated. Please use the --enable-unsafe-swiftshader flag to opt in to lower security guarantees for trusted content.
+[wt A] warning: [GroupMarkerNotSet(crbug.com/242999)!:A0F02F007C260000]Automatic fallback to software WebGL has been deprecated. Please use the --enable-unsafe-swiftshader flag to opt in to lower security guarantees for trusted content.
+[wt A] warning: [.WebGL-0x32f401aca200]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
+[wt B] warning: [.WebGL-0x39ec01aa5b00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
+[wt A] warning: [.WebGL-0x32f401aca200]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
+[wt B] warning: [.WebGL-0x39ec01aa5b00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
+[wt A] warning: [.WebGL-0x32f401aca200]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
+[wt A] warning: [.WebGL-0x32f401aca200]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)
+[wt B] warning: [.WebGL-0x39ec01aa5b00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
+[wt B] warning: [.WebGL-0x39ec01aa5b00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)

@@ -223,10 +223,17 @@ func (s *Server) accept(c transport.Conn, spawnHint *movement.Vec3) {
 
 // frameBudget bounds simulated time to real time: frames ARE simulation time
 // (one frame = 1/60 s of movement), so a client sending 120 frames a second
-// would move twice as fast. Burst 30 frames (0.5 s) absorbs packets bunched
-// up by TCP or a hitch; beyond that frames are dropped and the client
-// reconciles. This is the real speed-hack defense.
-func frameBudget() ratelimit.Bucket { return ratelimit.New(30, 60) }
+// would move twice as fast. The burst absorbs packets bunched up by TCP or a
+// hitch; beyond it frames are dropped and the client reconciles. This is the
+// real speed-hack defense.
+//
+// Burst 60 frames (1 s), up from WP03's 30: under the netsim "thailand"
+// profile a TCP retransmit stall (~250 ms) often chains into a second one,
+// and a 500-600 ms bunch overflowed 30 frames, snapping honest players back
+// a step or two (WP06 two-browser run, decision 0006). The cost: a client
+// that deliberately withholds input ("lag switch") can deliver at most 1 s
+// of movement at once, which an honest player on a bad link already does.
+func frameBudget() ratelimit.Bucket { return ratelimit.New(60, 60) }
 
 func (s *Server) spawnFor(c ticket.Claims, hint *movement.Vec3) movement.Vec3 {
 	if hint != nil {
