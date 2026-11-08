@@ -24,7 +24,7 @@
 # Versioning: adding a message or appending a field to a masked struct is a
 # compatible change (bump `version`, note it in docs/cr/). Changing the meaning
 # or order of an existing field is not; that needs a new message id.
-version: 3   # v2: WP10 movement (docs/cr/004-wp10-movement.md); v3 (docs/cr/005-voice-speaking-and-earshot.md): InputFlag.speaking
+version: 4   # v2: WP10 movement (docs/cr/004-wp10-movement.md); v3 (docs/cr/005-voice-speaking-and-earshot.md): InputFlag.speaking; v4 (docs/cr/009-wp13-combat.md): combat flag semantics, moveExt dash bits
 
 enums:
   EntityKind:
@@ -45,6 +45,18 @@ enums:
 
 flags:
   InputFlag:
+    # WP13 (CR 009) combat semantics, all decided by the client's step-synchronous
+    # combat timeline (client/src/combat/timeline.ts) and replayed by the zone:
+    #   attack     set on exactly ONE step per primary attack START (after the
+    #              input buffer); the zone logs it at that frame's seq
+    #   alt_attack HELD while the secondary button is held (bow draw, spear
+    #              charge, sword parry on its rising step); an attack step that
+    #              follows held alt_attack steps is the charged/released move
+    #   dodge      set on exactly one step per dodge or mobility spell; castSlot
+    #              then carries the dash variant (0 = plain dodge, else
+    #              combat.yaml dashes id). The shared movement step applies it.
+    #   cast       set on exactly one step per spell cast; castSlot = 0..3
+    #   interact   set on one step per consumable use (WP13 healing draught)
     type: u16
     # speaking (v3, WP11): the client is transmitting voice right now; the zone
     # mirrors it into Activity.speaking so far players' nameplates show it. Bit
@@ -63,7 +75,7 @@ structs:
       flags: u16
       yaw: u16          # yaw / 2pi * 65536 (u16 for your own input: aim precision matters)
       pitch: i16        # pitch / (pi/2) * 32767
-      castSlot: u8      # which equipped spell when `cast` is set (0..3)
+      castSlot: u8      # which equipped spell when `cast` is set (0..3); with `dodge`, the dash variant (WP13)
 
   EntityRecord:
     doc: Another entity in your interest set. Only changed fields are sent.
@@ -113,7 +125,8 @@ structs:
       # needs to replay from this snapshot bit-exactly:
       #   bits 0-15  stamina in fine units (x STAMINA_FINE_PER_POINT = x60, exact)
       #   bits 16-23 mode timer in steps (regen delay / rain slip phase / drowning)
-      #   bits 24-31 reserved (0)
+      #   bits 24-27 dash steps remaining (WP13, CR 009; protocol v4)
+      #   bits 28-31 dodge i-frame steps remaining
       moveExt: u32
 
   EditRecord:
@@ -158,9 +171,10 @@ messages:
     id: 4
     dir: c2s
     delivery: reliable
+    doc: 'WP13: one predicted hit on one ENEMY. attackSeq = the input frame seq that started the attack or cast; tick = the newest snapshot tick the client had (what it saw); x/y/z = attack origin, or the impact point for aimed area spells and runes. The zone validates leniently (spec 9) and answers with HitResult. Claims on players are always refused.'
     fields:
       attackSeq: u32
-      attackId: u16     # weapon move or spell id
+      attackId: u16     # weapon move or spell id (contracts/combat.yaml)
       targetId: u32
       tick: u32
       x: i32            # attack origin, cm
@@ -264,6 +278,7 @@ messages:
     id: 70
     dir: s2c
     delivery: reliable
+    doc: 'WP13: the verdict on one HitClaim. flags bit 0 crit, bit 1 killed, bit 2 weak (element), bit 3 resisted, bit 4 shield absorbed, bit 5 parried; when refused, flags = refusal reason (contracts/events.md).'
     fields:
       attackSeq: u32
       targetId: u32

@@ -77,6 +77,7 @@ import {
   u16ToYaw,
 } from '@lodestone/contracts';
 import type { GroundQuery } from './ground';
+import { beginDash } from './dash';
 import { atLevel, collideStep } from './caves';
 
 export interface Vec3 {
@@ -121,6 +122,10 @@ export interface MoveState {
   lunge: number;
   /** MoveFlag bits. */
   flags: number;
+  /** WP13 (./dash.ts): dash steps remaining (0..15); absent = 0. */
+  dash?: number;
+  /** WP13: dodge i-frame steps remaining (0..15); absent = 0. */
+  iframes?: number;
 }
 
 /**
@@ -133,6 +138,8 @@ export interface MoveInput {
   flags: number;
   yaw: number;
   pitch: number;
+  /** WP13: InputFrame.castSlot (with the dodge flag: the dash variant, ./dash.ts). Absent = 0. */
+  castSlot?: number;
 }
 
 /**
@@ -185,7 +192,7 @@ const DIAG = 0.7071067811865476;
 /** A fresh standing state with a full stamina wheel. */
 export function newMoveState(pos: Vec3, staminaMaxPoints: number = STAMINA_MAX): MoveState {
   const max = Math.round(staminaMaxPoints * FINE);
-  return { pos: { ...pos }, vel: { x: 0, y: 0, z: 0 }, airJumps: 0, mode: MoveMode.ground, stamina: max, staminaMax: max, timer: 0, lunge: 0, flags: 0 };
+  return { pos: { ...pos }, vel: { x: 0, y: 0, z: 0 }, airJumps: 0, mode: MoveMode.ground, stamina: max, staminaMax: max, timer: 0, lunge: 0, flags: 0, dash: 0, iframes: 0 };
 }
 
 export function cloneMoveState(s: MoveState): MoveState {
@@ -400,21 +407,26 @@ export function stepMovement(state: MoveState, input: MoveInput, groundIn: Groun
   const ground = atLevel(groundIn, state.pos.y); // WP09: caves see the ground at the player's level (caves.ts)
   const yaw = u16ToYaw(input.yaw);
   const wish = wishDirFromFlags(input.flags, yaw);
+  // WP13: dodge / dash bookkeeping first (Go stepFull -> beginDash).
+  const dashed = beginDash(state, input.flags, input.castSlot ?? 0, yaw, wish);
+  const st = dashed.state;
   let out: MoveState;
-  switch (state.mode) {
+  switch (st.mode) {
     case MoveMode.climb:
-      out = stepClimb(state, input.flags, wish, ground, dt, env);
+      out = stepClimb(st, input.flags, wish, ground, dt, env);
       break;
     case MoveMode.glide:
-      out = stepGlide(state, input.flags, wish, ground, dt, env);
+      out = stepGlide(st, input.flags, wish, ground, dt, env);
       break;
     case MoveMode.swim:
-      out = stepSwim(state, input.flags, wish, ground, dt);
+      out = stepSwim(st, input.flags, wish, ground, dt);
       break;
     default:
-      out = stepWalk(state, input.flags, wish, ground, dt);
+      out = stepWalk(st, input.flags, wish, ground, dt, dashed.dashing);
   }
   out = collideStep(ground, out); // WP09: cave walls and ceilings (caves.ts)
+  out.dash = st.dash ?? 0;
+  out.iframes = st.iframes ?? 0;
   return finish(state, out);
 }
 
@@ -423,7 +435,7 @@ export function stepMovement(state: MoveState, input: MoveInput, groundIn: Groun
  * gravity -> jump -> integrate -> snap) plus slope rules, glider opening,
  * grabbing walls, entering water and the sprint/regen stamina rules.
  */
-function stepWalk(s: MoveState, flags: number, wish: Vec2xz, ground: GroundQuery, dt: number): MoveState {
+function stepWalk(s: MoveState, flags: number, wish: Vec2xz, ground: GroundQuery, dt: number, dashing = false): MoveState {
   const exhausted = (s.flags & MoveFlag.exhausted) !== 0;
   const canUse = !exhausted && s.stamina > 0;
   const sprinting = (flags & InputFlag.sprint) !== 0 && canUse;
@@ -442,7 +454,10 @@ function stepWalk(s: MoveState, flags: number, wish: Vec2xz, ground: GroundQuery
   }
 
   const vel: Vec2xz = { x: s.vel.x, z: s.vel.z };
-  if (grounded && !sliding) {
+  if (dashing) {
+    // WP13: a dash holds its horizontal velocity (no friction, no steering);
+    // walls still take the into-wall part away below.
+  } else if (grounded && !sliding) {
     applyGroundFriction(vel, GROUND_FRICTION, STOP_SPEED, dt);
     applyGroundAccel(vel, wish, speed, GROUND_ACCEL, dt);
   } else if (sliding) {

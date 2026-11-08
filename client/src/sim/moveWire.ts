@@ -26,8 +26,9 @@ export function packFlags(s: Pick<MoveState, 'flags' | 'lunge'>): number {
   return (s.flags & 0x0f) | ((s.lunge & 0x0f) << 4);
 }
 
-export function packMoveExt(s: Pick<MoveState, 'stamina' | 'timer'>): number {
-  return ((s.stamina & 0xffff) | ((s.timer & 0xff) << 16)) >>> 0;
+/** WP13 (protocol v4): bits 24-27 dash steps, 28-31 dodge i-frame steps. */
+export function packMoveExt(s: Pick<MoveState, 'stamina' | 'timer' | 'dash' | 'iframes'>): number {
+  return ((s.stamina & 0xffff) | ((s.timer & 0xff) << 16) | (((s.dash ?? 0) & 0xf) << 24) | (((s.iframes ?? 0) & 0xf) << 28)) >>> 0;
 }
 
 /** Display stamina (x10, one decimal) from fine units. */
@@ -61,5 +62,7 @@ export function fromSelf(f: SelfMoveFields): MoveState {
     timer: (f.moveExt >>> 16) & 0xff,
     lunge: (f.flags >> 4) & 0x0f,
     flags: f.flags & 0x0f,
+    dash: (f.moveExt >>> 24) & 0xf,
+    iframes: (f.moveExt >>> 28) & 0xf,
   };
 }

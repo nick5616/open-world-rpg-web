@@ -17,6 +17,7 @@ import {
   PROTOCOL_VERSION,
   Transport,
   type Event as ZoneEvent,
+  type HitResult,
   type InputFrame,
   type Kick,
   type Snapshot,
@@ -82,6 +83,8 @@ export class ZoneSession {
   /** WP12: reliable gameplay Events (contracts/events.md) and local-profile save blobs. */
   onEvent: ((e: ZoneEvent) => void) | null = null;
   onSaveBlob: ((blob: Uint8Array) => void) | null = null;
+  /** WP13: HitResults (combat uses eventListeners for its Events). */
+  onHitResult: ((r: HitResult) => void) | null = null;
   /** WP09: world edits (mined veins), and extra Event listeners (mining 700-799) next to onEvent. */
   onWorldEdits: ((m: WorldEdits) => void) | null = null;
   readonly eventListeners = new Set<(e: ZoneEvent) => void>();
@@ -161,7 +164,7 @@ export class ZoneSession {
     if (this.phase !== 'playing') return;
     this.prediction.store({ seq, input, state, env });
     this.prediction.notePredicted(state);
-    this.frames.push({ seq, flags: input.flags, yaw: input.yaw, pitch: input.pitch, castSlot: 0 });
+    this.frames.push({ seq, flags: input.flags, yaw: input.yaw, pitch: input.pitch, castSlot: input.castSlot ?? 0 });
     if (this.frames.length > 64) this.frames.splice(0, this.frames.length - 64);
     this.unsent++;
     this.lastPos.x = state.pos.x;
@@ -196,6 +199,12 @@ export class ZoneSession {
   sendInteract(targetKind: number, targetId: bigint, action: number, arg = 0): void {
     if (this.phase !== 'playing' || !this.transport) return;
     this.transport.sendReliable(encodeMessage({ type: 'Interact', targetKind, targetId, action, arg }));
+  }
+
+  /** WP13: one predicted hit on an enemy (reliable; the zone answers with HitResult). */
+  sendHitClaim(c: { attackSeq: number; attackId: number; targetId: number; tick: number; x: number; y: number; z: number; yaw: number; pitch: number }): void {
+    if (this.phase !== 'playing' || !this.transport) return;
+    this.transport.sendReliable(encodeMessage({ type: 'HitClaim', ...c }));
   }
 
   /** Advance interpolation to now and return what to draw (frameDtMs paces easing). */
@@ -243,6 +252,9 @@ export class ZoneSession {
         break;
       case 'SaveBlob':
         this.onSaveBlob?.(m.blob);
+        break;
+      case 'HitResult':
+        this.onHitResult?.(m);
         break;
       case 'WorldEdits':
         this.onWorldEdits?.(m);

@@ -370,3 +370,43 @@ movement == prediction; interest clipping) and `zone_caves_integration_test.go`
 (zone binary + scratch Postgres: mine over the wire, `world_edits` row,
 kill + restart restores it, respawn on a 14-15 s schedule deletes it;
 evidence `docs/evidence/wp09-mining-respawn.txt`).
+
+## Combat (WP13)
+
+Code: `internal/combat` (pure rules, its own README) and the glue
+`internal/game/combat.go`; wiring `combat.go` (package main). Decision 0013,
+CR 009.
+
+- Every applied input frame first goes through the combat layer
+  (`combatFrame`): attack/cast/form starts are logged at the frame's seq, an
+  illegal mobility dash is stripped before the movement step, and after the
+  step the frame's outcome (position, i-frames, parry) is recorded for the
+  strike grace window. Synthesized and extrapolated frames never repeat
+  attack/cast/dodge/interact.
+- HitClaims are validated after the tick's frames (a claim can overtake its
+  frame: it waits up to 0.5 s). Claims that name a player are refused with
+  code 1 before anything else; the only path that lowers a player's health
+  is an enemy strike or enemy projectile (`combat.(*World).hurtPlayer`).
+- Enemies are entities (`EntityKind enemy`, `typeId` = combatdefs.TypeID,
+  `healthPct`, the Activity casting bit while winding up) on the existing
+  snapshot/AOI path, spawned only within ENEMY_SPAWN_M of a player.
+- Groups come from the atlas (camps, bandit camps, guardians, boss arenas at
+  wizard towers / sunken temples / demon lairs / large ruins) plus seeded
+  wild packs (enemyDensity from the WorldSpec); towns are safe.
+- Persistence: `character_progress.skill_tree / spells_known /
+  spells_equipped` (accounts, write-behind), the same fields of the local
+  save blob (local profiles). No migration.
+- Env: `LODESTONE_ZONE_DEV_COMBAT` (default with the dev ticket key) enables
+  `LODESTONE_ZONE_DEBUG_CAMP="x,z,level,key key...[,affix][;...]"`,
+  `LODESTONE_ZONE_DEBUG_BOSS="x,z,level,boss[,element]"` and the gem Interact;
+  `LODESTONE_ZONE_CAMP_RESPAWN_S`, `LODESTONE_ZONE_BOSS_RESPAWN_S`,
+  `LODESTONE_ZONE_NO_WILD_PACKS`, `LODESTONE_ZONE_NO_ATLAS_ENEMIES`.
+- `GET /debug/combat`: every group (kind, anchor, level, members with
+  position/health/state) and the counters, published once a second.
+- Metrics: `zone_combat_claims_accepted_total`,
+  `zone_combat_claims_refused_total{reason}`, `zone_combat_enemies`,
+  `zone_combat_kills_total`, `zone_combat_player_hits_total`,
+  `zone_combat_evaded_total`, `zone_combat_downs_total`.
+- Acceptance: `node server/zone/cmd/combatbots/acceptance.mjs` (the zone
+  binary on the official world; a party of two `cmd/combatbots` clears a
+  camp and a boss).

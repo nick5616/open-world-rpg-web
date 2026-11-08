@@ -51,6 +51,14 @@ export class LocalSim {
   envSource: (() => Readonly<StepEnv>) | null = null;
   /** The env the newest step used (HUD). */
   lastEnv: Readonly<StepEnv> = NO_ENV;
+  /**
+   * WP13 combat: called before each step with the seq it will get and the
+   * state it starts from; returns the combat bits (attack/alt/dodge/cast/
+   * interact) and castSlot to put in that step's InputFrame. afterStep sees
+   * the result (hit windows, the timing probe).
+   */
+  combatHook: ((seq: number, before: Readonly<MoveState>, sprinting: boolean) => { flags: number; castSlot: number }) | null = null;
+  afterStep: ((seq: number, state: Readonly<MoveState>) => void) | null = null;
 
   constructor(private ground: GroundQuery, spawn: Vec3) {
     this.cur = newMoveState(spawn);
@@ -102,12 +110,18 @@ export class LocalSim {
     this.accum = r.accum;
     for (let i = 0; i < r.steps; i++) {
       const input = makeMoveInput(inp.held, this.latch.consume(), inp.yaw, inp.pitch, this.glideLatch.consume());
+      if (this.combatHook && !inp.fly) {
+        const c = this.combatHook(this.seq + 1, this.cur, inp.held.sprint);
+        input.flags |= c.flags;
+        input.castSlot = c.castSlot;
+      }
       const env = this.envSource ? this.envSource() : NO_ENV;
       this.lastEnv = env;
       this.prev = this.cur;
       this.cur = inp.fly ? stepFly(this.cur, input, STEP_DT) : stepMovement(this.cur, input, this.ground, STEP_DT, env);
       this.seq++;
       this.onStep?.({ seq: this.seq, input, state: this.cur, fly: inp.fly, env });
+      this.afterStep?.(this.seq, this.cur);
     }
     out.x = lerp(this.prev.pos.x, this.cur.pos.x, r.alpha);
     out.y = lerp(this.prev.pos.y, this.cur.pos.y, r.alpha);

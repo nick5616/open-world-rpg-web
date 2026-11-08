@@ -1,0 +1,90 @@
+{
+  "campCleared": true,
+  "campSeconds": 19.0004814,
+  "bossDefeated": true,
+  "bossFightSeconds": 201,
+  "bossPhases": 3,
+  "downs": 1,
+  "claimsAccepted": 689,
+  "claimsRefused": 52,
+  "kills": [
+    "enemy 3",
+    "The Mossbound Warden",
+    "enemy 8",
+    "enemy 9",
+    "enemy 10",
+    "enemy 11",
+    "enemy 5",
+    "enemy 6",
+    "enemy 4"
+  ],
+  "bots": {
+    "Alyssa": {
+      "attacks": 443,
+      "casts": 26,
+      "claimsAccepted": 441,
+      "claimsRefused": 27,
+      "corrections": 0,
+      "damageDealt": 10982,
+      "damageTaken": 305,
+      "damageTakenBy": {
+        "boss_charge": 112,
+        "boss_cleave": 63,
+        "boss_shockwave": 19,
+        "boss_slam": 26,
+        "elemental_burst": 28,
+        "golem_punch": 57
+      },
+      "dodges": 97,
+      "downs": 0,
+      "drinks": 3,
+      "evaded": 88,
+      "kills": [
+        "enemy 3",
+        "The Mossbound Warden",
+        "enemy 8",
+        "enemy 9",
+        "enemy 10",
+        "enemy 11"
+      ],
+      "refusedBy": {
+        "10": 14,
+        "4": 13
+      },
+      "retreats": 0,
+      "weapon": "sword"
+    },
+    "Bruno": {
+      "attacks": 252,
+      "casts": 21,
+      "claimsAccepted": 248,
+      "claimsRefused": 25,
+      "corrections": 3,
+      "damageDealt": 5896,
+      "damageTaken": 397,
+      "damageTakenBy": {
+        "boss_cleave": 63,
+        "boss_shockwave": 19,
+        "boss_slam": 130,
+        "elemental_burst": 14,
+        "golem_punch": 171
+      },
+      "dodges": 113,
+      "downs": 1,
+      "drinks": 3,
+      "evaded": 104,
+      "kills": [
+        "enemy 5",
+        "enemy 6",
+        "enemy 4"
+      ],
+      "refusedBy": {
+        "10": 8,
+        "4": 16,
+        "5": 1
+      },
+      "retreats": 2,
+      "weapon": "spear"
+    }
+  }
+}

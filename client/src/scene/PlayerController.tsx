@@ -51,6 +51,10 @@ export interface PlayerDriver {
   takeCorrection(): { state: MoveState; error: Vec3; magnitude: number } | null;
   /** WP10: world inputs per step (rain at the synced world time, updrafts). Offline uses offlineEnv. */
   env?(): Readonly<StepEnv>;
+  /** WP13 combat: per-step combat bits (client/src/combat/link.ts), after-step hook, and input block while downed. */
+  combatHook?(seq: number, before: Readonly<MoveState>, sprinting: boolean): { flags: number; castSlot: number };
+  afterStep?(seq: number, state: Readonly<MoveState>): void;
+  blockInput?(): boolean;
 }
 
 interface Props {
@@ -82,6 +86,8 @@ export function PlayerController({ onStep, driver }: Props) {
   useEffect(() => sim.setGround(ground), [sim, ground]);
   useEffect(() => {
     sim.envSource = driver?.env ? () => driver.env!() : offlineEnv;
+    sim.combatHook = driver?.combatHook ? (seq, before, sprinting) => driver.combatHook!(seq, before, sprinting) : null; // WP13
+    sim.afterStep = driver?.afterStep ? (seq, st) => driver.afterStep!(seq, st) : null;
   }, [sim, driver]);
   useEffect(() => {
     sim.onStep = (r) => {
@@ -134,7 +140,7 @@ export function PlayerController({ onStep, driver }: Props) {
     lk.yaw = Math.atan2(Math.sin(lk.yaw), Math.cos(lk.yaw));
 
     // The debug panel takes the keyboard; the player stands still meanwhile.
-    const buttons = app.debugPanelOpen ? NO_BUTTONS : held.current;
+    const buttons = app.debugPanelOpen || driver?.blockInput?.() ? NO_BUTTONS : held.current; // WP13: no moving while downed
     sim.frame(delta, { held: buttons, yaw: lk.yaw, pitch: lk.pitch, fly }, render);
     driver?.afterFrame();
 

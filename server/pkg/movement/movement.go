@@ -88,6 +88,9 @@ type State struct {
 	Timer      int   // steps in the current mode family (0..255)
 	Lunge      int   // climb-jump lunge steps remaining (0..15)
 	Flags      uint8 // Flag*
+	// WP13 (dash.go): dash steps and dodge i-frame steps remaining (0..15 each).
+	Dash    int
+	IFrames int
 }
 
 // Ground answers terrain height (feet y) at a horizontal position.
@@ -198,7 +201,7 @@ func StepFrame(s State, f proto.InputFrame, g Ground) State {
 // StepFrameEnv applies one input frame. Yaw is dequantized from the wire
 // u16 so server and client steer by the identical angle the client sent.
 func StepFrameEnv(s State, f proto.InputFrame, g Ground, env Env) State {
-	return StepEnv(s, f.Flags, proto.U16ToYaw(f.Yaw), g, env)
+	return stepFull(s, f.Flags, f.CastSlot, proto.U16ToYaw(f.Yaw), g, env)
 }
 
 // Step advances s by one fixed Dt with input flags (proto.InputFlag*) and yaw
@@ -210,8 +213,16 @@ func Step(s State, flags uint16, yaw float64, g Ground) State {
 // StepEnv is the full step: dispatch on the carried mode, then the shared
 // stamina/timer bookkeeping (finish). Mirrors stepMovement in TS.
 func StepEnv(s State, flags uint16, yaw float64, g Ground, env Env) State {
+	return stepFull(s, flags, 0, yaw, g, env)
+}
+
+// stepFull is StepEnv with the frame's castSlot (the dash variant when the
+// dodge flag is set, WP13 dash.go).
+func stepFull(s State, flags uint16, castSlot uint8, yaw float64, g Ground, env Env) State {
 	g = AtLevel(g, s.Pos.Y) // WP09: caves see the ground at the player's level (caves.go)
 	wx, wz := wishDir(flags, yaw)
+	s0 := s
+	s, dashing := beginDash(s, flags, castSlot, yaw, wx, wz)
 	var out State
 	switch s.Mode {
 	case ModeClimb:
@@ -221,10 +232,11 @@ func StepEnv(s State, flags uint16, yaw float64, g Ground, env Env) State {
 	case ModeSwim:
 		out = stepSwim(s, flags, wx, wz, g)
 	default:
-		out = stepWalk(s, flags, wx, wz, g)
+		out = stepWalk(s, flags, wx, wz, g, dashing)
 	}
+	out.Dash, out.IFrames = s.Dash, s.IFrames
 	out = collideStep(g, out) // WP09: cave walls and ceilings (caves.go)
-	return finish(s, out)
+	return finish(s0, out)
 }
 
 // wishDir is the unit wish direction from flags relative to yaw. Yaw 0 faces
@@ -352,7 +364,7 @@ func FindShore(g Ground, x, z float64) Vec3 {
 
 // stepWalk is WP02's walk/air step plus slope rules, glider opening, wall
 // grabs, water entry and the sprint/regen stamina rules (TS stepWalk).
-func stepWalk(s State, flags uint16, wx, wz float64, g Ground) State {
+func stepWalk(s State, flags uint16, wx, wz float64, g Ground, dashing bool) State {
 	use := canUse(s)
 	sprinting := flags&proto.InputFlagSprint != 0 && use
 	speed := constants.BaseMoveSpeed
@@ -371,6 +383,9 @@ func stepWalk(s State, flags uint16, wx, wz float64, g Ground) State {
 
 	vx, vz := s.Vel.X, s.Vel.Z
 	switch {
+	case dashing:
+		// WP13: a dash holds its horizontal velocity (no friction, no
+		// steering); walls still take the into-wall part away below.
 	case grounded && !sliding:
 		vx, vz = applyGroundFriction(vx, vz, constants.GroundFriction, constants.StopSpeed, dt)
 		vx, vz = applyGroundAccel(vx, vz, wx, wz, speed, constants.GroundAccel, dt)
@@ -521,7 +536,7 @@ func stepGlide(s State, flags uint16, wx, wz float64, g Ground, env Env) State {
 	if !use || flags&presses != 0 {
 		a := s
 		a.Mode = ModeAir
-		return stepWalk(a, flags&^presses, wx, wz, g)
+		return stepWalk(a, flags&^presses, wx, wz, g, false)
 	}
 	vx, vz := moveToward2(s.Vel.X, s.Vel.Z, wx*constants.GlideSpeed, wz*constants.GlideSpeed, constants.GlideAccel*dt)
 	lift := 0.0
@@ -573,7 +588,7 @@ func stepClimb(s State, flags uint16, wx, wz float64, g Ground, env Env) State {
 		a := s
 		a.Mode = ModeGround
 		a.Vel = Vec3{}
-		return stepWalk(a, flags&^(proto.InputFlagJump|proto.InputFlagJumpEdge), wx, wz, g)
+		return stepWalk(a, flags&^(proto.InputFlagJump|proto.InputFlagJumpEdge), wx, wz, g, false)
 	}
 	t := math.Sqrt(here.T2)
 	ux, uz := here.GX/t, here.GZ/t
@@ -754,7 +769,11 @@ const MaxLegitHorizontalSpeed = constants.BaseMoveSpeed * constants.SprintMultip
 // lake accelerates like walking), so it gets the larger of both bounds.
 func MaxHorizontalSpeed(prev, next State) float64 {
 	const slack = 1e-6
-	return max(modeSpeedBound(next.Mode, prev), modeSpeedBound(prev.Mode, prev)) + slack
+	b := max(modeSpeedBound(next.Mode, prev), modeSpeedBound(prev.Mode, prev))
+	if prev.Dash > 0 || next.Dash > 0 {
+		b = max(b, MaxDashSpeed) // WP13 dash.go
+	}
+	return b + slack
 }
 
 func modeSpeedBound(mode int, prev State) float64 {
