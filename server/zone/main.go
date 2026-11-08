@@ -167,7 +167,7 @@ func main() {
 	})
 	s.Mux.HandleFunc("GET /debug/tickstats", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]any{"players": zone.Players(), "tick": zone.TickStats(), "clock": gameloop.PreciseClock})
+		_ = json.NewEncoder(w).Encode(map[string]any{"players": zone.Players(), "tick": zone.TickStats(), "clock": gameloop.PreciseClock, "phases": zone.TickPhases()})
 	})
 
 	// WebTransport gets its own context, cancelled only after the shutdown

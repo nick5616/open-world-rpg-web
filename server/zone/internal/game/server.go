@@ -135,6 +135,7 @@ type Server struct {
 	town       townsState   // WP20 (towns.go)
 	// WP11: next earshot hand-off (earshot.go).
 	earshotNext time.Time
+	phases      tickPhases // WP19: per-phase tick timing (phases.go)
 
 	// Shared with the metrics goroutine.
 	connsMu sync.Mutex
@@ -258,6 +259,8 @@ func (s *Server) onTick() {
 	s.tick++
 	tick := s.tick
 	now := time.Now()
+	s.phases.start() // WP19 (phases.go)
+	defer s.phases.end()
 	s.env = s.stepEnv() // WP10: rain + updrafts for every step this tick
 
 	for {
@@ -279,6 +282,7 @@ func (s *Server) onTick() {
 		s.drain(sess, now)
 		i++
 	}
+	s.phases.mark(phInputs)
 	for { // Do (caves.go): debug reads and test pokes, between ticks' phases
 		select {
 		case f := <-s.calls:
@@ -293,8 +297,11 @@ func (s *Server) onTick() {
 	s.caveTick(tick)                // WP09: cave cell interest + each entity's cave system (caves.go)
 	s.miningTick(tick, s.cfg.Now()) // WP09: pickups, respawns, WorldEdits interest (mining.go)
 	s.handoffTick(tick, now)        // WP16: handoffs, mirrored entities, presence (handoff.go, ghosts.go)
-	s.combatTick(tick)              // WP13: enemies, strikes, claims, respawns (combat.go)
-	s.townsTick(tick, s.cfg.Now())  // WP20: townsfolk near players (towns.go)
+	s.phases.mark(phWorld)
+	s.combatTick(tick) // WP13: enemies, strikes, claims, respawns (combat.go)
+	s.phases.mark(phCombat)
+	s.townsTick(tick, s.cfg.Now()) // WP20: townsfolk near players (towns.go)
+	s.phases.mark(phTowns)
 
 	// Quantize once per entity and rebuild the grid; every client's snapshot
 	// reads these.
@@ -321,7 +328,9 @@ func (s *Server) onTick() {
 
 	// Every client's snapshot, built in parallel (WP19, snapshots.go). Must
 	// stay the tick's last phase: workers read the world while they run.
+	s.phases.mark(phGrid)
 	s.sendSnapshots(tick, s.serverTimeMs())
+	s.phases.mark(phSnapshots)
 }
 
 // join admits a handshaken session (tick goroutine).

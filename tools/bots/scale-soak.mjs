@@ -62,10 +62,23 @@ function start(name, cmd, args, extra) {
   return child;
 }
 
+// --zone-affinity / --bots-affinity (Windows, hex CPU masks): pin the zone to
+// 4 logical CPUs (2 physical cores with SMT, what a cloud "4 vCPU" VM is) and
+// the bots elsewhere, so the zone is not timed while sharing cores with the
+// 300 bots that load it. Other agents' processes can still use those CPUs.
+const ZONE_AFFINITY = arg('zone-affinity', '');
+const BOTS_AFFINITY = arg('bots-affinity', '');
+function pin(child, mask, name) {
+  if (!mask || process.platform !== 'win32') return;
+  const r = spawnSync('powershell', ['-NoProfile', '-Command', `(Get-Process -Id ${child.pid}).ProcessorAffinity = ${parseInt(mask, 16)}`], { encoding: 'utf8' });
+  step(`pinned ${name} (pid ${child.pid}) to CPU mask 0x${mask}${r.status === 0 ? '' : ` FAILED: ${r.stderr}`}`);
+}
+
 const getJSON = (url) => fetch(url).then((r) => r.json()).catch(() => null);
 
 let exitCode = 1;
 const series = [];
+let lastPhases = null; // /debug/tickstats phases (last minute) from the last sample
 try {
   step(`WP19 scenario 1 "${TAG}": ${BOTS} bots + ${ENEMIES} enemies in a ${RADIUS} m disc at ${CENTER}, ${DURATION}, netsim ${PROFILE}, zone GOMAXPROCS=${PROCS}`);
   step(`machine: ${os.cpus().length} logical CPUs (${os.cpus()[0].model}), shared with other agents; load avg n/a on Windows`);
@@ -99,6 +112,7 @@ try {
     LODESTONE_ZONE_PPROF: PPROF ? '1' : '0',
   });
   const zoneExit = new Promise((r) => zone.on('exit', (code) => r(code)));
+  pin(zone, ZONE_AFFINITY, 'zone');
   if (!(await waitHttp(`http://127.0.0.1:${PORT}/healthz`, 120000))) throw new Error('zone not healthy');
   step(`zone on :${PORT} (world ${worldId})`);
 
@@ -116,6 +130,7 @@ try {
   const bots = start('bots', botsBin, ['-url', url, '-metrics', `http://127.0.0.1:${PORT}/metrics`, '-n', String(BOTS), '-mode', 'clustered', '-center', CENTER, '-radius', String(RADIUS),
     '-duration', DURATION, '-ramp', `${Math.max(10, Math.round(BOTS / 20))}s`, '-warmup', '30s', '-tick-budget', '12', '-json', out, '-metrics-out', prom], {});
   const botsDone = new Promise((r) => bots.on('exit', (code) => r(code)));
+  pin(bots, BOTS_AFFINITY, 'bots');
   step('bots started');
 
   const t0 = Date.now();
@@ -145,6 +160,7 @@ try {
     const w = ts.tick.windowTickMs;
     const row = { s: Math.round((Date.now() - t0) / 1000), players: ts.players, enemies: metric('zone_combat_enemies'), awake, p50: w.p50, p99: w.p99, max: w.max, overruns: ts.tick.overruns };
     series.push(row);
+    if (ts.phases && ts.players >= BOTS * 0.98) lastPhases = ts.phases;
     console.log(`  t=${row.s}s players ${row.players} enemies ${row.enemies} awake ${awake} tick p50 ${w.p50?.toFixed(2)} p99 ${w.p99?.toFixed(2)} max ${w.max?.toFixed(1)}`);
   }
   const code = await botsDone;
@@ -161,7 +177,11 @@ try {
   for (const r of series) lines.push(`t=${String(r.s).padStart(4)}s players ${r.players} enemies ${r.enemies} awake ${r.awake} | tick p50 ${r.p50?.toFixed(2)} p99 ${r.p99?.toFixed(2)} max ${r.max?.toFixed(1)} ms`);
   if (worst) step(`steady state: worst 60 s window tick p99 ${worst.p99.toFixed(2)} ms (budget 12), min awake enemies ${minAwake}, samples ${steady.length}`);
   const summary = JSON.parse(fs.readFileSync(out, 'utf8'));
-  const result = { tag: TAG, bots: BOTS, enemies: ENEMIES, profile: PROFILE, center: CENTER, radius: RADIUS, procs: PROCS, duration: DURATION, series, steadyWorstP99: worst?.p99 ?? null, minAwake, bots_summary: summary };
+  if (lastPhases) {
+    lines.push('', '---- tick phases, last minute before the end (ms) ----', JSON.stringify(lastPhases));
+    step(`tick phases mean ${JSON.stringify(lastPhases.meanMs)} slowest tick ${JSON.stringify(lastPhases.slowestTickMs)}`);
+  }
+  const result = { phases: lastPhases, tag: TAG, bots: BOTS, enemies: ENEMIES, profile: PROFILE, center: CENTER, radius: RADIUS, procs: PROCS, duration: DURATION, series, steadyWorstP99: worst?.p99 ?? null, minAwake, bots_summary: summary };
   fs.mkdirSync(EVIDENCE, { recursive: true });
   fs.writeFileSync(path.join(EVIDENCE, `wp19-s1-${TAG}.json`), JSON.stringify(result, null, 1));
   fs.copyFileSync(prom, path.join(EVIDENCE, `wp19-s1-${TAG}.prom`));

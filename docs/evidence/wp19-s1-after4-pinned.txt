@@ -1,0 +1,89 @@
+[2026-11-08T23:45:45.364Z] WP19 scenario 1 "after4-pinned": 300 bots + 2000 enemies in a 300 m disc at 1700,1700, 3m, netsim clean, zone GOMAXPROCS=4
+[2026-11-08T23:45:45.367Z] machine: 16 logical CPUs (11th Gen Intel(R) Core(TM) i7-11700K @ 3.60GHz), shared with other agents; load avg n/a on Windows
+[2026-11-08T23:45:49.499Z] built wp19-zone-mw8hd8k431956.exe, wp19-bots-mw8hd8k431956.exe
+[2026-11-08T23:45:50.555Z] pinned zone (pid 29324) to CPU mask 0xF000
+[2026-11-08T23:45:52.112Z] zone on :18510 (world wp19-s1-mw8hd8k431956)
+[2026-11-08T23:45:52.876Z] pinned bots (pid 39780) to CPU mask 0x0FFF
+[2026-11-08T23:45:52.876Z] bots started
+[2026-11-08T23:49:13.351Z] bots exited 3
+
+---- bots summary ----
+== bots: clustered, 300/300 connected, 195 s wall (windows/amd64, go1.27.3)
+downlink kbps   avg  154.11  p50  156.22  p95  157.77  max  158.48   (budget 160)
+uplink kbps     avg   11.16  p50   11.16  p95   11.16  max   11.16   (budget 24)
+entities/view   avg   750.0  p50   814.6  p95  1089.0  max  1158.6
+snapshot bytes  avg   616.8  p50   621.1  p95   621.1  max   621.1
+rtt ms          p50    0.50  max    4.34
+snapshots 1686990 (full 448), decode errors 0, apply errors 0
+prediction: 1683655 checks, 306 mismatches (>= 1 cm), max error 83900 cm, 4005 resyncs
+terrain: {"atlasHash":"50ae4562cfd25265","botCache":{"chunks":196,"pending":0,"hits":47007225,"misses":476,"generated":120,"evicted":0,"dropped":0,"genErrors":0,"genMeanMs":6.1870891666666665,"genMaxMs":14.1728,"wasmQueries":476},"botHeightMaxM":160.4,"botHeightMinM":82.51,"genVersion":"1","seaLevel":26.04,"seed":20261108,"wasmSha256":"42a66cc191bee49dc3df23031ee1fdb24c1ef4cbe6079fbdbfa68fa07cd4372b"}
+personas map[idler:41 jumper:82 strafer:57 walker:120] kicks map[] errors map[]
+  zone_tick_ms{q="p50"}                    10.298
+  zone_tick_ms{q="p99"}                    29.857
+  zone_tick_ms{q="max"}                    70.964
+  zone_tick_jitter_ms{q="p50"}             0
+  zone_tick_jitter_ms{q="p99"}             5.664
+  zone_tick_jitter_ms{q="max"}             37.632
+  zone_players                             300
+  zone_client_down_kbps{q="max"}           160.71
+  zone_client_up_kbps{q="max"}             11.23
+  zone_aoi_entities_avg{ring="near"}       98.06
+  zone_aoi_entities_avg{ring="mid"}        408.89
+  zone_aoi_entities_avg{ring="far"}        167.47
+  zone_aoi_entities_max                    1230
+  zone_snapshot_bytes_avg                  620.99
+  zone_writebehind_depth                   0
+  zone_speed_violations_total              0
+  zone_input_frames_dropped_total          0
+  zone_terrain_chunks                      527
+  zone_terrain_queries_total{path="cache"} 1.21485223e+08
+  zone_terrain_queries_total{path="wasm"}  53320
+  zone_terrain_generated_total             511
+  zone_terrain_gen_ms_mean                 4.727770645792564
+  zone_terrain_gen_ms_max                  14.7137
+  zone_terrain_dropped_total               0
+FAIL: zone tick p99 29.857 ms >= 12
+
+---- zone tick, 60 s windows sampled every 5 s (steady state: all bots in, t >= 60 s) ----
+t=   5s players 78 enemies 0 awake 0 | tick p50 2.32 p99 5.98 max 6.0 ms
+t=  10s players 177 enemies 2009 awake 2006 | tick p50 3.94 p99 9.25 max 11.6 ms
+t=  15s players 277 enemies 2009 awake 2006 | tick p50 5.40 p99 12.20 max 16.1 ms
+t=  20s players 300 enemies 2012 awake 2006 | tick p50 7.15 p99 17.94 max 25.0 ms
+t=  25s players 300 enemies 2012 awake 2006 | tick p50 8.55 p99 17.94 max 25.0 ms
+t=  30s players 300 enemies 2012 awake 2006 | tick p50 9.78 p99 17.38 max 25.0 ms
+t=  35s players 300 enemies 2012 awake 2006 | tick p50 9.97 p99 17.31 max 25.0 ms
+t=  40s players 300 enemies 2012 awake 2006 | tick p50 10.11 p99 16.31 max 25.0 ms
+t=  45s players 300 enemies 2012 awake 2006 | tick p50 10.14 p99 16.31 max 25.0 ms
+t=  50s players 300 enemies 2012 awake 2006 | tick p50 10.19 p99 17.38 max 25.8 ms
+t=  55s players 300 enemies 2012 awake 2006 | tick p50 10.24 p99 17.31 max 25.8 ms
+t=  60s players 300 enemies 2012 awake 2006 | tick p50 10.25 p99 17.31 max 25.8 ms
+t=  65s players 300 enemies 2012 awake 2006 | tick p50 10.35 p99 17.31 max 25.8 ms
+t=  70s players 300 enemies 2012 awake 2006 | tick p50 10.45 p99 17.31 max 25.8 ms
+t=  75s players 300 enemies 2012 awake 2006 | tick p50 10.51 p99 17.76 max 25.8 ms
+t=  80s players 300 enemies 2012 awake 2006 | tick p50 10.44 p99 16.15 max 25.8 ms
+t=  85s players 300 enemies 2012 awake 2006 | tick p50 10.41 p99 15.92 max 25.8 ms
+t=  90s players 300 enemies 2012 awake 2006 | tick p50 10.38 p99 15.92 max 25.8 ms
+t=  95s players 300 enemies 2012 awake 2006 | tick p50 10.35 p99 16.00 max 25.8 ms
+t= 100s players 300 enemies 2012 awake 2006 | tick p50 10.35 p99 16.15 max 25.8 ms
+t= 105s players 300 enemies 2012 awake 2006 | tick p50 10.36 p99 17.05 max 25.8 ms
+t= 110s players 300 enemies 2012 awake 2006 | tick p50 10.40 p99 20.84 max 26.7 ms
+t= 115s players 300 enemies 2012 awake 2006 | tick p50 10.40 p99 20.84 max 26.7 ms
+t= 120s players 300 enemies 2012 awake 2006 | tick p50 10.40 p99 20.95 max 26.7 ms
+t= 125s players 300 enemies 2012 awake 2006 | tick p50 10.39 p99 20.95 max 26.7 ms
+t= 130s players 300 enemies 2012 awake 2006 | tick p50 10.40 p99 20.95 max 26.7 ms
+t= 135s players 300 enemies 2012 awake 2006 | tick p50 10.43 p99 20.80 max 26.7 ms
+t= 140s players 300 enemies 2012 awake 2006 | tick p50 10.44 p99 21.35 max 26.7 ms
+t= 145s players 300 enemies 2012 awake 2006 | tick p50 10.45 p99 23.13 max 53.2 ms
+t= 150s players 300 enemies 2012 awake 2006 | tick p50 10.61 p99 29.50 max 71.0 ms
+t= 155s players 300 enemies 2012 awake 2006 | tick p50 10.80 p99 29.50 max 71.0 ms
+t= 160s players 300 enemies 2012 awake 2006 | tick p50 10.88 p99 29.86 max 71.0 ms
+t= 165s players 300 enemies 2012 awake 2006 | tick p50 10.84 p99 29.86 max 71.0 ms
+t= 170s players 300 enemies 2015 awake 2006 | tick p50 10.66 p99 29.86 max 71.0 ms
+t= 175s players 300 enemies 2015 awake 2006 | tick p50 10.60 p99 29.86 max 71.0 ms
+t= 180s players 300 enemies 2015 awake 2006 | tick p50 10.52 p99 29.86 max 71.0 ms
+t= 185s players 300 enemies 2015 awake 2006 | tick p50 10.46 p99 29.86 max 71.0 ms
+t= 190s players 300 enemies 2015 awake 2006 | tick p50 10.33 p99 29.86 max 71.0 ms
+t= 195s players 300 enemies 2015 awake 2006 | tick p50 10.31 p99 29.86 max 71.0 ms
+t= 200s players 0 enemies 2015 awake 180 | tick p50 10.18 p99 29.98 max 71.8 ms
+[2026-11-08T23:49:13.353Z] steady state: worst 60 s window tick p99 29.86 ms (budget 12), min awake enemies 2006, samples 28
+[2026-11-08T23:49:13.358Z] verdict: tick p99 FAIL (29.86 ms), downlink max PASS (158.5 kbps, budget 160), awake >= 2000: yes (2006)
