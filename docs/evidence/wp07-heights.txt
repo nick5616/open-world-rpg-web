@@ -1,0 +1,32 @@
+# WP07 ground height comparison (server vs client)
+date: 2026-11-08T12:28:28Z
+machine: windows/amd64, 16 CPUs, go1.27.3
+wasm: C:\Users\nickb\repos\open-world-rpg-web\.claude\worktrees\agent-a015f07c8b8336127\worldgen\pkg\worldgen.wasm (sha256 d38abb3027caa709d41501cd700d2efa006cf3522047952ac49c5227d29026a3, genVersion 1)
+world: seed 20261108 "Highmarch of Beigleifeild", atlas 50ae4562cfd25265 (314032 B), spawn (1920, 2272), sea level 26.04
+points: 10000 from worldhost.SamplePoints(seed 0x5eed): uniform over [0, 4096)^2 at full f64 precision, every 8th an edge case (lattice point, cell diagonal fx+fz=1, chunk border, up to 256 m outside the world)
+
+chromium user agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/131.0.6778.33 Safari/537.36
+atlas hashes: go-interp=50ae4562cfd25265 node=50ae4562cfd25265 chromium=50ae4562cfd25265 go=50ae4562cfd25265 (all equal: true)
+
+host            bitwise == go-wasm     notes
+go-wasm         (reference)            wazero compiler, 2.92 us/query
+go-fast         10000/10000            pure Go on cached chunk heights, 0.046 us/query (4083 chunks generated in 13829 ms; 10000 hits, 0 misses)
+go-interp       10000/10000            wazero interpreter (atlas rebuilt there too), 41.8 s total
+node-wasm       10000/10000            node v20.18.0 (win32 x64): collisionHeight, atlas 448 ms, 1.91 us/query (process 10.1 s)
+node-chunk      10000/10000            node v20.18.0 (win32 x64): chunkSurfaceHeight over 4083 LOD 0 chunks (9.2 s incl. chunk builds)
+chromium-wasm   10000/10000            chromium 131.0.6778.33 web worker: collisionHeight, atlas 459 ms, 1.96 us/query (process 11.1 s)
+chromium-chunk  10000/10000            chromium 131.0.6778.33 web worker: chunkSurfaceHeight over 4083 LOD 0 chunks (8.9 s incl. chunk builds)
+
+height range over the points: -49.68 .. 449.11 m
+first rows (x, z, height as f64 bits / value):
+  159.12441731967056     296.173291377429       c04702844eb73093  -46.019663
+  767                    1183                   4050702a80000000  65.752594
+  3744.1713465831413     37.297661088773566     c047075e1b84334f  -46.057559
+  3500.1956832689134     3741.8043167310866     403624183c5c0007  22.140995
+  138.16941298331585     1239.4219443613392     c046c7f4299177a9  -45.562139
+  2816                   1040.353135002234      40489aa3c986962a  49.208123
+  1152.4210641613645     769.471402816338       406142b57c33e363  138.084654
+  -207.601379596449      3166.8783826159674     c047bda88f6aa023  -47.481707
+
+RESULT: PASS (every host agrees to the bit at all 10000 points)
+table: docs/evidence/wp07-heights-table.csv.gz
