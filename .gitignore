@@ -16,3 +16,4 @@ client/public/wasm/
 *.tsbuildinfo
 .vite/
 evidence/tmp/
+.claude/
