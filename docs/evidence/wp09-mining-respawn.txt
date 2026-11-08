@@ -1,0 +1,10 @@
+[caves-itest] vein 83a4da8bc799ed3 (ruby, band 1, hp 145) mined in 6 swings over the wire; respawnAt 14.393s after the break (configured 14-15 s); world_edits row written, restored after kill+restart (late client got the active edit, re-mine refused), respawned after 14.4 s, row deleted, minable again
+
+--- zone (first run) log excerpt ---
+{"time":"2026-11-08T06:24:24.4360059-08:00","level":"INFO","msg":"caves ready","svc":"zone","systems":32,"chambers":287,"openings":44,"veins":685,"ms":48}
+{"time":"2026-11-08T06:24:26.6660422-08:00","level":"INFO","msg":"vein drop","svc":"zone","vein":592871688064573139,"material":"ruby","character":"itest-miner","item":"gem:ruby:cut","qty":1,"rollSeed":14560443283536896812,"edit":6229921133136354840}
+{"time":"2026-11-08T06:24:26.6660422-08:00","level":"INFO","msg":"vein mined","svc":"zone","vein":592871688064573139,"material":"ruby","edit":6229921133136354840,"respawnAt":"2026-11-08T14:24:41Z","owners":1}
+--- zone (after restart) log excerpt ---
+{"time":"2026-11-08T06:24:29.6883636-08:00","level":"INFO","msg":"caves ready","svc":"zone","systems":32,"chambers":287,"openings":44,"veins":685,"ms":56}
+{"time":"2026-11-08T06:24:29.7102505-08:00","level":"INFO","msg":"world edits restored","svc":"zone","veinsMined":1}
+{"time":"2026-11-08T06:24:41.379008-08:00","level":"INFO","msg":"vein respawned","svc":"zone","vein":592871688064573139,"edit":6229921133136354840,"minedFor":"11.667s"}
