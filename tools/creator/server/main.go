@@ -78,8 +78,10 @@ func run(s *svc.Server) error {
 		return err
 	}
 	defer pool.Close()
-	if err := pool.Ping(ctx); err != nil {
-		return fmt.Errorf("postgres: %w", err)
+	// WP18: fatal unless LODESTONE_LAZY_DEPS=1 (Cloud Run; the database
+	// sleeps on the game VM).
+	if err := s.CheckDep(ctx, "postgres", pool.Ping); err != nil {
+		return err
 	}
 
 	// Redis only backs the vibe cache, so it is only dialed when the LLM

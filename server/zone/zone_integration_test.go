@@ -174,7 +174,7 @@ func TestZoneProcessEndToEnd(t *testing.T) {
 	// Metrics scrape (published once a second).
 	time.Sleep(1200 * time.Millisecond)
 	body := get(t, base+"/metrics")
-	for _, want := range []string{"zone_players 1", `zone_tick_ms{q="p99"}`, `zone_tick_jitter_ms{q="p99"}`, "zone_writebehind_depth", `zone_client_down_kbps{q="max"}`, `zone_aoi_entities_avg{ring="near"}`} {
+	for _, want := range []string{"zone_players 1", `zone_tick_ms{q="p99"}`, `zone_tick_jitter_ms{q="p99"}`, "zone_writebehind_depth", `zone_client_down_kbps{q="max"}`, `zone_aoi_entities_avg{ring="near"}`, "zone_bytes_out_total ", "go_goroutines "} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("metrics missing %q:\n%s", want, body)
 		}
