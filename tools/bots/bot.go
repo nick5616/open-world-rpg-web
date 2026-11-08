@@ -99,15 +99,16 @@ type bot struct {
 	lastFrame   proto.InputFrame
 	terrainAt   time.Time // next chunk-interest / water check
 	// WP16
-	entityID     uint32
-	lastAckSeq   uint32
-	lastSnapAt   time.Time
-	sent         []proto.InputFrame   // newest frames (resent to a new owner)
-	postSwitch   int                  // prediction checks after a switch still to count as handoff checks
-	target       *movement.Vec3       // cross persona: where to walk
-	crosser      bool                 // WP16 -mode cross: this bot keeps crossing borders
-	discoveries  map[uint32]time.Time // first discovery Event per site (a repeat = a duplicated grant)
-	failedOverAt time.Time            // last successful failover
+	entityID                       uint32
+	lastAckSeq                     uint32
+	lastSnapAt                     time.Time
+	sent                           []proto.InputFrame   // newest frames (resent to a new owner)
+	postSwitch                     int                  // prediction checks after a switch still to count as handoff checks
+	lastCheckExact, preSwitchExact bool                 // was the last check exact (before the switch)?
+	target                         *movement.Vec3       // cross persona: where to walk
+	crosser                        bool                 // WP16 -mode cross: this bot keeps crossing borders
+	discoveries                    map[uint32]time.Time // first discovery Event per site (a repeat = a duplicated grant)
+	failedOverAt                   time.Time            // last successful failover
 
 	// stats (reader goroutine writes under mu)
 	st botStats
@@ -137,6 +138,7 @@ type botStats struct {
 	HandoffChecks          int       `json:"handoffChecks,omitempty"`
 	HandoffMismatch        int       `json:"handoffMismatches,omitempty"`
 	HandoffMaxErrCm        int32     `json:"handoffMaxErrCm,omitempty"`
+	HandoffIntroduced      int       `json:"handoffIntroducedMismatches,omitempty"`
 	HandoffIDChanges       int       `json:"handoffIdChanges,omitempty"`
 	Preconnects            int       `json:"preconnects,omitempty"`
 	PreconnectFails        int       `json:"preconnectFails,omitempty"`
@@ -534,11 +536,18 @@ func (b *bot) checkPrediction(seq uint32, self *proto.SelfState) {
 	p := b.pred[seq%512]
 	e := max(abs32(self.X-proto.MetersToCm(p.Pos.X)), abs32(self.Y-proto.MetersToCm(p.Pos.Y)), abs32(self.Z-proto.MetersToCm(p.Pos.Z)))
 	b.st.PredChecks++
+	defer func() { b.lastCheckExact = e == 0 }()
 	if b.postSwitch > 0 { // WP16: the first checks after a handoff
 		b.postSwitch--
 		b.st.HandoffChecks++
 		if e > 0 {
 			b.st.HandoffMismatch++
+			if b.preSwitchExact {
+				// Agreed with the old zone right before the switch, disagrees
+				// with the new one: divergence the handoff introduced (the
+				// rest was inherited from the old zone, e.g. a netsim stall).
+				b.st.HandoffIntroduced++
+			}
 		}
 		b.st.HandoffMaxErrCm = max(b.st.HandoffMaxErrCm, e)
 	}

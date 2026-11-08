@@ -34,6 +34,7 @@ type ClusterSummary struct {
 	HandoffChecks     int                `json:"handoffPredictionChecks"`
 	HandoffMismatches int                `json:"handoffPredictionMismatches"`
 	HandoffMaxErrCm   int32              `json:"handoffMaxErrCm"`
+	HandoffIntroduced int                `json:"handoffIntroducedMismatches"`
 	HandoffIDChanges  int                `json:"handoffEntityIdChanges"`
 	Preconnects       int                `json:"preconnects"`
 	PreconnectFails   int                `json:"preconnectFails"`
@@ -91,6 +92,7 @@ func clusterVerdict(s *Summary, bots []*bot, own *ownershipStats, zones []map[st
 		gaps = append(gaps, st.HandoffGapsMs...)
 		c.HandoffChecks += st.HandoffChecks
 		c.HandoffMismatches += st.HandoffMismatch
+		c.HandoffIntroduced += st.HandoffIntroduced
 		c.HandoffMaxErrCm = max(c.HandoffMaxErrCm, st.HandoffMaxErrCm)
 		c.HandoffIDChanges += st.HandoffIDChanges
 		c.Preconnects += st.Preconnects
@@ -153,8 +155,8 @@ func clusterVerdict(s *Summary, bots []*bot, own *ownershipStats, zones []map[st
 }
 
 func printCluster(c *ClusterSummary) {
-	fmt.Printf("handoffs %d by %d bots; gap ms p50 %.1f p95 %.1f max %.1f; prediction after switch: %d checks, %d mismatches, max %d cm; id changes %d\n",
-		c.Handoffs, c.BotsThatCrossed, c.HandoffGapMs.P50, c.HandoffGapMs.P95, c.HandoffGapMs.Max, c.HandoffChecks, c.HandoffMismatches, c.HandoffMaxErrCm, c.HandoffIDChanges)
+	fmt.Printf("handoffs %d by %d bots; gap ms p50 %.1f p95 %.1f max %.1f; prediction after switch: %d checks, %d mismatches (%d introduced by the switch, the rest inherited from the old zone), max %d cm; id changes %d\n",
+		c.Handoffs, c.BotsThatCrossed, c.HandoffGapMs.P50, c.HandoffGapMs.P95, c.HandoffGapMs.Max, c.HandoffChecks, c.HandoffMismatches, c.HandoffIntroduced, c.HandoffMaxErrCm, c.HandoffIDChanges)
 	fmt.Printf("pre-connects %d (failed %d), standby kicks %d, drops %d, failovers %d (gave up %d), failover ms p50 %.0f max %.0f, rewind m p50 %.1f max %.1f\n",
 		c.Preconnects, c.PreconnectFails, c.StandbyKicks, c.Drops, c.Failovers, c.GaveUp, c.FailoverMs.P50, c.FailoverMs.Max, c.FailoverRewindM.P50, c.FailoverRewindM.Max)
 	fmt.Printf("discoveries %d, duplicated %d, re-granted after a failover (lost with the dead zone's unsaved queue) %d\n", c.Discoveries, c.DupDiscoveries, c.Regranted)

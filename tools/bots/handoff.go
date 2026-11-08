@@ -264,6 +264,7 @@ func (b *bot) switchTo(bc *botConn, w *proto.Welcome) {
 	b.active = bc
 	b.dec = snapshot.Decoder{}
 	b.postSwitch = 4
+	b.preSwitchExact = b.lastCheckExact
 	// Resend what the old owner may not have applied (its last ack onward).
 	var frames []proto.InputFrame
 	for _, f := range b.sent {
