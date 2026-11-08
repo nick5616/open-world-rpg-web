@@ -90,6 +90,20 @@ async function play(page, charName) {
 const debug = (page) => page.evaluate(() => window.__lodestone.netDebug());
 const player = (page) => page.evaluate(() => window.__lodestone.player());
 
+/** Largest eased remote jump outside the excluded [from, to] window (cm). */
+function maxJump(jumps, from, to) {
+  return Math.max(0, ...jumps.filter((j) => j.atMs < from || j.atMs > to).map((j) => j.cm));
+}
+function diffC(x, y) {
+  const o = {};
+  for (const k of Object.keys(x)) o[k] = k === 'logLen' || k === 'transfers' ? 0 : x[k] - y[k];
+  return o;
+}
+function subC(x, e) {
+  const o = { ...x };
+  for (const k of Object.keys(e)) o[k] = x[k] - e[k];
+  return o;
+}
 function counters(d) {
   return { reconciles: d.prediction.reconciles, logLen: d.prediction.log.length, teleports: d.interp.teleports, visibleJumps: d.interp.visibleJumps, extrapEvents: d.interp.extrapEvents, transfers: d.transfers.length };
 }
@@ -201,14 +215,25 @@ try {
   await sleep(1500);
   samples.push(await sample(a, b));
   const mid = [await debug(a), await debug(b)];
+  // A screenshot stalls rendering in both browsers for hundreds of ms (the
+  // WP06 harness found the same), which shows up as an input burst and an
+  // eased remote lurch that has nothing to do with zones: leave it out of
+  // the measured window.
+  const shotFrom = Date.now();
   await a.screenshot({ path: path.join(EVIDENCE, 'wp16-border-east-a.png') });
+  await sleep(1500);
+  const shotTo = Date.now();
+  const resume = [await debug(a), await debug(b)];
+  const excluded = { A: diffC(counters(resume[0]), counters(mid[0])), B: diffC(counters(resume[1]), counters(mid[1])) };
   await walkTogether(a, b, Math.PI / 2, 45000, samples, (s) => s.A.x < BORDER_X - 15 && s.B.x < BORDER_X - 15);
   await sleep(1500);
   samples.push(await sample(a, b));
   const walkS = (Date.now() - t0) / 1000;
   const [da, dbb] = [await debug(a), await debug(b)];
   await b.screenshot({ path: path.join(EVIDENCE, 'wp16-border-back-b.png') });
-  const post = { A: counters(da), B: counters(dbb) };
+  // Measured = everything since pre, minus the screenshot interval.
+  const raw = { A: counters(da), B: counters(dbb) };
+  const post = { A: subC(raw.A, excluded.A), B: subC(raw.B, excluded.B) };
   const corr = (d, p) => d.prediction.log.slice(p.logLen).map((x) => x.magnitude);
   const corrA = corr(da, pre.A);
   const corrB = corr(dbb, pre.B);
@@ -221,9 +246,10 @@ try {
     zones: { start: [da0.zoneId, db0.zoneId], east: [mid[0].zoneId, mid[1].zoneId], end: [da.zoneId, dbb.zoneId] },
     transfers: { A: da.transfers.slice(pre.A.transfers), B: dbb.transfers.slice(pre.B.transfers) },
     corrections: { A: { count: post.A.reconciles - pre.A.reconciles, maxCm: Math.max(0, ...corrA) * 100 }, B: { count: post.B.reconciles - pre.B.reconciles, maxCm: Math.max(0, ...corrB) * 100 } },
+    excludedScreenshotWindow: excluded,
     remote: {
-      'A sees B': { teleports: post.A.teleports - pre.A.teleports, visibleJumps: post.A.visibleJumps - pre.A.visibleJumps, extrapEvents: post.A.extrapEvents - pre.A.extrapEvents, maxJumpCm: da.interp.maxJumpM * 100, visibleSamples: vis('A'), samples: samples.length },
-      'B sees A': { teleports: post.B.teleports - pre.B.teleports, visibleJumps: post.B.visibleJumps - pre.B.visibleJumps, extrapEvents: post.B.extrapEvents - pre.B.extrapEvents, maxJumpCm: dbb.interp.maxJumpM * 100, visibleSamples: vis('B'), samples: samples.length },
+      'A sees B': { teleports: post.A.teleports - pre.A.teleports, visibleJumps: post.A.visibleJumps - pre.A.visibleJumps, extrapEvents: post.A.extrapEvents - pre.A.extrapEvents, maxJumpCm: maxJump(da.interp.jumps, shotFrom, shotTo), visibleSamples: vis('A'), samples: samples.length },
+      'B sees A': { teleports: post.B.teleports - pre.B.teleports, visibleJumps: post.B.visibleJumps - pre.B.visibleJumps, extrapEvents: post.B.extrapEvents - pre.B.extrapEvents, maxJumpCm: maxJump(dbb.interp.jumps, shotFrom, shotTo), visibleSamples: vis('B'), samples: samples.length },
     },
     bandwidthKbps: { A: da.bandwidth, B: dbb.bandwidth },
     stats: { A: da.stats, B: dbb.stats },
@@ -237,6 +263,7 @@ try {
   check(new Set([...result.transfers.A, ...result.transfers.B].map((x) => x.entityId)).size === 2, 'entity ids unchanged across every switch');
   check(result.corrections.A.count === 0 && result.corrections.B.count === 0, 'zero local reconciliation corrections across the border (prediction continuous)', result.corrections);
   check(result.remote['A sees B'].teleports === 0 && result.remote['B sees A'].teleports === 0, 'zero remote teleports');
+  check(result.remote['A sees B'].maxJumpCm < 30 && result.remote['B sees A'].maxJumpCm < 30, 'no eased remote discontinuity over 30 cm (WP06 threshold for visible rubber-banding)', { A: result.remote['A sees B'].maxJumpCm, B: result.remote['B sees A'].maxJumpCm });
   check(vis('A') === samples.length && vis('B') === samples.length, 'each player saw the other in every sample while crossing (continuous visibility)', { A: `${vis('A')}/${samples.length}`, B: `${vis('B')}/${samples.length}` });
   step(`remote discontinuities (eased): A sees B ${result.remote['A sees B'].visibleJumps} (max ${result.remote['A sees B'].maxJumpCm.toFixed(1)} cm), B sees A ${result.remote['B sees A'].visibleJumps} (max ${result.remote['B sees A'].maxJumpCm.toFixed(1)} cm)`);
   step(`rtt A ${da.rttMs.toFixed(0)} ms, B ${dbb.rttMs.toFixed(0)} ms; walked ${walkS.toFixed(1)} s; handoff gaps ms A ${handoffs(result.transfers.A).map((x) => x.gapMs.toFixed(0)).join(',')} B ${handoffs(result.transfers.B).map((x) => x.gapMs.toFixed(0)).join(',')}`);

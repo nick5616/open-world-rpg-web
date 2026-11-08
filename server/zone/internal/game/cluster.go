@@ -184,8 +184,12 @@ type HandoffState struct {
 	LastSeq   uint32           `json:"lastSeq"`
 	LastFrame proto.InputFrame `json:"lastFrame"`
 	Level     uint8            `json:"level"`
-	Health    uint16           `json:"health"`
-	HealthMax uint16           `json:"healthMax"`
+	// CaveSys is the cave system the player stands in (-1 surface): the
+	// new owner admits mid-tick, after its caveTick, and interest clipping
+	// and the earshot cave rule (G3) read it before the next one.
+	CaveSys   int    `json:"caveSys"`
+	Health    uint16 `json:"health"`
+	HealthMax uint16 `json:"healthMax"`
 	// WP12 exploration (nil Progress: none).
 	Progress   *explore.Progress `json:"progress,omitempty"`
 	ReadOnly   bool              `json:"readOnly,omitempty"`

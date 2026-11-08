@@ -1,27 +1,27 @@
-[2026-11-08T19:19:24.269Z] WP16 border acceptance: profile thailand
-[2026-11-08T19:19:27.680Z] scratch database lodestone_wp04_wp16e2e
-[2026-11-08T19:19:39.129Z] built account, director, zone, bots, seedbots
-[2026-11-08T19:19:40.736Z] PASS account healthy on :18391 (mints the official world)
-[2026-11-08T19:19:41.749Z] PASS director healthy on :18390
-[2026-11-08T19:19:42.261Z] PASS netsim "thailand" in front of zone-east on :18393
-[2026-11-08T19:19:43.983Z] PASS zone-east (primary) healthy on :18392
-[2026-11-08T19:19:44.499Z] PASS netsim "thailand" in front of zone-west on :18397
-[2026-11-08T19:19:45.525Z] PASS zone-west (pool) healthy on :18396
-[2026-11-08T19:19:47.127Z] PASS director assigned x < 2048 to zone-west, the rest stays with zone-east (primary)  [["zone-west","zone-west","zone-west","zone-west"],["zone-west","zone-west","zone-west","zone-west"],["zone-east","zone-east","zone-east","zone-east"],["zone-east","zone-east","zone-east","zone-east"]]
-[2026-11-08T19:19:48.539Z] walkable crossing of x = 2048: {"x":2048,"y":90.65066528320312,"z":2048}
-[2026-11-08T19:19:49.568Z] PASS vite on :5193
-[2026-11-08T19:19:51.351Z] moved Alyssa to 2028.0,2048.0 (1 rows) | moved Bruno to 2028.0,2052.0 (1 rows)
-[2026-11-08T19:19:58.065Z] PASS both start on zone-west (the director routed them by region)  {"A":"zone-west","B":"zone-west"}
-[2026-11-08T19:19:58.066Z] PASS both pre-connected to zone-east (within the 64 m ghost band)  {"A":["zone-east"],"B":["zone-east"]}
-[2026-11-08T19:20:18.292Z] FAIL after walking east both are owned by zone-east  ["zone-west","zone-east"]
-[2026-11-08T19:20:18.292Z] PASS after walking back both are owned by zone-west again  ["zone-west","zone-west"]
-[2026-11-08T19:20:18.292Z] FAIL each browser switched zones at least twice (east, then back west)  {"A":[],"B":[{"atMs":1794165603354,"from":"zone-west","to":"zone-east","kind":"handoff","gapMs":62,"entityId":1073741825},{"atMs":1794165614092,"from":"zone-east","to":"zone-west","kind":"handoff","gapMs":56,"entityId":1073741825}]}
-[2026-11-08T19:20:18.292Z] FAIL entity ids unchanged across every switch
-[2026-11-08T19:20:18.292Z] PASS zero local reconciliation corrections across the border (prediction continuous)  {"A":{"count":0,"maxCm":0},"B":{"count":0,"maxCm":0}}
-[2026-11-08T19:20:18.292Z] PASS zero remote teleports
-[2026-11-08T19:20:18.292Z] PASS each player saw the other in every sample while crossing (continuous visibility)  {"A":"94/94","B":"94/94"}
-[2026-11-08T19:20:18.292Z] remote discontinuities (eased): A sees B 1 (max 49.5 cm), B sees A 1 (max 46.8 cm)
-[2026-11-08T19:20:18.292Z] rtt A 153 ms, B 184 ms; walked 19.8 s; handoff gaps ms A  B 62,56
-[2026-11-08T19:20:18.293Z] PASS no page errors in either browser  []
-[2026-11-08T19:20:20.569Z] dropped lodestone_wp04_wp16e2e
-[2026-11-08T19:20:20.569Z] FAILED: after walking east both are owned by zone-east; each browser switched zones at least twice (east, then back west); entity ids unchanged across every switch
+[2026-11-08T19:21:11.486Z] WP16 border acceptance: profile thailand
+[2026-11-08T19:21:15.106Z] scratch database lodestone_wp04_wp16e2e
+[2026-11-08T19:21:30.065Z] built account, director, zone, bots, seedbots
+[2026-11-08T19:21:31.666Z] PASS account healthy on :18391 (mints the official world)
+[2026-11-08T19:21:32.698Z] PASS director healthy on :18390
+[2026-11-08T19:21:33.213Z] PASS netsim "thailand" in front of zone-east on :18393
+[2026-11-08T19:21:34.895Z] PASS zone-east (primary) healthy on :18392
+[2026-11-08T19:21:35.407Z] PASS netsim "thailand" in front of zone-west on :18397
+[2026-11-08T19:21:36.435Z] PASS zone-west (pool) healthy on :18396
+[2026-11-08T19:21:38.043Z] PASS director assigned x < 2048 to zone-west, the rest stays with zone-east (primary)  [["zone-west","zone-west","zone-west","zone-west"],["zone-west","zone-west","zone-west","zone-west"],["zone-east","zone-east","zone-east","zone-east"],["zone-east","zone-east","zone-east","zone-east"]]
+[2026-11-08T19:21:39.285Z] walkable crossing of x = 2048: {"x":2048,"y":90.65066528320312,"z":2048}
+[2026-11-08T19:21:40.257Z] PASS vite on :5193
+[2026-11-08T19:21:42.034Z] moved Alyssa to 2028.0,2048.0 (1 rows) | moved Bruno to 2028.0,2052.0 (1 rows)
+[2026-11-08T19:21:47.777Z] PASS both start on zone-west (the director routed them by region)  {"A":"zone-west","B":"zone-west"}
+[2026-11-08T19:21:47.777Z] PASS both pre-connected to zone-east (within the 64 m ghost band)  {"A":["zone-east"],"B":["zone-east"]}
+[2026-11-08T19:22:07.783Z] PASS after walking east both are owned by zone-east  ["zone-east","zone-east"]
+[2026-11-08T19:22:07.783Z] PASS after walking back both are owned by zone-west again  ["zone-west","zone-west"]
+[2026-11-08T19:22:07.783Z] PASS each browser switched zones at least twice (east, then back west)  {"A":[{"atMs":1794165712911,"from":"zone-west","to":"zone-east","kind":"handoff","gapMs":194,"entityId":1073741826},{"atMs":1794165723572,"from":"zone-east","to":"zone-west","kind":"handoff","gapMs":25,"entityId":1073741826}],"B":[{"atMs":1794165713036,"from":"zone-west","to":"zone-east","kind":"handoff","gapMs":76,"entityId":1073741825},{"atMs":1794165723616,"from":"zone-east","to":"zone-west","kind":"handoff","gapMs":36,"entityId":1073741825}]}
+[2026-11-08T19:22:07.783Z] PASS entity ids unchanged across every switch
+[2026-11-08T19:22:07.783Z] PASS zero local reconciliation corrections across the border (prediction continuous)  {"A":{"count":0,"maxCm":0},"B":{"count":0,"maxCm":0}}
+[2026-11-08T19:22:07.783Z] PASS zero remote teleports
+[2026-11-08T19:22:07.783Z] PASS each player saw the other in every sample while crossing (continuous visibility)  {"A":"95/95","B":"95/95"}
+[2026-11-08T19:22:07.783Z] remote discontinuities (eased): A sees B 1 (max 128.3 cm), B sees A 1 (max 174.3 cm)
+[2026-11-08T19:22:07.783Z] rtt A 155 ms, B 149 ms; walked 19.6 s; handoff gaps ms A 194,25 B 76,36
+[2026-11-08T19:22:07.784Z] PASS no page errors in either browser  []
+[2026-11-08T19:22:10.013Z] dropped lodestone_wp04_wp16e2e
+[2026-11-08T19:22:10.013Z] ALL PASS

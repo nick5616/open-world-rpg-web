@@ -449,7 +449,7 @@ func (s *Server) buildState(sess *session) *HandoffState {
 		Claims: claimsJSON(sess.claims), From: s.cl.self, AtMs: s.cfg.Now().UnixMilli(), Epoch: e.epoch,
 		EntityID: e.ID, Move: e.Move, Prev: e.prevValid, View: e.viewRaw, Guess: e.guess,
 		Yaw: e.Yaw, Pitch: e.Pitch, LastSeq: e.LastSeq, LastFrame: e.lastFrame,
-		Level: e.Level, Health: e.Health, HealthMax: e.HealthMax,
+		Level: e.Level, Health: e.Health, HealthMax: e.HealthMax, CaveSys: e.caveSys,
 	}
 	if x := sess.x; x != nil {
 		st.Progress = x.prog
@@ -812,6 +812,7 @@ func (s *Server) joinState(sess *session, e *Entity) {
 	e.Yaw, e.Pitch = st.Yaw, st.Pitch
 	e.LastSeq, e.lastFrame = st.LastSeq, st.LastFrame
 	e.Health, e.HealthMax = st.Health, st.HealthMax
+	e.caveSys = st.CaveSys
 	if st.Level > 0 {
 		e.Level = st.Level
 	}
