@@ -54,20 +54,24 @@ interface Group {
   enemies?: { id: number; key: string; x: number; z: number; hp: number; state: string }[];
 }
 
+// The browser spawns here (open meadow west of the official world's spawn
+// settlement, outside its safe radius) and a level-1 training camp is placed
+// 18 m west of it with the dev knob, so the fight is in view and fair.
+const SPAWN = { x: 1300, z: 2352 };
+const CAMP = { x: SPAWN.x - 18, z: SPAWN.z };
+
 async function main() {
-  const zone = await startZone(buildZone(), SEED);
+  const zone = await startZone(buildZone(), SEED, { LODESTONE_ZONE_DEBUG_CAMP: `${CAMP.x},${CAMP.z},1,boar wolf boar`, LODESTONE_ZONE_NO_WILD_PACKS: '1' });
   let dbg: { groups: Group[] } | null = null;
   for (let i = 0; i < 60 && !dbg?.groups; i++) {
     dbg = (await (await fetch(`http://127.0.0.1:${zone.port}/debug/combat`)).json()) as { groups: Group[] } | null;
     if (!dbg?.groups) await sleep(250);
   }
   if (!dbg) throw new Error("zone published no combat debug");
-  const groups = dbg.groups.filter((g) => g.kind === 'pack' || g.kind === 'camp' || g.kind === 'guardian');
-  groups.sort((a, b) => a.level - b.level || Math.hypot(a.x - 1228, a.z - 2410) - Math.hypot(b.x - 1228, b.z - 2410));
-  const target = groups[0];
-  if (!target) throw new Error('no low-level group on the official world');
-  const spawnAt = { x: target.x + 30, z: target.z };
-  note(`target group #${target.id} ${target.kind} lvl ${target.level} at (${target.x.toFixed(0)}, ${target.z.toFixed(0)}); browser spawns 30 m east`);
+  const target = dbg.groups.find((g) => g.kind === 'test');
+  if (!target) throw new Error('the dev training camp is missing');
+  const spawnAt = SPAWN;
+  note(`training camp #${target.id} (boar, wolf, boar; level 1) at (${target.x.toFixed(0)}, ${target.z.toFixed(0)}); the browser spawns 18 m east`);
 
   const vitePort = 5300 + Math.floor(Math.random() * 400);
   const vite = spawn(process.execPath, [path.join(repoRoot, 'node_modules', 'vite', 'bin', 'vite.js'), '--port', String(vitePort), '--strictPort', '--host', '127.0.0.1'], { cwd: path.join(repoRoot, 'client'), stdio: 'ignore' });
@@ -168,6 +172,7 @@ async function main() {
         }
         return { best, bd };
       });
+      if (Date.now() % 5000 < 300) note(`  fight t=${((Date.now() - t0) / 1000).toFixed(0)} s: nearest enemy ${st.best ? st.bd.toFixed(1) + ' m' : 'none'}`);
       if (!st.best) {
         if (Date.now() - t0 > 15000) break;
         await face(target.x, target.z);
@@ -185,7 +190,7 @@ async function main() {
       await click(30);
       await sleep(260);
       if (Math.random() < 0.18) await page.keyboard.press('KeyF');
-      if ((shots === 0 && Date.now() - t0 > 4000) || (shots === 1 && Date.now() - t0 > 12000) || (shots === 2 && Date.now() - t0 > 22000)) {
+      if (st.bd < 6 && ((shots === 0 && Date.now() - t0 > 1500) || (shots === 1 && Date.now() - t0 > 5000) || (shots === 2 && Date.now() - t0 > 9000))) {
         await page.screenshot({ path: path.join(out, `wp13-browser-fight-${shots + 1}.png`) });
         shots++;
       }
