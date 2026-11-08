@@ -69,12 +69,15 @@ type pendingClaim struct {
 }
 
 type combatGlue struct {
-	debug   atomic.Pointer[CombatDebugInfo]
-	w       *combat.World
-	setup   CombatSetup
-	byID    map[uint32]*Entity // enemy entity by id
-	pending []pendingClaim
-	lastLog time.Time
+	debug atomic.Pointer[CombatDebugInfo]
+	// debugWanted: Unix ms of the last CombatDebug read (WP19: publish on demand).
+	debugWanted atomic.Int64
+	debugAt     atomic.Int64 // Unix ms of the last publish
+	w           *combat.World
+	setup       CombatSetup
+	byID        map[uint32]*Entity // enemy entity by id
+	pending     []pendingClaim
+	lastLog     time.Time
 }
 
 // World exposes the combat world (tests, the debug endpoint).
@@ -445,11 +448,21 @@ func (s *Server) combatTick(tick uint32) {
 			syncPlayerHealth(e)
 		}
 	}
-	if tick%constants.TickRateHz == 0 {
+	// WP19: the debug snapshot walks every group and allocates a record per
+	// enemy (~1.5 ms with 2,000 enemies, every 30th tick: a p99 spike), so
+	// it is built only while someone reads /debug/combat (CombatDebug).
+	if tick%constants.TickRateHz == 0 && time.Now().UnixMilli()-s.cbt.debugWanted.Load() < combatDebugKeepMs {
 		s.publishCombatDebug(tick)
 	}
 	if tick%(constants.TickRateHz*10) == 0 {
 		st := w.Stats
+		awake := 0
+		for _, ent := range s.cbt.byID {
+			if en := ent.npc; en != nil && en.State != combat.Asleep && en.Alive() {
+				awake++
+			}
+		}
+		s.m.reg.SetInt("zone_combat_awake", int64(awake)) // WP19: soak scenario 1 checks "2,000 awake enemies"
 		s.m.reg.SetInt("zone_combat_enemies", int64(len(s.cbt.byID)))
 		s.m.reg.SetInt("zone_combat_kills_total", st.Kills)
 		s.m.reg.SetInt("zone_combat_player_hits_total", st.PlayerHits)
@@ -609,7 +622,24 @@ func (s *Server) publishCombatDebug(tick uint32) {
 		info.Groups = append(info.Groups, d)
 	}
 	s.cbt.debug.Store(info)
+	s.cbt.debugAt.Store(time.Now().UnixMilli())
 }
 
 // CombatDebug returns the newest debug snapshot (nil before the first).
-func (s *Server) CombatDebug() *CombatDebugInfo { return s.cbt.debug.Load() }
+// WP19: the tick builds it only while it is being read (combatDebugKeepMs
+// after the last read), so a read after a quiet spell waits for the next
+// publish (at most ~1 s) instead of returning a stale or missing snapshot.
+func (s *Server) CombatDebug() *CombatDebugInfo {
+	now := time.Now().UnixMilli()
+	s.cbt.debugWanted.Store(now)
+	for deadline := now + 2500; ; {
+		if d := s.cbt.debug.Load(); (d != nil && now-s.cbt.debugAt.Load() < 1500) || time.Now().UnixMilli() > deadline || s.stopping.Load() {
+			return s.cbt.debug.Load()
+		}
+		time.Sleep(20 * time.Millisecond)
+		now = time.Now().UnixMilli()
+	}
+}
+
+// combatDebugKeepMs: keep publishing this long after the last read.
+const combatDebugKeepMs = 10_000

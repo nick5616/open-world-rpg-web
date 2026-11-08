@@ -144,6 +144,8 @@ type entView struct {
 	owner   uint32
 	partyID uint32
 	kind    proto.EntityKind
+	nameID  uint32
+	caveSys int32 // cave system this tick (-1 surface): caveVisible only runs when it differs from the viewer's
 }
 
 // buildViews fills s.views and s.qs for every grid index (after the grid
@@ -156,7 +158,10 @@ func (s *Server) buildViews() {
 	}
 	s.views, s.qs = s.views[:n], s.qs[:n]
 	put := func(i int, e *Entity) {
-		s.views[i] = entView{x: e.Move.Pos.X, z: e.Move.Pos.Z, id: e.ID, owner: e.Owner, partyID: e.PartyID, kind: e.Kind}
+		if e.q.Name != e.nameOf { // names rarely change: intern once per entity
+			e.nameOf, e.nameID = e.q.Name, snapshot.NameID(e.q.Name)
+		}
+		s.views[i] = entView{x: e.Move.Pos.X, z: e.Move.Pos.Z, id: e.ID, owner: e.Owner, partyID: e.PartyID, kind: e.Kind, caveSys: int32(e.caveSys), nameID: e.nameID}
 		s.qs[i] = e.q
 	}
 	for i, e := range s.ents {
@@ -256,11 +261,7 @@ func (s *Server) sendSnapshot(sc *snapScratch, sess *session, tick uint32, serve
 	px, pz := e.Move.Pos.X, e.Move.Pos.Z
 	s.gatherInterest(sc, e)
 
-	var lastEnts []snapshot.EntState
-	if last := sess.enc.Last(); last != nil {
-		lastEnts = last.Ents
-	}
-	kp := 0 // cursor into lastEnts (both sorted by id)
+	known := sess.enc.Known() // the newest frame's ids, walked alongside the sorted interest
 	var near, mid, far, party int
 	sc.cands = sc.cands[:0]
 	cw := s.caves()
@@ -271,17 +272,13 @@ func (s *Server) sendSnapshot(sc *snapScratch, sess *session, tick uint32, serve
 			continue
 		}
 		// Underground interest clipping (spec 9, WP09 caves.go).
-		if cw != nil && !(e.PartyID != 0 && o.partyID == e.PartyID) && !s.caveVisible(cw, e, s.entAt(i)) {
+		if cw != nil && o.caveSys != int32(e.caveSys) && !(e.PartyID != 0 && o.partyID == e.PartyID) && !s.caveVisible(cw, e, s.entAt(i)) {
 			continue
 		}
 		dx, dz := o.x-px, o.z-pz
 		d := math.Sqrt(dx*dx + dz*dz)
-		for kp < len(lastEnts) && lastEnts[kp].ID < o.id {
-			kp++
-		}
-		known := kp < len(lastEnts) && lastEnts[kp].ID == o.id
 		sameParty := e.PartyID != 0 && o.partyID == e.PartyID
-		r := aoi.Classify(d, o.kind, known, sameParty)
+		r := aoi.Classify(d, o.kind, known.Has(o.id), sameParty)
 		switch r {
 		case aoi.None:
 			continue
@@ -294,7 +291,7 @@ func (s *Server) sendSnapshot(sc *snapScratch, sess *session, tick uint32, serve
 		case aoi.Party:
 			party++
 		}
-		sc.cands = append(sc.cands, snapshot.Candidate{State: &s.qs[i], Due: aoi.Due(r, tick, o.id), Weight: priorityWeight(d, sameParty)})
+		sc.cands = append(sc.cands, snapshot.Candidate{State: &s.qs[i], Due: aoi.Due(r, tick, o.id), Weight: priorityWeight(d, sameParty), NameID: o.nameID})
 	}
 
 	st := e.selfState(s.cfg.Ground)

@@ -369,7 +369,7 @@ func (s *Server) Teleport(e *Entity, pos movement.Vec3) {
 	e.guess = 0
 	ev := proto.Encode(&proto.Event{Kind: EventTeleport, EntityID: e.ID, X: cm(pos.X), Y: cm(pos.Y), Z: cm(pos.Z)})
 	for _, o := range s.sessions {
-		if o.ent == e || (o.enc.Last() != nil && o.enc.Last().Find(e.ID) != nil) {
+		if o.ent == e || o.enc.Knows(e.ID) {
 			if err := o.conn.SendReliable(ev); err != nil {
 				o.closed.Store(true)
 			}

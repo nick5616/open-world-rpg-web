@@ -37,6 +37,7 @@ const RADIUS = Number(arg('radius', '300'));
 const PROCS = arg('procs', '4');
 const PORT = Number(arg('port', '18510'));
 const ZONE_BIN = arg('zone-bin', '');
+const PPROF = process.argv.includes('--pprof');
 const TAG = arg('tag', `${BOTS}b-${ENEMIES}e-${PROFILE}`);
 const RUN = `${Date.now().toString(36)}${process.pid}`;
 const EXE = process.platform === 'win32' ? '.exe' : '';
@@ -95,6 +96,7 @@ try {
     LODESTONE_ZONE_MAX_PLAYERS: String(BOTS + 50),
     LODESTONE_ZONE_DEBUG_HORDE: `${cx},${cz},${RADIUS},${ENEMIES}`,
     LODESTONE_ZONE_DEBUG_RAIN: '0',
+    LODESTONE_ZONE_PPROF: PPROF ? '1' : '0',
   });
   const zoneExit = new Promise((r) => zone.on('exit', (code) => r(code)));
   if (!(await waitHttp(`http://127.0.0.1:${PORT}/healthz`, 120000))) throw new Error('zone not healthy');
@@ -119,18 +121,29 @@ try {
   const t0 = Date.now();
   let done = false;
   botsDone.then(() => { done = true; });
+  // --pprof: a short mid-run CPU profile (diagnostic only: on Windows Go's
+  // profiler once crashed a zone unwinding wazero JIT frames, WP16).
+  if (PPROF) {
+    (async () => {
+      await sleep(90000);
+      const buf = Buffer.from(await (await fetch(`http://127.0.0.1:${PORT}/debug/pprof/profile?seconds=10`)).arrayBuffer());
+      const prof = path.join(TMP, 'cpu.pprof');
+      fs.writeFileSync(prof, buf);
+      const top = spawnSync('go', ['tool', 'pprof', '-top', '-cum', '-nodecount=60', zoneBin, prof], { cwd: root, env: env(), encoding: 'utf8' }).stdout;
+      fs.writeFileSync(path.join(EVIDENCE, `wp19-s1-${TAG}-cpu.txt`), `CPU profile, 10 s at t=90 s, zone with ${BOTS} bots + ${ENEMIES} enemies (GOMAXPROCS=${PROCS})\n\n${top}`);
+      step(`cpu profile saved (${prof})`);
+    })().catch((e) => step(`profile failed: ${e}`));
+  }
   while (!done) {
     await sleep(5000);
-    const [ts, cb] = await Promise.all([getJSON(`http://127.0.0.1:${PORT}/debug/tickstats`), getJSON(`http://127.0.0.1:${PORT}/debug/combat`)]);
+    // Enemy counts from /metrics (zone_combat_awake/_enemies, every 10 s):
+    // /debug/combat would make the zone build its debug snapshot every second.
+    const [ts, prom] = await Promise.all([getJSON(`http://127.0.0.1:${PORT}/debug/tickstats`), fetch(`http://127.0.0.1:${PORT}/metrics`).then((r) => r.text()).catch(() => '')]);
     if (!ts) continue;
-    let awake = 0;
-    let alive = 0;
-    for (const g of cb?.groups ?? []) for (const e of g.enemies ?? []) {
-      if (e.state !== 'dead') alive++;
-      if (e.state !== 'asleep' && e.state !== 'dead') awake++;
-    }
+    const metric = (name) => Number((new RegExp(`^${name} (\\S+)`, 'm').exec(prom) ?? [])[1] ?? 0);
+    const awake = metric('zone_combat_awake');
     const w = ts.tick.windowTickMs;
-    const row = { s: Math.round((Date.now() - t0) / 1000), players: ts.players, enemies: cb?.enemies ?? 0, alive, awake, p50: w.p50, p99: w.p99, max: w.max, overruns: ts.tick.overruns };
+    const row = { s: Math.round((Date.now() - t0) / 1000), players: ts.players, enemies: metric('zone_combat_enemies'), awake, p50: w.p50, p99: w.p99, max: w.max, overruns: ts.tick.overruns };
     series.push(row);
     console.log(`  t=${row.s}s players ${row.players} enemies ${row.enemies} awake ${awake} tick p50 ${w.p50?.toFixed(2)} p99 ${w.p99?.toFixed(2)} max ${w.max?.toFixed(1)}`);
   }

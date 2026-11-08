@@ -1,0 +1,71 @@
+CPU profile, 10 s at t=90 s, zone with 300 bots + 2000 enemies (GOMAXPROCS=4)
+
+File: wp19-zone-mw8gix1242772.exe
+Build ID: C:\Users\nickb\AppData\Local\Temp\lodestone-wp19-1mvsfZ\wp19-zone-mw8gix1242772.exe2026-11-08 15:22:16.2888826 -0800 PST
+Type: cpu
+Time: 2026-11-08 15:23:53 PST
+Duration: 10s, Total samples = 21.87s (218.69%)
+Showing nodes accounting for 11.85s, 54.18% of 21.87s total
+Dropped 356 nodes (cum <= 0.11s)
+Showing top 60 nodes out of 184
+      flat  flat%   sum%        cum   cum%
+     1.93s  8.82%  8.82%     10.17s 46.50%  lodestone/server/zone/internal/game.(*Server).sendSnapshot
+         0     0%  8.82%     10.17s 46.50%  lodestone/server/zone/internal/game.(*Server).sendSnapshots.func1 (partial-inline)
+         0     0%  8.82%      7.70s 35.21%  lodestone/server/zone/internal/game.(*Server).sendSnapshots.func2
+         0     0%  8.82%      6.69s 30.59%  lodestone/server/pkg/gameloop.(*Scheduler).run
+         0     0%  8.82%      6.36s 29.08%  lodestone/server/pkg/gameloop.(*Scheduler).runDue
+         0     0%  8.82%      6.35s 29.04%  lodestone/server/pkg/gameloop.(*Scheduler).safeTick
+     0.06s  0.27%  9.10%      6.35s 29.04%  lodestone/server/zone/internal/game.(*Server).onTick
+     0.01s 0.046%  9.14%      4.52s 20.67%  lodestone/server/pkg/snapshot.(*Encoder).Build
+     3.04s 13.90% 23.05%      4.51s 20.62%  lodestone/server/pkg/snapshot.(*Encoder).buildBudgeted
+     0.06s  0.27% 23.32%      4.51s 20.62%  lodestone/server/pkg/transport.(*wsConn).writer
+     0.10s  0.46% 23.78%      3.87s 17.70%  internal/poll.(*FD).execIO
+         0     0% 23.78%      3.73s 17.06%  github.com/coder/websocket.(*Conn).Write
+     0.03s  0.14% 23.91%      3.73s 17.06%  github.com/coder/websocket.(*Conn).write
+     0.03s  0.14% 24.05%      3.50s 16.00%  syscall.SyscallN
+     3.24s 14.81% 38.87%      3.47s 15.87%  runtime.cgocall
+         0     0% 38.87%      3.47s 15.87%  syscall.syscalln
+     0.01s 0.046% 38.91%      3.35s 15.32%  github.com/coder/websocket.(*Conn).writeFrame
+     0.01s 0.046% 38.96%      2.95s 13.49%  bufio.(*Writer).Flush
+     0.01s 0.046% 39.00%      2.90s 13.26%  net.(*conn).Write
+     0.01s 0.046% 39.05%      2.89s 13.21%  net.(*netFD).Write
+     0.02s 0.091% 39.14%      2.87s 13.12%  internal/poll.(*FD).Write
+         0     0% 39.14%      2.58s 11.80%  internal/poll.(*FD).Write.func2
+     0.03s  0.14% 39.28%      2.58s 11.80%  syscall.WSASend
+         0     0% 39.28%      2.53s 11.57%  lodestone/server/zone/internal/game.(*Server).sendSnapshots
+         0     0% 39.28%      2.21s 10.11%  lodestone/server/pkg/svc.(*Server).instrument.func1
+         0     0% 39.28%      2.21s 10.11%  lodestone/server/pkg/svc.CORS.func1
+         0     0% 39.28%      2.21s 10.11%  net/http.(*ServeMux).ServeHTTP
+         0     0% 39.28%      2.21s 10.11%  net/http.(*conn).serve
+         0     0% 39.28%      2.21s 10.11%  net/http.HandlerFunc.ServeHTTP
+         0     0% 39.28%      2.21s 10.11%  net/http.serverHandler.ServeHTTP
+         0     0% 39.28%      2.19s 10.01%  lodestone/server/pkg/transport.(*WebSocket).Handler.func1
+         0     0% 39.28%      2.19s 10.01%  lodestone/server/zone/internal/game.(*Server).Handler.func1
+         0     0% 39.28%      2.19s 10.01%  lodestone/server/zone/internal/game.(*Server).Handler.func1.1
+         0     0% 39.28%      2.19s 10.01%  lodestone/server/zone/internal/game.(*Server).accept
+     0.02s 0.091% 39.37%      2.19s 10.01%  lodestone/server/zone/internal/game.(*Server).readLoop
+     0.06s  0.27% 39.64%      2.03s  9.28%  lodestone/server/pkg/transport.(*wsConn).Recv
+     0.01s 0.046% 39.69%      1.97s  9.01%  github.com/coder/websocket.(*Conn).Read
+     0.17s  0.78% 40.47%      1.82s  8.32%  lodestone/server/zone/internal/game.(*Server).combatTick
+         0     0% 40.47%      1.63s  7.45%  github.com/coder/websocket.(*Conn).Reader (inline)
+     0.05s  0.23% 40.70%      1.63s  7.45%  github.com/coder/websocket.(*Conn).reader
+     0.04s  0.18% 40.88%      1.57s  7.18%  lodestone/server/zone/internal/combat.(*World).Step
+     1.51s  6.90% 47.78%      1.55s  7.09%  lodestone/server/zone/internal/game.(*Server).caveVisible
+     0.02s 0.091% 47.87%      1.49s  6.81%  github.com/coder/websocket.(*Conn).readLoop
+     0.02s 0.091% 47.97%      1.47s  6.72%  github.com/coder/websocket.(*Conn).readFrameHeader
+     0.13s  0.59% 48.56%      1.43s  6.54%  lodestone/server/zone/internal/game.(*Server).gatherInterest
+     0.92s  4.21% 52.77%      1.30s  5.94%  lodestone/server/zone/internal/aoi.(*Grid).Query
+     0.03s  0.14% 52.90%      1.29s  5.90%  github.com/coder/websocket.readFrameHeader
+     0.03s  0.14% 53.04%      1.22s  5.58%  bufio.(*Reader).ReadByte
+     0.06s  0.27% 53.32%      1.19s  5.44%  bufio.(*Reader).fill
+     0.02s 0.091% 53.41%      1.19s  5.44%  lodestone/server/zone/internal/combat.(*World).think
+     0.04s  0.18% 53.59%      1.13s  5.17%  io.(*multiReader).Read
+     0.04s  0.18% 53.77%      1.07s  4.89%  net.(*conn).Read
+     0.02s 0.091% 53.86%      1.06s  4.85%  lodestone/server/zone/internal/game.(*Server).drain
+     0.01s 0.046% 53.91%      1.04s  4.76%  lodestone/server/zone/internal/game.(*Server).applyFrames
+     0.01s 0.046% 53.96%      1.03s  4.71%  internal/poll.(*FD).Read
+         0     0% 53.96%      1.03s  4.71%  net.(*netFD).Read
+         0     0% 53.96%      0.88s  4.02%  lodestone/server/pkg/movement.StepFrameEnv (inline)
+         0     0% 53.96%      0.88s  4.02%  lodestone/server/pkg/movement.stepFull
+     0.01s 0.046% 54.00%      0.85s  3.89%  lodestone/server/zone/internal/game.(*Entity).applyFrame
+     0.04s  0.18% 54.18%      0.84s  3.84%  lodestone/server/zone/internal/combat.(*World).chase
