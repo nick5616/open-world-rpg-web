@@ -472,7 +472,7 @@ func NewCaveTerrain(t *Terrain, surface movement.Ground, c *Caves) *CaveTerrain 
 		surface = t
 	}
 	ct := &CaveTerrain{Terrain: t, Caves: c}
-	ct.g = &caves.Ground{Height: surface.HeightAt, Openings: c.Graph.OpeningsList, Cells: c,
+	ct.g = &caves.Ground{Height: surface.HeightAt, Terrain: t.HeightAt, Openings: c.Graph.OpeningsList, Cells: c,
 		Water: func(x, z float64) float64 { return movement.WaterAt(surface, x, z) }}
 	return ct
 }

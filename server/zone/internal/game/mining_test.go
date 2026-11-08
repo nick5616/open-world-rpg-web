@@ -340,7 +340,8 @@ func TestMiningRestoresPersistedEdits(t *testing.T) {
 // stretch on the server with a client predicting on its own cave ground.
 func TestCaveMovementMatchesPrediction(t *testing.T) {
 	ct := testCaveTerrain(t)
-	h := newHarness(t, func(c *Config) { c.Ground = ct })
+	dry := false
+	h := newHarness(t, func(c *Config) { c.Ground = ct; c.Rain = &dry }) // the local step runs without rain
 	g := ct.CaveGraph()
 	s := g.Systems[0]
 	deep := g.Chambers[s.FirstChamber+s.Deepest]
@@ -351,7 +352,7 @@ func TestCaveMovementMatchesPrediction(t *testing.T) {
 	cl.join(h, "spelunker", "Spelunker")
 	local := testCaveTerrain(t)
 	local.Caves.Ensure(x, deep.Floor, z, 48)
-	sim := movement.State{Pos: movement.Vec3{X: x, Y: local.FloorAt(x, deep.Floor+1, z), Z: z}}
+	sim := movement.NewState(movement.Vec3{X: x, Y: local.FloorAt(x, deep.Floor+1, z), Z: z}) // WP10: full stamina wheel, as the zone spawns
 	cl.walkOn(90, proto.InputFlagForward, 0.4, &sim, local)
 	cl.walkOn(60, proto.InputFlagForward|proto.InputFlagJump, 2.5, &sim, local)
 	cl.walkOn(90, proto.InputFlagForward|proto.InputFlagSprint, -1.9, &sim, local)

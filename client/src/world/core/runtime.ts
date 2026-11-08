@@ -66,7 +66,7 @@ export class WorldRuntime {
     try {
       this.caveGraph = parseCaveGraph(caveGraphBytes(wg, atlas));
       this.caveStore = new CaveCellStore(wg, atlas);
-      ground = new CaveGround(this.structureGround, this.caveGraph.openings, this.caveStore);
+      ground = new CaveGround(this.structureGround, this.caveGraph.openings, this.caveStore, this.terrainGround);
     } catch (err) {
       console.warn('[world] no caves (worldgen.wasm without cave exports?)', err);
     }

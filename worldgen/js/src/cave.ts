@@ -826,6 +826,8 @@ export class CaveGroundCore {
     readonly cells: CaveCellSource,
     /** Surface water (the wasm water_height), if the surface has water. */
     readonly water?: (x: number, z: number) => number,
+    /** The bare heightfield (no structures) for the in-cave test: climbing a tower wall is not being underground. Default: surface. */
+    readonly terrain?: (x: number, z: number) => number,
   ) {}
 
   /** The surface ground (no level): what non-step callers see. */
@@ -838,8 +840,8 @@ export class CaveGroundCore {
   }
 
   /** In a mouth hole or more than CAVE_UNDER_M under the surface at y? */
-  inCave(x: number, y: number, z: number, h = this.surface(x, z)): boolean {
-    return y < h - CAVE_UNDER_M || caveMasked(this.openings, x, z);
+  inCave(x: number, y: number, z: number): boolean {
+    return y < (this.terrain ?? this.surface)(x, z) - CAVE_UNDER_M || caveMasked(this.openings, x, z);
   }
 
   /**
@@ -852,7 +854,7 @@ export class CaveGroundCore {
    */
   floorAt(x: number, y: number, z: number): number {
     const h = this.surface(x, z);
-    if (!this.inCave(x, y, z, h)) return h;
+    if (!this.inCave(x, y, z)) return h;
     const f = caveFloorAt(this.cells, x, y, z);
     if (f > -Infinity) return f;
     if (caveMasked(this.openings, x, z)) return h;

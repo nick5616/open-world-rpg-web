@@ -17,9 +17,11 @@ export class CaveGround implements GroundQuery {
     readonly surface: GroundQuery,
     openings: readonly CaveOpening[],
     readonly store: CaveCellStore,
+    /** The bare terrain (no structures): the in-cave test. */
+    terrain: GroundQuery = surface,
   ) {
     const water = surface.waterAt ? (x: number, z: number) => surface.waterAt!(x, z) : undefined;
-    this.core = new CaveGroundCore((x, z) => surface.heightAt(x, z), openings, store, water);
+    this.core = new CaveGroundCore((x, z) => surface.heightAt(x, z), openings, store, water, (x, z) => terrain.heightAt(x, z));
   }
 
   /** The surface (non-step callers: rendering, overlays, spawns). */

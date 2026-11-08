@@ -372,7 +372,10 @@ func Rock(src CellSource, x, y, z float64) bool {
 // step views it at the player's level (movement.LevelGround); Ground
 // itself answers the surface (non-step callers).
 type Ground struct {
-	Height   func(x, z float64) float64
+	Height func(x, z float64) float64
+	// Terrain is the bare heightfield (no structures) for the in-cave test:
+	// climbing a tower wall is not being underground. Nil = Height.
+	Terrain  func(x, z float64) float64
 	Water    func(x, z float64) float64 // nil: no water
 	Openings []Opening
 	Cells    CellSource
@@ -380,11 +383,11 @@ type Ground struct {
 
 // InCave: in a mouth hole, or more than UnderM under the surface at y.
 func (g *Ground) InCave(x, y, z float64) bool {
-	return y < g.Height(x, z)-UnderM || Masked(g.Openings, x, z)
-}
-
-func (g *Ground) inCaveH(x, y, z, h float64) bool {
-	return y < h-UnderM || Masked(g.Openings, x, z)
+	t := g.Height
+	if g.Terrain != nil {
+		t = g.Terrain
+	}
+	return y < t(x, z)-UnderM || Masked(g.Openings, x, z)
 }
 
 // HeightAt is the surface (movement.Ground for non-step callers).
@@ -406,7 +409,7 @@ func (g *Ground) WaterAt(x, z float64) float64 {
 // a mouth hole whose cells are missing. Same as CaveGroundCore.floorAt.
 func (g *Ground) FloorAt(x, y, z float64) float64 {
 	h := g.Height(x, z)
-	if !g.inCaveH(x, y, z, h) {
+	if !g.InCave(x, y, z) {
 		return h
 	}
 	if f := FloorAt(g.Cells, x, y, z); !math.IsInf(f, -1) {
