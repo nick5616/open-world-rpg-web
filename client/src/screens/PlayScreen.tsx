@@ -1,6 +1,6 @@
 // In-world screen: the canvas plus DOM overlays. Lazy-loaded by App so the
 // title screen doesn't pull in three.js.
-import { GameCanvas } from '../scene/GameCanvas';
+import { WorldCanvas } from '../world/WorldCanvas';
 import { DebugHud } from '../hud/DebugHud';
 import { DebugPanel } from '../hud/DebugPanel';
 import { Crosshair, LockHint } from '../hud/Overlays';
@@ -23,7 +23,7 @@ function DebugLayer() {
 export default function PlayScreen() {
   return (
     <>
-      <GameCanvas />
+      <WorldCanvas />
       <Crosshair />
       <LockHint />
       {DEBUG && <DebugLayer />}
