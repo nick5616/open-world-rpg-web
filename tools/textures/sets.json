@@ -1,0 +1,22 @@
+{
+  "$comment": "Texture sets (CC0, https://3dtextures.me). id = runtime id under client/public/textures/<id>/; folder = texture-sources/<folder>/. 'from' marks sets copied from refs/3d-portfolio-website/texture-sources instead of downloaded. 'gain' brightens the base color (dark scans read as mud under ACES). terrain.layers is the texture-array layer order the terrain shader indexes (client/src/world/terrain/terrainMaterial.ts TERRAIN_LAYERS must match). CREDITS.md at the repo root lists every set.",
+  "terrain": {
+    "size": 512,
+    "layers": ["grass-meadow", "dirt", "rock-highland", "snow", "sand", "mud", "forest-floor", "rock-cliff", "rock-badlands"]
+  },
+  "sets": [
+    { "id": "grass-meadow", "folder": "Grass_005_SD", "page": "https://3dtextures.me/2020/08/28/grass-005/", "gain": 1.15, "use": "terrain: grass (meadow, highlands, wetland)" },
+    { "id": "forest-floor", "folder": "Ground_Forest_003_SD", "page": "https://3dtextures.me/2020/03/20/ground-forest-003/", "use": "terrain: grass layer in forest biome" },
+    { "id": "dirt", "folder": "Ground_Dirt_007_SD", "page": "https://3dtextures.me/2019/10/21/ground-dirt-007/", "gain": 1.35, "use": "terrain: dirt" },
+    { "id": "rock-highland", "folder": "Rock_040_SD", "page": "https://3dtextures.me/2021/04/09/rock-040/", "gain": 1.2, "use": "terrain: rock on gentle slopes; cave rock (WP09)" },
+    { "id": "rock-cliff", "folder": "Rock_038_SD", "page": "https://3dtextures.me/2020/01/14/rock-038/", "use": "terrain: triplanar cliffs (slope > 50 deg)" },
+    { "id": "rock-badlands", "folder": "Rock_Cliff_003_SD", "page": "https://3dtextures.me/2021/09/22/rock-cliff-003/", "use": "terrain: cliffs in badlands" },
+    { "id": "snow", "folder": "Snow_004_SD", "page": "https://3dtextures.me/2018/11/30/snow-004/", "use": "terrain: snow" },
+    { "id": "sand", "folder": "Sand_006_SD", "page": "https://3dtextures.me/2020/02/21/sand-006/", "use": "terrain: sand" },
+    { "id": "mud", "folder": "Mud_001_SD", "page": "https://3dtextures.me/2020/01/31/mud-001/", "use": "terrain: mud" },
+    { "id": "cave-wet-rock", "folder": "Ground_Wet_Rocks_002_SD", "page": "https://3dtextures.me/2020/10/30/ground-wet-rocks-002/", "size": 512, "use": "caves (WP09)" },
+    { "id": "crystal", "folder": "Crystal_003_SD", "page": "https://3dtextures.me/2018/04/26/crystal-003/", "size": 512, "use": "gems and ore veins (WP09)" },
+    { "id": "marble-white", "folder": "Marble_White_006_SD", "from": "refs/3d-portfolio-website", "size": 512, "use": "ruins stone (WP20)" },
+    { "id": "stone-column", "folder": "Stylized_Stone_Column_001_SD", "from": "refs/3d-portfolio-website", "size": 512, "use": "ruins stone (WP20)" }
+  ]
+}
