@@ -27,6 +27,7 @@
 //	LODESTONE_ZONE_DEBUG_UPDRAFTS  WP10: "x,z,radius,top,lift[;...]" debug updraft columns (client: ?updraft=...)
 //	LODESTONE_ZONE_DEBUG_RAIN      WP10: 1 = always rain, 0 = never (default: the seeded weather stub)
 //	LODESTONE_ZONE_CLUSTER / _ROLE / _REGIONS ...  WP16 multiple zones (cluster.go; off by default)
+//	LODESTONE_ZONE_TIME_OFFSET_S / _NO_DEMONS / _NO_CHEM / _DEV_NIGHT / _CHEM_SYNC / _DEBUG_DEFENSE  WP15 night and chemistry (night.go)
 //	LODESTONE_PG_URL, LODESTONE_REDIS_ADDR
 package main
 
@@ -151,8 +152,10 @@ func main() {
 	cfg.Ground = ground
 	miningConfig(&cfg, pool)
 	cfg.Combat = combatSetup(terrain, world.Seed, world.Spec, devKey, log) // WP13 (combat.go)
+	withNight(&cfg, terrain, world.Spec, devKey, log)                      // WP15: wards, demons, chemistry, ice/pillar ground (night.go)
 	zone := game.New(cfg)
 	serveCombatDebug(s.Mux, zone) // WP13
+	serveNightDebug(s.Mux, zone)  // WP15
 	restoreEdits(ctx, zone, log)
 
 	origins := strings.Split(env.Str("LODESTONE_CORS_ORIGIN", "*"), ",")

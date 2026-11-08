@@ -52,11 +52,11 @@ func DebugEnvFromEnv() (movement.UpdraftField, *bool) {
 // the server clock (the client evaluates the same function at its synced
 // estimate of that clock) unless overridden, plus the updraft field.
 func (s *Server) stepEnv() movement.Env {
-	raining := weather.IsRaining(s.cfg.Seed, weather.WorldTimeS(s.serverTimeMs()))
+	raining := weather.IsRaining(s.cfg.Seed, s.worldTimeS()) // WP15: the world clock (night.go)
 	if s.cfg.Rain != nil {
 		raining = *s.cfg.Rain
 	}
-	return movement.Env{Raining: raining, Updraft: s.cfg.Updraft}
+	return movement.Env{Raining: raining, Updraft: s.nightUpdraft()} // WP15: fire updrafts + debug columns
 }
 
 // respawned reports a drowning respawn between prev and next: the step

@@ -267,3 +267,20 @@ func (w *World) wetChain(src uint32, from *Enemy, dmg float64, killing bool) {
 		w.applyDamage(o, src, math.Round(dmg*0.5), combatdefs.Lightning, at, 0, false, killing)
 	}
 }
+
+// LevelAt is the enemy level of a position (region danger, like camps).
+func (w *World) LevelAt(x, z float64) int {
+	if w.Atlas == nil {
+		return 1
+	}
+	d := w.Atlas.Region(w.Atlas.RegionAt(x, z)).Danger
+	return 1 + int(math.Round(math.Max(0, math.Min(1, d))*24))
+}
+
+// ElementAt is the region element of a position (Physical without an atlas).
+func (w *World) ElementAt(x, z float64) int {
+	if w.Atlas == nil {
+		return combatdefs.Physical
+	}
+	return w.Atlas.Region(w.Atlas.RegionAt(x, z)).Element
+}

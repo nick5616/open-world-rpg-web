@@ -219,6 +219,7 @@ func (s *Server) combatFrame(sess *session, f proto.InputFrame) proto.InputFrame
 		return f
 	}
 	r := s.cbt.w.Frame(e.cbt, f, e.Move)
+	s.nightAction(sess, r.Started) // WP15: Fire/Ice/Earth chemistry where it lands (night.go)
 	return r.Frame
 }
 
@@ -380,6 +381,7 @@ func (s *Server) combatTick(tick uint32) {
 	}
 	for _, o := range events {
 		s.deliverCombat(o)
+		s.nightCombatEvent(o) // WP15: burning enemies set the grass alight (night.go)
 	}
 	for _, g := range xp {
 		s.grantCombatXP(g)

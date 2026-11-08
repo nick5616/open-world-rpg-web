@@ -90,6 +90,9 @@ type Config struct {
 	Towns       *npc.World
 	Stations    Stations
 	TimeOffsetS float64
+	// WP15 night, demons and chemistry (night.go); nil = none. TimeOffsetS
+	// above is the world clock's offset (same env on every zone of a world).
+	Night *NightSetup
 	// Now is the wall clock (tickets, server time); tests override it.
 	Now func() time.Time
 }
@@ -127,6 +130,7 @@ type Server struct {
 	cl       clusterState // WP16 (handoff.go)
 	cbt      combatGlue   // WP13 (combat.go)
 	town     townsState   // WP20 (towns.go)
+	night    nightState   // WP15 (night.go)
 	// WP11: next earshot hand-off (earshot.go).
 	earshotNext time.Time
 
@@ -288,6 +292,7 @@ func (s *Server) onTick() {
 	s.handoffTick(tick, now)        // WP16: handoffs, mirrored entities, presence (handoff.go, ghosts.go)
 	s.combatTick(tick)              // WP13: enemies, strikes, claims, respawns (combat.go)
 	s.townsTick(tick, s.cfg.Now())  // WP20: townsfolk near players (towns.go)
+	s.nightTick(tick)               // WP15: clock, demons, defense events, chemistry (night.go)
 
 	// Quantize once per entity and rebuild the grid; every client's snapshot
 	// reads these.
@@ -415,6 +420,7 @@ func (s *Server) join(sess *session) {
 	}
 	s.exploreJoin(sess)   // WP12: progress, pins (after Welcome, which the client needs first)
 	s.combatJoin(sess)    // WP13: loadouts, health, combat_sync (combat.go)
+	s.nightJoin(sess)     // WP15: world clock, pillars, defense state (night.go)
 	s.clusterJoined(sess) // WP16: owner record, arrival checkpoint
 	s.log.Info("join", "entity", e.ID, "character", e.CharacterID, "name", e.Name, "remote", sess.conn.RemoteAddr(),
 		"x", math.Round(e.Move.Pos.X*100)/100, "z", math.Round(e.Move.Pos.Z*100)/100)
