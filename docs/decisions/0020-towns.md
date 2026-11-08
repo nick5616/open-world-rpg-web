@@ -10,8 +10,8 @@ mint as part of the atlas". The atlas buffer itself could not grow without
 changing its hash (and the official world's pin), so the towns are a new
 export, `towns_build(atlas)`, computed from the atlas by every host (client
 worker, zone, bots), cached per wasm instance, golden-tested in Node,
-Chromium, Go/wazero and native Rust. Cost: ~0.1-0.7 s native, 0.15-1.05 s in
-wasm for a whole v1 world (budget 60 s); ~0.5 MB raw. Clients build it in a
+Chromium, Go/wazero and native Rust. Cost: ~0.1-0.7 s native, 0.04-1.3 s in
+wasm for a whole v1 world (budget 60 s; `docs/evidence/wp20-generation-timing.txt`); ~0.25-0.54 MB raw. Clients build it in a
 worker during load rather than downloading it: the bytes are identical, and
 nothing world-shaped goes over the wire (spec 4).
 
