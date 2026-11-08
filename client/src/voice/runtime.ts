@@ -11,6 +11,7 @@
 
 import { Room, RoomEvent, Track, type RemoteParticipant, type RemoteTrack, type RemoteTrackPublication } from 'livekit-client';
 import { InputFlag } from '@lodestone/contracts';
+import { isTextTarget } from '../input/useKeyboard';
 import type { GroundQuery } from '../sim/ground';
 import { localPlayer } from '../state/live';
 import { drawnRemotes } from '../net/netStore';
@@ -217,8 +218,9 @@ class VoiceRuntime {
 
   private onKey(e: KeyboardEvent, down: boolean): void {
     if (e.code !== 'KeyV' || e.ctrlKey || e.metaKey || e.altKey) return;
-    const t = e.target as HTMLElement | null;
-    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return; // typing in chat
+    // Typing a "v" in chat is not a push; a release always counts (focus may
+    // have moved into a text field while the key was held).
+    if (down && isTextTarget(e.target)) return;
     if (down) {
       if (e.repeat) return;
       this.mixer?.resume(); // a key press is the user gesture browsers want

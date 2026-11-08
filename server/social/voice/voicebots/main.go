@@ -230,7 +230,8 @@ func main() {
 	fmt.Print(sb.String())
 	if *out != "" {
 		must(os.WriteFile(*out+".txt", []byte(sb.String()), 0o644))
-		js, _ := json.MarshalIndent(map[string]any{"summary": s, "errors": errs, "events": ev}, "", " ")
+		// Compact: every event of a 50-bot run is a few thousand lines indented.
+		js, _ := json.Marshal(map[string]any{"summary": s, "errors": errs, "events": ev})
 		must(os.WriteFile(*out+".json", js, 0o644))
 		logf("wrote %s.txt and .json", *out)
 	}

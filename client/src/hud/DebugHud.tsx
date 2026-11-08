@@ -77,7 +77,7 @@ export function DebugHud() {
         <span ref={frameRef}>-- ms</span>
       </div>
       <pre ref={bodyRef} style={{ margin: 0, font: 'inherit' }} />
-      <div style={{ opacity: 0.55, marginTop: 3 }}>F3 hud · ` debug panel · V fly · F4 cells</div>
+      <div style={{ opacity: 0.55, marginTop: 3 }}>F3 hud · ` debug panel · V fly (offline; online V talks) · F4 cells</div>
     </div>
   );
 }

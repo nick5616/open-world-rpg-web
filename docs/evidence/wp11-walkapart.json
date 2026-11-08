@@ -1,0 +1,6577 @@
+{
+ "livekit": "ws://localhost:7880",
+ "samples": 209,
+ "fade": {
+  "nearDb": -23.7,
+  "farDb": -42.7,
+  "dropDb": 19,
+  "expectedDropDb": 18,
+  "spearmanDistanceVsLevel": -0.992,
+  "nNear": 33,
+  "nFar": 32
+ },
+ "pan": {
+  "rightSideRminusLdb": 4,
+  "leftSideLminusRdb": 4.4,
+  "nRight": 85,
+  "nLeft": 30,
+  "louderEarOnSpeakersSide": "129/129"
+ },
+ "earshot": {
+  "silentBeyondM": 51.5,
+  "samplesBeyondSilent": 41,
+  "audibleBeyondSilent": 0,
+  "unsubscribedBeyondM": 56.6,
+  "samplesBeyond": 29,
+  "subscribedBeyond": 0,
+  "samplesInside38m": 136,
+  "unsubscribedInside38m": 0
+ },
+ "pannerVsDrawnHeadM": {
+  "p50": 0.17,
+  "p95": 0.31,
+  "max": 0.42
+ },
+ "pannerVsTrueHeadM": {
+  "p50": 1.09,
+  "p95": 2.1,
+  "max": 2.38
+ },
+ "speakingIndicator": {
+  "domSpeakingSamples": 155,
+  "zoneSpeakingBitSamples": 209
+ },
+ "end": {
+  "mic": "ready",
+  "transmitting": false,
+  "ctx": "running"
+ },
+ "timeline": [
+  {
+   "t": 68,
+   "phase": "ahead",
+   "trueDist": 3.67,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2048.48,
+    "y": 1.8,
+    "z": 2044.34
+   },
+   "truePos": {
+    "x": 2048.47,
+    "y": 1.8,
+    "z": 2044.34
+   },
+   "pannerVsDrawn": 0,
+   "pannerVsTrue": 0.01,
+   "interpDelayMs": 400,
+   "distance": 3.67,
+   "rel": {
+    "right": 0.14,
+    "forward": 3.67
+   },
+   "distanceGain": 0.5446,
+   "lowpassHz": 20000,
+   "level": 0.374,
+   "outL": -25.4,
+   "outR": -25.4,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 270,
+   "phase": "ahead",
+   "trueDist": 3.67,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2048.48,
+    "y": 1.8,
+    "z": 2044.34
+   },
+   "truePos": {
+    "x": 2048.47,
+    "y": 1.8,
+    "z": 2044.34
+   },
+   "pannerVsDrawn": 0,
+   "pannerVsTrue": 0.01,
+   "interpDelayMs": 400,
+   "distance": 3.67,
+   "rel": {
+    "right": 0.14,
+    "forward": 3.67
+   },
+   "distanceGain": 0.5446,
+   "lowpassHz": 20000,
+   "level": 0.924,
+   "outL": -23.4,
+   "outR": -23.4,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 458,
+   "phase": "ahead",
+   "trueDist": 3.67,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2048.48,
+    "y": 1.8,
+    "z": 2044.34
+   },
+   "truePos": {
+    "x": 2048.47,
+    "y": 1.8,
+    "z": 2044.34
+   },
+   "pannerVsDrawn": 0,
+   "pannerVsTrue": 0.01,
+   "interpDelayMs": 400,
+   "distance": 3.67,
+   "rel": {
+    "right": 0.14,
+    "forward": 3.67
+   },
+   "distanceGain": 0.5446,
+   "lowpassHz": 20000,
+   "level": 0.975,
+   "outL": -23.3,
+   "outR": -23.3,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 672,
+   "phase": "ahead",
+   "trueDist": 3.67,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2048.48,
+    "y": 1.8,
+    "z": 2044.34
+   },
+   "truePos": {
+    "x": 2048.47,
+    "y": 1.8,
+    "z": 2044.34
+   },
+   "pannerVsDrawn": 0,
+   "pannerVsTrue": 0.01,
+   "interpDelayMs": 400,
+   "distance": 3.67,
+   "rel": {
+    "right": 0.14,
+    "forward": 3.67
+   },
+   "distanceGain": 0.5446,
+   "lowpassHz": 20000,
+   "level": 0.984,
+   "outL": -23.5,
+   "outR": -23.5,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 891,
+   "phase": "ahead",
+   "trueDist": 3.67,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2048.48,
+    "y": 1.8,
+    "z": 2044.34
+   },
+   "truePos": {
+    "x": 2048.47,
+    "y": 1.8,
+    "z": 2044.34
+   },
+   "pannerVsDrawn": 0,
+   "pannerVsTrue": 0.01,
+   "interpDelayMs": 400,
+   "distance": 3.67,
+   "rel": {
+    "right": 0.14,
+    "forward": 3.67
+   },
+   "distanceGain": 0.5446,
+   "lowpassHz": 20000,
+   "level": 0.981,
+   "outL": -24.5,
+   "outR": -24,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 1103,
+   "phase": "ahead",
+   "trueDist": 3.67,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2048.48,
+    "y": 1.8,
+    "z": 2044.34
+   },
+   "truePos": {
+    "x": 2048.47,
+    "y": 1.8,
+    "z": 2044.34
+   },
+   "pannerVsDrawn": 0,
+   "pannerVsTrue": 0.01,
+   "interpDelayMs": 400,
+   "distance": 3.67,
+   "rel": {
+    "right": 0.14,
+    "forward": 3.67
+   },
+   "distanceGain": 0.5446,
+   "lowpassHz": 20000,
+   "level": 0.987,
+   "outL": -23,
+   "outR": -22.6,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 1287,
+   "phase": "ahead",
+   "trueDist": 3.67,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2048.48,
+    "y": 1.8,
+    "z": 2044.34
+   },
+   "truePos": {
+    "x": 2048.47,
+    "y": 1.8,
+    "z": 2044.34
+   },
+   "pannerVsDrawn": 0,
+   "pannerVsTrue": 0.01,
+   "interpDelayMs": 400,
+   "distance": 3.67,
+   "rel": {
+    "right": 0.14,
+    "forward": 3.67
+   },
+   "distanceGain": 0.5446,
+   "lowpassHz": 20000,
+   "level": 0.995,
+   "outL": -23.6,
+   "outR": -23.2,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 1489,
+   "phase": "ahead",
+   "trueDist": 3.67,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2048.48,
+    "y": 1.8,
+    "z": 2044.34
+   },
+   "truePos": {
+    "x": 2048.47,
+    "y": 1.8,
+    "z": 2044.34
+   },
+   "pannerVsDrawn": 0,
+   "pannerVsTrue": 0.01,
+   "interpDelayMs": 400,
+   "distance": 3.67,
+   "rel": {
+    "right": 0.14,
+    "forward": 3.67
+   },
+   "distanceGain": 0.5446,
+   "lowpassHz": 20000,
+   "level": 0.999,
+   "outL": -23.6,
+   "outR": -23.2,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 1720,
+   "phase": "ahead",
+   "trueDist": 3.67,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2048.48,
+    "y": 1.8,
+    "z": 2044.34
+   },
+   "truePos": {
+    "x": 2048.47,
+    "y": 1.8,
+    "z": 2044.34
+   },
+   "pannerVsDrawn": 0,
+   "pannerVsTrue": 0.01,
+   "interpDelayMs": 400,
+   "distance": 3.67,
+   "rel": {
+    "right": 0.14,
+    "forward": 3.67
+   },
+   "distanceGain": 0.5446,
+   "lowpassHz": 20000,
+   "level": 0.998,
+   "outL": -23.5,
+   "outR": -23.1,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 1867,
+   "phase": "ahead",
+   "trueDist": 3.67,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2048.48,
+    "y": 1.8,
+    "z": 2044.34
+   },
+   "truePos": {
+    "x": 2048.47,
+    "y": 1.8,
+    "z": 2044.34
+   },
+   "pannerVsDrawn": 0,
+   "pannerVsTrue": 0.01,
+   "interpDelayMs": 400,
+   "distance": 3.67,
+   "rel": {
+    "right": 0.14,
+    "forward": 3.67
+   },
+   "distanceGain": 0.5446,
+   "lowpassHz": 20000,
+   "level": 0.996,
+   "outL": -22.7,
+   "outR": -22.3,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 2045,
+   "phase": "ahead",
+   "trueDist": 3.67,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2048.48,
+    "y": 1.8,
+    "z": 2044.34
+   },
+   "truePos": {
+    "x": 2048.47,
+    "y": 1.8,
+    "z": 2044.34
+   },
+   "pannerVsDrawn": 0,
+   "pannerVsTrue": 0.01,
+   "interpDelayMs": 400,
+   "distance": 3.67,
+   "rel": {
+    "right": 0.14,
+    "forward": 3.67
+   },
+   "distanceGain": 0.5446,
+   "lowpassHz": 20000,
+   "level": 0.993,
+   "outL": -23.5,
+   "outR": -23.1,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 2559,
+   "phase": "right",
+   "trueDist": 3.67,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2048.48,
+    "y": 1.8,
+    "z": 2044.34
+   },
+   "truePos": {
+    "x": 2048.51,
+    "y": 1.8,
+    "z": 2044.34
+   },
+   "pannerVsDrawn": 0,
+   "pannerVsTrue": 0.03,
+   "interpDelayMs": 400,
+   "distance": 3.67,
+   "rel": {
+    "right": 0.14,
+    "forward": 3.67
+   },
+   "distanceGain": 0.5446,
+   "lowpassHz": 20000,
+   "level": 0.997,
+   "outL": -22.8,
+   "outR": -22.4,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 2718,
+   "phase": "right",
+   "trueDist": 3.74,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2048.48,
+    "y": 1.8,
+    "z": 2044.34
+   },
+   "truePos": {
+    "x": 2049.06,
+    "y": 1.8,
+    "z": 2044.34
+   },
+   "pannerVsDrawn": 0,
+   "pannerVsTrue": 0.58,
+   "interpDelayMs": 400,
+   "distance": 3.67,
+   "rel": {
+    "right": 0.14,
+    "forward": 3.67
+   },
+   "distanceGain": 0.5446,
+   "lowpassHz": 20000,
+   "level": 0.996,
+   "outL": -23.7,
+   "outR": -23.3,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 2874,
+   "phase": "right",
+   "trueDist": 3.9,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2048.48,
+    "y": 1.8,
+    "z": 2044.34
+   },
+   "truePos": {
+    "x": 2049.66,
+    "y": 1.8,
+    "z": 2044.34
+   },
+   "pannerVsDrawn": 0,
+   "pannerVsTrue": 1.18,
+   "interpDelayMs": 400,
+   "distance": 3.67,
+   "rel": {
+    "right": 0.14,
+    "forward": 3.67
+   },
+   "distanceGain": 0.5446,
+   "lowpassHz": 20000,
+   "level": 0.991,
+   "outL": -23.2,
+   "outR": -22.8,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 3070,
+   "phase": "right",
+   "trueDist": 4.33,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2048.56,
+    "y": 1.8,
+    "z": 2044.34
+   },
+   "truePos": {
+    "x": 2050.62,
+    "y": 1.8,
+    "z": 2044.33
+   },
+   "pannerVsDrawn": 0.1,
+   "pannerVsTrue": 2.06,
+   "interpDelayMs": 400,
+   "distance": 3.68,
+   "rel": {
+    "right": 0.22,
+    "forward": 3.67
+   },
+   "distanceGain": 0.544,
+   "lowpassHz": 20000,
+   "level": 0.997,
+   "outL": -22.8,
+   "outR": -22.4,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 3232,
+   "phase": "right",
+   "trueDist": 4.81,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2049.11,
+    "y": 1.8,
+    "z": 2044.34
+   },
+   "truePos": {
+    "x": 2051.43,
+    "y": 1.8,
+    "z": 2044.33
+   },
+   "pannerVsDrawn": 0.31,
+   "pannerVsTrue": 2.32,
+   "interpDelayMs": 400,
+   "distance": 3.75,
+   "rel": {
+    "right": 0.77,
+    "forward": 3.67
+   },
+   "distanceGain": 0.5334,
+   "lowpassHz": 20000,
+   "level": 0.991,
+   "outL": -24,
+   "outR": -22.6,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 3416,
+   "phase": "right",
+   "trueDist": 5.43,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2049.96,
+    "y": 1.8,
+    "z": 2044.33
+   },
+   "truePos": {
+    "x": 2052.33,
+    "y": 1.8,
+    "z": 2044.32
+   },
+   "pannerVsDrawn": 0.32,
+   "pannerVsTrue": 2.36,
+   "interpDelayMs": 400,
+   "distance": 4.02,
+   "rel": {
+    "right": 1.62,
+    "forward": 3.68
+   },
+   "distanceGain": 0.4972,
+   "lowpassHz": 20000,
+   "level": 0.989,
+   "outL": -25,
+   "outR": -22.6,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 3621,
+   "phase": "right",
+   "trueDist": 6.12,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2050.88,
+    "y": 1.8,
+    "z": 2044.33
+   },
+   "truePos": {
+    "x": 2053.22,
+    "y": 1.8,
+    "z": 2044.32
+   },
+   "pannerVsDrawn": 0.17,
+   "pannerVsTrue": 2.34,
+   "interpDelayMs": 400,
+   "distance": 4.47,
+   "rel": {
+    "right": 2.54,
+    "forward": 3.68
+   },
+   "distanceGain": 0.4473,
+   "lowpassHz": 20000,
+   "level": 0.985,
+   "outL": -26.7,
+   "outR": -23.2,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 3789,
+   "phase": "right",
+   "trueDist": 6.86,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2051.74,
+    "y": 1.8,
+    "z": 2044.32
+   },
+   "truePos": {
+    "x": 2054.12,
+    "y": 1.8,
+    "z": 2044.31
+   },
+   "pannerVsDrawn": 0.2,
+   "pannerVsTrue": 2.38,
+   "interpDelayMs": 399,
+   "distance": 5.02,
+   "rel": {
+    "right": 3.4,
+    "forward": 3.69
+   },
+   "distanceGain": 0.3985,
+   "lowpassHz": 20000,
+   "level": 0.991,
+   "outL": -27.2,
+   "outR": -23.7,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 3984,
+   "phase": "right",
+   "trueDist": 7.7,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2052.83,
+    "y": 1.8,
+    "z": 2044.32
+   },
+   "truePos": {
+    "x": 2055.1,
+    "y": 1.8,
+    "z": 2044.31
+   },
+   "pannerVsDrawn": 0.18,
+   "pannerVsTrue": 2.27,
+   "interpDelayMs": 390,
+   "distance": 5.81,
+   "rel": {
+    "right": 4.49,
+    "forward": 3.69
+   },
+   "distanceGain": 0.3443,
+   "lowpassHz": 20000,
+   "level": 0.993,
+   "outL": -29.2,
+   "outR": -25,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 4097,
+   "phase": "right",
+   "trueDist": 7.99,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2053.32,
+    "y": 1.8,
+    "z": 2044.31
+   },
+   "truePos": {
+    "x": 2055.42,
+    "y": 1.8,
+    "z": 2044.3
+   },
+   "pannerVsDrawn": 0.29,
+   "pannerVsTrue": 2.1,
+   "interpDelayMs": 390,
+   "distance": 6.21,
+   "rel": {
+    "right": 4.98,
+    "forward": 3.7
+   },
+   "distanceGain": 0.3223,
+   "lowpassHz": 20000,
+   "level": 0.996,
+   "outL": -30.1,
+   "outR": -25.6,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 4261,
+   "phase": "right",
+   "trueDist": 9.02,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2054.27,
+    "y": 1.8,
+    "z": 2044.31
+   },
+   "truePos": {
+    "x": 2056.56,
+    "y": 1.8,
+    "z": 2044.3
+   },
+   "pannerVsDrawn": 0.22,
+   "pannerVsTrue": 2.29,
+   "interpDelayMs": 380,
+   "distance": 6.99,
+   "rel": {
+    "right": 5.93,
+    "forward": 3.7
+   },
+   "distanceGain": 0.2861,
+   "lowpassHz": 20000,
+   "level": 0.992,
+   "outL": -30.4,
+   "outR": -26.2,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 4443,
+   "phase": "right",
+   "trueDist": 9.7,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2055.23,
+    "y": 1.8,
+    "z": 2044.3
+   },
+   "truePos": {
+    "x": 2057.3,
+    "y": 1.8,
+    "z": 2044.29
+   },
+   "pannerVsDrawn": 0.14,
+   "pannerVsTrue": 2.07,
+   "interpDelayMs": 371,
+   "distance": 7.82,
+   "rel": {
+    "right": 6.89,
+    "forward": 3.71
+   },
+   "distanceGain": 0.2556,
+   "lowpassHz": 20000,
+   "level": 0.995,
+   "outL": -32.1,
+   "outR": -27.9,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 4615,
+   "phase": "right",
+   "trueDist": 10.53,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2056.05,
+    "y": 1.8,
+    "z": 2044.3
+   },
+   "truePos": {
+    "x": 2058.19,
+    "y": 1.8,
+    "z": 2044.29
+   },
+   "pannerVsDrawn": 0.22,
+   "pannerVsTrue": 2.14,
+   "interpDelayMs": 371,
+   "distance": 8.56,
+   "rel": {
+    "right": 7.71,
+    "forward": 3.71
+   },
+   "distanceGain": 0.2337,
+   "lowpassHz": 20000,
+   "level": 0.999,
+   "outL": -32.9,
+   "outR": -28.2,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 4788,
+   "phase": "right",
+   "trueDist": 11.3,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2057.03,
+    "y": 1.8,
+    "z": 2044.29
+   },
+   "truePos": {
+    "x": 2059.01,
+    "y": 1.8,
+    "z": 2044.29
+   },
+   "pannerVsDrawn": 0.14,
+   "pannerVsTrue": 1.97,
+   "interpDelayMs": 362,
+   "distance": 9.45,
+   "rel": {
+    "right": 8.69,
+    "forward": 3.72
+   },
+   "distanceGain": 0.2115,
+   "lowpassHz": 20000,
+   "level": 0.998,
+   "outL": -33.7,
+   "outR": -29.2,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 4976,
+   "phase": "right",
+   "trueDist": 12.15,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2057.87,
+    "y": 1.8,
+    "z": 2044.29
+   },
+   "truePos": {
+    "x": 2059.9,
+    "y": 1.8,
+    "z": 2044.28
+   },
+   "pannerVsDrawn": 0.23,
+   "pannerVsTrue": 2.03,
+   "interpDelayMs": 353,
+   "distance": 10.23,
+   "rel": {
+    "right": 9.53,
+    "forward": 3.72
+   },
+   "distanceGain": 0.1955,
+   "lowpassHz": 20000,
+   "level": 0.998,
+   "outL": -33.7,
+   "outR": -29.3,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 5128,
+   "phase": "right",
+   "trueDist": 12.93,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2058.67,
+    "y": 1.8,
+    "z": 2044.28
+   },
+   "truePos": {
+    "x": 2060.72,
+    "y": 1.8,
+    "z": 2044.28
+   },
+   "pannerVsDrawn": 0.15,
+   "pannerVsTrue": 2.05,
+   "interpDelayMs": 353,
+   "distance": 10.98,
+   "rel": {
+    "right": 10.33,
+    "forward": 3.73
+   },
+   "distanceGain": 0.1822,
+   "lowpassHz": 20000,
+   "level": 0.992,
+   "outL": -34.6,
+   "outR": -30.2,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 5331,
+   "phase": "right",
+   "trueDist": 13.71,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2059.7,
+    "y": 1.8,
+    "z": 2044.28
+   },
+   "truePos": {
+    "x": 2061.53,
+    "y": 1.8,
+    "z": 2044.27
+   },
+   "pannerVsDrawn": 0.14,
+   "pannerVsTrue": 1.83,
+   "interpDelayMs": 345,
+   "distance": 11.96,
+   "rel": {
+    "right": 11.36,
+    "forward": 3.73
+   },
+   "distanceGain": 0.1672,
+   "lowpassHz": 20000,
+   "level": 0.992,
+   "outL": -35.8,
+   "outR": -31.7,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 5529,
+   "phase": "right",
+   "trueDist": 14.74,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2060.53,
+    "y": 1.8,
+    "z": 2044.28
+   },
+   "truePos": {
+    "x": 2062.59,
+    "y": 1.8,
+    "z": 2044.27
+   },
+   "pannerVsDrawn": 0.28,
+   "pannerVsTrue": 2.06,
+   "interpDelayMs": 337,
+   "distance": 12.75,
+   "rel": {
+    "right": 12.19,
+    "forward": 3.73
+   },
+   "distanceGain": 0.1569,
+   "lowpassHz": 20000,
+   "level": 0.998,
+   "outL": -36.1,
+   "outR": -31.7,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 5723,
+   "phase": "right",
+   "trueDist": 15.68,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2061.58,
+    "y": 1.8,
+    "z": 2044.27
+   },
+   "truePos": {
+    "x": 2063.57,
+    "y": 1.8,
+    "z": 2044.26
+   },
+   "pannerVsDrawn": 0.17,
+   "pannerVsTrue": 1.99,
+   "interpDelayMs": 337,
+   "distance": 13.76,
+   "rel": {
+    "right": 13.24,
+    "forward": 3.74
+   },
+   "distanceGain": 0.1453,
+   "lowpassHz": 20000,
+   "level": 0.998,
+   "outL": -36.8,
+   "outR": -32.3,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 5919,
+   "phase": "right",
+   "trueDist": 16.56,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2062.64,
+    "y": 1.8,
+    "z": 2044.26
+   },
+   "truePos": {
+    "x": 2064.47,
+    "y": 1.8,
+    "z": 2044.26
+   },
+   "pannerVsDrawn": 0.19,
+   "pannerVsTrue": 1.83,
+   "interpDelayMs": 329,
+   "distance": 14.78,
+   "rel": {
+    "right": 14.3,
+    "forward": 3.75
+   },
+   "distanceGain": 0.1353,
+   "lowpassHz": 20000,
+   "level": 0.996,
+   "outL": -37.3,
+   "outR": -33.3,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 6128,
+   "phase": "right",
+   "trueDist": 17.59,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2063.6,
+    "y": 1.8,
+    "z": 2044.26
+   },
+   "truePos": {
+    "x": 2065.53,
+    "y": 1.8,
+    "z": 2044.25
+   },
+   "pannerVsDrawn": 0.27,
+   "pannerVsTrue": 1.93,
+   "interpDelayMs": 322,
+   "distance": 15.71,
+   "rel": {
+    "right": 15.26,
+    "forward": 3.75
+   },
+   "distanceGain": 0.1273,
+   "lowpassHz": 20000,
+   "level": 0.998,
+   "outL": -37.9,
+   "outR": -33.9,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 6336,
+   "phase": "right",
+   "trueDist": 18.47,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2064.6,
+    "y": 1.8,
+    "z": 2044.25
+   },
+   "truePos": {
+    "x": 2066.42,
+    "y": 1.8,
+    "z": 2044.25
+   },
+   "pannerVsDrawn": 0.32,
+   "pannerVsTrue": 1.82,
+   "interpDelayMs": 315,
+   "distance": 16.69,
+   "rel": {
+    "right": 16.26,
+    "forward": 3.76
+   },
+   "distanceGain": 0.1199,
+   "lowpassHz": 20000,
+   "level": 0.995,
+   "outL": -38.2,
+   "outR": -33.9,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 6502,
+   "phase": "right",
+   "trueDist": 19.51,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2065.62,
+    "y": 1.8,
+    "z": 2044.25
+   },
+   "truePos": {
+    "x": 2067.48,
+    "y": 1.8,
+    "z": 2044.24
+   },
+   "pannerVsDrawn": 0.09,
+   "pannerVsTrue": 1.86,
+   "interpDelayMs": 315,
+   "distance": 17.69,
+   "rel": {
+    "right": 17.28,
+    "forward": 3.76
+   },
+   "distanceGain": 0.1131,
+   "lowpassHz": 20000,
+   "level": 0.989,
+   "outL": -38.8,
+   "outR": -34.5,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 6679,
+   "phase": "right",
+   "trueDist": 20.31,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2066.45,
+    "y": 1.8,
+    "z": 2044.24
+   },
+   "truePos": {
+    "x": 2068.3,
+    "y": 1.8,
+    "z": 2044.24
+   },
+   "pannerVsDrawn": 0.12,
+   "pannerVsTrue": 1.84,
+   "interpDelayMs": 308,
+   "distance": 18.5,
+   "rel": {
+    "right": 18.11,
+    "forward": 3.77
+   },
+   "distanceGain": 0.1081,
+   "lowpassHz": 20000,
+   "level": 0.997,
+   "outL": -39.4,
+   "outR": -35.3,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 6848,
+   "phase": "right",
+   "trueDist": 21.11,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2067.35,
+    "y": 1.8,
+    "z": 2044.24
+   },
+   "truePos": {
+    "x": 2069.11,
+    "y": 1.8,
+    "z": 2044.23
+   },
+   "pannerVsDrawn": 0.13,
+   "pannerVsTrue": 1.76,
+   "interpDelayMs": 301,
+   "distance": 19.38,
+   "rel": {
+    "right": 19.01,
+    "forward": 3.77
+   },
+   "distanceGain": 0.1032,
+   "lowpassHz": 20000,
+   "level": 0.995,
+   "outL": -39.8,
+   "outR": -35.3,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 6999,
+   "phase": "right",
+   "trueDist": 21.91,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2068.14,
+    "y": 1.8,
+    "z": 2044.23
+   },
+   "truePos": {
+    "x": 2069.93,
+    "y": 1.8,
+    "z": 2044.23
+   },
+   "pannerVsDrawn": 0.13,
+   "pannerVsTrue": 1.78,
+   "interpDelayMs": 301,
+   "distance": 20.16,
+   "rel": {
+    "right": 19.8,
+    "forward": 3.78
+   },
+   "distanceGain": 0.0992,
+   "lowpassHz": 20000,
+   "level": 0.998,
+   "outL": -40.3,
+   "outR": -35.7,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 7147,
+   "phase": "right",
+   "trueDist": 22.56,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2068.78,
+    "y": 1.8,
+    "z": 2044.23
+   },
+   "truePos": {
+    "x": 2070.58,
+    "y": 1.8,
+    "z": 2044.22
+   },
+   "pannerVsDrawn": 0.18,
+   "pannerVsTrue": 1.8,
+   "interpDelayMs": 295,
+   "distance": 20.78,
+   "rel": {
+    "right": 20.44,
+    "forward": 3.78
+   },
+   "distanceGain": 0.0962,
+   "lowpassHz": 20000,
+   "level": 0.998,
+   "outL": -40.5,
+   "outR": -35.9,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 7324,
+   "phase": "right",
+   "trueDist": 23.36,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2069.74,
+    "y": 1.8,
+    "z": 2044.23
+   },
+   "truePos": {
+    "x": 2071.39,
+    "y": 1.8,
+    "z": 2044.22
+   },
+   "pannerVsDrawn": 0.3,
+   "pannerVsTrue": 1.65,
+   "interpDelayMs": 295,
+   "distance": 21.73,
+   "rel": {
+    "right": 21.4,
+    "forward": 3.78
+   },
+   "distanceGain": 0.092,
+   "lowpassHz": 20000,
+   "level": 0.996,
+   "outL": -40.4,
+   "outR": -36.2,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 7462,
+   "phase": "right",
+   "trueDist": 24.09,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2070.74,
+    "y": 1.8,
+    "z": 2044.22
+   },
+   "truePos": {
+    "x": 2072.13,
+    "y": 1.8,
+    "z": 2044.22
+   },
+   "pannerVsDrawn": 0.11,
+   "pannerVsTrue": 1.39,
+   "interpDelayMs": 289,
+   "distance": 22.72,
+   "rel": {
+    "right": 22.4,
+    "forward": 3.79
+   },
+   "distanceGain": 0.088,
+   "lowpassHz": 20000,
+   "level": 0.995,
+   "outL": -41,
+   "outR": -36.9,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 7614,
+   "phase": "right",
+   "trueDist": 24.73,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2071.23,
+    "y": 1.8,
+    "z": 2044.22
+   },
+   "truePos": {
+    "x": 2072.78,
+    "y": 1.8,
+    "z": 2044.21
+   },
+   "pannerVsDrawn": 0.22,
+   "pannerVsTrue": 1.55,
+   "interpDelayMs": 289,
+   "distance": 23.2,
+   "rel": {
+    "right": 22.89,
+    "forward": 3.79
+   },
+   "distanceGain": 0.0862,
+   "lowpassHz": 20000,
+   "level": 0.998,
+   "outL": -40.9,
+   "outR": -36.8,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 7802,
+   "phase": "right",
+   "trueDist": 25.62,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2072.04,
+    "y": 1.8,
+    "z": 2044.21
+   },
+   "truePos": {
+    "x": 2073.67,
+    "y": 1.8,
+    "z": 2044.21
+   },
+   "pannerVsDrawn": 0.17,
+   "pannerVsTrue": 1.63,
+   "interpDelayMs": 283,
+   "distance": 24,
+   "rel": {
+    "right": 23.7,
+    "forward": 3.8
+   },
+   "distanceGain": 0.0833,
+   "lowpassHz": 20000,
+   "level": 0.994,
+   "outL": -41.6,
+   "outR": -37,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 8045,
+   "phase": "right",
+   "trueDist": 26.67,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2072.92,
+    "y": 1.8,
+    "z": 2044.21
+   },
+   "truePos": {
+    "x": 2074.73,
+    "y": 1.8,
+    "z": 2044.2
+   },
+   "pannerVsDrawn": 0.42,
+   "pannerVsTrue": 1.82,
+   "interpDelayMs": 277,
+   "distance": 24.87,
+   "rel": {
+    "right": 24.58,
+    "forward": 3.8
+   },
+   "distanceGain": 0.0804,
+   "lowpassHz": 20000,
+   "level": 0.997,
+   "outL": -41.6,
+   "outR": -37.8,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 8215,
+   "phase": "right",
+   "trueDist": 27.72,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2073.96,
+    "y": 1.8,
+    "z": 2044.2
+   },
+   "truePos": {
+    "x": 2075.79,
+    "y": 1.8,
+    "z": 2044.2
+   },
+   "pannerVsDrawn": 0.21,
+   "pannerVsTrue": 1.83,
+   "interpDelayMs": 277,
+   "distance": 25.9,
+   "rel": {
+    "right": 25.62,
+    "forward": 3.81
+   },
+   "distanceGain": 0.0772,
+   "lowpassHz": 20000,
+   "level": 0.998,
+   "outL": -41.9,
+   "outR": -37.8,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 8395,
+   "phase": "right",
+   "trueDist": 28.6,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2074.93,
+    "y": 1.8,
+    "z": 2044.2
+   },
+   "truePos": {
+    "x": 2076.69,
+    "y": 1.8,
+    "z": 2044.19
+   },
+   "pannerVsDrawn": 0.2,
+   "pannerVsTrue": 1.76,
+   "interpDelayMs": 272,
+   "distance": 26.86,
+   "rel": {
+    "right": 26.59,
+    "forward": 3.81
+   },
+   "distanceGain": 0.0745,
+   "lowpassHz": 20000,
+   "level": 0.996,
+   "outL": -42.2,
+   "outR": -37.9,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 8565,
+   "phase": "right",
+   "trueDist": 29.41,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2075.96,
+    "y": 1.8,
+    "z": 2044.19
+   },
+   "truePos": {
+    "x": 2077.5,
+    "y": 1.8,
+    "z": 2044.19
+   },
+   "pannerVsDrawn": 0.13,
+   "pannerVsTrue": 1.54,
+   "interpDelayMs": 267,
+   "distance": 27.89,
+   "rel": {
+    "right": 27.62,
+    "forward": 3.82
+   },
+   "distanceGain": 0.0717,
+   "lowpassHz": 20000,
+   "level": 0.996,
+   "outL": -42.7,
+   "outR": -38.4,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 8752,
+   "phase": "right",
+   "trueDist": 30.3,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2076.74,
+    "y": 1.8,
+    "z": 2044.19
+   },
+   "truePos": {
+    "x": 2078.4,
+    "y": 1.8,
+    "z": 2044.18
+   },
+   "pannerVsDrawn": 0.17,
+   "pannerVsTrue": 1.66,
+   "interpDelayMs": 267,
+   "distance": 28.66,
+   "rel": {
+    "right": 28.4,
+    "forward": 3.82
+   },
+   "distanceGain": 0.0698,
+   "lowpassHz": 20000,
+   "level": 0.999,
+   "outL": -43,
+   "outR": -38.9,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 8932,
+   "phase": "right",
+   "trueDist": 31.19,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2077.73,
+    "y": 1.8,
+    "z": 2044.18
+   },
+   "truePos": {
+    "x": 2079.3,
+    "y": 1.8,
+    "z": 2044.18
+   },
+   "pannerVsDrawn": 0.13,
+   "pannerVsTrue": 1.57,
+   "interpDelayMs": 261,
+   "distance": 29.63,
+   "rel": {
+    "right": 29.39,
+    "forward": 3.83
+   },
+   "distanceGain": 0.0675,
+   "lowpassHz": 20000,
+   "level": 0.996,
+   "outL": -43.4,
+   "outR": -39.6,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 9126,
+   "phase": "right",
+   "trueDist": 32.08,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2078.73,
+    "y": 1.8,
+    "z": 2044.18
+   },
+   "truePos": {
+    "x": 2080.19,
+    "y": 1.8,
+    "z": 2044.17
+   },
+   "pannerVsDrawn": 0.14,
+   "pannerVsTrue": 1.46,
+   "interpDelayMs": 256,
+   "distance": 30.63,
+   "rel": {
+    "right": 30.39,
+    "forward": 3.83
+   },
+   "distanceGain": 0.0653,
+   "lowpassHz": 20000,
+   "level": 0.998,
+   "outL": -43.4,
+   "outR": -39.3,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 9310,
+   "phase": "right",
+   "trueDist": 33.05,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2079.53,
+    "y": 1.8,
+    "z": 2044.17
+   },
+   "truePos": {
+    "x": 2081.17,
+    "y": 1.8,
+    "z": 2044.17
+   },
+   "pannerVsDrawn": 0.18,
+   "pannerVsTrue": 1.64,
+   "interpDelayMs": 251,
+   "distance": 31.43,
+   "rel": {
+    "right": 31.19,
+    "forward": 3.84
+   },
+   "distanceGain": 0.0636,
+   "lowpassHz": 20000,
+   "level": 0.998,
+   "outL": -43.5,
+   "outR": -39.4,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 9480,
+   "phase": "right",
+   "trueDist": 33.86,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2080.49,
+    "y": 1.8,
+    "z": 2044.17
+   },
+   "truePos": {
+    "x": 2081.98,
+    "y": 1.8,
+    "z": 2044.16
+   },
+   "pannerVsDrawn": 0.08,
+   "pannerVsTrue": 1.49,
+   "interpDelayMs": 251,
+   "distance": 32.38,
+   "rel": {
+    "right": 32.15,
+    "forward": 3.84
+   },
+   "distanceGain": 0.0618,
+   "lowpassHz": 20000,
+   "level": 0.998,
+   "outL": -44.4,
+   "outR": -40.1,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 9673,
+   "phase": "right",
+   "trueDist": 34.67,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2081.36,
+    "y": 1.8,
+    "z": 2044.16
+   },
+   "truePos": {
+    "x": 2082.8,
+    "y": 1.8,
+    "z": 2044.16
+   },
+   "pannerVsDrawn": 0.22,
+   "pannerVsTrue": 1.44,
+   "interpDelayMs": 246,
+   "distance": 33.24,
+   "rel": {
+    "right": 33.02,
+    "forward": 3.85
+   },
+   "distanceGain": 0.0602,
+   "lowpassHz": 20000,
+   "level": 0.999,
+   "outL": -44.4,
+   "outR": -40,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 9851,
+   "phase": "right",
+   "trueDist": 35.65,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2082.17,
+    "y": 1.8,
+    "z": 2044.16
+   },
+   "truePos": {
+    "x": 2083.78,
+    "y": 1.8,
+    "z": 2044.15
+   },
+   "pannerVsDrawn": 0.14,
+   "pannerVsTrue": 1.61,
+   "interpDelayMs": 241,
+   "distance": 34.05,
+   "rel": {
+    "right": 33.83,
+    "forward": 3.85
+   },
+   "distanceGain": 0.0587,
+   "lowpassHz": 20000,
+   "level": 0.996,
+   "outL": -44.6,
+   "outR": -40.1,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 10026,
+   "phase": "right",
+   "trueDist": 36.54,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2083.06,
+    "y": 1.8,
+    "z": 2044.15
+   },
+   "truePos": {
+    "x": 2084.67,
+    "y": 1.8,
+    "z": 2044.15
+   },
+   "pannerVsDrawn": 0.31,
+   "pannerVsTrue": 1.62,
+   "interpDelayMs": 241,
+   "distance": 34.93,
+   "rel": {
+    "right": 34.72,
+    "forward": 3.86
+   },
+   "distanceGain": 0.0573,
+   "lowpassHz": 20000,
+   "level": 0.992,
+   "outL": -44.7,
+   "outR": -40.9,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 10199,
+   "phase": "right",
+   "trueDist": 37.35,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2084.08,
+    "y": 1.8,
+    "z": 2044.15
+   },
+   "truePos": {
+    "x": 2085.49,
+    "y": 1.8,
+    "z": 2044.14
+   },
+   "pannerVsDrawn": 0.11,
+   "pannerVsTrue": 1.4,
+   "interpDelayMs": 237,
+   "distance": 35.95,
+   "rel": {
+    "right": 35.74,
+    "forward": 3.86
+   },
+   "distanceGain": 0.0556,
+   "lowpassHz": 20000,
+   "level": 0.995,
+   "outL": -44.7,
+   "outR": -40.5,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 10389,
+   "phase": "right",
+   "trueDist": 38.32,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2084.92,
+    "y": 1.8,
+    "z": 2044.14
+   },
+   "truePos": {
+    "x": 2086.47,
+    "y": 1.8,
+    "z": 2044.14
+   },
+   "pannerVsDrawn": 0.2,
+   "pannerVsTrue": 1.55,
+   "interpDelayMs": 232,
+   "distance": 36.78,
+   "rel": {
+    "right": 36.58,
+    "forward": 3.87
+   },
+   "distanceGain": 0.0544,
+   "lowpassHz": 20000,
+   "level": 0.995,
+   "outL": -45.6,
+   "outR": -41.1,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 10532,
+   "phase": "right",
+   "trueDist": 38.97,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2085.6,
+    "y": 1.8,
+    "z": 2044.14
+   },
+   "truePos": {
+    "x": 2087.12,
+    "y": 1.8,
+    "z": 2044.13
+   },
+   "pannerVsDrawn": 0.2,
+   "pannerVsTrue": 1.52,
+   "interpDelayMs": 232,
+   "distance": 37.46,
+   "rel": {
+    "right": 37.26,
+    "forward": 3.87
+   },
+   "distanceGain": 0.0534,
+   "lowpassHz": 20000,
+   "level": 0.994,
+   "outL": -45,
+   "outR": -40.9,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 10674,
+   "phase": "right",
+   "trueDist": 39.7,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2086.43,
+    "y": 1.8,
+    "z": 2044.14
+   },
+   "truePos": {
+    "x": 2087.85,
+    "y": 1.8,
+    "z": 2044.13
+   },
+   "pannerVsDrawn": 0.16,
+   "pannerVsTrue": 1.42,
+   "interpDelayMs": 227,
+   "distance": 38.29,
+   "rel": {
+    "right": 38.09,
+    "forward": 3.87
+   },
+   "distanceGain": 0.0522,
+   "lowpassHz": 20000,
+   "level": 0.991,
+   "outL": -45.9,
+   "outR": -41.6,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 10878,
+   "phase": "right",
+   "trueDist": 40.43,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2087.34,
+    "y": 1.8,
+    "z": 2044.13
+   },
+   "truePos": {
+    "x": 2088.58,
+    "y": 1.8,
+    "z": 2044.13
+   },
+   "pannerVsDrawn": 0.16,
+   "pannerVsTrue": 1.25,
+   "interpDelayMs": 227,
+   "distance": 39.19,
+   "rel": {
+    "right": 39,
+    "forward": 3.88
+   },
+   "distanceGain": 0.051,
+   "lowpassHz": 20000,
+   "level": 0.993,
+   "outL": -46.1,
+   "outR": -41.8,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 11026,
+   "phase": "right",
+   "trueDist": 41.4,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2088.14,
+    "y": 1.8,
+    "z": 2044.13
+   },
+   "truePos": {
+    "x": 2089.56,
+    "y": 1.8,
+    "z": 2044.12
+   },
+   "pannerVsDrawn": 0.22,
+   "pannerVsTrue": 1.42,
+   "interpDelayMs": 223,
+   "distance": 39.99,
+   "rel": {
+    "right": 39.8,
+    "forward": 3.88
+   },
+   "distanceGain": 0.05,
+   "lowpassHz": 20000,
+   "level": 0.995,
+   "outL": -45.8,
+   "outR": -42.1,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 11191,
+   "phase": "right",
+   "trueDist": 42.22,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2088.94,
+    "y": 1.8,
+    "z": 2044.12
+   },
+   "truePos": {
+    "x": 2090.38,
+    "y": 1.8,
+    "z": 2044.12
+   },
+   "pannerVsDrawn": 0.26,
+   "pannerVsTrue": 1.44,
+   "interpDelayMs": 219,
+   "distance": 40.79,
+   "rel": {
+    "right": 40.6,
+    "forward": 3.89
+   },
+   "distanceGain": 0.05,
+   "lowpassHz": 20000,
+   "level": 0.993,
+   "outL": -45.8,
+   "outR": -41.6,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 11386,
+   "phase": "right",
+   "trueDist": 43.03,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2089.88,
+    "y": 1.8,
+    "z": 2044.12
+   },
+   "truePos": {
+    "x": 2091.19,
+    "y": 1.8,
+    "z": 2044.11
+   },
+   "pannerVsDrawn": 0.24,
+   "pannerVsTrue": 1.32,
+   "interpDelayMs": 219,
+   "distance": 41.72,
+   "rel": {
+    "right": 41.54,
+    "forward": 3.89
+   },
+   "distanceGain": 0.05,
+   "lowpassHz": 20000,
+   "level": 0.992,
+   "outL": -46.7,
+   "outR": -42.2,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 11539,
+   "phase": "right",
+   "trueDist": 43.84,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2090.75,
+    "y": 1.8,
+    "z": 2044.11
+   },
+   "truePos": {
+    "x": 2092.01,
+    "y": 1.8,
+    "z": 2044.11
+   },
+   "pannerVsDrawn": 0.12,
+   "pannerVsTrue": 1.26,
+   "interpDelayMs": 215,
+   "distance": 42.59,
+   "rel": {
+    "right": 42.41,
+    "forward": 3.9
+   },
+   "distanceGain": 0.05,
+   "lowpassHz": 20000,
+   "level": 0.993,
+   "outL": -46.7,
+   "outR": -42.9,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 11727,
+   "phase": "right",
+   "trueDist": 44.81,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2091.62,
+    "y": 1.8,
+    "z": 2044.11
+   },
+   "truePos": {
+    "x": 2092.98,
+    "y": 1.8,
+    "z": 2044.1
+   },
+   "pannerVsDrawn": 0.2,
+   "pannerVsTrue": 1.37,
+   "interpDelayMs": 215,
+   "distance": 43.45,
+   "rel": {
+    "right": 43.28,
+    "forward": 3.9
+   },
+   "distanceGain": 0.05,
+   "lowpassHz": 20000,
+   "level": 0.997,
+   "outL": -46.3,
+   "outR": -42.3,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 11892,
+   "phase": "right",
+   "trueDist": 45.63,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2092.44,
+    "y": 1.8,
+    "z": 2044.1
+   },
+   "truePos": {
+    "x": 2093.8,
+    "y": 1.8,
+    "z": 2044.1
+   },
+   "pannerVsDrawn": 0.12,
+   "pannerVsTrue": 1.36,
+   "interpDelayMs": 211,
+   "distance": 44.27,
+   "rel": {
+    "right": 44.1,
+    "forward": 3.91
+   },
+   "distanceGain": 0.05,
+   "lowpassHz": 20000,
+   "level": 0.995,
+   "outL": -46.8,
+   "outR": -42.9,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 12074,
+   "phase": "right",
+   "trueDist": 46.52,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2093.27,
+    "y": 1.8,
+    "z": 2044.1
+   },
+   "truePos": {
+    "x": 2094.7,
+    "y": 1.8,
+    "z": 2044.09
+   },
+   "pannerVsDrawn": 0.21,
+   "pannerVsTrue": 1.42,
+   "interpDelayMs": 207,
+   "distance": 45.1,
+   "rel": {
+    "right": 44.93,
+    "forward": 3.91
+   },
+   "distanceGain": 0.05,
+   "lowpassHz": 20000,
+   "level": 0.997,
+   "outL": -47.4,
+   "outR": -43.1,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 12247,
+   "phase": "right",
+   "trueDist": 47.33,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2094.26,
+    "y": 1.8,
+    "z": 2044.09
+   },
+   "truePos": {
+    "x": 2095.51,
+    "y": 1.8,
+    "z": 2044.09
+   },
+   "pannerVsDrawn": 0.13,
+   "pannerVsTrue": 1.25,
+   "interpDelayMs": 207,
+   "distance": 46.09,
+   "rel": {
+    "right": 45.92,
+    "forward": 3.92
+   },
+   "distanceGain": 0.05,
+   "lowpassHz": 20000,
+   "level": 0.997,
+   "outL": -47.5,
+   "outR": -43.4,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 12433,
+   "phase": "right",
+   "trueDist": 48.23,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2095.11,
+    "y": 1.8,
+    "z": 2044.09
+   },
+   "truePos": {
+    "x": 2096.41,
+    "y": 1.8,
+    "z": 2044.08
+   },
+   "pannerVsDrawn": 0.17,
+   "pannerVsTrue": 1.29,
+   "interpDelayMs": 204,
+   "distance": 46.94,
+   "rel": {
+    "right": 46.77,
+    "forward": 3.92
+   },
+   "distanceGain": 0.05,
+   "lowpassHz": 20000,
+   "level": 0.997,
+   "outL": -46.8,
+   "outR": -42.8,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 12587,
+   "phase": "right",
+   "trueDist": 49.04,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2095.96,
+    "y": 1.8,
+    "z": 2044.08
+   },
+   "truePos": {
+    "x": 2097.22,
+    "y": 1.8,
+    "z": 2044.08
+   },
+   "pannerVsDrawn": 0.17,
+   "pannerVsTrue": 1.26,
+   "interpDelayMs": 200,
+   "distance": 47.79,
+   "rel": {
+    "right": 47.62,
+    "forward": 3.93
+   },
+   "distanceGain": 0.05,
+   "lowpassHz": 20000,
+   "level": 0.993,
+   "outL": -47.9,
+   "outR": -43.5,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 12732,
+   "phase": "right",
+   "trueDist": 49.77,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2096.59,
+    "y": 1.8,
+    "z": 2044.08
+   },
+   "truePos": {
+    "x": 2097.95,
+    "y": 1.8,
+    "z": 2044.08
+   },
+   "pannerVsDrawn": 0.16,
+   "pannerVsTrue": 1.36,
+   "interpDelayMs": 200,
+   "distance": 48.41,
+   "rel": {
+    "right": 48.25,
+    "forward": 3.93
+   },
+   "distanceGain": 0.05,
+   "lowpassHz": 20000,
+   "level": 0.929,
+   "outL": -68.9,
+   "outR": -64.6,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 12887,
+   "phase": "right",
+   "trueDist": 50.5,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2097.29,
+    "y": 1.8,
+    "z": 2044.08
+   },
+   "truePos": {
+    "x": 2098.69,
+    "y": 1.8,
+    "z": 2044.07
+   },
+   "pannerVsDrawn": 0.22,
+   "pannerVsTrue": 1.39,
+   "interpDelayMs": 197,
+   "distance": 49.11,
+   "rel": {
+    "right": 48.95,
+    "forward": 3.93
+   },
+   "distanceGain": 0.05,
+   "lowpassHz": 20000,
+   "level": 0.719,
+   "outL": -92.9,
+   "outR": -88.6,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 13074,
+   "phase": "right",
+   "trueDist": 51.31,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2098.27,
+    "y": 1.8,
+    "z": 2044.07
+   },
+   "truePos": {
+    "x": 2099.5,
+    "y": 1.8,
+    "z": 2044.07
+   },
+   "pannerVsDrawn": 0.13,
+   "pannerVsTrue": 1.23,
+   "interpDelayMs": 194,
+   "distance": 50.08,
+   "rel": {
+    "right": 49.93,
+    "forward": 3.94
+   },
+   "distanceGain": 0.05,
+   "lowpassHz": 20000,
+   "level": 0.474,
+   "outL": -120,
+   "outR": -120,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 13261,
+   "phase": "right",
+   "trueDist": 52.21,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2099.12,
+    "y": 1.8,
+    "z": 2044.07
+   },
+   "truePos": {
+    "x": 2100.4,
+    "y": 1.8,
+    "z": 2044.06
+   },
+   "pannerVsDrawn": 0.18,
+   "pannerVsTrue": 1.28,
+   "interpDelayMs": 194,
+   "distance": 50.93,
+   "rel": {
+    "right": 50.78,
+    "forward": 3.94
+   },
+   "distanceGain": 0.05,
+   "lowpassHz": 20000,
+   "level": 0.312,
+   "outL": -120,
+   "outR": -120,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 13443,
+   "phase": "right",
+   "trueDist": 53.18,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2100.01,
+    "y": 1.8,
+    "z": 2044.06
+   },
+   "truePos": {
+    "x": 2101.38,
+    "y": 1.8,
+    "z": 2044.06
+   },
+   "pannerVsDrawn": 0.31,
+   "pannerVsTrue": 1.37,
+   "interpDelayMs": 191,
+   "distance": 51.82,
+   "rel": {
+    "right": 51.67,
+    "forward": 3.95
+   },
+   "distanceGain": 0.05,
+   "lowpassHz": 20000,
+   "level": 0.206,
+   "outL": -120,
+   "outR": -120,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 13615,
+   "phase": "right",
+   "trueDist": 54.08,
+   "subscribed": false,
+   "mode": null,
+   "pannerPos": null,
+   "truePos": {
+    "x": 2102.27,
+    "y": 1.8,
+    "z": 2044.05
+   },
+   "pannerVsDrawn": null,
+   "pannerVsTrue": null,
+   "interpDelayMs": 188,
+   "distance": null,
+   "rel": null,
+   "distanceGain": null,
+   "lowpassHz": null,
+   "level": null,
+   "outL": -120,
+   "outR": -120,
+   "levelDomSpeaking": null,
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 13778,
+   "phase": "right",
+   "trueDist": 54.81,
+   "subscribed": false,
+   "mode": null,
+   "pannerPos": null,
+   "truePos": {
+    "x": 2103.01,
+    "y": 1.8,
+    "z": 2044.05
+   },
+   "pannerVsDrawn": null,
+   "pannerVsTrue": null,
+   "interpDelayMs": 188,
+   "distance": null,
+   "rel": null,
+   "distanceGain": null,
+   "lowpassHz": null,
+   "level": null,
+   "outL": -120,
+   "outR": -120,
+   "levelDomSpeaking": null,
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 13924,
+   "phase": "right",
+   "trueDist": 55.54,
+   "subscribed": false,
+   "mode": null,
+   "pannerPos": null,
+   "truePos": {
+    "x": 2103.74,
+    "y": 1.8,
+    "z": 2044.05
+   },
+   "pannerVsDrawn": null,
+   "pannerVsTrue": null,
+   "interpDelayMs": 185,
+   "distance": null,
+   "rel": null,
+   "distanceGain": null,
+   "lowpassHz": null,
+   "level": null,
+   "outL": -120,
+   "outR": -120,
+   "levelDomSpeaking": null,
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 14117,
+   "phase": "right",
+   "trueDist": 56.44,
+   "subscribed": false,
+   "mode": null,
+   "pannerPos": null,
+   "truePos": {
+    "x": 2104.64,
+    "y": 1.8,
+    "z": 2044.04
+   },
+   "pannerVsDrawn": null,
+   "pannerVsTrue": null,
+   "interpDelayMs": 185,
+   "distance": null,
+   "rel": null,
+   "distanceGain": null,
+   "lowpassHz": null,
+   "level": null,
+   "outL": -120,
+   "outR": -120,
+   "levelDomSpeaking": null,
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 14276,
+   "phase": "right",
+   "trueDist": 57.33,
+   "subscribed": false,
+   "mode": null,
+   "pannerPos": null,
+   "truePos": {
+    "x": 2105.53,
+    "y": 1.8,
+    "z": 2044.04
+   },
+   "pannerVsDrawn": null,
+   "pannerVsTrue": null,
+   "interpDelayMs": 183,
+   "distance": null,
+   "rel": null,
+   "distanceGain": null,
+   "lowpassHz": null,
+   "level": null,
+   "outL": -120,
+   "outR": -120,
+   "levelDomSpeaking": null,
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 14418,
+   "phase": "right",
+   "trueDist": 57.98,
+   "subscribed": false,
+   "mode": null,
+   "pannerPos": null,
+   "truePos": {
+    "x": 2106.18,
+    "y": 1.8,
+    "z": 2044.03
+   },
+   "pannerVsDrawn": null,
+   "pannerVsTrue": null,
+   "interpDelayMs": 180,
+   "distance": null,
+   "rel": null,
+   "distanceGain": null,
+   "lowpassHz": null,
+   "level": null,
+   "outL": -120,
+   "outR": -120,
+   "levelDomSpeaking": null,
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 14581,
+   "phase": "right",
+   "trueDist": 58.79,
+   "subscribed": false,
+   "mode": null,
+   "pannerPos": null,
+   "truePos": {
+    "x": 2107,
+    "y": 1.8,
+    "z": 2044.03
+   },
+   "pannerVsDrawn": null,
+   "pannerVsTrue": null,
+   "interpDelayMs": 180,
+   "distance": null,
+   "rel": null,
+   "distanceGain": null,
+   "lowpassHz": null,
+   "level": null,
+   "outL": -120,
+   "outR": -120,
+   "levelDomSpeaking": null,
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 14751,
+   "phase": "right",
+   "trueDist": 59.44,
+   "subscribed": false,
+   "mode": null,
+   "pannerPos": null,
+   "truePos": {
+    "x": 2107.65,
+    "y": 1.8,
+    "z": 2044.02
+   },
+   "pannerVsDrawn": null,
+   "pannerVsTrue": null,
+   "interpDelayMs": 178,
+   "distance": null,
+   "rel": null,
+   "distanceGain": null,
+   "lowpassHz": null,
+   "level": null,
+   "outL": -120,
+   "outR": -120,
+   "levelDomSpeaking": null,
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 14947,
+   "phase": "right",
+   "trueDist": 60.34,
+   "subscribed": false,
+   "mode": null,
+   "pannerPos": null,
+   "truePos": {
+    "x": 2108.55,
+    "y": 1.8,
+    "z": 2044.02
+   },
+   "pannerVsDrawn": null,
+   "pannerVsTrue": null,
+   "interpDelayMs": 175,
+   "distance": null,
+   "rel": null,
+   "distanceGain": null,
+   "lowpassHz": null,
+   "level": null,
+   "outL": -120,
+   "outR": -120,
+   "levelDomSpeaking": null,
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 15129,
+   "phase": "right",
+   "trueDist": 61.31,
+   "subscribed": false,
+   "mode": null,
+   "pannerPos": null,
+   "truePos": {
+    "x": 2109.52,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": null,
+   "pannerVsTrue": null,
+   "interpDelayMs": 175,
+   "distance": null,
+   "rel": null,
+   "distanceGain": null,
+   "lowpassHz": null,
+   "level": null,
+   "outL": -120,
+   "outR": -120,
+   "levelDomSpeaking": null,
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 15380,
+   "phase": "far-right",
+   "trueDist": 62.33,
+   "subscribed": false,
+   "mode": null,
+   "pannerPos": null,
+   "truePos": {
+    "x": 2110.54,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": null,
+   "pannerVsTrue": null,
+   "interpDelayMs": 173,
+   "distance": null,
+   "rel": null,
+   "distanceGain": null,
+   "lowpassHz": null,
+   "level": null,
+   "outL": -120,
+   "outR": -120,
+   "levelDomSpeaking": null,
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 15560,
+   "phase": "far-right",
+   "trueDist": 62.39,
+   "subscribed": false,
+   "mode": null,
+   "pannerPos": null,
+   "truePos": {
+    "x": 2110.6,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": null,
+   "pannerVsTrue": null,
+   "interpDelayMs": 171,
+   "distance": null,
+   "rel": null,
+   "distanceGain": null,
+   "lowpassHz": null,
+   "level": null,
+   "outL": -120,
+   "outR": -120,
+   "levelDomSpeaking": null,
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 15708,
+   "phase": "far-right",
+   "trueDist": 62.39,
+   "subscribed": false,
+   "mode": null,
+   "pannerPos": null,
+   "truePos": {
+    "x": 2110.6,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": null,
+   "pannerVsTrue": null,
+   "interpDelayMs": 171,
+   "distance": null,
+   "rel": null,
+   "distanceGain": null,
+   "lowpassHz": null,
+   "level": null,
+   "outL": -120,
+   "outR": -120,
+   "levelDomSpeaking": null,
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 15885,
+   "phase": "far-right",
+   "trueDist": 62.39,
+   "subscribed": false,
+   "mode": null,
+   "pannerPos": null,
+   "truePos": {
+    "x": 2110.6,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": null,
+   "pannerVsTrue": null,
+   "interpDelayMs": 169,
+   "distance": null,
+   "rel": null,
+   "distanceGain": null,
+   "lowpassHz": null,
+   "level": null,
+   "outL": -120,
+   "outR": -120,
+   "levelDomSpeaking": null,
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 16052,
+   "phase": "far-right",
+   "trueDist": 62.39,
+   "subscribed": false,
+   "mode": null,
+   "pannerPos": null,
+   "truePos": {
+    "x": 2110.6,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": null,
+   "pannerVsTrue": null,
+   "interpDelayMs": 167,
+   "distance": null,
+   "rel": null,
+   "distanceGain": null,
+   "lowpassHz": null,
+   "level": null,
+   "outL": -120,
+   "outR": -120,
+   "levelDomSpeaking": null,
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 16232,
+   "phase": "far-right",
+   "trueDist": 62.39,
+   "subscribed": false,
+   "mode": null,
+   "pannerPos": null,
+   "truePos": {
+    "x": 2110.6,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": null,
+   "pannerVsTrue": null,
+   "interpDelayMs": 167,
+   "distance": null,
+   "rel": null,
+   "distanceGain": null,
+   "lowpassHz": null,
+   "level": null,
+   "outL": -120,
+   "outR": -120,
+   "levelDomSpeaking": null,
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 16395,
+   "phase": "far-right",
+   "trueDist": 62.39,
+   "subscribed": false,
+   "mode": null,
+   "pannerPos": null,
+   "truePos": {
+    "x": 2110.6,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": null,
+   "pannerVsTrue": null,
+   "interpDelayMs": 165,
+   "distance": null,
+   "rel": null,
+   "distanceGain": null,
+   "lowpassHz": null,
+   "level": null,
+   "outL": -120,
+   "outR": -120,
+   "levelDomSpeaking": null,
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 16595,
+   "phase": "far-right",
+   "trueDist": 62.39,
+   "subscribed": false,
+   "mode": null,
+   "pannerPos": null,
+   "truePos": {
+    "x": 2110.6,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": null,
+   "pannerVsTrue": null,
+   "interpDelayMs": 163,
+   "distance": null,
+   "rel": null,
+   "distanceGain": null,
+   "lowpassHz": null,
+   "level": null,
+   "outL": -120,
+   "outR": -120,
+   "levelDomSpeaking": null,
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 16754,
+   "phase": "far-right",
+   "trueDist": 62.39,
+   "subscribed": false,
+   "mode": null,
+   "pannerPos": null,
+   "truePos": {
+    "x": 2110.6,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": null,
+   "pannerVsTrue": null,
+   "interpDelayMs": 163,
+   "distance": null,
+   "rel": null,
+   "distanceGain": null,
+   "lowpassHz": null,
+   "level": null,
+   "outL": -120,
+   "outR": -120,
+   "levelDomSpeaking": null,
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 16912,
+   "phase": "far-right",
+   "trueDist": 62.39,
+   "subscribed": false,
+   "mode": null,
+   "pannerPos": null,
+   "truePos": {
+    "x": 2110.6,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": null,
+   "pannerVsTrue": null,
+   "interpDelayMs": 161,
+   "distance": null,
+   "rel": null,
+   "distanceGain": null,
+   "lowpassHz": null,
+   "level": null,
+   "outL": -120,
+   "outR": -120,
+   "levelDomSpeaking": null,
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 17077,
+   "phase": "far-right",
+   "trueDist": 62.39,
+   "subscribed": false,
+   "mode": null,
+   "pannerPos": null,
+   "truePos": {
+    "x": 2110.6,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": null,
+   "pannerVsTrue": null,
+   "interpDelayMs": 160,
+   "distance": null,
+   "rel": null,
+   "distanceGain": null,
+   "lowpassHz": null,
+   "level": null,
+   "outL": -120,
+   "outR": -120,
+   "levelDomSpeaking": null,
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 17247,
+   "phase": "far-right",
+   "trueDist": 62.39,
+   "subscribed": false,
+   "mode": null,
+   "pannerPos": null,
+   "truePos": {
+    "x": 2110.6,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": null,
+   "pannerVsTrue": null,
+   "interpDelayMs": 160,
+   "distance": null,
+   "rel": null,
+   "distanceGain": null,
+   "lowpassHz": null,
+   "level": null,
+   "outL": -120,
+   "outR": -120,
+   "levelDomSpeaking": null,
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 17407,
+   "phase": "far-right",
+   "trueDist": 62.39,
+   "subscribed": false,
+   "mode": null,
+   "pannerPos": null,
+   "truePos": {
+    "x": 2110.6,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": null,
+   "pannerVsTrue": null,
+   "interpDelayMs": 158,
+   "distance": null,
+   "rel": null,
+   "distanceGain": null,
+   "lowpassHz": null,
+   "level": null,
+   "outL": -120,
+   "outR": -120,
+   "levelDomSpeaking": null,
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 17575,
+   "phase": "far-right",
+   "trueDist": 62.39,
+   "subscribed": false,
+   "mode": null,
+   "pannerPos": null,
+   "truePos": {
+    "x": 2110.6,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": null,
+   "pannerVsTrue": null,
+   "interpDelayMs": 158,
+   "distance": null,
+   "rel": null,
+   "distanceGain": null,
+   "lowpassHz": null,
+   "level": null,
+   "outL": -120,
+   "outR": -120,
+   "levelDomSpeaking": null,
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 17749,
+   "phase": "far-right",
+   "trueDist": 62.39,
+   "subscribed": false,
+   "mode": null,
+   "pannerPos": null,
+   "truePos": {
+    "x": 2110.6,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": null,
+   "pannerVsTrue": null,
+   "interpDelayMs": 157,
+   "distance": null,
+   "rel": null,
+   "distanceGain": null,
+   "lowpassHz": null,
+   "level": null,
+   "outL": -120,
+   "outR": -120,
+   "levelDomSpeaking": null,
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 18369,
+   "phase": "left",
+   "trueDist": 62.34,
+   "subscribed": false,
+   "mode": null,
+   "pannerPos": null,
+   "truePos": {
+    "x": 2110.55,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": null,
+   "pannerVsTrue": null,
+   "interpDelayMs": 154,
+   "distance": null,
+   "rel": null,
+   "distanceGain": null,
+   "lowpassHz": null,
+   "level": null,
+   "outL": -120,
+   "outR": -120,
+   "levelDomSpeaking": null,
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 18506,
+   "phase": "left",
+   "trueDist": 61.81,
+   "subscribed": false,
+   "mode": null,
+   "pannerPos": null,
+   "truePos": {
+    "x": 2110.02,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": null,
+   "pannerVsTrue": null,
+   "interpDelayMs": 201,
+   "distance": null,
+   "rel": null,
+   "distanceGain": null,
+   "lowpassHz": null,
+   "level": null,
+   "outL": -120,
+   "outR": -120,
+   "levelDomSpeaking": null,
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 18681,
+   "phase": "left",
+   "trueDist": 61.05,
+   "subscribed": false,
+   "mode": null,
+   "pannerPos": null,
+   "truePos": {
+    "x": 2109.26,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": null,
+   "pannerVsTrue": null,
+   "interpDelayMs": 206,
+   "distance": null,
+   "rel": null,
+   "distanceGain": null,
+   "lowpassHz": null,
+   "level": null,
+   "outL": -120,
+   "outR": -120,
+   "levelDomSpeaking": null,
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 18840,
+   "phase": "left",
+   "trueDist": 60.25,
+   "subscribed": false,
+   "mode": null,
+   "pannerPos": null,
+   "truePos": {
+    "x": 2108.46,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": null,
+   "pannerVsTrue": null,
+   "interpDelayMs": 156,
+   "distance": null,
+   "rel": null,
+   "distanceGain": null,
+   "lowpassHz": null,
+   "level": null,
+   "outL": -120,
+   "outR": -120,
+   "levelDomSpeaking": null,
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 19006,
+   "phase": "left",
+   "trueDist": 59.52,
+   "subscribed": false,
+   "mode": null,
+   "pannerPos": null,
+   "truePos": {
+    "x": 2107.73,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": null,
+   "pannerVsTrue": null,
+   "interpDelayMs": 151,
+   "distance": null,
+   "rel": null,
+   "distanceGain": null,
+   "lowpassHz": null,
+   "level": null,
+   "outL": -120,
+   "outR": -120,
+   "levelDomSpeaking": null,
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 19191,
+   "phase": "left",
+   "trueDist": 58.71,
+   "subscribed": false,
+   "mode": null,
+   "pannerPos": null,
+   "truePos": {
+    "x": 2106.91,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": null,
+   "pannerVsTrue": null,
+   "interpDelayMs": 151,
+   "distance": null,
+   "rel": null,
+   "distanceGain": null,
+   "lowpassHz": null,
+   "level": null,
+   "outL": -120,
+   "outR": -120,
+   "levelDomSpeaking": null,
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 19358,
+   "phase": "left",
+   "trueDist": 57.73,
+   "subscribed": false,
+   "mode": null,
+   "pannerPos": null,
+   "truePos": {
+    "x": 2105.94,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": null,
+   "pannerVsTrue": null,
+   "interpDelayMs": 150,
+   "distance": null,
+   "rel": null,
+   "distanceGain": null,
+   "lowpassHz": null,
+   "level": null,
+   "outL": -120,
+   "outR": -120,
+   "levelDomSpeaking": null,
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 19598,
+   "phase": "left",
+   "trueDist": 56.76,
+   "subscribed": false,
+   "mode": null,
+   "pannerPos": null,
+   "truePos": {
+    "x": 2104.96,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": null,
+   "pannerVsTrue": null,
+   "interpDelayMs": 149,
+   "distance": null,
+   "rel": null,
+   "distanceGain": null,
+   "lowpassHz": null,
+   "level": null,
+   "outL": -120,
+   "outR": -120,
+   "levelDomSpeaking": null,
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 19755,
+   "phase": "left",
+   "trueDist": 55.78,
+   "subscribed": false,
+   "mode": null,
+   "pannerPos": null,
+   "truePos": {
+    "x": 2103.98,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": null,
+   "pannerVsTrue": null,
+   "interpDelayMs": 149,
+   "distance": null,
+   "rel": null,
+   "distanceGain": null,
+   "lowpassHz": null,
+   "level": null,
+   "outL": -120,
+   "outR": -120,
+   "levelDomSpeaking": null,
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 19934,
+   "phase": "left",
+   "trueDist": 55.05,
+   "subscribed": false,
+   "mode": null,
+   "pannerPos": null,
+   "truePos": {
+    "x": 2103.25,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": null,
+   "pannerVsTrue": null,
+   "interpDelayMs": 148,
+   "distance": null,
+   "rel": null,
+   "distanceGain": null,
+   "lowpassHz": null,
+   "level": null,
+   "outL": -120,
+   "outR": -120,
+   "levelDomSpeaking": null,
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 20115,
+   "phase": "left",
+   "trueDist": 54.08,
+   "subscribed": false,
+   "mode": null,
+   "pannerPos": null,
+   "truePos": {
+    "x": 2102.27,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": null,
+   "pannerVsTrue": null,
+   "interpDelayMs": 147,
+   "distance": null,
+   "rel": null,
+   "distanceGain": null,
+   "lowpassHz": null,
+   "level": null,
+   "outL": -120,
+   "outR": -120,
+   "levelDomSpeaking": null,
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 20282,
+   "phase": "left",
+   "trueDist": 53.18,
+   "subscribed": false,
+   "mode": null,
+   "pannerPos": null,
+   "truePos": {
+    "x": 2101.37,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": null,
+   "pannerVsTrue": null,
+   "interpDelayMs": 147,
+   "distance": null,
+   "rel": null,
+   "distanceGain": null,
+   "lowpassHz": null,
+   "level": null,
+   "outL": -120,
+   "outR": -120,
+   "levelDomSpeaking": null,
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 20457,
+   "phase": "left",
+   "trueDist": 52.37,
+   "subscribed": false,
+   "mode": null,
+   "pannerPos": null,
+   "truePos": {
+    "x": 2100.56,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": null,
+   "pannerVsTrue": null,
+   "interpDelayMs": 146,
+   "distance": null,
+   "rel": null,
+   "distanceGain": null,
+   "lowpassHz": null,
+   "level": null,
+   "outL": -120,
+   "outR": -120,
+   "levelDomSpeaking": null,
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 20625,
+   "phase": "left",
+   "trueDist": 51.56,
+   "subscribed": false,
+   "mode": null,
+   "pannerPos": null,
+   "truePos": {
+    "x": 2099.74,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": null,
+   "pannerVsTrue": null,
+   "interpDelayMs": 145,
+   "distance": null,
+   "rel": null,
+   "distanceGain": null,
+   "lowpassHz": null,
+   "level": null,
+   "outL": -120,
+   "outR": -120,
+   "levelDomSpeaking": null,
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 20809,
+   "phase": "left",
+   "trueDist": 50.83,
+   "subscribed": false,
+   "mode": null,
+   "pannerPos": null,
+   "truePos": {
+    "x": 2099.01,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": null,
+   "pannerVsTrue": null,
+   "interpDelayMs": 145,
+   "distance": null,
+   "rel": null,
+   "distanceGain": null,
+   "lowpassHz": null,
+   "level": null,
+   "outL": -120,
+   "outR": -120,
+   "levelDomSpeaking": null,
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 21004,
+   "phase": "left",
+   "trueDist": 49.85,
+   "subscribed": false,
+   "mode": null,
+   "pannerPos": null,
+   "truePos": {
+    "x": 2098.03,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": null,
+   "pannerVsTrue": null,
+   "interpDelayMs": 145,
+   "distance": null,
+   "rel": null,
+   "distanceGain": null,
+   "lowpassHz": null,
+   "level": null,
+   "outL": -120,
+   "outR": -120,
+   "levelDomSpeaking": null,
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 21211,
+   "phase": "left",
+   "trueDist": 48.8,
+   "subscribed": false,
+   "mode": null,
+   "pannerPos": null,
+   "truePos": {
+    "x": 2096.97,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": null,
+   "pannerVsTrue": null,
+   "interpDelayMs": 144,
+   "distance": null,
+   "rel": null,
+   "distanceGain": null,
+   "lowpassHz": null,
+   "level": null,
+   "outL": -120,
+   "outR": -120,
+   "levelDomSpeaking": null,
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 21424,
+   "phase": "left",
+   "trueDist": 47.82,
+   "subscribed": false,
+   "mode": null,
+   "pannerPos": null,
+   "truePos": {
+    "x": 2096,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": null,
+   "pannerVsTrue": null,
+   "interpDelayMs": 143,
+   "distance": null,
+   "rel": null,
+   "distanceGain": null,
+   "lowpassHz": null,
+   "level": null,
+   "outL": -120,
+   "outR": -120,
+   "levelDomSpeaking": null,
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 21593,
+   "phase": "left",
+   "trueDist": 46.77,
+   "subscribed": false,
+   "mode": null,
+   "pannerPos": null,
+   "truePos": {
+    "x": 2094.94,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": null,
+   "pannerVsTrue": null,
+   "interpDelayMs": 143,
+   "distance": null,
+   "rel": null,
+   "distanceGain": null,
+   "lowpassHz": null,
+   "level": null,
+   "outL": -120,
+   "outR": -120,
+   "levelDomSpeaking": null,
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 21780,
+   "phase": "left",
+   "trueDist": 46.04,
+   "subscribed": false,
+   "mode": null,
+   "pannerPos": null,
+   "truePos": {
+    "x": 2094.2,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": null,
+   "pannerVsTrue": null,
+   "interpDelayMs": 142,
+   "distance": null,
+   "rel": null,
+   "distanceGain": null,
+   "lowpassHz": null,
+   "level": null,
+   "outL": -120,
+   "outR": -120,
+   "levelDomSpeaking": null,
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 21964,
+   "phase": "left",
+   "trueDist": 45.06,
+   "subscribed": false,
+   "mode": null,
+   "pannerPos": null,
+   "truePos": {
+    "x": 2093.23,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": null,
+   "pannerVsTrue": null,
+   "interpDelayMs": 142,
+   "distance": null,
+   "rel": null,
+   "distanceGain": null,
+   "lowpassHz": null,
+   "level": null,
+   "outL": -120,
+   "outR": -120,
+   "levelDomSpeaking": null,
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 22114,
+   "phase": "left",
+   "trueDist": 44.25,
+   "subscribed": false,
+   "mode": null,
+   "pannerPos": null,
+   "truePos": {
+    "x": 2092.41,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": null,
+   "pannerVsTrue": null,
+   "interpDelayMs": 142,
+   "distance": null,
+   "rel": null,
+   "distanceGain": null,
+   "lowpassHz": null,
+   "level": null,
+   "outL": -120,
+   "outR": -120,
+   "levelDomSpeaking": null,
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 22299,
+   "phase": "left",
+   "trueDist": 43.44,
+   "subscribed": false,
+   "mode": null,
+   "pannerPos": null,
+   "truePos": {
+    "x": 2091.6,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": null,
+   "pannerVsTrue": null,
+   "interpDelayMs": 141,
+   "distance": null,
+   "rel": null,
+   "distanceGain": null,
+   "lowpassHz": null,
+   "level": null,
+   "outL": -120,
+   "outR": -120,
+   "levelDomSpeaking": null,
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 22495,
+   "phase": "left",
+   "trueDist": 42.47,
+   "subscribed": false,
+   "mode": null,
+   "pannerPos": null,
+   "truePos": {
+    "x": 2090.62,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": null,
+   "pannerVsTrue": null,
+   "interpDelayMs": 141,
+   "distance": null,
+   "rel": null,
+   "distanceGain": null,
+   "lowpassHz": null,
+   "level": null,
+   "outL": -120,
+   "outR": -120,
+   "levelDomSpeaking": null,
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 22643,
+   "phase": "left",
+   "trueDist": 41.74,
+   "subscribed": false,
+   "mode": null,
+   "pannerPos": null,
+   "truePos": {
+    "x": 2089.88,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": null,
+   "pannerVsTrue": null,
+   "interpDelayMs": 141,
+   "distance": null,
+   "rel": null,
+   "distanceGain": null,
+   "lowpassHz": null,
+   "level": null,
+   "outL": -120,
+   "outR": -120,
+   "levelDomSpeaking": null,
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 22839,
+   "phase": "left",
+   "trueDist": 40.93,
+   "subscribed": false,
+   "mode": null,
+   "pannerPos": null,
+   "truePos": {
+    "x": 2089.07,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": null,
+   "pannerVsTrue": null,
+   "interpDelayMs": 140,
+   "distance": null,
+   "rel": null,
+   "distanceGain": null,
+   "lowpassHz": null,
+   "level": null,
+   "outL": -120,
+   "outR": -120,
+   "levelDomSpeaking": null,
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 23039,
+   "phase": "left",
+   "trueDist": 39.87,
+   "subscribed": false,
+   "mode": null,
+   "pannerPos": null,
+   "truePos": {
+    "x": 2088.01,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": null,
+   "pannerVsTrue": null,
+   "interpDelayMs": 139,
+   "distance": null,
+   "rel": null,
+   "distanceGain": null,
+   "lowpassHz": null,
+   "level": null,
+   "outL": -120,
+   "outR": -120,
+   "levelDomSpeaking": null,
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 23204,
+   "phase": "left",
+   "trueDist": 39.06,
+   "subscribed": false,
+   "mode": null,
+   "pannerPos": null,
+   "truePos": {
+    "x": 2087.2,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": null,
+   "pannerVsTrue": null,
+   "interpDelayMs": 139,
+   "distance": null,
+   "rel": null,
+   "distanceGain": null,
+   "lowpassHz": null,
+   "level": null,
+   "outL": -120,
+   "outR": -120,
+   "levelDomSpeaking": null,
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 23385,
+   "phase": "left",
+   "trueDist": 38.17,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2087.39,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2086.3,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.26,
+   "pannerVsTrue": 1.09,
+   "interpDelayMs": 139,
+   "distance": 39.25,
+   "rel": {
+    "right": 39.05,
+    "forward": 4
+   },
+   "distanceGain": 0.0509,
+   "lowpassHz": 20000,
+   "level": 0,
+   "outL": -120,
+   "outR": -120,
+   "levelDomSpeaking": "0",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 23558,
+   "phase": "left",
+   "trueDist": 37.36,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2086.58,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2085.48,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.17,
+   "pannerVsTrue": 1.1,
+   "interpDelayMs": 139,
+   "distance": 38.45,
+   "rel": {
+    "right": 38.24,
+    "forward": 4
+   },
+   "distanceGain": 0.052,
+   "lowpassHz": 20000,
+   "level": 0.376,
+   "outL": -48,
+   "outR": -43.4,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 23755,
+   "phase": "left",
+   "trueDist": 36.31,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2085.51,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2084.43,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.16,
+   "pannerVsTrue": 1.09,
+   "interpDelayMs": 138,
+   "distance": 37.39,
+   "rel": {
+    "right": 37.17,
+    "forward": 4
+   },
+   "distanceGain": 0.0535,
+   "lowpassHz": 20000,
+   "level": 0.949,
+   "outL": -45.1,
+   "outR": -40.8,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 23962,
+   "phase": "left",
+   "trueDist": 35.5,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2084.56,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2083.61,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.22,
+   "pannerVsTrue": 0.95,
+   "interpDelayMs": 138,
+   "distance": 36.44,
+   "rel": {
+    "right": 36.22,
+    "forward": 4
+   },
+   "distanceGain": 0.0549,
+   "lowpassHz": 20000,
+   "level": 0.981,
+   "outL": -44.8,
+   "outR": -40.6,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 24120,
+   "phase": "left",
+   "trueDist": 34.53,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2083.81,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2082.63,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.19,
+   "pannerVsTrue": 1.18,
+   "interpDelayMs": 137,
+   "distance": 35.7,
+   "rel": {
+    "right": 35.47,
+    "forward": 4
+   },
+   "distanceGain": 0.056,
+   "lowpassHz": 20000,
+   "level": 0.988,
+   "outL": -45.1,
+   "outR": -40.9,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 24335,
+   "phase": "left",
+   "trueDist": 33.63,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2082.82,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2081.74,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.18,
+   "pannerVsTrue": 1.08,
+   "interpDelayMs": 137,
+   "distance": 34.71,
+   "rel": {
+    "right": 34.48,
+    "forward": 4
+   },
+   "distanceGain": 0.0576,
+   "lowpassHz": 20000,
+   "level": 0.996,
+   "outL": -44.8,
+   "outR": -40.4,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 24502,
+   "phase": "left",
+   "trueDist": 32.75,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2081.87,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2080.84,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.22,
+   "pannerVsTrue": 1.03,
+   "interpDelayMs": 137,
+   "distance": 33.76,
+   "rel": {
+    "right": 33.53,
+    "forward": 4
+   },
+   "distanceGain": 0.0592,
+   "lowpassHz": 20000,
+   "level": 0.998,
+   "outL": -44.1,
+   "outR": -40,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 24680,
+   "phase": "left",
+   "trueDist": 31.94,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2081.17,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2080.03,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.3,
+   "pannerVsTrue": 1.14,
+   "interpDelayMs": 137,
+   "distance": 33.07,
+   "rel": {
+    "right": 32.83,
+    "forward": 4
+   },
+   "distanceGain": 0.0605,
+   "lowpassHz": 20000,
+   "level": 0.996,
+   "outL": -44.4,
+   "outR": -39.9,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 24857,
+   "phase": "left",
+   "trueDist": 31.13,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2080.2,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2079.21,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.17,
+   "pannerVsTrue": 0.99,
+   "interpDelayMs": 137,
+   "distance": 32.11,
+   "rel": {
+    "right": 31.86,
+    "forward": 4
+   },
+   "distanceGain": 0.0623,
+   "lowpassHz": 20000,
+   "level": 0.992,
+   "outL": -44.2,
+   "outR": -39.6,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 25057,
+   "phase": "left",
+   "trueDist": 30.08,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2079.27,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2078.15,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.27,
+   "pannerVsTrue": 1.12,
+   "interpDelayMs": 136,
+   "distance": 31.19,
+   "rel": {
+    "right": 30.93,
+    "forward": 4
+   },
+   "distanceGain": 0.0641,
+   "lowpassHz": 20000,
+   "level": 0.995,
+   "outL": -43.7,
+   "outR": -39.8,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 25245,
+   "phase": "left",
+   "trueDist": 29.11,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2078.19,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2077.17,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.14,
+   "pannerVsTrue": 1.02,
+   "interpDelayMs": 136,
+   "distance": 30.12,
+   "rel": {
+    "right": 29.85,
+    "forward": 4
+   },
+   "distanceGain": 0.0664,
+   "lowpassHz": 20000,
+   "level": 0.997,
+   "outL": -43.4,
+   "outR": -39.5,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 25412,
+   "phase": "left",
+   "trueDist": 28.38,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2077.46,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2076.44,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.27,
+   "pannerVsTrue": 1.02,
+   "interpDelayMs": 136,
+   "distance": 29.39,
+   "rel": {
+    "right": 29.12,
+    "forward": 4
+   },
+   "distanceGain": 0.0681,
+   "lowpassHz": 20000,
+   "level": 0.994,
+   "outL": -43.6,
+   "outR": -39.5,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 25560,
+   "phase": "left",
+   "trueDist": 27.58,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2076.7,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2075.63,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.16,
+   "pannerVsTrue": 1.07,
+   "interpDelayMs": 135,
+   "distance": 28.64,
+   "rel": {
+    "right": 28.36,
+    "forward": 4
+   },
+   "distanceGain": 0.0698,
+   "lowpassHz": 20000,
+   "level": 0.995,
+   "outL": -42.7,
+   "outR": -38.5,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 25723,
+   "phase": "left",
+   "trueDist": 26.77,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2075.84,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2074.81,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.17,
+   "pannerVsTrue": 1.03,
+   "interpDelayMs": 135,
+   "distance": 27.79,
+   "rel": {
+    "right": 27.5,
+    "forward": 4
+   },
+   "distanceGain": 0.072,
+   "lowpassHz": 20000,
+   "level": 0.991,
+   "outL": -42.9,
+   "outR": -38.7,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 25879,
+   "phase": "left",
+   "trueDist": 26.05,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2075.1,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2074.08,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.16,
+   "pannerVsTrue": 1.03,
+   "interpDelayMs": 135,
+   "distance": 27.06,
+   "rel": {
+    "right": 26.76,
+    "forward": 4
+   },
+   "distanceGain": 0.0739,
+   "lowpassHz": 20000,
+   "level": 0.993,
+   "outL": -42.3,
+   "outR": -38.5,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 26032,
+   "phase": "left",
+   "trueDist": 25.24,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2074.33,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2073.26,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.25,
+   "pannerVsTrue": 1.07,
+   "interpDelayMs": 135,
+   "distance": 26.29,
+   "rel": {
+    "right": 25.99,
+    "forward": 4
+   },
+   "distanceGain": 0.0761,
+   "lowpassHz": 20000,
+   "level": 0.992,
+   "outL": -42.7,
+   "outR": -38.4,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 26238,
+   "phase": "left",
+   "trueDist": 24.44,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2073.53,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2072.45,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.24,
+   "pannerVsTrue": 1.08,
+   "interpDelayMs": 135,
+   "distance": 25.51,
+   "rel": {
+    "right": 25.19,
+    "forward": 4
+   },
+   "distanceGain": 0.0784,
+   "lowpassHz": 20000,
+   "level": 0.991,
+   "outL": -42.3,
+   "outR": -37.9,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 26422,
+   "phase": "left",
+   "trueDist": 23.47,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2072.59,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2071.47,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.32,
+   "pannerVsTrue": 1.12,
+   "interpDelayMs": 134,
+   "distance": 24.58,
+   "rel": {
+    "right": 24.25,
+    "forward": 4
+   },
+   "distanceGain": 0.0814,
+   "lowpassHz": 20000,
+   "level": 0.992,
+   "outL": -42,
+   "outR": -37.5,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 26580,
+   "phase": "left",
+   "trueDist": 22.67,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2071.73,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2070.65,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.2,
+   "pannerVsTrue": 1.07,
+   "interpDelayMs": 134,
+   "distance": 23.73,
+   "rel": {
+    "right": 23.39,
+    "forward": 4
+   },
+   "distanceGain": 0.0843,
+   "lowpassHz": 20000,
+   "level": 0.993,
+   "outL": -40.9,
+   "outR": -36.8,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 26773,
+   "phase": "left",
+   "trueDist": 21.87,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2070.75,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2069.84,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.12,
+   "pannerVsTrue": 0.91,
+   "interpDelayMs": 134,
+   "distance": 22.77,
+   "rel": {
+    "right": 22.41,
+    "forward": 4
+   },
+   "distanceGain": 0.0879,
+   "lowpassHz": 20000,
+   "level": 0.993,
+   "outL": -41,
+   "outR": -36.5,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 26981,
+   "phase": "left",
+   "trueDist": 20.83,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2069.77,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2068.78,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.13,
+   "pannerVsTrue": 0.98,
+   "interpDelayMs": 134,
+   "distance": 21.8,
+   "rel": {
+    "right": 21.43,
+    "forward": 4
+   },
+   "distanceGain": 0.0918,
+   "lowpassHz": 20000,
+   "level": 0.994,
+   "outL": -40.7,
+   "outR": -36.1,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 27142,
+   "phase": "left",
+   "trueDist": 19.95,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2068.93,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2067.88,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.13,
+   "pannerVsTrue": 1.04,
+   "interpDelayMs": 133,
+   "distance": 20.97,
+   "rel": {
+    "right": 20.59,
+    "forward": 4
+   },
+   "distanceGain": 0.0954,
+   "lowpassHz": 20000,
+   "level": 0.995,
+   "outL": -40.3,
+   "outR": -36.3,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 27338,
+   "phase": "left",
+   "trueDist": 19.15,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2067.94,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2067.07,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.19,
+   "pannerVsTrue": 0.87,
+   "interpDelayMs": 133,
+   "distance": 20,
+   "rel": {
+    "right": 19.6,
+    "forward": 4
+   },
+   "distanceGain": 0.1,
+   "lowpassHz": 20000,
+   "level": 0.996,
+   "outL": -39.8,
+   "outR": -35.8,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 27522,
+   "phase": "left",
+   "trueDist": 18.28,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2067.18,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2066.17,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.16,
+   "pannerVsTrue": 1.01,
+   "interpDelayMs": 133,
+   "distance": 19.26,
+   "rel": {
+    "right": 18.84,
+    "forward": 4
+   },
+   "distanceGain": 0.1038,
+   "lowpassHz": 20000,
+   "level": 0.994,
+   "outL": -40,
+   "outR": -36,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 27709,
+   "phase": "left",
+   "trueDist": 17.24,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2066.23,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2065.11,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.19,
+   "pannerVsTrue": 1.12,
+   "interpDelayMs": 133,
+   "distance": 18.34,
+   "rel": {
+    "right": 17.89,
+    "forward": 4
+   },
+   "distanceGain": 0.1091,
+   "lowpassHz": 20000,
+   "level": 0.992,
+   "outL": -39.6,
+   "outR": -35.6,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 27866,
+   "phase": "left",
+   "trueDist": 16.45,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2065.39,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2064.3,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.2,
+   "pannerVsTrue": 1.09,
+   "interpDelayMs": 132,
+   "distance": 17.51,
+   "rel": {
+    "right": 17.05,
+    "forward": 4
+   },
+   "distanceGain": 0.1142,
+   "lowpassHz": 20000,
+   "level": 0.998,
+   "outL": -38.4,
+   "outR": -34.2,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 28065,
+   "phase": "left",
+   "trueDist": 15.59,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2064.4,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2063.4,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.12,
+   "pannerVsTrue": 1,
+   "interpDelayMs": 132,
+   "distance": 16.55,
+   "rel": {
+    "right": 16.06,
+    "forward": 4
+   },
+   "distanceGain": 0.1208,
+   "lowpassHz": 20000,
+   "level": 0.998,
+   "outL": -38.3,
+   "outR": -33.8,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 28235,
+   "phase": "left",
+   "trueDist": 14.8,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2063.69,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2062.59,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.22,
+   "pannerVsTrue": 1.1,
+   "interpDelayMs": 132,
+   "distance": 15.86,
+   "rel": {
+    "right": 15.35,
+    "forward": 4
+   },
+   "distanceGain": 0.1261,
+   "lowpassHz": 20000,
+   "level": 0.997,
+   "outL": -37.8,
+   "outR": -33.6,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 28456,
+   "phase": "left",
+   "trueDist": 13.94,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2062.62,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2061.69,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.24,
+   "pannerVsTrue": 0.93,
+   "interpDelayMs": 132,
+   "distance": 14.83,
+   "rel": {
+    "right": 14.28,
+    "forward": 4
+   },
+   "distanceGain": 0.1348,
+   "lowpassHz": 20000,
+   "level": 0.994,
+   "outL": -37.1,
+   "outR": -33.1,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 28662,
+   "phase": "left",
+   "trueDist": 12.77,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2061.63,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2060.47,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.16,
+   "pannerVsTrue": 1.16,
+   "interpDelayMs": 132,
+   "distance": 13.88,
+   "rel": {
+    "right": 13.29,
+    "forward": 4
+   },
+   "distanceGain": 0.1441,
+   "lowpassHz": 20000,
+   "level": 0.996,
+   "outL": -36.7,
+   "outR": -32.2,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 28858,
+   "phase": "left",
+   "trueDist": 12,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2060.54,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2059.65,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.18,
+   "pannerVsTrue": 0.89,
+   "interpDelayMs": 132,
+   "distance": 12.84,
+   "rel": {
+    "right": 12.2,
+    "forward": 4
+   },
+   "distanceGain": 0.1558,
+   "lowpassHz": 20000,
+   "level": 0.995,
+   "outL": -36,
+   "outR": -31.5,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 29020,
+   "phase": "left",
+   "trueDist": 11.16,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2059.88,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2058.76,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.17,
+   "pannerVsTrue": 1.12,
+   "interpDelayMs": 132,
+   "distance": 12.21,
+   "rel": {
+    "right": 11.54,
+    "forward": 4
+   },
+   "distanceGain": 0.1637,
+   "lowpassHz": 20000,
+   "level": 0.997,
+   "outL": -35.8,
+   "outR": -31.2,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 29271,
+   "phase": "left",
+   "trueDist": 10.18,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2058.38,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2057.7,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.11,
+   "pannerVsTrue": 0.68,
+   "interpDelayMs": 131,
+   "distance": 10.8,
+   "rel": {
+    "right": 10.04,
+    "forward": 4
+   },
+   "distanceGain": 0.1851,
+   "lowpassHz": 20000,
+   "level": 0.998,
+   "outL": -34.2,
+   "outR": -29.9,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 29465,
+   "phase": "left",
+   "trueDist": 9.21,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2057.63,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2056.64,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.31,
+   "pannerVsTrue": 0.99,
+   "interpDelayMs": 131,
+   "distance": 10.12,
+   "rel": {
+    "right": 9.29,
+    "forward": 4
+   },
+   "distanceGain": 0.1977,
+   "lowpassHz": 20000,
+   "level": 0.991,
+   "outL": -34,
+   "outR": -29.7,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 29650,
+   "phase": "left",
+   "trueDist": 8.34,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2056.64,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2055.66,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.21,
+   "pannerVsTrue": 0.98,
+   "interpDelayMs": 131,
+   "distance": 9.21,
+   "rel": {
+    "right": 8.3,
+    "forward": 4
+   },
+   "distanceGain": 0.2171,
+   "lowpassHz": 20000,
+   "level": 0.997,
+   "outL": -33,
+   "outR": -29,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 29823,
+   "phase": "left",
+   "trueDist": 7.64,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2055.85,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2054.85,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.25,
+   "pannerVsTrue": 1,
+   "interpDelayMs": 131,
+   "distance": 8.51,
+   "rel": {
+    "right": 7.51,
+    "forward": 4
+   },
+   "distanceGain": 0.235,
+   "lowpassHz": 20000,
+   "level": 0.994,
+   "outL": -32.7,
+   "outR": -28.1,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 29986,
+   "phase": "left",
+   "trueDist": 6.96,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2055,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2054.03,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.18,
+   "pannerVsTrue": 0.96,
+   "interpDelayMs": 131,
+   "distance": 7.76,
+   "rel": {
+    "right": 6.66,
+    "forward": 4
+   },
+   "distanceGain": 0.2576,
+   "lowpassHz": 20000,
+   "level": 0.997,
+   "outL": -31.3,
+   "outR": -27,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 30177,
+   "phase": "left",
+   "trueDist": 6.31,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2054.22,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2053.22,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.23,
+   "pannerVsTrue": 1,
+   "interpDelayMs": 131,
+   "distance": 7.11,
+   "rel": {
+    "right": 5.88,
+    "forward": 4
+   },
+   "distanceGain": 0.2813,
+   "lowpassHz": 20000,
+   "level": 0.994,
+   "outL": -31.2,
+   "outR": -26.6,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 30387,
+   "phase": "left",
+   "trueDist": 5.64,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2053.37,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2052.32,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.17,
+   "pannerVsTrue": 1.05,
+   "interpDelayMs": 131,
+   "distance": 6.43,
+   "rel": {
+    "right": 5.03,
+    "forward": 4
+   },
+   "distanceGain": 0.3112,
+   "lowpassHz": 20000,
+   "level": 0.999,
+   "outL": -29.9,
+   "outR": -25.9,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 30606,
+   "phase": "left",
+   "trueDist": 4.86,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2052.1,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2051.1,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.25,
+   "pannerVsTrue": 1,
+   "interpDelayMs": 131,
+   "distance": 5.49,
+   "rel": {
+    "right": 3.76,
+    "forward": 4
+   },
+   "distanceGain": 0.3642,
+   "lowpassHz": 20000,
+   "level": 0.994,
+   "outL": -28.4,
+   "outR": -24.2,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 30806,
+   "phase": "left",
+   "trueDist": 4.41,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2051.17,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2050.2,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.15,
+   "pannerVsTrue": 0.97,
+   "interpDelayMs": 131,
+   "distance": 4.9,
+   "rel": {
+    "right": 2.83,
+    "forward": 4
+   },
+   "distanceGain": 0.4082,
+   "lowpassHz": 20000,
+   "level": 0.997,
+   "outL": -26.8,
+   "outR": -23.4,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 30989,
+   "phase": "left",
+   "trueDist": 4.08,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2050.25,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2049.14,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.14,
+   "pannerVsTrue": 1.11,
+   "interpDelayMs": 131,
+   "distance": 4.43,
+   "rel": {
+    "right": 1.91,
+    "forward": 4
+   },
+   "distanceGain": 0.4511,
+   "lowpassHz": 20000,
+   "level": 0.992,
+   "outL": -25.8,
+   "outR": -23,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 31178,
+   "phase": "left",
+   "trueDist": 4,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2049.3,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2048.33,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.21,
+   "pannerVsTrue": 0.97,
+   "interpDelayMs": 131,
+   "distance": 4.11,
+   "rel": {
+    "right": 0.96,
+    "forward": 4
+   },
+   "distanceGain": 0.4862,
+   "lowpassHz": 20000,
+   "level": 0.996,
+   "outL": -25.1,
+   "outR": -23,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 31381,
+   "phase": "left",
+   "trueDist": 4.1,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2048.38,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2047.43,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.13,
+   "pannerVsTrue": 0.95,
+   "interpDelayMs": 131,
+   "distance": 4,
+   "rel": {
+    "right": 0.04,
+    "forward": 4
+   },
+   "distanceGain": 0.5,
+   "lowpassHz": 20000,
+   "level": 0.99,
+   "outL": -23.9,
+   "outR": -23.2,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 31545,
+   "phase": "left",
+   "trueDist": 4.46,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2047.48,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2046.37,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.31,
+   "pannerVsTrue": 1.11,
+   "interpDelayMs": 131,
+   "distance": 4.09,
+   "rel": {
+    "right": -0.86,
+    "forward": 4
+   },
+   "distanceGain": 0.4889,
+   "lowpassHz": 20000,
+   "level": 0.993,
+   "outL": -24,
+   "outR": -24.8,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 31720,
+   "phase": "left",
+   "trueDist": 4.83,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2046.52,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2045.64,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.19,
+   "pannerVsTrue": 0.88,
+   "interpDelayMs": 132,
+   "distance": 4.4,
+   "rel": {
+    "right": -1.82,
+    "forward": 4
+   },
+   "distanceGain": 0.455,
+   "lowpassHz": 20000,
+   "level": 0.996,
+   "outL": -23.1,
+   "outR": -25.4,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 31988,
+   "phase": "left",
+   "trueDist": 5.49,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2045.62,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2044.58,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.28,
+   "pannerVsTrue": 1.04,
+   "interpDelayMs": 133,
+   "distance": 4.84,
+   "rel": {
+    "right": -2.72,
+    "forward": 4
+   },
+   "distanceGain": 0.4135,
+   "lowpassHz": 20000,
+   "level": 0.997,
+   "outL": -23.8,
+   "outR": -27,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 32170,
+   "phase": "left",
+   "trueDist": 6.26,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2044.41,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2043.52,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.12,
+   "pannerVsTrue": 0.88,
+   "interpDelayMs": 133,
+   "distance": 5.61,
+   "rel": {
+    "right": -3.93,
+    "forward": 4
+   },
+   "distanceGain": 0.3565,
+   "lowpassHz": 20000,
+   "level": 0.993,
+   "outL": -24.7,
+   "outR": -28.5,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 32340,
+   "phase": "left",
+   "trueDist": 6.98,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2043.6,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2042.63,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.26,
+   "pannerVsTrue": 0.98,
+   "interpDelayMs": 133,
+   "distance": 6.2,
+   "rel": {
+    "right": -4.74,
+    "forward": 4
+   },
+   "distanceGain": 0.3226,
+   "lowpassHz": 20000,
+   "level": 0.999,
+   "outL": -26.1,
+   "outR": -29.9,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 32561,
+   "phase": "left",
+   "trueDist": 7.94,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2042.54,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2041.48,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.15,
+   "pannerVsTrue": 1.06,
+   "interpDelayMs": 134,
+   "distance": 7.04,
+   "rel": {
+    "right": -5.8,
+    "forward": 4
+   },
+   "distanceGain": 0.2839,
+   "lowpassHz": 20000,
+   "level": 0.993,
+   "outL": -26.8,
+   "outR": -31.3,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 32726,
+   "phase": "left",
+   "trueDist": 8.65,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2041.72,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2040.67,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.25,
+   "pannerVsTrue": 1.05,
+   "interpDelayMs": 134,
+   "distance": 7.74,
+   "rel": {
+    "right": -6.62,
+    "forward": 4
+   },
+   "distanceGain": 0.2584,
+   "lowpassHz": 20000,
+   "level": 0.995,
+   "outL": -27.3,
+   "outR": -31.5,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 32941,
+   "phase": "left",
+   "trueDist": 9.53,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2040.56,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2039.69,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.18,
+   "pannerVsTrue": 0.87,
+   "interpDelayMs": 134,
+   "distance": 8.74,
+   "rel": {
+    "right": -7.78,
+    "forward": 4
+   },
+   "distanceGain": 0.2287,
+   "lowpassHz": 20000,
+   "level": 0.999,
+   "outL": -29,
+   "outR": -33,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 33148,
+   "phase": "left",
+   "trueDist": 10.5,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2039.65,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2038.63,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.17,
+   "pannerVsTrue": 1.02,
+   "interpDelayMs": 134,
+   "distance": 9.57,
+   "rel": {
+    "right": -8.69,
+    "forward": 4
+   },
+   "distanceGain": 0.209,
+   "lowpassHz": 20000,
+   "level": 0.995,
+   "outL": -29.4,
+   "outR": -34.1,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 33314,
+   "phase": "left",
+   "trueDist": 11.33,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2038.79,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2037.74,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.15,
+   "pannerVsTrue": 1.05,
+   "interpDelayMs": 134,
+   "distance": 10.35,
+   "rel": {
+    "right": -9.55,
+    "forward": 4
+   },
+   "distanceGain": 0.1932,
+   "lowpassHz": 20000,
+   "level": 0.995,
+   "outL": -29.5,
+   "outR": -34,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 33469,
+   "phase": "left",
+   "trueDist": 12.02,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2038.01,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2037,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.24,
+   "pannerVsTrue": 1.01,
+   "interpDelayMs": 134,
+   "distance": 11.08,
+   "rel": {
+    "right": -10.33,
+    "forward": 4
+   },
+   "distanceGain": 0.1805,
+   "lowpassHz": 20000,
+   "level": 0.994,
+   "outL": -30.4,
+   "outR": -35.1,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 33629,
+   "phase": "left",
+   "trueDist": 12.72,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2037.29,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2036.27,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.21,
+   "pannerVsTrue": 1.02,
+   "interpDelayMs": 134,
+   "distance": 11.75,
+   "rel": {
+    "right": -11.05,
+    "forward": 4
+   },
+   "distanceGain": 0.1702,
+   "lowpassHz": 20000,
+   "level": 0.997,
+   "outL": -30.6,
+   "outR": -35.1,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 33834,
+   "phase": "left",
+   "trueDist": 13.49,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2036.46,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2035.45,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.17,
+   "pannerVsTrue": 1,
+   "interpDelayMs": 134,
+   "distance": 12.54,
+   "rel": {
+    "right": -11.88,
+    "forward": 4
+   },
+   "distanceGain": 0.1595,
+   "lowpassHz": 20000,
+   "level": 0.993,
+   "outL": -31.8,
+   "outR": -35.8,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 34036,
+   "phase": "left",
+   "trueDist": 14.59,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2035.24,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2034.31,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.18,
+   "pannerVsTrue": 0.93,
+   "interpDelayMs": 134,
+   "distance": 13.69,
+   "rel": {
+    "right": -13.1,
+    "forward": 4
+   },
+   "distanceGain": 0.1461,
+   "lowpassHz": 20000,
+   "level": 0.994,
+   "outL": -32.4,
+   "outR": -36.6,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 34600,
+   "phase": "left",
+   "trueDist": 17.27,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2032.55,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2031.54,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.24,
+   "pannerVsTrue": 1.01,
+   "interpDelayMs": 134,
+   "distance": 16.29,
+   "rel": {
+    "right": -15.79,
+    "forward": 4
+   },
+   "distanceGain": 0.1228,
+   "lowpassHz": 20000,
+   "level": 0.985,
+   "outL": -33.4,
+   "outR": -38,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 34761,
+   "phase": "left",
+   "trueDist": 18.06,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2031.76,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2030.73,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.26,
+   "pannerVsTrue": 1.03,
+   "interpDelayMs": 134,
+   "distance": 17.05,
+   "rel": {
+    "right": -16.58,
+    "forward": 4
+   },
+   "distanceGain": 0.1173,
+   "lowpassHz": 20000,
+   "level": 0.983,
+   "outL": -34.1,
+   "outR": -38.5,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 35005,
+   "phase": "left",
+   "trueDist": 18.94,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2030.99,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2029.83,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.33,
+   "pannerVsTrue": 1.16,
+   "interpDelayMs": 134,
+   "distance": 17.8,
+   "rel": {
+    "right": -17.35,
+    "forward": 4
+   },
+   "distanceGain": 0.1123,
+   "lowpassHz": 20000,
+   "level": 0.99,
+   "outL": -35.2,
+   "outR": -39.2,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 35246,
+   "phase": "left",
+   "trueDist": 20.21,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2029.35,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2028.53,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.13,
+   "pannerVsTrue": 0.82,
+   "interpDelayMs": 134,
+   "distance": 19.41,
+   "rel": {
+    "right": -18.99,
+    "forward": 4
+   },
+   "distanceGain": 0.1031,
+   "lowpassHz": 20000,
+   "level": 0.988,
+   "outL": -35.3,
+   "outR": -39.8,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 35406,
+   "phase": "left",
+   "trueDist": 21.17,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2028.48,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2027.55,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.19,
+   "pannerVsTrue": 0.93,
+   "interpDelayMs": 134,
+   "distance": 20.26,
+   "rel": {
+    "right": -19.86,
+    "forward": 4
+   },
+   "distanceGain": 0.0987,
+   "lowpassHz": 20000,
+   "level": 0.989,
+   "outL": -35.6,
+   "outR": -40.4,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 35579,
+   "phase": "left",
+   "trueDist": 22.13,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2027.71,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2026.57,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.16,
+   "pannerVsTrue": 1.14,
+   "interpDelayMs": 134,
+   "distance": 21.01,
+   "rel": {
+    "right": -20.63,
+    "forward": 4
+   },
+   "distanceGain": 0.0952,
+   "lowpassHz": 20000,
+   "level": 0.994,
+   "outL": -36,
+   "outR": -40.3,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 35779,
+   "phase": "left",
+   "trueDist": 23.01,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2026.71,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2025.68,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.14,
+   "pannerVsTrue": 1.03,
+   "interpDelayMs": 134,
+   "distance": 22,
+   "rel": {
+    "right": -21.63,
+    "forward": 4
+   },
+   "distanceGain": 0.0909,
+   "lowpassHz": 20000,
+   "level": 0.997,
+   "outL": -36.4,
+   "outR": -40.7,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 35989,
+   "phase": "left",
+   "trueDist": 23.9,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2025.75,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2024.78,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.21,
+   "pannerVsTrue": 0.97,
+   "interpDelayMs": 134,
+   "distance": 22.94,
+   "rel": {
+    "right": -22.59,
+    "forward": 4
+   },
+   "distanceGain": 0.0872,
+   "lowpassHz": 20000,
+   "level": 0.991,
+   "outL": -37.6,
+   "outR": -41.6,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 36206,
+   "phase": "left",
+   "trueDist": 24.94,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2024.77,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2023.72,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.36,
+   "pannerVsTrue": 1.05,
+   "interpDelayMs": 134,
+   "distance": 23.9,
+   "rel": {
+    "right": -23.57,
+    "forward": 4
+   },
+   "distanceGain": 0.0837,
+   "lowpassHz": 20000,
+   "level": 0.997,
+   "outL": -37.2,
+   "outR": -41.3,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 36428,
+   "phase": "left",
+   "trueDist": 25.99,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2023.63,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2022.66,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.17,
+   "pannerVsTrue": 0.97,
+   "interpDelayMs": 134,
+   "distance": 25.03,
+   "rel": {
+    "right": -24.71,
+    "forward": 4
+   },
+   "distanceGain": 0.0799,
+   "lowpassHz": 20000,
+   "level": 0.991,
+   "outL": -37.5,
+   "outR": -42.1,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 36644,
+   "phase": "left",
+   "trueDist": 26.87,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2022.81,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2021.77,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.15,
+   "pannerVsTrue": 1.05,
+   "interpDelayMs": 134,
+   "distance": 25.84,
+   "rel": {
+    "right": -25.53,
+    "forward": 4
+   },
+   "distanceGain": 0.0774,
+   "lowpassHz": 20000,
+   "level": 0.995,
+   "outL": -38.3,
+   "outR": -42.4,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 36803,
+   "phase": "left",
+   "trueDist": 27.92,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2021.92,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2020.71,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.34,
+   "pannerVsTrue": 1.21,
+   "interpDelayMs": 134,
+   "distance": 26.72,
+   "rel": {
+    "right": -26.42,
+    "forward": 4
+   },
+   "distanceGain": 0.0748,
+   "lowpassHz": 20000,
+   "level": 0.992,
+   "outL": -38.6,
+   "outR": -43.1,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 36956,
+   "phase": "left",
+   "trueDist": 28.65,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2020.95,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2019.97,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.13,
+   "pannerVsTrue": 0.97,
+   "interpDelayMs": 134,
+   "distance": 27.68,
+   "rel": {
+    "right": -27.39,
+    "forward": 4
+   },
+   "distanceGain": 0.0722,
+   "lowpassHz": 20000,
+   "level": 0.998,
+   "outL": -38.5,
+   "outR": -42.9,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 37115,
+   "phase": "left",
+   "trueDist": 29.45,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2020.13,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2019.16,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.19,
+   "pannerVsTrue": 0.97,
+   "interpDelayMs": 134,
+   "distance": 28.5,
+   "rel": {
+    "right": -28.21,
+    "forward": 4
+   },
+   "distanceGain": 0.0702,
+   "lowpassHz": 20000,
+   "level": 0.996,
+   "outL": -39.2,
+   "outR": -43.1,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 37445,
+   "phase": "far-left",
+   "trueDist": 30.57,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2018.66,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2018.03,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.28,
+   "pannerVsTrue": 0.63,
+   "interpDelayMs": 134,
+   "distance": 29.95,
+   "rel": {
+    "right": -29.68,
+    "forward": 4
+   },
+   "distanceGain": 0.0668,
+   "lowpassHz": 20000,
+   "level": 1,
+   "outL": -39.1,
+   "outR": -43.3,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 37612,
+   "phase": "far-left",
+   "trueDist": 30.6,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2018.01,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2018,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0.02,
+   "pannerVsTrue": 0.01,
+   "interpDelayMs": 134,
+   "distance": 30.59,
+   "rel": {
+    "right": -30.33,
+    "forward": 4
+   },
+   "distanceGain": 0.0654,
+   "lowpassHz": 20000,
+   "level": 0.998,
+   "outL": -39.2,
+   "outR": -43.4,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 37776,
+   "phase": "far-left",
+   "trueDist": 30.6,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2018,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2018,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0,
+   "pannerVsTrue": 0,
+   "interpDelayMs": 134,
+   "distance": 30.6,
+   "rel": {
+    "right": -30.34,
+    "forward": 4
+   },
+   "distanceGain": 0.0654,
+   "lowpassHz": 20000,
+   "level": 0.991,
+   "outL": -39.5,
+   "outR": -43.7,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 37976,
+   "phase": "far-left",
+   "trueDist": 30.6,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2018,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2018,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0,
+   "pannerVsTrue": 0,
+   "interpDelayMs": 134,
+   "distance": 30.6,
+   "rel": {
+    "right": -30.34,
+    "forward": 4
+   },
+   "distanceGain": 0.0654,
+   "lowpassHz": 20000,
+   "level": 0.996,
+   "outL": -39.5,
+   "outR": -43.7,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 38165,
+   "phase": "far-left",
+   "trueDist": 30.6,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2018,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2018,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0,
+   "pannerVsTrue": 0,
+   "interpDelayMs": 134,
+   "distance": 30.6,
+   "rel": {
+    "right": -30.34,
+    "forward": 4
+   },
+   "distanceGain": 0.0654,
+   "lowpassHz": 20000,
+   "level": 0.995,
+   "outL": -39.4,
+   "outR": -44.1,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 38345,
+   "phase": "far-left",
+   "trueDist": 30.6,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2018,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2018,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0,
+   "pannerVsTrue": 0,
+   "interpDelayMs": 134,
+   "distance": 30.6,
+   "rel": {
+    "right": -30.34,
+    "forward": 4
+   },
+   "distanceGain": 0.0654,
+   "lowpassHz": 20000,
+   "level": 0.997,
+   "outL": -39.4,
+   "outR": -44.1,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 38548,
+   "phase": "far-left",
+   "trueDist": 30.6,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2018,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2018,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0,
+   "pannerVsTrue": 0,
+   "interpDelayMs": 134,
+   "distance": 30.6,
+   "rel": {
+    "right": -30.34,
+    "forward": 4
+   },
+   "distanceGain": 0.0654,
+   "lowpassHz": 20000,
+   "level": 0.99,
+   "outL": -39.4,
+   "outR": -43.7,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 38729,
+   "phase": "far-left",
+   "trueDist": 30.6,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2018,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2018,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0,
+   "pannerVsTrue": 0,
+   "interpDelayMs": 134,
+   "distance": 30.6,
+   "rel": {
+    "right": -30.34,
+    "forward": 4
+   },
+   "distanceGain": 0.0654,
+   "lowpassHz": 20000,
+   "level": 0.992,
+   "outL": -39.4,
+   "outR": -44,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 38895,
+   "phase": "far-left",
+   "trueDist": 30.6,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2018,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2018,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0,
+   "pannerVsTrue": 0,
+   "interpDelayMs": 133,
+   "distance": 30.6,
+   "rel": {
+    "right": -30.34,
+    "forward": 4
+   },
+   "distanceGain": 0.0654,
+   "lowpassHz": 20000,
+   "level": 0.991,
+   "outL": -39.5,
+   "outR": -44.1,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  },
+  {
+   "t": 39105,
+   "phase": "far-left",
+   "trueDist": 30.6,
+   "subscribed": true,
+   "mode": "spatial",
+   "pannerPos": {
+    "x": 2018,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "truePos": {
+    "x": 2018,
+    "y": 1.8,
+    "z": 2044.01
+   },
+   "pannerVsDrawn": 0,
+   "pannerVsTrue": 0,
+   "interpDelayMs": 133,
+   "distance": 30.6,
+   "rel": {
+    "right": -30.34,
+    "forward": 4
+   },
+   "distanceGain": 0.0654,
+   "lowpassHz": 20000,
+   "level": 0.995,
+   "outL": -39.2,
+   "outR": -43.5,
+   "levelDomSpeaking": "1",
+   "zoneSpeakingBit": true,
+   "selfFlag": true
+  }
+ ]
+}
