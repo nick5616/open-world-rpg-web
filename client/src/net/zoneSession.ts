@@ -16,6 +16,7 @@ import {
   KickCode,
   PROTOCOL_VERSION,
   Transport,
+  type Event as ZoneEvent,
   type InputFrame,
   type Kick,
   type Snapshot,
@@ -77,6 +78,9 @@ export class ZoneSession {
   onWelcome: ((w: Welcome) => void) | null = null;
   onEnd: ((e: SessionEnd) => void) | null = null;
   onFrame: ((f: Frame) => void) | null = null;
+  /** WP12: reliable gameplay Events (contracts/events.md) and local-profile save blobs. */
+  onEvent: ((e: ZoneEvent) => void) | null = null;
+  onSaveBlob: ((blob: Uint8Array) => void) | null = null;
 
   /** Counters for tests and the acceptance log. */
   readonly stats = { snapshots: 0, stale: 0, noBaseline: 0, inputPackets: 0, framesSent: 0, decodeErrors: 0, earlySnapshots: 0 };
@@ -184,6 +188,12 @@ export class ZoneSession {
     this.lastSend = t;
   }
 
+  /** Send an Interact (reliable; WP12 fast travel and pins, contracts/events.md "Interact"). */
+  sendInteract(targetKind: number, targetId: bigint, action: number, arg = 0): void {
+    if (this.phase !== 'playing' || !this.transport) return;
+    this.transport.sendReliable(encodeMessage({ type: 'Interact', targetKind, targetId, action, arg }));
+  }
+
   /** Advance interpolation to now and return what to draw (frameDtMs paces easing). */
   views(frameDtMs: number, out: RemoteView[] = []): RemoteView[] {
     return this.interp.update(this.now(), frameDtMs, out);
@@ -223,8 +233,14 @@ export class ZoneSession {
       case 'Kick':
         this.handleKick(m);
         break;
+      case 'Event':
+        this.onEvent?.(m);
+        break;
+      case 'SaveBlob':
+        this.onSaveBlob?.(m.blob);
+        break;
       default:
-        break; // Event, HitResult, SaveBlob...: later packages
+        break; // HitResult, WorldEdits...: later packages
     }
   }
 

@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "size": 512,
+  "layers": [
+    "grass-meadow",
+    "dirt",
+    "rock-highland",
+    "snow",
+    "sand",
+    "mud",
+    "forest-floor",
+    "rock-cliff",
+    "rock-badlands"
+  ],
+  "files": {
+    "color": "color-fd07efe8d794.ktx2",
+    "normal": "normal-14c72764d705.ktx2",
+    "orm": "orm-9d30612f337f.ktx2"
+  },
+  "bytes": {
+    "color": 921525,
+    "normal": 2420091,
+    "orm": 387341
+  },
+  "mean": {
+    "grass-meadow": [
+      0.353,
+      0.348,
+      0.264
+    ],
+    "dirt": [
+      0.359,
+      0.289,
+      0.224
+    ],
+    "rock-highland": [
+      0.344,
+      0.343,
+      0.333
+    ],
+    "snow": [
+      0.887,
+      0.887,
+      0.887
+    ],
+    "sand": [
+      0.903,
+      0.834,
+      0.779
+    ],
+    "mud": [
+      0.432,
+      0.376,
+      0.317
+    ],
+    "forest-floor": [
+      0.375,
+      0.334,
+      0.25
+    ],
+    "rock-cliff": [
+      0.528,
+      0.505,
+      0.477
+    ],
+    "rock-badlands": [
+      0.761,
+      0.511,
+      0.442
+    ]
+  }
+}

@@ -1,0 +1,88 @@
+# WP17 tests, 2026-11-08T13:20:52Z. go test -count=1 -v ./... in tools/creator/server (LODESTONE_REQUIRE_INFRA=1 LODESTONE_REQUIRE_WASM=1), then vitest in tools/creator (LODESTONE_REQUIRE_WASM=1)
+--- PASS: TestCreatorProcess (13.72s)
+PASS
+ok  	lodestone/tools/creator/server	14.900s
+--- PASS: TestFlagOffNeverReachesModel (5.95s)
+--- PASS: TestFlagOnCallsModelThroughInjectedClient (0.55s)
+--- PASS: TestMintFromSeedMatchesGoldenAtlas (1.22s)
+--- PASS: TestMintFromSlidersNormalizesFirst (0.61s)
+--- PASS: TestBadRequestsAndAuth (0.01s)
+PASS
+ok  	lodestone/tools/creator/server/internal/api	9.168s
+--- PASS: TestSharedFixtures (0.02s)
+    --- PASS: TestSharedFixtures/already_normalized_spec_passes_unchanged (0.00s)
+    --- PASS: TestSharedFixtures/spec_from_seed_weights_are_divided_by_their_max (0.00s)
+    --- PASS: TestSharedFixtures/top-level_numbers_clamp_to_schema_ranges (0.00s)
+    --- PASS: TestSharedFixtures/integers_clamp_then_round_half_up (0.00s)
+    --- PASS: TestSharedFixtures/negative_integer_clamps_to_minimum (0.00s)
+    --- PASS: TestSharedFixtures/integer_half_rounds_up (0.00s)
+    --- PASS: TestSharedFixtures/integer_just_under_half_rounds_down (0.00s)
+    --- PASS: TestSharedFixtures/specVersion_clamps_to_1 (0.00s)
+    --- PASS: TestSharedFixtures/fractional_caveMaxDepth_stays_fractional_(number_field) (0.00s)
+    --- PASS: TestSharedFixtures/all-zero_weights_become_all_ones (0.00s)
+    --- PASS: TestSharedFixtures/weights_above_1_clamp,_then_renormalize (0.00s)
+    --- PASS: TestSharedFixtures/all-one_weights_are_left_alone (0.00s)
+    --- PASS: TestSharedFixtures/negative_zero_becomes_zero (0.00s)
+    --- PASS: TestSharedFixtures/unknown,_repeated_and_surplus_loot_tags_are_dropped (0.00s)
+    --- PASS: TestSharedFixtures/empty_loot_themes_are_fine (0.00s)
+    --- PASS: TestSharedFixtures/name_punctuation_becomes_spaces (0.00s)
+    --- PASS: TestSharedFixtures/name_keeps_apostrophes_and_hyphens (0.00s)
+    --- PASS: TestSharedFixtures/long_name_is_cut_to_40_and_trimmed (0.00s)
+    --- PASS: TestSharedFixtures/non-ASCII_letters_become_spaces (0.00s)
+    --- PASS: TestSharedFixtures/name_words_merely_containing_a_stem_are_fine (0.00s)
+    --- PASS: TestSharedFixtures/name_with_too_few_usable_characters_is_rejected (0.00s)
+    --- PASS: TestSharedFixtures/name_starting_a_word_with_a_blocked_stem_is_rejected (0.00s)
+    --- PASS: TestSharedFixtures/blocked_stem_after_an_apostrophe_is_rejected (0.00s)
+    --- PASS: TestSharedFixtures/seed_with_leading_zeros_is_canonicalized (0.00s)
+    --- PASS: TestSharedFixtures/max_uint64_seed_is_fine (0.00s)
+    --- PASS: TestSharedFixtures/seed_above_uint64_is_rejected (0.00s)
+    --- PASS: TestSharedFixtures/seed_with_a_sign_is_rejected (0.00s)
+    --- PASS: TestSharedFixtures/numeric_seed_is_rejected (0.00s)
+    --- PASS: TestSharedFixtures/missing_field_is_rejected (0.00s)
+    --- PASS: TestSharedFixtures/missing_weight_is_rejected (0.00s)
+    --- PASS: TestSharedFixtures/extra_top-level_property_is_rejected (0.00s)
+    --- PASS: TestSharedFixtures/extra_weight_key_is_rejected (0.00s)
+    --- PASS: TestSharedFixtures/string_where_a_number_belongs_is_rejected (0.00s)
+    --- PASS: TestSharedFixtures/unknown_palette_is_rejected (0.00s)
+    --- PASS: TestSharedFixtures/unknown_nameGrammar_is_rejected (0.00s)
+    --- PASS: TestSharedFixtures/lootThemes_that_is_not_an_array_is_rejected (0.00s)
+    --- PASS: TestSharedFixtures/non-string_loot_tag_is_rejected (0.00s)
+    --- PASS: TestSharedFixtures/boolean_number_is_rejected (0.00s)
+    --- PASS: TestSharedFixtures/array_input_is_rejected (0.00s)
+    --- PASS: TestSharedFixtures/string_input_is_rejected (0.00s)
+    --- PASS: TestSharedFixtures/null_input_is_rejected (0.00s)
+    --- PASS: TestSharedFixtures/everything_at_once (0.00s)
+--- PASS: TestNormalizeIsIdempotent (0.01s)
+--- PASS: TestNegativeZero (0.00s)
+--- PASS: TestModelSchemaHasNoUnsupportedKeywords (0.00s)
+--- PASS: TestCleanNameAndBlocklist (0.00s)
+PASS
+ok  	lodestone/tools/creator/server/internal/spec	0.891s
+--- PASS: TestInsertDedupesAndLists (14.07s)
+PASS
+ok  	lodestone/tools/creator/server/internal/store	14.662s
+--- PASS: TestNewClientRefusesWhenDisabled (0.00s)
+--- PASS: TestVibeClampsDropsTagsAndUsesCreatorSeed (0.01s)
+--- PASS: TestVibeRetriesOnceThenSucceeds (0.00s)
+--- PASS: TestVibeGivesUpAfterOneRetry (0.01s)
+--- PASS: TestVibeRejectsBadPrompts (0.00s)
+PASS
+ok  	lodestone/tools/creator/server/internal/vibe	2.209s
+--- PASS: TestAtlasHashMatchesGolden (1.59s)
+--- PASS: TestBuildAtlasRejectsBadSpec (0.12s)
+PASS
+ok  	lodestone/tools/creator/server/internal/worldgen	3.330s
+ ✓ test/normalize.test.ts > shared fixtures > fixtures/normalize.json is up to date with fixture-cases.ts and normalize.ts
+ ✓ test/normalize.test.ts > shared fixtures > every ok result passes the strict contract schema and is idempotent
+ ✓ test/normalize.test.ts > normalize > clamps every numeric field to WORLDSPEC_RANGES
+ ✓ test/normalize.test.ts > normalize > turns -0 into 0 (Go would serialize -0 as "-0")
+ ✓ test/normalize.test.ts > normalize > renormalizes weights so the strongest is exactly 1
+ ✓ test/normalize.test.ts > normalize > rejects instead of guessing on unclampable problems
+ ✓ test/normalize.test.ts > normalize > cleans names and applies the blocklist per word prefix
+ ✓ test/normalize.test.ts > normalize > relaxed schema keeps structure but drops range constraints
+ ✓ test/presets.test.ts > presets > include the three spec presets plus original ones
+ ✓ test/presets.test.ts > presets > are in range: applying one never needs a clamp beyond renormalizing
+ ✓ test/presets.test.ts > sliders > cover every WORLDSPEC_RANGES field exactly once (specVersion excepted)
+ ✓ test/presets.test.ts > presets through worldgen.wasm > build atlases and change the world in the expected direction 4057ms
+ Test Files  2 passed (2)
+      Tests  12 passed (12)

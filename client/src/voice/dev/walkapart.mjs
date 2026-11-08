@@ -164,9 +164,6 @@ try {
     LODESTONE_SOCIAL_URL: `ws://localhost:${PORT.social}/ws`,
     LODESTONE_DEV_AUTH: '1',
     LODESTONE_CORS_ORIGIN: '*',
-    // Flat ground on both sides (the client's placeholder ground is flat):
-    // occlusion is unit-tested; this run is about fade and pan.
-    LODESTONE_WORLDGEN_WASM: path.join(TMP, 'absent.wasm'),
   };
   start('account', path.join(TMP, 'account' + EXE), [], svcEnv);
   check(await waitHttp(`http://localhost:${PORT.account}/healthz`, 30000), `account healthy on :${PORT.account}`);
@@ -252,6 +249,7 @@ try {
       rel: sp?.rel ? { right: +sp.rel.right.toFixed(2), forward: +sp.rel.forward.toFixed(2) } : null,
       distanceGain: sp ? +sp.distanceGain.toFixed(4) : null,
       lowpassHz: sp?.lowpassHz ?? null,
+      occluded: sp?.occluded ?? null,
       level: sp ? +sp.level.toFixed(3) : null,
       outL: va.output ? +va.output.leftDb.toFixed(1) : null,
       outR: va.output ? +va.output.rightDb.toFixed(1) : null,
@@ -335,7 +333,11 @@ try {
   // Proximity checks use the phases before the party was formed.
   const prox = samples.filter((s) => !s.phase.startsWith('party'));
   const partyFar = samples.filter((s) => s.phase.startsWith('party') && s.trueDist > 56);
-  const sub = prox.filter((s) => s.subscribed && s.mode === 'spatial' && s.distance !== null);
+  // Real terrain (WP05/WP07): a hill between the two heads muffles B (low-pass,
+  // -4 dB). Fade and pan are measured on unoccluded samples; occlusion is
+  // counted separately.
+  const subAll = prox.filter((s) => s.subscribed && s.mode === 'spatial' && s.distance !== null);
+  const sub = subAll.filter((s) => !s.occluded);
   const loud = (s) => Math.max(s.outL, s.outR);
   // Fade: output level vs distance. Expected from the model: 20*log10(gain).
   const near = sub.filter((s) => s.distance >= 3 && s.distance <= 7);
@@ -409,6 +411,7 @@ try {
     pannerVsDrawnHeadM: q(pannerVsDrawn),
     pannerVsTrueHeadM: q(pannerVsTrue),
     speakingIndicator: { domSpeakingSamples: speakingDom, zoneSpeakingBitSamples: zoneBit },
+    occlusion: { subscribedSamples: subAll.length, occludedSamples: subAll.length - sub.length },
     partyRadio: {
       samplesBeyond56m: partyFar.length,
       subscribed: partyFar.filter((s) => s.subscribed).length,

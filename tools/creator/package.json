@@ -1,0 +1,24 @@
+{
+  "name": "@lodestone/creator",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "WorldSpec creator tool (WP17): presets, sliders, live atlas preview, mint, optional vibe text.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit -p . && vite build",
+    "server": "node ../../scripts/go.mjs run ./tools/creator/server",
+    "typecheck": "tsc --noEmit -p .",
+    "test": "vitest run",
+    "fixtures": "vite-node scripts/gen-fixtures.ts",
+    "e2e": "node scripts/e2e.mjs"
+  },
+  "dependencies": {
+    "@lodestone/contracts": "*",
+    "@lodestone/worldgen": "*",
+    "ajv": "^8.17.1"
+  },
+  "devDependencies": {
+    "vite": "^5.4.11"
+  }
+}

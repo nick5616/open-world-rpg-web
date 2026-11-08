@@ -1,0 +1,16 @@
+{
+  "name": "@lodestone/textures",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Texture pipeline (spec 12): fetch CC0 sets from 3dtextures.me, pack color/normal/ORM WebP per set and KTX2 texture arrays for the terrain.",
+  "scripts": {
+    "fetch": "node fetch-sets.mjs",
+    "build": "node build-textures.mjs",
+    "test": "node --test test/"
+  },
+  "devDependencies": {
+    "ktx2-encoder": "0.6.0",
+    "sharp": "^0.33.5"
+  }
+}
