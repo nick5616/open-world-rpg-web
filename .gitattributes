@@ -1,0 +1,12 @@
+# Spec section 4: LF everywhere so Windows and Linux produce identical files
+# (generated code and golden vectors are compared byte for byte in CI).
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.webp binary
+*.ktx2 binary
+*.wasm binary
+*.glb binary
+*.mp3 binary
+*.ogg binary
+*.wav binary
