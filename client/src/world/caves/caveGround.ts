@@ -1,19 +1,43 @@
-// The client's movement ground with caves (WP09): WP05's WorldGround (the
-// heightfield via collision_height) plus cave floors, walls and mouth holes
-// from the shared cell store, through the same CaveGroundCore the golden
-// tests pin against the Go zone (server/pkg/caves.Ground). Prediction and the
-// server therefore agree underground exactly as they do on the surface.
+// The client's movement ground with caves (WP09): the surface ground (WP05's
+// terrain with WP12's structure overlay: towers keep working) plus cave
+// floors, walls and mouth holes from the shared cell store, through the
+// same CaveGroundCore the golden tests pin against the Go zone
+// (server/pkg/caves.Ground). The movement step views it at the player's
+// level (`atLevel`, client/src/sim/caves.ts), so prediction and the server
+// agree underground exactly as they do on the surface.
 
-import { CaveGroundCore, type AtlasHandle, type CaveCollideResult, type CaveOpening, type Worldgen } from '@lodestone/worldgen';
-import { WorldGround } from '../core/ground';
+import { CaveGroundCore, type CaveCollideResult, type CaveOpening } from '@lodestone/worldgen';
+import type { GroundQuery } from '../../sim/ground';
 import type { CaveCellStore } from './caveStore';
 
-export class CaveGround extends WorldGround {
+export class CaveGround implements GroundQuery {
   readonly core: CaveGroundCore;
 
-  constructor(wg: Worldgen, atlas: AtlasHandle, openings: readonly CaveOpening[], readonly store: CaveCellStore) {
-    super(wg, atlas);
-    this.core = new CaveGroundCore((x, z) => super.heightAt(x, z), openings, store);
+  constructor(
+    readonly surface: GroundQuery,
+    openings: readonly CaveOpening[],
+    readonly store: CaveCellStore,
+  ) {
+    const water = surface.waterAt ? (x: number, z: number) => surface.waterAt!(x, z) : undefined;
+    this.core = new CaveGroundCore((x, z) => surface.heightAt(x, z), openings, store, water);
+  }
+
+  /** The surface (non-step callers: rendering, overlays, spawns). */
+  heightAt(x: number, z: number): number {
+    return this.surface.heightAt(x, z);
+  }
+
+  waterAt(x: number, z: number): number {
+    return this.core.waterAt(x, z);
+  }
+
+  normalAt(x: number, z: number): { x: number; y: number; z: number } {
+    return this.surface.normalAt?.(x, z) ?? { x: 0, y: 1, z: 0 };
+  }
+
+  /** The step's view at feet height y (cave floors in caves). */
+  atLevel(y: number): GroundQuery {
+    return this.core.atLevel(y);
   }
 
   floorAt(x: number, y: number, z: number): number {

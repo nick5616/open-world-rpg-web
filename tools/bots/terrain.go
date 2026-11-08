@@ -15,6 +15,7 @@ import (
 	"sync"
 
 	"lodestone/server/pkg/movement"
+	"lodestone/server/pkg/structures"
 	"lodestone/server/pkg/worldhost"
 )
 
@@ -60,25 +61,41 @@ var (
 	caveMu      sync.Mutex
 )
 
-// ground is what prediction steps on: the terrain (with caves), or WP03's flat plane.
-func (c *botConfig) ground() movement.Ground {
-	if c.terrain != nil {
-		if g, ok := caveGrounds.Load(c.terrain); ok {
-			return g.(movement.Ground)
-		}
-		caveMu.Lock() // one cave cache (and worker) per terrain, not one per racing bot
-		defer caveMu.Unlock()
-		if g, ok := caveGrounds.Load(c.terrain); ok {
-			return g.(movement.Ground)
-		}
-		var g movement.Ground = c.terrain
-		if cv, err := worldhost.NewCaves(c.terrain.World(), worldhost.CaveOptions{Workers: 1}); err == nil {
-			g = worldhost.NewCaveTerrain(c.terrain, cv)
-		}
-		actual, _ := caveGrounds.LoadOrStore(c.terrain, g)
-		return actual.(movement.Ground)
+// withStructures puts the atlas towers on the terrain (WP12), as the zone
+// does, so a bot walking into a tower climbs it on both sides.
+func withStructures(t *worldhost.Terrain) movement.Ground {
+	a, err := structures.ParseAtlas(t.World().Atlas)
+	if err != nil {
+		return t
 	}
-	return movement.Flat{}
+	o, _ := structures.Towers(a, t)
+	return structures.Wrap(t, o)
+}
+
+// ground is what prediction steps on: the terrain with the towers (WP12)
+// and caves under it (WP09), or WP03's flat plane.
+func (c *botConfig) ground() movement.Ground {
+	if c.terrain == nil {
+		return movement.Flat{}
+	}
+	if g, ok := caveGrounds.Load(c.terrain); ok {
+		return g.(movement.Ground)
+	}
+	caveMu.Lock() // one cave cache (and worker) per terrain, not one per racing bot
+	defer caveMu.Unlock()
+	if g, ok := caveGrounds.Load(c.terrain); ok {
+		return g.(movement.Ground)
+	}
+	var surface movement.Ground = c.terrain
+	if c.structures != nil {
+		surface = c.structures
+	}
+	g := surface
+	if cv, err := worldhost.NewCaves(c.terrain.World(), worldhost.CaveOptions{Workers: 1}); err == nil {
+		g = worldhost.NewCaveTerrain(c.terrain, surface, cv)
+	}
+	actual, _ := caveGrounds.LoadOrStore(c.terrain, g)
+	return actual.(movement.Ground)
 }
 
 // landSpawn redraws a spawn until it is a dry cell (bots spawning in the sea

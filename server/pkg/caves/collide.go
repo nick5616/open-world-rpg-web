@@ -54,9 +54,19 @@ func binOf(v, o float64) int {
 // FloorAt is the highest up-facing cave triangle under (x, z) whose height is
 // within [y - FloorDrop, y + MAX_STEP_UP_M], or -Inf.
 func FloorAt(src CellSource, x, y, z float64) float64 {
-	top := y + constants.MaxStepUpM
-	bottom := y - FloorDrop
+	return FloorIn(src, x, z, y-FloorDrop, y+constants.MaxStepUpM, false)
+}
+
+// LedgeM: ledges are looked for this far above the feet.
+const LedgeM = 3.0
+
+// FloorIn is the highest (lowest when lowest) up-facing cave triangle height
+// at (x, z) within [bottom, top], or -Inf (+Inf when lowest) for none.
+func FloorIn(src CellSource, x, z, bottom, top float64, lowest bool) float64 {
 	best := math.Inf(-1)
+	if lowest {
+		best = math.Inf(1)
+	}
 	cx0, cx1 := cellsAlong(x, CellW)
 	cz0, cz1 := cellsAlong(z, CellW)
 	cy0 := int32(math.Floor((bottom - 2) / CellH))
@@ -74,7 +84,7 @@ func FloorAt(src CellSource, x, y, z float64) float64 {
 					t := int(c.ColTris[n]) * 3
 					a, b, d := int(c.Idx[t])*3, int(c.Idx[t+1])*3, int(c.Idx[t+2])*3
 					h, ok := triHeight(p[a], p[a+1], p[a+2], p[b], p[b+1], p[b+2], p[d], p[d+1], p[d+2], x, z)
-					if ok && h <= top && h >= bottom && h > best {
+					if ok && h <= top && h >= bottom && ((lowest && h < best) || (!lowest && h > best)) {
 						best = h
 					}
 				}
@@ -331,16 +341,44 @@ func rayTri(ox, oy, oz, dx, dy, dz, ax, ay, az, bx, by, bz, cx, cy, cz float64) 
 	return -1
 }
 
+// Rock reports whether (x, y, z) is inside solid rock: the trilinear density
+// of the cell holding the point (i8 samples, negative = air); a missing
+// cell counts as rock. Same as caveRock in cave.ts.
+func Rock(src CellSource, x, y, z float64) bool {
+	c := src.Cell(int32(math.Floor(x/CellW)), int32(math.Floor(y/CellH)), int32(math.Floor(z/CellW)))
+	if c == nil {
+		return true
+	}
+	fx, fy, fz := (x-c.OX)/2, (y-c.OY)/2, (z-c.OZ)/2
+	i := min(int(math.Floor(fx)), SamplesXZ-2)
+	j := min(int(math.Floor(fy)), SamplesY-2)
+	k := min(int(math.Floor(fz)), SamplesXZ-2)
+	tx, ty, tz := fx-float64(i), fy-float64(j), fz-float64(k)
+	at := func(a, b, e int) float64 {
+		return float64(c.Density[((j+b)*SamplesXZ+(k+e))*SamplesXZ+(i+a)])
+	}
+	x00 := at(0, 0, 0) + float64((at(1, 0, 0)-at(0, 0, 0))*tx)
+	x10 := at(0, 1, 0) + float64((at(1, 1, 0)-at(0, 1, 0))*tx)
+	x01 := at(0, 0, 1) + float64((at(1, 0, 1)-at(0, 0, 1))*tx)
+	x11 := at(0, 1, 1) + float64((at(1, 1, 1)-at(0, 1, 1))*tx)
+	y0 := x00 + float64((x10-x00)*ty)
+	y1 := x01 + float64((x11-x01)*ty)
+	return y0+float64((y1-y0)*tz) >= 0
+}
+
 // Ground is the cave-aware movement ground (README "Ground dispatch"):
-// heightfield on the open surface, cave triangles in mouth holes and
-// underground. It implements movement.CaveGround.
+// the surface ground (terrain, or terrain + structures) on the open
+// surface, cave triangles in mouth holes and underground. The movement
+// step views it at the player's level (movement.LevelGround); Ground
+// itself answers the surface (non-step callers).
 type Ground struct {
 	Height   func(x, z float64) float64
+	Water    func(x, z float64) float64 // nil: no water
 	Openings []Opening
 	Cells    CellSource
 }
 
-// InCave: in a mouth hole, or more than UnderM under the heightfield at y.
+// InCave: in a mouth hole, or more than UnderM under the surface at y.
 func (g *Ground) InCave(x, y, z float64) bool {
 	return y < g.Height(x, z)-UnderM || Masked(g.Openings, x, z)
 }
@@ -349,10 +387,23 @@ func (g *Ground) inCaveH(x, y, z, h float64) bool {
 	return y < h-UnderM || Masked(g.Openings, x, z)
 }
 
-// HeightAt is the heightfield (movement.Ground).
+// HeightAt is the surface (movement.Ground for non-step callers).
 func (g *Ground) HeightAt(x, z float64) float64 { return g.Height(x, z) }
 
-// FloorAt implements movement.CaveGround.
+// WaterAt is the surface water (movement.Water).
+func (g *Ground) WaterAt(x, z float64) float64 {
+	if g.Water == nil {
+		return math.Inf(-1)
+	}
+	return g.Water(x, z)
+}
+
+// FloorAt is the ground under feet height y at (x, z): the surface outside
+// caves; in a cave the highest cave floor in [y - 34, y + MAX_STEP_UP_M];
+// with no floor there, the lowest ledge within LedgeM above (a real step),
+// else y itself inside rock (walls are Collide's job, never
+// a slope to climb) or y - 35 in open air (keep falling); the old surface in
+// a mouth hole whose cells are missing. Same as CaveGroundCore.floorAt.
 func (g *Ground) FloorAt(x, y, z float64) float64 {
 	h := g.Height(x, z)
 	if !g.inCaveH(x, y, z, h) {
@@ -361,13 +412,45 @@ func (g *Ground) FloorAt(x, y, z float64) float64 {
 	if f := FloorAt(g.Cells, x, y, z); !math.IsInf(f, -1) {
 		return f
 	}
-	return h
+	if Masked(g.Openings, x, z) {
+		return h
+	}
+	if l := FloorIn(g.Cells, x, z, y+constants.MaxStepUpM, y+LedgeM, true); !math.IsInf(l, 1) {
+		return l
+	}
+	if Rock(g.Cells, x, y+1, z) {
+		return y
+	}
+	return y - FloorDrop - 1
 }
 
-// Collide implements movement.CaveGround (a no-op outside caves).
+// Collide is the wall/ceiling push-out (a no-op outside caves).
 func (g *Ground) Collide(x, y, z float64) movement.CollideResult {
 	if !g.InCave(x, y, z) {
 		return movement.CollideResult{X: x, Y: y, Z: z}
 	}
 	return Collide(g.Cells, x, y, z)
 }
+
+// AtLevel implements movement.LevelGround: the ground at feet height y.
+func (g *Ground) AtLevel(y float64) movement.Ground { return Level{G: g, Y: y} }
+
+// Level is Ground viewed at feet height Y (what one movement step uses).
+type Level struct {
+	G *Ground
+	Y float64
+}
+
+// HeightAt is the floor under Y at (x, z).
+func (l Level) HeightAt(x, z float64) float64 { return l.G.FloorAt(x, l.Y, z) }
+
+// WaterAt: no swimming in the lake overhead while in a cave.
+func (l Level) WaterAt(x, z float64) float64 {
+	if l.G.InCave(x, l.Y, z) {
+		return math.Inf(-1)
+	}
+	return l.G.WaterAt(x, z)
+}
+
+// Collide implements movement.Collider.
+func (l Level) Collide(x, y, z float64) movement.CollideResult { return l.G.Collide(x, y, z) }

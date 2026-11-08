@@ -4,7 +4,7 @@ import { advanceFixedStep, MAX_MOVE_SUBSTEPS } from './fixedStep';
 import { JumpEdgeLatch, makeMoveInput, NO_BUTTONS } from './inputFrame';
 import { LocalSim } from './localSim';
 import { FlatGround } from './ground';
-import { STEP_DT } from './movement';
+import { newMoveState, STEP_DT } from './movement';
 import { stepFly } from './fly';
 
 function stepsOver(seconds: number, hz: number) {
@@ -111,7 +111,7 @@ describe('LocalSim (render loop driver)', () => {
 
 describe('stepFly', () => {
   it('flies along the view direction and ignores gravity', () => {
-    const s0 = { pos: { x: 0, y: 50, z: 0 }, vel: { x: 0, y: 0, z: 0 }, airJumps: 0 };
+    const s0 = newMoveState({ x: 0, y: 50, z: 0 });
     const up = stepFly(s0, makeMoveInput({ ...NO_BUTTONS, forward: true }, false, 0, Math.PI / 4), 1);
     expect(up.pos.z).toBeLessThan(0);
     expect(up.pos.y).toBeGreaterThan(50);

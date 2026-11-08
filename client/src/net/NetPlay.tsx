@@ -8,7 +8,7 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react
 import type { Welcome } from '@lodestone/contracts';
 import type { ReadySession } from '../account/types';
 import { WorldCanvas } from '../world/WorldCanvas';
-import type { CollideResult, GroundQuery } from '../sim/ground';
+import type { GroundQuery } from '../sim/ground';
 import type { PlayerDriver } from '../scene/PlayerController';
 import { DEFAULT_GROUND } from '../scene/groundContext';
 import { useAppStore } from '../stores/appStore';
@@ -17,7 +17,10 @@ import { localPlayer, netStats } from '../state/live';
 import { startSocial, stopSocial } from '../social';
 import { netRuntime, useNetStore } from './netStore';
 import { RemotePlayers } from './RemotePlayers';
+import { envAt } from '../sim/stepEnv';
 import { ZoneSession, type SessionEnd } from './zoneSession';
+// WP12: exploration Events, map actions, re-issued local save blobs.
+import { attachExploration } from '../ui/map/zoneLink';
 
 type Phase = { kind: 'connecting' } | { kind: 'playing'; welcome: Welcome } | { kind: 'ended'; end: SessionEnd } | { kind: 'error'; message: string };
 
@@ -48,20 +51,11 @@ function forwardingGround(): GroundQuery & { target: GroundQuery } {
     target: DEFAULT_GROUND as GroundQuery,
     heightAt: (x: number, z: number) => g.target.heightAt(x, z),
     normalAt: (x: number, z: number) => g.target.normalAt?.(x, z) ?? { x: 0, y: 1, z: 0 },
-    // WP09: caves. Forward the cave queries too, or prediction would walk
-    // the heightfield while the zone walks the cave (identity when the
-    // target has no caves, so non-cave grounds step exactly as before).
-    floorAt: (x: number, y: number, z: number) => (g.target.floorAt ? g.target.floorAt(x, y, z) : g.target.heightAt(x, z)),
-    collide: (x: number, y: number, z: number, out: CollideResult) => {
-      if (g.target.collide) return g.target.collide(x, y, z, out);
-      out.x = x;
-      out.y = y;
-      out.z = z;
-      out.pushX = 0;
-      out.pushZ = 0;
-      out.ceiling = false;
-      return out;
-    },
+    waterAt: (x: number, z: number) => (g.target.waterAt ? g.target.waterAt(x, z) : -Infinity),
+    // WP09: the step views the ground at the player's level (caves); forward
+    // it, or prediction would walk the surface while the zone walks the cave.
+    // A target without caves is its own level view: steps are unchanged.
+    atLevel: (y: number): GroundQuery => (g.target.atLevel ? g.target.atLevel(y) : g.target),
   };
   return g;
 }
@@ -87,6 +81,7 @@ export function NetPlay({ ready }: { ready: ReadySession }) {
       prefer: preferredTransport(),
     });
     netRuntime.session = s;
+    const detachExploration = attachExploration(s, ready);
     let live = true;
     s.onEnd = (end) => live && setPhase({ kind: 'ended', end });
     s.start().then(
@@ -99,6 +94,7 @@ export function NetPlay({ ready }: { ready: ReadySession }) {
     );
     return () => {
       live = false;
+      detachExploration();
       s.close('leaving');
       if (netRuntime.session === s) netRuntime.session = null;
       netStats.transport = netStats.rttMs = netStats.downKbps = netStats.upKbps = null;
@@ -139,10 +135,13 @@ export function NetPlay({ ready }: { ready: ReadySession }) {
       spawn: { x: w.x / 100, y: w.y / 100, z: w.z / 100 },
       online: true,
       onStep: (r) => {
-        if (!r.fly) session.pushStep(r.seq, r.input, r.state);
+        if (!r.fly) session.pushStep(r.seq, r.input, r.state, r.env);
       },
       afterFrame: () => session.flushInput(),
       takeCorrection: () => session.prediction.takeCorrection(),
+      // WP10: rain/updrafts from the zone's seed at the synced server time,
+      // the same inputs the zone steps with.
+      env: () => envAt(w.seed, session.clock.serverNow()),
     };
   }, [session, phase]);
 

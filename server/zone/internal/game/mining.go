@@ -18,8 +18,8 @@ package game
 //     WorldEdits delta with the edit expired, the row is deleted.
 //
 // Wire conventions (contracts/events.md 700-799; Interact in
-// server/zone/README.md "Mining"): Interact{targetKind 1 = vein, action 1 =
-// swing, targetId = vein id}, Interact{targetKind 2 = pickup, action 1 =
+// server/zone/README.md "Mining"): Interact{targetKind 40 = vein, action 1 =
+// swing, targetId = vein id}, Interact{targetKind 41 = pickup, action 1 =
 // take, targetId = pickup entity id}.
 
 import (
@@ -39,8 +39,8 @@ import (
 
 // Interact target kinds and actions owned by mining.
 const (
-	InteractVein   = 1
-	InteractPickup = 2
+	InteractVein   = 40 // contracts/events.md Interact registry (1-9 are core)
+	InteractPickup = 41
 	ActionUse      = 1
 )
 
@@ -182,7 +182,7 @@ func (s *Server) vein(cw caveWorld, id uint64) (caves.Vein, *veinState, bool) {
 	return v, st, true
 }
 
-func (s *Server) sendEvent(e *Entity, ev *proto.Event) {
+func (s *Server) sendEventTo(e *Entity, ev *proto.Event) {
 	if sess := s.byChar[e.CharacterID]; sess != nil && sess.ent == e {
 		_ = sess.conn.SendReliable(proto.Encode(ev))
 	}
@@ -195,7 +195,7 @@ func veinData(id uint64, extra ...byte) []byte {
 }
 
 func (s *Server) refuse(e *Entity, id uint64, reason int32) {
-	s.sendEvent(e, &proto.Event{Kind: EventMineRefused, EntityID: e.ID, Value: reason, Data: veinData(id)})
+	s.sendEventTo(e, &proto.Event{Kind: EventMineRefused, EntityID: e.ID, Value: reason, Data: veinData(id)})
 }
 
 // interact handles an Interact message (tick goroutine).
@@ -263,7 +263,7 @@ func (s *Server) DamageVein(player *Entity, veinID uint64, amount float64, src D
 	if player != nil {
 		extra := make([]byte, 2)
 		binary.LittleEndian.PutUint16(extra, uint16(st.maxHP))
-		s.sendEvent(player, &proto.Event{Kind: EventVeinHit, EntityID: player.ID, Value: hp,
+		s.sendEventTo(player, &proto.Event{Kind: EventVeinHit, EntityID: player.ID, Value: hp,
 			X: proto.MetersToCm(v.X), Y: proto.MetersToCm(v.Y), Z: proto.MetersToCm(v.Z), Data: veinData(veinID, extra...)})
 	}
 	if st.hp <= 0 {
@@ -321,8 +321,8 @@ func (s *Server) breakVein(cw caveWorld, v caves.Vein, st *veinState, breaker *E
 		item, qty := rollDrop(v, seed)
 		s.log.Info("vein drop", "vein", v.ID, "material", v.MaterialName(), "character", o.CharacterID, "item", item, "qty", qty, "rollSeed", seed, "edit", st.editID)
 		p := s.spawnPickup(o, v, item, qty, seed, now)
-		s.sendEvent(o, &proto.Event{Kind: EventVeinBreak, EntityID: o.ID, TargetID: p.ID, Value: respawnS, Data: veinData(v.ID)})
-		s.sendEvent(o, &proto.Event{Kind: EventDropSpawned, EntityID: p.ID, TargetID: o.ID, Value: int32(qty), Data: []byte(item)})
+		s.sendEventTo(o, &proto.Event{Kind: EventVeinBreak, EntityID: o.ID, TargetID: p.ID, Value: respawnS, Data: veinData(v.ID)})
+		s.sendEventTo(o, &proto.Event{Kind: EventDropSpawned, EntityID: p.ID, TargetID: o.ID, Value: int32(qty), Data: []byte(item)})
 	}
 	st.hitters = map[uint32]time.Time{}
 	s.log.Info("vein mined", "vein", v.ID, "material", v.MaterialName(), "edit", st.editID, "respawnAt", st.respawnAt.UTC().Format(time.RFC3339), "owners", len(owners))
@@ -409,7 +409,7 @@ func (s *Server) takePickup(owner, p *Entity) {
 		}
 	}
 	s.log.Info("item granted", "character", owner.CharacterID, "item", p.Item, "qty", p.Qty, "rollSeed", p.RollSeed)
-	s.sendEvent(owner, &proto.Event{Kind: EventItemGranted, EntityID: owner.ID, TargetID: p.ID, Value: int32(p.Qty), Data: []byte(p.Item)})
+	s.sendEventTo(owner, &proto.Event{Kind: EventItemGranted, EntityID: owner.ID, TargetID: p.ID, Value: int32(p.Qty), Data: []byte(p.Item)})
 	s.removeEntity(p)
 	s.m.itemsGranted.Add(1)
 }

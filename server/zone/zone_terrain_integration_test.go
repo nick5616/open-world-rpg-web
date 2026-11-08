@@ -25,6 +25,7 @@ import (
 	"lodestone/server/pkg/snapshot"
 	"lodestone/server/pkg/ticket"
 	"lodestone/server/pkg/transport"
+	"lodestone/server/pkg/weather"
 	"lodestone/server/pkg/worldhost"
 )
 
@@ -150,7 +151,7 @@ func TestZoneProcessTerrain(t *testing.T) {
 		t.Fatalf("bad welcome %+v (ground %v)", w, ground)
 	}
 
-	sim := movement.State{Pos: movement.Vec3{X: sx, Y: ground, Z: sz}}
+	sim := movement.NewState(movement.Vec3{X: sx, Y: ground, Z: sz}) // WP10: full stamina, like join
 	const total = 150
 	var frames []proto.InputFrame
 	for seq := uint32(1); seq <= total; seq++ {
@@ -160,7 +161,7 @@ func TestZoneProcessTerrain(t *testing.T) {
 		}
 		f := proto.InputFrame{Seq: seq, Flags: flags, Yaw: proto.YawToU16(1.1 + float64(seq)/120)}
 		frames = append(frames, f)
-		sim = movement.StepFrame(sim, f, local)
+		sim = movement.StepFrameEnv(sim, f, local, movement.Env{Raining: weather.IsRaining(seed, weather.WorldTimeS(float64(time.Now().UnixMilli())))})
 	}
 	go func() {
 		for i := 0; i < total; i += 2 {

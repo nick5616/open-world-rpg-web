@@ -40,6 +40,8 @@ func newHarness(t *testing.T, mod func(*Config)) *harness {
 	pub, _, _ := ticket.PublicKeyFromEnv()
 	cfg := Config{ZoneID: testZone, WorldID: testWorld, Seed: 42, GenVersion: "g1", TicketKey: pub, DevSpawn: true,
 		SpinTail: time.Millisecond, Log: slog.New(slog.NewTextHandler(io.Discard, nil))}
+	dry := false
+	cfg.Rain = &dry // WP10: deterministic weather (the stub would follow the wall clock)
 	if mod != nil {
 		mod(&cfg)
 	}
@@ -236,7 +238,7 @@ func TestWelcomeThenAuthoritativeMovementMatchesPrediction(t *testing.T) {
 		w.X != 10000 || w.Z != 20000 || w.EntityID == 0 || w.ProtocolVersion != proto.ProtocolVersion {
 		t.Fatalf("welcome %+v", w.ToJSON())
 	}
-	sim := movement.State{Pos: movement.Vec3{X: 100, Z: 200}}
+	sim := movement.NewState(movement.Vec3{X: 100, Z: 200})
 	cl.walk(60, proto.InputFlagForward|proto.InputFlagSprint, 0.7, &sim)
 	cl.walk(20, proto.InputFlagForward|proto.InputFlagJump, 0.7, &sim)
 	// Wait for the snapshot acking our last frame.

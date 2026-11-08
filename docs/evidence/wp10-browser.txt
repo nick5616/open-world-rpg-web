@@ -1,0 +1,57 @@
+WP10 headless browser run 2026-11-08T14:59:58.356Z: Chromium (SwiftShader) + Vite dev client (WP05 terrain, WP12 towers) vs the real zone binary on seed 20261108
+(SwiftShader renders the real client at a few fps, so the run is paced by game steps, not wall time.)
+climb (ledge below the 14.5 m cliff, facing west):
+  screenshot wp10-browser-climb-grab.png: mode climb, pos (1332.21, 211.68, 2339.98), stamina 78.2
+  screenshot wp10-browser-climb-mid.png: mode climb, pos (1327.26, 218.50, 2340.90), stamina 35.5
+  screenshot wp10-browser-climb-mantled.png: mode walk, pos (1323.14, 223.89, 2341.11), stamina 13.5
+  screenshot wp10-browser-climb-top-looking-down.png: mode idle, pos (1322.80, 224.18, 2341.11), stamina 53.5
+  climb: 2519 compared snapshots, max divergence 0.76 cm; ground 801 snaps max 0.52 cm (y 206.1..224.2); climb 1718 snaps max 0.76 cm (y 208.1..222.2)
+  corrections 0 (max 0.00 cm), agreements 97
+    seq 34: start -> ground at (1336.20, 206.09, 2339.35)
+    seq 70: ground -> climb at (1334.26, 208.06, 2339.39)
+    seq 590: climb -> ground at (1324.39, 222.67, 2341.10)
+tower (14 m west of the tower at (1888, 1760), facing east):
+  screenshot wp10-browser-tower-climb.png: mode climb, pos (1878.67, 166.65, 1760.01), stamina 72.7
+  screenshot wp10-browser-tower-ledge-rested.png: mode idle, pos (1880.97, 175.95, 1760.01), stamina 100.0
+  screenshot wp10-browser-tower-top.png: mode walk, pos (1884.51, 188.95, 1760.01), stamina 34.8
+  screenshot wp10-browser-tower-glide.png: mode glide, pos (1917.55, 185.48, 1760.01), stamina 36.9
+  tower: 2269 compared snapshots, max divergence 0.80 cm; ground 495 snaps max 0.71 cm (y 161.2..188.9); climb 1086 snaps max 0.80 cm (y 161.2..188.9); air 42 snaps max 0.66 cm (y 189.6..191.0); glide 646 snaps max 0.74 cm (y 183.1..190.6)
+  corrections 0 (max 0.00 cm), agreements 195
+    seq 25: start -> ground at (1874.26, 161.27, 1760.00)
+    seq 71: ground -> climb at (1877.52, 161.15, 1760.01)
+    seq 521: climb -> ground at (1880.81, 175.95, 1760.01)
+    seq 771: ground -> climb at (1881.53, 175.95, 1760.01)
+    seq 1166: climb -> ground at (1884.51, 188.95, 1760.01)
+    seq 1252: ground -> air at (1891.33, 189.61, 1760.01)
+    seq 1305: air -> glide at (1895.69, 190.55, 1760.01)
+glide (the 360 m peak, facing south over the drop):
+  screenshot wp10-browser-glide.png: mode glide, pos (1122.00, 351.71, 2343.35), stamina 65.9
+  screenshot wp10-browser-glide-late.png: mode glide, pos (1136.53, 333.32, 2384.13), stamina 38.8
+  glide: 1724 compared snapshots, max divergence 0.80 cm; ground 129 snaps max 0.63 cm (y 355.4..360.6); air 179 snaps max 0.80 cm (y 340.7..357.4); glide 1416 snaps max 0.75 cm (y 330.8..356.8)
+  corrections 0 (max 0.00 cm), agreements 93
+    seq 16: start -> ground at (1122.00, 360.62, 2301.00)
+    seq 131: ground -> air at (1122.00, 356.04, 2313.67)
+    seq 187: air -> glide at (1122.00, 356.78, 2320.61)
+    seq 515: glide -> air at (1129.43, 345.66, 2366.67)
+    seq 555: air -> glide at (1133.63, 338.92, 2370.93)
+swim (dry shore south of the lake, facing north):
+  screenshot wp10-browser-swim.png: mode swim, pos (1418.00, 126.63, 1882.45), stamina 83.2
+  screenshot wp10-browser-swim-ashore.png: mode walk, pos (1418.00, 127.10, 1873.20), stamina 40.5
+  swim: 2506 compared snapshots, max divergence 0.63 cm; ground 860 snaps max 0.63 cm (y 126.6..128.3); swim 1646 snaps max 0.45 cm (y 126.6..126.6)
+  corrections 0 (max 0.00 cm), agreements 101
+    seq 16: start -> ground at (1418.00, 128.03, 1858.00)
+    seq 250: ground -> swim at (1418.00, 126.63, 1875.87)
+    seq 698: swim -> ground at (1418.00, 126.56, 1875.68)
+observer (browser stands on the ledge, a Node client climbs beside it):
+  screenshot wp10-browser-remote-climbing.png: mode idle, pos (1340.90, 198.99, 2336.34), stamina 100.0
+== climber: 10.1 s, 606 steps, 297 compared snapshots; spawn (1336.2, 206.09, 2339.35)
+   per mode: ground: 41 snapshots, max 0.62 cm, y 206.1..207.9; climb: 256 snapshots, max 0.76 cm, y 207.9..216.1
+   overall max divergence 0.76 cm; corrections 0 (max 0.00 cm), agreements 272; drowned events 0
+   end: climb at (1328.91, 216.13, 2340.69), stamina 50.0
+   transitions:
+     0.05s seq 2: start -> ground at (1336.20, 206.09, 2339.35) stamina 100.0
+     1.45s seq 85: ground -> climb at (1334.36, 207.94, 2339.36) stamina 99.8
+  observer: 382 compared snapshots, max divergence 0.55 cm; ground 382 snaps max 0.55 cm (y 199.0..199.1)
+  corrections 0 (max 0.00 cm), agreements 30
+    seq 16: start -> ground at (1340.81, 199.13, 2336.38)
+overall max divergence 0.80 cm vs 10 cm: PASS

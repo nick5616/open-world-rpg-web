@@ -30,7 +30,7 @@ changes size (three.js bakes the light count into every program; wizard-wars
 
 ## Online vs solo
 
-- Online: mining sends `Interact{targetKind 1, vein id, action 1}`; the zone
+- Online: mining sends `Interact{targetKind 40, vein id, action 1}`; the zone
   decides damage, drops, the edit and the respawn. `ZoneSession.onWorldEdits`
   applies edits to the store (carve + mined flag; a delta with `expiresAt`
   in the past removes it), `onEvent` drives the HUD (hit points, break,
@@ -50,16 +50,9 @@ node client/src/world/caves/dev/caveWalk.mjs                       # headless wa
 
 ## Interface with movement (WP10)
 
-`GroundQuery` (client/src/sim/ground.ts) gained two optional methods and
-the step calls them; Go mirrors it with `movement.CaveGround`:
+The step (WP10) is a heightfield state machine; caves plug in through two optional hooks, identical in TS (`client/src/sim/caves.ts`, `GroundQuery.atLevel` / `collide`) and Go (`server/pkg/movement/caves.go`, `LevelGround` / `Collider`):
 
-- `floorAt(x, y, z)`: feet height of the highest walkable surface at or
-  below `y + MAX_STEP_UP_M` (the step searches from `max(old y, new y)`).
-- `collide(x, y, z, out)`: wall push-out (horizontal) and ceiling (down);
-  the step slides velocity along the push and stops a rising jump at a
-  ceiling.
+1. At the start of a step the ground is viewed at the player's feet height (`AtLevel(y)`). In a cave (a mouth hole, or more than 1 m under the surface) that view's `HeightAt` is the highest cave floor in [y - 34, y + MAX_STEP_UP_M]; with none, the lowest ledge within 3 m above (a real step: the walk/step-up/climb rules decide), else `y` inside rock (walls are never slopes to climb), else y - 35 over an open pit. Its water is -Inf (no swimming in the lake overhead). Elsewhere it is the surface ground (terrain + WP12 structures) unchanged, so every mode, slope probe and climb works on it as on terrain.
+2. After the mode step, one wall/ceiling push-out (not while climbing): horizontal velocity slides along the push (`v -= n * min(0, v.n)`), a ceiling stops a rising jump, a grounded player is re-snapped to the floor at the pushed point.
 
-Grounds without caves omit both and step exactly as before. Climb, glide
-and swim (WP10) should treat cave triangles like terrain: `collide` is the
-wall query, `floorAt` the ground query; slope rules can read the triangle
-normal from the same cells (not exposed yet; ask in this README's history).
+Grounds without caves implement neither and step exactly as before (every WP02/WP10 golden unchanged). `server/pkg/caves.Ground`, `worldhost.CaveTerrain` and the client's `CaveGround` (over `StructureGround`) implement both. Golden cave walk: `client/src/world/caves/cavePath.test.ts` (TS) replayed by `server/pkg/caves/path_test.go` (Go).

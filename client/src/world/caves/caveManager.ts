@@ -519,7 +519,7 @@ export class CaveManager {
     this.spark(v);
     const session = netRuntime.session;
     if (session && session.phase === 'playing') {
-      session.sendInteract(1, v.id, 1, 0);
+      session.sendInteract(40, v.id, 1, 0); // Interact targetKind 40 = vein (contracts/events.md)
       return;
     }
     // Solo: the same rules locally (pickaxe 25 per swing, carve on break).
@@ -601,7 +601,7 @@ export class CaveManager {
       }
       this.visualsDirty = true;
     };
-    s.onEvent = (ev) => {
+    s.eventListeners.add((ev) => {
       const vein = ev.data.length >= 8 ? new DataView(ev.data.buffer, ev.data.byteOffset, 8).getBigUint64(0, true) : 0n;
       switch (ev.kind) {
         case 701: {
@@ -623,7 +623,7 @@ export class CaveManager {
           else if (ev.value === 2) this.toast('Already mined');
           break;
       }
-    };
+    });
   }
 
   private toast(text: string): void {

@@ -17,7 +17,8 @@ import (
 
 // caveWorld is a ground with caves (worldhost.CaveTerrain).
 type caveWorld interface {
-	movement.CaveGround
+	movement.LevelGround
+	movement.Collider
 	CaveGraph() *caves.Graph
 	SetEdit(caves.Edit)
 	RemoveEdit(veinID uint64)

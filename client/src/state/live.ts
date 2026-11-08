@@ -4,7 +4,7 @@
 // exists to diagnose frame-time problems, so it must not cause them
 // (same reasoning as wizard-wars FrameStats / localOrientation).
 
-export type MoveMode = 'idle' | 'walk' | 'sprint' | 'air' | 'fly';
+export type MoveMode = 'idle' | 'walk' | 'sprint' | 'air' | 'fly' | 'slide' | 'climb' | 'glide' | 'swim';
 
 export const localPlayer = {
   /** Feet position, meters (latest simulated step, not the interpolated render pose). */
@@ -17,6 +17,13 @@ export const localPlayer = {
   mode: 'idle' as MoveMode,
   /** Movement steps simulated so far (= InputFrame seq). */
   seq: 0,
+  /** WP10 stamina wheel, in points (the step keeps fine units). */
+  stamina: 100,
+  staminaMax: 100,
+  exhausted: false,
+  drowned: false,
+  /** Rain as the last movement step saw it (weather stub). */
+  raining: false,
 };
 
 /**

@@ -44,6 +44,7 @@ type session struct {
 
 	// Tick-owned.
 	ent         *Entity
+	x           *exploreState // WP12 exploration (explore.go)
 	left        bool
 	ackTick     uint32
 	enc         snapshot.Encoder
@@ -204,6 +205,7 @@ func (s *Server) accept(c transport.Conn, spawnHint *movement.Vec3) {
 	sess := &session{conn: c, claims: claims, joined: make(chan struct{}),
 		buckets: newBuckets(), violations: ratelimit.New(100, 10), frameBudget: frameBudget()}
 	sess.spawn = s.spawnFor(claims, spawnHint)
+	sess.x = s.loadExplore(claims, hello.SaveBlob, &sess.spawn, spawnHint != nil) // WP12
 
 	select {
 	case s.joins <- sess:
@@ -318,7 +320,8 @@ func (s *Server) drain(sess *session, now time.Time) {
 	sess.mu.Unlock()
 	for _, m := range msgs {
 		if it, ok := m.(*proto.Interact); ok {
-			s.interact(sess.ent, it, now) // WP09 mining (mining.go)
+			s.interact(sess.ent, it, now)   // WP09 mining (mining.go)
+			s.handleInteract(sess, it, now) // WP12: fast travel, pins (explore.go)
 			continue
 		}
 		in, ok := m.(*proto.Input)
@@ -383,7 +386,7 @@ func (s *Server) fillGap(sess *session, next uint32, now time.Time) {
 			s.m.framesDropped.Add(1)
 			continue
 		}
-		e.applyFrame(f, s.cfg.Ground)
+		e.applyFrame(f, s.cfg.Ground, s.env)
 		s.m.framesSynthesized.Add(1)
 	}
 }
@@ -418,10 +421,14 @@ func (s *Server) applyFrames(sess *session, now time.Time) {
 			s.m.framesDropped.Add(1)
 			continue
 		}
-		if !e.applyFrame(f, s.cfg.Ground) {
+		if !e.applyFrame(f, s.cfg.Ground, s.env) {
 			s.m.speedViolations.Add(1)
 		}
 		s.m.frames.Add(1)
+	}
+	if e.drownedEvent {
+		e.drownedEvent = false
+		s.sendDrowned(sess)
 	}
 	if i >= len(fr) {
 		sess.gapSince = 0

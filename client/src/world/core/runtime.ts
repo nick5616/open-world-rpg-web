@@ -16,8 +16,13 @@ import { ATLAS_STORE, cacheGet, cachePut, worldDb } from './cacheDb';
 import { poolSize, WorkerPool, type WorkerLike } from './workerPool';
 import type { InitMsg, ResultMsg } from './protocol';
 import { WorldGround } from './ground';
+// WP12: towers stand on the terrain as a structure overlay on the ground query
+// (client/src/world/structures/README.md); prediction and the zone use the same.
+import { StructureGround } from '../structures/overlay';
+import { towersFromAtlas, type TowerSet } from '../structures/towers';
 import { CaveGround } from '../caves/caveGround';
 import { CaveCellStore } from '../caves/caveStore';
+import type { GroundQuery } from '../../sim/ground';
 
 export interface LoadTimings {
   wasmMs: number;
@@ -30,7 +35,13 @@ export interface LoadTimings {
 const newWorker = (): WorkerLike => new Worker(new URL('./chunk.worker.ts', import.meta.url), { type: 'module', name: 'worldgen' }) as unknown as WorkerLike;
 
 export class WorldRuntime {
-  readonly ground: WorldGround;
+  /** What movement walks and climbs: terrain + structures (towers), with caves under it (WP09) when the wasm has them. */
+  readonly ground: GroundQuery;
+  /** Terrain plus structures (WP12): the surface the caves sit under. */
+  readonly structureGround: StructureGround;
+  /** The bare terrain (collision_height), for things that must ignore structures. */
+  readonly terrainGround: WorldGround;
+  readonly towers: TowerSet;
   /** WP09: the cave graph (systems, openings, veins) and the cave cells shared by collision and rendering. */
   readonly caveGraph: CaveGraph | null = null;
   readonly caveStore: CaveCellStore | null = null;
@@ -46,13 +57,16 @@ export class WorldRuntime {
   ) {
     this.data = atlas.data;
     this.atlasHashHex = hex64(atlas.hash);
-    // WP09: the ground is cave-aware when the wasm has the cave exports
-    // (a pre-WP09 build falls back to the plain heightfield).
-    let ground: WorldGround = new WorldGround(wg, atlas);
+    this.terrainGround = new WorldGround(wg, atlas);
+    this.towers = towersFromAtlas(this.data, this.terrainGround);
+    this.structureGround = new StructureGround(this.terrainGround, this.towers.overlay);
+    // WP09: caves under the surface when the wasm has the cave exports (a
+    // pre-WP09 build keeps the surface ground).
+    let ground: GroundQuery = this.structureGround;
     try {
       this.caveGraph = parseCaveGraph(caveGraphBytes(wg, atlas));
       this.caveStore = new CaveCellStore(wg, atlas);
-      ground = new CaveGround(wg, atlas, this.caveGraph.openings, this.caveStore);
+      ground = new CaveGround(this.structureGround, this.caveGraph.openings, this.caveStore);
     } catch (err) {
       console.warn('[world] no caves (worldgen.wasm without cave exports?)', err);
     }

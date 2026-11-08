@@ -89,6 +89,7 @@ type Cell struct {
 	CX, CY, CZ    int32
 	OX, OY, OZ    float64
 	Flags         uint32
+	Density       []int8    // 33 x 17 x 33, index (j*33 + k)*33 + i; negative = air
 	Pos           []float64 // 3 per vertex
 	Idx           []uint16  // 3 per triangle
 	ColOff        []uint32  // Bins*Bins+1
@@ -126,12 +127,20 @@ func ParseCell(b []byte) (*Cell, error) {
 	c.OX, c.OY, c.OZ = float64(c.CX)*CellW, float64(c.CY)*CellH, float64(c.CZ)*CellW
 	nv := int(le.Uint32(b[28:]))
 	nt := int(le.Uint32(b[32:]))
+	densOff := int(le.Uint32(b[36:]))
 	posOff, idxOff := int(le.Uint32(b[40:])), int(le.Uint32(b[48:]))
 	colOff, colLen := int(le.Uint32(b[52:])), int(le.Uint32(b[56:]))
 	veinOff, nVein := int(le.Uint32(b[60:])), int(le.Uint16(b[64:]))
 	nDeco, decoOff := int(le.Uint16(b[66:])), int(le.Uint32(b[68:]))
 	if posOff+nv*12 > len(b) || idxOff+nt*6 > len(b) || colOff+colLen > len(b) || veinOff+nVein*veinRec > len(b) || decoOff+nDeco*decoRec > len(b) {
 		return nil, errors.New("cave cell section out of range")
+	}
+	if densOff+SamplesXZ*SamplesY*SamplesXZ > len(b) {
+		return nil, errors.New("cave cell density out of range")
+	}
+	c.Density = make([]int8, SamplesXZ*SamplesY*SamplesXZ)
+	for i := range c.Density {
+		c.Density[i] = int8(b[densOff+i])
 	}
 	c.Pos = make([]float64, nv*3)
 	for i := range c.Pos {

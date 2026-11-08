@@ -38,7 +38,7 @@ func run(s State, n int, flags uint16, yaw float64) State {
 func steady(wish float64) float64 { return constants.GroundAccel * wish / constants.GroundFriction }
 
 func TestWalkReachesSteadySpeedFacingMinusZ(t *testing.T) {
-	s := run(State{}, 120, fwd, 0)
+	s := run(NewState(Vec3{}), 120, fwd, 0)
 	if math.Abs(s.Vel.Z+steady(constants.BaseMoveSpeed)) > 1e-6 || math.Abs(s.Vel.X) > 1e-9 {
 		t.Fatalf("yaw 0 forward should be -Z at base speed, vel=%+v", s.Vel)
 	}
@@ -48,7 +48,7 @@ func TestWalkReachesSteadySpeedFacingMinusZ(t *testing.T) {
 }
 
 func TestSprintSpeedAndStrafeDirections(t *testing.T) {
-	s := run(State{}, 240, fwd|sprint, 0)
+	s := run(NewState(Vec3{}), 240, fwd|sprint, 0)
 	want := steady(constants.BaseMoveSpeed * constants.SprintMultiplier)
 	if math.Abs(HorizontalSpeed(s)-want) > 1e-6 {
 		t.Fatalf("sprint speed %v want %v", HorizontalSpeed(s), want)
@@ -58,7 +58,7 @@ func TestSprintSpeedAndStrafeDirections(t *testing.T) {
 		flags  uint16
 		dx, dz float64
 	}{{right, 1, 0}, {left, -1, 0}, {back, 0, 1}, {fwd | right, 1, -1}} {
-		s := run(State{}, 120, c.flags, 0)
+		s := run(NewState(Vec3{}), 120, c.flags, 0)
 		l := math.Hypot(c.dx, c.dz)
 		w := steady(constants.BaseMoveSpeed)
 		if math.Abs(s.Vel.X-c.dx/l*w) > 1e-6 || math.Abs(s.Vel.Z-c.dz/l*w) > 1e-6 {
@@ -66,14 +66,14 @@ func TestSprintSpeedAndStrafeDirections(t *testing.T) {
 		}
 	}
 	// Yaw pi/2 turns forward to -X.
-	s = run(State{}, 120, fwd, math.Pi/2)
+	s = run(NewState(Vec3{}), 120, fwd, math.Pi/2)
 	if math.Abs(s.Vel.X+steady(constants.BaseMoveSpeed)) > 1e-6 || math.Abs(s.Vel.Z) > 1e-6 {
 		t.Fatalf("yaw pi/2 forward vel %+v", s.Vel)
 	}
 }
 
 func TestFrictionStops(t *testing.T) {
-	s := run(State{}, 120, fwd, 0)
+	s := run(NewState(Vec3{}), 120, fwd, 0)
 	s = run(s, 60, 0, 0)
 	if s.Vel.X != 0 || s.Vel.Z != 0 {
 		t.Fatalf("should have stopped within 1 s: %+v", s.Vel)
@@ -81,7 +81,7 @@ func TestFrictionStops(t *testing.T) {
 }
 
 func TestJumpArcAndLanding(t *testing.T) {
-	s := Step(State{}, jump, 0, Flat{})
+	s := Step(NewState(Vec3{}), jump, 0, Flat{})
 	if s.Vel.Y != constants.JumpForce {
 		t.Fatalf("jump vy %v", s.Vel.Y)
 	}
@@ -107,7 +107,7 @@ func TestJumpArcAndLanding(t *testing.T) {
 }
 
 func TestDoubleJumpNeedsEdgeAndIsLimited(t *testing.T) {
-	s := Step(State{}, jump, 0, Flat{})
+	s := Step(NewState(Vec3{}), jump, 0, Flat{})
 	s = run(s, 10, 0, 0)
 	vyBefore := s.Vel.Y
 	s = Step(s, jump, 0, Flat{}) // held jump in the air does nothing
@@ -127,12 +127,12 @@ func TestDoubleJumpNeedsEdgeAndIsLimited(t *testing.T) {
 
 func TestGroundSnapWhenHugging(t *testing.T) {
 	// Just above the ground, descending: snaps instead of falling.
-	s := Step(State{Pos: Vec3{Y: 0.2}, Vel: Vec3{Y: -0.1}}, 0, 0, Flat{})
+	s := Step(withVel(NewState(Vec3{Y: 0.2}), Vec3{Y: -0.1}), 0, 0, Flat{})
 	if s.Pos.Y != 0 || s.Vel.Y != 0 {
 		t.Fatalf("expected snap, got %+v", s)
 	}
 	// Rising: no snap even when close.
-	s = Step(State{Pos: Vec3{Y: 0.2}, Vel: Vec3{Y: 3}}, 0, 0, Flat{})
+	s = Step(withVel(NewState(Vec3{Y: 0.2}), Vec3{Y: 3}), 0, 0, Flat{})
 	if s.Pos.Y == 0 {
 		t.Fatalf("rising player must not snap: %+v", s)
 	}
@@ -141,7 +141,7 @@ func TestGroundSnapWhenHugging(t *testing.T) {
 func TestAirStrafeCanGainSpeed(t *testing.T) {
 	// Classic strafe jump: in the air, hold right while turning right; speed
 	// grows past base speed (this is the bunny-hop feel kept from wizard-wars).
-	s := run(State{}, 120, fwd, 0)
+	s := run(NewState(Vec3{}), 120, fwd, 0)
 	s = Step(s, jump|fwd, 0, Flat{})
 	start := HorizontalSpeed(s)
 	yaw := 0.0
@@ -159,8 +159,8 @@ func TestAirStrafeCanGainSpeed(t *testing.T) {
 
 func TestStepFrameUsesQuantizedYaw(t *testing.T) {
 	f := proto.InputFrame{Seq: 1, Flags: fwd, Yaw: proto.YawToU16(1.0)}
-	a := StepFrame(State{}, f, Flat{})
-	b := Step(State{}, fwd, proto.U16ToYaw(f.Yaw), Flat{})
+	a := StepFrame(NewState(Vec3{}), f, Flat{})
+	b := Step(NewState(Vec3{}), fwd, proto.U16ToYaw(f.Yaw), Flat{})
 	if a != b {
 		t.Fatal("StepFrame must steer by the dequantized yaw")
 	}
@@ -217,6 +217,13 @@ func scripted() []vecCase {
 
 func simulate(c vecCase) []vectorStep {
 	s := c.Start
+	if s.StaminaMax == 0 {
+		// The vector file predates WP10's stamina (its states carry only
+		// pos/vel/airJumps): start with a full wheel, as the zone does.
+		full := NewState(s.Pos)
+		full.Vel, full.AirJumps = s.Vel, s.AirJumps
+		s = full
+	}
 	g := Flat{Y: c.Ground}
 	out := make([]vectorStep, 0, len(c.Frames))
 	for i, f := range c.Frames {
@@ -265,4 +272,9 @@ func TestTrajectoryVectors(t *testing.T) {
 			}
 		}
 	}
+}
+
+func withVel(s State, v Vec3) State {
+	s.Vel = v
+	return s
 }

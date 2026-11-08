@@ -207,6 +207,28 @@ pub unsafe extern "C" fn collision_height(atlas_ptr: *const u8, x: f64, z: f64) 
     }
 }
 
+/// Water surface height at (x, z) (WP10): the triangle mesh over the f32
+/// water lattice, equal to interpolating LOD 0 chunk water samples. Sea level
+/// where no lake or river covers the point. Returns -1e9 on an invalid atlas
+/// or non-finite input (never NaN).
+///
+/// # Safety
+/// `atlas_ptr` must point at a valid atlas buffer.
+#[no_mangle]
+pub unsafe extern "C" fn water_height(atlas_ptr: *const u8, x: f64, z: f64) -> f64 {
+    match atlas_slice(atlas_ptr).and_then(Atlas::parse) {
+        Ok(a) if x.is_finite() && z.is_finite() => crate::ground::water_height(&a, x, z),
+        Ok(_) => {
+            set_error("non-finite coordinate");
+            -1e9
+        }
+        Err(e) => {
+            set_error(&e);
+            -1e9
+        }
+    }
+}
+
 /// Surface normal at (x, z) written as 3 f64 (nx, ny, nz) at `out_ptr`;
 /// returns the slope in degrees, or -1 on error.
 ///

@@ -1,0 +1,27 @@
+# WP10 test sites on the official world (seed 20261108), from surveys of worldgen.wasm collision_height/water_height.
+# (The chosen 14.5 m cliff at base (1334.44, 2338.48) was found by the same survey on a 3 m grid; the 5 m grid below lists two more.)
+# Climbable cliffs: march from a >57 deg point down/up the gradient (slope probe = movement.slopeAt) to walkable base/top; rise 7-15 m, min slope >= 51 deg.
+# The world has few short clean cliffs: most steep terrain is long 55-65 deg mountain faces (110 m) that one stamina wheel (20 m of surface) cannot climb.
+base 1228.17,2173.21 top 1224.04,2181.75 rise 14.3 min 51.6 d 273 hb 244.0
+base 1055.36,2367.49 top 1054.99,2358.50 rise 14.4 min 51.8 d 495 hb 261.4
+
+# Peaks (higher than everything within 32 m) by the largest drop within 80 m, and deep lake points (water > sea + 1, depth > 2.5 m) with distance to dry shore:
+peaks by 80 m drop
+1122 2300 360.6 drop80 109.0 d 282
+1594 2124 151.7 drop80 24.9 d 231
+1658 2412 107.0 drop80 6.4 d 305
+lakes 423
+1418 1956 depth 7.9 w 128.0 shore 88
+1410 1956 depth 7.8 w 128.0 shore 84
+1418 1964 depth 7.8 w 128.0 shore 90
+1418 1948 depth 7.8 w 128.0 shore 72
+1426 1956 depth 7.7 w 128.0 shore 86
+1426 1964 depth 7.7 w 128.0 shore 82
+1410 1948 depth 7.7 w 128.0 shore 78
+1410 1964 depth 7.6 w 128.0 shore 96
+1426 1948 depth 7.5 w 128.0 shore 78
+1426 1972 depth 7.5 w 128.0 shore 73
+
+# Chosen: climb = ledge (1336.2, 2339.35) below the cliff base (1334.44, 2338.48) -> top (1324.87, 2340.26), facing west;
+#         glide = peak (1122, 2300) 360.6 m, 70 m drop within 60 m to the south (+z); towers have no geometry yet (WP12/WP20), so the highest nearby terrain stands in;
+#         swim  = dry shore (1418, 1858) south of the lake at (1418, 1956): water 128.03, a 2 m deep shelf from z ~1876, 8 m deep middle, shore at z ~1866.

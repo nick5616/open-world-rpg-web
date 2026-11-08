@@ -29,11 +29,45 @@ With the wizard-wars constants the steady ground speed is
 sprinting. That is the tuned feel, not a bug.
 
 Zone-only extras (not in the step, so the client gets corrections for them):
-world-edge clamp to [0, WORLD_SIZE_M), a horizontal speed sanity bound
-(`MaxLegitHorizontalSpeed`, 25.6 m/s) that snaps violators back, and a
+world-edge clamp to [0, WORLD_SIZE_M), per-mode speed and vertical bounds
+(`MaxHorizontalSpeed`, zone `verticalOK`) that snap violators back, and a
 60 frames/s budget per session.
 
+## WP10: climb, glide, swim, slopes, stamina
+
+The full step (`StepEnv(state, flags, yaw, ground, env)`) adds spec 8's
+traversal; the algorithm is written out once, in
+`client/src/sim/README.md` ("WP10"). Files:
+
+| File | What |
+| --- | --- |
+| `movement.go` | `State` (+ mode, stamina in fine units, timer, lunge, flags), `stepWalk` / `stepClimb` / `stepGlide` / `stepSwim`, `SlopeAt`, `FindShore`, `Activity`, `MaxHorizontalSpeed` |
+| `wire.go` | `SelfFields` / `FromSelf`: State <-> SelfState (protocol v2: flags + lunge, `moveExt` = stamina + timer) |
+| `updraft.go` | `Columns` (debug UpdraftField) and `ParseColumns` (`x,z,r,top,lift;...`) |
+
+`Ground` stays `HeightAt`; water is the optional `Water` interface
+(`WaterAt`, implemented by `worldhost.Terrain` with the wasm
+`water_height`); grounds without it have no water. `Env` carries rain (the
+`server/pkg/weather` stub) and the `UpdraftField` hook WP15 will feed.
+Construct states with `NewState(pos)` (full wheel): a zero `State` has no
+stamina and cannot sprint.
+
+Bitwise: all WP10 arithmetic is + - * / sqrt and comparisons on the same
+inputs as TS, products are wrapped in `float64()` so Go never fuses an FMA,
+and `dt` is a run-time variable because Go folds constant expressions
+exactly (V8 multiplies the rounded 1/60). Slope thresholds are the literal
+constants `WALKABLE_TAN_SQ` / `CLIMB_MAX_TAN_SQ`, not a tan() per language.
+
 ## Cross-language check
+
+`terrain_golden_test.go` replays WP10's eight terrain goldens from
+`client/src/sim/golden/movement_wp10_*.json` on the official world through
+worldhost, both on the wasm and on the zone's cached-chunk fast path, and
+requires every position/velocity within 1e-9 m and every discrete field
+equal (measured: <= 2e-15 m). `traversal_test.go` pins each rule on
+synthetic ground. Both need the built wasm for the terrain part
+(`LODESTONE_REQUIRE_WASM=1` makes a missing wasm fail).
+
 
 `testdata/vectors.json` holds scripted trajectories (frames in, every state
 out). A TS port should replay them and match within 1e-9 (V8 and Go may differ
@@ -47,4 +81,9 @@ plugs in the wasm terrain behind the same interface.
 
 ## Caves (WP09)
 
-A ground may also implement `CaveGround` (`FloorAt(x, y, z)`, `Collide(x, y, z)`): underground the floor depends on height, and walls and ceilings push back. When it does, the step uses `FloorAt(pos)` for the grounded test, calls `Collide` once after integrating (sliding horizontal velocity along the push: `v -= n * min(0, v.n)` with `n` the normalized push; a ceiling hit zeroes a rising `vy`), and snaps to `FloorAt(x, max(old y, new y), z)`. Grounds without caves step exactly as before. `server/pkg/caves.Ground` and `worldhost.CaveTerrain` implement it; the TS twin is `GroundQuery.floorAt/collide` (client/src/sim/ground.ts). Golden cave walk: `server/pkg/caves/path_test.go`.
+The step (WP10) is a heightfield state machine; caves plug in through two optional hooks, identical in TS (`client/src/sim/caves.ts`, `GroundQuery.atLevel` / `collide`) and Go (`server/pkg/movement/caves.go`, `LevelGround` / `Collider`):
+
+1. At the start of a step the ground is viewed at the player's feet height (`AtLevel(y)`). In a cave (a mouth hole, or more than 1 m under the surface) that view's `HeightAt` is the highest cave floor in [y - 34, y + MAX_STEP_UP_M]; with none, the lowest ledge within 3 m above (a real step: the walk/step-up/climb rules decide), else `y` inside rock (walls are never slopes to climb), else y - 35 over an open pit. Its water is -Inf (no swimming in the lake overhead). Elsewhere it is the surface ground (terrain + WP12 structures) unchanged, so every mode, slope probe and climb works on it as on terrain.
+2. After the mode step, one wall/ceiling push-out (not while climbing): horizontal velocity slides along the push (`v -= n * min(0, v.n)`), a ceiling stops a rising jump, a grounded player is re-snapped to the floor at the pushed point.
+
+Grounds without caves implement neither and step exactly as before (every WP02/WP10 golden unchanged). `server/pkg/caves.Ground`, `worldhost.CaveTerrain` and the client's `CaveGround` (over `StructureGround`) implement both. Golden cave walk: `client/src/world/caves/cavePath.test.ts` (TS) replayed by `server/pkg/caves/path_test.go` (Go).

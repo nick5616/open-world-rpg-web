@@ -392,6 +392,30 @@ export function chunkSurfaceHeight(c: ChunkData, x: number, z: number): number {
   return h11 + (h01 - h11) * (1 - fx) + (h10 - h11) * (1 - fz);
 }
 
+/**
+ * The wasm `water_height` evaluated on LOD 0 chunk water samples (same
+ * triangle split and f64 operation order as chunkSurfaceHeight), so a client
+ * with chunks needs no wasm call to know where it can swim (WP10).
+ */
+export function chunkWaterHeight(c: ChunkData, x: number, z: number): number {
+  if (c.lod !== 0) throw new Error('chunkWaterHeight needs a LOD 0 chunk');
+  const x0 = Math.floor(x);
+  const z0 = Math.floor(z);
+  const i = x0 - c.cx * 64;
+  const j = z0 - c.cz * 64;
+  if (i < 0 || j < 0 || i > 64 || j > 64) throw new RangeError('point outside chunk');
+  const s = c.samples;
+  const at = (ii: number, jj: number) => c.water[jj * s + ii];
+  const w00 = at(i, j);
+  const w10 = at(Math.min(i + 1, 64), j);
+  const w01 = at(i, Math.min(j + 1, 64));
+  const w11 = at(Math.min(i + 1, 64), Math.min(j + 1, 64));
+  const fx = x - x0;
+  const fz = z - z0;
+  if (fx + fz <= 1) return w00 + (w10 - w00) * fx + (w01 - w00) * fz;
+  return w11 + (w01 - w11) * (1 - fx) + (w10 - w11) * (1 - fz);
+}
+
 /** FNV-1a 64, identical to the wasm `hash_buffer`. */
 export function fnv1a64(bytes: Uint8Array): bigint {
   // Two 32-bit halves keep this fast without BigInt in the loop.

@@ -212,12 +212,9 @@ the ground, so tests and the flat fallback need nothing new in `Config`).
   settlement. Dev `?spawn=x,z` is put on the ground.
 - **Validation.** Besides WP03's horizontal bound, `verticalOK` checks each
   step rises at most one jump step (or onto the ground it snapped to) and
-  never ends below the ground; both hold exactly for `movement.Step`, so this
-  only trips on bugs or unsimulated modes (WP10 must extend it for
-  climb/glide).
-- **Not yet:** slope limits (`WALKABLE_SLOPE_DEG`, `MAX_STEP_UP_M`) are not
-  applied on either side; the client and server stay identical, and WP10
-  adds them to both together with climb/slide.
+  never ends below the ground. WP10 made both per mode (see "Traversal").
+- Slope limits (`WALKABLE_SLOPE_DEG`, `MAX_STEP_UP_M`) are applied in the
+  shared step on both sides since WP10.
 - **For client netcode (WP06):** Welcome's position is cm-quantized while the
   server stands exactly on the ground; a client should take y from its own
   terrain (`collisionHeight`) at the spawn x/z, as the bots do, or its first
@@ -227,6 +224,65 @@ Tests: `internal/game/terrain_test.go` (prediction on terrain to the cm,
 spawns, validation), `zone_terrain_integration_test.go` (zone binary on
 terrain vs a client predicting with its own worldhost; refusal of a wrong
 genVersion). Both skip without the wasm unless `LODESTONE_REQUIRE_WASM=1`.
+
+## Traversal (WP10)
+
+The zone steps every frame with `movement.StepFrameEnv` (climb, glide, swim,
+slopes, stamina; algorithm in `client/src/sim/README.md`). Zone side, in
+`internal/game/traversal.go`:
+
+- **Env per tick** (`stepEnv`): rain from `server/pkg/weather` at the tick's
+  server time and the seed, unless `LODESTONE_ZONE_DEBUG_RAIN=1|0`; updrafts
+  from `Config.Updraft` (`LODESTONE_ZONE_DEBUG_UPDRAFTS="x,z,r,top,lift;..."`
+  debug columns until WP15 feeds the hook). The view extrapolation uses the
+  same env.
+- **Validation per mode** (spec 9: "validated against max speed for the
+  player's current mode; violations snap back"): `horizontalOK` uses
+  `movement.MaxHorizontalSpeed` (walk/air 25.6 m/s; climb <= lunge speed;
+  glide and swim <= max(their speed, previous speed); a mode-changing step
+  gets the larger of both bounds), `verticalOK` allows a rise of one step at
+  the fastest legal upward speed (jump, carried vy, strongest updraft minus
+  sink, lunge) or onto the ground / the swimmer's float level, never below
+  ground; a drowning respawn (drowned flag cleared) must land on dry ground at
+  rest. Every terrain golden passes it frame by frame
+  (`TestValidationPassesEveryLegitMode`); `TestPerModeValidationRejects`
+  shows violations still snap back.
+- **SelfState** carries the whole movement state (`movement.SelfFields`:
+  mode, exact stamina in `moveExt`, timers, flags), so clients replay
+  exactly; **Activity** bits (climbing, gliding, swimming, airborne) come from
+  the step's mode (`movement.Activity`).
+- **Drowning**: the step respawns the player at the nearest shore by itself;
+  the zone sends Event 100 `drowned` (contracts/events.md) and counts
+  `zone_drowned_total`.
+- Join starts players with a full wheel (`movement.NewState`); stamina is not
+  persisted (a reconnect refills it).
+
+## Exploration (WP12)
+
+Towers, waypoints, discovery XP, fast travel, pins and the party ring. Rules
+in `internal/explore` (README there); glue in `internal/game/explore.go`
+(progress load/save, Events, fast travel, `Teleport`, `RespawnPoint`),
+`internal/game/party.go` (party ring + party pins from the social service's
+Redis keys) and `internal/game/persist_progress.go` (Postgres). Wiring in
+`explore.go` (package main): the towers become a structure overlay on the
+terrain ground (`server/pkg/structures`), so the zone's movement ground is
+terrain + towers, exactly what clients predict on.
+
+- **Events** 600-608 and **Interact** kinds 10 (fast travel) / 11 (pins):
+  `contracts/events.md`. After Welcome every player gets `progress_sync` and
+  `pins`; party changes send `party` (the snapshot `partyId`).
+- **Party ring**: every 2 s an off-tick poller MGETs `partyof:{characterId}`
+  for the hosted players; `Entity.PartyID` = FNV-32 of the party id.
+- **Persistence**: changed progress is saved through the write-behind queue
+  (coalesced per character), at the 30 s checkpoint and on logout. Needs
+  migration `0012_exploration_pins` (`npm run migrate`). Local profiles: the
+  `Hello.saveBlob` is verified with `server/pkg/localsave` and a new blob is
+  sent (`SaveBlob`) when progress changes (at most every 5 s).
+- **Hooks for later packages**: `Server.Teleport(e, pos)` (any server move:
+  respawn, scripted travel) and `Server.RespawnPoint(e)` (spec 8 "death
+  respawns you at the last waypoint", for WP13).
+- Env: `LODESTONE_SAVE_PRIVATE_KEY` (local save signing; dev key + warning
+  when unset, same as the account service).
 
 ## Caves and mining (WP09)
 
@@ -248,7 +304,7 @@ pickups, edits, respawn), `internal/game/edits_store.go` (`world_edits`).
   entities in S and players on the surface within 48 m of S's openings; a
   viewer on the surface sees cave dwellers only from within 48 m of their
   system's openings. Party members are exempt.
-- **Mining.** `Interact{targetKind 1, targetId vein id, action 1}` is a
+- **Mining.** `Interact{targetKind 40, targetId vein id, action 1}` is a
   pickaxe swing: 25 damage, at most one per 250 ms, the vein within 4.5 m of
   the eye; refusals are `EventMineRefused`. `Server.DamageVein(player,
   veinID, amount, source)` is the hook combat (WP13) calls: pickaxe and
@@ -259,7 +315,7 @@ pickups, edits, respawn), `internal/game/edits_store.go` (`world_edits`).
   fnv(characterID))`, logged with the seed): ores `ore:<name>` x 1-4 by
   cluster size, gems `gem:<name>:rough|cut|brilliant` (deeper is better).
   Drops spawn as `pickup` entities only their owner receives; walking
-  within ~1.6 m (or `Interact{targetKind 2}`) takes it through
+  within ~1.6 m (or `Interact{targetKind 41}`) takes it through
   `Config.Granter` (WP14's inventory; the default logs) and sends
   `EventItemGranted`. Pickups despawn after `PICKUP_DESPAWN_S`.
 - **World edit.** `vein_mined(id, respawnAt)`: carve sphere 1.5 m in

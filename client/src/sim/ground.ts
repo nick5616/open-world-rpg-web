@@ -8,16 +8,21 @@
 export interface GroundQuery {
   /** Ground height (feet y) at world (x, z), meters. Must be deterministic. */
   heightAt(x: number, z: number): number;
-  /** Optional unit surface normal at (x, z); climbing/sliding (later) will need it. */
+  /** Optional unit surface normal at (x, z). Movement does NOT use it (slopes come from heightAt, see movement.ts slopeAt), it is for rendering/tools. */
   normalAt?(x: number, z: number): { x: number; y: number; z: number };
   /**
-   * Caves (WP09): feet height of the highest walkable surface at or below
-   * y + MAX_STEP_UP_M under (x, z). Grounds without caves omit it and the
-   * step uses heightAt. Contract: worldgen/README.md "Cave collision"; the Go
-   * twin is movement.CaveGround.
+   * Optional water surface height at (x, z) (WP10: swimming). Must be the wasm
+   * `water_height` (or `chunkWaterHeight` on the LOD 0 chunk, same bits), the
+   * function the zone swims on. Absent = no water anywhere.
    */
-  floorAt?(x: number, y: number, z: number): number;
-  /** Caves (WP09): push a player (feet at x, y, z) out of walls and ceilings; writes into out. */
+  waterAt?(x: number, z: number): number;
+  /**
+   * Caves (WP09): this ground viewed at feet height y. In a cave the view's
+   * heightAt is the cave floor under that level (see ./caves.ts); grounds
+   * without caves omit it. Go twin: movement.LevelGround.
+   */
+  atLevel?(y: number): GroundQuery;
+  /** Caves (WP09): push a player (feet at x, y, z) out of walls and ceilings; writes into out. Go twin: movement.Collider. */
   collide?(x: number, y: number, z: number, out: CollideResult): CollideResult;
 }
 
@@ -29,11 +34,6 @@ export interface CollideResult {
   pushX: number;
   pushZ: number;
   ceiling: boolean;
-}
-
-/** Ground under a player at height y: floorAt when the ground has caves, else heightAt. */
-export function groundAt(ground: GroundQuery, x: number, y: number, z: number): number {
-  return ground.floorAt ? ground.floorAt(x, y, z) : ground.heightAt(x, z);
 }
 
 /** Infinite flat plane at a fixed height: the WP02 placeholder world. */

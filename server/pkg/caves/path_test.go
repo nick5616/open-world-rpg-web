@@ -40,7 +40,7 @@ func stateKey(s movement.State) string {
 	for _, f := range v {
 		parts = append(parts, fmt.Sprintf("%016x", math.Float64bits(f)))
 	}
-	return strings.Join(parts, ",") + fmt.Sprintf(",%d", s.AirJumps)
+	return strings.Join(parts, ",") + fmt.Sprintf(",%d,%d", s.AirJumps, s.Mode)
 }
 
 // LoadCavePath reads the golden walk (exported for the zone test via a copy).
@@ -88,7 +88,7 @@ func TestGoldenCavePath(t *testing.T) {
 	for _, s := range p.Samples {
 		want[s.Frame] = s.S
 	}
-	st := movement.State{Pos: movement.Vec3{X: p.Start[0], Y: p.Start[1], Z: p.Start[2]}}
+	st := movement.NewState(movement.Vec3{X: p.Start[0], Y: p.Start[1], Z: p.Start[2]})
 	// Go math.Sin/Cos and V8 Math.sin/cos may differ in the last ulp for some
 	// yaws (server/pkg/movement README), so states are compared within 1e-9
 	// (WP03's replay tolerance) and bit-exact samples are counted separately.

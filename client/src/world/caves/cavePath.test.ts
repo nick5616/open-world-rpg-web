@@ -9,7 +9,7 @@ import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { CaveGroundCore, caveSystemAt, parseCaveGraph, caveGraphBytes, wasmCellSource } from '@lodestone/worldgen';
-import { stepMovement, type MoveState } from '../../sim/movement';
+import { newMoveState, stepMovement, type MoveState } from '../../sim/movement';
 import { hasWasm, testWorld } from '../testing/wasm';
 import { CaveAutopilot, caveRoute } from './autopilot';
 
@@ -37,7 +37,7 @@ function bits(v: number): string {
 }
 
 function stateKey(s: MoveState): string {
-  return [s.pos.x, s.pos.y, s.pos.z, s.vel.x, s.vel.y, s.vel.z].map(bits).join(',') + `,${s.airJumps}`;
+  return [s.pos.x, s.pos.y, s.pos.z, s.vel.x, s.vel.y, s.vel.z].map(bits).join(',') + `,${s.airJumps},${s.mode}`;
 }
 
 describe.skipIf(!hasWasm)('cave path: mouth to deepest chamber', () => {
@@ -51,7 +51,7 @@ describe.skipIf(!hasWasm)('cave path: mouth to deepest chamber', () => {
     if (process.env.LODESTONE_UPDATE_CAVE_GOLDEN === '1' || !fs.existsSync(goldenPath)) {
       const route = caveRoute(graph, SYSTEM);
       const pilot = new CaveAutopilot(route.points);
-      let st: MoveState = { pos: { x: route.start.x, y: wg.collisionHeight(atlas, route.start.x, route.start.z), z: route.start.z }, vel: { x: 0, y: 0, z: 0 }, airJumps: 0 };
+      let st: MoveState = newMoveState({ x: route.start.x, y: wg.collisionHeight(atlas, route.start.x, route.start.z), z: route.start.z });
       const start: [number, number, number] = [st.pos.x, st.pos.y, st.pos.z];
       const frames: number[] = [];
       const samples: CavePathGolden['samples'] = [];
@@ -84,7 +84,7 @@ describe.skipIf(!hasWasm)('cave path: mouth to deepest chamber', () => {
     const g = JSON.parse(fs.readFileSync(goldenPath, 'utf8')) as CavePathGolden;
     const raw = Buffer.from(g.frames, 'base64');
     const f16 = new Uint16Array(raw.buffer, raw.byteOffset, raw.byteLength / 2);
-    let st: MoveState = { pos: { x: g.start[0], y: g.start[1], z: g.start[2] }, vel: { x: 0, y: 0, z: 0 }, airJumps: 0 };
+    let st: MoveState = newMoveState({ x: g.start[0], y: g.start[1], z: g.start[2] });
     let k = 0;
     const want = new Map(g.samples.map((x) => [x.frame, x.s]));
     let mismatches = 0;
@@ -115,7 +115,7 @@ describe.skipIf(!hasWasm)('cave walkability across systems', () => {
     for (let si = 0; si < graph.systems.length; si++) {
       const route = caveRoute(graph, si);
       const pilot = new CaveAutopilot(route.points);
-      let st: MoveState = { pos: { x: route.start.x, y: wg.collisionHeight(atlas, route.start.x, route.start.z), z: route.start.z }, vel: { x: 0, y: 0, z: 0 }, airJumps: 0 };
+      let st: MoveState = newMoveState({ x: route.start.x, y: wg.collisionHeight(atlas, route.start.x, route.start.z), z: route.start.z });
       let n = 0;
       for (; n < MAX_FRAMES && !pilot.done; n++) st = stepMovement(st, pilot.step(st), ground);
       if (pilot.done) reached++;

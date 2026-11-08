@@ -502,9 +502,18 @@ function cellsAlong(v: number, size: number): [number, number] {
 
 /** Highest up-facing cave triangle under (x, z) whose height is <= y + MAX_STEP_UP_M (and >= y - CAVE_FLOOR_DROP), or -Infinity. */
 export function caveFloorAt(src: CaveCellSource, x: number, y: number, z: number): number {
-  const top = y + MAX_STEP_UP_M;
-  const bottom = y - CAVE_FLOOR_DROP;
-  let best = -Infinity;
+  return caveFloorIn(src, x, z, y - CAVE_FLOOR_DROP, y + MAX_STEP_UP_M, false);
+}
+
+/** Ledges are looked for this far above the feet. */
+export const CAVE_LEDGE_M = 3;
+
+/**
+ * Highest (lowest when `lowest`) up-facing cave triangle height at (x, z)
+ * within [bottom, top], or -Infinity (+Infinity when `lowest`) for none.
+ */
+export function caveFloorIn(src: CaveCellSource, x: number, z: number, bottom: number, top: number, lowest: boolean): number {
+  let best = lowest ? Infinity : -Infinity;
   const [cx0, cx1] = cellsAlong(x, CAVE_CELL_W);
   const [cz0, cz1] = cellsAlong(z, CAVE_CELL_W);
   const cy0 = Math.floor((bottom - 2) / CAVE_CELL_H);
@@ -524,7 +533,7 @@ export function caveFloorAt(src: CaveCellSource, x: number, y: number, z: number
           const t = c.colTris[n] * 3;
           const a = ix[t] * 3, b = ix[t + 1] * 3, d = ix[t + 2] * 3;
           const h = triHeight(p[a], p[a + 1], p[a + 2], p[b], p[b + 1], p[b + 2], p[d], p[d + 1], p[d + 2], x, z);
-          if (h === h && h <= top && h >= bottom && h > best) best = h;
+          if (h === h && h <= top && h >= bottom && (lowest ? h < best : h > best)) best = h;
         }
       }
     }
@@ -772,34 +781,93 @@ function rayTri(ox: number, oy: number, oz: number, dx: number, dy: number, dz: 
 export const CAVE_UNDER_M = 1;
 
 /**
+ * Is (x, y, z) inside solid rock? Trilinear density of the cell holding the
+ * point (i8 samples, negative = air); a missing or invalid cell counts as
+ * rock. Used only where no cave floor answers (see CaveGroundCore.floorAt).
+ */
+export function caveRock(src: CaveCellSource, x: number, y: number, z: number): boolean {
+  const cx = Math.floor(x / CAVE_CELL_W);
+  const cy = Math.floor(y / CAVE_CELL_H);
+  const cz = Math.floor(z / CAVE_CELL_W);
+  const c = src.cell(cx, cy, cz);
+  if (!c) return true;
+  const fx = (x - c.ox) / 2;
+  const fy = (y - c.oy) / 2;
+  const fz = (z - c.oz) / 2;
+  const i = Math.min(Math.floor(fx), CAVE_SAMPLES_XZ - 2);
+  const j = Math.min(Math.floor(fy), CAVE_SAMPLES_Y - 2);
+  const k = Math.min(Math.floor(fz), CAVE_SAMPLES_XZ - 2);
+  const tx = fx - i;
+  const ty = fy - j;
+  const tz = fz - k;
+  const d = c.density;
+  const at = (a: number, b: number, e: number) => d[((j + b) * CAVE_SAMPLES_XZ + (k + e)) * CAVE_SAMPLES_XZ + (i + a)];
+  const x00 = at(0, 0, 0) + (at(1, 0, 0) - at(0, 0, 0)) * tx;
+  const x10 = at(0, 1, 0) + (at(1, 1, 0) - at(0, 1, 0)) * tx;
+  const x01 = at(0, 0, 1) + (at(1, 0, 1) - at(0, 0, 1)) * tx;
+  const x11 = at(0, 1, 1) + (at(1, 1, 1) - at(0, 1, 1)) * tx;
+  const y0 = x00 + (x10 - x00) * ty;
+  const y1 = x01 + (x11 - x01) * ty;
+  return y0 + (y1 - y0) * tz >= 0;
+}
+
+/**
  * The movement ground with caves (README "Cave collision", "Ground
- * dispatch"): heightfield on the open surface, cave triangles in mouth holes
- * and underground. `heightfield` is collision_height (or chunkSurfaceHeight).
+ * dispatch"): the surface ground (terrain, or terrain + structures) on the
+ * open surface, cave triangles in mouth holes and underground. The step
+ * views it at the player's level (`atLevel`, client/src/sim/caves.ts).
  */
 export class CaveGroundCore {
   private readonly res: CaveCollideResult = { x: 0, y: 0, z: 0, pushX: 0, pushZ: 0, ceiling: false };
 
   constructor(
-    readonly heightfield: (x: number, z: number) => number,
+    readonly surface: (x: number, z: number) => number,
     readonly openings: readonly CaveOpening[],
     readonly cells: CaveCellSource,
+    /** Surface water (the wasm water_height), if the surface has water. */
+    readonly water?: (x: number, z: number) => number,
   ) {}
 
-  /** The heightfield (so this object is a movement GroundQuery as is). */
+  /** The surface ground (no level): what non-step callers see. */
   heightAt(x: number, z: number): number {
-    return this.heightfield(x, z);
+    return this.surface(x, z);
+  }
+
+  waterAt(x: number, z: number): number {
+    return this.water ? this.water(x, z) : -Infinity;
   }
 
   /** In a mouth hole or more than CAVE_UNDER_M under the surface at y? */
-  inCave(x: number, y: number, z: number, h = this.heightfield(x, z)): boolean {
+  inCave(x: number, y: number, z: number, h = this.surface(x, z)): boolean {
     return y < h - CAVE_UNDER_M || caveMasked(this.openings, x, z);
   }
 
+  /**
+   * The ground under feet height y at (x, z): the surface outside caves; in
+   * a cave the highest cave floor in [y - 34, y + MAX_STEP_UP_M]; with no
+   * floor there, the lowest ledge within CAVE_LEDGE_M above (a real step:
+   * the step and climb rules decide), else `y` itself inside rock (walls
+   * are collide's job, never a slope to climb), else y - 35 in open air
+   * (keep falling); the old surface in a mouth hole whose cells are missing.
+   */
   floorAt(x: number, y: number, z: number): number {
-    const h = this.heightfield(x, z);
+    const h = this.surface(x, z);
     if (!this.inCave(x, y, z, h)) return h;
     const f = caveFloorAt(this.cells, x, y, z);
-    return f > -Infinity ? f : h;
+    if (f > -Infinity) return f;
+    if (caveMasked(this.openings, x, z)) return h;
+    const ledge = caveFloorIn(this.cells, x, z, y + MAX_STEP_UP_M, y + CAVE_LEDGE_M, true);
+    if (ledge < Infinity) return ledge;
+    return caveRock(this.cells, x, y + 1, z) ? y : y - CAVE_FLOOR_DROP - 1;
+  }
+
+  /** The ground viewed at feet height y (the movement step's view). */
+  atLevel(y: number): { heightAt(x: number, z: number): number; waterAt(x: number, z: number): number; collide(x: number, y: number, z: number, out: CaveCollideResult): CaveCollideResult } {
+    return {
+      heightAt: (x, z) => this.floorAt(x, y, z),
+      waterAt: (x, z) => (this.inCave(x, y, z) ? -Infinity : this.waterAt(x, z)),
+      collide: (cx, cy, cz, out) => this.collide(cx, cy, cz, out),
+    };
   }
 
   /** Wall/ceiling push-out; untouched (push 0) outside caves. */

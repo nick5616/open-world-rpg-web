@@ -37,7 +37,7 @@ func withCaves(ground movement.Ground, terrain *worldhost.Terrain, log *slog.Log
 		log.Warn("NO CAVES: cave graph unavailable; players walk the heightfield only", "err", err)
 		return ground, nil
 	}
-	ct := worldhost.NewCaveTerrain(terrain, cv)
+	ct := worldhost.NewCaveTerrain(terrain, ground, cv) // caves under the surface (terrain + WP12 towers)
 	g := cv.Graph
 	log.Info("caves ready", "systems", len(g.Systems), "chambers", len(g.Chambers), "openings", len(g.OpeningsList), "veins", len(g.Veins), "ms", time.Since(start).Milliseconds())
 	return ct, ct

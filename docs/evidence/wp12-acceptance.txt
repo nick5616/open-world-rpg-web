@@ -1,0 +1,40 @@
+[2026-11-08T14:12:39.701Z] WP12 acceptance: towers, waypoints, map, compass, party pins, fast travel, discovery XP
+[2026-11-08T14:12:42.817Z] scratch database lodestone_wp04_wp12e2e (migrations incl. 0012_exploration_pins)
+[2026-11-08T14:12:50.963Z] built account, director, zone, social
+[2026-11-08T14:12:52.611Z] PASS account healthy on :18291 (mints the official world)
+[2026-11-08T14:12:53.632Z] PASS social healthy on :18293
+[2026-11-08T14:12:54.637Z] PASS director healthy on :18290
+[2026-11-08T14:12:56.315Z] PASS zone healthy on :18292
+[2026-11-08T14:12:56.319Z] zone serves world d5209175-51ec-4884-9bfc-0714663dfa6b seed 20261108 genVersion 1 atlas 50ae4562cfd25265
+[2026-11-08T14:12:56.856Z] PASS vite on :5293
+[2026-11-08T14:13:08.209Z] signed in: Alyssa level 2 xp 100, Bruno level 2 xp 100
+[2026-11-08T14:13:08.209Z] PASS fresh characters: every region unrevealed  {"a":0,"b":0}
+[2026-11-08T14:13:10.409Z] PASS zone put both in the same party (party ring id from the social party)  {"a":1679697870,"b":1679697870}
+[2026-11-08T14:13:10.420Z] PASS each sees the other on the compass
+[2026-11-08T14:13:10.427Z] Alyssa at (1913.5, 2270.5); nearest waypoint #145 "null" 6.7 m; nearest tower #35 "The Forgotten Spire" (region 5) 511 m, top y 188.95
+[2026-11-08T14:13:10.440Z]   to waypoint walking: 7 m to go, at (1914, 82.5, 2270)
+[2026-11-08T14:13:11.555Z] PASS touching the waypoint stone activates it and makes it the respawn point  {"unlocked":1,"lastWaypoint":145,"walkMs":1115,"toasts":[{"kind":"waypoint","title":"Waypoint activated: Draedmore","detail":"Unlocked for fast travel"},{"kind":"info","title":"Respawn point set","detail":"Draedmore"}]}
+[2026-11-08T14:13:11.575Z]   to tower walking: 513 m to go, at (1918, 82.4, 2272)
+[2026-11-08T14:13:21.749Z]   to tower walking: 434 m to go, at (1914, 82.9, 2193)
+[2026-11-08T14:13:31.769Z]   to tower walking: 355 m to go, at (1909, 89.8, 2115)
+[2026-11-08T14:13:41.867Z]   to tower walking: 276 m to go, at (1905, 108.0, 2036)
+[2026-11-08T14:13:51.953Z]   to tower walking: 198 m to go, at (1900, 128.2, 1957)
+[2026-11-08T14:14:02.109Z]   to tower walking: 118 m to go, at (1895, 148.7, 1878)
+[2026-11-08T14:14:10.240Z] PASS reached the tower's surroundings (55 m from its axis) in 59 s
+[2026-11-08T14:14:12.931Z]   climbing walking: 54 m to go, at (1891, 156.2, 1814)
+[2026-11-08T14:14:19.590Z] PASS standing on the top (y 188.95 vs top 188.95) reveals region 5 on the map  {"revealed":32,"climbMs":6675}
+[2026-11-08T14:14:19.590Z] PASS tower unlocked for fast travel  {"towersUnlocked":1}
+[2026-11-08T14:14:19.590Z] PASS discovery and tower toasts shown  [{"kind":"discovery","title":"Discovered: The Forgotten Spire","detail":"+40 XP"},{"kind":"tower","title":"Region revealed: The Forgotten Heights","detail":"Map updated · tower unlocked for fast travel"},{"kind":"level","title":"Level 3"}]
+[2026-11-08T14:14:19.591Z] PASS discovery XP granted: +240 XP (tower discovery 40 + climb 150 + places passed on the way)  {"xpBefore":100,"xpAfter":340,"discoveries":3,"discoveryXpTotal":190,"level":3}
+[2026-11-08T14:14:23.517Z] PASS Alyssa's party pin shows for Bruno  {"pinAt":{"x":2148,"z":1940},"bPins":[{"party":true,"slot":0,"color":0,"x":2144.71,"z":1939.91,"owner":"Alyssa"}]}
+[2026-11-08T14:14:24.410Z] PASS a personal pin is Alyssa's alone  {"a":2,"b":1}
+[2026-11-08T14:14:26.180Z] PASS Bruno's compass shows Alyssa and her party pin  [{"kind":"party","label":"Alyssa","dist":506,"relDeg":14},{"kind":"pin","label":"Alyssa","dist":396,"relDeg":52}]
+[2026-11-08T14:14:30.041Z] PASS fast travel to the waypoint (map UI): now 2.5 m from the stone  {"at":{"x":1922.5,"y":82.28120040893555,"z":2272,"yaw":2.4}}
+[2026-11-08T14:14:33.399Z] PASS fast travel to the unlocked tower: on its top (188.95 vs 188.95)  {"at":{"x":1888,"y":188.94663892311667,"z":1760,"yaw":2.4}}
+[2026-11-08T14:14:33.409Z] PASS zone sent teleport Events for both hops  {"before":0,"after":2}
+[2026-11-08T14:14:35.927Z] PASS back on the tower top: no XP granted twice  {"xpBeforeReturn":340,"xpNow":340}
+[2026-11-08T14:14:37.667Z] PASS Bruno's compass follows Alyssa after her fast travel  {"rel":0.25,"dist":508.6713084104508,"color":"#4cc9f0","label":"Alyssa","kind":"party"}
+[2026-11-08T14:14:42.113Z] PASS after a reload the progress comes back from Postgres (revealed regions, XP, unlocks, personal pin)  {"before":{"revealed":32,"xp":340},"after":{"revealed":32,"xp":340,"towers":1,"waypoints":1,"pins":2}}
+[2026-11-08T14:14:42.122Z] PASS no page errors in either browser  []
+[2026-11-08T14:15:09.763Z] dropped lodestone_wp04_wp12e2e
+[2026-11-08T14:15:09.763Z] ALL PASS

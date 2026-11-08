@@ -19,6 +19,11 @@ type Progress struct {
 	SkillTree        json.RawMessage `json:"skillTree"`
 	SpellsKnown      []string        `json:"spellsKnown"`
 	SpellsEquipped   []string        `json:"spellsEquipped"`
+	// Pins are the character's personal map pins (WP12; mirrors
+	// character_progress.pins from migration 0004): a JSON array of
+	// {slot, color, x, z} with x/z in cm. Optional so blobs issued before
+	// WP12 still parse.
+	Pins json.RawMessage `json:"pins,omitempty"`
 }
 
 // Item mirrors the items table so an upgrade can insert inventory rows as-is.

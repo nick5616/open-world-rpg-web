@@ -30,7 +30,7 @@ func testCaveTerrain(t *testing.T) *worldhost.CaveTerrain {
 		t.Fatal(err)
 	}
 	t.Cleanup(cv.Close)
-	return worldhost.NewCaveTerrain(tr, cv)
+	return worldhost.NewCaveTerrain(tr, nil, cv)
 }
 
 type memEdits struct {

@@ -25,9 +25,9 @@ func TestViewExtrapolatesThroughInputStall(t *testing.T) {
 	var viewZ []float64
 	tick := func(frames int) {
 		for i := 0; i < frames; i++ {
-			e.applyFrame(frame(), g)
+			e.applyFrame(frame(), g, movement.Env{})
 		}
-		e.updateView(g)
+		e.updateView(g, movement.Env{})
 		viewZ = append(viewZ, e.view.Pos.Z)
 	}
 	for i := 0; i < 30; i++ { // reach top speed
@@ -64,9 +64,9 @@ func TestViewCorrectionAfterWrongGuessIsEased(t *testing.T) {
 	tick := func(frames int, yaw float64) {
 		for i := 0; i < frames; i++ {
 			seq++
-			e.applyFrame(proto.InputFrame{Seq: seq, Flags: proto.InputFlagForward, Yaw: proto.YawToU16(yaw)}, g)
+			e.applyFrame(proto.InputFrame{Seq: seq, Flags: proto.InputFlagForward, Yaw: proto.YawToU16(yaw)}, g, movement.Env{})
 		}
-		e.updateView(g)
+		e.updateView(g, movement.Env{})
 		pos = append(pos, e.view.Pos)
 	}
 	for i := 0; i < 30; i++ {
@@ -98,10 +98,10 @@ func TestViewGuessIsBoundedAndDecays(t *testing.T) {
 	g := movement.Flat{}
 	e := &Entity{}
 	e.Move.Pos = movement.Vec3{X: 1000, Z: 1000}
-	e.applyFrame(proto.InputFrame{Seq: 1, Flags: proto.InputFlagForward}, g)
-	e.updateView(g)
+	e.applyFrame(proto.InputFrame{Seq: 1, Flags: proto.InputFlagForward}, g, movement.Env{})
+	e.updateView(g, movement.Env{})
 	for i := 0; i < 40; i++ { // client went silent (closed tab)
-		e.updateView(g)
+		e.updateView(g, movement.Env{})
 	}
 	if e.guess != maxGuessSteps {
 		t.Fatalf("guess %d, want capped at %d", e.guess, maxGuessSteps)
@@ -109,17 +109,17 @@ func TestViewGuessIsBoundedAndDecays(t *testing.T) {
 	// Frames resume at the normal rate without a catch-up burst (a paused
 	// client): the lead decays by one step per tick.
 	for i := 0; i < maxGuessSteps; i++ {
-		e.applyFrame(proto.InputFrame{Seq: uint32(2 + 2*i), Flags: 0}, g)
-		e.applyFrame(proto.InputFrame{Seq: uint32(3 + 2*i), Flags: 0}, g)
-		e.updateView(g)
+		e.applyFrame(proto.InputFrame{Seq: uint32(2 + 2*i), Flags: 0}, g, movement.Env{})
+		e.applyFrame(proto.InputFrame{Seq: uint32(3 + 2*i), Flags: 0}, g, movement.Env{})
+		e.updateView(g, movement.Env{})
 	}
 	if e.guess != 0 {
 		t.Fatalf("guess %d after %d steady ticks, want 0", e.guess, maxGuessSteps)
 	}
 	// A player who never sent input is never extrapolated.
 	idle := &Entity{}
-	idle.updateView(g)
-	idle.updateView(g)
+	idle.updateView(g, movement.Env{})
+	idle.updateView(g, movement.Env{})
 	if idle.view != idle.Move {
 		t.Fatal("no input yet: nothing to extrapolate")
 	}
@@ -140,7 +140,7 @@ func TestLostFramesRepeatTheLastInput(t *testing.T) {
 	}
 	cl.send(&proto.Input{Frames: fs})
 	cl.drainFor(300 * time.Millisecond)
-	sim := movement.State{Pos: movement.Vec3{X: 500, Z: 500}}
+	sim := movement.NewState(movement.Vec3{X: 500, Z: 500})
 	for i := 0; i < 10; i++ {
 		sim = movement.Step(sim, proto.InputFlagForward, 0, movement.Flat{})
 	}
@@ -171,7 +171,7 @@ func TestReorderedInputWaitsForTheGap(t *testing.T) {
 	time.Sleep(15 * time.Millisecond)
 	cl.send(&proto.Input{Frames: mk(2, 4)})
 	cl.drainFor(300 * time.Millisecond)
-	sim := movement.State{Pos: movement.Vec3{X: 500, Z: 500}}
+	sim := movement.NewState(movement.Vec3{X: 500, Z: 500})
 	for i := 0; i < 8; i++ {
 		sim = movement.Step(sim, proto.InputFlagForward, 0, movement.Flat{})
 	}

@@ -6,12 +6,15 @@ import { WorldCanvas } from '../world/WorldCanvas';
 import { DebugHud } from '../hud/DebugHud';
 import { DebugPanel } from '../hud/DebugPanel';
 import { Crosshair, LockHint } from '../hud/Overlays';
+import { StaminaWheel } from '../hud/StaminaWheel';
 import { useDebugHotkeys } from '../hud/useDebugHotkeys';
 import { useAppStore } from '../stores/appStore';
 import { NetPlay, useOnlineSession } from '../net/NetPlay';
 import { DEBUG, SOLO } from '../config';
 // WP08: renders nothing until the play flow calls startSocial() (client/src/social/README.md).
 import { SocialOverlay } from '../social';
+// WP12: compass, discovery toasts, map (M).
+import { ExplorationHud } from '../ui/map/ExplorationHud';
 
 function DebugLayer() {
   useDebugHotkeys();
@@ -32,9 +35,11 @@ export default function PlayScreen() {
     <>
       {online ? <NetPlay ready={ready} /> : <WorldCanvas />}
       <Crosshair />
+      <StaminaWheel />
       <LockHint />
       {DEBUG && <DebugLayer />}
       <SocialOverlay />
+      <ExplorationHud />
     </>
   );
 }

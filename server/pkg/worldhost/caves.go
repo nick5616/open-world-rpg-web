@@ -454,26 +454,42 @@ func (c *Caves) Stats() CaveStats {
 	return s
 }
 
-// CaveTerrain is Terrain plus caves: the zone's movement ground
-// (movement.CaveGround), still a spawner and a chunk wanter through the
-// embedded Terrain.
+// CaveTerrain is Terrain plus caves: the zone's movement ground. Its
+// surface is whatever ground it wraps (terrain, or WP12's terrain +
+// structures overlay), so towers keep working on the surface; in mouth holes
+// and underground the movement step sees cave floors (movement.LevelGround)
+// and walls (movement.Collider). Still a spawner and a chunk wanter through
+// the embedded Terrain.
 type CaveTerrain struct {
 	*Terrain
 	Caves *Caves
-	g     caves.Ground
+	g     *caves.Ground
 }
 
-// NewCaveTerrain combines the heightfield cache and the cave cache.
-func NewCaveTerrain(t *Terrain, c *Caves) *CaveTerrain {
+// NewCaveTerrain puts caves under surface (nil = the plain terrain).
+func NewCaveTerrain(t *Terrain, surface movement.Ground, c *Caves) *CaveTerrain {
+	if surface == nil {
+		surface = t
+	}
 	ct := &CaveTerrain{Terrain: t, Caves: c}
-	ct.g = caves.Ground{Height: t.HeightAt, Openings: c.Graph.OpeningsList, Cells: c}
+	ct.g = &caves.Ground{Height: surface.HeightAt, Openings: c.Graph.OpeningsList, Cells: c,
+		Water: func(x, z float64) float64 { return movement.WaterAt(surface, x, z) }}
 	return ct
 }
 
-// FloorAt implements movement.CaveGround.
+// HeightAt is the surface ground (non-step callers: spawns, hints).
+func (ct *CaveTerrain) HeightAt(x, z float64) float64 { return ct.g.HeightAt(x, z) }
+
+// WaterAt is the surface water (movement.Water).
+func (ct *CaveTerrain) WaterAt(x, z float64) float64 { return ct.g.WaterAt(x, z) }
+
+// AtLevel implements movement.LevelGround (the step's view at feet height y).
+func (ct *CaveTerrain) AtLevel(y float64) movement.Ground { return ct.g.AtLevel(y) }
+
+// FloorAt is the ground under feet height y (same as AtLevel(y).HeightAt).
 func (ct *CaveTerrain) FloorAt(x, y, z float64) float64 { return ct.g.FloorAt(x, y, z) }
 
-// Collide implements movement.CaveGround.
+// Collide is the cave wall/ceiling push-out.
 func (ct *CaveTerrain) Collide(x, y, z float64) movement.CollideResult { return ct.g.Collide(x, y, z) }
 
 // InCave reports whether a point is in a mouth hole or underground.

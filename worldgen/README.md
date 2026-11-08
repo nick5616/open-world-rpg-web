@@ -62,6 +62,7 @@ below. `ptr`/`len` are i32 offsets into linear memory.
 | `atlas_check(atlas_ptr)` | `(i32) -> i32` | 1 if the buffer is a valid atlas of this format, else 0 + error. Use after loading cached bytes. |
 | `chunk_build(atlas_ptr, cx, cz, lod)` | `(i32, i32, i32, i32) -> i32` | Pointer to a chunk buffer in scratch (layout below); length from `result_len()`; 0 on error |
 | `collision_height(atlas_ptr, x, z)` | `(i32, f64, f64) -> f64` | Ground height (see "Collision"); -1e9 on an invalid atlas or non-finite input |
+| `water_height(atlas_ptr, x, z)` | `(i32, f64, f64) -> f64` | WP10: water surface height, the same triangle mesh as `collision_height` over the f32 water lattice the chunks carry (so it equals interpolating LOD 0 chunk water); sea level where no lake or river covers the point (under dry land); -1e9 on an invalid atlas or non-finite input. Added after genVersion 1 shipped: outputs and golden hashes are unchanged |
 | `ground_normal(atlas_ptr, x, z, out_ptr)` | `(i32, f64, f64, i32) -> f64` | Writes the unit normal as 3 x f64 LE at `out_ptr` (24 bytes); returns slope in degrees, -1 on error |
 | `raycast(atlas_ptr, ox, oy, oz, dx, dy, dz, max_dist)` | `(i32, f64 x7) -> f64` | Distance along the normalized direction to the first surface hit, or -1 (no hit within min(max_dist, 1024 m)) |
 | `hash_buffer(ptr, len)` | `(i32, i32) -> i64` | FNV-1a 64 of the bytes (JS receives a signed BigInt: use `BigInt.asUintN(64, v)`) |
@@ -314,7 +315,7 @@ The overworld is a heightfield; the underground is a density volume grown
 from a graph per cave mouth (spec 7). Code: `src/cave/` (module table in
 `src/cave/mod.rs`). All of it is new output next to WP01's: no existing
 buffer changed, every chunk/atlas hash of genVersion 1 still holds, and the
-cave hashes joined the golden table (`docs/cr/003-cave-exports.md`).
+cave hashes joined the golden table (`docs/cr/005-cave-exports.md`).
 
 ### Exports (same rules as the ABI above: scratch results, 0 = error)
 
@@ -449,14 +450,16 @@ wall = triangle normal y < cos 50 deg (0.6428), ceiling = normal y <= -0.5.
   triangles within 1.2 m (same candidate order as `collide`) and test
   them two-sided (Moller-Trumbore); the nearest hit, stopping once it lies
   behind the probes; -1 for none. Line of sight, aim and spell impacts.
-- Ground dispatch (`CaveGroundCore` / `caves.Ground`): in a mouth hole
-  (point masked) or more than 1 m under the heightfield = "in a cave" ->
-  cave floor (heightfield if no cave floor is found); otherwise the
-  heightfield. `collide` is a no-op outside caves.
-- The movement step (`client/src/sim/movement.ts`, `server/pkg/movement`)
-  calls `collide` after integrating, slides the horizontal velocity along
-  the push (`v -= n * min(0, v.n)`), zeroes rising vy on a ceiling, and
-  snaps to `floorAt(x, max(old y, new y), z)`.
+- Ground dispatch (`CaveGroundCore` / `caves.Ground`): the surface ground
+  (terrain, or terrain + structures) on the open surface; in a mouth hole
+  (point masked) or more than 1 m under the surface ("in a cave") the floor
+  under feet height y: the highest cave floor in [y - 34, y + 0.6], else the
+  lowest ledge in (y + 0.6, y + 3], else y inside rock (trilinear density of
+  the cell >= 0), else y - 35 (open pit); a masked point with no cells keeps
+  the surface. `collide` is a no-op outside caves.
+- The movement step (WP10's state machine) views the ground at the
+  player's level once per step and runs one `collide` pass after the mode
+  step: `server/pkg/movement/caves.go`, `client/src/sim/caves.ts`.
 
 Cost (Chromium worker, golden table run): cave_build mean 0.8 ms, max 3.7 ms
 over 220 cells around system chambers (budget 12 ms); the cave graph once

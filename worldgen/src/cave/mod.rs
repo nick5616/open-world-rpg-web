@@ -14,7 +14,7 @@
 //!
 //! All of it is new output next to WP01's (no existing buffer changed), so
 //! every golden chunk hash of genVersion 1 still holds; the cave hashes join
-//! the golden table (docs/cr/003-cave-exports.md).
+//! the golden table (docs/cr/005-cave-exports.md).
 
 pub mod abi;
 pub mod cell;

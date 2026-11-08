@@ -178,7 +178,7 @@ func TestZoneProcessCavesMining(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer cv.Close()
-	ct := worldhost.NewCaveTerrain(tr, cv)
+	ct := worldhost.NewCaveTerrain(tr, nil, cv)
 	var vein caves.Vein
 	var sx, sy, sz float64
 	for _, v := range cv.Graph.Veins {

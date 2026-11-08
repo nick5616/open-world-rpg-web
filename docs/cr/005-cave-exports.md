@@ -1,4 +1,4 @@
-# CR 003: cave exports in worldgen genVersion 1, mining event kinds
+# CR 005: cave exports in worldgen genVersion 1, mining event kinds
 
 Date: 2026-11-08 · WP09 (caves, gems and mining)
 
@@ -26,8 +26,8 @@ Date: 2026-11-08 · WP09 (caves, gems and mining)
    Go movement grounds, and `cave_mask` (the reference, in the golden
    table). Same result for every consumer, no chunk change.
 4. **Event kinds 701-706** registered in `contracts/events.md` (WP09's
-   700-799 range) and the Interact conventions for mining (targetKind 1 =
-   vein, 2 = pickup; action 1 = use). WorldEdits `vein_mined` params are 16
+   700-799 range) and the Interact kinds for mining (targetKind 40 =
+   vein, 41 = pickup; action 1 = use; registry rows next to WP12's 10/11). WorldEdits `vein_mined` params are 16
    bytes (f32 x, y, z, carve radius); `expiresAt` = respawn time, and a
    delta with `expiresAt <= now` means the edit expired (vein respawned).
    `protocol.yaml` itself is unchanged (no version bump): these are uses of
@@ -46,10 +46,10 @@ and new builds agree on the overworld bit for bit.
   Chromium and Go harnesses, `tests/golden_native.rs`.
 - `server/pkg/caves` (new, Go readers + collision), `server/pkg/worldhost`
   (`caves.go`: wasm wrappers, cave cell cache, `CaveTerrain`),
-  `server/pkg/movement` (`CaveGround` interface), `server/zone` (mining,
+  `server/pkg/movement` (`LevelGround` / `Collider` hooks in `caves.go`), `server/zone` (mining,
   WorldEdits, cave ground, interest clipping), `tools/bots` (predict on the
   cave ground).
-- `client/src/sim` (`GroundQuery.floorAt/collide`, step), `client/src/world`
+- `client/src/sim` (`GroundQuery.atLevel/collide`, `caves.ts`), `client/src/world`
   (caves module, worker `cave` job, terrain holes, runtime), `client/src/net`
   (`onWorldEdits`, `onEvent`, `sendInteract`, forwarding ground).
 

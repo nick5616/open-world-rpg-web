@@ -23,6 +23,7 @@ import (
 
 	"lodestone/server/pkg/constants"
 	"lodestone/server/pkg/gameloop"
+	"lodestone/server/pkg/localsave"
 	"lodestone/server/pkg/movement"
 	"lodestone/server/pkg/proto"
 	"lodestone/server/pkg/snapshot"
@@ -30,6 +31,7 @@ import (
 	"lodestone/server/pkg/transport"
 	"lodestone/server/pkg/writebehind"
 	"lodestone/server/zone/internal/aoi"
+	"lodestone/server/zone/internal/explore"
 )
 
 // Config is everything a zone needs; main.go fills it from env.
@@ -42,9 +44,14 @@ type Config struct {
 	// DevSpawn lets a client pick its spawn with /ws?spawn=x,z. Only for dev
 	// and soak bots (main enables it only with the dev ticket key or
 	// LODESTONE_ZONE_DEV_SPAWN=1); real spawns come from the character row.
-	DevSpawn     bool
-	TicketKey    ed25519.PublicKey
-	Ground       movement.Ground
+	DevSpawn  bool
+	TicketKey ed25519.PublicKey
+	Ground    movement.Ground
+	// WP10: the updraft hook for the movement step (debug columns from
+	// LODESTONE_ZONE_DEBUG_UPDRAFTS until WP15 feeds it) and a rain
+	// override (nil: the weather stub decides from seed + world time).
+	Updraft      movement.UpdraftField
+	Rain         *bool
 	SpinTail     time.Duration
 	SaveInterval time.Duration
 	// DownBudgetKbps caps each client's snapshot bytes (decision 0005); the
@@ -59,6 +66,13 @@ type Config struct {
 	Queue                          *writebehind.Queue
 	Metrics                        *svc.Metrics
 	Log                            *slog.Logger
+	// WP12 exploration (explore.go, party.go): the world's sites and towers
+	// (nil: no exploration, e.g. flat ground), the social service's parties
+	// (nil: no party ring) and the local-profile save store (nil: blobs in
+	// Hello are ignored, as before WP12).
+	Explore *explore.World
+	Parties PartyDirectory
+	Saves   *localsave.Store
 	// Now is the wall clock (tickets, server time); tests override it.
 	Now func() time.Time
 }
@@ -88,8 +102,11 @@ type Server struct {
 	cands    []snapshot.Candidate
 	w        proto.Writer
 	saveDiv  uint32
-	mine     mining      // WP09 (mining.go)
-	calls    chan func() // run on the tick goroutine (Do, caves.go)
+	mine     mining              // WP09 (mining.go)
+	calls    chan func()         // run on the tick goroutine (Do, caves.go)
+	env      movement.Env        // WP10: this tick's movement env (stepEnv)
+	hap      []explore.Happening // scratch for exploreTick
+	party    partyState
 
 	// Shared with the metrics goroutine.
 	connsMu sync.Mutex
@@ -150,6 +167,7 @@ func New(cfg Config) *Server {
 func (s *Server) Start() {
 	s.sched = gameloop.New(s.cfg.SpinTail)
 	s.sched.Add(s.loop)
+	s.startParties()
 	s.log.Info("zone ticking", "hz", constants.TickRateHz, "spinTail", s.cfg.SpinTail.String(), "clock", gameloop.PreciseClock)
 }
 
@@ -205,6 +223,7 @@ func (s *Server) onTick() {
 	s.tick++
 	tick := s.tick
 	now := time.Now()
+	s.env = s.stepEnv() // WP10: rain + updrafts for every step this tick
 
 	for {
 		select {
@@ -235,6 +254,7 @@ func (s *Server) onTick() {
 		break
 	}
 	s.terrainTick(tick)             // WP07: chunk cache interest (terrain.go)
+	s.exploreTick(tick)             // WP12: towers, waypoints, discoveries, party ring (explore.go)
 	s.caveTick(tick)                // WP09: cave cell interest + each entity's cave system (caves.go)
 	s.miningTick(tick, s.cfg.Now()) // WP09: pickups, respawns, WorldEdits interest (mining.go)
 
@@ -243,7 +263,7 @@ func (s *Server) onTick() {
 	s.grid.Reset()
 	for i, e := range s.ents {
 		e.idx = int32(i)
-		e.updateView(s.cfg.Ground)
+		e.updateView(s.cfg.Ground, s.env)
 		e.quantize(s.cfg.Ground)
 		s.grid.Insert(int32(i), e.Move.Pos.X, e.Move.Pos.Z)
 	}
@@ -305,11 +325,9 @@ func (s *Server) join(sess *session) {
 		Level:       1,
 		Health:      100,
 		HealthMax:   100,
-		Stamina:     constants.StaminaMax,
-		StaminaMax:  constants.StaminaMax,
 	}
 	s.nextID++
-	e.Move.Pos = spawn
+	e.Move = movement.NewState(spawn) // WP10: full stamina wheel, ground mode
 	if g := movement.GroundAt(s.cfg.Ground, spawn.X, spawn.Y, spawn.Z); e.Move.Pos.Y < g {
 		e.Move.Pos.Y = g
 	}
@@ -357,6 +375,7 @@ func (s *Server) join(sess *session) {
 	if err := sess.conn.SendReliable(proto.Encode(welcome)); err != nil {
 		sess.closed.Store(true)
 	}
+	s.exploreJoin(sess) // WP12: progress, pins (after Welcome, which the client needs first)
 	s.log.Info("join", "entity", e.ID, "character", e.CharacterID, "name", e.Name, "remote", sess.conn.RemoteAddr(),
 		"x", math.Round(spawn.X*100)/100, "z", math.Round(spawn.Z*100)/100)
 }
@@ -399,6 +418,7 @@ func (s *Server) leave(sess *session) {
 			delete(s.parties, e.PartyID)
 		}
 	}
+	s.exploreLeave(sess) // WP12: progress save
 	if s.cfg.Queue != nil {
 		s.checkpoint(e)
 	}
@@ -407,6 +427,7 @@ func (s *Server) leave(sess *session) {
 
 // checkpoint queues a position save (never blocks).
 func (s *Server) checkpoint(e *Entity) {
+	s.exploreCheckpoint(e) // WP12: changed progress rides the same cadence
 	if s.cfg.Store == nil || s.cfg.Queue == nil {
 		return
 	}
