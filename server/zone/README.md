@@ -127,7 +127,7 @@ included. When a tick's records don't fit, they go out in priority order:
 party first, then by distance, with an accumulator so starved entities win
 a turn. A deferred entity keeps its baseline state and later sends the
 whole accumulated change; the ring table stays the maximum rate. Dense case
-(150 bots in a 40 m disc): 503 → 150 kbps (`docs/evidence/wp06-dense-budget-*`).
+(150 bots in a 40 m disc): 504 → 150 kbps (`docs/evidence/wp06-dense-budget-*`).
 
 Interest: 32 m grid, rings near < 64 m (everything, 30 Hz), mid < 200 m
 (players/enemies/effects, 10 Hz), far < 600 m (players only, 2 Hz; a player

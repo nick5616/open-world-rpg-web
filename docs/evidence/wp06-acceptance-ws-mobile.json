@@ -1,0 +1,179 @@
+{
+  "mode": "ws",
+  "profile": "mobile",
+  "transport": "websocket",
+  "walkSeconds": 18.551,
+  "rttMs": {
+    "A": 263,
+    "B": 283
+  },
+  "bandwidthKbps": {
+    "A": {
+      "downKbps": 8.40631958436941,
+      "upKbps": 15.014314494786936
+    },
+    "B": {
+      "downKbps": 7.839531968246804,
+      "upKbps": 14.931048892615047
+    }
+  },
+  "local": {
+    "A": {
+      "reconciles": 0,
+      "agreements": 186,
+      "corrMaxCm": 0,
+      "corrP95Cm": 0,
+      "over5cm": 0
+    },
+    "B": {
+      "reconciles": 0,
+      "agreements": 219,
+      "corrMaxCm": 0,
+      "corrP95Cm": 0,
+      "over5cm": 0
+    }
+  },
+  "remote": {
+    "A sees B": {
+      "reconciles": 0,
+      "agreements": 186,
+      "logLen": 0,
+      "extrapEvents": 3,
+      "extrapFrames": 8,
+      "frozenFrames": 0,
+      "interpFrames": 548,
+      "visibleJumps": 2,
+      "teleports": 0,
+      "extrapPctFrames": 1.4388489208633093,
+      "maxJumpCm": 15.86282783386923,
+      "maxHandbackCm": 0,
+      "linkDelayMs": 397.29976021797245,
+      "arrival": {
+        "baseLag": 110.051025390625,
+        "p50": 97.635986328125,
+        "p95": 341.522216796875,
+        "max": 406.15087890625,
+        "delay": 397.29976021797245,
+        "n": 256
+      }
+    },
+    "B sees A": {
+      "reconciles": 0,
+      "agreements": 219,
+      "logLen": 0,
+      "extrapEvents": 4,
+      "extrapFrames": 8,
+      "frozenFrames": 0,
+      "interpFrames": 549,
+      "visibleJumps": 2,
+      "teleports": 0,
+      "extrapPctFrames": 1.436265709156194,
+      "maxJumpCm": 22.409704353479487,
+      "maxHandbackCm": 15.379781990048036,
+      "linkDelayMs": 404.1073933493707,
+      "arrival": {
+        "baseLag": 96.68896484375,
+        "p50": 122.277099609375,
+        "p95": 354.176025390625,
+        "max": 408.690185546875,
+        "delay": 404.1073933493707,
+        "n": 256
+      }
+    }
+  },
+  "screenshots": {
+    "A": {
+      "dist": 13.939882165157265,
+      "lod": 0,
+      "mode": "interp",
+      "delayMs": 397.29976021797245
+    },
+    "B": {
+      "dist": 13.94606025146417,
+      "lod": 0,
+      "mode": "interp",
+      "delayMs": 400
+    }
+  },
+  "drawnVsTrue": {
+    "B drawn by A vs B true (m)": 0.00582379487383473,
+    "A drawn by B vs A true (m)": 0.0028384925979060807
+  },
+  "stats": {
+    "A": {
+      "snapshots": 707,
+      "stale": 0,
+      "noBaseline": 0,
+      "inputPackets": 637,
+      "framesSent": 1457,
+      "decodeErrors": 0,
+      "earlySnapshots": 0
+    },
+    "B": {
+      "snapshots": 707,
+      "stale": 0,
+      "noBaseline": 0,
+      "inputPackets": 643,
+      "framesSent": 1461,
+      "decodeErrors": 0,
+      "earlySnapshots": 0
+    }
+  },
+  "zoneMetrics": [
+    "zone_budget_records_sent_total 1250",
+    "zone_client_down_kbps{q=\"avg\"} 8.12",
+    "zone_client_down_kbps{q=\"max\"} 8.42",
+    "zone_client_down_kbps{q=\"p50\"} 8.42",
+    "zone_client_down_kbps{q=\"p99\"} 8.42",
+    "zone_client_up_kbps{q=\"avg\"} 15.18",
+    "zone_client_up_kbps{q=\"max\"} 15.27",
+    "zone_client_up_kbps{q=\"p50\"} 15.27",
+    "zone_client_up_kbps{q=\"p99\"} 15.27",
+    "zone_sessions{transport=\"websocket\"} 2",
+    "zone_snapshots_shed_total 81"
+  ],
+  "jumps": {
+    "A sees B": [
+      {
+        "atMs": 1794142828757,
+        "cm": 15.9,
+        "dtMs": 32,
+        "mode": "interp",
+        "handback": false,
+        "id": 2
+      },
+      {
+        "atMs": 1794142843845,
+        "cm": 11.3,
+        "dtMs": 33,
+        "mode": "interp",
+        "handback": false,
+        "id": 2
+      }
+    ],
+    "B sees A": [
+      {
+        "atMs": 1794142839547,
+        "cm": 22.4,
+        "dtMs": 40,
+        "mode": "extrap",
+        "handback": false,
+        "id": 1
+      },
+      {
+        "atMs": 1794142839588,
+        "cm": 15.4,
+        "dtMs": 40,
+        "mode": "interp",
+        "handback": true,
+        "id": 1
+      }
+    ]
+  },
+  "correctionLog": {
+    "A": [],
+    "B": []
+  },
+  "correctionsA": [],
+  "correctionsB": []
+}

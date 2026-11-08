@@ -175,9 +175,9 @@ StrictMode, a session closed mid-connect still logged in. It is fixed in
   bonus). A deferred known entity keeps its baseline state in the frame and
   later sends the accumulated delta. A deferred new entity waits.
 - Dense soak, 150 bots in a 40 m disc
-  (`docs/evidence/wp06-dense-budget-*`): downlink averaged 503 kbps (max
-  534) with the budget off, 150.2 kbps (max 150.3) at 150. Tick p99 went
-  from 4.9 to 6.3 ms because sorting about 145 records per client per tick
+  (`docs/evidence/wp06-dense-budget-*`): downlink averaged 504 kbps (max
+  531) with the budget off, 150.2 kbps (max 150.3) at 150. Tick p99 went
+  from 4.8 to 6.6 ms because sorting about 145 records per client per tick
   is real work. A fast path skips the sort whenever everything fits, which
   is every non-dense case.
 - In the unit-test crowd, entities within 12 m update at about 27 Hz and

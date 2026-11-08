@@ -142,7 +142,7 @@ Evidence:
   - Uplink: 15.5 kbps (WS) / 20 kbps (WT), budget 24. Downlink: 8–14 kbps.
   - Screenshots show the other player with nameplate from both browsers, and the "airborne" chip when B jumps.
 - The "mobile" profile also passes: 263–317 ms RTT, 0 corrections, largest discontinuity 22 cm (`wp06-acceptance-mobile*`).
-- Dense crowd, decision 0005 (`node tools/netsim/dense-budget.mjs`, `docs/evidence/wp06-dense-budget-*`): 150 bots in a 40 m disc. Downlink averaged **503 kbps (max 534)** with the budget off and **150.2 kbps (max 150.3)** at 150 kbps. Tick p99 rose from 4.9 to 6.3 ms.
+- Dense crowd, decision 0005 (`node tools/netsim/dense-budget.mjs`, `docs/evidence/wp06-dense-budget-*`): 150 bots in a 40 m disc. Downlink averaged **504 kbps (max 531)** with the budget off and **150.2 kbps (max 150.3)** at 150 kbps. Tick p99 rose from 4.8 to 6.6 ms.
 - Tests:
   - Go: transport WT round trip, kick close code, latest-wins and big frames, wrong cert hash refused, dev cert limits. Snapshot: budget cap, correctness under loss, priority, starvation, record size vs codec, benchmark. Zone: view extrapolation and easing, reordered input, lost-frame fill, `zone_wt_integration_test.go` (zone binary over WebTransport, cross-transport visibility, registry `wtEndpoint`, shutdown code).
   - TS: vitest for clock, decoder (randomized vs a reference encoder), prediction, interpolation, framing. `zone.integration.test.ts` runs the zone binary and the netsim proxy as processes, with two sessions, B under thailand: 0 corrections, observer within 0.5 m, 0 teleports.

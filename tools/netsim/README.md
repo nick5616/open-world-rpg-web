@@ -65,5 +65,5 @@ Result on 2026-11-08 (Windows 11, 16 cores, zone and bots on one machine):
 
 | Budget | Avg ↓ kbps | Max ↓ kbps | Players in view | Avg snapshot bytes | Tick p99 |
 | --- | --- | --- | --- | --- | --- |
-| off | 503 | 534 | 147 | 2060 | 4.9 ms |
-| 150 kbps | 150.2 | 150.3 | 146 | 621 | 6.3 ms |
+| off | 504 | 531 | 147 | 2063 | 4.8 ms |
+| 150 kbps | 150.2 | 150.3 | 146 | 621 | 6.6 ms |
