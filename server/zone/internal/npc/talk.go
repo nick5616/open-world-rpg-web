@@ -55,6 +55,9 @@ var wares = [5][]Ware{
 		{"blueprint:iron_sword", 30, 1}, {"blueprint:silver_sword", 80, 1}, {"blueprint:sunsteel_blade", 40, 1}, {"blueprint:sunsteel_arrow", 30, 1}}, // WP14: spec 7 blueprints "bought from blacksmiths"
 }
 
+// SmithWares is what every blacksmith sells (WP14 tests, tools).
+func SmithWares() []Ware { return wares[4] }
+
 // Wares is what NPC i sells (nil: nothing).
 func (w *World) Wares(i int) []Ware {
 	d := w.NPCs[i].Def

@@ -373,7 +373,7 @@ func grantedUnits(w *itemClient, source uint32) map[string]int {
 
 // pickContainers finds containers near the spawn (the zone lists them once
 // their chunks are cached around a player).
-func (f *itemFixture) pickContainers(port int, n int) []struct {
+func (f *itemFixture) pickContainers(port int, n, need int) []struct {
 	ID      uint64
 	X, Y, Z float64
 	Opened  bool
@@ -392,7 +392,7 @@ func (f *itemFixture) pickContainers(port int, n int) []struct {
 			Kind string  `json:"kind"`
 		}
 		_ = json.Unmarshal([]byte(get(f.t, fmt.Sprintf("http://127.0.0.1:%d/debug/containers?x=%f&z=%f&r=200", port, f.spawnX, f.spawnZ))), &list)
-		if len(list) >= n {
+		if len(list) >= n || (len(list) >= need && time.Now().After(deadline.Add(-15*time.Second))) {
 			out := make([]struct {
 				ID      uint64
 				X, Y, Z float64
@@ -409,7 +409,7 @@ func (f *itemFixture) pickContainers(port int, n int) []struct {
 			sort.Slice(out, func(i, j int) bool {
 				return math.Hypot(out[i].X-f.spawnX, out[i].Z-f.spawnZ) < math.Hypot(out[j].X-f.spawnX, out[j].Z-f.spawnZ)
 			})
-			return out[:n]
+			return out[:min(n, len(out))]
 		}
 		if time.Now().After(deadline) {
 			f.t.Fatalf("fewer than %d containers near the spawn (%.0f, %.0f)", n, f.spawnX, f.spawnZ)
@@ -424,7 +424,7 @@ func TestZoneProcessKillMidGrantNeverDuplicates(t *testing.T) {
 
 	// Find containers with a plain zone.
 	z := startItemZone(t, f.bin, f.wasm, f.dbURL, f.world, port)
-	cs := f.pickContainers(port, 2)
+	cs := f.pickContainers(port, 2, 2)
 	z.kill()
 	for i, c := range cs {
 		f.logf("container %d: id %d at (%.1f, %.1f, %.1f)", i, c.ID, c.X, c.Y, c.Z)
