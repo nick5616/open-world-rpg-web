@@ -284,13 +284,23 @@ func (s *Server) sortInterest() {
 		s.idxs = slices.Compact(s.idxs)
 		return
 	}
-	slices.SortFunc(s.idxs, func(a, b int32) int {
-		if a == b {
-			return 0
+	// Sort (id << 32 | index) keys: a plain integer sort, several times
+	// faster than a comparator that looks up both entities (measured in the
+	// 1,000-bot soak, where it showed in the tick).
+	keys := s.cl.keys[:0]
+	for _, i := range s.idxs {
+		keys = append(keys, uint64(s.entAt(i).ID)<<32|uint64(uint32(i)))
+	}
+	slices.Sort(keys)
+	s.idxs = s.idxs[:0]
+	last := int32(-1)
+	for _, k := range keys {
+		if i := int32(uint32(k)); i != last {
+			s.idxs = append(s.idxs, i)
+			last = i
 		}
-		return cmpU32(s.entAt(a).ID, s.entAt(b).ID)
-	})
-	s.idxs = slices.Compact(s.idxs)
+	}
+	s.cl.keys = keys
 }
 
 // remotePartyMembers appends mirrored members of party p (any distance).

@@ -72,10 +72,12 @@ type clusterDoc struct {
 	} `json:"live"`
 	Stats map[string]int64 `json:"stats"`
 	View  struct {
-		Characters []string `json:"characters"`
-		Standby    int      `json:"standby"`
-		Remote     int      `json:"remote"`
-		Pending    int      `json:"pending"`
+		Characters []string         `json:"characters"`
+		Epochs     map[string]int64 `json:"epochs"`
+		NowMs      int64            `json:"nowMs"`
+		Standby    int              `json:"standby"`
+		Remote     int              `json:"remote"`
+		Pending    int              `json:"pending"`
 	} `json:"view"`
 }
 
@@ -362,6 +364,7 @@ func (b *bot) crossTarget(x, z float64) {
 type ownershipStats struct {
 	Samples         int      `json:"samples"`
 	MaxDuplicated   int      `json:"maxCharactersOwnedTwice"`
+	InFlight        int      `json:"listedTwiceAcrossAHandoff"`
 	DuplicateEvents int      `json:"duplicateSamples"`
 	MaxUnowned      int      `json:"maxConnectedBotsUnowned"`
 	UnownedSustain  int      `json:"botsUnownedTwoSamplesInARow"`
@@ -386,6 +389,8 @@ func sampleOwnership(ctx context.Context, view *clusterView, bots []*bot, every 
 		bases := append([]string(nil), view.debugs...)
 		view.mu.Unlock()
 		owned := map[string]int{}
+		type own struct{ epoch, at int64 }
+		by := map[string][]own{}
 		per := []string{}
 		okAll := true
 		for _, base := range bases {
@@ -396,6 +401,7 @@ func sampleOwnership(ctx context.Context, view *clusterView, bots []*bot, every 
 			}
 			for _, c := range d.View.Characters {
 				owned[c]++
+				by[c] = append(by[c], own{d.View.Epochs[c], d.View.NowMs})
 			}
 			per = append(per, fmt.Sprintf("%s=%d", d.ZoneID, len(d.View.Characters)))
 		}
@@ -405,9 +411,21 @@ func sampleOwnership(ctx context.Context, view *clusterView, bots []*bot, every 
 		sort.Strings(per)
 		st.Samples++
 		st.OwnedPerZone = per
+		// Zones are polled one after another, so a character handed over
+		// between two polls shows up in both lists. That is a true overlap
+		// only if every zone listing it already owned it (epoch) before the
+		// earliest of those lists was taken.
 		dup := 0
-		for _, n := range owned {
-			if n > 1 {
+		for c, n := range owned {
+			if n < 2 {
+				continue
+			}
+			st.InFlight++
+			latestEpoch, firstAt := int64(0), int64(1)<<62
+			for _, o := range by[c] {
+				latestEpoch, firstAt = max(latestEpoch, o.epoch), min(firstAt, o.at)
+			}
+			if latestEpoch < firstAt {
 				dup++
 			}
 		}

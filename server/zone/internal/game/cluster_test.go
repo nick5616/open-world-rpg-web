@@ -614,6 +614,7 @@ func TestStaleCheckpointIsFencedAfterHandoff(t *testing.T) {
 	qb := writebehind.New(100)
 	_, a, b := twoZones(t, func(c *Config) {
 		c.Store = store
+		c.SaveInterval = 300 * time.Millisecond // B checkpoints soon after admission
 		if c.ZoneID == "zone-a" {
 			c.Queue = qa
 		} else {
@@ -632,8 +633,8 @@ func TestStaleCheckpointIsFencedAfterHandoff(t *testing.T) {
 	if p.active != "zone-b" {
 		t.Fatalf("no handoff: %v", p.switchLog)
 	}
-	// B checkpointed at admission with a newer epoch; now A's stale queue drains.
-	time.Sleep(200 * time.Millisecond)
+	// B checkpoints (periodically) with a newer epoch; then A's stale queue drains.
+	time.Sleep(700 * time.Millisecond)
 	go qa.Run(ctx)
 	time.Sleep(300 * time.Millisecond)
 	store.mu.Lock()

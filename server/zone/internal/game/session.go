@@ -51,6 +51,7 @@ type session struct {
 	x           *exploreState // WP12 exploration (explore.go)
 	left        bool
 	ackTick     uint32
+	ackFloor    uint32 // WP16: acks at or below this tick predate the session's current activation
 	enc         snapshot.Encoder
 	budget      snapshot.BudgetStats // last published encoder counters
 	frameBudget ratelimit.Bucket
@@ -331,7 +332,7 @@ func (s *Server) drain(sess *session, now time.Time) {
 		}
 		// Baseline ack: newest snapshot the client has. Never trust an ack
 		// from the future.
-		if in.AckTick > sess.ackTick && in.AckTick <= s.tick {
+		if in.AckTick > sess.ackTick && in.AckTick > sess.ackFloor && in.AckTick <= s.tick {
 			sess.ackTick = in.AckTick
 		}
 		// Frames: newest plus repeats, any order; collected across this

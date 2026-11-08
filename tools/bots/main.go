@@ -385,7 +385,7 @@ func summarize(bots []*bot, mode string, n int, radius float64, wall time.Durati
 	s := Summary{Mode: mode, Bots: n, RadiusM: radius, WallS: math.Round(wall.Seconds()*10) / 10, GoVersion: runtime.Version(), OS: runtime.GOOS + "/" + runtime.GOARCH,
 		Kicks: map[string]int{}, Errors: map[string]int{}, Personas: map[string]int{}, BudgetUpKbps: 24, BudgetTickP99: tickBudget}
 	s.BudgetDownKbps = 64
-	if mode == "clustered" {
+	if mode == "clustered" || mode == "cross" { // WP16 cross: crossers crowd the borders (spec 9 "100 players in view")
 		s.BudgetDownKbps = 160
 	}
 	var down, up, ents, snapB, rtt []float64

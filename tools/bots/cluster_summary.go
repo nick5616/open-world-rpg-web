@@ -153,8 +153,8 @@ func printCluster(c *ClusterSummary) {
 		c.Preconnects, c.PreconnectFails, c.StandbyKicks, c.Drops, c.Failovers, c.GaveUp, c.FailoverMs.P50, c.FailoverMs.Max, c.FailoverRewindM.P50, c.FailoverRewindM.Max)
 	fmt.Printf("discoveries %d, duplicated %d\n", c.Discoveries, c.DupDiscoveries)
 	if o := c.Ownership; o != nil {
-		fmt.Printf("ownership: %d samples, max owned twice %d, max playing-but-unowned %d, unowned two samples running %d, last %v\n",
-			o.Samples, o.MaxDuplicated, o.MaxUnowned, o.UnownedSustain, o.OwnedPerZone)
+		fmt.Printf("ownership: %d samples, listed twice across a handoff %d, truly owned twice %d, max playing-but-unowned %d, unowned two samples running %d, last %v\n",
+			o.Samples, o.InFlight, o.MaxDuplicated, o.MaxUnowned, o.UnownedSustain, o.OwnedPerZone)
 	}
 	for _, z := range c.Zones {
 		m, _ := z["metrics"].(map[string]float64)

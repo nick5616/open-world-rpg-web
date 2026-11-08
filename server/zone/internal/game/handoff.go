@@ -145,6 +145,7 @@ type clusterState struct {
 	departed    []string
 	presenceAt  time.Time
 	gw          proto.Writer
+	keys        []uint64 // sortInterest scratch
 
 	stats clusterStats
 }
@@ -572,12 +573,13 @@ func (s *Server) admitTransfer(st *HandoffState, now time.Time) {
 // resetForAdmission clears per-activation session state, so a connection
 // that was active here before (and a standby since) starts like a new one:
 // fresh snapshot baselines (the client resets its decoder on Welcome) and
-// an ack floor at the current tick (a stale ack from the last activation,
-// e.g. a reordered datagram, must not name a baseline the client lost).
+// an ack floor at the current tick: a stale ack from the last activation
+// (e.g. a reordered datagram) must not name a baseline the client lost.
+// Snapshots are full until the client acks one of the new ones.
 func (s *Server) resetForAdmission(sess *session) {
 	sess.enc = snapshot.Encoder{} // join re-applies the byte budget
 	sess.budget = snapshot.BudgetStats{}
-	sess.ackTick = s.tick
+	sess.ackTick, sess.ackFloor = 0, s.tick
 	sess.frames = sess.frames[:0]
 	sess.gapSince = 0
 	sess.consumed = 0
@@ -822,8 +824,8 @@ func (s *Server) joinState(sess *session, e *Entity) {
 	}
 }
 
-// clusterJoined runs after Welcome: the owner record, and for an arriving
-// character the full checkpoint that fences out the old owner's queue.
+// clusterJoined runs after Welcome: the owner record for an arriving
+// character, and its progress marked for the next checkpoint.
 func (s *Server) clusterJoined(sess *session) {
 	if !s.clusterOn() || sess.ent == nil {
 		return
@@ -831,10 +833,14 @@ func (s *Server) clusterJoined(sess *session) {
 	char, self := sess.ent.CharacterID, s.cl.self
 	transferred := sess.ho != nil && sess.ho.state != nil
 	if transferred {
+		// No checkpoint here: the old owner saved this exact state on the
+		// transfer (spec 11), and our epoch fences out anything older it may
+		// still have queued. Progress is marked dirty so our next checkpoint
+		// rewrites it in full even if the old owner's progress write was the
+		// one fenced.
 		if sess.x != nil && sess.x.prog != nil {
 			sess.x.prog.MarkDirty()
 		}
-		s.checkpoint(sess.ent)
 		s.do(func() {
 			ctx, cancel := bg(2 * time.Second)
 			defer cancel()
@@ -925,12 +931,17 @@ func (s *Server) ClusterView(ctx context.Context) (map[string]any, error) {
 	var out map[string]any
 	err := s.Do(ctx, func() {
 		chars := make([]string, 0, len(s.sessions))
+		epochs := make(map[string]int64, len(s.sessions))
 		for _, sess := range s.sessions {
 			if sess.ent != nil {
 				chars = append(chars, sess.ent.CharacterID)
+				epochs[sess.ent.CharacterID] = sess.ent.epoch
 			}
 		}
-		out = map[string]any{"tick": s.tick, "characters": chars, "standby": len(s.cl.standby), "remote": len(s.cl.remote), "pending": len(s.cl.pending)}
+		// epochs = when each character became ours (Unix ms), nowMs = when
+		// this list was taken: a checker can tell an overlap from two lists
+		// taken on either side of a handoff.
+		out = map[string]any{"tick": s.tick, "nowMs": s.cfg.Now().UnixMilli(), "characters": chars, "epochs": epochs, "standby": len(s.cl.standby), "remote": len(s.cl.remote), "pending": len(s.cl.pending)}
 	})
 	return out, err
 }
