@@ -1,14 +1,33 @@
-//! Lodestone worldgen core. WP00 skeleton: only the generated contracts and the
-//! content hash exist; WP01 builds the atlas and chunk passes on top.
+//! Lodestone worldgen core (spec 5): `spec_from_seed`, the atlas pass, the
+//! chunk detail pass, collision queries and content hashing, compiled once to
+//! `worldgen.wasm` and run unchanged in browsers, Node and Go (wazero).
 //!
 //! Determinism rules (spec 5): no host-imported math (use `libm`), no threads,
-//! no relaxed SIMD, no clocks, no host randomness; randomness is a counter-based
-//! hash of (seed, stream, x, y, z).
+//! no relaxed SIMD, no clocks, no host randomness; randomness is a
+//! counter-based hash of (seed, stream, x, y, z); no NaN in output; every
+//! output buffer has a 64-bit content hash.
 
+pub mod abi;
+pub mod atlas;
+pub mod chunk;
 pub mod gen;
+pub mod ground;
+pub mod names;
+pub mod noise;
+pub mod rng;
+pub mod spec;
 
-/// 64-bit content hash used for golden tests (FNV-1a 64; WP01 may replace it
-/// with a faster hash as long as it pins the choice in the golden table).
+/// Generator major version. Any change that alters output bytes for an
+/// existing (seed, spec) bumps this and gets a new golden table (spec 5,
+/// "keeping old worlds working").
+pub const GEN_VERSION: u16 = 1;
+
+/// Version of the wasm export signatures and buffer layouts in README.md.
+pub const ABI_VERSION: u32 = 1;
+
+/// 64-bit content hash used for golden tests and atlasHash: FNV-1a 64.
+/// Chosen for being trivial to reimplement in any host (a JS or Go check
+/// needs five lines); at ~1.5 ns/byte in wasm it costs ~0.1 ms per chunk.
 pub fn hash_bytes(data: &[u8]) -> u64 {
     let mut h: u64 = 0xcbf2_9ce4_8422_2325;
     for &b in data {
