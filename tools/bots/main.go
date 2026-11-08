@@ -52,6 +52,7 @@ func main() {
 		metricsURL = flag.String("metrics", "", "zone /metrics URL to scrape before disconnecting (default derived from -url)")
 		metricsOut = flag.String("metrics-out", "", "save the scrape here")
 		ticketArg  = flag.String("ticket", "", "connect ONE bot with this ticket, or @file (e.g. from the director POST /v1/connect), instead of a self-signed dev ticket")
+		terrainArg = flag.String("terrain", "auto", "auto | on | off: predict on the zone's generated terrain (worldgen.wasm, LODESTONE_WORLDGEN_WASM) and spawn on land")
 	)
 	flag.Parse()
 
@@ -65,20 +66,28 @@ func main() {
 	}
 	cx, cz := 2048.0, 2048.0
 	fmt.Sscanf(*center, "%f,%f", &cx, &cz)
-	if *zoneID == "" || *worldID == "" {
-		// The zone may serve the official world (a generated uuid), so ask it
-		// rather than guess; fall back to the zone's dev defaults.
-		z, w := zoneIdentity(*zoneURL)
-		if *zoneID == "" {
-			*zoneID = z
-		}
-		if *worldID == "" {
-			*worldID = w
-		}
+	// The zone may serve the official world (a generated uuid), so ask it
+	// rather than guess; fall back to the zone's dev defaults. It also names
+	// the terrain (seed, spec, genVersion, atlasHash).
+	info := zoneIdentity(*zoneURL)
+	if *zoneID == "" {
+		*zoneID = info.ZoneID
+	}
+	if *worldID == "" {
+		*worldID = info.WorldID
+	}
+	terrain, err := openTerrain(info, *terrainArg)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "bots: terrain:", err)
+		os.Exit(1)
+	}
+	if terrain != nil {
+		defer terrain.Close()
+		fmt.Fprintf(os.Stderr, "bots: predicting on generated terrain (seed %d, genVersion %s, atlas %s)\n", info.Seed, info.GenVersion, info.AtlasHash)
 	}
 
 	cfg := &botConfig{url: *zoneURL, zoneID: *zoneID, worldID: *worldID, priv: priv, centerX: cx, centerZ: cz,
-		worldM: constants.WorldSizeM, warmup: *warmup, pingPeriod: time.Second, ticket: *ticketArg}
+		worldM: constants.WorldSizeM, warmup: *warmup, pingPeriod: time.Second, ticket: *ticketArg, terrain: terrain}
 	if strings.HasPrefix(cfg.ticket, "@") {
 		b, err := os.ReadFile(cfg.ticket[1:])
 		if err != nil {
@@ -99,16 +108,19 @@ func main() {
 
 	rng := rand.New(rand.NewSource(*seed))
 	bots := make([]*bot, *n)
-	for i := range bots {
-		var x, z float64
+	draw := func() (x, z float64) {
 		if cfg.radius > 0 {
 			r := cfg.radius * math.Sqrt(rng.Float64()) // uniform over the disc
 			a := rng.Float64() * 2 * math.Pi
-			x, z = cx+r*math.Cos(a), cz+r*math.Sin(a)
-		} else {
-			const margin = 100
-			x = margin + rng.Float64()*(cfg.worldM-2*margin)
-			z = margin + rng.Float64()*(cfg.worldM-2*margin)
+			return cx + r*math.Cos(a), cz + r*math.Sin(a)
+		}
+		const margin = 100
+		return margin + rng.Float64()*(cfg.worldM-2*margin), margin + rng.Float64()*(cfg.worldM-2*margin)
+	}
+	for i := range bots {
+		x, z := draw()
+		if terrain != nil {
+			x, z = landSpawn(terrain, draw)
 		}
 		bots[i] = newBot(i+1, cfg, *seed*100003+int64(i), x, z)
 	}
@@ -152,6 +164,9 @@ func main() {
 	wg.Wait()
 
 	sum := summarize(bots, *mode, *n, cfg.radius, time.Since(start), scrape)
+	if terrain != nil {
+		sum.Terrain = terrainSummary(info, terrain, bots)
+	}
 	printSummary(sum)
 	if *jsonOut != "" {
 		b, _ := json.MarshalIndent(sum, "", "  ")
@@ -162,17 +177,16 @@ func main() {
 	}
 }
 
-// zoneIdentity reads {zoneId, worldId} from the zone's /debug/zone, or
-// returns the zone's dev defaults if that fails.
-func zoneIdentity(ws string) (zoneID, worldID string) {
-	zoneID, worldID = "zone-dev-1", "00000000-0000-0000-0000-000000000001"
+// zoneIdentity reads the zone's /debug/zone (ids, seed, genVersion, spec,
+// atlasHash), or returns the zone's dev ids if that fails.
+func zoneIdentity(ws string) zoneInfo {
 	u := strings.TrimSuffix(deriveMetricsURL(ws), "/metrics") + "/debug/zone"
-	var id struct{ ZoneID, WorldID string }
+	var id zoneInfo
 	if body := fetch(u); body != "" && json.Unmarshal([]byte(body), &id) == nil && id.ZoneID != "" {
-		return id.ZoneID, id.WorldID
+		return id
 	}
 	fmt.Fprintln(os.Stderr, "bots: could not read", u, "; using dev zone/world ids")
-	return zoneID, worldID
+	return zoneInfo{ZoneID: "zone-dev-1", WorldID: "00000000-0000-0000-0000-000000000001"}
 }
 
 func deriveMetricsURL(ws string) string {
@@ -218,6 +232,8 @@ type Summary struct {
 	PredChecks     int                `json:"predictionChecks"`
 	PredErrMaxCm   int32              `json:"predictionErrMaxCm"`
 	PredResyncs    int                `json:"predictionResyncs"`
+	PredMismatch   int                `json:"predictionMismatches"`
+	Terrain        map[string]any     `json:"terrain,omitempty"`
 	Kicks          map[string]int     `json:"kicks"`
 	Errors         map[string]int     `json:"errors"`
 	Personas       map[string]int     `json:"personas"`
@@ -294,6 +310,7 @@ func summarize(bots []*bot, mode string, n int, radius float64, wall time.Durati
 		s.ApplyErrors += st.ApplyErrors
 		s.PredChecks += st.PredChecks
 		s.PredResyncs += st.PredResyncs
+		s.PredMismatch += st.PredMismatch
 		if st.PredErrMaxCm > s.PredErrMaxCm {
 			s.PredErrMaxCm = st.PredErrMaxCm
 		}
@@ -357,7 +374,8 @@ func printSummary(s Summary) {
 	fmt.Printf("personas %v kicks %v errors %v\n", s.Personas, s.Kicks, s.Errors)
 	keys := []string{`zone_tick_ms{q="p50"}`, `zone_tick_ms{q="p99"}`, `zone_tick_ms{q="max"}`, `zone_tick_jitter_ms{q="p50"}`, `zone_tick_jitter_ms{q="p99"}`, `zone_tick_jitter_ms{q="max"}`,
 		"zone_players", `zone_client_down_kbps{q="max"}`, `zone_client_up_kbps{q="max"}`, `zone_aoi_entities_avg{ring="near"}`, `zone_aoi_entities_avg{ring="mid"}`, `zone_aoi_entities_avg{ring="far"}`,
-		"zone_aoi_entities_max", "zone_snapshot_bytes_avg", "zone_writebehind_depth", "zone_speed_violations_total", "zone_input_frames_dropped_total"}
+		"zone_aoi_entities_max", "zone_snapshot_bytes_avg", "zone_writebehind_depth", "zone_speed_violations_total", "zone_input_frames_dropped_total",
+		"zone_terrain_chunks", `zone_terrain_queries_total{path="cache"}`, `zone_terrain_queries_total{path="wasm"}`, "zone_terrain_generated_total", "zone_terrain_gen_ms_mean", "zone_terrain_gen_ms_max", "zone_terrain_dropped_total"}
 	for _, k := range keys {
 		if v, ok := s.Zone[k]; ok {
 			fmt.Printf("  %-40s %g\n", k, v)
