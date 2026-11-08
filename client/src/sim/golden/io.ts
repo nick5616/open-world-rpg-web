@@ -1,0 +1,31 @@
+// Golden file (de)serialization, shared by the generator and the regression test.
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import type { GoldenFile } from './scenarios';
+
+const here = dirname(fileURLToPath(import.meta.url));
+
+export function goldenPath(name: string): string {
+  return join(here, `movement_${name}.json`);
+}
+
+/**
+ * One frame/state row per line so diffs stay readable. JSON.stringify of a
+ * double is its shortest round-trip form, which Go's strconv.ParseFloat (and
+ * encoding/json) reads back bit-exactly.
+ */
+export function serializeGolden(g: GoldenFile): string {
+  const { frames, states, ...head } = g;
+  return [
+    '{',
+    ...Object.entries(head).map(([k, v]) => `  ${JSON.stringify(k)}: ${JSON.stringify(v)},`),
+    '  "frames": [',
+    frames.map((f) => `    ${JSON.stringify(f)}`).join(',\n'),
+    '  ],',
+    '  "states": [',
+    states.map((s) => `    ${JSON.stringify(s)}`).join(',\n'),
+    '  ]',
+    '}',
+    '',
+  ].join('\n');
+}
