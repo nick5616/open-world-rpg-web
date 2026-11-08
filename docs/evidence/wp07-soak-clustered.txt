@@ -1,0 +1,39 @@
+bots: signing tickets with the development key
+bots: predicting on generated terrain (seed 20261108, genVersion 1, atlas 50ae4562cfd25265)
+bots: terrain warm (107 chunks) in 64ms
+bots: 150 connecting in clustered mode, playing 1m15s
+== bots: clustered, 150/150 connected, 85 s wall (windows/amd64, go1.27.3)
+downlink kbps   avg  127.02  p50  124.96  p95  156.12  max  163.00   (budget 160)
+uplink kbps     avg   11.16  p50   11.16  p95   11.16  max   11.16   (budget 24)
+entities/view   avg   146.0  p50   146.7  p95   149.0  max   149.0
+snapshot bytes  avg   517.4  p50   509.9  p95   642.0  max   688.7
+rtt ms          p50    0.00  max    0.00
+snapshots 360224 (full 300), decode errors 0, apply errors 0
+prediction: 359924 checks, 0 mismatches (>= 1 cm), max error 0 cm, 0 resyncs
+terrain: {"atlasHash":"50ae4562cfd25265","botCache":{"chunks":132,"pending":0,"hits":1461739,"misses":0,"generated":64,"evicted":0,"dropped":0,"genErrors":0,"genMeanMs":5.8405953125,"genMaxMs":10.6175,"wasmQueries":0},"botHeightMaxM":156.56,"botHeightMinM":69.71,"genVersion":"1","seaLevel":26.04,"seed":20261108,"wasmSha256":"d38abb3027caa709d41501cd700d2efa006cf3522047952ac49c5227d29026a3"}
+personas map[idler:20 jumper:41 strafer:29 walker:60] kicks map[] errors map[]
+  zone_tick_ms{q="p50"}                    2.157
+  zone_tick_ms{q="p99"}                    3.187
+  zone_tick_ms{q="max"}                    5.523
+  zone_tick_jitter_ms{q="p50"}             0
+  zone_tick_jitter_ms{q="p99"}             0.035
+  zone_tick_jitter_ms{q="max"}             3.821
+  zone_players                             150
+  zone_client_down_kbps{q="max"}           171.25
+  zone_client_up_kbps{q="max"}             11.16
+  zone_aoi_entities_avg{ring="near"}       6.14
+  zone_aoi_entities_avg{ring="mid"}        43.8
+  zone_aoi_entities_avg{ring="far"}        99.06
+  zone_aoi_entities_max                    149
+  zone_snapshot_bytes_avg                  523.98
+  zone_writebehind_depth                   1
+  zone_speed_violations_total              0
+  zone_input_frames_dropped_total          0
+  zone_terrain_chunks                      132
+  zone_terrain_queries_total{path="cache"} 2.83108e+06
+  zone_terrain_queries_total{path="wasm"}  12
+  zone_terrain_generated_total             116
+  zone_terrain_gen_ms_mean                 5.3503887931034475
+  zone_terrain_gen_ms_max                  8.8043
+  zone_terrain_dropped_total               0
+FAIL: downlink max 163.0 kbps > 160

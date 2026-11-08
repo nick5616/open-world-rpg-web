@@ -1,0 +1,22 @@
+# WP07 world minting end to end (scratch database lodestone_wp04_wp07soak, 2026-11-08)
+# Binaries built from branch wp/07-server-terrain; logs trimmed to the relevant lines.
+
+## 1. account service WITHOUT worldgen.wasm (what WP04 did before WP07): placeholder row
+{"time":"2026-11-08T04:30:42.9472746-08:00","level":"WARN","msg":"worldgen.wasm not built: official world stays a placeholder (zones derive it from the seed); run `npm run build:wasm` and restart to mint it","svc":"account","err":"worldgen.wasm not found (run `npm run build:wasm` or set LODESTONE_WORLDGEN_WASM): C:/tmp/wp07/absent.wasm"}
+{"time":"2026-11-08T04:30:43.0052273-08:00","level":"INFO","msg":"official world","svc":"account","id":"30623067-e2e6-4012-a009-b9804f761705","seed":"20261108","created":true}
+
+## 2. account service restarted WITH worldgen.wasm: the placeholder row is minted in place (same id, seed kept)
+{"time":"2026-11-08T04:30:49.364651-08:00","level":"INFO","msg":"official world","svc":"account","id":"30623067-e2e6-4012-a009-b9804f761705","seed":"20261108","genVersion":"1","atlasHash":"50ae4562cfd25265","action":"upgraded"}
+
+## 3. third start: already minted, nothing written (the wasm is not even loaded)
+{"time":"2026-11-08T04:30:58.6432696-08:00","level":"INFO","msg":"official world","svc":"account","id":"30623067-e2e6-4012-a009-b9804f761705","seed":"20261108","genVersion":"1","atlasHash":"50ae4562cfd25265","action":"already-minted"}
+
+## 4. zone (no LODESTONE_WORLD_ID) serves the official row: rebuilds the atlas from the stored jsonb spec,
+##    gen_version and atlas_hash pins hold, Welcome/registry carry seed 20261108 and genVersion "1"
+{"time":"2026-11-08T04:37:57.2978317-08:00","level":"INFO","msg":"serving the official world","svc":"zone","world":"30623067-e2e6-4012-a009-b9804f761705","seed":20261108,"genVersion":"1"}
+{"time":"2026-11-08T04:37:58.196407-08:00","level":"INFO","msg":"terrain ready","svc":"zone","wasm":"C:/Users/nickb/repos/open-world-rpg-web/.claude/worktrees/agent-a015f07c8b8336127/worldgen/pkg/worldgen.wasm","wasmSha256":"d38abb3027caa709d41501cd700d2efa006cf3522047952ac49c5227d29026a3","genVersion":"1","atlasHash":"50ae4562cfd25265","world":"Highmarch of Beigleifeild","spawnX":1920,"spawnZ":2272,"seaLevel":26.040000915527344,"ms":898}
+{"time":"2026-11-08T04:37:58.196407-08:00","level":"INFO","msg":"zone config","svc":"zone","zone":"zone-dev-1","world":"30623067-e2e6-4012-a009-b9804f761705","seed":20261108,"genVersion":"1","devSpawn":true}
+
+## 5. refusal (TestZoneRefusesWrongGenVersion, server/zone): a world row with gen_version "99" makes the zone exit 1 with
+##    "terrain: refusing to serve this world ... world gen_version does not match the loaded worldgen.wasm"
+##    and a wrong atlas_hash fails with "rebuilt atlas hash does not match the world row" (worldhost TestPinAndMint).

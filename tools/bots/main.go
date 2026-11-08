@@ -124,6 +124,21 @@ func main() {
 		}
 		bots[i] = newBot(i+1, cfg, *seed*100003+int64(i), x, z)
 	}
+	if terrain != nil {
+		// Generate the bots' own chunks before connecting: doing it during
+		// the ramp competes for CPU with the zone on a shared machine, and a
+		// starved bot sends bunched packets that trip the zone's frame
+		// budget (dropped frames = resyncs that have nothing to do with
+		// terrain).
+		t0 := time.Now()
+		for _, b := range bots {
+			terrain.Want(b.spawnX, b.spawnZ, 48)
+		}
+		wctx, wcancel := context.WithTimeout(context.Background(), 2*time.Minute)
+		_ = terrain.WaitIdle(wctx)
+		wcancel()
+		fmt.Fprintf(os.Stderr, "bots: terrain warm (%d chunks) in %s\n", terrain.Stats().Chunks, time.Since(t0).Round(time.Millisecond))
+	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	sig := make(chan os.Signal, 1)
@@ -370,7 +385,11 @@ func printSummary(s Summary) {
 	fmt.Printf("snapshot bytes  avg %7.1f  p50 %7.1f  p95 %7.1f  max %7.1f\n", s.SnapBytes.Avg, s.SnapBytes.P50, s.SnapBytes.P95, s.SnapBytes.Max)
 	fmt.Printf("rtt ms          p50 %7.2f  max %7.2f\n", s.RTTms.P50, s.RTTms.Max)
 	fmt.Printf("snapshots %d (full %d), decode errors %d, apply errors %d\n", s.Snapshots, s.FullSnapshots, s.DecodeErrors, s.ApplyErrors)
-	fmt.Printf("prediction: %d checks, max error %d cm, %d resyncs\n", s.PredChecks, s.PredErrMaxCm, s.PredResyncs)
+	fmt.Printf("prediction: %d checks, %d mismatches (>= 1 cm), max error %d cm, %d resyncs\n", s.PredChecks, s.PredMismatch, s.PredErrMaxCm, s.PredResyncs)
+	if s.Terrain != nil {
+		b, _ := json.Marshal(s.Terrain)
+		fmt.Printf("terrain: %s\n", b)
+	}
 	fmt.Printf("personas %v kicks %v errors %v\n", s.Personas, s.Kicks, s.Errors)
 	keys := []string{`zone_tick_ms{q="p50"}`, `zone_tick_ms{q="p99"}`, `zone_tick_ms{q="max"}`, `zone_tick_jitter_ms{q="p50"}`, `zone_tick_jitter_ms{q="p99"}`, `zone_tick_jitter_ms{q="max"}`,
 		"zone_players", `zone_client_down_kbps{q="max"}`, `zone_client_up_kbps{q="max"}`, `zone_aoi_entities_avg{ring="near"}`, `zone_aoi_entities_avg{ring="mid"}`, `zone_aoi_entities_avg{ring="far"}`,

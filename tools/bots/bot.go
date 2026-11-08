@@ -107,7 +107,7 @@ type botStats struct {
 	PredChecks    int       `json:"predChecks"`
 	PredErrMaxCm  int32     `json:"predErrMaxCm"`
 	PredResyncs   int       `json:"predResyncs"`
-	PredMismatch  int       `json:"predMismatches"` // checks where server and prediction differ by >= 1 cm
+	PredMismatch  int       `json:"predMismatches"` // checks differing by >= 1 cm while still exact, i.e. before this bot's first resync (after one, the bot replays from cm-quantized state and 1 cm rounding noise is expected)
 	RTTs          []float64 `json:"-"`
 	RTTp50        float64   `json:"rttP50Ms"`
 	DownKbps      float64   `json:"downKbps"`
@@ -415,7 +415,7 @@ func (b *bot) checkPrediction(seq uint32, self *proto.SelfState) {
 	p := b.pred[seq%512]
 	e := max(abs32(self.X-proto.MetersToCm(p.Pos.X)), abs32(self.Y-proto.MetersToCm(p.Pos.Y)), abs32(self.Z-proto.MetersToCm(p.Pos.Z)))
 	b.st.PredChecks++
-	if e > 0 {
+	if e > 0 && b.st.PredResyncs == 0 {
 		b.st.PredMismatch++
 	}
 	if e > b.st.PredErrMaxCm {
