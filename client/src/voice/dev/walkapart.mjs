@@ -184,7 +184,10 @@ try {
   await sleep(6000); // zone registry heartbeat reaches the director
 
   const consoleLog = [];
-  const launchArgs = ['--allow-loopback-in-peer-connection', '--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream', `--use-file-for-fake-audio-capture=${wav}`, '--autoplay-policy=no-user-gesture-required'];
+  // Real GPU through ANGLE, as WP05/WP12 do: SwiftShader renders the terrain so
+  // slowly that the movement sim (8-step backlog cap) falls behind real time.
+  const GPU_ARGS = ['--use-angle=d3d11', '--enable-gpu', '--ignore-gpu-blocklist'];
+  const launchArgs = [...GPU_ARGS, '--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream', `--use-file-for-fake-audio-capture=${wav}`, '--autoplay-policy=no-user-gesture-required'];
   browsers = [await chromium.launch({ args: launchArgs }), await chromium.launch({ args: launchArgs })];
   const pages = [];
   for (const [i, br] of browsers.entries()) {
@@ -290,7 +293,13 @@ try {
   await a.getByTestId('chat-input').fill('/invite Bram');
   await a.keyboard.press('Enter');
   await a.keyboard.press('Escape');
-  await b.getByTestId('party-accept').waitFor({ timeout: 10000 });
+  try {
+    await b.getByTestId('party-accept').waitFor({ timeout: 10000 });
+  } catch (e) {
+    await a.screenshot({ path: path.join(TMP, 'party-a.png') });
+    await b.screenshot({ path: path.join(TMP, 'party-b.png') });
+    throw new Error(`no party invite on B (screenshots in ${TMP}): ${e.message}`);
+  }
   await b.getByTestId('party-accept').dispatchEvent('click');
   await a.waitForFunction(() => document.querySelectorAll('[data-testid="party-member"]').length === 2, null, { timeout: 10000 });
   step('A and B are in a party');
