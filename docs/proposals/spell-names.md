@@ -1,6 +1,6 @@
 # Spell, technique and elemental form names
 
-**Status: PENDING NICOLE'S APPROVAL.** Everything in the "Proposed" tables
+**Status: APPROVED by Nicole on 2026-11-08.** (Previously pending.) Everything in the "Proposed" tables
 below is a proposal. The game uses these names today, but only through one
 table, `names:` in `contracts/combat.yaml` (keys on the left, display names
 on the right). Every proposed key is also listed under `pending:` in that

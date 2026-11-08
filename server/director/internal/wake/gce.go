@@ -137,16 +137,17 @@ func (g *GCE) Status(ctx context.Context) (Status, error) {
 	var body struct {
 		Status             string `json:"status"`
 		LastStartTimestamp string `json:"lastStartTimestamp"`
-		LastResumeTime     string `json:"lastResumeTimestamp"`
 	}
-	if err := g.do(ctx, http.MethodGet, g.instanceURL("?fields=status,lastStartTimestamp,lastResumeTimestamp"), &body); err != nil {
+	if err := g.do(ctx, http.MethodGet, g.instanceURL("?fields=status,lastStartTimestamp"), &body); err != nil {
 		return Status{}, err
 	}
 	g.mu.Lock()
 	g.lastRaw = body.Status
 	g.mu.Unlock()
 	st := Status{State: mapGCEStatus(body.Status)}
-	for _, ts := range []string{body.LastStartTimestamp, body.LastResumeTime} {
+	// lastResumeTimestamp is not a Compute API field (the API rejects the whole
+	// fields selector with HTTP 400 if it is asked for), so only start times.
+	for _, ts := range []string{body.LastStartTimestamp} {
 		if t, err := time.Parse(time.RFC3339, ts); err == nil && t.After(st.LastStart) {
 			st.LastStart = t
 		}
