@@ -35,7 +35,9 @@ func testWorld(t *testing.T) *World {
 	return NewWorld(a, structures.Wrap(base, o), sites)
 }
 
-func at(w *World, x, z float64) movement.Vec3 { return movement.Vec3{X: x, Y: w.Ground.HeightAt(x, z), Z: z} }
+func at(w *World, x, z float64) movement.Vec3 {
+	return movement.Vec3{X: x, Y: w.Ground.HeightAt(x, z), Z: z}
+}
 
 func TestDiscoveryOncePerCharacter(t *testing.T) {
 	w := testWorld(t)
