@@ -1,0 +1,18 @@
+open http://localhost:5173
+screenshot wp02-title.png
+spawn {"pos":{"x":2048,"y":0,"z":2048},"vel":{"x":0,"y":0,"z":0},"yaw":0,"pitch":-0.05,"grounded":true,"airJumps":0,"mode":"idle","seq":158}
+screenshot wp02-spawn.png {"player":{"pos":{"x":2048,"y":0,"z":2048},"vel":{"x":0,"y":0,"z":0},"yaw":0,"pitch":-0.05,"grounded":true,"airJumps":0,"mode":"idle","seq":198},"hud":{"fps":"32 FPS","frame":{"fps":32,"avgMs":31.312121212121205,"maxMs":49.90000000000009,"dropped":13}}}
+screenshot wp02-walking.png {"player":{"pos":{"x":2048,"y":0,"z":2035.4307098765398},"vel":{"x":0,"y":0,"z":-4.888888888861753},"yaw":0,"pitch":-0.05,"grounded":true,"airJumps":0,"mode":"walk","seq":359},"hud":{"fps":"32 FPS","frame":{"fps":32,"avgMs":31.25,"maxMs":66.69999999999982,"dropped":11}}}
+walk speed m/s (expected ~4.889, the wizard-wars ground equilibrium) 4.889
+screenshot wp02-sprinting.png {"player":{"pos":{"x":2056.038087942571,"y":0,"z":2015.9563465544072},"vel":{"x":3.0460122729653443,"y":0,"z":-7.204787972354331},"yaw":-0.4,"pitch":-0.05,"grounded":true,"airJumps":0,"mode":"sprint","seq":525},"hud":{"fps":"31 FPS","frame":{"fps":31,"avgMs":31.765625,"maxMs":66.70000000000073,"dropped":9}}}
+sprint speed m/s (expected ~7.822) 7.822
+screenshot wp02-double-jump.png {"player":{"pos":{"x":2060.150204511082,"y":0,"z":2006.2298827917218},"vel":{"x":3.046012272972465,"y":0,"z":-7.204787972362915},"yaw":-0.4,"pitch":-0.05,"grounded":true,"airJumps":0,"mode":"sprint","seq":606},"hud":{"fps":"30 FPS","frame":{"fps":30,"avgMs":33.332258064516104,"maxMs":66.60000000000036,"dropped":10}}}
+double jump: max feet height m (single jump apex ~1.05, double ~2.1 depending on press timing), air jumps used {"maxY":2.1,"maxAirJumps":1}
+landed {"y":0,"grounded":true,"mode":"idle"}
+teleported next to the region corner (1024, 1024) {"x":1000,"y":0,"z":1000}
+screenshot wp02-cell-borders.png {"player":{"pos":{"x":1000,"y":0,"z":1000},"vel":{"x":0,"y":0,"z":0},"yaw":-2.356194490192345,"pitch":-0.3,"grounded":true,"airJumps":0,"mode":"idle","seq":843},"hud":{"fps":"30 FPS","frame":{"fps":30,"avgMs":33.32903225806448,"maxMs":66.70000000000073,"dropped":12}}}
+fly mode after 1.5 s forward, pitched up {"pos":{"x":1019.9271191148171,"y":10.286877444956234,"z":1019.9271191148171},"mode":"fly"}
+screenshot wp02-fly.png {"player":{"pos":{"x":1019.9271191148171,"y":10.286877444956234,"z":1019.9271191148171},"vel":{"x":0,"y":0,"z":0},"yaw":-2.356194490192345,"pitch":0.35,"grounded":false,"airJumps":0,"mode":"fly","seq":964},"hud":{"fps":"37 FPS","frame":{"fps":37,"avgMs":26.75,"maxMs":66.60000000000036,"dropped":9}}}
+screenshot wp02-debug-panel.png {"player":{"pos":{"x":1019.9271191148171,"y":10.286877444956234,"z":1019.9271191148171},"vel":{"x":0,"y":0,"z":0},"yaw":-2.356194490192345,"pitch":0.35,"grounded":false,"airJumps":0,"mode":"fly","seq":1023},"hud":{"fps":"45 FPS","frame":{"fps":45,"avgMs":22.463043478260854,"maxMs":83.29999999999927,"dropped":8}}}
+frame windows (SwiftShader software GL, not a GPU number) [{"fps":48,"avgMs":20.74897959183675,"maxMs":50,"dropped":5},{"fps":47,"avgMs":21.27659574468085,"maxMs":50,"dropped":4},{"fps":46,"avgMs":21.627659574468087,"maxMs":33.400000000001455,"dropped":5}]
+page errors []

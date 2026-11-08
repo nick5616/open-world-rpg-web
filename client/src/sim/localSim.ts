@@ -1,0 +1,86 @@
+// The local player's simulation driver, independent of React/three so it can
+// be unit tested: per rendered frame it latches input edges, runs as many
+// fixed 1/60 s steps as the accumulator allows (one InputFrame each) and
+// returns a render pose interpolated between the last two steps.
+//
+// Why interpolate: with steps at 60 Hz and a 144 Hz display, drawing the
+// latest step directly shows the camera holding still for 1-2 frames and then
+// jumping, which reads as judder. Lerping prev -> current by the leftover
+// accumulator fraction makes motion smooth at any refresh rate, at the cost of
+// at most one step (16.7 ms) of visual latency. Look (yaw/pitch) is NOT
+// interpolated: it is applied every frame straight from the mouse.
+
+import type { GroundQuery } from './ground';
+import { advanceFixedStep, lerp } from './fixedStep';
+import { stepFly } from './fly';
+import { JumpEdgeLatch, makeMoveInput, type HeldButtons } from './inputFrame';
+import { cloneMoveState, isGrounded, stepMovement, STEP_DT, type MoveInput, type MoveState, type Vec3 } from './movement';
+
+export interface FrameInput {
+  held: HeldButtons;
+  /** Radians, unquantized; quantized per step into the InputFrame. */
+  yaw: number;
+  pitch: number;
+  fly: boolean;
+}
+
+/** One simulated step, for WP06 to send/store for reconciliation. */
+export interface StepRecord {
+  seq: number;
+  input: MoveInput;
+  state: MoveState;
+  fly: boolean;
+}
+
+export class LocalSim {
+  private prev: MoveState;
+  private cur: MoveState;
+  private accum = 0;
+  private latch = new JumpEdgeLatch();
+  seq = 0;
+  /** Optional per-step hook (WP06: send + store for reconciliation). */
+  onStep: ((r: StepRecord) => void) | null = null;
+
+  constructor(private ground: GroundQuery, spawn: Vec3) {
+    this.cur = { pos: { ...spawn }, vel: { x: 0, y: 0, z: 0 }, airJumps: 0 };
+    this.prev = cloneMoveState(this.cur);
+  }
+
+  get state(): Readonly<MoveState> {
+    return this.cur;
+  }
+
+  setGround(g: GroundQuery): void {
+    this.ground = g;
+  }
+
+  /** Hard move (teleport, respawn, server snap): no interpolation streak across it. */
+  teleport(p: { x: number; y?: number; z: number }): void {
+    const y = p.y ?? this.ground.heightAt(p.x, p.z);
+    this.cur = { pos: { x: p.x, y, z: p.z }, vel: { x: 0, y: 0, z: 0 }, airJumps: 0 };
+    this.prev = cloneMoveState(this.cur);
+    this.accum = 0;
+  }
+
+  grounded(): boolean {
+    return isGrounded(this.cur.pos, this.ground);
+  }
+
+  /** Advance by one rendered frame; returns the interpolated feet position to draw. */
+  frame(dt: number, inp: FrameInput, out: Vec3 = { x: 0, y: 0, z: 0 }): Vec3 {
+    this.latch.sample(inp.held.jump);
+    const r = advanceFixedStep(this.accum, dt, STEP_DT);
+    this.accum = r.accum;
+    for (let i = 0; i < r.steps; i++) {
+      const input = makeMoveInput(inp.held, this.latch.consume(), inp.yaw, inp.pitch);
+      this.prev = this.cur;
+      this.cur = inp.fly ? stepFly(this.cur, input, STEP_DT) : stepMovement(this.cur, input, this.ground, STEP_DT);
+      this.seq++;
+      this.onStep?.({ seq: this.seq, input, state: this.cur, fly: inp.fly });
+    }
+    out.x = lerp(this.prev.pos.x, this.cur.pos.x, r.alpha);
+    out.y = lerp(this.prev.pos.y, this.cur.pos.y, r.alpha);
+    out.z = lerp(this.prev.pos.z, this.cur.pos.z, r.alpha);
+    return out;
+  }
+}
