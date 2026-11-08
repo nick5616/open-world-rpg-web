@@ -32,6 +32,7 @@ import (
 	"lodestone/server/pkg/writebehind"
 	"lodestone/server/zone/internal/aoi"
 	"lodestone/server/zone/internal/explore"
+	"lodestone/server/zone/internal/npc"
 )
 
 // Config is everything a zone needs; main.go fills it from env.
@@ -74,6 +75,12 @@ type Config struct {
 	Explore *explore.World
 	Parties PartyDirectory
 	Saves   *localsave.Store
+	// WP20 towns (towns.go): the world's townsfolk (nil: no NPCs), the
+	// forge/anvil hook for WP14 (nil: Event 805 only) and an offset added to
+	// the zone clock for the NPC day (tests, evidence; WP15 owns the clock).
+	Towns       *npc.World
+	Stations    Stations
+	TimeOffsetS float64
 	// Now is the wall clock (tickets, server time); tests override it.
 	Now func() time.Time
 }
@@ -108,6 +115,7 @@ type Server struct {
 	env      movement.Env        // WP10: this tick's movement env (stepEnv)
 	hap      []explore.Happening // scratch for exploreTick
 	party    partyState
+	town     townsState // WP20 (towns.go)
 	// WP11: next earshot hand-off (earshot.go).
 	earshotNext time.Time
 
@@ -260,6 +268,7 @@ func (s *Server) onTick() {
 	s.exploreTick(tick)             // WP12: towers, waypoints, discoveries, party ring (explore.go)
 	s.caveTick(tick)                // WP09: cave cell interest + each entity's cave system (caves.go)
 	s.miningTick(tick, s.cfg.Now()) // WP09: pickups, respawns, WorldEdits interest (mining.go)
+	s.townsTick(tick, s.cfg.Now())  // WP20: townsfolk near players (towns.go)
 
 	// Quantize once per entity and rebuild the grid; every client's snapshot
 	// reads these.

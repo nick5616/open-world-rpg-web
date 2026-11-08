@@ -337,7 +337,18 @@ fn furn(c: &mut Ctx, t: &mut Towns, bi: u16, o: &Obb, u: f64, v: f64, rot: f64, 
     if let Some((hu, hv, h)) = solid {
         let quarter_turns = libm::round(rot / core::f64::consts::FRAC_PI_2) as i64;
         let (hu, hv) = if quarter_turns % 2 != 0 { (hv, hu) } else { (hu, hv) };
-        push_flat(&mut t.boxes, &sub(o, u, v, hu, hv), y - 0.1, y + h, bk::FURNITURE, bf::WALK | bf::SOLID, bi);
+        // Furniture you could step onto (beds, chests: top within a step)
+        // is walkable; anything taller is solid only. A walkable top higher
+        // than a step is a hard edge the climb grab can latch onto from the
+        // air, where the last-ulp sin/cos difference between V8 and Go
+        // (WP02/WP10 caveat) can flip the grab: client and zone then
+        // disagree by centimetres. Solid-only furniture just pushes you away.
+        let flags = if h <= crate::gen::constants::MAX_STEP_UP_M {
+            bf::WALK | bf::SOLID
+        } else {
+            bf::SOLID
+        };
+        push_flat(&mut t.boxes, &sub(o, u, v, hu, hv), y - 0.1, y + h, bk::FURNITURE, flags, bi);
     }
 }
 
@@ -382,7 +393,8 @@ fn interior(c: &mut Ctx, t: &mut Towns, bi: u16, o: &Obb, r: u8, style: u8, wt: 
             furn(c, t, bi, o, iu - 0.35, iv * 0.15, 0.0, pk::BARREL, 0, y, Some((0.3, 0.3, 0.9)), 0);
             furn(c, t, bi, o, iu - 0.35, iv * 0.15 + 1.0, 0.0, pk::SHELF, 1, y, Some((0.2, 0.6, 1.8)), 0);
             furn(c, t, bi, o, 0.0, iv - 0.5, pi, pk::HEARTH, style, y, Some((0.9, 0.45, 1.2)), pf::LIGHT);
-            for (k, (u, v)) in [(-iu * 0.55, -iv * 0.3), (-iu * 0.55, iv * 0.35), (0.0, -iv * 0.3)].iter().enumerate() {
+            // Tables off the door lane (u = 0), so the way from the door to the hearth stays open.
+            for (k, (u, v)) in [(-iu * 0.6, -iv * 0.4), (-iu * 0.6, iv * 0.4), (iu * 0.35, iv * 0.55)].iter().enumerate() {
                 furn(c, t, bi, o, *u, *v, 0.0, pk::TABLE, k as u8, y, Some((0.75, 0.45, 0.78)), 0);
                 furn(c, t, bi, o, *u, *v - 0.8, 0.0, pk::BENCH, 0, y, None, 0);
                 furn(c, t, bi, o, *u, *v + 0.8, pi, pk::BENCH, 0, y, None, 0);

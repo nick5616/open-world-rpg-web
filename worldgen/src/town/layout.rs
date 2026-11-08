@@ -336,11 +336,21 @@ pub fn build_settlements(a: &Atlas, net: &Net, t: &mut Towns) {
         let n_stalls = 1 + size as usize;
         let mut stall_angles: Vec<f64> = Vec::new();
         let base = seq.range(0.0, TAU);
+        // Keep the doorways of buildings facing the square clear: no stall,
+        // board or well in front of an inn or forge door.
+        let doors: Vec<(f64, f64)> = t.buildings[set_first_building as usize..]
+            .iter()
+            .filter(|b| b.street == NONE && b.floors > 0)
+            .map(|b| (libm::atan2(b.front_z - s.z, b.front_x - s.x), (b.door_w * 0.5 + 3.0) / square))
+            .collect();
         let mut k = 0;
-        while stall_angles.len() < n_stalls + 2 && k < 24 {
-            let ang = base + k as f64 * TAU / 24.0;
+        while stall_angles.len() < n_stalls + 2 && k < 48 {
+            let ang = base + k as f64 * TAU / 48.0;
             k += 1;
-            if angles.iter().any(|&a| ang_diff(a, ang) < 0.55) || stall_angles.iter().any(|&a| ang_diff(a, ang) < 0.6) {
+            if angles.iter().any(|&a| ang_diff(a, ang) < 0.55)
+                || stall_angles.iter().any(|&a| ang_diff(a, ang) < 0.6)
+                || doors.iter().any(|&(a, h)| ang_diff(a, ang) < h + 0.12)
+            {
                 continue;
             }
             stall_angles.push(ang);
@@ -472,7 +482,8 @@ fn town_prop(c: &mut Ctx, t: &mut Towns, ter: &Terrain, x: f64, z: f64, yaw: f64
     if let Some((hu, hv, h)) = solid {
         let o = Obb::new(x, z, yaw, hu, hv);
         let sp = ter.span(&o, 0.0);
-        push_flat(&mut t.boxes, &o, sp.min - 0.5, sp.max + h, bk::TOWN_PROP, bf::SOLID | bf::WALK, c.settlement);
+        // Solid only (no walkable top): see kit::furn on hard edges.
+        push_flat(&mut t.boxes, &o, sp.min - 0.5, sp.max + h, bk::TOWN_PROP, bf::SOLID, c.settlement);
     }
 }
 

@@ -21,6 +21,7 @@ type Entity struct {
 	CharacterID string
 	Level       uint8
 	PartyID     uint32        // 0 = none; WP12 sets it from the social service's party (party.go)
+	TypeID      uint16        // enemy type, npc role | variant << 8 (WP20), ...: EntityRecord.typeId
 	x           *exploreState // WP12 exploration progress (explore.go), shared with the session
 	ListenOnly  bool          // WP11: local profile, its speaking bit is never shown
 
@@ -164,6 +165,7 @@ func (e *Entity) quantize(_ movement.Ground) {
 		Name:      e.Name,
 		Level:     e.Level,
 		PartyID:   e.PartyID,
+		TypeID:    e.TypeID,
 	}
 }
 

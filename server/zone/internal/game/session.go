@@ -322,6 +322,7 @@ func (s *Server) drain(sess *session, now time.Time) {
 		if it, ok := m.(*proto.Interact); ok {
 			s.interact(sess.ent, it, now)   // WP09 mining (mining.go)
 			s.handleInteract(sess, it, now) // WP12: fast travel, pins (explore.go)
+			s.townInteract(sess, it, now)   // WP20: NPCs, bounty board, stations, shafts (towns.go)
 			continue
 		}
 		in, ok := m.(*proto.Input)

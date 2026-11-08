@@ -44,6 +44,8 @@ func officialTowns(t *testing.T) *towns.Towns {
 
 func flat(_, y, _ float64) float64 { return 0 }
 
+func flatSurface(_, _ float64) float64 { return 0 }
+
 func inside(b *towns.Building, x, z, pad float64) bool {
 	dx, dz := x-b.X, z-b.Z
 	u := dx*b.C + dz*b.S
@@ -59,14 +61,14 @@ func TestScheduleDayAndNight(t *testing.T) {
 	indoors, homed := 0, 0
 	for i := range w.NPCs {
 		d := w.NPCs[i].Def
-		w.Place(i, noon, flat)
+		w.Place(i, noon, flat, flatSurface)
 		if s := w.NPCs[i]; s.X != d.WorkX && d.Role != towns.RoleVillager {
 			t.Fatalf("npc %d (%s) not at work at noon", i, towns.RoleNames[d.Role])
 		}
 		if !w.Open(i, noon) && d.Role != towns.RoleVillager && d.Role != towns.RoleFarmer {
 			t.Errorf("npc %d (%s) closed at noon", i, towns.RoleNames[d.Role])
 		}
-		w.Place(i, night, flat)
+		w.Place(i, night, flat, flatSurface)
 		if w.Works(i, Hour(night)) {
 			if d.Role != towns.RoleInnkeeper && d.Role != towns.RoleGuard {
 				t.Errorf("npc %d (%s) works at 01:00", i, towns.RoleNames[d.Role])
@@ -101,7 +103,7 @@ func TestWalkHomeAlongStreets(t *testing.T) {
 		if d.Home < 0 || d.Role == towns.RoleInnkeeper || d.Role == towns.RoleGuard || d.Role == towns.RoleFarmer {
 			continue
 		}
-		w.Place(i, before, flat)
+		w.Place(i, before, flat, flatSurface)
 		walkers++
 		start := w.NPCs[i]
 		for k := 0; k < 30*600 && !(w.NPCs[i].At && w.NPCs[i].Goal == GoalHome); k++ {
