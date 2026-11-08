@@ -24,6 +24,7 @@ Shared Go packages for every service (module `lodestone/server/pkg`).
 | `localsave` | (WP04) Local-profile save blobs: Ed25519 sign/verify + Redis newest-counter check |
 | `caves` | WP09: cave buffer readers, mouth masks, cave-system id, cave collision (bit-exact port of the TS queries), `Ground` (movement.LevelGround + Collider) |
 | `structures` | (WP12) structure overlay on the ground query: towers (and later WP20 buildings) as height functions max-combined with the terrain, bit-identical to the TS twin in `client/src/world/structures`; Go reader of the atlas site table |
+| `towns` | (WP20) towns buffer reader (settlements, buildings, boxes, props, NPCs, roads, structures) and the building collision (`Collision`, `Ground`: movement.LevelGround + Collider), bit-exact port of `worldgen/js/src/town.ts` |
 | `worldhost` | (WP07) wazero host for `worldgen.wasm`: pooled instances, chunk cache by interest (`Terrain`, a `movement.Ground`), genVersion/atlas-hash pin, minting, land spawns; `worldhost/mintdb` writes minted `worlds` rows (see its README) |
 | `cmd/mintworld` | (WP07) Mint a world / the official row from a seed |
 | `cmd/heightcmp` | (WP07) Bitwise ground comparison: Go/wazero vs Node vs headless Chromium |
