@@ -207,7 +207,22 @@ func TestFastPathBitwise(t *testing.T) {
 	if after.Misses != before.Misses {
 		t.Fatalf("expected every point to hit the cache: %+v", after)
 	}
-	t.Logf("%d points bitwise equal; cache %+v", len(pts), after)
+	// WP10: the water surface follows the same rule on the chunk's water lattice.
+	wet := 0
+	for _, p := range pts {
+		fast := tr.WaterAt(p[0], p[1])
+		slow := w.WaterHeight(p[0], p[1])
+		if math.Float64bits(fast) != math.Float64bits(slow) {
+			t.Fatalf("water (%v, %v): fast %v vs wasm %v", p[0], p[1], fast, slow)
+		}
+		if fast > tr.HeightAt(p[0], p[1]) {
+			wet++
+		}
+	}
+	if wet == 0 {
+		t.Fatal("expected some sample points under water")
+	}
+	t.Logf("%d points bitwise equal (heights and water, %d wet); cache %+v", len(pts), wet, after)
 }
 
 func TestTerrainNeverBlocksAndCaches(t *testing.T) {

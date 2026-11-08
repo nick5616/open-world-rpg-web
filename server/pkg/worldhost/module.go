@@ -57,6 +57,9 @@ var exportNames = []string{
 	"alloc", "free", "gen_version", "abi_version", "result_len", "error_ptr", "error_len",
 	"spec_from_seed", "atlas_build", "atlas_check", "chunk_build", "collision_height",
 	"ground_normal", "raycast", "hash_buffer",
+	// WP10: swimming needs the water surface on the server exactly as the
+	// client sees it; a wasm built before the export is refused (rebuild it).
+	"water_height",
 }
 
 // ErrNoWasm is returned by LoadFromEnv when no wasm file exists (not built).
@@ -298,7 +301,7 @@ type instance struct {
 type fns struct {
 	alloc, free, genVersion, abiVersion, resultLen, errorPtr, errorLen,
 	specFromSeed, atlasBuild, atlasCheck, chunkBuild, collisionHeight,
-	groundNormal, raycast, hashBuffer api.Function
+	groundNormal, raycast, hashBuffer, waterHeight api.Function
 }
 
 func (m *Module) newInstance(ctx context.Context) (*instance, error) {
@@ -320,7 +323,7 @@ func (m *Module) newInstance(ctx context.Context) (*instance, error) {
 		resultLen: get["result_len"], errorPtr: get["error_ptr"], errorLen: get["error_len"],
 		specFromSeed: get["spec_from_seed"], atlasBuild: get["atlas_build"], atlasCheck: get["atlas_check"],
 		chunkBuild: get["chunk_build"], collisionHeight: get["collision_height"], groundNormal: get["ground_normal"],
-		raycast: get["raycast"], hashBuffer: get["hash_buffer"],
+		raycast: get["raycast"], hashBuffer: get["hash_buffer"], waterHeight: get["water_height"],
 	}}
 	return in, nil
 }

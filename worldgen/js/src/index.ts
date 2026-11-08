@@ -27,6 +27,8 @@ export interface WorldgenExports {
   chunk_build(atlasPtr: number, cx: number, cz: number, lod: number): number;
   collision_height(atlasPtr: number, x: number, z: number): number;
   ground_normal(atlasPtr: number, x: number, z: number, outPtr: number): number;
+  /** WP10. Absent in wasm builds before it. */
+  water_height?(atlasPtr: number, x: number, z: number): number;
   raycast(atlasPtr: number, ox: number, oy: number, oz: number, dx: number, dy: number, dz: number, maxDist: number): number;
   hash_buffer(ptr: number, len: number): bigint;
 }
@@ -161,6 +163,17 @@ export class Worldgen {
   /** Ground height: the surface the server validates movement against. */
   collisionHeight(atlas: AtlasHandle, x: number, z: number): number {
     return this.exports.collision_height(atlas.ptr, x, z);
+  }
+
+  /**
+   * Water surface height (WP10, swimming): the triangle mesh over the f32 water
+   * lattice, equal to chunkWaterHeight on the LOD 0 chunk. Sea level where no
+   * lake or river covers the point (that lies under dry land).
+   */
+  waterHeight(atlas: AtlasHandle, x: number, z: number): number {
+    const f = this.exports.water_height;
+    if (!f) throw new WorldgenError('worldgen.wasm has no water_height export (rebuild: npm run build:wasm)');
+    return f(atlas.ptr, x, z);
   }
 
   groundNormal(atlas: AtlasHandle, x: number, z: number): { normal: [number, number, number]; slopeDeg: number } {

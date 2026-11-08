@@ -728,6 +728,30 @@ mod tests {
         }
     }
 
+    /// WP10: `water_height` at a lattice point is the chunk's water sample,
+    /// over chunks with lakes, rivers and dry land, so hosts can evaluate it
+    /// from chunk water (Go fast path, TS `chunkWaterHeight`).
+    #[test]
+    fn chunk_water_matches_water_height() {
+        let ab = atlas_bytes();
+        let a = Atlas::parse(&ab).unwrap();
+        let mut wet = 0;
+        for cz in (0..64).step_by(7) {
+            for cx in (0..64).step_by(7) {
+                let c = build(&a, cx, cz, 0).unwrap();
+                let woff = crate::atlas::format::get_u32(&c, 40) as usize;
+                wet += (c[21] & 1) as i32;
+                for (i, j) in [(0, 0), (64, 64), (13, 41), (64, 0), (5, 64), (32, 32)] {
+                    let w = get_f32(&c, woff + (j * S_ + i) * 4) as f64;
+                    let x = (cx * 64 + i as i32) as f64;
+                    let z = (cz * 64 + j as i32) as f64;
+                    assert_eq!(w.to_bits(), crate::ground::water_height(&a, x, z).to_bits(), "chunk ({cx},{cz}) sample ({i},{j})");
+                }
+            }
+        }
+        assert!(wet > 0, "expected some chunks with water above ground");
+    }
+
     #[test]
     fn lod_seams_match() {
         let ab = atlas_bytes();
