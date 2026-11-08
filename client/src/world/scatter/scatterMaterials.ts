@@ -152,7 +152,8 @@ export function createBillboardMaterial(atlas: THREE.Texture, tile: number, tile
         // At impostor distance the trunk is a few pixels: tinting the whole card is fine.
         vec3 albedo = c.rgb * mix(vec3(1.0), vTint, 0.85);
         float sun = 0.55 + 0.45 * max(uSunDir.y, 0.0);
-        vec3 lit = albedo * (uAmbient * 0.9 + uLightColor * sun * 0.55);
+        // Matched by eye to the LOD1 meshes under the standard material at the 200 m swap.
+        vec3 lit = albedo * (uAmbient * 0.42 + uLightColor * sun * 0.38);
         gl_FragColor = vec4(lit, 1.0);
         #include <colorspace_fragment>
       }`,

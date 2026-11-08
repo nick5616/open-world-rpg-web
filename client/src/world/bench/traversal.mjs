@@ -37,6 +37,8 @@ const tiers = process.argv.slice(2).filter((a) => ['high', 'medium', 'low'].incl
 const runTiers = tiers.length ? tiers : ['high', 'low'];
 const software = process.env.LODESTONE_BENCH_GL === 'swiftshader';
 const uncapped = process.env.LODESTONE_BENCH_UNCAPPED === '1';
+// LODESTONE_BENCH_SHORT=1: 2 s walk, no flight, results not written (iterating on the beauty shots).
+const SHORT = process.env.LODESTONE_BENCH_SHORT === '1';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const BUDGETS = { drawCalls: 400, triangles: 1.5e6, longTaskMs: 50, heapMB: 600, chunkGenMs: 8, downloadMB: 15, frameMs: { high: 16.6, medium: 16.6, low: 33 } };
@@ -161,7 +163,7 @@ async function runTier(tier) {
   await page.evaluate(() => window.__lodestone.setLook(Math.PI * 0.25, -0.05));
   await begin();
   await page.keyboard.down('KeyW');
-  await sleep(20000);
+  await sleep(SHORT ? 2000 : 20000);
   await page.keyboard.up('KeyW');
   const walk = await end('walk');
 
@@ -182,7 +184,7 @@ async function runTier(tier) {
   await page.keyboard.down('KeyW');
   await page.keyboard.down('ShiftLeft'); // 80 m/s: the streaming worst case (spec: farther ahead when gliding/sprinting)
   const legs = [];
-  for (const wp of route) {
+  for (const wp of SHORT ? [] : route) {
     const legStart = Date.now();
     for (;;) {
       const p = (await page.evaluate(() => window.__lodestone.player())).pos;
@@ -217,24 +219,44 @@ async function runTier(tier) {
       await page.evaluate(setup);
       await settle();
       const file = `wp05-${name}.png`;
-      await page.evaluate(() => window.__lodestone && document.querySelector('[data-testid="debug-hud"]')?.setAttribute('style', 'display:none'));
+      // Clean frame: no debug HUD, no pointer-lock hint (headless never locks).
+      await page.evaluate(() => {
+        document.querySelector('[data-testid="debug-hud"]')?.setAttribute('style', 'display:none');
+        for (const el of document.querySelectorAll('div')) if (el.childElementCount === 0 && /Click to look around/.test(el.textContent ?? '')) el.style.display = 'none';
+      });
       await page.screenshot({ path: join(out, file) });
       shots.push(file);
       console.log(`[${tier}] screenshot ${file}`);
     };
     const pick = (biome, pred = () => true) => sites.filter((s) => s.biome === biome && pred(s)).sort((a, b) => Math.hypot(a.x - spawn.x, a.z - spawn.z) - Math.hypot(b.x - spawn.x, b.z - spawn.z))[0];
     const meadow = { x: spawn.x + 40, z: spawn.z + 30 };
-    const forest = pick('forest', (s) => s.category === 'settlement') ?? pick('forest');
+    // Forest: the middle of the largest forest patch (forest settlements sit on clearings or coasts).
+    const forest = await page.evaluate(() => window.__lodestoneWorld.biomeSpot(1));
     const snow = pick('snowpeak');
     const valley = pick('meadow', (s) => s.category === 'settlement' && Math.hypot(s.x - spawn.x, s.z - spawn.z) > 300) ?? pick('highlands');
     await page.evaluate(() => window.__lodestone.setFly(false));
     await shoot('meadow', `(() => { const L = window.__lodestone; L.setTimeOfDay(0.42 * 3600); L.teleport({ x: ${meadow.x}, z: ${meadow.z} }); L.setLook(${Math.PI * 0.75}, -0.02); })()`);
-    if (forest) await shoot('forest', `(() => { const L = window.__lodestone; L.setTimeOfDay(0.45 * 3600); L.teleport({ x: ${forest.x + forest.radius + 25}, z: ${forest.z} }); L.setLook(${Math.PI * 0.5}, 0.05); })()`);
+    if (forest) await shoot('forest', `(() => { const L = window.__lodestone; L.setTimeOfDay(0.4 * 3600); L.teleport({ x: ${forest.x}, z: ${forest.z} }); L.setLook(${Math.PI * 0.8}, 0.08); })()`);
     if (snow) await shoot('snowpeak', `(() => { const L = window.__lodestone; L.setFly(true); L.setTimeOfDay(0.4 * 3600); L.teleport({ x: ${snow.x - 250}, y: ${snow.y + 60}, z: ${snow.z + 250} }); L.setLook(${Math.atan2(250, -250)}, -0.12); })()`);
     if (valley) await shoot('valley-sunset', `(() => { const L = window.__lodestone; L.setFly(true); L.setTimeOfDay(0.738 * 3600); L.teleport({ x: ${valley.x + 200}, y: ${valley.y + 45}, z: ${valley.z} }); L.setLook(${Math.PI / 2}, -0.08); })()`);
     await shoot('dawn-fog', `(() => { const L = window.__lodestone; L.setFly(true); L.setTimeOfDay(0.27 * 3600); L.teleport({ x: ${spawn.x}, y: window.__lodestoneWorld.groundAt(${spawn.x}, ${spawn.z}) + 70, z: ${spawn.z} }); L.setLook(${-Math.PI / 2}, -0.15); })()`);
     await shoot('lod-tiles', `(() => { const L = window.__lodestone; L.setTimeOfDay(0.45 * 3600); L.setShowCells(true); L.teleport({ x: ${spawn.x}, y: window.__lodestoneWorld.groundAt(${spawn.x}, ${spawn.z}) + 180, z: ${spawn.z} }); L.setLook(0.3, -0.6); })()`);
     await page.evaluate(() => window.__lodestone.setShowCells(false));
+    // Debug panel: regenerate the chunk under the player and compare hashes (spec 14 dev tool), via the real UI.
+    await page.evaluate(() => {
+      const L = window.__lodestone;
+      L.setFly(false);
+      L.setTimeOfDay(0.42 * 3600);
+      L.setLook(0.5, -0.1);
+      document.querySelector('[data-testid="debug-hud"]')?.removeAttribute('style');
+    });
+    await page.keyboard.press('Backquote');
+    await page.click('[data-testid="world-debug"] button');
+    await page.waitForSelector('[data-testid="regen-result"]', { timeout: 30000 });
+    await sleep(500);
+    await page.screenshot({ path: join(out, 'wp05-debug-panel.png') });
+    shots.push('wp05-debug-panel.png');
+    await page.keyboard.press('Backquote');
   }
 
   // Regenerate the chunk under the player and compare hashes (debug tool, spec 14).
@@ -274,7 +296,7 @@ async function runTier(tier) {
     },
     shots,
   };
-  writeFileSync(join(out, `wp05-traversal-${tier}.json`), JSON.stringify(result, null, 2) + '\n');
+  if (!SHORT) writeFileSync(join(out, `wp05-traversal-${tier}.json`), JSON.stringify(result, null, 2) + '\n');
   console.log(`[${tier}] budgets`, JSON.stringify(result.budgets));
   return result;
 }
@@ -305,5 +327,5 @@ const md = [
   ...results.map((r) => `- ${r.tier}: renderer ${r.renderer}; first playable ${Math.round(r.firstPlayableMs)} ms after navigation start; route ${r.route.map((l) => l.to).join(' -> ')}; regen hash ${r.regen?.match ? 'MATCH' : 'MISMATCH'}; page errors ${r.errors.length}`),
   '',
 ].join('\n');
-writeFileSync(join(out, 'wp05-traversal.md'), md);
+if (!SHORT) writeFileSync(join(out, 'wp05-traversal.md'), md);
 console.log(md);

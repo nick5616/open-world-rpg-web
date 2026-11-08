@@ -43,13 +43,21 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
     // Exponential height fog, integrated analytically along the ray.
     float b = uFogFalloff;
     float base = uFogDensity * exp(-b * (uCamPos.y - uFogBase));
-    float k = b * d.y * L;
-    float fh = abs(k) > 1e-4 ? base * (1.0 - exp(-k)) / (b * d.y) : base * L;
+    // k clamped: looking down from high up, exp(-k) overflowed to Inf, and
+    // Inf * a vanishing base is NaN (black squares once bloom spreads it).
+    float k = clamp(b * d.y * L, -60.0, 60.0);
+    float fh = abs(k) > 1e-4 ? base * L * (1.0 - exp(-k)) / k : base * L;
     float T = exp(-(max(fh, 0.0) + uHaze * L));
-    vec3 sky = skyRadiance(normalize(vec3(d.x, max(d.y, 0.03), d.z)), uSunDir);
-    // Sun in-scattering: the haze glows toward the sun, which is what makes rays visible in air.
+    // Fog colour: the sky's Rayleigh + ambient light at the horizon in this
+    // direction (no Mie aureole: that is concentrated near the sun disc and
+    // turned the whole fog bank into a white-gold wall at dawn).
+    vec3 sky = skyAmbient(normalize(vec3(d.x, max(d.y, 0.03), d.z)), uSunDir);
+    // Sun in-scattering with a broad forward lobe: haze brightens toward the
+    // sun, which is what makes god rays and valley fog read as lit air.
     float mu = dot(d, uSunDir);
-    vec3 inscatter = uSunColor * phaseM(mu) * 0.35;
+    float g = 0.55;
+    float pm = (1.0 - g * g) / (4.0 * PI_ * pow(1.0 + g * g - 2.0 * g * mu, 1.5));
+    vec3 inscatter = uSunColor * pm * 0.5;
     col = col * T + (sky + inscatter) * (1.0 - T);
   }
   outputColor = vec4(col * uExposure, inputColor.a);
@@ -149,11 +157,11 @@ export class PostFX {
     this.sunSource.frustumCulled = false;
     const effects: Effect[] = [this.fog];
     if (cfg.godRays) {
-      this.godRays = new GodRaysEffect(camera, this.sunSource, { resolutionScale: 0.5, density: 0.94, decay: 0.92, weight: 0.32, exposure: 0.5, samples: 48, clampMax: 1, blur: true });
+      this.godRays = new GodRaysEffect(camera, this.sunSource, { resolutionScale: 0.5, density: 0.9, decay: 0.93, weight: 0.22, exposure: 0.32, samples: 48, clampMax: 0.8, blur: true });
       effects.push(this.godRays);
     }
     if (cfg.bloom) {
-      this.bloom = new BloomEffect({ mipmapBlur: true, intensity: 0.55, luminanceThreshold: 0.95, luminanceSmoothing: 0.25, radius: 0.7 });
+      this.bloom = new BloomEffect({ mipmapBlur: true, intensity: 0.45, luminanceThreshold: 1.25, luminanceSmoothing: 0.3, radius: 0.65 });
       effects.push(this.bloom);
     }
     effects.push(new ToneMappingEffect({ mode: ToneMappingMode.ACES_FILMIC }));
@@ -165,8 +173,9 @@ export class PostFX {
   update(sunDir: THREE.Vector3, sunColor: THREE.Color, sunVisible: number): void {
     const far = this.camera.far * 0.9;
     this.sunSource.position.copy(this.camera.position).addScaledVector(sunDir, far);
-    // ~3 degrees across: big enough to seed rays at half resolution.
-    this.sunSource.scale.setScalar(far * 0.028);
+    // ~1.6 degrees across: big enough to seed rays at half resolution, small
+    // enough that the rays stay rays instead of a screen-wide glow.
+    this.sunSource.scale.setScalar(far * 0.014);
     this.sunSource.updateMatrixWorld();
     (this.sunSource.material as THREE.MeshBasicMaterial).color.copy(sunColor).multiplyScalar(sunVisible);
     this.fog.setCamera(this.camera);

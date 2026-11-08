@@ -56,7 +56,7 @@ function lumpy(g: THREE.BufferGeometry, amount: number, seed: number, c = new TH
   return g;
 }
 
-const BARK = new THREE.Color(0.23, 0.16, 0.11);
+const BARK = new THREE.Color(0.14, 0.095, 0.06);
 const LEAF = new THREE.Color(0.16, 0.3, 0.09);
 const NEEDLE = new THREE.Color(0.09, 0.2, 0.1);
 
@@ -159,11 +159,12 @@ export function grassClump(blades = 6, seed = 5): THREE.BufferGeometry {
   const pos: number[] = [];
   const nor: number[] = [];
   const col: number[] = [];
-  const root = new THREE.Color(0.1, 0.16, 0.04);
-  const tip = new THREE.Color(0.42, 0.55, 0.2);
+  // Root close to the ground texture so clumps grow out of it rather than sit on it.
+  const root = new THREE.Color(0.12, 0.15, 0.05);
+  const tip = new THREE.Color(0.4, 0.52, 0.17);
   for (let b = 0; b < blades; b++) {
     const a = r() * Math.PI * 2;
-    const d = r() * 0.18;
+    const d = r() * 0.13;
     const x = Math.cos(a) * d;
     const z = Math.sin(a) * d;
     const h = 0.55 + r() * 0.45;

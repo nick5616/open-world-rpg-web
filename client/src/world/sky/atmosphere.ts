@@ -37,6 +37,23 @@ export function sunVisibility(sunY: number): number {
   return THREE.MathUtils.smoothstep(sunY, -0.08, 0.02);
 }
 
+/**
+ * Sunlight reaching the air that scatters it toward the viewer. That air is
+ * mostly high up, so the light has crossed only part of the airmass that
+ * reaches the ground: with the full ground transmittance the zenith turned
+ * orange at sunset, while the real one stays blue above an orange horizon.
+ * Looking at the horizon, the scattering air is low and the full reddening
+ * applies; looking up, only SKY_TRANS_FRACTION of it.
+ */
+export const SKY_TRANS_FRACTION = 0.3;
+export function sunTransmittanceSky(sunY: number, viewY: number, out = new THREE.Color()): THREE.Color {
+  const f = 1 + (SKY_TRANS_FRACTION - 1) * Math.sqrt(Math.min(1, Math.max(0, viewY)));
+  const m = airmass(Math.max(sunY, 0.0)) * f;
+  const vis = sunVisibility(sunY);
+  out.setRGB(Math.exp(-(TAU_R.x + TAU_M * 1.1) * m) * vis, Math.exp(-(TAU_R.y + TAU_M * 1.1) * m) * vis, Math.exp(-(TAU_R.z + TAU_M * 1.1) * m) * vis);
+  return out;
+}
+
 /** Linear RGB of direct sunlight at the ground (before SUN_E), writes into out. */
 export function sunTransmittance(sunY: number, out = new THREE.Color()): THREE.Color {
   const m = airmass(Math.max(sunY, 0.0));
@@ -53,7 +70,7 @@ export function skyRadiance(v: THREE.Vector3, s: THREE.Vector3, out = new THREE.
   const vy = Math.max(v.y, 0.0);
   const mv = airmass(vy);
   const mu = v.dot(s);
-  const ts = sunTransmittance(s.y);
+  const ts = sunTransmittanceSky(s.y, v.y);
   const pR = phaseR(mu);
   const pM = phaseM(mu);
   const ch = (tr: number, t: number) => {
@@ -145,6 +162,10 @@ float sunVis(float y) { return smoothstep(-0.08, 0.02, y); }
 vec3 sunTrans(float y) {
   return exp(-(TAU_R + TAU_M * 1.1) * airmassY(max(y, 0.0))) * sunVis(y);
 }
+vec3 sunTransSky(float y, float vy) {
+  float f = mix(1.0, ${SKY_TRANS_FRACTION.toFixed(3)}, sqrt(clamp(vy, 0.0, 1.0)));
+  return exp(-(TAU_R + TAU_M * 1.1) * airmassY(max(y, 0.0)) * f) * sunVis(y);
+}
 float phaseR(float mu) { return 3.0 / (16.0 * PI_) * (1.0 + mu * mu); }
 float phaseM(float mu) {
   float g2 = MIE_G * MIE_G;
@@ -154,7 +175,17 @@ vec3 skyRadiance(vec3 v, vec3 s) {
   float mv = airmassY(max(v.y, 0.0));
   float mu = dot(v, s);
   vec3 tau = TAU_R + TAU_M;
-  vec3 L = SUN_E * sunTrans(s.y) * (TAU_R * phaseR(mu) + TAU_M * phaseM(mu)) * (1.0 - exp(-tau * mv)) / tau;
+  vec3 L = SUN_E * sunTransSky(s.y, v.y) * (TAU_R * phaseR(mu) + TAU_M * phaseM(mu)) * (1.0 - exp(-tau * mv)) / tau;
+  float amb = 0.02 + 0.25 * sunVis(s.y + 0.1) * max(0.0, s.y + 0.1);
+  L += amb * vec3(0.32, 0.45, 0.75) + vec3(0.004, 0.006, 0.012);
+  return L;
+}
+/** skyRadiance without the Mie aureole (fog colour). */
+vec3 skyAmbient(vec3 v, vec3 s) {
+  float mv = airmassY(max(v.y, 0.0));
+  float mu = dot(v, s);
+  vec3 tau = TAU_R + TAU_M;
+  vec3 L = SUN_E * sunTransSky(s.y, v.y) * (TAU_R * phaseR(mu) + TAU_M * 0.08) * (1.0 - exp(-tau * mv)) / tau;
   float amb = 0.02 + 0.25 * sunVis(s.y + 0.1) * max(0.0, s.y + 0.1);
   L += amb * vec3(0.32, 0.45, 0.75) + vec3(0.004, 0.006, 0.012);
   return L;

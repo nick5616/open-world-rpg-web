@@ -118,7 +118,27 @@ const handle = {
   resetStats: () => worldDebug.resetStats(),
   regenerateCurrentChunk: () => worldDebug.regenerateCurrentChunk(),
   groundAt: (x: number, z: number) => worldDebug.runtime?.ground.heightAt(x, z) ?? null,
-  sites: () => worldDebug.runtime?.data.sites.map((s) => ({ kind: s.kind, category: s.category, biome: s.biome, x: s.x, y: s.y, z: s.z, name: s.name })) ?? [],
+  sites: () => worldDebug.runtime?.data.sites.map((s) => ({ kind: s.kind, category: s.category, biome: s.biome, x: s.x, y: s.y, z: s.z, radius: s.radius, name: s.name })) ?? [],
+  /** Centre of the largest uniform patch of a biome on land (benchmark beauty shots). */
+  biomeSpot: (biome: number) => {
+    const d = worldDebug.runtime?.data;
+    if (!d) return null;
+    const N = d.gridN;
+    let best = -1;
+    let at = { x: 0, z: 0 };
+    for (let j = 6; j < N - 6; j++) {
+      for (let i = 6; i < N - 6; i++) {
+        if (d.biome[j * N + i] !== biome || d.height[j * N + i] < d.seaY + 6) continue;
+        let n = 0;
+        for (let dj = -5; dj <= 5; dj++) for (let di = -5; di <= 5; di++) if (d.biome[(j + dj) * N + i + di] === biome && d.height[(j + dj) * N + i + di] > d.seaY + 2) n++;
+        if (n > best) {
+          best = n;
+          at = { x: i * d.macroRes, z: j * d.macroRes };
+        }
+      }
+    }
+    return at;
+  },
   biomeAt: (x: number, z: number) => {
     const d = worldDebug.runtime?.data;
     if (!d) return null;

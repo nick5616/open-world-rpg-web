@@ -31,7 +31,8 @@ const LAYER_ROCK = 2;
 const LAYER_BUSH = 3;
 const LAYER_TUFT = 4;
 const LOD0_M = 60;
-const BAND = 8;
+/** Half-width of the dithered cross-fade between LODs (m): wide bands read as screen-door noise. */
+const BAND = 5;
 const REBIN_MOVE_M = 6;
 const GRASS_REBIN_MOVE_M = 2;
 /** Rocks and bushes cast shadows only this close (tree LODs cast to treeMeshDistance). */

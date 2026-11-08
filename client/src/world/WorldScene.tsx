@@ -34,8 +34,8 @@ interface Props {
 }
 
 const GRADE = {
-  day: { gain: new THREE.Vector3(1.0, 1.0, 1.0), lift: new THREE.Vector3(0.0, 0.0, 0.01), sat: 1.1, contrast: 1.05 },
-  golden: { gain: new THREE.Vector3(1.07, 0.99, 0.86), lift: new THREE.Vector3(0.01, 0.0, 0.0), sat: 1.18, contrast: 1.06 },
+  day: { gain: new THREE.Vector3(1.0, 1.0, 1.0), lift: new THREE.Vector3(0.0, 0.0, 0.01), sat: 1.15, contrast: 1.1 },
+  golden: { gain: new THREE.Vector3(1.03, 0.99, 0.93), lift: new THREE.Vector3(0.0, 0.0, 0.01), sat: 1.06, contrast: 1.08 },
   night: { gain: new THREE.Vector3(0.82, 0.92, 1.12), lift: new THREE.Vector3(0.0, 0.005, 0.02), sat: 0.7, contrast: 1.02 },
 };
 /** Per-biome grade offsets (gain multiplier, saturation delta), BIOMES order. */
@@ -234,11 +234,11 @@ export function WorldScene({ runtime }: Props) {
       const evening = Math.exp(-(((hour - 19) / 1.5) ** 2)) * 0.4;
       const fogU = f.post.fog;
       fogU.u('uSunDir').value.copy(L.sunDir);
-      (fogU.u('uSunColor').value as THREE.Color).copy(L.lightColor).multiplyScalar(L.lightIntensity * 0.6);
-      fogU.u('uFogDensity').value = 0.0012 + 0.009 * morning + 0.004 * evening;
+      (fogU.u('uSunColor').value as THREE.Color).copy(L.lightColor).multiplyScalar(L.lightIntensity * 0.6 * sunVisibility(L.sunDir.y));
+      fogU.u('uFogDensity').value = 0.0004 + 0.0045 * morning + 0.0015 * evening;
       fogU.u('uFogFalloff').value = 1 / 38;
       fogU.u('uFogBase').value = runtime.seaY + 18;
-      fogU.u('uHaze').value = 1 / 7500;
+      fogU.u('uHaze').value = 1 / 14000;
       fogU.u('uExposure').value = 1.0 + (1 - L.day) * 1.6;
       // Grade: time of day, then the biome under the player (eased, so crossing a border is a drift, not a cut).
       const g = f.post.grade;

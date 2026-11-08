@@ -148,6 +148,10 @@ if (uTexReady < 0.5) {
   // Planar UVs: 1 texture repeat per 4 m; cliffs 1 per 9 m (triplanar).
   vec2 uv = vWPos.xz * 0.25;
   vec2 dx = dFdx(uv), dy = dFdy(uv);
+  const mat2 ROT = mat2(0.799, 0.602, -0.602, 0.799);
+  vec2 uv2 = ROT * (uv * 0.41) + vec2(0.37, 0.71);
+  vec2 dx2 = ROT * (dx * 0.41), dy2 = ROT * (dy * 0.41);
+  float tileMix = smoothstep(0.25, 0.75, tNoise(vWPos.xz * 0.035)) * 0.6;
   vec3 tp = vWPos / 9.0;
   vec3 dpx = dFdx(tp), dpy = dFdy(tp);
   vec3 tw = pow(abs(Ng), vec3(4.0));
@@ -167,6 +171,12 @@ if (uTexReady < 0.5) {
         + textureGrad(tColor, vec3(tp.xy, float(i)), dpx.xy, dpy.xy) * tw.z;
     } else {
       c = textureGrad(tColor, vec3(uv, float(i)), dx, dy);
+      #ifdef TERRAIN_NORMALS
+      // Anti-tiling: blend in a second, rotated, larger-scale sample where a
+      // slow noise says so; a 4 m repeat otherwise reads as wallpaper across
+      // a sand flat or meadow. Colour only (normals/ORM stay single-sampled).
+      c = mix(c, textureGrad(tColor, vec3(uv2, float(i)), dx2, dy2), tileMix);
+      #endif
     }
     col[i] = c;
     hs[i] = w[i] + c.a * 0.6;
@@ -176,6 +186,9 @@ if (uTexReady < 0.5) {
   float bs = 0.0;
   float b[${NL}];
   for (int i = 0; i < ${NL}; i++) { b[i] = max(hs[i] - hmax + 0.25, 0.0); bs += b[i]; }
+  // Guard: no layer sampled (all weights ~0, e.g. sea floor past the coast)
+  // would make 0/0 here; one NaN pixel turns into black squares through bloom.
+  bs = max(bs, 1e-5);
   vec3 nsum = vec3(0.0);
   vec3 orm = vec3(0.0);
   for (int i = 0; i < ${NL}; i++) {
@@ -211,7 +224,7 @@ if (uTexReady < 0.5) {
       #endif
     }
   }
-  terrainN = normalize(nsum);
+  terrainN = dot(nsum, nsum) > 1e-8 ? normalize(nsum) : Ng;
   terrainAO = mix(1.0, orm.r, 0.8);
   terrainRough = orm.g;
   // Far away, fade normal detail (it only shimmers) and add macro variation.
@@ -221,7 +234,7 @@ if (uTexReady < 0.5) {
 
 // Grass colour from moisture and biome: dry is straw, wet is deep green.
 float gw = (w[0] + w[6] * 0.5) / max(w[0] + w[1] + w[2] + w[3] + w[4] + w[5] + w[6] + w[7] + w[8], 1e-3);
-vec3 lush = mix(vec3(1.02, 1.12, 0.62), vec3(0.78, 1.08, 0.62), wetl);
+vec3 lush = mix(vec3(0.98, 1.2, 0.58), vec3(0.78, 1.1, 0.6), wetl);
 vec3 dry = vec3(1.28, 1.08, 0.62);
 vec3 grassTint = mix(dry, lush, smoothstep(0.15, 0.6, moist + wetl * 0.3));
 grassTint = mix(grassTint, grassTint * vec3(0.92, 0.98, 1.02), highl);
