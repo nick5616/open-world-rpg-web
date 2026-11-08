@@ -12,6 +12,8 @@ import { NetPlay, useOnlineSession } from '../net/NetPlay';
 import { DEBUG, SOLO } from '../config';
 // WP08: renders nothing until the play flow calls startSocial() (client/src/social/README.md).
 import { SocialOverlay } from '../social';
+// WP12: compass, discovery toasts, map (M).
+import { ExplorationHud } from '../ui/map/ExplorationHud';
 
 function DebugLayer() {
   useDebugHotkeys();
@@ -35,6 +37,7 @@ export default function PlayScreen() {
       <LockHint />
       {DEBUG && <DebugLayer />}
       <SocialOverlay />
+      <ExplorationHud />
     </>
   );
 }
