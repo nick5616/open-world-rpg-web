@@ -570,3 +570,6 @@ func (g *Group) String() string {
 	}
 	return fmt.Sprintf("%s#%d @(%.0f,%.0f) lvl %d members %d/%d", g.Kind, g.ID, g.Anchor.X, g.Anchor.Z, g.Level, alive, len(g.Members))
 }
+
+// Cleared reports a group that was beaten and waits for its respawn timer.
+func (g *Group) Cleared() bool { return g.spawns > 0 && !g.Spawned && g.respawn > 0 }

@@ -74,6 +74,9 @@ type Config struct {
 	Explore *explore.World
 	Parties PartyDirectory
 	Saves   *localsave.Store
+	// WP13 combat (combat.go): camps, packs, bosses from the atlas; nil =
+	// combat without atlas groups.
+	Combat *CombatSetup
 	// Now is the wall clock (tickets, server time); tests override it.
 	Now func() time.Time
 }
@@ -108,6 +111,7 @@ type Server struct {
 	env      movement.Env        // WP10: this tick's movement env (stepEnv)
 	hap      []explore.Happening // scratch for exploreTick
 	party    partyState
+	cbt      combatGlue // WP13 (combat.go)
 	// WP11: next earshot hand-off (earshot.go).
 	earshotNext time.Time
 
@@ -162,6 +166,7 @@ func New(cfg Config) *Server {
 		s.saveDiv = 1
 	}
 	s.m.init(cfg.Metrics)
+	s.initCombat() // WP13 (combat.go)
 	s.loop = &gameloop.Loop{Interval: interval, Stats: s.stats, OnTick: s.onTick}
 	return s
 }
@@ -260,6 +265,7 @@ func (s *Server) onTick() {
 	s.exploreTick(tick)             // WP12: towers, waypoints, discoveries, party ring (explore.go)
 	s.caveTick(tick)                // WP09: cave cell interest + each entity's cave system (caves.go)
 	s.miningTick(tick, s.cfg.Now()) // WP09: pickups, respawns, WorldEdits interest (mining.go)
+	s.combatTick(tick)              // WP13: enemies, strikes, claims, respawns (combat.go)
 
 	// Quantize once per entity and rebuild the grid; every client's snapshot
 	// reads these.
@@ -381,6 +387,7 @@ func (s *Server) join(sess *session) {
 		sess.closed.Store(true)
 	}
 	s.exploreJoin(sess) // WP12: progress, pins (after Welcome, which the client needs first)
+	s.combatJoin(sess)  // WP13: loadouts, health, combat_sync (combat.go)
 	s.log.Info("join", "entity", e.ID, "character", e.CharacterID, "name", e.Name, "remote", sess.conn.RemoteAddr(),
 		"x", math.Round(spawn.X*100)/100, "z", math.Round(spawn.Z*100)/100)
 }
@@ -423,6 +430,7 @@ func (s *Server) leave(sess *session) {
 			delete(s.parties, e.PartyID)
 		}
 	}
+	s.combatLeave(sess)  // WP13: combat profile save (combat.go)
 	s.exploreLeave(sess) // WP12: progress save
 	if s.cfg.Queue != nil {
 		s.checkpoint(e)
