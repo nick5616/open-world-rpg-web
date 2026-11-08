@@ -105,3 +105,33 @@ Metrics: `director_tickets_issued_total{kind}`, `director_waking_total`, `direct
 | `main.go` | Config, keys, production guards |
 | `internal/director` | Handlers, zone selection, tests (incl. `TestAcceptanceTicketFile`, which verifies tickets a real browser received) |
 | `cmd/fakezone` | Announces a fake zone with heartbeats (dev/e2e until WP03's zone runs) |
+
+## Wake on demand (WP18)
+
+`internal/wake` starts the game VM when a player shows up and stops it after
+15 minutes with nobody online (spec 13; decision 0018). Off by default: with
+no `LODESTONE_WAKE_PROVIDER` the world is always awake and `POST /v1/wake`
+answers `{"state":"awake","awake":true,"provider":"none"}`.
+
+| Env var | Default | Meaning |
+| --- | --- | --- |
+| `LODESTONE_WAKE_PROVIDER` | `none` | `gce` (Compute Engine REST, metadata-server token) or `fake` (in-process, for the rehearsal) |
+| `LODESTONE_WAKE_GCE_PROJECT` / `_ZONE` / `_INSTANCE` | | The game VM (gce) |
+| `LODESTONE_WAKE_IDLE` | `15m` | Stop after this long with nobody online |
+| `LODESTONE_WAKE_READY_URLS` | | Comma-separated URLs that must answer 2xx before the world counts as awake (zone/social `/healthz`) |
+| `LODESTONE_WAKE_CRON_TOKEN` | | Enables `POST /internal/wake/tick` (Cloud Scheduler, `Authorization: Bearer <token>`) |
+| `LODESTONE_WAKE_CHECK_EVERY` | `1m` | In-process idle check while an instance is alive |
+| `LODESTONE_WAKE_FAKE_BOOT` | `8s` | Simulated boot time (fake) |
+| `LODESTONE_LAZY_DEPS` | off | `1` on Cloud Run: start even when Postgres/Redis (on the sleeping VM) are unreachable |
+
+- `POST /v1/wake` (public, no session: the client calls it before sign-in) ->
+  `{"state":"awake|starting|booting|stopping|unknown","awake":bool,"provider":"gce","retryAfterS":3}`; starts a stopped VM.
+- With a provider, `POST /v1/connect` and `POST /v1/social-ticket` answer
+  `503 waking_world` (`Retry-After`) until awake, before touching Postgres.
+- Idle: last activity in Redis (`wake:lastActive`), players from the zone
+  registry; the VM's last start time is the floor when Redis is unreachable.
+- Metrics: `director_wake_starts_total`, `_stops_total`, `_errors_total`,
+  `director_wake_players_online`, `director_wake_idle_seconds`.
+- Tests: `go test ./internal/wake` (fake clock: start, debounce, readiness,
+  15-minute stop, players keep it awake, broken store, provider outage, HTTP
+  gate and cron auth, GCE REST against a fake Compute API, Redis store).
