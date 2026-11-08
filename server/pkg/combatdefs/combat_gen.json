@@ -156,7 +156,7 @@
       "level": 40,
       "key": "whirlwind",
       "name": "Whirling Cut",
-      "pending": true
+      "pending": false
      }
     ]
    },
@@ -168,7 +168,7 @@
       "level": 10,
       "key": "sweep",
       "name": "Sweeping Strike",
-      "pending": true
+      "pending": false
      },
      {
       "level": 20,
@@ -186,7 +186,7 @@
       "level": 40,
       "key": "impale",
       "name": "Impale",
-      "pending": true
+      "pending": false
      }
     ]
    },
@@ -228,25 +228,25 @@
       "level": 10,
       "key": "mana_flow",
       "name": "Mana Flow",
-      "pending": true
+      "pending": false
      },
      {
       "level": 20,
       "key": "quick_cast",
       "name": "Quick Cast",
-      "pending": true
+      "pending": false
      },
      {
       "level": 30,
       "key": "overflow",
       "name": "Overflow",
-      "pending": true
+      "pending": false
      },
      {
       "level": 40,
       "key": "twin_cast",
       "name": "Twin Cast",
-      "pending": true
+      "pending": false
      }
     ]
    },
@@ -817,7 +817,7 @@
    "key": "form_fire",
    "element": 0,
    "name": "Wheel of Embers",
-   "pending": true,
+   "pending": false,
    "radius": 3.5,
    "reach": 0,
    "arc": 0,
@@ -839,7 +839,7 @@
    "key": "form_ice",
    "element": 1,
    "name": "Rime Crescent",
-   "pending": true,
+   "pending": false,
    "radius": 0,
    "reach": 4,
    "arc": 120,
@@ -861,7 +861,7 @@
    "key": "form_lightning",
    "element": 2,
    "name": "Thunder Thread",
-   "pending": true,
+   "pending": false,
    "radius": 0,
    "reach": 10,
    "arc": 0,
@@ -883,7 +883,7 @@
    "key": "form_earth",
    "element": 3,
    "name": "Faultline",
-   "pending": true,
+   "pending": false,
    "radius": 0,
    "reach": 8,
    "arc": 0,
@@ -905,7 +905,7 @@
    "key": "form_wind",
    "element": 4,
    "name": "Gale Step Cut",
-   "pending": true,
+   "pending": false,
    "radius": 0,
    "reach": 8,
    "arc": 0,
@@ -927,7 +927,7 @@
    "key": "form_light",
    "element": 5,
    "name": "Dawn Arc",
-   "pending": true,
+   "pending": false,
    "radius": 0,
    "reach": 4,
    "arc": 140,
@@ -948,7 +948,7 @@
    "key": "form_dark",
    "element": 6,
    "name": "Hungering Cut",
-   "pending": true,
+   "pending": false,
    "radius": 0,
    "reach": 3.5,
    "arc": 90,
@@ -969,7 +969,7 @@
    "key": "form_void",
    "element": 7,
    "name": "Severance",
-   "pending": true,
+   "pending": false,
    "radius": 4,
    "reach": 0,
    "arc": 0,
@@ -4473,7 +4473,7 @@
   {
    "key": "static_step",
    "name": "Static Step",
-   "pending": true,
+   "pending": false,
    "element": 2,
    "damage": 0,
    "cooldownMs": 1500,
@@ -4511,7 +4511,7 @@
   {
    "key": "spark_jab",
    "name": "Spark Jab",
-   "pending": true,
+   "pending": false,
    "element": 2,
    "damage": 20,
    "cooldownMs": 350,
@@ -4669,7 +4669,7 @@
   {
    "key": "ball_lightning",
    "name": "Ball Lightning",
-   "pending": true,
+   "pending": false,
    "element": 2,
    "damage": 18,
    "cooldownMs": 6000,
@@ -4708,7 +4708,7 @@
   {
    "key": "thunderclap",
    "name": "Thunderclap",
-   "pending": true,
+   "pending": false,
    "element": 2,
    "damage": 40,
    "cooldownMs": 6000,
@@ -4747,7 +4747,7 @@
   {
    "key": "overcharge",
    "name": "Overcharge",
-   "pending": true,
+   "pending": false,
    "element": 2,
    "damage": 0,
    "cooldownMs": 0,
@@ -4790,7 +4790,7 @@
   {
    "key": "eye_of_the_storm",
    "name": "Eye of the Storm",
-   "pending": true,
+   "pending": false,
    "element": 2,
    "damage": 25,
    "cooldownMs": 70000,
@@ -4829,7 +4829,7 @@
   {
    "key": "act_of_god",
    "name": "Act of God",
-   "pending": true,
+   "pending": false,
    "element": 2,
    "damage": 300,
    "cooldownMs": 18000,
@@ -4868,7 +4868,7 @@
   {
    "key": "updraft",
    "name": "Updraft",
-   "pending": true,
+   "pending": false,
    "element": 4,
    "damage": 0,
    "cooldownMs": 3000,
@@ -4906,7 +4906,7 @@
   {
    "key": "gust",
    "name": "Gust",
-   "pending": true,
+   "pending": false,
    "element": 4,
    "damage": 15,
    "cooldownMs": 700,
@@ -4945,7 +4945,7 @@
   {
    "key": "razor_wind",
    "name": "Razor Wind",
-   "pending": true,
+   "pending": false,
    "element": 4,
    "damage": 45,
    "cooldownMs": 1400,
@@ -4983,7 +4983,7 @@
   {
    "key": "cyclone",
    "name": "Cyclone",
-   "pending": true,
+   "pending": false,
    "element": 4,
    "damage": 10,
    "cooldownMs": 9000,
@@ -5022,7 +5022,7 @@
   {
    "key": "downburst",
    "name": "Downburst",
-   "pending": true,
+   "pending": false,
    "element": 4,
    "damage": 90,
    "cooldownMs": 6000,
@@ -5061,7 +5061,7 @@
   {
    "key": "crosswind",
    "name": "Crosswind",
-   "pending": true,
+   "pending": false,
    "element": 4,
    "damage": 0,
    "cooldownMs": 0,
@@ -5104,7 +5104,7 @@
   {
    "key": "howling_expanse",
    "name": "Howling Expanse",
-   "pending": true,
+   "pending": false,
    "element": 4,
    "damage": 20,
    "cooldownMs": 70000,
@@ -5143,7 +5143,7 @@
   {
    "key": "heavens_exhale",
    "name": "Heaven's Exhale",
-   "pending": true,
+   "pending": false,
    "element": 4,
    "damage": 260,
    "cooldownMs": 15000,
@@ -5182,7 +5182,7 @@
   {
    "key": "sunstep",
    "name": "Sunstep",
-   "pending": true,
+   "pending": false,
    "element": 5,
    "damage": 0,
    "cooldownMs": 2000,
@@ -5220,7 +5220,7 @@
   {
    "key": "glint",
    "name": "Glint",
-   "pending": true,
+   "pending": false,
    "element": 5,
    "damage": 18,
    "cooldownMs": 300,
@@ -5258,7 +5258,7 @@
   {
    "key": "radiant_lance",
    "name": "Radiant Lance",
-   "pending": true,
+   "pending": false,
    "element": 5,
    "damage": 80,
    "cooldownMs": 2500,
@@ -5296,7 +5296,7 @@
   {
    "key": "sunburst",
    "name": "Sunburst",
-   "pending": true,
+   "pending": false,
    "element": 5,
    "damage": 45,
    "cooldownMs": 7000,
@@ -5334,7 +5334,7 @@
   {
    "key": "halo",
    "name": "Halo",
-   "pending": true,
+   "pending": false,
    "element": 5,
    "damage": 0,
    "cooldownMs": 15000,
@@ -5372,7 +5372,7 @@
   {
    "key": "dawnbreak",
    "name": "Dawnbreak",
-   "pending": true,
+   "pending": false,
    "element": 5,
    "damage": 100,
    "cooldownMs": 6000,
@@ -5411,7 +5411,7 @@
   {
    "key": "sunlit",
    "name": "Sunlit",
-   "pending": true,
+   "pending": false,
    "element": 5,
    "damage": 0,
    "cooldownMs": 0,
@@ -5454,7 +5454,7 @@
   {
    "key": "high_noon",
    "name": "High Noon",
-   "pending": true,
+   "pending": false,
    "element": 5,
    "damage": 30,
    "cooldownMs": 75000,
@@ -5492,7 +5492,7 @@
   {
    "key": "let_there_be_light",
    "name": "Let There Be Light",
-   "pending": true,
+   "pending": false,
    "element": 5,
    "damage": 250,
    "cooldownMs": 20000,
@@ -5530,7 +5530,7 @@
   {
    "key": "skip",
    "name": "Skip",
-   "pending": true,
+   "pending": false,
    "element": 7,
    "damage": 0,
    "cooldownMs": 2000,
@@ -5568,7 +5568,7 @@
   {
    "key": "rift_shot",
    "name": "Rift Shot",
-   "pending": true,
+   "pending": false,
    "element": 7,
    "damage": 26,
    "cooldownMs": 450,
@@ -5606,7 +5606,7 @@
   {
    "key": "collapse",
    "name": "Collapse",
-   "pending": true,
+   "pending": false,
    "element": 7,
    "damage": 60,
    "cooldownMs": 6000,
@@ -5645,7 +5645,7 @@
   {
    "key": "unmake",
    "name": "Unmake",
-   "pending": true,
+   "pending": false,
    "element": 7,
    "damage": 140,
    "cooldownMs": 8000,
@@ -5687,7 +5687,7 @@
   {
    "key": "null_field",
    "name": "Null Field",
-   "pending": true,
+   "pending": false,
    "element": 7,
    "damage": 30,
    "cooldownMs": 9000,
@@ -5725,7 +5725,7 @@
   {
    "key": "hollow_echo",
    "name": "Hollow Echo",
-   "pending": true,
+   "pending": false,
    "element": 7,
    "damage": 0,
    "cooldownMs": 0,
@@ -5765,7 +5765,7 @@
   {
    "key": "zero_point",
    "name": "Zero Point",
-   "pending": true,
+   "pending": false,
    "element": 7,
    "damage": 10,
    "cooldownMs": 70000,
@@ -5804,7 +5804,7 @@
   {
    "key": "unwritten",
    "name": "Unwritten",
-   "pending": true,
+   "pending": false,
    "element": 7,
    "damage": 99999,
    "cooldownMs": 120000,
@@ -6771,55 +6771,7 @@
   "form_dark": "Hungering Cut",
   "form_void": "Severance"
  },
- "pending": [
-  "static_step",
-  "spark_jab",
-  "ball_lightning",
-  "thunderclap",
-  "overcharge",
-  "eye_of_the_storm",
-  "act_of_god",
-  "updraft",
-  "gust",
-  "razor_wind",
-  "cyclone",
-  "downburst",
-  "crosswind",
-  "howling_expanse",
-  "heavens_exhale",
-  "sunstep",
-  "glint",
-  "radiant_lance",
-  "sunburst",
-  "halo",
-  "dawnbreak",
-  "sunlit",
-  "high_noon",
-  "let_there_be_light",
-  "skip",
-  "rift_shot",
-  "collapse",
-  "unmake",
-  "null_field",
-  "hollow_echo",
-  "zero_point",
-  "unwritten",
-  "whirlwind",
-  "sweep",
-  "impale",
-  "mana_flow",
-  "quick_cast",
-  "overflow",
-  "twin_cast",
-  "form_fire",
-  "form_ice",
-  "form_lightning",
-  "form_earth",
-  "form_wind",
-  "form_light",
-  "form_dark",
-  "form_void"
- ],
+ "pending": [],
  "enemyAttacks": [
   {
    "key": "gore",
