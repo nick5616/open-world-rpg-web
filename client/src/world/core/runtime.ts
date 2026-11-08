@@ -21,6 +21,10 @@ import { WorldGround } from './ground';
 import { StructureGround } from '../structures/overlay';
 import { towersFromAtlas, type TowerSet } from '../structures/towers';
 import { CaveGround } from '../caves/caveGround';
+// WP20: buildings, bridges and structures as town collision boxes (client/src/world/buildings/README.md).
+import { parseTowns, TownCollision, type Towns } from '@lodestone/worldgen';
+import { TownGround } from '../buildings/townGround';
+import type { TownsResult } from '../buildings/towns.worker';
 import { CaveCellStore } from '../caves/caveStore';
 import type { GroundQuery } from '../../sim/ground';
 
@@ -30,6 +34,8 @@ export interface LoadTimings {
   atlasSource: 'cache' | 'built';
   poolMs: number;
   totalMs: number;
+  /** WP20: towns_build in its worker (overlaps the pool start). */
+  townsMs?: number;
 }
 
 const newWorker = (): WorkerLike => new Worker(new URL('./chunk.worker.ts', import.meta.url), { type: 'module', name: 'worldgen' }) as unknown as WorkerLike;
@@ -45,6 +51,9 @@ export class WorldRuntime {
   /** WP09: the cave graph (systems, openings, veins) and the cave cells shared by collision and rendering. */
   readonly caveGraph: CaveGraph | null = null;
   readonly caveStore: CaveCellStore | null = null;
+  /** WP20: the world's towns layer (settlements, buildings, roads, structures, NPCs) and its collision. */
+  readonly towns: Towns | null = null;
+  readonly townCollision: TownCollision | null = null;
   readonly data: AtlasData;
   readonly atlasHashHex: string;
 
@@ -54,6 +63,7 @@ export class WorldRuntime {
     readonly pool: WorkerPool,
     readonly seed: string,
     readonly timings: LoadTimings,
+    townsBytes: Uint8Array | null = null,
   ) {
     this.data = atlas.data;
     this.atlasHashHex = hex64(atlas.hash);
@@ -69,6 +79,16 @@ export class WorldRuntime {
       ground = new CaveGround(this.structureGround, this.caveGraph.openings, this.caveStore, this.terrainGround);
     } catch (err) {
       console.warn('[world] no caves (worldgen.wasm without cave exports?)', err);
+    }
+    // WP20: buildings on top (floors within a step, walls, ceilings), same core as the zone.
+    if (townsBytes) {
+      try {
+        this.towns = parseTowns(townsBytes);
+        this.townCollision = new TownCollision(this.towns.boxes);
+        ground = new TownGround(ground, this.townCollision);
+      } catch (err) {
+        console.warn('[world] towns unavailable', err);
+      }
     }
     this.ground = ground;
   }
@@ -111,6 +131,7 @@ export class WorldRuntime {
     const t2 = performance.now();
 
     opts.onStatus?.('Starting workers');
+    const townsP = buildTownsInWorker(module, bytes);
     const pool = new WorkerPool(newWorker, poolSize(navigator.hardwareConcurrency));
     const init: InitMsg = { type: 'init', module, atlas: bytes, atlasHash: hex64(atlas.hash), meshCache: opts.meshCache && !!db };
     await pool.start(init);
@@ -119,7 +140,10 @@ export class WorldRuntime {
       // Keep the mesh cache under its cap; runs in a worker, at low priority.
       pool.submit('evict', { type: 'evict', cap: 500 * 1024 * 1024 }, 1e9).catch(() => {});
     }
-    return new WorldRuntime(wg, atlas, pool, seed, { wasmMs: t1 - t0, atlasMs: t2 - t1, atlasSource: source, poolMs: t3 - t2, totalMs: t3 - t0 });
+    opts.onStatus?.('Raising towns');
+    const towns = await townsP;
+    const t4 = performance.now();
+    return new WorldRuntime(wg, atlas, pool, seed, { wasmMs: t1 - t0, atlasMs: t2 - t1, atlasSource: source, poolMs: t3 - t2, totalMs: t4 - t0, townsMs: towns?.ms }, towns?.bytes ?? null);
   }
 
   dispose(): void {
@@ -145,5 +169,33 @@ function buildAtlasInWorker(module: WebAssembly.Module, seed: string): Promise<{
     };
     w.onerror = (e) => reject(new Error(e.message));
     w.postMessage({ type: 'init', module, meshCache: false } satisfies InitMsg);
+  });
+}
+
+/** One-off worker: towns_build takes ~0.15-1 s; null (no towns, a warning) on failure or a pre-WP20 wasm. */
+function buildTownsInWorker(module: WebAssembly.Module, atlas: Uint8Array): Promise<{ bytes: Uint8Array; ms: number } | null> {
+  return new Promise((resolve) => {
+    let w: Worker;
+    try {
+      w = new Worker(new URL('../buildings/towns.worker.ts', import.meta.url), { type: 'module', name: 'towns' });
+    } catch (err) {
+      console.warn('[world] towns worker unavailable', err);
+      resolve(null);
+      return;
+    }
+    w.onmessage = (e: MessageEvent<TownsResult>) => {
+      w.terminate();
+      if (e.data.ok) resolve({ bytes: e.data.bytes, ms: e.data.ms });
+      else {
+        console.warn('[world] towns_build failed', e.data.message);
+        resolve(null);
+      }
+    };
+    w.onerror = (e) => {
+      console.warn('[world] towns worker error', e.message);
+      w.terminate();
+      resolve(null);
+    };
+    w.postMessage({ module, atlas });
   });
 }
