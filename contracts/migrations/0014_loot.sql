@@ -40,15 +40,6 @@ CREATE INDEX items_in_world ON items (world_id, despawn_at) WHERE owner_characte
 -- This replaces character_progress.containers_opened for containers:
 -- container ids are 64-bit stable generator ids, not dense indices, so a
 -- bitset indexed by them is not practical (decision 0014).
--- WP16 fencing: the newest ownership epoch that wrote a character's items.
--- An item transaction from an older owner (a zone the character has left)
--- is refused, so a stale zone can never grant, take or duplicate items
--- after the new owner wrote (see server/zone/internal/game/items_handoff.go).
-CREATE TABLE item_epochs (
-    character_id uuid PRIMARY KEY REFERENCES characters (id) ON DELETE CASCADE,
-    epoch        bigint NOT NULL
-);
-
 CREATE TABLE loot_grants (
     character_id uuid NOT NULL REFERENCES characters (id) ON DELETE CASCADE,
     grant_key    text NOT NULL,
@@ -57,4 +48,13 @@ CREATE TABLE loot_grants (
     items        integer NOT NULL,          -- rows inserted (audit)
     created_at   timestamptz NOT NULL DEFAULT now(),
     PRIMARY KEY (character_id, grant_key)
+);
+
+-- WP16 fencing: the newest ownership epoch that wrote a character's items.
+-- An item transaction from an older owner (a zone the character has left)
+-- is refused, so a stale zone can never grant, take or duplicate items
+-- after the new owner wrote (see server/zone/internal/game/items_handoff.go).
+CREATE TABLE item_epochs (
+    character_id uuid PRIMARY KEY REFERENCES characters (id) ON DELETE CASCADE,
+    epoch        bigint NOT NULL
 );

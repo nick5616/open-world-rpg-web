@@ -1,0 +1,20 @@
+=== RUN   TestZoneProcessDropPickupDespawn
+    zone_items_integration_test.go:280: [15:40:12.738] Dropper dropped 1 potion:health -> public pickup entity 25
+    zone_items_integration_test.go:280: [15:40:12.845] Postgres: item 225bbf07-0cea-48fc-894e-d46144f56223 lies in the world (owner NULL, despawn_at set)
+    zone_items_integration_test.go:280: [15:40:12.895] Finder took it: Event 411 qty 1 potion:health
+    zone_items_integration_test.go:280: [15:40:12.901] Postgres: Finder holds potion:health x4 (stack merged; provenance [{"at": 1794181210751, "ev": "starter", "char": "ae644f6d-8db8-4ee0-bd1f-bff685137097"}, {"at": 1794181210718, "ev": "starter", "char": "ce858c03-0e00-4e92-bef4-9292923aa078"}, {"at": 1794181212718, "ev": "dropped", "char": "ce858c03-0e00-4e92-bef4-9292923aa078", "name": "Dropper"}, {"at": 1794181212851, "ev": "picked_up", "char": "ae644f6d-8db8-4ee0-bd1f-bff685137097", "name": "Finder"}])
+    zone_items_integration_test.go:280: [15:40:13.420] Dropper dropped 7 gold; zone killed while it lies there
+    zone_items_integration_test.go:280: [15:40:15.126] restart: {"time":"2026-11-08T15:40:15.0966623-08:00","level":"INFO","msg":"dropped items restored","svc":"zone","items":1}
+    zone_items_integration_test.go:280: [15:40:22.406] checked 9.5 s after the drop (despawn timer 8 s, restart in between): pickup despawned, world rows left: 0
+    zone_items_integration_test.go:280: [15:40:22.407] PASS
+[15:40:12.738] Dropper dropped 1 potion:health -> public pickup entity 25
+[15:40:12.845] Postgres: item 225bbf07-0cea-48fc-894e-d46144f56223 lies in the world (owner NULL, despawn_at set)
+[15:40:12.895] Finder took it: Event 411 qty 1 potion:health
+[15:40:12.901] Postgres: Finder holds potion:health x4 (stack merged; provenance [{"at": 1794181210751, "ev": "starter", "char": "ae644f6d-8db8-4ee0-bd1f-bff685137097"}, {"at": 1794181210718, "ev": "starter", "char": "ce858c03-0e00-4e92-bef4-9292923aa078"}, {"at": 1794181212718, "ev": "dropped", "char": "ce858c03-0e00-4e92-bef4-9292923aa078", "name": "Dropper"}, {"at": 1794181212851, "ev": "picked_up", "char": "ae644f6d-8db8-4ee0-bd1f-bff685137097", "name": "Finder"}])
+[15:40:13.420] Dropper dropped 7 gold; zone killed while it lies there
+[15:40:15.126] restart: {"time":"2026-11-08T15:40:15.0966623-08:00","level":"INFO","msg":"dropped items restored","svc":"zone","items":1}
+[15:40:22.406] checked 9.5 s after the drop (despawn timer 8 s, restart in between): pickup despawned, world rows left: 0
+[15:40:22.407] PASS
+--- PASS: TestZoneProcessDropPickupDespawn (22.60s)
+PASS
+ok  	lodestone/server/zone	23.779s

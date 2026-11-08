@@ -448,7 +448,10 @@ func TestZoneProcessKillMidGrantNeverDuplicates(t *testing.T) {
 	p = dialItems(t, port, f.world, char, "Grantee", cs[0].X+1.0, cs[0].Z)
 	p.pump(2500 * time.Millisecond) // starter (re-granted: it never landed) commits after 1.5 s
 	z.waitLog(t, `"note":"starter"`, 5*time.Second)
-	p.interact(game.InteractContainer, cs[0].ID, game.ActionUse, 0)
+	for k := 0; k < 30 && p.count(game.EventContainerOpened) == 0; k++ {
+		p.interact(game.InteractContainer, cs[0].ID, game.ActionUse, 0)
+		p.pump(200 * time.Millisecond)
+	}
 	p.last(game.EventContainerOpened, 5*time.Second)
 	firstRoll := grantedUnits(p, game.SourceContainer)
 	f.logf("container 0 opened in game: %q", fmtUnits(firstRoll))
@@ -504,9 +507,13 @@ func TestZoneProcessKillMidGrantNeverDuplicates(t *testing.T) {
 		t.Fatal("refused open changed the database")
 	}
 	p.c.Close(transport.CloseNormal, "")
+	gone(t, port, char) // else the new session continues from the old one's position
 	p = dialItems(t, port, f.world, char, "Grantee", cs[1].X+1.0, cs[1].Z)
-	p.pump(2000 * time.Millisecond)
-	p.interact(game.InteractContainer, cs[1].ID, game.ActionUse, 0)
+	p.pump(1000 * time.Millisecond)
+	for k := 0; k < 30 && p.count(game.EventContainerOpened) == 0; k++ {
+		p.interact(game.InteractContainer, cs[1].ID, game.ActionUse, 0) // its chunk may still be generating
+		p.pump(200 * time.Millisecond)
+	}
 	p.last(game.EventContainerOpened, 5*time.Second)
 	second := grantedUnits(p, game.SourceContainer)
 	z.waitLog(t, "TEST item tx committed", 5*time.Second)

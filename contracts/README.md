@@ -9,6 +9,8 @@ Everything more than one package agrees on. Edit the sources here, then run
 | `constants.yaml` | `ts/src/gen/constants.ts`, `server/pkg/constants/constants_gen.go`, `worldgen/src/gen/constants.rs` | everyone |
 | `social.yaml` | `ts/src/gen/social.ts`, `server/pkg/socialproto/social_gen.go` | client social, social service |
 | `worldspec.schema.json` | `ts/src/gen/worldspec.ts`, `server/pkg/worldspec/worldspec_gen.go`, `worldgen/src/gen/worldspec.rs` | worldgen, creator, director |
+| `combat.yaml` | `ts/src/gen/combat.ts`, `server/pkg/combatdefs/combat_gen.json` | client combat, zone combat (WP13, CR 009) |
+| `items.yaml` | `ts/src/gen/items.ts`, `server/pkg/itemdefs/items_gen.json` | client inventory, zone items; item keys are stored in Postgres: add, never rename (WP14, CR 010) |
 | `migrations/*.sql` | applied by `server/pkg/cmd/migrate` (`npm run migrate`) | all Go services |
 | `events.md` | (documentation) Event message `kind` registry | zone, client |
 

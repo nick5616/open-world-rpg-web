@@ -1,0 +1,38 @@
+=== RUN   TestZoneProcessKillMidGrantNeverDuplicates
+    zone_items_integration_test.go:280: [15:40:55.260] world 78110db5-658e-4d9e-a975-3522425f979e, spawn settlement at (1920.0, 2272.0)
+    zone_items_integration_test.go:280: [15:40:58.769] container 0: id 17299388121088975657 at (1845.9, 88.0, 2379.3)
+    zone_items_integration_test.go:280: [15:40:58.769] container 1: id 17712850599143377915 at (2029.7, 81.9, 2185.9)
+    zone_items_integration_test.go:280: [15:40:58.819] character 0b395314-561c-4a46-bf47-f79989f27d50
+    zone_items_integration_test.go:280: [15:41:00.328] starter grant transaction open (held 1.5 s before COMMIT); killing the zone process
+    zone_items_integration_test.go:280: [15:41:00.344] after kill #1: DB units "", markers starter=0
+    zone_items_integration_test.go:280: [15:41:04.634] container 0 opened in game: "currency:gold=44 weapon:iron_spear=1"
+    zone_items_integration_test.go:280: [15:41:04.634] container grant transaction open; killing the zone process
+    zone_items_integration_test.go:280: [15:41:04.646] after kill #2: DB units "currency:gold=20 potion:health=3", markers container=0 starter=1
+    zone_items_integration_test.go:280: [15:41:08.189] container 0 re-opened after the crash: "currency:gold=44 weapon:iron_spear=1" (same seed: same roll)
+    zone_items_integration_test.go:280: [15:41:08.210] container grant COMMITTED; killing the zone process before it hears back
+    zone_items_integration_test.go:280: [15:41:08.220] after kill #3: DB units "currency:gold=64 potion:health=3 weapon:iron_spear=1", markers container=1
+    zone_items_integration_test.go:280: [15:41:11.863] container 0 again: refused, reason 8 (8 = already opened)
+    zone_items_integration_test.go:280: [15:41:13.101] container 1 opened "currency:gold=10 food:grilled_meat=1 weapon:iron_spear=1 weapon:oak_staff=1", committed, killed; DB units "currency:gold=74 food:grilled_meat=1 potion:health=3 weapon:iron_spear=2 weapon:oak_staff=1"
+    zone_items_integration_test.go:280: [15:41:17.492] clean restart: inventory in game "currency:gold=74 food:grilled_meat=1 potion:health=3 weapon:iron_spear=2 weapon:oak_staff=1"; both containers refused (2 refusals)
+    zone_items_integration_test.go:280: [15:41:17.495] final DB units "currency:gold=74 food:grilled_meat=1 potion:health=3 weapon:iron_spear=2 weapon:oak_staff=1"; want "currency:gold=74 food:grilled_meat=1 potion:health=3 weapon:iron_spear=2 weapon:oak_staff=1"; loot_grants: starter=1 container=2
+    zone_items_integration_test.go:280: [15:41:17.497] PASS: 4 hard kills mid-grant (2 with the transaction open, 2 right after COMMIT): every roll exactly once in Postgres
+[15:40:55.260] world 78110db5-658e-4d9e-a975-3522425f979e, spawn settlement at (1920.0, 2272.0)
+[15:40:58.769] container 0: id 17299388121088975657 at (1845.9, 88.0, 2379.3)
+[15:40:58.769] container 1: id 17712850599143377915 at (2029.7, 81.9, 2185.9)
+[15:40:58.819] character 0b395314-561c-4a46-bf47-f79989f27d50
+[15:41:00.328] starter grant transaction open (held 1.5 s before COMMIT); killing the zone process
+[15:41:00.344] after kill #1: DB units "", markers starter=0
+[15:41:04.634] container 0 opened in game: "currency:gold=44 weapon:iron_spear=1"
+[15:41:04.634] container grant transaction open; killing the zone process
+[15:41:04.646] after kill #2: DB units "currency:gold=20 potion:health=3", markers container=0 starter=1
+[15:41:08.189] container 0 re-opened after the crash: "currency:gold=44 weapon:iron_spear=1" (same seed: same roll)
+[15:41:08.210] container grant COMMITTED; killing the zone process before it hears back
+[15:41:08.220] after kill #3: DB units "currency:gold=64 potion:health=3 weapon:iron_spear=1", markers container=1
+[15:41:11.863] container 0 again: refused, reason 8 (8 = already opened)
+[15:41:13.101] container 1 opened "currency:gold=10 food:grilled_meat=1 weapon:iron_spear=1 weapon:oak_staff=1", committed, killed; DB units "currency:gold=74 food:grilled_meat=1 potion:health=3 weapon:iron_spear=2 weapon:oak_staff=1"
+[15:41:17.492] clean restart: inventory in game "currency:gold=74 food:grilled_meat=1 potion:health=3 weapon:iron_spear=2 weapon:oak_staff=1"; both containers refused (2 refusals)
+[15:41:17.495] final DB units "currency:gold=74 food:grilled_meat=1 potion:health=3 weapon:iron_spear=2 weapon:oak_staff=1"; want "currency:gold=74 food:grilled_meat=1 potion:health=3 weapon:iron_spear=2 weapon:oak_staff=1"; loot_grants: starter=1 container=2
+[15:41:17.497] PASS: 4 hard kills mid-grant (2 with the transaction open, 2 right after COMMIT): every roll exactly once in Postgres
+--- PASS: TestZoneProcessKillMidGrantNeverDuplicates (30.68s)
+PASS
+ok  	lodestone/server/zone	31.482s
