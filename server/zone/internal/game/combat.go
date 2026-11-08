@@ -311,6 +311,14 @@ func (s *Server) handleCombatInteract(sess *session, m *proto.Interact) {
 		if s.cbt.setup.Dev {
 			ok = pr.SetGem(int(m.Arg&0xff), int(m.Arg>>8)-1)
 		}
+	case combat.ActSetMaterial: // WP15: dev sunsteel until WP14 equips forged items
+		if s.cbt.setup.Dev {
+			key := ""
+			if mat := combatdefs.D.MaterialByID(int(m.Arg >> 8)); mat != nil {
+				key = mat.Key
+			}
+			ok = (m.Arg>>8 == 0 || key != "") && pr.SetMaterial(int(m.Arg&0xff), key)
+		}
 	}
 	if !ok {
 		s.sendEvent(sess, &proto.Event{Kind: combat.EvRefused, EntityID: e.ID, TargetID: uint32(m.Action), Value: combat.RefuseIllegal})

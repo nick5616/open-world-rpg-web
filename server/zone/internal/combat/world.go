@@ -25,7 +25,7 @@ const (
 )
 
 func (k GroupKind) String() string {
-	return [...]string{"?", "camp", "bandit", "guardian", "pack", "boss", "test"}[k]
+	return [...]string{"?", "camp", "bandit", "guardian", "pack", "boss", "test", "demon"}[k]
 }
 
 // Group is a spawn anchor: a camp, a pack or a boss arena. Its members
@@ -105,6 +105,8 @@ type World struct {
 	Synced  []uint32 // players whose combat_sync must be re-sent
 	// OnKill is the WP14 loot hook (personal loot per eligible player).
 	OnKill func(KillInfo)
+	// DemonHooks are WP15's wards and wet-lightning callbacks (demon.go).
+	DemonHooks DemonHooks
 
 	// Stats for metrics and evidence.
 	Stats Stats
@@ -258,7 +260,7 @@ func (w *World) composition(g *Group) (keys []string, elite int, affix *combatde
 	biome := D.Tables.Biome[min(5, max(0, g.Biome))]
 	eliteChance := D.Tables.Depth["surface"].EliteChance
 	switch g.Kind {
-	case GroupTest:
+	case GroupTest, GroupDemon: // GroupDemon: WP15 night spawns (demon.go)
 		keys = slices.Clone(g.Comp)
 		eliteChance = 0 // tests and dev placement say exactly what they want
 	case GroupCamp:
@@ -337,6 +339,9 @@ func (w *World) spawnGroup(g *Group) {
 		}
 		e := newEnemy(def, g.Level, el, af, pos)
 		e.Group = g
+		if def.Demon != nil {
+			e.Demon = newDemonState(def) // WP15 (demon.go)
+		}
 		e.Yaw = a
 		if af != nil {
 			e.Name = affixTitle[af.Key] + " " + def.Name

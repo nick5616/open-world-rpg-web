@@ -37,8 +37,10 @@ type statusInst struct {
 	stacks int
 	next   uint32 // next DOT tick
 	src    uint32 // player who applied it (DOT kill credit)
-	dmg    float64
-	from   movement.Vec3 // pull target / knockback source
+	// killing: applied by a demon-killing action (WP15: Light's burn sears demons)
+	killing bool
+	dmg     float64
+	from    movement.Vec3 // pull target / knockback source
 }
 
 // histSample is one tick of an enemy's position (lenient hit validation).
@@ -57,6 +59,7 @@ type Enemy struct {
 	Element int // combatdefs element, Physical none
 	Affix   *combatdefs.Affix
 	Boss    *BossState
+	Demon   *DemonState // WP15: demons regenerate and die only to KillsDemons (demon.go)
 	Group   *Group
 	Name    string // "" for commons; elites and bosses are named
 

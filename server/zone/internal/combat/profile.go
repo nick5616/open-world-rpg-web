@@ -33,6 +33,10 @@ type Loadout struct {
 	Gem      int       `json:"gem"`    // combatdefs element of the socketed gem, -1 none
 	ArrowOre string    `json:"arrowOre,omitempty"`
 	ArrowGem int       `json:"arrowGem"` // gem tip element, -1 none
+	// Material is the main-hand weapon's material key (combat.yaml
+	// materials; "" = ordinary). WP15: "sunsteel" kills demons. WP14 sets
+	// it from the equipped item with SetMaterial.
+	Material string `json:"material,omitempty"`
 }
 
 // Profile is a character's persistent combat state: loadouts, known spells
@@ -230,6 +234,19 @@ func (p *Profile) SetGem(loadout, element int) bool {
 		return false
 	}
 	p.Loadouts[loadout].Gem = element
+	p.dirty = true
+	return true
+}
+
+// SetMaterial sets the material of a loadout's weapon (WP15, CR 011): a
+// combat.yaml materials key, or "" for an ordinary weapon. WP14 calls it
+// when a forged weapon is equipped (a sunsteel blade -> "sunsteel"); dev
+// builds also reach it through Interact 50 action 6.
+func (p *Profile) SetMaterial(loadout int, key string) bool {
+	if loadout < 0 || loadout > 1 || (key != "" && D.MaterialByKey(key) == nil) {
+		return false
+	}
+	p.Loadouts[loadout].Material = key
 	p.dirty = true
 	return true
 }
