@@ -62,6 +62,20 @@ export class LocalSim {
     this.accum = 0;
   }
 
+  /**
+   * Server reconciliation (WP06): replace the simulated state with the
+   * corrected one. The previous step moves by the same delta so the render
+   * interpolation between them doesn't streak across the correction; the
+   * visible easing is the caller's job (a decaying render offset).
+   */
+  rebase(s: MoveState): void {
+    const dx = s.pos.x - this.cur.pos.x;
+    const dy = s.pos.y - this.cur.pos.y;
+    const dz = s.pos.z - this.cur.pos.z;
+    this.prev = { pos: { x: this.prev.pos.x + dx, y: this.prev.pos.y + dy, z: this.prev.pos.z + dz }, vel: { ...this.prev.vel }, airJumps: this.prev.airJumps };
+    this.cur = cloneMoveState(s);
+  }
+
   grounded(): boolean {
     return isGrounded(this.cur.pos, this.ground);
   }

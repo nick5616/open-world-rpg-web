@@ -1,13 +1,14 @@
 // Package transport hides how zone frames travel (spec 9 Transport). The zone
-// and bots talk to a Conn; WebSocket is implemented, WebTransport is stubbed
-// with the same interface so it can be added without touching session code.
+// and bots talk to a Conn; WebSocket (the mandatory fallback) and WebTransport
+// (HTTP/3, preferred where browsers have it) implement the same interface, so
+// session code never knows which one a client picked.
 //
 // Every frame is exactly one protocol message ([msgId][body], see
 // contracts/README.md). Two send paths map spec 9's delivery classes:
 //
 //   - SendReliable: reliable ordered (Welcome, Kick, events, inventory). Over
-//     WebSocket everything is reliable ordered; over WebTransport this will be
-//     one bidirectional stream (and per-chunk streams for WorldEdits).
+//     WebSocket everything is reliable ordered; over WebTransport it is one
+//     bidirectional stream (per-chunk WorldEdits streams arrive with WP09).
 //   - SendUnreliable: latest-wins (snapshots, clock pongs). Over WebTransport
 //     these become datagrams. Over WebSocket we cannot drop on the wire, so we
 //     drop in the queue instead: a not-yet-written unreliable frame is replaced
@@ -20,6 +21,9 @@ import (
 	"context"
 	"errors"
 	"sync/atomic"
+
+	"github.com/coder/websocket"
+	"github.com/quic-go/webtransport-go"
 
 	"lodestone/server/pkg/proto"
 )
@@ -75,9 +79,24 @@ var (
 	ErrClosed = errors.New("transport: connection closed")
 	// ErrSlowConsumer is returned when the reliable queue overflows.
 	ErrSlowConsumer = errors.New("transport: reliable queue full")
-	// ErrNotImplemented is returned by the WebTransport stub.
-	ErrNotImplemented = errors.New("transport: not implemented")
 )
+
+// CloseCode extracts the application close code from a Recv error: the
+// WebSocket close status or the WebTransport session error code. -1 when the
+// error carries none (network failure, local close).
+func CloseCode(err error) int {
+	if err == nil {
+		return -1
+	}
+	if s := websocket.CloseStatus(err); s != -1 {
+		return int(s)
+	}
+	var se *webtransport.SessionError
+	if errors.As(err, &se) {
+		return int(se.ErrorCode)
+	}
+	return -1
+}
 
 // wsHeaderLen is the WebSocket frame header size for a payload of n bytes
 // (+4 masking key for client-to-server frames).

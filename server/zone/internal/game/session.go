@@ -47,8 +47,11 @@ type session struct {
 	left        bool
 	ackTick     uint32
 	enc         snapshot.Encoder
+	budget      snapshot.BudgetStats // last published encoder counters
 	frameBudget ratelimit.Bucket
-	frames      []proto.InputFrame
+	frames      []proto.InputFrame // received, not yet applied (sorted at apply)
+	gapSince    uint32             // tick a missing frame started holding the buffer, 0 = none
+	consumed    uint32             // newest frame seq applied or refused (LastSeq counts applied only)
 
 	// Reader-owned.
 	buckets    [256]*ratelimit.Bucket
@@ -74,16 +77,45 @@ func newBuckets() [256]*ratelimit.Bucket {
 // spawn point (soak bots use it to spread out or cluster).
 func (s *Server) Handler(ws *transport.WebSocket) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var hint *movement.Vec3
-		if s.cfg.DevSpawn {
-			if v := r.URL.Query().Get("spawn"); v != "" {
-				if p, ok := parseSpawn(v); ok {
-					hint = &p
-				}
-			}
-		}
+		hint := s.spawnHint(r)
 		ws.Handler(func(c transport.Conn) { s.accept(c, hint) }).ServeHTTP(w, r)
 	})
+}
+
+// AcceptWebTransport is the WebTransport session handler (same handshake
+// and session code as /ws; the transport is invisible past this point).
+func (s *Server) AcceptWebTransport(r *http.Request, c transport.Conn) {
+	s.accept(c, s.spawnHint(r))
+}
+
+func (s *Server) spawnHint(r *http.Request) *movement.Vec3 {
+	if !s.cfg.DevSpawn {
+		return nil
+	}
+	if v := r.URL.Query().Get("spawn"); v != "" {
+		if p, ok := parseSpawn(v); ok {
+			return &p
+		}
+	}
+	return nil
+}
+
+// budgetBurstTicks: unused byte allowance carries over for up to 3 ticks
+// (100 ms), enough for a burst of first-sight records with names, short
+// enough that the 5 s per-client kbps metric never sees the cap exceeded.
+const budgetBurstTicks = 3
+
+// priorityWeight is how fast an entity's send priority grows under the byte
+// budget (decision 0005): 2 at your feet, 1 at 8 m, 0.22 at the near ring's
+// edge (64 m), so in a crowd the people next to you update several times as
+// often as those across the square. Party members get +2 on top: you watch
+// your friends.
+func priorityWeight(d float64, party bool) float64 {
+	w := 16 / (d + 8)
+	if party {
+		w += 2
+	}
+	return w
 }
 
 func parseSpawn(v string) (movement.Vec3, bool) {
@@ -191,10 +223,17 @@ func (s *Server) accept(c transport.Conn, spawnHint *movement.Vec3) {
 
 // frameBudget bounds simulated time to real time: frames ARE simulation time
 // (one frame = 1/60 s of movement), so a client sending 120 frames a second
-// would move twice as fast. Burst 30 frames (0.5 s) absorbs packets bunched
-// up by TCP or a hitch; beyond that frames are dropped and the client
-// reconciles. This is the real speed-hack defense.
-func frameBudget() ratelimit.Bucket { return ratelimit.New(30, 60) }
+// would move twice as fast. The burst absorbs packets bunched up by TCP or a
+// hitch; beyond it frames are dropped and the client reconciles. This is the
+// real speed-hack defense.
+//
+// Burst 60 frames (1 s), up from WP03's 30: under the netsim "thailand"
+// profile a TCP retransmit stall (~250 ms) often chains into a second one,
+// and a 500-600 ms bunch overflowed 30 frames, snapping honest players back
+// a step or two (WP06 two-browser run, decision 0006). The cost: a client
+// that deliberately withholds input ("lag switch") can deliver at most 1 s
+// of movement at once, which an honest player on a bad link already does.
+func frameBudget() ratelimit.Bucket { return ratelimit.New(60, 60) }
 
 func (s *Server) spawnFor(c ticket.Claims, hint *movement.Vec3) movement.Vec3 {
 	if hint != nil {
@@ -267,7 +306,6 @@ func (s *Server) drain(sess *session, now time.Time) {
 	msgs := sess.inbox
 	sess.inbox = sess.spare[:0]
 	sess.mu.Unlock()
-	e := sess.ent
 	for _, m := range msgs {
 		in, ok := m.(*proto.Input)
 		if !ok {
@@ -278,26 +316,104 @@ func (s *Server) drain(sess *session, now time.Time) {
 		if in.AckTick > sess.ackTick && in.AckTick <= s.tick {
 			sess.ackTick = in.AckTick
 		}
-		// Frames: newest plus repeats, any order. Apply every NEW frame in
-		// seq order as one fixed 1/60 s step each.
-		sess.frames = append(sess.frames[:0], in.Frames...)
-		slices.SortFunc(sess.frames, func(a, b proto.InputFrame) int { return cmpU32(a.Seq, b.Seq) })
-		for _, f := range sess.frames {
-			if f.Seq <= e.LastSeq {
-				continue
+		// Frames: newest plus repeats, any order; collected across this
+		// tick's packets and applied below.
+		for _, f := range in.Frames {
+			if f.Seq > sess.consumed {
+				sess.frames = append(sess.frames, f)
 			}
-			if !sess.frameBudget.Take(now) {
-				s.m.framesDropped.Add(1)
-				continue
-			}
-			if !e.applyFrame(f, s.cfg.Ground) {
-				s.m.speedViolations.Add(1)
-			}
-			s.m.frames.Add(1)
 		}
 	}
 	clear(msgs)
 	sess.spare = msgs
+	s.applyFrames(sess, now)
+}
+
+// gapWaitTicks: how long a missing frame may hold back the ones after it.
+// Datagrams reorder (the netsim "thailand" relay reorders by 2+ packets about
+// 1% of the time, as real jittery paths do); applying frame N+1 before N
+// arrives would drop N for good and cost the player a reconciliation snap.
+// Two ticks (67 ms) is past any plausible reordering; a frame still missing
+// then was truly lost (all its redundant copies), so skip it. Over WebSocket
+// frames never arrive out of order and this never waits.
+const gapWaitTicks = 2
+
+// maxBufferedFrames caps frames held behind a gap (0.5 s of input).
+const maxBufferedFrames = 30
+
+// maxSynthFrames: longest run of lost frames filled by repeating the last
+// input (133 ms); a longer hole is skipped.
+const maxSynthFrames = 8
+
+// fillGap handles frames lost for good (every redundant copy dropped)
+// before frame next: rather than skip them, which puts the server a step or
+// two behind the client's prediction and costs a visible 8-16 cm snap, repeat
+// the player's previous input for each (Quake's "duplicate the last
+// command"). Walking or holding still through a loss then matches the
+// prediction exactly; a turn or key change inside the hole is reconciled
+// as usual. Synthesized frames pass the frame budget like real ones, so this
+// grants no extra simulation time. Jump edges are never repeated.
+func (s *Server) fillGap(sess *session, next uint32, now time.Time) {
+	e := sess.ent
+	missing := next - sess.consumed - 1
+	if missing > maxSynthFrames || e.LastSeq == 0 {
+		s.m.framesSkipped.Add(int64(missing))
+		return
+	}
+	f := e.lastFrame
+	f.Flags &^= proto.InputFlagJumpEdge
+	for seq := sess.consumed + 1; seq < next; seq++ {
+		f.Seq = seq
+		sess.consumed = seq
+		if !sess.frameBudget.Take(now) {
+			s.m.framesDropped.Add(1)
+			continue
+		}
+		e.applyFrame(f, s.cfg.Ground)
+		s.m.framesSynthesized.Add(1)
+	}
+}
+
+// applyFrames applies buffered input frames in seq order, one fixed 1/60 s
+// step each, waiting briefly for a missing frame (see gapWaitTicks).
+func (s *Server) applyFrames(sess *session, now time.Time) {
+	e := sess.ent
+	fr := sess.frames
+	slices.SortFunc(fr, func(a, b proto.InputFrame) int { return cmpU32(a.Seq, b.Seq) })
+	fr = slices.CompactFunc(fr, func(a, b proto.InputFrame) bool { return a.Seq == b.Seq })
+	i := 0
+	for ; i < len(fr); i++ {
+		f := fr[i]
+		if f.Seq <= sess.consumed {
+			continue
+		}
+		if sess.consumed != 0 && f.Seq != sess.consumed+1 {
+			if sess.gapSince == 0 {
+				sess.gapSince = s.tick
+			}
+			if s.tick-sess.gapSince < gapWaitTicks && len(fr)-i < maxBufferedFrames {
+				break // hold the rest until the gap fills or times out
+			}
+			s.fillGap(sess, f.Seq, now)
+		}
+		sess.gapSince = 0
+		// Consumed whether applied or dropped by the frame budget: a frame
+		// refused for speed-hack reasons must not hold back later ones.
+		sess.consumed = f.Seq
+		if !sess.frameBudget.Take(now) {
+			s.m.framesDropped.Add(1)
+			continue
+		}
+		if !e.applyFrame(f, s.cfg.Ground) {
+			s.m.speedViolations.Add(1)
+		}
+		s.m.frames.Add(1)
+	}
+	if i >= len(fr) {
+		sess.gapSince = 0
+	}
+	n := copy(fr, fr[i:])
+	sess.frames = fr[:n]
 }
 
 // sendSnapshot computes the client's interest set and sends a delta snapshot.
@@ -330,7 +446,8 @@ func (s *Server) sendSnapshot(sess *session, tick uint32, serverTime float64) (n
 		o := s.ents[i]
 		d := math.Hypot(o.Move.Pos.X-px, o.Move.Pos.Z-pz)
 		known := last != nil && last.Find(o.ID) != nil
-		r := aoi.Classify(d, o.Kind, known, e.PartyID != 0 && o.PartyID == e.PartyID)
+		sameParty := e.PartyID != 0 && o.PartyID == e.PartyID
+		r := aoi.Classify(d, o.Kind, known, sameParty)
 		switch r {
 		case aoi.None:
 			continue
@@ -343,11 +460,16 @@ func (s *Server) sendSnapshot(sess *session, tick uint32, serverTime float64) (n
 		case aoi.Party:
 			party++
 		}
-		s.cands = append(s.cands, snapshot.Candidate{State: &o.q, Due: aoi.Due(r, tick, o.ID)})
+		s.cands = append(s.cands, snapshot.Candidate{State: &o.q, Due: aoi.Due(r, tick, o.ID), Weight: priorityWeight(d, sameParty)})
 	}
 
 	st := e.selfState(s.cfg.Ground)
 	snap := sess.enc.Build(tick, sess.ackTick, e.LastSeq, serverTime, &st, s.cands)
+	if bs := sess.enc.Stats(); bs != sess.budget {
+		s.m.recordsSent.Add(int64(bs.Sent - sess.budget.Sent))
+		s.m.recordsDeferred.Add(int64(bs.Deferred - sess.budget.Deferred))
+		sess.budget = bs
+	}
 	s.w.Reset()
 	proto.WriteMessage(&s.w, snap)
 	buf := make([]byte, len(s.w.B))

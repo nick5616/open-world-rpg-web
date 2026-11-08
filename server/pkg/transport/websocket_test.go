@@ -109,10 +109,3 @@ func TestSendAfterCloseFails(t *testing.T) {
 		t.Fatal("unreliable send after close must report false")
 	}
 }
-
-func TestWebTransportStub(t *testing.T) {
-	var wt WebTransport
-	if err := wt.Serve(context.Background(), nil); !errors.Is(err, ErrNotImplemented) {
-		t.Fatal(err)
-	}
-}

@@ -1,0 +1,30 @@
+# node tools/netsim/dense-budget.mjs (zone LODESTONE_ZONE_DOWN_BUDGET_KBPS=150)
+== bots: clustered, 150/150 connected, 44 s wall (windows/amd64, go1.27.3)
+downlink kbps   avg  150.16  p50  150.12  p95  150.26  max  150.27   (budget 160)
+uplink kbps     avg   11.16  p50   11.16  p95   11.17  max   11.17   (budget 24)
+entities/view   avg   145.9  p50   146.3  p95   148.2  max   148.3
+snapshot bytes  avg   621.1  p50   621.5  p95   621.5  max   621.5
+rtt ms          p50    0.00  max    0.00
+snapshots 189125 (full 300), decode errors 0, apply errors 0
+prediction: 188825 checks, max error 0 cm, 0 resyncs
+personas map[idler:20 jumper:41 strafer:29 walker:60] kicks map[] errors map[]
+  zone_tick_ms{q="p50"}                    4.115
+  zone_tick_ms{q="p99"}                    6.605
+  zone_tick_ms{q="max"}                    8.972
+  zone_tick_jitter_ms{q="p50"}             0
+  zone_tick_jitter_ms{q="p99"}             0.127
+  zone_tick_jitter_ms{q="max"}             0.818
+  zone_players                             150
+  zone_client_down_kbps{q="max"}           151.22
+  zone_client_up_kbps{q="max"}             11.26
+  zone_aoi_entities_avg{ring="near"}       142.72
+  zone_aoi_entities_avg{ring="mid"}        6.28
+  zone_aoi_entities_avg{ring="far"}        0
+  zone_aoi_entities_max                    149
+  zone_snapshot_bytes_avg                  620.98
+  zone_writebehind_depth                   0
+  zone_speed_violations_total              0
+  zone_input_frames_dropped_total          0
+FAIL: zone tick p99 6.605 ms >= 5
+bots: signing tickets with the development key
+bots: 150 connecting in clustered mode, playing 40s

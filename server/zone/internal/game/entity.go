@@ -32,12 +32,101 @@ type Entity struct {
 	prevValid movement.State // last state that passed validation
 	idx       int32          // index in Server.ents this tick (grid payload)
 	q         snapshot.EntState
+
+	// View extrapolation (WP06): what OTHER clients see when this player's
+	// input is late. See updateView.
+	lastFrame proto.InputFrame
+	applied   int // frames applied this tick
+	guess     int // guessed steps the view runs ahead of Move
+	view      movement.State
+	viewRaw   movement.State // view before easing (carried forward next tick)
+	viewOff   movement.Vec3  // decaying horizontal easing offset
 }
 
-// quantize refreshes the wire view others see (spec 9 quantization).
+// stepsPerTick: 60 Hz input frames, 30 Hz ticks.
+const stepsPerTick = constants.MoveStepHz / constants.TickRateHz
+
+// maxGuessSteps bounds the extrapolation at 16 steps (267 ms): a TCP
+// retransmit stall (RTO 200 ms + slack) on a lossy link is covered, a player
+// whose connection died stops after a quarter second.
+const maxGuessSteps = 16
+
+// updateView computes the state others see this tick. The zone simulates a
+// player only from their input frames, so when a packet is late (jitter, or
+// a TCP retransmit stall on the WebSocket fallback) the authoritative state
+// stands still and then jumps by a burst of frames: every observer sees a
+// stop and a lurch (measured with tools/netsim "thailand": up to 40 cm per
+// stall). Instead, the view runs ahead of the confirmed state by as many
+// steps as real time owes (2 per tick, minus frames applied), repeating the
+// player's last movement input (without jumps). When the late frames land
+// the confirmed state catches up to where the view already is, so walking
+// straight through a stall looks seamless; a turn during the stall shows as
+// an eased correction on the observer's side. The guess decays by one extra
+// step per tick while frames flow, so a lead left by a client that paused
+// (hidden tab: no frames, nothing to catch up) melts away in half a second.
+//
+// Only the view is extrapolated: SelfState (reconciliation), validation,
+// AOI and persistence all use the confirmed Move, and combat validation must
+// use confirmed history too (WP10).
+func (e *Entity) updateView(g movement.Ground) {
+	n := e.applied
+	e.applied = 0
+	e.guess += stepsPerTick - n
+	if n >= stepsPerTick {
+		e.guess--
+	}
+	e.guess = max(0, min(maxGuessSteps, e.guess))
+	prev := e.viewRaw
+	e.view = e.Move
+	if e.guess > 0 && e.LastSeq != 0 {
+		f := e.lastFrame
+		f.Flags &^= proto.InputFlagJump | proto.InputFlagJumpEdge
+		for i := 0; i < e.guess; i++ {
+			e.view = movement.StepFrame(e.view, f, g)
+		}
+	}
+	e.easeView(prev)
+}
+
+// View easing: when a guess turns out wrong (the player turned a corner
+// during an input stall) the view would jump by up to a metre in one tick.
+// Instead the difference between where observers expected the player (the
+// previous view carried forward by its velocity) and the corrected view
+// becomes an offset that decays with a 50 ms time constant, so the
+// correction plays out as a quick curve over ~4 ticks. Measured in the
+// two-browser "thailand" run: a 55 cm one-tick jump before this. Steady
+// walking carries forward exactly (offset 0); discontinuities over 3 m
+// (snap-back, respawn) are shown as they are.
+const viewEaseDecay = 0.513 // exp(-33.3 ms / 50 ms)
+
+func (e *Entity) easeView(prev movement.State) {
+	e.viewRaw = e.view
+	if e.LastSeq == 0 || prev == (movement.State{}) {
+		return
+	}
+	// Horizontal only: gravity and landings make vertical carry-forward
+	// noisy, and corner guesses are a horizontal error.
+	dt := 1.0 / float64(constants.TickRateHz)
+	dx := prev.Pos.X + prev.Vel.X*dt - e.view.Pos.X
+	dz := prev.Pos.Z + prev.Vel.Z*dt - e.view.Pos.Z
+	if d := math.Hypot(dx, dz); d > 0.05 && d < 3 {
+		e.viewOff.X += dx
+		e.viewOff.Z += dz
+	}
+	e.viewOff.X *= viewEaseDecay
+	e.viewOff.Z *= viewEaseDecay
+	if math.Hypot(e.viewOff.X, e.viewOff.Z) > 3 {
+		e.viewOff = movement.Vec3{}
+	}
+	e.view.Pos.X += e.viewOff.X
+	e.view.Pos.Z += e.viewOff.Z
+}
+
+// quantize refreshes the wire view others see (spec 9 quantization), from
+// the extrapolated view (updateView).
 func (e *Entity) quantize(g movement.Ground) {
 	var act uint8
-	if !movement.Grounded(e.Move, g) {
+	if !movement.Grounded(e.view, g) {
 		act |= proto.ActivityAirborne
 	}
 	hp := uint8(0)
@@ -47,14 +136,14 @@ func (e *Entity) quantize(g movement.Ground) {
 	e.q = snapshot.EntState{
 		ID:        e.ID,
 		Kind:      e.Kind,
-		X:         proto.MetersToCm(e.Move.Pos.X),
-		Y:         proto.MetersToCm(e.Move.Pos.Y),
-		Z:         proto.MetersToCm(e.Move.Pos.Z),
+		X:         proto.MetersToCm(e.view.Pos.X),
+		Y:         proto.MetersToCm(e.view.Pos.Y),
+		Z:         proto.MetersToCm(e.view.Pos.Z),
 		Yaw:       proto.YawToU8(e.Yaw),
 		Pitch:     proto.PitchToU8(e.Pitch),
-		Vx:        proto.VelToCms(e.Move.Vel.X),
-		Vy:        proto.VelToCms(e.Move.Vel.Y),
-		Vz:        proto.VelToCms(e.Move.Vel.Z),
+		Vx:        proto.VelToCms(e.view.Vel.X),
+		Vy:        proto.VelToCms(e.view.Vel.Y),
+		Vz:        proto.VelToCms(e.view.Vel.Z),
 		HealthPct: hp,
 		Activity:  act,
 		Name:      e.Name,
@@ -96,6 +185,8 @@ func (e *Entity) applyFrame(f proto.InputFrame, g movement.Ground) bool {
 	e.Yaw = proto.U16ToYaw(f.Yaw)
 	e.Pitch = proto.I16ToPitch(f.Pitch)
 	e.LastSeq = f.Seq
+	e.lastFrame = f
+	e.applied++
 	vertOK := verticalOK(e.Move, next, g) // WP07, terrain.go; before the clamp
 
 	// World bounds: the v1 world spans [0, WORLD_SIZE_M) on x and z. The

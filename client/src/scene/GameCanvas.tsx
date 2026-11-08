@@ -11,6 +11,7 @@ import { useDebugStore } from '../stores/debugStore';
 import { DEBUG } from '../config';
 import type { GroundQuery } from '../sim/ground';
 import type { StepRecord } from '../sim/localSim';
+import type { PlayerDriver } from './PlayerController';
 import { DEFAULT_GROUND, GroundContext } from './groundContext';
 import { PlayerController } from './PlayerController';
 import { FirstPersonArms } from './FirstPersonArms';
@@ -23,6 +24,10 @@ interface Props {
   /** Visual for the ground; defaults to the flat placeholder. */
   terrain?: ReactNode;
   onStep?: (r: StepRecord) => void;
+  /** Online play (WP06): feeds steps to the zone and applies corrections. */
+  driver?: PlayerDriver;
+  /** Extra scene content (remote players). */
+  children?: ReactNode;
 }
 
 /** The view model is parented to the camera, so the camera must be in the scene graph. */
@@ -31,7 +36,7 @@ function CameraInScene() {
   return <primitive object={camera} />;
 }
 
-export function GameCanvas({ ground = DEFAULT_GROUND, terrain, onStep }: Props) {
+export function GameCanvas({ ground = DEFAULT_GROUND, terrain, onStep, driver, children }: Props) {
   const tier = useQualityStore((s) => s.tier);
   const preset = QUALITY_PRESETS[tier];
   const showCells = useDebugStore((s) => s.showCells);
@@ -67,7 +72,8 @@ export function GameCanvas({ ground = DEFAULT_GROUND, terrain, onStep }: Props) 
           {terrain ?? <FlatTerrain height={ground.heightAt(0, 0)} />}
           {DEBUG && showCells && <CellBorders />}
         </Suspense>
-        <PlayerController onStep={onStep} />
+        <PlayerController onStep={onStep} driver={driver} />
+        {children}
         <FirstPersonArms />
       </GroundContext.Provider>
     </Canvas>

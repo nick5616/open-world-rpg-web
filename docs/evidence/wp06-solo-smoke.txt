@@ -1,0 +1,2 @@
+solo: title -> play without servers; walked 4.42 m in 1 s; zone session: none; page errors: 0
+PASS dev:solo still works offline

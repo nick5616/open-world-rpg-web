@@ -1,0 +1,14 @@
+{
+  "name": "@lodestone/netsim",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Network impairment proxies (WebSocket + UDP/QUIC) with named profiles; budget measurement harness",
+  "scripts": {
+    "proxy": "node proxy.mjs",
+    "test": "node --test test/"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}

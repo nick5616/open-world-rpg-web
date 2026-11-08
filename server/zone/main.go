@@ -14,7 +14,10 @@
 //	LODESTONE_ZONE_DEV_SPAWN     1 to honor /ws?spawn=x,z (default: on only with the dev ticket key)
 //	LODESTONE_SPIN_MS            scheduler spin tail (default 2 on Windows, 1 elsewhere)
 //	LODESTONE_ZONE_EXIT_AFTER    e.g. 90s: shut down gracefully after this long (soaks, CI)
-//	LODESTONE_ZONE_WT_ADDR       WebTransport UDP address (stub: logs "not implemented")
+//	LODESTONE_ZONE_WT_ADDR       WebTransport UDP listen address (default :<port>; "off" disables)
+//	LODESTONE_ZONE_WT_PUBLIC_URL https://localhost:<udp port>/wt (announced as wtEndpoint)
+//	LODESTONE_ZONE_WT_CERT/_KEY  PEM files; unset: self-signed 10-day ECDSA cert, hash in #certHash=
+//	LODESTONE_ZONE_DOWN_BUDGET_KBPS  per-client snapshot byte budget (decision 0005), default 150, 0 = off
 //	LODESTONE_ZONE_NO_DB / _NO_REDIS  1 to run without Postgres / Redis
 //	LODESTONE_TICKET_PUBLIC_KEY  base64 Ed25519 key (dev key + warning when unset)
 //	LODESTONE_WORLDGEN_WASM      worldgen/pkg/worldgen.wasm (WP07 terrain; see terrain.go for the rest)
@@ -25,10 +28,13 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -105,10 +111,13 @@ func main() {
 		TicketKey:  pub,
 		Ground:     ground, // WP07: wasm terrain (terrain.go), flat only without worldgen.wasm
 		SpinTail:   gameloop.DefaultSpinTail(),
-		Store:      store,
-		Queue:      queue,
-		Metrics:    s.Metrics,
-		Log:        log,
+		// Decision 0005: 150 kbps leaves headroom under the 160 kbps budget
+		// for reliable traffic. 0 restores WP03's unlimited ring table.
+		DownBudgetKbps: env.Float("LODESTONE_ZONE_DOWN_BUDGET_KBPS", 150),
+		Store:          store,
+		Queue:          queue,
+		Metrics:        s.Metrics,
+		Log:            log,
 	}
 	zone := game.New(cfg)
 
@@ -126,14 +135,15 @@ func main() {
 		_ = json.NewEncoder(w).Encode(map[string]any{"players": zone.Players(), "tick": zone.TickStats(), "clock": gameloop.PreciseClock})
 	})
 
-	if addr := env.Str("LODESTONE_ZONE_WT_ADDR", ""); addr != "" {
-		wt := &transport.WebTransport{Addr: addr, Path: "/wt"}
-		go func() {
-			if err := wt.Serve(ctx, nil); err != nil {
-				log.Warn("webtransport unavailable; clients use the WebSocket fallback", "err", err)
-			}
-		}()
-	}
+	// WebTransport gets its own context, cancelled only after the shutdown
+	// kicks have drained (see WebTransport.Drain).
+	wtCtx, stopWT := context.WithCancel(context.Background())
+	defer stopWT()
+	wt, wtEndpoint, certHash := startWebTransport(wtCtx, port, zone, log)
+	s.Mux.HandleFunc("GET /debug/wt", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{"wtEndpoint": wtEndpoint, "certHash": certHash})
+	})
 
 	queueCtx, stopQueue := context.WithCancel(context.Background())
 	go queue.Run(queueCtx)
@@ -157,8 +167,9 @@ func main() {
 	if !env.Bool("LODESTONE_ZONE_NO_REDIS", false) {
 		rdb = redis.NewClient(&redis.Options{Addr: env.RedisAddr()})
 		entry := zoneregistry.Entry{
-			ZoneID:   cfg.ZoneID,
-			Endpoint: env.Str("LODESTONE_ZONE_PUBLIC_URL", fmt.Sprintf("ws://localhost:%d/ws", port)),
+			ZoneID:     cfg.ZoneID,
+			Endpoint:   env.Str("LODESTONE_ZONE_PUBLIC_URL", fmt.Sprintf("ws://localhost:%d/ws", port)),
+			WTEndpoint: wtEndpoint,
 		}
 		go announce(ctx, rdb, cfg.WorldID, entry, zone, log)
 	}
@@ -169,6 +180,13 @@ func main() {
 		// the queue, then leave the registry so the director stops routing here.
 		stopQueue()
 		zone.Stop(sctx)
+		if wt != nil {
+			wt.Drain(2 * time.Second)
+			// Closing the listener sends CONNECTION_CLOSE, which discards
+			// anything not yet on the wire; give the close capsules a beat.
+			time.Sleep(100 * time.Millisecond)
+			stopWT()
+		}
 		if rdb != nil {
 			if err := zoneregistry.Remove(sctx, rdb, cfg.WorldID, cfg.ZoneID); err != nil {
 				log.Warn("zone registry remove", "err", err)
@@ -220,6 +238,65 @@ func resolveWorld(ctx context.Context, pool *pgxpool.Pool, log *slog.Logger) gam
 		return ow
 	}
 	return w
+}
+
+// startWebTransport serves WebTransport over HTTP/3 on UDP (by default the
+// same port number as the HTTP/WebSocket listener) and returns the endpoint
+// to announce, or "" when it is off or failed (clients then use WebSocket).
+//
+// Certificates: with LODESTONE_ZONE_WT_CERT/_KEY (PEM) the zone uses a real
+// certificate and announces a plain https URL. Otherwise (local dev) it mints
+// a short-lived self-signed ECDSA cert and appends its SHA-256 as a
+// #certHash= fragment: the registry and director carry the URL verbatim, and
+// the browser pins the cert with serverCertificateHashes. Browsers accept
+// such a cert for at most 14 days; a zone runs on one cert for 10 days, so a
+// dev zone left up longer needs a restart (see STATUS).
+func startWebTransport(ctx context.Context, port int, zone *game.Server, log *slog.Logger) (wt *transport.WebTransport, endpoint, certHash string) {
+	addr := env.Str("LODESTONE_ZONE_WT_ADDR", fmt.Sprintf(":%d", port))
+	if addr == "" || addr == "off" || addr == "0" {
+		log.Info("webtransport disabled (LODESTONE_ZONE_WT_ADDR)")
+		return nil, "", ""
+	}
+	_, udpPort, err := net.SplitHostPort(addr)
+	if err != nil {
+		log.Warn("bad LODESTONE_ZONE_WT_ADDR; webtransport disabled", "addr", addr, "err", err)
+		return nil, "", ""
+	}
+	public := env.Str("LODESTONE_ZONE_WT_PUBLIC_URL", fmt.Sprintf("https://localhost:%s/wt", udpPort))
+	var tlsConf *tls.Config
+	if certFile, keyFile := env.Str("LODESTONE_ZONE_WT_CERT", ""), env.Str("LODESTONE_ZONE_WT_KEY", ""); certFile != "" && keyFile != "" {
+		cert, err := tls.LoadX509KeyPair(certFile, keyFile)
+		if err != nil {
+			log.Warn("webtransport certificate unreadable; webtransport disabled", "err", err)
+			return nil, "", ""
+		}
+		tlsConf = &tls.Config{Certificates: []tls.Certificate{cert}}
+	} else {
+		hosts := []string{"localhost", "127.0.0.1", "::1"}
+		if u, err := url.Parse(public); err == nil && u.Hostname() != "" && u.Hostname() != "localhost" {
+			hosts = append(hosts, u.Hostname())
+		}
+		dc, err := transport.NewDevCert(10*24*time.Hour, hosts...)
+		if err != nil {
+			log.Warn("dev certificate failed; webtransport disabled", "err", err)
+			return nil, "", ""
+		}
+		tlsConf, certHash = dc.TLS, dc.Hash
+		log.Info("webtransport dev certificate", "sha256", dc.Hash, "notAfter", dc.NotAfter.Format(time.RFC3339))
+	}
+	wt = &transport.WebTransport{Addr: addr, Path: "/wt", TLS: tlsConf}
+	go func() {
+		if err := wt.ServeRequests(ctx, zone.AcceptWebTransport); err != nil {
+			log.Warn("webtransport stopped; clients use the WebSocket fallback", "err", err)
+		}
+	}()
+	if wt.LocalAddr(2*time.Second) == nil {
+		log.Warn("webtransport did not start listening; not announcing it", "addr", addr)
+		return nil, "", ""
+	}
+	endpoint = transport.WithCertHash(public, certHash)
+	log.Info("webtransport listening", "udp", addr, "endpoint", endpoint)
+	return wt, endpoint, certHash
 }
 
 // announce heartbeats the zone registry (zones:{worldId}) every

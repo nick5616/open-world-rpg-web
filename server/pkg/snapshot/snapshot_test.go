@@ -49,7 +49,7 @@ func TestDeltaAgainstAckedBaselineAndRemoval(t *testing.T) {
 	self := proto.SelfState{X: 1, Health: 100, HealthMax: 100}
 	a, b := ent(1, 0), ent(2, 0)
 
-	s := roundTrip(t, enc.Build(1, 0, 0, 0, &self, []Candidate{{&a, true}, {&b, true}}))
+	s := roundTrip(t, enc.Build(1, 0, 0, 0, &self, []Candidate{{State: &a, Due: true}, {State: &b, Due: true}}))
 	if s.BaselineTick != 0 || len(s.Entities) != 2 {
 		t.Fatalf("first snapshot must be full: %+v", s.ToJSON())
 	}
@@ -60,7 +60,7 @@ func TestDeltaAgainstAckedBaselineAndRemoval(t *testing.T) {
 	// Tick 2, client acked 1: a moved, b didn't, c appears.
 	a.X = 10
 	c := ent(3, 0)
-	s = roundTrip(t, enc.Build(2, 1, 5, 0, &self, []Candidate{{&a, true}, {&b, true}, {&c, true}}))
+	s = roundTrip(t, enc.Build(2, 1, 5, 0, &self, []Candidate{{State: &a, Due: true}, {State: &b, Due: true}, {State: &c, Due: true}}))
 	if s.BaselineTick != 1 || len(s.Entities) != 2 || s.Entities[0].Mask != proto.EntityRecordHasX || s.Self.Mask != 0 {
 		t.Fatalf("delta wrong: %+v", s.ToJSON())
 	}
@@ -74,7 +74,7 @@ func TestDeltaAgainstAckedBaselineAndRemoval(t *testing.T) {
 
 	// Tick 3, client still acked 1 (tick 2 ack lost): delta vs 1 again, so c
 	// is sent in full again and b leaves.
-	s = roundTrip(t, enc.Build(3, 1, 6, 0, &self, []Candidate{{&a, true}, {&c, true}}))
+	s = roundTrip(t, enc.Build(3, 1, 6, 0, &self, []Candidate{{State: &a, Due: true}, {State: &c, Due: true}}))
 	if s.BaselineTick != 1 || len(s.Removed) != 1 || s.Removed[0] != 2 {
 		t.Fatalf("removal wrong: %+v", s.ToJSON())
 	}
@@ -91,9 +91,9 @@ func TestNotDueEntitiesCostNothingAndKeepBaselineState(t *testing.T) {
 	var enc Encoder
 	self := proto.SelfState{}
 	a := ent(1, 0)
-	enc.Build(1, 0, 0, 0, &self, []Candidate{{&a, true}})
+	enc.Build(1, 0, 0, 0, &self, []Candidate{{State: &a, Due: true}})
 	a.X = 999
-	s := enc.Build(2, 1, 0, 0, &self, []Candidate{{&a, false}})
+	s := enc.Build(2, 1, 0, 0, &self, []Candidate{{State: &a, Due: false}})
 	if len(s.Entities) != 0 {
 		t.Fatal("not-due entity must not be sent")
 	}
@@ -102,7 +102,7 @@ func TestNotDueEntitiesCostNothingAndKeepBaselineState(t *testing.T) {
 	if enc.Last().Find(1).X != 0 {
 		t.Fatal("frame must keep the baseline state for not-due entities")
 	}
-	s = enc.Build(3, 2, 0, 0, &self, []Candidate{{&a, true}})
+	s = enc.Build(3, 2, 0, 0, &self, []Candidate{{State: &a, Due: true}})
 	if len(s.Entities) != 1 || s.Entities[0].X != 999 {
 		t.Fatalf("due tick must send the change: %+v", s.ToJSON())
 	}
@@ -113,9 +113,9 @@ func TestOldOrMissingAckFallsBackToFull(t *testing.T) {
 	self := proto.SelfState{}
 	a := ent(1, 0)
 	for tick := uint32(1); tick <= 40; tick++ {
-		enc.Build(tick, 0, 0, 0, &self, []Candidate{{&a, true}})
+		enc.Build(tick, 0, 0, 0, &self, []Candidate{{State: &a, Due: true}})
 	}
-	if s := enc.Build(41, 5, 0, 0, &self, []Candidate{{&a, true}}); s.BaselineTick != 0 {
+	if s := enc.Build(41, 5, 0, 0, &self, []Candidate{{State: &a, Due: true}}); s.BaselineTick != 0 {
 		t.Fatal("ack older than the ring must produce a full snapshot")
 	}
 	var dec Decoder
@@ -151,7 +151,7 @@ func TestRandomizedEncoderDecoderAgree(t *testing.T) {
 		var cands []Candidate
 		for id := uint32(1); id <= 40; id++ {
 			if rng.Intn(10) < 8 {
-				cands = append(cands, Candidate{world[id], rng.Intn(3) != 0})
+				cands = append(cands, Candidate{State: world[id], Due: rng.Intn(3) != 0})
 			}
 		}
 		s := roundTrip(t, enc.Build(tick, acked, tick, float64(tick), &self, cands))

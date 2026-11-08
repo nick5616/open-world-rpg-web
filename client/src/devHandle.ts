@@ -7,11 +7,14 @@ import { useAppStore, type Screen } from './stores/appStore';
 import { useDebugStore, type TeleportTarget } from './stores/debugStore';
 import { useQualityStore, type QualitySetting } from './stores/qualityStore';
 import { localPlayer, netStats, worldClock } from './state/live';
+import { netDebug } from './net/netStore';
 
 export function installDevHandle(): void {
   const handle = {
     player: () => JSON.parse(JSON.stringify(localPlayer)) as typeof localPlayer,
     net: netStats,
+    /** WP06: zone connection state (transport, corrections, interpolation, drawn remotes). */
+    netDebug,
     screen: (s: Screen) => useAppStore.getState().setScreen(s),
     teleport: (t: TeleportTarget) => useDebugStore.getState().teleport(t),
     /** Radians; pass null to give look back to the mouse. */

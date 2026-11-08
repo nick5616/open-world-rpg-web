@@ -363,12 +363,12 @@ func TestFrameBudgetCapsSimulatedTime(t *testing.T) {
 	cl.send(&proto.Input{Frames: frames})
 	cl.drainFor(300 * time.Millisecond)
 	moved := 500 - proto.CmToMeters(cl.frame.Self.Z)
-	// Burst budget is 30 frames (0.5 s): at most ~4 m, never the ~25 m that
+	// Burst budget is 60 frames (1 s, decision 0006): at most ~7 m, never the ~25 m that
 	// 200 frames of sprint would give.
-	if moved <= 0 || moved > 5 {
+	if moved <= 0 || moved > 8 {
 		t.Fatalf("moved %v m from a 200-frame burst", moved)
 	}
-	if h.srv.m.framesDropped.Load() < 150 {
+	if h.srv.m.framesDropped.Load() < 110 {
 		t.Fatalf("dropped %d frames", h.srv.m.framesDropped.Load())
 	}
 }

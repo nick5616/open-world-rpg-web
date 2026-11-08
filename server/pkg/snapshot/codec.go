@@ -2,6 +2,7 @@ package snapshot
 
 import (
 	"errors"
+	"slices"
 	"sort"
 
 	"lodestone/server/pkg/proto"
@@ -14,6 +15,10 @@ type Candidate struct {
 	// entity that is not due costs nothing: the new frame records the state
 	// the client already has.
 	Due bool
+	// Weight is how fast this entity's send priority grows per due tick when
+	// a byte budget is set (see Encoder.SetBudget): party members and close
+	// entities grow faster. Zero counts as 1. Ignored without a budget.
+	Weight float64
 }
 
 // Encoder is the zone's per-client snapshot state. Not goroutine-safe; the
@@ -22,6 +27,125 @@ type Encoder struct {
 	r    ring
 	last uint32
 	snap proto.Snapshot
+
+	// Byte budget (decision 0005). Zero perTick = unlimited.
+	perTick  float64
+	burst    float64
+	overhead int
+	tokens   float64
+	// Priority accumulators of deferred entities, sorted by id (parallel
+	// slices, double-buffered). Interest is sorted by id too, so reading and
+	// rewriting them is a merge walk: no hashing in the tick's hottest loop
+	// (150 clients x 150 entities x 30 Hz).
+	accIDs, accIDs2   []uint32
+	accVals, accVals2 []float64
+	work              []pendingRec
+	order             []prioIdx
+	stats             BudgetStats
+}
+
+// pendingRec is one record the client could get this tick.
+type pendingRec struct {
+	rec  proto.EntityRecord
+	size int
+	prio float64
+	send bool
+}
+
+type prioIdx struct {
+	prio float64
+	k    int32
+}
+
+// BudgetStats counts what the budget did (zone metrics and soak evidence).
+type BudgetStats struct {
+	// Deferred counts records that were due and changed but did not fit;
+	// they went out later with the accumulated delta.
+	Deferred uint64
+	// Sent counts records that were due and changed and went out.
+	Sent uint64
+}
+
+// SetBudget caps snapshot bytes for this client (decision 0005: the AOI ring
+// table is the MAXIMUM rate, the budget a ceiling on top). bytesPerSec
+// includes overhead, the per-snapshot transport framing to charge (WebSocket
+// header or QUIC packet). Unused allowance carries over up to burstTicks
+// ticks' worth, so a large first-sight record (names) is never starved and an
+// idle tick isn't wasted; over a window the client still gets at most
+// bytesPerSec. bytesPerSec <= 0 removes the budget.
+func (e *Encoder) SetBudget(bytesPerSec float64, tickRate int, burstTicks float64, overhead int) {
+	if bytesPerSec <= 0 || tickRate <= 0 {
+		e.perTick = 0
+		return
+	}
+	if burstTicks < 1 {
+		burstTicks = 1
+	}
+	e.perTick = bytesPerSec / float64(tickRate)
+	e.burst = e.perTick * burstTicks
+	e.overhead = overhead
+	e.tokens = e.perTick
+}
+
+// accCursor walks the sorted accumulator slices alongside sorted interest.
+type accCursor struct {
+	ids  []uint32
+	vals []float64
+	p    int
+}
+
+// get returns the accumulator for id; ids must be asked in ascending order.
+func (c *accCursor) get(id uint32) float64 {
+	for c.p < len(c.ids) && c.ids[c.p] < id {
+		c.p++
+	}
+	if c.p < len(c.ids) && c.ids[c.p] == id {
+		return c.vals[c.p]
+	}
+	return 0
+}
+
+// Stats returns the budget counters.
+func (e *Encoder) Stats() BudgetStats { return e.stats }
+
+// RecordSize is the encoded size of r in bytes (mirrors the generated codec;
+// TestRecordSizeMatchesCodec keeps it honest if the protocol changes).
+func RecordSize(r *proto.EntityRecord) int {
+	n := 4 + 2 // id, mask
+	m := r.Mask
+	for _, f := range recordFieldSizes {
+		if m&f.bit != 0 {
+			n += f.size
+		}
+	}
+	if m&proto.EntityRecordHasName != 0 {
+		n += 2 + len(r.Name)
+	}
+	return n
+}
+
+var recordFieldSizes = [...]struct {
+	bit  uint16
+	size int
+}{
+	{proto.EntityRecordHasKind, 1}, {proto.EntityRecordHasX, 4}, {proto.EntityRecordHasY, 4}, {proto.EntityRecordHasZ, 4},
+	{proto.EntityRecordHasYaw, 1}, {proto.EntityRecordHasPitch, 1}, {proto.EntityRecordHasVx, 2}, {proto.EntityRecordHasVy, 2},
+	{proto.EntityRecordHasVz, 2}, {proto.EntityRecordHasHealthPct, 1}, {proto.EntityRecordHasActivity, 1},
+	{proto.EntityRecordHasTypeID, 2}, {proto.EntityRecordHasLevel, 1}, {proto.EntityRecordHasPartyID, 4},
+}
+
+// selfSize is the encoded size of a SelfState record.
+func selfSize(s *proto.SelfState) int {
+	var w proto.Writer
+	s.Write(&w)
+	return len(w.B)
+}
+
+// snapshotFixed is the Snapshot message size without entity records:
+// msgId, tick, baselineTick, ackInputSeq, serverTime, self, two list counts,
+// removed ids.
+func snapshotFixed(self *proto.SelfState, removed int) int {
+	return 1 + 4 + 4 + 4 + 8 + selfSize(self) + 2 + 2 + 4*removed
 }
 
 // Last returns the newest frame built (not necessarily acked), or nil. The
@@ -61,6 +185,11 @@ func (e *Encoder) Build(tick, ackTick, ackSeq uint32, serverTime float64, self *
 	out.Self = *self
 	out.Self.Mask = 0
 
+	if e.perTick > 0 {
+		e.buildBudgeted(s, out, bents, interest)
+		return s
+	}
+
 	i, j := 0, 0
 	for i < len(interest) || j < len(bents) {
 		switch {
@@ -87,6 +216,161 @@ func (e *Encoder) Build(tick, ackTick, ackSeq uint32, serverTime float64, self *
 		}
 	}
 	return s
+}
+
+// buildBudgeted is Build under a byte budget (decision 0005). Same merge as
+// the unlimited path, in two passes: the first collects every record the
+// client could get (new entities, and due entities that changed against the
+// acked baseline) and decides which fit, the second writes the snapshot and
+// the frame in ID order. Priority is a per-entity accumulator: each due tick
+// an entity is deferred, its priority grows by its Weight, and sending it
+// resets it. Close and party entities grow fastest, but anyone starved long
+// enough wins a turn (the "age bonus"). A deferred known entity keeps its
+// baseline state in the new frame, so its next record carries the whole
+// accumulated change: nothing is lost, only rate. A deferred NEW entity is
+// left out of the frame and tried again next tick.
+func (e *Encoder) buildBudgeted(s *proto.Snapshot, out *Frame, bents []EntState, interest []Candidate) {
+	work := e.work[:0]
+	acc := accCursor{ids: e.accIDs, vals: e.accVals}
+	total := 0
+
+	i, j := 0, 0
+	for i < len(interest) || j < len(bents) {
+		switch {
+		case j >= len(bents) || (i < len(interest) && interest[i].State.ID < bents[j].ID):
+			c := &interest[i]
+			rec := Diff(nil, c.State)
+			w := pendingRec{rec: rec, size: RecordSize(&rec), prio: acc.get(c.State.ID) + weightOf(c)}
+			total += w.size
+			work = append(work, w)
+			i++
+		case i >= len(interest) || bents[j].ID < interest[i].State.ID:
+			s.Removed = append(s.Removed, bents[j].ID)
+			j++
+		default:
+			c := &interest[i]
+			if c.Due {
+				if rec := Diff(&bents[j], c.State); rec.Mask != 0 {
+					w := pendingRec{rec: rec, size: RecordSize(&rec), prio: acc.get(c.State.ID) + weightOf(c)}
+					total += w.size
+					work = append(work, w)
+				}
+			}
+			i++
+			j++
+		}
+	}
+
+	e.tokens += e.perTick
+	if e.tokens > e.burst {
+		e.tokens = e.burst
+	}
+	fixed := snapshotFixed(&s.Self, len(s.Removed)) + e.overhead
+	avail := e.tokens - float64(fixed)
+	spent := 0
+	if float64(total) <= avail {
+		// Fast path (everything but dense crowds): it all fits, no ordering.
+		for k := range work {
+			work[k].send = true
+		}
+		spent = total
+	} else {
+		e.order = e.order[:0]
+		for k := range work {
+			e.order = append(e.order, prioIdx{prio: work[k].prio, k: int32(k)})
+		}
+		slices.SortFunc(e.order, func(a, b prioIdx) int {
+			switch {
+			case a.prio > b.prio:
+				return -1
+			case a.prio < b.prio:
+				return 1
+			}
+			return int(a.k - b.k) // ties: lower id first, deterministic
+		})
+		for _, o := range e.order {
+			w := &work[o.k]
+			if float64(spent+w.size) > avail {
+				break // strict priority: the top record waits for allowance rather than being overtaken
+			}
+			w.send = true
+			spent += w.size
+		}
+		// A record bigger than any tick's allowance (a long name on first
+		// sight with a tiny budget) still goes out once the bucket is full.
+		if spent == 0 && len(e.order) > 0 && e.tokens >= e.burst-1e-9 {
+			w := &work[e.order[0].k]
+			w.send = true
+			spent = w.size
+		}
+	}
+	e.tokens -= float64(fixed + spent)
+
+	// Second pass: write records and the frame in id order, and rebuild the
+	// accumulators: deferred entities keep (accumulated + weight), sent ones
+	// reset, entities with no record this tick carry theirs, and entities
+	// that left interest drop out.
+	newIDs, newVals := e.accIDs2[:0], e.accVals2[:0]
+	old := accCursor{ids: e.accIDs, vals: e.accVals}
+	keep := func(id uint32, v float64) {
+		if v > 0 {
+			newIDs = append(newIDs, id)
+			newVals = append(newVals, v)
+		}
+	}
+	k := 0
+	i, j = 0, 0
+	for i < len(interest) || j < len(bents) {
+		switch {
+		case j >= len(bents) || (i < len(interest) && interest[i].State.ID < bents[j].ID):
+			w := &work[k]
+			if w.send {
+				s.Entities = append(s.Entities, w.rec)
+				out.Ents = append(out.Ents, *interest[i].State)
+				e.stats.Sent++
+			} else {
+				keep(w.rec.ID, w.prio)
+				e.stats.Deferred++
+			}
+			k++
+			i++
+		case i >= len(interest) || bents[j].ID < interest[i].State.ID:
+			j++
+		default:
+			c, b := &interest[i], &bents[j]
+			switch {
+			case k < len(work) && work[k].rec.ID == c.State.ID:
+				w := &work[k]
+				if w.send {
+					s.Entities = append(s.Entities, w.rec)
+					out.Ents = append(out.Ents, *c.State)
+					e.stats.Sent++
+				} else {
+					out.Ents = append(out.Ents, *b)
+					keep(w.rec.ID, w.prio)
+					e.stats.Deferred++
+				}
+				k++
+			case c.Due:
+				out.Ents = append(out.Ents, *c.State) // unchanged: equal to b, nothing pending
+			default:
+				out.Ents = append(out.Ents, *b)
+				keep(c.State.ID, old.get(c.State.ID)) // not due this tick: priority waits
+			}
+			i++
+			j++
+		}
+	}
+	e.accIDs, e.accIDs2 = newIDs, e.accIDs
+	e.accVals, e.accVals2 = newVals, e.accVals
+	e.work = work
+}
+
+func weightOf(c *Candidate) float64 {
+	if c.Weight <= 0 {
+		return 1
+	}
+	return c.Weight
 }
 
 // Decoder rebuilds client state from snapshots (bots, tests; WP06 ports it).

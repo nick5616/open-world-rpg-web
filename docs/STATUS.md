@@ -191,3 +191,78 @@ Assumptions:
 - `worlds.gen_version` holds the generator major version ("1"), not the wasm content hash the 0001 migration comment mentions; `atlas_hash` is the strong pin (decision 0007). No contract change.
 - A character whose saved position is exactly WP04's creation default `(2048, 0, 2048)` has never been checkpointed and gets the atlas spawn.
 - Shared files touched: `server/pkg/go.mod`/`go.sum` (wazero), `server/pkg/README.md` (rows), `server/zone/main.go` (terrain load, Ground, /debug/zone fields), `server/zone/internal/game/{server.go (1 line), session.go (spawn calls), entity.go (2 lines), persist.go (World spec/atlasHash)}`, `server/zone/zone_integration_test.go` (1 env line: keep it flat), `server/zone/README.md` (appended section), `server/account/main.go` (`seedWorld`) + README, `tools/bots/{bot.go, main.go, README.md}`. No contract changes, no worldgen changes.
+
+## WP06: Netcode integration ✅
+
+Branch `wp/06-netcode`. Decisions: `docs/decisions/0006-netcode-transport.md`, which also implements decision 0005. Package docs: `client/src/net/README.md`, `tools/netsim/README.md`, `server/zone/README.md` (Transports, Input handling, Byte budget).
+
+Works:
+- Client `client/src/net/`:
+  - Ports of wizard-wars ClientPrediction, EntityInterpolation and ClockSync onto the generated binary codec.
+  - Snapshot decoder: a port of `server/pkg/snapshot` with a 32-frame baseline ring, masked fields, zero-state first sight and removals.
+  - Prediction runs WP02's `stepMovement` on 60 Hz frames. Input goes out at 30 Hz: new frames + `INPUT_REDUNDANCY` repeats + `ackTick`.
+  - Reconciliation compares the server's SelfState at `ackInputSeq` with its own prediction and replays only on disagreement. The correction is eased over 90 ms and snaps beyond 3 m.
+  - Interpolation uses per-ring floors (`INTERP_DELAY_NEAR/MID/FAR_MS`), per-entity spacing floors and a jitter-adaptive link delay. It dead-reckons from the wire velocity, cuts teleports and eases discontinuities, with counters for each.
+  - Remote players have 3 LODs and a canvas nameplate with name, level and activity-flag chips.
+  - HUD shows transport, RTT, ↓/↑ kbps and a sync line. `window.__lodestone.netDebug()` exposes the session state.
+- Screen flow: title → WP04's `AccountScreen`, mounted unchanged in `screens/AccountSlot.tsx` → `ReadySession` → `NetPlay` connects to the director's zone, with Reconnect (fresh ticket) and Characters on kick or drop. "Continue offline" and `npm run dev:solo` still play with no servers (`docs/evidence/wp06-solo-smoke.txt`). Fly and teleport are refused while online.
+- Transport (`server/pkg/transport`):
+  - WebTransport over HTTP/3 (quic-go/webtransport-go v0.13.0): datagrams for unreliable frames, one u32-length-prefixed bidirectional stream for reliable ones, oversized unreliable frames sent on the stream.
+  - The zone makes a 10-day ECDSA dev cert at startup and announces `wtEndpoint=https://…/wt#certHash=…` in `zoneregistry`; the browser pins it via `serverCertificateHashes`.
+  - The client tries WebTransport for 2.5 s, then falls back to WebSocket (same frames). `?transport=ws|wt` forces one.
+  - Shutdown drains WebTransport sessions so the kick and close code arrive. Safari status: 26.4+ per web sources, untested here (decision 0006).
+- Zone (`server/zone`):
+  - Per-client byte budget (`LODESTONE_ZONE_DOWN_BUDGET_KBPS`, default 150) with a priority accumulator: party, then distance, then an age bonus.
+  - Late players are view-extrapolated for observers (≤16 steps), and wrong guesses are eased.
+  - Input jitter buffer: a frame gap waits up to 2 ticks; frames lost in every copy are filled with the player's previous input (≤8).
+  - Frame-budget burst raised from 30 to 60 frames, which changes a WP03 decision; see 0006.
+  - New metrics: per-transport sessions, budget sent/deferred, synthesized/skipped frames.
+- `tools/netsim/`:
+  - `proxy.mjs`: wizard-wars netsim proxy port (WS ordered pipes, TCP-retransmit loss) plus a UDP relay for QUIC. Profiles: clean, lan, wifi, thailand (80±20 ms one way, 3%), mobile (125±40 ms, 6%, 1.5 Mbit), awful. Live `/config`.
+  - `dense-budget.mjs`: the decision 0005 measurement.
+  - Real netem (the-circle `e2e/netem.sh`) is documented as optional; it runs inside a Linux container.
+
+Evidence:
+- Acceptance: `node client/src/net/dev/acceptance.mjs` (`docs/evidence/wp06-acceptance.txt`, `wp06-acceptance-{ws,wt}.json`, `wp06-{ws,wt}-{a,b,walking,activity}.png`). Real account + director + zone binaries on a scratch database, two Chromium processes, dev sign-in, director tickets, "thailand" netsim. 18.5 s of both players walking squares, on WebSocket and on WebTransport:
+  - RTT 158–169 ms.
+  - Local reconciliation corrections: **0** on both transports (261–289 prediction agreements per player).
+  - Remote extrapolation events while walking: **0**. Teleports: **0**.
+  - Largest eased remote discontinuity: 3.4 cm (WS) / 0 cm (WT).
+  - Drawn vs true position: under 1 cm.
+  - Uplink: 15.5 kbps (WS) / 20 kbps (WT), budget 24. Downlink: 8–14 kbps.
+  - Screenshots show the other player with nameplate from both browsers, and the "airborne" chip when B jumps.
+- The "mobile" profile also passes: 263–317 ms RTT, 0 corrections, largest discontinuity 22 cm (`wp06-acceptance-mobile*`).
+- Dense crowd, decision 0005 (`node tools/netsim/dense-budget.mjs`, `docs/evidence/wp06-dense-budget-*`): 150 bots in a 40 m disc. Downlink averaged **504 kbps (max 531)** with the budget off and **150.2 kbps (max 150.3)** at 150 kbps. Tick p99 rose from 4.8 to 6.6 ms.
+- Tests:
+  - Go: transport WT round trip, kick close code, latest-wins and big frames, wrong cert hash refused, dev cert limits. Snapshot: budget cap, correctness under loss, priority, starvation, record size vs codec, benchmark. Zone: view extrapolation and easing, reordered input, lost-frame fill, `zone_wt_integration_test.go` (zone binary over WebTransport, cross-transport visibility, registry `wtEndpoint`, shutdown code).
+  - TS: vitest for clock, decoder (randomized vs a reference encoder), prediction, interpolation, framing. `zone.integration.test.ts` runs the zone binary and the netsim proxy as processes, with two sessions, B under thailand: 0 corrections, observer within 0.5 m, 0 teleports.
+  - Netsim: `node --test`.
+  - eslint, tsc, go vet and gofmt are clean.
+
+Known gaps:
+- Safari not tested: no Mac here. WebKit 26.4 support of `serverCertificateHashes` comes from compat data, not a test.
+- The dev cert does not rotate: a dev zone running longer than 10 days needs a restart before browsers refuse the cert. Production needs `LODESTONE_ZONE_WT_CERT/_KEY` (real cert, plain URL).
+- WebTransport per-chunk WorldEdits streams are not implemented; nothing sends WorldEdits yet (WP09).
+- The byte budget costs about 9 µs per client per tick in dense crowds (sorting about 145 records). Fine at 150 players; WP19's 300-player soak should re-measure, and building snapshots in parallel per client is the next step if needed.
+- Server view extrapolation is cosmetic for observers. Combat hit validation (WP10) must use confirmed position history, not the view.
+- Local profiles' save blobs are sent in Hello but not verified or issued by the zone (WP14).
+- World time (day/night) is still client-local; it needs an agreed epoch from the server (gameplay package).
+- The headless runs use SwiftShader at ~30 fps, so frame-time numbers are not GPU numbers.
+- Acceptance thresholds are mine, not the spec's: a local correction > 5 cm or an eased remote discontinuity > 30 cm counts as visible rubber-banding.
+
+Assumptions:
+- The cert hash travels as a URL fragment in `wtEndpoint`, so there is no contract change: the registry, director and `ReadySession` carry it verbatim.
+- One acceptance "two headless browsers" run = two separate Chromium processes. Both are routed through the proxy by having the zone announce the proxy's endpoints.
+- Shared files touched (minimal):
+  - `client/src/sim/localSim.ts`: `rebase()`.
+  - `client/src/scene/PlayerController.tsx`: optional `PlayerDriver`, correction easing, fly/teleport refused online.
+  - `client/src/scene/GameCanvas.tsx`: `driver` and `children` props.
+  - `client/src/screens/{AccountSlot,PlayScreen}.tsx`.
+  - `client/src/state/live.ts`: `netStats.sync`.
+  - `client/src/hud/DebugHud.tsx`: sync line.
+  - `client/src/devHandle.ts`: `netDebug`.
+  - `client/package.json`: devDeps `ws`, `@types/ws`.
+  - `package-lock.json`.
+  - `server/pkg/go.mod/go.sum`: webtransport-go.
+  - `server/pkg/README.md`.
+  - `server/zone` (owned).
