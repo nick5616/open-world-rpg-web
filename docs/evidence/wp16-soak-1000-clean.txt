@@ -1,0 +1,60 @@
+[2026-11-08T18:58:56.275Z] WP16 soak "1000-clean": 1000 bots, 3 zones, 10m, netsim clean
+[2026-11-08T18:58:59.508Z] scratch database lodestone_wp04_wp16soak
+[2026-11-08T18:59:11.805Z] built director, zone, bots, seedbots, mintworld
+[2026-11-08T18:59:13.766Z] }
+[2026-11-08T18:59:14.922Z] seeded 1000 bot characters (1000 new) into lodestone_wp04_wp16soak, world 97e572f2-6e36-446b-8956-b44f0e24c858
+[2026-11-08T18:59:16.024Z] director (assigner) on :18300
+[2026-11-08T18:59:18.317Z] zone-primary on :18310
+[2026-11-08T18:59:19.851Z] zone-pool-1 on :18312
+[2026-11-08T18:59:21.383Z] zone-pool-2 on :18314
+[2026-11-08T18:59:23.000Z] region owners (x-major rows): [["zone-pool-1","zone-pool-1","zone-pool-1","zone-pool-1"],["zone-pool-1","zone-pool-1","zone-pool-1","zone-pool-1"],["zone-pool-2","zone-pool-2","zone-pool-2","zone-pool-2"],["zone-primary","zone-primary","zone-primary","zone-primary"]]
+[2026-11-08T18:59:23.049Z] bots started (1000, cross mode)
+[2026-11-08T19:09:53.264Z] bots exited 3
+
+---- bots summary ----
+== bots: cross, 1000/1000 connected, 626 s wall (windows/amd64, go1.27.3)
+downlink kbps   avg  129.68  p50  136.13  p95  147.31  max  149.20   (budget 64)
+uplink kbps     avg   11.13  p50   11.13  p95   11.14  max   11.19   (budget 24)
+entities/view   avg   172.4  p50   185.9  p95   208.0  max   212.7
+snapshot bytes  avg   580.8  p50   614.4  p95   621.4  max   621.9
+rtt ms          p50    0.51  max    0.83
+snapshots 16886265 (full 16333), decode errors 0, apply errors 31
+prediction: 16797061 checks, 1278421 mismatches (>= 1 cm), max error 4600 cm, 101872 resyncs
+terrain: {"atlasHash":"50ae4562cfd25265","botCache":{"chunks":918,"pending":0,"hits":500612497,"misses":416,"generated":345,"evicted":0,"dropped":0,"genErrors":0,"genMeanMs":6.375829275362318,"genMaxMs":14.2055,"wasmQueries":416},"botHeightMaxM":176.7,"botHeightMinM":24.64,"genVersion":"1","seaLevel":26.04,"seed":20261108,"wasmSha256":"a3ead5388abdf58aae80f6615c44ca2090a448c64f240420ae1dd95819580b80"}
+personas map[idler:146 jumper:255 strafer:199 walker:400] kicks map[] errors map[]
+  zone_tick_ms{q="p50"}                    19.218
+  zone_tick_ms{q="p99"}                    34.32
+  zone_tick_ms{q="max"}                    83.014
+  zone_tick_jitter_ms{q="p50"}             0
+  zone_tick_jitter_ms{q="p99"}             10.071
+  zone_tick_jitter_ms{q="max"}             49.682
+  zone_players                             272
+  zone_client_down_kbps{q="max"}           151.98
+  zone_client_up_kbps{q="max"}             11.23
+  zone_aoi_entities_avg{ring="near"}       15.3
+  zone_aoi_entities_avg{ring="mid"}        40.33
+  zone_aoi_entities_avg{ring="far"}        120.05
+  zone_aoi_entities_max                    226
+  zone_snapshot_bytes_avg                  571.28
+  zone_writebehind_depth                   306
+  zone_speed_violations_total              0
+  zone_input_frames_dropped_total          0
+  zone_terrain_chunks                      618
+  zone_terrain_queries_total{path="cache"} 1.90626997e+08
+  zone_terrain_queries_total{path="wasm"}  768
+  zone_terrain_generated_total             602
+  zone_terrain_gen_ms_mean                 7.301595016611295
+  zone_terrain_gen_ms_max                  19.5639
+  zone_terrain_dropped_total               0
+handoffs 14696 by 977 bots; gap ms p50 49.8 p95 93.1 max 1120.9; prediction after switch: 58778 checks, 16216 mismatches, max 3400 cm; id changes 0
+pre-connects 1049 (failed 0), standby kicks 35, drops 0, failovers 0 (gave up 0), failover ms p50 0 max 0, rewind m p50 0.0 max 0.0
+discoveries 791, duplicated 0
+ownership: 300 samples, max owned twice 2, max playing-but-unowned 6, unowned two samples running 0, last [zone-pool-1=277 zone-pool-2=454 zone-primary=269]
+  zone zone-pool-1  owned 276  tick p50 18.41 p99 33.86 max 46.54 ms  players 273  stats map[cancels:1 checkpoints_fenced:979 ghost_frames_dropped:0 ghost_frames_in:34383 handoffs_in:4439 handoffs_out:4436 pending_drops:0 preconnects:275 released:0 remote_entities:724 standby_drops:1 standbys_joined:230 states_lost:0]
+  zone zone-primary owned 269  tick p50 19.22 p99 34.32 max 83.01 ms  players 272  stats map[cancels:0 checkpoints_fenced:513 ghost_frames_dropped:0 ghost_frames_in:34415 handoffs_in:2925 handoffs_out:2895 pending_drops:0 preconnects:255 released:0 remote_entities:731 standby_drops:14 standbys_joined:289 states_lost:0]
+  zone zone-pool-2  owned 454  tick p50 36.77 p99 64.41 max 136.21 ms  players 455  stats map[cancels:18 checkpoints_fenced:1291 ghost_frames_dropped:0 ghost_frames_in:37268 handoffs_in:7331 handoffs_out:7365 pending_drops:0 preconnects:519 released:0 remote_entities:546 standby_drops:20 standbys_joined:530 states_lost:0]
+FAIL: downlink max 149.2 kbps > 64; 0 decode / 31 apply errors; zone zone-pool-1 tick p99 33.86 ms > 12; zone zone-primary tick p99 34.32 ms > 12; zone zone-pool-2 tick p99 64.41 ms > 12; characters owned by two zones at once (max 2 in one sample)
+zone log zone-primary: {"handoffOut":2895,"handoffIn":2925,"released":0,"lost":0,"errors":0}
+zone log zone-pool-1: {"handoffOut":4436,"handoffIn":4440,"released":0,"lost":0,"errors":0}
+zone log zone-pool-2: {"handoffOut":7365,"handoffIn":7331,"released":0,"lost":0,"errors":0}
+[2026-11-08T19:09:53.331Z] SOAK FAIL
