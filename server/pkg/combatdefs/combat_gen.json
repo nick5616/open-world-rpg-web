@@ -8132,9 +8132,9 @@
      ]
     },
     {
-     "adds": 3,
-     "speedMult": 1.25,
-     "cooldownMult": 0.8,
+     "adds": 2,
+     "speedMult": 1.2,
+     "cooldownMult": 0.9,
      "at": 0.33,
      "attacks": [
       "boss_cleave",

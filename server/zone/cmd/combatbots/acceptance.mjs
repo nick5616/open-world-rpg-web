@@ -17,6 +17,7 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..');
 const args = process.argv.slice(2);
 const outDir = path.resolve(root, args[args.indexOf('--out') + 1] && args.includes('--out') ? args[args.indexOf('--out') + 1] : 'docs/evidence');
+const generated = args.includes('--generated');
 const exe = process.platform === 'win32' ? '.exe' : '';
 const bin = path.join(root, 'bin');
 fs.mkdirSync(bin, { recursive: true });
@@ -50,6 +51,12 @@ const zone = spawn(path.join(bin, `zone-wp13${exe}`), [], {
     LODESTONE_GEN_VERSION: 'dev',
     LODESTONE_ZONE_REQUIRE_TERRAIN: '1',
     LODESTONE_ZONE_DEV_SPAWN: '1',
+    // The atlas places 13 boss arenas and ~120 camps on this world (see
+    // /debug/combat); the acceptance places its own level-2 camp and boss
+    // with the dev knob on open ground near the spawn settlement (snapped
+    // to walkable terrain), so the run is about combat, not cliffs or a
+    // level-16 temple. --generated uses the atlas groups instead.
+    ...(generated ? {} : { LODESTONE_ZONE_NO_ATLAS_ENEMIES: '1', LODESTONE_ZONE_DEBUG_CAMP: '1330,2330,2,cutthroat archer cutthroat brute', LODESTONE_ZONE_DEBUG_BOSS: '1420,2250,2,warden,earth' }),
   },
   stdio: ['ignore', 'pipe', 'pipe'],
 });
@@ -62,7 +69,7 @@ for (let i = 0; i < 120; i++) {
   } catch {}
   await new Promise((r) => setTimeout(r, 250));
 }
-const bots = spawn(path.join(bin, `combatbots${exe}`), ['-url', `ws://127.0.0.1:${port}/ws`, '-out', path.join(outDir, 'wp13-party-clear.txt'), '-json', path.join(outDir, 'wp13-party-clear.json'), '-timeout', '20m'], { cwd: root, stdio: 'inherit' });
+const bots = spawn(path.join(bin, `combatbots${exe}`), ['-url', `ws://127.0.0.1:${port}/ws`, ...(generated ? [] : ['-from', '1420,2250']), '-out', path.join(outDir, 'wp13-party-clear.txt'), '-json', path.join(outDir, 'wp13-party-clear.json'), '-timeout', '20m'], { cwd: root, stdio: 'inherit' });
 const code = await new Promise((r) => bots.on('exit', r));
 try {
   const r = await fetch(`${base}/metrics`);

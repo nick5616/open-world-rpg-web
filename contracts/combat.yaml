@@ -626,7 +626,7 @@ bosses:
     phases:
       - {at: 1.0, attacks: [boss_cleave, boss_slam]}
       - {at: 0.66, attacks: [boss_cleave, boss_slam, boss_shockwave], adds: 2, speedMult: 1.1}
-      - {at: 0.33, attacks: [boss_cleave, boss_slam, boss_shockwave, boss_charge], adds: 3, speedMult: 1.25, cooldownMult: 0.8}
+      - {at: 0.33, attacks: [boss_cleave, boss_slam, boss_shockwave, boss_charge], adds: 2, speedMult: 1.2, cooldownMult: 0.9}
   archon:
     transitionMs: 2500
     arenaRadius: 26

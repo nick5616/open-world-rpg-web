@@ -260,7 +260,7 @@ func (b *Brain) Step(es []EnemyView, serverTick uint32) (proto.InputFrame, []Cla
 
 	in, threat := b.threatened()
 	if b.Safe != nil {
-		if !b.retreating && b.HP < 0.3 && b.Charges == 0 {
+		if !b.retreating && b.HP < 0.35 && (b.Charges == 0 || b.HP < 0.2) {
 			b.retreating = true
 			b.Retreats++
 		}

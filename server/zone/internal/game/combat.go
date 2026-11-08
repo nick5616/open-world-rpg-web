@@ -124,6 +124,7 @@ func devPlacement(w *combat.World, log func(string, ...any)) {
 		if len(f) >= 5 {
 			elite = f[4]
 		}
+		x, z = w.WalkableNear(x, z, 120, 8)
 		g := w.TestGroup(movement.Vec3{X: x, Z: z}, strings.Fields(f[3]), lvl, elite)
 		log("dev camp", "group", g.ID, "x", x, "z", z, "members", f[3])
 	}
@@ -143,6 +144,7 @@ func devPlacement(w *combat.World, log func(string, ...any)) {
 				}
 			}
 		}
+		x, z = w.WalkableNear(x, z, 160, 18)
 		g := w.TestBoss(movement.Vec3{X: x, Z: z}, f[3], lvl, el)
 		log("dev boss", "group", g.ID, "x", x, "z", z, "boss", f[3])
 	}

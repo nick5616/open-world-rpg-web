@@ -193,7 +193,7 @@ func pickTargets(gs []game.CombatGroupDebug, fx, fz float64) (boss, camp *game.C
 		}
 		dd := math.Hypot(g.X-boss.X, g.Z-boss.Z)
 		// A fair fight for fresh characters: no stronger than the boss.
-		if dd < 60 || g.Level > boss.Level || (g.Kind != "camp" && g.Kind != "pack" && g.Kind != "guardian") {
+		if dd < 60 || g.Level > boss.Level || (g.Kind != "camp" && g.Kind != "pack" && g.Kind != "guardian" && g.Kind != "test") {
 			continue
 		}
 		if camp == nil || dd < math.Hypot(camp.X-boss.X, camp.Z-boss.Z) {

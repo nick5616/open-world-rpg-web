@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"math"
 
+	"lodestone/server/pkg/constants"
 	"lodestone/server/pkg/movement"
 	"lodestone/server/pkg/proto"
 )
@@ -63,6 +64,38 @@ func (w *World) castFX(p *Player, id int, f proto.InputFrame, before movement.St
 
 // Sync asks the host to (re)send p's combat_sync.
 func (w *World) Sync(id uint32) { w.Synced = append(w.Synced, id) }
+
+// WalkableNear finds dry, gentle ground near (x, z) (rings every 4 m up to
+// search m) whose surroundings within flatR stay walkable: dev placement on
+// generated terrain, so a test camp or arena never lands in a lake or on a
+// cliff face. Returns the input point when nothing qualifies.
+func (w *World) WalkableNear(x, z, search, flatR float64) (float64, float64) {
+	ok := func(px, pz float64) bool {
+		h := w.ground.HeightAt(px, pz)
+		if movement.WaterAt(w.ground, px, pz) > h-0.2 || movement.SlopeAt(w.ground, px, pz).T2 > constants.WalkableTanSq*0.5 {
+			return false
+		}
+		for k := 0; k < 8; k++ {
+			a := float64(k) * math.Pi / 4
+			qx, qz := px+flatR*math.Cos(a), pz+flatR*math.Sin(a)
+			qh := w.ground.HeightAt(qx, qz)
+			if movement.WaterAt(w.ground, qx, qz) > qh-0.2 || math.Abs(qh-h) > flatR*0.5 || movement.SlopeAt(w.ground, qx, qz).T2 > constants.WalkableTanSq {
+				return false
+			}
+		}
+		return true
+	}
+	for r := 0.0; r <= search; r += 4 {
+		n := max(1, int(r*2*math.Pi/4))
+		for i := 0; i < n; i++ {
+			a := float64(i) / float64(n) * 2 * math.Pi
+			if px, pz := x+r*math.Cos(a), z+r*math.Sin(a); ok(px, pz) {
+				return px, pz
+			}
+		}
+	}
+	return x, z
+}
 
 // TestGroup places an explicit group (dev placement and tests): keys are
 // enemy keys; elite is an affix key or "".
