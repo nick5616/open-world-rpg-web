@@ -22,3 +22,17 @@ for your package; document each kind's use of `entityId`, `targetId`, `value`,
 | --- | --- | --- |
 | 1 | `notice` | `data` = UTF-8 text shown in the system channel |
 | 2 | `teleport` | `entityId` = who, `x/y/z` = destination (cm); clients cut interpolation |
+| 701 | `vein_hit` | WP09. To the miner: `entityId` = miner, `value` = vein hit points left, `x/y/z` = vein (cm), `data` = u64 vein id LE + u16 max hit points |
+| 702 | `vein_break` | WP09. To each player who helped break it: `entityId` = player, `targetId` = their pickup's entity id, `value` = seconds until respawn, `data` = u64 vein id |
+| 703 | `drop_spawned` | WP09. To the owner: `entityId` = pickup entity, `targetId` = owner, `value` = quantity, `data` = item id (UTF-8, `ore:<name>` / `gem:<name>:<cut>` until WP14 defines items) |
+| 704 | `item_granted` | WP09 (grant hook for WP14). To the player: `entityId` = player, `targetId` = the pickup taken, `value` = quantity, `data` = item id |
+| 706 | `mine_refused` | WP09. To the miner: `value` = 1 too far, 2 already mined, 3 unknown vein, 4 swinging too fast; `data` = u64 vein id |
+
+Mining uses the existing `Interact` message (WP09): `targetKind` 1 = vein
+(`targetId` = vein stable id, `action` 1 = pickaxe swing, `arg` = tool tier,
+0 for now), `targetKind` 2 = pickup (`targetId` = pickup entity id, `action`
+1 = take). `WorldEdits` for `vein_mined` carry 16 bytes of `params` (f32 x,
+y, z, carve radius 1.5) and `expiresAt` = respawn time; a delta with
+`expiresAt` at or before the server time means the edit expired (the vein
+respawned and the carve is restored). See server/zone/README.md "Caves and
+mining".

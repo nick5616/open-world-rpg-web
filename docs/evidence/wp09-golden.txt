@@ -1,0 +1,31 @@
+# WP01 golden determinism run
+date: 2026-11-08T14:52:28.142Z
+machine: 11th Gen Intel(R) Core(TM) i7-11700K @ 3.60GHz x16, win32 10.0.22621, node v20.18.0
+wasm: worldgen-76a908981c3b33ed.wasm (421921 B, genVersion 1, abi 1, rustc 1.99.1 (58cf8f9c3 2026-10-13))
+
+## build: PASS
+worldgen.wasm 421921 bytes, sha256 76a908981c3b33ed, genVersion 1, abi 1
+
+## node: PASS
+[golden:node] 5 worlds, 288 chunks, 320 collision points, 0 failures; atlas 958/934/915/1114/647 ms; lod0 chunk mean 6.43 p95 12.00 max 26.50 ms
+[golden:node] caves: 237 cells, 1275 collision/system queries, 0 failures expected; cave_build mean 3.68 p95 7.29 max 43.06 ms
+[golden:node] 10000 collision_height queries in 72.9 ms (7.3 us each)
+[golden:node] atlas 312224 B raw, 123699 B gzipped (budget 2097152)
+Tests  5 passed (5)
+
+## chromium: FAIL
+[golden:chromium] Chromium 131.0.6778.33 worker: 5 worlds, 288 chunks, 320 collision points, 0 failures
+[golden:chromium] detail chunk (LOD 0, 200 chunks, worker, crossOriginIsolated=true): mean 6.01 ms, p50 5.34, p95 11.14, max 31.60 (budget 8 ms); atlas 1027 ms; 84 scatter/chunk
+[golden:chromium] caves: 237 golden cells, 1275 collision/system queries; cave_build in worker over 220 cells (105 with mesh): mean 1.65 ms, p95 4.04, max 7.01 (budget 12 ms); cave graph (all systems, once) 71.1 ms
+
+## go: PASS
+[golden:go] wazero compiler: 5 worlds, 288 chunks, 320 collision points, 0 failures; lod0 chunk mean 19.81 ms p95 77.24 ms
+[golden:go] caves: 237 cells, 30 masks, 5 graphs match; cave_build max 112.17 ms
+--- PASS: TestGolden (18.14s)
+[golden:go] wazero interpreter: 1 world, 12 chunks, 64 collision points, 0 failures
+--- PASS: TestGoldenInterpreter (117.21s)
+
+## native: PASS
+[golden:native] 288 chunks, 237 cave cells match
+
+RESULT: FAIL (chromium)

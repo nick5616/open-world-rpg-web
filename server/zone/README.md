@@ -227,3 +227,67 @@ Tests: `internal/game/terrain_test.go` (prediction on terrain to the cm,
 spawns, validation), `zone_terrain_integration_test.go` (zone binary on
 terrain vs a client predicting with its own worldhost; refusal of a wrong
 genVersion). Both skip without the wasm unless `LODESTONE_REQUIRE_WASM=1`.
+
+## Caves and mining (WP09)
+
+Code: `caves.go` (wiring, package main), `internal/game/caves.go` (cave
+interest, clipping, `Do`), `internal/game/mining.go` (veins, drops,
+pickups, edits, respawn), `internal/game/edits_store.go` (`world_edits`).
+
+- **Ground.** With a WP09 wasm the zone simulates on
+  `worldhost.CaveTerrain`: heightfield on the surface, cave floors, walls
+  and ceilings in mouth holes and underground (the same queries the
+  client predicts with: `server/pkg/caves`, bit-exact vs TS). Validation
+  (`verticalOK`), spawn lifting and dev spawns (`?spawn=x,y,z` lands on the
+  floor under y) use `movement.GroundAt`. Cells are wanted for players
+  underground or within 64 m of a mouth (48 m + 3 s of travel, one cell up
+  and down); a cell asked for and not cached is built synchronously
+  (`zone_cave_builds_total{path="sync"}`, rare).
+- **Interest clipping (spec 9).** Each tick every entity gets its cave
+  system (`SystemAt`, -1 on the surface). A viewer in system S sees
+  entities in S and players on the surface within 48 m of S's openings; a
+  viewer on the surface sees cave dwellers only from within 48 m of their
+  system's openings. Party members are exempt.
+- **Mining.** `Interact{targetKind 1, targetId vein id, action 1}` is a
+  pickaxe swing: 25 damage, at most one per 250 ms, the vein within 4.5 m of
+  the eye; refusals are `EventMineRefused`. `Server.DamageVein(player,
+  veinID, amount, source)` is the hook combat (WP13) calls: pickaxe and
+  Earth spells full damage, any other spell impact half. Hit points start
+  at the generator's value.
+- **Break.** Every player who hit the vein in the last 2 minutes gets a
+  personal drop from a seeded roll (`mix64(worldSeed ^ veinID ^ editID ^
+  fnv(characterID))`, logged with the seed): ores `ore:<name>` x 1-4 by
+  cluster size, gems `gem:<name>:rough|cut|brilliant` (deeper is better).
+  Drops spawn as `pickup` entities only their owner receives; walking
+  within ~1.6 m (or `Interact{targetKind 2}`) takes it through
+  `Config.Granter` (WP14's inventory; the default logs) and sends
+  `EventItemGranted`. Pickups despawn after `PICKUP_DESPAWN_S`.
+- **World edit.** `vein_mined(id, respawnAt)`: carve sphere 1.5 m in
+  `params` (16 bytes, f32 x, y, z, r), applied to the cave cells at once
+  (`CaveTerrain.SetEdit` rebuilds the touched cached cells synchronously,
+  so collision changes in the same tick), sent as `WorldEdits` to every
+  client with the chunk in interest, persisted to `world_edits` through the
+  write-behind queue (`edit_id` = mix64(vein id, break time) >> 1).
+- **WorldEdits delivery.** Each client's interest square is the 5 x 5
+  chunks around it (re-evaluated twice a second): a chunk entering it
+  sends all its active edits ("first interest"), then edits come as live
+  deltas (a list of one). Chunks leaving it are forgotten.
+- **Respawn.** A seeded `VeinRespawnMin + (Max - Min) * u` after the break
+  (spec 7: 6-24 h; `LODESTONE_ZONE_VEIN_RESPAWN_MIN/_MAX` shorten it for
+  tests): hit points restored, the edit removed from the cave cells, a
+  delta with `expiresAt` = now sent, the row deleted.
+- **Restart.** `RestoreEdits` loads unexpired `world_edits` rows at startup
+  (before the first tick): mined veins stay mined, carves stay carved, the
+  respawn time is kept.
+- `GET /debug/caves`: cave cache counters and mining state (veins touched,
+  hit points, respawn times). Metrics: `zone_cave_*`, `zone_veins_mined_total`,
+  `zone_veins_respawned_total`, `zone_items_granted_total`,
+  `zone_world_edits_sent_total`.
+
+Tests: `internal/game/mining_test.go` (in-process, real cave world: break
+after ceil(hp/25) swings, personal pickup and grant, carve applied, late
+joiner gets the edit, respawn restores, persisted edits restored; cave
+movement == prediction; interest clipping) and `zone_caves_integration_test.go`
+(zone binary + scratch Postgres: mine over the wire, `world_edits` row,
+kill + restart restores it, respawn on a 14-15 s schedule deletes it;
+evidence `docs/evidence/wp09-mining-respawn.txt`).

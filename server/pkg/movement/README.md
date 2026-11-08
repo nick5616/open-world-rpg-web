@@ -44,3 +44,7 @@ in the last ulp of sin/cos). Regenerate with
 
 `Ground` is `HeightAt(x, z) float64` (feet height). `Flat{Y}` until WP07
 plugs in the wasm terrain behind the same interface.
+
+## Caves (WP09)
+
+A ground may also implement `CaveGround` (`FloorAt(x, y, z)`, `Collide(x, y, z)`): underground the floor depends on height, and walls and ceilings push back. When it does, the step uses `FloorAt(pos)` for the grounded test, calls `Collide` once after integrating (sliding horizontal velocity along the push: `v -= n * min(0, v.n)` with `n` the normalized push; a ceiling hit zeroes a rising `vy`), and snaps to `FloorAt(x, max(old y, new y), z)`. Grounds without caves step exactly as before. `server/pkg/caves.Ground` and `worldhost.CaveTerrain` implement it; the TS twin is `GroundQuery.floorAt/collide` (client/src/sim/ground.ts). Golden cave walk: `server/pkg/caves/path_test.go`.

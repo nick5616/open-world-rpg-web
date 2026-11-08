@@ -175,3 +175,7 @@ npm run golden -w client      # regenerate after an intended change (then update
 npm run test -w client        # fails if stepMovement no longer reproduces the files bit-exactly
 npm run compare:ww -w client  # re-run the wizard-wars side-by-side (needs refs/)
 ```
+
+## Caves (WP09)
+
+`GroundQuery` has two optional methods, `floorAt(x, y, z)` and `collide(x, y, z, out)` (cave floors; wall and ceiling push-out). When present the step uses `floorAt` instead of `heightAt` (searching from `max(old y, new y)` for the snap), calls `collide` once after integrating and slides the velocity along the push; a ceiling stops a rising jump. Without them nothing changes (the flat and plane goldens are bit-identical). Go mirror: `movement.CaveGround`. Algorithm and constants: worldgen/README.md "Cave collision and ground dispatch"; golden cave walk: client/src/world/caves/cavePath.test.ts.

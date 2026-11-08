@@ -12,6 +12,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"sync"
 
 	"lodestone/server/pkg/movement"
 	"lodestone/server/pkg/worldhost"
@@ -51,10 +52,31 @@ func openTerrain(info zoneInfo, mode string) (*worldhost.Terrain, error) {
 	return worldhost.NewTerrain(mt.World, worldhost.TerrainOptions{}), nil
 }
 
-// ground is what prediction steps on: the terrain, or WP03's flat plane.
+// caveGrounds: one cave-aware ground per terrain (WP09), built on first use.
+// The zone simulates on worldhost.CaveTerrain, so a bot that walks into a
+// cave mouth must predict on it too or it reads the hole as a mismatch.
+var (
+	caveGrounds sync.Map // *worldhost.Terrain -> movement.Ground
+	caveMu      sync.Mutex
+)
+
+// ground is what prediction steps on: the terrain (with caves), or WP03's flat plane.
 func (c *botConfig) ground() movement.Ground {
 	if c.terrain != nil {
-		return c.terrain
+		if g, ok := caveGrounds.Load(c.terrain); ok {
+			return g.(movement.Ground)
+		}
+		caveMu.Lock() // one cave cache (and worker) per terrain, not one per racing bot
+		defer caveMu.Unlock()
+		if g, ok := caveGrounds.Load(c.terrain); ok {
+			return g.(movement.Ground)
+		}
+		var g movement.Ground = c.terrain
+		if cv, err := worldhost.NewCaves(c.terrain.World(), worldhost.CaveOptions{Workers: 1}); err == nil {
+			g = worldhost.NewCaveTerrain(c.terrain, cv)
+		}
+		actual, _ := caveGrounds.LoadOrStore(c.terrain, g)
+		return actual.(movement.Ground)
 	}
 	return movement.Flat{}
 }
