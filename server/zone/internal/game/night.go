@@ -736,6 +736,7 @@ type DefenseInfo struct {
 	Wave         int     `json:"wave"`
 	Ward         float64 `json:"ward"`
 	Participants int     `json:"participants"`
+	Until        float64 `json:"until"`
 }
 
 // NightDebug is the /debug/night snapshot (call through Do).
@@ -772,7 +773,7 @@ func (s *Server) NightDebugInfo(withHashes bool) NightDebug {
 		}
 	}
 	for _, df := range n.defs {
-		d.Defenses = append(d.Defenses, DefenseInfo{Town: df.town.Index, Name: df.town.Name, Phase: df.phase, Wave: df.wave, Ward: df.ward, Participants: len(df.part)})
+		d.Defenses = append(d.Defenses, DefenseInfo{Town: df.town.Index, Name: df.town.Name, Phase: df.phase, Wave: df.wave, Ward: df.ward, Participants: len(df.part), Until: df.until})
 	}
 	for t := range n.broken {
 		d.Broken = append(d.Broken, t)
