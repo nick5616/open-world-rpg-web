@@ -217,6 +217,7 @@ func (s *Server) onTick() {
 	s.grid.Reset()
 	for i, e := range s.ents {
 		e.idx = int32(i)
+		e.updateView(s.cfg.Ground)
 		e.quantize(s.cfg.Ground)
 		s.grid.Insert(int32(i), e.Move.Pos.X, e.Move.Pos.Z)
 	}
@@ -287,6 +288,7 @@ func (s *Server) join(sess *session) {
 		e.Move.Pos.Y = g
 	}
 	e.prevValid = e.Move
+	e.view = e.Move
 	e.quantize(s.cfg.Ground)
 	sess.ent = e
 	if s.cfg.DownBudgetKbps > 0 {
