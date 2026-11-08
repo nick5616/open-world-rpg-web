@@ -88,6 +88,9 @@ func main() {
 
 	cfg := &botConfig{url: *zoneURL, zoneID: *zoneID, worldID: *worldID, priv: priv, centerX: cx, centerZ: cz,
 		worldM: constants.WorldSizeM, warmup: *warmup, pingPeriod: time.Second, ticket: *ticketArg, terrain: terrain}
+	if terrain != nil {
+		cfg.structures = withStructures(terrain)
+	}
 	if strings.HasPrefix(cfg.ticket, "@") {
 		b, err := os.ReadFile(cfg.ticket[1:])
 		if err != nil {

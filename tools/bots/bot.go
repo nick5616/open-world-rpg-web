@@ -47,6 +47,8 @@ type botConfig struct {
 	pingPeriod time.Duration
 	ticket     string             // use this ticket (e.g. from the director) instead of signing one
 	terrain    *worldhost.Terrain // WP07: shared by all bots (safe for concurrent use); nil = flat
+	// WP12: the terrain plus the towers, exactly the zone's ground (set with terrain).
+	structures movement.Ground
 }
 
 // bot is one headless player: it signs a dev ticket, connects, runs Hello,
@@ -378,7 +380,7 @@ func (b *bot) reader(done chan struct{}) {
 				// cm-rounded while the server stands exactly on the ground. Take
 				// y from our own (bit-identical) terrain, or the first steps would
 				// start a few mm off the ground and diverge.
-				b.state.Pos.Y = b.cfg.terrain.HeightAt(b.state.Pos.X, b.state.Pos.Z)
+				b.state.Pos.Y = b.cfg.ground().HeightAt(b.state.Pos.X, b.state.Pos.Z)
 			}
 		case *proto.Kick:
 			b.st.Kick = fmt.Sprintf("%d %s", msg.Code, msg.Reason)

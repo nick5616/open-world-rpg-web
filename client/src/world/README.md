@@ -61,6 +61,7 @@ takes the beauty shots).
 | `scatter/` | `archetypes.ts` procedural trees/rocks/bushes/grass, `impostors.ts` impostor atlas, `scatterMaterials.ts` (wind, LOD dither fades, foliage tint), `scatterManager.ts` (global InstancedMeshes re-binned by distance, stable ids, hide by id), `grassGen.ts` (worker grass clumps). |
 | `sky/` | `atmosphere.ts` analytic scattering (CPU + GLSL twins), `skyDome.ts` (stars, sun, moon, clouds), `sunShadows.ts` (CSM, patched so non-CSM materials use cascade 0 only). |
 | `post/postfx.ts` | Composer: fog from depth, god rays (half res), bloom, ACES, grade. |
+| `structures/` | (WP12) Structure overlay on the ground (`WorldRuntime.ground` = terrain + towers), towers from the atlas, tower and waypoint-stone visuals. README there (how WP20 adds structures). |
 | `debug/` | `worldDebug.ts` (stats + window handle), `lodOverlay.ts`, `WorldDebugSection.tsx` (debug panel). |
 | `bench/traversal.mjs` | The traversal benchmark. |
 | `testing/wasm.ts` | Test helper: the real worldgen.wasm in Node. |

@@ -14,6 +14,7 @@ import (
 	"math"
 
 	"lodestone/server/pkg/movement"
+	"lodestone/server/pkg/structures"
 	"lodestone/server/pkg/worldhost"
 )
 
@@ -51,8 +52,22 @@ func openTerrain(info zoneInfo, mode string) (*worldhost.Terrain, error) {
 	return worldhost.NewTerrain(mt.World, worldhost.TerrainOptions{}), nil
 }
 
+// withStructures puts the atlas towers on the terrain (WP12), as the zone
+// does, so a bot walking into a tower climbs it on both sides.
+func withStructures(t *worldhost.Terrain) movement.Ground {
+	a, err := structures.ParseAtlas(t.World().Atlas)
+	if err != nil {
+		return t
+	}
+	o, _ := structures.Towers(a, t)
+	return structures.Wrap(t, o)
+}
+
 // ground is what prediction steps on: the terrain, or WP03's flat plane.
 func (c *botConfig) ground() movement.Ground {
+	if c.structures != nil {
+		return c.structures
+	}
 	if c.terrain != nil {
 		return c.terrain
 	}

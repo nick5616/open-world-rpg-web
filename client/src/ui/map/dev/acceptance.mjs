@@ -161,7 +161,7 @@ async function fastTravelUI(page, site) {
       const b = document.querySelector('[data-testid=map-travel]').getBoundingClientRect();
       const c = document.querySelector('[data-testid=map-canvas]').getBoundingClientRect();
       const hit = document.elementFromPoint(b.x + b.width / 2, b.y + b.height / 2);
-      return { button: [b.x, b.y, b.width, b.height], canvas: [c.x, c.y, c.width, c.height], hit: hit?.tagName, vw: innerWidth, vh: innerHeight };
+      return { button: [b.x, b.y, b.width, b.height], canvas: [c.x, c.y, c.width, c.height], hit: hit?.tagName, vw: window.innerWidth, vh: window.innerHeight };
     });
     step('travel button geometry ' + JSON.stringify(geo));
     await page.screenshot({ path: shot('debug-travel') });

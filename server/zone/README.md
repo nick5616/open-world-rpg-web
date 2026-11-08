@@ -227,3 +227,30 @@ Tests: `internal/game/terrain_test.go` (prediction on terrain to the cm,
 spawns, validation), `zone_terrain_integration_test.go` (zone binary on
 terrain vs a client predicting with its own worldhost; refusal of a wrong
 genVersion). Both skip without the wasm unless `LODESTONE_REQUIRE_WASM=1`.
+
+## Exploration (WP12)
+
+Towers, waypoints, discovery XP, fast travel, pins and the party ring. Rules
+in `internal/explore` (README there); glue in `internal/game/explore.go`
+(progress load/save, Events, fast travel, `Teleport`, `RespawnPoint`),
+`internal/game/party.go` (party ring + party pins from the social service's
+Redis keys) and `internal/game/persist_progress.go` (Postgres). Wiring in
+`explore.go` (package main): the towers become a structure overlay on the
+terrain ground (`server/pkg/structures`), so the zone's movement ground is
+terrain + towers, exactly what clients predict on.
+
+- **Events** 600-608 and **Interact** kinds 10 (fast travel) / 11 (pins):
+  `contracts/events.md`. After Welcome every player gets `progress_sync` and
+  `pins`; party changes send `party` (the snapshot `partyId`).
+- **Party ring**: every 2 s an off-tick poller MGETs `partyof:{characterId}`
+  for the hosted players; `Entity.PartyID` = FNV-32 of the party id.
+- **Persistence**: changed progress is saved through the write-behind queue
+  (coalesced per character), at the 30 s checkpoint and on logout. Needs
+  migration `0012_exploration_pins` (`npm run migrate`). Local profiles: the
+  `Hello.saveBlob` is verified with `server/pkg/localsave` and a new blob is
+  sent (`SaveBlob`) when progress changes (at most every 5 s).
+- **Hooks for later packages**: `Server.Teleport(e, pos)` (any server move:
+  respawn, scripted travel) and `Server.RespawnPoint(e)` (spec 8 "death
+  respawns you at the last waypoint", for WP13).
+- Env: `LODESTONE_SAVE_PRIVATE_KEY` (local save signing; dev key + warning
+  when unset, same as the account service).
