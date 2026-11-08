@@ -345,7 +345,7 @@ func (p *Player) startMove(f proto.InputFrame, before movement.State, w *combatd
 	}
 	// Legality: no faster than the previous move allows; a dodge after its
 	// hit frames cancels the recovery (spec 8).
-	cancel := p.dodgeSeq > p.activeEnd && p.dodgeSeq <= seq
+	cancel := p.dodgeSeq >= p.activeEnd && p.activeEnd > 0 && p.dodgeSeq <= seq
 	if seq+startTolerance < p.nextSeq && !(cancel && seq+startTolerance >= p.activeEnd) {
 		a.Legal, a.Refusal = false, RefuseIllegal
 		return p.log(a)

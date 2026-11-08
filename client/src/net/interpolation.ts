@@ -89,6 +89,8 @@ export interface RemoteView {
   healthPct: number;
   activity: number;
   partyId: number;
+  /** EntityRecord.typeId (enemy type, element, affix: WP13). */
+  typeId?: number;
   ring: Ring;
   delayMs: number;
   mode: 'interp' | 'extrap' | 'frozen' | 'waiting';
@@ -297,7 +299,7 @@ export class EntityInterpolation {
     const buf = tr.samples;
     if (buf.length === 0) return null;
     const st = tr.state;
-    const base = { id: tr.id, kind: st.kind, name: st.name, level: st.level, healthPct: st.healthPct, activity: st.activity, partyId: st.partyId, ring: tr.ring, delayMs: tr.delay };
+    const base = { id: tr.id, kind: st.kind, name: st.name, level: st.level, healthPct: st.healthPct, activity: st.activity, partyId: st.partyId, typeId: st.typeId, ring: tr.ring, delayMs: tr.delay };
     this.metrics.frames++;
 
     let i = buf.length - 1;
