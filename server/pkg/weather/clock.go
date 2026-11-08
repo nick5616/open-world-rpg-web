@@ -83,7 +83,9 @@ func MoonPhase(seed uint64, n int64) int {
 var moonDemons = [constants.MoonCycleNights]float64{1, 0.85, 0.65, 0.5, 0.35, 0.5, 0.65, 0.85}
 
 // MoonDemonFactor is the phase's demon multiplier (1 at new moon).
-func MoonDemonFactor(phase int) float64 { return moonDemons[floorMod(int64(phase), constants.MoonCycleNights)] }
+func MoonDemonFactor(phase int) float64 {
+	return moonDemons[floorMod(int64(phase), constants.MoonCycleNights)]
+}
 
 // MoonIllumination is the lit fraction of the moon (0 new .. 1 full).
 func MoonIllumination(phase int) float64 {

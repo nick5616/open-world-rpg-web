@@ -86,7 +86,7 @@ func TestNightRules(t *testing.T) {
 	if IsNight(5 * day / 24 * 2.4) { // 12:00
 		t.Fatal("noon is not night")
 	}
-	if !IsNight(19 * 150) || !IsNight(2 * 150) || IsNight(6*150) || IsNight(18*150) {
+	if !IsNight(19*150) || !IsNight(2*150) || IsNight(6*150) || IsNight(18*150) {
 		t.Fatal("night is 18:30-06:00")
 	}
 	// Night n: dusk of day n to dawn of day n+1.
