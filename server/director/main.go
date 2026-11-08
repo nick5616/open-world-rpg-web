@@ -87,6 +87,12 @@ func run(s *svc.Server) error {
 		Log:            s.Log, Metrics: s.Metrics,
 	}
 	d.Register(s.Mux)
+	// WP16: region assignment for cluster worlds (internal/director/assign.go).
+	if every := env.Duration("LODESTONE_DIRECTOR_ASSIGN_EVERY", 2*time.Second); every > 0 {
+		actx, stopAssign := context.WithCancel(context.Background())
+		defer stopAssign()
+		go d.RunAssigner(actx, every)
+	}
 	handler, stopWake, err := withWake(s, rdb)
 	if err != nil {
 		return err
