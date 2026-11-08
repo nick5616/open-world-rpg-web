@@ -20,6 +20,7 @@ type Entity struct {
 	CharacterID string
 	Level       uint8
 	PartyID     uint32 // 0 = none; party ids arrive with WP08 (stub field)
+	ListenOnly  bool   // WP11: local profile, its speaking bit is never shown
 
 	Move       movement.State
 	Yaw, Pitch float64 // radians, from the newest applied input
@@ -129,6 +130,7 @@ func (e *Entity) quantize(g movement.Ground) {
 	if !movement.Grounded(e.view, g) {
 		act |= proto.ActivityAirborne
 	}
+	act |= e.speakingActivity() // WP11 (earshot.go)
 	hp := uint8(0)
 	if e.HealthMax > 0 {
 		hp = uint8(math.Round(float64(e.Health) * 100 / float64(e.HealthMax)))
