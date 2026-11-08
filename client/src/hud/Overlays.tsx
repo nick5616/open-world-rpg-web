@@ -18,7 +18,7 @@ export function LockHint() {
   if (locked || panel) return null;
   return (
     <div style={{ position: 'fixed', left: '50%', bottom: 48, transform: 'translateX(-50%)', padding: '8px 14px', borderRadius: 4, background: 'rgba(8,10,16,0.6)', color: '#e9ecef', font: '14px system-ui, sans-serif', pointerEvents: 'none', zIndex: 10 }}>
-      Click to look around · WASD move · Shift sprint · Space jump (again in the air to double jump)
+      Click to look around · WASD move · Shift sprint · Space jump (again in the air: double jump, then glide) · G glider · hold W into a cliff to climb
     </div>
   );
 }

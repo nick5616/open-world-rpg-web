@@ -1,0 +1,466 @@
+{
+  "seed": "20261108",
+  "limitM": 0.1,
+  "pass": true,
+  "perModeMaxM": {
+    "ground": 0.007277104914696001,
+    "climb": 0.008367298965062218,
+    "air": 0.008030465419153037,
+    "glide": 0.00798990974540641,
+    "swim": 0.004880392364262025
+  },
+  "results": [
+    {
+      "name": "climb",
+      "spawn": {
+        "x": 1336.2,
+        "y": 206.09148025512687,
+        "z": 2339.35
+      },
+      "seconds": 11.747665599999998,
+      "steps": 704,
+      "snapshots": 351,
+      "perMode": {
+        "ground": {
+          "snapshots": 112,
+          "maxDivM": 0.007277104914696001
+        },
+        "climb": {
+          "snapshots": 239,
+          "maxDivM": 0.007970367208925536
+        }
+      },
+      "maxDivM": 0.007970367208925536,
+      "corrections": 0,
+      "agreements": 347,
+      "maxCorrectionM": 0,
+      "transitions": [
+        "0.06s seq 2: start -> ground at (1336.20, 206.09, 2339.35) stamina 100.0",
+        "1.43s seq 84: ground -> climb at (1334.38, 207.92, 2339.35) stamina 100.0",
+        "9.40s seq 562: climb -> ground at (1324.93, 221.98, 2339.99) stamina 3.0"
+      ],
+      "drownedEvents": 0,
+      "samples": [
+        "0.53s seq 30 ground server (1336.20, 206.09, 2339.35) predicted (1336.200, 206.091, 2339.350) div 0.15 cm stamina 100.0 flags 0",
+        "1.03s seq 60 ground server (1336.04, 206.27, 2339.35) predicted (1336.037, 206.269, 2339.350) div 0.30 cm stamina 100.0 flags 0",
+        "1.53s seq 90 climb  server (1334.26, 208.06, 2339.39) predicted (1334.261, 208.056, 2339.388) div 0.42 cm stamina 99.0 flags 0",
+        "2.03s seq 120 climb  server (1333.72, 208.89, 2339.55) predicted (1333.716, 208.890, 2339.546) div 0.57 cm stamina 94.0 flags 0",
+        "2.53s seq 150 climb  server (1333.24, 209.78, 2339.68) predicted (1333.235, 209.779, 2339.680) div 0.47 cm stamina 89.0 flags 0",
+        "3.03s seq 180 climb  server (1332.77, 210.64, 2339.82) predicted (1332.767, 210.639, 2339.820) div 0.36 cm stamina 84.0 flags 0",
+        "3.53s seq 210 climb  server (1332.29, 211.53, 2339.95) predicted (1332.292, 211.529, 2339.953) div 0.38 cm stamina 79.0 flags 0",
+        "4.03s seq 240 climb  server (1331.46, 212.83, 2340.19) predicted (1331.457, 212.833, 2340.193) div 0.57 cm stamina 55.0 flags 144",
+        "4.53s seq 270 climb  server (1330.34, 214.21, 2340.04) predicted (1330.342, 214.209, 2340.036) div 0.48 cm stamina 51.5 flags 0",
+        "5.03s seq 300 climb  server (1329.76, 214.75, 2339.45) predicted (1329.757, 214.752, 2339.447) div 0.50 cm stamina 46.5 flags 0",
+        "5.53s seq 330 climb  server (1329.17, 215.45, 2339.26) predicted (1329.174, 215.449, 2339.256) div 0.56 cm stamina 41.5 flags 0",
+        "6.03s seq 360 climb  server (1328.58, 216.24, 2339.39) predicted (1328.581, 216.239, 2339.390) div 0.14 cm stamina 36.5 flags 0",
+        "6.53s seq 390 climb  server (1328.01, 217.00, 2339.51) predicted (1328.008, 216.997, 2339.510) div 0.39 cm stamina 31.5 flags 0",
+        "7.03s seq 420 climb  server (1327.49, 217.91, 2339.60) predicted (1327.488, 217.911, 2339.603) div 0.40 cm stamina 26.5 flags 0",
+        "7.53s seq 450 climb  server (1326.99, 218.76, 2339.69) predicted (1326.991, 218.762, 2339.694) div 0.48 cm stamina 21.5 flags 0",
+        "8.03s seq 480 climb  server (1326.49, 219.64, 2339.78) predicted (1326.493, 219.636, 2339.781) div 0.55 cm stamina 16.5 flags 0",
+        "8.53s seq 510 climb  server (1325.98, 220.54, 2339.86) predicted (1325.978, 220.540, 2339.856) div 0.50 cm stamina 11.5 flags 0",
+        "9.03s seq 540 climb  server (1325.42, 221.33, 2339.93) predicted (1325.415, 221.326, 2339.935) div 0.78 cm stamina 6.5 flags 0",
+        "9.53s seq 570 ground server (1324.39, 222.53, 2340.01) predicted (1324.392, 222.529, 2340.013) div 0.34 cm stamina 3.0 flags 0",
+        "10.03s seq 600 ground server (1322.41, 224.41, 2340.52) predicted (1322.411, 224.413, 2340.524) div 0.57 cm stamina 3.0 flags 0",
+        "10.53s seq 630 ground server (1321.92, 224.99, 2342.86) predicted (1321.924, 224.990, 2342.856) div 0.56 cm stamina 9.7 flags 0",
+        "11.03s seq 660 ground server (1321.85, 225.06, 2343.27) predicted (1321.850, 225.057, 2343.274) div 0.53 cm stamina 29.7 flags 0",
+        "11.53s seq 690 ground server (1321.85, 225.06, 2343.27) predicted (1321.850, 225.057, 2343.274) div 0.53 cm stamina 49.7 flags 0"
+      ],
+      "end": {
+        "mode": "ground",
+        "x": 1321.8498558493234,
+        "y": 225.0570769586291,
+        "z": 2343.2744580789863,
+        "stamina": 59
+      }
+    },
+    {
+      "name": "climb-rain",
+      "spawn": {
+        "x": 1336.2,
+        "y": 206.09148025512687,
+        "z": 2339.35
+      },
+      "seconds": 16.114632,
+      "steps": 966,
+      "snapshots": 482,
+      "perMode": {
+        "ground": {
+          "snapshots": 136,
+          "maxDivM": 0.0070616595844381165
+        },
+        "climb": {
+          "snapshots": 346,
+          "maxDivM": 0.008367298965062218
+        }
+      },
+      "maxDivM": 0.008367298965062218,
+      "corrections": 0,
+      "agreements": 482,
+      "maxCorrectionM": 0,
+      "transitions": [
+        "0.07s seq 2: start -> ground at (1336.20, 206.09, 2339.35) stamina 100.0",
+        "1.40s seq 83: ground -> climb at (1334.38, 207.92, 2339.35) stamina 100.0",
+        "12.93s seq 775: climb -> ground at (1331.63, 212.59, 2340.14) stamina 0.0"
+      ],
+      "drownedEvents": 0,
+      "samples": [
+        "0.53s seq 31 ground server (1336.20, 206.09, 2339.35) predicted (1336.200, 206.091, 2339.350) div 0.15 cm stamina 100.0 flags 0",
+        "1.03s seq 61 ground server (1335.94, 206.37, 2339.35) predicted (1335.936, 206.370, 2339.350) div 0.39 cm stamina 100.0 flags 0",
+        "1.53s seq 91 climb  server (1334.30, 208.01, 2339.38) predicted (1334.300, 208.010, 2339.375) div 0.46 cm stamina 98.7 flags 0",
+        "2.03s seq 121 climb  server (1334.01, 208.34, 2339.46) predicted (1334.014, 208.341, 2339.461) div 0.46 cm stamina 93.7 flags 0",
+        "2.53s seq 151 climb  server (1333.75, 208.83, 2339.54) predicted (1333.750, 208.826, 2339.536) div 0.58 cm stamina 88.7 flags 0",
+        "3.03s seq 181 climb  server (1333.50, 209.29, 2339.60) predicted (1333.504, 209.286, 2339.604) div 0.73 cm stamina 83.7 flags 0",
+        "3.53s seq 211 climb  server (1333.27, 209.72, 2339.67) predicted (1333.268, 209.721, 2339.671) div 0.25 cm stamina 78.7 flags 0",
+        "4.03s seq 241 climb  server (1333.28, 209.69, 2339.67) predicted (1333.283, 209.693, 2339.666) div 0.63 cm stamina 75.0 flags 0",
+        "4.53s seq 271 climb  server (1333.75, 208.83, 2339.54) predicted (1333.749, 208.829, 2339.537) div 0.40 cm stamina 73.7 flags 0",
+        "5.03s seq 301 climb  server (1333.50, 209.29, 2339.60) predicted (1333.503, 209.289, 2339.605) div 0.55 cm stamina 68.7 flags 0",
+        "5.53s seq 331 climb  server (1333.27, 209.72, 2339.67) predicted (1333.266, 209.724, 2339.671) div 0.53 cm stamina 63.7 flags 0",
+        "6.03s seq 361 climb  server (1333.03, 210.14, 2339.74) predicted (1333.032, 210.142, 2339.740) div 0.28 cm stamina 58.7 flags 0",
+        "6.53s seq 391 climb  server (1332.80, 210.58, 2339.81) predicted (1332.797, 210.581, 2339.811) div 0.28 cm stamina 53.7 flags 0",
+        "7.03s seq 421 climb  server (1332.81, 210.55, 2339.81) predicted (1332.813, 210.551, 2339.806) div 0.51 cm stamina 50.0 flags 0",
+        "7.53s seq 451 climb  server (1333.27, 209.72, 2339.67) predicted (1333.266, 209.724, 2339.671) div 0.53 cm stamina 48.7 flags 0",
+        "8.03s seq 481 climb  server (1333.03, 210.14, 2339.74) predicted (1333.032, 210.142, 2339.740) div 0.28 cm stamina 43.7 flags 0",
+        "8.53s seq 511 climb  server (1332.80, 210.58, 2339.81) predicted (1332.797, 210.581, 2339.811) div 0.29 cm stamina 38.7 flags 0",
+        "9.03s seq 541 climb  server (1332.56, 211.02, 2339.88) predicted (1332.562, 211.024, 2339.878) div 0.47 cm stamina 33.7 flags 0",
+        "9.53s seq 571 climb  server (1332.32, 211.47, 2339.94) predicted (1332.324, 211.469, 2339.944) div 0.53 cm stamina 28.7 flags 0",
+        "10.03s seq 601 climb  server (1332.34, 211.44, 2339.94) predicted (1332.340, 211.438, 2339.939) div 0.23 cm stamina 25.0 flags 0",
+        "10.53s seq 631 climb  server (1332.80, 210.58, 2339.81) predicted (1332.798, 210.579, 2339.810) div 0.19 cm stamina 23.7 flags 0",
+        "11.03s seq 661 climb  server (1332.56, 211.02, 2339.88) predicted (1332.562, 211.022, 2339.877) div 0.41 cm stamina 18.7 flags 0",
+        "11.53s seq 691 climb  server (1332.32, 211.47, 2339.94) predicted (1332.325, 211.468, 2339.943) div 0.64 cm stamina 13.7 flags 0",
+        "12.03s seq 721 climb  server (1332.08, 211.93, 2340.01) predicted (1332.078, 211.928, 2340.014) div 0.48 cm stamina 8.7 flags 0",
+        "12.53s seq 751 climb  server (1331.82, 212.32, 2340.09) predicted (1331.821, 212.320, 2340.090) div 0.10 cm stamina 3.7 flags 0",
+        "13.03s seq 781 ground server (1331.70, 212.48, 2340.12) predicted (1331.704, 212.485, 2340.123) div 0.71 cm stamina 0.0 flags 5",
+        "13.53s seq 811 ground server (1333.25, 209.75, 2339.68) predicted (1333.251, 209.754, 2339.680) div 0.38 cm stamina 0.0 flags 5",
+        "14.03s seq 841 ground server (1334.37, 207.88, 2339.24) predicted (1334.370, 207.882, 2339.235) div 0.51 cm stamina 0.0 flags 5",
+        "14.53s seq 871 ground server (1334.37, 207.88, 2339.23) predicted (1334.374, 207.877, 2339.232) div 0.53 cm stamina 0.0 flags 1",
+        "15.03s seq 901 ground server (1334.37, 207.88, 2339.23) predicted (1334.374, 207.877, 2339.232) div 0.53 cm stamina 10.0 flags 1",
+        "15.53s seq 931 ground server (1334.37, 207.88, 2339.23) predicted (1334.374, 207.877, 2339.232) div 0.53 cm stamina 30.0 flags 1",
+        "16.03s seq 961 ground server (1334.37, 207.88, 2339.23) predicted (1334.374, 207.877, 2339.232) div 0.53 cm stamina 50.0 flags 1"
+      ],
+      "end": {
+        "mode": "ground",
+        "x": 1334.3736067768743,
+        "y": 207.87694681761934,
+        "z": 2339.232344317623,
+        "stamina": 53.333333333333336
+      }
+    },
+    {
+      "name": "glide",
+      "spawn": {
+        "x": 1122,
+        "y": 360.62396240234375,
+        "z": 2301
+      },
+      "seconds": 19.3228931,
+      "steps": 1159,
+      "snapshots": 578,
+      "perMode": {
+        "ground": {
+          "snapshots": 81,
+          "maxDivM": 0.006545188780152431
+        },
+        "air": {
+          "snapshots": 226,
+          "maxDivM": 0.008030465419153037
+        },
+        "glide": {
+          "snapshots": 271,
+          "maxDivM": 0.00798990974540641
+        }
+      },
+      "maxDivM": 0.008030465419153037,
+      "corrections": 0,
+      "agreements": 578,
+      "maxCorrectionM": 0,
+      "transitions": [
+        "0.07s seq 2: start -> ground at (1122.00, 360.62, 2301.00) stamina 100.0",
+        "2.13s seq 127: ground -> air at (1122.00, 356.33, 2312.21) stamina 82.0",
+        "3.07s seq 183: air -> glide at (1122.00, 357.84, 2319.10) stamina 81.9",
+        "9.10s seq 545: glide -> air at (1132.22, 345.76, 2366.71) stamina 45.9",
+        "9.60s seq 575: air -> glide at (1136.29, 342.14, 2368.62) stamina 45.8",
+        "12.60s seq 755: glide -> air at (1148.32, 334.20, 2391.43) stamina 27.9",
+        "16.00s seq 959: air -> ground at (1158.78, 221.75, 2420.19) stamina 27.9",
+        "16.17s seq 969: ground -> air at (1159.27, 219.37, 2421.71) stamina 27.9",
+        "17.57s seq 1053: air -> ground at (1163.21, 201.23, 2435.25) stamina 27.9",
+        "18.03s seq 1081: ground -> air at (1164.30, 194.82, 2440.49) stamina 27.9"
+      ],
+      "drownedEvents": 0,
+      "samples": [
+        "0.53s seq 31 ground server (1122.00, 360.62, 2301.00) predicted (1122.000, 360.624, 2301.000) div 0.40 cm stamina 100.0 flags 0",
+        "1.03s seq 61 ground server (1122.00, 360.39, 2303.63) predicted (1122.000, 360.393, 2303.631) div 0.36 cm stamina 94.8 flags 0",
+        "1.53s seq 91 ground server (1122.00, 359.23, 2307.53) predicted (1122.000, 359.229, 2307.531) div 0.13 cm stamina 88.8 flags 0",
+        "2.03s seq 121 ground server (1122.00, 356.65, 2311.44) predicted (1122.000, 356.653, 2311.442) div 0.36 cm stamina 82.8 flags 0",
+        "2.53s seq 151 air    server (1122.00, 357.11, 2315.16) predicted (1122.000, 357.112, 2315.163) div 0.34 cm stamina 82.0 flags 0",
+        "3.03s seq 181 air    server (1122.00, 357.94, 2318.85) predicted (1122.000, 357.937, 2318.854) div 0.47 cm stamina 82.0 flags 0",
+        "3.53s seq 211 glide  server (1122.00, 356.90, 2323.12) predicted (1122.000, 356.904, 2323.122) div 0.43 cm stamina 79.1 flags 0",
+        "4.03s seq 241 glide  server (1122.00, 355.90, 2327.62) predicted (1122.000, 355.904, 2327.622) div 0.43 cm stamina 76.1 flags 0",
+        "4.53s seq 271 glide  server (1122.00, 354.90, 2332.12) predicted (1122.000, 354.904, 2332.122) div 0.43 cm stamina 73.1 flags 0",
+        "5.03s seq 301 glide  server (1122.00, 353.90, 2336.62) predicted (1122.000, 353.904, 2336.622) div 0.43 cm stamina 70.1 flags 0",
+        "5.53s seq 331 glide  server (1122.00, 352.90, 2341.12) predicted (1122.000, 352.904, 2341.122) div 0.43 cm stamina 67.1 flags 0",
+        "6.03s seq 361 glide  server (1122.00, 351.90, 2345.62) predicted (1122.000, 351.904, 2345.622) div 0.43 cm stamina 64.1 flags 0",
+        "6.53s seq 391 glide  server (1122.00, 350.90, 2350.12) predicted (1122.000, 350.904, 2350.122) div 0.43 cm stamina 61.1 flags 0",
+        "7.03s seq 421 glide  server (1122.00, 349.90, 2354.62) predicted (1122.000, 349.904, 2354.622) div 0.43 cm stamina 58.1 flags 0",
+        "7.53s seq 451 glide  server (1122.61, 348.90, 2358.73) predicted (1122.611, 348.904, 2358.732) div 0.48 cm stamina 55.1 flags 0",
+        "8.03s seq 481 glide  server (1124.49, 347.90, 2362.04) predicted (1124.488, 347.904, 2362.037) div 0.53 cm stamina 52.1 flags 0",
+        "8.53s seq 511 glide  server (1127.63, 346.90, 2364.54) predicted (1127.630, 346.904, 2364.536) div 0.59 cm stamina 49.1 flags 0",
+        "9.03s seq 541 glide  server (1131.67, 345.90, 2366.46) predicted (1131.671, 345.904, 2366.461) div 0.41 cm stamina 46.1 flags 0",
+        "9.53s seq 571 air    server (1135.75, 342.87, 2368.36) predicted (1135.750, 342.874, 2368.362) div 0.44 cm stamina 45.9 flags 0",
+        "10.03s seq 601 glide  server (1139.36, 339.34, 2370.69) predicted (1139.364, 339.339, 2370.690) div 0.40 cm stamina 43.2 flags 0",
+        "10.53s seq 631 glide  server (1141.88, 338.34, 2374.03) predicted (1141.876, 338.339, 2374.027) div 0.55 cm stamina 40.2 flags 0",
+        "11.03s seq 661 glide  server (1143.49, 337.34, 2378.18) predicted (1143.494, 337.339, 2378.183) div 0.51 cm stamina 37.2 flags 0",
+        "11.53s seq 691 glide  server (1145.03, 336.34, 2382.41) predicted (1145.033, 336.339, 2382.411) div 0.38 cm stamina 34.2 flags 0",
+        "12.03s seq 721 glide  server (1146.57, 335.34, 2386.64) predicted (1146.572, 335.339, 2386.640) div 0.27 cm stamina 31.2 flags 0",
+        "12.53s seq 751 glide  server (1148.11, 334.34, 2390.87) predicted (1148.112, 334.339, 2390.869) div 0.24 cm stamina 28.2 flags 0",
+        "13.03s seq 781 air    server (1149.65, 331.45, 2395.10) predicted (1149.651, 331.449, 2395.097) div 0.32 cm stamina 27.9 flags 0",
+        "13.53s seq 811 air    server (1151.19, 324.07, 2399.33) predicted (1151.190, 324.074, 2399.326) div 0.57 cm stamina 27.9 flags 0",
+        "14.03s seq 841 air    server (1152.73, 312.20, 2403.55) predicted (1152.729, 312.199, 2403.554) div 0.46 cm stamina 27.9 flags 0",
+        "14.53s seq 871 air    server (1154.27, 295.82, 2407.78) predicted (1154.268, 295.824, 2407.783) div 0.52 cm stamina 27.9 flags 0",
+        "15.03s seq 901 air    server (1155.81, 274.95, 2412.01) predicted (1155.807, 274.949, 2412.012) div 0.34 cm stamina 27.9 flags 0",
+        "15.53s seq 931 air    server (1157.35, 249.57, 2416.24) predicted (1157.346, 249.574, 2416.240) div 0.53 cm stamina 27.9 flags 0",
+        "16.03s seq 961 ground server (1158.88, 221.27, 2420.48) predicted (1158.884, 221.268, 2420.475) div 0.65 cm stamina 27.9 flags 4",
+        "16.53s seq 991 air    server (1160.30, 218.11, 2425.26) predicted (1160.304, 218.106, 2425.256) div 0.69 cm stamina 27.9 flags 0",
+        "17.03s seq 1021 air    server (1161.71, 212.48, 2430.09) predicted (1161.712, 212.481, 2430.091) div 0.31 cm stamina 27.9 flags 0",
+        "17.53s seq 1051 air    server (1163.12, 202.36, 2434.93) predicted (1163.121, 202.356, 2434.927) div 0.50 cm stamina 27.9 flags 0",
+        "18.03s seq 1081 air    server (1164.30, 194.82, 2440.49) predicted (1164.302, 194.820, 2440.488) div 0.24 cm stamina 27.9 flags 0",
+        "18.53s seq 1111 air    server (1165.23, 192.35, 2446.42) predicted (1165.234, 192.345, 2446.415) div 0.80 cm stamina 27.9 flags 0",
+        "19.03s seq 1141 air    server (1166.17, 185.37, 2452.34) predicted (1166.167, 185.370, 2452.342) div 0.36 cm stamina 27.9 flags 0"
+      ],
+      "end": {
+        "mode": "air",
+        "x": 1166.727041125899,
+        "y": 179.02525622301155,
+        "z": 2455.898562200537,
+        "stamina": 27.9
+      }
+    },
+    {
+      "name": "glide-updraft",
+      "spawn": {
+        "x": 1122,
+        "y": 360.62396240234375,
+        "z": 2301
+      },
+      "seconds": 15.466394400000004,
+      "steps": 927,
+      "snapshots": 463,
+      "perMode": {
+        "ground": {
+          "snapshots": 62,
+          "maxDivM": 0.006290291203298367
+        },
+        "air": {
+          "snapshots": 27,
+          "maxDivM": 0.005551335068716956
+        },
+        "glide": {
+          "snapshots": 374,
+          "maxDivM": 0.007905043873474132
+        }
+      },
+      "maxDivM": 0.007905043873474132,
+      "corrections": 0,
+      "agreements": 463,
+      "maxCorrectionM": 0,
+      "transitions": [
+        "0.07s seq 3: start -> ground at (1122.00, 360.62, 2301.00) stamina 100.0",
+        "2.13s seq 127: ground -> air at (1122.00, 356.33, 2312.21) stamina 82.0",
+        "3.03s seq 181: air -> glide at (1122.00, 357.91, 2318.85) stamina 82.0"
+      ],
+      "drownedEvents": 0,
+      "samples": [
+        "0.53s seq 31 ground server (1122.00, 360.62, 2301.00) predicted (1122.000, 360.624, 2301.000) div 0.40 cm stamina 100.0 flags 0",
+        "1.03s seq 61 ground server (1122.00, 360.39, 2303.63) predicted (1122.000, 360.393, 2303.631) div 0.36 cm stamina 94.8 flags 0",
+        "1.53s seq 91 ground server (1122.00, 359.23, 2307.53) predicted (1122.000, 359.229, 2307.531) div 0.13 cm stamina 88.8 flags 0",
+        "2.03s seq 121 ground server (1122.00, 356.65, 2311.44) predicted (1122.000, 356.653, 2311.442) div 0.36 cm stamina 82.8 flags 0",
+        "2.53s seq 151 air    server (1122.00, 357.24, 2315.16) predicted (1122.000, 357.237, 2315.163) div 0.39 cm stamina 82.0 flags 0",
+        "3.03s seq 181 glide  server (1122.00, 357.91, 2318.85) predicted (1122.000, 357.912, 2318.854) div 0.43 cm stamina 82.0 flags 0",
+        "3.53s seq 211 glide  server (1122.00, 356.90, 2323.15) predicted (1122.000, 356.895, 2323.149) div 0.46 cm stamina 79.0 flags 0",
+        "4.03s seq 241 glide  server (1122.00, 355.90, 2327.65) predicted (1122.000, 355.895, 2327.649) div 0.46 cm stamina 76.0 flags 0",
+        "4.53s seq 271 glide  server (1121.77, 354.90, 2332.04) predicted (1121.769, 354.895, 2332.041) div 0.48 cm stamina 73.0 flags 0",
+        "5.03s seq 301 glide  server (1120.30, 353.90, 2335.85) predicted (1120.296, 353.895, 2335.854) div 0.74 cm stamina 70.0 flags 0",
+        "5.53s seq 331 glide  server (1117.47, 352.90, 2339.03) predicted (1117.465, 352.895, 2339.034) div 0.79 cm stamina 67.0 flags 0",
+        "6.03s seq 361 glide  server (1114.02, 351.90, 2341.93) predicted (1114.018, 351.895, 2341.927) div 0.57 cm stamina 64.0 flags 0",
+        "6.53s seq 391 glide  server (1110.57, 350.90, 2344.82) predicted (1110.571, 350.895, 2344.820) div 0.46 cm stamina 61.0 flags 0",
+        "7.03s seq 421 glide  server (1107.30, 349.90, 2347.57) predicted (1107.298, 349.895, 2347.567) div 0.62 cm stamina 58.0 flags 0",
+        "7.53s seq 451 glide  server (1105.06, 348.90, 2349.45) predicted (1105.057, 348.895, 2349.447) div 0.63 cm stamina 55.0 flags 0",
+        "8.03s seq 481 glide  server (1103.97, 347.90, 2350.36) predicted (1103.965, 347.895, 2350.363) div 0.71 cm stamina 52.0 flags 0",
+        "8.53s seq 511 glide  server (1103.85, 346.90, 2350.46) predicted (1103.849, 346.895, 2350.460) div 0.46 cm stamina 49.0 flags 0",
+        "9.03s seq 541 glide  server (1103.85, 345.90, 2350.46) predicted (1103.849, 345.895, 2350.460) div 0.46 cm stamina 46.0 flags 0",
+        "9.53s seq 571 glide  server (1103.85, 344.90, 2350.46) predicted (1103.849, 344.895, 2350.460) div 0.46 cm stamina 43.0 flags 0",
+        "10.03s seq 601 glide  server (1103.85, 343.90, 2350.46) predicted (1103.849, 343.895, 2350.460) div 0.46 cm stamina 40.0 flags 0",
+        "10.53s seq 631 glide  server (1103.85, 342.90, 2350.46) predicted (1103.849, 342.895, 2350.460) div 0.46 cm stamina 37.0 flags 0",
+        "11.03s seq 661 glide  server (1103.85, 341.90, 2350.69) predicted (1103.849, 341.895, 2350.687) div 0.55 cm stamina 34.0 flags 0",
+        "11.53s seq 691 glide  server (1103.85, 340.90, 2352.26) predicted (1103.849, 340.895, 2352.262) div 0.50 cm stamina 31.0 flags 0",
+        "12.03s seq 721 glide  server (1103.85, 339.90, 2355.34) predicted (1103.849, 339.895, 2355.337) div 0.55 cm stamina 28.0 flags 0",
+        "12.53s seq 751 glide  server (1103.85, 338.90, 2359.69) predicted (1103.849, 338.895, 2359.685) div 0.66 cm stamina 25.0 flags 0",
+        "13.03s seq 781 glide  server (1103.85, 337.90, 2364.19) predicted (1103.849, 337.895, 2364.185) div 0.66 cm stamina 22.0 flags 0",
+        "13.53s seq 811 glide  server (1103.85, 336.90, 2368.69) predicted (1103.849, 336.895, 2368.685) div 0.66 cm stamina 19.0 flags 0",
+        "14.03s seq 841 glide  server (1103.85, 335.90, 2373.19) predicted (1103.849, 335.895, 2373.185) div 0.66 cm stamina 16.0 flags 0",
+        "14.53s seq 871 glide  server (1103.85, 334.90, 2377.69) predicted (1103.849, 334.895, 2377.685) div 0.66 cm stamina 13.0 flags 0",
+        "15.03s seq 901 glide  server (1103.85, 333.90, 2381.96) predicted (1103.849, 333.895, 2381.959) div 0.48 cm stamina 10.0 flags 0"
+      ],
+      "end": {
+        "mode": "glide",
+        "x": 1103.8491159097625,
+        "y": 333.02881204024396,
+        "z": 2384.5803203285,
+        "stamina": 7.4
+      }
+    },
+    {
+      "name": "swim",
+      "spawn": {
+        "x": 1418,
+        "y": 128.03370666503906,
+        "z": 1858
+      },
+      "seconds": 15.099613400000003,
+      "steps": 905,
+      "snapshots": 452,
+      "perMode": {
+        "ground": {
+          "snapshots": 285,
+          "maxDivM": 0.00693658117115714
+        },
+        "swim": {
+          "snapshots": 167,
+          "maxDivM": 0.004880392364262025
+        }
+      },
+      "maxDivM": 0.00693658117115714,
+      "corrections": 0,
+      "agreements": 452,
+      "maxCorrectionM": 0,
+      "transitions": [
+        "0.07s seq 3: start -> ground at (1418.00, 128.03, 1858.00) stamina 100.0",
+        "4.67s seq 279: ground -> swim at (1418.00, 126.63, 1875.87) stamina 100.0",
+        "10.23s seq 613: swim -> ground at (1418.00, 126.54, 1875.80) stamina 55.5"
+      ],
+      "drownedEvents": 0,
+      "samples": [
+        "0.53s seq 31 ground server (1418.00, 128.03, 1858.00) predicted (1418.000, 128.034, 1858.000) div 0.37 cm stamina 100.0 flags 0",
+        "1.03s seq 61 ground server (1418.00, 127.99, 1858.26) predicted (1418.000, 127.991, 1858.264) div 0.41 cm stamina 100.0 flags 0",
+        "1.53s seq 91 ground server (1418.00, 127.99, 1860.55) predicted (1418.000, 127.987, 1860.548) div 0.31 cm stamina 100.0 flags 0",
+        "2.03s seq 121 ground server (1418.00, 128.16, 1862.99) predicted (1418.000, 128.161, 1862.992) div 0.19 cm stamina 100.0 flags 0",
+        "2.53s seq 151 ground server (1418.00, 128.32, 1865.44) predicted (1418.000, 128.318, 1865.436) div 0.45 cm stamina 100.0 flags 0",
+        "3.03s seq 181 ground server (1418.00, 128.18, 1867.88) predicted (1418.000, 128.181, 1867.880) div 0.08 cm stamina 100.0 flags 0",
+        "3.53s seq 211 ground server (1418.00, 127.75, 1870.32) predicted (1418.000, 127.754, 1870.325) div 0.66 cm stamina 100.0 flags 0",
+        "4.03s seq 241 ground server (1418.00, 127.20, 1872.77) predicted (1418.000, 127.200, 1872.769) div 0.08 cm stamina 100.0 flags 0",
+        "4.53s seq 271 ground server (1418.00, 126.65, 1875.21) predicted (1418.000, 126.652, 1875.214) div 0.42 cm stamina 100.0 flags 0",
+        "5.03s seq 301 swim   server (1418.00, 126.63, 1877.25) predicted (1418.000, 126.629, 1877.247) div 0.28 cm stamina 97.1 flags 0",
+        "5.53s seq 331 swim   server (1418.00, 126.63, 1878.75) predicted (1418.000, 126.629, 1878.747) div 0.28 cm stamina 93.1 flags 0",
+        "6.03s seq 361 swim   server (1418.00, 126.63, 1880.25) predicted (1418.000, 126.629, 1880.247) div 0.28 cm stamina 89.1 flags 0",
+        "6.53s seq 391 swim   server (1418.00, 126.63, 1881.75) predicted (1418.000, 126.629, 1881.747) div 0.28 cm stamina 85.1 flags 0",
+        "7.03s seq 421 swim   server (1418.00, 126.63, 1883.19) predicted (1418.000, 126.629, 1883.187) div 0.28 cm stamina 81.1 flags 0",
+        "7.53s seq 451 swim   server (1418.00, 126.63, 1883.51) predicted (1418.000, 126.629, 1883.512) div 0.23 cm stamina 77.1 flags 0",
+        "8.03s seq 481 swim   server (1418.00, 126.63, 1882.40) predicted (1418.000, 126.629, 1882.397) div 0.28 cm stamina 73.1 flags 0",
+        "8.53s seq 511 swim   server (1418.00, 126.63, 1880.90) predicted (1418.000, 126.629, 1880.897) div 0.28 cm stamina 69.1 flags 0",
+        "9.03s seq 541 swim   server (1418.00, 126.63, 1879.40) predicted (1418.000, 126.629, 1879.397) div 0.28 cm stamina 65.1 flags 0",
+        "9.53s seq 571 swim   server (1418.00, 126.63, 1877.90) predicted (1418.000, 126.629, 1877.897) div 0.28 cm stamina 61.1 flags 0",
+        "10.03s seq 601 swim   server (1418.00, 126.63, 1876.40) predicted (1418.000, 126.629, 1876.397) div 0.28 cm stamina 57.1 flags 0",
+        "10.53s seq 631 ground server (1418.00, 126.80, 1874.50) predicted (1418.000, 126.804, 1874.499) div 0.45 cm stamina 55.5 flags 0",
+        "11.03s seq 661 ground server (1418.00, 127.37, 1872.06) predicted (1418.000, 127.365, 1872.064) div 0.65 cm stamina 55.5 flags 0",
+        "11.53s seq 691 ground server (1418.00, 127.90, 1869.62) predicted (1418.000, 127.896, 1869.620) div 0.39 cm stamina 68.1 flags 0",
+        "12.03s seq 721 ground server (1418.00, 128.22, 1867.50) predicted (1418.000, 128.222, 1867.500) div 0.19 cm stamina 88.1 flags 0",
+        "12.53s seq 751 ground server (1418.00, 128.22, 1867.48) predicted (1418.000, 128.224, 1867.484) div 0.51 cm stamina 100.0 flags 0",
+        "13.03s seq 781 ground server (1418.00, 128.22, 1867.48) predicted (1418.000, 128.224, 1867.484) div 0.51 cm stamina 100.0 flags 0",
+        "13.53s seq 811 ground server (1418.00, 128.22, 1867.48) predicted (1418.000, 128.224, 1867.484) div 0.51 cm stamina 100.0 flags 0",
+        "14.03s seq 841 ground server (1418.00, 128.22, 1867.48) predicted (1418.000, 128.224, 1867.484) div 0.51 cm stamina 100.0 flags 0",
+        "14.53s seq 871 ground server (1418.00, 128.22, 1867.48) predicted (1418.000, 128.224, 1867.484) div 0.51 cm stamina 100.0 flags 0",
+        "15.03s seq 901 ground server (1418.00, 128.22, 1867.48) predicted (1418.000, 128.224, 1867.484) div 0.51 cm stamina 100.0 flags 0"
+      ],
+      "end": {
+        "mode": "ground",
+        "x": 1418,
+        "y": 128.2236033977264,
+        "z": 1867.483624114927,
+        "stamina": 100
+      }
+    },
+    {
+      "name": "swim-drown",
+      "spawn": {
+        "x": 1418,
+        "y": 128.03370666503906,
+        "z": 1858
+      },
+      "seconds": 22.0997096,
+      "steps": 1325,
+      "snapshots": 662,
+      "perMode": {
+        "ground": {
+          "snapshots": 242,
+          "maxDivM": 0.00693658117115714
+        },
+        "swim": {
+          "snapshots": 420,
+          "maxDivM": 0.004880392364262025
+        }
+      },
+      "maxDivM": 0.00693658117115714,
+      "corrections": 0,
+      "agreements": 662,
+      "maxCorrectionM": 0,
+      "transitions": [
+        "0.07s seq 2: start -> ground at (1418.00, 128.03, 1858.00) stamina 100.0",
+        "4.67s seq 279: ground -> swim at (1418.00, 126.63, 1875.87) stamina 100.0",
+        "18.67s seq 1119: swim -> ground at (1418.00, 128.21, 1867.65) stamina 100.0"
+      ],
+      "drownedEvents": 1,
+      "samples": [
+        "0.53s seq 31 ground server (1418.00, 128.03, 1858.00) predicted (1418.000, 128.034, 1858.000) div 0.37 cm stamina 100.0 flags 0",
+        "1.03s seq 61 ground server (1418.00, 127.99, 1858.26) predicted (1418.000, 127.991, 1858.264) div 0.41 cm stamina 100.0 flags 0",
+        "1.53s seq 91 ground server (1418.00, 127.99, 1860.55) predicted (1418.000, 127.987, 1860.548) div 0.31 cm stamina 100.0 flags 0",
+        "2.03s seq 121 ground server (1418.00, 128.16, 1862.99) predicted (1418.000, 128.161, 1862.992) div 0.19 cm stamina 100.0 flags 0",
+        "2.53s seq 151 ground server (1418.00, 128.32, 1865.44) predicted (1418.000, 128.318, 1865.436) div 0.45 cm stamina 100.0 flags 0",
+        "3.03s seq 181 ground server (1418.00, 128.18, 1867.88) predicted (1418.000, 128.181, 1867.880) div 0.08 cm stamina 100.0 flags 0",
+        "3.53s seq 211 ground server (1418.00, 127.75, 1870.32) predicted (1418.000, 127.754, 1870.325) div 0.66 cm stamina 100.0 flags 0",
+        "4.03s seq 241 ground server (1418.00, 127.20, 1872.77) predicted (1418.000, 127.200, 1872.769) div 0.08 cm stamina 100.0 flags 0",
+        "4.53s seq 271 ground server (1418.00, 126.65, 1875.21) predicted (1418.000, 126.652, 1875.214) div 0.42 cm stamina 100.0 flags 0",
+        "5.03s seq 301 swim   server (1418.00, 126.63, 1877.25) predicted (1418.000, 126.629, 1877.247) div 0.28 cm stamina 97.1 flags 0",
+        "5.53s seq 331 swim   server (1418.00, 126.63, 1878.75) predicted (1418.000, 126.629, 1878.747) div 0.28 cm stamina 93.1 flags 0",
+        "6.03s seq 361 swim   server (1418.00, 126.63, 1880.25) predicted (1418.000, 126.629, 1880.247) div 0.28 cm stamina 89.1 flags 0",
+        "6.53s seq 391 swim   server (1418.00, 126.63, 1881.75) predicted (1418.000, 126.629, 1881.747) div 0.28 cm stamina 85.1 flags 0",
+        "7.03s seq 421 swim   server (1418.00, 126.63, 1883.25) predicted (1418.000, 126.629, 1883.247) div 0.28 cm stamina 81.1 flags 0",
+        "7.53s seq 451 swim   server (1418.00, 126.63, 1884.75) predicted (1418.000, 126.629, 1884.747) div 0.28 cm stamina 77.1 flags 0",
+        "8.03s seq 481 swim   server (1418.00, 126.63, 1886.25) predicted (1418.000, 126.629, 1886.247) div 0.28 cm stamina 73.1 flags 0",
+        "8.53s seq 511 swim   server (1418.00, 126.63, 1887.75) predicted (1418.000, 126.629, 1887.747) div 0.28 cm stamina 69.1 flags 0",
+        "9.03s seq 541 swim   server (1418.00, 126.63, 1889.25) predicted (1418.000, 126.630, 1889.247) div 0.28 cm stamina 65.1 flags 0",
+        "9.53s seq 571 swim   server (1418.00, 126.63, 1890.75) predicted (1418.000, 126.630, 1890.747) div 0.28 cm stamina 61.1 flags 0",
+        "10.03s seq 601 swim   server (1418.00, 126.63, 1892.25) predicted (1418.000, 126.630, 1892.247) div 0.28 cm stamina 57.1 flags 0",
+        "10.53s seq 631 swim   server (1418.00, 126.63, 1893.75) predicted (1418.000, 126.630, 1893.747) div 0.28 cm stamina 53.1 flags 0",
+        "11.03s seq 661 swim   server (1418.00, 126.63, 1895.25) predicted (1418.000, 126.630, 1895.247) div 0.28 cm stamina 49.1 flags 0",
+        "11.53s seq 691 swim   server (1418.00, 126.63, 1896.75) predicted (1418.000, 126.630, 1896.747) div 0.28 cm stamina 45.1 flags 0",
+        "12.03s seq 721 swim   server (1418.00, 126.63, 1898.25) predicted (1418.000, 126.630, 1898.247) div 0.28 cm stamina 41.1 flags 0",
+        "12.53s seq 751 swim   server (1418.00, 126.63, 1899.75) predicted (1418.000, 126.630, 1899.747) div 0.28 cm stamina 37.1 flags 0",
+        "13.03s seq 781 swim   server (1418.00, 126.63, 1901.25) predicted (1418.000, 126.630, 1901.247) div 0.28 cm stamina 33.1 flags 0",
+        "13.53s seq 811 swim   server (1418.00, 126.63, 1902.75) predicted (1418.000, 126.630, 1902.747) div 0.28 cm stamina 29.1 flags 0",
+        "14.03s seq 841 swim   server (1418.00, 126.63, 1904.25) predicted (1418.000, 126.630, 1904.247) div 0.28 cm stamina 25.1 flags 0",
+        "14.53s seq 871 swim   server (1418.00, 126.63, 1905.75) predicted (1418.000, 126.630, 1905.747) div 0.28 cm stamina 21.1 flags 0",
+        "15.03s seq 901 swim   server (1418.00, 126.63, 1907.25) predicted (1418.000, 126.630, 1907.247) div 0.28 cm stamina 17.1 flags 0",
+        "15.53s seq 931 swim   server (1418.00, 126.63, 1908.75) predicted (1418.000, 126.630, 1908.747) div 0.28 cm stamina 13.1 flags 0",
+        "16.03s seq 961 swim   server (1418.00, 126.63, 1910.25) predicted (1418.000, 126.630, 1910.247) div 0.28 cm stamina 9.1 flags 0",
+        "16.53s seq 991 swim   server (1418.00, 126.63, 1911.75) predicted (1418.000, 126.630, 1911.747) div 0.28 cm stamina 5.1 flags 0",
+        "17.03s seq 1021 swim   server (1418.00, 126.63, 1913.25) predicted (1418.000, 126.630, 1913.247) div 0.28 cm stamina 1.1 flags 0",
+        "17.53s seq 1051 swim   server (1418.00, 126.63, 1913.65) predicted (1418.000, 126.630, 1913.647) div 0.28 cm stamina 0.0 flags 3",
+        "18.03s seq 1081 swim   server (1418.00, 126.63, 1913.65) predicted (1418.000, 126.630, 1913.647) div 0.28 cm stamina 0.0 flags 3",
+        "18.53s seq 1111 swim   server (1418.00, 126.63, 1913.65) predicted (1418.000, 126.630, 1913.647) div 0.28 cm stamina 0.0 flags 3",
+        "19.03s seq 1141 ground server (1418.00, 128.03, 1868.91) predicted (1418.000, 128.028, 1868.907) div 0.35 cm stamina 100.0 flags 0",
+        "19.53s seq 1171 ground server (1418.00, 127.53, 1871.34) predicted (1418.000, 127.533, 1871.335) div 0.56 cm stamina 100.0 flags 0",
+        "20.03s seq 1201 ground server (1418.00, 127.04, 1873.46) predicted (1418.000, 127.040, 1873.455) div 0.45 cm stamina 100.0 flags 0",
+        "20.53s seq 1231 ground server (1418.00, 127.04, 1873.47) predicted (1418.000, 127.036, 1873.472) div 0.39 cm stamina 100.0 flags 0",
+        "21.03s seq 1261 ground server (1418.00, 127.04, 1873.47) predicted (1418.000, 127.036, 1873.472) div 0.39 cm stamina 100.0 flags 0",
+        "21.53s seq 1291 ground server (1418.00, 127.04, 1873.47) predicted (1418.000, 127.036, 1873.472) div 0.39 cm stamina 100.0 flags 0",
+        "22.03s seq 1321 ground server (1418.00, 127.04, 1873.47) predicted (1418.000, 127.036, 1873.472) div 0.39 cm stamina 100.0 flags 0"
+      ],
+      "end": {
+        "mode": "ground",
+        "x": 1418,
+        "y": 127.03639676777603,
+        "z": 1873.4715303901253,
+        "stamina": 100
+      }
+    }
+  ]
+}

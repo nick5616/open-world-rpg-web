@@ -766,7 +766,7 @@ function stepSwim(s: MoveState, flags: number, wish: Vec2xz, ground: GroundQuery
   let x = s.pos.x + vel.x * dt;
   let z = s.pos.z + vel.z * dt;
   let y = s.pos.y;
-  let vy = 0;
+  const vy = 0;
   const groundY = ground.heightAt(x, z);
   const w = waterAt(ground, x, z);
   const stamina = s.stamina - DRAIN_SWIM;

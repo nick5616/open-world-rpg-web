@@ -6,12 +6,16 @@ import { GameCanvas } from '../scene/GameCanvas';
 import { DebugHud } from '../hud/DebugHud';
 import { DebugPanel } from '../hud/DebugPanel';
 import { Crosshair, LockHint } from '../hud/Overlays';
+import { StaminaWheel } from '../hud/StaminaWheel';
 import { useDebugHotkeys } from '../hud/useDebugHotkeys';
 import { useAppStore } from '../stores/appStore';
 import { NetPlay, useOnlineSession } from '../net/NetPlay';
 import { DEBUG, SOLO } from '../config';
 // WP08: renders nothing until the play flow calls startSocial() (client/src/social/README.md).
 import { SocialOverlay } from '../social';
+// WP10 dev: ?ground=worldgen walks on generated ground offline too.
+import { wantsWorldgenGround } from '../sim/dev/debugWorldgen';
+import { WorldgenDebugCanvas } from '../sim/dev/WorldgenDebugCanvas';
 
 function DebugLayer() {
   useDebugHotkeys();
@@ -30,8 +34,9 @@ export default function PlayScreen() {
   const online = !SOLO && ready !== null;
   return (
     <>
-      {online ? <NetPlay ready={ready} /> : <GameCanvas />}
+      {online ? <NetPlay ready={ready} /> : wantsWorldgenGround() ? <WorldgenDebugCanvas /> : <GameCanvas />}
       <Crosshair />
+      <StaminaWheel />
       <LockHint />
       {DEBUG && <DebugLayer />}
       <SocialOverlay />

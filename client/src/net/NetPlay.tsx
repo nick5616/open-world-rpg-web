@@ -17,6 +17,9 @@ import { startSocial, stopSocial } from '../social';
 import { netRuntime, useNetStore } from './netStore';
 import { RemotePlayers } from './RemotePlayers';
 import { envAt } from '../sim/stepEnv';
+import { wantsWorldgenGround } from '../sim/dev/debugWorldgen';
+import { WorldgenDebugCanvas } from '../sim/dev/WorldgenDebugCanvas';
+import type { GroundQuery } from '../sim/ground';
 import { ZoneSession, type SessionEnd } from './zoneSession';
 
 type Phase = { kind: 'connecting' } | { kind: 'playing'; welcome: Welcome } | { kind: 'ended'; end: SessionEnd } | { kind: 'error'; message: string };
@@ -117,9 +120,25 @@ export function NetPlay({ ready }: { ready: ReadySession }) {
     };
   }, [session, phase]);
 
+  // WP10 dev: ?ground=worldgen plays on worldgen.wasm's surface (the zone's
+  // own terrain) until WP05's streamed terrain provides the ground.
+  const worldgen = wantsWorldgenGround();
+  const onGround = useCallback(
+    (g: GroundQuery) => {
+      session?.prediction.setGround(g);
+      session?.interp.setGround(g);
+    },
+    [session],
+  );
+
   return (
     <>
-      {driver && session && (
+      {driver && session && worldgen && phase.kind === 'playing' && (
+        <WorldgenDebugCanvas seed={phase.welcome.seed} driver={driver} onGround={onGround}>
+          <RemotePlayers session={session} />
+        </WorldgenDebugCanvas>
+      )}
+      {driver && session && !worldgen && (
         <GameCanvas driver={driver}>
           <RemotePlayers session={session} />
         </GameCanvas>
