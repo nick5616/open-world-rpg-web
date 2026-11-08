@@ -75,3 +75,4 @@ When the active connection drops without a terminal kick, the client (`ZoneSessi
 - WebTransport per-chunk streams don't exist yet (WP06 gap), so WorldEdits ride the reliable stream on whichever connection is active; a client re-receives a chunk's edits from the new zone on first interest.
 - The director's assigner never rebalances live pool zones by load (sticky by design); WP19 decides rebalancing from soak numbers.
 - Failover rewinds a player to the last checkpoint (up to 30 s), as the spec says.
+- WP13 combat crosses a handoff as the profile plus runtime state (HP, mana, seq-based cooldowns as they are, tick timers as time remaining; `internal/combat/handoff.go`); the strike action log and frame ring do not (a claim racing the switch is refused as stale). WP13's combat profile saves are not epoch-fenced yet.
