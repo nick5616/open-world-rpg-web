@@ -227,10 +227,26 @@ func TestTowerClimbRevealsRegionThenFastTravel(t *testing.T) {
 	}
 	cl.nextEvent(EventPins, time.Second)
 
-	// Walk east into the tower: the walls are part of the ground, so (until
-	// WP10 adds slope limits) the ground snap carries the player up them,
-	// exactly as prediction does on the client.
-	cl.stepWalk(150, proto.InputFlagForward, east)
+	// Walk east into the tower and climb it the WP10 way: 80 degree walls
+	// are climbed with stamina, resting on the ledge between the lower and
+	// upper wall to refill the wheel. PlanClimb predicts exactly the steps
+	// the zone runs, so these inputs put the player on the top.
+	g := h.srv.cfg.Ground
+	tw := h.srv.cfg.Explore.Towers[0].Shape
+	plan, end := movement.PlanClimb(movement.NewState(movement.Vec3{X: 86, Y: g.HeightAt(86, 100), Z: 100}), east, g, func(s movement.State) bool {
+		return s.Pos.Y >= tw.TopY-1e-6 && s.Pos.X >= tw.CX-2
+	}, 4000)
+	if end.Pos.Y < tw.TopY-1e-6 {
+		t.Fatalf("planned climb does not reach the top: %+v (top %v)", end, tw.TopY)
+	}
+	for i := 0; i < len(plan); {
+		j := i
+		for j < len(plan) && plan[j] == plan[i] {
+			j++
+		}
+		cl.stepWalk(j-i, plan[i], east)
+		i = j
+	}
 	disc := cl.nextEvent(EventDiscovery, 2*time.Second)
 	if disc.TargetID != 0 || disc.Value != 40 || string(disc.Data) != "Test Tower" {
 		t.Fatalf("tower discovery %+v", disc.ToJSON())

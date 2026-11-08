@@ -21,6 +21,7 @@ export const KEY_MAP: Record<string, keyof HeldButtons> = {
   ShiftRight: 'sprint',
   ControlLeft: 'crouch',
   KeyC: 'crouch',
+  KeyG: 'glide', // WP10: open/close the glider without spending the double jump
 };
 
 export function isTextTarget(t: EventTarget | null): boolean {

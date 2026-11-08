@@ -55,6 +55,8 @@ export function DebugHud() {
           `pos   ${p.x.toFixed(2)}  ${p.y.toFixed(2)}  ${p.z.toFixed(2)}`,
           `vel   ${hs.toFixed(2)} m/s  vy ${v.y.toFixed(2)}`,
           `mode  ${localPlayer.mode}${localPlayer.grounded ? '' : `  air jumps ${localPlayer.airJumps}`}`,
+          // WP10: stamina wheel, exhaustion/drowning and the weather stub's rain.
+          `stam  ${localPlayer.stamina.toFixed(1)} / ${localPlayer.staminaMax.toFixed(0)}${localPlayer.exhausted ? '  EXHAUSTED' : ''}${localPlayer.drowned ? '  DROWNING' : ''}${localPlayer.raining ? '  rain' : ''}`,
           `look  yaw ${yawDeg.toFixed(0)}°  pitch ${((localPlayer.pitch * 180) / Math.PI).toFixed(0)}°`,
           `cell  ${Math.floor(p.x / AOI_CELL_M)},${Math.floor(p.z / AOI_CELL_M)}  chunk ${Math.floor(p.x / CHUNK_SIZE_M)},${Math.floor(p.z / CHUNK_SIZE_M)}`,
           `step  #${localPlayer.seq}`,

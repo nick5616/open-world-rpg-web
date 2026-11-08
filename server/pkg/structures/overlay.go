@@ -116,6 +116,14 @@ func (g *Ground) HeightAt(x, z float64) float64 {
 	return b
 }
 
+// WaterAt implements movement.Water (WP10) with the base ground's water:
+// structures stand on land, and where a structure top is above the water
+// the swim depth test fails by itself. Without a water-aware base there is
+// no water. TS twin: StructureGround.waterAt.
+func (g *Ground) WaterAt(x, z float64) float64 {
+	return movement.WaterAt(g.Base, x, z)
+}
+
 // StructureAt reports which structure forms the ground at (x, z) (-1: the
 // terrain does). Exploration uses it ("standing on tower 3").
 func (g *Ground) StructureAt(x, z float64) int {

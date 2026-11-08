@@ -31,9 +31,9 @@ type Record struct {
 }
 
 // Chunk is the part of a LOD 0 chunk the server keeps: the height lattice
-// (for collision) and the records (stable ids for world edits, loot
-// containers and enemy spawn anchors; WP09/WP13 consume them). Splat and
-// water planes are render data and are dropped. Immutable once built.
+// (for collision), the water lattice (swimming, WP10) and the records (stable ids for world edits, loot
+// containers and enemy spawn anchors; WP09/WP13 consume them). Splat
+// planes are render data and are dropped. Immutable once built.
 type Chunk struct {
 	CX, CZ     int32
 	Heights    []float32 // ChunkSamples^2, index j*65 + i
@@ -115,6 +115,15 @@ func (c *Chunk) Height(x, z float64) float64 {
 	i := int(int64(x0) - int64(c.CX)*ChunkSize)
 	j := int(int64(z0) - int64(c.CZ)*ChunkSize)
 	return surfaceHeight(c.Heights, i, j, x-x0, z-z0)
+}
+
+// WaterHeight evaluates the water surface (wasm water_height, WP10) from
+// this chunk's water lattice, with the same cell rule as Height.
+func (c *Chunk) WaterHeight(x, z float64) float64 {
+	x0, z0 := math.Floor(x), math.Floor(z)
+	i := int(int64(x0) - int64(c.CX)*ChunkSize)
+	j := int(int64(z0) - int64(c.CZ)*ChunkSize)
+	return surfaceHeight(c.Water, i, j, x-x0, z-z0)
 }
 
 // surfaceHeight is the collision formula of worldgen/src/ground.rs

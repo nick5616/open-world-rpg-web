@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { BIOMES, POI_KINDS, WorldgenError, chunkSurfaceHeight, fnv1a64, hex64, parseAtlas, type AtlasHandle, type Worldgen } from '../src/index';
+import { BIOMES, POI_KINDS, WorldgenError, chunkSurfaceHeight, chunkWaterHeight, fnv1a64, hex64, parseAtlas, type AtlasHandle, type Worldgen } from '../src/index';
 import { hasWasm, worldgen } from './wasm';
 
 describe('fnv1a64 (pure TS)', () => {
@@ -70,6 +70,26 @@ describe.skipIf(!hasWasm)('worldgen.wasm via the loader', () => {
     }
     for (let i = 0; i < c.scatter.count; i++) {
       expect(c.scatter.y(i)).toBe(Math.fround(wg.collisionHeight(atlas, c.scatter.x(i), c.scatter.z(i))));
+    }
+  });
+
+  it('water_height equals chunk water at lattice points and chunkWaterHeight to the bit (WP10)', () => {
+    // Scan for chunks with water above the ground so lakes/rivers are covered,
+    // plus one dry chunk (sea level under land).
+    const wet: [number, number][] = [];
+    for (let cz = 0; cz < 64 && wet.length < 3; cz += 3) for (let cx = 0; cx < 64 && wet.length < 3; cx += 3) if (wg.buildChunk(atlas, cx, cz).hasWater) wet.push([cx, cz]);
+    expect(wet.length).toBeGreaterThan(0);
+    let s = 777;
+    const rnd = () => ((s = (s * 1103515245 + 12345) >>> 0) / 2 ** 32);
+    for (const [cx, cz] of [...wet, [32, 32] as [number, number]]) {
+      const c = wg.buildChunk(atlas, cx, cz);
+      expect(c.water[0]).toBe(wg.waterHeight(atlas, cx * 64, cz * 64));
+      expect(c.water[64 * 65 + 64]).toBe(wg.waterHeight(atlas, cx * 64 + 64, cz * 64 + 64));
+      for (let i = 0; i < 500; i++) {
+        const x = cx * 64 + rnd() * 64;
+        const z = cz * 64 + rnd() * 64;
+        expect(chunkWaterHeight(c, x, z)).toBe(wg.waterHeight(atlas, x, z));
+      }
     }
   });
 

@@ -14,10 +14,13 @@
     "shots": "node scripts/headless-shots.mjs",
     "net:accept": "node src/net/dev/acceptance.mjs",
     "net:solo-smoke": "node src/net/dev/solo-smoke.mjs",
+    "traversal:accept": "vite-node src/sim/dev/traversal-acceptance.ts",
+    "traversal:browser": "vite-node src/sim/dev/traversal-browser.ts",
     "bench": "node src/world/bench/traversal.mjs"
   },
   "dependencies": {
     "@lodestone/contracts": "*",
+    "@lodestone/worldgen": "*",
     "@react-three/drei": "^9.117.0",
     "@react-three/fiber": "^8.17.10",
     "@react-three/postprocessing": "^2.16.3",

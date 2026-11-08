@@ -20,9 +20,10 @@
 // 30 times a second, a constant shimmer of micro-corrections. wizard-wars
 // replayed unconditionally because its server sent full-precision floats.
 
-import { cmToMeters, cmsToVel, metersToCm, velToCms } from '@lodestone/contracts';
+import { metersToCm, velToCms } from '@lodestone/contracts';
 import type { GroundQuery } from '../sim/ground';
-import { stepMovement, STEP_DT, type MoveInput, type MoveState } from '../sim/movement';
+import { NO_ENV, stepMovement, STEP_DT, type MoveInput, type MoveState, type StepEnv } from '../sim/movement';
+import { fromSelf, packFlags, packMoveExt } from '../sim/moveWire';
 import type { FullSelf } from './snapshotDecoder';
 
 export interface PredictedStep {
@@ -30,6 +31,8 @@ export interface PredictedStep {
   input: MoveInput;
   /** State after this step. */
   state: MoveState;
+  /** World inputs (rain, updrafts) the step used; replays reuse them (WP10). */
+  env?: Readonly<StepEnv>;
 }
 
 export interface Correction {
@@ -123,13 +126,11 @@ export class ClientPrediction {
     // nothing pending there is nothing to replay either.
     if (!acked && ackSeq === 0 && this.pending.length === 0) return null;
 
-    let state: MoveState = {
-      pos: { x: cmToMeters(server.x), y: cmToMeters(server.y), z: cmToMeters(server.z) },
-      vel: { x: cmsToVel(server.vx), y: cmsToVel(server.vy), z: cmsToVel(server.vz) },
-      airJumps: server.airJumps,
-    };
+    // WP10: SelfState carries mode, stamina (exact), timers and flags too, so
+    // a replay restarts from the server's whole movement state.
+    let state: MoveState = fromSelf(server);
     for (const p of this.pending) {
-      state = stepMovement(state, p.input, this.ground, STEP_DT);
+      state = stepMovement(state, p.input, this.ground, STEP_DT, p.env ?? NO_ENV);
       p.state = state; // keep history consistent with the new timeline
     }
     const predicted = this.pending.length ? this.lastPredicted : acked?.state;
@@ -164,6 +165,10 @@ function agrees(p: MoveState, s: FullSelf): boolean {
     Math.abs(velToCms(p.vel.x) - s.vx) <= VEL_TOL_CMS &&
     Math.abs(velToCms(p.vel.y) - s.vy) <= VEL_TOL_CMS &&
     Math.abs(velToCms(p.vel.z) - s.vz) <= VEL_TOL_CMS &&
-    p.airJumps === s.airJumps
+    p.airJumps === s.airJumps &&
+    // WP10: discrete movement state must match exactly (integers on both sides).
+    p.mode === s.mode &&
+    packFlags(p) === s.flags &&
+    packMoveExt(p) === s.moveExt
   );
 }

@@ -1,7 +1,7 @@
 // Package earshot is the zone -> social message that carries proximity-voice
 // earshot sets (spec 10 "Proximity voice" 1, WP11). Zones compute who can hear
 // whom every EARSHOT_INTERVAL_MS and publish it here; the social service's
-// voice leader turns the sets into LiveKit subscriptions. CR 004 documents it.
+// voice leader turns the sets into LiveKit subscriptions. CR 005 documents it.
 //
 // Wire: one JSON object per Redis pub/sub message on Channel(worldID):
 //

@@ -29,11 +29,45 @@ With the wizard-wars constants the steady ground speed is
 sprinting. That is the tuned feel, not a bug.
 
 Zone-only extras (not in the step, so the client gets corrections for them):
-world-edge clamp to [0, WORLD_SIZE_M), a horizontal speed sanity bound
-(`MaxLegitHorizontalSpeed`, 25.6 m/s) that snaps violators back, and a
+world-edge clamp to [0, WORLD_SIZE_M), per-mode speed and vertical bounds
+(`MaxHorizontalSpeed`, zone `verticalOK`) that snap violators back, and a
 60 frames/s budget per session.
 
+## WP10: climb, glide, swim, slopes, stamina
+
+The full step (`StepEnv(state, flags, yaw, ground, env)`) adds spec 8's
+traversal; the algorithm is written out once, in
+`client/src/sim/README.md` ("WP10"). Files:
+
+| File | What |
+| --- | --- |
+| `movement.go` | `State` (+ mode, stamina in fine units, timer, lunge, flags), `stepWalk` / `stepClimb` / `stepGlide` / `stepSwim`, `SlopeAt`, `FindShore`, `Activity`, `MaxHorizontalSpeed` |
+| `wire.go` | `SelfFields` / `FromSelf`: State <-> SelfState (protocol v2: flags + lunge, `moveExt` = stamina + timer) |
+| `updraft.go` | `Columns` (debug UpdraftField) and `ParseColumns` (`x,z,r,top,lift;...`) |
+
+`Ground` stays `HeightAt`; water is the optional `Water` interface
+(`WaterAt`, implemented by `worldhost.Terrain` with the wasm
+`water_height`); grounds without it have no water. `Env` carries rain (the
+`server/pkg/weather` stub) and the `UpdraftField` hook WP15 will feed.
+Construct states with `NewState(pos)` (full wheel): a zero `State` has no
+stamina and cannot sprint.
+
+Bitwise: all WP10 arithmetic is + - * / sqrt and comparisons on the same
+inputs as TS, products are wrapped in `float64()` so Go never fuses an FMA,
+and `dt` is a run-time variable because Go folds constant expressions
+exactly (V8 multiplies the rounded 1/60). Slope thresholds are the literal
+constants `WALKABLE_TAN_SQ` / `CLIMB_MAX_TAN_SQ`, not a tan() per language.
+
 ## Cross-language check
+
+`terrain_golden_test.go` replays WP10's eight terrain goldens from
+`client/src/sim/golden/movement_wp10_*.json` on the official world through
+worldhost, both on the wasm and on the zone's cached-chunk fast path, and
+requires every position/velocity within 1e-9 m and every discrete field
+equal (measured: <= 2e-15 m). `traversal_test.go` pins each rule on
+synthetic ground. Both need the built wasm for the terrain part
+(`LODESTONE_REQUIRE_WASM=1` makes a missing wasm fail).
+
 
 `testdata/vectors.json` holds scripted trajectories (frames in, every state
 out). A TS port should replay them and match within 1e-9 (V8 and Go may differ

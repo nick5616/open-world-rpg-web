@@ -8,8 +8,14 @@
 export interface GroundQuery {
   /** Ground height (feet y) at world (x, z), meters. Must be deterministic. */
   heightAt(x: number, z: number): number;
-  /** Optional unit surface normal at (x, z); climbing/sliding (later) will need it. */
+  /** Optional unit surface normal at (x, z). Movement does NOT use it (slopes come from heightAt, see movement.ts slopeAt), it is for rendering/tools. */
   normalAt?(x: number, z: number): { x: number; y: number; z: number };
+  /**
+   * Optional water surface height at (x, z) (WP10: swimming). Must be the wasm
+   * `water_height` (or `chunkWaterHeight` on the LOD 0 chunk, same bits), the
+   * function the zone swims on. Absent = no water anywhere.
+   */
+  waterAt?(x: number, z: number): number;
 }
 
 /** Infinite flat plane at a fixed height: the WP02 placeholder world. */

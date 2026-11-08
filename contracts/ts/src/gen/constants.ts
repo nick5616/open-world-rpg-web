@@ -100,6 +100,50 @@ export const STAMINA_CLIMB_PER_S = 10;
 export const STAMINA_GLIDE_PER_S = 6;
 /** Drain while swimming. */
 export const STAMINA_SWIM_PER_S = 8;
+/** tan(WALKABLE_SLOPE_DEG)^2 as a literal, so TS and Go compare slopes against the identical double (Math.tan and Go's math.Tan may differ in the last ulp). Tests on both sides check it against the degrees. */
+export const WALKABLE_TAN_SQ = 1.4202766254612063;
+/** tan(CLIMB_MAX_SLOPE_DEG)^2 as a literal (see WALKABLE_TAN_SQ). */
+export const CLIMB_MAX_TAN_SQ = 3282.139703653939;
+/** Slope = central differences of the ground height at +-this, i.e. over 1 m: smooths single 1 m triangles of the collision mesh so one odd triangle never decides walk vs climb. */
+export const SLOPE_PROBE_M = 0.5;
+/** Step-up probe: an uphill move onto steep ground is still allowed when the ground this far ahead is walkable and at most MAX_STEP_UP_M above the feet (a lip, not a wall). */
+export const STEP_PROBE_M = 0.8;
+/** Holding 'into' a wall: wish direction . uphill direction must be at least this (within 60 degrees) to start climbing. */
+export const CLIMB_FACING_MIN = 0.5;
+/** Climb-jump lunge speed up the wall, m/s along the surface. */
+export const CLIMB_JUMP_SPEED = 8;
+/** Lunge duration (15 steps: 2 m up the wall). */
+export const CLIMB_JUMP_TIME_S = 0.25;
+/** Jump while holding back on a wall: leap away horizontally at this speed (plus JUMP_FORCE up). Free: it ends the climb. */
+export const CLIMB_KICK_SPEED = 5;
+/** In rain a climber slips once per this period (spec 8: every few seconds). */
+export const CLIMB_SLIP_PERIOD_S = 3;
+/** Length of one rain slip; input is ignored meanwhile. */
+export const CLIMB_SLIP_TIME_S = 0.5;
+/** Slide-back speed down the wall during a slip, m/s along the surface. */
+export const CLIMB_SLIP_SPEED = 3;
+/** Forward push when a climb tops out onto walkable ground (the mantle). */
+export const MANTLE_SPEED = 3;
+/** Speed cap when sliding down slopes steeper than walkable (no friction there). */
+export const SLIDE_MAX_SPEED = 12;
+/** Horizontal acceleration toward the steered glide velocity, m/s^2. */
+export const GLIDE_ACCEL = 6;
+/** How fast vertical speed approaches -GLIDE_SINK_SPEED (+ updraft lift) once the glider opens, m/s^2: the canopy catch. */
+export const GLIDE_VERTICAL_ACCEL = 20;
+/** Upper bound of an updraft column's lift (m/s); the step clamps to it and the zone's vertical validation relies on it. */
+export const UPDRAFT_MAX_LIFT = 10;
+/** Horizontal acceleration toward the swim velocity, m/s^2. */
+export const SWIM_ACCEL = 6;
+/** Water deeper than this (surface minus ground) is swum, shallower is walked. */
+export const SWIM_DEPTH_M = 1.5;
+/** Swimmers float with their feet this far below the surface (eyes 0.4 m above it). */
+export const SWIM_FLOAT_DEPTH_M = 1.4;
+/** Out of stamina in deep water: this long helpless, then respawn at the nearest shore. */
+export const DROWN_TIME_S = 1.5;
+/** Drowning respawn searches for dry walkable ground up to this far (swim drain caps how far from shore you can be). */
+export const SHORE_SEARCH_M = 256;
+/** Stamina is integer 'fine' units in the step (SelfState.moveExt), = MOVE_STEP_HZ, so whole per-second rates are whole units per step and the wire carries stamina exactly. */
+export const STAMINA_FINE_PER_POINT = 60;
 // ---- aoi
 /** Interest grid cell size. */
 export const AOI_CELL_M = 32;
@@ -186,6 +230,10 @@ export const PICKUP_DESPAWN_S = 600;
 export const MAX_EQUIPPED_SPELLS = 4;
 /** Map pins per player. */
 export const MAX_PERSONAL_PINS = 10;
+/** WP10 weather stub (until WP15): world time is cut into windows this long; each is rainy or dry from a hash of (seed, window). */
+export const WEATHER_STUB_WINDOW_S = 600;
+/** WP10 weather stub: percent of windows that rain. */
+export const WEATHER_STUB_RAIN_PCT = 25;
 // ---- security
 /** Connect ticket lifetime. */
 export const TICKET_TTL_S = 60;

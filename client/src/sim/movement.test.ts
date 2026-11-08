@@ -16,6 +16,7 @@ import {
   applyGroundAccel,
   applyGroundFriction,
   cloneMoveState,
+  newMoveState,
   stepMovement,
   STEP_DT,
   wishDirFromFlags,
@@ -26,7 +27,7 @@ import { SCENARIOS, runScenario, type GoldenFile } from './golden/scenarios';
 import { goldenPath } from './golden/io';
 
 const flat = new FlatGround(0);
-const at = (x = 0, y = 0, z = 0): MoveState => ({ pos: { x, y, z }, vel: { x: 0, y: 0, z: 0 }, airJumps: 0 });
+const at = (x = 0, y = 0, z = 0): MoveState => newMoveState({ x, y, z });
 const inp = (flags: number, yawRad = 0): MoveInput => ({ flags, yaw: yawToU16(yawRad), pitch: 0 });
 function run(s: MoveState, flags: number, steps: number, yawRad = 0, g: GroundQuery = flat) {
   for (let i = 0; i < steps; i++) s = stepMovement(s, inp(flags, yawRad), g);
@@ -80,8 +81,9 @@ describe('stepMovement', () => {
   });
 
   it('walk and sprint converge to accel*wish/friction (wizard-wars top speeds)', () => {
+    // Sprint for 6 s: a full wheel lasts 8.3 s at STAMINA_SPRINT_PER_S (WP10), so stay inside it.
     expect(hspeed(run(at(), F.forward, 600))).toBeCloseTo((GROUND_ACCEL * BASE_MOVE_SPEED) / GROUND_FRICTION, 6);
-    expect(hspeed(run(at(), F.forward | F.sprint, 600))).toBeCloseTo((GROUND_ACCEL * BASE_MOVE_SPEED * SPRINT_MULTIPLIER) / GROUND_FRICTION, 6);
+    expect(hspeed(run(at(), F.forward | F.sprint, 360))).toBeCloseTo((GROUND_ACCEL * BASE_MOVE_SPEED * SPRINT_MULTIPLIER) / GROUND_FRICTION, 6);
   });
 
   it('stops completely after release', () => {

@@ -24,7 +24,7 @@
 # Versioning: adding a message or appending a field to a masked struct is a
 # compatible change (bump `version`, note it in docs/cr/). Changing the meaning
 # or order of an existing field is not; that needs a new message id.
-version: 2   # v2 (docs/cr/004-voice-speaking-and-earshot.md): InputFlag.speaking
+version: 3   # v2: WP10 movement (docs/cr/004-wp10-movement.md); v3 (docs/cr/005-voice-speaking-and-earshot.md): InputFlag.speaking
 
 enums:
   EntityKind:
@@ -46,7 +46,7 @@ enums:
 flags:
   InputFlag:
     type: u16
-    # speaking (v2, WP11): the client is transmitting voice right now; the zone
+    # speaking (v3, WP11): the client is transmitting voice right now; the zone
     # mirrors it into Activity.speaking so far players' nameplates show it. Bit
     # 15, not 14, so movement packages can keep appending from 14.
     bits: {forward: 0, back: 1, left: 2, right: 3, jump: 4, jump_edge: 5, sprint: 6, crouch: 7, attack: 8, alt_attack: 9, dodge: 10, interact: 11, cast: 12, glide_toggle: 13, speaking: 15}
@@ -98,12 +98,23 @@ structs:
       vz: i16
       health: u16
       healthMax: u16
-      stamina: u16      # x10 (one decimal)
+      stamina: u16      # x10 (one decimal), for display; moveExt carries it exactly
       staminaMax: u16   # x10
       mode: MoveMode
       airJumps: u8
       activity: u8
-      flags: u8         # misc server-side movement state bits (WP10 defines)
+      # Movement state bits (WP10, CR 004; client/src/sim/README.md):
+      #   bit 0 exhausted (stamina ran out; no sprint/climb/glide until full)
+      #   bit 1 drowned (helpless in deep water, respawn at shore pending)
+      #   bit 2 sliding (standing on ground steeper than WALKABLE_SLOPE_DEG)
+      #   bits 4-7 climb-jump lunge steps remaining (0..15)
+      flags: u8
+      # WP10 (CR 004, protocol v2): the rest of the movement state a client
+      # needs to replay from this snapshot bit-exactly:
+      #   bits 0-15  stamina in fine units (x STAMINA_FINE_PER_POINT = x60, exact)
+      #   bits 16-23 mode timer in steps (regen delay / rain slip phase / drowning)
+      #   bits 24-31 reserved (0)
+      moveExt: u32
 
   EditRecord:
     doc: One entry of a chunk's append-only edit log (spec 7).

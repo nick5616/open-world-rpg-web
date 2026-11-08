@@ -3,7 +3,7 @@
 The social service's half of proximity voice (spec 10, WP11): LiveKit join
 tokens for `voice_token`, and the reconciler that turns the zones' earshot
 sets into LiveKit subscriptions with auto-subscribe off. Decisions:
-`docs/decisions/0011-proximity-voice.md`; message format: CR 004 and
+`docs/decisions/0011-proximity-voice.md`; message format: CR 005 and
 `server/pkg/earshot`.
 
 | File | What |

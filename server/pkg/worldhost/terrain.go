@@ -130,6 +130,25 @@ func (t *Terrain) HeightAt(x, z float64) float64 {
 	return t.w.CollisionHeight(x, z)
 }
 
+// WaterAt implements movement.Water (WP10): the water surface at (x, z),
+// bitwise equal to the wasm water_height. Same caching rules as HeightAt.
+func (t *Terrain) WaterAt(x, z float64) float64 {
+	cx, cz, ok := chunkOf(x, z)
+	if ok {
+		k := key(cx, cz)
+		t.mu.RLock()
+		tl := t.tiles[k]
+		t.mu.RUnlock()
+		if tl != nil {
+			t.hits.Add(1)
+			return tl.c.WaterHeight(x, z)
+		}
+		t.request(k)
+	}
+	t.misses.Add(1)
+	return t.w.WaterHeight(x, z)
+}
+
 // Chunk returns the cached chunk, if present (never generates).
 func (t *Terrain) Chunk(cx, cz int32) (*Chunk, bool) {
 	t.mu.RLock()

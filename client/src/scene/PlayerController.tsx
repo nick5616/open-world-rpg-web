@@ -15,11 +15,15 @@ import { useKeyboard } from '../input/useKeyboard';
 import { useMouseLook } from '../input/useMouseLook';
 import { LocalSim, type StepRecord } from '../sim/localSim';
 import { NO_BUTTONS } from '../sim/inputFrame';
-import type { MoveState, Vec3 } from '../sim/movement';
+import { FINE, MoveFlag, type MoveState, type StepEnv, type Vec3 } from '../sim/movement';
+import { offlineEnv } from '../sim/stepEnv';
 import { useAppStore } from '../stores/appStore';
 import { useDebugStore } from '../stores/debugStore';
 import { localPlayer, type MoveMode } from '../state/live';
 import { useGround } from './groundContext';
+
+/** HUD names for the WP10 modes carried in MoveState.mode (ground/air are refined below). */
+const MODE_NAMES: Record<number, MoveMode | undefined> = { 2: 'climb', 3: 'glide', 4: 'swim' };
 
 const MOUSE_SENSITIVITY = 0.002; // rad per pixel (wizard-wars value)
 const PITCH_LIMIT = Math.PI / 2 - 0.01;
@@ -45,6 +49,8 @@ export interface PlayerDriver {
   afterFrame(): void;
   /** Newest server correction since the last frame, or null. */
   takeCorrection(): { state: MoveState; error: Vec3; magnitude: number } | null;
+  /** WP10: world inputs per step (rain at the synced world time, updrafts). Offline uses offlineEnv. */
+  env?(): Readonly<StepEnv>;
 }
 
 interface Props {
@@ -59,7 +65,12 @@ export function PlayerController({ onStep, driver }: Props) {
   const consumeLook = useMouseLook();
   // Created once; later ground swaps go through setGround so the player keeps their state.
   const [sim] = useState(() => {
-    const p = driver?.spawn ?? { x: SPAWN.x, y: ground.heightAt(SPAWN.x, SPAWN.z), z: SPAWN.z };
+    const p = { ...(driver?.spawn ?? { x: SPAWN.x, y: ground.heightAt(SPAWN.x, SPAWN.z), z: SPAWN.z }) };
+    // WP10: Welcome's y is cm-rounded while the zone stands exactly on the
+    // ground; start on the identical surface, or the first step is a tiny
+    // fall and (on a slope, where it turns into a slide) costs corrections.
+    const gy = ground.heightAt(p.x, p.z);
+    if (Math.abs(gy - p.y) < 0.01) p.y = gy;
     return new LocalSim(ground, p);
   });
   const look = useRef({ yaw: 0, pitch: 0 });
@@ -69,6 +80,9 @@ export function PlayerController({ onStep, driver }: Props) {
   const render = useMemo(() => ({ x: 0, y: 0, z: 0 }), []);
 
   useEffect(() => sim.setGround(ground), [sim, ground]);
+  useEffect(() => {
+    sim.envSource = driver?.env ? () => driver.env!() : offlineEnv;
+  }, [sim, driver]);
   useEffect(() => {
     sim.onStep = (r) => {
       onStep?.(r);
@@ -136,7 +150,20 @@ export function PlayerController({ onStep, driver }: Props) {
     const s = sim.state;
     const grounded = !fly && sim.grounded();
     const hs = Math.hypot(s.vel.x, s.vel.z);
-    const mode: MoveMode = fly ? 'fly' : !grounded ? 'air' : hs < 0.05 ? 'idle' : buttons.sprint ? 'sprint' : 'walk';
+    const special = MODE_NAMES[s.mode];
+    const mode: MoveMode = fly
+      ? 'fly'
+      : special
+        ? special
+        : !grounded
+          ? 'air'
+          : (s.flags & MoveFlag.sliding) !== 0
+            ? 'slide'
+            : hs < 0.05
+              ? 'idle'
+              : buttons.sprint && (s.flags & MoveFlag.exhausted) === 0
+                ? 'sprint'
+                : 'walk';
     localPlayer.pos.x = s.pos.x;
     localPlayer.pos.y = s.pos.y;
     localPlayer.pos.z = s.pos.z;
@@ -149,6 +176,11 @@ export function PlayerController({ onStep, driver }: Props) {
     localPlayer.airJumps = s.airJumps;
     localPlayer.mode = mode;
     localPlayer.seq = sim.seq;
+    localPlayer.stamina = s.stamina / FINE;
+    localPlayer.staminaMax = s.staminaMax / FINE;
+    localPlayer.exhausted = (s.flags & MoveFlag.exhausted) !== 0;
+    localPlayer.drowned = (s.flags & MoveFlag.drowned) !== 0;
+    localPlayer.raining = sim.lastEnv.raining;
   });
 
   return null;

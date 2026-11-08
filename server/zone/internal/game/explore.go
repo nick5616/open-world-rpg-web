@@ -351,7 +351,17 @@ func (s *Server) Teleport(e *Entity, pos movement.Vec3) {
 	if g := s.cfg.Ground.HeightAt(pos.X, pos.Z); pos.Y < g {
 		pos.Y = g
 	}
-	e.Move = movement.State{Pos: pos}
+	// WP10: a teleport resets motion and mode but keeps the stamina wheel (a
+	// zero State would have no stamina: no sprint, climb or glide).
+	next := movement.NewState(pos)
+	next.Stamina, next.StaminaMax, next.Flags = e.Move.Stamina, e.Move.StaminaMax, e.Move.Flags&movement.FlagExhausted
+	if next.StaminaMax == 0 {
+		next = movement.NewState(pos)
+	}
+	if !movement.Grounded(next, s.cfg.Ground) {
+		next.Mode = movement.ModeAir
+	}
+	e.Move = next
 	e.prevValid = e.Move
 	e.view, e.viewRaw = e.Move, e.Move
 	e.viewOff = movement.Vec3{}

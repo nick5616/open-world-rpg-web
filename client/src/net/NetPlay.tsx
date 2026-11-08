@@ -18,6 +18,7 @@ import { startSocial, stopSocial, useSocialStore } from '../social';
 import { requestVoiceToken, startVoice, stopVoice, voiceInputFlags } from '../voice';
 import { netRuntime, useNetStore } from './netStore';
 import { RemotePlayers } from './RemotePlayers';
+import { envAt } from '../sim/stepEnv';
 import { ZoneSession, type SessionEnd } from './zoneSession';
 // WP12: exploration Events, map actions, re-issued local save blobs.
 import { attachExploration } from '../ui/map/zoneLink';
@@ -142,10 +143,13 @@ export function NetPlay({ ready }: { ready: ReadySession }) {
       online: true,
       onStep: (r) => {
         // WP11: the speaking bit rides in the input flags (InputFlag.speaking).
-        if (!r.fly) session.pushStep(r.seq, { ...r.input, flags: r.input.flags | voiceInputFlags() }, r.state);
+        if (!r.fly) session.pushStep(r.seq, { ...r.input, flags: r.input.flags | voiceInputFlags() }, r.state, r.env);
       },
       afterFrame: () => session.flushInput(),
       takeCorrection: () => session.prediction.takeCorrection(),
+      // WP10: rain/updrafts from the zone's seed at the synced server time,
+      // the same inputs the zone steps with.
+      env: () => envAt(w.seed, session.clock.serverNow()),
     };
   }, [session, phase]);
 

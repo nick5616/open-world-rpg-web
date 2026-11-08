@@ -211,6 +211,7 @@ func DiffSelf(base, cur *proto.SelfState) proto.SelfState {
 	set(cur.AirJumps != base.AirJumps, proto.SelfStateHasAirJumps)
 	set(cur.Activity != base.Activity, proto.SelfStateHasActivity)
 	set(cur.Flags != base.Flags, proto.SelfStateHasFlags)
+	set(cur.MoveExt != base.MoveExt, proto.SelfStateHasMoveExt) // WP10, protocol v2
 	return out
 }
 
@@ -263,6 +264,9 @@ func ApplySelf(base *proto.SelfState, r *proto.SelfState) proto.SelfState {
 	}
 	if m&proto.SelfStateHasFlags != 0 {
 		s.Flags = r.Flags
+	}
+	if m&proto.SelfStateHasMoveExt != 0 {
+		s.MoveExt = r.MoveExt
 	}
 	s.Mask = 0
 	return s

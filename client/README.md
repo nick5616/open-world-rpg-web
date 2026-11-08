@@ -13,10 +13,17 @@ npm run dev                 # full stack; the client goes title -> account slot 
 ```
 
 Controls: click the canvas to capture the mouse, WASD move, Shift sprint, Space
-jump (press again in the air to double jump). Debug builds (dev, solo, or
+jump (press again in the air to double jump, a third time while falling to
+open the glider), G open/close the glider, hold W into a steep slope to climb
+(Space on a wall = lunge, Space + S = kick off). The stamina wheel shows beside
+the crosshair while it is not full (WP10). Debug builds (dev, solo, or
 `?debug=1`): F3 HUD, backquote debug panel (teleport, fly, freeze time, time of
 day, borders, quality), V fly (Space up, Ctrl/C down), F4 cell/chunk/region
-borders. `?autoplay=1` skips the title screen.
+borders. `?autoplay=1` skips the title screen. WP10 dev params:
+`?rain=1|0`, `?updraft=x,z,r,top,lift`.
+Traversal acceptance: `npm run traversal:accept -w client` (Node client vs
+the zone binary) and `npm run traversal:browser -w client` (headless
+Chromium); see `src/sim/README.md`.
 
 ## Test
 
