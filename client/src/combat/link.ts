@@ -6,6 +6,7 @@ import type { ZoneSession } from '../net/zoneSession';
 import type { GroundQuery } from '../sim/ground';
 import { CombatRuntime } from './runtime';
 import { useCombatHud } from './store';
+import { drawnRemotes } from '../net/netStore';
 
 /** The live runtime (PlayerController hook, 3D layer, dev handle). */
 export const combatRuntime: { current: CombatRuntime | null } = { current: null };
@@ -24,7 +25,10 @@ export function attachCombat(session: ZoneSession, ground: GroundQuery, input = 
   if (input && typeof window !== 'undefined') rt.attachInput(window);
   combatRuntime.current = rt;
   const w = typeof window !== 'undefined' ? (window as unknown as { __lodestoneCombat?: unknown }) : null;
-  if (w) w.__lodestoneCombat = { runtime: rt, probe: () => rt.probe.summary(), hud: () => ({ ...useCombatHud.getState() }) };
+  if (w) {
+    w.__lodestoneCombat = { runtime: rt, probe: () => rt.probe.summary(), hud: () => ({ ...useCombatHud.getState() }) };
+    (w as unknown as { __lodestoneDrawn?: unknown }).__lodestoneDrawn = () => drawnRemotes.views; // headless runs aim at what is drawn
+  }
   return () => {
     session.eventListeners.delete(onEvent);
     session.onHitResult = null;

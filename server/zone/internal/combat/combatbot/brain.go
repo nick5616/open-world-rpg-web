@@ -75,6 +75,12 @@ type Brain struct {
 	tele      []Telegraph
 	drinkSeq  uint32
 	strafeDir float64
+	// Spell is the slot-0 spell (the start kit's Ember Flick) the bot casts at
+	// targets its weapon can't reach: flyers, kiting archers, enemies on a
+	// ledge above it.
+	Spell     *combatdefs.Spell
+	spellNext uint32
+	Casts     int
 
 	// Stats
 	Attacks, Claims, Dodges, Drinks int
@@ -85,6 +91,7 @@ type pending struct {
 	at     uint32 // step the hit frames start (claim then)
 	start  uint32 // the attack's start seq (HitClaim.attackSeq)
 	move   *combatdefs.Move
+	spell  *combatdefs.Spell
 	target uint32
 	yaw    float64
 }
@@ -92,7 +99,7 @@ type pending struct {
 // New makes a brain at state s with a weapon.
 func New(name string, weapon string, g movement.Ground, s movement.State) *Brain {
 	return &Brain{Name: name, Weapon: D.WeaponByKey(weapon), Ground: g, State: s, HP: 1, Leash: 1e9, Charges: D.Start.Consumable.Charges,
-		FightStart: map[uint32]uint32{}, strafeDir: 1}
+		FightStart: map[uint32]uint32{}, strafeDir: 1, Spell: D.SpellByKey(D.Start.Spells[0])}
 }
 
 // SeeTelegraph records a wind-up Event (call when it arrives).
@@ -229,6 +236,13 @@ func (b *Brain) Step(es []EnemyView, serverTick uint32) (proto.InputFrame, []Cla
 			if e.ID != p.target || e.HPPct == 0 {
 				continue
 			}
+			if p.spell != nil {
+				o := b.State.Pos
+				claims = append(claims, Claim{AttackSeq: p.start, AttackID: uint16(p.spell.ID), TargetID: e.ID, Tick: serverTick,
+					X: proto.MetersToCm(o.X), Y: proto.MetersToCm(o.Y), Z: proto.MetersToCm(o.Z), Yaw: proto.YawToU16(p.yaw)})
+				b.Claims++
+				continue
+			}
 			if p.move.Speed > 0 || hdist(e.Pos, b.State.Pos) <= p.move.Reach+0.6+0.5*sizeOf(e.TypeID) {
 				o := b.State.Pos
 				claims = append(claims, Claim{AttackSeq: p.start, AttackID: uint16(p.move.ID), TargetID: e.ID, Tick: serverTick,
@@ -261,9 +275,19 @@ func (b *Brain) Step(es []EnemyView, serverTick uint32) (proto.InputFrame, []Cla
 		} else if d < reach*0.45 && b.Weapon.Key != "sword" && b.Weapon.Key != "spear" {
 			f.Flags |= proto.InputFlagBack
 		}
-		// Attack when ready and in reach.
-		if seq >= b.nextSeq && d <= reach+0.3 && seq > b.dodgeAt+2 {
+		// Attack when ready and in reach; cast at what the weapon can't reach.
+		dy := t.Pos.Y - b.State.Pos.Y
+		melee := b.Weapon.Key == "sword" || b.Weapon.Key == "spear"
+		switch {
+		case seq >= b.nextSeq && d <= reach+0.3 && dy < 2.5 && seq > b.dodgeAt+2:
 			b.attack(&f, t, yaw, d)
+		case melee && b.Spell != nil && seq >= b.spellNext && seq > b.dodgeAt+2 && d < b.Spell.Range*0.8 && (dy >= 2.5 || d > reach+3):
+			f.Flags |= proto.InputFlagCast
+			f.CastSlot = 0
+			b.spellNext = seq + uint32(max(b.Spell.CooldownSteps, 50))
+			b.Casts++
+			at := seq + uint32(b.Spell.WindupSteps) + 1 + uint32(math.Round(math.Hypot(d, dy)/math.Max(1, b.Spell.Speed)*float64(constants.MoveStepHz)))
+			b.pend = append(b.pend, pending{at: at, start: seq, spell: b.Spell, target: t.ID, yaw: yaw})
 		}
 	}
 

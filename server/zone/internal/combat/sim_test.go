@@ -154,6 +154,7 @@ func fightOne(t *testing.T, key, weapon, elite string) (hits int, secs float64, 
 	s := newSim(t)
 	g := s.w.TestGroup(movement.Vec3{X: 500, Z: 520}, []string{key}, 1, elite)
 	sp := s.addPlayer("bot", weapon, movement.Vec3{X: 500, Z: 500}, 1)
+	sp.brain.Spell = nil // weapon time-to-kill: no spells
 	var target *Enemy
 	var start, end uint32
 	ok = s.runUntil(30*120, func() bool {
@@ -206,7 +207,7 @@ func TestEliteTimeToKill(t *testing.T) {
 		for _, k := range []string{"boar", "cutthroat", "brute", "ember_imp"} {
 			s := newSim(t)
 			g := s.w.TestGroup(movement.Vec3{X: 500, Z: 520}, []string{k}, 1, af)
-			s.addPlayer("bot", "sword", movement.Vec3{X: 500, Z: 500}, 1)
+			s.addPlayer("bot", "sword", movement.Vec3{X: 500, Z: 500}, 1).brain.Spell = nil
 			var start uint32
 			ok := s.runUntil(30*90, func() bool {
 				for _, e := range g.Members {

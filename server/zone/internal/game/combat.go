@@ -530,19 +530,33 @@ type CombatDebugInfo struct {
 
 // CombatGroupDebug is one group in the debug snapshot.
 type CombatGroupDebug struct {
-	ID      int     `json:"id"`
-	Kind    string  `json:"kind"`
-	X       float64 `json:"x"`
-	Y       float64 `json:"y"`
-	Z       float64 `json:"z"`
-	Radius  float64 `json:"radius"`
-	Level   int     `json:"level"`
-	Name    string  `json:"name,omitempty"`
-	Boss    string  `json:"boss,omitempty"`
-	Spawned bool    `json:"spawned"`
-	Alive   int     `json:"alive"`
-	Members int     `json:"members"`
-	Cleared bool    `json:"cleared"` // spawned at least once and currently down (respawn timer)
+	ID      int                `json:"id"`
+	Kind    string             `json:"kind"`
+	X       float64            `json:"x"`
+	Y       float64            `json:"y"`
+	Z       float64            `json:"z"`
+	Radius  float64            `json:"radius"`
+	Level   int                `json:"level"`
+	Name    string             `json:"name,omitempty"`
+	Boss    string             `json:"boss,omitempty"`
+	Spawned bool               `json:"spawned"`
+	Alive   int                `json:"alive"`
+	Members int                `json:"members"`
+	Cleared bool               `json:"cleared"` // spawned at least once and currently down (respawn timer)
+	Enemies []CombatEnemyDebug `json:"enemies,omitempty"`
+}
+
+// CombatEnemyDebug is one spawned member.
+type CombatEnemyDebug struct {
+	ID    uint32  `json:"id"`
+	Key   string  `json:"key"`
+	Name  string  `json:"name,omitempty"`
+	X     float64 `json:"x"`
+	Y     float64 `json:"y"`
+	Z     float64 `json:"z"`
+	HP    float64 `json:"hp"`
+	HPMax float64 `json:"hpMax"`
+	State string  `json:"state"`
 }
 
 func (s *Server) publishCombatDebug(tick uint32) {
@@ -554,6 +568,7 @@ func (s *Server) publishCombatDebug(tick uint32) {
 			if e.Alive() {
 				d.Alive++
 			}
+			d.Enemies = append(d.Enemies, CombatEnemyDebug{ID: e.ID, Key: e.Def.Key, Name: e.Name, X: e.Pos.X, Y: e.Pos.Y, Z: e.Pos.Z, HP: e.HP, HPMax: e.HPMax, State: e.State.String()})
 		}
 		info.Groups = append(info.Groups, d)
 	}

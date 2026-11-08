@@ -229,7 +229,8 @@ func coordinate(ctx context.Context, base string, party []*bot, camp, boss *game
 		return func(e combatbot.EnemyView) bool { return math.Hypot(e.Pos.X-c.X, e.Pos.Z-c.Z) <= r }
 	}
 	for _, b := range party {
-		b.setPlan(&campAt, 10, inArea(campAt, camp.Radius+22))
+		// Kiting enemies (archers, wisps) roam up to ENEMY_LEASH_M from home.
+		b.setPlan(&campAt, 10, inArea(campAt, camp.Radius+constants.EnemyLeashM+10))
 	}
 	phase := "camp"
 	t0 := time.Now()
@@ -408,7 +409,19 @@ func (b *bot) run(ctx context.Context) {
 	t := time.NewTicker(period)
 	defer t.Stop()
 	var last proto.InputFrame
+	status := time.NewTicker(15 * time.Second)
+	defer status.Stop()
 	for {
+		select {
+		case <-status.C:
+			b.mu.Lock()
+			if b.brain != nil {
+				p := b.brain.State.Pos
+				logf("%s at (%.0f, %.0f, %.0f) hp %.0f%%  attacks %d casts %d dodges %d  accepted %d refused %d  corrections %d", b.name, p.X, p.Y, p.Z, b.brain.HP*100, b.brain.Attacks, b.brain.Casts, b.brain.Dodges, b.accepted, b.refused, b.corr)
+			}
+			b.mu.Unlock()
+		default:
+		}
 		select {
 		case <-ctx.Done():
 			_ = c.SendReliable(proto.Encode(&proto.Bye{}))
@@ -584,7 +597,7 @@ func (b *bot) summary() map[string]any {
 	s := map[string]any{"weapon": b.weapon, "claimsAccepted": b.accepted, "claimsRefused": b.refused, "refusedBy": b.refusedBy,
 		"damageDealt": b.dmgDealt, "damageTaken": b.hurt, "evaded": b.evaded, "downs": b.downs, "corrections": b.corr, "kills": b.kills}
 	if b.brain != nil {
-		s["attacks"], s["dodges"], s["drinks"] = b.brain.Attacks, b.brain.Dodges, b.brain.Drinks
+		s["attacks"], s["dodges"], s["drinks"], s["casts"] = b.brain.Attacks, b.brain.Dodges, b.brain.Drinks, b.brain.Casts
 	}
 	return s
 }
