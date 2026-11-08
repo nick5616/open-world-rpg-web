@@ -64,9 +64,46 @@ type Flat struct{ Y float64 }
 // HeightAt implements Ground.
 func (f Flat) HeightAt(_, _ float64) float64 { return f.Y }
 
+// CaveGround is a Ground with caves (WP09): underground the floor depends on
+// the height you stand at, and walls and ceilings push back. The cave-aware
+// ground (server/pkg/caves.Ground, TS CaveGroundCore) answers the heightfield
+// on the open surface and cave triangles in mouth holes and underground.
+// Step uses it through groundAt and one Collide call per step; the contract
+// is written out in worldgen/README.md "Cave collision" and mirrored in
+// client/src/sim/movement.ts.
+type CaveGround interface {
+	Ground
+	// FloorAt is the feet height of the highest walkable surface at or below
+	// y + MAX_STEP_UP_M under (x, z).
+	FloorAt(x, y, z float64) float64
+	// Collide pushes a player with feet at (x, y, z) out of walls
+	// (horizontally) and ceilings (down).
+	Collide(x, y, z float64) CollideResult
+}
+
+// CollideResult is the pushed position, the horizontal push, and whether
+// the head hit a ceiling.
+type CollideResult struct {
+	X, Y, Z      float64
+	PushX, PushZ float64
+	Ceiling      bool
+}
+
+// groundAt is the ground under a player at height y: FloorAt on a
+// CaveGround, else the heightfield.
+func groundAt(g Ground, x, y, z float64) float64 {
+	if cg, ok := g.(CaveGround); ok {
+		return cg.FloorAt(x, y, z)
+	}
+	return g.HeightAt(x, z)
+}
+
+// GroundAt is groundAt for callers outside the step (zone validation, spawns).
+func GroundAt(g Ground, x, y, z float64) float64 { return groundAt(g, x, y, z) }
+
 // Grounded reports whether s stands on g (same test Step uses).
 func Grounded(s State, g Ground) bool {
-	return s.Pos.Y <= g.HeightAt(s.Pos.X, s.Pos.Z)+groundEps
+	return s.Pos.Y <= groundAt(g, s.Pos.X, s.Pos.Y, s.Pos.Z)+groundEps
 }
 
 // StepFrame applies one input frame. Yaw is dequantized from the wire u16 so
@@ -107,7 +144,7 @@ func Step(s State, flags uint16, yaw float64, g Ground) State {
 	}
 	wishX, wishZ = normalizeWishDir(wishX, wishZ)
 
-	grounded := s.Pos.Y <= g.HeightAt(s.Pos.X, s.Pos.Z)+groundEps
+	grounded := s.Pos.Y <= groundAt(g, s.Pos.X, s.Pos.Y, s.Pos.Z)+groundEps
 
 	vx, vz := s.Vel.X, s.Vel.Z
 	if grounded {
@@ -141,7 +178,26 @@ func Step(s State, flags uint16, yaw float64, g Ground) State {
 
 	// Ground snap: landing, or descending within GROUND_SNAP_M of the surface
 	// (ramp descent would otherwise stutter between ground and air physics).
-	groundY := g.HeightAt(x, z)
+	// Caves (WP09): walls and ceilings push back, sliding the velocity along
+	// the wall; then the floor is searched from the higher of the old and new
+	// feet height so a fast fall can't skip through a floor in one step.
+	if cg, ok := g.(CaveGround); ok {
+		r := cg.Collide(x, y, z)
+		if r.PushX != 0 || r.PushZ != 0 {
+			l := math.Sqrt(float64(r.PushX*r.PushX) + float64(r.PushZ*r.PushZ))
+			nx, nz := r.PushX/l, r.PushZ/l
+			vn := float64(vx*nx) + float64(vz*nz)
+			if vn < 0 {
+				vx = vx - float64(vn*nx)
+				vz = vz - float64(vn*nz)
+			}
+		}
+		x, y, z = r.X, r.Y, r.Z
+		if r.Ceiling && vy > 0 {
+			vy = 0
+		}
+	}
+	groundY := groundAt(g, x, math.Max(s.Pos.Y, y), z)
 	hugging := vy <= 0 && y-groundY <= constants.GroundSnapM
 	if y <= groundY || hugging {
 		y = groundY

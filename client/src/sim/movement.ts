@@ -28,7 +28,7 @@ import {
   STOP_SPEED,
   u16ToYaw,
 } from '@lodestone/contracts';
-import type { GroundQuery } from './ground';
+import { groundAt, type CollideResult, type GroundQuery } from './ground';
 
 export interface Vec3 {
   x: number;
@@ -156,7 +156,7 @@ export function wishDirFromFlags(flags: number, yaw: number): Vec2xz {
 
 /** True when `pos` stands on the ground (see GROUND_EPS). */
 export function isGrounded(pos: Vec3, ground: GroundQuery): boolean {
-  return pos.y <= ground.heightAt(pos.x, pos.z) + GROUND_EPS;
+  return pos.y <= groundAt(ground, pos.x, pos.y, pos.z) + GROUND_EPS;
 }
 
 /**
@@ -199,13 +199,35 @@ export function stepMovement(state: MoveState, input: MoveInput, ground: GroundQ
     airJumps = airJumps + 1;
   }
 
-  const x = state.pos.x + vel.x * dt;
+  let x = state.pos.x + vel.x * dt;
   let y = state.pos.y + vy * dt;
-  const z = state.pos.z + vel.z * dt;
+  let z = state.pos.z + vel.z * dt;
+
+  // Caves (WP09): walls and ceilings push back, sliding the velocity along
+  // the wall; then the floor is searched from the higher of the old and new
+  // feet height so a fast fall can't skip through a floor in one step. Same
+  // as the Go step (movement.CaveGround).
+  if (ground.collide) {
+    const r = ground.collide(x, y, z, COLLIDE);
+    if (r.pushX !== 0 || r.pushZ !== 0) {
+      const l = Math.sqrt(r.pushX * r.pushX + r.pushZ * r.pushZ);
+      const nx = r.pushX / l;
+      const nz = r.pushZ / l;
+      const vn = vel.x * nx + vel.z * nz;
+      if (vn < 0) {
+        vel.x = vel.x - vn * nx;
+        vel.z = vel.z - vn * nz;
+      }
+    }
+    x = r.x;
+    y = r.y;
+    z = r.z;
+    if (r.ceiling && vy > 0) vy = 0;
+  }
 
   // Snap when below ground, or when descending within GROUND_SNAP_M of it so
   // walking down a slope stays grounded instead of stuttering through tiny falls.
-  const groundY = ground.heightAt(x, z);
+  const groundY = groundAt(ground, x, Math.max(state.pos.y, y), z);
   const hugging = vy <= 0 && y - groundY <= GROUND_SNAP_M;
   if (y <= groundY || hugging) {
     y = groundY;
@@ -215,6 +237,9 @@ export function stepMovement(state: MoveState, input: MoveInput, ground: GroundQ
 
   return { pos: { x, y, z }, vel: { x: vel.x, y: vy, z: vel.z }, airJumps };
 }
+
+/** Scratch for GroundQuery.collide (the step is synchronous, so one is enough). */
+const COLLIDE: CollideResult = { x: 0, y: 0, z: 0, pushX: 0, pushZ: 0, ceiling: false };
 
 export function cloneMoveState(s: MoveState): MoveState {
   return { pos: { ...s.pos }, vel: { ...s.vel }, airJumps: s.airJumps };

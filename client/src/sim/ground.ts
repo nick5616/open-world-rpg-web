@@ -10,6 +10,30 @@ export interface GroundQuery {
   heightAt(x: number, z: number): number;
   /** Optional unit surface normal at (x, z); climbing/sliding (later) will need it. */
   normalAt?(x: number, z: number): { x: number; y: number; z: number };
+  /**
+   * Caves (WP09): feet height of the highest walkable surface at or below
+   * y + MAX_STEP_UP_M under (x, z). Grounds without caves omit it and the
+   * step uses heightAt. Contract: worldgen/README.md "Cave collision"; the Go
+   * twin is movement.CaveGround.
+   */
+  floorAt?(x: number, y: number, z: number): number;
+  /** Caves (WP09): push a player (feet at x, y, z) out of walls and ceilings; writes into out. */
+  collide?(x: number, y: number, z: number, out: CollideResult): CollideResult;
+}
+
+/** Result of GroundQuery.collide: pushed feet position, horizontal push, ceiling hit. */
+export interface CollideResult {
+  x: number;
+  y: number;
+  z: number;
+  pushX: number;
+  pushZ: number;
+  ceiling: boolean;
+}
+
+/** Ground under a player at height y: floorAt when the ground has caves, else heightAt. */
+export function groundAt(ground: GroundQuery, x: number, y: number, z: number): number {
+  return ground.floorAt ? ground.floorAt(x, y, z) : ground.heightAt(x, z);
 }
 
 /** Infinite flat plane at a fixed height: the WP02 placeholder world. */

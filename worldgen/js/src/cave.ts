@@ -737,6 +737,11 @@ export class CaveGroundCore {
     readonly cells: CaveCellSource,
   ) {}
 
+  /** The heightfield (so this object is a movement GroundQuery as is). */
+  heightAt(x: number, z: number): number {
+    return this.heightfield(x, z);
+  }
+
   /** In a mouth hole or more than CAVE_UNDER_M under the surface at y? */
   inCave(x: number, y: number, z: number, h = this.heightfield(x, z)): boolean {
     return y < h - CAVE_UNDER_M || caveMasked(this.openings, x, z);
