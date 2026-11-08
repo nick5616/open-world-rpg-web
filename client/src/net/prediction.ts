@@ -43,6 +43,8 @@ export interface Correction {
   magnitude: number;
   ackSeq: number;
   unacked: number;
+  /** WP16 failover: a snap to a state the zone loaded (no history to replay). */
+  forced?: boolean;
 }
 
 /**
@@ -86,6 +88,21 @@ export class ClientPrediction {
     this.pending = [];
     this.correction = null;
     this.lastAckSeq = 0;
+  }
+
+  /**
+   * WP16 failover: the new zone put us at its checkpoint. Drop all history
+   * and hand the renderer that state as a correction beyond any snap
+   * distance; until it is taken (awaitingForced) the session sends nothing.
+   */
+  force(state: MoveState): void {
+    this.pending = [];
+    this.lastAckSeq = 0;
+    this.correction = { state, error: { x: 0, y: 0, z: 0 }, magnitude: Number.POSITIVE_INFINITY, ackSeq: 0, unacked: 0, forced: true };
+  }
+
+  get awaitingForced(): boolean {
+    return this.correction?.forced === true;
   }
 
   store(step: PredictedStep): void {

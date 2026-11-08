@@ -59,6 +59,7 @@ func main() {
 		sampleArg  = flag.Duration("sample-every", 2*time.Second, "WP16: ownership sampling period (0 = off)")
 		borderM    = flag.Float64("border-spawn", 150, "WP16 cross mode: spawn within this distance of a border between zones")
 		printChars = flag.Bool("print-characters", false, "print the bots' deterministic character ids and names as JSON and exit (seed a scratch database with them)")
+		findBorder = flag.Float64("find-border", 0, "WP16: print a walkable crossing of the region line x = this value (JSON) and exit (needs the zone and its terrain)")
 		tickBudget = flag.Float64("tick-budget", 0, "zone tick p99 budget in ms (default 5, or 12 with -cluster: spec 9's 300-player budget)")
 	)
 	flag.Parse()
@@ -105,6 +106,19 @@ func main() {
 		fmt.Fprintf(os.Stderr, "bots: predicting on generated terrain (seed %d, genVersion %s, atlas %s)\n", info.Seed, info.GenVersion, info.AtlasHash)
 	}
 
+	if *findBorder > 0 {
+		if terrain == nil {
+			fmt.Fprintln(os.Stderr, "bots: -find-border needs terrain")
+			os.Exit(1)
+		}
+		x, y, z, ok := findBorderCrossing(terrain, *findBorder)
+		if !ok {
+			fmt.Fprintln(os.Stderr, "bots: no walkable crossing found")
+			os.Exit(1)
+		}
+		_ = json.NewEncoder(os.Stdout).Encode(map[string]float64{"x": x, "y": y, "z": z})
+		return
+	}
 	cfg := &botConfig{url: *zoneURL, zoneID: *zoneID, worldID: *worldID, priv: priv, centerX: cx, centerZ: cz,
 		worldM: constants.WorldSizeM, warmup: *warmup, pingPeriod: time.Second, ticket: *ticketArg, terrain: terrain}
 	if terrain != nil {

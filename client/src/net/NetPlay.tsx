@@ -80,6 +80,13 @@ export function NetPlay({ ready }: { ready: ReadySession }) {
       ground,
       saveBlob: ready.save ? new TextEncoder().encode(JSON.stringify(ready.save)) : undefined,
       prefer: preferredTransport(),
+      // WP16: handoffs between zones happen inside the session; when our zone
+      // dies, fail over to whoever owns the region now (fresh director ticket).
+      zoneId: ready.zoneId,
+      reconnect: async () => {
+        const r = await ready.refreshTickets();
+        return { zoneId: r.zone.zoneId, ticket: r.ticket, wsUrl: r.zone.endpoint, wtUrl: r.zone.wtEndpoint };
+      },
     });
     netRuntime.session = s;
     const detachExploration = attachExploration(s, ready);
@@ -111,7 +118,7 @@ export function NetPlay({ ready }: { ready: ReadySession }) {
       endpoint: ready.socialEndpoint,
       ticket: ready.socialTicket,
       refreshTicket: () => ready.refreshTickets().then((r) => r.socialTicket),
-      zoneId: () => ready.zoneId,
+      zoneId: () => netRuntime.session?.zoneId || ready.zoneId, // WP16: follows handoffs
       position: () => ({ x: localPlayer.pos.x, z: localPlayer.pos.z }),
     });
     // WP11 proximity voice rides on the social session (voice_token).

@@ -4,6 +4,7 @@
 // saved). Reads `go run ./tools/bots -print-characters -n N` JSON on stdin.
 //
 //	go run ./tools/bots -print-characters -n 1000 | LODESTONE_PG_URL=... go run ./tools/bots/cmd/seedbots
+//	LODESTONE_PG_URL=... go run ./tools/bots/cmd/seedbots -move "Alyssa:2023,1500;Bruno:2023,1504"   (place characters by name)
 //
 // Refuses databases whose name does not start with lodestone_wp (scratch
 // databases only; the shared dev database is never seeded with bots).
@@ -31,6 +32,9 @@ func main() {
 }
 
 func run() error {
+	if len(os.Args) == 3 && os.Args[1] == "-move" {
+		return move(os.Args[2])
+	}
 	var chars []struct {
 		ID   string `json:"id"`
 		Name string `json:"name"`
@@ -87,5 +91,38 @@ func run() error {
 		return err
 	}
 	fmt.Printf("seeded %d bot characters (%d new) into %s, world %s\n", len(chars), tag.RowsAffected(), db, world)
+	return nil
+}
+
+// move sets characters' saved positions by name (y 0: the zone lifts them
+// onto the ground when they join). Scratch databases only.
+func move(spec string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	pool, err := pgxpool.New(ctx, env.PostgresURL())
+	if err != nil {
+		return err
+	}
+	defer pool.Close()
+	var db string
+	if err := pool.QueryRow(ctx, `SELECT current_database()`).Scan(&db); err != nil {
+		return err
+	}
+	if !strings.HasPrefix(db, "lodestone_wp") {
+		return fmt.Errorf("refusing to move characters in %q (scratch databases lodestone_wp* only)", db)
+	}
+	for _, part := range strings.Split(spec, ";") {
+		name, xz, ok := strings.Cut(part, ":")
+		var x, z float64
+		if _, err := fmt.Sscanf(xz, "%g,%g", &x, &z); !ok || err != nil {
+			return fmt.Errorf("bad -move entry %q (Name:x,z)", part)
+		}
+		pos, _ := json.Marshal(map[string]float64{"x": x, "y": 0, "z": z})
+		tag, err := pool.Exec(ctx, `UPDATE characters SET position = $2::jsonb WHERE name_lower = lower($1)`, name, pos)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("moved %s to %.1f,%.1f (%d rows)\n", name, x, z, tag.RowsAffected())
+	}
 	return nil
 }
