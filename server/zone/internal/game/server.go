@@ -27,7 +27,6 @@ import (
 	"lodestone/server/pkg/localsave"
 	"lodestone/server/pkg/movement"
 	"lodestone/server/pkg/proto"
-	"lodestone/server/pkg/snapshot"
 	"lodestone/server/pkg/svc"
 	"lodestone/server/pkg/transport"
 	"lodestone/server/pkg/writebehind"
@@ -59,7 +58,10 @@ type Config struct {
 	// DownBudgetKbps caps each client's snapshot bytes (decision 0005); the
 	// ring table stays the maximum rate. 0 = unlimited (WP03 behavior).
 	DownBudgetKbps float64
-	Store          CharacterStore // nil: no persistence
+	// SnapshotWorkers builds clients' snapshots on this many goroutines
+	// (WP19, snapshots.go); 0 = GOMAXPROCS, 1 = on the tick goroutine.
+	SnapshotWorkers int
+	Store           CharacterStore // nil: no persistence
 	// Mining (WP09): vein respawn window (spec 7: a seeded 6-24 h; tests
 	// shorten it), world edit persistence and the item grant hook (WP14).
 	VeinRespawnMin, VeinRespawnMax time.Duration
@@ -114,19 +116,20 @@ type Server struct {
 	sessions []*session
 	byChar   map[string]*session
 	parties  map[uint32][]*Entity
-	grid     *aoi.Grid
-	idxs     []int32
-	cands    []snapshot.Candidate
-	w        proto.Writer
-	saveDiv  uint32
-	mine     mining              // WP09 (mining.go)
-	calls    chan func()         // run on the tick goroutine (Do, caves.go)
-	env      movement.Env        // WP10: this tick's movement env (stepEnv)
-	hap      []explore.Happening // scratch for exploreTick
-	party    partyState
-	cl       clusterState // WP16 (handoff.go)
-	cbt      combatGlue   // WP13 (combat.go)
-	town     townsState   // WP20 (towns.go)
+	grid     *aoi.Grid // players (and anything with a party id): far ring reach
+	// gridOthers holds every other entity (WP19, snapshots.go gridFor):
+	// they are never sent beyond the mid ring, so clients query it 200 m out.
+	gridOthers *aoi.Grid
+	snapScr    []*snapScratch // WP19: one per snapshot worker (snapshots.go)
+	saveDiv    uint32
+	mine       mining              // WP09 (mining.go)
+	calls      chan func()         // run on the tick goroutine (Do, caves.go)
+	env        movement.Env        // WP10: this tick's movement env (stepEnv)
+	hap        []explore.Happening // scratch for exploreTick
+	party      partyState
+	cl         clusterState // WP16 (handoff.go)
+	cbt        combatGlue   // WP13 (combat.go)
+	town       townsState   // WP20 (towns.go)
 	// WP11: next earshot hand-off (earshot.go).
 	earshotNext time.Time
 
@@ -164,18 +167,19 @@ func New(cfg Config) *Server {
 	}
 	interval := time.Second / constants.TickRateHz
 	s := &Server{
-		cfg:     cfg,
-		log:     cfg.Log,
-		joins:   make(chan *session, 256),
-		calls:   make(chan func(), 16),
-		stopped: make(chan struct{}),
-		byChar:  map[string]*session{},
-		parties: map[uint32][]*Entity{},
-		grid:    aoi.NewWorld(),
-		conns:   map[*session]struct{}{},
-		nextID:  1,
-		stats:   gameloop.NewStats(interval, 60*constants.TickRateHz),
-		saveDiv: uint32(cfg.SaveInterval / interval),
+		cfg:        cfg,
+		log:        cfg.Log,
+		joins:      make(chan *session, 256),
+		calls:      make(chan func(), 16),
+		stopped:    make(chan struct{}),
+		byChar:     map[string]*session{},
+		parties:    map[uint32][]*Entity{},
+		grid:       aoi.NewWorld(),
+		gridOthers: aoi.NewWorld(),
+		conns:      map[*session]struct{}{},
+		nextID:     1,
+		stats:      gameloop.NewStats(interval, 60*constants.TickRateHz),
+		saveDiv:    uint32(cfg.SaveInterval / interval),
 	}
 	if s.saveDiv == 0 {
 		s.saveDiv = 1
@@ -292,11 +296,12 @@ func (s *Server) onTick() {
 	// Quantize once per entity and rebuild the grid; every client's snapshot
 	// reads these.
 	s.grid.Reset()
+	s.gridOthers.Reset()
 	for i, e := range s.ents {
 		e.idx = int32(i)
 		e.updateView(s.cfg.Ground, s.env)
 		e.quantize(s.cfg.Ground)
-		s.grid.Insert(int32(i), e.Move.Pos.X, e.Move.Pos.Z)
+		s.gridFor(e).Insert(int32(i), e.Move.Pos.X, e.Move.Pos.Z)
 	}
 	s.gridRemotes()    // WP16: mirrored entities after the local ones (ghosts.go)
 	s.earshotTick(now) // WP11: proximity voice positions every 250 ms (earshot.go)
@@ -311,20 +316,9 @@ func (s *Server) onTick() {
 		}
 	}
 
-	serverTime := s.serverTimeMs()
-	var sumNear, sumMid, sumFar, sumParty, maxSet, snapBytes int64
-	for _, sess := range s.sessions {
-		n, md, f, p, b := s.sendSnapshot(sess, tick, serverTime)
-		sumNear += int64(n)
-		sumMid += int64(md)
-		sumFar += int64(f)
-		sumParty += int64(p)
-		snapBytes += int64(b)
-		if t := int64(n + md + f + p); t > maxSet {
-			maxSet = t
-		}
-	}
-	s.m.aoiAccum(len(s.sessions), sumNear, sumMid, sumFar, sumParty, maxSet, snapBytes)
+	// Every client's snapshot, built in parallel (WP19, snapshots.go). Must
+	// stay the tick's last phase: workers read the world while they run.
+	s.sendSnapshots(tick, s.serverTimeMs())
 }
 
 // join admits a handshaken session (tick goroutine).

@@ -113,6 +113,20 @@ const LeaveMarginM = 16
 // QueryRadius is how far a client's interest query must reach.
 const QueryRadius = constants.RingFarM + LeaveMarginM
 
+// QueryRadiusOthers is how far the query must reach for everything that is
+// not a player and carries no party id (enemies, townsfolk, pickups,
+// projectiles): Classify gives those nothing beyond the mid ring, so the
+// zone keeps them in a second grid queried only this far (WP19: in a
+// 300-player / 2,000-enemy region the 616 m query walked every enemy for
+// every client).
+const QueryRadiusOthers = constants.RingMidM
+
+// FarRing reports whether an entity can be in a far or party ring (players,
+// and anything carrying a party id) and so belongs in the 616 m grid.
+func FarRing(kind proto.EntityKind, partyID uint32) bool {
+	return kind == proto.EntityKindPlayer || partyID != 0
+}
+
 // Classify picks the ring for an entity at horizontal distance d. known says
 // the client already has it (for hysteresis); sameParty puts party members in
 // the party ring at any distance.

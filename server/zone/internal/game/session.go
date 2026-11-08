@@ -17,7 +17,6 @@ import (
 	"lodestone/server/pkg/snapshot"
 	"lodestone/server/pkg/ticket"
 	"lodestone/server/pkg/transport"
-	"lodestone/server/zone/internal/aoi"
 	"lodestone/server/zone/internal/combat"
 )
 
@@ -457,79 +456,6 @@ func (s *Server) applyFrames(sess *session, now time.Time) {
 	}
 	n := copy(fr, fr[i:])
 	sess.frames = fr[:n]
-}
-
-// sendSnapshot computes the client's interest set and sends a delta snapshot.
-// Returns ring populations and the snapshot size for metrics.
-func (s *Server) sendSnapshot(sess *session, tick uint32, serverTime float64) (near, mid, far, party, size int) {
-	e := sess.ent
-	px, pz := e.Move.Pos.X, e.Move.Pos.Z
-	s.idxs = s.idxs[:0]
-	self := e.idx
-	s.grid.Query(px, pz, aoi.QueryRadius, func(i int32) {
-		if i != self {
-			s.idxs = append(s.idxs, i)
-		}
-	})
-	if e.PartyID != 0 {
-		for _, m := range s.parties[e.PartyID] {
-			if m != e {
-				s.idxs = append(s.idxs, m.idx)
-			}
-		}
-		s.remotePartyMembers(e.PartyID) // WP16: party members on other zones
-	}
-	// The encoder's merge with the baseline needs interest sorted by entity
-	// ID (ents is sorted by ID; WP16 mirrors are sorted in, ghosts.go).
-	s.sortInterest()
-
-	last := sess.enc.Last()
-	s.cands = s.cands[:0]
-	cw := s.caves()
-	for _, i := range s.idxs {
-		o := s.entAt(i)
-		// Personal pickups: only their owner sees them (WP09).
-		if o.Kind == proto.EntityKindPickup && o.Owner != e.ID {
-			continue
-		}
-		// Underground interest clipping (spec 9, WP09 caves.go).
-		if cw != nil && !(e.PartyID != 0 && o.PartyID == e.PartyID) && !s.caveVisible(cw, e, o) {
-			continue
-		}
-		d := math.Hypot(o.Move.Pos.X-px, o.Move.Pos.Z-pz)
-		known := last != nil && last.Find(o.ID) != nil
-		sameParty := e.PartyID != 0 && o.PartyID == e.PartyID
-		r := aoi.Classify(d, o.Kind, known, sameParty)
-		switch r {
-		case aoi.None:
-			continue
-		case aoi.Near:
-			near++
-		case aoi.Mid:
-			mid++
-		case aoi.Far:
-			far++
-		case aoi.Party:
-			party++
-		}
-		s.cands = append(s.cands, snapshot.Candidate{State: &o.q, Due: aoi.Due(r, tick, o.ID), Weight: priorityWeight(d, sameParty)})
-	}
-
-	st := e.selfState(s.cfg.Ground)
-	snap := sess.enc.Build(tick, sess.ackTick, e.LastSeq, serverTime, &st, s.cands)
-	if bs := sess.enc.Stats(); bs != sess.budget {
-		s.m.recordsSent.Add(int64(bs.Sent - sess.budget.Sent))
-		s.m.recordsDeferred.Add(int64(bs.Deferred - sess.budget.Deferred))
-		sess.budget = bs
-	}
-	s.w.Reset()
-	proto.WriteMessage(&s.w, snap)
-	buf := make([]byte, len(s.w.B))
-	copy(buf, s.w.B)
-	if !sess.conn.SendUnreliable(buf) {
-		s.m.snapshotsShed.Add(1)
-	}
-	return near, mid, far, party, len(buf)
 }
 
 // markJoined closes joined once (WP16: a standby session joins twice).

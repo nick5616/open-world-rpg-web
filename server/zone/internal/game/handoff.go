@@ -145,7 +145,6 @@ type clusterState struct {
 	departed    []string
 	presenceAt  time.Time
 	gw          proto.Writer
-	keys        []uint64 // sortInterest scratch
 
 	stats clusterStats
 }

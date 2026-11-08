@@ -92,6 +92,7 @@ type World struct {
 	players map[uint32]*Player
 	strikes []*strike
 	shots   []*shot
+	winding []*Enemy // WP19: enemies that entered Windup since the last prune (windupsOn)
 	alloc   func() uint32
 	tick    uint32
 	rng     uint64
@@ -448,6 +449,7 @@ func (w *World) Step(tick uint32) {
 	if tick%15 == 0 {
 		w.wakeTick()
 	}
+	w.pruneWinding() // WP19
 	for _, id := range slices.Clone(w.order) {
 		e := w.enemies[id]
 		if e == nil {

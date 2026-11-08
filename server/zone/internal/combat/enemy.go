@@ -99,6 +99,7 @@ type Enemy struct {
 	AggroTick  uint32
 	recentHits []uint32
 	lastEvade  uint32
+	inWinding  bool // WP19: listed in World.winding
 }
 
 // Typeid is the wire typeId (combatdefs.TypeID).

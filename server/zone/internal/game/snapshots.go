@@ -1,0 +1,284 @@
+package game
+
+// The tick's snapshot phase (WP19). Every client's interest set and delta
+// snapshot is built here, in parallel across GOMAXPROCS workers.
+//
+// Why parallel: at spec 14 scenario 1's size (300 players and 2,000 awake
+// enemies in one region) each client's interest is ~2,300 entities, and the
+// serial phase alone took ~68 ms of a 100 ms tick on the reference desktop
+// (docs/evidence/wp19-*). The work per client is independent: by this point
+// the tick has finished mutating the world (entities quantized, grid
+// rebuilt, parties and mirrors placed), so workers only READ shared state
+// and each writes its own session's encoder and connection queue. The
+// output for each client is byte-identical to the serial build regardless
+// of which worker builds it; the transport's send path is goroutine-safe.
+//
+// What the phase reads (and must stay read-only until it ends): s.ents and
+// their quantized states (e.q), s.grid, s.parties, s.cl.remote /
+// remoteParty, the cave graph and each entity's caveSys. Anything added to
+// sendSnapshot later must keep to that rule or move before the phase.
+//
+// Also WP19, inside one client's build:
+//   - interest is gathered into a bitset over entity indices and read back
+//     in index order (= id order, s.ents is sorted by id) instead of being
+//     sorted: the sort was 20 % of the tick;
+//   - mirrored entities (WP16) are sorted by id once per tick (gridRemotes)
+//     so they form a second sorted run, merged with the local run;
+//   - "does the client already know this entity" walks the previous frame
+//     alongside the sorted interest instead of binary-searching it;
+//   - distances use Sqrt(dx²+dz²) rather than math.Hypot (equal to within
+//     an ulp, at a fraction of the cost; ring edges are not that precise).
+
+import (
+	"math"
+	"math/bits"
+	"runtime"
+	"sync"
+	"sync/atomic"
+
+	"lodestone/server/pkg/proto"
+	"lodestone/server/pkg/snapshot"
+	"lodestone/server/zone/internal/aoi"
+)
+
+// snapScratch is one snapshot worker's scratch space and metric sums.
+type snapScratch struct {
+	mark  []uint64 // interest bitset over grid indices (all zero between uses)
+	idxs  []int32  // interest, sorted by entity id
+	rem   []int32  // mirrored entities in interest (merge scratch)
+	loc   []int32  // local entities in interest (merge scratch)
+	cands []snapshot.Candidate
+	w     proto.Writer
+	sum   snapSums
+	_     [64]byte // keep workers' hot fields off each other's cache lines
+}
+
+type snapSums struct{ near, mid, far, party, maxSet, bytes int64 }
+
+const (
+	// snapParallelMin: below this many sessions the phase runs on the tick
+	// goroutine (goroutine hand-off costs more than it saves for a few
+	// clients, and small zones and most tests stay single-threaded).
+	snapParallelMin = 32
+	// snapChunk: sessions a worker claims at a time.
+	snapChunk = 8
+)
+
+// snapshotWorkers is how many goroutines build snapshots (Config, else
+// GOMAXPROCS: spec 9's budget is per 4 vCPU zone).
+func (s *Server) snapshotWorkers() int {
+	n := s.cfg.SnapshotWorkers
+	if n <= 0 {
+		n = runtime.GOMAXPROCS(0)
+	}
+	return max(1, n)
+}
+
+// sendSnapshots builds and queues every client's snapshot for this tick.
+func (s *Server) sendSnapshots(tick uint32, serverTime float64) {
+	n := len(s.sessions)
+	workers := s.snapshotWorkers()
+	if workers > (n+snapChunk-1)/snapChunk {
+		workers = (n + snapChunk - 1) / snapChunk
+	}
+	if n < snapParallelMin || workers < 2 {
+		workers = 1
+	}
+	for len(s.snapScr) < workers {
+		s.snapScr = append(s.snapScr, &snapScratch{})
+	}
+	for _, sc := range s.snapScr[:workers] {
+		sc.sum = snapSums{}
+	}
+	if workers == 1 {
+		sc := s.snapScr[0]
+		for _, sess := range s.sessions {
+			s.sendSnapshot(sc, sess, tick, serverTime)
+		}
+	} else {
+		var next atomic.Int64
+		var wg sync.WaitGroup
+		run := func(sc *snapScratch) {
+			for {
+				i := int(next.Add(snapChunk)) - snapChunk
+				if i >= n {
+					return
+				}
+				for _, sess := range s.sessions[i:min(n, i+snapChunk)] {
+					s.sendSnapshot(sc, sess, tick, serverTime)
+				}
+			}
+		}
+		wg.Add(workers - 1)
+		for _, sc := range s.snapScr[1:workers] {
+			go func() {
+				defer wg.Done()
+				run(sc)
+			}()
+		}
+		run(s.snapScr[0]) // the tick goroutine works too
+		wg.Wait()
+	}
+	var t snapSums
+	for _, sc := range s.snapScr[:workers] {
+		t.near += sc.sum.near
+		t.mid += sc.sum.mid
+		t.far += sc.sum.far
+		t.party += sc.sum.party
+		t.bytes += sc.sum.bytes
+		t.maxSet = max(t.maxSet, sc.sum.maxSet)
+	}
+	s.m.aoiAccum(n, t.near, t.mid, t.far, t.party, t.maxSet, t.bytes)
+}
+
+// gridFor is the AOI grid an entity goes in this tick: players (and
+// anything with a party id) can be seen 616 m away, everything else only
+// within the mid ring (aoi.QueryRadiusOthers), so clients look for those in
+// a smaller square. Classify drops the others beyond 200 m anyway: the
+// split changes no interest set, only how many entities each client walks.
+func (s *Server) gridFor(e *Entity) *aoi.Grid {
+	if aoi.FarRing(e.Kind, e.PartyID) {
+		return s.grid
+	}
+	return s.gridOthers
+}
+
+// gatherInterest fills sc.idxs with the client's candidate entities (grid
+// cells around them, party members anywhere), deduplicated and sorted by
+// entity id.
+func (s *Server) gatherInterest(sc *snapScratch, e *Entity) {
+	nLocal := len(s.ents)
+	total := nLocal + len(s.cl.remote)
+	words := (total + 63) >> 6
+	if cap(sc.mark) < words {
+		sc.mark = make([]uint64, words)
+	}
+	mark := sc.mark[:words]
+	set := func(i int32) { mark[i>>6] |= 1 << (uint(i) & 63) }
+	s.grid.Query(e.Move.Pos.X, e.Move.Pos.Z, aoi.QueryRadius, set)
+	s.gridOthers.Query(e.Move.Pos.X, e.Move.Pos.Z, aoi.QueryRadiusOthers, set)
+	self := e.idx
+	mark[self>>6] &^= 1 << (uint(self) & 63)
+	if e.PartyID != 0 {
+		for _, m := range s.parties[e.PartyID] {
+			if m != e {
+				mark[m.idx>>6] |= 1 << (uint(m.idx) & 63)
+			}
+		}
+		for _, m := range s.cl.remoteParty[e.PartyID] { // WP16: party members on other zones
+			mark[m.idx>>6] |= 1 << (uint(m.idx) & 63)
+		}
+	}
+	// Read the bitset back in index order, clearing it for the next client.
+	// Local indices are in id order (s.ents is sorted by id); mirrors come
+	// after them, sorted by id among themselves (gridRemotes).
+	idxs := sc.idxs[:0]
+	if len(s.cl.remote) == 0 {
+		for wi, wv := range mark {
+			for wv != 0 {
+				idxs = append(idxs, int32(wi<<6+bits.TrailingZeros64(wv)))
+				wv &= wv - 1
+			}
+			mark[wi] = 0
+		}
+		sc.idxs = idxs
+		return
+	}
+	loc, rem := sc.loc[:0], sc.rem[:0]
+	for wi, wv := range mark {
+		for wv != 0 {
+			i := int32(wi<<6 + bits.TrailingZeros64(wv))
+			if int(i) < nLocal {
+				loc = append(loc, i)
+			} else {
+				rem = append(rem, i)
+			}
+			wv &= wv - 1
+		}
+		mark[wi] = 0
+	}
+	// Merge the two id-sorted runs (equal ids: the local entity first, as
+	// the old (id, index) sort did).
+	a, b := 0, 0
+	for a < len(loc) || b < len(rem) {
+		if b >= len(rem) || (a < len(loc) && s.ents[loc[a]].ID <= s.cl.remote[int(rem[b])-nLocal].ID) {
+			idxs = append(idxs, loc[a])
+			a++
+		} else {
+			idxs = append(idxs, rem[b])
+			b++
+		}
+	}
+	sc.loc, sc.rem, sc.idxs = loc, rem, idxs
+}
+
+// sendSnapshot computes one client's interest set and sends a delta
+// snapshot (run by a snapshot worker; see the file comment for what it may
+// touch).
+func (s *Server) sendSnapshot(sc *snapScratch, sess *session, tick uint32, serverTime float64) {
+	e := sess.ent
+	px, pz := e.Move.Pos.X, e.Move.Pos.Z
+	s.gatherInterest(sc, e)
+
+	var lastEnts []snapshot.EntState
+	if last := sess.enc.Last(); last != nil {
+		lastEnts = last.Ents
+	}
+	kp := 0 // cursor into lastEnts (both sorted by id)
+	var near, mid, far, party int
+	sc.cands = sc.cands[:0]
+	cw := s.caves()
+	for _, i := range sc.idxs {
+		o := s.entAt(i)
+		// Personal pickups: only their owner sees them (WP09).
+		if o.Kind == proto.EntityKindPickup && o.Owner != e.ID {
+			continue
+		}
+		// Underground interest clipping (spec 9, WP09 caves.go).
+		if cw != nil && !(e.PartyID != 0 && o.PartyID == e.PartyID) && !s.caveVisible(cw, e, o) {
+			continue
+		}
+		dx, dz := o.Move.Pos.X-px, o.Move.Pos.Z-pz
+		d := math.Sqrt(dx*dx + dz*dz)
+		for kp < len(lastEnts) && lastEnts[kp].ID < o.ID {
+			kp++
+		}
+		known := kp < len(lastEnts) && lastEnts[kp].ID == o.ID
+		sameParty := e.PartyID != 0 && o.PartyID == e.PartyID
+		r := aoi.Classify(d, o.Kind, known, sameParty)
+		switch r {
+		case aoi.None:
+			continue
+		case aoi.Near:
+			near++
+		case aoi.Mid:
+			mid++
+		case aoi.Far:
+			far++
+		case aoi.Party:
+			party++
+		}
+		sc.cands = append(sc.cands, snapshot.Candidate{State: &o.q, Due: aoi.Due(r, tick, o.ID), Weight: priorityWeight(d, sameParty)})
+	}
+
+	st := e.selfState(s.cfg.Ground)
+	snap := sess.enc.Build(tick, sess.ackTick, e.LastSeq, serverTime, &st, sc.cands)
+	if bs := sess.enc.Stats(); bs != sess.budget {
+		s.m.recordsSent.Add(int64(bs.Sent - sess.budget.Sent))
+		s.m.recordsDeferred.Add(int64(bs.Deferred - sess.budget.Deferred))
+		sess.budget = bs
+	}
+	sc.w.Reset()
+	proto.WriteMessage(&sc.w, snap)
+	buf := make([]byte, len(sc.w.B))
+	copy(buf, sc.w.B)
+	if !sess.conn.SendUnreliable(buf) {
+		s.m.snapshotsShed.Add(1)
+	}
+	sc.sum.near += int64(near)
+	sc.sum.mid += int64(mid)
+	sc.sum.far += int64(far)
+	sc.sum.party += int64(party)
+	sc.sum.bytes += int64(len(buf))
+	sc.sum.maxSet = max(sc.sum.maxSet, int64(near+mid+far+party))
+}

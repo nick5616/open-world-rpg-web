@@ -2,7 +2,6 @@ package snapshot
 
 import (
 	"errors"
-	"slices"
 	"sort"
 
 	"lodestone/server/pkg/proto"
@@ -44,12 +43,27 @@ type Encoder struct {
 	stats             BudgetStats
 }
 
-// pendingRec is one record the client could get this tick.
+// pendingRec is one record the client could get this tick. WP19: the record
+// itself (Diff + RecordSize) is computed only when the selection reaches it
+// (fill), so the many records a dense crowd defers cost no diffing.
 type pendingRec struct {
+	id   uint32
+	base *EntState // nil: first sight
+	cur  *EntState
 	rec  proto.EntityRecord
 	size int
 	prio float64
+	made bool
 	send bool
+}
+
+// fill computes the record and its size once.
+func (w *pendingRec) fill() {
+	if !w.made {
+		w.rec = Diff(w.base, w.cur)
+		w.size = RecordSize(&w.rec)
+		w.made = true
+	}
 }
 
 type prioIdx struct {
@@ -232,29 +246,23 @@ func (e *Encoder) Build(tick, ackTick, ackSeq uint32, serverTime float64, self *
 func (e *Encoder) buildBudgeted(s *proto.Snapshot, out *Frame, bents []EntState, interest []Candidate) {
 	work := e.work[:0]
 	acc := accCursor{ids: e.accIDs, vals: e.accVals}
-	total := 0
 
 	i, j := 0, 0
 	for i < len(interest) || j < len(bents) {
 		switch {
 		case j >= len(bents) || (i < len(interest) && interest[i].State.ID < bents[j].ID):
 			c := &interest[i]
-			rec := Diff(nil, c.State)
-			w := pendingRec{rec: rec, size: RecordSize(&rec), prio: acc.get(c.State.ID) + weightOf(c)}
-			total += w.size
-			work = append(work, w)
+			work = append(work, pendingRec{id: c.State.ID, cur: c.State, prio: acc.get(c.State.ID) + weightOf(c)})
 			i++
 		case i >= len(interest) || bents[j].ID < interest[i].State.ID:
 			s.Removed = append(s.Removed, bents[j].ID)
 			j++
 		default:
 			c := &interest[i]
-			if c.Due {
-				if rec := Diff(&bents[j], c.State); rec.Mask != 0 {
-					w := pendingRec{rec: rec, size: RecordSize(&rec), prio: acc.get(c.State.ID) + weightOf(c)}
-					total += w.size
-					work = append(work, w)
-				}
+			// Changed iff Diff's mask would be non-zero: EntState is exactly
+			// the diffed fields plus the (equal) id.
+			if c.Due && bents[j] != *c.State {
+				work = append(work, pendingRec{id: c.State.ID, base: &bents[j], cur: c.State, prio: acc.get(c.State.ID) + weightOf(c)})
 			}
 			i++
 			j++
@@ -268,42 +276,36 @@ func (e *Encoder) buildBudgeted(s *proto.Snapshot, out *Frame, bents []EntState,
 	fixed := snapshotFixed(&s.Self, len(s.Removed)) + e.overhead
 	avail := e.tokens - float64(fixed)
 	spent := 0
-	if float64(total) <= avail {
-		// Fast path (everything but dense crowds): it all fits, no ordering.
-		for k := range work {
-			work[k].send = true
-		}
-		spent = total
-	} else {
-		e.order = e.order[:0]
-		for k := range work {
-			e.order = append(e.order, prioIdx{prio: work[k].prio, k: int32(k)})
-		}
-		slices.SortFunc(e.order, func(a, b prioIdx) int {
-			switch {
-			case a.prio > b.prio:
-				return -1
-			case a.prio < b.prio:
-				return 1
-			}
-			return int(a.k - b.k) // ties: lower id first, deterministic
-		})
-		for _, o := range e.order {
-			w := &work[o.k]
-			if float64(spent+w.size) > avail {
-				break // strict priority: the top record waits for allowance rather than being overtaken
-			}
-			w.send = true
-			spent += w.size
-		}
-		// A record bigger than any tick's allowance (a long name on first
-		// sight with a tiny budget) still goes out once the bucket is full.
-		if spent == 0 && len(e.order) > 0 && e.tokens >= e.burst-1e-9 {
-			w := &work[e.order[0].k]
-			w.send = true
-			spent = w.size
-		}
+	// Strict priority (highest accumulated priority first, ties to the lower
+	// id): records go out in that order until the first that does not fit,
+	// which waits for allowance rather than being overtaken. WP19: a binary
+	// heap pops only as many records as the allowance reaches (a few dozen
+	// of a dense crowd's hundreds) instead of sorting them all; pops come
+	// out in exactly the sorted order, and when everything fits this sends
+	// everything, as the old "it all fits" fast path did.
+	h := e.order[:0]
+	for k := range work {
+		h = append(h, prioIdx{prio: work[k].prio, k: int32(k)})
 	}
+	heapInit(h)
+	for len(h) > 0 {
+		w := &work[h[0].k]
+		w.fill()
+		if float64(spent+w.size) > avail {
+			break
+		}
+		w.send = true
+		spent += w.size
+		h = heapPop(h)
+	}
+	// A record bigger than any tick's allowance (a long name on first
+	// sight with a tiny budget) still goes out once the bucket is full.
+	if spent == 0 && len(h) > 0 && e.tokens >= e.burst-1e-9 {
+		w := &work[h[0].k]
+		w.send = true
+		spent = w.size
+	}
+	e.order = h[:0]
 	e.tokens -= float64(fixed + spent)
 
 	// Second pass: write records and the frame in id order, and rebuild the
@@ -329,7 +331,7 @@ func (e *Encoder) buildBudgeted(s *proto.Snapshot, out *Frame, bents []EntState,
 				out.Ents = append(out.Ents, *interest[i].State)
 				e.stats.Sent++
 			} else {
-				keep(w.rec.ID, w.prio)
+				keep(w.id, w.prio)
 				e.stats.Deferred++
 			}
 			k++
@@ -339,7 +341,7 @@ func (e *Encoder) buildBudgeted(s *proto.Snapshot, out *Frame, bents []EntState,
 		default:
 			c, b := &interest[i], &bents[j]
 			switch {
-			case k < len(work) && work[k].rec.ID == c.State.ID:
+			case k < len(work) && work[k].id == c.State.ID:
 				w := &work[k]
 				if w.send {
 					s.Entities = append(s.Entities, w.rec)
@@ -347,7 +349,7 @@ func (e *Encoder) buildBudgeted(s *proto.Snapshot, out *Frame, bents []EntState,
 					e.stats.Sent++
 				} else {
 					out.Ents = append(out.Ents, *b)
-					keep(w.rec.ID, w.prio)
+					keep(w.id, w.prio)
 					e.stats.Deferred++
 				}
 				k++
@@ -364,6 +366,47 @@ func (e *Encoder) buildBudgeted(s *proto.Snapshot, out *Frame, bents []EntState,
 	e.accIDs, e.accIDs2 = newIDs, e.accIDs
 	e.accVals, e.accVals2 = newVals, e.accVals
 	e.work = work
+}
+
+// prioBefore is the send order: higher priority first, ties to the lower
+// work index (= lower entity id, since work is built in id order).
+func prioBefore(a, b prioIdx) bool {
+	return a.prio > b.prio || (a.prio == b.prio && a.k < b.k)
+}
+
+// heapInit makes h a binary heap with the first record to send at h[0].
+func heapInit(h []prioIdx) {
+	for i := len(h)/2 - 1; i >= 0; i-- {
+		heapDown(h, i)
+	}
+}
+
+// heapPop removes h[0] and returns the shrunk heap.
+func heapPop(h []prioIdx) []prioIdx {
+	n := len(h) - 1
+	h[0] = h[n]
+	h = h[:n]
+	heapDown(h, 0)
+	return h
+}
+
+func heapDown(h []prioIdx, i int) {
+	n := len(h)
+	for {
+		l := 2*i + 1
+		if l >= n {
+			return
+		}
+		m := l
+		if r := l + 1; r < n && prioBefore(h[r], h[l]) {
+			m = r
+		}
+		if !prioBefore(h[m], h[i]) {
+			return
+		}
+		h[i], h[m] = h[m], h[i]
+		i = m
+	}
 }
 
 func weightOf(c *Candidate) float64 {
