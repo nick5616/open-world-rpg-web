@@ -1,0 +1,49 @@
+# Edge proxy on the game VM (WP18). Browsers on the https Netlify page may
+# only open wss:// sockets, so Caddy terminates TLS (automatic Let's Encrypt
+# for LODESTONE_SITE_ADDRESS, by default <ip-with-dashes>.sslip.io, which
+# needs no domain) and forwards by path to the plain-HTTP services:
+#
+#   /zone/ws    -> zone:8092/ws     (binary game protocol, WebSocket fallback)
+#   /social/ws  -> social:8093/ws   (chat, parties, presence)
+#   /livekit/*  -> livekit:7880/*   (voice signaling; media goes direct, UDP 7882)
+#
+# Nothing else is exposed: /metrics and /debug/* stay on the VPC-only ports.
+# WebTransport does not pass through here: the zone serves HTTP/3 itself on
+# UDP 4433 (a QUIC proxy would add a hop to every datagram).
+{
+	servers {
+		metrics
+	}
+}
+
+# Prometheus scrape target for Caddy's own metrics; not published outside
+# the compose network.
+:9180 {
+	metrics /metrics
+}
+
+{$LODESTONE_SITE_ADDRESS} {
+	@zone path /zone/ws
+	handle @zone {
+		uri strip_prefix /zone
+		reverse_proxy zone:8092
+	}
+	@social path /social/ws
+	handle @social {
+		uri strip_prefix /social
+		reverse_proxy social:8093
+	}
+	handle_path /livekit/* {
+		reverse_proxy livekit:7880
+	}
+	handle /healthz {
+		respond "ok" 200
+	}
+	handle {
+		respond "Lodestone game server. Play at the client URL." 404
+	}
+	log {
+		output stdout
+		format json
+	}
+}

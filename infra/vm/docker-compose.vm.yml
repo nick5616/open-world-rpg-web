@@ -1,0 +1,167 @@
+# The game VM (spec 13: "one small GCE VM running containers, started on
+# demand"): zone, social, LiveKit, Postgres, Redis and Caddy (TLS for the
+# browser's wss:// connections). The same file runs in the local rehearsal
+# (`node infra/deploy.mjs --target local`, which layers
+# infra/rehearsal/docker-compose.rehearsal.yml on top), so what is rehearsed
+# is what is deployed.
+#
+# Configuration comes only from environment variables (spec 13 rule 5). On
+# the VM, infra/vm/startup.sh writes /opt/lodestone/.env from instance
+# metadata and Secret Manager; compose reads it both for ${...} below and,
+# through env_file, inside the containers.
+#
+# Published ports, and who may reach them (GCE firewall, set by deploy.mjs):
+#   80/tcp, 443/tcp+udp   Caddy: wss://HOST/zone/ws, /social/ws, /livekit   public
+#   4433/udp              zone WebTransport (HTTP/3)                         public
+#   7881/tcp, 7882/udp    LiveKit media (TCP fallback, UDP mux)              public
+#   5432, 6379            Postgres, Redis   only the Cloud Run services (VPC, network tag)
+#   8092, 8093            zone/social /healthz + /metrics (director readiness, Prometheus)  VPC only
+name: lodestone-vm
+
+x-service-env: &service-env
+  env_file: [.env]
+  restart: unless-stopped
+  logging:
+    driver: json-file
+    options: { max-size: "20m", max-file: "5" }
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    <<: *service-env
+    environment:
+      POSTGRES_USER: lodestone
+      POSTGRES_DB: lodestone
+      # POSTGRES_PASSWORD comes from .env (Secret Manager lodestone-pg-password).
+    ports:
+      - "${LODESTONE_PG_PUBLISH:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lodestone -d lodestone"]
+      interval: 2s
+      timeout: 3s
+      retries: 60
+
+  redis:
+    image: redis:7-alpine
+    <<: *service-env
+    # AOF on (decision 0004: local-save counters should survive a restart;
+    # the VM stops every time nobody plays). Everything else in Redis is
+    # ephemeral by design (spec 11) and rebuilt by heartbeats.
+    command: ["redis-server", "--appendonly", "yes", "--appendfsync", "everysec", "--save", ""]
+    ports:
+      - "${LODESTONE_REDIS_PUBLISH:-6379}:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 60
+
+  migrate:
+    image: ${LODESTONE_REGISTRY:-lodestone}/zone:${LODESTONE_TAG:-latest}
+    env_file: [.env]
+    entrypoint: ["/usr/local/bin/migrate"]
+    environment:
+      LODESTONE_PG_URL: postgres://lodestone:${POSTGRES_PASSWORD}@postgres:5432/lodestone?sslmode=disable
+    depends_on:
+      postgres: { condition: service_healthy }
+    restart: "no"
+
+  # Mint the official world before the zone looks it up. The account service
+  # does the same on its first start, but it lives on Cloud Run and may not
+  # have run yet on a fresh deploy; without a row the zone would serve the
+  # dev world and the director would never find a zone. No-op once minted.
+  mint:
+    image: ${LODESTONE_REGISTRY:-lodestone}/zone:${LODESTONE_TAG:-latest}
+    env_file: [.env]
+    entrypoint: ["/usr/local/bin/mintworld", "-official"]
+    environment:
+      LODESTONE_PG_URL: postgres://lodestone:${POSTGRES_PASSWORD}@postgres:5432/lodestone?sslmode=disable
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+    restart: "no"
+
+  zone:
+    image: ${LODESTONE_REGISTRY:-lodestone}/zone:${LODESTONE_TAG:-latest}
+    <<: *service-env
+    environment:
+      LODESTONE_PG_URL: postgres://lodestone:${POSTGRES_PASSWORD}@postgres:5432/lodestone?sslmode=disable
+      LODESTONE_REDIS_ADDR: redis:6379
+      LODESTONE_ZONE_ID: ${LODESTONE_ZONE_ID:-zone-1}
+      LODESTONE_ZONE_PUBLIC_URL: ${LODESTONE_PUBLIC_WS_SCHEME:-wss}://${LODESTONE_GAME_HOST}${LODESTONE_PUBLIC_HTTP_PORT_SUFFIX:-}/zone/ws
+      LODESTONE_ZONE_WT_ADDR: :${LODESTONE_ZONE_WT_PORT:-4433}
+      LODESTONE_ZONE_WT_PUBLIC_URL: https://${LODESTONE_GAME_HOST}:${LODESTONE_ZONE_WT_PUBLISH:-4433}/wt
+    ports:
+      - "${LODESTONE_ZONE_HTTP_PUBLISH:-8092}:8092/tcp"
+      - "${LODESTONE_PUBLIC_BIND:-0.0.0.0}:${LODESTONE_ZONE_WT_PUBLISH:-4433}:${LODESTONE_ZONE_WT_PORT:-4433}/udp"
+    depends_on:
+      mint: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+    stop_grace_period: 20s   # kick, checkpoint, flush the write-behind queue
+
+  social:
+    image: ${LODESTONE_REGISTRY:-lodestone}/social:${LODESTONE_TAG:-latest}
+    <<: *service-env
+    environment:
+      LODESTONE_PG_URL: postgres://lodestone:${POSTGRES_PASSWORD}@postgres:5432/lodestone?sslmode=disable
+      LODESTONE_REDIS_ADDR: redis:6379
+      LODESTONE_LIVEKIT_URL: ${LODESTONE_PUBLIC_WS_SCHEME:-wss}://${LODESTONE_GAME_HOST}${LODESTONE_PUBLIC_HTTP_PORT_SUFFIX:-}/livekit
+    ports:
+      - "${LODESTONE_SOCIAL_HTTP_PUBLISH:-8093}:8093/tcp"
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+    stop_grace_period: 15s
+
+  livekit:
+    image: livekit/livekit-server:v1.8
+    <<: *service-env
+    # Keys from .env (Secret Manager). One UDP port (mux) keeps the firewall
+    # to a single rule; TCP 7881 is the fallback for UDP-hostile networks.
+    environment:
+      LIVEKIT_KEYS: "${LODESTONE_LIVEKIT_KEY}: ${LODESTONE_LIVEKIT_SECRET}"
+    command: ["--bind", "0.0.0.0", "--config-body", "port: 7880\nrtc:\n  tcp_port: 7881\n  udp_port: ${LODESTONE_LIVEKIT_UDP_PORT:-7882}\n  use_external_ip: ${LODESTONE_LIVEKIT_EXTERNAL_IP:-true}\n"]
+    ports:
+      - "${LODESTONE_LIVEKIT_TCP_PUBLISH:-7881}:7881/tcp"
+      - "${LODESTONE_LIVEKIT_UDP_PUBLISH:-7882}:${LODESTONE_LIVEKIT_UDP_PORT:-7882}/udp"
+
+  caddy:
+    image: caddy:2.10-alpine
+    <<: *service-env
+    environment:
+      LODESTONE_SITE_ADDRESS: ${LODESTONE_SITE_ADDRESS:-${LODESTONE_GAME_HOST}}
+    ports:
+      - "${LODESTONE_PUBLIC_BIND:-0.0.0.0}:${LODESTONE_CADDY_HTTP_PUBLISH:-80}:80/tcp"
+      - "${LODESTONE_CADDY_HTTPS_PUBLISH:-443}:443/tcp"
+      - "${LODESTONE_CADDY_HTTPS_PUBLISH:-443}:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddydata:/data
+    depends_on: [zone, social, livekit]
+
+  # Optional: `docker compose --profile obs up -d prometheus` on the VM, then
+  # `gcloud compute ssh lodestone-game --tunnel-through-iap -- -L 9390:localhost:9390`.
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    profiles: [obs]
+    restart: unless-stopped
+    command: ["--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.retention.time=15d", "--web.listen-address=:9390"]
+    ports:
+      - "127.0.0.1:9390:9390"
+    volumes:
+      - ./prometheus.vm.yml:/etc/prometheus/prometheus.yml:ro
+      - ./metrics-token:/etc/prometheus/metrics-token:ro
+      - promdata:/prometheus
+
+# Named volumes. On the VM, startup.sh points Docker's data-root at the
+# persistent data disk (/mnt/lodestone-data/docker, auto-delete off), so
+# these survive stop/start and even recreating the VM. In the rehearsal they
+# belong to the rehearsal's own compose project and are removed with it.
+volumes:
+  pgdata:
+  redisdata:
+  caddydata:
+  promdata:
