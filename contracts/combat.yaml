@@ -70,7 +70,7 @@ weapons:
   # moves: light = primary button; heavy = secondary; charged = release of a
   # held secondary (bow draw, spear charge); sprint/air/plunge variants are
   # picked automatically from movement (spec 8 "mobility in combat").
-  # Light startups sit a step or two under LIGHT_STARTUP_MAX_MS on purpose:
+  # Light startups are 67 ms (4 steps), two steps under LIGHT_STARTUP_MAX_MS:
   # a press waits up to one rendered frame for the next 60 Hz step, and the
   # MEASURED press-to-first-hit-frame time (the client probe) must still be
   # <= 100 ms at 60 fps.
@@ -83,7 +83,7 @@ weapons:
     moves:
       sword_slash_1: {id: 101, kind: light, combo: 0, startupMs: 67, activeMs: 100, recoveryMs: 200, damage: 18, reach: 2.6, arc: 110}
       sword_slash_2: {id: 102, kind: light, combo: 1, startupMs: 67, activeMs: 100, recoveryMs: 200, damage: 20, reach: 2.6, arc: 110}
-      sword_slash_3: {id: 103, kind: light, combo: 2, startupMs: 83, activeMs: 117, recoveryMs: 250, damage: 30, reach: 2.8, arc: 140}
+      sword_slash_3: {id: 103, kind: light, combo: 2, startupMs: 67, activeMs: 117, recoveryMs: 250, damage: 30, reach: 2.8, arc: 140}
       sword_sprint: {id: 104, kind: sprint, startupMs: 83, activeMs: 117, recoveryMs: 233, damage: 22, reach: 3.2, arc: 90}
       sword_air: {id: 105, kind: air, startupMs: 67, activeMs: 117, recoveryMs: 200, damage: 20, reach: 2.6, arc: 120}
       sword_plunge: {id: 106, kind: plunge, startupMs: 50, activeMs: 133, recoveryMs: 250, damage: 30, reach: 3.0, arc: 360, perMeter: 3, maxBonus: 60}
@@ -95,8 +95,8 @@ weapons:
     spellPower: 1.0
     manaRegen: 1.0
     moves:
-      spear_thrust: {id: 201, kind: light, combo: 0, startupMs: 83, activeMs: 83, recoveryMs: 233, damage: 24, reach: 3.6, arc: 30}
-      spear_sweep: {id: 202, kind: light, combo: 1, startupMs: 83, activeMs: 117, recoveryMs: 250, damage: 20, reach: 3.2, arc: 120}
+      spear_thrust: {id: 201, kind: light, combo: 0, startupMs: 67, activeMs: 83, recoveryMs: 233, damage: 24, reach: 3.6, arc: 30}
+      spear_sweep: {id: 202, kind: light, combo: 1, startupMs: 67, activeMs: 117, recoveryMs: 250, damage: 20, reach: 3.2, arc: 120}
       spear_charged: {id: 203, kind: charged, startupMs: 50, activeMs: 133, recoveryMs: 250, damage: 24, reach: 4.4, arc: 30, chargeMs: 600, chargeMult: 1.8}
       spear_sprint: {id: 204, kind: sprint, startupMs: 83, activeMs: 117, recoveryMs: 250, damage: 26, reach: 4.0, arc: 30}
       spear_air: {id: 205, kind: air, startupMs: 67, activeMs: 117, recoveryMs: 200, damage: 22, reach: 3.4, arc: 60}
@@ -110,7 +110,7 @@ weapons:
       # light: tap to loose a quick arrow (draw = startup); charged: hold the
       # secondary to draw up to chargeMs, release to loose (damage and speed
       # scale linearly with the draw).
-      bow_quick: {id: 301, kind: light, startupMs: 83, activeMs: 17, recoveryMs: 200, damage: 14, reach: 45, arc: 0, speed: 45, gravity: 9, radius: 0.25}
+      bow_quick: {id: 301, kind: light, startupMs: 67, activeMs: 17, recoveryMs: 200, damage: 14, reach: 45, arc: 0, speed: 45, gravity: 9, radius: 0.25}
       bow_charged: {id: 302, kind: charged, startupMs: 17, activeMs: 17, recoveryMs: 233, damage: 14, reach: 90, arc: 0, speed: 45, gravity: 9, radius: 0.25, chargeMs: 1000, chargeMult: 2.4, chargeSpeed: 75}
       bow_rain: {id: 303, kind: heavy, startupMs: 100, activeMs: 17, recoveryMs: 250, damage: 12, reach: 30, arc: 0, radius: 4, technique: arrow_rain, hits: 4, cooldownMs: 8000}
     arrows:

@@ -181,8 +181,8 @@ pub const LIGHT_RECOVERY_MAX_MS: i32 = 250;
 pub const INPUT_BUFFER_MS: i32 = 150;
 /// Spec 8 (40-80 ms): local-only freeze of the weapon and the struck enemy on a predicted hit. Never pauses the world.
 pub const HITSTOP_MS: i32 = 60;
-/// Spec 8 (at most 400 ms): time from pressing use to the effect; movement is unaffected meanwhile.
-pub const CONSUMABLE_USE_MS: i32 = 350;
+/// Spec 8 (at most 400 ms): time from the use step to the effect on the zone; press-to-effect adds a step, a tick and the event (measured ~330-360 ms). Movement is unaffected meanwhile.
+pub const CONSUMABLE_USE_MS: i32 = 300;
 /// Spec 8: every enemy attack telegraphs at least this long.
 pub const ENEMY_WINDUP_MIN_MS: i32 = 300;
 /// Spec 8: and never longer than this.

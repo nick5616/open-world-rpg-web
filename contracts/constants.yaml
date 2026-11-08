@@ -121,7 +121,7 @@ groups:
     LIGHT_RECOVERY_MAX_MS: {type: i32, value: 250, doc: "Spec 8: recovery after a light attack's hit frames at most this; a dodge cancels it."}
     INPUT_BUFFER_MS: {type: i32, value: 150, doc: "Spec 8: presses during an animation are buffered this long and fire as soon as the move allows."}
     HITSTOP_MS: {type: i32, value: 60, doc: "Spec 8 (40-80 ms): local-only freeze of the weapon and the struck enemy on a predicted hit. Never pauses the world."}
-    CONSUMABLE_USE_MS: {type: i32, value: 350, doc: "Spec 8 (at most 400 ms): time from pressing use to the effect; movement is unaffected meanwhile."}
+    CONSUMABLE_USE_MS: {type: i32, value: 300, doc: "Spec 8 (at most 400 ms): time from the use step to the effect on the zone; press-to-effect adds a step, a tick and the event (measured ~330-360 ms). Movement is unaffected meanwhile."}
     ENEMY_WINDUP_MIN_MS: {type: i32, value: 300, doc: "Spec 8: every enemy attack telegraphs at least this long."}
     ENEMY_WINDUP_MAX_MS: {type: i32, value: 600, doc: "Spec 8: and never longer than this."}
     DODGE_IFRAME_STEPS: {type: i32, value: 9, doc: "Spec 8: 150 ms of invulnerability (9 steps at 60 Hz) from the dodge's first step."}
