@@ -16,6 +16,12 @@ describe('golden table shape', () => {
     for (const b of BIOMES) expect(chunks.filter((c) => c.tag === `biome:${b}`).length).toBeGreaterThanOrEqual(6);
     for (const w of golden.worlds) expect(w.atlas.gzipBytes).toBeLessThan(2 * 1024 * 1024);
   });
+
+  it('covers cave cells in every depth band, mouths and sinkholes (WP09)', () => {
+    const cells = golden.worlds.flatMap((w) => w.caves?.cells ?? []);
+    expect(cells.length).toBeGreaterThanOrEqual(100);
+    for (const tag of ['mouth', 'sinkhole', 'band:shallow', 'band:mid', 'band:deep', 'deepest', 'empty']) expect(cells.filter((c) => c.tag === tag).length).toBeGreaterThanOrEqual(2);
+  });
 });
 
 describe.skipIf(!hasWasm)('golden hashes (Node host)', () => {
@@ -27,8 +33,11 @@ describe.skipIf(!hasWasm)('golden hashes (Node host)', () => {
       `[golden:node] ${r.worlds} worlds, ${r.chunks} chunks, ${r.collisions} collision points, ${r.failures.length} failures; ` +
         `atlas ${r.atlasMs.map((m) => m.toFixed(0)).join('/')} ms; lod0 chunk mean ${s.mean.toFixed(2)} p95 ${s.p95.toFixed(2)} max ${s.max.toFixed(2)} ms`,
     );
+    const c = stats(r.caveMs);
+    console.log(`[golden:node] caves: ${r.caveCells} cells, ${r.caveQueries} collision/system queries, 0 failures expected; cave_build mean ${c.mean.toFixed(2)} p95 ${c.p95.toFixed(2)} max ${c.max.toFixed(2)} ms`);
     expect(r.failures).toEqual([]);
     expect(r.chunks).toBeGreaterThanOrEqual(200);
+    expect(r.caveCells).toBeGreaterThanOrEqual(100);
   }, 120_000);
 
   it('collision queries are cheap enough for server movement validation', async () => {

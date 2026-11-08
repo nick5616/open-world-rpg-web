@@ -12,6 +12,8 @@ import { chromium } from 'playwright';
 import { createServer } from 'vite';
 
 const BUDGET_MS = 8;
+// spec 5: a cave volume cell in under 12 ms in a browser worker (WP09).
+const CAVE_BUDGET_MS = 12;
 const here = path.dirname(fileURLToPath(import.meta.url));
 const arg = (name, def) => {
   const i = process.argv.indexOf(name);
@@ -49,6 +51,10 @@ console.log(
 console.log(
   `[golden:chromium] detail chunk (LOD 0, ${b.n} chunks, worker, crossOriginIsolated=${result.crossOriginIsolated}): mean ${b.mean.toFixed(2)} ms, p50 ${b.p50.toFixed(2)}, p95 ${b.p95.toFixed(2)}, max ${b.max.toFixed(2)} (budget ${BUDGET_MS} ms); atlas ${result.bench.atlasMs.toFixed(0)} ms; ${result.bench.scatterPerChunk.toFixed(0)} scatter/chunk`,
 );
+const cb = result.caveBench;
+console.log(
+  `[golden:chromium] caves: ${result.caveCells} golden cells, ${result.caveQueries} collision/system queries; cave_build in worker over ${cb.cells} cells (${cb.withMesh} with mesh): mean ${cb.ms.mean.toFixed(2)} ms, p95 ${cb.ms.p95.toFixed(2)}, max ${cb.ms.max.toFixed(2)} (budget ${CAVE_BUDGET_MS} ms); cave graph (all systems, once) ${cb.graphMs.toFixed(1)} ms`,
+);
 for (const f of result.failures.slice(0, 20)) console.error('  ' + f);
 if (jsonOut) fs.writeFileSync(jsonOut, JSON.stringify(result, null, 2) + '\n');
-process.exit(result.failures.length || b.p95 > BUDGET_MS ? 1 : 0);
+process.exit(result.failures.length || b.p95 > BUDGET_MS || cb.ms.max > CAVE_BUDGET_MS ? 1 : 0);
