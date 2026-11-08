@@ -69,6 +69,10 @@ type World struct {
 	ID         string
 	Seed       uint64
 	GenVersion string
+	// Spec and AtlasHash pin the terrain (WP07): the zone rebuilds the atlas
+	// from Spec and refuses to serve if it doesn't hash to AtlasHash.
+	Spec      []byte
+	AtlasHash string
 }
 
 // OfficialWorld returns the world WP04's account service marks official
@@ -78,7 +82,8 @@ type World struct {
 func (p *PGStore) OfficialWorld(ctx context.Context) (World, bool, error) {
 	var w World
 	var seed string
-	err := p.Pool.QueryRow(ctx, `SELECT id::text, seed::text, gen_version FROM worlds WHERE official ORDER BY created_at LIMIT 1`).Scan(&w.ID, &seed, &w.GenVersion)
+	err := p.Pool.QueryRow(ctx, `SELECT id::text, seed::text, gen_version, spec::text, atlas_hash FROM worlds WHERE official ORDER BY created_at LIMIT 1`).
+		Scan(&w.ID, &seed, &w.GenVersion, &w.Spec, &w.AtlasHash)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return World{}, false, nil
 	}

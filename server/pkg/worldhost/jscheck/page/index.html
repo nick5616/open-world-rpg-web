@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Height Check</title>
+  </head>
+  <body>
+    <pre id="out">WP07 height comparison host (driven by browser.mjs)</pre>
+    <script type="module">
+      // The check runs in a Web Worker, where the client generates terrain.
+      window.runHeights = (input, wasmUrl) =>
+        new Promise((resolve) => {
+          const worker = new Worker(new URL('./worker.mjs', import.meta.url), { type: 'module' });
+          worker.onmessage = (e) => resolve(e.data);
+          worker.onerror = (e) => resolve({ error: String(e.message ?? e) });
+          worker.postMessage({ input, wasmUrl });
+        });
+    </script>
+  </body>
+</html>

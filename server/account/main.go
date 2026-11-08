@@ -24,6 +24,8 @@ import (
 	"lodestone/server/pkg/env"
 	"lodestone/server/pkg/localsave"
 	"lodestone/server/pkg/svc"
+	"lodestone/server/pkg/worldhost"
+	"lodestone/server/pkg/worldhost/mintdb"
 )
 
 // DefaultWorldSeed seeds the official world until the creator tool mints
@@ -133,17 +135,39 @@ func providers(s string) map[string]string {
 	return m
 }
 
-// seedWorld makes sure one official world exists. The spec JSON and
-// gen_version are placeholders until worldgen's spec_from_seed is wired in
-// (WP01 merge); see docs/STATUS.md.
+// seedWorld makes sure one official world exists and is minted: spec from
+// worldgen's spec_from_seed, the wasm's gen_version and the atlas hash
+// (WP07, server/pkg/worldhost/mintdb; a placeholder row from before is
+// upgraded in place, keeping its seed). Without a built worldgen.wasm it
+// falls back to WP04's placeholder row, which zones open from the seed
+// alone.
 func seedWorld(ctx context.Context, log *slog.Logger, db accountapi.DB) error {
 	seed := env.Str("LODESTONE_WORLD_SEED", DefaultWorldSeed)
 	if _, err := strconv.ParseUint(seed, 10, 64); err != nil {
 		return fmt.Errorf("LODESTONE_WORLD_SEED must be a uint64: %w", err)
 	}
-	spec, _ := json.Marshal(map[string]any{"placeholder": true, "seed": seed, "note": "replace with worldgen spec_from_seed (WP01)"})
+	name := env.Str("LODESTONE_WORLD_NAME", "Lodestone")
+	var mod *worldhost.Module
+	load := func() (*worldhost.Module, error) {
+		var err error
+		mod, err = worldhost.LoadFromEnv(ctx)
+		return mod, err
+	}
+	w, action, err := mintdb.EnsureOfficial(ctx, db, load, accountapi.World{Name: name, Seed: seed})
+	if mod != nil {
+		_ = mod.Close(ctx) // the account service needs no wasm after minting
+	}
+	if err == nil {
+		log.Info("official world", "id", w.ID, "seed", w.Seed, "genVersion", w.GenVersion, "atlasHash", w.AtlasHash, "action", action)
+		return nil
+	}
+	if !errors.Is(err, worldhost.ErrNoWasm) {
+		return err
+	}
+	log.Warn("worldgen.wasm not built: official world stays a placeholder (zones derive it from the seed); run `npm run build:wasm` and restart to mint it", "err", err)
+	spec, _ := json.Marshal(map[string]any{"placeholder": true, "seed": seed, "note": "minted from spec_from_seed when worldgen.wasm is available (WP07)"})
 	w, created, err := db.EnsureOfficialWorld(ctx, accountapi.World{
-		Name: env.Str("LODESTONE_WORLD_NAME", "Lodestone"), Seed: seed, Spec: spec,
+		Name: name, Seed: seed, Spec: spec,
 		GenVersion: "placeholder", AtlasHash: "placeholder",
 	})
 	if err != nil {

@@ -128,3 +128,48 @@ Soak: see `tools/bots/README.md`. Evidence: `docs/evidence/wp03-*`.
 `zone_input_frames_total`, `zone_input_frames_dropped_total`,
 `zone_speed_violations_total`, `zone_snapshots_shed_total`,
 `zone_spin_seconds_total`.
+
+## Terrain (WP07)
+
+The zone simulates on the generated world: `terrain.go` (package main) loads
+`worldgen.wasm` (`LODESTONE_WORLDGEN_WASM`, default
+`worldgen/pkg/worldgen.wasm`), opens the world it serves with
+`server/pkg/worldhost` and passes a `worldhost.Terrain` as `Config.Ground`.
+Game-side hooks live in `internal/game/terrain.go` (optional interfaces on
+the ground, so tests and the flat fallback need nothing new in `Config`).
+
+- **Pin.** A minted world row must have the wasm's `gen_version` and its
+  rebuilt atlas must hash to `atlas_hash`, or the zone exits 1 ("refusing to
+  serve this world"). A placeholder row (or `LODESTONE_GEN_VERSION=dev`) is
+  opened from `spec_from_seed(seed)`. Welcome carries the real seed and
+  genVersion (`"1"`); `/debug/zone` adds `spec` and `atlasHash` (bots use them).
+- **No wasm** (not built): flat ground with a loud warning, as in WP03; fatal
+  with `LODESTONE_ZONE_REQUIRE_TERRAIN=1` or `LODESTONE_ENV=production`.
+- **Chunk cache.** Every player re-announces interest twice a second
+  (staggered): 48 m around it plus 3 s of travel at its speed. Ground queries
+  hit cached chunk heights (~25 ns); a miss is a direct `collision_height`
+  call (~3-5 us, same bits) and never waits for generation. Env:
+  `LODESTONE_ZONE_CHUNK_CACHE` (3072 chunks), `LODESTONE_ZONE_CHUNK_WORKERS`
+  (GOMAXPROCS/4, 1-4), `LODESTONE_ZONE_WASM_INSTANCES` (query pool,
+  GOMAXPROCS up to 8). Metrics `zone_terrain_*`, JSON at `GET /debug/terrain`.
+- **Spawns.** Saved positions are respected (lifted onto the ground if below
+  it). New characters (no row, or WP04's creation placeholder
+  `(2048, 0, 2048)`) start on a dry cell within 8 m of the atlas spawn
+  settlement. Dev `?spawn=x,z` is put on the ground.
+- **Validation.** Besides WP03's horizontal bound, `verticalOK` checks each
+  step rises at most one jump step (or onto the ground it snapped to) and
+  never ends below the ground; both hold exactly for `movement.Step`, so this
+  only trips on bugs or unsimulated modes (WP10 must extend it for
+  climb/glide).
+- **Not yet:** slope limits (`WALKABLE_SLOPE_DEG`, `MAX_STEP_UP_M`) are not
+  applied on either side; the client and server stay identical, and WP10
+  adds them to both together with climb/slide.
+- **For client netcode (WP06):** Welcome's position is cm-quantized while the
+  server stands exactly on the ground; a client should take y from its own
+  terrain (`collisionHeight`) at the spawn x/z, as the bots do, or its first
+  steps start a few mm off the ground and reconcile once.
+
+Tests: `internal/game/terrain_test.go` (prediction on terrain to the cm,
+spawns, validation), `zone_terrain_integration_test.go` (zone binary on
+terrain vs a client predicting with its own worldhost; refusal of a wrong
+genVersion). Both skip without the wasm unless `LODESTONE_REQUIRE_WASM=1`.

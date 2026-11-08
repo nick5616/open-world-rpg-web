@@ -64,6 +64,9 @@ func TestZoneProcessEndToEnd(t *testing.T) {
 		"LODESTONE_WORLD_SEED=777",
 		"LODESTONE_GEN_VERSION=itest-gen",
 		"LODESTONE_ZONE_EXIT_AFTER=6s",
+		// Flat ground on purpose (no wasm): this test is about the protocol;
+		// zone_terrain_integration_test.go covers terrain (WP07).
+		"LODESTONE_WORLDGEN_WASM="+filepath.Join(t.TempDir(), "absent.wasm"),
 		// A database that refuses connections: the zone must still serve
 		// (logins fall back to the default spawn, checkpoints retry).
 		"LODESTONE_PG_URL=postgres://x:y@127.0.0.1:1/none?sslmode=disable&connect_timeout=1",

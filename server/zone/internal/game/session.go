@@ -198,18 +198,18 @@ func frameBudget() ratelimit.Bucket { return ratelimit.New(30, 60) }
 
 func (s *Server) spawnFor(c ticket.Claims, hint *movement.Vec3) movement.Vec3 {
 	if hint != nil {
-		return *hint
+		return s.hintSpawn(*hint)
 	}
 	if s.cfg.Store != nil {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 		if p, ok, err := s.cfg.Store.LoadPosition(ctx, c.CharacterID); err == nil && ok {
-			return p
+			return s.savedSpawn(c.CharacterID, p)
 		} else if err != nil {
 			s.log.Warn("load position failed; using default spawn", "character", c.CharacterID, "err", err)
 		}
 	}
-	return defaultSpawn(c.CharacterID)
+	return s.newCharacterSpawn(c.CharacterID)
 }
 
 // readLoop decodes frames, applies rate limits and answers clock pings

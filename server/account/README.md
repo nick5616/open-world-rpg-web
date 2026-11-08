@@ -5,7 +5,7 @@ The account service (spec 4, 11; WP04). Go module `lodestone/server/account`.
 - Sign-in: Firebase Auth ID tokens (Google first), plus a **dev provider** (sign in by username) for local work.
 - Local profiles: browser-generated profiles whose characters live in IndexedDB as signed save blobs; export/import; upgrade into an account.
 - Worlds and characters: world list, character create/list (names unique per world, case-insensitive, across account and local characters).
-- Seeds one official world on startup if none exists.
+- Seeds one official world on startup if none exists, minted with `worldgen.wasm` (WP07: `spec_from_seed`, gen_version, atlas_hash via `server/pkg/worldhost/mintdb`; a placeholder row from before is upgraded in place, keeping its seed; without a built wasm it stays a placeholder and zones derive it from the seed).
 
 Connect tickets come from the **director** (`server/director/README.md`), not from here.
 
@@ -29,6 +29,7 @@ go run ./server/account                  # :8091, dev auth on, dev keys (warns)
 | `LODESTONE_SAVE_PRIVATE_KEY` | dev key + warning | base64 Ed25519 seed that signs local save blobs (the zone needs the same key) |
 | `LODESTONE_SESSION_TTL` | `12h` | Session lifetime |
 | `LODESTONE_WORLD_SEED` / `LODESTONE_WORLD_NAME` | `20261108` / `Lodestone` | Official world seeded on first start |
+| `LODESTONE_WORLDGEN_WASM` | `worldgen/pkg/worldgen.wasm` | Module used to mint the official world (WP07) |
 | `LODESTONE_CORS_ORIGIN` | `*` | CORS origin for the browser client |
 
 Generate production keys with e.g. `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`; the director needs the matching public keys (`LODESTONE_SESSION_PUBLIC_KEY`, `LODESTONE_SAVE_PUBLIC_KEY`).

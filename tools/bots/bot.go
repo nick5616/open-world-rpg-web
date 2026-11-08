@@ -15,6 +15,7 @@ import (
 	"lodestone/server/pkg/snapshot"
 	"lodestone/server/pkg/ticket"
 	"lodestone/server/pkg/transport"
+	"lodestone/server/pkg/worldhost"
 )
 
 // persona picks a movement pattern. Exploring players mostly walk with long
@@ -44,7 +45,8 @@ type botConfig struct {
 	worldM     float64
 	warmup     time.Duration
 	pingPeriod time.Duration
-	ticket     string // use this ticket (e.g. from the director) instead of signing one
+	ticket     string             // use this ticket (e.g. from the director) instead of signing one
+	terrain    *worldhost.Terrain // WP07: shared by all bots (safe for concurrent use); nil = flat
 }
 
 // bot is one headless player: it signs a dev ticket, connects, runs Hello,
@@ -82,6 +84,7 @@ type bot struct {
 	doubleAt    int
 	seq         uint32
 	lastFrame   proto.InputFrame
+	terrainAt   time.Time // next chunk-interest / water check
 
 	// stats (reader goroutine writes under mu)
 	st botStats
@@ -104,6 +107,7 @@ type botStats struct {
 	PredChecks    int       `json:"predChecks"`
 	PredErrMaxCm  int32     `json:"predErrMaxCm"`
 	PredResyncs   int       `json:"predResyncs"`
+	PredMismatch  int       `json:"predMismatches"` // checks differing by >= 1 cm while still exact, i.e. before this bot's first resync (after one, the bot replays from cm-quantized state and 1 cm rounding noise is expected)
 	RTTs          []float64 `json:"-"`
 	RTTp50        float64   `json:"rttP50Ms"`
 	DownKbps      float64   `json:"downKbps"`
@@ -234,7 +238,7 @@ func (b *bot) run(ctx context.Context) {
 			for k := 0; k < framesPerPacket; k++ {
 				f := b.nextFrame()
 				frames = append(frames, f)
-				b.state = movement.StepFrame(b.state, f, movement.Flat{})
+				b.state = movement.StepFrame(b.state, f, b.cfg.ground())
 				clampWorld(&b.state, b.cfg.worldM)
 				b.pred[f.Seq%512], b.predSeq[f.Seq%512] = b.state, f.Seq
 				b.lastFrame = f
@@ -266,13 +270,23 @@ func clampWorld(s *movement.State, worldM float64) {
 // decide updates intent (BotAI-style: decisions on segments, smooth steps).
 func (b *bot) decide(now time.Time) {
 	b.mu.Lock()
-	px, pz := b.state.Pos.X, b.state.Pos.Z
+	px, pz, spd := b.state.Pos.X, b.state.Pos.Z, movement.HorizontalSpeed(b.state)
 	b.mu.Unlock()
 	if now.After(b.segmentEnds) {
 		b.segmentEnds = now.Add(time.Duration(2000+b.rng.Intn(4000)) * time.Millisecond)
 		b.heading += (b.rng.Float64() - 0.5) * math.Pi // turn up to 90 degrees either way
 		b.sprint = b.persona != idler && b.rng.Float64() < 0.2
 		b.idle = b.persona == idler && b.rng.Float64() < 0.7
+	}
+	// Terrain (WP07): keep the shared chunk cache warm around this bot and
+	// turn back from the sea, twice a second (not every packet: a turn
+	// takes a while and re-deciding mid-turn would flap).
+	if b.cfg.terrain != nil && now.After(b.terrainAt) {
+		b.terrainAt = now.Add(500 * time.Millisecond)
+		b.cfg.terrain.Want(px, pz, 48+spd*3)
+		if math.Abs(math.Remainder(b.heading-b.yaw, 2*math.Pi)) < 0.3 {
+			b.avoidWater(px, pz)
+		}
 	}
 	// Steering: clustered bots stay in their disc; spread bots avoid edges.
 	dx, dz := b.cfg.centerX-px, b.cfg.centerZ-pz
@@ -359,6 +373,13 @@ func (b *bot) reader(done chan struct{}) {
 			b.welcomed = true
 			b.st.Connected = true
 			b.state.Pos = movement.Vec3{X: proto.CmToMeters(msg.X), Y: proto.CmToMeters(msg.Y), Z: proto.CmToMeters(msg.Z)}
+			if b.cfg.terrain != nil && b.cfg.ticket == "" {
+				// Dev spawn: x and z are our exact %.2f hint, but Welcome's y is
+				// cm-rounded while the server stands exactly on the ground. Take
+				// y from our own (bit-identical) terrain, or the first steps would
+				// start a few mm off the ground and diverge.
+				b.state.Pos.Y = b.cfg.terrain.HeightAt(b.state.Pos.X, b.state.Pos.Z)
+			}
 		case *proto.Kick:
 			b.st.Kick = fmt.Sprintf("%d %s", msg.Code, msg.Reason)
 		case *proto.ClockPong:
@@ -394,6 +415,9 @@ func (b *bot) checkPrediction(seq uint32, self *proto.SelfState) {
 	p := b.pred[seq%512]
 	e := max(abs32(self.X-proto.MetersToCm(p.Pos.X)), abs32(self.Y-proto.MetersToCm(p.Pos.Y)), abs32(self.Z-proto.MetersToCm(p.Pos.Z)))
 	b.st.PredChecks++
+	if e > 0 && b.st.PredResyncs == 0 {
+		b.st.PredMismatch++
+	}
 	if e > b.st.PredErrMaxCm {
 		b.st.PredErrMaxCm = e
 	}

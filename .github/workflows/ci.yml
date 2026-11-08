@@ -31,12 +31,14 @@ jobs:
       - run: npm ci
       - name: Generated code is fresh
         run: npm run gen:check
+      # Before tests: terrain tests in the zone, worldhost and bots skip
+      # without worldgen/pkg/worldgen.wasm.
+      - name: Build worldgen.wasm
+        run: npm run build:wasm
       - name: Lint and typecheck
         run: npm run lint
       - name: Tests (TS, Go, Rust)
         run: npm test
-      - name: Build worldgen.wasm
-        run: npm run build:wasm
       - name: Install headless Chromium
         run: npx playwright install chromium
       - name: Determinism golden tests (Node, Chromium, Go/wazero, native)

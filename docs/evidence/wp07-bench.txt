@@ -1,0 +1,25 @@
+# WP07 terrain cost (go test -run XXX -bench . -benchtime 2s ./worldhost, from server/pkg)
+# Windows 11, i7-11700K (16 threads), Go 1.27.3, worldgen.wasm sha256 d38abb30..., world seed 20261108.
+#
+# HeightAtCached        one ground query from the chunk cache (pure Go on LOD 0 heights): the zone's hot path
+# CollisionHeightWasm   one direct collision_height call through wazero (compiler) + pool hand-off: the miss path
+# ChunkBuild            one LOD 0 chunk_build in wazero (runs on cache worker goroutines, never in a tick)
+# Tick150               terrain share of a 30 Hz tick with 150 players: 2 movement steps each (2 queries per
+#                       step), the grounded checks for quantize + SelfState, Want every 15 ticks; cache warm.
+#                       One op = one tick: 46 us of the 33,333 us tick budget, 900 ground queries, 0% misses.
+
+goos: windows
+goarch: amd64
+pkg: lodestone/server/pkg/worldhost
+cpu: 11th Gen Intel(R) Core(TM) i7-11700K @ 3.60GHz
+BenchmarkHeightAtCached-16         	98914821	        23.19 ns/op
+BenchmarkCollisionHeightWasm-16    	  480520	      5092 ns/op
+BenchmarkChunkBuild-16             	    1060	   3406020 ns/op
+BenchmarkTick150-16                	   51601	     46072 ns/op	         0 miss%	       900.0 queries/tick
+PASS
+ok  	lodestone/server/pkg/worldhost	40.988s
+
+# Live (docs/evidence/wp07-soak-spread.txt, 150 bots, 75 s): the zone answered 2.85M ground queries from the
+# cache and 182 through wasm (cold chunks right after a bot appeared); 2,018 chunks generated, mean 5.2 ms,
+# max 11.5 ms, on worker goroutines; tick p50 0.84 / p99 1.27 / max 2.1 ms.
+# heightcmp (wp07-heights.txt): go-fast 0.047 us/query, go-wasm 2.7 us/query over 10,000 random points.
