@@ -120,9 +120,13 @@ export function parseCombat(doc, consts) {
     const key = `form_${el}`;
     checkStatus(f.status, `form ${key}`);
     if (f.dash !== undefined && !dashes.some((d) => d.id === f.dash)) fail(`form ${key}: unknown dash id ${f.dash}`);
-    return withSteps({ key, element: elIndex(el, `form ${key}`), name: nameOf(key, 'form'), pending: pending.has(key), radius: 0, reach: 0, arc: 0, width: 0, chain: 0, lifesteal: 0, demonMult: 1, dash: 0, selfCast: false, ...f });
+    return withSteps({ key, element: elIndex(el, `form ${key}`), name: nameOf(key, 'form'), pending: pending.has(key), radius: 0, reach: 0, arc: 0, width: 0, chain: 0, lifesteal: 0, demonMult: 1, killsDemons: false, dash: 0, selfCast: false, ...f });
   });
   uniqueIds(forms, 'form');
+
+  // WP15 (CR 011): weapon materials; killsDemons is the whole demon rule.
+  const materials = Object.entries(doc.materials ?? {}).map(([key, m]) => ({ key, mult: 1, demonStagger: false, killsDemons: false, ...m }));
+  uniqueIds(materials, 'material');
 
   const treeKeys = new Set(Object.keys(doc.trees));
   const spells = Object.entries(doc.spells).map(([key, s]) => {
@@ -158,6 +162,8 @@ export function parseCombat(doc, consts) {
       nonBossOnly: false,
       stripShield: false,
       ...s,
+      // WP15: a tree's killsDemons flag (Light) marks every spell in it.
+      killsDemons: !!doc.trees[s.tree].killsDemons,
       mana,
       dash: s.dash === undefined ? 0 : dashKeys.get(s.dash) ?? fail(`spell ${key}: unknown dash ${s.dash}`),
     });
@@ -177,6 +183,7 @@ export function parseCombat(doc, consts) {
   const trees = Object.entries(doc.trees).map(([key, t]) => ({
     key,
     element: elIndex(t.element, `tree ${key}`),
+    killsDemons: !!t.killsDemons,
     nodes: Object.entries(t.nodes).map(([n, pre]) => {
       if (!spellKeys.has(n)) fail(`tree ${key}: unknown node ${n}`);
       for (const p of pre) if (!(p in t.nodes)) fail(`tree ${key}: ${n} requires unknown ${p}`);
@@ -211,6 +218,22 @@ export function parseCombat(doc, consts) {
   });
   uniqueIds(enemies, 'enemy');
   const enemyKeys = new Set(enemies.map((e) => e.key));
+
+  // WP15 demons: every demon-family enemy has a rank; the spawn tables name demons only.
+  const dm = doc.demons ?? { regen: {}, lesser: [], greater: {}, lord: '' };
+  const ranks = ['lesser', 'greater', 'lord'];
+  for (const e of enemies) {
+    if (e.family !== 'demon') continue;
+    if (!e.demon || !ranks.includes(e.demon.rank)) fail(`enemy ${e.key}: demons need demon.rank (lesser | greater | lord)`);
+    const regen = dm.regen?.[e.demon.rank];
+    if (typeof regen !== 'number') fail(`demons.regen.${e.demon.rank} missing`);
+    e.demon = { regen, ...e.demon };
+  }
+  const isDemon = (k, rank) => enemies.some((e) => e.key === k && e.family === 'demon' && e.demon.rank === rank);
+  for (const k of dm.lesser) if (!isDemon(k, 'lesser')) fail(`demons.lesser: ${k} is not a lesser demon`);
+  for (const el of elements) if (!isDemon(dm.greater[el], 'greater')) fail(`demons.greater.${el}: not a greater demon`);
+  if (!isDemon(dm.lord, 'lord')) fail(`demons.lord: ${dm.lord} is not a demon lord`);
+  const demons = { regen: dm.regen, lesser: dm.lesser, greater: elements.map((el) => dm.greater[el]), lord: dm.lord };
 
   const bossTitles = doc.bosses.titles;
   const bossNames = doc.bosses.names;
@@ -257,6 +280,7 @@ export function parseCombat(doc, consts) {
     weapons,
     moves,
     forms,
+    materials,
     dashes,
     mana: doc.mana,
     spells,
@@ -271,6 +295,7 @@ export function parseCombat(doc, consts) {
     bossNames,
     affixes,
     tables,
+    demons,
   };
 }
 
@@ -292,23 +317,24 @@ export interface MoveDef {
 }
 export interface ArrowDef { key: string; mult: number; demonStagger: boolean; killsDemons: boolean }
 export interface WeaponDef { key: string; id: number; skill: string; spellPower: number; manaRegen: number; cooldownMult: number; moves: string[]; parryMs?: number; parrySteps?: number; arrows?: ArrowDef[] }
-export interface FormDef { key: string; id: number; element: ElementIndex; name: string; pending: boolean; shape: string; radius: number; reach: number; arc: number; width: number; chain: number; lifesteal: number; demonMult: number; dash: number; selfCast: boolean; damage: number; status?: string; cooldownMs: number; cooldownSteps: number; stamina: number }
+export interface FormDef { key: string; id: number; element: ElementIndex; name: string; pending: boolean; shape: string; radius: number; reach: number; arc: number; width: number; chain: number; lifesteal: number; demonMult: number; killsDemons: boolean; dash: number; selfCast: boolean; damage: number; status?: string; cooldownMs: number; cooldownSteps: number; stamina: number }
+export interface MaterialDef { key: string; id: number; mult: number; demonStagger: boolean; killsDemons: boolean }
 export interface DashDef { key: string; id: number; speed: number; steps: number; iframes: number; lift: number }
 export interface SpellDef {
   key: string; id: number; name: string; pending: boolean; tree: string; tier: number; type: string; element: ElementIndex;
   damage: number; cooldownMs: number; cooldownSteps: number; windupMs: number; windupSteps: number; durationMs: number; durationSteps: number;
   armMs?: number; armSteps?: number; radius: number; range: number; speed: number; gravity: number; hits: number; spread: number; spreadDeg: number;
   cone: number; line: number; chain: number; lifesteal: number; heal: number; healRadius: number; absorb: number; pierce: boolean; selfCast: boolean;
-  nonBossOnly: boolean; stripShield: boolean; mana: number; dash: number; status?: string; requiresStatus?: string; color?: string; bossDamage?: number;
+  nonBossOnly: boolean; stripShield: boolean; killsDemons: boolean; mana: number; dash: number; status?: string; requiresStatus?: string; color?: string; bossDamage?: number;
   effect?: Record<string, unknown>; vsStatus?: { status: string; mult: number }; lowTargetHp?: { below: number; mult: number }; ported?: string;
 }
-export interface TreeDef { key: string; element: ElementIndex; nodes: { key: string; prereqs: string[] }[] }
+export interface TreeDef { key: string; element: ElementIndex; killsDemons: boolean; nodes: { key: string; prereqs: string[] }[] }
 export interface EnemyAttackDef {
   key: string; id: number; shape: 'cone' | 'circle' | 'ground' | 'line' | 'projectile'; element: ElementIndex;
   windupMs: number; windupSteps: number; activeMs: number; activeSteps: number; recoveryMs: number; recoverySteps: number; cooldownMs: number; cooldownSteps: number;
   damage: number; radius: number; reach: number; arc: number; width: number; speed: number; minRange: number; volley: number; spreadDeg: number; charge: boolean; everyone: boolean;
 }
-export interface EnemyDef { key: string; id: number; name: string; family: string; hp: number; speed: number; aggro: number; attacks: string[]; behavior: string; keepAway: number; element: ElementIndex; xp: number; size: number; color: string }
+export interface EnemyDef { key: string; id: number; name: string; family: string; hp: number; speed: number; aggro: number; attacks: string[]; behavior: string; keepAway: number; element: ElementIndex; xp: number; size: number; color: string; demon?: { rank: 'lesser' | 'greater' | 'lord'; regen: number } }
 export interface BossPhaseDef { at: number; attacks: string[]; adds: number; speedMult: number; cooldownMult: number }
 export interface BossDef { key: string; transitionMs: number; transitionSteps: number; arenaRadius: number; phases: BossPhaseDef[] }
 export interface AffixDef { key: string; id: number; hpMult: number; damageMult: number; speedMult: number; cooldownMult: number; shieldPct: number; shieldRegenMs: number; shieldRegenSteps: number; splitInto: number; splitHpPct: number }
@@ -316,7 +342,7 @@ export interface CombatDefs {
   version: number; stepHz: number; elements: string[];
   effectiveness: { strong: number; resist: number; voidAll: number; pairs: Record<string, number[]> };
   statuses: StatusDef[]; skills: { xpBase: number; xpExp: number; list: SkillDef[] };
-  weapons: WeaponDef[]; moves: MoveDef[]; forms: FormDef[]; dashes: DashDef[];
+  weapons: WeaponDef[]; moves: MoveDef[]; forms: FormDef[]; materials: MaterialDef[]; dashes: DashDef[];
   mana: { base: number; perLevel: number; regenPerS: number; regenPerLevel: number; byTier: number[] };
   spells: SpellDef[]; trees: TreeDef[];
   start: { spells: string[]; loadouts: { weapon: string; spells: (string | null)[] }[]; consumable: { charges: number; heal: number } };
@@ -324,6 +350,8 @@ export interface CombatDefs {
   enemyAttacks: EnemyAttackDef[]; enemies: EnemyDef[]; bosses: BossDef[]; bossTitles: Record<string, string>; bossNames: Record<string, string>;
   affixes: AffixDef[];
   tables: { biome: string[][]; element: string[]; site: Record<string, string[]>; depth: Record<string, { extra: string[]; levelBonus: number; eliteChance: number }> };
+  /** WP15: night spawn tables (greater: indexed by element). */
+  demons: { regen: Record<string, number>; lesser: string[]; greater: string[]; lord: string };
 }
 `;
 
