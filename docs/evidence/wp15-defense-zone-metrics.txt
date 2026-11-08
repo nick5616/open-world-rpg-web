@@ -3,16 +3,17 @@
 # HELP zone_players Connected players.
 # HELP zone_tick_ms Tick duration quantiles over the last 60 s (ms).
 # HELP zone_tick_ms_lifetime Tick duration quantiles since start (ms, 10 us buckets).
-zone_combat_claims_accepted_total 26
+zone_combat_claims_accepted_total 205
+zone_combat_claims_refused_total{reason="4"} 42
 zone_combat_downs_total 0
-zone_combat_enemies 3
-zone_combat_evaded_total 223
-zone_combat_kills_total 4
-zone_combat_player_hits_total 52
+zone_combat_enemies 1
+zone_combat_evaded_total 134
+zone_combat_kills_total 27
+zone_combat_player_hits_total 42
 zone_players 2
-zone_tick_ms_lifetime{q="max"} 7.361
+zone_tick_ms_lifetime{q="max"} 4.401
 zone_tick_ms_lifetime{q="p50"} 0.1
-zone_tick_ms_lifetime{q="p99"} 0.25
-zone_tick_ms{q="max"} 5.704
-zone_tick_ms{q="p50"} 0.111
-zone_tick_ms{q="p99"} 0.244
+zone_tick_ms_lifetime{q="p99"} 0.24
+zone_tick_ms{q="max"} 0.397
+zone_tick_ms{q="p50"} 0.098
+zone_tick_ms{q="p99"} 0.201
