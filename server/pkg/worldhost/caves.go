@@ -499,3 +499,18 @@ func (ct *CaveTerrain) NearMouth(x, z, r float64) int {
 	}
 	return -1
 }
+
+// CaveGraph is the world's cave graph (vein registry, openings, nav graph).
+func (ct *CaveTerrain) CaveGraph() *caves.Graph { return ct.Caves.Graph }
+
+// SetEdit activates a mined-vein edit (see Caves.SetEdit).
+func (ct *CaveTerrain) SetEdit(e caves.Edit) { ct.Caves.SetEdit(e) }
+
+// RemoveEdit restores a respawned vein (see Caves.RemoveEdit).
+func (ct *CaveTerrain) RemoveEdit(veinID uint64) { ct.Caves.RemoveEdit(veinID) }
+
+// WantCaves feeds the cave cell cache (see Caves.WantCaves).
+func (ct *CaveTerrain) WantCaves(x, y, z, r float64) { ct.Caves.WantCaves(x, y, z, r) }
+
+// CaveStats exposes the cave cache counters.
+func (ct *CaveTerrain) CaveStats() CaveStats { return ct.Caves.Stats() }

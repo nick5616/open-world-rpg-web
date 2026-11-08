@@ -119,7 +119,11 @@ func main() {
 		Metrics:        s.Metrics,
 		Log:            log,
 	}
+	ground, caveTerrain := withCaves(ground, terrain, log) // WP09 (caves.go)
+	cfg.Ground = ground
+	miningConfig(&cfg, pool)
 	zone := game.New(cfg)
+	restoreEdits(ctx, zone, log)
 
 	origins := strings.Split(env.Str("LODESTONE_CORS_ORIGIN", "*"), ",")
 	ws := &transport.WebSocket{OriginPatterns: origins}
@@ -151,6 +155,10 @@ func main() {
 	if terrain != nil {
 		defer terrain.Close()
 		serveTerrain(ctx, s, terrain)
+	}
+	if caveTerrain != nil {
+		defer caveTerrain.Caves.Close()
+		serveCaves(ctx, s, caveTerrain, zone)
 	}
 	go zone.RunMetrics(ctx, queue.Depth, func(m *svc.Metrics) {
 		st := &queue.Stats

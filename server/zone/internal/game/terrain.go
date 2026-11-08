@@ -8,6 +8,8 @@ package game
 // fields.
 
 import (
+	"math"
+
 	"lodestone/server/pkg/accountapi"
 	"lodestone/server/pkg/constants"
 	"lodestone/server/pkg/movement"
@@ -74,7 +76,11 @@ func (s *Server) savedSpawn(characterID string, p movement.Vec3) movement.Vec3 {
 
 // hintSpawn puts a dev spawn hint (bots' ?spawn=x,z) on the ground.
 func (s *Server) hintSpawn(h movement.Vec3) movement.Vec3 {
-	h.Y = s.cfg.Ground.HeightAt(h.X, h.Z)
+	if math.IsNaN(h.Y) {
+		h.Y = s.cfg.Ground.HeightAt(h.X, h.Z)
+	} else {
+		h.Y = movement.GroundAt(s.cfg.Ground, h.X, h.Y, h.Z) // WP09: a cave floor
+	}
 	return h
 }
 
@@ -89,7 +95,9 @@ func (s *Server) hintSpawn(h movement.Vec3) movement.Vec3 {
 // the world-edge clamp moves x/z.
 func verticalOK(prev, next movement.State, g movement.Ground) bool {
 	const eps = 1e-6
-	ground := g.HeightAt(next.Pos.X, next.Pos.Z)
+	// WP09: with caves the ground depends on height; search from where the
+	// step searched (the higher of the old and new feet).
+	ground := movement.GroundAt(g, next.Pos.X, math.Max(prev.Pos.Y, next.Pos.Y), next.Pos.Z)
 	if next.Pos.Y < ground-eps {
 		return false
 	}

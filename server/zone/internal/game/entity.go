@@ -3,6 +3,7 @@ package game
 import (
 	"errors"
 	"math"
+	"time"
 
 	"lodestone/server/pkg/constants"
 	"lodestone/server/pkg/movement"
@@ -41,6 +42,16 @@ type Entity struct {
 	view      movement.State
 	viewRaw   movement.State // view before easing (carried forward next tick)
 	viewOff   movement.Vec3  // decaying horizontal easing offset
+
+	// Caves and mining (WP09).
+	caveSys   int       // cave system this tick (-1 surface), for interest clipping
+	lastSwing time.Time // last accepted pickaxe swing
+	// Pickups: personal drops only their owner sees and can take.
+	Owner     uint32
+	Item      string
+	Qty       int
+	RollSeed  uint64
+	DespawnAt time.Time
 }
 
 // stepsPerTick: 60 Hz input frames, 30 Hz ticks.

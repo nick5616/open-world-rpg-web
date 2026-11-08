@@ -35,6 +35,8 @@ type metrics struct {
 	framesSkipped                atomic.Int64    // lost frames given up on (hole longer than maxSynthFrames)
 	framesSynthesized            atomic.Int64    // lost frames filled by repeating the last input
 	transports                   [3]atomic.Int64 // live sessions by proto.Transport
+	// Mining (WP09).
+	veinsMined, veinsRespawned, itemsGranted, editsSent atomic.Int64
 
 	// AOI accumulators (tick writes, publisher swaps out).
 	aoiSamples, aoiNear, aoiMid, aoiFar, aoiParty, aoiMax, snapBytes, snapCount atomic.Int64
@@ -138,6 +140,10 @@ func (s *Server) publish(hist map[*session][]bwSample, depth func() int, extra f
 	r.SetInt("zone_input_frames_dropped_total", s.m.framesDropped.Load())
 	r.SetInt("zone_input_frames_skipped_total", s.m.framesSkipped.Load())
 	r.SetInt("zone_input_frames_synthesized_total", s.m.framesSynthesized.Load())
+	r.SetInt("zone_veins_mined_total", s.m.veinsMined.Load())
+	r.SetInt("zone_veins_respawned_total", s.m.veinsRespawned.Load())
+	r.SetInt("zone_items_granted_total", s.m.itemsGranted.Load())
+	r.SetInt("zone_world_edits_sent_total", s.m.editsSent.Load())
 	r.SetInt("zone_speed_violations_total", s.m.speedViolations.Load())
 	r.SetInt("zone_rate_limited_total", s.m.rateLimited.Load())
 	r.SetInt("zone_protocol_errors_total", s.m.protoErrors.Load())
