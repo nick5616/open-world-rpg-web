@@ -49,7 +49,7 @@ type Session struct {
 
 	// Only the reader goroutine touches these.
 	lim       limits
-	lastLimit time.Time // throttles rate_limited errors to one per second
+	lastLimit map[sp.ErrorCode]time.Time // throttles each limit error to one per second
 
 	mu              sync.Mutex
 	region, zoneID  string
@@ -68,7 +68,7 @@ type Session struct {
 func newSession(h *Hub, c *websocket.Conn, remote string) *Session {
 	ctx, cancel := context.WithCancel(h.ctx)
 	s := &Session{hub: h, c: c, id: randHex(8), remote: remote, out: make(chan []byte, outQueue), done: make(chan struct{}),
-		ctx: ctx, cancel: cancel, lim: newLimits(h.cfg.Limits), filter: true,
+		ctx: ctx, cancel: cancel, lim: newLimits(h.cfg.Limits), filter: true, lastLimit: map[sp.ErrorCode]time.Time{},
 		muted: map[string]string{}, blocked: map[string]string{}, friends: map[string]bool{}, partyMembers: map[string]bool{}}
 	s.cleanOffline.Store(true)
 	return s
@@ -316,14 +316,15 @@ func (s *Session) readLoop() {
 	}
 }
 
-// limited sends a rate-limit error at most once per second, so a flood of
-// refused messages does not turn into a flood of replies.
+// limited sends a rate-limit error at most once per second per code, so a
+// flood of refused messages does not turn into a flood of replies, while a
+// person who hits slow mode still sees why (they type slower than 1/s).
 func (s *Session) limited(now time.Time, code sp.ErrorCode, msg string) {
 	s.hub.metrics.Add(`social_chat_rejected_total{reason="`+string(code)+`"}`, 1)
-	if now.Sub(s.lastLimit) < time.Second {
+	if now.Sub(s.lastLimit[code]) < time.Second {
 		return
 	}
-	s.lastLimit = now
+	s.lastLimit[code] = now
 	s.sendErr(code, msg)
 }
 

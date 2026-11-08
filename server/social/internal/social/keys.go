@@ -27,14 +27,14 @@ import (
 //	social:worlds                          SET   worlds with live sessions (reaper scope)
 //	pub/sub social:{worldId}               cross-process delivery (bus.go)
 
-func keyPresence(charID string) string     { return "presence:" + charID }
-func keyOnline(worldID string) string      { return "online:" + worldID }
-func keyName(worldID, name string) string  { return "name:" + worldID + ":" + strings.ToLower(name) }
-func keyCharName(charID string) string     { return "charname:" + charID }
-func keyParty(partyID string) string       { return "party:" + partyID }
-func keyPartyOf(charID string) string      { return "partyof:" + charID }
-func keyPartyInv(charID string) string     { return "partyinv:" + charID }
-func keyPartyGrace(worldID string) string  { return "partygrace:" + worldID }
+func keyPresence(charID string) string    { return "presence:" + charID }
+func keyOnline(worldID string) string     { return "online:" + worldID }
+func keyName(worldID, name string) string { return "name:" + worldID + ":" + strings.ToLower(name) }
+func keyCharName(charID string) string    { return "charname:" + charID }
+func keyParty(partyID string) string      { return "party:" + partyID }
+func keyPartyOf(charID string) string     { return "partyof:" + charID }
+func keyPartyInv(charID string) string    { return "partyinv:" + charID }
+func keyPartyGrace(worldID string) string { return "partygrace:" + worldID }
 func keyWhisperConv(worldID, charID string) string {
 	return "whisperconv:" + worldID + ":" + charID
 }

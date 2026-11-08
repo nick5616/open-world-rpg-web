@@ -208,7 +208,6 @@ func (s *Session) deliverChat(e *envelope) {
 	s.send(sp.S2CChat{Type: sp.S2CTypeChat, Message: m})
 }
 
-
 // nowMs is server unix milliseconds, the ts on every ChatMessage.
 func nowMs() int64 { return time.Now().UnixMilli() }
 

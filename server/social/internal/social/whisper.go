@@ -118,8 +118,7 @@ func (s *Session) whisper(ctx context.Context, now time.Time, to, raw string) {
 		}
 	}
 	if !s.lim.whisper.Take(now) {
-		s.hub.metrics.Add(`social_chat_rejected_total{reason="rate_limited"}`, 1)
-		s.sendErr(sp.ErrorCodeRateLimited, "You are sending messages too quickly.")
+		s.limited(now, sp.ErrorCodeRateLimited, "You are sending messages too quickly.")
 		return
 	}
 	// Offline: say so, store nothing (offline mail is out of scope for v1).

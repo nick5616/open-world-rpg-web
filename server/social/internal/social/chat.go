@@ -123,8 +123,7 @@ func (s *Session) chatSend(ctx context.Context, now time.Time, ch sp.Channel, ra
 		if limitCode == sp.ErrorCodeSlowMode {
 			msg = fmt.Sprintf("Global chat is in slow mode: one message every %d seconds.", constants.GlobalSlowModeMs/1000)
 		}
-		s.hub.metrics.Add(`social_chat_rejected_total{reason="`+string(limitCode)+`"}`, 1)
-		s.sendErr(limitCode, msg)
+		s.limited(now, limitCode, msg)
 		return
 	}
 
