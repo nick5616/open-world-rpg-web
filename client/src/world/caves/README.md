@@ -56,3 +56,5 @@ The step (WP10) is a heightfield state machine; caves plug in through two option
 2. After the mode step, one wall/ceiling push-out (not while climbing): horizontal velocity slides along the push (`v -= n * min(0, v.n)`), a ceiling stops a rising jump, a grounded player is re-snapped to the floor at the pushed point.
 
 Grounds without caves implement neither and step exactly as before (every WP02/WP10 golden unchanged). `server/pkg/caves.Ground`, `worldhost.CaveTerrain` and the client's `CaveGround` (over `StructureGround`) implement both. Golden cave walk: `client/src/world/caves/cavePath.test.ts` (TS) replayed by `server/pkg/caves/path_test.go` (Go).
+
+G3: `CaveGround.caveAir(x, y, z)` (open cave air from loaded cells only, no sync builds) feeds WP11's voice occlusion through `GroundQuery.caveAir`; movement doesn't use it.

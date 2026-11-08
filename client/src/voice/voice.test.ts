@@ -61,6 +61,16 @@ describe('spatial math', () => {
     const bump: GroundQuery = { heightAt: (x) => (x < 0.8 ? 1.7 : 0) };
     expect(terrainBetween(bump, { x: 0, y: 1.8, z: 0 }, { x: 20, y: 1.8, z: 0 })).toBe(false);
   });
+
+  it('underground, cave air between the heads is not an occluder; rock is (G3)', () => {
+    // The surface is 60 m overhead; a tunnel at y 0..4 runs along x from 0 to 40.
+    const tunnel: GroundQuery = { heightAt: () => 60, caveAir: (x, y) => x >= 0 && x <= 40 && y > 0 && y < 4 };
+    expect(terrainBetween(tunnel, { x: 2, y: 1.8, z: 0 }, { x: 30, y: 1.8, z: 0 })).toBe(false);
+    // Past the tunnel's end there is rock between them.
+    expect(terrainBetween(tunnel, { x: 2, y: 1.8, z: 0 }, { x: 60, y: 1.8, z: 0 })).toBe(true);
+    // A ground without caves underground (no caveAir) stays occluded, as before.
+    expect(terrainBetween({ heightAt: () => 60 }, { x: 2, y: 1.8, z: 0 }, { x: 30, y: 1.8, z: 0 })).toBe(true);
+  });
 });
 
 describe('voice prefs', () => {

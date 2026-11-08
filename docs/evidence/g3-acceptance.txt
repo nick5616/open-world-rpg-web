@@ -1,0 +1,114 @@
+[2026-11-08T19:11:44.986Z] G3 acceptance (spec 15): two friends, proximity voice, climb + glide, map + towers, a cave together. Run mw87kv2x, LiveKit ws://127.0.0.1:7880
+[2026-11-08T19:11:44.992Z] private ports {"account":30414,"director":43817,"zone":27954,"social":20802,"vite":44272}; logs in C:\Users\nickb\AppData\Local\Temp\lodestone-g3-EB198e
+[2026-11-08T19:11:49.070Z] scratch database lodestone_wp04_g3_mw87kv2x (all migrations)
+[2026-11-08T19:11:58.236Z] built account, director, zone, social from this checkout
+[2026-11-08T19:11:59.998Z] PASS account healthy on :30414 (mints the official world into the scratch DB)
+[2026-11-08T19:12:01.100Z] PASS social healthy on :20802 (voice via ws://127.0.0.1:7880)
+[2026-11-08T19:12:02.169Z] PASS director healthy on :43817
+[2026-11-08T19:12:04.437Z] PASS zone healthy on :27954
+[2026-11-08T19:12:04.439Z] zone serves world b96e5c0c-de14-4f1a-8257-0db7ebfaf22f (fresh for this run) seed 20261108 genVersion 1
+[2026-11-08T19:12:05.401Z] PASS vite on :44272
+[2026-11-08T19:12:21.152Z] PASS both playing (dev auth -> director ticket -> zone): Corin at (1927.5, 82.0, 2273.5), Della at (1920.5, 82.3, 2276.5)
+[2026-11-08T19:12:22.242Z]   screenshot g3-01-signed-in-A.png
+[2026-11-08T19:12:23.413Z] PASS both touched the spawn waypoint #145 (7.6 m away): activated, respawn point set  {"a":145,"b":145}
+[2026-11-08T19:12:23.769Z] PASS friend request -> accept: each lists the other, online with region  {"a":"Della online · 1,2 Whisper Invite Remove","b":"Corin online · 1,2 Whisper Invite Remove"}
+[2026-11-08T19:12:23.955Z]   screenshot g3-02-friends-A.png
+[2026-11-08T19:12:24.028Z] PASS voice connected to LiveKit; microphone not requested before the first push  {"mic":"idle","status":"connected"}
+[2026-11-08T19:12:24.105Z] PASS push-to-talk: V publishes the mic and transmits while held; AudioContext running  {"mic":"ready","ctx":"running"}
+[2026-11-08T19:12:29.322Z]   screenshot g3-03-voice-near-A.png
+[2026-11-08T19:12:43.717Z]   screenshot g3-04-voice-out-of-earshot-A.png
+[2026-11-08T19:12:58.504Z] PASS party via /invite + party frame; the zone's party ring has both in party 2009725965  {"a":2009725965,"b":2009725965}
+[2026-11-08T19:12:58.678Z]   screenshot g3-05-party-A.png
+[2026-11-08T19:13:12.192Z]   screenshot g3-06-voice-party-radio-A.png
+[2026-11-08T19:13:17.229Z] voice (surface): {"samples":336,"fade":{"nearDb":-24.59,"farDb":-40.84,"dropDb":16.24,"expectedDropDb":17.09,"spearman":-0.99,"nNear":40,"nFar":29},"occlusion":{"spatialSamples":157,"occluded":0},"earshot":{"silentBeyondM":51.45,"samplesBeyond":46,"audibleBeyond":0,"samplesInside38m":132,"unsubscribedInside38m":0},"partyRadio":{"samplesBeyond56m":46,"subscribed":46,"radio":46,"audible":46,"meanAbsRminusLdb":0,"meanLevelDb":-15.68},"speaking":{"zoneSpeakingBitSamples":336}}
+[2026-11-08T19:13:17.229Z] PASS they hear each other close and it fades: -24.59 dB at 3-7 m, -40.84 dB at 30-40 m (drop 16.24 dB, model 17.09 dB)  {"nearDb":-24.59,"farDb":-40.84,"dropDb":16.24,"expectedDropDb":17.09,"spearman":-0.99,"nNear":40,"nFar":29}
+[2026-11-08T19:13:17.229Z] PASS level falls steadily with distance (Spearman -0.99 < -0.8)
+[2026-11-08T19:13:17.229Z] PASS within 38 m A is subscribed to B (allowing the re-subscribe moment)  {"silentBeyondM":51.45,"samplesBeyond":46,"audibleBeyond":0,"samplesInside38m":132,"unsubscribedInside38m":0}
+[2026-11-08T19:13:17.229Z] PASS out of earshot (not partied yet): silent past 51.45 m  {"silentBeyondM":51.45,"samplesBeyond":46,"audibleBeyond":0,"samplesInside38m":132,"unsubscribedInside38m":0}
+[2026-11-08T19:13:17.229Z] PASS party radio: past earshot the party member stays subscribed, audible and flat (radio branch)  {"samplesBeyond56m":46,"subscribed":46,"radio":46,"audible":46,"meanAbsRminusLdb":0,"meanLevelDb":-15.68}
+[2026-11-08T19:13:17.229Z] PASS A sees B's speaking bit from the zone while B holds V  {"zoneSpeakingBitSamples":336}
+[2026-11-08T19:13:17.239Z] nearest tower #35 "The Forgotten Spire" (region 5) 514 m away, top y 188.95, maxR 11.1; cave system 10 mouth (1760, 130, 1474) 314 m from the tower, deepest chamber 191 m down
+[2026-11-08T19:13:17.244Z]   Corin to the tower: 518 m to go, at (1922, 82.3, 2272)
+[2026-11-08T19:13:17.244Z]   Della to the tower: 500 m to go, at (1843, 84.9, 2268)
+[2026-11-08T19:13:32.320Z]   Della to the tower: 393 m to go, at (1844, 90.2, 2161)
+[2026-11-08T19:13:32.320Z]   Corin to the tower: 411 m to go, at (1907, 81.5, 2167)
+[2026-11-08T19:13:47.351Z]   Della to the tower: 306 m to go, at (1845, 101.5, 2075)
+[2026-11-08T19:13:47.352Z]   Corin to the tower: 319 m to go, at (1893, 98.6, 2076)
+[2026-11-08T19:14:02.502Z]   Corin to the tower: 212 m to go, at (1878, 126.9, 1969)
+[2026-11-08T19:14:02.502Z]   Della to the tower: 198 m to go, at (1846, 128.6, 1967)
+[2026-11-08T19:14:17.518Z]   Corin to the tower: 114 m to go, at (1863, 147.3, 1873)
+[2026-11-08T19:14:17.518Z]   Della to the tower: 91 m to go, at (1847, 151.4, 1860)
+[2026-11-08T19:14:32.608Z]   Corin to the tower: 6 m to go, at (1848, 159.8, 1766)
+[2026-11-08T19:14:33.267Z] PASS both walked to the tower (76 s, 73 s)
+[2026-11-08T19:14:40.638Z]   screenshot g3-07-tower-base-B.png
+[2026-11-08T19:14:51.560Z]   screenshot g3-08-climb-ledge-rested-A.png
+[2026-11-08T19:14:58.535Z]   Corin: climbing (attempt 1) at y 161.15
+[2026-11-08T19:14:58.535Z]   Corin: on the ledge at y 175.95, stamina 25.5; resting
+[2026-11-08T19:14:58.535Z]   Corin: on top at (1884.62, 188.95, 1760.00), stamina 34.8, 18 s
+[2026-11-08T19:14:58.535Z]   Della: climbing (attempt 1) at y 161.23
+[2026-11-08T19:14:58.535Z]   Della: on the ledge at y 175.95, stamina 26.2; resting
+[2026-11-08T19:14:58.535Z]   Della: on top at (1884.69, 188.95, 1760.77), stamina 34.3, 18 s
+[2026-11-08T19:14:58.540Z] climb: [{"ok":true,"minStamina":25.5,"maxCm":0.83,"perMode":{"ground":{"snapshots":118,"maxCm":0.78},"climb":{"snapshots":419,"maxCm":0.83}},"corrections":0},{"ok":true,"minStamina":26.17,"maxCm":0.82,"perMode":{"ground":{"snapshots":118,"maxCm":0.72},"climb":{"snapshots":419,"maxCm":0.82}},"corrections":0}]
+[2026-11-08T19:14:58.540Z] PASS both climbed the wall to the top with the stamina wheel (lowest stamina 25.5 / 26.17, rested on the ledge)
+[2026-11-08T19:14:58.540Z] PASS the zone simulated them climbing (climb-mode snapshots on both)  [{"snapshots":419,"maxCm":0.83},{"snapshots":419,"maxCm":0.82}]
+[2026-11-08T19:14:58.540Z] PASS climb: prediction vs server within 10 cm (max 0.83 / 0.82 cm), 0 corrections  [{"maxCm":0.83,"corrections":0},{"maxCm":0.82,"corrections":0}]
+[2026-11-08T19:14:59.929Z]   screenshot g3-09-tower-top-A.png
+[2026-11-08T19:14:59.934Z] PASS the tower top reveals region 5 and unlocks the tower for both  {"a":{"revealed":32,"towers":1,"xp":290},"b":{"revealed":32,"towers":1,"xp":290}}
+[2026-11-08T19:14:59.934Z] PASS tower toast shown  [{"kind":"tower","title":"Region revealed: The Forgotten Heights","detail":"Map updated · tower unlocked for fast travel"},{"kind":"level","title":"Level 3"}]
+[2026-11-08T19:14:59.935Z] PASS Della is on Corin's compass as a party member  [{"label":"Della","dist":1}]
+[2026-11-08T19:15:01.368Z]   screenshot g3-10-map-revealed-pin-A.png
+[2026-11-08T19:15:01.634Z] PASS Corin's party pin on the cave mouth shows on Della's map  {"bPin":{"party":true,"slot":0,"color":0,"x":1757.87,"z":1473.42,"owner":"Corin"},"mouth":{"x":1759.615234375,"z":1473.962646484375}}
+[2026-11-08T19:15:02.448Z] PASS Della's compass shows Corin and the pin  [{"kind":"party","label":"Corin","dist":1},{"kind":"pin","label":"Corin","dist":314}]
+[2026-11-08T19:15:02.653Z]   screenshot g3-11-compass-pin-B.png
+[2026-11-08T19:15:03.967Z]   screenshot g3-12-map-party-B.png
+[2026-11-08T19:15:05.318Z] PASS fast travel to the waypoint: 2.5 m from the stone (514 m from the tower)
+[2026-11-08T19:15:05.538Z]   screenshot g3-13-fast-travel-waypoint-A.png
+[2026-11-08T19:15:09.253Z] PASS fast travel back to the unlocked tower: on its top (y 188.95 vs 188.95), 2 teleport Events
+[2026-11-08T19:15:12.267Z] fast travel (2 hops + 3 s standing): 2 corrections (the 2 teleports arrive as corrections); first mismatches [{"seq":9792,"mode":"ground","divCm":52434.5,"at":[1922.5,82.28,2272],"fields":["pos (1884.82,188.95,1760.00)","moveExt 16717680 vs 137072"]},{"seq":10028,"mode":"ground","divCm":52413,"at":[1888,188.95,1760],"fields":["pos (1922.50,82.28,2272.00)","moveExt 15603568 vs 137072"]}]
+[2026-11-08T19:15:12.267Z] PASS after the fast-travel teleports prediction settles at once: 2 corrections for 2 hops, 0 disagreeing snapshots in the 3 s after  {"corrections":2,"after":[]}
+[2026-11-08T19:15:12.269Z] PASS Della (on the top) sees Corin arrive back; 2 remote teleports seen (the 2 hops)
+[2026-11-08T19:15:17.167Z]   screenshot g3-15-glide-A.png
+[2026-11-08T19:15:17.228Z]   screenshot g3-14-glide-B.png
+[2026-11-08T19:15:31.557Z] glide: [{"horizontal":160.45,"drop":56.38,"toMouth":153.27,"maxCm":0.79,"perMode":{"ground":{"snapshots":6,"maxCm":0.71},"air":{"snapshots":71,"maxCm":0.72},"glide":{"snapshots":501,"maxCm":0.79}},"corrections":0},{"horizontal":159.89,"drop":56.82,"toMouth":153.25,"maxCm":0.8,"perMode":{"ground":{"snapshots":7,"maxCm":0.55},"air":{"snapshots":71,"maxCm":0.74},"glide":{"snapshots":500,"maxCm":0.8}},"corrections":0}]
+[2026-11-08T19:15:31.557Z] PASS both glided from the top toward the cave (160.45 m out, 56.38 m down; 159.89 m out, 56.82 m down)
+[2026-11-08T19:15:31.557Z] PASS glide: prediction vs server within 10 cm (max 0.79 / 0.8 cm), 0 corrections  [{"maxCm":0.79,"corrections":0,"perMode":{"ground":{"snapshots":6,"maxCm":0.71},"air":{"snapshots":71,"maxCm":0.72},"glide":{"snapshots":501,"maxCm":0.79}}},{"maxCm":0.8,"corrections":0,"perMode":{"ground":{"snapshots":7,"maxCm":0.55},"air":{"snapshots":71,"maxCm":0.74},"glide":{"snapshots":500,"maxCm":0.8}}}]
+[2026-11-08T19:15:31.567Z]   Della to a spot 64 m out: 107 m to go, at (1826, 132.1, 1612)
+[2026-11-08T19:15:31.567Z]   Corin to the mouth: 140 m to go, at (1817, 132.6, 1616)
+[2026-11-08T19:15:46.598Z]   Della to a spot 64 m out: 34 m to go, at (1774, 128.6, 1561)
+[2026-11-08T19:15:46.599Z]   Corin to the mouth: 68 m to go, at (1786, 128.3, 1551)
+[2026-11-08T19:16:01.716Z]   Corin to the mouth: 35 m to go, at (1783, 129.2, 1514)
+[2026-11-08T19:16:12.062Z]   at the mouth: Corin arrived (40 s), Della arrived at (1750.2, 1537.9) (26 s)
+[2026-11-08T19:16:13.781Z]   screenshot g3-16-cave-mouth-A.png
+[2026-11-08T19:16:27.757Z] PASS Corin 12.39 m down inside system 10, Della on the surface 91.88 m from the mouth (outside the 48 m mouth band): they still see each other (party exempt from interest clipping) in 10/10 samples  {"aUnderground":1,"dist":119.41}
+[2026-11-08T19:16:29.031Z]   screenshot g3-17-cave-split-B-sees-A-below.png
+[2026-11-08T19:16:29.037Z]   Della to the mouth: 77 m to go, at (1777, 128.3, 1564)
+[2026-11-08T19:16:44.056Z]   Della to the mouth: 32 m to go, at (1765, 128.3, 1521)
+[2026-11-08T19:16:59.447Z]   Della to the mouth: 16 m to go, at (1769, 128.3, 1500)
+[2026-11-08T19:17:08.851Z] PASS Della reached the mouth
+[2026-11-08T19:17:29.855Z]   screenshot g3-18-cave-tunnel-A-sees-B.png
+[2026-11-08T19:18:08.474Z] PASS both walked down from the mouth to the deepest chamber of system 10: Corin 190.5 m below the mouth, Della 185.7 m (waypoint 15/16), 60 s
+[2026-11-08T19:18:15.393Z]   screenshot g3-19-cave-deepest-B-sees-A.png
+[2026-11-08T19:18:15.394Z] PASS underground together they keep seeing each other: 143/143 samples (max distance 15.14 m)
+[2026-11-08T19:18:15.394Z] voice (cave): {"samplesUnderground":143,"within25m":143,"subscribed":143,"spatial":143,"audible":143,"occluded":0,"meanLevelDb":-32.34,"meanDistance":9.16}
+[2026-11-08T19:18:15.395Z] PASS in the cave they keep hearing each other: A hears B (output > -70 dB) in 143/143 samples within 25 m (mean -32.34 dB at 9.16 m)  {"samplesUnderground":143,"within25m":143,"subscribed":143,"spatial":143,"audible":143,"occluded":0,"meanLevelDb":-32.34,"meanDistance":9.16}
+[2026-11-08T19:18:15.395Z] PASS underground the rock overhead does not muffle them: occluded (low-pass) in 0/143 samples within 25 m (only where the tunnel bends between them)  {"occluded":0,"n":143}
+[2026-11-08T19:18:15.395Z] PASS underground the voice stays spatial (positioned on the drawn partner, not the radio)  {"spatial":143,"n":143}
+[2026-11-08T19:18:15.396Z] PASS the zone's earshot sets (Redis voice:{worldId}) have Della in Corin's set underground: 143/143  {"messages":193,"samples":143,"inEarshot":143}
+[2026-11-08T19:18:15.415Z] cave prediction: [{"maxCm":0.83,"perMode":{"ground":{"snapshots":3668,"maxCm":0.83},"swim":{"snapshots":771,"maxCm":0.81},"air":{"snapshots":84,"maxCm":0.75}},"corrections":0,"remoteTeleports":0},{"maxCm":0.82,"perMode":{"ground":{"snapshots":3225,"maxCm":0.82},"swim":{"snapshots":1079,"maxCm":0.82},"climb":{"snapshots":122,"maxCm":0.77},"air":{"snapshots":85,"maxCm":0.75}},"corrections":0,"remoteTeleports":0}]
+[2026-11-08T19:18:15.415Z] PASS walking from the glide landing to the deepest chamber: prediction vs server within 10 cm (max 0.83 / 0.82 cm), 0 corrections  [{"maxCm":0.83,"corrections":0},{"maxCm":0.82,"corrections":0}]
+[2026-11-08T19:18:15.415Z] PASS no remote teleports while walking the cave together  [0,0]
+[2026-11-08T19:18:16.525Z]   vein 10093791980006757657 (ore 1, 1.6 m away): walked there; target iron 8c145a539cfd5519
+[2026-11-08T19:18:16.743Z]   screenshot g3-20-vein-before-A.png
+[2026-11-08T19:18:18.730Z]   screenshot g3-21-vein-mined-A.png
+[2026-11-08T19:18:18.732Z] mining: {"vein":"10093791980006757657","kind":"ore","material":1,"target":"iron 8c145a539cfd5519","swings":5,"toasts":["Vein broken","+2 iron ore"]}
+[2026-11-08T19:18:18.732Z]   zone: {"time":"2026-11-08T11:12:03.9221537-08:00","level":"INFO","msg":"caves ready","svc":"zone","systems":32,"chambers":287,"openings":44,"veins":685,"ms":54}
+[2026-11-08T19:18:18.732Z]   zone: {"time":"2026-11-08T11:18:18.1653761-08:00","level":"INFO","msg":"vein drop","svc":"zone","vein":10093791980006757657,"material":"iron","character":"36db65d6-6cd4-4d09-92ce-95cc6b42c846","item":"ore:iron","qty":2,"rollSeed":2483820242364443781,"edit":8107742349211059950}
+[2026-11-08T19:18:18.732Z]   zone: {"time":"2026-11-08T11:18:18.1653761-08:00","level":"INFO","msg":"vein mined","svc":"zone","vein":10093791980006757657,"material":"iron","edit":8107742349211059950,"respawnAt":"2026-11-09T07:41:34Z","owners":1}
+[2026-11-08T19:18:18.732Z]   zone: {"time":"2026-11-08T11:18:18.1653761-08:00","level":"INFO","msg":"item granted","svc":"zone","character":"36db65d6-6cd4-4d09-92ce-95cc6b42c846","item":"ore:iron","qty":2,"rollSeed":2483820242364443781}
+[2026-11-08T19:18:18.732Z] PASS Corin mined a vein (1 ore, 5 swings): "Vein broken"
+[2026-11-08T19:18:18.732Z] PASS ...and got the drop: +2 iron ore (zone granted it)
+[2026-11-08T19:18:18.743Z] mining prediction (Corin, the carve reshapes the floor around the vein; the client learns of it one round trip after the zone): {"maxCm":8.23,"corrections":1,"mismatches":[{"seq":20642,"mode":"ground","divCm":8.2,"at":[1730.26,-60.29,1437],"fields":["pos (1730.26,-60.21,1437.00)"]}]}
+[2026-11-08T19:18:18.744Z] PASS no page errors in either browser  []
+[2026-11-08T19:18:32.108Z] dropped lodestone_wp04_g3_mw87kv2x
+[2026-11-08T19:18:32.108Z] summary: setup: PASS (5/5) | 1 sign-in, friends, party: PASS (4/4) | 2 proximity voice: PASS (8/8) | 3 climb + glide: PASS (7/7) | 4 map + towers: PASS (8/8) | 5 cave together: PASS (12/12) | general: PASS (1/1)
+[2026-11-08T19:18:32.108Z] ALL PASS

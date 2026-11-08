@@ -22,6 +22,8 @@
 
 import { metersToCm, velToCms } from '@lodestone/contracts';
 import type { GroundQuery } from '../sim/ground';
+import { MoveMode } from '@lodestone/contracts';
+import { groundAt } from '../sim/caves';
 import { NO_ENV, stepMovement, STEP_DT, type MoveInput, type MoveState, type StepEnv } from '../sim/movement';
 import { fromSelf, packFlags, packMoveExt } from '../sim/moveWire';
 import type { FullSelf } from './snapshotDecoder';
@@ -146,6 +148,16 @@ export class ClientPrediction {
     // WP10: SelfState carries mode, stamina (exact), timers and flags too, so
     // a replay restarts from the server's whole movement state.
     let state: MoveState = fromSelf(server);
+    // G3: SelfState's y is cm-rounded while the zone stands exactly on the
+    // ground. Replaying from up to 0.5 cm above it makes the first step a tiny
+    // fall, so WP10's grounded-only timer (regen delay) skips a step and every
+    // later snapshot disagrees again (seen after a fast travel: ~30
+    // corrections a second while standing). Put a grounded server state back
+    // on the surface it stands on, as the spawn does (PlayerController).
+    if (state.mode === MoveMode.ground) {
+      const gy = groundAt(this.ground, state.pos.x, state.pos.y, state.pos.z);
+      if (Math.abs(gy - state.pos.y) <= 0.0051) state.pos.y = gy;
+    }
     for (const p of this.pending) {
       state = stepMovement(state, p.input, this.ground, STEP_DT, p.env ?? NO_ENV);
       p.state = state; // keep history consistent with the new timeline

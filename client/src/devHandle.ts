@@ -8,7 +8,7 @@ import { useDebugStore, type TeleportTarget } from './stores/debugStore';
 import { useQualityStore, type QualitySetting } from './stores/qualityStore';
 import { localPlayer, netStats, worldClock } from './state/live';
 import { netDebug, netRuntime, useNetStore } from './net/netStore';
-import { divergenceProbe } from './sim/dev/divergenceProbe';
+import { divergenceProbe, resetProbe } from './sim/dev/divergenceProbe';
 import type { ReadySession } from './account/types';
 import { voiceDebugHook } from './voice/debugHook';
 
@@ -38,6 +38,8 @@ export function installDevHandle(): void {
      */
     /** WP10: per-mode prediction-vs-server divergence of the live session (installs on first call). */
     probe: () => (netRuntime.session ? JSON.parse(JSON.stringify(divergenceProbe(netRuntime.session))) : null),
+    /** G3: start the probe over (per-phase numbers in one long session). */
+    probeReset: () => netRuntime.session && resetProbe(netRuntime.session),
     connectZone: (r: Pick<ReadySession, 'ticket' | 'zoneEndpoint' | 'zoneId' | 'worldId'> & { name?: string }) => {
       const ready: ReadySession = {
         ticket: r.ticket,

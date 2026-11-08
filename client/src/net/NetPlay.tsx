@@ -57,6 +57,8 @@ function forwardingGround(): GroundQuery & { target: GroundQuery } {
     // it, or prediction would walk the surface while the zone walks the cave.
     // A target without caves is its own level view: steps are unchanged.
     atLevel: (y: number): GroundQuery => (g.target.atLevel ? g.target.atLevel(y) : g.target),
+    // G3: voice occlusion asks whether a point between two heads is cave air.
+    caveAir: (x: number, y: number, z: number) => g.target.caveAir?.(x, y, z) ?? false,
   };
   return g;
 }
