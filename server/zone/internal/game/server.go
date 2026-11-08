@@ -1,0 +1,402 @@
+// Package game is the zone server's authoritative simulation: sessions, the
+// entity store, the 30 Hz tick, interest management and delta snapshots.
+//
+// Threading model (the one rule that keeps this simple): ONE goroutine, the
+// scheduler's, owns all simulation state. Connection goroutines only decode
+// frames, rate-limit them and append them to their session's inbox; the tick
+// drains inboxes, steps movement, rebuilds the AOI grid, and encodes and
+// queues every snapshot. Nothing in a tick waits on the network or Postgres:
+// sends go to per-connection queues (transport) and durable writes go to the
+// write-behind queue.
+package game
+
+import (
+	"context"
+	"crypto/ed25519"
+	"hash/fnv"
+	"log/slog"
+	"math"
+	"slices"
+	"sync"
+	"sync/atomic"
+	"time"
+
+	"lodestone/server/pkg/constants"
+	"lodestone/server/pkg/gameloop"
+	"lodestone/server/pkg/movement"
+	"lodestone/server/pkg/proto"
+	"lodestone/server/pkg/snapshot"
+	"lodestone/server/pkg/svc"
+	"lodestone/server/pkg/writebehind"
+	"lodestone/server/zone/internal/aoi"
+)
+
+// Config is everything a zone needs; main.go fills it from env.
+type Config struct {
+	ZoneID     string
+	WorldID    string
+	Seed       uint64
+	GenVersion string
+	MaxPlayers int
+	// DevSpawn lets a client pick its spawn with /ws?spawn=x,z. Only for dev
+	// and soak bots (main enables it only with the dev ticket key or
+	// LODESTONE_ZONE_DEV_SPAWN=1); real spawns come from the character row.
+	DevSpawn     bool
+	TicketKey    ed25519.PublicKey
+	Ground       movement.Ground
+	SpinTail     time.Duration
+	SaveInterval time.Duration
+	Store        CharacterStore // nil: no persistence
+	Queue        *writebehind.Queue
+	Metrics      *svc.Metrics
+	Log          *slog.Logger
+	// Now is the wall clock (tickets, server time); tests override it.
+	Now func() time.Time
+}
+
+// Server is one zone process's simulation.
+type Server struct {
+	cfg   Config
+	log   *slog.Logger
+	sched *gameloop.Scheduler
+	loop  *gameloop.Loop
+	stats *gameloop.Stats
+
+	joins    chan *session
+	stopping atomic.Bool
+	stopped  chan struct{} // closed once the tick has halted
+	stopOnce sync.Once
+
+	// Tick-owned state.
+	tick     uint32
+	nextID   uint32
+	ents     []*Entity // sorted by ID (IDs only grow, removal keeps order)
+	sessions []*session
+	byChar   map[string]*session
+	parties  map[uint32][]*Entity
+	grid     *aoi.Grid
+	idxs     []int32
+	cands    []snapshot.Candidate
+	w        proto.Writer
+	saveDiv  uint32
+
+	// Shared with the metrics goroutine.
+	connsMu sync.Mutex
+	conns   map[*session]struct{}
+	m       metrics
+}
+
+// New builds a server; call Start to begin ticking.
+func New(cfg Config) *Server {
+	if cfg.Now == nil {
+		cfg.Now = time.Now
+	}
+	if cfg.Ground == nil {
+		cfg.Ground = movement.Flat{}
+	}
+	if cfg.Log == nil {
+		cfg.Log = slog.Default()
+	}
+	if cfg.Metrics == nil {
+		cfg.Metrics = svc.NewMetrics()
+	}
+	if cfg.MaxPlayers <= 0 {
+		cfg.MaxPlayers = 400
+	}
+	if cfg.SaveInterval <= 0 {
+		cfg.SaveInterval = constants.SaveIntervalS * time.Second
+	}
+	interval := time.Second / constants.TickRateHz
+	s := &Server{
+		cfg:     cfg,
+		log:     cfg.Log,
+		joins:   make(chan *session, 256),
+		stopped: make(chan struct{}),
+		byChar:  map[string]*session{},
+		parties: map[uint32][]*Entity{},
+		grid:    aoi.NewWorld(),
+		conns:   map[*session]struct{}{},
+		nextID:  1,
+		stats:   gameloop.NewStats(interval, 60*constants.TickRateHz),
+		saveDiv: uint32(cfg.SaveInterval / interval),
+	}
+	if s.saveDiv == 0 {
+		s.saveDiv = 1
+	}
+	s.m.init(cfg.Metrics)
+	s.loop = &gameloop.Loop{Interval: interval, Stats: s.stats, OnTick: s.onTick}
+	return s
+}
+
+// Start begins ticking on a fresh shared scheduler.
+func (s *Server) Start() {
+	s.sched = gameloop.New(s.cfg.SpinTail)
+	s.sched.Add(s.loop)
+	s.log.Info("zone ticking", "hz", constants.TickRateHz, "spinTail", s.cfg.SpinTail.String(), "clock", gameloop.PreciseClock)
+}
+
+// Players is the number of connected players (safe from any goroutine).
+func (s *Server) Players() int { return int(s.m.players.Load()) }
+
+// TickStats exposes scheduler stats (metrics, tests, evidence).
+func (s *Server) TickStats() gameloop.Summary { return s.stats.Summary() }
+
+// Stop halts the tick (waiting for one in progress), kicks everyone with
+// `shutdown`, checkpoints every character, and flushes the write-behind queue
+// until ctx expires.
+func (s *Server) Stop(ctx context.Context) {
+	s.stopOnce.Do(func() {
+		s.stopping.Store(true)
+		if s.sched != nil {
+			s.sched.Close() // waits for the current tick; no tick runs after this
+		}
+		close(s.stopped)
+		for {
+			select {
+			case sess := <-s.joins:
+				s.kick(sess, proto.KickCodeShutdown, "zone shutting down")
+				close(sess.joined)
+				continue
+			default:
+			}
+			break
+		}
+		for _, sess := range slices.Clone(s.sessions) {
+			s.kick(sess, proto.KickCodeShutdown, "zone shutting down")
+			s.leave(sess)
+		}
+		if s.cfg.Queue != nil {
+			if err := s.cfg.Queue.Flush(ctx); err != nil {
+				s.log.Error("write-behind flush", "err", err, "left", s.cfg.Queue.Depth())
+			} else {
+				s.log.Info("write-behind flushed")
+			}
+		}
+	})
+}
+
+// serverTimeMs is the protocol's server clock: Unix milliseconds with
+// sub-millisecond precision (Welcome, Snapshot, ClockPong all use it).
+func (s *Server) serverTimeMs() float64 {
+	return float64(s.cfg.Now().UnixMicro()) / 1000
+}
+
+// onTick is one 1/30 s simulation step. Order: joins, inputs, grid,
+// checkpoints, snapshots.
+func (s *Server) onTick() {
+	s.tick++
+	tick := s.tick
+	now := time.Now()
+
+	for {
+		select {
+		case sess := <-s.joins:
+			s.join(sess)
+			continue
+		default:
+		}
+		break
+	}
+
+	for i := 0; i < len(s.sessions); {
+		sess := s.sessions[i]
+		if sess.closed.Load() {
+			s.leave(sess) // removes sessions[i]; don't advance
+			continue
+		}
+		s.drain(sess, now)
+		i++
+	}
+
+	// Quantize once per entity and rebuild the grid; every client's snapshot
+	// reads these.
+	s.grid.Reset()
+	for i, e := range s.ents {
+		e.idx = int32(i)
+		e.quantize(s.cfg.Ground)
+		s.grid.Insert(int32(i), e.Move.Pos.X, e.Move.Pos.Z)
+	}
+
+	// Checkpoint each character every SAVE_INTERVAL_S, staggered by id so
+	// the queue sees a trickle, not a burst every 30 s.
+	if s.cfg.Queue != nil {
+		for _, e := range s.ents {
+			if (tick+e.ID)%s.saveDiv == 0 {
+				s.checkpoint(e)
+			}
+		}
+	}
+
+	serverTime := s.serverTimeMs()
+	var sumNear, sumMid, sumFar, sumParty, maxSet, snapBytes int64
+	for _, sess := range s.sessions {
+		n, md, f, p, b := s.sendSnapshot(sess, tick, serverTime)
+		sumNear += int64(n)
+		sumMid += int64(md)
+		sumFar += int64(f)
+		sumParty += int64(p)
+		snapBytes += int64(b)
+		if t := int64(n + md + f + p); t > maxSet {
+			maxSet = t
+		}
+	}
+	s.m.aoiAccum(len(s.sessions), sumNear, sumMid, sumFar, sumParty, maxSet, snapBytes)
+}
+
+// join admits a handshaken session (tick goroutine).
+func (s *Server) join(sess *session) {
+	defer close(sess.joined)
+	if s.stopping.Load() {
+		s.kick(sess, proto.KickCodeShutdown, "zone shutting down")
+		return
+	}
+	if sess.closed.Load() {
+		return
+	}
+	spawn := sess.spawn
+	// Duplicate login: the newest connection wins (a player reconnecting after
+	// a dropped socket must not be locked out by their own ghost). The old
+	// session is kicked and the new one continues from its live position.
+	if old := s.byChar[sess.claims.CharacterID]; old != nil {
+		spawn = old.ent.Move.Pos
+		s.kick(old, proto.KickCodeDuplicateLogin, "logged in from another connection")
+		s.leave(old)
+	}
+	if len(s.sessions) >= s.cfg.MaxPlayers {
+		s.kick(sess, proto.KickCodeServerFull, "zone full")
+		return
+	}
+	e := &Entity{
+		ID:          s.nextID,
+		Kind:        proto.EntityKindPlayer,
+		Name:        sess.claims.CharacterName,
+		CharacterID: sess.claims.CharacterID,
+		Level:       1,
+		Health:      100,
+		HealthMax:   100,
+		Stamina:     constants.StaminaMax,
+		StaminaMax:  constants.StaminaMax,
+	}
+	s.nextID++
+	e.Move.Pos = spawn
+	if g := s.cfg.Ground.HeightAt(spawn.X, spawn.Z); e.Move.Pos.Y < g {
+		e.Move.Pos.Y = g
+	}
+	e.prevValid = e.Move
+	e.quantize(s.cfg.Ground)
+	sess.ent = e
+	s.ents = append(s.ents, e)
+	s.sessions = append(s.sessions, sess)
+	s.byChar[e.CharacterID] = sess
+	if e.PartyID != 0 {
+		s.parties[e.PartyID] = append(s.parties[e.PartyID], e)
+	}
+	s.connsMu.Lock()
+	s.conns[sess] = struct{}{}
+	s.connsMu.Unlock()
+	s.m.players.Store(int64(len(s.sessions)))
+
+	welcome := &proto.Welcome{
+		ProtocolVersion: proto.ProtocolVersion,
+		EntityID:        e.ID,
+		Tick:            s.tick,
+		TickRate:        constants.TickRateHz,
+		ServerTime:      s.serverTimeMs(),
+		WorldID:         s.cfg.WorldID,
+		Seed:            s.cfg.Seed,
+		GenVersion:      s.cfg.GenVersion,
+		X:               proto.MetersToCm(e.Move.Pos.X),
+		Y:               proto.MetersToCm(e.Move.Pos.Y),
+		Z:               proto.MetersToCm(e.Move.Pos.Z),
+		Name:            e.Name,
+	}
+	if err := sess.conn.SendReliable(proto.Encode(welcome)); err != nil {
+		sess.closed.Store(true)
+	}
+	s.log.Info("join", "entity", e.ID, "character", e.CharacterID, "name", e.Name, "remote", sess.conn.RemoteAddr(),
+		"x", math.Round(spawn.X*100)/100, "z", math.Round(spawn.Z*100)/100)
+}
+
+// leave removes a session and its entity, checkpointing the character
+// (spec 11: saved on logout).
+func (s *Server) leave(sess *session) {
+	if sess.left {
+		return
+	}
+	sess.left = true
+	sess.closed.Store(true)
+	sess.conn.Close(1000, "")
+	if i := slices.Index(s.sessions, sess); i >= 0 {
+		s.sessions = slices.Delete(s.sessions, i, i+1)
+	}
+	s.connsMu.Lock()
+	delete(s.conns, sess)
+	s.connsMu.Unlock()
+	s.m.players.Store(int64(len(s.sessions)))
+	e := sess.ent
+	if e == nil {
+		return
+	}
+	if s.byChar[e.CharacterID] == sess {
+		delete(s.byChar, e.CharacterID)
+	}
+	if i, ok := slices.BinarySearchFunc(s.ents, e.ID, func(x *Entity, id uint32) int { return cmpU32(x.ID, id) }); ok {
+		s.ents = slices.Delete(s.ents, i, i+1)
+	}
+	if e.PartyID != 0 {
+		ps := s.parties[e.PartyID]
+		if i := slices.Index(ps, e); i >= 0 {
+			s.parties[e.PartyID] = slices.Delete(ps, i, i+1)
+		}
+		if len(s.parties[e.PartyID]) == 0 {
+			delete(s.parties, e.PartyID)
+		}
+	}
+	if s.cfg.Queue != nil {
+		s.checkpoint(e)
+	}
+	s.log.Info("leave", "entity", e.ID, "character", e.CharacterID)
+}
+
+// checkpoint queues a position save (never blocks).
+func (s *Server) checkpoint(e *Entity) {
+	if s.cfg.Store == nil || s.cfg.Queue == nil {
+		return
+	}
+	id, pos, store, log := e.CharacterID, e.Move.Pos, s.cfg.Store, s.log
+	s.cfg.Queue.Enqueue(writebehind.Op{Key: "pos:" + id, Run: func(ctx context.Context) error {
+		err := store.SavePosition(ctx, id, pos)
+		if err != nil && errorsIsSkip(err) {
+			// Expected until WP04 creates character rows: log once per
+			// character, not every 30 s.
+			if _, seen := loggedMissing.LoadOrStore(id, true); !seen {
+				log.Info("checkpoint skipped: no character row (WP04 creates characters)", "character", id)
+			}
+		}
+		return err
+	}})
+}
+
+var loggedMissing sync.Map
+
+// defaultSpawn scatters players within 8 m of the world center by character
+// id, so dev logins without a character row don't stack on one point.
+func defaultSpawn(characterID string) movement.Vec3 {
+	h := fnv.New64a()
+	h.Write([]byte(characterID))
+	v := h.Sum64()
+	a := float64(v&0xffff) / 65536 * 2 * math.Pi
+	r := float64((v>>16)&0xffff) / 65536 * 8
+	c := float64(constants.WorldSizeM) / 2
+	return movement.Vec3{X: c + r*math.Cos(a), Z: c + r*math.Sin(a)}
+}
+
+func cmpU32(a, b uint32) int {
+	switch {
+	case a < b:
+		return -1
+	case a > b:
+		return 1
+	}
+	return 0
+}

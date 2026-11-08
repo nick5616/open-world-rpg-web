@@ -132,11 +132,18 @@ func CORS(origin string, h http.Handler) http.Handler {
 // Run serves until SIGINT/SIGTERM, then shuts down gracefully. onStop runs
 // after the listener closes (flush write-behind queues, close pools).
 func (s *Server) Run(handler http.Handler, onStop func(context.Context)) error {
+	return s.RunContext(context.Background(), handler, onStop)
+}
+
+// RunContext is Run with a parent context: cancelling it shuts down exactly
+// like a signal does (the zone uses this for LODESTONE_ZONE_EXIT_AFTER, since
+// Windows cannot deliver SIGINT to a background process).
+func (s *Server) RunContext(parent context.Context, handler http.Handler, onStop func(context.Context)) error {
 	if handler == nil {
 		handler = s.Mux
 	}
 	srv := &http.Server{Addr: s.Addr, Handler: handler, ReadHeaderTimeout: 10 * time.Second}
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	ctx, stop := signal.NotifyContext(parent, os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	errc := make(chan error, 1)
 	go func() {
