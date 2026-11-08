@@ -28,7 +28,8 @@ import { buildZone, goAvailable, repoRoot, startZone, type ZoneProc } from '../.
 import { chemStep, worldClockState, worldTime } from '../clock';
 import { TerrainMaterial } from '../chem/material';
 import { BitmapSync, EventSync, type ChemView } from '../chem/sync';
-import { cellCenter, cellId, MAT_BRUSH, MAT_GRASS, ST_BURNING } from '../chem/sim';
+import { cellId, ST_BURNING } from '../chem/sim';
+import { findMeadow } from './meadow';
 
 const SEED = '20261108';
 const SECONDS = 62;
@@ -134,38 +135,12 @@ class FireClient {
   }
 }
 
-/** A meadow near the spawn: the spot with the most dry fuel in a 14-cell disc. */
-function findMeadow(terrain: WorldgenGround): { x: number; z: number; fuel: number } {
-  const d = terrain.atlas.data;
-  const src = new TerrainMaterial(terrain, BigInt(SEED), d);
-  let best = { x: d.spawn.x, z: d.spawn.z, fuel: -1 };
-  for (let r = 80; r <= 600 && best.fuel < 0.62; r += 40) {
-    for (let a = 0; a < 16; a++) {
-      const x = d.spawn.x + r * Math.cos((a * Math.PI) / 8);
-      const z = d.spawn.z + r * Math.sin((a * Math.PI) / 8);
-      const cx = Math.floor(x / 2);
-      const cz = Math.floor(z / 2);
-      let n = 0;
-      let f = 0;
-      for (let dz = -14; dz <= 14; dz++)
-        for (let dx = -14; dx <= 14; dx++) {
-          if (dx * dx + dz * dz > 196) continue;
-          n++;
-          const m = src.material(cx + dx, cz + dz);
-          if (m === MAT_GRASS || m === MAT_BRUSH) f++;
-        }
-      if (f / n > best.fuel) best = { x: cellCenter(cx), z: cellCenter(cz), fuel: f / n };
-    }
-  }
-  return best;
-}
-
 async function main(): Promise<void> {
   if (!goAvailable()) throw new Error('Go not found (PATH or ~/sdk/go/bin)');
   const wasm = path.join(repoRoot, 'worldgen', 'pkg', 'worldgen.wasm');
   if (!fs.existsSync(wasm)) throw new Error('build the wasm first: npm run build:wasm');
   const terrain = await loadWorldgenGround(fs.readFileSync(wasm), SEED);
-  const spot = findMeadow(terrain);
+  const spot = findMeadow(terrain, BigInt(SEED));
   console.log(`meadow at (${spot.x}, ${spot.z}), ${(spot.fuel * 100).toFixed(0)}% fuel`);
   console.log('building zone...');
   const bin = buildZone();

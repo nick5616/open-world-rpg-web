@@ -1,73 +1,8 @@
-[   1.32s] world world-wp15-defense seed 20261108: world time 1794182103, 22:01, night true, night 498383, moon 4, 30 towns
-[   1.35s] Bo joined as entity 1 at (1923.3, 82.1, 2296.3) with a spear
-[   1.35s] Bo: world clock offset 1384 s: 22:01, night true, moon 4
-[   1.35s] Ana joined as entity 2 at (1929.3, 82.0, 2296.3) with a sword
-[   1.35s] Ana: world clock offset 1384 s: 22:01, night true, moon 4
-[   1.36s] Ana (sword) and Bo (spear), both with sunsteel, stand at the ward garden of Draedmore (1926, 2296); ward radius 140 m
-[   2.39s] Ana: DEFENSE: the ward of Draedmore falters; first wave in 15 s
-[   2.39s] Bo: DEFENSE: the ward of Draedmore falters; first wave in 15 s
-[  16.36s] Bo at (1925, 82, 2296) hp 100%  attacks 0 dodges 0  accepted 0 refused 0  corrections 0
-[  16.36s] Ana at (1927, 82, 2296) hp 100%  attacks 0 dodges 0  accepted 0 refused 0  corrections 0
-[  17.39s] Ana: 3 demons rose (rank 0) at (1775, 2253)
-[  17.39s] Bo: 3 demons rose (rank 0) at (1775, 2253)
-[  17.39s] Ana: 1 demons rose (rank 0) at (1976, 2407)
-[  17.39s] Ana: DEFENSE: wave 1 of 3 (7 demons)
-[  17.39s] Bo: 1 demons rose (rank 0) at (1976, 2407)
-[  17.39s] Bo: DEFENSE: wave 1 of 3 (7 demons)
-[  17.42s] Ana: ward garden health 1000
-[  31.36s] Ana at (1929, 82, 2300) hp 100%  attacks 0 dodges 0  accepted 0 refused 0  corrections 0
-[  31.36s] Bo at (1929, 82, 2300) hp 100%  attacks 0 dodges 0  accepted 0 refused 0  corrections 0
-[  46.36s] Ana at (1923, 82, 2300) hp 100%  attacks 0 dodges 6  accepted 0 refused 0  corrections 0
-[  46.36s] Bo at (1923, 82, 2300) hp 100%  attacks 0 dodges 6  accepted 0 refused 0  corrections 0
-[  61.36s] Bo at (1928, 82, 2299) hp 69%  attacks 0 dodges 21  accepted 0 refused 0  corrections 0
-[  61.36s] Ana at (1928, 82, 2299) hp 69%  attacks 0 dodges 21  accepted 0 refused 0  corrections 0
-[  76.36s] Ana at (1923, 82, 2300) hp 42%  attacks 0 dodges 33  accepted 0 refused 0  corrections 0
-[  76.36s] Bo at (1923, 82, 2300) hp 42%  attacks 0 dodges 33  accepted 0 refused 0  corrections 0
-[  91.36s] Ana at (1924, 82, 2300) hp 74%  attacks 0 dodges 48  accepted 0 refused 0  corrections 0
-[  91.36s] Bo at (1924, 82, 2300) hp 74%  attacks 0 dodges 48  accepted 0 refused 0  corrections 0
-[ 106.36s] Ana at (1923, 82, 2298) hp 79%  attacks 0 dodges 63  accepted 0 refused 0  corrections 0
-[ 106.36s] Bo at (1923, 82, 2298) hp 79%  attacks 0 dodges 63  accepted 0 refused 0  corrections 0
-[ 121.36s] Bo at (1923, 82, 2300) hp 89%  attacks 0 dodges 78  accepted 0 refused 0  corrections 0
-[ 121.36s] Ana at (1923, 82, 2300) hp 89%  attacks 0 dodges 78  accepted 0 refused 0  corrections 0
-[ 136.36s] Bo at (1923, 82, 2300) hp 49%  attacks 0 dodges 91  accepted 0 refused 0  corrections 0
-[ 136.36s] Ana at (1923, 82, 2300) hp 49%  attacks 0 dodges 91  accepted 0 refused 0  corrections 0
-[ 151.36s] Bo at (1919, 82, 2303) hp 40%  attacks 0 dodges 104  accepted 0 refused 0  corrections 0
-[ 151.36s] Ana at (1919, 82, 2303) hp 40%  attacks 0 dodges 104  accepted 0 refused 0  corrections 0
-[ 158.05s] Ana killed a demon (31, +30 xp)
-[ 162.79s] Bo killed a demon (25, +30 xp)
-[ 164.19s] Ana killed a demon (26, +30 xp)
-[ 166.36s] Ana at (1913, 80, 2314) hp 95%  attacks 11 dodges 115  accepted 11 refused 0  corrections 0
-[ 166.36s] Bo at (1913, 80, 2313) hp 95%  attacks 14 dodges 115  accepted 12 refused 0  corrections 0
-[ 167.39s] Ana killed a demon (27, +30 xp)
-[ 181.36s] Bo at (1935, 82, 2292) hp 100%  attacks 16 dodges 116  accepted 13 refused 0  corrections 0
-[ 181.36s] Ana at (1935, 82, 2293) hp 100%  attacks 13 dodges 116  accepted 13 refused 0  corrections 0
-[ 196.36s] Ana at (1933, 82, 2291) hp 100%  attacks 13 dodges 116  accepted 13 refused 0  corrections 0
-[ 196.36s] Bo at (1933, 82, 2291) hp 100%  attacks 16 dodges 116  accepted 13 refused 0  corrections 0
-[ 211.36s] Bo at (1932, 82, 2290) hp 100%  attacks 16 dodges 116  accepted 13 refused 0  corrections 0
-[ 211.36s] Ana at (1932, 82, 2290) hp 100%  attacks 13 dodges 116  accepted 13 refused 0  corrections 0
-[ 226.36s] Ana at (1931, 82, 2290) hp 100%  attacks 13 dodges 116  accepted 13 refused 0  corrections 0
-[ 226.36s] Bo at (1931, 82, 2290) hp 100%  attacks 16 dodges 116  accepted 13 refused 0  corrections 0
-[ 241.36s] Bo at (1945, 81, 2261) hp 100%  attacks 16 dodges 116  accepted 13 refused 0  corrections 0
-[ 241.36s] Ana at (1945, 81, 2261) hp 100%  attacks 13 dodges 116  accepted 13 refused 0  corrections 0
-[ 256.36s] Ana at (1946, 81, 2261) hp 100%  attacks 13 dodges 116  accepted 13 refused 0  corrections 0
-[ 256.36s] Bo at (1946, 81, 2261) hp 100%  attacks 16 dodges 116  accepted 13 refused 0  corrections 0
-[ 271.36s] Ana at (1946, 81, 2262) hp 100%  attacks 13 dodges 116  accepted 13 refused 0  corrections 0
-[ 271.36s] Bo at (1946, 81, 2262) hp 100%  attacks 16 dodges 116  accepted 13 refused 0  corrections 0
-[ 286.36s] Bo at (1947, 81, 2262) hp 100%  attacks 16 dodges 116  accepted 13 refused 0  corrections 0
-[ 286.36s] Ana at (1947, 81, 2262) hp 100%  attacks 13 dodges 116  accepted 13 refused 0  corrections 0
-[ 301.36s] Bo at (1947, 81, 2262) hp 100%  attacks 16 dodges 116  accepted 13 refused 0  corrections 0
-[ 301.36s] Ana at (1947, 81, 2262) hp 100%  attacks 13 dodges 116  accepted 13 refused 0  corrections 0
-[ 316.36s] Ana at (1947, 81, 2262) hp 100%  attacks 13 dodges 116  accepted 13 refused 0  corrections 0
-[ 316.36s] Bo at (1947, 81, 2262) hp 100%  attacks 16 dodges 116  accepted 13 refused 0  corrections 0
-[ 331.36s] Ana at (1947, 81, 2262) hp 100%  attacks 13 dodges 116  accepted 13 refused 0  corrections 0
-[ 331.36s] Bo at (1947, 81, 2262) hp 100%  attacks 16 dodges 116  accepted 13 refused 0  corrections 0
-[ 346.36s] Ana at (1947, 81, 2262) hp 100%  attacks 13 dodges 116  accepted 13 refused 0  corrections 0
-[ 346.36s] Bo at (1947, 81, 2262) hp 100%  attacks 16 dodges 116  accepted 13 refused 0  corrections 0
-[ 361.36s] Bo at (1947, 81, 2262) hp 100%  attacks 16 dodges 116  accepted 13 refused 0  corrections 0
-[ 361.36s] Ana at (1947, 81, 2262) hp 100%  attacks 13 dodges 116  accepted 13 refused 0  corrections 0
-[ 376.36s] Bo at (1947, 81, 2262) hp 100%  attacks 16 dodges 116  accepted 13 refused 0  corrections 0
-[ 376.36s] Ana at (1947, 81, 2262) hp 100%  attacks 13 dodges 116  accepted 13 refused 0  corrections 0
-[ 391.36s] Ana at (1947, 81, 2262) hp 100%  attacks 13 dodges 116  accepted 13 refused 0  corrections 0
-[ 391.36s] Bo at (1947, 81, 2262) hp 100%  attacks 16 dodges 116  accepted 13 refused 0  corrections 0
-[ 406.36s] Ana at (1947, 81, 2262) hp 100%  attacks 13 dodges 116  accepted 13 refused 0  corrections 0
-[ 406.36s] Bo at (1947, 81, 2262) hp 100%  attacks 16 dodges 116  accepted 13 refused 0  corrections 0
+[   1.34s] world world-wp15-defense seed 20261108: world time 1794182104, 22:01, night true, night 498383, moon 4, 30 towns
+[   1.38s] Ana joined as entity 1 at (1929.3, 82.0, 2296.3) with a sword
+[   1.38s] Ana: world clock offset 643 s: 22:02, night true, moon 4
+[   1.38s] Bo joined as entity 2 at (1923.3, 82.1, 2296.3) with a spear
+[   1.38s] Bo: world clock offset 643 s: 22:02, night true, moon 4
+[   1.39s] Ana (sword) and Bo (spear), both with sunsteel, stand at the ward garden of Draedmore (1926, 2296); ward radius 140 m
+[   2.41s] Ana: DEFENSE: the ward of Draedmore falters; first wave in 15 s
+[   2.41s] Bo: DEFENSE: the ward of Draedmore falters; first wave in 15 s

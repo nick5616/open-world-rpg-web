@@ -30,4 +30,4 @@ Tests: `npm test -w client` (clock and chemistry vectors, two-client sync).
 Acceptance: `npm run fire:accept -w client` (two event clients and a bitmap
 client against the zone process, 60 s cell for cell:
 docs/evidence/wp15-fire-sync.txt); screenshots:
-`node client/src/systems/dev/night-shots.mjs`.
+`npm run night:shots -w client`.

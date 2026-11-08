@@ -49,6 +49,10 @@ type DemonState struct {
 	AtGoal      bool
 	DefenseID   int
 	lastStagger uint32
+	// stuck detection (shadow step): where it was at checkAt.
+	checkPos movement.Vec3
+	checkAt  uint32
+	Steps    int // shadow steps taken (debug)
 }
 
 // DemonHooks are the night glue's callbacks (nil = no wards).
@@ -199,13 +203,57 @@ func (w *World) stagger(e *Enemy, src uint32) {
 	}
 }
 
-// demonRegen closes a demon's wounds (every tick, even while staggered).
+// demonRegen closes a demon's wounds (every tick, even while staggered)
+// and shadow-steps a stuck one.
 func (w *World) demonRegen(e *Enemy) {
 	d := e.Demon
 	if d.Wounds > 0 {
 		d.Wounds = math.Max(0, d.Wounds-d.Regen*e.HPMax*dt)
 	}
 	w.demonHealth(e)
+	w.shadowStep(e)
+}
+
+// shadowStep: enemies steer straight over the heightfield (WP13), so a
+// cliff or a terrace can strand one. A demon that wants to go somewhere
+// (its target or its ward garden, more than 5 m away) and has not moved a
+// metre in 4 s steps through the shadows: 6-20 m toward it, onto dry
+// ground outside any active ward (rivers and cliff bands strand them). Thematic, and it keeps defense waves arriving.
+func (w *World) shadowStep(e *Enemy) {
+	d := e.Demon
+	if w.tick-d.checkAt < secondsToTicks(4) {
+		return
+	}
+	moved := hdist(e.Pos, d.checkPos)
+	d.checkPos, d.checkAt = e.Pos, w.tick
+	var want *movement.Vec3
+	if p := w.players[e.Target]; p != nil && (e.State == Chase || e.State == Reposition) {
+		t := p.Pos
+		want = &t
+	} else if d.Goal != nil && !d.AtGoal {
+		want = d.Goal
+	}
+	if want == nil || moved > 1 || hdist(e.Pos, *want) < 5 || e.disabled(w.tick) {
+		return
+	}
+	base := math.Atan2(want.Z-e.Pos.Z, want.X-e.Pos.X)
+	l := hdist(e.Pos, *want)
+	// Straight at it first; then a little to either side; farther each ring
+	// (a river or a cliff band can be wider than one step).
+	for _, step := range []float64{6, 10, 14, 20} {
+		step = math.Min(step, l-2)
+		for _, da := range []float64{0, 0.5, -0.5, 1, -1} {
+			nx, nz := e.Pos.X+step*math.Cos(base+da), e.Pos.Z+step*math.Sin(base+da)
+			y := w.ground.HeightAt(nx, nz)
+			if movement.WaterAt(w.ground, nx, nz) > y-0.3 || (w.DemonHooks.Blocked != nil && w.DemonHooks.Blocked(e, nx, nz)) {
+				continue
+			}
+			e.Pos = w.place(nx, nz, e.Def)
+			d.Steps++
+			d.checkPos = e.Pos
+			return
+		}
+	}
 }
 
 // markKilling flags a status applied by a demon-killing action (its DOT sears).

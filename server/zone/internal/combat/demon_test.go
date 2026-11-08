@@ -201,3 +201,29 @@ func TestWardsBlockDemonsAndShelterPlayers(t *testing.T) {
 		t.Fatalf("demon ignores a player in the open (state %s)", e.State)
 	}
 }
+
+// river is flat ground with a 12 m river across x 310..322.
+type river struct{}
+
+func (river) HeightAt(x, z float64) float64 { return 5 }
+func (river) WaterAt(x, z float64) float64 {
+	if x > 310 && x < 322 {
+		return 7
+	}
+	return 0
+}
+
+func TestStuckDemonShadowStepsAcrossARiver(t *testing.T) {
+	id := uint32(100)
+	w := NewWorld(Config{Seed: 1, NoWildPacks: true}, river{}, func() uint32 { id++; return id })
+	e := w.SpawnDemons(movement.Vec3{X: 300, Z: 300}, []string{"gloamling"}, 1).Members[0]
+	goal := movement.Vec3{X: 340, Y: 5, Z: 300}
+	e.Demon.Goal = &goal
+	e.State = Idle
+	for i := 0; i < 30*20; i++ {
+		w.Step(w.tick + 1)
+	}
+	if e.Pos.X < 322 || e.Demon.Steps == 0 {
+		t.Fatalf("demon stuck at x %.1f (steps %d)", e.Pos.X, e.Demon.Steps)
+	}
+}
