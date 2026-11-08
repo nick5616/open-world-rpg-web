@@ -358,6 +358,7 @@ func (w *World) damageOf(p *Player, a *Action, e *Enemy) (dmg float64, element i
 		if (a.Weapon.Key == "staff" || a.Weapon.Key == "wand") && m.Speed > 0 && lo.Gem >= 0 {
 			element = lo.Gem
 		}
+		dmg *= orOne(p.Gear.WeaponMult) * (1 + p.Gear.DamagePct/100) // WP14 weapon item
 	case a.Spell != nil:
 		s := a.Spell
 		element = s.Element
@@ -377,10 +378,12 @@ func (w *World) damageOf(p *Player, a *Action, e *Enemy) (dmg float64, element i
 			dmg *= s.LowTargetHP.Mult
 		}
 		dmg *= w.passiveMult(p, s, e)
+		dmg *= 1 + p.Gear.SpellPower/100 // WP14
 	case a.Form != nil:
 		f := a.Form
 		element = f.Element
 		dmg = f.Damage * (1 + 0.01*float64(pr.SkillLevel(a.Weapon.Skill)))
+		dmg *= orOne(p.Gear.WeaponMult) * (1 + p.Gear.DamagePct/100) * orOne(p.Gear.FormMult) // WP14: weapon + gem cut
 	}
 	em := D.ElementMult(element, e.Element)
 	if em > 1 {
@@ -389,7 +392,7 @@ func (w *World) damageOf(p *Player, a *Action, e *Enemy) (dmg float64, element i
 		flags |= FlagResisted
 	}
 	dmg *= em * e.damageTakenMult(w.tick)
-	crit := 0.05
+	crit := 0.05 + p.Gear.CritPct/100 // WP14
 	if pr.Knows("solar_flare") {
 		crit += 0.1
 	}

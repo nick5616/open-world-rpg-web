@@ -90,6 +90,12 @@ type Player struct {
 	Mana, ManaMax float64
 	Pos           movement.Vec3 // authoritative feet position (game updates per tick)
 	LastSeq       uint32
+	// WP14: what the equipped items add (internal/items Gear; the zero
+	// value is the WP13 training kit) and the inventory-backed consumable
+	// (nil: WP13's stand-in draught with refilling charges).
+	Gear      Gear
+	OnDrink   func() (heal float64, ok bool)
+	drinkHeal float64
 
 	readyAt   map[int]uint32 // spell/form/technique id -> seq it is ready
 	actions   [actionRing]Action
@@ -132,6 +138,50 @@ func NewPlayer(id uint32, name string, prof *Profile, level int) *Player {
 	return p
 }
 
+// Gear is what equipped items add to a player (WP14 sets it from the
+// inventory; zero = no items, the WP13 numbers exactly).
+type Gear struct {
+	WeaponMult  float64 // weapon moves and forms (0 = 1)
+	DamagePct   float64 // weapon moves and forms
+	SpellPower  float64 // spells, %
+	CritPct     float64
+	Health      float64 // added to the level's max health
+	ArmorPct    float64 // enemy damage reduction, %
+	FormMult    float64 // socketed gem cut (0 = 1)
+	KillsDemons bool    // WP15: sunsteel weapon
+	Stagger     bool    // WP15: silver weapon
+}
+
+func orOne(v float64) float64 {
+	if v <= 0 {
+		return 1
+	}
+	return v
+}
+
+// SetGear applies new gear (health max follows, keeping the health fraction).
+func (p *Player) SetGear(g Gear) {
+	if p.Gear == g {
+		return
+	}
+	p.Gear = g
+	p.SetLevel(p.Level)
+}
+
+// spendDrink asks the inventory for one consumable (WP14); the WP13
+// stand-in always succeeds with combat.yaml's heal.
+func (p *Player) spendDrink() bool {
+	p.drinkHeal = D.Start.Consumable.Heal
+	if p.OnDrink == nil {
+		return true
+	}
+	h, ok := p.OnDrink()
+	if ok {
+		p.drinkHeal = h
+	}
+	return ok
+}
+
 // SetLevel applies a character level (health and mana pools grow with it;
 // spec 8: "character level still exists for health and spell skill points").
 func (p *Player) SetLevel(level int) {
@@ -140,7 +190,7 @@ func (p *Player) SetLevel(level int) {
 	if p.HPMax > 0 {
 		frac = p.HP / p.HPMax
 	}
-	p.HPMax = 100 + 10*float64(p.Level-1)
+	p.HPMax = 100 + 10*float64(p.Level-1) + p.Gear.Health
 	p.HP = math.Min(p.HPMax, p.HPMax*frac)
 	p.ManaMax = D.MaxMana(p.Level)
 	p.Mana = math.Min(p.Mana, p.ManaMax)
@@ -249,7 +299,7 @@ func (p *Player) Frame(f proto.InputFrame, before movement.State, g movement.Gro
 	if f.Flags&proto.InputFlagCast != 0 {
 		r.Started = p.startCast(f, before, w, tick, &r)
 	}
-	if f.Flags&proto.InputFlagInteract != 0 && p.Charges > 0 && p.drinkTick == 0 {
+	if f.Flags&proto.InputFlagInteract != 0 && p.Charges > 0 && p.drinkTick == 0 && p.spendDrink() {
 		p.Charges--
 		p.drinkTick = tick + uint32(math.Round(float64(constants.ConsumableUseMs)*constants.TickRateHz/1000))
 		r.Drink = true
