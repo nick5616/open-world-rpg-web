@@ -83,9 +83,9 @@ interface DemonDecor {
   eyes: THREE.MeshBasicMaterial;
 }
 
-const hornGeo = new THREE.ConeGeometry(0.07, 0.42, 6);
-const eyeGeo = new THREE.SphereGeometry(0.05, 6, 5);
-const hornMat = new THREE.MeshStandardMaterial({ color: '#1a0c08', roughness: 0.5 });
+const hornGeo = new THREE.ConeGeometry(0.08, 0.5, 6);
+const eyeGeo = new THREE.SphereGeometry(0.065, 6, 5);
+const hornMat = new THREE.MeshStandardMaterial({ color: '#b8a888', roughness: 0.45, emissive: '#2a1008', emissiveIntensity: 0.4 });
 
 function makeDecor(size: number, lord: boolean): DemonDecor {
   const root = new THREE.Group();

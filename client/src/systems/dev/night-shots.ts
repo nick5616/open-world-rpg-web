@@ -91,6 +91,7 @@ async function main(): Promise<void> {
     await page.evaluate((r) => (window as unknown as W).__lodestone.connectZone(r), { ticket, zoneEndpoint: `ws://127.0.0.1:${zone.port}/ws?spawn=${at.x.toFixed(2)},${at.z.toFixed(2)}`, zoneId: zone.zoneId, worldId: zone.worldId, name: 'Nightwatch' });
     await page.waitForFunction(() => (window as unknown as W).__lodestone.netDebug()?.phase === 'playing' && (window as unknown as W).__lodestone.player().pos.y > 20 && !!(window as unknown as W).__lodestoneNight, null, { polling: 250, timeout: 180000 });
     await page.evaluate(() => (window as unknown as W).__lodestone.setQuality('high'));
+    await page.keyboard.press('F3'); // hide the debug HUD for the shots
     await sleep(6000); // terrain, towns, the first chemistry clock
     const hud = await page.evaluate(() => (window as unknown as W).__lodestoneNight!.hud());
     note(`connected: hour ${hud.hour}, night ${hud.night}, moon ${hud.moon}`);
@@ -118,6 +119,7 @@ async function main(): Promise<void> {
     await sleep(700);
     await page.screenshot({ path: path.join(out, 'wp15-demons.png') });
     await sleep(1500);
+    await sleep(3000); // they close in
     if (d.first) {
       const d2 = await page.evaluate(() => {
         const me = (window as unknown as W).__lodestone.player().pos;

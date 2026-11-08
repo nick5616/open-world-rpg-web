@@ -27,7 +27,7 @@ export function NightHud() {
   const now = performance.now();
   const d = s.defense;
   return (
-    <div data-testid="night-hud" style={{ position: 'fixed', top: 10, left: '50%', transform: 'translateX(-50%)', zIndex: 12, pointerEvents: 'none', font: '13px system-ui, sans-serif', color: '#e9ecef', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+    <div data-testid="night-hud" style={{ position: 'fixed', top: 46, left: '50%', transform: 'translateX(-50%)', zIndex: 12, pointerEvents: 'none', font: '13px system-ui, sans-serif', color: '#e9ecef', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
       <div data-testid="night-clock" style={{ background: 'rgba(10,12,20,0.55)', padding: '3px 10px', borderRadius: 12, display: 'flex', gap: 8, alignItems: 'center' }}>
         <span>{s.night ? MOON_GLYPHS[s.moon] : '☀️'}</span>
         <span>{hhmm(s.hour)}</span>

@@ -498,3 +498,31 @@ func (s *Sim) ActiveChunks() []uint32 {
 	slices.Sort(out)
 	return out
 }
+
+// Rebase moves the simulation to step k without simulating the gap,
+// shifting every timer, op and pillar by the same amount: the world clock
+// jumped (a dev "set time"), and fires keep their remaining time. Clients
+// rebuild their view and get fresh baselines.
+func (s *Sim) Rebase(k int64) {
+	d := k - s.Step
+	if d == 0 {
+		return
+	}
+	s.Step = k
+	for id, c := range s.cells {
+		c.until += d
+		s.cells[id] = c
+	}
+	timers := make(map[int64][]uint32, len(s.timers))
+	for at, ids := range s.timers {
+		timers[at+d] = ids
+	}
+	s.timers = timers
+	for i := range s.ops {
+		s.ops[i].Step += d
+	}
+	for i := range s.Pillars {
+		s.Pillars[i].Until += d
+	}
+	s.SurfaceVersion++
+}

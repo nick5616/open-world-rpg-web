@@ -1,0 +1,5 @@
+meadow (1843, 2457) 73% fuel
+connected: hour 21.5, night true, moon 4
+demons drawn: 4
+fire after 14 s: 0 burning cells (view events, step 8970916526)
+shots: wp15-night.png wp15-demons.png wp15-demons-close.png wp15-dawn.png wp15-fire-night.png wp15-pillar.png wp15-fire-day.png (GPU)

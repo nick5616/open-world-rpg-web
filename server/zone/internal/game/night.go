@@ -289,6 +289,12 @@ func (s *Server) SetClockOffset(offsetS float64) {
 	s.nightInit()
 	s.night.offset = offsetS
 	s.cfg.TimeOffsetS = offsetS
+	if c := s.night.cfg.Chem; c != nil {
+		c.Rebase(weather.Step(s.worldTimeS())) // fires keep their remaining time
+		for _, cc := range s.night.clients {
+			clear(cc.known) // clients rebuild their view: send fresh baselines
+		}
+	}
 	for _, sess := range s.sessions {
 		if sess.ent != nil {
 			s.sendClock(sess)

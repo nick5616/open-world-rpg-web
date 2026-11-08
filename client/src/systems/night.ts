@@ -151,7 +151,14 @@ function onClock(e: { data: Uint8Array }): void {
   const d = e.data;
   if (d.length < 18 || d[0] !== 1) return;
   const v = new DataView(d.buffer, d.byteOffset, d.byteLength);
-  worldClockState.offsetS = v.getFloat64(1, true);
+  const offset = v.getFloat64(1, true);
+  if (worldClockState.announced && offset !== worldClockState.offsetS) {
+    // The world clock jumped (dev "set time"): the zone rebased its
+    // chemistry and re-sends baselines; start a fresh view.
+    nightRuntime.view = null;
+    chemRuntime.view = null;
+  }
+  worldClockState.offsetS = offset;
   worldClockState.windDeg = v.getUint16(10, true);
   const zoneMode: ChemMode = d[12] === 2 ? 'bitmap' : 'events';
   worldClockState.demonIntensity = v.getFloat32(13, true);
@@ -168,6 +175,7 @@ function onClock(e: { data: Uint8Array }): void {
     nightRuntime.view = null;
     chemRuntime.view = null;
   }
+  if (!nightRuntime.view) nightRuntime.queue = [];
   useNightHud.getState().set({ online: true, chemMode: zoneMode });
   rebuildView();
 }

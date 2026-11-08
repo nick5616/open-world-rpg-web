@@ -305,3 +305,25 @@ func TestCodecRoundTrip(t *testing.T) {
 	}
 	_ = proto.Event{}
 }
+
+func TestRebaseKeepsTheFireAndItsTimers(t *testing.T) {
+	no := false
+	a := NewSim(5, 90, patch{uniform{MatGrass}, 100, 100, 30}, 1000)
+	b := NewSim(5, 90, patch{uniform{MatGrass}, 100, 100, 30}, 1000)
+	a.Rain, b.Rain = &no, &no
+	for _, s := range []*Sim{a, b} {
+		s.Schedule(Op{Step: 1003, Kind: OpIgnite, Cell: CellID(100, 100), Radius: 1})
+		s.AdvanceTo(1050)
+	}
+	b.Rebase(1050 - 40000) // the clock jumped back
+	if a.Hash() != b.Hash() {
+		t.Fatal("rebase changed the relative state")
+	}
+	// Spread rolls hash the absolute step, so the two diverge from here (clients
+	// re-sync from fresh baselines after a jump); the fire just keeps burning.
+	before := b.Burning()
+	b.AdvanceTo(1060 - 40000)
+	if before == 0 || b.Burning() == 0 {
+		t.Fatal("the rebased fire went out")
+	}
+}
