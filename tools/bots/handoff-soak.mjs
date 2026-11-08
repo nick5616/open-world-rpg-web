@@ -29,6 +29,10 @@ const ZONES = Number(arg('zones', '3'));
 const DURATION = arg('duration', '10m');
 const PROFILE = arg('profile', 'clean');
 const KILL_AFTER = arg('kill-after', ''); // e.g. 3m: hard-kill one pool zone then
+// Opt-in: on Windows, Go's CPU profiler can crash a process that runs
+// wazero-compiled code (runtime.sigprof unwinding JIT frames: seen once in
+// a 1,000-bot run), so a profile run is a diagnostic run, not an acceptance run.
+const CPU_PROFILE = process.argv.includes('--cpu-profile');
 const TAG = arg('tag', `${BOTS}-${ZONES}z-${PROFILE}${KILL_AFTER ? '-failover' : ''}`);
 const BASE_PORT = Number(arg('base-port', '18300'));
 const EXE = process.platform === 'win32' ? '.exe' : '';
@@ -107,7 +111,7 @@ try {
       LODESTONE_ZONE_MAX_PLAYERS: '1200',
       LODESTONE_ZONE_EARSHOT: '0',
       LODESTONE_ZONE_DEBUG_URL: z.debug,
-      LODESTONE_ZONE_PPROF: '1', // a mid-run CPU profile of the busiest zone goes into the evidence
+      LODESTONE_ZONE_PPROF: CPU_PROFILE ? '1' : '0', // --cpu-profile: a mid-run profile of the busiest zone
     });
     if (!(await waitHttp(`${z.debug}/healthz`, 60000))) throw new Error(`${id} not healthy`);
     zones.push(z);
@@ -139,6 +143,7 @@ try {
   // Mid-run CPU profile of the busiest zone (where does the tick go?).
   const profileAt = Math.min(parseDur(DURATION) / 2, KILL_AFTER ? parseDur(KILL_AFTER) - 30000 : Infinity);
   const profiling = (async () => {
+    if (!CPU_PROFILE) return;
     await sleep(Math.max(30000, profileAt));
     let best = null;
     for (const z of zones) {
@@ -159,14 +164,14 @@ ${top}`);
   if (KILL_AFTER) {
     await sleep(parseDur(KILL_AFTER));
     const victim = zones[zones.length - 1];
-    const before = await (await fetch(`${victim.debug}/debug/cluster`)).json().catch(() => null);
+    const before = await fetch(`${victim.debug}/debug/cluster`).then((r) => r.json()).catch(() => null);
     step(`HARD KILL ${victim.id} (owned ${before?.view?.characters?.length ?? '?'} players): simulating a reclaimed spot VM`);
     killTree(victim.child);
     victim.killedAt = Date.now();
     for (let t = 0; t < 40; t++) {
       await sleep(500);
-      const d = await (await fetch(`${zones[0].debug}/debug/cluster`)).json();
-      if (!d.owners.flat().includes(victim.id)) {
+      const d = await fetch(`${zones[0].debug}/debug/cluster`).then((r) => r.json()).catch(() => null);
+      if (d && !d.owners.flat().includes(victim.id)) {
         step(`failover: ${victim.id}'s regions owned by others after ${((Date.now() - victim.killedAt) / 1000).toFixed(1)} s: ${JSON.stringify(d.owners)}`);
         break;
       }

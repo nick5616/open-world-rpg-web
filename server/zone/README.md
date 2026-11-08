@@ -384,7 +384,7 @@ Decision: `docs/decisions/0016-handoff.md`. Contract: `docs/cr/008-zone-handoff.
 | `LODESTONE_ZONE_REGIONS="x,z;x,z"` | regions pinned by config |
 | `LODESTONE_ZONE_HEARTBEAT_MS` / `_TTL_MS` | registry heartbeat (1000) and the staleness others apply to us (3000) |
 | `LODESTONE_ZONE_DEBUG_URL` | HTTP base announced for tools (`http://127.0.0.1:<port>`) |
-| `LODESTONE_ZONE_PPROF=1` | Go profiler on `/debug/pprof/` (any mode; soaks use it, off by default) |
+| `LODESTONE_ZONE_PPROF=1` | Go profiler on `/debug/pprof/` (any mode, off by default). Diagnostic only: on Windows a CPU profile crashed a zone once (`runtime.sigprof` unwinding wazero JIT frames) |
 
 Every zone of a world must run in cluster mode. Each needs its own port (and WebTransport UDP port).
 
