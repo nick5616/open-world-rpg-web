@@ -11,6 +11,7 @@ import { parseAtlas, parseChunk, type AtlasData, type ChunkData } from './format
 
 export * from './format';
 export * from './cave';
+export * from './town';
 
 /** Raw exports of worldgen.wasm (README "Exports"). Pointers are i32 offsets. */
 export interface WorldgenExports {
@@ -32,6 +33,8 @@ export interface WorldgenExports {
   water_height?(atlasPtr: number, x: number, z: number): number;
   raycast(atlasPtr: number, ox: number, oy: number, oz: number, dx: number, dy: number, dz: number, maxDist: number): number;
   hash_buffer(ptr: number, len: number): bigint;
+  /** WP20 towns layer. Absent in wasm builds before it. */
+  towns_build?(atlasPtr: number): number;
 }
 
 /** The ABI this loader speaks; loading a wasm with another ABI fails fast. */

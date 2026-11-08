@@ -103,8 +103,40 @@ pub struct Deco {
 /// Starmetal hook (spec 7: meteor craters, WP20 structures). WP20 places the
 /// crater geometry; it should emit veins with material ORE_STARMETAL through
 /// this function so ids, hit points and the record format stay in one place.
-pub fn crater_veins(_a: &Atlas, _crater_site_index: usize) -> Vec<Vein> {
-    Vec::new()
+///
+/// WP20: 3 to 5 starmetal clusters in a ring 2.4-3.4 m around the crater's
+/// meteorite, on the surface (sunlit). The cave pass never calls this, so
+/// cave output is unchanged; the towns buffer carries these veins.
+pub fn crater_veins(a: &Atlas, crater_site_index: usize) -> Vec<Vein> {
+    let s = a.site(crater_site_index);
+    let elem = a.section(crate::atlas::format::sec::SITES)[8 + crater_site_index * crate::atlas::format::SITE_REC + 35];
+    let mut seq = Seq::new(a.seed ^ s.seed as u64, 0x5747);
+    let n = 3 + seq.below(3);
+    let base = seq.range(0.0, core::f64::consts::TAU);
+    (0..n)
+        .map(|k| {
+            let ang = base + k as f64 * core::f64::consts::TAU / n as f64 + seq.range(-0.3, 0.3);
+            let r = seq.range(2.4, 3.4);
+            let (x, z) = (s.x + r * libm::cos(ang), s.z + r * libm::sin(ang));
+            let y = crate::ground::collision_height(a, x, z) as f32 as f64;
+            Vein {
+                id: stable_id(LAYER_VEIN, crater_site_index as i32, 0xFFF, k as u32),
+                x: x as f32 as f64,
+                y,
+                z: z as f32 as f64,
+                n: [0.0, 1.0, 0.0],
+                kind: KIND_ORE,
+                material: ORE_STARMETAL,
+                element: if elem < 8 { elem } else { 7 },
+                hp: ORE_HP[ORE_STARMETAL as usize] as u16,
+                size: 3 + seq.below(5) as u8,
+                flags: VEIN_SUNLIT,
+                band: 0,
+                chamber: 0xFFFF,
+                system: 0xFFFF,
+            }
+        })
+        .collect()
 }
 
 fn noise_scale_at(sys: &System, x: f64, z: f64) -> f64 {

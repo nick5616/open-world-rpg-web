@@ -35,9 +35,12 @@ describe.skipIf(!hasWasm)('golden hashes (Node host)', () => {
     );
     const c = stats(r.caveMs);
     console.log(`[golden:node] caves: ${r.caveCells} cells, ${r.caveQueries} collision/system queries, 0 failures expected; cave_build mean ${c.mean.toFixed(2)} p95 ${c.p95.toFixed(2)} max ${c.max.toFixed(2)} ms`);
+    console.log(`[golden:node] towns: ${r.towns} worlds (hash, counts, every region settled), ${r.townQueries} building floor/collide vectors; towns_build ${r.townMs.map((m) => m.toFixed(0)).join('/')} ms`);
     expect(r.failures).toEqual([]);
     expect(r.chunks).toBeGreaterThanOrEqual(200);
     expect(r.caveCells).toBeGreaterThanOrEqual(100);
+    expect(r.towns).toBe(golden.worlds.length);
+    expect(r.townQueries).toBeGreaterThanOrEqual(3000);
   }, 120_000);
 
   it('collision queries are cheap enough for server movement validation', async () => {

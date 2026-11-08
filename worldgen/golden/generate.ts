@@ -11,6 +11,7 @@ import type { WorldSpec } from '@lodestone/contracts';
 import { BIOMES, fnv1a64, hex64, loadWorldgen, type AtlasData } from '../js/src/index';
 import { f64Bits, type GoldenChunk, type GoldenFile, type GoldenWorld } from '../js/src/golden';
 import { generateCaves } from '../js/src/caveGolden';
+import { generateTowns } from '../js/src/townGolden';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const wasmPath = path.join(here, '..', 'pkg', 'worldgen.wasm');
@@ -125,7 +126,11 @@ for (const { label, spec } of presets()) {
     collision,
     // WP09: cave cells across depth bands, graph, masks, collision vectors.
     caves: generateCaves(wg, atlas),
+    // WP20: towns buffer, counts, building collision vectors.
+    towns: generateTowns(wg, atlas, label),
   });
+  const tw = worlds.at(-1)!.towns!;
+  console.log(`  towns: ${tw.bytes} B, ${JSON.stringify(tw.counts)}, ${tw.floors.length} floors, ${tw.collide.length} collide`);
   const cv = worlds.at(-1)!.caves!;
   console.log(`  caves: ${cv.graph.systems} systems, ${cv.cells.length} cells (${[...new Set(cv.cells.map((c) => c.tag))].join(" ")}), ${cv.floors.length} floors, ${cv.collide.length} collide, ${cv.masks.length} masks`);
   const biomes = BIOMES.map((b) => `${b}:${chunks.filter((c) => c.tag === `biome:${b}`).length}`).join(' ');

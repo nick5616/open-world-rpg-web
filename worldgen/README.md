@@ -12,13 +12,14 @@ reader and must stay in sync with this document.
 
 | Path | What |
 | --- | --- |
-| `src/` | The crate: `spec.rs` (spec_from_seed, validation), `names.rs` (name grammars), `rng.rs` / `noise.rs` (counter hashing, gradient noise), `atlas/` (pass 1), `ground.rs` (height function + collision queries), `chunk.rs` (pass 2), `abi.rs` (wasm exports), `cave/` (WP09 caves, gems and veins), `gen/` (generated from contracts, never edit) |
+| `src/` | The crate: `spec.rs` (spec_from_seed, validation), `names.rs` (name grammars), `rng.rs` / `noise.rs` (counter hashing, gradient noise), `atlas/` (pass 1), `ground.rs` (height function + collision queries), `chunk.rs` (pass 2), `abi.rs` (wasm exports), `cave/` (WP09 caves, gems and veins), `town/` (WP20 towns, roads, structures, NPCs), `gen/` (generated from contracts, never edit) |
 | `js/` | `@lodestone/worldgen`, the typed TS loader (README there) |
 | `golden/` | Golden table `golden.json` and its generator |
 | `harness/` | Chromium (Web Worker) and Go/wazero hosts of the golden table |
 | `debug/` | Vite debug map on port 5180 |
 | `scripts/` | `build-wasm.mjs`, `test-golden.mjs` |
 | `examples/atlas_stats.rs` | Native sanity report: `cargo run -p worldgen --release --example atlas_stats -- 42` |
+| `examples/town_stats.rs` | Towns report (settlements per region and size, buildings vs spec ranges, roads, bridges, structures, timing): `cargo run -p worldgen --release --example town_stats -- 20261108 7` |
 | `examples/cave_stats.rs` | Cave report (systems, depths, veins, cell build times): `cargo run -p worldgen --release --example cave_stats -- 20261108` |
 | `tests/caves.rs` | Cave invariants: every chamber of every system reachable from the sky (4 worlds), border vertices shared, edits, system query |
 | `pkg/` | Build output (gitignored): `worldgen.wasm`, `worldgen-<sha256:16>.wasm`, `manifest.json` |
@@ -465,6 +466,143 @@ Cost (Chromium worker, golden table run): cave_build mean 0.8 ms, max 3.7 ms
 over 220 cells around system chambers (budget 12 ms); the cave graph once
 per worker ~38 ms.
 
+## Towns, roads and structures (WP20)
+
+The settlement and structure sites of the atlas become towns, roads and
+structures in a second pure function of the atlas, `towns_build` (code:
+`src/town/`, module table in `src/town/mod.rs`). Like the caves it is new
+output beside WP01's: no atlas or chunk byte changed, every golden hash of
+genVersion 1 still holds, and the towns hashes joined the golden table
+(`docs/cr/007-towns.md`). Clients and zone servers build it locally (it is
+not downloaded: same bytes everywhere, golden-tested).
+
+### Export (same rules as the ABI above: scratch result, 0 = error)
+
+| Export | Wasm signature | Returns |
+| --- | --- | --- |
+| `towns_build(atlas_ptr)` | `(i32) -> i32` | The towns buffer (below). Built on the first call per instance (official world ~0.15 s, worst golden world ~1 s in wasm; spec budget 60 s), then cached per instance by (seed, spec, genVersion). |
+
+### Generation
+
+1. **Roads** (`roads.rs`): edges = a minimum spanning tree over the
+   settlements plus each one's two nearest neighbours within 1.4 km;
+   Dijkstra on the 129 x 129 macro grid (cost: distance x (1 + 30 slope^2),
+   x3 above slope 0.35, biome factors (snowpeak 1.8, wetland 1.5, ...),
+   +120 per river node, x4 through another settlement, x0.55 along a road
+   already laid, sea and lakes impassable). Paths merge into one network;
+   its stretches between terminals (settlements, forks) are smoothed
+   (Chaikin x3), resampled every 4 m and clipped exactly at each
+   settlement's edge, where the town's street continues. Bridges where the
+   road crosses water for 2-90 m (deck >= water + 1.3 m, railings, ramps
+   down to the banks). A signpost beside every fork, one arm per road,
+   pointing at the nearest settlement along it. Lanterns every 28 m within
+   260 m of a settlement (spec 8). Roads are drawn on the terrain, not cut
+   into it (cutting would change chunks: a genVersion bump).
+2. **Layouts** (`layout.rs`): a square (half size 9 / 13 / 18 m) around
+   the waypoint stone at the site centre; one street per road entry (topped
+   up to 2 / 3 / 4 by splitting the widest gap) from the square to the edge;
+   a ring street in villages and towns; frontage slots every 2 m along both
+   sides of every street and around the square. Buildings in priority
+   order: inn, forge (square first, then the streets nearest it), ward
+   garden, then houses / farms / workshops / storehouses up to a seeded
+   target in the spec's range (hamlet 4-8, village 10-25, town 30-60). A plot
+   fits when it is inside the radius (minus the wall in towns), clear of the
+   square, streets and other plots, dry, and its 1 m terrain range is under a
+   tolerance (2.4 m, then 3.4 / 4.6 m with a second row of back-lane plots,
+   7 m for required buildings): that is the siting refinement on top of the
+   atlas's site. Settlements below their minimum get extra houses (bounded).
+   Market stalls (1 + size), the bounty board and a well stand in the square;
+   lanterns line the streets; towns get a 32-segment wall with gate towers
+   where streets leave.
+3. **Kits** (`kit.rs`): style by biome: meadow cottage, forest timber,
+   highland stone, snowpeak log, badlands adobe, wetland stilt. The grammar
+   picks footprint (by role), floors (inns 2; timber/stone houses 2 with
+   p 0.35), roof (adobe flat, stone hip, others gable; pitch by style),
+   ridge along the longer side, door (front wall, centred or at +-0.45 hx;
+   forges open the whole front), porch (log 0.7, stilt 1.0, cottage 0.3),
+   chimney, stilts, jetty. The floor sits on the highest 1 m lattice point
+   under the footprint (+0.25 m; stilts +1.4 m). Interiors from the role's
+   furniture set (beds, tables, hearth, chests; inn counter, tables,
+   hearth; forge, anvil, quench tub; workbenches; crates).
+4. **Structures** (`jigsaw.rs`): pieces on a 6 m grid aligned to the site
+   yaw, each with an open/closed connector on its four edges; from the
+   kind's anchor, breadth-first over open connectors, a weighted pick from
+   the kind's pool (any rotation whose facing edge is open) on dry cells
+   with < 3.5 m relief inside the site, until the budget
+   `(base + per_tier x tier) x (0.7 + 0.6 structureDensity)`. Kinds:
+   ruin (paving, walls, corners, pillars, rubble), watchtower (tower +
+   ramp, palisades, campfire), mineshaft (head frame + winch linked to the
+   nearest cave mouth, rubble, shed), shrine (altar, statue, braziers,
+   pillars), bandit camp (campfire, tents with chests, palisades), wizard
+   tower (room + 14-22 m spire, walls), meteor crater (meteorite + starmetal
+   clusters = `veins::crater_veins`, rubble), sunken temple (rooms, pillars,
+   walls), demon lair (spike ring, bones, walls).
+5. **NPCs** (`npc.rs`): blacksmith (forge), innkeeper (lives at the inn),
+   one merchant per stall (kinds rotate general / provisions / herbalist /
+   tools), the bounty keeper by the board, a farmer per farm, villagers
+   (one per free house, capped 3 / 7 / 12), two guards in walled towns.
+   Each has a home (a house; interior spot) and a work spot.
+
+### Towns buffer (`LDTW`, format 1)
+
+Header (64 bytes): 0 magic `LDTW`, 4 u16 format (1), 6 u16 genVersion, 8
+u32 total length, 12 u32 header length (64), 16 u64 seed, 24 u32
+settlement count, 28 u32 directory offset (64), 32 u32 directory entries
+(16). Directory at 64: 16 x (u32 offset, u32 count, u32 byte length, u32
+record size); sections 8-aligned; read them only through the directory.
+`0xFFFF` in a u16 index means none. Angles: u16 fractions of a turn x 65536
+(radians = v / 65536 x 2 pi, from +x toward +z).
+
+| Id | Section | Record | Content |
+| --- | --- | --- | --- |
+| 0 | SETTLEMENTS | 64 | u64 id (= the atlas site id), u16 site index, u8 size (0 hamlet, 1 village, 2 town), u8 style, u8 walled, u8 wall radius (m, 0 none), u8 region, u8 0, f32 x, y (ground at the centre), z, radius, square half size, u16 first building, u16 building count, u16 first npc, u16 npc count, u32 first prop, u32 prop count, u32 first box, u32 box count, u16 first road (its streets), u16 road count |
+| 1 | BUILDINGS | 96 | u64 id, u16 settlement, u8 role (0 house, 1 inn, 2 forge, 3 stall, 4 ward garden, 5 farm, 6 workshop, 7 storehouse), u8 style (0 timber, 1 stone, 2 adobe, 3 stilt, 4 log, 5 cottage), f32 x, z (centre), floor y, base y (foundation bottom), hx, hz (half extents along local u = frontage and v = depth), cos, sin (local u axis in world xz; v = (-sin, cos); the door is on the -v wall), storey height, roof height (ridge above the wall top), u8 floors (0 = stall/garden), u8 roof (0 gable, 1 hip, 2 flat, 3 none), u8 ridge along u, u8 flags (1 porch (2 m deep, in front), 2 chimney, 4 stilts, 8 open front, 16 field behind (9 m), 32 jetty), f32 door u offset, f32 door width, u8 variant, u8 0, u16 box count, u32 first box, u32 first prop, u16 prop count, u16 street (road index the door faces; none = the square), f32 front x, z (the street point in front of the door), f32 along (distance along the street), u32 0 |
+| 2 | BOXES | 40 | f32 cx, cz, cos, sin, hx, hz, y0 (bottom), y1 (top at local u = -hx), y2 (top at u = +hx); u8 kind (0 floor, 1 wall, 2 upper block, 3 roof half, 4 door ramp, 5 furniture, 6 fence, 7 town wall, 8 gate tower, 9 bridge deck, 10 bridge ramp, 11 structure piece, 12 town prop, 13 railing), u8 flags (1 walkable top, 2 solid sides, 4 ceiling), u16 owner (building for kinds 0-6; settlement for 7, 8, 12; bridge for 9, 10, 13; structure for 11) |
+| 3 | PROPS | 32 | u64 id, f32 x, y, z, u16 yaw, u8 kind (0 door, 1 bed, 2 table, 3 bench, 4 hearth, 5 chest, 6 barrel, 7 crate, 8 shelf, 9 counter, 10 forge, 11 anvil, 12 quench tub, 13 workbench (variant 9: mineshaft winch), 14 market stall, 15 bounty board, 16 well, 17 lantern, 18 ward flower bed, 19 crop field, 20 rug, 21 bookshelf, 22 campfire, 23 tent, 24 starmetal cluster, 25 statue, 26 crystal, 27 brazier, 28 bones, 29 rubble, 30 torch), u8 variant (door: width x 10; hearth/forge/crops: style), u16 building, u16 settlement, u8 flags (1 interactable, 2 light source), u8 scale (64 = 1.0; crop field: width in m, depth 9 m), u16 structure |
+| 4 | NPCS | 40 | u64 id, u16 settlement, u8 role (0 villager, 1 merchant, 2 blacksmith, 3 innkeeper, 4 bounty keeper, 5 farmer, 6 guard), u8 appearance variant, u16 name (NAMES index), u16 home building, u16 work building, u16 work prop, f32 work x, z, home x, z (interior spot), u16 work yaw, u8 merchant kind (0 general, 1 provisions, 2 herbalist, 3 tools; 255 none), u8 0 |
+| 5 | ROADS | 24 | u32 first point, u32 point count, u16 from, u16 to (settlement indices; none = a fork), f32 width, u8 class (0 road, 1 town street), u8 surface (0 dirt, 1 cobble), u16 settlement (streets), f32 length |
+| 6 | POINTS | 12 | f32 x, y (ground sample), z: road polylines, 4 m apart |
+| 7 | BRIDGES | 48 | u64 id, f32 ax, az, bx, bz (deck ends), deck y, width, water y, u16 road, u8 style (0 wood, 1 stone), u8 0, u32 first box, u16 box count, u16 0 |
+| 8 | SIGNS | 32 | u64 id, f32 x, y, z, u16 yaw x 3 (arms), u16 settlement x 3 (where each arm points) |
+| 9 | STRUCTURES | 56 | u64 id (= the atlas site id), u16 site, u8 kind (atlas structure kinds), u8 tier, f32 x, y, z, radius (actual extent), u32 first piece, u16 piece count, u16 prop count, u32 first box, u32 box count, u32 first prop, u16 link (mineshafts: nearest cave-mouth site within 800 m), u16 0, u32 0 |
+| 10 | PIECES | 40 | u64 id, f32 x, y (base: top of the ground under the cell), z, cos, sin (piece frame), sx (cell size, 6), sy (height), u8 kind (0 pave, 1 wall (back edge), 2 corner (back + left), 3 room, 4 tower, 5 ramp, 6 pillars, 7 tent, 8 palisade, 9 campfire, 10 shaft, 11 altar, 12 crater, 13 lair, 14 rubble), u8 variant, u16 structure |
+| 11 | VEINS | 32 | starmetal clusters at meteor craters, in the cave vein record layout ("Caves" above); ids `stable_id(7, crater site index, 0xFFF, k)` |
+| 12 | NAMES | - | count = names; u16 byte length + UTF-8 each (NPC names) |
+
+Stable ids (`rng::stable_id`, spec 5: buildings, structure pieces, doors,
+chests and NPCs are named): building `(0x20, settlement site, 0, n)`, prop
+`(0x21, site, 0 settlement / 1 structure, n)` (road lanterns `(0x21, 0x3FFF,
+1, n)`), NPC `(0x22, site, role, n)`, piece `(0x23, site, 0, n)`, bridge
+`(0x24, road chain, 0, n)`, signpost `(0x25, 0, 0, n)`.
+
+### Town collision (TS `town.ts`, Go `server/pkg/towns`)
+
+Pure host code over the f32 boxes, identical in TS and Go (f64, same
+operation order, no FMA, no host math but sqrt; every box carries its
+cos/sin), pinned by the golden table's town floor and collide vectors.
+Constants: MAX_STEP_UP_M 0.6, PLAYER_CAPSULE_RADIUS 0.4, head 1.9 m.
+
+- Local coordinates of a point: `dx = x - cx, dz = z - cz, u = dx*c + dz*s,
+  v = dz*c - dx*s`; inside when `|u| <= hx && |v| <= hz`; top
+  `y1 + (y2 - y1) * ((u + hx) / (hx + hx))`.
+- `floorAt(x, y, z)`: the highest walkable top at (x, z) that is `<= y +
+  0.6`, else -Infinity.
+- `collide(x, y, z)`: candidates = boxes indexed (8 m grid, by bounding
+  circle) in the square x, z +- 1.4, ascending; two passes over the solid
+  ones whose top (max of y1, y2) is `> y + 0.6` and bottom `< y + 1.9`: the
+  closest point of the rectangle to the body centre (clamped u, v); closer
+  than 0.4 pushes along it by `0.4 - d`; a centre inside leaves by the
+  nearest face (`hx - |u|` vs `hz - |v|`, ties to u) by penetration + 0.4.
+  Then one ceiling pass: a ceiling box whose bottom is `> y + 0.6` and `<
+  current y + 1.9` over the pushed point sets `y = bottom - 1.9`.
+- Ground (`TownGroundCore` / `towns.Ground`): wraps the surface/cave
+  ground. Viewed at feet height y (the WP09 `atLevel` hook) its height is
+  `max(base view, floorAt)` and its `collide` is the base view's push-out
+  (caves) followed by the town's. So a floor, porch, ramp, bridge deck or
+  roof within a step is ground, a wall is pushed out of, and a ceiling
+  stops a jump; walls are not climbable (they are not in the height
+  function). Non-step callers see the base surface.
+
 ## How the world is made
 
 **spec_from_seed** picks every field inside tasteful sub-ranges of the schema
@@ -569,8 +707,8 @@ allowed without a bump.
   meshes need no special cases; sea level is under dry land.
 - **One site table** for POIs, settlements and structures, with category +
   kind tags; WP20 builds towns, roads and buildings from settlement and
-  structure sites (it can use the per-site seed and yaw). Roads are not
-  generated here.
+  structure sites (it can use the per-site seed and yaw). Roads, layouts and buildings
+  are WP20's `towns_build` (section "Towns, roads and structures").
 - **Settlement footprints are pre-flattened** (detail amplitude x0.25, no
   terraces) so buildings fit; trees, rocks and bushes are kept out of every
   site footprint.

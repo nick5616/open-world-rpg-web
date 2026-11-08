@@ -22,6 +22,7 @@ type Entity struct {
 	CharacterID string
 	Level       uint8
 	PartyID     uint32        // 0 = none; WP12 sets it from the social service's party (party.go)
+	TypeID      uint16        // enemy type, npc role | variant << 8 (WP20), ...: EntityRecord.typeId
 	x           *exploreState // WP12 exploration progress (explore.go), shared with the session
 	ListenOnly  bool          // WP11: local profile, its speaking bit is never shown
 
@@ -37,7 +38,6 @@ type Entity struct {
 	// mirrors; TypeID rides in snapshots (combatdefs.TypeID).
 	cbt         *combat.Player
 	npc         *combat.Enemy
-	TypeID      uint16
 	npcActivity uint8
 
 	drownedEvent bool // WP10: a frame this tick drowned + respawned the player (Event 100)

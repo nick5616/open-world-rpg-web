@@ -410,3 +410,37 @@ CR 009.
 - Acceptance: `node server/zone/cmd/combatbots/acceptance.mjs` (the zone
   binary on the official world; a party of two `cmd/combatbots` clears a
   camp and a boss).
+## Towns and NPCs (WP20)
+
+Wiring: `towns.go` (main package) builds the towns layer from the wasm
+(`worldhost.World.TownsBytes`, ~0.2 s), wraps the cave terrain so the
+movement ground has building floors, walls and ceilings (`server/pkg/towns`;
+the cave terrain's methods are promoted, so chunk interest, spawns and
+caves are unchanged) and fills `Config.Towns` (`internal/npc`). Game glue:
+`internal/game/towns.go`.
+
+- **NPCs** are snapshot entities (kind npc, `typeId` = role | variant << 8,
+  `level` = merchant kind, `name`) while a player is within 200 m of their
+  settlement's edge (dropped beyond 260 m, checked twice a second); they
+  walk their schedule on the movement ground (not pushed by walls: their
+  routes go through doors). NPC day = zone clock + `LODESTONE_ZONE_TIME_OFFSET_S`
+  (WP15 owns world time later).
+- **Interact** (contracts/events.md, reach 4.5 m from the eye):
+  `30 npc` (targetId = entity id; 1 talk -> 800 + 801 shop / 802 bounties,
+  2 buy (arg item index) -> 807 via `Config.Granter`, 3 rest at the inn ->
+  804, 4 accept bounty), `31 board` (prop id; 1 read -> 802, 2 accept ->
+  803), `32 station` (forge/anvil prop id; 1 use -> `Config.Stations`
+  (WP14) or 805), `33 shaft` (mineshaft structure id; 1 descend: teleport
+  into a chamber of the linked cave system below the shaft). Refusals: 806.
+- **Bounties**: seeded per settlement per in-game day; accepted ones live in
+  zone memory per character (max 5); `Server.AcceptedBounties` /
+  `Server.CompleteBounty` are the completion hooks for WP13/WP14/WP15.
+- `LODESTONE_ZONE_NO_TOWNS=1` turns the layer off; a pre-WP20 wasm logs
+  NO TOWNS and keeps the old ground.
+- Tests: `internal/npc` (schedules, street walking, bounties),
+  `internal/game/towns_test.go` (in-process zone on the official world:
+  NPCs in snapshots, talk/shop/buy, board read/accept, inn, forge, night
+  closing, mineshaft descent), and the cross-process walk into buildings
+  (`client/src/world/buildings/walkIntoBuilding.integration.test.ts`,
+  evidence `docs/evidence/wp20-walk-into-building.txt`: 0 corrections).
+

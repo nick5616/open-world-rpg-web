@@ -36,6 +36,10 @@ self.onmessage = async (e: MessageEvent<{ bench: number }>) => {
       caveQueries: golden_.caveQueries,
       goldenCaveMs: stats(golden_.caveMs),
       caveBench: { graphMs: cb.graphMs, cells: cb.cells, withMesh: cb.withMesh, ms: stats(cb.ms) },
+      // WP20: towns worlds checked, building collision vectors, towns_build per world (ms).
+      towns: golden_.towns,
+      townQueries: golden_.townQueries,
+      townMs: golden_.townMs,
     });
   } catch (err) {
     self.postMessage({ error: String((err as Error)?.stack ?? err) });
