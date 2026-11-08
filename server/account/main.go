@@ -68,18 +68,25 @@ func run(s *svc.Server) error {
 		return err
 	}
 	defer pool.Close()
-	if err := pool.Ping(ctx); err != nil {
-		return fmt.Errorf("postgres: %w", err)
+	// WP18: fatal as before unless LODESTONE_LAZY_DEPS=1 (Cloud Run, database
+	// asleep on the game VM): then serve now and seed the world once it wakes.
+	var pgErr error
+	if err := s.CheckDep(ctx, "postgres", func(c context.Context) error { pgErr = pool.Ping(c); return pgErr }); err != nil {
+		return err
 	}
 	rdb := redis.NewClient(&redis.Options{Addr: env.RedisAddr()})
 	defer rdb.Close()
-	if err := rdb.Ping(ctx).Err(); err != nil {
-		return fmt.Errorf("redis: %w", err)
+	if err := s.CheckDep(ctx, "redis", func(c context.Context) error { return rdb.Ping(c).Err() }); err != nil {
+		return err
 	}
 
 	db := accountapi.DB{Pool: pool}
-	if err := seedWorld(ctx, s.Log, db); err != nil {
-		return fmt.Errorf("seed world: %w", err)
+	if pgErr == nil {
+		if err := seedWorld(ctx, s.Log, db); err != nil {
+			return fmt.Errorf("seed world: %w", err)
+		}
+	} else {
+		go seedWorldWhenReachable(s.Log, db)
 	}
 
 	a := &api.API{
@@ -104,6 +111,24 @@ func run(s *svc.Server) error {
 	a.Register(s.Mux)
 	s.Log.Info("account ready", "firebase", a.Firebase != nil, "devAuth", devAuth, "production", prod)
 	return s.Run(svc.CORS(env.Str("LODESTONE_CORS_ORIGIN", "*"), s.Mux), nil)
+}
+
+// seedWorldWhenReachable retries seedWorld until Postgres answers (lazy
+// startup only; WP18). Minting the same official world twice is a no-op.
+func seedWorldWhenReachable(log *slog.Logger, db accountapi.DB) {
+	for {
+		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+		err := db.Pool.Ping(ctx)
+		if err == nil {
+			err = seedWorld(ctx, log, db)
+		}
+		cancel()
+		if err == nil {
+			return
+		}
+		log.Warn("seed world: waiting for postgres", "err", err)
+		time.Sleep(10 * time.Second)
+	}
 }
 
 // checkDevKeys warns about well-known development keys, and refuses them in

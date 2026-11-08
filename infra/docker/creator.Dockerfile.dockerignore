@@ -1,0 +1,19 @@
+# Build context whitelist shared by every Go service image (WP18). BuildKit
+# reads <name>.Dockerfile.dockerignore next to each Dockerfile; the five
+# files are identical copies (infra/lib/images.mjs checks that they match).
+# The context is the repo root, so ignore everything and let back only what
+# a Go build needs: the workspace, the Go modules it lists, the prebuilt
+# worldgen.wasm (built once on the host so the zone runs the exact bytes the
+# client ships) and the two contract files services read at runtime.
+*
+!go.work
+!server/
+!tools/bots/
+!tools/creator/server/
+!worldgen/harness/go/
+!worldgen/pkg/worldgen.wasm
+!worldgen/pkg/manifest.json
+!contracts/migrations/
+!contracts/worldspec.schema.json
+**/node_modules
+**/bin

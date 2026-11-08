@@ -1,0 +1,37 @@
+# Local Prometheus for Lodestone (WP18). Every Go service exports
+# /metrics via server/pkg/svc. Two environments are scraped side by side,
+# told apart by the `env` label:
+#   env="dev"        npm run dev (8090-8094), no metrics token
+#   env="rehearsal"  node infra/deploy.mjs --target local --keep (28090-28094),
+#                    token in ./metrics-token (npm run infra:obs copies it)
+# Scraping a service that is not running only marks the target down.
+global:
+  scrape_interval: 5s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: director
+    authorization: { credentials_file: /etc/prometheus/metrics-token }
+    static_configs:
+      - { targets: ["host.docker.internal:8090"], labels: { env: dev } }
+      - { targets: ["host.docker.internal:28090"], labels: { env: rehearsal } }
+  - job_name: account
+    authorization: { credentials_file: /etc/prometheus/metrics-token }
+    static_configs:
+      - { targets: ["host.docker.internal:8091"], labels: { env: dev } }
+      - { targets: ["host.docker.internal:28091"], labels: { env: rehearsal } }
+  - job_name: zone
+    authorization: { credentials_file: /etc/prometheus/metrics-token }
+    static_configs:
+      - { targets: ["host.docker.internal:8092"], labels: { env: dev } }
+      - { targets: ["host.docker.internal:28092"], labels: { env: rehearsal } }
+  - job_name: social
+    authorization: { credentials_file: /etc/prometheus/metrics-token }
+    static_configs:
+      - { targets: ["host.docker.internal:8093"], labels: { env: dev } }
+      - { targets: ["host.docker.internal:28093"], labels: { env: rehearsal } }
+  - job_name: creator
+    authorization: { credentials_file: /etc/prometheus/metrics-token }
+    static_configs:
+      - { targets: ["host.docker.internal:8094"], labels: { env: dev } }
+      - { targets: ["host.docker.internal:28094"], labels: { env: rehearsal } }

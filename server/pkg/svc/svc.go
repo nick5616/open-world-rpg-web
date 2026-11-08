@@ -28,10 +28,11 @@ func Logger(service string) *slog.Logger {
 // Metrics is a tiny dependency-free Prometheus registry. Names may carry
 // labels inline, e.g. `zone_bytes_out_total{zone="z1"}`.
 type Metrics struct {
-	mu     sync.Mutex
-	ints   map[string]*atomic.Int64
-	floats map[string]float64
-	help   map[string]string
+	mu         sync.Mutex
+	ints       map[string]*atomic.Int64
+	floats     map[string]float64
+	help       map[string]string
+	collectors []func(*Metrics) // run on every scrape (observe.go)
 }
 
 // NewMetrics creates an empty registry.
@@ -74,6 +75,7 @@ func (m *Metrics) Help(family, text string) {
 
 // ServeHTTP renders Prometheus text exposition format.
 func (m *Metrics) ServeHTTP(w http.ResponseWriter, _ *http.Request) {
+	m.collect()
 	m.mu.Lock()
 	lines := make([]string, 0, len(m.ints)+len(m.floats)+len(m.help))
 	for f, h := range m.help {
@@ -101,6 +103,7 @@ type Server struct {
 	Metrics *Metrics
 	Log     *slog.Logger
 	started time.Time
+	http    *httpStats // observe.go
 }
 
 // New creates a service shell that will listen on addr (e.g. ":8092").
@@ -110,7 +113,8 @@ func New(name, addr string) *Server {
 		w.Header().Set("Content-Type", "application/json")
 		fmt.Fprintf(w, `{"ok":true,"svc":%q,"uptimeS":%d}`, name, int(time.Since(s.started).Seconds()))
 	})
-	s.Mux.Handle("GET /metrics", s.Metrics)
+	s.Mux.Handle("GET /metrics", metricsAuth(os.Getenv("LODESTONE_METRICS_TOKEN"), s.Metrics))
+	s.observe() // WP18: process/runtime/build/http metrics (observe.go)
 	return s
 }
 
@@ -142,7 +146,7 @@ func (s *Server) RunContext(parent context.Context, handler http.Handler, onStop
 	if handler == nil {
 		handler = s.Mux
 	}
-	srv := &http.Server{Addr: s.Addr, Handler: handler, ReadHeaderTimeout: 10 * time.Second}
+	srv := &http.Server{Addr: s.Addr, Handler: s.instrument(handler), ReadHeaderTimeout: 10 * time.Second}
 	ctx, stop := signal.NotifyContext(parent, os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	errc := make(chan error, 1)
