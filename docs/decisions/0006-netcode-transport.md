@@ -105,6 +105,62 @@ change: 6 cm worst, 0 extrapolations. SelfState, validation, AOI and
 persistence use the confirmed state. Combat validation (WP10) must use
 confirmed history too.
 
+A wrong guess (the player turned a corner during the stall) was a 55 cm
+one-tick jump in the two-browser run. The zone now eases it: the gap
+between where observers expected the player (previous raw view plus
+velocity × dt) and the corrected view becomes an offset that decays with a
+50 ms time constant (`easeView`). Discontinuities of 3 m or more stay
+visible.
+
+## Input arrives out of order or not at all (WebTransport)
+
+Datagrams reorder. Under "thailand", a packet overtook the one before it by
+2 or more about 1% of the time, enough to defeat the 3-frame redundancy. The
+zone applied the later frames, dropped the late one as stale, and the
+player was snapped back 8–23 cm a few times per 20 s.
+
+The zone now applies a tick's frames in seq order and holds frames behind a
+gap for up to 2 ticks. A frame still missing then was lost in every copy.
+It is replaced by the player's previous input, minus jump edges, at most 8
+in a row (the "duplicate last command" idea from Quake). Synthesized frames
+pass the frame budget like real ones. After this: 0 corrections on
+WebTransport, 3 frames synthesized per run.
+
+## Frame budget burst 30 → 60 (changes a WP03 decision)
+
+A TCP retransmit stall in the WebSocket "thailand" run often chains into a
+second one. The resulting 500–600 ms bunch of frames overflowed WP03's
+30-frame burst, so honest players were snapped back. The burst is now 60
+frames (1 s), and the rate is still 60 frames/s. The cost: a "lag switch"
+can deliver at most 1 s of movement at once, which a player on a bad link
+already does honestly.
+
+## Acceptance result (2026-11-08)
+
+Two headless Chromium processes signed in with dev auth, got tickets from
+the director, and connected through `tools/netsim` "thailand"
+(`docs/evidence/wp06-acceptance*.{txt,json}`, `wp06-{ws,wt}-*.png`). Each
+played 18.5 s of scripted walking: two laps of a square at walking speed,
+both players at once.
+
+| | WebSocket | WebTransport |
+| --- | --- | --- |
+| RTT (A / B) | 163 / 158 ms | 169 / 160 ms |
+| Local reconciliation corrections | 0 / 0 (273 / 261 agreements) | 0 / 0 (289 / 288) |
+| Remote extrapolation events while walking | 0 / 0 | 0 / 0 |
+| Remote teleports | 0 | 0 |
+| Largest remote discontinuity (eased) | 3.4 cm | 0 cm |
+| Drawn vs true position at the end | 0.4 cm | 0.8 cm |
+| Uplink | 15.5 kbps | 20 kbps |
+
+The "mobile" profile also passes on both transports, with 263–317 ms RTT,
+0 corrections and a largest eased discontinuity of 22 cm
+(`wp06-acceptance-mobile*`). Before the fixes above, the same "thailand" run
+showed 4–9 local corrections (8–23 cm) on WebTransport and remote jumps of
+40–55 cm. The first run's 1.5–2.6 m jumps were a client bug: under React
+StrictMode, a session closed mid-connect still logged in. It is fixed in
+`ZoneSession.start`.
+
 ## Byte budget (implements decision 0005)
 
 - `LODESTONE_ZONE_DOWN_BUDGET_KBPS` (default 150, 0 = off) is applied in

@@ -29,6 +29,8 @@ const arg = (name, def) => {
 };
 const MODES = arg('modes', 'ws,wt').split(',');
 const PROFILE = arg('profile', 'thailand');
+// Evidence files carry the profile name unless it is the acceptance profile.
+const SUFFIX = PROFILE === 'thailand' ? '' : `-${PROFILE}`;
 const EVIDENCE = path.join(root, 'docs', 'evidence');
 const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'lodestone-wp06-'));
 // devdb (WP04) only creates and drops lodestone_wp04_* scratch databases.
@@ -223,8 +225,8 @@ try {
     const fa = await faceOther(a, 'Bruno');
     const fb = await faceOther(b, 'Alyssa');
     await sleep(600);
-    await a.screenshot({ path: path.join(EVIDENCE, `wp06-${mode}-a.png`) });
-    await b.screenshot({ path: path.join(EVIDENCE, `wp06-${mode}-b.png`) });
+    await a.screenshot({ path: path.join(EVIDENCE, `wp06-${mode}${SUFFIX}-a.png`) });
+    await b.screenshot({ path: path.join(EVIDENCE, `wp06-${mode}${SUFFIX}-b.png`) });
     // Activity flags: B jumps; A should draw B airborne (chip on the
     // nameplate) once its interpolation delay has passed.
     await b.keyboard.down('Space');
@@ -235,7 +237,7 @@ try {
       await sleep(40);
       airborneSeen = await a.evaluate(() => window.__lodestone.netDebug().remotes.some((r) => r.name === 'Bruno' && (r.activity & 128) !== 0));
     }
-    if (airborneSeen) await a.screenshot({ path: path.join(EVIDENCE, `wp06-${mode}-activity.png`) });
+    if (airborneSeen) await a.screenshot({ path: path.join(EVIDENCE, `wp06-${mode}${SUFFIX}-activity.png`) });
     const pa = await player(a);
     const pb = await player(b);
     const remB = (await debug(a)).remotes.find((r) => r.name === 'Bruno');
@@ -245,7 +247,7 @@ try {
     await b.keyboard.down('KeyD');
     await sleep(900);
     await faceOther(a, 'Bruno');
-    await a.screenshot({ path: path.join(EVIDENCE, `wp06-${mode}-walking.png`) });
+    await a.screenshot({ path: path.join(EVIDENCE, `wp06-${mode}${SUFFIX}-walking.png`) });
     await b.keyboard.up('KeyD');
     const zoneMetrics = (await (await fetch(`http://localhost:${PORT.zone}/metrics`)).text())
       .split('\n')
@@ -278,7 +280,7 @@ try {
       correctionsA: corrA,
       correctionsB: corrB,
     };
-    fs.writeFileSync(path.join(EVIDENCE, `wp06-acceptance-${mode}.json`), JSON.stringify(result, null, 2) + '\n');
+    fs.writeFileSync(path.join(EVIDENCE, `wp06-acceptance-${mode}${SUFFIX}.json`), JSON.stringify(result, null, 2) + '\n');
     summary.push(result);
 
     check(!!remB && !!remA, 'each browser draws the other player (by name)', { 'A->Bruno': fa, 'B->Alyssa': fb });
@@ -295,7 +297,7 @@ try {
     browsers = [];
   }
   const errors = consoleLog.filter((l) => /pageerror|error:/.test(l));
-  fs.writeFileSync(path.join(EVIDENCE, 'wp06-acceptance-console.txt'), consoleLog.join('\n') + '\n');
+  fs.writeFileSync(path.join(EVIDENCE, `wp06-acceptance${SUFFIX}-console.txt`), consoleLog.join('\n') + '\n');
   check(errors.filter((l) => /pageerror/.test(l)).length === 0, 'no page errors in either browser', errors.slice(0, 5));
 } catch (e) {
   failures.push(String(e));
@@ -310,6 +312,6 @@ try {
     step(`could not drop ${DB}: ${e.message}`);
   }
   step(failures.length ? `FAILED: ${failures.join('; ')}` : 'ALL PASS');
-  fs.writeFileSync(path.join(EVIDENCE, 'wp06-acceptance.txt'), lines.join('\n') + '\n');
+  fs.writeFileSync(path.join(EVIDENCE, `wp06-acceptance${SUFFIX}.txt`), lines.join('\n') + '\n');
   process.exit(failures.length ? 1 : 0);
 }

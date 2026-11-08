@@ -14,7 +14,7 @@ simulation for a set of regions. In v1 one process owns the whole world.
 | 32 m cell grid and AOI rings | `internal/aoi` |
 
 Shared building blocks live in `server/pkg`: `gameloop` (30 Hz scheduler),
-`transport` (WebSocket, WebTransport stub), `movement` (the step WP02 ports to
+`transport` (WebSocket, WebTransport), `movement` (the step WP02 ports to
 TS), `snapshot` (delta encoder/decoder), `ratelimit`, `writebehind`, plus
 `proto`, `ticket`, `zoneregistry`.
 
@@ -38,9 +38,29 @@ director routes to, else a dev world),
 (graceful exit after a duration, for soaks: Windows can't send SIGINT to a
 background process).
 
+## Transports (WP06)
+
+- WebSocket `GET /ws` on TCP (the mandatory fallback), plus WebTransport
+  over HTTP/3 at `/wt` on UDP. UDP defaults to the same port number;
+  `LODESTONE_ZONE_WT_ADDR=off` disables it. Session code is
+  transport-blind (`AcceptWebTransport` runs the same handshake).
+- Without `LODESTONE_ZONE_WT_CERT/_KEY` the zone mints a 10-day self-signed
+  ECDSA certificate at startup. It announces
+  `wtEndpoint = https://localhost:<port>/wt#certHash=<sha256 b64>` in the
+  registry; browsers pin the cert with `serverCertificateHashes`.
+  `GET /debug/wt` shows the endpoint and hash.
+- `LODESTONE_ZONE_PUBLIC_URL` / `LODESTONE_ZONE_WT_PUBLIC_URL` override the
+  announced endpoints, for example to route players through
+  `tools/netsim/proxy.mjs`.
+- On shutdown the zone kicks everyone, drains WebTransport sessions (their
+  kick frame and close code) and only then closes the UDP listener.
+- Details and the Safari status: `docs/decisions/0006-netcode-transport.md`.
+
 ## Session protocol (what WP06's client must do)
 
-1. Connect `ws(s)://host:port/ws`, binary frames, one message per frame.
+1. Connect `ws(s)://host:port/ws`, binary frames, one message per frame (or
+   WebTransport: open one bidirectional stream, u32-LE length-prefixed frames
+   on it, unreliable messages as datagrams).
 2. Send `Hello{protocolVersion, ticket, clientTime, transport}`. The zone kicks
    with `version_mismatch` (checked from the first bytes, before full decode),
    `bad_ticket` (signature, expiry, audience `zone:<zoneId>`, world id, missing
@@ -64,8 +84,23 @@ Rate limits (token buckets per connection and message type, the-circle
 pattern): Input 60 burst / 40 per s, ClockPing 16 / 4, HitClaim 30 / 15,
 Interact 10 / 5. Dropped messages count against a violation bucket (100 / 10
 per s); emptying it kicks with `rate_limited`. Separately, movement frames are
-budgeted at 60 per second with a 30-frame burst: frames are simulation time,
-so this is what stops a client from moving faster by sending more frames.
+budgeted at 60 per second with a 60-frame burst (WP06 raised it from 30:
+chained TCP stalls under "thailand" overflowed it). Frames are simulation
+time, so this is what stops a client from moving faster by sending more
+frames.
+
+Input handling (WP06):
+- Frames from all of a tick's packets are applied in seq order. When a frame
+  is missing (datagrams reorder), later frames wait up to 2 ticks for it.
+- A frame still missing after that was lost in every redundant copy. It is
+  replaced by the player's previous input (minus jump edges; at most 8 in a
+  row, `zone_input_frames_synthesized_total`), so walking through a loss
+  matches the client's prediction exactly.
+- What other clients see of a player is a view that runs ahead of the
+  confirmed state by the steps real time owes when input is late, at most
+  16 (267 ms), repeating the last input. A wrong guess is eased out over
+  about 4 ticks. SelfState, validation, AOI and persistence use the
+  confirmed state only.
 
 ### Applying snapshots
 
@@ -85,6 +120,14 @@ so this is what stops a client from moving faster by sending more frames.
   It carries position (cm), velocity (cm/s) and airJumps, which is all a
   replay from the acked input needs; grounded is derived from position.
 - Ignore a snapshot whose tick is not newer than the newest you applied.
+
+Byte budget (decision 0005, WP06): `LODESTONE_ZONE_DOWN_BUDGET_KBPS`
+(default 150, 0 = off) caps each client's snapshot bytes, transport framing
+included. When a tick's records don't fit, they go out in priority order:
+party first, then by distance, with an accumulator so starved entities win
+a turn. A deferred entity keeps its baseline state and later sends the
+whole accumulated change; the ring table stays the maximum rate. Dense case
+(150 bots in a 40 m disc): 503 → 150 kbps (`docs/evidence/wp06-dense-budget-*`).
 
 Interest: 32 m grid, rings near < 64 m (everything, 30 Hz), mid < 200 m
 (players/enemies/effects, 10 Hz), far < 600 m (players only, 2 Hz; a player
@@ -107,6 +150,14 @@ cd server/zone && go test ./...          # unit + in-process sessions + subproce
 cd server/zone && go test -short ./...   # skip the subprocess test
 ```
 
+`zone_wt_integration_test.go` (WP06) runs the binary with WebTransport. It
+pins the dev cert by the hash from `/debug/wt`, handshakes on the stream,
+sends Input as datagrams, has a WebSocket player watch the WebTransport
+player walk, and checks the registry `wtEndpoint`, the per-transport
+session metrics and that the shutdown kick arrives with its close code.
+`internal/game/view_test.go` covers view extrapolation and easing,
+reordered input and lost-frame fill.
+
 `zone_integration_test.go` builds the binary, runs it as a subprocess against
 a refusing Postgres URL and the shared Redis (registry checks are skipped if
 Redis is down), drives Hello/Input/Snapshot over a real socket, checks the
@@ -127,4 +178,7 @@ Soak: see `tools/bots/README.md`. Evidence: `docs/evidence/wp03-*`.
 `zone_kicks_total{code=...}`, `zone_rate_limited_total`,
 `zone_input_frames_total`, `zone_input_frames_dropped_total`,
 `zone_speed_violations_total`, `zone_snapshots_shed_total`,
-`zone_spin_seconds_total`.
+`zone_spin_seconds_total`; WP06: `zone_input_frames_skipped_total`,
+`zone_input_frames_synthesized_total`, `zone_budget_records_sent_total`,
+`zone_budget_records_deferred_total`, `zone_downlink_budget_kbps`,
+`zone_sessions{transport=websocket|webtransport}`.
