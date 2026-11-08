@@ -302,6 +302,13 @@ func (d DB) GetCharacter(ctx context.Context, o Owner, id string) (Character, er
 	return Character{}, ErrNotFound
 }
 
+// DeleteLocalCharacter releases a local character's name reservation. Used
+// to compensate when the initial save blob could not be issued.
+func (d DB) DeleteLocalCharacter(ctx context.Context, profileID, id string) error {
+	_, err := d.Pool.Exec(ctx, `DELETE FROM local_characters WHERE id = $1 AND profile_id = $2`, id, profileID)
+	return err
+}
+
 // UpgradeLocalProfile moves every character of a local profile into the
 // account, copying each one's verified save state, in ONE transaction (spec
 // 11): either the account owns all of them with their progress, or nothing
