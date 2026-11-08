@@ -452,7 +452,7 @@
    "activeSteps": 7,
    "recoveryMs": 233,
    "recoverySteps": 14,
-   "damage": 26,
+   "damage": 22,
    "reach": 3.2,
    "arc": 90
   },
@@ -618,7 +618,7 @@
    "activeSteps": 7,
    "recoveryMs": 250,
    "recoverySteps": 15,
-   "damage": 30,
+   "damage": 26,
    "reach": 4,
    "arc": 30
   },
@@ -703,9 +703,9 @@
    "damage": 14,
    "reach": 90,
    "arc": 0,
-   "chargeMs": 900,
-   "chargeSteps": 54,
-   "chargeMult": 3,
+   "chargeMs": 1000,
+   "chargeSteps": 60,
+   "chargeMult": 2.4,
    "chargeSpeed": 75
   },
   {
@@ -7654,7 +7654,7 @@
    "keepAway": 0,
    "id": 1,
    "family": "beast",
-   "hp": 70,
+   "hp": 84,
    "speed": 5.5,
    "aggro": 18,
    "attacks": [
@@ -7673,7 +7673,7 @@
    "keepAway": 0,
    "id": 2,
    "family": "beast",
-   "hp": 55,
+   "hp": 80,
    "speed": 6.5,
    "aggro": 22,
    "attacks": [
@@ -7692,7 +7692,7 @@
    "keepAway": 0,
    "id": 3,
    "family": "beast",
-   "hp": 90,
+   "hp": 92,
    "speed": 5,
    "aggro": 16,
    "attacks": [
@@ -7711,7 +7711,7 @@
    "keepAway": 0,
    "id": 4,
    "family": "beast",
-   "hp": 75,
+   "hp": 86,
    "speed": 6,
    "aggro": 22,
    "attacks": [
@@ -7730,7 +7730,7 @@
    "keepAway": 0,
    "id": 5,
    "family": "beast",
-   "hp": 65,
+   "hp": 82,
    "speed": 5.5,
    "aggro": 16,
    "attacks": [
@@ -7749,7 +7749,7 @@
    "keepAway": 0,
    "id": 6,
    "family": "beast",
-   "hp": 85,
+   "hp": 90,
    "speed": 4.5,
    "aggro": 14,
    "attacks": [
@@ -7768,7 +7768,7 @@
    "keepAway": 0,
    "id": 10,
    "family": "bandit",
-   "hp": 60,
+   "hp": 82,
    "speed": 5.5,
    "aggro": 24,
    "attacks": [
@@ -7787,7 +7787,7 @@
    "keepAway": 14,
    "id": 11,
    "family": "bandit",
-   "hp": 50,
+   "hp": 80,
    "speed": 5,
    "aggro": 30,
    "attacks": [
@@ -7805,7 +7805,7 @@
    "keepAway": 0,
    "id": 12,
    "family": "bandit",
-   "hp": 100,
+   "hp": 94,
    "speed": 4.2,
    "aggro": 20,
    "attacks": [
@@ -7824,7 +7824,7 @@
    "keepAway": 0,
    "id": 20,
    "family": "guardian",
-   "hp": 100,
+   "hp": 94,
    "speed": 3.5,
    "aggro": 18,
    "attacks": [
@@ -7843,7 +7843,7 @@
    "keepAway": 12,
    "id": 21,
    "family": "guardian",
-   "hp": 50,
+   "hp": 80,
    "speed": 5,
    "aggro": 26,
    "attacks": [
@@ -7861,7 +7861,7 @@
    "keepAway": 9,
    "id": 30,
    "family": "elemental",
-   "hp": 60,
+   "hp": 82,
    "speed": 5.5,
    "aggro": 20,
    "attacks": [
@@ -7880,7 +7880,7 @@
    "keepAway": 10,
    "id": 31,
    "family": "elemental",
-   "hp": 60,
+   "hp": 82,
    "speed": 5,
    "aggro": 20,
    "attacks": [
@@ -7899,7 +7899,7 @@
    "keepAway": 10,
    "id": 32,
    "family": "elemental",
-   "hp": 55,
+   "hp": 80,
    "speed": 6.5,
    "aggro": 22,
    "attacks": [
@@ -7918,7 +7918,7 @@
    "keepAway": 0,
    "id": 33,
    "family": "elemental",
-   "hp": 95,
+   "hp": 92,
    "speed": 3.8,
    "aggro": 16,
    "attacks": [
@@ -7937,7 +7937,7 @@
    "keepAway": 8,
    "id": 34,
    "family": "elemental",
-   "hp": 60,
+   "hp": 82,
    "speed": 7,
    "aggro": 24,
    "attacks": [
@@ -7956,7 +7956,7 @@
    "keepAway": 10,
    "id": 35,
    "family": "elemental",
-   "hp": 55,
+   "hp": 80,
    "speed": 5.5,
    "aggro": 20,
    "attacks": [
@@ -7975,7 +7975,7 @@
    "keepAway": 0,
    "id": 36,
    "family": "elemental",
-   "hp": 65,
+   "hp": 84,
    "speed": 6,
    "aggro": 22,
    "attacks": [
@@ -7994,7 +7994,7 @@
    "keepAway": 0,
    "id": 37,
    "family": "elemental",
-   "hp": 50,
+   "hp": 80,
    "speed": 7,
    "aggro": 22,
    "attacks": [
@@ -8013,7 +8013,7 @@
    "keepAway": 0,
    "id": 40,
    "family": "cave",
-   "hp": 65,
+   "hp": 82,
    "speed": 5.5,
    "aggro": 16,
    "attacks": [
@@ -8032,7 +8032,7 @@
    "keepAway": 4,
    "id": 41,
    "family": "cave",
-   "hp": 50,
+   "hp": 80,
    "speed": 7,
    "aggro": 20,
    "attacks": [
@@ -8051,7 +8051,7 @@
    "keepAway": 0,
    "id": 42,
    "family": "cave",
-   "hp": 100,
+   "hp": 94,
    "speed": 3.5,
    "aggro": 14,
    "attacks": [
@@ -8205,7 +8205,7 @@
  "affixes": [
   {
    "key": "fast",
-   "hpMult": 6,
+   "hpMult": 7,
    "damageMult": 1.4,
    "speedMult": 1.4,
    "cooldownMult": 0.75,
@@ -8231,7 +8231,7 @@
   },
   {
    "key": "splitting",
-   "hpMult": 5,
+   "hpMult": 6,
    "damageMult": 1.3,
    "speedMult": 1,
    "cooldownMult": 1,

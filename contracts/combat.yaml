@@ -80,7 +80,7 @@ weapons:
       sword_slash_1: {id: 101, kind: light, combo: 0, startupMs: 83, activeMs: 100, recoveryMs: 200, damage: 18, reach: 2.6, arc: 110}
       sword_slash_2: {id: 102, kind: light, combo: 1, startupMs: 83, activeMs: 100, recoveryMs: 200, damage: 20, reach: 2.6, arc: 110}
       sword_slash_3: {id: 103, kind: light, combo: 2, startupMs: 100, activeMs: 117, recoveryMs: 250, damage: 30, reach: 2.8, arc: 140}
-      sword_sprint: {id: 104, kind: sprint, startupMs: 83, activeMs: 117, recoveryMs: 233, damage: 26, reach: 3.2, arc: 90}
+      sword_sprint: {id: 104, kind: sprint, startupMs: 83, activeMs: 117, recoveryMs: 233, damage: 22, reach: 3.2, arc: 90}
       sword_air: {id: 105, kind: air, startupMs: 67, activeMs: 117, recoveryMs: 200, damage: 20, reach: 2.6, arc: 120}
       sword_plunge: {id: 106, kind: plunge, startupMs: 50, activeMs: 133, recoveryMs: 250, damage: 30, reach: 3.0, arc: 360, perMeter: 3, maxBonus: 60}
       sword_riposte: {id: 107, kind: riposte, startupMs: 50, activeMs: 117, recoveryMs: 200, damage: 45, reach: 3.0, arc: 120}
@@ -94,7 +94,7 @@ weapons:
       spear_thrust: {id: 201, kind: light, combo: 0, startupMs: 100, activeMs: 83, recoveryMs: 233, damage: 24, reach: 3.6, arc: 30}
       spear_sweep: {id: 202, kind: light, combo: 1, startupMs: 100, activeMs: 117, recoveryMs: 250, damage: 20, reach: 3.2, arc: 120}
       spear_charged: {id: 203, kind: charged, startupMs: 50, activeMs: 133, recoveryMs: 250, damage: 24, reach: 4.4, arc: 30, chargeMs: 600, chargeMult: 1.8}
-      spear_sprint: {id: 204, kind: sprint, startupMs: 83, activeMs: 117, recoveryMs: 250, damage: 30, reach: 4.0, arc: 30}
+      spear_sprint: {id: 204, kind: sprint, startupMs: 83, activeMs: 117, recoveryMs: 250, damage: 26, reach: 4.0, arc: 30}
       spear_air: {id: 205, kind: air, startupMs: 67, activeMs: 117, recoveryMs: 200, damage: 22, reach: 3.4, arc: 60}
       spear_plunge: {id: 206, kind: plunge, startupMs: 50, activeMs: 133, recoveryMs: 250, damage: 32, reach: 3.0, arc: 360, perMeter: 3, maxBonus: 60}
   bow:
@@ -107,7 +107,7 @@ weapons:
       # secondary to draw up to chargeMs, release to loose (damage and speed
       # scale linearly with the draw).
       bow_quick: {id: 301, kind: light, startupMs: 100, activeMs: 17, recoveryMs: 200, damage: 14, reach: 45, arc: 0, speed: 45, gravity: 9, radius: 0.25}
-      bow_charged: {id: 302, kind: charged, startupMs: 17, activeMs: 17, recoveryMs: 233, damage: 14, reach: 90, arc: 0, speed: 45, gravity: 9, radius: 0.25, chargeMs: 900, chargeMult: 3.0, chargeSpeed: 75}
+      bow_charged: {id: 302, kind: charged, startupMs: 17, activeMs: 17, recoveryMs: 233, damage: 14, reach: 90, arc: 0, speed: 45, gravity: 9, radius: 0.25, chargeMs: 1000, chargeMult: 2.4, chargeSpeed: 75}
       bow_rain: {id: 303, kind: heavy, startupMs: 100, activeMs: 17, recoveryMs: 250, damage: 12, reach: 30, arc: 0, radius: 4, technique: arrow_rain, hits: 4, cooldownMs: 8000}
     arrows:
       # Data hooks for WP14 (ore arrows, gem tips): damage multiplier by the
@@ -586,28 +586,28 @@ enemies:
   # bits 0-7 id, 8-11 element (0 none, 1+worldgen element), 12-14 affix
   # (0 none, 1 fast, 2 shielded, 3 splitting, 7 boss).
   # behavior: melee | ranged (keeps keepAway m) | flyer (hovers 1.5 m up)
-  boar: {id: 1, family: beast, hp: 70, speed: 5.5, aggro: 18, attacks: [gore, boar_charge], behavior: melee, xp: 20, size: 1.0, color: '#7a5a3a'}
-  wolf: {id: 2, family: beast, hp: 55, speed: 6.5, aggro: 22, attacks: [bite, pounce], behavior: melee, xp: 18, size: 0.9, color: '#5e6b4a'}
-  ram: {id: 3, family: beast, hp: 90, speed: 5.0, aggro: 16, attacks: [headbutt, stampede], behavior: melee, xp: 24, size: 1.1, color: '#8a8478'}
-  stalker: {id: 4, family: beast, hp: 75, speed: 6.0, aggro: 22, attacks: [claw, frost_spit], behavior: melee, element: ice, xp: 24, size: 1.0, color: '#c8dce8'}
-  scuttler: {id: 5, family: beast, hp: 65, speed: 5.5, aggro: 16, attacks: [pincer, stinger], behavior: melee, xp: 20, size: 0.9, color: '#b0884a'}
-  lurker: {id: 6, family: beast, hp: 85, speed: 4.5, aggro: 14, attacks: [lash, mud_spray], behavior: melee, xp: 22, size: 1.1, color: '#4a5a3a'}
-  cutthroat: {id: 10, family: bandit, hp: 60, speed: 5.5, aggro: 24, attacks: [slash, bandit_lunge], behavior: melee, xp: 22, size: 1.0, color: '#8a3a2a'}
-  archer: {id: 11, family: bandit, hp: 50, speed: 5.0, aggro: 30, attacks: [arrow_shot], behavior: ranged, keepAway: 14, xp: 22, size: 1.0, color: '#5a6a2a'}
-  brute: {id: 12, family: bandit, hp: 100, speed: 4.2, aggro: 20, attacks: [smash, stomp], behavior: melee, xp: 30, size: 1.3, color: '#6a3a3a'}
-  sentinel: {id: 20, family: guardian, hp: 100, speed: 3.5, aggro: 18, attacks: [sentinel_slam, sentinel_sweep], behavior: melee, xp: 32, size: 1.4, color: '#8c8c96'}
-  wisp: {id: 21, family: guardian, hp: 50, speed: 5.0, aggro: 26, attacks: [wisp_bolt], behavior: flyer, keepAway: 12, xp: 20, size: 0.6, color: '#9fd0ff'}
-  ember_imp: {id: 30, family: elemental, hp: 60, speed: 5.5, aggro: 20, attacks: [elemental_bolt, elemental_burst], behavior: ranged, keepAway: 9, element: fire, xp: 24, size: 0.8, color: '#ff6b2b'}
-  frost_mote: {id: 31, family: elemental, hp: 60, speed: 5.0, aggro: 20, attacks: [elemental_bolt, elemental_burst], behavior: flyer, keepAway: 10, element: ice, xp: 24, size: 0.7, color: '#a0d8ff'}
-  spark_wisp: {id: 32, family: elemental, hp: 55, speed: 6.5, aggro: 22, attacks: [elemental_bolt, elemental_burst], behavior: flyer, keepAway: 10, element: lightning, xp: 24, size: 0.6, color: '#ffe066'}
-  mud_golem: {id: 33, family: elemental, hp: 95, speed: 3.8, aggro: 16, attacks: [golem_punch, elemental_burst], behavior: melee, element: earth, xp: 28, size: 1.3, color: '#6b5a3a'}
-  gale_harpy: {id: 34, family: elemental, hp: 60, speed: 7.0, aggro: 24, attacks: [harpy_dive, elemental_bolt], behavior: flyer, keepAway: 8, element: wind, xp: 24, size: 0.9, color: '#9fe8d8'}
-  lumen_moth: {id: 35, family: elemental, hp: 55, speed: 5.5, aggro: 20, attacks: [elemental_bolt, elemental_burst], behavior: flyer, keepAway: 10, element: light, xp: 24, size: 0.8, color: '#ffd76a'}
-  shade: {id: 36, family: elemental, hp: 65, speed: 6.0, aggro: 22, attacks: [claw, elemental_burst], behavior: melee, element: dark, xp: 26, size: 1.0, color: '#3a2a5a'}
-  void_mite: {id: 37, family: elemental, hp: 50, speed: 7.0, aggro: 22, attacks: [crawler_bite, elemental_burst], behavior: melee, element: void, xp: 26, size: 0.6, color: '#7a4dff'}
-  cave_crawler: {id: 40, family: cave, hp: 65, speed: 5.5, aggro: 16, attacks: [crawler_bite, pounce], behavior: melee, xp: 22, size: 0.9, color: '#5a4a5a'}
-  gloom_bat: {id: 41, family: cave, hp: 50, speed: 7.0, aggro: 20, attacks: [bite, harpy_dive], behavior: flyer, keepAway: 4, xp: 20, size: 0.6, color: '#3a3a4a'}
-  crystal_golem: {id: 42, family: cave, hp: 100, speed: 3.5, aggro: 14, attacks: [golem_punch, elemental_burst], behavior: melee, xp: 34, size: 1.4, color: '#8fd4ff'}
+  boar: {id: 1, family: beast, hp: 84, speed: 5.5, aggro: 18, attacks: [gore, boar_charge], behavior: melee, xp: 20, size: 1.0, color: '#7a5a3a'}
+  wolf: {id: 2, family: beast, hp: 80, speed: 6.5, aggro: 22, attacks: [bite, pounce], behavior: melee, xp: 18, size: 0.9, color: '#5e6b4a'}
+  ram: {id: 3, family: beast, hp: 92, speed: 5.0, aggro: 16, attacks: [headbutt, stampede], behavior: melee, xp: 24, size: 1.1, color: '#8a8478'}
+  stalker: {id: 4, family: beast, hp: 86, speed: 6.0, aggro: 22, attacks: [claw, frost_spit], behavior: melee, element: ice, xp: 24, size: 1.0, color: '#c8dce8'}
+  scuttler: {id: 5, family: beast, hp: 82, speed: 5.5, aggro: 16, attacks: [pincer, stinger], behavior: melee, xp: 20, size: 0.9, color: '#b0884a'}
+  lurker: {id: 6, family: beast, hp: 90, speed: 4.5, aggro: 14, attacks: [lash, mud_spray], behavior: melee, xp: 22, size: 1.1, color: '#4a5a3a'}
+  cutthroat: {id: 10, family: bandit, hp: 82, speed: 5.5, aggro: 24, attacks: [slash, bandit_lunge], behavior: melee, xp: 22, size: 1.0, color: '#8a3a2a'}
+  archer: {id: 11, family: bandit, hp: 80, speed: 5.0, aggro: 30, attacks: [arrow_shot], behavior: ranged, keepAway: 14, xp: 22, size: 1.0, color: '#5a6a2a'}
+  brute: {id: 12, family: bandit, hp: 94, speed: 4.2, aggro: 20, attacks: [smash, stomp], behavior: melee, xp: 30, size: 1.3, color: '#6a3a3a'}
+  sentinel: {id: 20, family: guardian, hp: 94, speed: 3.5, aggro: 18, attacks: [sentinel_slam, sentinel_sweep], behavior: melee, xp: 32, size: 1.4, color: '#8c8c96'}
+  wisp: {id: 21, family: guardian, hp: 80, speed: 5.0, aggro: 26, attacks: [wisp_bolt], behavior: flyer, keepAway: 12, xp: 20, size: 0.6, color: '#9fd0ff'}
+  ember_imp: {id: 30, family: elemental, hp: 82, speed: 5.5, aggro: 20, attacks: [elemental_bolt, elemental_burst], behavior: ranged, keepAway: 9, element: fire, xp: 24, size: 0.8, color: '#ff6b2b'}
+  frost_mote: {id: 31, family: elemental, hp: 82, speed: 5.0, aggro: 20, attacks: [elemental_bolt, elemental_burst], behavior: flyer, keepAway: 10, element: ice, xp: 24, size: 0.7, color: '#a0d8ff'}
+  spark_wisp: {id: 32, family: elemental, hp: 80, speed: 6.5, aggro: 22, attacks: [elemental_bolt, elemental_burst], behavior: flyer, keepAway: 10, element: lightning, xp: 24, size: 0.6, color: '#ffe066'}
+  mud_golem: {id: 33, family: elemental, hp: 92, speed: 3.8, aggro: 16, attacks: [golem_punch, elemental_burst], behavior: melee, element: earth, xp: 28, size: 1.3, color: '#6b5a3a'}
+  gale_harpy: {id: 34, family: elemental, hp: 82, speed: 7.0, aggro: 24, attacks: [harpy_dive, elemental_bolt], behavior: flyer, keepAway: 8, element: wind, xp: 24, size: 0.9, color: '#9fe8d8'}
+  lumen_moth: {id: 35, family: elemental, hp: 80, speed: 5.5, aggro: 20, attacks: [elemental_bolt, elemental_burst], behavior: flyer, keepAway: 10, element: light, xp: 24, size: 0.8, color: '#ffd76a'}
+  shade: {id: 36, family: elemental, hp: 84, speed: 6.0, aggro: 22, attacks: [claw, elemental_burst], behavior: melee, element: dark, xp: 26, size: 1.0, color: '#3a2a5a'}
+  void_mite: {id: 37, family: elemental, hp: 80, speed: 7.0, aggro: 22, attacks: [crawler_bite, elemental_burst], behavior: melee, element: void, xp: 26, size: 0.6, color: '#7a4dff'}
+  cave_crawler: {id: 40, family: cave, hp: 82, speed: 5.5, aggro: 16, attacks: [crawler_bite, pounce], behavior: melee, xp: 22, size: 0.9, color: '#5a4a5a'}
+  gloom_bat: {id: 41, family: cave, hp: 80, speed: 7.0, aggro: 20, attacks: [bite, harpy_dive], behavior: flyer, keepAway: 4, xp: 20, size: 0.6, color: '#3a3a4a'}
+  crystal_golem: {id: 42, family: cave, hp: 94, speed: 3.5, aggro: 14, attacks: [golem_punch, elemental_burst], behavior: melee, xp: 34, size: 1.4, color: '#8fd4ff'}
   # bosses: hp is the solo value at level 1 (party scaling multiplies it)
   warden: {id: 100, family: boss, hp: 3600, speed: 4.5, aggro: 30, attacks: [boss_cleave, boss_slam], behavior: melee, xp: 600, size: 3.0, color: '#7a6a5a'}
   archon: {id: 101, family: boss, hp: 3200, speed: 4.0, aggro: 32, attacks: [boss_orbs, boss_nova], behavior: ranged, keepAway: 10, xp: 600, size: 2.6, color: '#5a4a8a'}
@@ -645,9 +645,9 @@ bosses:
 
 affixes:
   # Spec 8 elites: an element and an affix. Wind-ups never leave 300-600 ms.
-  fast: {id: 1, hpMult: 6, damageMult: 1.4, speedMult: 1.4, cooldownMult: 0.75}
+  fast: {id: 1, hpMult: 7, damageMult: 1.4, speedMult: 1.4, cooldownMult: 0.75}
   shielded: {id: 2, hpMult: 5, damageMult: 1.4, shieldPct: 0.4, shieldRegenMs: 6000}
-  splitting: {id: 3, hpMult: 5, damageMult: 1.3, splitInto: 2, splitHpPct: 0.35}
+  splitting: {id: 3, hpMult: 6, damageMult: 1.3, splitInto: 2, splitHpPct: 0.35}
 
 enemyNames:
   boar: Thornback Boar
