@@ -63,11 +63,7 @@ fn every_chamber_reachable_from_the_sky() {
                 for (dx, dy, dz) in [(1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1)] {
                     let n = (x + dx, y + dy, z + dz);
                     // Stay near the system (the surface air is unbounded).
-                    if (n.0 * 2) as f64 > s.bbox[3] + 8.0
-                        || ((n.0 * 2) as f64) < s.bbox[0] - 8.0
-                        || ((n.2 * 2) as f64) > s.bbox[5] + 8.0
-                        || ((n.2 * 2) as f64) < s.bbox[2] - 8.0
-                    {
+                    if (n.0 * 2) as f64 > s.bbox[3] + 8.0 || ((n.0 * 2) as f64) < s.bbox[0] - 8.0 || ((n.2 * 2) as f64) > s.bbox[5] + 8.0 || ((n.2 * 2) as f64) < s.bbox[2] - 8.0 {
                         continue;
                     }
                     if g.get(&n) == Some(&true) && !seen.contains_key(&n) {
@@ -77,11 +73,7 @@ fn every_chamber_reachable_from_the_sky() {
                 }
             }
             for (ci, ch) in s.chambers.iter().enumerate() {
-                let p = (
-                    (ch.x / 2.0).round() as i32,
-                    ((ch.floor + 1.5) / 2.0).round() as i32,
-                    (ch.z / 2.0).round() as i32,
-                );
+                let p = ((ch.x / 2.0).round() as i32, ((ch.floor + 1.5) / 2.0).round() as i32, (ch.z / 2.0).round() as i32);
                 // The nearest air sample to the chamber floor point.
                 let found = (-1..=1).any(|dy| seen.contains_key(&(p.0, p.1 + dy, p.2)));
                 assert!(found, "seed {seed} sys {si}: chamber {ci} (depth {:.0}) not reachable", ch.depth);
@@ -132,13 +124,7 @@ fn edits_carve_and_flag() {
     let v = w.systems[1].veins[0];
     let (cx, cy, cz) = ((v.x / 64.0).floor() as i32, (v.y / 32.0).floor() as i32, (v.z / 64.0).floor() as i32);
     let plain = cell::build(&a, w, cx, cy, cz, &[]).unwrap();
-    let e = cell::Edit {
-        vein_id: v.id,
-        x: v.x,
-        y: v.y,
-        z: v.z,
-        r: 1.5,
-    };
+    let e = cell::Edit { vein_id: v.id, x: v.x, y: v.y, z: v.z, r: 1.5 };
     let edited = cell::build(&a, w, cx, cy, cz, &[e]).unwrap();
     assert_ne!(worldgen::hash_bytes(&plain), worldgen::hash_bytes(&edited));
     let vo = u32::from_le_bytes(edited[60..64].try_into().unwrap()) as usize;

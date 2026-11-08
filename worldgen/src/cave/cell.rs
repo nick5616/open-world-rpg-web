@@ -137,9 +137,7 @@ pub fn build(a: &Atlas, w: &CaveWorld, cx: i32, cy: i32, cz: i32, edits: &[Edit]
         .collect();
     let carves: Vec<Edit> = edits
         .iter()
-        .filter(|e| {
-            e.x + e.r >= pbox[0] && e.x - e.r <= pbox[3] && e.y + e.r >= pbox[1] && e.y - e.r <= pbox[4] && e.z + e.r >= pbox[2] && e.z - e.r <= pbox[5]
-        })
+        .filter(|e| e.x + e.r >= pbox[0] && e.x - e.r <= pbox[3] && e.y + e.r >= pbox[1] && e.y - e.r <= pbox[4] && e.z + e.r >= pbox[2] && e.z - e.r <= pbox[5])
         .copied()
         .collect();
 
@@ -151,13 +149,7 @@ pub fn build(a: &Atlas, w: &CaveWorld, cx: i32, cy: i32, cz: i32, edits: &[Edit]
         !elems.is_empty() && {
             let g = Ground::new(a, ox, oz, ox, oz);
             let mut lo = f64::MAX;
-            for (x, z) in [
-                (ox, oz),
-                (ox + CELL_W, oz),
-                (ox, oz + CELL_W),
-                (ox + CELL_W, oz + CELL_W),
-                (ox + 32.0, oz + 32.0),
-            ] {
+            for (x, z) in [(ox, oz), (ox + CELL_W, oz), (ox, oz + CELL_W), (ox + CELL_W, oz + CELL_W), (ox + 32.0, oz + 32.0)] {
                 lo = lo.min(g.macro_h(x, z));
             }
             top > lo - 75.0
@@ -472,11 +464,7 @@ pub fn build(a: &Atlas, w: &CaveWorld, cx: i32, cy: i32, cz: i32, edits: &[Edit]
         b[o + 1] = snorm8(nn[1]);
         b[o + 2] = snorm8(nn[2]);
         let vy = cpos[n][1];
-        b[o + 3] = if sys_main == u16::MAX {
-            0
-        } else {
-            band_of(w.systems[sys_main as usize].mouth_y - vy)
-        };
+        b[o + 3] = if sys_main == u16::MAX { 0 } else { band_of(w.systems[sys_main as usize].mouth_y - vy) };
     }
     for (n, t) in tris.iter().enumerate() {
         for (c, v) in t.iter().enumerate() {

@@ -39,18 +39,7 @@ pub const ORE_NAMES: [&str; 6] = ["copper", "iron", "silver", "sunsteel", "starm
 
 /// Gem ids 0..7 follow the element order (fire, ice, lightning, earth, wind,
 /// light, dark, void); 8 and 9 are the utility gems.
-pub const GEM_NAMES: [&str; 10] = [
-    "ruby",
-    "sapphire",
-    "topaz",
-    "emerald",
-    "aquamarine",
-    "sunstone",
-    "onyx",
-    "amethyst",
-    "opal",
-    "moonstone",
-];
+pub const GEM_NAMES: [&str; 10] = ["ruby", "sapphire", "topaz", "emerald", "aquamarine", "sunstone", "onyx", "amethyst", "opal", "moonstone"];
 pub const GEM_OPAL: u8 = 8;
 pub const GEM_MOONSTONE: u8 = 9;
 
@@ -280,11 +269,7 @@ pub fn place_all(a: &Atlas, p: &CaveParams, w: &mut CaveWorld) {
                 let depth = sys.mouth_y - hit[1];
                 let (kind, material, element) = roll(p, sys, biome, depth, sunlit, near_peak, u1, u2);
                 let size = 3 + (us * 5.0) as u8;
-                let base = if kind == KIND_GEM {
-                    GEM_HP + 60.0 * depth_frac
-                } else {
-                    ORE_HP[material as usize]
-                };
+                let base = if kind == KIND_GEM { GEM_HP + 60.0 * depth_frac } else { ORE_HP[material as usize] };
                 let hp = libm::round(base * (0.8 + 0.1 * size as f64)) as u16;
                 veins.push(Vein {
                     id: stable_id(LAYER_VEIN, sys.site_index as i32, ci as i32, vi),
@@ -313,9 +298,7 @@ pub fn place_all(a: &Atlas, p: &CaveParams, w: &mut CaveWorld) {
                 let x = c.x + libm::cos(ang) * r;
                 let z = c.z + libm::sin(ang) * r;
                 let top = [x, c.y, z];
-                let Some(hit) = wall_hit(sys, seed, top, [0.0, -1.0, 0.0], c.ry + 4.0) else {
-                    continue;
-                };
+                let Some(hit) = wall_hit(sys, seed, top, [0.0, -1.0, 0.0], c.ry + 4.0) else { continue };
                 let roll_kind = unit(seq.next_u64());
                 let kind = if roll_kind < 0.6 {
                     DECO_FUNGUS

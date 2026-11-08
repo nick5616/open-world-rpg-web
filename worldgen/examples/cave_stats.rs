@@ -62,14 +62,8 @@ fn main() {
             }
         }
     }
-    println!(
-        "  ores: {:?}",
-        (0..6).map(|i| format!("{}={}", veins::ORE_NAMES[i], mats[i])).collect::<Vec<_>>()
-    );
-    println!(
-        "  gems: {:?}",
-        (0..8).map(|i| format!("{}={}", veins::GEM_NAMES[i], mats[8 + i])).collect::<Vec<_>>()
-    );
+    println!("  ores: {:?}", (0..6).map(|i| format!("{}={}", veins::ORE_NAMES[i], mats[i])).collect::<Vec<_>>());
+    println!("  gems: {:?}", (0..8).map(|i| format!("{}={}", veins::GEM_NAMES[i], mats[8 + i])).collect::<Vec<_>>());
     cells.sort();
     cells.dedup();
     let mut ms = Vec::new();

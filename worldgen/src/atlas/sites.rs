@@ -637,7 +637,9 @@ fn feature_nodes(w: &World, prom: &[f64], ground: &[bool]) -> Vec<usize> {
                         }
                     }
                 }
-                let ridge = (i + j) % 2 == 0 && prom[k] > 10.0 && ((h[k] > h[k - 1] && h[k] > h[k + 1]) || (h[k] > h[k - N] && h[k] > h[k + N]));
+                let ridge = (i + j) % 2 == 0
+                    && prom[k] > 10.0
+                    && ((h[k] > h[k - 1] && h[k] > h[k + 1]) || (h[k] > h[k - N] && h[k] > h[k + N]));
                 if (top && prom[k] > 12.0) || ridge {
                     out.push(k);
                 }

@@ -551,11 +551,7 @@ fn build_system(a: &Atlas, p: &CaveParams, index: u16, site: &SiteRec, yaw: u16)
             let back = libm::atan2(sz - pc.z, sx - pc.x);
             let far = libm::sqrt((pc.x - sx) * (pc.x - sx) + (pc.z - sz) * (pc.z - sz)) > 95.0;
             let spread = 0.7 + 1.6 * attempt as f64 / 14.0;
-            let h = if far {
-                back + (b.seq.unit() - 0.5) * 2.0
-            } else {
-                heading + (b.seq.unit() - 0.5) * spread
-            };
+            let h = if far { back + (b.seq.unit() - 0.5) * 2.0 } else { heading + (b.seq.unit() - 0.5) * spread };
             let drop = per * (1.0 - attempt as f64 / 20.0);
             if let Some(ct) = b.try_chamber(cur, h, drop, 24.0, 68.0) {
                 placed = Some((ct, h));
@@ -594,10 +590,7 @@ fn build_system(a: &Atlas, p: &CaveParams, index: u16, site: &SiteRec, yaw: u16)
             }
             let (ci, cj) = (b.chambers[i], b.chambers[j]);
             let hd = libm::sqrt((ci.x - cj.x) * (ci.x - cj.x) + (ci.z - cj.z) * (ci.z - cj.z));
-            let adjacent = b
-                .tunnels
-                .iter()
-                .any(|t| (t.a as usize == i && t.b as usize == j) || (t.a as usize == j && t.b as usize == i));
+            let adjacent = b.tunnels.iter().any(|t| (t.a as usize == i && t.b as usize == j) || (t.a as usize == j && t.b as usize == i));
             if adjacent || hd > 46.0 || libm::fabs(ci.floor - cj.floor) > hd * MAX_TUNNEL_SLOPE || b.seq.unit() > 0.35 {
                 continue;
             }

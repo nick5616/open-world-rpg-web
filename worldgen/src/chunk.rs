@@ -745,11 +745,7 @@ mod tests {
                     let w = get_f32(&c, woff + (j * S_ + i) * 4) as f64;
                     let x = (cx * 64 + i as i32) as f64;
                     let z = (cz * 64 + j as i32) as f64;
-                    assert_eq!(
-                        w.to_bits(),
-                        crate::ground::water_height(&a, x, z).to_bits(),
-                        "chunk ({cx},{cz}) sample ({i},{j})"
-                    );
+                    assert_eq!(w.to_bits(), crate::ground::water_height(&a, x, z).to_bits(), "chunk ({cx},{cz}) sample ({i},{j})");
                 }
             }
         }

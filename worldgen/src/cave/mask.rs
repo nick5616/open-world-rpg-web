@@ -25,11 +25,7 @@ pub const BITS_LEN: usize = 64 * 64 * 2 / 8;
 /// (x0, z0) dropped by any of `openings`?
 #[inline]
 pub fn tri_masked(openings: &[Opening], x0: f64, z0: f64, tri: u32) -> bool {
-    let (cx, cz) = if tri == 0 {
-        (x0 + 1.0 / 3.0, z0 + 1.0 / 3.0)
-    } else {
-        (x0 + 2.0 / 3.0, z0 + 2.0 / 3.0)
-    };
+    let (cx, cz) = if tri == 0 { (x0 + 1.0 / 3.0, z0 + 1.0 / 3.0) } else { (x0 + 2.0 / 3.0, z0 + 2.0 / 3.0) };
     openings.iter().any(|o| {
         let dx = cx - o.x;
         let dz = cz - o.z;
