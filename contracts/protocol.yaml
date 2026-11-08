@@ -24,7 +24,7 @@
 # Versioning: adding a message or appending a field to a masked struct is a
 # compatible change (bump `version`, note it in docs/cr/). Changing the meaning
 # or order of an existing field is not; that needs a new message id.
-version: 2   # v2 (docs/cr/003-voice-speaking-and-earshot.md): InputFlag.speaking
+version: 2   # v2 (docs/cr/004-voice-speaking-and-earshot.md): InputFlag.speaking
 
 enums:
   EntityKind:

@@ -13,6 +13,7 @@ Shared Go packages for every service (module `lodestone/server/pkg`).
 | `migrate`, `cmd/migrate` | Applies `contracts/migrations` (`npm run migrate`) |
 | `ticket` | Ed25519 connect tickets (director signs, zone/social verify); dev key when env unset |
 | `zoneregistry` | Redis `zones:{worldId}` registry: zones announce, director picks |
+| `earshot` | (WP11) The zone -> social earshot message on Redis `voice:{worldId}` (CR 004) |
 | `movement` | Authoritative movement step (wizard-wars port); the contract WP02's TS prediction mirrors, with trajectory vectors (see its README) |
 | `gameloop` | Shared fixed-rate scheduler: one grid, coarse sleep + spin tail (`LODESTONE_SPIN_MS`), bounded catch-up, debt forgiveness, tick/jitter stats; QPC clock on Windows |
 | `transport` | `Conn` interface with reliable vs unreliable (latest-wins) sends; WebSocket server/dialer; WebTransport server/dialer (quic-go/webtransport-go: datagrams + one length-prefixed stream), `NewDevCert` (ECDSA, <14 days, hash for `serverCertificateHashes`), `CloseCode` |

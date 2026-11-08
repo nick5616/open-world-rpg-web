@@ -227,3 +227,24 @@ Tests: `internal/game/terrain_test.go` (prediction on terrain to the cm,
 spawns, validation), `zone_terrain_integration_test.go` (zone binary on
 terrain vs a client predicting with its own worldhost; refusal of a wrong
 genVersion). Both skip without the wasm unless `LODESTONE_REQUIRE_WASM=1`.
+
+## Proximity voice: earshot (WP11)
+
+Every `EARSHOT_INTERVAL_MS` (250 ms) the tick copies player positions
+(`internal/game/earshot.go`, a few microseconds) and hands them to a
+`voice.Runner` (`internal/voice`), which computes earshot sets on its own
+goroutine and publishes them to Redis `voice:{worldId}` (`voice.go`; message
+format `server/pkg/earshot`, CR 004). Rules: 3D distance, join 40 m / leave
+48 m, at most 12 with an 8 m head start for current members (no swapping in a
+crowd), cave hook (`Player.Cave`, WP09), parties added by the social service.
+Full message every 2 s, deltas only on change. `LODESTONE_ZONE_EARSHOT=0` (or
+`LODESTONE_ZONE_NO_REDIS=1`) turns it off. Metrics `zone_earshot_*`.
+
+The client's `InputFlag.speaking` is mirrored into the entity's
+`Activity.speaking` (never for local profiles, `Entity.ListenOnly`).
+
+Tests: `internal/voice` (hysteresis, cap with incumbency, 3D, caves, deltas,
+no flapping in a jittery crowd, grid == brute force, runner messages),
+`internal/game/earshot_test.go` (cadence, speaking bit),
+`zone_earshot_integration_test.go` (zone binary -> Redis: sets, 2 s fulls,
+a sprinting player leaves earshot after ~5 s). Decisions: 0011.

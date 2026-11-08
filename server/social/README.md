@@ -21,6 +21,7 @@ go run ./server/social                     # :8093, /ws, /healthz, /metrics
 | `LODESTONE_SOCIAL_PRESENCE_TTL` | `30s` | Presence TTL (`PRESENCE_TTL_S`); heartbeat every third of it |
 | `LODESTONE_SOCIAL_REAP_EVERY` | `10s` | Dead-session reaper interval |
 | `LODESTONE_SOCIAL_PARTY_GRACE` | `5m` | Party membership kept while offline (`PARTY_RECONNECT_GRACE_S`) |
+| `LODESTONE_LIVEKIT_URL`, `_API_URL`, `_KEY`, `_SECRET`, `LODESTONE_VOICE` | compose LiveKit `--dev` | Proximity voice (WP11), see `voice/README.md` |
 
 Several processes may serve one world: everything goes through Redis.
 
@@ -98,3 +99,4 @@ node client/src/social/dev/e2e.mjs       # from the repo root: 3 browsers via di
 | `internal/social` | Hub, sessions, channels, whispers, parties, friends, moderation, store, bus |
 | `internal/client` | Small Go client used by tests and the flood tool |
 | `cmd/admin`, `cmd/flood`, `cmd/e2ezones` | CLIs above |
+| `voice/`, `voicecfg.go`, `internal/social/voice.go` | (WP11) Proximity voice: `voice_token` (LiveKit join tokens; listen-only for local profiles and moderator-muted players) and the earshot → LiveKit subscription reconciler, one leader per world. See `voice/README.md`; `/debug/voice` |
