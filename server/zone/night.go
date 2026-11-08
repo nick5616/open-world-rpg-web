@@ -78,6 +78,11 @@ func withNight(cfg *game.Config, terrain *worldhost.Terrain, specJSON []byte, de
 	if cfg.Combat != nil {
 		atlas = cfg.Combat.Atlas
 	}
+	if atlas == nil && terrain != nil { // combat may run without atlas groups; wards and lairs still need the sites
+		if a, err := structures.ParseAtlas(terrain.World().Atlas); err == nil {
+			atlas = combat.ParseAtlas(terrain.World().Atlas, a)
+		}
+	}
 	var tw = cfg.Towns
 	names := func(i int) string {
 		if tw == nil || atlas == nil {
@@ -146,7 +151,13 @@ func serveNightDebug(mux *http.ServeMux, zone *game.Server) {
 		var info game.NightDebug
 		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
 		defer cancel()
-		if err := zone.Do(ctx, func() { info = zone.NightDebugInfo(r.URL.Query().Get("hashes") == "1") }); err != nil {
+		q := r.URL.Query()
+		if err := zone.Do(ctx, func() {
+			info = zone.NightDebugInfo(q.Get("hashes") == "1")
+			if q.Get("towns") == "1" {
+				info.Towns = zone.NightTowns()
+			}
+		}); err != nil {
 			http.Error(w, err.Error(), http.StatusServiceUnavailable)
 			return
 		}

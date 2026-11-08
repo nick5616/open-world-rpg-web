@@ -1,0 +1,47 @@
+{
+  "bot": {
+    "attacks": 55,
+    "claimsAccepted": 40,
+    "claimsRefused": 15,
+    "corrections": 0,
+    "damageTaken": 54,
+    "defenseXP": 0,
+    "demonKills": 3,
+    "dodges": 51,
+    "downs": 0,
+    "weapon": "sword"
+  },
+  "ordinary": {
+    "hits": 19,
+    "damage": 375,
+    "shrugged": 19,
+    "minHealthPct": 53,
+    "killedByBot": 0,
+    "alive": 3
+  },
+  "pass": true,
+  "scenario": "demon",
+  "sunrise": {
+    "alive": 0,
+    "burned": 3,
+    "dawn": 1,
+    "fresh": 3
+  },
+  "sunsteel": {
+    "hits": 14,
+    "damage": 290,
+    "shrugged": 0,
+    "minHealthPct": 2,
+    "killedByBot": 3,
+    "alive": 0
+  },
+  "town": {
+    "index": 9,
+    "name": "Draedmore",
+    "x": 1920,
+    "z": 2272,
+    "wardR": 140,
+    "gardenX": 1926.297607421875,
+    "gardenZ": 2296.262451171875
+  }
+}

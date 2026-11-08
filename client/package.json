@@ -17,6 +17,7 @@
     "traversal:accept": "vite-node src/sim/dev/traversal-acceptance.ts",
     "traversal:browser": "vite-node src/sim/dev/traversal-browser.ts",
     "combat:browser": "vite-node src/combat/dev/feel-browser.ts",
+    "fire:accept": "vite-node src/systems/dev/fire-acceptance.ts",
     "bench": "node src/world/bench/traversal.mjs"
   },
   "dependencies": {

@@ -319,6 +319,7 @@ func (s *Server) handleCombatInteract(sess *session, m *proto.Interact) {
 				key = mat.Key
 			}
 			ok = (m.Arg>>8 == 0 || key != "") && pr.SetMaterial(int(m.Arg&0xff), key)
+			s.log.Info("dev weapon material", "entity", e.ID, "loadout", m.Arg&0xff, "active", pr.Active, "material", key, "ok", ok)
 		}
 	}
 	if !ok {

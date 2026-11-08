@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"lodestone/server/pkg/combatdefs"
 	"lodestone/server/pkg/constants"
 	"lodestone/server/pkg/movement"
 	"lodestone/server/pkg/proto"
@@ -198,4 +199,60 @@ func TestDemonsNeverHuntInsideAWardAndBurnAtDawn(t *testing.T) {
 			t.Error("ward block")
 		}
 	})
+}
+
+func TestDevSunsteelInteractSetsTheLoadoutMaterial(t *testing.T) {
+	h, _ := nightHarness(t)
+	a := h.dial("?spawn=300,300")
+	a.join(h, "ss", "Sol")
+	a.send(&proto.Interact{TargetKind: combat.InteractCombat, Action: combat.ActSetMaterial, Arg: 0 | 3<<8})
+	time.Sleep(300 * time.Millisecond)
+	var mat string
+	_ = h.srv.Do(context.Background(), func() {
+		for _, e := range h.srv.ents {
+			if e.cbt != nil {
+				mat = e.cbt.Loadout().Material
+			}
+		}
+	})
+	if mat != "sunsteel" {
+		t.Fatalf("material %q", mat)
+	}
+}
+
+// TestSunsteelKillsADemonOverTheSessionPath: the dev sunsteel Interact and
+// real sword HitClaims through the zone's session path.
+func TestSunsteelKillsADemonOverTheSessionPath(t *testing.T) {
+	h, _ := nightHarness(t)
+	a := h.dial("?spawn=300,300")
+	a.join(h, "sk", "Sol")
+	a.send(&proto.Interact{TargetKind: combat.InteractCombat, Action: combat.ActSetMaterial, Arg: 0 | 3<<8})
+	var demon *combat.Enemy
+	_ = h.srv.Do(context.Background(), func() {
+		g := h.srv.cbt.w.SpawnDemons(movement.Vec3{X: 300, Z: 298}, []string{"gloamling"}, 1)
+		h.srv.trackDemons(g, 0, "lesser", -1)
+		demon = g.Members[0]
+	})
+	sword := combatdefs.D.MoveOf(combatdefs.D.WeaponByKey("sword"), "light", 0)
+	alive := true
+	for i := 0; i < 12 && alive; i++ {
+		_ = h.srv.Do(context.Background(), func() { demon.Pos = movement.Vec3{X: 300, Z: 298}; alive = demon.Alive() })
+		a.sendFrames(proto.InputFlagAttack, 0)
+		swing := a.seq - 1
+		a.send(&proto.HitClaim{AttackSeq: swing, AttackID: uint16(sword.ID), TargetID: demon.ID, Tick: a.dec.Latest(), X: 30000, Z: 30000})
+		r := a.hitResult(3 * time.Second)
+		if !r.Accepted {
+			t.Fatalf("swing %d refused %+v", i, r)
+		}
+		for k := 0; k < 25; k++ {
+			a.sendFrames(0, 0)
+		}
+		a.drainFor(100 * time.Millisecond)
+		_ = h.srv.Do(context.Background(), func() { alive = demon.Alive() })
+	}
+	if alive {
+		var seared float64
+		_ = h.srv.Do(context.Background(), func() { seared = demon.Demon.Seared })
+		t.Fatalf("sunsteel never killed it (seared %v of %v)", seared, demon.HPMax)
+	}
 }

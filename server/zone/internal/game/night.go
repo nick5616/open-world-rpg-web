@@ -756,6 +756,47 @@ type NightDebug struct {
 	ChemHash  uint32         `json:"chemHash"`
 	ChemLate  int            `json:"chemLate"`
 	Hashes    []ChemHash     `json:"hashes,omitempty"`
+	Towns     []TownDebug    `json:"towns,omitempty"`
+	DemonList []DemonDebug   `json:"demonList,omitempty"`
+}
+
+// DemonDebug is one demon in /debug/night.
+type DemonDebug struct {
+	ID     uint32  `json:"id"`
+	Key    string  `json:"key"`
+	Rank   string  `json:"rank"`
+	Level  int     `json:"level"`
+	HP     float64 `json:"hp"`
+	HPMax  float64 `json:"hpMax"`
+	Seared float64 `json:"seared"`
+	Wounds float64 `json:"wounds"`
+	State  string  `json:"state"`
+	X      float64 `json:"x"`
+	Z      float64 `json:"z"`
+	AtGoal bool    `json:"atGoal"`
+}
+
+// TownDebug is a ward in /debug/night (?towns=1).
+type TownDebug struct {
+	Index   int     `json:"index"`
+	Name    string  `json:"name"`
+	X       float64 `json:"x"`
+	Z       float64 `json:"z"`
+	WardR   float64 `json:"wardR"`
+	GardenX float64 `json:"gardenX"`
+	GardenZ float64 `json:"gardenZ"`
+}
+
+// NightTowns lists the wards (tick goroutine: call via Do).
+func (s *Server) NightTowns() []TownDebug {
+	s.nightInit()
+	var out []TownDebug
+	if s.night.cfg.World != nil {
+		for _, t := range s.night.cfg.World.Towns {
+			out = append(out, TownDebug{Index: t.Index, Name: t.Name, X: t.X, Z: t.Z, WardR: t.WardRadius(), GardenX: t.GardenX, GardenZ: t.GardenZ})
+		}
+	}
+	return out
 }
 
 // NightDebugInfo reports night state (tick goroutine: call via Do).
@@ -769,6 +810,9 @@ func (s *Server) NightDebugInfo(withHashes bool) NightDebug {
 		for _, e := range dg.g.Members {
 			if e.Alive() {
 				d.Demons++
+			}
+			if e.Demon != nil {
+				d.DemonList = append(d.DemonList, DemonDebug{ID: e.ID, Key: e.Def.Key, Rank: e.Demon.Rank, Level: e.Level, HP: e.HP, HPMax: e.HPMax, Seared: e.Demon.Seared, Wounds: e.Demon.Wounds, State: e.State.String(), X: e.Pos.X, Z: e.Pos.Z, AtGoal: e.Demon.AtGoal})
 			}
 		}
 	}
