@@ -1,7 +1,13 @@
 # Status
 
 One section per work package (spec 15). Each package edits only its own section.
-Gates: G0 ✅ · G1 ⏳ · G2 ⏳ · G3 ⏳ · G4 ⏳ · G5 ⏳
+Gates: G0 ✅ · G1 ✅ · G2 ✅ · G3 ⏳ · G4 ⏳ · G5 ⏳
+
+## Gate evidence (orchestrator)
+
+- **G0**: docs/evidence/wp00-dev-smoke.log.
+- **G1**: same chunk hashes in Node, Chromium and Go/wazero (docs/evidence/wp01-golden.txt, re-run on main after merge); one player walks generated terrain solo in  (docs/evidence/wp05-*).
+- **G2**: two browsers see each other on *generated terrain* over the binary protocol under "thailand": docs/evidence/g2-two-browsers-terrain-ws.txt and g2-terrain-ws-*.png (run on main after the WP05 merge: 0 local corrections, 0 remote teleports; a first run on a heavily loaded machine (2 fps headless) logged one 58 cm eased remote jump, the re-run had none). 150-bot soaks within budget: wp03-soak-*, wp07-soak-spread.*. Chat and whispers: wp08-e2e.txt. Known gap: the WP06 acceptance harness doesn't start the social service, so its browsers log refused social sockets (harmless; WP08's e2e covers social).
 
 ## WP00: Monorepo scaffold and contracts ✅
 
