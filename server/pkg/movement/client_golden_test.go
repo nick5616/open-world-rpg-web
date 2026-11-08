@@ -46,7 +46,8 @@ func TestReplaysClientGoldens(t *testing.T) {
 		if g.Ground.Kind == "plane" {
 			ground = plane{g.Ground.Base, g.Ground.Sx, g.Ground.Sz}
 		}
-		s := State{Pos: Vec3{g.Initial[0], g.Initial[1], g.Initial[2]}, Vel: Vec3{g.Initial[3], g.Initial[4], g.Initial[5]}, AirJumps: int(g.Initial[6])}
+		s := NewState(Vec3{g.Initial[0], g.Initial[1], g.Initial[2]})
+		s.Vel, s.AirJumps = Vec3{g.Initial[3], g.Initial[4], g.Initial[5]}, int(g.Initial[6])
 		worst := 0.0
 		for i, f := range g.Frames {
 			s = StepFrame(s, proto.InputFrame{Seq: uint32(f[0]), Flags: uint16(f[1]), Yaw: uint16(f[2]), Pitch: int16(f[3])}, ground)

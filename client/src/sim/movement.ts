@@ -659,7 +659,9 @@ function stepClimb(s: MoveState, flags: number, wish: Vec2xz, ground: GroundQuer
     // Letting go: on a heightfield that is standing on the slope, so the walk
     // step slides us down it (no jumping off a slide). It cannot re-grab:
     // wantsClimb fails for an empty wheel or an unclimbable surface.
-    return stepWalk(asWalk(s, MoveMode.ground), flags & ~(InputFlag.jump | InputFlag.jump_edge), wish, ground, dt);
+    // The climb's velocity is only a report of the last move, so it must not
+    // leak into walk physics (an upward vy would launch us off the wall).
+    return stepWalk({ ...s, mode: MoveMode.ground, vel: { x: 0, y: 0, z: 0 } }, flags & ~(InputFlag.jump | InputFlag.jump_edge), wish, ground, dt);
   }
   const t = Math.sqrt(here.t2);
   const ux = here.gx / t;
@@ -732,6 +734,7 @@ function stepClimb(s: MoveState, flags: number, wish: Vec2xz, ground: GroundQuer
     vel = y > s.pos.y ? { x: ux * MANTLE_SPEED, y: 0, z: uz * MANTLE_SPEED } : { x: 0, y: 0, z: 0 };
   } else if (there.t2 > CLIMB_MAX_TAN_SQ) {
     mode = MoveMode.ground; // too steep to hold: the next step slides
+    vel = { x: 0, y: 0, z: 0 };
   }
   const fy = entersWater(ground, x, y, z, y);
   if (fy !== null) {
