@@ -1,0 +1,74 @@
+# Social service WebSocket protocol (spec section 10): JSON text frames, low
+# volume, like the-circle's socket. Every frame is one object with a "type".
+#
+# Generated into contracts/ts/src/social.ts and server/pkg/socialproto/social.go.
+# Field types: string, int, number, bool, any struct/enum name, T[] for arrays.
+# A trailing "?" marks an optional field (omitted when empty).
+version: 1
+
+enums:
+  Channel: [global, zone, local, party, whisper, system]
+  WhisperStatus: [delivered, offline, blocked_you, not_allowed]
+  FriendState: [pending_out, pending_in, accepted]
+  ErrorCode: [bad_auth, rate_limited, slow_mode, too_long, unknown_target, not_allowed, party_full, not_leader, internal]
+
+structs:
+  ChatMessage:
+    id: string
+    channel: Channel
+    fromId: string
+    fromName: string
+    text: string
+    ts: number          # server unix ms
+    toName: string?     # whisper target (for the sender's own echo)
+    x: number?          # local chat origin (for bubbles)
+    z: number?
+  PartyMember:
+    characterId: string
+    name: string
+    online: bool
+    region: string?
+  Friend:
+    characterId: string
+    name: string
+    state: FriendState
+    online: bool
+    region: string?
+
+messages:
+  c2s:
+    auth: {ticket: string}
+    chat_send: {channel: Channel, text: string}
+    whisper: {to: string, text: string}
+    reply: {text: string}
+    party_invite: {name: string}
+    party_respond: {partyId: string, accept: bool}
+    party_leave: {}
+    party_kick: {name: string}
+    party_promote: {name: string}
+    friend_request: {name: string}
+    friend_respond: {name: string, accept: bool}
+    friend_remove: {name: string}
+    block: {name: string}
+    unblock: {name: string}
+    mute: {name: string}
+    unmute: {name: string}
+    report: {name: string, channel: Channel, reason: string?}
+    presence: {region: string, x: number, z: number, zoneId: string}
+    set_filter: {profanity: bool}
+    voice_token: {}
+    ping: {t: number}
+
+  s2c:
+    welcome: {characterId: string, name: string, isLocalProfile: bool}
+    chat: {message: ChatMessage}
+    history: {channel: Channel, conversation: string?, messages: "ChatMessage[]"}
+    whisper_status: {to: string, status: WhisperStatus}
+    party_state: {partyId: string, leaderId: string, members: "PartyMember[]"}
+    party_invite: {partyId: string, fromName: string}
+    party_left: {}
+    friends: {friends: "Friend[]"}
+    error: {code: ErrorCode, message: string}
+    system: {text: string}
+    voice_token: {url: string, token: string, room: string}
+    pong: {t: number, serverTime: number}

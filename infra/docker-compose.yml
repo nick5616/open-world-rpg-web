@@ -1,0 +1,48 @@
+# Local stateful infrastructure (spec section 4): Postgres, Redis, LiveKit.
+# Started by `npm run dev` / `npm run infra:up`. Host ports default to
+# non-standard values (55432, 56379, 7880...) because the stock ports are
+# often taken on dev machines; override with the env vars below.
+name: lodestone
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: lodestone
+      POSTGRES_PASSWORD: lodestone
+      POSTGRES_DB: lodestone
+    ports:
+      - "${LODESTONE_PG_PORT:-55432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lodestone -d lodestone"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]   # ephemeral by design (spec 11)
+    ports:
+      - "${LODESTONE_REDIS_PORT:-56379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  livekit:
+    image: livekit/livekit-server:v1.8
+    # --dev: built-in devkey/secret ("devkey" / "secret"), fine for local only.
+    # Media ports are a small UDP range so Docker Desktop maps them quickly. Ports
+    # stay below 10000: Windows Hyper-V reserves random blocks in 49152+ (57177-
+    # 57924 was reserved on the dev machine when 57880 was tried).
+    command: ["--dev", "--bind", "0.0.0.0", "--node-ip", "127.0.0.1", "--config-body", "rtc: {port_range_start: 7900, port_range_end: 7950, tcp_port: 7881, use_external_ip: false}"]
+    ports:
+      - "${LODESTONE_LIVEKIT_PORT:-7880}:7880"
+      - "7881:7881"
+      - "7900-7950:7900-7950/udp"
+
+volumes:
+  pgdata:

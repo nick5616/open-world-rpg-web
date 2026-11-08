@@ -1,0 +1,275 @@
+# Lodestone zone wire protocol (spec section 9).
+#
+# One definition, generated into:
+#   contracts/ts/src/protocol.ts          (client, tools)
+#   server/pkg/proto/protocol.go          (zone server, bots)
+#   contracts/golden/protocol_vectors.json (byte vectors both sides must match)
+# Hand-edited codecs are not allowed: edit this file and run `npm run gen`.
+#
+# Framing: every frame is [msgId u8][body]. All integers little-endian.
+#   string  = u16 byte length + UTF-8 bytes
+#   bytes   = u32 byte length + raw bytes
+#   list<T> = u16 count + items
+#   u64/i64 are bigint in TypeScript.
+# Masked structs ("mask: u16") write their `always` fields first, then the mask,
+# then each remaining field, in declaration order, only if its bit is set. Bit n
+# is the n-th non-always field. Absent fields cost zero bytes; this is how
+# snapshot deltas against the client's acknowledged baseline stay small (the
+# generalization of wizard-wars' cold-field wire cache).
+#
+# Quantization (portfolio protocol.ts in spirit): positions int32 centimeters,
+# yaw/pitch one byte each for others (u16 for your own input), velocity int16
+# cm/s, health a byte of percent for others and exact for yourself.
+#
+# Versioning: adding a message or appending a field to a masked struct is a
+# compatible change (bump `version`, note it in docs/cr/). Changing the meaning
+# or order of an existing field is not; that needs a new message id.
+version: 1
+
+enums:
+  EntityKind:
+    type: u8
+    values: {player: 1, enemy: 2, projectile: 3, pickup: 4, npc: 5, demon: 6, effect: 7}
+  MoveMode:
+    type: u8
+    values: {ground: 0, air: 1, climb: 2, glide: 3, swim: 4, fly: 5}
+  Transport:
+    type: u8
+    values: {websocket: 1, webtransport: 2}
+  EditKind:
+    type: u8
+    values: {vein_mined: 1, object_burned: 2, object_frozen: 3, object_destroyed: 4, pillar_raised: 5}
+  KickCode:
+    type: u16
+    values: {bad_ticket: 1, version_mismatch: 2, duplicate_login: 3, server_full: 4, rate_limited: 5, shutdown: 6, transferred: 7}
+
+flags:
+  InputFlag:
+    type: u16
+    bits: {forward: 0, back: 1, left: 2, right: 3, jump: 4, jump_edge: 5, sprint: 6, crouch: 7, attack: 8, alt_attack: 9, dodge: 10, interact: 11, cast: 12, glide_toggle: 13}
+  Activity:
+    # Rides in every entity record (portfolio protocol.ts activity-bits idea).
+    type: u8
+    bits: {climbing: 0, gliding: 1, swimming: 2, casting: 3, emoting: 4, typing: 5, speaking: 6, airborne: 7}
+
+structs:
+  InputFrame:
+    doc: One 1/60 s movement step. Packets carry the newest frames plus repeats.
+    fields:
+      seq: u32
+      flags: u16
+      yaw: u16          # yaw / 2pi * 65536 (u16 for your own input: aim precision matters)
+      pitch: i16        # pitch / (pi/2) * 32767
+      castSlot: u8      # which equipped spell when `cast` is set (0..3)
+
+  EntityRecord:
+    doc: Another entity in your interest set. Only changed fields are sent.
+    mask: u16
+    fields:
+      id: {type: u32, always: true}
+      kind: EntityKind
+      x: i32            # cm
+      y: i32
+      z: i32
+      yaw: u8
+      pitch: u8
+      vx: i16           # cm/s
+      vy: i16
+      vz: i16
+      healthPct: u8
+      activity: u8      # Activity bits
+      typeId: u16       # enemy type, item base id, npc role...
+      name: string      # sent on first sight only
+      level: u8
+      partyId: u32      # 0 = none; members get the party ring at any distance
+
+  SelfState:
+    doc: Your own authoritative state, for reconciliation. Exact health.
+    mask: u16
+    fields:
+      x: i32
+      y: i32
+      z: i32
+      vx: i16
+      vy: i16
+      vz: i16
+      health: u16
+      healthMax: u16
+      stamina: u16      # x10 (one decimal)
+      staminaMax: u16   # x10
+      mode: MoveMode
+      airJumps: u8
+      activity: u8
+      flags: u8         # misc server-side movement state bits (WP10 defines)
+
+  EditRecord:
+    doc: One entry of a chunk's append-only edit log (spec 7).
+    fields:
+      editId: u64
+      kind: EditKind
+      targetId: u64     # stable generator id (scatter, vein, container...)
+      params: bytes
+      tick: u32
+      expiresAt: f64    # server time ms, 0 = never
+
+messages:
+  # ---- client -> server ----
+  Hello:
+    id: 1
+    dir: c2s
+    delivery: reliable
+    fields:
+      protocolVersion: u16
+      ticket: bytes     # Ed25519-signed by the director (spec 9 security)
+      clientTime: f64
+      transport: Transport
+      saveBlob: bytes   # local profile signed save, empty for accounts
+
+  Input:
+    id: 2
+    dir: c2s
+    delivery: unreliable
+    fields:
+      ackTick: u32      # newest snapshot tick received (baseline ack)
+      frames: list<InputFrame>
+
+  ClockPing:
+    id: 3
+    dir: c2s
+    delivery: unreliable
+    fields:
+      t1: f64
+
+  HitClaim:
+    id: 4
+    dir: c2s
+    delivery: reliable
+    fields:
+      attackSeq: u32
+      attackId: u16     # weapon move or spell id
+      targetId: u32
+      tick: u32
+      x: i32            # attack origin, cm
+      y: i32
+      z: i32
+      yaw: u16
+      pitch: i16
+
+  Interact:
+    id: 5
+    dir: c2s
+    delivery: reliable
+    fields:
+      targetKind: u8
+      targetId: u64
+      action: u8
+      arg: u32
+
+  Bye:
+    id: 6
+    dir: c2s
+    delivery: reliable
+    fields:
+      reason: u8
+
+  # ---- server -> client ----
+  Welcome:
+    id: 64
+    dir: s2c
+    delivery: reliable
+    fields:
+      protocolVersion: u16
+      entityId: u32
+      tick: u32
+      tickRate: u8
+      serverTime: f64
+      worldId: string
+      seed: u64
+      genVersion: string
+      x: i32
+      y: i32
+      z: i32
+      name: string
+
+  Snapshot:
+    id: 65
+    dir: s2c
+    delivery: unreliable
+    fields:
+      tick: u32
+      baselineTick: u32   # 0 = full snapshot, else delta against that acked tick
+      ackInputSeq: u32
+      serverTime: f64
+      self: SelfState
+      entities: list<EntityRecord>
+      removed: list<u32>
+
+  ClockPong:
+    id: 66
+    dir: s2c
+    delivery: unreliable
+    fields:
+      t1: f64
+      t2: f64
+      t3: f64
+
+  Event:
+    id: 67
+    dir: s2c
+    delivery: reliable
+    doc: Generic gameplay event (damage number, discovery, ignite, loot...). Kinds are defined by the owning package in contracts/events.md.
+    fields:
+      kind: u16
+      entityId: u32
+      targetId: u32
+      value: i32
+      x: i32
+      y: i32
+      z: i32
+      data: bytes
+
+  WorldEdits:
+    id: 68
+    dir: s2c
+    delivery: chunk
+    doc: Active edits for a chunk on first interest, then live deltas (list of one).
+    fields:
+      cx: i32
+      cz: i32
+      edits: list<EditRecord>
+
+  Kick:
+    id: 69
+    dir: s2c
+    delivery: reliable
+    fields:
+      code: KickCode
+      reason: string
+
+  HitResult:
+    id: 70
+    dir: s2c
+    delivery: reliable
+    fields:
+      attackSeq: u32
+      targetId: u32
+      accepted: bool
+      damage: u16
+      targetHealthPct: u8
+      flags: u8
+
+  SaveBlob:
+    id: 71
+    dir: s2c
+    delivery: reliable
+    fields:
+      blob: bytes
+
+  ZoneTransfer:
+    id: 72
+    dir: s2c
+    delivery: reliable
+    fields:
+      zoneId: string
+      endpoint: string
+      ticket: bytes

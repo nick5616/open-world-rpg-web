@@ -1,0 +1,17 @@
+[package]
+name = "worldgen"
+version = "0.1.0"
+edition = "2021"
+description = "Deterministic Lodestone world generator, compiled once to worldgen.wasm (spec section 5)."
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+# libm: all transcendental math compiled into the module (determinism rule 2).
+libm = "0.2"
+serde = { version = "1", default-features = false, features = ["derive", "alloc"] }
+# float_roundtrip: correctly rounded float parsing, so a spec parses to the same
+# bits on every host and every build.
+serde_json = { version = "1", default-features = false, features = ["alloc", "float_roundtrip"] }
