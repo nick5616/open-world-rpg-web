@@ -4,6 +4,7 @@
 //
 //	go run ./tools/bots -n 150 -mode spread -duration 60s
 //	go run ./tools/bots -n 150 -mode clustered -radius 300 -duration 60s -json out.json
+//	go run ./tools/bots -cluster http://127.0.0.1:18301,http://127.0.0.1:18302 -mode cross -n 1000 -duration 10m   (WP16)
 //
 // Spread: bots spawn uniformly over the world (typical exploring density,
 // budget 64 kbps). Clustered: bots spawn in a disc and steer back into it, so
@@ -39,7 +40,7 @@ func main() {
 	var (
 		zoneURL    = flag.String("url", "ws://localhost:8092/ws", "zone WebSocket URL")
 		n          = flag.Int("n", 150, "number of bots")
-		mode       = flag.String("mode", "spread", "spread | clustered")
+		mode       = flag.String("mode", "spread", "spread | clustered | cross (WP16: walk back and forth across zone borders; needs -cluster)")
 		radius     = flag.Float64("radius", 300, "clustered: disc radius in meters")
 		center     = flag.String("center", "2048,2048", "clustered: disc center x,z")
 		duration   = flag.Duration("duration", 60*time.Second, "how long to play after the ramp")
@@ -53,8 +54,26 @@ func main() {
 		metricsOut = flag.String("metrics-out", "", "save the scrape here")
 		ticketArg  = flag.String("ticket", "", "connect ONE bot with this ticket, or @file (e.g. from the director POST /v1/connect), instead of a self-signed dev ticket")
 		terrainArg = flag.String("terrain", "auto", "auto | on | off: predict on the zone's generated terrain (worldgen.wasm, LODESTONE_WORLDGEN_WASM) and spawn on land")
+		clusterArg = flag.String("cluster", "", "WP16: comma-separated http bases of cluster zones (any live one will do): follow handoffs, fail over, sample ownership")
+		giveUp     = flag.Duration("failover-giveup", 60*time.Second, "WP16: a bot that cannot reconnect for this long counts as dropped")
+		sampleArg  = flag.Duration("sample-every", 2*time.Second, "WP16: ownership sampling period (0 = off)")
+		borderM    = flag.Float64("border-spawn", 150, "WP16 cross mode: spawn within this distance of a border between zones")
+		printChars = flag.Bool("print-characters", false, "print the bots' deterministic character ids and names as JSON and exit (seed a scratch database with them)")
+		tickBudget = flag.Float64("tick-budget", 0, "zone tick p99 budget in ms (default 5, or 12 with -cluster: spec 9's 300-player budget)")
 	)
 	flag.Parse()
+	if *printChars {
+		type ch struct {
+			ID   string `json:"id"`
+			Name string `json:"name"`
+		}
+		out := make([]ch, *n)
+		for i := range out {
+			out[i] = ch{characterID(i + 1), fmt.Sprintf("bot-%03d", i+1)}
+		}
+		_ = json.NewEncoder(os.Stdout).Encode(out)
+		return
+	}
 
 	priv, dev, err := ticket.PrivateKeyFromEnv()
 	if err != nil {
@@ -102,10 +121,27 @@ func main() {
 	if cfg.ticket != "" {
 		*n = 1
 	}
-	if *mode == "clustered" {
+	var view *clusterView
+	if *clusterArg != "" {
+		view = newClusterView(strings.Split(*clusterArg, ","))
+		if !view.refresh() {
+			fmt.Fprintln(os.Stderr, "bots: no cluster zone answered /debug/cluster at", *clusterArg)
+			os.Exit(1)
+		}
+		cfg.view, cfg.failoverGiveUp = view, *giveUp
+	}
+	switch *mode {
+	case "clustered":
 		cfg.radius = *radius
-	} else if *mode != "spread" {
-		fmt.Fprintln(os.Stderr, "mode must be spread or clustered")
+	case "spread":
+	case "cross":
+		if view == nil {
+			fmt.Fprintln(os.Stderr, "mode cross needs -cluster")
+			os.Exit(2)
+		}
+		cfg.cross = true
+	default:
+		fmt.Fprintln(os.Stderr, "mode must be spread, clustered or cross")
 		os.Exit(2)
 	}
 
@@ -118,7 +154,16 @@ func main() {
 			return cx + r*math.Cos(a), cz + r*math.Sin(a)
 		}
 		const margin = 100
-		return margin + rng.Float64()*(cfg.worldM-2*margin), margin + rng.Float64()*(cfg.worldM-2*margin)
+		for try := 0; ; try++ {
+			x, z = margin+rng.Float64()*(cfg.worldM-2*margin), margin+rng.Float64()*(cfg.worldM-2*margin)
+			if !cfg.cross || try > 200 {
+				return x, z
+			}
+			// WP16 cross: start near a border between zones.
+			if _, _, d, ok := view.nearestForeign(x, z, 0); ok && d < *borderM {
+				return x, z
+			}
+		}
 	}
 	for i := range bots {
 		x, z := draw()
@@ -160,10 +205,25 @@ func main() {
 	}
 	fmt.Fprintf(os.Stderr, "bots: %d connecting in %s mode, playing %s\n", *n, *mode, duration.String())
 
+	var owners *ownershipStats
+	sampleDone := make(chan struct{})
+	sctx, stopSample := context.WithCancel(ctx)
+	if view != nil && *sampleArg > 0 {
+		go func() {
+			defer close(sampleDone)
+			owners = sampleOwnership(sctx, view, bots, *sampleArg)
+		}()
+	} else {
+		close(sampleDone)
+	}
+
 	select {
 	case <-time.After(*duration):
 	case <-ctx.Done():
 	}
+	stopSample()
+	<-sampleDone
+	zones := scrapeZones(view)
 
 	// Scrape the zone while every bot is still connected: its per-client
 	// bandwidth and 60 s tick window cover exactly the soak.
@@ -181,7 +241,13 @@ func main() {
 	cancel()
 	wg.Wait()
 
-	sum := summarize(bots, *mode, *n, cfg.radius, time.Since(start), scrape)
+	if view != nil && *tickBudget == 0 {
+		*tickBudget = 12
+	}
+	sum := summarize(bots, *mode, *n, cfg.radius, time.Since(start), scrape, *tickBudget)
+	if view != nil {
+		clusterVerdict(&sum, bots, owners, zones, *tickBudget)
+	}
 	if terrain != nil {
 		sum.Terrain = terrainSummary(info, terrain, bots)
 	}
@@ -261,6 +327,7 @@ type Summary struct {
 	BudgetTickP99  float64            `json:"budgetTickP99Ms"`
 	Pass           bool               `json:"pass"`
 	Failures       []string           `json:"failures,omitempty"`
+	Cluster        *ClusterSummary    `json:"cluster,omitempty"`
 	PerBot         []botStats         `json:"perBot"`
 }
 
@@ -293,9 +360,12 @@ func dist(v []float64) Q {
 	return Q{Avg: r(a / float64(len(v))), P50: r(pct(v, 0.5)), P95: r(pct(v, 0.95)), Max: r(pct(v, 1))}
 }
 
-func summarize(bots []*bot, mode string, n int, radius float64, wall time.Duration, scrape string) Summary {
+func summarize(bots []*bot, mode string, n int, radius float64, wall time.Duration, scrape string, tickBudget float64) Summary {
+	if tickBudget <= 0 {
+		tickBudget = 5
+	}
 	s := Summary{Mode: mode, Bots: n, RadiusM: radius, WallS: math.Round(wall.Seconds()*10) / 10, GoVersion: runtime.Version(), OS: runtime.GOOS + "/" + runtime.GOARCH,
-		Kicks: map[string]int{}, Errors: map[string]int{}, Personas: map[string]int{}, BudgetUpKbps: 24, BudgetTickP99: 5}
+		Kicks: map[string]int{}, Errors: map[string]int{}, Personas: map[string]int{}, BudgetUpKbps: 24, BudgetTickP99: tickBudget}
 	s.BudgetDownKbps = 64
 	if mode == "clustered" {
 		s.BudgetDownKbps = 160
@@ -345,6 +415,7 @@ func summarize(bots []*bot, mode string, n int, radius float64, wall time.Durati
 	if s.Connected < n {
 		fail("%d of %d bots connected", s.Connected, n)
 	}
+	s.BudgetTickP99 = tickBudget
 	if s.DownKbps.Max > s.BudgetDownKbps {
 		fail("downlink max %.1f kbps > %.0f", s.DownKbps.Max, s.BudgetDownKbps)
 	}
@@ -402,6 +473,9 @@ func printSummary(s Summary) {
 		if v, ok := s.Zone[k]; ok {
 			fmt.Printf("  %-40s %g\n", k, v)
 		}
+	}
+	if c := s.Cluster; c != nil {
+		printCluster(c)
 	}
 	if s.Pass {
 		fmt.Println("PASS")

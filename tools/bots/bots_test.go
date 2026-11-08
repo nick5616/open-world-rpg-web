@@ -52,11 +52,11 @@ func TestMetricsHelpersAndVerdict(t *testing.T) {
 	}
 	b := newBot(1, &botConfig{}, 1, 0, 0)
 	b.st.Connected, b.st.DownKbps, b.st.UpKbps = true, 70, 10
-	s := summarize([]*bot{b}, "spread", 1, 0, time.Second, "zone_tick_ms{q=\"p99\"} 1.2\n")
+	s := summarize([]*bot{b}, "spread", 1, 0, time.Second, "zone_tick_ms{q=\"p99\"} 1.2\n", 0)
 	if s.Pass || len(s.Failures) != 1 {
 		t.Fatalf("70 kbps spread must fail the 64 kbps budget: %+v", s.Failures)
 	}
-	s = summarize([]*bot{b}, "clustered", 1, 300, time.Second, "zone_tick_ms{q=\"p99\"} 1.2\n")
+	s = summarize([]*bot{b}, "clustered", 1, 300, time.Second, "zone_tick_ms{q=\"p99\"} 1.2\n", 0)
 	if !s.Pass {
 		t.Fatalf("70 kbps clustered is within 160: %+v", s.Failures)
 	}
