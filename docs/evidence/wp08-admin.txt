@@ -1,19 +1,19 @@
 $ admin reports
-295d9100-52ee-4e64-af48-478e41b09188  2026-11-08T04:27:24-08:00  whisper  Lina -> Bob  "unwanted whispers"  [open]
+4cd4dcd6-d3d4-4902-985f-8884d763754e  2026-11-08T04:33:16-08:00  whisper  Lina -> Bob  "unwanted whispers"  [open]
 
-$ admin report 295d9100-52ee-4e64-af48-478e41b09188
-report 295d9100-52ee-4e64-af48-478e41b09188 (2026-11-08T04:27:24-08:00)
+$ admin report 4cd4dcd6-d3d4-4902-985f-8884d763754e
+report 4cd4dcd6-d3d4-4902-985f-8884d763754e (2026-11-08T04:33:16-08:00)
   channel whisper, region "2,2"
-  Lina reported Bob (a1b6d3b5-dddc-43e9-a0c1-f0628855dce0): "unwanted whispers"
+  Lina reported Bob (c67b2181-d145-48fb-852c-7002703d6a97): "unwanted whispers"
   resolution: ""
   context (1 messages):
-    04:27:23  Bob -> Lina: hello Lina
+    04:33:15  Bob -> Lina: hello Lina
 
 $ admin mute Bob -reason e2e
-mute Bob: account bdf25d50-d8e8-42c4-97a9-a99671a7a3db is now muted
+mute Bob: account 033d0637-1e1a-475f-9b80-00034345c3bf is now muted
 
 $ admin unmute Bob
-unmute Bob: account bdf25d50-d8e8-42c4-97a9-a99671a7a3db is now active
+unmute Bob: account 033d0637-1e1a-475f-9b80-00034345c3bf is now active
 
-$ admin resolve 295d9100-52ee-4e64-af48-478e41b09188 "warned Bob"
-resolved 295d9100-52ee-4e64-af48-478e41b09188
+$ admin resolve 4cd4dcd6-d3d4-4902-985f-8884d763754e "warned Bob"
+resolved 4cd4dcd6-d3d4-4902-985f-8884d763754e

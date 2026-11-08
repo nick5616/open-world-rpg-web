@@ -40,7 +40,7 @@
   },
   "errorFramesByCode": {
     "rate_limited": 1000,
-    "slow_mode": 849
+    "slow_mode": 879
   },
   "observerReceived": {
     "global": 100,
