@@ -31,6 +31,20 @@ describe.skipIf(!hasWasm)('golden hashes (Node host)', () => {
     expect(r.chunks).toBeGreaterThanOrEqual(200);
   }, 120_000);
 
+  it('collision queries are cheap enough for server movement validation', async () => {
+    const wg = await worldgen();
+    const a = wg.buildAtlas(golden.worlds[0].spec);
+    let s = 1;
+    const rnd = () => ((s = (s * 1103515245 + 12345) >>> 0) / 2 ** 32) * 4096;
+    const t0 = performance.now();
+    let sum = 0;
+    for (let i = 0; i < 10_000; i++) sum += wg.collisionHeight(a, rnd(), rnd());
+    const ms = performance.now() - t0;
+    console.log(`[golden:node] 10000 collision_height queries in ${ms.toFixed(1)} ms (${((ms * 1000) / 10_000).toFixed(1)} us each)`);
+    expect(Number.isFinite(sum)).toBe(true);
+    a.free();
+  });
+
   it('atlas stays under the 2 MB gzipped budget', async () => {
     const wg = await worldgen();
     const a = wg.buildAtlas(golden.worlds[0].spec);

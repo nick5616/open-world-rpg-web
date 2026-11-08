@@ -1,24 +1,26 @@
 # WP01 golden determinism run
-date: 2026-11-08T11:44:48.226Z
+date: 2026-11-08T11:52:01.366Z
 machine: 11th Gen Intel(R) Core(TM) i7-11700K @ 3.60GHz x16, win32 10.0.22621, node v20.18.0
-wasm: worldgen-f599100f4c6d15c2.wasm (348778 B, genVersion 1, abi 1, rustc 1.99.1 (58cf8f9c3 2026-10-13))
+wasm: worldgen-d38abb3027caa709.wasm (353165 B, genVersion 1, abi 1, rustc 1.99.1 (58cf8f9c3 2026-10-13))
 
 ## build: PASS
-worldgen.wasm 348778 bytes, sha256 f599100f4c6d15c2, genVersion 1, abi 1
+worldgen.wasm 353165 bytes, sha256 d38abb3027caa709, genVersion 1, abi 1
 
 ## node: PASS
-[22m[39m[golden:node] 5 worlds, 288 chunks, 320 collision points, 0 failures; atlas 300/356/320/347/234 ms; lod0 chunk mean 2.76 p95 3.93 max 5.53 ms
-[22m[39m[golden:node] atlas 312064 B raw, 123503 B gzipped (budget 2097152)
+[golden:node] 5 worlds, 288 chunks, 320 collision points, 0 failures; atlas 512/556/446/565/325 ms; lod0 chunk mean 3.06 p95 4.61 max 7.36 ms
+[golden:node] 10000 collision_height queries in 17.1 ms (1.7 us each)
+[golden:node] atlas 312224 B raw, 123699 B gzipped (budget 2097152)
+Tests  4 passed (4)
 
 ## chromium: PASS
 [golden:chromium] Chromium 131.0.6778.33 worker: 5 worlds, 288 chunks, 320 collision points, 0 failures
-[golden:chromium] detail chunk (LOD 0, 200 chunks, worker, crossOriginIsolated=true): mean 2.35 ms, p50 2.36, p95 3.70, max 4.35 (budget 8 ms); atlas 279 ms; 84 scatter/chunk
+[golden:chromium] detail chunk (LOD 0, 200 chunks, worker, crossOriginIsolated=true): mean 2.34 ms, p50 2.33, p95 3.73, max 4.01 (budget 8 ms); atlas 395 ms; 84 scatter/chunk
 
 ## go: PASS
-[golden:go] wazero compiler: 5 worlds, 288 chunks, 320 collision points, 0 failures; lod0 chunk mean 3.86 ms p95 6.00 ms
---- PASS: TestGolden (3.71s)
+[golden:go] wazero compiler: 5 worlds, 288 chunks, 320 collision points, 0 failures; lod0 chunk mean 3.86 ms p95 5.76 ms
+--- PASS: TestGolden (4.32s)
 [golden:go] wazero interpreter: 1 world, 12 chunks, 64 collision points, 0 failures
---- PASS: TestGoldenInterpreter (31.59s)
+--- PASS: TestGoldenInterpreter (39.47s)
 
 ## native: PASS
 [golden:native] 288 chunks match

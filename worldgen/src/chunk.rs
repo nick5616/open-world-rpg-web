@@ -655,20 +655,14 @@ impl<'a, 'b> Ctx<'a, 'b> {
         }
     }
 
+    /// Near any settlement in the world (not just this chunk's site list:
+    /// the margin reaches past the chunk).
     fn near_settlement(&self, x: f64, z: f64, margin: f64) -> bool {
-        self.sites.iter().any(|s| {
-            s.category == S::CAT_SETTLEMENT && {
-                let r = s.radius + margin;
-                (s.x - x) * (s.x - x) + (s.z - z) * (s.z - z) < r * r
-            }
-        }) || {
-            // Settlements just outside the chunk's site list still matter.
-            (0..self.a.site_count()).any(|i| {
-                let s = self.a.site(i);
-                let r = s.radius + margin;
-                s.category == S::CAT_SETTLEMENT && (s.x - x) * (s.x - x) + (s.z - z) * (s.z - z) < r * r
-            })
-        }
+        (0..self.a.site_count()).any(|i| {
+            let s = self.a.site(i);
+            let r = s.radius + margin;
+            s.category == S::CAT_SETTLEMENT && (s.x - x) * (s.x - x) + (s.z - z) * (s.z - z) < r * r
+        })
     }
 }
 

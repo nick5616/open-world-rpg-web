@@ -159,23 +159,31 @@ pub fn place(w: &mut World) {
     }
     let prom: Vec<f64> = (0..NN).map(|k| prominence(&w.h, k, 5)).collect();
 
-    // Candidate sites for visibility-driven POIs: every third node on land.
-    let mut cands: Vec<Cand> = Vec::new();
+    // Candidate sites for visibility-driven POIs (spec 5): peaks, ridge
+    // crests, river bends and valley mouths, plus every third node on land so
+    // flat country still gets candidates for gap filling.
+    let mut is_cand = vec![false; NN];
     for j in (1..N - 1).step_by(3) {
         for i in (1..N - 1).step_by(3) {
-            let k = idx(i, j);
-            if !ground[k] {
-                continue;
-            }
-            let (x, z) = node_xz(k);
-            cands.push(Cand {
-                k,
-                x,
-                z,
-                region: region_of(x, z),
-                vis: viewshed(&w.h, x, z, 10.0, VIS_RADIUS),
-            });
+            is_cand[idx(i, j)] = true;
         }
+    }
+    for k in feature_nodes(w, &prom, &ground) {
+        is_cand[k] = true;
+    }
+    let mut cands: Vec<Cand> = Vec::new();
+    for k in 0..NN {
+        if !is_cand[k] || !ground[k] {
+            continue;
+        }
+        let (x, z) = node_xz(k);
+        cands.push(Cand {
+            k,
+            x,
+            z,
+            region: region_of(x, z),
+            vis: viewshed(&w.h, x, z, 10.0, VIS_RADIUS),
+        });
     }
 
     let mut p = Placer {
@@ -593,6 +601,76 @@ pub fn place(w: &mut World) {
     w.coverage = coverage;
     w.coverage_frac = covered as f64 / walk_total as f64;
     w.spawn = spawn;
+}
+
+/// Peaks (highest in their 5 x 5 window), ridge crests (a local maximum
+/// across one axis, on every other node), and for river bends (flow turns 90
+/// degrees or more) and valley mouths (a river leaving steep ground for flat)
+/// the driest bank node beside the river, since a POI never sits in water.
+fn feature_nodes(w: &World, prom: &[f64], ground: &[bool]) -> Vec<usize> {
+    let h = &w.h;
+    let mut out = Vec::new();
+    let bank = |k: usize| -> Option<usize> {
+        let (i, j) = (k % N, k / N);
+        let mut best: Option<usize> = None;
+        for (dx, dz) in super::hydro::D8 {
+            let (ni, nj) = (i as i32 + dx, j as i32 + dz);
+            if ni < 0 || nj < 0 || ni >= N as i32 || nj >= N as i32 {
+                continue;
+            }
+            let nk = idx(ni as usize, nj as usize);
+            if ground[nk] && best.is_none_or(|b| w.slope[nk] < w.slope[b]) {
+                best = Some(nk);
+            }
+        }
+        best
+    };
+    for j in 2..N - 2 {
+        for i in 2..N - 2 {
+            let k = idx(i, j);
+            if ground[k] {
+                let mut top = true;
+                for dz in -2i32..=2 {
+                    for dx in -2i32..=2 {
+                        if (dx != 0 || dz != 0) && h[idx((i as i32 + dx) as usize, (j as i32 + dz) as usize)] > h[k] {
+                            top = false;
+                        }
+                    }
+                }
+                let ridge = (i + j) % 2 == 0
+                    && prom[k] > 10.0
+                    && ((h[k] > h[k - 1] && h[k] > h[k + 1]) || (h[k] > h[k - N] && h[k] > h[k + N]));
+                if (top && prom[k] > 12.0) || ridge {
+                    out.push(k);
+                }
+                continue;
+            }
+            if w.river_w[k] == 0 {
+                continue;
+            }
+            let Some(d) = super::hydro::downstream(&w.flow, k) else { continue };
+            let out_dir = w.flow[k] as i32;
+            // The main upstream neighbor: the river node draining into k with the largest area.
+            let mut up: Option<usize> = None;
+            for (dx, dz) in super::hydro::D8 {
+                let nk = idx((i as i32 + dx) as usize, (j as i32 + dz) as usize);
+                if w.river_w[nk] > 0 && super::hydro::downstream(&w.flow, nk) == Some(k) && up.is_none_or(|u| w.acc[nk] > w.acc[u]) {
+                    up = Some(nk);
+                }
+            }
+            let bend = up.is_some_and(|u| {
+                let turn = (w.flow[u] as i32 - out_dir).rem_euclid(8);
+                (2..=6).contains(&turn)
+            });
+            let mouth = up.is_some_and(|u| mean_slope(&w.slope, u, 2) > 10.0) && mean_slope(&w.slope, d, 1) < 5.0;
+            if bend || mouth {
+                if let Some(b) = bank(k) {
+                    out.push(b);
+                }
+            }
+        }
+    }
+    out
 }
 
 /// Yaw (u16 fraction of a turn, 0 = +x, increasing toward +z) facing downhill.
