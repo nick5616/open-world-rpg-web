@@ -380,7 +380,14 @@ export function deployGcp(r, cfg, { only } = {}) {
     buildCreator(r);
     writeCreatorRedirects(r, out.urls.creatorApi);
     r.section('Netlify (static; creates each site on first deploy)');
-    const site = (name, idEnv) => (process.env[idEnv] ? ['--site', process.env[idEnv]] : ['--site-name', name, ...(cfg.netlify.team ? ['--team', cfg.netlify.team] : [])]);
+    // An existing site is addressed with --site; --site-name always creates
+    // a site (with a random suffix when the name is taken), so it is only
+    // used the first time.
+    const site = (name, idEnv) => {
+      if (process.env[idEnv]) return ['--site', process.env[idEnv]];
+      if (r.probe(['netlify', 'api', 'getSite', '--data', JSON.stringify({ site_id: `${name}.netlify.app` })])) return ['--site', name];
+      return ['--site-name', name, ...(cfg.netlify.team ? ['--team', cfg.netlify.team] : [])];
+    };
     // Run each deploy from its OWN scratch directory: the CLI never writes
     // .netlify/ link state into the repo, and the creator deploy cannot
     // inherit the client site the first deploy just created and linked (that
