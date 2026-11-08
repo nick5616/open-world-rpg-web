@@ -1,0 +1,14 @@
+{
+  "name": "@lodestone/contracts",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Generated zone codec, constants, social types and WorldSpec type (from contracts/*.yaml).",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p ."
+  }
+}

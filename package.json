@@ -1,0 +1,35 @@
+{
+  "name": "lodestone",
+  "private": true,
+  "type": "module",
+  "workspaces": ["contracts/ts", "client", "tools/*"],
+  "engines": { "node": ">=20.10" },
+  "scripts": {
+    "gen": "node contracts/codegen/gen.mjs",
+    "gen:check": "node contracts/codegen/gen.mjs --check",
+    "refs": "node scripts/refs.mjs",
+    "dev": "node scripts/dev.mjs",
+    "dev:solo": "node scripts/dev.mjs --solo",
+    "infra:up": "node scripts/infra.mjs up",
+    "infra:down": "node scripts/infra.mjs down",
+    "migrate": "node scripts/go.mjs run ./server/pkg/cmd/migrate",
+    "test": "node scripts/test-all.mjs",
+    "test:ts": "npm run test --workspaces --if-present",
+    "test:go": "node scripts/go.mjs each test ./...",
+    "test:rust": "cargo test --workspace",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "node scripts/lint-all.mjs",
+    "lint:ts": "eslint .",
+    "lint:go": "node scripts/go.mjs each vet ./...",
+    "lint:rust": "cargo clippy --workspace --all-targets -- -D warnings"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.14.0",
+    "@types/node": "^20.17.0",
+    "eslint": "^9.14.0",
+    "typescript": "~5.6.3",
+    "typescript-eslint": "^8.14.0",
+    "vitest": "^2.1.5",
+    "yaml": "^2.6.0"
+  }
+}

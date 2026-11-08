@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lodestone.game/contracts/worldspec.schema.json",
+  "title": "WorldSpec",
+  "description": "The ~35 numbers and tags that, with a seed and genVersion, define a world (spec section 6). The only object a language model may ever fill. Every free-text field is an enum except the display name.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "specVersion", "name", "seed",
+    "seaLevel", "landFraction", "mountainHeight", "roughness", "plateaus", "riverDensity",
+    "temperatureBias", "moistureBias", "windDirection", "stormFrequency",
+    "biomeWeights", "elementWeights",
+    "caveDensity", "caveMaxDepth", "gemRarityCurve", "oreAbundance",
+    "dangerCurve", "enemyDensity", "demonIntensity",
+    "flammability", "nightLength", "settlementDensity", "structureDensity",
+    "palette", "lootThemes", "nameGrammar"
+  ],
+  "properties": {
+    "specVersion": { "type": "integer", "minimum": 1, "maximum": 1, "description": "Schema version." },
+    "name": { "type": "string", "minLength": 3, "maxLength": 40, "pattern": "^[A-Za-z0-9' \\-]+$", "description": "World display name." },
+    "seed": { "type": "string", "pattern": "^[0-9]{1,20}$", "description": "uint64 as a decimal string." },
+
+    "seaLevel": { "type": "number", "minimum": 0, "maximum": 1 },
+    "landFraction": { "type": "number", "minimum": 0.3, "maximum": 0.9 },
+    "mountainHeight": { "type": "number", "minimum": 0, "maximum": 1 },
+    "roughness": { "type": "number", "minimum": 0, "maximum": 1 },
+    "plateaus": { "type": "number", "minimum": 0, "maximum": 1 },
+    "riverDensity": { "type": "number", "minimum": 0, "maximum": 1 },
+
+    "temperatureBias": { "type": "number", "minimum": -1, "maximum": 1 },
+    "moistureBias": { "type": "number", "minimum": -1, "maximum": 1 },
+    "windDirection": { "type": "integer", "minimum": 0, "maximum": 359, "description": "Degrees, prevailing wind." },
+    "stormFrequency": { "type": "number", "minimum": 0, "maximum": 1 },
+
+    "biomeWeights": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["meadow", "forest", "highlands", "snowpeak", "badlands", "wetland"],
+      "description": "Each 0 to 1; renormalized by the generator.",
+      "properties": {
+        "meadow": { "type": "number", "minimum": 0, "maximum": 1 },
+        "forest": { "type": "number", "minimum": 0, "maximum": 1 },
+        "highlands": { "type": "number", "minimum": 0, "maximum": 1 },
+        "snowpeak": { "type": "number", "minimum": 0, "maximum": 1 },
+        "badlands": { "type": "number", "minimum": 0, "maximum": 1 },
+        "wetland": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "elementWeights": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fire", "ice", "lightning", "earth", "wind", "light", "dark", "void"],
+      "description": "Each 0 to 1; sets each region's elemental character (spec 7).",
+      "properties": {
+        "fire": { "type": "number", "minimum": 0, "maximum": 1 },
+        "ice": { "type": "number", "minimum": 0, "maximum": 1 },
+        "lightning": { "type": "number", "minimum": 0, "maximum": 1 },
+        "earth": { "type": "number", "minimum": 0, "maximum": 1 },
+        "wind": { "type": "number", "minimum": 0, "maximum": 1 },
+        "light": { "type": "number", "minimum": 0, "maximum": 1 },
+        "dark": { "type": "number", "minimum": 0, "maximum": 1 },
+        "void": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+
+    "caveDensity": { "type": "number", "minimum": 0, "maximum": 1 },
+    "caveMaxDepth": { "type": "number", "minimum": 64, "maximum": 256, "description": "Meters." },
+    "gemRarityCurve": { "type": "number", "minimum": 0.5, "maximum": 3, "description": "Exponent on depth." },
+    "oreAbundance": { "type": "number", "minimum": 0, "maximum": 1 },
+
+    "dangerCurve": { "type": "number", "minimum": 0, "maximum": 1 },
+    "enemyDensity": { "type": "number", "minimum": 0, "maximum": 1 },
+    "demonIntensity": { "type": "number", "minimum": 0, "maximum": 1 },
+
+    "flammability": { "type": "number", "minimum": 0, "maximum": 1 },
+    "nightLength": { "type": "number", "minimum": 0.2, "maximum": 0.6, "description": "Fraction of a day." },
+    "settlementDensity": { "type": "number", "minimum": 0, "maximum": 1 },
+    "structureDensity": { "type": "number", "minimum": 0, "maximum": 1 },
+
+    "palette": { "type": "string", "enum": ["verdant", "autumn", "ashen", "frost", "golden", "twilight"] },
+    "lootThemes": {
+      "type": "array",
+      "maxItems": 4,
+      "uniqueItems": true,
+      "items": { "type": "string", "enum": ["ancient", "arcane", "bandit", "celestial", "draconic", "drowned", "feral", "infernal", "royal", "rustic", "sylvan", "voidtouched"] }
+    },
+    "nameGrammar": { "type": "string", "enum": ["pastoral", "highland", "coastal", "arcane", "austere"] }
+  }
+}

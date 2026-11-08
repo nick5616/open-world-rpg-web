@@ -1,0 +1,10 @@
+go 1.27
+
+use (
+	./server/account
+	./server/director
+	./server/pkg
+	./server/social
+	./server/zone
+	./tools/bots
+)

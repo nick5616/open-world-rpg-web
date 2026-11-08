@@ -1,0 +1,16 @@
+[workspace]
+resolver = "2"
+members = ["worldgen"]
+
+[profile.release]
+# Size and determinism over speed tricks: no LTO-dependent float reassociation
+# exists in Rust anyway, but keep codegen-units 1 so builds are reproducible.
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+debug = false
+strip = true
+
+[profile.dev]
+panic = "abort"

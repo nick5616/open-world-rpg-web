@@ -1,0 +1,41 @@
+# Build, lint and test on Linux and Windows (spec section 4). Deploy is added
+# by WP18, modeled on wizard-wars .github/workflows/deploy.yml.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.work
+          cache-dependency-path: '**/go.sum'
+      # rust-toolchain.toml pins the version and the wasm32 target; rustup
+      # (preinstalled on hosted runners) installs it on first cargo call.
+      - run: rustup show
+      - uses: Swatinem/rust-cache@v2
+      - run: npm ci
+      - name: Generated code is fresh
+        run: npm run gen:check
+      - name: Lint and typecheck
+        run: npm run lint
+      - name: Tests (TS, Go, Rust)
+        run: npm test
+      - name: Build worldgen.wasm
+        run: cargo build -p worldgen --target wasm32-unknown-unknown --release
+      - name: Build client
+        run: npm run build -w client
