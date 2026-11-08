@@ -1,0 +1,24 @@
+{
+  "name": "@lodestone/worldgen",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Typed loader for worldgen.wasm: atlas, chunks, collision queries, hashing (spec 5).",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./golden": "./src/golden.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p .",
+    "debug": "vite --config ../debug/vite.config.ts"
+  },
+  "dependencies": {
+    "@lodestone/contracts": "*"
+  },
+  "devDependencies": {
+    "vite": "^5.4.11"
+  }
+}

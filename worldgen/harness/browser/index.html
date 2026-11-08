@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Worldgen Golden Harness</title>
+  </head>
+  <body>
+    <pre id="out">running golden table in a Web Worker...</pre>
+    <script type="module">
+      // Determinism host 2 of 3: headless Chromium, wasm inside a Web Worker
+      // (the same place the client generates chunks, spec 12).
+      const worker = new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' });
+      worker.onmessage = (e) => {
+        window.__result = e.data;
+        document.getElementById('out').textContent = JSON.stringify(e.data, null, 2);
+        document.body.dataset.done = '1';
+      };
+      worker.onerror = (e) => {
+        window.__result = { error: String(e.message ?? e) };
+        document.body.dataset.done = '1';
+      };
+      worker.postMessage({ bench: Number(new URLSearchParams(location.search).get('bench') ?? 200) });
+    </script>
+  </body>
+</html>

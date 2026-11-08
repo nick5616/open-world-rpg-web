@@ -7,4 +7,5 @@ use (
 	./server/social
 	./server/zone
 	./tools/bots
+	./worldgen/harness/go
 )

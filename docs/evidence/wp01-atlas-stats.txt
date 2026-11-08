@@ -1,0 +1,88 @@
+# WP01 atlas content report (native release build; wasm timings are in wp01-golden.txt)
+# cargo run -p worldgen --release --example atlas_stats -- <seed>
+
+seed 7: Shores of Sonaliassver (grammar coastal, palette verdant)
+atlas: 312224 bytes in 300.5 ms, hash f2242d3b06f316cc
+land nodes 8952 (53.8%), river nodes 162, lake nodes 631
+  meadow      17.4%
+  forest      31.4%
+  highlands   18.6%
+  snowpeak    23.1%
+  badlands     4.9%
+  wetland      4.6%
+sites: 168
+  bandit_camp            4
+  cave_mouth             31
+  enemy_camp             8
+  landmark               15
+  mineshaft              6
+  ruin                   14
+  settlement:hamlet      16
+  settlement:town        2
+  settlement:village     10
+  shrine                 8
+  tower                  16
+  watchtower             3
+  waypoint               32
+  wizard_tower           3
+coverage (walkable nodes seeing a POI within 800 m): 99.9%
+spawn: (2592, 1888)
+native chunk lod0: 1.82 ms avg over 256 chunks, 94 scatter/chunk
+
+seed 1234: The Ironbound Expanse (grammar arcane, palette twilight)
+atlas: 313632 bytes in 335.7 ms, hash c689f2bc53166df2
+land nodes 10151 (61.0%), river nodes 161, lake nodes 423
+  meadow      25.6%
+  forest      29.7%
+  highlands   15.1%
+  snowpeak     3.5%
+  badlands    23.1%
+  wetland      3.1%
+sites: 191
+  bandit_camp            3
+  cave_mouth             31
+  enemy_camp             9
+  landmark               15
+  meteor_crater          1
+  mineshaft              7
+  ruin                   8
+  settlement:hamlet      19
+  settlement:town        2
+  settlement:village     12
+  shrine                 18
+  tower                  16
+  watchtower             7
+  waypoint               36
+  wizard_tower           7
+coverage (walkable nodes seeing a POI within 800 m): 100.0%
+spawn: (1376, 1792)
+native chunk lod0: 1.86 ms avg over 256 chunks, 129 scatter/chunk
+
+seed 99: Realm of Seathaes (grammar arcane, palette twilight)
+atlas: 312248 bytes in 302.0 ms, hash 9f172b4f877ac7cb
+land nodes 8570 (51.5%), river nodes 73, lake nodes 113
+  meadow      32.4%
+  forest      35.5%
+  highlands    9.5%
+  snowpeak     5.1%
+  badlands    13.2%
+  wetland      4.2%
+sites: 170
+  bandit_camp            3
+  cave_mouth             32
+  enemy_camp             4
+  landmark               12
+  mineshaft              3
+  ruin                   10
+  settlement:hamlet      19
+  settlement:town        2
+  settlement:village     12
+  shrine                 10
+  sunken_temple          1
+  tower                  16
+  watchtower             4
+  waypoint               36
+  wizard_tower           6
+coverage (walkable nodes seeing a POI within 800 m): 100.0%
+spawn: (2080, 1888)
+native chunk lod0: 1.77 ms avg over 256 chunks, 132 scatter/chunk

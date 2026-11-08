@@ -5,7 +5,8 @@
   "workspaces": [
     "contracts/ts",
     "client",
-    "tools/*"
+    "tools/*",
+    "worldgen/js"
   ],
   "engines": {
     "node": ">=20.10"
@@ -24,6 +25,9 @@
     "test:ts": "npm run test --workspaces --if-present",
     "test:go": "node scripts/go.mjs each test ./...",
     "test:rust": "cargo test --workspace",
+    "build:wasm": "node worldgen/scripts/build-wasm.mjs",
+    "test:golden": "node worldgen/scripts/test-golden.mjs",
+    "golden:update": "node worldgen/scripts/build-wasm.mjs && vite-node worldgen/golden/generate.ts",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint": "node scripts/lint-all.mjs",
     "lint:ts": "eslint .",

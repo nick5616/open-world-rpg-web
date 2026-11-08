@@ -1,0 +1,33 @@
+# worldgen golden table
+
+`golden.json` pins `(seed, spec, genVersion, chunk) -> hash` (spec 5 rule 5).
+Every host must reproduce every hash bit for bit: Node
+(`worldgen/js/test/golden.test.ts`), headless Chromium in a Web Worker
+(`worldgen/harness/browser`), Go via wazero (`worldgen/harness/go`) and
+native Rust (`worldgen/tests/golden_native.rs`). Run all with
+`npm run test:golden`.
+
+Contents (genVersion 1): 5 worlds (seeds 7, 1234, 99 from `spec_from_seed`,
+plus two hand-made extremes of the schema ranges), 288 chunks: 6 per biome
+per world where the biome exists (every biome appears >= 18 times), lakes,
+rivers, sea, coast, settlement / structure / tower / cave-mouth / camp
+chunks, LOD 1, 2, 3 and 6 tiles, and two chunks outside the world. Per world
+also the atlas hash, byte size, gzipped size, and 64 collision heights (as
+f64 bit patterns) at random points.
+
+```jsonc
+{
+  "hashAlgo": "fnv1a64", "genVersion": 1, "abiVersion": 1,
+  "worlds": [{
+    "label": "seed-7", "seed": "7", "spec": { /* WorldSpec */ },
+    "atlas": { "hash": "16 hex", "bytes": 312224, "gzipBytes": 123699 },
+    "chunks": [{ "cx": 12, "cz": 40, "lod": 0, "tag": "biome:forest", "hash": "16 hex" }],
+    "collision": [{ "x": 1234.5, "z": 987.25, "h": "f64 bits, 16 hex" }]
+  }]
+}
+```
+
+Regenerate with `npm run golden:update` (`generate.ts`, run by vite-node).
+Once a world is minted on genVersion N, its table must never change: an
+output change means a new genVersion and a new table kept next to the old
+one (spec 5, "keeping old worlds working").
