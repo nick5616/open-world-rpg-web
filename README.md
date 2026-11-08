@@ -39,7 +39,7 @@ The build spec is [`docs/SPEC.md`](docs/SPEC.md). What works today is in
 | Creator API | 8094 | `LODESTONE_CREATOR_PORT` |
 | Postgres | 55432 | `LODESTONE_PG_PORT` / `LODESTONE_PG_URL` |
 | Redis | 56379 | `LODESTONE_REDIS_PORT` / `LODESTONE_REDIS_ADDR` |
-| LiveKit | 7880 (+7881 TCP, 7900-7950 UDP) | `LODESTONE_LIVEKIT_PORT` |
+| LiveKit | 7880 (+7881 TCP, 7882 UDP mux) | `LODESTONE_LIVEKIT_PORT` |
 
 ## Layout
 

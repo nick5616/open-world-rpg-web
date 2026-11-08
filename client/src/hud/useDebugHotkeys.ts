@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useAppStore } from '../stores/appStore';
 import { useDebugStore } from '../stores/debugStore';
 import { isTextTarget } from '../input/useKeyboard';
+import { netRuntime } from '../net/netStore';
 
 export function useDebugHotkeys() {
   useEffect(() => {
@@ -24,6 +25,8 @@ export function useDebugHotkeys() {
           break;
         }
         case 'KeyV':
+          // Online, V is push-to-talk (WP11) and fly is refused anyway.
+          if (netRuntime.session) break;
           dbg.setFly(!dbg.fly);
           break;
         case 'F4':

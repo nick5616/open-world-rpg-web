@@ -58,6 +58,7 @@ type Config struct {
 	// ring table stays the maximum rate. 0 = unlimited (WP03 behavior).
 	DownBudgetKbps float64
 	Store          CharacterStore // nil: no persistence
+	Earshot        Earshot        // WP11 proximity voice (earshot.go); nil: none
 	Queue          *writebehind.Queue
 	Metrics        *svc.Metrics
 	Log            *slog.Logger
@@ -100,6 +101,8 @@ type Server struct {
 	env      movement.Env        // WP10: this tick's movement env (stepEnv)
 	hap      []explore.Happening // scratch for exploreTick
 	party    partyState
+	// WP11: next earshot hand-off (earshot.go).
+	earshotNext time.Time
 
 	// Shared with the metrics goroutine.
 	connsMu sync.Mutex
@@ -242,6 +245,7 @@ func (s *Server) onTick() {
 		e.quantize(s.cfg.Ground)
 		s.grid.Insert(int32(i), e.Move.Pos.X, e.Move.Pos.Z)
 	}
+	s.earshotTick(now) // WP11: proximity voice positions every 250 ms (earshot.go)
 
 	// Checkpoint each character every SAVE_INTERVAL_S, staggered by id so
 	// the queue sees a trickle, not a burst every 30 s.
@@ -300,6 +304,7 @@ func (s *Server) join(sess *session) {
 		Level:       1,
 		Health:      100,
 		HealthMax:   100,
+		ListenOnly:  sess.claims.IsLocalProfile, // WP11: local profiles hear voice but never transmit (spec 11)
 	}
 	s.nextID++
 	e.Move = movement.NewState(spawn) // WP10: full stamina wheel, ground mode

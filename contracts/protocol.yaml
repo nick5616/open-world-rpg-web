@@ -24,7 +24,7 @@
 # Versioning: adding a message or appending a field to a masked struct is a
 # compatible change (bump `version`, note it in docs/cr/). Changing the meaning
 # or order of an existing field is not; that needs a new message id.
-version: 2
+version: 3   # v2: WP10 movement (docs/cr/004-wp10-movement.md); v3 (docs/cr/005-voice-speaking-and-earshot.md): InputFlag.speaking
 
 enums:
   EntityKind:
@@ -46,7 +46,10 @@ enums:
 flags:
   InputFlag:
     type: u16
-    bits: {forward: 0, back: 1, left: 2, right: 3, jump: 4, jump_edge: 5, sprint: 6, crouch: 7, attack: 8, alt_attack: 9, dodge: 10, interact: 11, cast: 12, glide_toggle: 13}
+    # speaking (v3, WP11): the client is transmitting voice right now; the zone
+    # mirrors it into Activity.speaking so far players' nameplates show it. Bit
+    # 15, not 14, so movement packages can keep appending from 14.
+    bits: {forward: 0, back: 1, left: 2, right: 3, jump: 4, jump_edge: 5, sprint: 6, crouch: 7, attack: 8, alt_attack: 9, dodge: 10, interact: 11, cast: 12, glide_toggle: 13, speaking: 15}
   Activity:
     # Rides in every entity record (portfolio protocol.ts activity-bits idea).
     type: u8

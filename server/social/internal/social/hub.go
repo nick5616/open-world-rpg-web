@@ -27,6 +27,7 @@ import (
 
 	"lodestone/server/pkg/constants"
 	"lodestone/server/pkg/svc"
+	"lodestone/server/social/voice"
 )
 
 // Config tunes a Hub. Zero values take production defaults.
@@ -40,7 +41,7 @@ type Config struct {
 	PartyGrace     time.Duration // PARTY_RECONNECT_GRACE_S
 	PingEvery      time.Duration // WebSocket ping to detect dead sockets
 	AuthTimeout    time.Duration
-	VoiceURL       string // LiveKit URL; voice tokens are a later package
+	VoiceURL       string // LiveKit URL (WP11 builds its voice.Service from it in main.go)
 }
 
 func (c *Config) defaults() {
@@ -75,7 +76,8 @@ type Hub struct {
 	store   *Store
 	log     *slog.Logger
 	metrics *svc.Metrics
-	node    string // this process, for presence records and logs
+	node    string         // this process, for presence records and logs
+	voice   *voice.Service // WP11 proximity voice (voice.go); nil = unavailable
 
 	mu       sync.RWMutex
 	sessions map[string]*Session // by character id (one live session per character)

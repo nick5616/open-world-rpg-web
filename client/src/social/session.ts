@@ -33,7 +33,18 @@ const PRESENCE_IDLE_MS = 5000;
 let socket: SocialSocket | null = null;
 let presenceTimer: ReturnType<typeof setInterval> | null = null;
 
+// WP11: other packages (voice) listen for replies to their own requests
+// (voice_token) without going through the chat store.
+const listeners = new Set<(msg: S2C) => void>();
+
+/** Listen to every server frame; returns an unsubscribe function. */
+export function onSocialMessage(fn: (msg: S2C) => void): () => void {
+  listeners.add(fn);
+  return () => listeners.delete(fn);
+}
+
 function onMessage(msg: S2C) {
+  for (const fn of listeners) fn(msg);
   const store = useSocialStore.getState();
   store.apply(msg);
   if (msg.type === 'chat' && msg.message.channel === 'local' && msg.message.fromName) {

@@ -1,0 +1,36 @@
+[2026-11-08T14:46:30.775Z] WP11 walk-apart: LiveKit ws://localhost:7880
+[2026-11-08T14:46:34.912Z] scratch database lodestone_wp04_wp11voice
+[2026-11-08T14:46:48.006Z] built account, director, zone, social
+[2026-11-08T14:46:49.391Z] PASS account healthy on :18691
+[2026-11-08T14:46:50.518Z] PASS director healthy on :18690
+[2026-11-08T14:46:51.617Z] PASS social healthy on :18693
+[2026-11-08T14:46:52.888Z] PASS zone healthy on :18692
+[2026-11-08T14:46:53.430Z] PASS vite on :5196
+[2026-11-08T14:47:01.268Z] both playing
+[2026-11-08T14:47:02.104Z] PASS microphone not requested before the first push (spec 10)  {"mic":"idle","status":"connected"}
+[2026-11-08T14:47:02.992Z] PASS push-to-talk: V publishes the mic on first push and transmits while held  {"mic":"ready","ctx":"running"}
+[2026-11-08T14:47:48.578Z] A and B are in a party
+[2026-11-08T14:48:03.907Z] settings button hit test {"rect":[1037.171875,597,50.828125,31],"hit":"BUTTON.voice-settings-toggle"}
+[2026-11-08T14:48:05.602Z] social /debug/voice (worlds with participants): [{"world":"ae68adef-ea93-4e84-9f13-7ff467a42bb0","leader":true,"stats":{"participants":2,"appliedSubscriptions":2,"listenersWithEarshot":2,"lastPassMs":0}}] applyLatencyMs {"1":4.366943359375,"0.5":4.366943359375,"0.95":4.366943359375,"0.99":4.366943359375}
+[2026-11-08T14:48:05.842Z] social voice metrics: voice_apply_latency_ms{q="0.5"} 4.366943359375 | voice_apply_latency_ms{q="0.95"} 4.366943359375 | voice_apply_latency_ms{q="0.99"} 4.366943359375 | voice_apply_latency_ms{q="1"} 4.366943359375 | voice_earshot_msgs_total 36 | voice_leader_worlds 22 | voice_participants 0 | voice_pass_ms 0 | voice_sub_changes_total{op="subscribe"} 4 | voice_sub_changes_total{op="unsubscribe"} 2 | voice_subscriptions 0 | voice_tokens_total{mode="publish"} 2
+[2026-11-08T14:48:05.842Z] zone earshot metrics: zone_earshot_changes_total 8 | zone_earshot_compute_us 0 | zone_earshot_failed_total 0 | zone_earshot_pairs 0 | zone_earshot_published_total 41 | zone_earshot_skipped_total 0
+[2026-11-08T14:48:05.862Z] samples 256; fade {"nearDb":-24,"farDb":-42.8,"dropDb":18.8,"expectedDropDb":17.2,"spearmanDistanceVsLevel":-0.994,"nNear":32,"nFar":30}; pan {"rightSideRminusLdb":4,"leftSideLminusRdb":4.3,"nRight":79,"nLeft":29,"louderEarOnSpeakersSide":"121/121"}
+[2026-11-08T14:48:05.862Z] earshot {"silentBeyondM":51.5,"samplesBeyondSilent":40,"audibleBeyondSilent":0,"unsubscribedBeyondM":56.6,"samplesBeyond":28,"subscribedBeyond":0,"samplesInside38m":132,"unsubscribedInside38m":0}; panner vs drawn {"p50":0.2,"p95":0.34,"max":0.38}, vs true {"p50":1.17,"p95":1.95,"max":2.12}; speaking {"domSpeakingSamples":203,"zoneSpeakingBitSamples":256}
+[2026-11-08T14:48:05.862Z] PASS A's AudioContext is running (output meters are live)  {"ctx":"running"}
+[2026-11-08T14:48:05.862Z] PASS fade: B is >12 dB quieter at 30-40 m than at 3-7 m (inverse distance, ref 2 m)  {"nearDb":-24,"farDb":-42.8,"dropDb":18.8,"expectedDropDb":17.2,"spearmanDistanceVsLevel":-0.994,"nNear":32,"nFar":30}
+[2026-11-08T14:48:05.862Z] PASS fade: output level falls steadily with distance (Spearman < -0.8)  {"rho":-0.994}
+[2026-11-08T14:48:05.862Z] PASS pan: B on A's right is louder in A's right ear (HRTF)  {"rightSideRminusLdb":4,"leftSideLminusRdb":4.3,"nRight":79,"nLeft":29,"louderEarOnSpeakersSide":"121/121"}
+[2026-11-08T14:48:05.862Z] PASS pan: B on A's left is louder in A's left ear  {"rightSideRminusLdb":4,"leftSideLminusRdb":4.3,"nRight":79,"nLeft":29,"louderEarOnSpeakersSide":"121/121"}
+[2026-11-08T14:48:05.862Z] PASS pan: the louder ear is on B's side in >= 95% of off-centre samples  {"rightSideRminusLdb":4,"leftSideLminusRdb":4.3,"nRight":79,"nLeft":29,"louderEarOnSpeakersSide":"121/121"}
+[2026-11-08T14:48:05.862Z] PASS earshot: A hears nothing (output < -70 dB) once B is past 48 m + 0.5 s of walking  {"silentBeyondM":51.5,"samplesBeyondSilent":40,"audibleBeyondSilent":0,"unsubscribedBeyondM":56.6,"samplesBeyond":28,"subscribedBeyond":0,"samplesInside38m":132,"unsubscribedInside38m":0}
+[2026-11-08T14:48:05.862Z] PASS earshot: A's subscription to B is gone past 48 m + 1.75 s of walking (LiveKit's 1 s flush included)  {"silentBeyondM":51.5,"samplesBeyondSilent":40,"audibleBeyondSilent":0,"unsubscribedBeyondM":56.6,"samplesBeyond":28,"subscribedBeyond":0,"samplesInside38m":132,"unsubscribedInside38m":0}
+[2026-11-08T14:48:05.862Z] PASS earshot: A hears B whenever B is within 38 m (allowing the re-subscribe moment)  {"silentBeyondM":51.5,"samplesBeyondSilent":40,"audibleBeyondSilent":0,"unsubscribedBeyondM":56.6,"samplesBeyond":28,"subscribedBeyond":0,"samplesInside38m":132,"unsubscribedInside38m":0}
+[2026-11-08T14:48:05.862Z] PASS the panner sits on B's interpolated head as drawn (within 0.5 m, sampled a frame apart)  {"p50":0.2,"p95":0.34,"max":0.38}
+[2026-11-08T14:48:05.862Z] PASS ...which trails B's true head only by the interpolation delay (p95 < 2.5 m at 4.9 m/s)  {"p50":1.17,"p95":1.95,"max":2.12}
+[2026-11-08T14:48:05.862Z] PASS speaking indicator: A's DOM level bar for B shows data-speaking=1 (analyser, outside React)  {"domSpeakingSamples":203,"zoneSpeakingBitSamples":256}
+[2026-11-08T14:48:05.862Z] PASS speaking bit: A sees B's Activity.speaking from the zone while B holds V  {"domSpeakingSamples":203,"zoneSpeakingBitSamples":256}
+[2026-11-08T14:48:05.863Z] PASS party radio: past earshot a party member stays subscribed and plays through the radio branch  {"samplesBeyond56m":29,"subscribed":29,"radioMode":29,"audible":29,"meanAbsRminusLdb":0,"meanLevelDb":-16.7}
+[2026-11-08T14:48:05.863Z] PASS party radio: audible and flat (no pan, no distance loss)  {"samplesBeyond56m":29,"subscribed":29,"radioMode":29,"audible":29,"meanAbsRminusLdb":0,"meanLevelDb":-16.7}
+[2026-11-08T14:48:05.863Z] PASS no page errors in either browser  []
+[2026-11-08T14:48:11.385Z] dropped lodestone_wp04_wp11voice
+[2026-11-08T14:48:11.385Z] ALL PASS

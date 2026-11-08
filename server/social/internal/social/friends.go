@@ -223,6 +223,9 @@ func (s *Session) relationOp(ctx context.Context, typ, name string) {
 		delete(s.muted, otherID)
 	}
 	s.mu.Unlock()
+	if s.hub.voice != nil {
+		s.hub.voice.Nudge(s.worldID) // WP11: voice applies the block/mute now, not at the next refresh
+	}
 	s.sendRelations()
 	s.system(note)
 	if typ == sp.C2STypeBlock {

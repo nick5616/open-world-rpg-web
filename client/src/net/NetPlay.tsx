@@ -14,7 +14,8 @@ import { DEFAULT_GROUND } from '../scene/groundContext';
 import { useAppStore } from '../stores/appStore';
 import { useDebugStore } from '../stores/debugStore';
 import { localPlayer, netStats } from '../state/live';
-import { startSocial, stopSocial } from '../social';
+import { startSocial, stopSocial, useSocialStore } from '../social';
+import { requestVoiceToken, startVoice, stopVoice, voiceInputFlags } from '../voice';
 import { netRuntime, useNetStore } from './netStore';
 import { RemotePlayers } from './RemotePlayers';
 import { envAt } from '../sim/stepEnv';
@@ -108,8 +109,19 @@ export function NetPlay({ ready }: { ready: ReadySession }) {
       zoneId: () => ready.zoneId,
       position: () => ({ x: localPlayer.pos.x, z: localPlayer.pos.z }),
     });
-    return () => stopSocial();
-  }, [ready]);
+    // WP11 proximity voice rides on the social session (voice_token).
+    startVoice({
+      requestToken: () => requestVoiceToken(),
+      listenOnly: () => useSocialStore.getState().me?.isLocalProfile ?? ready.isLocalProfile,
+      partyIds: () => (useSocialStore.getState().party?.members ?? []).map((m) => m.characterId),
+      ground, // occlusion samples the same terrain the player walks on
+      rawMic: new URLSearchParams(location.search).has('voiceRawMic'),
+    });
+    return () => {
+      stopVoice();
+      stopSocial();
+    };
+  }, [ready, ground]);
 
   const reconnect = useCallback(async () => {
     setPhase({ kind: 'connecting' });
@@ -130,7 +142,8 @@ export function NetPlay({ ready }: { ready: ReadySession }) {
       spawn: { x: w.x / 100, y: w.y / 100, z: w.z / 100 },
       online: true,
       onStep: (r) => {
-        if (!r.fly) session.pushStep(r.seq, r.input, r.state, r.env);
+        // WP11: the speaking bit rides in the input flags (InputFlag.speaking).
+        if (!r.fly) session.pushStep(r.seq, { ...r.input, flags: r.input.flags | voiceInputFlags() }, r.state, r.env);
       },
       afterFrame: () => session.flushInput(),
       takeCorrection: () => session.prediction.takeCorrection(),
