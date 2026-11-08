@@ -172,6 +172,59 @@ pub const INTERP_DELAY_FAR_MS: i32 = 1000;
 pub const GHOST_BAND_M: f64 = 64.0;
 /// Enemies sleep until a player is this close.
 pub const ENEMY_WAKE_M: f64 = 96.0;
+// ---- combat
+/// Spec 8: light attack startup (press to first active frame) at most this.
+pub const LIGHT_STARTUP_MAX_MS: i32 = 100;
+/// Spec 8: recovery after a light attack's hit frames at most this; a dodge cancels it.
+pub const LIGHT_RECOVERY_MAX_MS: i32 = 250;
+/// Spec 8: presses during an animation are buffered this long and fire as soon as the move allows.
+pub const INPUT_BUFFER_MS: i32 = 150;
+/// Spec 8 (40-80 ms): local-only freeze of the weapon and the struck enemy on a predicted hit. Never pauses the world.
+pub const HITSTOP_MS: i32 = 60;
+/// Spec 8 (at most 400 ms): time from pressing use to the effect; movement is unaffected meanwhile.
+pub const CONSUMABLE_USE_MS: i32 = 350;
+/// Spec 8: every enemy attack telegraphs at least this long.
+pub const ENEMY_WINDUP_MIN_MS: i32 = 300;
+/// Spec 8: and never longer than this.
+pub const ENEMY_WINDUP_MAX_MS: i32 = 600;
+/// Spec 8: 150 ms of invulnerability (9 steps at 60 Hz) from the dodge's first step.
+pub const DODGE_IFRAME_STEPS: i32 = 9;
+/// The plain dodge carries the player at DODGE_SPEED for this many steps (0.2 s, 2.4 m).
+pub const DODGE_DASH_STEPS: i32 = 12;
+/// Plain dodge dash speed, m/s (horizontal, held constant during the dash: no friction, no steering).
+pub const DODGE_SPEED: f64 = 12.0;
+/// Stamina cost of a plain dodge (points). Exhausted players cannot dodge.
+pub const DODGE_STAMINA: f64 = 12.0;
+/// When a dash ends its horizontal speed is clamped to this, so blinks and lunges stop crisply instead of sliding on friction.
+pub const DASH_EXIT_SPEED: f64 = 6.0;
+/// Lenient PvE validation (spec 9): a claimed hit may be this much beyond the move's reach at the best sample of the target's last HIT_HISTORY_MS.
+pub const HIT_RANGE_SLACK_M: f64 = 1.0;
+/// Favor the player: an enemy strike on a player settles only after the player's input frames up to this long after the strike; a dodge (i-frames) or being outside the area in any of them evades it.
+pub const HIT_GRACE_MS: i32 = 200;
+/// Players counted for enemy scaling at most (party size 4 is the tuning point; spec 16).
+pub const PARTY_SCALE_MAX: i32 = 8;
+/// Enemy health multiplier per extra engaged player: 1 + 0.75 (n - 1); 4 players = 3.25x.
+pub const PARTY_HP_PER_PLAYER: f64 = 0.75;
+/// Enemy damage multiplier per extra engaged player: 1 + 0.10 (n - 1).
+pub const PARTY_DMG_PER_PLAYER: f64 = 0.1;
+/// Downed players respawn at their last waypoint (RespawnPoint) after this long, keeping everything (spec 8).
+pub const PLAYER_RESPAWN_S: f64 = 3.0;
+/// Health regenerates only after this long without taking damage.
+pub const PLAYER_REGEN_DELAY_S: f64 = 6.0;
+/// Out-of-combat health regeneration, points per second.
+pub const PLAYER_REGEN_PER_S: f64 = 4.0;
+/// Enemies give up a chase this far from home and return (camps, packs); bosses stay in their arena.
+pub const ENEMY_LEASH_M: f64 = 40.0;
+/// Camps and packs spawn when a player comes this close to their anchor.
+pub const ENEMY_SPAWN_M: f64 = 160.0;
+/// Spawned groups with no player this close for ENEMY_DESPAWN_S despawn (state is regenerated on return).
+pub const ENEMY_DESPAWN_M: f64 = 260.0;
+/// See ENEMY_DESPAWN_M.
+pub const ENEMY_DESPAWN_S: f64 = 30.0;
+/// A cleared camp or pack comes back after this long.
+pub const CAMP_RESPAWN_S: f64 = 600.0;
+/// Spec 8: a boss respawns 1 real hour after a kill so others get their turn.
+pub const BOSS_RESPAWN_S: f64 = 3600.0;
 // ---- voice
 /// Join radius in open air.
 pub const EARSHOT_OPEN_M: f64 = 40.0;

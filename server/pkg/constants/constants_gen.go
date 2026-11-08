@@ -261,6 +261,86 @@ const GhostBandM float64 = 64
 // EnemyWakeM: Enemies sleep until a player is this close.
 const EnemyWakeM float64 = 96
 
+// ---- combat
+
+// LightStartupMaxMs: Spec 8: light attack startup (press to first active frame) at most this.
+const LightStartupMaxMs = 100
+
+// LightRecoveryMaxMs: Spec 8: recovery after a light attack's hit frames at most this; a dodge cancels it.
+const LightRecoveryMaxMs = 250
+
+// InputBufferMs: Spec 8: presses during an animation are buffered this long and fire as soon as the move allows.
+const InputBufferMs = 150
+
+// HitstopMs: Spec 8 (40-80 ms): local-only freeze of the weapon and the struck enemy on a predicted hit. Never pauses the world.
+const HitstopMs = 60
+
+// ConsumableUseMs: Spec 8 (at most 400 ms): time from pressing use to the effect; movement is unaffected meanwhile.
+const ConsumableUseMs = 350
+
+// EnemyWindupMinMs: Spec 8: every enemy attack telegraphs at least this long.
+const EnemyWindupMinMs = 300
+
+// EnemyWindupMaxMs: Spec 8: and never longer than this.
+const EnemyWindupMaxMs = 600
+
+// DodgeIframeSteps: Spec 8: 150 ms of invulnerability (9 steps at 60 Hz) from the dodge's first step.
+const DodgeIframeSteps = 9
+
+// DodgeDashSteps: The plain dodge carries the player at DODGE_SPEED for this many steps (0.2 s, 2.4 m).
+const DodgeDashSteps = 12
+
+// DodgeSpeed: Plain dodge dash speed, m/s (horizontal, held constant during the dash: no friction, no steering).
+const DodgeSpeed float64 = 12
+
+// DodgeStamina: Stamina cost of a plain dodge (points). Exhausted players cannot dodge.
+const DodgeStamina float64 = 12
+
+// DashExitSpeed: When a dash ends its horizontal speed is clamped to this, so blinks and lunges stop crisply instead of sliding on friction.
+const DashExitSpeed float64 = 6
+
+// HitRangeSlackM: Lenient PvE validation (spec 9): a claimed hit may be this much beyond the move's reach at the best sample of the target's last HIT_HISTORY_MS.
+const HitRangeSlackM float64 = 1
+
+// HitGraceMs: Favor the player: an enemy strike on a player settles only after the player's input frames up to this long after the strike; a dodge (i-frames) or being outside the area in any of them evades it.
+const HitGraceMs = 200
+
+// PartyScaleMax: Players counted for enemy scaling at most (party size 4 is the tuning point; spec 16).
+const PartyScaleMax = 8
+
+// PartyHpPerPlayer: Enemy health multiplier per extra engaged player: 1 + 0.75 (n - 1); 4 players = 3.25x.
+const PartyHpPerPlayer float64 = 0.75
+
+// PartyDmgPerPlayer: Enemy damage multiplier per extra engaged player: 1 + 0.10 (n - 1).
+const PartyDmgPerPlayer float64 = 0.1
+
+// PlayerRespawnS: Downed players respawn at their last waypoint (RespawnPoint) after this long, keeping everything (spec 8).
+const PlayerRespawnS float64 = 3
+
+// PlayerRegenDelayS: Health regenerates only after this long without taking damage.
+const PlayerRegenDelayS float64 = 6
+
+// PlayerRegenPerS: Out-of-combat health regeneration, points per second.
+const PlayerRegenPerS float64 = 4
+
+// EnemyLeashM: Enemies give up a chase this far from home and return (camps, packs); bosses stay in their arena.
+const EnemyLeashM float64 = 40
+
+// EnemySpawnM: Camps and packs spawn when a player comes this close to their anchor.
+const EnemySpawnM float64 = 160
+
+// EnemyDespawnM: Spawned groups with no player this close for ENEMY_DESPAWN_S despawn (state is regenerated on return).
+const EnemyDespawnM float64 = 260
+
+// EnemyDespawnS: See ENEMY_DESPAWN_M.
+const EnemyDespawnS float64 = 30
+
+// CampRespawnS: A cleared camp or pack comes back after this long.
+const CampRespawnS float64 = 600
+
+// BossRespawnS: Spec 8: a boss respawns 1 real hour after a kill so others get their turn.
+const BossRespawnS float64 = 3600
+
 // ---- voice
 
 // EarshotOpenM: Join radius in open air.

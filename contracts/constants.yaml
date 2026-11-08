@@ -9,7 +9,7 @@
 # therefore needs a new genVersion (spec section 5). Changing a movement value
 # changes client prediction AND server simulation together, which is the point
 # of keeping them here.
-version: 2
+version: 3
 
 groups:
   world:
@@ -109,6 +109,40 @@ groups:
     INTERP_DELAY_FAR_MS: {type: i32, value: 1000, doc: "Far ring: 2 Hz needs ~2 samples of buffer."}
     GHOST_BAND_M: {type: f64, value: 64, doc: "Region border strip mirrored to the neighbor zone."}
     ENEMY_WAKE_M: {type: f64, value: 96, doc: "Enemies sleep until a player is this close."}
+
+  combat:
+    # ---- WP13 (CR 005): spec 8 "Combat feel" targets and the shared dodge.
+    # The feel numbers are acceptance criteria (docs/evidence/wp13-feel.md);
+    # tests on both sides check every weapon move and enemy attack in
+    # contracts/combat.yaml against them. Dodge values feed the shared
+    # movement step (client/src/sim/movement.ts, server/pkg/movement), so they
+    # change prediction and simulation together.
+    LIGHT_STARTUP_MAX_MS: {type: i32, value: 100, doc: "Spec 8: light attack startup (press to first active frame) at most this."}
+    LIGHT_RECOVERY_MAX_MS: {type: i32, value: 250, doc: "Spec 8: recovery after a light attack's hit frames at most this; a dodge cancels it."}
+    INPUT_BUFFER_MS: {type: i32, value: 150, doc: "Spec 8: presses during an animation are buffered this long and fire as soon as the move allows."}
+    HITSTOP_MS: {type: i32, value: 60, doc: "Spec 8 (40-80 ms): local-only freeze of the weapon and the struck enemy on a predicted hit. Never pauses the world."}
+    CONSUMABLE_USE_MS: {type: i32, value: 350, doc: "Spec 8 (at most 400 ms): time from pressing use to the effect; movement is unaffected meanwhile."}
+    ENEMY_WINDUP_MIN_MS: {type: i32, value: 300, doc: "Spec 8: every enemy attack telegraphs at least this long."}
+    ENEMY_WINDUP_MAX_MS: {type: i32, value: 600, doc: "Spec 8: and never longer than this."}
+    DODGE_IFRAME_STEPS: {type: i32, value: 9, doc: "Spec 8: 150 ms of invulnerability (9 steps at 60 Hz) from the dodge's first step."}
+    DODGE_DASH_STEPS: {type: i32, value: 12, doc: "The plain dodge carries the player at DODGE_SPEED for this many steps (0.2 s, 2.4 m)."}
+    DODGE_SPEED: {type: f64, value: 12, doc: "Plain dodge dash speed, m/s (horizontal, held constant during the dash: no friction, no steering)."}
+    DODGE_STAMINA: {type: f64, value: 12, doc: "Stamina cost of a plain dodge (points). Exhausted players cannot dodge."}
+    DASH_EXIT_SPEED: {type: f64, value: 6, doc: "When a dash ends its horizontal speed is clamped to this, so blinks and lunges stop crisply instead of sliding on friction."}
+    HIT_RANGE_SLACK_M: {type: f64, value: 1, doc: "Lenient PvE validation (spec 9): a claimed hit may be this much beyond the move's reach at the best sample of the target's last HIT_HISTORY_MS."}
+    HIT_GRACE_MS: {type: i32, value: 200, doc: "Favor the player: an enemy strike on a player settles only after the player's input frames up to this long after the strike; a dodge (i-frames) or being outside the area in any of them evades it."}
+    PARTY_SCALE_MAX: {type: i32, value: 8, doc: "Players counted for enemy scaling at most (party size 4 is the tuning point; spec 16)."}
+    PARTY_HP_PER_PLAYER: {type: f64, value: 0.75, doc: "Enemy health multiplier per extra engaged player: 1 + 0.75 (n - 1); 4 players = 3.25x."}
+    PARTY_DMG_PER_PLAYER: {type: f64, value: 0.1, doc: "Enemy damage multiplier per extra engaged player: 1 + 0.10 (n - 1)."}
+    PLAYER_RESPAWN_S: {type: f64, value: 3, doc: "Downed players respawn at their last waypoint (RespawnPoint) after this long, keeping everything (spec 8)."}
+    PLAYER_REGEN_DELAY_S: {type: f64, value: 6, doc: "Health regenerates only after this long without taking damage."}
+    PLAYER_REGEN_PER_S: {type: f64, value: 4, doc: "Out-of-combat health regeneration, points per second."}
+    ENEMY_LEASH_M: {type: f64, value: 40, doc: "Enemies give up a chase this far from home and return (camps, packs); bosses stay in their arena."}
+    ENEMY_SPAWN_M: {type: f64, value: 160, doc: "Camps and packs spawn when a player comes this close to their anchor."}
+    ENEMY_DESPAWN_M: {type: f64, value: 260, doc: "Spawned groups with no player this close for ENEMY_DESPAWN_S despawn (state is regenerated on return)."}
+    ENEMY_DESPAWN_S: {type: f64, value: 30, doc: "See ENEMY_DESPAWN_M."}
+    CAMP_RESPAWN_S: {type: f64, value: 600, doc: "A cleared camp or pack comes back after this long."}
+    BOSS_RESPAWN_S: {type: f64, value: 3600, doc: "Spec 8: a boss respawns 1 real hour after a kill so others get their turn."}
 
   voice:
     EARSHOT_OPEN_M: {type: f64, value: 40, doc: "Join radius in open air."}
