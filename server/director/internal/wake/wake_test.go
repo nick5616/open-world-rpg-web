@@ -255,6 +255,7 @@ func TestFromEnv(t *testing.T) {
 	t.Setenv("LODESTONE_WAKE_PROVIDER", "gce")
 	t.Setenv("LODESTONE_WAKE_GCE_PROJECT", "p")
 	t.Setenv("LODESTONE_WAKE_GCE_ZONE", "")
+	t.Setenv("LODESTONE_WAKE_GCE_INSTANCE", "")
 	if _, err := FromEnv(nil, quiet(), svc.NewMetrics()); err == nil || !strings.Contains(err.Error(), "ZONE") {
 		t.Fatalf("missing zone: %v", err)
 	}

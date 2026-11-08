@@ -40,9 +40,9 @@ func FromEnv(rdb *redis.Client, log *slog.Logger, m *svc.Metrics) (*Waker, error
 			Zone:     env.Str("LODESTONE_WAKE_GCE_ZONE", ""),
 			Instance: env.Str("LODESTONE_WAKE_GCE_INSTANCE", ""),
 		}
-		for name, v := range map[string]string{"LODESTONE_WAKE_GCE_PROJECT": g.Project, "LODESTONE_WAKE_GCE_ZONE": g.Zone, "LODESTONE_WAKE_GCE_INSTANCE": g.Instance} {
-			if v == "" {
-				return nil, errMissing(name)
+		for _, kv := range [][2]string{{"LODESTONE_WAKE_GCE_PROJECT", g.Project}, {"LODESTONE_WAKE_GCE_ZONE", g.Zone}, {"LODESTONE_WAKE_GCE_INSTANCE", g.Instance}} {
+			if kv[1] == "" {
+				return nil, errMissing(kv[0])
 			}
 		}
 		p = g
