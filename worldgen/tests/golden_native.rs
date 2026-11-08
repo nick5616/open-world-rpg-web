@@ -21,6 +21,7 @@ fn native_matches_golden() {
     let (max_worlds, max_chunks) = if cfg!(debug_assertions) { (2, 25) } else { (usize::MAX, usize::MAX) };
     let mut checked = 0;
     let mut caves = 0;
+    let mut towns = 0;
     for w in g["worlds"].as_array().unwrap().iter().take(max_worlds) {
         let spec: WorldSpec = serde_json::from_value(w["spec"].clone()).unwrap();
         let seed: u64 = w["seed"].as_str().unwrap().parse().unwrap();
@@ -45,6 +46,12 @@ fn native_matches_golden() {
         for p in w["collision"].as_array().unwrap() {
             let h = ground::collision_height(&a, p["x"].as_f64().unwrap(), p["z"].as_f64().unwrap());
             assert_eq!(format!("{:016x}", h.to_bits()), p["h"].as_str().unwrap(), "{label} collision");
+        }
+        // WP20: the towns buffer (settlements, buildings, roads, structures).
+        if let Some(tw) = w.get("towns") {
+            let c = worldgen::town::world(&a).unwrap();
+            assert_eq!(format!("{:016x}", hash_bytes(&c.bytes)), tw["hash"].as_str().unwrap(), "{label} towns");
+            towns += 1;
         }
         // WP09: cave graph, cells (plain and edited) and mouth masks.
         if let Some(cv) = w.get("caves") {
@@ -96,5 +103,5 @@ fn native_matches_golden() {
             }
         }
     }
-    println!("[golden:native] {checked} chunks, {caves} cave cells match");
+    println!("[golden:native] {checked} chunks, {caves} cave cells, {towns} town worlds match");
 }
