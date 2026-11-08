@@ -369,7 +369,7 @@ func (s *Server) combatTick(tick uint32) {
 		ent.Move.Pos = en.Pos
 		ent.Yaw = en.Yaw
 		ent.prevValid, ent.view = ent.Move, ent.Move
-		s.ents = append(s.ents, ent) // ids only grow: stays sorted
+		s.insertEntity(ent) // WP16: player ids are world-stable, not in join order
 		s.cbt.byID[en.ID] = ent
 	}
 	for _, en := range removed {

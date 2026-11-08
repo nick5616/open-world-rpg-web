@@ -371,6 +371,44 @@ movement == prediction; interest clipping) and `zone_caves_integration_test.go`
 kill + restart restores it, respawn on a 14-15 s schedule deletes it;
 evidence `docs/evidence/wp09-mining-respawn.txt`).
 
+## Multiple zones and handoff (WP16)
+
+Decision: `docs/decisions/0016-handoff.md`. Contract: `docs/cr/008-zone-handoff.md` (protocol v5 `ZoneTransfer`). Code: `cluster.go` (env wiring, `/debug/cluster`), `internal/cluster` (Redis: pub/sub, keys, registry heartbeat and ownership table), `internal/game/{cluster,handoff,ghosts}.go` (simulation side).
+
+**Off by default.** A zone started as `npm run dev` starts it owns the whole world exactly as before. Cluster mode:
+
+| Env | Meaning |
+| --- | --- |
+| `LODESTONE_ZONE_CLUSTER=1` | join the world's cluster as the primary (owns what nobody claims; failover target) |
+| `LODESTONE_ZONE_ROLE=pool` | own only the regions the director assigns (`zoneassign:{worldId}`) |
+| `LODESTONE_ZONE_REGIONS="x,z;x,z"` | regions pinned by config |
+| `LODESTONE_ZONE_HEARTBEAT_MS` / `_TTL_MS` | registry heartbeat (1000) and the staleness others apply to us (3000) |
+| `LODESTONE_ZONE_DEBUG_URL` | HTTP base announced for tools (`http://127.0.0.1:<port>`) |
+| `LODESTONE_ZONE_PPROF=1` | Go profiler on `/debug/pprof/` (any mode, off by default). Diagnostic only: on Windows a CPU profile crashed a zone once (`runtime.sigprof` unwinding wazero JIT frames) |
+
+Every zone of a world must run in cluster mode. Each needs its own port (and WebTransport UDP port).
+
+```
+# two zones + director on the dev infra (the director splits the regions)
+go run ./server/director
+LODESTONE_ZONE_CLUSTER=1 LODESTONE_ZONE_ID=zone-a go run ./server/zone
+LODESTONE_ZONE_ROLE=pool LODESTONE_ZONE_ID=zone-b LODESTONE_ZONE_PORT=8192 go run ./server/zone
+curl http://127.0.0.1:8092/debug/cluster   # owners grid [x][z], live zones, handoff counters, owned characters
+```
+
+What a cluster zone does each tick (`handoffTick`, after inputs):
+
+- **Ownership checks** at 10 Hz per player: within `GHOST_BAND_M` of a region another zone owns → pre-connect (`ZoneTransfer` kind 0 with a single-use token); 2 m inside such a region and that zone has a standby connection → transfer; out of the band by 16 m → cancel (kind 1). A player whose client never pre-connects stays here (simulated past the border) rather than being dropped.
+- **Standby sessions**: a Hello carrying a `ho1.` token joins as a standby (no entity, ClockPong only) and the owner is told `ready`. On `transfer` the standby is admitted with the `HandoffState` (exact movement state, input seq, observers' view, progress, party, epoch): same entity id, input continues at `lastSeq + 1`, and its Welcome tells the client to switch. After a transfer out, the old connection stays as this zone's standby for the way back.
+- **Mirrors**: entities within 64 m of a foreign region are broadcast every tick, within 200 m at 10 Hz (`ghost:{worldId}`); every player once a second in `worldpos:{worldId}`. Received ones become mirrored entities (never in `Server.ents`; AI and every per-entity loop ignore them), extrapolated to this tick, sent to clients like local ones.
+- **Duplicate login across zones**: a login swaps `owner:{worldId}:{charId}`; a live previous owner releases the character with its live state (and kicks its session `duplicate_login`).
+- **Checkpoints** carry the owner's epoch (`characters.position.e`); Postgres refuses older epochs, so a late write from the previous owner never overwrites the new one. The new owner checkpoints in full at admission.
+
+Per-character state of other packages (WP13 combat, WP14 items, ...) must ride the handoff: register a `game.HandoffField{Name, Save, Load}` from an `init` function, or it resets when a player crosses a border. Items in Postgres are read on admission like on login (spec 11: "reads happen on login and zone transfer").
+
+Metrics: `zone_cluster_*` (handoffs in/out, pre-connects, standbys, releases, mirrored entities, ghost frames, fenced checkpoints, lost states).
+
+Tests: `internal/game/cluster_test.go` (two zones in one process on an in-memory cluster: handoff with prediction agreeing to the cm and the same entity id, observer continuity on the old zone, no pre-connect = stay, duplicate login across zones, presence feed, checkpoint fencing, re-admission), `internal/cluster` (Redis), director `assign_test.go`. Soak and browser acceptance: `tools/bots/handoff-soak.mjs`, `client/src/net/dev/handoff-acceptance.mjs`.
 ## Combat (WP13)
 
 Code: `internal/combat` (pure rules, its own README) and the glue

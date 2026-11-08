@@ -8,6 +8,19 @@
 //  Welcome | Kick; then Input at 30 Hz carrying the newest 60 Hz frames plus
 //  INPUT_REDUNDANCY repeats and ackTick = newest applied snapshot; Snapshot
 //  every tick; ClockPing <-> ClockPong.
+//
+// WP16 multiple zones (server/zone/README.md "Multiple zones", decision
+// 0016): a ZoneTransfer(kind 0) asks us to pre-connect to the neighbor zone
+// with a one-time token; that connection waits on standby until its Welcome,
+// which means the server moved ownership there. We then swap the active
+// connection, reset the snapshot decoder, resend the inputs the old zone may
+// not have applied, and keep everything else: prediction (the new zone
+// continues the exact state, so the next snapshot agrees), interpolation
+// (entity ids are world-stable, zone clocks are all Unix time) and clock
+// sync. The old connection stays open as a standby for the way back. When
+// the active zone dies instead (a reclaimed spot VM, spec 13) and the
+// caller gave us `reconnect`, we fail over: fresh director ticket, connect
+// to whoever owns the region now, and snap to the checkpoint it loaded.
 
 import {
   decodeMessage,
@@ -23,6 +36,7 @@ import {
   type Snapshot,
   type Welcome,
   type WorldEdits,
+  type ZoneTransfer,
 } from '@lodestone/contracts';
 import type { GroundQuery } from '../sim/ground';
 import type { MoveInput, MoveState, StepEnv } from '../sim/movement';
@@ -30,6 +44,7 @@ import { ClockSync } from './clockSync';
 import { EntityInterpolation, type RemoteView } from './interpolation';
 import { ClientPrediction } from './prediction';
 import { SnapshotDecoder, type Frame } from './snapshotDecoder';
+import { fromSelf } from '../sim/moveWire';
 import { connectTransport, type ConnectAttempt, type ConnectOptions, type NetTransport } from './transport';
 
 export type SessionPhase = 'connecting' | 'handshake' | 'playing' | 'closed';
@@ -49,9 +64,35 @@ export interface SessionOptions extends SessionEndpoints {
   prefer?: ConnectOptions['prefer'];
   wtTimeoutMs?: number;
   wsFactory?: ConnectOptions['wsFactory'];
+  /** WP16: the zone this connects to first (ZoneTransfer and failover change it). */
+  zoneId?: string;
+  /**
+   * WP16 failover: a fresh ticket and endpoints for whoever owns our region
+   * now (the director). Without it a dropped connection ends the session.
+   */
+  reconnect?: () => Promise<FailoverTarget>;
   /** Injectable clocks for tests. */
   now?: () => number;
   perfNow?: () => number;
+}
+
+/** WP16: where to fail over to. */
+export interface FailoverTarget {
+  zoneId: string;
+  ticket: string;
+  wsUrl: string;
+  wtUrl?: string;
+}
+
+/** WP16: one ownership switch, for tests and the acceptance log. */
+export interface TransferRecord {
+  atMs: number;
+  from: string;
+  to: string;
+  kind: 'handoff' | 'failover';
+  /** Since the old zone's last snapshot (handoff) or since the drop (failover). */
+  gapMs: number;
+  entityId: number;
 }
 
 export interface SessionEnd {
@@ -72,7 +113,13 @@ export class ZoneSession {
   welcome: Welcome | null = null;
   end: SessionEnd | null = null;
   readonly clock: ClockSync;
-  readonly decoder = new SnapshotDecoder();
+  /** Replaced on every zone switch (each zone has its own snapshot baselines). */
+  decoder = new SnapshotDecoder();
+  /** WP16: the zone owning us now, standby connections by zone, switches so far. */
+  zoneId: string;
+  readonly standby = new Map<string, NetTransport>();
+  readonly transfers: TransferRecord[] = [];
+  onTransfer: ((r: TransferRecord) => void) | null = null;
   readonly prediction: ClientPrediction;
   readonly interp: EntityInterpolation;
   latestFrame: Frame | null = null;
@@ -90,7 +137,7 @@ export class ZoneSession {
   readonly eventListeners = new Set<(e: ZoneEvent) => void>();
 
   /** Counters for tests and the acceptance log. */
-  readonly stats = { snapshots: 0, stale: 0, noBaseline: 0, inputPackets: 0, framesSent: 0, decodeErrors: 0, earlySnapshots: 0 };
+  readonly stats = { snapshots: 0, stale: 0, noBaseline: 0, inputPackets: 0, framesSent: 0, decodeErrors: 0, earlySnapshots: 0, preconnects: 0, handoffs: 0, failovers: 0, resent: 0 };
 
   private frames: InputFrame[] = [];
   private unsent = 0;
@@ -101,8 +148,14 @@ export class ZoneSession {
   private bwWindow: { t: number; down: number; up: number }[] = [];
   private readonly now: () => number;
   private readonly perfNow: () => number;
+  private lastSnapAt = 0;
+  private failingOver = false;
+  private forceOnNextSnapshot = false;
+  private latestSaveBlob: Uint8Array | undefined;
 
   constructor(private readonly opts: SessionOptions) {
+    this.zoneId = opts.zoneId ?? '';
+    this.latestSaveBlob = opts.saveBlob;
     this.now = opts.now ?? Date.now;
     this.perfNow = opts.perfNow ?? (() => performance.now());
     this.clock = new ClockSync(this.now);
@@ -129,7 +182,7 @@ export class ZoneSession {
       this.onWelcomeReject = reject;
     });
     transport.onFrame = (b) => this.handleFrame(b);
-    transport.onClose = (info) => this.finish({ code: info.code, reason: info.reason });
+    transport.onClose = (info) => this.onActiveClose(transport, info);
     transport.sendReliable(
       encodeMessage({
         type: 'Hello',
@@ -153,6 +206,8 @@ export class ZoneSession {
       this.transport?.sendReliable(encodeMessage({ type: 'Bye', reason: 0 }));
     } catch {}
     this.transport?.close(1000, reason);
+    for (const t of this.standby.values()) t.close(1000, reason);
+    this.standby.clear();
     this.finish({ code: 1000, reason });
   }
 
@@ -162,6 +217,10 @@ export class ZoneSession {
    */
   pushStep(seq: number, input: MoveInput, state: MoveState, env?: Readonly<StepEnv>): void {
     if (this.phase !== 'playing') return;
+    // WP16 failover: nothing goes out until we are reconnected and the
+    // renderer has snapped to the checkpoint (steps before that start from
+    // where we were, not where the new zone put us).
+    if (this.failingOver || this.forceOnNextSnapshot || this.prediction.awaitingForced) return;
     this.prediction.store({ seq, input, state, env });
     this.prediction.notePredicted(state);
     this.frames.push({ seq, flags: input.flags, yaw: input.yaw, pitch: input.pitch, castSlot: input.castSlot ?? 0 });
@@ -251,10 +310,14 @@ export class ZoneSession {
         for (const l of this.eventListeners) l(m);
         break;
       case 'SaveBlob':
+        this.latestSaveBlob = m.blob;
         this.onSaveBlob?.(m.blob);
         break;
       case 'HitResult':
         this.onHitResult?.(m);
+        break;
+      case 'ZoneTransfer':
+        this.handleZoneTransfer(m);
         break;
       case 'WorldEdits':
         this.onWorldEdits?.(m);
@@ -298,6 +361,7 @@ export class ZoneSession {
     const f = r.frame;
     this.stats.snapshots++;
     this.latestFrame = f;
+    this.lastSnapAt = this.now();
     const arrival = this.now();
     this.interp.onSnapshot(f.serverTime, arrival);
     const self = this.welcome.entityId;
@@ -310,12 +374,213 @@ export class ZoneSession {
     }
     for (const id of f.removed) this.interp.remove(id, f.serverTime);
     if (s.baselineTick === 0) this.interp.removeAbsent(present, f.serverTime);
-    this.prediction.reconcile(f.self, f.ackInputSeq, this.perfNow());
+    if (this.forceOnNextSnapshot) {
+      // WP16 failover: the new zone loaded our checkpoint. Snap there (the
+      // renderer takes it as a correction beyond the snap distance).
+      this.forceOnNextSnapshot = false;
+      this.prediction.force(fromSelf(f.self));
+    } else {
+      this.prediction.reconcile(f.self, f.ackInputSeq, this.perfNow());
+    }
     this.onFrame?.(f);
   }
 
   private handleKick(k: Kick): void {
     this.end = { code: 4000 + k.code, reason: k.reason, kick: { code: k.code, name: KICK_NAMES[k.code] ?? String(k.code), reason: k.reason } };
+  }
+
+  // ---- WP16: handoff between zones and failover ----
+
+  private handleZoneTransfer(m: ZoneTransfer): void {
+    if (m.kind === 1) {
+      const t = this.standby.get(m.zoneId);
+      this.standby.delete(m.zoneId);
+      t?.close(1000, 'cancelled');
+      return;
+    }
+    void this.preconnect(m);
+  }
+
+  /** Open the standby connection a ZoneTransfer(kind 0) asks for. */
+  private async preconnect(m: ZoneTransfer): Promise<void> {
+    let tr: NetTransport;
+    try {
+      ({ transport: tr } = await connectTransport({ wsUrl: m.endpoint, wtUrl: m.wtEndpoint || undefined, prefer: this.opts.prefer, wtTimeoutMs: this.opts.wtTimeoutMs, wsFactory: this.opts.wsFactory }));
+    } catch {
+      return; // the old zone keeps us and re-asks later
+    }
+    if (this.phase === 'closed' || this.failingOver) {
+      tr.close(1000, 'cancelled');
+      return;
+    }
+    const old = this.standby.get(m.zoneId);
+    if (old && old !== tr) old.close(1000, 'replaced');
+    this.standby.set(m.zoneId, tr);
+    this.stats.preconnects++;
+    this.attachStandby(m.zoneId, tr);
+    tr.sendReliable(
+      encodeMessage({
+        type: 'Hello',
+        protocolVersion: PROTOCOL_VERSION,
+        ticket: m.ticket,
+        clientTime: this.now(),
+        transport: tr.kind === 'webtransport' ? Transport.webtransport : Transport.websocket,
+        saveBlob: new Uint8Array(0),
+      }),
+    );
+  }
+
+  private attachStandby(zone: string, tr: NetTransport): void {
+    tr.onFrame = (b) => this.handleStandbyFrame(zone, tr, b);
+    tr.onClose = () => {
+      if (this.standby.get(zone) === tr) this.standby.delete(zone);
+    };
+  }
+
+  /** A frame on a standby connection: only its Welcome matters. */
+  private handleStandbyFrame(zone: string, tr: NetTransport, b: Uint8Array): void {
+    let m;
+    try {
+      m = decodeMessage(b);
+    } catch {
+      return;
+    }
+    if (m.type === 'Welcome') this.switchTo(zone, tr, m);
+    else if (m.type === 'SaveBlob') {
+      this.latestSaveBlob = m.blob;
+      this.onSaveBlob?.(m.blob);
+    }
+  }
+
+  /** Ownership moved to zone: its connection becomes the active one. */
+  private switchTo(zone: string, tr: NetTransport, w: Welcome): void {
+    if (this.phase !== 'playing' || this.failingOver) return;
+    const old = this.transport;
+    const from = this.zoneId;
+    this.standby.delete(zone);
+    if (old && old !== tr) {
+      this.standby.set(from, old); // the old zone keeps it for the way back
+      this.attachStandby(from, old);
+    }
+    tr.onFrame = (b) => this.handleFrame(b);
+    tr.onClose = (info) => this.onActiveClose(tr, info);
+    this.transport = tr;
+    this.zoneId = zone;
+    this.decoder = new SnapshotDecoder();
+    this.bwWindow = [];
+    const rec: TransferRecord = { atMs: this.now(), from, to: zone, kind: 'handoff', gapMs: this.lastSnapAt ? this.now() - this.lastSnapAt : 0, entityId: w.entityId };
+    this.welcome = w;
+    // Resend every frame the old zone may not have applied; the new one
+    // skips those it already has (its state is at the old zone's last seq).
+    const pending = this.frames.filter((f) => f.seq > this.prediction.ackSeq);
+    for (let i = 0; i < pending.length; i += 16) {
+      // Reliable: these frames have no later repeats (WebTransport datagrams
+      // could drop them, leaving the new zone a gap it would fill by guessing).
+      tr.sendReliable(encodeMessage({ type: 'Input', ackTick: 0, frames: pending.slice(i, i + 16) }));
+      this.stats.resent += Math.min(16, pending.length - i);
+    }
+    this.unsent = 0;
+    this.lastSend = this.perfNow();
+    this.stats.handoffs++;
+    this.transfers.push(rec);
+    if (this.transfers.length > 200) this.transfers.shift();
+    this.onTransfer?.(rec);
+  }
+
+  private onActiveClose(tr: NetTransport, info: { code: number; reason: string }): void {
+    if (tr !== this.transport) return; // a connection we already switched away from
+    const kick = this.end?.kick?.code ?? info.code - 4000;
+    // Terminal kicks end the session; a zone going away (shutdown kick, or
+    // the socket just dying) is what failover is for.
+    const terminal = ([KickCode.bad_ticket, KickCode.version_mismatch, KickCode.duplicate_login, KickCode.rate_limited, KickCode.server_full] as number[]).includes(kick) || info.code === 1002;
+    if (this.welcome && this.opts.reconnect && !terminal && this.phase === 'playing') {
+      void this.failover();
+      return;
+    }
+    this.finish({ code: info.code, reason: info.reason });
+  }
+
+  private async failover(): Promise<void> {
+    if (this.failingOver) return;
+    this.failingOver = true;
+    this.end = null;
+    for (const t of this.standby.values()) t.close(1000, 'failover');
+    this.standby.clear();
+    const from = this.zoneId;
+    const t0 = this.now();
+    let delay = 250;
+    while (this.phase === 'playing' && this.now() - t0 < 60_000) {
+      try {
+        const target = await this.opts.reconnect!();
+        const { transport: tr } = await connectTransport({ wsUrl: target.wsUrl, wtUrl: target.wtUrl, prefer: this.opts.prefer, wtTimeoutMs: this.opts.wtTimeoutMs, wsFactory: this.opts.wsFactory });
+        if (this.phase !== 'playing') {
+          tr.close(1000, 'cancelled');
+          break;
+        }
+        const w = await this.helloAndWelcome(tr, target.ticket);
+        tr.onFrame = (b) => this.handleFrame(b);
+        tr.onClose = (info) => this.onActiveClose(tr, info);
+        this.transport = tr;
+        this.zoneId = target.zoneId;
+        this.decoder = new SnapshotDecoder();
+        this.bwWindow = [];
+        this.welcome = w;
+        this.frames = [];
+        this.unsent = 0;
+        this.prediction.reset();
+        this.forceOnNextSnapshot = true;
+        this.failingOver = false;
+        this.stats.failovers++;
+        const rec: TransferRecord = { atMs: this.now(), from, to: target.zoneId, kind: 'failover', gapMs: this.now() - t0, entityId: w.entityId };
+        this.transfers.push(rec);
+        this.onTransfer?.(rec);
+        return;
+      } catch {
+        await new Promise((r) => setTimeout(r, delay));
+        delay = Math.min(2000, delay * 2);
+      }
+    }
+    this.failingOver = false;
+    this.finish({ code: 1006, reason: 'zone lost; failover gave up' });
+  }
+
+  /** Hello on a fresh connection; resolves with its Welcome. */
+  private helloAndWelcome(tr: NetTransport, ticket: string): Promise<Welcome> {
+    return new Promise<Welcome>((resolve, reject) => {
+      const timer = setTimeout(() => {
+        tr.close(1000, 'no welcome');
+        reject(new Error('no welcome'));
+      }, 5000);
+      tr.onFrame = (b) => {
+        let m;
+        try {
+          m = decodeMessage(b);
+        } catch {
+          return;
+        }
+        if (m.type === 'Welcome') {
+          clearTimeout(timer);
+          resolve(m);
+        } else if (m.type === 'Kick') {
+          clearTimeout(timer);
+          reject(new Error(`kicked: ${m.reason}`));
+        }
+      };
+      tr.onClose = () => {
+        clearTimeout(timer);
+        reject(new Error('closed'));
+      };
+      tr.sendReliable(
+        encodeMessage({
+          type: 'Hello',
+          protocolVersion: PROTOCOL_VERSION,
+          ticket: new TextEncoder().encode(ticket),
+          clientTime: this.now(),
+          transport: tr.kind === 'webtransport' ? Transport.webtransport : Transport.websocket,
+          saveBlob: this.latestSaveBlob ?? new Uint8Array(0),
+        }),
+      );
+    });
   }
 
   private finish(info: { code: number; reason: string }): void {

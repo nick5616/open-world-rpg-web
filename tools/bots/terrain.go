@@ -14,6 +14,7 @@ import (
 	"math"
 	"sync"
 
+	"lodestone/server/pkg/constants"
 	"lodestone/server/pkg/movement"
 	"lodestone/server/pkg/structures"
 	"lodestone/server/pkg/towns"
@@ -153,4 +154,43 @@ func (b *bot) avoidWater(px, pz float64) {
 	if t.HeightAt(ax, az) < float64(t.World().Header.SeaLevel) {
 		b.heading = b.yaw + math.Pi + (b.rng.Float64() - 0.5)
 	}
+}
+
+// findBorderCrossing (WP16, -find-border): a place where two players can
+// walk east across the region line x = borderX on easy, dry ground: every
+// sample from 60 m west to 60 m east of the line (both lanes, 4 m apart)
+// above sea level and water, slopes under ~20 degrees. Searches outward
+// from z = 2048. For the two-browser border run.
+func findBorderCrossing(t *worldhost.Terrain, borderX float64) (x, y, z float64, ok bool) {
+	sea := float64(t.World().Header.SeaLevel)
+	good := func(zz float64) bool {
+		prev := math.NaN()
+		for _, lane := range []float64{0, 4} {
+			prev = math.NaN()
+			for dx := -60.0; dx <= 60; dx += 2 {
+				px, pz := borderX+dx, zz+lane
+				h := t.HeightAt(px, pz)
+				if h < sea+1 || t.WaterAt(px, pz) > h-0.2 {
+					return false
+				}
+				if !math.IsNaN(prev) && math.Abs(h-prev) > 0.7 { // 2 m steps: ~19 degrees
+					return false
+				}
+				prev = h
+			}
+		}
+		return true
+	}
+	for off := 0.0; off < 1000; off += 4 {
+		for _, zz := range []float64{2048 + off, 2048 - off} {
+			if zz < 64 || zz > float64(constants.WorldSizeM)-64 {
+				continue
+			}
+			t.Want(borderX, zz, 80)
+			if good(zz) {
+				return borderX, t.HeightAt(borderX, zz), zz, true
+			}
+		}
+	}
+	return 0, 0, 0, false
 }

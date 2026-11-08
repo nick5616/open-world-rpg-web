@@ -69,3 +69,22 @@ Exercised end to end by the soaks (`docs/evidence/wp03-soak-*`,
 `docs/evidence/wp07-soak-*`); the zone's own tests cover the protocol paths.
 `go test ./...` covers personas, the verdict and (with the built wasm) land
 spawns and sea avoidance. `go vet ./...` must stay clean.
+
+## Multiple zones (WP16)
+
+`-cluster http://127.0.0.1:18310,http://127.0.0.1:18312` points the bots at cluster zones' `/debug/cluster` (any live one; the list of live zones is learned from the registry). Each bot then follows the handoff protocol exactly like the browser client: pre-connects on `ZoneTransfer` kind 0, switches to a standby connection when its Welcome arrives (resending unacknowledged frames, keeping its prediction), keeps the old connection as a standby, and fails over (owner of its position, fresh dev ticket, no spawn hint: the zone loads the last checkpoint) when its active zone dies.
+
+- `-mode cross`: `-cross-frac` (0.4) of the bots spawn within `-border-spawn` (150 m) of a border between zones and keep walking 40-120 m past the nearest one and back; the rest walk the world like `-mode spread`.
+- `-sample-every 2s`: polls every live zone's owned characters; a character owned by two zones, or a playing bot owned by none for two samples in a row, fails the run.
+- Verdict (spec 14 scenario 2): every bot still connected at the end, no failover gave up, no entity id change across a switch, no duplicated discovery grant (WP12 discovery XP is once per character per site: the stand-in for items until WP14), ownership never duplicated; plus the usual budgets and each zone's tick p99 against `-tick-budget` (12 ms with `-cluster`).
+- Reported: handoffs and the gap between the old zone's last snapshot and the new zone's first, prediction checks right after each switch (must be 0 cm), pre-connects, failovers (time to reconnect, rewind distance to the checkpoint), per-zone ticks and handoff counters.
+- `-print-characters -n N` prints the bots' deterministic character ids; `go run ./tools/bots/cmd/seedbots` inserts them into a scratch database (`lodestone_wp*` only) so zones checkpoint them like real characters (`-move "Name:x,z;..."` places characters by name). `-find-border X` prints a walkable crossing of the region line x = X.
+
+The whole acceptance run (scratch database, director, N zones, netsim per zone, bots, an optional hard kill of a pool zone):
+
+```
+node tools/bots/handoff-soak.mjs --bots 1000 --zones 3 --duration 10m
+node tools/bots/handoff-soak.mjs --bots 1000 --zones 3 --duration 6m --profile thailand --kill-after 3m --tag thailand-failover
+```
+
+Evidence goes to `docs/evidence/wp16-soak-<tag>.txt|json`.
