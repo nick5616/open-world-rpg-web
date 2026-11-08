@@ -1,0 +1,54 @@
+[2026-11-08T11:33:08.323Z] scratch database lodestone_wp04_e2e
+[2026-11-08T11:33:10.855Z] building account, director, fakezone
+[2026-11-08T11:33:18.291Z] PASS account healthy on :18091
+[2026-11-08T11:33:19.340Z] PASS director healthy on :18090
+[2026-11-08T11:33:19.893Z] PASS vite serving http://localhost:5174/account-dev.html
+[2026-11-08T11:33:20.350Z] --- account path ---
+[2026-11-08T11:33:20.579Z] PASS Google button hidden without a Firebase config
+[2026-11-08T11:33:20.919Z] PASS dev sign-in and character "Nicole" created
+[2026-11-08T11:33:20.960Z] PASS duplicate name (case-insensitive) refused  "that name is taken in this world"
+[2026-11-08T11:33:21.015Z] PASS invalid name refused  "invalid name: use only letters, digits and _"
+[2026-11-08T11:33:21.135Z] PASS no live zone -> 503 waking_world, client shows "Waking the world…"
+[2026-11-08T11:33:21.764Z] fake zone "wp04-fake-zone" announced in zones:{worldId}
+[2026-11-08T11:33:26.146Z] PASS client retried and received a zone ticket + social ticket  {"zone":"wp04-fake-zone","endpoint":"ws://localhost:8092/ws","social":"ws://localhost:8093/ws"}
+[2026-11-08T11:33:26.199Z] --- local profile path ---
+[2026-11-08T11:33:26.609Z] PASS local character created; signed blob (counter 1) stored in IndexedDB object store "saves"  {"profile":"36db896b-b887-4b9c-9d23-3d4ed17e300f","stores":["profile","saves"],"save":{"characterId":"a422e3c5-b11f-446f-a543-bcc367648bea","counter":1,"format":"lodestone-save","state":{"characterId":"a422e3c5-b11f-446f-a543-bcc367648bea","worldId":"ab99c639-27e6-4549-991b-732ce5d7b04d","name":"Wanderer","level":1,"xp":0,"position":{"x":2048,"y":0,"z":2048},"lastWaypoint":null,"staminaMax":100,"appearance":{},"progress":{"towers":"","waypoints":"","containersOpened":"","discoveries":"","skillTree":{},"spellsKnown":[],"spellsEquipped":[]},"items":[]}}}
+[2026-11-08T11:33:26.719Z] PASS tampered blob (level 1 -> 99) fails the signature at account service and director  {"tamperedVerify":"bad_signature","tamperedConnect":"bad_signature","blob2Counter":2,"stored2":true,"storeRefusesOlder":true,"oldVerify":"stale_save","oldConnect":"stale_save","newestVerify":true,"storedCounter":2}
+[2026-11-08T11:33:26.719Z] PASS save point issued counter 2; IndexedDB keeps the newest and refuses to overwrite it with counter 1
+[2026-11-08T11:33:26.719Z] PASS old blob (counter 1) fails the counter check; newest (counter 2) verifies
+[2026-11-08T11:33:26.722Z] PASS clearing cache stores leaves saves intact (separate object stores in one DB)  {"cleared":["cache:wp04-test"],"stores":["cache:wp04-test","profile","saves"],"saves":1}
+[2026-11-08T11:33:26.917Z] PASS local character presents its newest blob and receives a zone ticket  {"zone":"wp04-fake-zone","save":2}
+[2026-11-08T11:33:27.176Z] PASS Export downloads a profile file with the newest blob  {"file":"lodestone-profile-36db896b.json","saves":1,"counter":2}
+[2026-11-08T11:33:27.424Z] PASS importing an edited profile file is refused  "this save was modified or is not a Lodestone save"
+[2026-11-08T11:33:27.671Z] PASS Import restores the profile and its newest save (level 4) in a fresh browser  "Wanderer lv 4 · save #2Play"
+[2026-11-08T11:33:27.866Z] PASS Upgrade imports the verified blob into Postgres: Wanderer is now an account character at level 4  {"who":"Account: upgrader switch","after":"Wanderer lv 4Play"}
+[2026-11-08T11:33:27.948Z] PASS the upgraded local profile can no longer open sessions (410 profile_upgraded)
+[2026-11-08T11:33:27.983Z] PASS upgraded character plays from its account with a zone ticket  {"level":4}
+[2026-11-08T11:33:27.984Z] go test: ticket.Verify on the tickets the browser received (as a zone server would)
+[2026-11-08T11:33:30.357Z]   go> === RUN   TestAcceptanceTicketFile
+[2026-11-08T11:33:30.357Z]   go>     acceptance_test.go:51: verifying with the development ticket key (the acceptance run uses the dev key)
+[2026-11-08T11:33:30.357Z]   go>     acceptance_test.go:76: account: OK zone=wp04-fake-zone character=Nicole (db934baa-a8e4-422e-b252-755f30d173bf) local=false expires=2026-11-08T03:34:26-08:00
+[2026-11-08T11:33:30.357Z]   go>     acceptance_test.go:76: local: OK zone=wp04-fake-zone character=Wanderer (a422e3c5-b11f-446f-a543-bcc367648bea) local=true expires=2026-11-08T03:34:26-08:00
+[2026-11-08T11:33:30.357Z]   go>     acceptance_test.go:76: upgraded-account: OK zone=wp04-fake-zone character=Wanderer (a422e3c5-b11f-446f-a543-bcc367648bea) local=false expires=2026-11-08T03:34:27-08:00
+[2026-11-08T11:33:30.358Z]   go> --- PASS: TestAcceptanceTicketFile (0.01s)
+[2026-11-08T11:33:30.358Z]   go> PASS
+[2026-11-08T11:33:30.358Z]   go> ok  	lodestone/server/director/internal/director	1.010s
+[2026-11-08T11:33:30.358Z] PASS Go ticket.Verify accepts every ticket for its zone (and rejects it for another zone)
+[2026-11-08T11:33:30.358Z] PASS no uncaught page errors  []
+[2026-11-08T11:33:30.358Z] ALL PASS
+[2026-11-08T11:33:30.824Z] --- account log (filtered) ---
+[2026-11-08T11:33:30.824Z]   {"time":"2026-11-08T03:33:17.7501843-08:00","level":"WARN","msg":"using the insecure development key; set it for any shared deployment","svc":"account","env":"LODESTONE_SAVE_PRIVATE_KEY"}
+[2026-11-08T11:33:30.824Z]   {"time":"2026-11-08T03:33:17.7501843-08:00","level":"WARN","msg":"using the insecure development key; set it for any shared deployment","svc":"account","env":"LODESTONE_SESSION_PRIVATE_KEY"}
+[2026-11-08T11:33:30.824Z]   {"time":"2026-11-08T03:33:17.7934392-08:00","level":"INFO","msg":"official world","svc":"account","id":"ab99c639-27e6-4549-991b-732ce5d7b04d","seed":"20261108","created":true}
+[2026-11-08T11:33:30.824Z]   {"time":"2026-11-08T03:33:17.7934392-08:00","level":"WARN","msg":"dev auth enabled: anyone can sign in by username (LODESTONE_DEV_AUTH=0 to disable)","svc":"account"}
+[2026-11-08T11:33:30.824Z]   {"time":"2026-11-08T03:33:17.7934392-08:00","level":"INFO","msg":"account ready","svc":"account","firebase":false,"devAuth":true,"production":false}
+[2026-11-08T11:33:30.824Z]   {"time":"2026-11-08T03:33:27.8576923-08:00","level":"INFO","msg":"local profile upgraded","svc":"account","profile":"36db896b-b887-4b9c-9d23-3d4ed17e300f","account":"38e2cfc4-5f48-4ac7-8fed-860ffc56d1dd","characters":1}
+[2026-11-08T11:33:30.825Z] --- director log (filtered) ---
+[2026-11-08T11:33:30.825Z]   {"time":"2026-11-08T03:33:18.833921-08:00","level":"WARN","msg":"using the insecure development key; set it for any shared deployment","svc":"director","env":"LODESTONE_TICKET_PRIVATE_KEY"}
+[2026-11-08T11:33:30.825Z]   {"time":"2026-11-08T03:33:18.833921-08:00","level":"WARN","msg":"using the insecure development key; set it for any shared deployment","svc":"director","env":"LODESTONE_SESSION_PUBLIC_KEY"}
+[2026-11-08T11:33:30.825Z]   {"time":"2026-11-08T03:33:18.833921-08:00","level":"WARN","msg":"using the insecure development key; set it for any shared deployment","svc":"director","env":"LODESTONE_SAVE_PUBLIC_KEY"}
+[2026-11-08T11:33:30.825Z]   {"time":"2026-11-08T03:33:18.8541598-08:00","level":"INFO","msg":"director ready","svc":"director","social":"ws://localhost:8093/ws","production":false}
+[2026-11-08T11:33:30.825Z]   {"time":"2026-11-08T03:33:26.1355435-08:00","level":"INFO","msg":"ticket issued","svc":"director","character":"db934baa-a8e4-422e-b252-755f30d173bf","zone":"wp04-fake-zone","region":{"x":2,"z":2},"local":false}
+[2026-11-08T11:33:30.825Z]   {"time":"2026-11-08T03:33:26.9088878-08:00","level":"INFO","msg":"ticket issued","svc":"director","character":"a422e3c5-b11f-446f-a543-bcc367648bea","zone":"wp04-fake-zone","region":{"x":2,"z":2},"local":true}
+[2026-11-08T11:33:30.825Z]   {"time":"2026-11-08T03:33:27.9763708-08:00","level":"INFO","msg":"ticket issued","svc":"director","character":"a422e3c5-b11f-446f-a543-bcc367648bea","zone":"wp04-fake-zone","region":{"x":2,"z":2},"local":false}
+[2026-11-08T11:33:31.936Z] dropped lodestone_wp04_e2e and its zone registry keys
