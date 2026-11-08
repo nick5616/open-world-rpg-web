@@ -1,17 +1,17 @@
-building the client (VITE_SOLO=1) into C:\Users\nickb\AppData\Local\Temp\lodestone-wp20-Uz4uup
+building the client (VITE_SOLO=1) into C:\Users\nickb\AppData\Local\Temp\lodestone-wp20-vtealK
 # WP20 towns bench (headless Chromium, ANGLE (NVIDIA, NVIDIA GeForce RTX 3070 (0x00002488) Direct3D11 vs_5_0 ps_5_0, D3D11), 1600x900, high tier, uncapped, production build)
-date: 2026-11-08T19:31:25.970Z; playable after 11596 ms
+date: 2026-11-08T19:45:36.374Z; playable after 12711 ms
 largest town: #9 "Draedmore" (town, cottage, walled true), 40 buildings, 22 NPCs, radius 130 m at (1920, 2272)
-overview (whole town, from above at an angle): 229 draw calls (37 in shadow passes), 1518k tris, frame 5.81 ms mean / 8.9 p95; without the towns layer: 162 calls, 1210k tris, 19.52 ms
+overview (whole town, from above at an angle): 214 draw calls (31 in shadow passes), 1498k tris, frame 7.35 ms mean / 9.3 p95; without the towns layer: 162 calls, 1210k tris, 20.23 ms
 screenshot docs/evidence/wp20-town-overview.png
-top-down (whole town and walls): 162 draw calls (38 in shadow passes), 1097k tris, frame 4.98 ms mean / 7.5 p95; without the towns layer: 110 calls, 857k tris, 4.69 ms
+top-down (whole town and walls): 167 draw calls (41 in shadow passes), 1088k tris, frame 5.76 ms mean / 7.5 p95; without the towns layer: 110 calls, 857k tris, 5.21 ms
 screenshot docs/evidence/wp20-town-top.png
-street level (looking along a street to the square): 291 draw calls (87 in shadow passes), 1816k tris, frame 7.19 ms mean / 9.1 p95; without the towns layer: 216 calls, 1514k tris, 6.59 ms
+street level (looking along a street to the square): 292 draw calls (87 in shadow passes), 1816k tris, frame 8.07 ms mean / 10.4 p95; without the towns layer: 216 calls, 1515k tris, 6.14 ms
 screenshot docs/evidence/wp20-street.png
-interior (inn, looking at the door): 259 draw calls (63 in shadow passes), 1740k tris, frame 5.91 ms mean / 8.7 p95
+interior (inn, looking at the door): 261 draw calls (64 in shadow passes), 1741k tris, frame 5.9 ms mean / 7.5 p95
 screenshot docs/evidence/wp20-interior.png
 screenshot docs/evidence/wp20-interior-house.png
-NPCs in the square: 251 draw calls (60 in shadow passes), 1689k tris, frame 7.16 ms mean / 10 p95
+NPCs in the square: 251 draw calls (60 in shadow passes), 1677k tris, frame 6.07 ms mean / 8.2 p95
 screenshot docs/evidence/wp20-npcs.png
 target near Fenia: {"kind":"npc","name":"Fenia","role":1,"entityId":null,"stableId":"16224443885322019154"}
 screenshot docs/evidence/wp20-npc-talk-prompt.png
@@ -21,7 +21,7 @@ forge target: {"kind":"forge","name":"","role":-1,"entityId":null,"stableId":"33
 screenshot docs/evidence/wp20-forge.png
 screenshot docs/evidence/wp20-forge-panel.png
 screenshot docs/evidence/wp20-forge-street.png
-road and bridge: 277 draw calls (71 in shadow passes), 1892k tris, frame 5.54 ms mean / 8.5 p95
+road and bridge: 277 draw calls (71 in shadow passes), 1884k tris, frame 5.67 ms mean / 7.4 p95
 screenshot docs/evidence/wp20-road-bridge.png
 signpost target: {"kind":"sign","name":"Signpost: Dekairnan 681 m  ·  Glaisgair 93 m  ·  Baiscach 298 m","role":-1,"entityId":null,"stableId":"9138992586635644519"}
 screenshot docs/evidence/wp20-signpost.png
@@ -35,8 +35,8 @@ screenshot docs/evidence/wp20-structures-sunken-temple.png
 screenshot docs/evidence/wp20-styles-timber.png
 screenshot docs/evidence/wp20-styles-stilt.png
 screenshot docs/evidence/wp20-styles-stone.png
-night overview: 265 draw calls (77 in shadow passes), 1720k tris, frame 5.92 ms mean / 8.6 p95
+night overview: 264 draw calls (76 in shadow passes), 1708k tris, frame 8.61 ms mean / 10.9 p95
 screenshot docs/evidence/wp20-town-night.png
 screenshot docs/evidence/wp20-street-night.png
-towns layer: worker ready after 8594 ms (towns_build 226 ms incl. wasm, textures 904 ms, roads 650 ms, all in the worker); max settlement/structure build 35.6 ms (worker); max main-thread upload step 3.90 ms; 2423 scatter objects hidden
+towns layer: worker ready after 11190 ms (towns_build 413 ms incl. wasm, textures 1558 ms, roads 909 ms, all in the worker); max settlement/structure build 50.5 ms (worker); max main-thread upload step 4.50 ms; 2296 scatter objects hidden
 no page errors
