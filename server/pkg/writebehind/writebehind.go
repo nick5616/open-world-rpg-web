@@ -51,8 +51,8 @@ type Stats struct {
 }
 
 type item struct {
-	op       Op
-	attempts int
+	op        Op
+	attempts  int
 	notBefore time.Time
 }
 

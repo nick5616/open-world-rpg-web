@@ -85,8 +85,8 @@ func (m *metrics) aoiAccum(clients int, near, mid, far, party, max, bytes int64)
 }
 
 type bwSample struct {
-	t        time.Time
-	in, out  int64
+	t       time.Time
+	in, out int64
 }
 
 // RunMetrics publishes metrics every second until ctx ends.
