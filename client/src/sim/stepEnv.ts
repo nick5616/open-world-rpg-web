@@ -9,7 +9,10 @@
 
 import type { StepEnv, UpdraftField } from './movement';
 import { parseUpdrafts, UpdraftColumns } from './updraft';
-import { isRaining, worldTimeS } from './weather';
+import { isRaining } from './weather';
+// WP15: world time includes the world's clock offset; fire feeds the updrafts.
+import { worldClockState, worldTime } from '../systems/clock';
+import { chemRuntime } from '../systems/chem/ground';
 
 /** Seed used offline (solo builds have no world row): WP04's official world seed. */
 export const OFFLINE_SEED = 20261108n;
@@ -46,8 +49,17 @@ export function rainOverride(): boolean | null {
 
 /** The env for a world seed at a server time (ms), with the dev overrides applied. */
 export function envAt(seed: bigint, serverTimeMs: number): StepEnv {
-  const forced = rainOverride();
-  return { raining: forced ?? isRaining(seed, worldTimeS(serverTimeMs)), updraft: debugUpdraft() };
+  const forced = rainOverride() ?? worldClockState.rain;
+  return { raining: forced ?? isRaining(seed, worldTime(serverTimeMs)), updraft: chemUpdraft() };
+}
+
+/** WP15: fire's updrafts (the live chemistry view) plus the debug columns. */
+function chemUpdraft(): UpdraftField | null {
+  const dbg = debugUpdraft();
+  const view = chemRuntime.view;
+  if (!view) return dbg;
+  if (!dbg) return view;
+  return { liftAt: (x, y, z) => Math.max(view.liftAt(x, y, z), dbg.liftAt(x, y, z)) };
 }
 
 /** Offline (solo) env: local clock, default seed. */

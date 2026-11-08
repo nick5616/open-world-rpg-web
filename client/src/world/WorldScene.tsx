@@ -212,7 +212,7 @@ export function WorldScene({ runtime }: Props) {
   useFrame((_, delta) => {
     const dt = Math.min(delta, 0.1);
     const now = performance.now();
-    if (!useDebugStore.getState().freezeTime) worldClock.timeOfDayS = (worldClock.timeOfDayS + Math.min(delta, 0.25)) % DAY_LENGTH_S;
+    if (!useDebugStore.getState().freezeTime) worldClock.timeOfDayS = worldClock.source ? worldClock.source() : (worldClock.timeOfDayS + Math.min(delta, 0.25)) % DAY_LENGTH_S; // WP15: the world clock online
     advanceWind(dt);
 
     // WP09: caves first, so this frame's light knows how far underground we are.

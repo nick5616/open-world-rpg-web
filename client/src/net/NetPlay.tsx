@@ -25,6 +25,10 @@ import { attachExploration } from '../ui/map/zoneLink';
 // WP13: combat (input, predicted hits, HitClaims, enemies, HUD state).
 import { attachCombat, combatDriverHooks } from '../combat/link';
 import { CombatLayer } from '../combat/CombatLayer';
+// WP15: world clock, demons, town defense, chemistry (fire, ice, pillars, rain).
+import { attachNight, nightWorld } from '../systems/night';
+import { NightLayer } from '../systems/NightLayer';
+import { NightHud } from '../systems/NightHud';
 
 type Phase = { kind: 'connecting' } | { kind: 'playing'; welcome: Welcome } | { kind: 'ended'; end: SessionEnd } | { kind: 'error'; message: string };
 
@@ -96,6 +100,7 @@ export function NetPlay({ ready }: { ready: ReadySession }) {
     netRuntime.session = s;
     const detachExploration = attachExploration(s, ready);
     const detachCombat = attachCombat(s, ground);
+    const detachNight = attachNight(s);
     let live = true;
     s.onEnd = (end) => live && setPhase({ kind: 'ended', end });
     s.start().then(
@@ -110,6 +115,7 @@ export function NetPlay({ ready }: { ready: ReadySession }) {
       live = false;
       detachExploration();
       detachCombat();
+      detachNight();
       s.close('leaving');
       if (netRuntime.session === s) netRuntime.session = null;
       netStats.transport = netStats.rttMs = netStats.downKbps = netStats.upKbps = null;
@@ -176,11 +182,13 @@ export function NetPlay({ ready }: { ready: ReadySession }) {
   return (
     <>
       {driver && session && (
-        <WorldCanvas driver={driver} seed={phase.kind === 'playing' ? phase.welcome.seed.toString() : undefined} onRuntime={(r) => (ground.target = r.ground)}>
+        <WorldCanvas driver={driver} seed={phase.kind === 'playing' ? phase.welcome.seed.toString() : undefined} onRuntime={(r) => { ground.target = r.ground; nightWorld(r); }}>
           <RemotePlayers session={session} />
           <CombatLayer />
+          <NightLayer />
         </WorldCanvas>
       )}
+      {driver && session && <NightHud />}
       {phase.kind === 'connecting' && (
         <Overlay>
           <div data-testid="net-connecting">Connecting to {ready.zoneId}…</div>

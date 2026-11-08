@@ -27,6 +27,8 @@ import { TownGround } from '../buildings/townGround';
 import type { TownsResult } from '../buildings/towns.worker';
 import { CaveCellStore } from '../caves/caveStore';
 import type { GroundQuery } from '../../sim/ground';
+// WP15: ice sheets and earth pillars on top (client/src/systems/chem/ground.ts; pass-through when there are none).
+import { ChemGround } from '../../systems/chem/ground';
 
 export interface LoadTimings {
   wasmMs: number;
@@ -93,7 +95,7 @@ export class WorldRuntime {
         console.warn('[world] towns unavailable', err);
       }
     }
-    this.ground = ground;
+    this.ground = new ChemGround(ground);
   }
 
   get genVersion(): number {
