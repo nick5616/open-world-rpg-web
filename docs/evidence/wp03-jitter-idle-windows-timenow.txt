@@ -1,0 +1,11 @@
+=== RUN   TestMeasureJitter
+GOOS=windows GOARCH=amd64 NumCPU=16 go1.27.3, 20 s per row, 30 Hz, idle tick body
+spin_ms     ticks    jit_p50    jit_p99    jit_max  space_min  space_max    spin%
+0.0           600      0.160      0.855      1.418     31.916     34.492    0.00%
+0.5           600      0.332      1.200      1.424     31.930     34.757    2.26%
+1.0           600      0.230      0.913      1.009     32.385     34.342    3.25%
+2.0           600      0.313      0.952      1.187     32.147     34.500    6.52%
+3.0           600      0.259      1.302      1.477     31.856     34.565    9.32%
+--- PASS: TestMeasureJitter (100.00s)
+PASS
+ok  	lodestone/server/pkg/gameloop	100.851s

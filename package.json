@@ -19,6 +19,7 @@
     "infra:up": "node scripts/infra.mjs up",
     "infra:down": "node scripts/infra.mjs down",
     "migrate": "node scripts/go.mjs run ./server/pkg/cmd/migrate",
+    "bots": "node scripts/go.mjs run ./tools/bots",
     "test": "node scripts/test-all.mjs",
     "test:ts": "npm run test --workspaces --if-present",
     "test:go": "node scripts/go.mjs each test ./...",

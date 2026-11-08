@@ -1,0 +1,29 @@
+bots: signing tickets with the development key
+bots: 150 connecting in spread mode, playing 1m15s
+== bots: spread, 150/150 connected, 79 s wall (windows/amd64, go1.27.3)
+downlink kbps   avg   13.03  p50   12.82  p95   16.27  max   16.84   (budget 64)
+uplink kbps     avg   11.16  p50   11.16  p95   11.16  max   11.16   (budget 24)
+entities/view   avg     9.9  p50    10.1  p95    14.7  max    16.1
+snapshot bytes  avg    51.4  p50    50.9  p95    64.6  max    67.1
+rtt ms          p50    0.00  max    0.00
+snapshots 346696 (full 300), decode errors 0, apply errors 0
+prediction: 346396 checks, max error 0 cm, 0 resyncs
+personas map[idler:20 jumper:41 strafer:29 walker:60] kicks map[] errors map[]
+  zone_tick_ms{q="p50"}                    0.549
+  zone_tick_ms{q="p99"}                    1.56
+  zone_tick_ms{q="max"}                    6.807
+  zone_tick_jitter_ms{q="p50"}             0
+  zone_tick_jitter_ms{q="p99"}             0.178
+  zone_tick_jitter_ms{q="max"}             0.442
+  zone_players                             150
+  zone_client_down_kbps{q="max"}           18.22
+  zone_client_up_kbps{q="max"}             11.16
+  zone_aoi_entities_avg{ring="near"}       0.07
+  zone_aoi_entities_avg{ring="mid"}        0.95
+  zone_aoi_entities_avg{ring="far"}        8.81
+  zone_aoi_entities_max                    18
+  zone_snapshot_bytes_avg                  51.04
+  zone_writebehind_depth                   0
+  zone_speed_violations_total              0
+  zone_input_frames_dropped_total          0
+PASS
