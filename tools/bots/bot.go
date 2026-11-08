@@ -13,7 +13,6 @@ import (
 	"lodestone/server/pkg/movement"
 	"lodestone/server/pkg/proto"
 	"lodestone/server/pkg/snapshot"
-	"lodestone/server/pkg/ticket"
 	"lodestone/server/pkg/transport"
 	"lodestone/server/pkg/weather"
 	"lodestone/server/pkg/worldhost"
@@ -50,6 +49,12 @@ type botConfig struct {
 	terrain    *worldhost.Terrain // WP07: shared by all bots (safe for concurrent use); nil = flat
 	// WP12: the terrain plus the towers, exactly the zone's ground (set with terrain).
 	structures movement.Ground
+	// WP16: multiple zones (handoff.go). view != nil: follow handoffs, fail
+	// over when the active zone dies; cross: walk back and forth across
+	// borders between zones.
+	view           *clusterView
+	failoverGiveUp time.Duration
+	cross          bool
 }
 
 // bot is one headless player: it signs a dev ticket, connects, runs Hello,
@@ -65,7 +70,11 @@ type bot struct {
 	spawnX  float64
 	spawnZ  float64
 
-	conn transport.Conn
+	// WP16: the active connection and standbys by zone (handoff.go), every
+	// connection ever opened (bandwidth totals).
+	active   *botConn
+	standby  map[string]*botConn
+	allConns []transport.Conn
 
 	mu       sync.Mutex
 	dec      snapshot.Decoder
@@ -89,33 +98,62 @@ type bot struct {
 	seq         uint32
 	lastFrame   proto.InputFrame
 	terrainAt   time.Time // next chunk-interest / water check
+	// WP16
+	entityID                       uint32
+	lastAckSeq                     uint32
+	lastSnapAt                     time.Time
+	sent                           []proto.InputFrame   // newest frames (resent to a new owner)
+	postSwitch                     int                  // prediction checks after a switch still to count as handoff checks
+	lastCheckExact, preSwitchExact bool                 // was the last check exact (before the switch)?
+	target                         *movement.Vec3       // cross persona: where to walk
+	crosser                        bool                 // WP16 -mode cross: this bot keeps crossing borders
+	discoveries                    map[uint32]time.Time // first discovery Event per site (a repeat = a duplicated grant)
+	failedOverAt                   time.Time            // last successful failover
 
 	// stats (reader goroutine writes under mu)
 	st botStats
 }
 
 type botStats struct {
-	Persona       string    `json:"persona"`
-	Connected     bool      `json:"connected"`
-	Error         string    `json:"error,omitempty"`
-	Kick          string    `json:"kick,omitempty"`
-	Snapshots     int       `json:"snapshots"`
-	FullSnapshots int       `json:"fullSnapshots"`
-	DecodeErrors  int       `json:"decodeErrors"`
-	ApplyErrors   int       `json:"applyErrors"`
-	EntsSum       int64     `json:"-"`
-	EntsMax       int       `json:"entsMax"`
-	EntsAvg       float64   `json:"entsAvg"`
-	SnapBytes     int64     `json:"-"`
-	SnapBytesAvg  float64   `json:"snapBytesAvg"`
-	PredChecks    int       `json:"predChecks"`
-	PredErrMaxCm  int32     `json:"predErrMaxCm"`
-	PredResyncs   int       `json:"predResyncs"`
-	PredMismatch  int       `json:"predMismatches"` // checks differing by >= 1 cm while still exact, i.e. before this bot's first resync (after one, the bot replays from cm-quantized state and 1 cm rounding noise is expected)
-	RTTs          []float64 `json:"-"`
-	RTTp50        float64   `json:"rttP50Ms"`
-	DownKbps      float64   `json:"downKbps"`
-	UpKbps        float64   `json:"upKbps"`
+	Persona       string  `json:"persona"`
+	Connected     bool    `json:"connected"`
+	Error         string  `json:"error,omitempty"`
+	Kick          string  `json:"kick,omitempty"`
+	Snapshots     int     `json:"snapshots"`
+	FullSnapshots int     `json:"fullSnapshots"`
+	DecodeErrors  int     `json:"decodeErrors"`
+	ApplyErrors   int     `json:"applyErrors"`
+	EntsSum       int64   `json:"-"`
+	EntsMax       int     `json:"entsMax"`
+	EntsAvg       float64 `json:"entsAvg"`
+	SnapBytes     int64   `json:"-"`
+	SnapBytesAvg  float64 `json:"snapBytesAvg"`
+	PredChecks    int     `json:"predChecks"`
+	PredErrMaxCm  int32   `json:"predErrMaxCm"`
+	PredResyncs   int     `json:"predResyncs"`
+	PredMismatch  int     `json:"predMismatches"`
+	// WP16 multiple zones.
+	Handoffs               int       `json:"handoffs,omitempty"`
+	HandoffGapsMs          []float64 `json:"-"`
+	HandoffChecks          int       `json:"handoffChecks,omitempty"`
+	HandoffMismatch        int       `json:"handoffMismatches,omitempty"`
+	HandoffMaxErrCm        int32     `json:"handoffMaxErrCm,omitempty"`
+	HandoffIntroduced      int       `json:"handoffIntroducedMismatches,omitempty"`
+	HandoffIDChanges       int       `json:"handoffIdChanges,omitempty"`
+	Preconnects            int       `json:"preconnects,omitempty"`
+	PreconnectFails        int       `json:"preconnectFails,omitempty"`
+	StandbyKicks           int       `json:"standbyKicks,omitempty"`
+	DropsSeen              int       `json:"drops,omitempty"`
+	Failovers              int       `json:"failovers,omitempty"`
+	FailoverMs             []float64 `json:"-"`
+	FailoverRewindM        []float64 `json:"-"`
+	Discoveries            int       `json:"discoveries,omitempty"`
+	DupDiscoveries         int       `json:"duplicateDiscoveries,omitempty"`
+	RegrantedAfterFailover int       `json:"regrantedAfterFailover,omitempty"` // checks differing by >= 1 cm while still exact, i.e. before this bot's first resync (after one, the bot replays from cm-quantized state and 1 cm rounding noise is expected)
+	RTTs                   []float64 `json:"-"`
+	RTTp50                 float64   `json:"rttP50Ms"`
+	DownKbps               float64   `json:"downKbps"`
+	UpKbps                 float64   `json:"upKbps"`
 
 	warmIn, warmOut int64
 	warmAt          time.Time
@@ -123,7 +161,7 @@ type botStats struct {
 
 func newBot(id int, cfg *botConfig, seed int64, x, z float64) *bot {
 	rng := rand.New(rand.NewSource(seed))
-	b := &bot{id: id, cfg: cfg, rng: rng, spawnX: x, spawnZ: z}
+	b := &bot{id: id, cfg: cfg, rng: rng, spawnX: x, spawnZ: z, standby: map[string]*botConn{}, discoveries: map[uint32]time.Time{}}
 	r := rng.Float64()
 	switch {
 	case r < 0.40:
@@ -153,61 +191,45 @@ func uuidish(rng *rand.Rand) string {
 
 // run connects and plays until ctx ends.
 func (b *bot) run(ctx context.Context) {
-	dctx, cancel := context.WithTimeout(ctx, 10*time.Second)
-	url := fmt.Sprintf("%s?spawn=%.2f,%.2f", b.cfg.url, b.spawnX, b.spawnZ)
-	if b.cfg.ticket != "" {
-		url = b.cfg.url // a real character spawns where its row says
+	zone, url := b.cfg.zoneID, b.cfg.url
+	if b.cfg.view != nil {
+		// WP16: start on the zone that owns the spawn point.
+		if ep, ok := b.cfg.view.ownerAt(b.spawnX, b.spawnZ); ok {
+			zone, url = ep.ID, ep.Endpoint
+		}
 	}
-	c, err := transport.DialWebSocket(dctx, url)
-	cancel()
+	if b.cfg.ticket == "" {
+		url = fmt.Sprintf("%s?spawn=%.2f,%.2f", url, b.spawnX, b.spawnZ) // a real character spawns where its row says
+	}
+	bc, err := b.open(ctx, zone, url, b.devTicket(zone))
 	if err != nil {
 		b.mu.Lock()
 		b.st.Error = err.Error()
 		b.mu.Unlock()
 		return
 	}
-	b.conn = c
-	defer c.Close(transport.CloseNormal, "")
-
-	idRng := rand.New(rand.NewSource(int64(b.id)*7919 + 1))
-	tk := ticket.Sign(b.cfg.priv, ticket.Claims{
-		AccountID:     uuidish(idRng),
-		CharacterID:   uuidish(idRng),
-		CharacterName: fmt.Sprintf("bot-%03d", b.id),
-		WorldID:       b.cfg.worldID,
-		Audience:      ticket.AudienceZone(b.cfg.zoneID),
-	})
-	if b.cfg.ticket != "" {
-		tk = b.cfg.ticket
-	}
-	_ = c.SendReliable(proto.Encode(&proto.Hello{ProtocolVersion: proto.ProtocolVersion, Ticket: []byte(tk),
-		ClientTime: nowMs(), Transport: proto.TransportWebsocket}))
-
-	readDone := make(chan struct{})
-	go b.reader(readDone)
+	b.mu.Lock()
+	b.active = bc
+	b.mu.Unlock()
+	defer func() {
+		b.mu.Lock()
+		conns := append([]transport.Conn(nil), b.allConns...)
+		b.mu.Unlock()
+		for _, c := range conns {
+			c.Close(transport.CloseNormal, "")
+		}
+	}()
 
 	// Wait for Welcome before sending input.
-	deadline := time.After(10 * time.Second)
-	for {
+	select {
+	case <-bc.welcomeCh:
+	case <-bc.done:
+		return
+	case <-time.After(10 * time.Second):
 		b.mu.Lock()
-		ok, kicked := b.welcomed, b.st.Kick != ""
+		b.st.Error = "no welcome"
 		b.mu.Unlock()
-		if ok {
-			break
-		}
-		if kicked {
-			return
-		}
-		select {
-		case <-readDone:
-			return
-		case <-deadline:
-			b.mu.Lock()
-			b.st.Error = "no welcome"
-			b.mu.Unlock()
-			return
-		case <-time.After(5 * time.Millisecond):
-		}
+		return
 	}
 
 	period := time.Second / constants.InputSendHz
@@ -221,19 +243,38 @@ func (b *bot) run(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			b.finish()
-			_ = c.SendReliable(proto.Encode(&proto.Bye{}))
-			return
-		case <-readDone:
-			b.finish()
+			b.mu.Lock()
+			if a := b.active; a != nil {
+				_ = a.conn.SendReliable(proto.Encode(&proto.Bye{}))
+			}
+			b.mu.Unlock()
 			return
 		case <-warm:
-			st := c.Stats()
 			b.mu.Lock()
-			b.st.warmIn, b.st.warmOut, b.st.warmAt = st.BytesIn.Load(), st.BytesOut.Load(), time.Now()
+			b.st.warmIn, b.st.warmOut = b.bytes()
+			b.st.warmAt = time.Now()
 			b.mu.Unlock()
 		case <-ping.C:
-			_ = c.SendUnreliable(proto.Encode(&proto.ClockPing{T1: nowMs()}))
+			b.mu.Lock()
+			a := b.active
+			b.mu.Unlock()
+			if a != nil {
+				_ = a.conn.SendUnreliable(proto.Encode(&proto.ClockPing{T1: nowMs()}))
+			}
 		case now := <-tick.C:
+			b.mu.Lock()
+			a := b.active
+			b.mu.Unlock()
+			select {
+			case <-a.done:
+				// The active zone is gone (WP16: failover; single zone: done).
+				if b.cfg.view == nil || !b.failover(ctx) {
+					b.finish()
+					return
+				}
+				continue
+			default:
+			}
 			b.decide(now)
 			frames := make([]proto.InputFrame, 0, constants.InputRedundancy)
 			if b.seq > 0 {
@@ -250,14 +291,24 @@ func (b *bot) run(ctx context.Context) {
 				clampWorld(&b.state, b.cfg.worldM)
 				b.pred[f.Seq%512], b.predSeq[f.Seq%512] = b.state, f.Seq
 				b.lastFrame = f
+				b.sent = append(b.sent, f)
+				if len(b.sent) > 64 {
+					b.sent = b.sent[len(b.sent)-64:]
+				}
 			}
 			ack := b.dec.Latest()
-			b.mu.Unlock()
 			// Keep only the newest INPUT_REDUNDANCY frames.
 			if len(frames) > constants.InputRedundancy {
 				frames = frames[len(frames)-constants.InputRedundancy:]
 			}
-			_ = c.SendUnreliable(proto.Encode(&proto.Input{AckTick: ack, Frames: frames}))
+			// WP16: send to whoever is active NOW, under the lock switchTo takes:
+			// frames go either to the old owner before the switch (and switchTo
+			// resends them from b.sent) or to the new one after it, never lost
+			// in between.
+			if a := b.active; a != nil {
+				_ = a.conn.SendUnreliable(proto.Encode(&proto.Input{AckTick: ack, Frames: frames}))
+			}
+			b.mu.Unlock()
 		}
 	}
 }
@@ -294,6 +345,17 @@ func (b *bot) decide(now time.Time) {
 		b.cfg.terrain.Want(px, pz, 48+spd*3)
 		if math.Abs(math.Remainder(b.heading-b.yaw, 2*math.Pi)) < 0.3 {
 			b.avoidWater(px, pz)
+		}
+	}
+	// WP16 cross persona: walk to a point past the nearest border between
+	// zones; on arrival pick the next one (usually back across).
+	if b.crosser && b.cfg.view != nil {
+		if b.target == nil || math.Hypot(b.target.X-px, b.target.Z-pz) < 8 {
+			b.crossTarget(px, pz)
+		}
+		if b.target != nil {
+			b.heading = math.Atan2(-(b.target.X - px), -(b.target.Z - pz))
+			b.idle = false
 		}
 	}
 	// Steering: clustered bots stay in their disc; spread bots avoid edges.
@@ -362,10 +424,10 @@ func (b *bot) nextFrame() proto.InputFrame {
 	return proto.InputFrame{Seq: b.seq, Flags: flags, Yaw: proto.YawToU16(b.yaw)}
 }
 
-func (b *bot) reader(done chan struct{}) {
-	defer close(done)
+func (b *bot) reader(bc *botConn) {
+	defer close(bc.done)
 	for {
-		raw, err := b.conn.Recv(context.Background())
+		raw, err := bc.conn.Recv(context.Background())
 		if err != nil {
 			return
 		}
@@ -378,10 +440,29 @@ func (b *bot) reader(done chan struct{}) {
 		}
 		switch msg := m.(type) {
 		case *proto.Welcome:
+			first := !bc.welcomed
+			bc.welcomed = true
+			if first {
+				close(bc.welcomeCh)
+			}
+			if b.welcomed && b.active != nil && bc != b.active {
+				b.switchTo(bc, msg) // WP16: ownership moved to this standby's zone
+				break
+			}
+			// First Welcome, or a failover reconnect (b.active == nil until
+			// failover adopts this connection): start from its position.
+			if b.welcomed {
+				for i := range b.predSeq {
+					b.predSeq[i] = 0
+				}
+				b.dec = snapshot.Decoder{}
+				b.lastAckSeq = 0
+			}
 			b.welcomed = true
+			b.entityID = msg.EntityID
 			b.st.Connected = true
 			b.seed = msg.Seed
-			b.state.Pos = movement.Vec3{X: proto.CmToMeters(msg.X), Y: proto.CmToMeters(msg.Y), Z: proto.CmToMeters(msg.Z)}
+			b.state = movement.NewState(movement.Vec3{X: proto.CmToMeters(msg.X), Y: proto.CmToMeters(msg.Y), Z: proto.CmToMeters(msg.Z)})
 			if b.cfg.terrain != nil && b.cfg.ticket == "" {
 				// Dev spawn: x and z are our exact %.2f hint, but Welcome's y is
 				// cm-rounded while the server stands exactly on the ground. Take
@@ -390,14 +471,45 @@ func (b *bot) reader(done chan struct{}) {
 				b.state.Pos.Y = b.cfg.ground().HeightAt(b.state.Pos.X, b.state.Pos.Z)
 			}
 		case *proto.Kick:
-			b.st.Kick = fmt.Sprintf("%d %s", msg.Code, msg.Reason)
+			if bc == b.active {
+				b.st.Kick = fmt.Sprintf("%d %s", msg.Code, msg.Reason)
+			} else {
+				b.st.StandbyKicks++
+			}
+		case *proto.ZoneTransfer:
+			b.handleTransfer(bc, msg)
+		case *proto.Event:
+			if msg.Kind == 602 { // WP12 discovery: granted once per character, ever
+				b.st.Discoveries++
+				if first, seen := b.discoveries[msg.TargetID]; seen {
+					if !b.failedOverAt.IsZero() && first.Before(b.failedOverAt) {
+						// Granted on a zone that then died before its write-behind
+						// queue saved it: the survivor loaded the older checkpoint.
+						// Lost by the crash, granted once in durable state.
+						b.st.RegrantedAfterFailover++
+					} else {
+						b.st.DupDiscoveries++
+					}
+				} else {
+					b.discoveries[msg.TargetID] = time.Now()
+				}
+			}
 		case *proto.ClockPong:
-			b.st.RTTs = append(b.st.RTTs, nowMs()-msg.T1-(msg.T3-msg.T2))
+			if bc == b.active {
+				b.st.RTTs = append(b.st.RTTs, nowMs()-msg.T1-(msg.T3-msg.T2))
+			}
 		case *proto.Snapshot:
+			if bc != b.active {
+				break
+			}
 			f, err := b.dec.Apply(msg)
 			if err != nil {
 				b.st.ApplyErrors++
 				break
+			}
+			b.lastSnapAt = time.Now()
+			if msg.AckInputSeq > b.lastAckSeq {
+				b.lastAckSeq = msg.AckInputSeq
 			}
 			b.st.Snapshots++
 			if msg.BaselineTick == 0 {
@@ -424,6 +536,21 @@ func (b *bot) checkPrediction(seq uint32, self *proto.SelfState) {
 	p := b.pred[seq%512]
 	e := max(abs32(self.X-proto.MetersToCm(p.Pos.X)), abs32(self.Y-proto.MetersToCm(p.Pos.Y)), abs32(self.Z-proto.MetersToCm(p.Pos.Z)))
 	b.st.PredChecks++
+	defer func() { b.lastCheckExact = e == 0 }()
+	if b.postSwitch > 0 { // WP16: the first checks after a handoff
+		b.postSwitch--
+		b.st.HandoffChecks++
+		if e > 0 {
+			b.st.HandoffMismatch++
+			if b.preSwitchExact {
+				// Agreed with the old zone right before the switch, disagrees
+				// with the new one: divergence the handoff introduced (the
+				// rest was inherited from the old zone, e.g. a netsim stall).
+				b.st.HandoffIntroduced++
+			}
+		}
+		b.st.HandoffMaxErrCm = max(b.st.HandoffMaxErrCm, e)
+	}
 	if e > 0 && b.st.PredResyncs == 0 {
 		b.st.PredMismatch++
 	}
@@ -444,17 +571,17 @@ func (b *bot) checkPrediction(seq uint32, self *proto.SelfState) {
 
 // finish computes per-bot rates over [warmup end, now].
 func (b *bot) finish() {
-	if b.conn == nil {
-		return
-	}
-	st := b.conn.Stats()
 	b.mu.Lock()
 	defer b.mu.Unlock()
+	if len(b.allConns) == 0 {
+		return
+	}
+	in, out := b.bytes()
 	if !b.st.warmAt.IsZero() {
 		dt := time.Since(b.st.warmAt).Seconds()
 		if dt > 0 {
-			b.st.DownKbps = float64(st.BytesIn.Load()-b.st.warmIn) * 8 / 1000 / dt
-			b.st.UpKbps = float64(st.BytesOut.Load()-b.st.warmOut) * 8 / 1000 / dt
+			b.st.DownKbps = float64(in-b.st.warmIn) * 8 / 1000 / dt
+			b.st.UpKbps = float64(out-b.st.warmOut) * 8 / 1000 / dt
 		}
 	}
 	if b.st.Snapshots > 0 {
@@ -472,3 +599,14 @@ func abs32(v int32) int32 {
 }
 
 func nowMs() float64 { return float64(time.Now().UnixMicro()) / 1000 }
+
+// bytes totals every connection's traffic (b.mu held): a bot near a border
+// holds a standby connection too, and its pings count.
+func (b *bot) bytes() (in, out int64) {
+	for _, c := range b.allConns {
+		st := c.Stats()
+		in += st.BytesIn.Load()
+		out += st.BytesOut.Load()
+	}
+	return in, out
+}

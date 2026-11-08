@@ -25,6 +25,8 @@ type Entity struct {
 	TypeID      uint16        // enemy type, npc role | variant << 8 (WP20), ...: EntityRecord.typeId
 	x           *exploreState // WP12 exploration progress (explore.go), shared with the session
 	ListenOnly  bool          // WP11: local profile, its speaking bit is never shown
+	remote      *remoteInfo   // WP16: mirrored from another zone (ghosts.go); never in Server.ents
+	epoch       int64         // WP16: checkpoint fence (persist.go), 0 = unfenced
 
 	Move       movement.State
 	Yaw, Pitch float64 // radians, from the newest applied input

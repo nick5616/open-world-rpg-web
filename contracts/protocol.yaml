@@ -24,7 +24,7 @@
 # Versioning: adding a message or appending a field to a masked struct is a
 # compatible change (bump `version`, note it in docs/cr/). Changing the meaning
 # or order of an existing field is not; that needs a new message id.
-version: 4   # v2: WP10 movement (docs/cr/004-wp10-movement.md); v3 (docs/cr/005-voice-speaking-and-earshot.md): InputFlag.speaking; v4 (docs/cr/009-wp13-combat.md): combat flag semantics, moveExt dash bits
+version: 5   # v2: WP10 movement (docs/cr/004-wp10-movement.md); v3 (docs/cr/005-voice-speaking-and-earshot.md): InputFlag.speaking; v4 (docs/cr/009-wp13-combat.md): combat flag semantics, moveExt dash bits; v5 (docs/cr/008-zone-handoff.md): ZoneTransfer kind + wtEndpoint
 
 enums:
   EntityKind:
@@ -298,7 +298,10 @@ messages:
     id: 72
     dir: s2c
     delivery: reliable
+    doc: "WP16 handoff (docs/cr/008-zone-handoff.md, server/zone/README.md 'Multiple zones'). kind 0 = pre-connect - open a second connection to zoneId and send Hello with ticket; the zone holds it on standby and its Welcome later means ownership moved there (switch the active connection, keep prediction and interpolation). kind 1 = cancel - close the standby connection to zoneId (ticket and endpoints empty)."
     fields:
       zoneId: string
-      endpoint: string
-      ticket: bytes
+      endpoint: string      # WebSocket URL of the neighbor zone
+      ticket: bytes         # single-use handoff token (opaque), valid 60 s
+      kind: u8              # 0 pre-connect, 1 cancel (v4)
+      wtEndpoint: string    # WebTransport URL (with #certHash=) when the zone offers it, else empty (v4)

@@ -642,3 +642,108 @@ Assumptions:
 - NPCs are snapshot entities of the existing kind npc (no protocol change); Interact for NPCs targets the entity id, boards/stations the prop stable id, shafts the structure id.
 - Furniture taller than a step and town props are solid-only (decision 0020: walkable hard edges let the V8/Go sin/cos ulp difference flip WP10's climb grab, measured as 8-10 corrections of up to 6 cm before the change, 0 after).
 - Shared files touched: `contracts/events.md` (rows 800-807, Interact 30-33, NPC entity convention); `worldgen/src/lib.rs` (`pub mod town`), `worldgen/src/cave/veins.rs` (`crater_veins` body), `worldgen/README.md`, `worldgen/golden/{generate.ts,golden.json,README.md}`, `worldgen/harness/{browser/worker.ts,browser/run.mjs,go/golden_test.go}` (+ new `go/towns.go`), `worldgen/tests/golden_native.rs`, `worldgen/js/src/{index.ts (export + `towns_build?`),golden.ts}`, `worldgen/js/test/golden.test.ts`, `worldgen/js/README.md`; `server/pkg/worldhost/towns.go` (new file), `server/pkg/README.md`; `server/zone/main.go` (1 line), `server/zone/internal/game/{server.go (Config.Towns/Stations/TimeOffsetS, one Server field, one tick line), session.go (1 line), entity.go (TypeID field + quantize)}`, `server/zone/README.md`; `tools/bots/terrain.go`; `client/src/world/core/runtime.ts` (towns worker, TownGround, `caveGround`), `client/src/world/caves/caveManager.ts` (uses `runtime.caveGround`), `client/src/world/WorldCanvas.tsx` (mounts `TownsLayer`), `client/src/world/README.md`. New: `worldgen/src/town/`, `worldgen/js/src/{town.ts,townGolden.ts}`, `worldgen/examples/town_stats.rs`, `worldgen/tests/towns.rs`, `worldgen/scripts/towns-timing.mjs`, `server/pkg/towns/`, `server/zone/{towns.go,internal/npc/,internal/game/towns.go,internal/game/towns_test.go}`, `client/src/world/buildings/`, `docs/cr/007-towns.md`, `docs/decisions/0020-towns.md`, `docs/evidence/wp20-*`. No protocol.yaml, constants.yaml or migration change (`npm run migrate` not needed for WP20).
+
+## WP16: Multiple zones and handoff ✅
+
+Branch `wp/16-handoff` (main merged in, incl. the G3 fixes). Decisions: `docs/decisions/0016-handoff.md`. Contract change: `docs/cr/008-zone-handoff.md` (protocol v4: `ZoneTransfer` kind + wtEndpoint; zone-cluster Redis keys). Package docs: `server/zone/README.md` "Multiple zones and handoff", `client/src/net/README.md` "Multiple zones", `tools/bots/README.md` "Multiple zones", `server/director/README.md` "Region assignment".
+
+Works:
+- **Region ownership** (`server/pkg/zoneregistry`): roles `primary` (owns what nobody claims; the failover target) and `pool` (owns what the director assigns), or regions pinned by config. `Owner(live, region)` is the one deterministic owner (explicit claim, else the primary; ties go to the lowest id, never to load). Every zone, the director and the bots compute it from the same registry read. Cluster zones heartbeat every 1 s with their own 3 s TTL. The **director assigns regions** (`internal/director/assign.go`: `zoneregistry.Plan`, sticky, contiguous stripes, a dead pool zone's regions go back to the primary, Redis lease per world) and routes logins with `Owner`.
+- **Pre-connect and seamless transfer** (`server/zone/internal/game/handoff.go`): within 64 m of a foreign region, the owner sends `ZoneTransfer` (kind 0) with a single-use Redis token, and the client opens a standby connection to the neighbor. Once the player is 2 m inside the new owner's territory, the old owner transfers the exact state: movement state bit-exact (incl. stamina/moveExt), input seq and last frame, observers' view, health, level, exploration progress, local-save state, party, cave system (for the G3 earshot cave rule), WP13 combat profile and runtime state (HP, mana, cooldowns in input seqs, tick timers carried as time remaining), checkpoint epoch and registered `HandoffField`s. The new owner admits the standby with the same entity id, and its Welcome is the client's signal to switch. The old connection is kept as a standby for the way back, so walking back needs no pre-connect. A player whose client can't pre-connect stays with the old owner (simulated past the border) and is never dropped.
+- **Ghost band and far ring** (`ghosts.go`): entities within 64 m of a foreign region are mirrored at 30 Hz, and within 200 m at 10 Hz (`ghost:{worldId}` pub/sub; the 200 m tier is my addition so mid-ring observers get mid-ring rates). The world presence feed `worldpos:{worldId}` runs at 1 Hz (spec 11) for the far ring and the cross-zone party ring. Every entity kind except personal pickups and projectiles is mirrored: players, WP13 enemies and WP20 townsfolk. Mirrors never enter `Server.ents`, so AI, checkpoints, exploration, mining and earshot see only owned entities. Mirrors are extrapolated to the receiver's tick time. Entity ids are world-stable (`entid:{worldId}`), so observers keep one track through a handoff.
+- **Checkpoint ordering**: every cluster write carries the owner's epoch in `characters.position.e`, and Postgres refuses older epochs (position and progress saves). The old owner's late queue therefore never overwrites the new owner. The old owner saves on transfer (spec 11), and progress is marked dirty again on admission. No migration.
+- **Duplicate login across zones**: `owner:{worldId}:{charId}` is swapped on login. A live previous owner releases the live state (and kicks its session with `duplicate_login`); a dead one is skipped.
+- **Failover** (spec 13): a killed pool zone's regions go to the primary about 3 s after its last heartbeat. Clients (`ZoneSession` with a `reconnect` callback from NetPlay) and bots reconnect on their own through the director/registry to the new owner and snap to the last checkpoint. No overlay, no click.
+- **Client** (`client/src/net/zoneSession.ts`): standby connections; switch on Welcome (decoder reset, unacked frames resent, prediction, interpolation and clock kept); cancel; failover with a forced correction. `netDebug()` shows `zoneId`, `standby` and `transfers`. Single-zone dev is unchanged: no ZoneTransfer ever arrives, and reconnect only replaces the old "connection lost" overlay when the zone dies (the overlay comes back after 60 s of failed attempts).
+- **Cluster mode is opt-in** (`LODESTONE_ZONE_CLUSTER=1` / `_ROLE` / `_REGIONS`). Without it a zone behaves exactly as before.
+- **Bots** (`tools/bots`): `-cluster` follows handoffs exactly like the client and fails over. `-mode cross` makes a share of the bots keep crossing borders. An ownership sampler feeds the scenario-2 verdict. `seedbots` puts bot characters in a scratch DB. `handoff-soak.mjs` runs everything: scratch DB, director, N zones, netsim per zone and an optional hard kill.
+
+Evidence:
+- **Soak scenario 2: 1,000 bots across the world with continuous zone crossings** (`node tools/bots/handoff-soak.mjs --bots 1000 --zones 4 --duration 10m`; `docs/evidence/wp16-soak-1000-4z-clean.txt|json`). Setup: real director (assigner), 4 zone processes (primary + 3 pool; the director split the world into four 1024 m stripes), shared Redis, scratch Postgres with one character row per bot, WebSocket. 40 % of the bots keep crossing the nearest border; the rest walk the world. 626 s. Results:
+  - **1000/1000 bots connected at the end** (no dropped player).
+  - **6,353 handoffs by 625 bots**, **0 handoff states lost**, 0 entity id changes.
+  - Ownership sampled every 2 s: **0 characters owned by two zones**. Characters listed by two zones across an in-flight handoff were told apart by admission epoch, and no playing bot was unowned for two samples running.
+  - **0 duplicated discovery grants** (1,135 grants).
+  - Switch gap p50 56 ms, p95 67 ms. Downlink p95 101 kbps, max 116 kbps (budget 160); uplink 11 kbps.
+  - The file says FAIL only because, at the time, the verdict gated the zone tick on spec 9's 12 ms. Zone tick p99 was 8.5 / 16.8 / 20.0 / 25.6 ms with 158 / 216 / 315 / 310 players (see gaps). That run also predates the reliable post-switch resend.
+- **Scenario 2 under "thailand" (scenario 4) plus a spot-zone kill** (`--bots 1000 --zones 4 --duration 6m --profile thailand --kill-after 3m`; `docs/evidence/wp16-soak-1000-4z-thailand-failover.txt|json`). One netsim proxy per zone (RTT p50 200 ms). After 3 min a pool zone owning 306 players is hard-killed. **PASS**:
+  - 1000/1000 connected at the end.
+  - The dead zone's regions belonged to the primary 3.7 s after the kill.
+  - **306 of 306 bots failed over on their own** (gave up 0; reconnect p50 5.2 s, max 5.5 s; rewind to the checkpoint p50 68 m).
+  - 3,122 handoffs, 0 lost states, 0 id changes, **0 characters owned twice**, 0 duplicated discoveries. 5 discoveries were re-granted after the failover: they were granted on the dead zone, whose write-behind queue died with it, so each is granted once in durable state.
+- **200 bots, thailand, kill** (`docs/evidence/wp16-soak-200-3z-thailand-failover.txt|json`, the machine not overloaded): PASS.
+  - 86/86 failovers, 363 handoffs.
+  - **0 prediction mismatches introduced by a switch** over 1,448 post-switch checks (every post-switch mismatch already existed against the old zone: netsim TCP-retransmit stalls).
+  - Zone tick p99 2.3-3.5 ms.
+- **The same 200-bot thailand + kill run after merging WP13/WP20** (enemies and townsfolk live; `docs/evidence/wp16-soak-200-3z-thailand-failover-postmerge.txt|json`): PASS.
+  - 200/200 connected; 88/88 failovers (p50 4.8 s); 363 handoffs.
+  - 0 owned twice, 0 duplicated grants.
+  - 1 prediction mismatch introduced by a switch (of 1,446 post-switch checks).
+  - Zone tick p99 3.7-6.6 ms.
+- First 1000-bot run (`wp16-soak-1000-3z-first-run.txt`, 3 zones, every bot a crosser) found three bugs, all fixed:
+  - the ownership sampler counted in-flight handoffs as duplicates;
+  - re-admitted standby sessions used a fake ack baseline;
+  - the unreliable post-switch resend was shed under load (the latest-wins input queue).
+- **CPU profile** of a 329-player zone under the 1000-bot thailand run (`wp16-soak-1000-4z-thailand-failover-cpu-zone-pool-2.txt`): the tick goes to the existing snapshot/AOI path (`sendSnapshot` 30 %, `Grid.Query` 8 %) and Windows socket syscalls (`cgocall` 16 %). WP16 code (ghost frames, mirrors, interest sort) is about 2 %.
+- **Two headless browsers across a border** (`node client/src/net/dev/handoff-acceptance.mjs --profile thailand`; `docs/evidence/wp16-border-browsers.txt|json`, `wp16-border-*.png`). Setup: real account, director and two zone processes (primary + pool; the director gave the pool x < 2048), one netsim "thailand" proxy per zone (RTT 135-168 ms), two Chromium processes on the GPU. Re-run after merging WP13/WP20. Both players walk side by side east across x = 2048 and back. Results:
+  - Each browser switched zones twice (west → east → west), keeping the same entity id.
+  - **0 local reconciliation corrections, 0 remote teleports.**
+  - Each player saw the other in **96/96** samples.
+  - Switch gaps (old zone's last snapshot → new zone's first): 41-72 ms.
+  - Eased remote corrections within 1.5 s of a switch: at most 26 cm, under WP06's 30 cm "visible" line. A lurch away from the switches is described under gaps.
+  - ALL PASS. Before the merge, two runs also had 0 eased discontinuities.
+- **Failover in the browsers** (`--failover`; `docs/evidence/wp16-failover-browsers.txt|json`, `wp16-failover-a.png`): the same walk (again 0 corrections, 0 teleports, 95/95 visibility), then zone-west (which owns both players) is hard-killed. **Both browsers reconnected on their own to zone-east in 5.0 s** (failover gap ~4.7 s) and rewound 13-14 m to the transfer checkpoint. No "connection lost" overlay appeared, they see each other again, and walking afterwards gives 0 corrections. ALL PASS.
+- Tests:
+  - Go `internal/game/cluster_test.go`: two or three zones in one process on an in-memory cluster, with real WebSocket clients following the protocol. Covers: handoff with prediction agreeing to the cm and the same id both ways; combat state carried; enemies and NPCs mirrored; standby reuse on the way back; an observer on the old zone never gets a removal; no pre-connect means the player stays; duplicate login across zones takes the live state; the presence feed fills the far ring; a stale checkpoint is fenced; re-admission takes the handed-over progress; transfer along a line between two regions of one zone.
+  - `internal/cluster` (Redis): single-use records, owner swap, ids, presence, pub/sub, heartbeat and ownership.
+  - `zoneregistry`: Owner, TTL, Plan.
+  - director `assign_test.go`: split, routing, failover.
+  - vitest `client/src/net/handoff.test.ts`: switch, cancel, failover snap, terminal kick.
+
+Known gaps:
+- **Zone tick p99 over spec 9's 12 ms in the 1000-bot runs.** Pool zones held 300-460 players, about 100 in view each, on one shared 16-core Windows box that was also running 1,000 bots, 4 netsim proxies and other agents' work: p99 14-27 ms. The profile puts the cost in the existing snapshot/AOI path and socket I/O, not in handoff code. The cluster verdict reports this as a warning (scenario 2 is about drops and duplicates; the tick budget is scenario 1's, WP19). Mirroring the whole world's players into every zone's far ring (presence feed) is what a single 1,000-player zone would hold too, so `Grid.Query` grows with world population.
+- **Bot prediction under load or thailand.** Bots resync (more than 5 cm) a few percent of checks: their own latest-wins input queue sheds packets when the bots process is starved, and netsim stalls make the zone fill input gaps by guessing. The handoff adds none at 200 bots (0 introduced). At 1,000 bots on the overloaded box, 56 of 3,122 switches introduced one. The browser client shows 0 corrections across every switch.
+- **Browsers, post-merge:** each run shows one eased remote lurch of 0.6-2.8 m a few seconds after the harness's screenshot stall, while both players stand on one zone, away from any switch. Eased jumps within 1.5 s of a switch are at most 26 cm, under WP06's 30 cm "visible" line. The lurch first appeared after merging WP13/WP20 (two earlier runs had 0) and is not on the handoff path. Worth a look by WP06/WP13: the interpolation delay recovering after a render stall?
+- **Failover rewinds to the last checkpoint** (spec 13): p50 14-68 m in the runs, up to `SAVE_INTERVAL_S` of walking. Progress granted on the dead zone in its last seconds can be re-granted (its write-behind queue dies with it).
+- **Earshot (WP11) is still per zone.** Players on two sides of a border see each other (ghost band) but are not in each other's earshot. Fix: feed mirrored players to the earshot runner as speakers only.
+- **WP13 combat profile saves are not epoch-fenced** (WP13's `SaveCombat`). A skill change on the new zone within the old zone's queue lag could be overwritten by the old owner's transfer save. Position and progress are fenced. Combat runtime state crosses handoffs, with tick timers moved as time remaining. The action log and the frame ring do not cross (a hit claim racing the switch is refused as stale).
+- **Not browser-tested over WebTransport.** The border runs use WebSocket through netsim. Standby connections use the same `connectTransport` (WebTransport with fallback), and the WT endpoint rides in `ZoneTransfer.wtEndpoint`.
+- **The director's assigner never rebalances live zones by load** (sticky by design). A director scaled to zero (Cloud Run) assigns nothing new, though routing and failover still work. The plan splits regions evenly only for pool zones seen in the same run (the soak starts the director after the zones).
+- **Costs:** a player near a border holds one standby connection, an idle WebSocket answering nothing but kicks. Every handoff adds a position checkpoint and, when progress changed, a progress save on the old owner. Shared Postgres saw write-behind backlogs of about 300 under 1,000 bots.
+- **One standby per player.** Near a corner of three zones only the nearest foreign zone is pre-connected. A transfer to the other one waits for its pre-connect, and the old owner simulates the player in the meantime.
+- **Bots near the world edge or on islands** may never cross (cross mode aims at the nearest foreign region regardless of water). `-cross-frac` spawns crossers within 150 m of a border.
+- **The 1000-bot soaks ran on code from before the WP13/WP20 merge.** After the merge, the browser border and failover runs and the 200-bot thailand failover soak were re-run (`*-postmerge`). All Go and TS suites pass on the merged tree.
+- **CPU profiling** (`LODESTONE_ZONE_PPROF`, soak `--cpu-profile`) crashed a zone once on Windows: Go's profiler unwinding wazero JIT frames. It is opt-in, for diagnostics only.
+
+Assumptions:
+- "No duplicated items": WP14 isn't built, so the soak checks the preconditions and the grants that exist today:
+  - no character owned by two zones at once (that would mean two authoritative inventories);
+  - handoff states consumed exactly once (GETDEL);
+  - WP12 discovery grants (once per character per site) never repeated.
+
+  WP14 should read items on admission (spec 11: "reads happen on login and zone transfer") or register a `HandoffField`.
+- The ghost band is extended with a 200 m / 10 Hz tier. The control channel is `zone:{worldId}:{zoneId}` (spec: `zone:{zoneId}`), so concurrent worlds on one Redis never collide.
+- Failover position is the last Postgres checkpoint (spec 13), not the fresher presence feed.
+- Shared files touched:
+  - Contracts: `contracts/protocol.yaml` plus generated `contracts/ts/src/gen/protocol.ts`, `server/pkg/proto/protocol_gen.go` and `contracts/golden/protocol_vectors.json`.
+  - `server/pkg`: `zoneregistry/{zoneregistry.go,_test.go}` (additive); `README.md` (row).
+  - `server/director`: `main.go` (assigner start), `internal/director/director.go` (pickZone = Owner), `README.md`.
+  - `server/zone/main.go` (cluster wiring, ~20 lines).
+  - `server/zone/internal/game`:
+    - `server.go`: Config.Cluster/IDBase, hooks in New/Start/Stop/onTick/join/leave, sorted insert, checkpoint epoch.
+    - `session.go`: session.ho/joinOnce/ackFloor, verifyHello + clusterAccept in accept, remote entities in sendSnapshot.
+    - `entity.go` (2 fields), `mining.go` (sorted insert, 1 line), `explore.go` (ProgressSnapshot.Epoch, 2 lines).
+    - `persist.go` (fenced writes appended), `persist_progress.go` (fenced progress save).
+    - `combat.go` and `towns.go` (WP13/WP20): one line each, sorted insert of enemies/NPCs.
+  - `server/zone/internal/combat/handoff.go`: new file in WP13's package (Export/Restore of a player's combat state).
+  - `server/zone/README.md` (section).
+  - `client/src/net`: `zoneSession.ts`, `prediction.ts` (force/awaitingForced, beside main's G3 ground snap), `NetPlay.tsx` (zoneId + reconnect, social zoneId), `netStore.ts` (3 debug fields), `README.md`.
+  - `tools/bots`: `bot.go`, `main.go`, `terrain.go`, `bots_test.go`, `README.md`.
+- New files:
+  - `server/zone/{cluster.go, internal/cluster/}`, `server/zone/internal/game/{cluster,handoff,ghosts}.go` + tests.
+  - `server/director/internal/director/assign*.go`.
+  - `tools/bots/{handoff.go, cluster_summary.go, handoff-soak.mjs, cmd/seedbots/}`.
+  - `client/src/net/{handoff.test.ts, dev/handoff-acceptance.mjs}`.
+  - `docs/cr/008-zone-handoff.md`, `docs/decisions/0016-handoff.md`, `docs/evidence/wp16-*`.
+
+  No migration, no worldgen change.
