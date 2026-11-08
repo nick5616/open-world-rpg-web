@@ -2,6 +2,7 @@ package snapshot
 
 import (
 	"errors"
+	"slices"
 	"sort"
 
 	"lodestone/server/pkg/proto"
@@ -32,25 +33,28 @@ type Encoder struct {
 	burst    float64
 	overhead int
 	tokens   float64
-	prio     map[uint32]prioEntry
-	gen      uint32
-	work     []pendingRec
-	order    []int
-	stats    BudgetStats
-}
-
-type prioEntry struct {
-	acc float64
-	gen uint32
+	// Priority accumulators of deferred entities, sorted by id (parallel
+	// slices, double-buffered). Interest is sorted by id too, so reading and
+	// rewriting them is a merge walk: no hashing in the tick's hottest loop
+	// (150 clients x 150 entities x 30 Hz).
+	accIDs, accIDs2   []uint32
+	accVals, accVals2 []float64
+	work              []pendingRec
+	order             []prioIdx
+	stats             BudgetStats
 }
 
 // pendingRec is one record the client could get this tick.
 type pendingRec struct {
-	rec    proto.EntityRecord
-	size   int
-	prio   float64
-	weight float64
-	send   bool
+	rec  proto.EntityRecord
+	size int
+	prio float64
+	send bool
+}
+
+type prioIdx struct {
+	prio float64
+	k    int32
 }
 
 // BudgetStats counts what the budget did (zone metrics and soak evidence).
@@ -81,9 +85,24 @@ func (e *Encoder) SetBudget(bytesPerSec float64, tickRate int, burstTicks float6
 	e.burst = e.perTick * burstTicks
 	e.overhead = overhead
 	e.tokens = e.perTick
-	if e.prio == nil {
-		e.prio = map[uint32]prioEntry{}
+}
+
+// accCursor walks the sorted accumulator slices alongside sorted interest.
+type accCursor struct {
+	ids  []uint32
+	vals []float64
+	p    int
+}
+
+// get returns the accumulator for id; ids must be asked in ascending order.
+func (c *accCursor) get(id uint32) float64 {
+	for c.p < len(c.ids) && c.ids[c.p] < id {
+		c.p++
 	}
+	if c.p < len(c.ids) && c.ids[c.p] == id {
+		return c.vals[c.p]
+	}
+	return 0
 }
 
 // Stats returns the budget counters.
@@ -211,15 +230,19 @@ func (e *Encoder) Build(tick, ackTick, ackSeq uint32, serverTime float64, self *
 // accumulated change: nothing is lost, only rate. A deferred NEW entity is
 // left out of the frame and tried again next tick.
 func (e *Encoder) buildBudgeted(s *proto.Snapshot, out *Frame, bents []EntState, interest []Candidate) {
-	e.gen++
 	work := e.work[:0]
+	acc := accCursor{ids: e.accIDs, vals: e.accVals}
+	total := 0
 
 	i, j := 0, 0
 	for i < len(interest) || j < len(bents) {
 		switch {
 		case j >= len(bents) || (i < len(interest) && interest[i].State.ID < bents[j].ID):
 			c := &interest[i]
-			work = append(work, pendingRec{rec: Diff(nil, c.State), weight: c.Weight})
+			rec := Diff(nil, c.State)
+			w := pendingRec{rec: rec, size: RecordSize(&rec), prio: acc.get(c.State.ID) + weightOf(c)}
+			total += w.size
+			work = append(work, w)
 			i++
 		case i >= len(interest) || bents[j].ID < interest[i].State.ID:
 			s.Removed = append(s.Removed, bents[j].ID)
@@ -228,25 +251,15 @@ func (e *Encoder) buildBudgeted(s *proto.Snapshot, out *Frame, bents []EntState,
 			c := &interest[i]
 			if c.Due {
 				if rec := Diff(&bents[j], c.State); rec.Mask != 0 {
-					work = append(work, pendingRec{rec: rec, weight: c.Weight})
+					w := pendingRec{rec: rec, size: RecordSize(&rec), prio: acc.get(c.State.ID) + weightOf(c)}
+					total += w.size
+					work = append(work, w)
 				}
 			}
 			i++
 			j++
 		}
 	}
-
-	e.order = e.order[:0]
-	for k := range work {
-		w := &work[k]
-		if w.weight <= 0 {
-			w.weight = 1
-		}
-		w.size = RecordSize(&w.rec)
-		w.prio = e.prio[w.rec.ID].acc + w.weight
-		e.order = append(e.order, k)
-	}
-	sort.SliceStable(e.order, func(a, b int) bool { return work[e.order[a]].prio > work[e.order[b]].prio })
 
 	e.tokens += e.perTick
 	if e.tokens > e.burst {
@@ -255,51 +268,69 @@ func (e *Encoder) buildBudgeted(s *proto.Snapshot, out *Frame, bents []EntState,
 	fixed := snapshotFixed(&s.Self, len(s.Removed)) + e.overhead
 	avail := e.tokens - float64(fixed)
 	spent := 0
-	for _, k := range e.order {
-		w := &work[k]
-		if float64(spent+w.size) > avail {
-			break // strict priority: the top record waits for allowance rather than being overtaken
+	if float64(total) <= avail {
+		// Fast path (everything but dense crowds): it all fits, no ordering.
+		for k := range work {
+			work[k].send = true
 		}
-		w.send = true
-		spent += w.size
-	}
-	// A record bigger than any tick's allowance (a long name on first sight
-	// with a tiny budget) still goes out once the bucket is full.
-	if spent == 0 && len(e.order) > 0 && e.tokens >= e.burst-1e-9 {
-		w := &work[e.order[0]]
-		w.send = true
-		spent = w.size
+		spent = total
+	} else {
+		e.order = e.order[:0]
+		for k := range work {
+			e.order = append(e.order, prioIdx{prio: work[k].prio, k: int32(k)})
+		}
+		slices.SortFunc(e.order, func(a, b prioIdx) int {
+			switch {
+			case a.prio > b.prio:
+				return -1
+			case a.prio < b.prio:
+				return 1
+			}
+			return int(a.k - b.k) // ties: lower id first, deterministic
+		})
+		for _, o := range e.order {
+			w := &work[o.k]
+			if float64(spent+w.size) > avail {
+				break // strict priority: the top record waits for allowance rather than being overtaken
+			}
+			w.send = true
+			spent += w.size
+		}
+		// A record bigger than any tick's allowance (a long name on first
+		// sight with a tiny budget) still goes out once the bucket is full.
+		if spent == 0 && len(e.order) > 0 && e.tokens >= e.burst-1e-9 {
+			w := &work[e.order[0].k]
+			w.send = true
+			spent = w.size
+		}
 	}
 	e.tokens -= float64(fixed + spent)
 
-	for k := range work {
-		w := &work[k]
-		if w.send {
-			e.prio[w.rec.ID] = prioEntry{gen: e.gen}
-			e.stats.Sent++
-		} else {
-			e.prio[w.rec.ID] = prioEntry{acc: w.prio, gen: e.gen}
-			e.stats.Deferred++
+	// Second pass: write records and the frame in id order, and rebuild the
+	// accumulators: deferred entities keep (accumulated + weight), sent ones
+	// reset, entities with no record this tick carry theirs, and entities
+	// that left interest drop out.
+	newIDs, newVals := e.accIDs2[:0], e.accVals2[:0]
+	old := accCursor{ids: e.accIDs, vals: e.accVals}
+	keep := func(id uint32, v float64) {
+		if v > 0 {
+			newIDs = append(newIDs, id)
+			newVals = append(newVals, v)
 		}
 	}
-	// Forget entities that left interest (no record for 64 ticks means they
-	// are gone or idle with nothing pending; idle ones start again from 0).
-	if e.gen%64 == 0 {
-		for id, p := range e.prio {
-			if e.gen-p.gen > 64 {
-				delete(e.prio, id)
-			}
-		}
-	}
-
 	k := 0
 	i, j = 0, 0
 	for i < len(interest) || j < len(bents) {
 		switch {
 		case j >= len(bents) || (i < len(interest) && interest[i].State.ID < bents[j].ID):
-			if w := &work[k]; w.send {
+			w := &work[k]
+			if w.send {
 				s.Entities = append(s.Entities, w.rec)
 				out.Ents = append(out.Ents, *interest[i].State)
+				e.stats.Sent++
+			} else {
+				keep(w.rec.ID, w.prio)
+				e.stats.Deferred++
 			}
 			k++
 			i++
@@ -309,23 +340,37 @@ func (e *Encoder) buildBudgeted(s *proto.Snapshot, out *Frame, bents []EntState,
 			c, b := &interest[i], &bents[j]
 			switch {
 			case k < len(work) && work[k].rec.ID == c.State.ID:
-				if work[k].send {
-					s.Entities = append(s.Entities, work[k].rec)
+				w := &work[k]
+				if w.send {
+					s.Entities = append(s.Entities, w.rec)
 					out.Ents = append(out.Ents, *c.State)
+					e.stats.Sent++
 				} else {
 					out.Ents = append(out.Ents, *b)
+					keep(w.rec.ID, w.prio)
+					e.stats.Deferred++
 				}
 				k++
 			case c.Due:
-				out.Ents = append(out.Ents, *c.State) // unchanged: equal to b
+				out.Ents = append(out.Ents, *c.State) // unchanged: equal to b, nothing pending
 			default:
 				out.Ents = append(out.Ents, *b)
+				keep(c.State.ID, old.get(c.State.ID)) // not due this tick: priority waits
 			}
 			i++
 			j++
 		}
 	}
+	e.accIDs, e.accIDs2 = newIDs, e.accIDs
+	e.accVals, e.accVals2 = newVals, e.accVals
 	e.work = work
+}
+
+func weightOf(c *Candidate) float64 {
+	if c.Weight <= 0 {
+		return 1
+	}
+	return c.Weight
 }
 
 // Decoder rebuilds client state from snapshots (bots, tests; WP06 ports it).

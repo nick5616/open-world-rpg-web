@@ -187,3 +187,27 @@ func TestBudgetPartyFirstAndNoStarvationOfBigRecords(t *testing.T) {
 		t.Fatalf("stats not counted: %+v", st)
 	}
 }
+
+// Per-client Build cost in the dense case (143 movers), budget on vs off:
+// the zone runs this once per client per tick.
+func BenchmarkBuildDense(b *testing.B) {
+	for _, budget := range []float64{0, 150_000.0 / 8} {
+		name := "unlimited"
+		if budget > 0 {
+			name = "budget150"
+		}
+		b.Run(name, func(b *testing.B) {
+			var enc Encoder
+			if budget > 0 {
+				enc.SetBudget(budget, 30, 3, 4)
+			}
+			c := newCrowd(143, 3)
+			self := proto.SelfState{}
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				tick := uint32(i + 2)
+				enc.Build(tick, tick-1, tick, 0, &self, c.step())
+			}
+		})
+	}
+}
