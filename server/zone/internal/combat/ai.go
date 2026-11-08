@@ -21,7 +21,7 @@ import (
 
 const (
 	dt              = 1.0 / float64(constants.TickRateHz)
-	alertTicks      = 15 // 500 ms "noticed you" beat (a readable roar) before the first chase
+	alertTicks      = 18 // 600 ms "noticed you" beat (a readable roar) before the first chase
 	repositionTicks = 20 // hit-and-run back-off after a melee attack
 	minAttackGap    = 18 // ticks between two attacks of one enemy (600 ms)
 	maxWindupsOnOne = 2

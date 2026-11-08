@@ -8218,7 +8218,7 @@
   },
   {
    "key": "shielded",
-   "hpMult": 4,
+   "hpMult": 4.5,
    "damageMult": 1.4,
    "speedMult": 1,
    "cooldownMult": 1,

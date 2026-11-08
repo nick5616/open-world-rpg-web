@@ -1,68 +1,59 @@
-[   1.48s] world world-wp13 seed 20261108; boss group #2 warden (, lvl 2) at (1420, 2250) r 26; camp #1 test (0 members, lvl 2) at (1274, 2336), 169 m from the boss
-[   1.49s] Bruno joined as entity 1 at (1237.1, 279.2, 2358.9) with a spear
-[   1.49s] Alyssa joined as entity 2 at (1234.1, 281.6, 2358.9) with a sword
-[  10.82s] Bruno killed enemy 5 (+24 xp)
-[  16.49s] Alyssa at (1264, 262, 2338) hp 100%  attacks 3 casts 8 dodges 7  accepted 10 refused 0  corrections 0
-[  16.49s] Bruno at (1266, 262, 2342) hp 90%  attacks 9 casts 4 dodges 8  accepted 12 refused 0  corrections 0
-[  16.52s] Bruno killed enemy 6 (+33 xp)
-[  16.82s] Bruno killed enemy 3 (+24 xp)
-[  19.92s] Bruno: camp cleared (group 1)
-[  19.92s] Alyssa killed enemy 4 (+24 xp)
-[  19.92s] Alyssa: camp cleared (group 1)
-[  20.48s] CAMP CLEARED: group #1 (test) in 19.0 s; regrouping at (1386, 2270) outside the arena
-[  31.49s] Bruno at (1343, 194, 2300) hp 100%  attacks 9 casts 9 dodges 10  accepted 17 refused 0  corrections 0
-[  31.49s] Alyssa at (1343, 193, 2300) hp 100%  attacks 3 casts 12 dodges 8  accepted 15 refused 0  corrections 0
-[  40.98s] party regrouped; pulling the boss
-[  42.72s] Bruno: boss engaged: The Mossbound Warden (16170 hp after party scaling)
-[  42.72s] Alyssa: boss engaged: The Mossbound Warden (16170 hp after party scaling)
-[  46.49s] Bruno at (1411, 159, 2252) hp 100%  attacks 12 casts 14 dodges 12  accepted 24 refused 0  corrections 0
-[  46.49s] Alyssa at (1415, 159, 2256) hp 100%  attacks 5 casts 17 dodges 10  accepted 22 refused 0  corrections 0
-[  61.49s] Alyssa at (1413, 159, 2255) hp 100%  attacks 38 casts 17 dodges 17  accepted 55 refused 0  corrections 0
-[  61.49s] Bruno at (1412, 159, 2254) hp 100%  attacks 44 casts 14 dodges 18  accepted 57 refused 0  corrections 0
-[  76.49s] Alyssa at (1412, 159, 2254) hp 100%  attacks 73 casts 17 dodges 25  accepted 90 refused 0  corrections 0
-[  76.49s] Bruno at (1411, 159, 2256) hp 100%  attacks 75 casts 14 dodges 24  accepted 88 refused 0  corrections 0
-[  91.49s] Bruno at (1413, 159, 2250) hp 100%  attacks 106 casts 14 dodges 31  accepted 118 refused 0  corrections 0
-[  91.49s] Alyssa at (1414, 159, 2250) hp 100%  attacks 107 casts 17 dodges 32  accepted 124 refused 0  corrections 0
-[  95.19s] Alyssa: BOSS PHASE 2/3: The Mossbound Warden
-[  95.19s] Bruno: BOSS PHASE 2/3: The Mossbound Warden
-[ 106.49s] Alyssa at (1413, 159, 2254) hp 100%  attacks 141 casts 17 dodges 46  accepted 154 refused 4  corrections 0
-[ 106.49s] Bruno at (1419, 159, 2253) hp 100%  attacks 133 casts 15 dodges 44  accepted 143 refused 4  corrections 0
-[ 121.49s] Alyssa at (1412, 159, 2250) hp 70%  attacks 169 casts 19 dodges 59  accepted 176 refused 12  corrections 0
-[ 121.49s] Bruno at (1420, 159, 2255) hp 100%  attacks 167 casts 15 dodges 46  accepted 177 refused 4  corrections 0
-[ 136.49s] Bruno at (1417, 159, 2253) hp 100%  attacks 197 casts 15 dodges 52  accepted 207 refused 4  corrections 0
-[ 136.49s] Alyssa at (1416, 159, 2254) hp 77%  attacks 201 casts 19 dodges 73  accepted 208 refused 12  corrections 0
-[ 151.49s] Alyssa at (1410, 159, 2250) hp 81%  attacks 235 casts 19 dodges 87  accepted 242 refused 12  corrections 0
-[ 151.49s] Bruno at (1414, 159, 2250) hp 100%  attacks 224 casts 17 dodges 61  accepted 234 refused 5  corrections 0
-[ 151.59s] Alyssa: BOSS PHASE 3/3: The Mossbound Warden
-[ 151.59s] Bruno: BOSS PHASE 3/3: The Mossbound Warden
-[ 166.49s] Bruno at (1408, 160, 2258) hp 100%  attacks 254 casts 18 dodges 71  accepted 261 refused 10  corrections 0
-[ 166.49s] Alyssa at (1412, 159, 2260) hp 47%  attacks 260 casts 22 dodges 103  accepted 259 refused 22  corrections 0
-[ 181.49s] Bruno at (1402, 160, 2266) hp 100%  attacks 279 casts 20 dodges 75  accepted 288 refused 10  corrections 0
-[ 181.49s] Alyssa at (1386, 162, 2272) hp 35%  attacks 268 casts 22 dodges 108  accepted 263 refused 27  corrections 0
-[ 194.42s] Alyssa was downed (respawn in 3000 ms)
-[ 196.49s] Bruno at (1401, 160, 2264) hp 100%  attacks 315 casts 20 dodges 77  accepted 324 refused 10  corrections 0
-[ 196.49s] Alyssa at (1385, 162, 2272) hp 0%  attacks 268 casts 22 dodges 120  accepted 263 refused 27  corrections 8
-[ 211.49s] Alyssa at (1841, 85, 2270) hp 100%  attacks 268 casts 22 dodges 120  accepted 263 refused 27  corrections 9
-[ 211.49s] Bruno at (1415, 158, 2276) hp 100%  attacks 341 casts 23 dodges 90  accepted 351 refused 11  corrections 0
-[ 226.49s] Alyssa at (1766, 97, 2270) hp 100%  attacks 268 casts 22 dodges 120  accepted 263 refused 27  corrections 9
-[ 226.49s] Bruno at (1391, 161, 2269) hp 46%  attacks 358 casts 23 dodges 100  accepted 367 refused 13  corrections 0
-[ 241.49s] Alyssa at (1690, 108, 2270) hp 100%  attacks 268 casts 22 dodges 120  accepted 263 refused 27  corrections 9
-[ 241.49s] Bruno at (1392, 160, 2264) hp 89%  attacks 358 casts 26 dodges 111  accepted 370 refused 13  corrections 0
-[ 256.49s] Alyssa at (1614, 125, 2270) hp 100%  attacks 268 casts 22 dodges 120  accepted 263 refused 27  corrections 9
-[ 256.49s] Bruno at (1404, 159, 2249) hp 87%  attacks 384 casts 28 dodges 125  accepted 397 refused 14  corrections 0
-[ 271.49s] Bruno at (1401, 159, 2254) hp 67%  attacks 415 casts 28 dodges 139  accepted 419 refused 23  corrections 0
-[ 271.49s] Alyssa at (1540, 136, 2270) hp 100%  attacks 268 casts 22 dodges 120  accepted 263 refused 27  corrections 9
-[ 286.49s] Bruno at (1387, 161, 2270) hp 77%  attacks 415 casts 28 dodges 149  accepted 419 refused 23  corrections 0
-[ 286.49s] Alyssa at (1464, 152, 2270) hp 100%  attacks 268 casts 22 dodges 120  accepted 263 refused 27  corrections 9
-[ 290.85s] Bruno was downed (respawn in 3000 ms)
-[ 298.39s] Alyssa killed enemy 9 (+31 xp)
-[ 301.49s] Bruno at (1871, 83, 2268) hp 100%  attacks 415 casts 28 dodges 150  accepted 419 refused 23  corrections 3
-[ 301.49s] Alyssa at (1410, 160, 2261) hp 100%  attacks 274 casts 31 dodges 127  accepted 278 refused 27  corrections 9
-[ 302.09s] Alyssa killed enemy 10 (+31 xp)
-[ 307.12s] Alyssa killed enemy 11 (+31 xp)
-[ 311.59s] Alyssa killed enemy 8 (+31 xp)
-[ 314.52s] Alyssa killed The Mossbound Warden (+660 xp)
-[ 314.52s] Alyssa: BOSS DEFEATED: The Mossbound Warden after a 272 s fight
-[ 315.48s] BOSS GROUP CLEARED 274 s after the pull
-[ 315.48s] RESULT camp cleared: true (19.0 s)  boss defeated: true (fight 272 s, 3 phases)  downs 2  claims accepted 720 refused 50
-[ 315.48s] PASS: a party of two cleared a camp and a boss against the zone process
+[   1.50s] world world-wp13 seed 20261108; boss group #2 warden (, lvl 2) at (1420, 2250) r 26; camp #1 test (0 members, lvl 2) at (1274, 2336), 169 m from the boss
+[   1.53s] Bruno joined as entity 1 at (1237.1, 279.2, 2358.9) with a spear
+[   1.53s] Alyssa joined as entity 2 at (1234.1, 281.6, 2358.9) with a sword
+[  10.86s] Bruno killed enemy 5 (+24 xp)
+[  15.90s] Bruno killed enemy 6 (+33 xp)
+[  16.53s] Bruno at (1266, 262, 2342) hp 100%  attacks 8 casts 6 dodges 9  accepted 14 refused 0  corrections 0
+[  16.53s] Alyssa at (1265, 262, 2340) hp 100%  attacks 3 casts 8 dodges 5  accepted 10 refused 0  corrections 0
+[  16.60s] Alyssa killed enemy 3 (+24 xp)
+[  19.76s] Bruno killed enemy 4 (+24 xp)
+[  19.76s] Bruno: camp cleared (group 1)
+[  19.76s] Alyssa: camp cleared (group 1)
+[  20.50s] CAMP CLEARED: group #1 (test) in 19.0 s; regrouping at (1386, 2270) outside the arena
+[  31.53s] Alyssa at (1349, 187, 2298) hp 100%  attacks 3 casts 12 dodges 5  accepted 14 refused 0  corrections 0
+[  31.53s] Bruno at (1350, 186, 2298) hp 100%  attacks 8 casts 10 dodges 9  accepted 18 refused 0  corrections 0
+[  40.00s] party regrouped; pulling the boss
+[  41.70s] Bruno: boss engaged: The Mossbound Warden (16170 hp after party scaling)
+[  41.70s] Alyssa: boss engaged: The Mossbound Warden (16170 hp after party scaling)
+[  46.53s] Bruno at (1412, 159, 2252) hp 100%  attacks 13 casts 15 dodges 11  accepted 28 refused 0  corrections 0
+[  46.53s] Alyssa at (1413, 159, 2252) hp 100%  attacks 8 casts 17 dodges 7  accepted 24 refused 0  corrections 0
+[  61.53s] Alyssa at (1417, 159, 2253) hp 100%  attacks 46 casts 17 dodges 12  accepted 62 refused 0  corrections 0
+[  61.53s] Bruno at (1412, 159, 2252) hp 100%  attacks 48 casts 15 dodges 18  accepted 63 refused 0  corrections 0
+[  76.53s] Alyssa at (1417, 159, 2253) hp 100%  attacks 85 casts 17 dodges 12  accepted 101 refused 0  corrections 0
+[  76.53s] Bruno at (1417, 159, 2251) hp 100%  attacks 85 casts 15 dodges 26  accepted 100 refused 0  corrections 0
+[  89.73s] Bruno: BOSS PHASE 2/3: The Mossbound Warden
+[  89.73s] Alyssa: BOSS PHASE 2/3: The Mossbound Warden
+[  91.53s] Alyssa at (1417, 159, 2254) hp 100%  attacks 123 casts 17 dodges 13  accepted 133 refused 5  corrections 0
+[  91.53s] Bruno at (1415, 159, 2254) hp 100%  attacks 120 casts 15 dodges 35  accepted 131 refused 4  corrections 0
+[ 106.53s] Alyssa at (1418, 159, 2256) hp 100%  attacks 155 casts 17 dodges 23  accepted 164 refused 7  corrections 0
+[ 106.53s] Bruno at (1415, 158, 2247) hp 64%  attacks 151 casts 16 dodges 49  accepted 153 refused 14  corrections 0
+[ 121.53s] Alyssa at (1413, 159, 2254) hp 100%  attacks 189 casts 17 dodges 29  accepted 197 refused 7  corrections 0
+[ 121.53s] Bruno at (1415, 159, 2258) hp 76%  attacks 181 casts 16 dodges 65  accepted 183 refused 14  corrections 0
+[ 136.53s] Alyssa at (1416, 159, 2254) hp 100%  attacks 225 casts 17 dodges 32  accepted 234 refused 7  corrections 0
+[ 136.53s] Bruno at (1412, 159, 2255) hp 72%  attacks 212 casts 17 dodges 79  accepted 213 refused 16  corrections 0
+[ 144.20s] Bruno: BOSS PHASE 3/3: The Mossbound Warden
+[ 144.20s] Alyssa: BOSS PHASE 3/3: The Mossbound Warden
+[ 151.53s] Bruno at (1386, 161, 2270) hp 56%  attacks 230 casts 17 dodges 87  accepted 228 refused 19  corrections 0
+[ 151.53s] Alyssa at (1399, 160, 2262) hp 75%  attacks 254 casts 19 dodges 37  accepted 258 refused 14  corrections 0
+[ 166.53s] Bruno at (1396, 160, 2259) hp 100%  attacks 240 casts 21 dodges 101  accepted 241 refused 20  corrections 0
+[ 166.53s] Alyssa at (1402, 160, 2261) hp 75%  attacks 291 casts 19 dodges 39  accepted 295 refused 14  corrections 0
+[ 181.53s] Bruno at (1384, 162, 2271) hp 19%  attacks 252 casts 21 dodges 109  accepted 248 refused 25  corrections 0
+[ 181.53s] Alyssa at (1399, 160, 2262) hp 75%  attacks 324 casts 19 dodges 42  accepted 328 refused 14  corrections 0
+[ 187.70s] Bruno was downed (respawn in 3000 ms)
+[ 196.53s] Bruno at (1880, 83, 2268) hp 100%  attacks 252 casts 21 dodges 113  accepted 248 refused 25  corrections 3
+[ 196.53s] Alyssa at (1396, 160, 2262) hp 100%  attacks 359 casts 19 dodges 50  accepted 362 refused 14  corrections 0
+[ 211.53s] Bruno at (1804, 90, 2268) hp 100%  attacks 252 casts 21 dodges 113  accepted 248 refused 25  corrections 3
+[ 211.53s] Alyssa at (1398, 159, 2246) hp 51%  attacks 386 casts 21 dodges 65  accepted 384 refused 21  corrections 0
+[ 226.53s] Bruno at (1729, 103, 2269) hp 100%  attacks 252 casts 21 dodges 113  accepted 248 refused 25  corrections 3
+[ 226.53s] Alyssa at (1403, 159, 2252) hp 35%  attacks 407 casts 26 dodges 81  accepted 410 refused 22  corrections 0
+[ 241.53s] Alyssa at (1401, 160, 2255) hp 63%  attacks 439 casts 26 dodges 96  accepted 436 refused 27  corrections 0
+[ 241.53s] Bruno at (1653, 116, 2269) hp 100%  attacks 252 casts 21 dodges 113  accepted 248 refused 25  corrections 3
+[ 243.16s] Alyssa killed The Mossbound Warden (+660 xp)
+[ 243.16s] Alyssa killed enemy 8 (+31 xp)
+[ 243.16s] Alyssa killed enemy 9 (+31 xp)
+[ 243.16s] Alyssa killed enemy 10 (+31 xp)
+[ 243.16s] Alyssa killed enemy 11 (+31 xp)
+[ 243.16s] Alyssa: BOSS DEFEATED: The Mossbound Warden after a 201 s fight
+[ 243.50s] BOSS GROUP CLEARED 203 s after the pull
+[ 243.50s] RESULT camp cleared: true (19.0 s)  boss defeated: true (fight 201 s, 3 phases)  downs 1  claims accepted 689 refused 52
+[ 243.50s] PASS: a party of two cleared a camp and a boss against the zone process

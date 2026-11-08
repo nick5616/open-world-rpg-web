@@ -650,7 +650,7 @@ bosses:
 affixes:
   # Spec 8 elites: an element and an affix. Wind-ups never leave 300-600 ms.
   fast: {id: 1, hpMult: 7, damageMult: 1.4, speedMult: 1.4, cooldownMult: 0.75}
-  shielded: {id: 2, hpMult: 4, damageMult: 1.4, shieldPct: 0.4, shieldRegenMs: 6000}
+  shielded: {id: 2, hpMult: 4.5, damageMult: 1.4, shieldPct: 0.4, shieldRegenMs: 6000}
   splitting: {id: 3, hpMult: 6, damageMult: 1.3, splitInto: 2, splitHpPct: 0.35}
 
 enemyNames:

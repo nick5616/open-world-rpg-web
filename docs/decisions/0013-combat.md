@@ -68,7 +68,7 @@ player to hurt a player.
    new message, no change to rings or the byte budget (decision 0005).
 
 8. **Fight pacing is designed, not tuned by HP alone.** Commons have 80-94
-   health (2-5 hits for every weapon), a 500 ms "noticed you" beat, hit-and-
+   health (2-5 hits for every weapon), a 600 ms "noticed you" beat, hit-and-
    run repositioning after attacks, and hop out of reach after two quick
    hits; at most two enemies wind up on the same player. Measured with the
    bot brain in simulation (sword/spear/bow vs every common: 3-10 s).
@@ -83,7 +83,7 @@ player to hurt a player.
 10. **Party scaling**: health x (1 + 0.75 (n - 1)), damage x (1 + 0.1 (n - 1)),
     n = players engaged (near the group when the fight starts or joining
     it), capped at 8, never shrinking mid-fight. Measured: the Warden takes
-    183 / 164 / 161 s for 1 / 2 / 4 bots (simulation).
+    175 / 182 / 165 s for 1 / 2 / 4 bots (simulation) and 201 s for the networked party of two.
 
 11. **Persistence without a migration.** `character_progress.skill_tree`
     holds `{"v":1, loadouts, active, weaponSkills}`, `spells_known` the

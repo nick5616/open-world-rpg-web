@@ -1,4 +1,4 @@
-# WP13 PvP immunity (spec 2 and 8: no attack or spell can damage a player) (2026-11-08T19:01:38.949Z)
+# WP13 PvP immunity (spec 2 and 8: no attack or spell can damage a player) (2026-11-08T19:41:15.710Z)
 
 ## 1) combat package: every weapon move and every spell started and claimed at a player; structural check that only enemies call hurtPlayer
 
@@ -8,12 +8,12 @@
 === RUN   TestOnlyEnemiesCallHurtPlayer
 --- PASS: TestOnlyEnemiesCallHurtPlayer (0.00s)
 PASS
-ok  	lodestone/server/zone/internal/combat	0.872s
+ok  	lodestone/server/zone/internal/combat	0.828s
 
 ## 2) the real session path (WebSocket, zone tick): every move and spell id claimed on player B is refused with code 1 and B's SelfState health stays full; the same sword swing claimed on a brute is accepted
 
 === RUN   TestZonePvPImmunityAndEnemyHits
     combat_test.go:94: 142 claims on a player refused (reason 1)
---- PASS: TestZonePvPImmunityAndEnemyHits (15.38s)
+--- PASS: TestZonePvPImmunityAndEnemyHits (15.44s)
 PASS
-ok  	lodestone/server/zone/internal/game	16.533s
+ok  	lodestone/server/zone/internal/game	16.282s
