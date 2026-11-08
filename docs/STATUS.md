@@ -675,6 +675,11 @@ Evidence:
   - 86/86 failovers, 363 handoffs.
   - **0 prediction mismatches introduced by a switch** over 1,448 post-switch checks (every post-switch mismatch already existed against the old zone: netsim TCP-retransmit stalls).
   - Zone tick p99 2.3-3.5 ms.
+- **The same 200-bot thailand + kill run after merging WP13/WP20** (enemies and townsfolk live; `docs/evidence/wp16-soak-200-3z-thailand-failover-postmerge.txt|json`): PASS.
+  - 200/200 connected; 88/88 failovers (p50 4.8 s); 363 handoffs.
+  - 0 owned twice, 0 duplicated grants.
+  - 1 prediction mismatch introduced by a switch (of 1,446 post-switch checks).
+  - Zone tick p99 3.7-6.6 ms.
 - First 1000-bot run (`wp16-soak-1000-3z-first-run.txt`, 3 zones, every bot a crosser) found three bugs, all fixed:
   - the ownership sampler counted in-flight handoffs as duplicates;
   - re-admitted standby sessions used a fake ack baseline;
