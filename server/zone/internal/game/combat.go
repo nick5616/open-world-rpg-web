@@ -148,6 +148,40 @@ func devPlacement(w *combat.World, log func(string, ...any)) {
 		g := w.TestBoss(movement.Vec3{X: x, Z: z}, f[3], lvl, el)
 		log("dev boss", "group", g.ID, "x", x, "z", z, "boss", f[3])
 	}
+	if spec := strings.TrimSpace(os.Getenv("LODESTONE_ZONE_DEBUG_HORDE")); spec != "" {
+		devHorde(w, spec, log)
+	}
+}
+
+// devHorde reads LODESTONE_ZONE_DEBUG_HORDE="cx,cz,radius,enemies[,level]"
+// (WP19, spec 14 soak scenario 1: "300 bots in one region plus 2,000 awake
+// enemies"): camps of four mixed commons spread evenly over the disc
+// (sunflower spiral), each nudged onto walkable dry ground. They spawn and
+// wake by the ordinary rules, so they are awake exactly while players are
+// near.
+func devHorde(w *combat.World, spec string, log func(string, ...any)) {
+	f := strings.Split(spec, ",")
+	if len(f) < 4 {
+		log("dev horde: want cx,cz,radius,enemies[,level]", "spec", spec)
+		return
+	}
+	cx, _ := strconv.ParseFloat(f[0], 64)
+	cz, _ := strconv.ParseFloat(f[1], 64)
+	radius, _ := strconv.ParseFloat(f[2], 64)
+	n, _ := strconv.Atoi(f[3])
+	lvl := 3
+	if len(f) >= 5 {
+		lvl, _ = strconv.Atoi(f[4])
+	}
+	comps := [][]string{{"boar", "boar", "wolf", "wolf"}, {"cutthroat", "archer", "cutthroat", "brute"}, {"ram", "stalker", "scuttler", "lurker"}, {"ember_imp", "mud_golem", "shade", "void_mite"}}
+	groups := n / 4
+	for g := 0; g < groups; g++ {
+		r := radius * math.Sqrt((float64(g)+0.5)/float64(groups))
+		a := float64(g) * 2.399963229728653 // golden angle
+		x, z := w.WalkableNear(cx+r*math.Cos(a), cz+r*math.Sin(a), 24, 4)
+		w.TestGroup(movement.Vec3{X: x, Z: z}, comps[g%len(comps)], lvl, "")
+	}
+	log("dev horde", "groups", groups, "enemies", groups*4, "cx", cx, "cz", cz, "radius", radius, "level", lvl)
 }
 
 // loadCombat runs on the connection goroutine before join (like
