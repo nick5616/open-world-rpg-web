@@ -1,0 +1,28 @@
+# WP01 golden determinism run
+date: 2026-11-08T14:28:03.765Z
+machine: 11th Gen Intel(R) Core(TM) i7-11700K @ 3.60GHz x16, win32 10.0.22621, node v20.18.0
+wasm: worldgen-ad2e60caf6bcf5be.wasm (354330 B, genVersion 1, abi 1, rustc 1.99.1 (58cf8f9c3 2026-10-13))
+
+## build: PASS
+worldgen.wasm 354330 bytes, sha256 ad2e60caf6bcf5be, genVersion 1, abi 1
+
+## node: PASS
+[golden:node] 5 worlds, 288 chunks, 320 collision points, 0 failures; atlas 446/457/426/526/304 ms; lod0 chunk mean 3.17 p95 4.59 max 6.69 ms
+[golden:node] 10000 collision_height queries in 19.4 ms (1.9 us each)
+[golden:node] atlas 312224 B raw, 123699 B gzipped (budget 2097152)
+Tests  4 passed (4)
+
+## chromium: PASS
+[golden:chromium] Chromium 131.0.6778.33 worker: 5 worlds, 288 chunks, 320 collision points, 0 failures
+[golden:chromium] detail chunk (LOD 0, 200 chunks, worker, crossOriginIsolated=true): mean 2.81 ms, p50 2.63, p95 4.65, max 5.89 (budget 8 ms); atlas 456 ms; 84 scatter/chunk
+
+## go: PASS
+[golden:go] wazero compiler: 5 worlds, 288 chunks, 320 collision points, 0 failures; lod0 chunk mean 4.40 ms p95 7.06 ms
+--- PASS: TestGolden (4.83s)
+[golden:go] wazero interpreter: 1 world, 12 chunks, 64 collision points, 0 failures
+--- PASS: TestGoldenInterpreter (85.50s)
+
+## native: PASS
+[golden:native] 288 chunks match
+
+RESULT: PASS (all hosts agree)
