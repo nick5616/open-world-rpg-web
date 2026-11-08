@@ -296,6 +296,8 @@ crowd), cave hook (`Player.Cave`, WP09), parties added by the social service.
 Full message every 2 s, deltas only on change. `LODESTONE_ZONE_EARSHOT=0` (or
 `LODESTONE_ZONE_NO_REDIS=1`) turns it off. Metrics `zone_earshot_*`.
 
+G3 integration fix: the hand-off now fills `Player.Cave` (cave system + 1 from WP09's per-tick `caveSys`, as interest clipping uses) and `Player.Mouth` for someone in open air within 48 m of a system's opening; before, the cave rule never fired (a cave dweller was "heard" by the meadow 30 m above). Test `TestEarshotCarriesCaveSystem`, `TestCaveMouthRule`.
+
 The client's `InputFlag.speaking` is mirrored into the entity's
 `Activity.speaking` (never for local profiles, `Entity.ListenOnly`).
 

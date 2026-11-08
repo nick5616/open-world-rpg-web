@@ -79,7 +79,10 @@ export function chooseMode(distance: number | null, isPartyMember: boolean): Voi
  * muffle someone). Spec 10 asks for a wasm raycast; @lodestone/worldgen has
  * one but the client does not load the wasm yet (WP05), so this uses the
  * GroundQuery every system already shares, which is exact for heightfield
- * terrain. Caves (WP09) will need the real raycast.
+ * terrain. Underground the surface is above both heads, so a sample below it
+ * counts only when it is not open cave air (GroundQuery.caveAir, WP09's cave
+ * density): two people in the same tunnel are not muffled, rock between them
+ * still is (G3).
  *
  * Samples every 2 m (at most 32), skipping the first and last metre, which
  * are the speakers' own feet.
@@ -97,7 +100,7 @@ export function terrainBetween(ground: GroundQuery, a: Vec3, b: Vec3, clearance 
     const x = a.x + dx * t;
     const z = a.z + dz * t;
     const lineY = a.y + dy * t;
-    if (ground.heightAt(x, z) > lineY - clearance) return true;
+    if (ground.heightAt(x, z) > lineY - clearance && !(ground.caveAir?.(x, lineY, z) ?? false)) return true;
   }
   return false;
 }

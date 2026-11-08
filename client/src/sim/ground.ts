@@ -24,6 +24,13 @@ export interface GroundQuery {
   atLevel?(y: number): GroundQuery;
   /** Caves (WP09): push a player (feet at x, y, z) out of walls and ceilings; writes into out. Go twin: movement.Collider. */
   collide?(x: number, y: number, z: number, out: CollideResult): CollideResult;
+  /**
+   * Caves (WP09), not used by movement: is (x, y, z) open cave air (below the
+   * surface but not inside rock)? Voice occlusion (WP11) asks it so the
+   * terrain overhead doesn't muffle two people talking in a cave. Only
+   * already-loaded cave cells answer (no synchronous builds); unknown is false.
+   */
+  caveAir?(x: number, y: number, z: number): boolean;
 }
 
 /** Result of GroundQuery.collide: pushed feet position, horizontal push, ceiling hit. */
