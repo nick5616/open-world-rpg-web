@@ -375,7 +375,7 @@ func (s *Server) fillGap(sess *session, next uint32, now time.Time) {
 			s.m.framesDropped.Add(1)
 			continue
 		}
-		e.applyFrame(f, s.cfg.Ground)
+		e.applyFrame(f, s.cfg.Ground, s.env)
 		s.m.framesSynthesized.Add(1)
 	}
 }
@@ -410,10 +410,14 @@ func (s *Server) applyFrames(sess *session, now time.Time) {
 			s.m.framesDropped.Add(1)
 			continue
 		}
-		if !e.applyFrame(f, s.cfg.Ground) {
+		if !e.applyFrame(f, s.cfg.Ground, s.env) {
 			s.m.speedViolations.Add(1)
 		}
 		s.m.frames.Add(1)
+	}
+	if e.drownedEvent {
+		e.drownedEvent = false
+		s.sendDrowned(sess)
 	}
 	if i >= len(fr) {
 		sess.gapSince = 0

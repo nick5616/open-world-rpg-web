@@ -7,7 +7,9 @@ import { useAppStore, type Screen } from './stores/appStore';
 import { useDebugStore, type TeleportTarget } from './stores/debugStore';
 import { useQualityStore, type QualitySetting } from './stores/qualityStore';
 import { localPlayer, netStats, worldClock } from './state/live';
-import { netDebug } from './net/netStore';
+import { netDebug, netRuntime, useNetStore } from './net/netStore';
+import { divergenceProbe } from './sim/dev/divergenceProbe';
+import type { ReadySession } from './account/types';
 
 export function installDevHandle(): void {
   const handle = {
@@ -26,6 +28,30 @@ export function installDevHandle(): void {
       worldClock.timeOfDayS = s;
     },
     setQuality: (q: QualitySetting) => useQualityStore.getState().setSetting(q),
+    /**
+     * WP10 headless runs: connect straight to a zone with a dev ticket (no
+     * account/director round trip). Fields not given are stubbed; social is
+     * pointed at a dead port and just keeps backing off.
+     */
+    /** WP10: per-mode prediction-vs-server divergence of the live session (installs on first call). */
+    probe: () => (netRuntime.session ? JSON.parse(JSON.stringify(divergenceProbe(netRuntime.session))) : null),
+    connectZone: (r: Pick<ReadySession, 'ticket' | 'zoneEndpoint' | 'zoneId' | 'worldId'> & { name?: string }) => {
+      const ready: ReadySession = {
+        ticket: r.ticket,
+        socialTicket: '',
+        ticketExpiresAt: Date.now() + 60_000,
+        zoneId: r.zoneId,
+        zoneEndpoint: r.zoneEndpoint,
+        socialEndpoint: 'ws://127.0.0.1:9/ws',
+        worldId: r.worldId,
+        character: { id: 'dev', name: r.name ?? 'Dev', level: 1 } as ReadySession['character'],
+        isLocalProfile: false,
+        session: '',
+        refreshTickets: () => Promise.reject(new Error('dev connect: no director')),
+      };
+      useNetStore.getState().setReady(ready);
+      useAppStore.getState().setScreen('play');
+    },
   };
   (window as unknown as { __lodestone: typeof handle }).__lodestone = handle;
 }

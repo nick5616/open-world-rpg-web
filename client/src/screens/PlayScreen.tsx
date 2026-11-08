@@ -6,6 +6,7 @@ import { WorldCanvas } from '../world/WorldCanvas';
 import { DebugHud } from '../hud/DebugHud';
 import { DebugPanel } from '../hud/DebugPanel';
 import { Crosshair, LockHint } from '../hud/Overlays';
+import { StaminaWheel } from '../hud/StaminaWheel';
 import { useDebugHotkeys } from '../hud/useDebugHotkeys';
 import { useAppStore } from '../stores/appStore';
 import { NetPlay, useOnlineSession } from '../net/NetPlay';
@@ -34,6 +35,7 @@ export default function PlayScreen() {
     <>
       {online ? <NetPlay ready={ready} /> : <WorldCanvas />}
       <Crosshair />
+      <StaminaWheel />
       <LockHint />
       {DEBUG && <DebugLayer />}
       <SocialOverlay />

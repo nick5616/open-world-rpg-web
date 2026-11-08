@@ -17,6 +17,7 @@ import { localPlayer, netStats } from '../state/live';
 import { startSocial, stopSocial } from '../social';
 import { netRuntime, useNetStore } from './netStore';
 import { RemotePlayers } from './RemotePlayers';
+import { envAt } from '../sim/stepEnv';
 import { ZoneSession, type SessionEnd } from './zoneSession';
 // WP12: exploration Events, map actions, re-issued local save blobs.
 import { attachExploration } from '../ui/map/zoneLink';
@@ -129,10 +130,13 @@ export function NetPlay({ ready }: { ready: ReadySession }) {
       spawn: { x: w.x / 100, y: w.y / 100, z: w.z / 100 },
       online: true,
       onStep: (r) => {
-        if (!r.fly) session.pushStep(r.seq, r.input, r.state);
+        if (!r.fly) session.pushStep(r.seq, r.input, r.state, r.env);
       },
       afterFrame: () => session.flushInput(),
       takeCorrection: () => session.prediction.takeCorrection(),
+      // WP10: rain/updrafts from the zone's seed at the synced server time,
+      // the same inputs the zone steps with.
+      env: () => envAt(w.seed, session.clock.serverNow()),
     };
   }, [session, phase]);
 

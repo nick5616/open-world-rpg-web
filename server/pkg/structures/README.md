@@ -9,7 +9,7 @@ stay bit-identical to it.
 
 | File | What |
 | --- | --- |
-| `overlay.go` | `Structure` interface, `Overlay` (64 m grid index, read-only after build), `Ground` (a `movement.Ground`: base + overlay), `StructureAt`, `NormalAt` |
+| `overlay.go` | `Structure` interface, `Overlay` (64 m grid index, read-only after build), `Ground` (a `movement.Ground`: base + overlay; `WaterAt` passes the base's water through for WP10 swimming), `StructureAt`, `NormalAt` |
 | `radial.go` | `Radial`: solid of revolution with a piecewise-linear profile (towers) |
 | `tower.go` | Tower constants and `NewTower` (samples the plain terrain at fixed points) |
 | `sites.go` | Go reader of the atlas SITES / REGIONS / NAMES sections (`ParseAtlas`), `Towers(atlas, terrain)` |

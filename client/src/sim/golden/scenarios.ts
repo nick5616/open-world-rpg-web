@@ -3,7 +3,7 @@
 // the Go replay can reproduce them in two lines.
 
 import { FlatGround, PlaneGround, type GroundQuery } from '../ground';
-import { stepMovement, STEP_DT, type MoveState } from '../movement';
+import { newMoveState, stepMovement, STEP_DT, type MoveState } from '../movement';
 import { goldenScript, type ScriptFrame } from './script';
 
 export type GroundSpec = { kind: 'flat'; height: number } | { kind: 'plane'; base: number; sx: number; sz: number };
@@ -46,7 +46,7 @@ export function toRow(s: MoveState): StateRow {
 
 export function initialState(sc: Scenario): MoveState {
   const ground = makeGround(sc.ground);
-  return { pos: { x: sc.start.x, y: ground.heightAt(sc.start.x, sc.start.z), z: sc.start.z }, vel: { x: 0, y: 0, z: 0 }, airJumps: 0 };
+  return newMoveState({ x: sc.start.x, y: ground.heightAt(sc.start.x, sc.start.z), z: sc.start.z });
 }
 
 export function runScenario(sc: Scenario, frames: ScriptFrame[] = goldenScript()): GoldenFile {

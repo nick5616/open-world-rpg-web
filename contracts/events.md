@@ -22,6 +22,7 @@ for your package; document each kind's use of `entityId`, `targetId`, `value`,
 | --- | --- | --- |
 | 1 | `notice` | `data` = UTF-8 text shown in the system channel |
 | 2 | `teleport` | `entityId` = who, `x/y/z` = destination (cm); clients cut interpolation |
+| 100 | `drowned` | WP10. Sent reliably to the player whose movement step drowned them and respawned them at the shore (the step does both, identically on client and server, so this is only for UI: a fade, a notice). `entityId` = who, `x/y/z` = the shore point (cm), `value` = 0 |
 | 600 | `tower_unlocked` | WP12. You stood on a tower's top (zone-validated): `entityId` = you, `targetId` = atlas site index of the tower, `value` = region index now revealed, `x/y/z` = top centre (cm), `data` = UTF-8 region name. Granted once per character. |
 | 601 | `waypoint_activated` | WP12. You touched a waypoint stone for the first time: `targetId` = site index, `x/y/z` = stone (cm), `data` = name (a settlement waypoint carries its settlement's name). |
 | 602 | `discovery` | WP12. You entered a POI's discovery radius for the first time: `targetId` = site index, `value` = XP granted, `x/y/z` = site (cm), `data` = name (may be empty). |

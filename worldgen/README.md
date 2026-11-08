@@ -60,6 +60,7 @@ below. `ptr`/`len` are i32 offsets into linear memory.
 | `atlas_check(atlas_ptr)` | `(i32) -> i32` | 1 if the buffer is a valid atlas of this format, else 0 + error. Use after loading cached bytes. |
 | `chunk_build(atlas_ptr, cx, cz, lod)` | `(i32, i32, i32, i32) -> i32` | Pointer to a chunk buffer in scratch (layout below); length from `result_len()`; 0 on error |
 | `collision_height(atlas_ptr, x, z)` | `(i32, f64, f64) -> f64` | Ground height (see "Collision"); -1e9 on an invalid atlas or non-finite input |
+| `water_height(atlas_ptr, x, z)` | `(i32, f64, f64) -> f64` | WP10: water surface height, the same triangle mesh as `collision_height` over the f32 water lattice the chunks carry (so it equals interpolating LOD 0 chunk water); sea level where no lake or river covers the point (under dry land); -1e9 on an invalid atlas or non-finite input. Added after genVersion 1 shipped: outputs and golden hashes are unchanged |
 | `ground_normal(atlas_ptr, x, z, out_ptr)` | `(i32, f64, f64, i32) -> f64` | Writes the unit normal as 3 x f64 LE at `out_ptr` (24 bytes); returns slope in degrees, -1 on error |
 | `raycast(atlas_ptr, ox, oy, oz, dx, dy, dz, max_dist)` | `(i32, f64 x7) -> f64` | Distance along the normalized direction to the first surface hit, or -1 (no hit within min(max_dist, 1024 m)) |
 | `hash_buffer(ptr, len)` | `(i32, i32) -> i64` | FNV-1a 64 of the bytes (JS receives a signed BigInt: use `BigInt.asUintN(64, v)`) |

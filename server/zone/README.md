@@ -212,12 +212,9 @@ the ground, so tests and the flat fallback need nothing new in `Config`).
   settlement. Dev `?spawn=x,z` is put on the ground.
 - **Validation.** Besides WP03's horizontal bound, `verticalOK` checks each
   step rises at most one jump step (or onto the ground it snapped to) and
-  never ends below the ground; both hold exactly for `movement.Step`, so this
-  only trips on bugs or unsimulated modes (WP10 must extend it for
-  climb/glide).
-- **Not yet:** slope limits (`WALKABLE_SLOPE_DEG`, `MAX_STEP_UP_M`) are not
-  applied on either side; the client and server stay identical, and WP10
-  adds them to both together with climb/slide.
+  never ends below the ground. WP10 made both per mode (see "Traversal").
+- Slope limits (`WALKABLE_SLOPE_DEG`, `MAX_STEP_UP_M`) are applied in the
+  shared step on both sides since WP10.
 - **For client netcode (WP06):** Welcome's position is cm-quantized while the
   server stands exactly on the ground; a client should take y from its own
   terrain (`collisionHeight`) at the spawn x/z, as the bots do, or its first
@@ -227,6 +224,38 @@ Tests: `internal/game/terrain_test.go` (prediction on terrain to the cm,
 spawns, validation), `zone_terrain_integration_test.go` (zone binary on
 terrain vs a client predicting with its own worldhost; refusal of a wrong
 genVersion). Both skip without the wasm unless `LODESTONE_REQUIRE_WASM=1`.
+
+## Traversal (WP10)
+
+The zone steps every frame with `movement.StepFrameEnv` (climb, glide, swim,
+slopes, stamina; algorithm in `client/src/sim/README.md`). Zone side, in
+`internal/game/traversal.go`:
+
+- **Env per tick** (`stepEnv`): rain from `server/pkg/weather` at the tick's
+  server time and the seed, unless `LODESTONE_ZONE_DEBUG_RAIN=1|0`; updrafts
+  from `Config.Updraft` (`LODESTONE_ZONE_DEBUG_UPDRAFTS="x,z,r,top,lift;..."`
+  debug columns until WP15 feeds the hook). The view extrapolation uses the
+  same env.
+- **Validation per mode** (spec 9: "validated against max speed for the
+  player's current mode; violations snap back"): `horizontalOK` uses
+  `movement.MaxHorizontalSpeed` (walk/air 25.6 m/s; climb <= lunge speed;
+  glide and swim <= max(their speed, previous speed); a mode-changing step
+  gets the larger of both bounds), `verticalOK` allows a rise of one step at
+  the fastest legal upward speed (jump, carried vy, strongest updraft minus
+  sink, lunge) or onto the ground / the swimmer's float level, never below
+  ground; a drowning respawn (drowned flag cleared) must land on dry ground at
+  rest. Every terrain golden passes it frame by frame
+  (`TestValidationPassesEveryLegitMode`); `TestPerModeValidationRejects`
+  shows violations still snap back.
+- **SelfState** carries the whole movement state (`movement.SelfFields`:
+  mode, exact stamina in `moveExt`, timers, flags), so clients replay
+  exactly; **Activity** bits (climbing, gliding, swimming, airborne) come from
+  the step's mode (`movement.Activity`).
+- **Drowning**: the step respawns the player at the nearest shore by itself;
+  the zone sends Event 100 `drowned` (contracts/events.md) and counts
+  `zone_drowned_total`.
+- Join starts players with a full wheel (`movement.NewState`); stamina is not
+  persisted (a reconnect refills it).
 
 ## Exploration (WP12)
 

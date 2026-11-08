@@ -64,8 +64,9 @@ func TestZoneProcessTowerClimbAndFastTravel(t *testing.T) {
 		"LODESTONE_WORLD_SEED="+strconv.Itoa(seed),
 		"LODESTONE_GEN_VERSION=dev",
 		"LODESTONE_WORLDGEN_WASM="+wasmPath,
-		"LODESTONE_ZONE_EXIT_AFTER=20s",
+		"LODESTONE_ZONE_EXIT_AFTER=60s", // WP10: climbing with a rest on the ledge takes ~25 s of input
 		"LODESTONE_ZONE_NO_DB=1",
+		"LODESTONE_ZONE_DEBUG_RAIN=0", // WP10: the prediction below assumes dry weather
 		"LODESTONE_ZONE_NO_REDIS=1",
 		"LODESTONE_ZONE_WT_ADDR=off",
 	)
@@ -85,8 +86,19 @@ func TestZoneProcessTowerClimbAndFastTravel(t *testing.T) {
 		t.Fatalf("zone should build the same %d towers", overlay.Len())
 	}
 
-	// Spawn 3 m outside the tower's footprint, due west of its axis.
-	sx, sz := tw.CX-tw.MaxR-3, tw.CZ
+	// Spawn 3 m outside the tower's footprint on its uphill side (WP10: the
+	// walls are climbed with stamina, and on a slope the downhill face is
+	// taller than one wheel climbs; the uphill face plus a rest on the ledge
+	// is the intended route).
+	best, ang := math.Inf(-1), 0.0
+	for k := 0; k < 16; k++ {
+		a := float64(k) * math.Pi / 8
+		if h := ground.HeightAt(tw.CX+math.Cos(a)*(tw.MaxR+3), tw.CZ+math.Sin(a)*(tw.MaxR+3)); h > best {
+			best, ang = h, a
+		}
+	}
+	sx, sz := tw.CX+math.Cos(ang)*(tw.MaxR+3), tw.CZ+math.Sin(ang)*(tw.MaxR+3)
+	dx, dz := -math.Cos(ang), -math.Sin(ang) // toward the axis
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	c, err := transport.DialWebSocket(ctx, fmt.Sprintf("ws://127.0.0.1:%d/ws?spawn=%s,%s", port, strconv.FormatFloat(sx, 'f', -1, 64), strconv.FormatFloat(sz, 'f', -1, 64)))
 	cancel()
@@ -135,21 +147,28 @@ func TestZoneProcessTowerClimbAndFastTravel(t *testing.T) {
 		t.Fatalf("welcome y %d cm, overlay ground %v", w.Y, g0)
 	}
 
-	// Walk east (+x) through the tower: up the lower wall, across the
-	// ledge, up the upper wall, onto the top. Predict every step locally.
-	east := -math.Pi / 2
-	sim := movement.State{Pos: movement.Vec3{X: sx, Y: g0, Z: sz}}
-	steps := int(math.Ceil((tw.MaxR+3)/(4.8/60))) + 30 // walking speed ~4.9 m/s
+	// Walk east (+x) into the tower and climb it the WP10 way: up the lower
+	// wall with stamina, rest on the ledge until the wheel is full, up the
+	// upper wall, mantle onto the top, walk to the axis. Predict every step
+	// locally (movement.PlanClimb; the zone runs with rain off).
+	face := math.Atan2(-dx, -dz) // forward = (-sin yaw, -cos yaw) = (dx, dz)
+	sim := movement.NewState(movement.Vec3{X: sx, Y: g0, Z: sz})
+	faceYaw := proto.U16ToYaw(proto.YawToU16(face)) // plan with the angle the zone decodes
+	plan, _ := movement.PlanClimb(sim, faceYaw, ground, func(s movement.State) bool {
+		return s.Pos.Y >= tw.TopY-1e-6 && (s.Pos.X-tw.CX)*dx+(s.Pos.Z-tw.CZ)*dz >= 0
+	}, 5000)
 	var frames []proto.InputFrame
 	maxY := sim.Pos.Y
-	for seq := uint32(1); seq <= uint32(steps); seq++ {
-		f := proto.InputFrame{Seq: seq, Flags: proto.InputFlagForward, Yaw: proto.YawToU16(east)}
+	climbed := false
+	for i, fl := range plan {
+		f := proto.InputFrame{Seq: uint32(i + 1), Flags: fl, Yaw: proto.YawToU16(face)}
 		frames = append(frames, f)
 		sim = movement.StepFrame(sim, f, ground)
 		maxY = math.Max(maxY, sim.Pos.Y)
-		if sim.Pos.X >= tw.CX { // stop on the top, at the axis
-			break
-		}
+		climbed = climbed || sim.Mode == movement.ModeClimb
+	}
+	if !climbed {
+		t.Fatal("the tower walls were not climbed (WP10)")
 	}
 	total := uint32(len(frames))
 	go func() {
@@ -158,7 +177,7 @@ func TestZoneProcessTowerClimbAndFastTravel(t *testing.T) {
 			time.Sleep(33 * time.Millisecond)
 		}
 	}()
-	deadline := time.Now().Add(15 * time.Second)
+	deadline := time.Now().Add(time.Duration(len(frames))*time.Second/30 + 15*time.Second)
 	for lastAck != total && time.Now().Before(deadline) {
 		recv(time.Second)
 	}

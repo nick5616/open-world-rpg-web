@@ -179,6 +179,15 @@ export class StructureGround implements GroundQuery {
     return t.idx >= 0 && t.h > b ? t.h : b;
   }
 
+  /**
+   * Water is the base ground's (WP10): structures stand on land, and where a
+   * structure top is above the water the swim test (water - ground >= 1.5 m)
+   * fails by itself. Go twin: structures.Ground.WaterAt.
+   */
+  waterAt(x: number, z: number): number {
+    return this.base.waterAt ? this.base.waterAt(x, z) : -Infinity;
+  }
+
   /** Index of the structure forming the ground at (x, z), -1 for terrain. */
   structureAt(x: number, z: number): number {
     const t = this.overlay.top(x, z, this.q);

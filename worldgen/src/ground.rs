@@ -355,6 +355,24 @@ pub fn collision_height(a: &Atlas, x: f64, z: f64) -> f64 {
     tri_interp(h00, h10, h01, h11, x - x0, z - z0)
 }
 
+/// Water surface height at any point (WP10, swimming): the same triangle mesh
+/// as `collision_height`, over the f32 water lattice the chunks carry
+/// (`chunk.water`), so a host can evaluate it from LOD 0 chunk water samples
+/// and get identical bits. Where no lake or river covers a lattice point its
+/// value is sea level (under dry land), exactly as in the chunk buffer; at a
+/// shoreline cell the interpolated surface dips toward sea level, which is
+/// harmless because the water there is shallower than swimming depth.
+pub fn water_height(a: &Atlas, x: f64, z: f64) -> f64 {
+    let x0 = libm::floor(x);
+    let z0 = libm::floor(z);
+    let g = Ground::new(a, x0, z0, x0 + 1.0, z0 + 1.0);
+    let w00 = g.sample(x0, z0).1 as f32 as f64;
+    let w10 = g.sample(x0 + 1.0, z0).1 as f32 as f64;
+    let w01 = g.sample(x0, z0 + 1.0).1 as f32 as f64;
+    let w11 = g.sample(x0 + 1.0, z0 + 1.0).1 as f32 as f64;
+    tri_interp(w00, w10, w01, w11, x - x0, z - z0)
+}
+
 /// Normal of the surface at a point, and its slope in degrees.
 pub fn ground_normal(a: &Atlas, x: f64, z: f64) -> ([f64; 3], f64) {
     let x0 = libm::floor(x);

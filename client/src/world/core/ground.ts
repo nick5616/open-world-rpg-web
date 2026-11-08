@@ -30,6 +30,17 @@ export class WorldGround implements GroundQuery {
     return this.fn(this.atlas.ptr, cx, cz);
   }
 
+  /**
+   * Water surface (WP10: swimming): the wasm water_height, the same function
+   * the zone's worldhost.Terrain.WaterAt answers, so client and zone agree on
+   * where you swim. Clamped like heightAt.
+   */
+  waterAt(x: number, z: number): number {
+    const cx = x < MIN ? MIN : x > MAX ? MAX : x;
+    const cz = z < MIN ? MIN : z > MAX ? MAX : z;
+    return this.wg.waterHeight(this.atlas, cx, cz);
+  }
+
   normalAt(x: number, z: number): { x: number; y: number; z: number } {
     const n = this.wg.groundNormal(this.atlas, x, z).normal;
     return { x: n[0], y: n[1], z: n[2] };

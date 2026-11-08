@@ -56,7 +56,7 @@ export interface Frame {
 }
 
 export const ZERO_SELF: Readonly<FullSelf> = Object.freeze({
-  x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, health: 0, healthMax: 0, stamina: 0, staminaMax: 0, mode: 0, airJumps: 0, activity: 0, flags: 0,
+  x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, health: 0, healthMax: 0, stamina: 0, staminaMax: 0, mode: 0, airJumps: 0, activity: 0, flags: 0, moveExt: 0,
 });
 
 function zeroEnt(id: number): EntState {

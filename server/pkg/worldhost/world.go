@@ -183,6 +183,23 @@ func (w *World) CollisionHeight(x, z float64) float64 {
 	return api.DecodeF64(r)
 }
 
+// WaterHeight is the wasm water_height (WP10): the water surface over the
+// same triangle mesh as CollisionHeight, sea level where no lake or river
+// covers the point (under dry land). NaN only if the instance trapped.
+func (w *World) WaterHeight(x, z float64) float64 {
+	w.wasmQueries.Add(1)
+	in, err := w.pool.get()
+	if err != nil {
+		return math.NaN()
+	}
+	defer w.pool.put(in)
+	r, err := in.call(in.fn.waterHeight, uint64(in.atlasPtr), api.EncodeF64(x), api.EncodeF64(z))
+	if err != nil {
+		return math.NaN()
+	}
+	return api.DecodeF64(r)
+}
+
 // GroundNormal returns the unit normal of the surface triangle at (x, z) and
 // its slope in degrees.
 func (w *World) GroundNormal(x, z float64) (n [3]float64, slopeDeg float64, err error) {

@@ -128,7 +128,7 @@ func TestZoneProcessEndToEnd(t *testing.T) {
 	// Walk forward for one second: 30 packets of 2 new frames + 1 repeat,
 	// acking snapshots as they arrive.
 	var dec snapshot.Decoder
-	sim := movement.State{Pos: movement.Vec3{X: 1000, Z: 1000}}
+	sim := movement.NewState(movement.Vec3{X: 1000, Z: 1000})
 	var frames []proto.InputFrame
 	seq := uint32(0)
 	snaps := 0
