@@ -768,3 +768,21 @@ export class CaveGroundCore {
     return { ...this.collide(x, y, z, this.res) };
   }
 }
+
+/** A cell source that builds cave cells on demand through the wasm (cached). */
+export function wasmCellSource(wg: Worldgen, atlas: AtlasHandle): CaveCellSource {
+  const cells = new Map<number, CaveCell>();
+  return {
+    cell(cx, cy, cz) {
+      if (!caveCellValid(cx, cy, cz)) return undefined;
+      const k = caveCellKey(cx, cy, cz);
+      let c = cells.get(k);
+      if (!c) {
+        c = parseCaveCell(caveCellBytes(wg, atlas, cx, cy, cz));
+        cells.set(k, c);
+      }
+      return c;
+    },
+  };
+}
+

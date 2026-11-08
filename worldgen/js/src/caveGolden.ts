@@ -3,7 +3,7 @@
 // Shared by Node (vitest) and the Chromium worker through runGolden; the Go
 // host checks the same entries in worldgen/harness/go (hashes) and
 // server/pkg/caves (collision vectors, with the Go port of the queries).
-import { CaveGroundCore, caveCellBytes, caveCellKey, caveCellValid, caveGraphBytes, caveMaskBytes, caveSystemAt, parseCaveCell, parseCaveGraph, type CaveCell, type CaveGraph } from './cave';
+import { CaveGroundCore, caveCellBytes, caveCellKey, caveCellValid, caveGraphBytes, caveMaskBytes, caveSystemAt, parseCaveGraph, wasmCellSource, type CaveGraph } from './cave';
 import { hex64 } from './format';
 import type { AtlasHandle, Worldgen } from './index';
 
@@ -42,23 +42,6 @@ function bits(v: number): string {
 
 /** Quarter-millimeter grid so coordinates survive JSON in every host exactly. */
 const q = (v: number) => Math.round(v * 4096) / 4096;
-
-/** A cell source that builds cave cells on demand through the wasm (cached). */
-export function wasmCellSource(wg: Worldgen, atlas: AtlasHandle): { cell: (cx: number, cy: number, cz: number) => CaveCell | undefined } {
-  const cells = new Map<number, CaveCell>();
-  return {
-    cell(cx, cy, cz) {
-      if (!caveCellValid(cx, cy, cz)) return undefined;
-      const k = caveCellKey(cx, cy, cz);
-      let c = cells.get(k);
-      if (!c) {
-        c = parseCaveCell(caveCellBytes(wg, atlas, cx, cy, cz));
-        cells.set(k, c);
-      }
-      return c;
-    },
-  };
-}
 
 export function checkCaves(wg: Worldgen, atlas: AtlasHandle, label: string, g: GoldenCaves, now: () => number, r: Counters): void {
   const gb = caveGraphBytes(wg, atlas);
