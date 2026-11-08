@@ -102,6 +102,11 @@ func (s *sim) step() {
 	evs, _, _, _, respawn, _ := s.w.Drain()
 	s.events = append(s.events, evs...)
 	for _, o := range evs {
+		if o.Ev.Kind == EvProjectile {
+			for _, sp := range s.players {
+				sp.brain.SeeProjectile(o.Ev)
+			}
+		}
 		if o.Ev.Kind == EvTelegraph {
 			if tg, ok := combatbot.DecodeTelegraph(o.Ev); ok {
 				for _, sp := range s.players {

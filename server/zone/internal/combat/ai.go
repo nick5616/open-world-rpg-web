@@ -158,13 +158,15 @@ func (w *World) think(e *Enemy) {
 			}
 		}
 	case Windup:
-		if tick-e.stateAt >= ticksOf(e.attack.WindupSteps) {
+		if e.attack == nil {
+			e.State, e.stateAt = Chase, tick
+		} else if tick-e.stateAt >= ticksOf(e.attack.WindupSteps) {
 			w.strikeStart(e)
 		}
 	case Striking:
 		w.striking(e)
 	case Recover:
-		if tick-e.stateAt >= ticksOf(e.attack.RecoverySteps) || e.attack == nil {
+		if e.attack == nil || tick-e.stateAt >= ticksOf(e.attack.RecoverySteps) {
 			if e.Def.Behavior == "melee" && e.Boss == nil {
 				e.State, e.stateAt = Reposition, tick
 			} else {
@@ -173,7 +175,17 @@ func (w *World) think(e *Enemy) {
 			e.attack = nil
 		}
 	case Return:
-		if hdist(e.Pos, e.Home) < 2 {
+		// A returning enemy turns on anyone who walks up to it near home,
+		// and never gets stuck on the way (crowded home point, a ledge):
+		// after 6 s it is simply home.
+		if t := w.acquire(e, 1); t != nil && hdist(e.Pos, e.Home) <= e.leash()*0.5 {
+			e.Target = t.ID
+			w.engage(e, t)
+			e.State, e.stateAt = Chase, tick
+			return
+		}
+		if hdist(e.Pos, e.Home) < 2 || tick-e.stateAt > secondsToTicks(6) {
+			e.Pos = w.place(e.Home.X, e.Home.Z, e.Def)
 			e.State, e.stateAt = Idle, tick
 			e.resetScale() // spec 8 "return": a reset enemy is a fresh fight
 			clear(e.threat)
@@ -443,6 +455,10 @@ func (w *World) strikeArea(e *Enemy, a *combatdefs.EnemyAttack, area attackArea,
 // striking runs the active window (charges travel and hit as they go).
 func (w *World) striking(e *Enemy) {
 	a := e.attack
+	if a == nil {
+		e.State, e.stateAt = Chase, w.tick
+		return
+	}
 	tick := w.tick
 	elapsed := tick - e.stateAt
 	active := ticksOf(a.ActiveSteps)

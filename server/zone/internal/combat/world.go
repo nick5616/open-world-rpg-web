@@ -326,6 +326,9 @@ func (w *World) spawnGroup(g *Group) {
 		pos := w.place(g.Anchor.X+r*math.Cos(a), g.Anchor.Z+r*math.Sin(a), def)
 		var af *combatdefs.Affix
 		el := def.Element
+		if def.Family == "boss" && g.Element < combatdefs.Physical {
+			el = g.Element // a boss takes its arena's element ("The Ashen Warden")
+		}
 		if i == elite {
 			af = affix
 			if el == combatdefs.Physical && g.Element < 8 {

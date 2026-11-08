@@ -571,14 +571,14 @@ enemyAttacks:
   harpy_dive: {id: 24, shape: ground, radius: 2.0, windupMs: 450, activeMs: 100, recoveryMs: 600, cooldownMs: 4000, damage: 11, reach: 9, minRange: 3}
   crawler_bite: {id: 25, shape: cone, reach: 2.2, arc: 80, windupMs: 350, activeMs: 100, recoveryMs: 500, cooldownMs: 1700, damage: 10}
   # bosses
-  boss_cleave: {id: 40, shape: cone, reach: 4.5, arc: 120, windupMs: 500, activeMs: 150, recoveryMs: 700, cooldownMs: 3000, damage: 22}
-  boss_slam: {id: 41, shape: ground, radius: 4.0, windupMs: 600, activeMs: 117, recoveryMs: 800, cooldownMs: 5000, damage: 28, reach: 12}
-  boss_shockwave: {id: 42, shape: circle, radius: 7.0, windupMs: 600, activeMs: 150, recoveryMs: 900, cooldownMs: 9000, damage: 20}
-  boss_charge: {id: 43, shape: line, charge: true, reach: 14, width: 2.4, windupMs: 550, activeMs: 500, recoveryMs: 1000, cooldownMs: 8000, damage: 30, minRange: 5}
-  boss_orbs: {id: 44, shape: projectile, speed: 16, radius: 0.8, reach: 30, windupMs: 500, activeMs: 17, recoveryMs: 600, cooldownMs: 3500, damage: 16, volley: 3, spreadDeg: 20}
-  boss_nova: {id: 45, shape: circle, radius: 5.5, windupMs: 600, activeMs: 150, recoveryMs: 800, cooldownMs: 7000, damage: 22}
-  boss_meteor: {id: 46, shape: ground, radius: 3.0, windupMs: 600, activeMs: 117, recoveryMs: 600, cooldownMs: 8000, damage: 26, reach: 30, everyone: true}
-  boss_beam: {id: 47, shape: line, reach: 20, width: 2.0, windupMs: 600, activeMs: 300, recoveryMs: 900, cooldownMs: 9000, damage: 32}
+  boss_cleave: {id: 40, shape: cone, reach: 4.5, arc: 120, windupMs: 500, activeMs: 150, recoveryMs: 700, cooldownMs: 3000, damage: 18}
+  boss_slam: {id: 41, shape: ground, radius: 4.0, windupMs: 600, activeMs: 117, recoveryMs: 800, cooldownMs: 5000, damage: 22, reach: 12}
+  boss_shockwave: {id: 42, shape: circle, radius: 7.0, windupMs: 600, activeMs: 150, recoveryMs: 900, cooldownMs: 9000, damage: 16}
+  boss_charge: {id: 43, shape: line, charge: true, reach: 14, width: 2.4, windupMs: 550, activeMs: 500, recoveryMs: 1000, cooldownMs: 8000, damage: 24, minRange: 5}
+  boss_orbs: {id: 44, shape: projectile, speed: 16, radius: 0.8, reach: 30, windupMs: 500, activeMs: 17, recoveryMs: 600, cooldownMs: 3500, damage: 12, volley: 3, spreadDeg: 20}
+  boss_nova: {id: 45, shape: circle, radius: 5.5, windupMs: 600, activeMs: 150, recoveryMs: 800, cooldownMs: 7000, damage: 18}
+  boss_meteor: {id: 46, shape: ground, radius: 3.0, windupMs: 600, activeMs: 117, recoveryMs: 600, cooldownMs: 8000, damage: 20, reach: 30, everyone: true}
+  boss_beam: {id: 47, shape: line, reach: 20, width: 2.0, windupMs: 600, activeMs: 300, recoveryMs: 900, cooldownMs: 9000, damage: 24}
 
 enemies:
   # hp/damage are level 1 values; the zone scales them by level (region
@@ -609,8 +609,8 @@ enemies:
   gloom_bat: {id: 41, family: cave, hp: 80, speed: 7.0, aggro: 20, attacks: [bite, harpy_dive], behavior: flyer, keepAway: 4, xp: 20, size: 0.6, color: '#3a3a4a'}
   crystal_golem: {id: 42, family: cave, hp: 94, speed: 3.5, aggro: 14, attacks: [golem_punch, elemental_burst], behavior: melee, xp: 34, size: 1.4, color: '#8fd4ff'}
   # bosses: hp is the solo value at level 1 (party scaling multiplies it)
-  warden: {id: 100, family: boss, hp: 3600, speed: 4.5, aggro: 30, attacks: [boss_cleave, boss_slam], behavior: melee, xp: 600, size: 3.0, color: '#7a6a5a'}
-  archon: {id: 101, family: boss, hp: 3200, speed: 4.0, aggro: 32, attacks: [boss_orbs, boss_nova], behavior: ranged, keepAway: 10, xp: 600, size: 2.6, color: '#5a4a8a'}
+  warden: {id: 100, family: boss, hp: 8400, speed: 4.5, aggro: 30, attacks: [boss_cleave, boss_slam], behavior: melee, xp: 600, size: 3.0, color: '#7a6a5a'}
+  archon: {id: 101, family: boss, hp: 6800, speed: 4.0, aggro: 32, attacks: [boss_orbs, boss_nova], behavior: ranged, keepAway: 10, xp: 600, size: 2.6, color: '#5a4a8a'}
 
 bosses:
   # Spec 8: 2 or 3 phases, big telegraphed attacks, adds. `at` is the health
@@ -646,7 +646,7 @@ bosses:
 affixes:
   # Spec 8 elites: an element and an affix. Wind-ups never leave 300-600 ms.
   fast: {id: 1, hpMult: 7, damageMult: 1.4, speedMult: 1.4, cooldownMult: 0.75}
-  shielded: {id: 2, hpMult: 5, damageMult: 1.4, shieldPct: 0.4, shieldRegenMs: 6000}
+  shielded: {id: 2, hpMult: 4, damageMult: 1.4, shieldPct: 0.4, shieldRegenMs: 6000}
   splitting: {id: 3, hpMult: 6, damageMult: 1.3, splitInto: 2, splitHpPct: 0.35}
 
 enemyNames:

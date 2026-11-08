@@ -112,11 +112,14 @@ func (w *World) checkPhase(e *Enemy) {
 }
 
 // spawnAdds summons the phase's adds: the boss element's elemental (or the
-// biome's beasts for an unaligned boss), around the boss.
+// biome's beasts for an unaligned boss), around the boss. The count scales
+// with the party (half the table's count solo, +25 % per extra player), so
+// a solo player gets a fight and a party of four gets a crowd.
 func (w *World) spawnAdds(e *Enemy, n int) {
 	if n <= 0 {
 		return
 	}
+	n = int(math.Ceil(float64(n) * (0.5 + 0.25*float64(e.scaleN-1))))
 	key := ""
 	if e.Element < combatdefs.Physical {
 		key = D.Tables.Element[e.Element]
@@ -131,7 +134,7 @@ func (w *World) spawnAdds(e *Enemy, n int) {
 		a := e.Yaw + float64(i)*2*math.Pi/float64(n)
 		pos := w.place(e.Pos.X+5*math.Cos(a), e.Pos.Z+5*math.Sin(a), def)
 		add := newEnemy(def, e.Level, e.Element, nil, pos)
-		add.Group, add.Home = e.Group, e.Home
+		add.Group, add.Home = e.Group, pos
 		for id := range e.engaged {
 			add.engaged[id] = true
 		}
