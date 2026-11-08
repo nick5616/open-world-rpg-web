@@ -21,7 +21,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { InputFlag, u16ToYaw } from '@lodestone/contracts';
 import * as LC from '@lodestone/contracts';
 import { FlatGround } from '../src/sim/ground';
-import { stepMovement, type MoveInput, type MoveState } from '../src/sim/movement';
+import { newMoveState, stepMovement, type MoveInput, type MoveState } from '../src/sim/movement';
 import { goldenScript } from '../src/sim/golden/script';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -118,7 +118,7 @@ const fromLC = (t: number, s: MoveState): Sample => ({ t, x: s.pos.x, y: s.pos.y
 const fromWW = (t: number, s: WWState): Sample => ({ t, x: s.pos.x, y: s.pos.y - wwC.PLAYER_HEIGHT, z: s.pos.z, vx: s.vel.x, vy: s.vel.y, vz: s.vel.z });
 
 function runLC(inputs: MoveInput[], dt: number): Sample[] {
-  let s: MoveState = { pos: { x: START.x, y: 0, z: START.z }, vel: { x: 0, y: 0, z: 0 }, airJumps: 0 };
+  let s: MoveState = newMoveState({ x: START.x, y: 0, z: START.z });
   const out = [fromLC(0, s)];
   inputs.forEach((f, i) => { s = stepMovement(s, f, ground, dt); out.push(fromLC((i + 1) * dt, s)); });
   return out;
@@ -191,7 +191,7 @@ const divC = maxDiv(aligned60, aligned64);
 // Feel metrics from isolated micro-scenarios, per variant.
 type Stepper = (s: Sample, flags: number, dt: number) => Sample;
 const lcStepper: Stepper = (s, flags, dt) => {
-  const r = stepMovement({ pos: { x: s.x, y: s.y, z: s.z }, vel: { x: s.vx, y: s.vy, z: s.vz }, airJumps: (s as Sample & { aj?: number }).aj ?? 0 }, { flags, yaw: 0, pitch: 0 }, ground, dt);
+  const r = stepMovement({ ...newMoveState({ x: s.x, y: s.y, z: s.z }), vel: { x: s.vx, y: s.vy, z: s.vz }, airJumps: (s as Sample & { aj?: number }).aj ?? 0 }, { flags, yaw: 0, pitch: 0 }, ground, dt);
   return Object.assign(fromLC(s.t + dt, r), { aj: r.airJumps });
 };
 const wwStepper: Stepper = (s, flags, dt) => {

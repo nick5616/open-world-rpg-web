@@ -14,6 +14,8 @@ export interface HeldButtons {
   jump: boolean;
   sprint: boolean;
   crouch: boolean;
+  /** WP10: the explicit glider key (G). Edge-triggered like jump: glide_toggle is set on one step per press. */
+  glide: boolean;
 }
 
 export const NO_BUTTONS: Readonly<HeldButtons> = Object.freeze({
@@ -24,6 +26,7 @@ export const NO_BUTTONS: Readonly<HeldButtons> = Object.freeze({
   jump: false,
   sprint: false,
   crouch: false,
+  glide: false,
 });
 
 export function heldToFlags(h: HeldButtons): number {
@@ -39,7 +42,7 @@ export function heldToFlags(h: HeldButtons): number {
 }
 
 /**
- * Jump-edge latch. Key state is sampled every rendered frame but steps run at
+ * Jump-edge latch (also used for the glider key's glide_toggle edge). Key state is sampled every rendered frame but steps run at
  * 60 Hz; on a 144 Hz display a quick tap can rise and fall between two steps.
  * The edge is latched on the rising frame and stays pending until a step
  * consumes it, so a press is never lost (wizard-wars pendingJumpEdge).
@@ -67,10 +70,14 @@ export class JumpEdgeLatch {
   }
 }
 
-/** Quantize view angles and flags into the wire-unit MoveInput the step consumes. */
-export function makeMoveInput(held: HeldButtons, jumpEdge: boolean, yawRad: number, pitchRad: number): MoveInput {
+/**
+ * Quantize view angles and flags into the wire-unit MoveInput the step
+ * consumes. `glideEdge` sets glide_toggle (the held G key itself is not a
+ * flag: only presses mean anything to the step).
+ */
+export function makeMoveInput(held: HeldButtons, jumpEdge: boolean, yawRad: number, pitchRad: number, glideEdge = false): MoveInput {
   return {
-    flags: heldToFlags(held) | (jumpEdge ? InputFlag.jump_edge : 0),
+    flags: heldToFlags(held) | (jumpEdge ? InputFlag.jump_edge : 0) | (glideEdge ? InputFlag.glide_toggle : 0),
     yaw: yawToU16(yawRad),
     pitch: pitchToI16(pitchRad),
   };

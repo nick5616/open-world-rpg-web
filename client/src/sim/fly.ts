@@ -3,7 +3,7 @@
 // be refused online or become a server-checked admin command. It reuses the
 // MoveInput shape so the same input pipeline drives both modes.
 
-import { InputFlag, i16ToPitch, u16ToYaw } from '@lodestone/contracts';
+import { InputFlag, MoveMode, i16ToPitch, u16ToYaw } from '@lodestone/contracts';
 import type { MoveInput, MoveState } from './movement';
 
 export const FLY_SPEED = 20; // m/s: crosses a 64 m chunk in ~3 s
@@ -34,9 +34,13 @@ export function stepFly(state: MoveState, input: MoveInput, dt: number): MoveSta
   const speed = FLY_SPEED * (f & InputFlag.sprint ? FLY_SPRINT_MULT : 1);
   const k = len > 0 ? speed / len : 0;
   const vel = { x: dx * k, y: dy * k, z: dz * k };
+  // Stamina and timers are left as they were; leaving fly drops you into a fall.
   return {
+    ...state,
     pos: { x: state.pos.x + vel.x * dt, y: state.pos.y + vel.y * dt, z: state.pos.z + vel.z * dt },
     vel,
     airJumps: 0,
+    mode: MoveMode.air,
+    lunge: 0,
   };
 }

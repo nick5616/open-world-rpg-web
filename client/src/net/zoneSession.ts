@@ -22,7 +22,7 @@ import {
   type Welcome,
 } from '@lodestone/contracts';
 import type { GroundQuery } from '../sim/ground';
-import type { MoveInput, MoveState } from '../sim/movement';
+import type { MoveInput, MoveState, StepEnv } from '../sim/movement';
 import { ClockSync } from './clockSync';
 import { EntityInterpolation, type RemoteView } from './interpolation';
 import { ClientPrediction } from './prediction';
@@ -149,9 +149,9 @@ export class ZoneSession {
    * A predicted local step (LocalSim.onStep): stored for reconciliation and
    * queued for the next Input packet.
    */
-  pushStep(seq: number, input: MoveInput, state: MoveState): void {
+  pushStep(seq: number, input: MoveInput, state: MoveState, env?: Readonly<StepEnv>): void {
     if (this.phase !== 'playing') return;
-    this.prediction.store({ seq, input, state });
+    this.prediction.store({ seq, input, state, env });
     this.prediction.notePredicted(state);
     this.frames.push({ seq, flags: input.flags, yaw: input.yaw, pitch: input.pitch, castSlot: 0 });
     if (this.frames.length > 64) this.frames.splice(0, this.frames.length - 64);

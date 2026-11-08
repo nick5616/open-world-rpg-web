@@ -154,6 +154,72 @@ const StaminaGlidePerS float64 = 6
 // StaminaSwimPerS: Drain while swimming.
 const StaminaSwimPerS float64 = 8
 
+// WalkableTanSq: tan(WALKABLE_SLOPE_DEG)^2 as a literal, so TS and Go compare slopes against the identical double (Math.tan and Go's math.Tan may differ in the last ulp). Tests on both sides check it against the degrees.
+const WalkableTanSq float64 = 1.4202766254612063
+
+// ClimbMaxTanSq: tan(CLIMB_MAX_SLOPE_DEG)^2 as a literal (see WALKABLE_TAN_SQ).
+const ClimbMaxTanSq float64 = 3282.139703653939
+
+// SlopeProbeM: Slope = central differences of the ground height at +-this, i.e. over 1 m: smooths single 1 m triangles of the collision mesh so one odd triangle never decides walk vs climb.
+const SlopeProbeM float64 = 0.5
+
+// StepProbeM: Step-up probe: an uphill move onto steep ground is still allowed when the ground this far ahead is walkable and at most MAX_STEP_UP_M above the feet (a lip, not a wall).
+const StepProbeM float64 = 0.8
+
+// ClimbFacingMin: Holding 'into' a wall: wish direction . uphill direction must be at least this (within 60 degrees) to start climbing.
+const ClimbFacingMin float64 = 0.5
+
+// ClimbJumpSpeed: Climb-jump lunge speed up the wall, m/s along the surface.
+const ClimbJumpSpeed float64 = 8
+
+// ClimbJumpTimeS: Lunge duration (15 steps: 2 m up the wall).
+const ClimbJumpTimeS float64 = 0.25
+
+// ClimbKickSpeed: Jump while holding back on a wall: leap away horizontally at this speed (plus JUMP_FORCE up). Free: it ends the climb.
+const ClimbKickSpeed float64 = 5
+
+// ClimbSlipPeriodS: In rain a climber slips once per this period (spec 8: every few seconds).
+const ClimbSlipPeriodS float64 = 3
+
+// ClimbSlipTimeS: Length of one rain slip; input is ignored meanwhile.
+const ClimbSlipTimeS float64 = 0.5
+
+// ClimbSlipSpeed: Slide-back speed down the wall during a slip, m/s along the surface.
+const ClimbSlipSpeed float64 = 3
+
+// MantleSpeed: Forward push when a climb tops out onto walkable ground (the mantle).
+const MantleSpeed float64 = 3
+
+// SlideMaxSpeed: Speed cap when sliding down slopes steeper than walkable (no friction there).
+const SlideMaxSpeed float64 = 12
+
+// GlideAccel: Horizontal acceleration toward the steered glide velocity, m/s^2.
+const GlideAccel float64 = 6
+
+// GlideVerticalAccel: How fast vertical speed approaches -GLIDE_SINK_SPEED (+ updraft lift) once the glider opens, m/s^2: the canopy catch.
+const GlideVerticalAccel float64 = 20
+
+// UpdraftMaxLift: Upper bound of an updraft column's lift (m/s); the step clamps to it and the zone's vertical validation relies on it.
+const UpdraftMaxLift float64 = 10
+
+// SwimAccel: Horizontal acceleration toward the swim velocity, m/s^2.
+const SwimAccel float64 = 6
+
+// SwimDepthM: Water deeper than this (surface minus ground) is swum, shallower is walked.
+const SwimDepthM float64 = 1.5
+
+// SwimFloatDepthM: Swimmers float with their feet this far below the surface (eyes 0.4 m above it).
+const SwimFloatDepthM float64 = 1.4
+
+// DrownTimeS: Out of stamina in deep water: this long helpless, then respawn at the nearest shore.
+const DrownTimeS float64 = 1.5
+
+// ShoreSearchM: Drowning respawn searches for dry walkable ground up to this far (swim drain caps how far from shore you can be).
+const ShoreSearchM float64 = 256
+
+// StaminaFinePerPoint: Stamina is integer 'fine' units in the step (SelfState.moveExt), = MOVE_STEP_HZ, so whole per-second rates are whole units per step and the wire carries stamina exactly.
+const StaminaFinePerPoint = 60
+
 // ---- aoi
 
 // AoiCellM: Interest grid cell size.
@@ -284,6 +350,12 @@ const MaxEquippedSpells = 4
 
 // MaxPersonalPins: Map pins per player.
 const MaxPersonalPins = 10
+
+// WeatherStubWindowS: WP10 weather stub (until WP15): world time is cut into windows this long; each is rainy or dry from a hash of (seed, window).
+const WeatherStubWindowS = 600
+
+// WeatherStubRainPct: WP10 weather stub: percent of windows that rain.
+const WeatherStubRainPct = 25
 
 // ---- security
 

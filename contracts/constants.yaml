@@ -9,7 +9,7 @@
 # therefore needs a new genVersion (spec section 5). Changing a movement value
 # changes client prediction AND server simulation together, which is the point
 # of keeping them here.
-version: 1
+version: 2
 
 groups:
   world:
@@ -69,6 +69,31 @@ groups:
     STAMINA_CLIMB_PER_S: {type: f64, value: 10, doc: "Drain while climbing."}
     STAMINA_GLIDE_PER_S: {type: f64, value: 6, doc: "Drain while gliding."}
     STAMINA_SWIM_PER_S: {type: f64, value: 8, doc: "Drain while swimming."}
+    # ---- WP10 (CR 003): climb / glide / swim / slope tuning. Every value
+    # below feeds the shared step in client/src/sim/movement.ts and
+    # server/pkg/movement; the algorithm is in client/src/sim/README.md.
+    WALKABLE_TAN_SQ: {type: f64, value: 1.4202766254612063, doc: "tan(WALKABLE_SLOPE_DEG)^2 as a literal, so TS and Go compare slopes against the identical double (Math.tan and Go's math.Tan may differ in the last ulp). Tests on both sides check it against the degrees."}
+    CLIMB_MAX_TAN_SQ: {type: f64, value: 3282.139703653939, doc: "tan(CLIMB_MAX_SLOPE_DEG)^2 as a literal (see WALKABLE_TAN_SQ)."}
+    SLOPE_PROBE_M: {type: f64, value: 0.5, doc: "Slope = central differences of the ground height at +-this, i.e. over 1 m: smooths single 1 m triangles of the collision mesh so one odd triangle never decides walk vs climb."}
+    STEP_PROBE_M: {type: f64, value: 0.8, doc: "Step-up probe: an uphill move onto steep ground is still allowed when the ground this far ahead is walkable and at most MAX_STEP_UP_M above the feet (a lip, not a wall)."}
+    CLIMB_FACING_MIN: {type: f64, value: 0.5, doc: "Holding 'into' a wall: wish direction . uphill direction must be at least this (within 60 degrees) to start climbing."}
+    CLIMB_JUMP_SPEED: {type: f64, value: 8, doc: "Climb-jump lunge speed up the wall, m/s along the surface."}
+    CLIMB_JUMP_TIME_S: {type: f64, value: 0.25, doc: "Lunge duration (15 steps: 2 m up the wall)."}
+    CLIMB_KICK_SPEED: {type: f64, value: 5, doc: "Jump while holding back on a wall: leap away horizontally at this speed (plus JUMP_FORCE up). Free: it ends the climb."}
+    CLIMB_SLIP_PERIOD_S: {type: f64, value: 3, doc: "In rain a climber slips once per this period (spec 8: every few seconds)."}
+    CLIMB_SLIP_TIME_S: {type: f64, value: 0.5, doc: "Length of one rain slip; input is ignored meanwhile."}
+    CLIMB_SLIP_SPEED: {type: f64, value: 3, doc: "Slide-back speed down the wall during a slip, m/s along the surface."}
+    MANTLE_SPEED: {type: f64, value: 3, doc: "Forward push when a climb tops out onto walkable ground (the mantle)."}
+    SLIDE_MAX_SPEED: {type: f64, value: 12, doc: "Speed cap when sliding down slopes steeper than walkable (no friction there)."}
+    GLIDE_ACCEL: {type: f64, value: 6, doc: "Horizontal acceleration toward the steered glide velocity, m/s^2."}
+    GLIDE_VERTICAL_ACCEL: {type: f64, value: 20, doc: "How fast vertical speed approaches -GLIDE_SINK_SPEED (+ updraft lift) once the glider opens, m/s^2: the canopy catch."}
+    UPDRAFT_MAX_LIFT: {type: f64, value: 10, doc: "Upper bound of an updraft column's lift (m/s); the step clamps to it and the zone's vertical validation relies on it."}
+    SWIM_ACCEL: {type: f64, value: 6, doc: "Horizontal acceleration toward the swim velocity, m/s^2."}
+    SWIM_DEPTH_M: {type: f64, value: 1.5, doc: "Water deeper than this (surface minus ground) is swum, shallower is walked."}
+    SWIM_FLOAT_DEPTH_M: {type: f64, value: 1.4, doc: "Swimmers float with their feet this far below the surface (eyes 0.4 m above it)."}
+    DROWN_TIME_S: {type: f64, value: 1.5, doc: "Out of stamina in deep water: this long helpless, then respawn at the nearest shore."}
+    SHORE_SEARCH_M: {type: f64, value: 256, doc: "Drowning respawn searches for dry walkable ground up to this far (swim drain caps how far from shore you can be)."}
+    STAMINA_FINE_PER_POINT: {type: i32, value: 60, doc: "Stamina is integer 'fine' units in the step (SelfState.moveExt), = MOVE_STEP_HZ, so whole per-second rates are whole units per step and the wire carries stamina exactly."}
 
   aoi:
     AOI_CELL_M: {type: i32, value: 32, doc: "Interest grid cell size."}
@@ -118,6 +143,8 @@ groups:
     PICKUP_DESPAWN_S: {type: i32, value: 600, doc: "Dropped items despawn after 10 minutes."}
     MAX_EQUIPPED_SPELLS: {type: i32, value: 4, doc: "Off-hand spell slots."}
     MAX_PERSONAL_PINS: {type: i32, value: 10, doc: "Map pins per player."}
+    WEATHER_STUB_WINDOW_S: {type: i32, value: 600, doc: "WP10 weather stub (until WP15): world time is cut into windows this long; each is rainy or dry from a hash of (seed, window)."}
+    WEATHER_STUB_RAIN_PCT: {type: i32, value: 25, doc: "WP10 weather stub: percent of windows that rain."}
 
   security:
     TICKET_TTL_S: {type: i32, value: 60, doc: "Connect ticket lifetime."}

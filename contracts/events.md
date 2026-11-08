@@ -22,3 +22,4 @@ for your package; document each kind's use of `entityId`, `targetId`, `value`,
 | --- | --- | --- |
 | 1 | `notice` | `data` = UTF-8 text shown in the system channel |
 | 2 | `teleport` | `entityId` = who, `x/y/z` = destination (cm); clients cut interpolation |
+| 100 | `drowned` | WP10. Sent reliably to the player whose movement step drowned them and respawned them at the shore (the step does both, identically on client and server, so this is only for UI: a fade, a notice). `entityId` = who, `x/y/z` = the shore point (cm), `value` = 0 |

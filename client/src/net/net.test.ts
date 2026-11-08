@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { BASELINE_RING, decodeMessage, encodeMessage, InputFlag, metersToCm, velToCms, yawToU16, type EntityRecord, type Snapshot } from '@lodestone/contracts';
 import { FlatGround } from '../sim/ground';
-import { stepMovement, STEP_DT, type MoveInput, type MoveState } from '../sim/movement';
+import { newMoveState, stepMovement, STEP_DT, type MoveInput, type MoveState } from '../sim/movement';
+import { selfFields } from '../sim/moveWire';
 import { ClockSync } from './clockSync';
 import { EntityInterpolation, ringFor } from './interpolation';
 import { ClientPrediction } from './prediction';
@@ -111,13 +112,13 @@ function walkInput(): MoveInput {
 }
 
 function quant(s: MoveState, airJumps = s.airJumps): FullSelf {
-  return { x: metersToCm(s.pos.x), y: metersToCm(s.pos.y), z: metersToCm(s.pos.z), vx: velToCms(s.vel.x), vy: velToCms(s.vel.y), vz: velToCms(s.vel.z), health: 100, healthMax: 100, stamina: 0, staminaMax: 0, mode: 0, airJumps, activity: 0, flags: 0 };
+  return { x: metersToCm(s.pos.x), y: metersToCm(s.pos.y), z: metersToCm(s.pos.z), vx: velToCms(s.vel.x), vy: velToCms(s.vel.y), vz: velToCms(s.vel.z), health: 100, healthMax: 100, ...selfFields(s), airJumps };
 }
 
 describe('ClientPrediction', () => {
   it('agrees silently when the server ran the same frames, and corrects with replay when it did not', () => {
     const p = new ClientPrediction(ground);
-    let s: MoveState = { pos: { x: 2048, y: 0, z: 2048 }, vel: { x: 0, y: 0, z: 0 }, airJumps: 0 };
+    let s: MoveState = newMoveState({ x: 2048, y: 0, z: 2048 });
     const states: MoveState[] = [];
     for (let seq = 1; seq <= 30; seq++) {
       s = stepMovement(s, walkInput(), ground, STEP_DT);
@@ -143,8 +144,8 @@ describe('ClientPrediction', () => {
 
   it('ignores older acks and the spawn snapshot before any input is applied', () => {
     const p = new ClientPrediction(ground);
-    expect(p.reconcile(quant({ pos: { x: 1, y: 0, z: 1 }, vel: { x: 0, y: 0, z: 0 }, airJumps: 0 }), 0)).toBeNull();
-    const s = stepMovement({ pos: { x: 1, y: 0, z: 1 }, vel: { x: 0, y: 0, z: 0 }, airJumps: 0 }, walkInput(), ground, STEP_DT);
+    expect(p.reconcile(quant(newMoveState({ x: 1, y: 0, z: 1 })), 0)).toBeNull();
+    const s = stepMovement(newMoveState({ x: 1, y: 0, z: 1 }), walkInput(), ground, STEP_DT);
     p.store({ seq: 1, input: walkInput(), state: s });
     expect(p.reconcile(quant(s), 1)).toBeNull();
     expect(p.reconcile(quant(s), 0)).toBeNull();

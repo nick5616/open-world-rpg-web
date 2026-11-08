@@ -14,7 +14,8 @@ import type { GroundQuery } from './ground';
 import { advanceFixedStep, lerp } from './fixedStep';
 import { stepFly } from './fly';
 import { JumpEdgeLatch, makeMoveInput, type HeldButtons } from './inputFrame';
-import { cloneMoveState, isGrounded, stepMovement, STEP_DT, type MoveInput, type MoveState, type Vec3 } from './movement';
+import { MoveMode } from '@lodestone/contracts';
+import { cloneMoveState, MoveFlag, newMoveState, NO_ENV, stepMovement, STEP_DT, type MoveInput, type MoveState, type StepEnv, type Vec3 } from './movement';
 
 export interface FrameInput {
   held: HeldButtons;
@@ -30,6 +31,8 @@ export interface StepRecord {
   input: MoveInput;
   state: MoveState;
   fly: boolean;
+  /** World inputs this step used (rain, updrafts): prediction replays with the same. */
+  env: Readonly<StepEnv>;
 }
 
 export class LocalSim {
@@ -37,12 +40,20 @@ export class LocalSim {
   private cur: MoveState;
   private accum = 0;
   private latch = new JumpEdgeLatch();
+  private glideLatch = new JumpEdgeLatch();
   seq = 0;
   /** Optional per-step hook (WP06: send + store for reconciliation). */
   onStep: ((r: StepRecord) => void) | null = null;
+  /**
+   * World inputs for the next step (WP10: rain from the weather stub at the
+   * synced world time, updraft columns). Called once per step.
+   */
+  envSource: (() => Readonly<StepEnv>) | null = null;
+  /** The env the newest step used (HUD). */
+  lastEnv: Readonly<StepEnv> = NO_ENV;
 
   constructor(private ground: GroundQuery, spawn: Vec3) {
-    this.cur = { pos: { ...spawn }, vel: { x: 0, y: 0, z: 0 }, airJumps: 0 };
+    this.cur = newMoveState(spawn);
     this.prev = cloneMoveState(this.cur);
   }
 
@@ -57,7 +68,9 @@ export class LocalSim {
   /** Hard move (teleport, respawn, server snap): no interpolation streak across it. */
   teleport(p: { x: number; y?: number; z: number }): void {
     const y = p.y ?? this.ground.heightAt(p.x, p.z);
-    this.cur = { pos: { x: p.x, y, z: p.z }, vel: { x: 0, y: 0, z: 0 }, airJumps: 0 };
+    // A teleport keeps the stamina wheel but resets motion and mode.
+    this.cur = { ...newMoveState({ x: p.x, y, z: p.z }), stamina: this.cur.stamina, staminaMax: this.cur.staminaMax, flags: this.cur.flags & MoveFlag.exhausted };
+    if (y > this.ground.heightAt(p.x, p.z)) this.cur.mode = MoveMode.air;
     this.prev = cloneMoveState(this.cur);
     this.accum = 0;
   }
@@ -72,25 +85,29 @@ export class LocalSim {
     const dx = s.pos.x - this.cur.pos.x;
     const dy = s.pos.y - this.cur.pos.y;
     const dz = s.pos.z - this.cur.pos.z;
-    this.prev = { pos: { x: this.prev.pos.x + dx, y: this.prev.pos.y + dy, z: this.prev.pos.z + dz }, vel: { ...this.prev.vel }, airJumps: this.prev.airJumps };
+    this.prev = { ...this.prev, pos: { x: this.prev.pos.x + dx, y: this.prev.pos.y + dy, z: this.prev.pos.z + dz }, vel: { ...this.prev.vel } };
     this.cur = cloneMoveState(s);
   }
 
+  /** Standing on the ground (walk family, not airborne). */
   grounded(): boolean {
-    return isGrounded(this.cur.pos, this.ground);
+    return this.cur.mode === MoveMode.ground;
   }
 
   /** Advance by one rendered frame; returns the interpolated feet position to draw. */
   frame(dt: number, inp: FrameInput, out: Vec3 = { x: 0, y: 0, z: 0 }): Vec3 {
     this.latch.sample(inp.held.jump);
+    this.glideLatch.sample(inp.held.glide);
     const r = advanceFixedStep(this.accum, dt, STEP_DT);
     this.accum = r.accum;
     for (let i = 0; i < r.steps; i++) {
-      const input = makeMoveInput(inp.held, this.latch.consume(), inp.yaw, inp.pitch);
+      const input = makeMoveInput(inp.held, this.latch.consume(), inp.yaw, inp.pitch, this.glideLatch.consume());
+      const env = this.envSource ? this.envSource() : NO_ENV;
+      this.lastEnv = env;
       this.prev = this.cur;
-      this.cur = inp.fly ? stepFly(this.cur, input, STEP_DT) : stepMovement(this.cur, input, this.ground, STEP_DT);
+      this.cur = inp.fly ? stepFly(this.cur, input, STEP_DT) : stepMovement(this.cur, input, this.ground, STEP_DT, env);
       this.seq++;
-      this.onStep?.({ seq: this.seq, input, state: this.cur, fly: inp.fly });
+      this.onStep?.({ seq: this.seq, input, state: this.cur, fly: inp.fly, env });
     }
     out.x = lerp(this.prev.pos.x, this.cur.pos.x, r.alpha);
     out.y = lerp(this.prev.pos.y, this.cur.pos.y, r.alpha);
