@@ -91,7 +91,7 @@ func (s *Server) lootOnKill(k combat.KillInfo) {
 			}
 			ci.markers[bossKey] = true
 			if ci.persist == persistDB {
-				s.enqueueItems(sess, &ItemOp{Char: ent.CharacterID, Grant: &GrantMark{Key: bossKey}, Note: "boss lockout"})
+				s.enqueueItems(sess, &ItemOp{Char: ent.CharacterID, Epoch: ent.epoch, Grant: &GrantMark{Key: bossKey}, Note: "boss lockout"})
 			} else if ci.persist == persistLocal {
 				s.commitItems(sess, &items.Delta{}, nil, "boss lockout")
 			}
@@ -140,7 +140,7 @@ func (s *Server) spawnDrop(owner uint32, it *items.Item, pos movement.Vec3, d *i
 	p.Move.Pos = pos
 	p.prevValid = p.Move
 	p.view = p.Move
-	s.ents = append(s.ents, p) // ids only grow: stays sorted
+	s.insertEntity(p)
 	return p
 }
 
@@ -264,19 +264,32 @@ func (s *Server) transferToWorld(sess *session, spot *WorldSpot, it *items.Item,
 	var d items.Delta
 	part := ci.inv.Take(it, qty, &d)
 	local := ci.persist == persistLocal
-	part.Prov = append(part.Prov, items.Prov{Ev: reason, Char: e.CharacterID, Name: e.Name, At: now.UnixMilli(), Local: local})
-	if local || ci.persist == persistMemory && sess.claims.IsLocalProfile {
+	part.Prov = append(part.Prov, items.Prov{Ev: reason, Char: e.CharacterID, Name: e.Name, At: now.UnixMilli(), Local: local || sess.claims.IsLocalProfile})
+	if local || sess.claims.IsLocalProfile {
 		// Spec 8: items dropped by a local-profile player are marked
 		// unverified and won't be tradeable.
 		part.Verified, part.Tradeable = false, false
 	}
+	// In front of the player, on the ground.
+	pos := e.Move.Pos
+	pos.X += -math.Sin(e.Yaw) * 1.0
+	pos.Z += -math.Cos(e.Yaw) * 1.0
+	pos.Y = movement.GroundAt(s.cfg.Ground, pos.X, e.Move.Pos.Y+1.5, pos.Z) + 0.3
 	spot.WorldID = s.cfg.WorldID
 	spot.DespawnAt = now.Add(s.itm.setup.DropDespawn)
+	spot.X, spot.Y, spot.Z = pos.X, pos.Y, pos.Z
 	drop := &itemDrop{world: true, source: SourceDropped}
 	ci.version++
+	spawn := func() *Entity {
+		p := s.spawnDrop(0, part, pos, drop, spot.DespawnAt)
+		s.log.Info("item dropped", "character", e.CharacterID, "item", part.ID, "base", part.Base, "qty", part.Qty, "verified", part.Verified,
+			"tradeable", part.Tradeable, "pickup", p.ID, "despawnAt", spot.DespawnAt.UTC().Format(time.RFC3339))
+		return p
+	}
+	var p *Entity
 	switch {
 	case ci.persist == persistDB:
-		op := &ItemOp{Char: e.CharacterID, Note: "drop " + part.Base}
+		op := &ItemOp{Char: e.CharacterID, Epoch: e.epoch, Note: "drop " + part.Base}
 		_, updated, _ := d.Rows()
 		for _, u := range updated {
 			op.Update = append(op.Update, ItemRow{Item: u, Owner: e.CharacterID})
@@ -288,34 +301,96 @@ func (s *Server) transferToWorld(sess *session, spot *WorldSpot, it *items.Item,
 		}
 		drop.persisted = s.itm.j != nil
 		s.enqueueItems(sess, op)
-	case local && s.itm.j != nil:
-		// Local profile: the signed blob without the item must exist
-		// before the world copy does, or a crash in between would leave the
-		// item both in the browser's newest blob and on the ground. The op
-		// issues the blob first, then inserts the world row.
-		stateJSON, issue := s.localBlobIssuer(sess)
-		op := &ItemOp{Note: "local drop " + part.Base, Upsert: []ItemRow{{Item: part.Clone(), World: spot}}}
-		if issue != nil {
-			op.Before = func(ctx context.Context) error { return issue(ctx, stateJSON) }
-		}
-		drop.persisted = true
-		s.enqueueItems(nil, op)
-	case local:
-		s.commitItems(sess, &d, nil, "local drop")
+		p = spawn()
+	case local && s.cfg.Saves != nil && s.cfg.Queue != nil && sess.x != nil && sess.x.local != nil:
+		// Local profile: the signed blob WITHOUT the item must be issued
+		// before the world copy exists, or a crash in between would leave
+		// the item both in the browser's newest blob and on the ground.
+		// The world row (and the pickup) follow the next local-save issue
+		// for this character (flushLocalDrops); if the player leaves first,
+		// no blob is issued, the browser's blob still holds the item and
+		// the world copy is never made. Lose never, duplicate never.
+		drop.persisted = s.itm.j != nil
+		s.addLocalDrop(e.CharacterID, &ItemOp{Note: "local drop " + part.Base, Upsert: []ItemRow{{Item: part.Clone(), World: spot}}, Done: func() { spawn() }})
+		sess.x.prog.MarkDirty()
+		s.issueLocalSave(sess)
+	default:
+		// Memory-only characters (no row, no blob): nothing to keep in step.
+		p = spawn()
 	}
-	// In front of the player, on the ground.
-	pos := e.Move.Pos
-	fx, fz := -math.Sin(e.Yaw), -math.Cos(e.Yaw)
-	pos.X += fx * 1.0
-	pos.Z += fz * 1.0
-	pos.Y = movement.GroundAt(s.cfg.Ground, pos.X, e.Move.Pos.Y+1.5, pos.Z) + 0.3
-	spot.X, spot.Y, spot.Z = pos.X, pos.Y, pos.Z
-	p := s.spawnDrop(0, part, pos, drop, spot.DespawnAt)
-	s.log.Info("item dropped", "character", e.CharacterID, "item", part.ID, "base", part.Base, "qty", part.Qty, "verified", part.Verified,
-		"tradeable", part.Tradeable, "pickup", p.ID, "despawnAt", spot.DespawnAt.UTC().Format(time.RFC3339))
-	s.sendEvent(sess, &proto.Event{Kind: EventDropped, EntityID: p.ID, TargetID: e.ID, Value: int32(part.Qty), Data: []byte(part.Base)})
+	pid := uint32(0)
+	if p != nil {
+		pid = p.ID
+	}
+	s.sendEvent(sess, &proto.Event{Kind: EventDropped, EntityID: pid, TargetID: e.ID, Value: int32(part.Qty), Data: []byte(part.Base)})
 	s.sendInventory(sess)
 	return part, nil
+}
+
+// addLocalDrop parks a local profile's drop until its blob is issued.
+func (s *Server) addLocalDrop(char string, op *ItemOp) {
+	s.itm.ldMu.Lock()
+	if s.itm.localDrops == nil {
+		s.itm.localDrops = map[string][]*ItemOp{}
+	}
+	s.itm.localDrops[char] = append(s.itm.localDrops[char], op)
+	s.itm.ldMu.Unlock()
+}
+
+// flushLocalDrops runs after a local-save blob for char was issued (the
+// write-behind worker, explore.go issueLocalSave): parked drops are now
+// safe to put into the world. ok=false: the issue was skipped (the player
+// left), the drops are abandoned (their items are still in the blob).
+func (s *Server) flushLocalDrops(char string, ok bool) {
+	s.itm.ldMu.Lock()
+	ops := s.itm.localDrops[char]
+	delete(s.itm.localDrops, char)
+	s.itm.ldMu.Unlock()
+	if !ok {
+		if len(ops) > 0 {
+			s.log.Info("local drops abandoned: the player left before the save was issued (the items stay in their blob)", "character", char, "n", len(ops))
+		}
+		return
+	}
+	for _, op := range ops {
+		if s.itm.j != nil {
+			s.itm.j.Enqueue(op)
+		} else {
+			s.itm.ldMu.Lock()
+			s.itm.later = append(s.itm.later, op.Done)
+			s.itm.ldMu.Unlock()
+		}
+	}
+}
+
+// deferredTake: a local profile or a memory-only character takes a dropped
+// item that has a database row. The row is deleted first; the item joins
+// the inventory (and the next blob) only once that committed, so a crash
+// can lose it but never leave it both on the ground and in a blob.
+func (s *Server) deferredTake(p *Entity, sess *session, reason string) (*items.Item, error) {
+	it := p.drop.item
+	s.removeEntity(p) // nobody else can take it meanwhile
+	char := sess.ent.CharacterID
+	s.enqueueItems(nil, &ItemOp{Take: []string{it.ID}, Delete: []string{it.ID}, Note: "deferred take " + it.Base, Done: func() {
+		cur := s.byChar[char]
+		if cur == nil || cur.items == nil || cur.ent == nil {
+			s.log.Warn("dropped item taken by a player who left before it arrived: lost", "character", char, "item", it.ID, "base", it.Base)
+			return
+		}
+		ci, e := cur.items, cur.ent
+		it.Prov = append(it.Prov, items.Prov{Ev: reason, Char: char, Name: e.Name, At: s.cfg.Now().UnixMilli(), Local: ci.persist == persistLocal})
+		var d items.Delta
+		if left := ci.inv.Add(it, &d); left > 0 {
+			rest := it.Clone()
+			rest.ID, rest.H, rest.Slot, rest.Qty = "", 0, "", left
+			s.spawnDrop(e.ID, rest, e.Move.Pos, &itemDrop{key: "take:" + it.ID + ":spill", source: SourceDropped}, s.cfg.Now().Add(constants.PickupDespawnS*time.Second))
+		}
+		s.commitItems(cur, &d, nil, "take "+it.Base)
+		s.log.Info("item taken", "character", char, "item", it.ID, "base", it.Base, "qty", it.Qty, "verified", it.Verified, "tradeable", it.Tradeable, "hands", len(it.Prov))
+		s.sendEvent(cur, &proto.Event{Kind: EventItemTaken, EntityID: e.ID, TargetID: p.ID, Value: int32(it.Qty), Data: []byte(it.Base)})
+		s.sendGranted(cur, SourceDropped, []*items.Item{it})
+	}})
+	return it, nil
 }
 
 func (s *Server) transferFromWorld(p *Entity, sess *session, reason string, now time.Time) (*items.Item, error) {
@@ -337,7 +412,7 @@ func (s *Server) transferFromWorld(p *Entity, sess *session, reason string, now 
 	persisted := p.drop.persisted && s.itm.j != nil
 	switch ci.persist {
 	case persistDB:
-		op := &ItemOp{Char: e.CharacterID, Note: "take " + it.Base}
+		op := &ItemOp{Char: e.CharacterID, Epoch: e.epoch, Note: "take " + it.Base}
 		if persisted {
 			op.Grant = &GrantMark{Key: "take:" + it.ID, Seed: it.Seed}
 			op.Take = []string{it.ID}
@@ -391,7 +466,7 @@ func (s *Server) transferBetween(from, to *session, it *items.Item, qty int, rea
 	from.items.version++
 	to.items.version++
 	if from.items.persist == persistDB {
-		op := &ItemOp{Char: to.ent.CharacterID, Grant: &GrantMark{Key: "take:" + part.ID + ":" + strconv.FormatInt(now.UnixNano(), 36)}, Note: "transfer " + part.Base}
+		op := &ItemOp{Char: to.ent.CharacterID, Epoch: to.ent.epoch, Grant: &GrantMark{Key: "take:" + part.ID + ":" + strconv.FormatInt(now.UnixNano(), 36)}, Note: "transfer " + part.Base}
 		_, upd, _ := d.Rows()
 		for _, u := range upd {
 			op.Update = append(op.Update, ItemRow{Item: u, Owner: from.ent.CharacterID})

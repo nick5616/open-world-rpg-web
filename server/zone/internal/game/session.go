@@ -51,6 +51,7 @@ type session struct {
 	ent         *Entity
 	x           *exploreState   // WP12 exploration (explore.go)
 	cprof       *combat.Profile // WP13: loaded before join (combat.go)
+	items       *charItems      // WP14: loaded before join (items.go)
 	left        bool
 	ackTick     uint32
 	ackFloor    uint32 // WP16: acks at or below this tick predate the session's current activation
@@ -210,6 +211,7 @@ func (s *Server) accept(c transport.Conn, spawnHint *movement.Vec3) {
 		sess.spawn = s.spawnFor(claims, spawnHint)
 		sess.x = s.loadExplore(claims, hello.SaveBlob, &sess.spawn, spawnHint != nil) // WP12
 		sess.cprof = s.loadCombat(claims.CharacterID, sess.x)                         // WP13
+		sess.items = s.loadItems(claims.CharacterID, sess.x)                          // WP14
 	}
 
 	select {
@@ -337,6 +339,7 @@ func (s *Server) drain(sess *session, now time.Time) {
 			s.interact(sess.ent, it, now)   // WP09 mining (mining.go)
 			s.handleInteract(sess, it, now) // WP12: fast travel, pins (explore.go)
 			s.townInteract(sess, it, now)   // WP20: NPCs, bounty board, stations, shafts (towns.go)
+			s.itemInteract(sess, it, now)   // WP14: containers, items, crafting, dropped items (items.go)
 			continue
 		}
 		in, ok := m.(*proto.Input)
@@ -489,7 +492,8 @@ func (s *Server) sendSnapshot(sess *session, tick uint32, serverTime float64) (n
 	for _, i := range s.idxs {
 		o := s.entAt(i)
 		// Personal pickups: only their owner sees them (WP09).
-		if o.Kind == proto.EntityKindPickup && o.Owner != e.ID {
+		// WP14: owner 0 = a dropped item, public.
+		if o.Kind == proto.EntityKindPickup && o.Owner != 0 && o.Owner != e.ID {
 			continue
 		}
 		// Underground interest clipping (spec 9, WP09 caves.go).

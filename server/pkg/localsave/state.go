@@ -37,6 +37,21 @@ type Item struct {
 	Sockets   json.RawMessage `json:"sockets"`
 	Slot      string          `json:"slot,omitempty"`
 	RollSeed  int64           `json:"rollSeed"`
+	// WP14 (migration 0014 columns), optional so older blobs still parse:
+	// stack size (0 = 1), trading flags (nil = true), provenance, name.
+	Qty        int             `json:"qty,omitempty"`
+	Tradeable  *bool           `json:"tradeable,omitempty"`
+	Verified   *bool           `json:"verified,omitempty"`
+	Provenance json.RawMessage `json:"provenance,omitempty"`
+	Name       string          `json:"name,omitempty"`
+}
+
+// Loot is a local character's loot bookkeeping (WP14): grant markers the
+// zone checks in memory (containers opened, boss lockouts, the starter kit;
+// spec 8) and the chosen quick consumable. Optional.
+type Loot struct {
+	Markers []string `json:"markers,omitempty"`
+	Quick   string   `json:"quick,omitempty"`
 }
 
 // State is the character state carried in a save blob: the same fields an
@@ -55,6 +70,7 @@ type State struct {
 	Appearance   json.RawMessage `json:"appearance"`
 	Progress     Progress        `json:"progress"`
 	Items        []Item          `json:"items"`
+	Loot         *Loot           `json:"loot,omitempty"` // WP14
 }
 
 // NewCharacterState is a level-1 character standing at spawn, matching the

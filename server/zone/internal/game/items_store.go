@@ -13,7 +13,6 @@ import (
 	"log/slog"
 	"os"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -166,6 +165,18 @@ func (p *PGStore) ApplyItemOp(ctx context.Context, op *ItemOp) error {
 		return err
 	}
 	defer func() { _ = tx.Rollback(context.WithoutCancel(ctx)) }()
+	if op.Epoch > 0 && op.Char != "" {
+		// WP16 fence: refuse an op from an older owner than the newest
+		// writer (the row lock also serializes two zones' ops).
+		tag, err := tx.Exec(ctx, `INSERT INTO item_epochs (character_id, epoch) VALUES ($1::uuid, $2)
+			ON CONFLICT (character_id) DO UPDATE SET epoch = EXCLUDED.epoch WHERE item_epochs.epoch <= EXCLUDED.epoch`, op.Char, op.Epoch)
+		if err != nil {
+			return err
+		}
+		if tag.RowsAffected() == 0 {
+			return fmt.Errorf("%w: epoch %d", errItemsFenced, op.Epoch)
+		}
+	}
 	if op.Grant != nil && op.Char != "" {
 		n := len(op.Upsert)
 		tag, err := tx.Exec(ctx, `INSERT INTO loot_grants (character_id, grant_key, op_id, roll_seed, items) VALUES ($1::uuid, $2, $3::uuid, $4, $5) ON CONFLICT DO NOTHING`,
@@ -213,6 +224,20 @@ func (p *PGStore) ApplyItemOp(ctx context.Context, op *ItemOp) error {
 			return err
 		}
 	}
+	if op.Sync && op.Char != "" {
+		keep := make([]string, 0, len(op.Upsert))
+		for _, r := range op.Upsert {
+			keep = append(keep, r.Item.ID)
+		}
+		if _, err := tx.Exec(ctx, `DELETE FROM items WHERE owner_character_id = $1::uuid AND NOT (id = ANY($2::uuid[]))`, op.Char, keep); err != nil {
+			return err
+		}
+		for _, k := range op.Markers {
+			if _, err := tx.Exec(ctx, `INSERT INTO loot_grants (character_id, grant_key, op_id, roll_seed, items) VALUES ($1::uuid, $2, $3::uuid, 0, 0) ON CONFLICT DO NOTHING`, op.Char, k, op.ID); err != nil {
+				return err
+			}
+		}
+	}
 	if itemTxDelay > 0 {
 		slog.Info("TEST item tx open", "op", op.ID, "note", op.Note, "holdMs", itemTxDelay.Milliseconds())
 		time.Sleep(itemTxDelay)
@@ -254,7 +279,3 @@ func (p *PGStore) LoadWorldItems(ctx context.Context, worldID string, now time.T
 	}
 	return out, rows.Err()
 }
-
-// itemKindOK guards against a base the zone doesn't know (an item from a
-// newer build): it is kept in the database untouched and hidden.
-func itemKindOK(it *items.Item) bool { return it.Def() != nil && !strings.HasPrefix(it.Base, "tome:") || items.D.Item(it.Base) != nil }

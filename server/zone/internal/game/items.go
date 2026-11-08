@@ -39,12 +39,12 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"lodestone/server/pkg/combatdefs"
 	"lodestone/server/pkg/constants"
 	"lodestone/server/pkg/localsave"
-	"lodestone/server/pkg/movement"
 	"lodestone/server/pkg/proto"
 	"lodestone/server/pkg/towns"
 	"lodestone/server/zone/internal/combat"
@@ -221,6 +221,12 @@ type itemsState struct {
 	runCtx context.CancelFunc
 	ran    bool
 	loot   int64
+	// Local profiles' drops parked until their blob is issued (loot.go);
+	// written from the write-behind worker, hence the mutex.
+	ldMu       sync.Mutex
+	localDrops map[string][]*ItemOp
+	later      []func() // tick callbacks queued off the tick (no journal)
+	handed     map[string]*handedItems
 }
 
 func (s *Server) initItems() {
@@ -357,6 +363,7 @@ func (s *Server) itemsOf(e *Entity) *charItems {
 
 // itemsJoin finishes setup on the tick (after combatJoin).
 func (s *Server) itemsJoin(sess *session) {
+	adopted := s.adoptHanded(sess) // WP16: a handed-over character keeps its live items (items_handoff.go)
 	ci := sess.items
 	if ci == nil {
 		ci = &charItems{markers: map[string]bool{}}
@@ -368,6 +375,9 @@ func (s *Server) itemsJoin(sess *session) {
 	}
 	if s.itm.j != nil {
 		s.itm.j.clearPoison(sess.ent.CharacterID)
+	}
+	if adopted {
+		s.syncAll(sess, "handoff sync") // first write at our epoch: fences the old owner's leftovers
 	}
 	if !ci.markers["starter"] {
 		s.grantStarter(sess)
@@ -390,6 +400,14 @@ func (s *Server) grantStarter(sess *session) {
 		ci.inv.Add(it, &d)
 	}
 	ci.markers["starter"] = true
+	if ci.persist == persistLocal {
+		// Rides the next save point (no blob issued at join just for this).
+		ci.version++
+		if sess.x != nil && sess.x.prog != nil {
+			sess.x.prog.MarkDirty()
+		}
+		return
+	}
 	s.commitItems(sess, &d, &GrantMark{Key: "starter"}, "starter")
 }
 
@@ -405,7 +423,7 @@ func (s *Server) commitItems(sess *session, d *items.Delta, grant *GrantMark, no
 		if d.Empty() && grant == nil {
 			break
 		}
-		op := &ItemOp{Char: sess.ent.CharacterID, Grant: grant, Note: note}
+		op := &ItemOp{Char: sess.ent.CharacterID, Epoch: sess.ent.epoch, Grant: grant, Note: note}
 		created, updated, deleted := d.Rows()
 		for _, it := range created {
 			op.Upsert = append(op.Upsert, ItemRow{Item: it, Owner: op.Char})
@@ -675,6 +693,13 @@ func (s *Server) drink(sess *session) (float64, bool) {
 
 // itemsTick: journal results, gear, world drop despawn, container lists.
 func (s *Server) itemsTick(tick uint32, now time.Time) {
+	s.itm.ldMu.Lock()
+	later := s.itm.later
+	s.itm.later = nil
+	s.itm.ldMu.Unlock()
+	for _, f := range later {
+		f()
+	}
 	if s.itm.j != nil {
 		for _, r := range s.itm.j.drainResults() {
 			if r.err == nil {
@@ -685,6 +710,9 @@ func (s *Server) itemsTick(tick uint32, now time.Time) {
 			}
 			if r.char == "" {
 				continue
+			}
+			if errors.Is(r.err, errItemsFenced) {
+				continue // the character lives on another zone now (or came back newer): nothing to undo here
 			}
 			if sess := s.byChar[r.char]; sess != nil {
 				s.kick(sess, proto.KickCodeShutdown, "inventory out of sync; please reconnect")

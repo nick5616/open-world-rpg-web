@@ -59,6 +59,9 @@ type GrantMark struct {
 type ItemOp struct {
 	ID      string // op uuid (marker retry detection)
 	Char    string // the character whose state this is ("" = world-only op)
+	Epoch   int64  // WP16 ownership epoch of the writing zone (0 = unfenced, single zone)
+	Sync    bool   // full state: rows of Char not in Upsert are deleted, Markers inserted
+	Markers []string
 	Grant   *GrantMark
 	Upsert  []ItemRow // created rows: INSERT .. ON CONFLICT (id) DO UPDATE
 	Update  []ItemRow // existing rows: UPDATE (must exist)
@@ -94,6 +97,9 @@ var (
 	// errLocalGone: a local profile left before its drop's blob could be
 	// issued; the world copy is not created (lose, never duplicate).
 	errLocalGone = errors.New("items: local profile gone before its save was issued")
+	// errItemsFenced: a newer owner (WP16 epoch) already wrote this
+	// character; this zone's op is stale and must not land.
+	errItemsFenced = errors.New("items: superseded by a newer owner")
 )
 
 type journalResult struct {
@@ -210,6 +216,27 @@ func (j *itemJournal) pop(op *ItemOp, err error) {
 		j.log.Error("item op failed for good", "op", op.ID, "note", op.Note, "err", err)
 		return
 	}
+	if errors.Is(err, errItemsFenced) {
+		// The character moved on to a newer owner: this zone's queued ops
+		// for it up to this epoch are all stale. Newer ones (it came back)
+		// stay.
+		keep := j.ops[:0]
+		dropped := 0
+		for _, o := range j.ops {
+			if o.Char == op.Char && o.Epoch <= op.Epoch {
+				dropped++
+				if j.pending[o.Char]--; j.pending[o.Char] <= 0 {
+					delete(j.pending, o.Char)
+				}
+				continue
+			}
+			keep = append(keep, o)
+		}
+		j.ops = keep
+		j.results = append(j.results, journalResult{char: op.Char, err: err, op: op})
+		j.log.Info("stale item ops fenced (a newer zone owns the character)", "character", op.Char, "epoch", op.Epoch, "dropped", dropped+1)
+		return
+	}
 	// Quarantine: drop the character's remaining ops (they assume this one
 	// landed) and tell the tick to kick them.
 	j.poison[op.Char] = true
@@ -233,7 +260,7 @@ func (j *itemJournal) pop(op *ItemOp, err error) {
 }
 
 func permanent(err error) bool {
-	return errors.Is(err, ErrDuplicateGrant) || errors.Is(err, ErrRowMissing) || errors.Is(err, errLocalGone)
+	return errors.Is(err, ErrDuplicateGrant) || errors.Is(err, ErrRowMissing) || errors.Is(err, errLocalGone) || errors.Is(err, errItemsFenced)
 }
 
 // apply runs one op with retries until it commits or fails for good.
