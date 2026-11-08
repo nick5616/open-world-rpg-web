@@ -15,7 +15,8 @@ import type { ZoneSession } from '../../net/zoneSession';
 import { netRuntime } from '../../net/netStore';
 import { promptFor, type Candidate } from './interact';
 import { escapeHtml } from './npcs';
-import { ACT, BOUNTY_KIND_LABEL, decodeBounties, decodeShop, decodeStation, EV, INTERACT, itemName, MERCHANT_LABEL, NPC_ROLE_LABEL, REFUSAL, utf8, type Bounty, type ShopItem } from './townEvents';
+import { openStationOffline } from '../../ui/inventory/store'; // WP14
+import { ACT, BOUNTY_KIND_LABEL, decodeBounties, decodeShop, EV, INTERACT, itemName, MERCHANT_LABEL, NPC_ROLE_LABEL, REFUSAL, utf8, type Bounty, type ShopItem } from './townEvents';
 
 interface PanelState {
   title: string;
@@ -204,7 +205,7 @@ export class TownHud {
         break;
       case 'forge':
       case 'anvil':
-        this.open({ ...this.blank(c.kind === 'forge' ? 'The forge' : 'The anvil', 'Smithing station'), station: 'The forge is hot. Smelting and forging arrive with WP14.', line: '(offline)', offline: true });
+        openStationOffline(c.kind); // WP14: the smithing panel, crafting disabled offline
         break;
       case 'shaft':
         this.open({ ...this.blank('Old mineshaft', 'A rope winch over the shaft'), line: c.index >= 0 ? '(offline) The rope drops into darkness. Connect to a zone to descend into the cave below.' : '(offline) The shaft is choked with rubble.', offline: true });
@@ -306,12 +307,9 @@ export class TownHud {
         case EV.rested:
           this.toast(`You rest at the inn (+${e.value} health)`);
           break;
-        case EV.stationOpened: {
-          // data names the station (prop id + settlement); WP14 replaces this placeholder.
-          const st = decodeStation(e.data);
-          this.open({ ...this.blank(e.targetId === 2 ? 'The anvil' : 'The forge', st ? `Smithing station · settlement ${st.settlement}` : 'Smithing station'), station: 'The forge is hot. Smelting and forging arrive with WP14.' });
+        case EV.stationOpened:
+          // WP14: the smithing panel (client/src/ui/inventory/CraftPanel.tsx) opens on 805 instead of this placeholder.
           break;
-        }
         case EV.refused:
           this.toast(REFUSAL[e.value] ?? `Refused (${e.value})`);
           break;

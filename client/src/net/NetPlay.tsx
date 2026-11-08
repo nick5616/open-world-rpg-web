@@ -25,6 +25,8 @@ import { attachExploration } from '../ui/map/zoneLink';
 // WP13: combat (input, predicted hits, HitClaims, enemies, HUD state).
 import { attachCombat, combatDriverHooks } from '../combat/link';
 import { CombatLayer } from '../combat/CombatLayer';
+// WP14: inventory/loot Events and Interacts, pickups and containers in 3D.
+import { attachInventory, LootLayer } from '../ui/inventory';
 
 type Phase = { kind: 'connecting' } | { kind: 'playing'; welcome: Welcome } | { kind: 'ended'; end: SessionEnd } | { kind: 'error'; message: string };
 
@@ -96,6 +98,7 @@ export function NetPlay({ ready }: { ready: ReadySession }) {
     netRuntime.session = s;
     const detachExploration = attachExploration(s, ready);
     const detachCombat = attachCombat(s, ground);
+    const detachInventory = attachInventory(s); // WP14
     let live = true;
     s.onEnd = (end) => live && setPhase({ kind: 'ended', end });
     s.start().then(
@@ -110,6 +113,7 @@ export function NetPlay({ ready }: { ready: ReadySession }) {
       live = false;
       detachExploration();
       detachCombat();
+      detachInventory(); // WP14
       s.close('leaving');
       if (netRuntime.session === s) netRuntime.session = null;
       netStats.transport = netStats.rttMs = netStats.downKbps = netStats.upKbps = null;
@@ -179,6 +183,8 @@ export function NetPlay({ ready }: { ready: ReadySession }) {
         <WorldCanvas driver={driver} seed={phase.kind === 'playing' ? phase.welcome.seed.toString() : undefined} onRuntime={(r) => (ground.target = r.ground)}>
           <RemotePlayers session={session} />
           <CombatLayer />
+          {/* WP14 */}
+          <LootLayer />
         </WorldCanvas>
       )}
       {phase.kind === 'connecting' && (

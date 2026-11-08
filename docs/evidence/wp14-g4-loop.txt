@@ -1,0 +1,38 @@
+=== RUN   TestG4LoopForgeSunsteelBlade
+    zone_items_integration_test.go:280: [15:38:31.956] spawn settlement 9 at (1920, 2272) r 130: forge prop 33461356418492015 at (1903.5, 82.3, 2292.1), blacksmith "Selina"
+    zone_items_integration_test.go:280: [15:38:32.204] caves: 4 reachable sunsteel veins, gem vein 7840581575915726357 (topaz) at depth band 0
+    zone_items_integration_test.go:280: [15:38:34.536] zone up; dev camp of 2 boars at (2085.1, 2384.9); character 2ced934d-1cd4-4aa1-acd8-da397d0dd94f
+    zone_items_integration_test.go:280: [15:38:36.039] joined at (2099.1, 2384.9): starter inventory "currency:gold=20 potion:health=3"
+    zone_g4loop_integration_test.go:181: fight: no enemy within 40 m (self hp 70/100, enemies in view 0)
+    zone_items_integration_test.go:280: [15:38:48.713] fought the camp with the starting sword: 2 kills, 9 accepted hits, damage [18 20 30 18 20 30 18 20 18]; kill loot picked up: "currency:gold=6 gem:sapphire:rough=1 meat:raw=2"
+    zone_items_integration_test.go:280: [15:38:55.465] opened a container at (1846, 2379): "armor:iron_helm=1 currency:gold=40 gem:emerald:cut=1"; gold now 66
+    zone_items_integration_test.go:280: [15:38:59.513] mined sunsteel vein 8835879023699622851 (1818, -56, 316): "ore:sunsteel=2"
+    zone_items_integration_test.go:280: [15:39:03.545] mined sunsteel vein 14318032726258039959 (3733, -111, 511): "ore:sunsteel=2"
+    zone_items_integration_test.go:280: [15:39:07.238] mined topaz vein 7840581575915726357: "gem:topaz:cut=1"
+    zone_items_integration_test.go:280: [15:39:10.088] bought blueprint:sunsteel_blade from Selina for 40 gold (gold 66 -> 26)
+    zone_items_integration_test.go:280: [15:39:12.049] smelted at the forge: "armor:iron_helm=1 blueprint:sunsteel_blade=1 currency:gold=26 gem:emerald:cut=1 gem:sapphire:rough=1 gem:topaz:cut=1 ingot:sunsteel=2 meat:raw=2 potion:health=3"
+    zone_items_integration_test.go:280: [15:39:12.149] forged weapon:sunsteel_blade (rarity Common, 1 socket(s))
+    zone_items_integration_test.go:280: [15:39:12.649] equipped in eq:main0 with sockets [gem:topaz:cut]; combat_sync loadout 1: weapon id 1, socketed gem element 2 (lightning)
+    zone_g4loop_integration_test.go:181: fight: no enemy within 40 m (self hp 80/110, enemies in view 0)
+    zone_items_integration_test.go:280: [15:39:20.824] fought the respawned camp with the Sunsteel Blade: 2 kills, damage [22 24 37 22 25 37 22] (mean 27.0 vs 21.3 with the starting sword)
+    zone_items_integration_test.go:280: [15:39:20.829] Postgres holds: "armor:iron_helm=1 blueprint:sunsteel_blade=1 currency:gold=32 gem:emerald:cut=1 gem:sapphire:rough=1 meat:raw=4 potion:health=3 weapon:sunsteel_blade=1"
+    zone_items_integration_test.go:280: [15:39:20.829] PASS: fight -> loot -> mine sunsteel + topaz -> buy blueprint -> smelt -> forge Sunsteel Blade -> socket -> equip -> fight
+[15:38:31.956] spawn settlement 9 at (1920, 2272) r 130: forge prop 33461356418492015 at (1903.5, 82.3, 2292.1), blacksmith "Selina"
+[15:38:32.204] caves: 4 reachable sunsteel veins, gem vein 7840581575915726357 (topaz) at depth band 0
+[15:38:34.536] zone up; dev camp of 2 boars at (2085.1, 2384.9); character 2ced934d-1cd4-4aa1-acd8-da397d0dd94f
+[15:38:36.039] joined at (2099.1, 2384.9): starter inventory "currency:gold=20 potion:health=3"
+[15:38:48.713] fought the camp with the starting sword: 2 kills, 9 accepted hits, damage [18 20 30 18 20 30 18 20 18]; kill loot picked up: "currency:gold=6 gem:sapphire:rough=1 meat:raw=2"
+[15:38:55.465] opened a container at (1846, 2379): "armor:iron_helm=1 currency:gold=40 gem:emerald:cut=1"; gold now 66
+[15:38:59.513] mined sunsteel vein 8835879023699622851 (1818, -56, 316): "ore:sunsteel=2"
+[15:39:03.545] mined sunsteel vein 14318032726258039959 (3733, -111, 511): "ore:sunsteel=2"
+[15:39:07.238] mined topaz vein 7840581575915726357: "gem:topaz:cut=1"
+[15:39:10.088] bought blueprint:sunsteel_blade from Selina for 40 gold (gold 66 -> 26)
+[15:39:12.049] smelted at the forge: "armor:iron_helm=1 blueprint:sunsteel_blade=1 currency:gold=26 gem:emerald:cut=1 gem:sapphire:rough=1 gem:topaz:cut=1 ingot:sunsteel=2 meat:raw=2 potion:health=3"
+[15:39:12.149] forged weapon:sunsteel_blade (rarity Common, 1 socket(s))
+[15:39:12.649] equipped in eq:main0 with sockets [gem:topaz:cut]; combat_sync loadout 1: weapon id 1, socketed gem element 2 (lightning)
+[15:39:20.824] fought the respawned camp with the Sunsteel Blade: 2 kills, damage [22 24 37 22 25 37 22] (mean 27.0 vs 21.3 with the starting sword)
+[15:39:20.829] Postgres holds: "armor:iron_helm=1 blueprint:sunsteel_blade=1 currency:gold=32 gem:emerald:cut=1 gem:sapphire:rough=1 meat:raw=4 potion:health=3 weapon:sunsteel_blade=1"
+[15:39:20.829] PASS: fight -> loot -> mine sunsteel + topaz -> buy blueprint -> smelt -> forge Sunsteel Blade -> socket -> equip -> fight
+--- PASS: TestG4LoopForgeSunsteelBlade (58.64s)
+PASS
+ok  	lodestone/server/zone	59.539s

@@ -1,0 +1,286 @@
+# Items, rarities, affixes, recipes and loot tables (WP14, docs/cr/010-loot.md).
+#
+# One table for the zone (server/pkg/itemdefs, embedded JSON) and the client
+# (contracts/ts/src/gen/items.ts): `npm run gen` normalizes this file, so the
+# two can never disagree about what an item is, what a recipe costs or how
+# likely a Bitchin' roll is. The generator (contracts/codegen/lib/items.mjs)
+# validates every reference (recipe inputs, blueprint outputs, merchant
+# items) and expands the families (gems x cuts, ores, ingots, blueprints).
+#
+# ITEM KEYS ARE A CONTRACT. They are stored in items.base_id, carried on the
+# wire (pickup entity names, Event 400 inventory, WP20 shop lists) and read
+# by other packages: WP15 checks `killsDemons` on the equipped weapon's
+# material (weapon:sunsteel_blade, ammo:sunsteel_arrow). Renaming a key
+# orphans every stored item with it; add, never rename.
+#
+# Key shape: <category>:<name>[:<variant>], e.g. ore:iron, gem:ruby:cut,
+# weapon:sunsteel_blade, food:stew, tome:fireball. WP09's mining drops
+# (ore:<name>, gem:<name>:<cut>) and WP20's placeholder shop ids already
+# follow it.
+version: 1
+
+# Spec 8 rarity table. `odds` are per roll at the base; luck (item level,
+# source, Opal) multiplies the odds of rare and above (`lucky: true`), and
+# common absorbs whatever is left so the eight always sum to 1. Bitchin' is
+# "anywhere, about 1 in a million" and never shifted by luck (spec: its
+# odds are a fixed property of a roll, not of the source).
+rarities:
+  - {key: common, name: Common, color: '#9d9d9d', affixes: 0, uniques: 0, odds: 0.60}
+  - {key: uncommon, name: Uncommon, color: '#3ec93e', affixes: 1, uniques: 0, odds: 0.25}
+  - {key: rare, name: Rare, color: '#3d8bff', affixes: 2, uniques: 0, odds: 0.10, lucky: true}
+  - {key: relic, name: Relic, color: '#a64dff', affixes: 3, uniques: 0, odds: 0.04, lucky: true}
+  - {key: legendary, name: Legendary, color: '#ff8c1a', affixes: 3, uniques: 1, odds: 0.009, lucky: true}
+  - {key: mythic, name: Mythic Artifact, color: '#e8323c', affixes: 4, uniques: 1, named: true, odds: 0.0009, lucky: true}
+  - {key: primordial, name: Primordial, color: '#f3dc9a', affixes: 5, uniques: 1, named: true, odds: 0.00009, lucky: true, bases: [starmetal, voidglass]}
+  - {key: bitchin, name: "Bitchin'", color: holographic, affixes: 5, uniques: 2, named: true, odds: 0.000001, announce: true}
+
+# Luck caps: the shifted odds of rare-and-above never exceed this share of
+# all rolls (a stack of luck sources must not turn every roll purple).
+luckCap: 0.6
+
+# Weapon and armor materials. `mult` scales weapon damage and armor stats;
+# `killsDemons` / `demonStagger` are WP15's rule data (spec 8: only sunsteel
+# kills demons; silver staggers them longer).
+materials:
+  wood: {name: Oak, mult: 1.0, tier: 1}
+  leather: {name: Leather, mult: 1.0, tier: 1}
+  copper: {name: Copper, mult: 0.9, tier: 1}
+  iron: {name: Iron, mult: 1.0, tier: 2}
+  silver: {name: Silver, mult: 1.1, tier: 3, demonStagger: true}
+  sunsteel: {name: Sunsteel, mult: 1.2, tier: 4, killsDemons: true}
+  starmetal: {name: Starmetal, mult: 1.35, tier: 5}
+  voidglass: {name: Voidglass, mult: 1.5, tier: 6}
+
+# The eight elements' gems plus the two utility gems (spec 7). `element`
+# is the worldgen/combat element index (0 fire .. 7 void), -1 utility.
+# Socketed in a weapon, an elemental gem powers the WP13 elemental form of
+# its element; Opal adds loot find; Moonstone adds stamina (data for the
+# shared movement step: not applied in v1, see STATUS) and night sight (WP15).
+gems:
+  ruby: {name: Ruby, element: 0}
+  sapphire: {name: Sapphire, element: 1}
+  topaz: {name: Topaz, element: 2}
+  emerald: {name: Emerald, element: 3}
+  aquamarine: {name: Aquamarine, element: 4}
+  sunstone: {name: Sunstone, element: 5}
+  onyx: {name: Onyx, element: 6}
+  amethyst: {name: Amethyst, element: 7}
+  opal: {name: Opal, element: -1, stat: lootFindPct}
+  moonstone: {name: Moonstone, element: -1, stat: staminaPct}
+
+# Spec 7: rough, cut, brilliant; three of a cut combine into the next at a
+# waypoint. `formMult` scales the elemental form's damage, `utility` is the
+# Opal/Moonstone stat value, `value` the merchant price hint.
+cuts:
+  - {key: rough, name: Rough, formMult: 1.0, utility: 4, value: 10}
+  - {key: cut, name: Cut, formMult: 1.25, utility: 8, value: 35}
+  - {key: brilliant, name: Brilliant, formMult: 1.5, utility: 14, value: 120}
+combineCount: 3
+
+# Ores (spec 7 table) smelt into ingots of the same metal.
+ores:
+  copper: {name: Copper, smelt: 2}
+  iron: {name: Iron, smelt: 2}
+  silver: {name: Silver, smelt: 2}
+  sunsteel: {name: Sunsteel, smelt: 2}
+  starmetal: {name: Starmetal, smelt: 3}
+  voidglass: {name: Voidglass, smelt: 3}
+
+# Stacks: how many fit in one stack per category (1 = never stacks).
+stacks: {ore: 99, ingot: 99, gem: 99, food: 20, potion: 20, meat: 20, herb: 40, hide: 20, ammo: 99, tool: 1, seed: 20, blueprint: 1, tome: 1, currency: 1000000, weapon: 1, armor: 1, key: 1}
+
+# Where a category lives (spec 8: 40 slots plus a gem pouch and an ore pouch;
+# coins in a purse that takes no slot).
+pouches: {gem: gem, ore: ore, ingot: ore, currency: purse}
+
+# Base items. Weapons name their combat.yaml weapon type; `sockets` is the
+# most a base can roll (spec 8: 0 to 3). Armor `health`/`armorPct` are at
+# item level 1, scaled by material and level.
+items:
+  # ---- weapons ----
+  weapon:copper_sword: {name: Copper Sword, weapon: sword, material: copper, level: 1, value: 30}
+  weapon:iron_sword: {name: Iron Sword, weapon: sword, material: iron, level: 4, value: 90}
+  weapon:silver_sword: {name: Silver Sword, weapon: sword, material: silver, level: 8, value: 200}
+  weapon:sunsteel_blade: {name: Sunsteel Blade, weapon: sword, material: sunsteel, level: 10, value: 400}
+  weapon:starmetal_sword: {name: Starmetal Sword, weapon: sword, material: starmetal, level: 14, value: 900}
+  weapon:voidglass_sword: {name: Voidglass Sword, weapon: sword, material: voidglass, level: 18, value: 1600}
+  weapon:copper_spear: {name: Copper Spear, weapon: spear, material: copper, level: 1, value: 30}
+  weapon:iron_spear: {name: Iron Spear, weapon: spear, material: iron, level: 4, value: 85}
+  weapon:silver_spear: {name: Silver Spear, weapon: spear, material: silver, level: 8, value: 190}
+  weapon:sunsteel_spear: {name: Sunsteel Spear, weapon: spear, material: sunsteel, level: 10, value: 380}
+  weapon:starmetal_spear: {name: Starmetal Spear, weapon: spear, material: starmetal, level: 14, value: 880}
+  weapon:voidglass_spear: {name: Voidglass Spear, weapon: spear, material: voidglass, level: 18, value: 1550}
+  weapon:oak_bow: {name: Oak Bow, weapon: bow, material: wood, level: 1, value: 35}
+  weapon:silver_bow: {name: Silver-Strung Bow, weapon: bow, material: silver, level: 8, value: 210}
+  weapon:starmetal_bow: {name: Starmetal Bow, weapon: bow, material: starmetal, level: 14, value: 920}
+  weapon:voidglass_bow: {name: Voidglass Bow, weapon: bow, material: voidglass, level: 18, value: 1650}
+  weapon:oak_staff: {name: Oak Staff, weapon: staff, material: wood, level: 1, value: 35}
+  weapon:silver_staff: {name: Silver Staff, weapon: staff, material: silver, level: 8, value: 210}
+  weapon:starmetal_staff: {name: Starmetal Staff, weapon: staff, material: starmetal, level: 14, value: 920}
+  weapon:voidglass_staff: {name: Voidglass Staff, weapon: staff, material: voidglass, level: 18, value: 1650}
+  weapon:birch_wand: {name: Birch Wand, weapon: wand, material: wood, level: 1, value: 30}
+  weapon:silver_wand: {name: Silver Wand, weapon: wand, material: silver, level: 8, value: 190}
+  weapon:starmetal_wand: {name: Starmetal Wand, weapon: wand, material: starmetal, level: 14, value: 880}
+  weapon:voidglass_wand: {name: Voidglass Wand, weapon: wand, material: voidglass, level: 18, value: 1550}
+  # ---- armor (head, body, legs) ----
+  armor:leather_cap: {name: Leather Cap, armor: head, material: leather, level: 1, health: 6, armorPct: 2, value: 20}
+  armor:leather_jerkin: {name: Leather Jerkin, armor: body, material: leather, level: 1, health: 12, armorPct: 4, value: 35}
+  armor:leather_leggings: {name: Leather Leggings, armor: legs, material: leather, level: 1, health: 8, armorPct: 3, value: 25}
+  armor:iron_helm: {name: Iron Helm, armor: head, material: iron, level: 4, health: 10, armorPct: 3, value: 60}
+  armor:iron_cuirass: {name: Iron Cuirass, armor: body, material: iron, level: 4, health: 20, armorPct: 6, value: 110}
+  armor:iron_greaves: {name: Iron Greaves, armor: legs, material: iron, level: 4, health: 14, armorPct: 4, value: 80}
+  armor:silver_helm: {name: Silver Helm, armor: head, material: silver, level: 8, health: 14, armorPct: 4, value: 150}
+  armor:silver_cuirass: {name: Silver Cuirass, armor: body, material: silver, level: 8, health: 28, armorPct: 7, value: 260}
+  armor:silver_greaves: {name: Silver Greaves, armor: legs, material: silver, level: 8, health: 20, armorPct: 5, value: 190}
+  armor:starmetal_helm: {name: Starmetal Helm, armor: head, material: starmetal, level: 14, health: 20, armorPct: 5, value: 600}
+  armor:starmetal_cuirass: {name: Starmetal Cuirass, armor: body, material: starmetal, level: 14, health: 40, armorPct: 9, value: 1000}
+  armor:starmetal_greaves: {name: Starmetal Greaves, armor: legs, material: starmetal, level: 14, health: 28, armorPct: 6, value: 750}
+  armor:voidglass_helm: {name: Voidglass Helm, armor: head, material: voidglass, level: 18, health: 26, armorPct: 6, value: 1100}
+  armor:voidglass_cuirass: {name: Voidglass Cuirass, armor: body, material: voidglass, level: 18, health: 52, armorPct: 10, value: 1800}
+  armor:voidglass_greaves: {name: Voidglass Greaves, armor: legs, material: voidglass, level: 18, health: 36, armorPct: 7, value: 1300}
+  # ---- arrows (combat.yaml bow.arrows: using a stack sets the bow's arrowheads) ----
+  ammo:copper_arrow: {name: Copper Arrows, arrow: copper, value: 1}
+  ammo:iron_arrow: {name: Iron Arrows, arrow: iron, value: 1}
+  ammo:silver_arrow: {name: Silver Arrows, arrow: silver, value: 3}
+  ammo:sunsteel_arrow: {name: Sunsteel Arrows, arrow: sunsteel, value: 6}
+  ammo:starmetal_arrow: {name: Starmetal Arrows, arrow: starmetal, value: 10}
+  ammo:voidglass_arrow: {name: Voidglass Arrows, arrow: voidglass, value: 14}
+  # ---- consumables (spec 8: cooked at campfires and inns; used in <= 400 ms while walking) ----
+  potion:health: {name: Healing Draught, heal: 40, value: 25}
+  potion:greater_health: {name: Greater Healing Draught, heal: 90, value: 70}
+  potion:antidote: {name: Antidote, heal: 15, value: 18}
+  food:bread: {name: Bread, heal: 15, value: 4}
+  food:cheese: {name: Cheese, heal: 20, value: 6}
+  food:apple: {name: Apple, heal: 8, value: 2}
+  food:stew: {name: Hearty Stew, heal: 55, value: 9}
+  food:grilled_meat: {name: Grilled Meat, heal: 30, value: 6}
+  food:berry_tart: {name: Berry Tart, heal: 40, value: 8}
+  # ---- ingredients and trade goods ----
+  meat:raw: {name: Raw Meat, value: 2}
+  herb:heartleaf: {name: Heartleaf, value: 5}
+  hide:wolf: {name: Wolf Pelt, value: 6}
+  seed:wardbloom: {name: Wardbloom Seed, value: 30}
+  # ---- tools (v1: carried, not yet required; spec 7's pickaxe is implicit) ----
+  tool:pickaxe: {name: Pickaxe, value: 40}
+  tool:torch: {name: Torch, value: 6}
+  tool:rope: {name: Rope, value: 10}
+  tool:whetstone: {name: Whetstone, value: 8}
+  # ---- currency (not in the spec: WP20's shops and bounties price things, see CR 010) ----
+  currency:gold: {name: Gold, value: 1}
+
+# Spell tomes: `tome:<spell key>` for every castable spell in combat.yaml
+# (resolved at runtime against combatdefs, so a new spell is a new tome
+# with no change here). Using one learns the spell (combat Profile.Grant).
+tome: {name: 'Tome: {spell}', value: 150}
+
+# Elemental and stat affixes (spec 8: "tables keyed by element and loot
+# theme"). Weight is the base chance; an affix that names elements/themes
+# is x4 on a matching roll and x0.25 off it. Values are rolled in
+# [min, max] and scaled by +3 % per item level above 1. Stats: damagePct,
+# critPct, spellPowerPct (weapons), health, armorPct (armor), lootFindPct
+# (any). All are applied by the zone (server/zone/internal/items gear.go).
+affixes:
+  brutal: {name: Brutal, stat: damagePct, min: 4, max: 10, slots: [weapon], weight: 10}
+  keen: {name: Keen, stat: critPct, min: 2, max: 5, slots: [weapon], weight: 8}
+  arcane: {name: Arcane, stat: spellPowerPct, min: 4, max: 10, slots: [weapon], weight: 6, themes: [arcane, celestial, voidtouched]}
+  of_embers: {name: of Embers, stat: damagePct, min: 6, max: 14, slots: [weapon], weight: 4, elements: [0], themes: [infernal, draconic]}
+  of_frost: {name: of Frost, stat: damagePct, min: 6, max: 14, slots: [weapon], weight: 4, elements: [1], themes: [drowned, royal]}
+  of_storms: {name: of Storms, stat: critPct, min: 3, max: 7, slots: [weapon], weight: 4, elements: [2], themes: [celestial]}
+  of_stone: {name: of Stone, stat: armorPct, min: 2, max: 6, slots: [weapon, armor], weight: 4, elements: [3], themes: [ancient, rustic]}
+  of_gales: {name: of Gales, stat: critPct, min: 3, max: 7, slots: [weapon], weight: 4, elements: [4], themes: [sylvan, feral]}
+  of_dawn: {name: of Dawn, stat: spellPowerPct, min: 6, max: 14, slots: [weapon], weight: 4, elements: [5], themes: [celestial, royal]}
+  of_dusk: {name: of Dusk, stat: damagePct, min: 6, max: 14, slots: [weapon], weight: 4, elements: [6], themes: [bandit, infernal]}
+  of_the_void: {name: of the Void, stat: spellPowerPct, min: 8, max: 16, slots: [weapon], weight: 2, elements: [7], themes: [voidtouched]}
+  sturdy: {name: Sturdy, stat: health, min: 5, max: 15, slots: [armor], weight: 10}
+  warding: {name: Warding, stat: armorPct, min: 2, max: 5, slots: [armor], weight: 8, themes: [royal, ancient]}
+  hale: {name: Hale, stat: health, min: 8, max: 20, slots: [armor], weight: 4, themes: [rustic, sylvan, feral]}
+  lucky: {name: Lucky, stat: lootFindPct, min: 2, max: 6, slots: [weapon, armor], weight: 3, themes: [bandit, royal, drowned]}
+
+# Unique effects (legendary and above: spec 8 "a unique effect", Bitchin'
+# two). Each is a bundle of the same stats, larger than any affix, with a
+# name shown on the item.
+uniques:
+  emberheart: {name: Emberheart, stats: {damagePct: 20, critPct: 4}}
+  stormcall: {name: Stormcall, stats: {critPct: 10}}
+  oathkeeper: {name: Oathkeeper, stats: {armorPct: 8, health: 30}}
+  starlit: {name: Starlit, stats: {spellPowerPct: 25}}
+  gravebloom: {name: Gravebloom, stats: {damagePct: 12, health: 20}}
+  magpie: {name: "Magpie's Eye", stats: {lootFindPct: 15}}
+  sunforged: {name: Sunforged, stats: {damagePct: 15, spellPowerPct: 15}}
+  hollowstep: {name: Hollowstep, stats: {critPct: 6, armorPct: 5}}
+
+# Named uniques (mythic and above): "<first><second>" from these lists, by
+# the roll seed. Original words, no names from other games.
+names:
+  first: [Dawn, Ash, Gale, Thorn, Ember, Frost, Hollow, Star, Grave, Storm, Sun, Rift, Iron, Moon, Wild, Bright]
+  second: [breaker, song, fall, warden, bite, heart, reaver, call, mourn, spire, keeper, wake, fang, crown, edge, light]
+
+# Recipes. station: forge (town forge or anvil: smelting and forging),
+# cook (inn hearth or campfire: cooking). A forge recipe with a blueprint
+# needs the blueprint item in the inventory (it is not consumed: spec 8
+# blueprints are "found in structures or bought from blacksmiths" and teach
+# the pattern); copper gear and smelting need none. `sockets` is the
+# guaranteed socket count of a forged item (more can roll, up to the base's
+# max); `luck` the rarity luck of the forge roll, +1 % per Smithing level.
+recipes:
+  smelt_copper: {station: forge, inputs: {ore:copper: 2}, output: ingot:copper, xp: 8}
+  smelt_iron: {station: forge, inputs: {ore:iron: 2}, output: ingot:iron, xp: 10}
+  smelt_silver: {station: forge, inputs: {ore:silver: 2}, output: ingot:silver, xp: 14}
+  smelt_sunsteel: {station: forge, inputs: {ore:sunsteel: 2}, output: ingot:sunsteel, xp: 20}
+  smelt_starmetal: {station: forge, inputs: {ore:starmetal: 3}, output: ingot:starmetal, xp: 28}
+  smelt_voidglass: {station: forge, inputs: {ore:voidglass: 3}, output: ingot:voidglass, xp: 32}
+  forge_copper_sword: {station: forge, inputs: {ingot:copper: 2}, output: weapon:copper_sword, sockets: 1, xp: 15}
+  forge_copper_spear: {station: forge, inputs: {ingot:copper: 2}, output: weapon:copper_spear, sockets: 1, xp: 15}
+  forge_copper_arrows: {station: forge, inputs: {ingot:copper: 1}, output: ammo:copper_arrow, qty: 20, xp: 6}
+  forge_iron_sword: {station: forge, blueprint: true, inputs: {ingot:iron: 3}, output: weapon:iron_sword, sockets: 1, xp: 25}
+  forge_iron_spear: {station: forge, blueprint: true, inputs: {ingot:iron: 3}, output: weapon:iron_spear, sockets: 1, xp: 25}
+  forge_iron_cuirass: {station: forge, blueprint: true, inputs: {ingot:iron: 4}, output: armor:iron_cuirass, xp: 30}
+  forge_iron_arrows: {station: forge, inputs: {ingot:iron: 1}, output: ammo:iron_arrow, qty: 20, xp: 8}
+  forge_silver_sword: {station: forge, blueprint: true, inputs: {ingot:silver: 3, ingot:iron: 1}, output: weapon:silver_sword, sockets: 1, xp: 40}
+  forge_silver_arrows: {station: forge, blueprint: true, inputs: {ingot:silver: 1}, output: ammo:silver_arrow, qty: 15, xp: 12}
+  # Spec 7/8: sunsteel ore (daylight-touching veins) -> sunsteel ingots ->
+  # the sunsteel blade, the only weapon that kills demons (WP15).
+  forge_sunsteel_blade: {station: forge, blueprint: true, inputs: {ingot:sunsteel: 2}, output: weapon:sunsteel_blade, sockets: 1, xp: 60}
+  forge_sunsteel_spear: {station: forge, blueprint: true, inputs: {ingot:sunsteel: 2, ingot:iron: 1}, output: weapon:sunsteel_spear, sockets: 1, xp: 60}
+  forge_sunsteel_arrows: {station: forge, blueprint: true, inputs: {ingot:sunsteel: 1}, output: ammo:sunsteel_arrow, qty: 10, xp: 20}
+  forge_starmetal_sword: {station: forge, blueprint: true, inputs: {ingot:starmetal: 3, ingot:silver: 1}, output: weapon:starmetal_sword, sockets: 2, xp: 90}
+  forge_voidglass_sword: {station: forge, blueprint: true, inputs: {ingot:voidglass: 3, ingot:starmetal: 1}, output: weapon:voidglass_sword, sockets: 2, xp: 120}
+  cook_grilled_meat: {station: cook, inputs: {meat:raw: 1}, output: food:grilled_meat, xp: 4}
+  cook_stew: {station: cook, inputs: {meat:raw: 1, herb:heartleaf: 1}, output: food:stew, xp: 8}
+  cook_berry_tart: {station: cook, inputs: {food:apple: 2, food:bread: 1}, output: food:berry_tart, xp: 6}
+  brew_health: {station: cook, inputs: {herb:heartleaf: 2}, output: potion:health, xp: 6}
+  brew_greater_health: {station: cook, inputs: {herb:heartleaf: 2, potion:health: 1}, output: potion:greater_health, xp: 10}
+
+# What a new character carries (spec 8's consumables replace WP13's
+# stand-in draught; granted once per character, exactly once).
+starter: {potion:health: 3, currency:gold: 20}
+
+# Loot tables (rolled by the zone per eligible player, spec 8 personal loot).
+loot:
+  # Coins per kill: [min, max] x (1 + perLevel x (level - 1)).
+  coins: {common: [2, 6], elite: [12, 26], boss: [80, 140], perLevel: 0.15}
+  # Chance per kill of each extra drop, by enemy family (combat.yaml).
+  families:
+    beast: {item: 0.12, meat: 0.6, hide: 0.35, gem: 0.03, blueprint: 0.02, consumable: 0.05}
+    bandit: {item: 0.35, gem: 0.04, blueprint: 0.05, consumable: 0.15, food: 0.2}
+    guardian: {item: 0.3, gem: 0.12, blueprint: 0.08, consumable: 0.05}
+    elemental: {item: 0.2, gem: 0.18, blueprint: 0.03, consumable: 0.05}
+    cave: {item: 0.2, gem: 0.15, ore: 0.4, blueprint: 0.04, consumable: 0.05}
+    boss: {item: 1.0, gem: 1.0, blueprint: 1.0, consumable: 1.0}
+  # Elites: one guaranteed equipment roll with this luck. Bosses: `items`
+  # equipment rolls, a tome, and luck; weekly lockout per character (spec 8).
+  elite: {items: 1, luck: 2.0}
+  boss: {items: 3, luck: 4.0, tomes: 1, lockoutDays: 7}
+  # Containers (worldgen chunk containers: kind 0 chest, 1 buried cache,
+  # 2 urn, 3 crate). Opened once per character (spec 8).
+  containers:
+    chest: {coins: [8, 20], items: [1, 2], luck: 1.5, gem: 0.25, blueprint: 0.15, consumable: 0.4}
+    buried_cache: {coins: [15, 40], items: [1, 1], luck: 2.0, gem: 0.35, blueprint: 0.2, consumable: 0.2}
+    urn: {coins: [3, 10], items: [0, 1], luck: 1.0, gem: 0.15, blueprint: 0.05, consumable: 0.3}
+    crate: {coins: [0, 6], items: [0, 1], luck: 1.0, gem: 0.05, blueprint: 0.05, consumable: 0.6}
+  # Socket count weights for rolled weapons (spec 8: 0 to 3), shifted one
+  # step up from relic upward.
+  sockets: [0.5, 0.3, 0.15, 0.05]
+  # Opal loot find: each point of lootFindPct adds 1 % to the luck multiplier.
+  # Depth: deep-cave sources (WP09 depth band 2) add this luck.
+  deepCaveLuck: 2.0

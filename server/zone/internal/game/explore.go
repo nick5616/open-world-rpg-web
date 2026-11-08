@@ -437,6 +437,30 @@ func (s *Server) saveProgressSoon(sess *session, force bool) {
 // the connection is open, because a counter the client never receives
 // would make its stored blob stale (localsave README).
 func (s *Server) issueLocalSave(sess *session) {
+	x, e := sess.x, sess.ent
+	stateJSON := s.localState(sess).Marshal()
+	saves, profile, charID, world, log := s.cfg.Saves, x.local.profileID, e.CharacterID, s.cfg.WorldID, s.log
+	s.cfg.Queue.Enqueue(writebehind.Op{Key: "localsave:" + charID, Run: func(ctx context.Context) error {
+		if sess.closed.Load() {
+			s.flushLocalDrops(charID, false) // WP14: parked drops stay in the browser's blob
+			return nil                       // gone: keep the blob the browser already has valid
+		}
+		b, err := saves.Issue(ctx, profile, charID, world, stateJSON)
+		if err != nil {
+			return err
+		}
+		raw, _ := json.Marshal(b)
+		if err := sess.conn.SendReliable(proto.Encode(&proto.SaveBlob{Blob: raw})); err != nil {
+			log.Warn("local save issued but not delivered; the browser's blob is now stale", "character", charID, "counter", b.Counter)
+		}
+		s.flushLocalDrops(charID, true) // WP14: drops parked until a blob without them exists (loot.go)
+		return nil
+	}})
+}
+
+// localState builds the state the next blob carries and marks it issued
+// (WP14 calls it for a local profile's drop, which must issue first).
+func (s *Server) localState(sess *session) localsave.State {
 	x := sess.x
 	e := sess.ent
 	p := x.prog
@@ -448,6 +472,7 @@ func (s *Server) issueLocalSave(sess *session) {
 	st.Progress.Discoveries = append([]byte(nil), p.Discoveries...)
 	st.Progress.Pins = p.PinsJSON()
 	combatIntoLocal(e, (*[]byte)(&st.Progress.SkillTree), &st.Progress.SpellsKnown, &st.Progress.SpellsEquipped) // WP13
+	itemsIntoLocal(sess, &st)                                                                                    // WP14
 	st.LastWaypoint = nil
 	if p.LastWaypoint >= 0 {
 		id := int64(s.cfg.Explore.Atlas.Sites[p.LastWaypoint].ID)
@@ -456,22 +481,7 @@ func (s *Server) issueLocalSave(sess *session) {
 	x.local.state = st
 	p.MarkSaved()
 	x.lastIssue = time.Now()
-	stateJSON := st.Marshal()
-	saves, profile, charID, world, log := s.cfg.Saves, x.local.profileID, e.CharacterID, s.cfg.WorldID, s.log
-	s.cfg.Queue.Enqueue(writebehind.Op{Key: "localsave:" + charID, Run: func(ctx context.Context) error {
-		if sess.closed.Load() {
-			return nil // gone: keep the blob the browser already has valid
-		}
-		b, err := saves.Issue(ctx, profile, charID, world, stateJSON)
-		if err != nil {
-			return err
-		}
-		raw, _ := json.Marshal(b)
-		if err := sess.conn.SendReliable(proto.Encode(&proto.SaveBlob{Blob: raw})); err != nil {
-			log.Warn("local save issued but not delivered; the browser's blob is now stale", "character", charID, "counter", b.Counter)
-		}
-		return nil
-	}})
+	return st
 }
 
 // exploreLeave saves what's left when a player leaves (logout checkpoint).
