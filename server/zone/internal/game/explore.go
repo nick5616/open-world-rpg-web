@@ -447,6 +447,7 @@ func (s *Server) issueLocalSave(sess *session) {
 	st.Progress.Waypoints = append([]byte(nil), p.Waypoints...)
 	st.Progress.Discoveries = append([]byte(nil), p.Discoveries...)
 	st.Progress.Pins = p.PinsJSON()
+	combatIntoLocal(e, (*[]byte)(&st.Progress.SkillTree), &st.Progress.SpellsKnown, &st.Progress.SpellsEquipped) // WP13
 	st.LastWaypoint = nil
 	if p.LastWaypoint >= 0 {
 		id := int64(s.cfg.Explore.Atlas.Sites[p.LastWaypoint].ID)

@@ -1,0 +1,82 @@
+package main
+
+// Towns wiring for the zone (WP20): build the world's towns layer from the
+// wasm, put its buildings, bridges and structures on the movement ground
+// (the same collision the client predicts with: server/pkg/towns), and
+// hand the townsfolk to the game. Its own file so main.go gains one line.
+
+import (
+	"log/slog"
+	"time"
+
+	"lodestone/server/pkg/env"
+	"lodestone/server/pkg/movement"
+	"lodestone/server/pkg/structures"
+	"lodestone/server/pkg/towns"
+	"lodestone/server/pkg/worldhost"
+	"lodestone/server/zone/internal/game"
+	"lodestone/server/zone/internal/npc"
+)
+
+// townCaveTerrain is the zone ground with buildings over the cave terrain.
+// Embedding promotes every method the game asserts on the ground (chunk
+// interest, spawns, caves: wanter, spawner, caveWorld); only the level view
+// the movement step stands on changes (floors within a step, walls, ceilings).
+type townCaveTerrain struct {
+	*worldhost.CaveTerrain
+	tg *towns.Ground
+}
+
+// AtLevel implements movement.LevelGround: caves under, buildings on top.
+func (t townCaveTerrain) AtLevel(y float64) movement.Ground { return t.tg.AtLevel(y) }
+
+// townTerrain is the same over the surface ground when there are no caves
+// (a pre-WP09 wasm): terrain + towers, promoted through overlaidTerrain.
+type townTerrain struct {
+	overlaidTerrain
+	tg *towns.Ground
+}
+
+func (t townTerrain) AtLevel(y float64) movement.Ground { return t.tg.AtLevel(y) }
+
+// withTowns wraps the ground with the towns' collision and fills the towns
+// part of cfg. LODESTONE_ZONE_NO_TOWNS=1 turns it off (A/B checks);
+// LODESTONE_ZONE_TIME_OFFSET_S shifts the NPC day (evidence: a night run).
+// A wasm built before WP20 has no towns_build: the zone logs NO TOWNS and
+// keeps the ground it had.
+func withTowns(ground movement.Ground, terrain *worldhost.Terrain, cfg *game.Config, log *slog.Logger) movement.Ground {
+	cfg.TimeOffsetS = env.Float("LODESTONE_ZONE_TIME_OFFSET_S", 0)
+	if terrain == nil || env.Bool("LODESTONE_ZONE_NO_TOWNS", false) {
+		return ground
+	}
+	start := time.Now()
+	b, err := terrain.World().TownsBytes()
+	if err != nil {
+		log.Warn("NO TOWNS: towns_build unavailable; buildings have no collision and there are no NPCs", "err", err)
+		return ground
+	}
+	tw, err := towns.Parse(b)
+	if err != nil {
+		log.Error("NO TOWNS: towns buffer unreadable", "err", err)
+		return ground
+	}
+	var sites []npc.Site
+	if a, err := structures.ParseAtlas(terrain.World().Atlas); err == nil {
+		for _, s := range a.Sites {
+			sites = append(sites, npc.Site{Index: s.Index, Category: s.Category, Kind: s.Kind, X: s.X, Z: s.Z, Name: s.Name})
+		}
+	}
+	cfg.Towns = npc.New(tw, terrain.World().Seed, sites)
+	var out movement.Ground
+	switch g := ground.(type) {
+	case *worldhost.CaveTerrain:
+		out = townCaveTerrain{CaveTerrain: g, tg: towns.NewGround(g, tw)}
+	case overlaidTerrain:
+		out = townTerrain{overlaidTerrain: g, tg: towns.NewGround(g, tw)}
+	default:
+		out = towns.NewGround(ground, tw)
+	}
+	log.Info("towns ready", "settlements", len(tw.Settlements), "buildings", len(tw.Buildings), "boxes", tw.Boxes.Len(), "npcs", len(tw.NPCs),
+		"roads", len(tw.Roads), "bridges", tw.Bridges, "structures", len(tw.Structures), "bytes", len(b), "ms", time.Since(start).Milliseconds())
+	return out
+}

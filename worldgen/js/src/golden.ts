@@ -5,8 +5,10 @@ import type { WorldSpec } from '@lodestone/contracts';
 import { hex64 } from './format';
 import type { AtlasHandle, Worldgen } from './index';
 import { checkCaves, type GoldenCaves } from './caveGolden';
+import { checkTowns, type GoldenTowns } from './townGolden';
 
 export type { GoldenCaves } from './caveGolden';
+export type { GoldenTowns } from './townGolden';
 
 export interface GoldenChunk {
   cx: number;
@@ -27,6 +29,8 @@ export interface GoldenWorld {
   collision: { x: number; z: number; h: string }[];
   /** WP09: cave cells, graph, masks and collision vectors (optional so older tables still load). */
   caves?: GoldenCaves;
+  /** WP20: towns buffer, counts and building collision vectors (optional so older tables still load). */
+  towns?: GoldenTowns;
 }
 
 export interface GoldenFile {
@@ -49,6 +53,10 @@ export interface GoldenResult {
   caveCells: number;
   caveQueries: number;
   caveMs: number[];
+  /** WP20: town worlds and collision vectors checked, towns_build time per world (ms). */
+  towns: number;
+  townQueries: number;
+  townMs: number[];
 }
 
 export function f64Bits(v: number): string {
@@ -58,7 +66,7 @@ export function f64Bits(v: number): string {
 }
 
 export function runGolden(wg: Worldgen, golden: GoldenFile, now: () => number, host: string): GoldenResult {
-  const r: GoldenResult = { host, worlds: 0, chunks: 0, collisions: 0, failures: [], atlasMs: [], chunkMs: [], caveCells: 0, caveQueries: 0, caveMs: [] };
+  const r: GoldenResult = { host, worlds: 0, chunks: 0, collisions: 0, failures: [], atlasMs: [], chunkMs: [], caveCells: 0, caveQueries: 0, caveMs: [], towns: 0, townQueries: 0, townMs: [] };
   if (wg.genVersion !== golden.genVersion) r.failures.push(`genVersion ${wg.genVersion} != golden ${golden.genVersion}`);
   for (const w of golden.worlds) {
     const t0 = now();
@@ -77,6 +85,10 @@ export function runGolden(wg: Worldgen, golden: GoldenFile, now: () => number, h
         r.chunks++;
       }
       if (w.caves) checkCaves(wg, atlas as AtlasHandle, w.label, w.caves, now, r);
+      if (w.towns) {
+        checkTowns(wg, atlas as AtlasHandle, w.label, w.towns, now, r);
+        r.towns++;
+      }
       for (const p of w.collision) {
         const h = f64Bits(wg.collisionHeight(atlas, p.x, p.z));
         if (h !== p.h) r.failures.push(`${w.label}: collision (${p.x}, ${p.z}) ${h} != ${p.h}`);

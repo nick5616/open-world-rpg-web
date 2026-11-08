@@ -1,0 +1,62 @@
+[   2.01s] world world-wp13 seed 20261108; boss group #38 archon (The Hollow Sanctum, lvl 4) at (1152, 2176) r 26; camp #37 guardian (0 members, lvl 4) at (1216, 2368), 202 m from the boss
+[   2.04s] Alyssa joined as entity 1 at (1228.7, 250.3, 2410.7) with a sword
+[   2.04s] Bruno joined as entity 2 at (1231.7, 249.8, 2410.7) with a spear
+[  16.07s] Bruno killed enemy 3 (+42 xp)
+[  17.04s] Alyssa at (1218, 291, 2368) hp 100%  attacks 5 casts 2 dodges 4  accepted 6 refused 0  corrections 0
+[  17.04s] Bruno at (1219, 290, 2369) hp 79%  attacks 5 casts 3 dodges 4  accepted 7 refused 0  corrections 0
+[  19.34s] Alyssa killed enemy 5 (+42 xp)
+[  22.80s] Alyssa: camp cleared (group 37)
+[  22.80s] Bruno killed enemy 4 (+26 xp)
+[  22.80s] Bruno: camp cleared (group 37)
+[  23.52s] CAMP CLEARED: group #37 (guardian) in 21.5 s; regrouping at (1165, 2214) outside the arena
+[  32.04s] Alyssa at (1193, 316, 2307) hp 100%  attacks 8 casts 7 dodges 8  accepted 14 refused 0  corrections 0
+[  32.04s] Bruno at (1193, 316, 2307) hp 100%  attacks 8 casts 9 dodges 8  accepted 15 refused 1  corrections 0
+[  46.02s] party regrouped; pulling the boss
+[  47.04s] Alyssa at (1164, 317, 2212) hp 100%  attacks 8 casts 8 dodges 8  accepted 14 refused 0  corrections 0
+[  47.04s] Bruno at (1164, 317, 2212) hp 100%  attacks 8 casts 10 dodges 8  accepted 15 refused 1  corrections 0
+[  47.77s] Alyssa: boss engaged: The Gilded Archon (15470 hp after party scaling)
+[  47.77s] Bruno: boss engaged: The Gilded Archon (15470 hp after party scaling)
+[  62.04s] Alyssa at (1151, 317, 2167) hp 100%  attacks 24 casts 13 dodges 13  accepted 36 refused 0  corrections 0
+[  62.04s] Bruno at (1151, 319, 2169) hp 100%  attacks 23 casts 14 dodges 13  accepted 35 refused 1  corrections 0
+[  77.04s] Alyssa at (1156, 307, 2159) hp 100%  attacks 35 casts 22 dodges 18  accepted 55 refused 0  corrections 0
+[  77.04s] Bruno at (1152, 311, 2159) hp 100%  attacks 34 casts 23 dodges 18  accepted 55 refused 1  corrections 0
+[  92.04s] Alyssa at (1152, 311, 2160) hp 100%  attacks 35 casts 35 dodges 22  accepted 69 refused 0  corrections 0
+[  92.04s] Bruno at (1156, 307, 2159) hp 100%  attacks 34 casts 38 dodges 22  accepted 69 refused 1  corrections 0
+[ 107.04s] Alyssa at (1156, 307, 2159) hp 100%  attacks 35 casts 53 dodges 27  accepted 86 refused 0  corrections 0
+[ 107.04s] Bruno at (1155, 307, 2159) hp 100%  attacks 34 casts 56 dodges 26  accepted 87 refused 1  corrections 0
+[ 122.04s] Alyssa at (1152, 311, 2160) hp 100%  attacks 35 casts 71 dodges 31  accepted 104 refused 0  corrections 0
+[ 122.04s] Bruno at (1151, 311, 2160) hp 100%  attacks 34 casts 73 dodges 30  accepted 105 refused 1  corrections 0
+[ 137.04s] Bruno at (1152, 310, 2160) hp 100%  attacks 34 casts 91 dodges 33  accepted 123 refused 1  corrections 0
+[ 137.04s] Alyssa at (1151, 311, 2160) hp 85%  attacks 35 casts 89 dodges 35  accepted 122 refused 0  corrections 0
+[ 152.04s] Bruno at (1156, 306, 2159) hp 100%  attacks 34 casts 109 dodges 36  accepted 141 refused 1  corrections 0
+[ 152.04s] Alyssa at (1155, 307, 2159) hp 100%  attacks 35 casts 105 dodges 39  accepted 139 refused 0  corrections 0
+[ 157.77s] Alyssa: BOSS PHASE 2/3: The Gilded Archon
+[ 157.77s] Bruno: BOSS PHASE 2/3: The Gilded Archon
+[ 167.04s] Alyssa at (1151, 311, 2160) hp 73%  attacks 35 casts 123 dodges 53  accepted 154 refused 2  corrections 0
+[ 167.04s] Bruno at (1155, 307, 2159) hp 76%  attacks 34 casts 127 dodges 43  accepted 156 refused 4  corrections 0
+[ 182.04s] Alyssa at (1157, 306, 2159) hp 54%  attacks 35 casts 139 dodges 68  accepted 171 refused 2  corrections 0
+[ 182.04s] Bruno at (1151, 311, 2160) hp 100%  attacks 34 casts 145 dodges 52  accepted 173 refused 4  corrections 0
+[ 197.04s] Alyssa at (1176, 290, 2163) hp 58%  attacks 35 casts 153 dodges 84  accepted 183 refused 4  corrections 0
+[ 197.04s] Bruno at (1156, 307, 2159) hp 65%  attacks 38 casts 156 dodges 63  accepted 185 refused 8  corrections 1
+[ 212.04s] Alyssa at (1226, 253, 2179) hp 100%  attacks 35 casts 153 dodges 84  accepted 183 refused 4  corrections 93
+[ 212.04s] Bruno at (1186, 266, 2156) hp 62%  attacks 45 casts 164 dodges 78  accepted 193 refused 15  corrections 8
+[ 227.04s] Alyssa at (1217, 234, 2160) hp 100%  attacks 35 casts 153 dodges 84  accepted 183 refused 4  corrections 139
+[ 227.04s] Bruno at (1216, 234, 2160) hp 100%  attacks 45 casts 164 dodges 78  accepted 193 refused 15  corrections 29
+[ 242.04s] Alyssa at (1215, 235, 2160) hp 100%  attacks 35 casts 153 dodges 84  accepted 183 refused 4  corrections 292
+[ 242.04s] Bruno at (1215, 236, 2160) hp 100%  attacks 45 casts 164 dodges 78  accepted 193 refused 15  corrections 192
+[ 257.05s] Alyssa at (1214, 236, 2160) hp 100%  attacks 35 casts 153 dodges 84  accepted 183 refused 4  corrections 461
+[ 257.05s] Bruno at (1214, 236, 2160) hp 100%  attacks 45 casts 164 dodges 78  accepted 193 refused 15  corrections 368
+[ 272.04s] Alyssa at (1215, 233, 2158) hp 100%  attacks 35 casts 153 dodges 84  accepted 183 refused 4  corrections 566
+[ 272.04s] Bruno at (1215, 234, 2158) hp 100%  attacks 45 casts 164 dodges 78  accepted 193 refused 15  corrections 462
+[ 287.04s] Bruno at (1214, 234, 2158) hp 100%  attacks 45 casts 164 dodges 78  accepted 193 refused 15  corrections 660
+[ 287.04s] Alyssa at (1213, 237, 2159) hp 100%  attacks 35 casts 153 dodges 84  accepted 183 refused 4  corrections 722
+[ 302.04s] Alyssa at (1214, 234, 2158) hp 100%  attacks 35 casts 153 dodges 84  accepted 183 refused 4  corrections 789
+[ 302.04s] Bruno at (1214, 234, 2158) hp 100%  attacks 45 casts 164 dodges 78  accepted 193 refused 15  corrections 685
+[ 317.04s] Alyssa at (1214, 234, 2158) hp 100%  attacks 35 casts 153 dodges 84  accepted 183 refused 4  corrections 817
+[ 317.04s] Bruno at (1213, 236, 2159) hp 100%  attacks 45 casts 164 dodges 78  accepted 193 refused 15  corrections 800
+[ 332.04s] Alyssa at (1214, 234, 2158) hp 100%  attacks 35 casts 153 dodges 84  accepted 183 refused 4  corrections 1016
+[ 332.04s] Bruno at (1214, 234, 2158) hp 100%  attacks 45 casts 164 dodges 78  accepted 193 refused 15  corrections 916
+[ 347.04s] Bruno at (1214, 234, 2158) hp 100%  attacks 45 casts 164 dodges 78  accepted 193 refused 15  corrections 941
+[ 347.04s] Alyssa at (1214, 234, 2158) hp 100%  attacks 35 casts 153 dodges 84  accepted 183 refused 4  corrections 1033
+[ 362.04s] Bruno at (1214, 234, 2158) hp 100%  attacks 45 casts 164 dodges 78  accepted 193 refused 15  corrections 1138
+[ 362.04s] Alyssa at (1213, 237, 2159) hp 100%  attacks 35 casts 153 dodges 84  accepted 183 refused 4  corrections 1188

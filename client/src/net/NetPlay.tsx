@@ -22,6 +22,9 @@ import { envAt } from '../sim/stepEnv';
 import { ZoneSession, type SessionEnd } from './zoneSession';
 // WP12: exploration Events, map actions, re-issued local save blobs.
 import { attachExploration } from '../ui/map/zoneLink';
+// WP13: combat (input, predicted hits, HitClaims, enemies, HUD state).
+import { attachCombat, combatDriverHooks } from '../combat/link';
+import { CombatLayer } from '../combat/CombatLayer';
 
 type Phase = { kind: 'connecting' } | { kind: 'playing'; welcome: Welcome } | { kind: 'ended'; end: SessionEnd } | { kind: 'error'; message: string };
 
@@ -92,6 +95,7 @@ export function NetPlay({ ready }: { ready: ReadySession }) {
     });
     netRuntime.session = s;
     const detachExploration = attachExploration(s, ready);
+    const detachCombat = attachCombat(s, ground);
     let live = true;
     s.onEnd = (end) => live && setPhase({ kind: 'ended', end });
     s.start().then(
@@ -105,6 +109,7 @@ export function NetPlay({ ready }: { ready: ReadySession }) {
     return () => {
       live = false;
       detachExploration();
+      detachCombat();
       s.close('leaving');
       if (netRuntime.session === s) netRuntime.session = null;
       netStats.transport = netStats.rttMs = netStats.downKbps = netStats.upKbps = null;
@@ -164,6 +169,7 @@ export function NetPlay({ ready }: { ready: ReadySession }) {
       // WP10: rain/updrafts from the zone's seed at the synced server time,
       // the same inputs the zone steps with.
       env: () => envAt(w.seed, session.clock.serverNow()),
+      ...combatDriverHooks(),
     };
   }, [session, phase]);
 
@@ -172,6 +178,7 @@ export function NetPlay({ ready }: { ready: ReadySession }) {
       {driver && session && (
         <WorldCanvas driver={driver} seed={phase.kind === 'playing' ? phase.welcome.seed.toString() : undefined} onRuntime={(r) => (ground.target = r.ground)}>
           <RemotePlayers session={session} />
+          <CombatLayer />
         </WorldCanvas>
       )}
       {phase.kind === 'connecting' && (

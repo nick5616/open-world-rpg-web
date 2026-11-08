@@ -9,6 +9,7 @@ import { parseProtocol, genTs, genGo, genGoVectorTest, buildVectors } from './li
 import { parseConstants, genConstantsTs, genConstantsGo, genConstantsRust } from './lib/constants.mjs';
 import { parseSocial, genSocialTs, genSocialGo } from './lib/social.mjs';
 import { parseWorldSpec, genWorldSpecTs, genWorldSpecGo, genWorldSpecRust } from './lib/worldspec.mjs';
+import { parseCombat, genCombatTs, genCombatJson } from './lib/combat.mjs'; // WP13 (CR 009)
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const rd = (...p) => fs.readFileSync(path.join(root, ...p), 'utf8');
@@ -18,6 +19,7 @@ const protocol = parseProtocol(YAML.parse(rd('contracts', 'protocol.yaml')));
 const constants = parseConstants(YAML.parse(rd('contracts', 'constants.yaml')));
 const social = parseSocial(YAML.parse(rd('contracts', 'social.yaml')));
 const worldspec = parseWorldSpec(JSON.parse(rd('contracts', 'worldspec.schema.json')));
+const combat = parseCombat(YAML.parse(rd('contracts', 'combat.yaml')), constants);
 
 const outputs = {
   'contracts/ts/src/gen/protocol.ts': genTs(protocol),
@@ -32,6 +34,8 @@ const outputs = {
   'server/pkg/worldspec/worldspec_gen.go': genWorldSpecGo(worldspec),
   'worldgen/src/gen/constants.rs': genConstantsRust(constants),
   'worldgen/src/gen/worldspec.rs': genWorldSpecRust(worldspec),
+  'contracts/ts/src/gen/combat.ts': genCombatTs(combat),
+  'server/pkg/combatdefs/combat_gen.json': genCombatJson(combat),
 };
 
 let stale = 0;

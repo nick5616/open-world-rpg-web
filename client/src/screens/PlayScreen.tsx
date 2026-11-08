@@ -15,6 +15,8 @@ import { DEBUG, SOLO } from '../config';
 import { SocialOverlay } from '../social';
 // WP12: compass, discovery toasts, map (M).
 import { ExplorationHud } from '../ui/map/ExplorationHud';
+// WP13: health, mana, spell slots, boss bar, damage numbers (renders nothing offline).
+import { CombatHud } from '../combat/CombatHud';
 // WP11: renders nothing until NetPlay starts voice (client/src/voice/README.md).
 import { VoiceHud } from '../voice';
 
@@ -42,6 +44,7 @@ export default function PlayScreen() {
       {DEBUG && <DebugLayer />}
       <SocialOverlay />
       <ExplorationHud />
+      <CombatHud />
       <VoiceHud />
     </>
   );

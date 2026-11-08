@@ -1,0 +1,212 @@
+{
+  "date": "2026-11-08T19:48:01.727Z",
+  "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 3070 (0x00002488) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+  "viewport": {
+    "width": 1600,
+    "height": 900
+  },
+  "tier": "high",
+  "build": "production",
+  "seed": "20261108",
+  "town": {
+    "index": 9,
+    "name": "Draedmore",
+    "size": "town",
+    "style": "cottage",
+    "walled": true,
+    "x": 1920,
+    "y": 82.3236083984375,
+    "z": 2272,
+    "radius": 130,
+    "square": 18,
+    "buildings": 40,
+    "npcs": 22
+  },
+  "budgetDrawCalls": 400,
+  "views": [
+    {
+      "name": "overview (whole town, from above at an angle)",
+      "withTowns": {
+        "calls": 214,
+        "triangles": 1497853,
+        "shadowCalls": 31,
+        "frameMsMean": 7.35,
+        "frameMsP95": 9.3,
+        "frames": 275,
+        "townTris": 268890,
+        "settlementsLoaded": 17,
+        "structuresLoaded": 11,
+        "roadCells": 16,
+        "lights": 0
+      },
+      "withoutTowns": {
+        "calls": 162,
+        "triangles": 1210123,
+        "shadowCalls": 9,
+        "frameMsMean": 20.23,
+        "frameMsP95": 7.2,
+        "frames": 365,
+        "townTris": 268890,
+        "settlementsLoaded": 17,
+        "structuresLoaded": 11,
+        "roadCells": 16,
+        "lights": 0
+      }
+    },
+    {
+      "name": "top-down (whole town and walls)",
+      "withTowns": {
+        "calls": 167,
+        "triangles": 1088435,
+        "shadowCalls": 41,
+        "frameMsMean": 5.76,
+        "frameMsP95": 7.5,
+        "frames": 350,
+        "townTris": 272740,
+        "settlementsLoaded": 18,
+        "structuresLoaded": 12,
+        "roadCells": 16,
+        "lights": 0
+      },
+      "withoutTowns": {
+        "calls": 110,
+        "triangles": 857281,
+        "shadowCalls": 9,
+        "frameMsMean": 5.21,
+        "frameMsP95": 6.9,
+        "frames": 385,
+        "townTris": 272740,
+        "settlementsLoaded": 18,
+        "structuresLoaded": 12,
+        "roadCells": 16,
+        "lights": 0
+      }
+    },
+    {
+      "name": "street level (looking along a street to the square)",
+      "withTowns": {
+        "calls": 292,
+        "triangles": 1815710,
+        "shadowCalls": 87,
+        "frameMsMean": 8.07,
+        "frameMsP95": 10.4,
+        "frames": 252,
+        "townTris": 276296,
+        "settlementsLoaded": 19,
+        "structuresLoaded": 12,
+        "roadCells": 16,
+        "lights": 0
+      },
+      "withoutTowns": {
+        "calls": 216,
+        "triangles": 1515011,
+        "shadowCalls": 53,
+        "frameMsMean": 6.14,
+        "frameMsP95": 8,
+        "frames": 327,
+        "townTris": 276296,
+        "settlementsLoaded": 19,
+        "structuresLoaded": 12,
+        "roadCells": 16,
+        "lights": 0
+      }
+    },
+    {
+      "name": "interior (inn, looking at the door)",
+      "withTowns": {
+        "calls": 261,
+        "triangles": 1741202,
+        "shadowCalls": 64,
+        "frameMsMean": 5.9,
+        "frameMsP95": 7.5,
+        "frames": 340,
+        "townTris": 276296,
+        "settlementsLoaded": 19,
+        "structuresLoaded": 12,
+        "roadCells": 16,
+        "lights": 0
+      },
+      "withoutTowns": null
+    },
+    {
+      "name": "NPCs in the square",
+      "withTowns": {
+        "calls": 251,
+        "triangles": 1676835,
+        "shadowCalls": 60,
+        "frameMsMean": 6.07,
+        "frameMsP95": 8.2,
+        "frames": 333,
+        "townTris": 276296,
+        "settlementsLoaded": 19,
+        "structuresLoaded": 12,
+        "roadCells": 16,
+        "lights": 0
+      },
+      "withoutTowns": null
+    },
+    {
+      "name": "road and bridge",
+      "withTowns": {
+        "calls": 277,
+        "triangles": 1883751,
+        "shadowCalls": 71,
+        "frameMsMean": 5.67,
+        "frameMsP95": 7.4,
+        "frames": 354,
+        "townTris": 281333,
+        "settlementsLoaded": 22,
+        "structuresLoaded": 13,
+        "roadCells": 16,
+        "lights": 0
+      },
+      "withoutTowns": null
+    },
+    {
+      "name": "night overview",
+      "withTowns": {
+        "calls": 264,
+        "triangles": 1707740,
+        "shadowCalls": 76,
+        "frameMsMean": 8.61,
+        "frameMsP95": 10.9,
+        "frames": 237,
+        "townTris": 280072,
+        "settlementsLoaded": 19,
+        "structuresLoaded": 13,
+        "roadCells": 16,
+        "lights": 0
+      },
+      "withoutTowns": null
+    }
+  ],
+  "towns": {
+    "ready": true,
+    "readyMs": 11189.60000000149,
+    "worker": {
+      "towns": 412.69999999552965,
+      "textures": 1557.8000000044703,
+      "roads": 909.0999999940395
+    },
+    "settlements": 21,
+    "structures": 13,
+    "cells": 16,
+    "uploads": 209,
+    "maxUploadMs": 4.5,
+    "maxBuildMs": 50.5,
+    "hiddenScatter": 2296,
+    "lights": 6,
+    "tris": 0,
+    "inFlight": 0,
+    "frame": {
+      "calls": 289,
+      "triangles": 1781568,
+      "geometries": 524,
+      "textures": 38,
+      "shadowCalls": 87,
+      "shadowTris": 587582
+    },
+    "townTris": 287272
+  },
+  "errors": []
+}

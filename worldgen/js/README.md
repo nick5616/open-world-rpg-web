@@ -31,9 +31,12 @@ atlas.free();
 | `parseAtlas`, `parseChunk` | Pure-TS readers (no wasm), e.g. for a chunk posted from a worker |
 | `chunkSurfaceHeight` | The collision formula evaluated on LOD 0 chunk heights |
 | `chunkWaterHeight` | The `water_height` formula on LOD 0 chunk water samples (WP10; WP05's streamed ground should implement `GroundQuery.waterAt` with it) |
+| `townsBytes`, `parseTowns` | WP20: the `towns_build` export and the pure-TS reader of the towns buffer (settlements, buildings, boxes, props, NPCs, roads, bridges, signs, structures, pieces, veins, names) |
+| `TownCollision`, `TownGroundCore` | WP20: building collision (`floorAt`, `collide`; bit-exact twin of `server/pkg/towns`) and the level-ground wrapper the client's `TownGround` uses |
+| `BUILDING_ROLES`, `BUILDING_STYLES`, `ROOF_KINDS`, `BOX_KINDS`, `PROP_KINDS`, `NPC_ROLES`, `MERCHANT_KINDS`, `PIECE_KINDS`, `TOWN_LAYER` | WP20 enum tables matching the README "Towns" section |
 | `fnv1a64`, `hex64` | Content hash in TS (equal to `hash_buffer`) |
 | `BIOMES`, `ELEMENTS`, `MATERIALS`, `POI_KINDS`, `STRUCTURE_KINDS`, `SETTLEMENT_SIZES`, `LANDMARK_VARIANTS`, `TREE_KINDS`, `ROCK_KINDS`, `BUSH_KINDS`, `GRASS_KINDS`, `CONTAINER_KINDS`, `ENEMY_TABLES`, `LAYER`, `PARAM` | Enum tables matching the README |
-| `@lodestone/worldgen/golden` | `runGolden`, `benchmarkChunks`, `stats` for determinism hosts |
+| `@lodestone/worldgen/golden` | `runGolden` (chunks, caves, towns), `benchmarkChunks`, `stats` for determinism hosts |
 
 Notes: one `Worldgen` per worker (instances are single-threaded); every call
 may grow wasm memory, so the wrapper copies results out and never keeps views

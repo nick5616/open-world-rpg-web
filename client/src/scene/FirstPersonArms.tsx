@@ -13,6 +13,7 @@ import { useRef } from 'react';
 import { createPortal, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { localPlayer } from '../state/live';
+import { useCombatHud } from '../combat/store';
 
 const REST_PITCH = 0.35; // wizard-wars rest pose: wand tipped up toward the crosshair
 const SKIN = '#c9a27e';
@@ -97,5 +98,8 @@ function Arms() {
 /** Mount once inside the Canvas; requires the camera to be part of the scene (GameCanvas adds it). */
 export function FirstPersonArms() {
   const camera = useThree((s) => s.camera);
+  // WP13: online, the combat layer draws the equipped weapon instead.
+  const combat = useCombatHud((s) => s.active);
+  if (combat) return null;
   return createPortal(<Arms />, camera);
 }

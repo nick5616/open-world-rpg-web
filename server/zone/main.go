@@ -147,9 +147,12 @@ func main() {
 		cfg.Earshot = r // WP11 proximity voice (voice.go)
 	}
 	ground, caveTerrain := withCaves(ground, terrain, log) // WP09 (caves.go)
+	ground = withTowns(ground, terrain, &cfg, log)         // WP20: buildings on the ground, townsfolk (towns.go)
 	cfg.Ground = ground
 	miningConfig(&cfg, pool)
+	cfg.Combat = combatSetup(terrain, world.Seed, world.Spec, devKey, log) // WP13 (combat.go)
 	zone := game.New(cfg)
+	serveCombatDebug(s.Mux, zone) // WP13
 	restoreEdits(ctx, zone, log)
 
 	origins := strings.Split(env.Str("LODESTONE_CORS_ORIGIN", "*"), ",")

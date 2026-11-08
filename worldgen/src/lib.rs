@@ -23,6 +23,7 @@ pub mod names;
 pub mod noise;
 pub mod rng;
 pub mod spec;
+pub mod town;
 
 /// Generator major version. Any change that alters output bytes for an
 /// existing (seed, spec) bumps this and gets a new golden table (spec 5,

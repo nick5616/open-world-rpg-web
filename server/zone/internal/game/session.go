@@ -18,6 +18,7 @@ import (
 	"lodestone/server/pkg/ticket"
 	"lodestone/server/pkg/transport"
 	"lodestone/server/zone/internal/aoi"
+	"lodestone/server/zone/internal/combat"
 )
 
 const (
@@ -48,7 +49,8 @@ type session struct {
 
 	// Tick-owned.
 	ent         *Entity
-	x           *exploreState // WP12 exploration (explore.go)
+	x           *exploreState   // WP12 exploration (explore.go)
+	cprof       *combat.Profile // WP13: loaded before join (combat.go)
 	left        bool
 	ackTick     uint32
 	ackFloor    uint32 // WP16: acks at or below this tick predate the session's current activation
@@ -207,6 +209,7 @@ func (s *Server) accept(c transport.Conn, spawnHint *movement.Vec3) {
 	if !s.clusterAccept(sess) { // WP16: standby, or live state from the previous owner
 		sess.spawn = s.spawnFor(claims, spawnHint)
 		sess.x = s.loadExplore(claims, hello.SaveBlob, &sess.spawn, spawnHint != nil) // WP12
+		sess.cprof = s.loadCombat(claims.CharacterID, sess.x)                         // WP13
 	}
 
 	select {
@@ -320,15 +323,25 @@ func (s *Server) drain(sess *session, now time.Time) {
 	msgs := sess.inbox
 	sess.inbox = sess.spare[:0]
 	sess.mu.Unlock()
+	var claims []*proto.HitClaim
 	for _, m := range msgs {
+		if hc, ok := m.(*proto.HitClaim); ok {
+			claims = append(claims, hc) // WP13: validated after this tick's frames (combat.go)
+			continue
+		}
 		if it, ok := m.(*proto.Interact); ok {
+			if it.TargetKind == combat.InteractCombat {
+				s.handleCombatInteract(sess, it) // WP13: loadouts, equip, learn (combat.go)
+				continue
+			}
 			s.interact(sess.ent, it, now)   // WP09 mining (mining.go)
 			s.handleInteract(sess, it, now) // WP12: fast travel, pins (explore.go)
+			s.townInteract(sess, it, now)   // WP20: NPCs, bounty board, stations, shafts (towns.go)
 			continue
 		}
 		in, ok := m.(*proto.Input)
 		if !ok {
-			continue // HitClaim: combat lands in WP13
+			continue
 		}
 		// Baseline ack: newest snapshot the client has. Never trust an ack
 		// from the future.
@@ -346,6 +359,9 @@ func (s *Server) drain(sess *session, now time.Time) {
 	clear(msgs)
 	sess.spare = msgs
 	s.applyFrames(sess, now)
+	for _, c := range claims {
+		s.handleHitClaim(sess, c) // WP13 (combat.go)
+	}
 }
 
 // gapWaitTicks: how long a missing frame may hold back the ones after it.
@@ -380,7 +396,7 @@ func (s *Server) fillGap(sess *session, next uint32, now time.Time) {
 		return
 	}
 	f := e.lastFrame
-	f.Flags &^= proto.InputFlagJumpEdge
+	f.Flags &^= proto.InputFlagJumpEdge | oneStepFlags // WP13: never repeat an attack, cast or dodge
 	for seq := sess.consumed + 1; seq < next; seq++ {
 		f.Seq = seq
 		sess.consumed = seq
@@ -388,7 +404,9 @@ func (s *Server) fillGap(sess *session, next uint32, now time.Time) {
 			s.m.framesDropped.Add(1)
 			continue
 		}
+		f = s.combatFrame(sess, f) // WP13 (combat.go)
 		e.applyFrame(f, s.cfg.Ground, s.env)
+		s.combatAfterFrame(sess, f)
 		s.m.framesSynthesized.Add(1)
 	}
 }
@@ -423,9 +441,11 @@ func (s *Server) applyFrames(sess *session, now time.Time) {
 			s.m.framesDropped.Add(1)
 			continue
 		}
+		f = s.combatFrame(sess, f) // WP13: log attacks/casts, refuse illegal dashes (combat.go)
 		if !e.applyFrame(f, s.cfg.Ground, s.env) {
 			s.m.speedViolations.Add(1)
 		}
+		s.combatAfterFrame(sess, f)
 		s.m.frames.Add(1)
 	}
 	if e.drownedEvent {

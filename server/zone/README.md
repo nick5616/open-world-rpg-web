@@ -373,7 +373,7 @@ evidence `docs/evidence/wp09-mining-respawn.txt`).
 
 ## Multiple zones and handoff (WP16)
 
-Decision: `docs/decisions/0016-handoff.md`. Contract: `docs/cr/008-zone-handoff.md` (protocol v4 `ZoneTransfer`). Code: `cluster.go` (env wiring, `/debug/cluster`), `internal/cluster` (Redis: pub/sub, keys, registry heartbeat and ownership table), `internal/game/{cluster,handoff,ghosts}.go` (simulation side).
+Decision: `docs/decisions/0016-handoff.md`. Contract: `docs/cr/008-zone-handoff.md` (protocol v5 `ZoneTransfer`). Code: `cluster.go` (env wiring, `/debug/cluster`), `internal/cluster` (Redis: pub/sub, keys, registry heartbeat and ownership table), `internal/game/{cluster,handoff,ghosts}.go` (simulation side).
 
 **Off by default.** A zone started as `npm run dev` starts it owns the whole world exactly as before. Cluster mode:
 
@@ -409,3 +409,76 @@ Per-character state of other packages (WP13 combat, WP14 items, ...) must ride t
 Metrics: `zone_cluster_*` (handoffs in/out, pre-connects, standbys, releases, mirrored entities, ghost frames, fenced checkpoints, lost states).
 
 Tests: `internal/game/cluster_test.go` (two zones in one process on an in-memory cluster: handoff with prediction agreeing to the cm and the same entity id, observer continuity on the old zone, no pre-connect = stay, duplicate login across zones, presence feed, checkpoint fencing, re-admission), `internal/cluster` (Redis), director `assign_test.go`. Soak and browser acceptance: `tools/bots/handoff-soak.mjs`, `client/src/net/dev/handoff-acceptance.mjs`.
+## Combat (WP13)
+
+Code: `internal/combat` (pure rules, its own README) and the glue
+`internal/game/combat.go`; wiring `combat.go` (package main). Decision 0013,
+CR 009.
+
+- Every applied input frame first goes through the combat layer
+  (`combatFrame`): attack/cast/form starts are logged at the frame's seq, an
+  illegal mobility dash is stripped before the movement step, and after the
+  step the frame's outcome (position, i-frames, parry) is recorded for the
+  strike grace window. Synthesized and extrapolated frames never repeat
+  attack/cast/dodge/interact.
+- HitClaims are validated after the tick's frames (a claim can overtake its
+  frame: it waits up to 0.5 s). Claims that name a player are refused with
+  code 1 before anything else; the only path that lowers a player's health
+  is an enemy strike or enemy projectile (`combat.(*World).hurtPlayer`).
+- Enemies are entities (`EntityKind enemy`, `typeId` = combatdefs.TypeID,
+  `healthPct`, the Activity casting bit while winding up) on the existing
+  snapshot/AOI path, spawned only within ENEMY_SPAWN_M of a player.
+- Groups come from the atlas (camps, bandit camps, guardians, boss arenas at
+  wizard towers / sunken temples / demon lairs / large ruins) plus seeded
+  wild packs (enemyDensity from the WorldSpec); towns are safe.
+- Persistence: `character_progress.skill_tree / spells_known /
+  spells_equipped` (accounts, write-behind), the same fields of the local
+  save blob (local profiles). No migration.
+- Env: `LODESTONE_ZONE_DEV_COMBAT` (default with the dev ticket key) enables
+  `LODESTONE_ZONE_DEBUG_CAMP="x,z,level,key key...[,affix][;...]"`,
+  `LODESTONE_ZONE_DEBUG_BOSS="x,z,level,boss[,element]"` and the gem Interact;
+  `LODESTONE_ZONE_CAMP_RESPAWN_S`, `LODESTONE_ZONE_BOSS_RESPAWN_S`,
+  `LODESTONE_ZONE_NO_WILD_PACKS`, `LODESTONE_ZONE_NO_ATLAS_ENEMIES`.
+- `GET /debug/combat`: every group (kind, anchor, level, members with
+  position/health/state) and the counters, published once a second.
+- Metrics: `zone_combat_claims_accepted_total`,
+  `zone_combat_claims_refused_total{reason}`, `zone_combat_enemies`,
+  `zone_combat_kills_total`, `zone_combat_player_hits_total`,
+  `zone_combat_evaded_total`, `zone_combat_downs_total`.
+- Acceptance: `node server/zone/cmd/combatbots/acceptance.mjs` (the zone
+  binary on the official world; a party of two `cmd/combatbots` clears a
+  camp and a boss).
+## Towns and NPCs (WP20)
+
+Wiring: `towns.go` (main package) builds the towns layer from the wasm
+(`worldhost.World.TownsBytes`, ~0.2 s), wraps the cave terrain so the
+movement ground has building floors, walls and ceilings (`server/pkg/towns`;
+the cave terrain's methods are promoted, so chunk interest, spawns and
+caves are unchanged) and fills `Config.Towns` (`internal/npc`). Game glue:
+`internal/game/towns.go`.
+
+- **NPCs** are snapshot entities (kind npc, `typeId` = role | variant << 8,
+  `level` = merchant kind, `name`) while a player is within 200 m of their
+  settlement's edge (dropped beyond 260 m, checked twice a second); they
+  walk their schedule on the movement ground (not pushed by walls: their
+  routes go through doors). NPC day = zone clock + `LODESTONE_ZONE_TIME_OFFSET_S`
+  (WP15 owns world time later).
+- **Interact** (contracts/events.md, reach 4.5 m from the eye):
+  `30 npc` (targetId = entity id; 1 talk -> 800 + 801 shop / 802 bounties,
+  2 buy (arg item index) -> 807 via `Config.Granter`, 3 rest at the inn ->
+  804, 4 accept bounty), `31 board` (prop id; 1 read -> 802, 2 accept ->
+  803), `32 station` (forge/anvil prop id; 1 use -> `Config.Stations`
+  (WP14) or 805), `33 shaft` (mineshaft structure id; 1 descend: teleport
+  into a chamber of the linked cave system below the shaft). Refusals: 806.
+- **Bounties**: seeded per settlement per in-game day; accepted ones live in
+  zone memory per character (max 5); `Server.AcceptedBounties` /
+  `Server.CompleteBounty` are the completion hooks for WP13/WP14/WP15.
+- `LODESTONE_ZONE_NO_TOWNS=1` turns the layer off; a pre-WP20 wasm logs
+  NO TOWNS and keeps the old ground.
+- Tests: `internal/npc` (schedules, street walking, bounties),
+  `internal/game/towns_test.go` (in-process zone on the official world:
+  NPCs in snapshots, talk/shop/buy, board read/accept, inn, forge, night
+  closing, mineshaft descent), and the cross-process walk into buildings
+  (`client/src/world/buildings/walkIntoBuilding.integration.test.ts`,
+  evidence `docs/evidence/wp20-walk-into-building.txt`: 0 corrections).
+

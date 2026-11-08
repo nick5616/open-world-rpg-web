@@ -85,6 +85,9 @@ func verticalOK(prev, next movement.State, g movement.Ground) bool {
 		return false
 	}
 	up := max(prev.Vel.Y, constants.JumpForce, constants.UpdraftMaxLift-constants.GlideSinkSpeed, constants.ClimbJumpSpeed)
+	if next.Dash > 0 {
+		up = max(up, movement.MaxDashLift) // WP13: a launch dash (root launch, updraft) starts this step
+	}
 	limit := max(prev.Pos.Y+up*movement.Dt, ground)
 	if next.Mode == movement.ModeSwim {
 		limit = max(limit, movement.WaterAt(g, next.Pos.X, next.Pos.Z)-constants.SwimFloatDepthM)

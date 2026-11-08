@@ -1,0 +1,45 @@
+# WP20 walk into a building: client prediction (TS town.ts) vs the zone binary (Go server/pkg/towns), official world seed 20261108
+date 2026-11-08T19:43:49.096Z
+
+building 1e88f2c6e6d4773f (inn, style 5) at (1939.05, 2286.83) floor y 82.17, 2 floor(s), door 1.80 m at u 0.00
+start (1930.65, 2280.29) yaw -127.9 deg; 548 predicted samples inside the walls; deepest v 2.993 (back wall limit 3.943); inside y 82.167..82.167; jumped false
+== b0: 18.0 s, 1077 steps, 538 compared snapshots; spawn (1930.65, 81.84, 2280.29)
+   per mode: ground: 520 snapshots, max 0.77 cm, y 81.7..82.5; air: 18 snapshots, max 0.61 cm, y 82.4..83.2
+   overall max divergence 0.77 cm; corrections 0 (max 0.00 cm), agreements 443; drowned events 0
+   end: ground at (1914.57, 82.49, 2267.77), stamina 100.0
+   transitions:
+     0.06s seq 2: start -> ground at (1930.65, 81.84, 2280.29) stamina 100.0
+     8.06s seq 483: ground -> air at (1941.41, 82.36, 2288.67) stamina 100.0
+     8.66s seq 519: air -> ground at (1941.41, 82.17, 2288.67) stamina 100.0
+PASS
+
+building d42e5ef0bbfef662 (forge, style 5) at (1907.29, 2291.45) floor y 82.33, 1 floor(s), door 6.73 m at u 0.00
+start (1912.62, 2283.30) yaw 146.8 deg; 491 predicted samples inside the walls; deepest v -0.277 (back wall limit 3.030); inside y 82.334..82.334; jumped false
+== b1: 17.9 s, 1075 steps, 537 compared snapshots; spawn (1912.62, 82.22, 2283.3)
+   per mode: ground: 518 snapshots, max 0.83 cm, y 82.0..82.4; air: 19 snapshots, max 0.63 cm, y 82.4..83.4
+   overall max divergence 0.83 cm; corrections 0 (max 0.00 cm), agreements 484; drowned events 0
+   end: ground at (1926.05, 82.15, 2262.74), stamina 100.0
+   transitions:
+     0.06s seq 2: start -> ground at (1912.62, 82.22, 2283.30) stamina 100.0
+     8.03s seq 481: ground -> air at (1907.45, 82.43, 2291.22) stamina 100.0
+     8.66s seq 519: air -> ground at (1907.45, 82.33, 2291.22) stamina 100.0
+PASS
+
+building ad6e0acc176d1d63 (farm, style 5) at (1895.76, 2277.66) floor y 82.60, 1 floor(s), door 1.40 m at u 1.71
+start (1897.84, 2268.44) yaw 177.8 deg; 592 predicted samples inside the walls; deepest v 2.599 (back wall limit 2.599); inside y 82.597..82.597; jumped false
+== b2: 17.9 s, 1075 steps, 537 compared snapshots; spawn (1897.84, 82.47, 2268.44)
+   per mode: ground: 515 snapshots, max 0.76 cm, y 82.3..82.8; air: 22 snapshots, max 0.73 cm, y 82.7..83.7
+   overall max divergence 0.76 cm; corrections 0 (max 0.00 cm), agreements 532; drowned events 0
+   end: ground at (1898.09, 82.82, 2268.25), stamina 100.0
+   transitions:
+     0.07s seq 2: start -> ground at (1897.84, 82.82, 2268.44) stamina 100.0
+     1.40s seq 83: ground -> air at (1897.78, 82.82, 2269.86) stamina 100.0
+     1.50s seq 89: air -> ground at (1897.77, 82.42, 2270.33) stamina 100.0
+     8.03s seq 481: ground -> air at (1898.08, 82.70, 2280.35) stamina 100.0
+     8.67s seq 519: air -> ground at (1898.08, 82.60, 2280.35) stamina 100.0
+PASS
+
+zone log (towns):
+{"time":"2026-11-08T11:43:49.0373445-08:00","level":"INFO","msg":"towns ready","svc":"zone","settlements":30,"buildings":408,"boxes":6277,"npcs":254,"roads":141,"bridges":11,"structures":58,"bytes":522880,"ms":450}
+
+ALL PASS

@@ -4,7 +4,7 @@ Author: WP16 · Date: 2026-11-08 · Status: applied on `wp/16-handoff`
 
 ## What
 
-1. **`contracts/protocol.yaml` version 3 → 4 (additive):** `ZoneTransfer` (id 72, s2c, reliable; defined by WP00, never sent before) gets its meaning and two appended fields:
+1. **`contracts/protocol.yaml` version 4 → 5 (additive; v4 was WP13, CR 009):** `ZoneTransfer` (id 72, s2c, reliable; defined by WP00, never sent before) gets its meaning and two appended fields:
 
    | Field | Type | Meaning |
    | --- | --- | --- |
@@ -37,7 +37,7 @@ Author: WP16 · Date: 2026-11-08 · Status: applied on `wp/16-handoff`
 
 3. **`characters.position` gains an optional `"e"` key** (no migration): the checkpoint epoch of the zone that wrote it. Cluster zones write with a fenced `UPDATE … WHERE COALESCE((position->>'e')::bigint, 0) <= $epoch`; single-zone zones keep the original statement. Every existing reader decodes `{x, y, z}` and ignores the extra key.
 
-Regenerated with `npm run gen`: `contracts/ts/src/gen/protocol.ts`, `server/pkg/proto/protocol_gen.go`, `contracts/golden/protocol_vectors.json` (`PROTOCOL_VERSION` 4).
+Regenerated with `npm run gen`: `contracts/ts/src/gen/protocol.ts`, `server/pkg/proto/protocol_gen.go`, `contracts/golden/protocol_vectors.json` (`PROTOCOL_VERSION` 5).
 
 ## Why
 
@@ -50,10 +50,10 @@ Regenerated with `npm run gen`: `contracts/ts/src/gen/protocol.ts`, `server/pkg/
 | Consumer | Change |
 | --- | --- |
 | `server/zone` | Sends ZoneTransfer, accepts `ho1.` tokens as standby sessions, transfers/admits (`internal/game/handoff.go`), ghosts and presence (`ghosts.go`), Redis plumbing (`internal/cluster`), cluster mode wiring (`cluster.go`). Off unless `LODESTONE_ZONE_CLUSTER`/`_ROLE`/`_REGIONS` is set. |
-| `client/src/net` | `zoneSession.ts` handles ZoneTransfer, standby connections, the switch and failover; `NetPlay.tsx` passes `zoneId` and a `reconnect` callback. Hello sends `PROTOCOL_VERSION` 4 automatically. |
-| `tools/bots` | Follow handoffs and fail over with `-cluster`; speak v4 after a rebuild |
+| `client/src/net` | `zoneSession.ts` handles ZoneTransfer, standby connections, the switch and failover; `NetPlay.tsx` passes `zoneId` and a `reconnect` callback. Hello sends `PROTOCOL_VERSION` 5 automatically. |
+| `tools/bots` | Follow handoffs and fail over with `-cluster`; speak v5 after a rebuild |
 | `server/director` | Routes with `zoneregistry.Owner`, runs the region assigner (`LODESTONE_DIRECTOR_ASSIGN_EVERY`, default 2 s) |
 | `server/pkg/zoneregistry` | `Role`, `TTLMs`, `Debug`, `Owner`, `RegionAt`, `Plan`, assignment helpers (additive; `Pick` unchanged) |
 | `server/social`, account | None (the registry stays readable; positions keep `{x, y, z}`) |
 
-The zone kicks clients whose `Hello.protocolVersion` differs, so v3 clients must be rebuilt (every client in the repo reads the generated constant). WP13 (combat) and WP20 (towns) branches regenerate on merge; a package that adds per-character zone state registers a `game.HandoffField` so it survives handoffs (server/zone/README.md "Multiple zones").
+The zone kicks clients whose `Hello.protocolVersion` differs, so v4 clients must be rebuilt (every client in the repo reads the generated constant). WP13 (combat) and WP20 (towns) were merged before this CR landed (it was renumbered onto their v4 as v5); a package that adds per-character zone state registers a `game.HandoffField` so it survives handoffs (server/zone/README.md "Multiple zones").

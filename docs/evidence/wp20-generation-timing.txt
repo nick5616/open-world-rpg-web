@@ -1,0 +1,16 @@
+# WP20 generation timing: settlements, roads, buildings, structures and NPCs of a full v1 world (towns_build), wasm on Node v20.18.0, 2026-11-08T19:50:02.098Z
+# budget (spec 5): all settlements, roads and structure placements for a v1 world in under 60 s at mint
+
+world            seed        atlas ms  towns ms   bytes   sett  bldg  boxes  props  npcs  roads  bridges  signs  structs  pieces  hash
+official         20261108        526       232  522880     30   408   6277   4002   254    141       11     16       58     211  9c2252a23320ea47
+seed-7           7               425      1310  502320     28   415   6242   3839   263    128        8     16       38     120  9f5dad3161012970
+seed-1234        1234            505       222  530464     33   425   6302   4133   266    154        8     20       51     195  1c4fac5c08996bd6
+seed-99          99              449       174  534784     33   436   6502   4126   272    163        9     28       37     125  4cbc5d4260012be4
+extreme-high     2026            550       439  442568     21   313   4949   3170   195    103       30     16       72     297  598623d7ce9500cd
+extreme-low      31337           319        52  250360     16   221   3246   1943   139     53        0      1       25      70  2d20c90f52597132
+seed-42          42              407       241  466232     27   360   5648   3567   241    129       12     20       50     226  7013b7c675c23eac
+seed-2026        2026            423       381  469520     25   374   5737   3583   241    120       12     18       50     196  72c1fc0cfcf98a7a
+seed-31337       31337           449       185  502768     28   389   6045   3805   257    146       10     27       55     226  38c95d6f738b0541
+seed-777         777             421       684  540752     29   425   6678   4106   266    146        2     24       56     202  1ccce63e192d190b
+
+worst towns_build 1310 ms (atlas + towns together stay well under the 60 s mint budget): PASS

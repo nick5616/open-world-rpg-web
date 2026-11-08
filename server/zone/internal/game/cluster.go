@@ -26,6 +26,7 @@ import (
 	"lodestone/server/pkg/snapshot"
 	"lodestone/server/pkg/ticket"
 	"lodestone/server/pkg/zoneregistry"
+	"lodestone/server/zone/internal/combat"
 	"lodestone/server/zone/internal/explore"
 )
 
@@ -190,6 +191,9 @@ type HandoffState struct {
 	CaveSys   int    `json:"caveSys"`
 	Health    uint16 `json:"health"`
 	HealthMax uint16 `json:"healthMax"`
+	// WP13 combat: profile (loadouts, skills, known spells) plus the runtime
+	// state (health, mana, cooldowns in input seqs, tick timers as time left).
+	Combat *combat.PlayerHandoff `json:"combat,omitempty"`
 	// WP12 exploration (nil Progress: none).
 	Progress   *explore.Progress `json:"progress,omitempty"`
 	ReadOnly   bool              `json:"readOnly,omitempty"`

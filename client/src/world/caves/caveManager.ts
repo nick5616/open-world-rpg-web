@@ -160,7 +160,8 @@ export class CaveManager {
     if (!runtime.caveGraph || !runtime.caveStore) throw new Error('no caves in this runtime');
     this.graph = runtime.caveGraph;
     this.store = runtime.caveStore;
-    this.ground = runtime.ground as CaveGround;
+    // runtime.ground may wrap the caves (WP20 towns on top): use the cave ground itself.
+    this.ground = runtime.caveGround as CaveGround;
     this.group.name = 'caves';
     this.store.onCell = (s) => this.onCell(s);
 

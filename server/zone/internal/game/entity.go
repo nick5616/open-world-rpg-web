@@ -10,6 +10,7 @@ import (
 	"lodestone/server/pkg/proto"
 	"lodestone/server/pkg/snapshot"
 	"lodestone/server/pkg/writebehind"
+	"lodestone/server/zone/internal/combat"
 )
 
 // Entity is one simulated thing in the zone. Only players exist in WP03;
@@ -21,6 +22,7 @@ type Entity struct {
 	CharacterID string
 	Level       uint8
 	PartyID     uint32        // 0 = none; WP12 sets it from the social service's party (party.go)
+	TypeID      uint16        // enemy type, npc role | variant << 8 (WP20), ...: EntityRecord.typeId
 	x           *exploreState // WP12 exploration progress (explore.go), shared with the session
 	ListenOnly  bool          // WP11: local profile, its speaking bit is never shown
 	remote      *remoteInfo   // WP16: mirrored from another zone (ghosts.go); never in Server.ents
@@ -33,6 +35,12 @@ type Entity struct {
 	LastSeq    uint32 // newest applied input frame (acked in snapshots)
 	// Stamina, mode and the traversal timers live in Move (WP10): they are
 	// part of the shared step and travel in SelfState.
+
+	// WP13 (combat.go): a player's combat state, or the enemy this entity
+	// mirrors; TypeID rides in snapshots (combatdefs.TypeID).
+	cbt         *combat.Player
+	npc         *combat.Enemy
+	npcActivity uint8
 
 	drownedEvent bool // WP10: a frame this tick drowned + respawned the player (Event 100)
 
@@ -97,7 +105,7 @@ func (e *Entity) updateView(g movement.Ground, env movement.Env) {
 	e.view = e.Move
 	if e.guess > 0 && e.LastSeq != 0 {
 		f := e.lastFrame
-		f.Flags &^= proto.InputFlagJump | proto.InputFlagJumpEdge | proto.InputFlagGlideToggle
+		f.Flags &^= proto.InputFlagJump | proto.InputFlagJumpEdge | proto.InputFlagGlideToggle | oneStepFlags
 		for i := 0; i < e.guess; i++ {
 			e.view = movement.StepFrameEnv(e.view, f, g, env)
 		}
@@ -146,6 +154,7 @@ func (e *Entity) quantize(_ movement.Ground) {
 	// the step's mode, so remote players can pose them.
 	act := movement.Activity(e.view)
 	act |= e.speakingActivity() // WP11 (earshot.go)
+	act |= e.combatActivity()   // WP13: enemy wind-ups (combat.go)
 	hp := uint8(0)
 	if e.HealthMax > 0 {
 		hp = uint8(math.Round(float64(e.Health) * 100 / float64(e.HealthMax)))
@@ -166,6 +175,7 @@ func (e *Entity) quantize(_ movement.Ground) {
 		Name:      e.Name,
 		Level:     e.Level,
 		PartyID:   e.PartyID,
+		TypeID:    e.TypeID,
 	}
 }
 

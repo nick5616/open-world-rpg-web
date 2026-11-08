@@ -462,6 +462,10 @@ func (s *Server) buildState(sess *session) *HandoffState {
 			st.Local = &localSaveJSON{ProfileID: x.local.profileID, State: x.local.state}
 		}
 	}
+	if e.cbt != nil {
+		h := e.cbt.Export(s.tick)
+		st.Combat = &h
+	}
 	for _, f := range handoffFields {
 		if b := f.Save(s, e); b != nil {
 			if st.Ext == nil {
@@ -480,6 +484,7 @@ func (s *Server) transferOut(sess *session, to string, now time.Time) {
 	// Spec 11: saved on zone transfer. Fenced by this zone's epoch, so it
 	// can never overwrite what the next owner writes.
 	s.exploreLeave(sess)
+	s.combatLeave(sess) // WP13: profile save (if changed), out of the combat world
 	if s.cfg.Queue != nil {
 		s.checkpoint(e)
 	}
@@ -645,6 +650,7 @@ func (s *Server) handleCtl(m ctlMsg, now time.Time) {
 			st := s.buildState(sess)
 			e := sess.ent
 			s.exploreLeave(sess)
+			s.combatLeave(sess)
 			if s.cfg.Queue != nil {
 				s.checkpoint(e)
 			}
@@ -823,6 +829,9 @@ func (s *Server) joinState(sess *session, e *Entity) {
 	if k := sess.x.partyKey; k != "" {
 		e.PartyID = PartyHash(k)
 	}
+	if st.Combat != nil {
+		sess.cprof = st.Combat.Profile() // combatJoin builds the player from it
+	}
 	for _, f := range handoffFields {
 		if b, ok := st.Ext[f.Name]; ok {
 			f.Load(s, e, b)
@@ -838,6 +847,12 @@ func (s *Server) clusterJoined(sess *session) {
 	}
 	char, self := sess.ent.CharacterID, s.cl.self
 	transferred := sess.ho != nil && sess.ho.state != nil
+	if transferred && sess.ho.state.Combat != nil && sess.ent.cbt != nil {
+		// After combatJoin: health, mana, cooldowns continue (WP13).
+		sess.ent.cbt.Restore(*sess.ho.state.Combat, s.tick)
+		syncPlayerHealth(sess.ent)
+		s.sendCombatSync(sess)
+	}
 	if transferred {
 		// No checkpoint here: the old owner saved this exact state on the
 		// transfer (spec 11), and our epoch fences out anything older it may
@@ -911,12 +926,7 @@ func (s *Server) insertEntity(e *Entity) {
 	s.ents = slices.Insert(s.ents, i, e)
 }
 
-func (s *Server) entityByID(id uint32) *Entity {
-	if i, ok := slices.BinarySearchFunc(s.ents, id, func(x *Entity, id uint32) int { return cmpU32(x.ID, id) }); ok {
-		return s.ents[i]
-	}
-	return nil
-}
+// entityByID (binary search of s.ents) is WP13's, in combat.go.
 
 // ClusterStats is the handoff counters (metrics, /debug/cluster).
 func (s *Server) ClusterStats() map[string]int64 {

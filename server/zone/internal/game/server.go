@@ -33,6 +33,7 @@ import (
 	"lodestone/server/pkg/writebehind"
 	"lodestone/server/zone/internal/aoi"
 	"lodestone/server/zone/internal/explore"
+	"lodestone/server/zone/internal/npc"
 )
 
 // Config is everything a zone needs; main.go fills it from env.
@@ -80,6 +81,15 @@ type Config struct {
 	// zone-local entity id counter (cluster zones: a per-zone range).
 	Cluster Cluster
 	IDBase  uint32
+	// WP13 combat (combat.go): camps, packs, bosses from the atlas; nil =
+	// combat without atlas groups.
+	Combat *CombatSetup
+	// WP20 towns (towns.go): the world's townsfolk (nil: no NPCs), the
+	// forge/anvil hook for WP14 (nil: Event 805 only) and an offset added to
+	// the zone clock for the NPC day (tests, evidence; WP15 owns the clock).
+	Towns       *npc.World
+	Stations    Stations
+	TimeOffsetS float64
 	// Now is the wall clock (tickets, server time); tests override it.
 	Now func() time.Time
 }
@@ -115,6 +125,8 @@ type Server struct {
 	hap      []explore.Happening // scratch for exploreTick
 	party    partyState
 	cl       clusterState // WP16 (handoff.go)
+	cbt      combatGlue   // WP13 (combat.go)
+	town     townsState   // WP20 (towns.go)
 	// WP11: next earshot hand-off (earshot.go).
 	earshotNext time.Time
 
@@ -172,6 +184,7 @@ func New(cfg Config) *Server {
 		s.nextID = cfg.IDBase
 	}
 	s.m.init(cfg.Metrics)
+	s.initCombat() // WP13 (combat.go)
 	s.loop = &gameloop.Loop{Interval: interval, Stats: s.stats, OnTick: s.onTick}
 	return s
 }
@@ -273,6 +286,8 @@ func (s *Server) onTick() {
 	s.caveTick(tick)                // WP09: cave cell interest + each entity's cave system (caves.go)
 	s.miningTick(tick, s.cfg.Now()) // WP09: pickups, respawns, WorldEdits interest (mining.go)
 	s.handoffTick(tick, now)        // WP16: handoffs, mirrored entities, presence (handoff.go, ghosts.go)
+	s.combatTick(tick)              // WP13: enemies, strikes, claims, respawns (combat.go)
+	s.townsTick(tick, s.cfg.Now())  // WP20: townsfolk near players (towns.go)
 
 	// Quantize once per entity and rebuild the grid; every client's snapshot
 	// reads these.
@@ -399,6 +414,7 @@ func (s *Server) join(sess *session) {
 		sess.closed.Store(true)
 	}
 	s.exploreJoin(sess)   // WP12: progress, pins (after Welcome, which the client needs first)
+	s.combatJoin(sess)    // WP13: loadouts, health, combat_sync (combat.go)
 	s.clusterJoined(sess) // WP16: owner record, arrival checkpoint
 	s.log.Info("join", "entity", e.ID, "character", e.CharacterID, "name", e.Name, "remote", sess.conn.RemoteAddr(),
 		"x", math.Round(e.Move.Pos.X*100)/100, "z", math.Round(e.Move.Pos.Z*100)/100)
@@ -442,6 +458,7 @@ func (s *Server) leave(sess *session) {
 			delete(s.parties, e.PartyID)
 		}
 	}
+	s.combatLeave(sess)  // WP13: combat profile save (combat.go)
 	s.exploreLeave(sess) // WP12: progress save
 	if s.cfg.Queue != nil {
 		s.checkpoint(e)
