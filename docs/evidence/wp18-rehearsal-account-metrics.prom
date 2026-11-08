@@ -10,7 +10,7 @@ account_local_profiles_created_total 1
 account_sessions_issued_total{provider="local"} 1
 go_gc_cycles_total 0
 go_goroutines 16
-go_heap_bytes 1104192
+go_heap_bytes 1144112
 http_request_duration_seconds_bucket{le="+Inf"} 12
 http_request_duration_seconds_bucket{le="0.001"} 8
 http_request_duration_seconds_bucket{le="0.005"} 10
@@ -24,11 +24,11 @@ http_request_duration_seconds_bucket{le="1"} 12
 http_request_duration_seconds_bucket{le="2.5"} 12
 http_request_duration_seconds_bucket{le="5"} 12
 http_request_duration_seconds_count 12
-http_request_duration_seconds_sum 0.153044
+http_request_duration_seconds_sum 0.12905
 http_requests_total{code="1xx"} 0
 http_requests_total{code="2xx"} 11
 http_requests_total{code="3xx"} 0
 http_requests_total{code="4xx"} 1
 http_requests_total{code="5xx"} 0
-lodestone_build_info{version="rehearsal-e5eb455a5316",go="go1.27.3"} 1
-process_uptime_seconds 25
+lodestone_build_info{version="rehearsal-09422c11da40",go="go1.27.3"} 1
+process_uptime_seconds 27

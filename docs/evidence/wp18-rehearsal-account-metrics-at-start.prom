@@ -7,7 +7,7 @@
 # HELP process_uptime_seconds Seconds since the service started.
 go_gc_cycles_total 0
 go_goroutines 15
-go_heap_bytes 768320
+go_heap_bytes 760592
 http_request_duration_seconds_bucket{le="+Inf"} 2
 http_request_duration_seconds_bucket{le="0.001"} 2
 http_request_duration_seconds_bucket{le="0.005"} 2
@@ -21,11 +21,11 @@ http_request_duration_seconds_bucket{le="1"} 2
 http_request_duration_seconds_bucket{le="2.5"} 2
 http_request_duration_seconds_bucket{le="5"} 2
 http_request_duration_seconds_count 2
-http_request_duration_seconds_sum 3.6e-05
+http_request_duration_seconds_sum 3.1e-05
 http_requests_total{code="1xx"} 0
 http_requests_total{code="2xx"} 1
 http_requests_total{code="3xx"} 0
 http_requests_total{code="4xx"} 1
 http_requests_total{code="5xx"} 0
-lodestone_build_info{version="rehearsal-e5eb455a5316",go="go1.27.3"} 1
+lodestone_build_info{version="rehearsal-09422c11da40",go="go1.27.3"} 1
 process_uptime_seconds 1
