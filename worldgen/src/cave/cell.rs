@@ -69,7 +69,9 @@ pub struct Edit {
 
 pub fn parse_edits(b: &[u8]) -> Vec<Edit> {
     use crate::atlas::format::{get_f32, get_u64};
-    b.chunks_exact(EDIT_REC)
+    b.as_chunks::<EDIT_REC>()
+        .0
+        .iter()
         .map(|e| Edit {
             vein_id: get_u64(e, 0),
             x: get_f32(e, 8) as f64,
@@ -80,6 +82,9 @@ pub fn parse_edits(b: &[u8]) -> Vec<Edit> {
         .filter(|e| e.x.is_finite() && e.y.is_finite() && e.z.is_finite() && e.r.is_finite())
         .collect()
 }
+
+/// One sample edge: its far sample and the 4 cubes around it, in +axis winding order.
+type EdgeQuad = ((i32, i32, i32), [(i32, i32, i32); 4]);
 
 #[inline]
 fn sidx(i: i32, j: i32, k: i32) -> usize {
@@ -255,7 +260,7 @@ pub fn build(a: &Atlas, w: &CaveWorld, cx: i32, cy: i32, cz: i32, edits: &[Edit]
                     let f0 = fv(i, j, k);
                     let s0 = f0 < 0.0;
                     // (far sample, the 4 cubes around the edge in +axis winding order)
-                    let quads: [((i32, i32, i32), [(i32, i32, i32); 4]); 3] = [
+                    let quads: [EdgeQuad; 3] = [
                         ((i + 1, j, k), [(i, j - 1, k - 1), (i, j, k - 1), (i, j, k), (i, j - 1, k)]),
                         ((i, j + 1, k), [(i - 1, j, k - 1), (i - 1, j, k), (i, j, k), (i, j, k - 1)]),
                         ((i, j, k + 1), [(i - 1, j - 1, k), (i, j - 1, k), (i, j, k), (i - 1, j, k)]),
