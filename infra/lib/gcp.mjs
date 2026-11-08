@@ -380,12 +380,25 @@ export function deployGcp(r, cfg, { only } = {}) {
     buildCreator(r);
     writeCreatorRedirects(r, out.urls.creatorApi);
     r.section('Netlify (static; creates each site on first deploy)');
-    const site = (name, idEnv) => (process.env[idEnv] ? ['--site', process.env[idEnv]] : ['--site-name', name, ...(cfg.netlify.team ? ['--team', cfg.netlify.team] : [])]);
-    // Run from a scratch directory so the CLI never writes .netlify/ link
-    // state into the repo.
-    const nopts = { cwd: stage };
-    r.run(['netlify', 'deploy', '--prod', '--no-build', '--dir', path.join(root, 'client', 'dist'), ...site(cfg.netlify.clientSite, 'LODESTONE_NETLIFY_CLIENT_SITE_ID'), '--message', `lodestone ${cfg.tag}`], nopts);
-    r.run(['netlify', 'deploy', '--prod', '--no-build', '--dir', path.join(root, 'tools', 'creator', 'dist'), ...site(cfg.netlify.creatorSite, 'LODESTONE_NETLIFY_CREATOR_SITE_ID'), '--message', `lodestone ${cfg.tag}`], nopts);
+    // An existing site is addressed with --site; --site-name always creates
+    // a site (with a random suffix when the name is taken), so it is only
+    // used the first time.
+    const site = (name, idEnv) => {
+      if (process.env[idEnv]) return ['--site', process.env[idEnv]];
+      if (r.probe(['netlify', 'api', 'getSite', '--data', JSON.stringify({ site_id: `${name}.netlify.app` })])) return ['--site', name];
+      return ['--site-name', name, ...(cfg.netlify.team ? ['--team', cfg.netlify.team] : [])];
+    };
+    // Run each deploy from its OWN scratch directory: the CLI never writes
+    // .netlify/ link state into the repo, and the creator deploy cannot
+    // inherit the client site the first deploy just created and linked (that
+    // happened on the first real deploy: the creator overwrote the client).
+    const nopts = (sub) => {
+      const cwd = path.join(stage, sub);
+      fs.mkdirSync(cwd, { recursive: true });
+      return { cwd };
+    };
+    r.run(['netlify', 'deploy', '--prod', '--no-build', '--dir', path.join(root, 'client', 'dist'), ...site(cfg.netlify.clientSite, 'LODESTONE_NETLIFY_CLIENT_SITE_ID'), '--message', `lodestone ${cfg.tag}`], nopts('netlify-client'));
+    r.run(['netlify', 'deploy', '--prod', '--no-build', '--dir', path.join(root, 'tools', 'creator', 'dist'), ...site(cfg.netlify.creatorSite, 'LODESTONE_NETLIFY_CREATOR_SITE_ID'), '--message', `lodestone ${cfg.tag}`], nopts('netlify-creator'));
     out.urls.client = clientOrigin;
     out.urls.creator = creatorOrigin;
     if (!fb.apiKey) {
@@ -410,6 +423,11 @@ export function deployGcp(r, cfg, { only } = {}) {
   r.note(`worldgen wasm   ${out.urls.wasm ?? '(not published in this run)'}`);
   r.note(`backups         gs://${cfg.backupBucket}/pg/ (nightly + every stop)`);
   r.note('wake on demand  the first sign-in starts the VM; it stops 15 min after the last player leaves');
-  fs.rmSync(stage, { recursive: true, force: true });
+  // Best effort: on Windows a CLI child can still hold the directory (EBUSY).
+  try {
+    fs.rmSync(stage, { recursive: true, force: true, maxRetries: 5, retryDelay: 500 });
+  } catch (e) {
+    r.note(`could not remove ${stage}: ${e.code ?? e.message} (harmless)`);
+  }
   return out;
 }

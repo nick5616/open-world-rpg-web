@@ -83,6 +83,8 @@ Useful options (flag or env var): `--region` / `LODESTONE_GCP_REGION`
 ```
 node infra/deploy.mjs --target gcp --project <project-id> --dry-run
 npm run deploy:plan -- --project <project-id>
+# after a real deploy, a headless browser smoke test against the live site:
+node infra/smoke-live.mjs https://<client-site>.netlify.app
 ```
 
 Executes nothing (not even read-only `describe` calls). Every probe is shown

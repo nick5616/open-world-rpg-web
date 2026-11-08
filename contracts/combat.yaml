@@ -505,56 +505,9 @@ names:
   form_dark: Hungering Cut
   form_void: Severance
 
-pending:
-  # Proposed names awaiting Nicole's sign-off (spec 8, spec 16). Code uses
-  # them like any other name; approval just deletes them from this list.
-  - static_step
-  - spark_jab
-  - ball_lightning
-  - thunderclap
-  - overcharge
-  - eye_of_the_storm
-  - act_of_god
-  - updraft
-  - gust
-  - razor_wind
-  - cyclone
-  - downburst
-  - crosswind
-  - howling_expanse
-  - heavens_exhale
-  - sunstep
-  - glint
-  - radiant_lance
-  - sunburst
-  - halo
-  - dawnbreak
-  - sunlit
-  - high_noon
-  - let_there_be_light
-  - skip
-  - rift_shot
-  - collapse
-  - unmake
-  - null_field
-  - hollow_echo
-  - zero_point
-  - unwritten
-  - whirlwind
-  - sweep
-  - impale
-  - mana_flow
-  - quick_cast
-  - overflow
-  - twin_cast
-  - form_fire
-  - form_ice
-  - form_lightning
-  - form_earth
-  - form_wind
-  - form_light
-  - form_dark
-  - form_void
+pending: []
+  # All proposed names approved by Nicole on 2026-11-08 (spec 16). New
+  # proposals go here as keys until approved.
 
 enemyAttacks:
   # shape: cone (reach, arc) | circle (radius, around the attacker) |
