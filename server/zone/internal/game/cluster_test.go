@@ -680,3 +680,73 @@ func TestTransferDepthIgnoresLinesInsideOneZone(t *testing.T) {
 		t.Fatalf("no handoff walking along z = 2048 (x now %.1f)", p.sim.Pos.X)
 	}
 }
+
+// WP13 x WP16: health, mana and cooldowns continue on the new zone.
+func TestHandoffCarriesCombatState(t *testing.T) {
+	_, a, b := twoZones(t, nil)
+	p := newHoClient(t, a, "char-p", "Pat", 2035, 1000)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	var id uint32
+	if err := a.srv.Do(ctx, func() {
+		e := a.srv.byChar["char-p"].ent
+		id = e.ID
+		e.cbt.HP, e.cbt.Mana = 42, 7
+		e.cbt.Export(a.srv.tick) // exercised again on transfer
+	}); err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < 12 && p.active != "zone-b"; i++ {
+		p.walk(30, proto.InputFlagForward, eastYaw)
+	}
+	if p.active != "zone-b" {
+		t.Fatal("no handoff")
+	}
+	var hp, mana, manaMax float64
+	var health uint16
+	ctx2, cancel2 := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel2()
+	_ = b.srv.Do(ctx2, func() {
+		e := b.srv.entityByID(id)
+		if e != nil && e.cbt != nil {
+			hp, mana, health, manaMax = e.cbt.HP, e.cbt.Mana, e.Health, e.cbt.ManaMax
+		}
+	})
+	// Mana regenerates over the seconds of walking; it must not have been
+	// reset to a fresh pool.
+	if hp != 42 || health != 42 || mana < 7 || mana >= manaMax {
+		t.Fatalf("combat state after handoff: hp %v mana %v health %v", hp, mana, health)
+	}
+}
+
+// Enemies and townsfolk near a border are mirrored like players.
+func TestNonPlayerEntitiesAreMirrored(t *testing.T) {
+	_, a, b := twoZones(t, nil)
+	o := newHoClient(t, b, "char-o", "Obs", 2070, 1200)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	var ids []uint32
+	_ = a.srv.Do(ctx, func() {
+		for i, k := range []proto.EntityKind{proto.EntityKindEnemy, proto.EntityKindNpc} {
+			e := &Entity{ID: a.srv.nextID, Kind: k, Name: "mirror-me", Health: 100, HealthMax: 100}
+			a.srv.nextID++
+			e.Move = movement.NewState(movement.Vec3{X: 2030, Z: 1200 + float64(i)*3})
+			e.view = e.Move
+			a.srv.insertEntity(e)
+			ids = append(ids, e.ID)
+		}
+	})
+	deadline := time.Now().Add(3 * time.Second)
+	for {
+		o.walk(2, 0, 0)
+		if o.frame != nil && o.frame.Find(ids[0]) != nil && o.frame.Find(ids[1]) != nil {
+			if k := o.frame.Find(ids[0]).Kind; k != proto.EntityKindEnemy {
+				t.Fatalf("mirrored kind %v", k)
+			}
+			return
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("enemy/npc near the border never reached the other zone's client")
+		}
+	}
+}
