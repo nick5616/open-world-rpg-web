@@ -8,7 +8,10 @@
     "build": "tsc --noEmit -p . && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit -p .",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run --passWithNoTests",
+    "golden": "vite-node src/sim/golden/generate.ts",
+    "compare:ww": "vite-node scripts/compare-wizard-wars.ts",
+    "shots": "node scripts/headless-shots.mjs"
   },
   "dependencies": {
     "@lodestone/contracts": "*",
