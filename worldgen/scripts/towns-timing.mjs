@@ -5,6 +5,7 @@
 // worlds (incl. both schema extremes) and a few more seeds. Each towns_build
 // runs on a fresh instance so nothing is cached.
 //   node worldgen/scripts/towns-timing.mjs [out.txt]
+/* global WebAssembly, TextEncoder, TextDecoder */
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
