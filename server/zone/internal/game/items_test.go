@@ -22,7 +22,7 @@ import (
 
 type fakeClock struct{ off atomic.Int64 }
 
-func (c *fakeClock) now() time.Time         { return time.Now().Add(time.Duration(c.off.Load())) }
+func (c *fakeClock) now() time.Time          { return time.Now().Add(time.Duration(c.off.Load())) }
 func (c *fakeClock) advance(d time.Duration) { c.off.Add(int64(d)) }
 
 func (cl *client) inventory(t *testing.T) inventoryJSON {
