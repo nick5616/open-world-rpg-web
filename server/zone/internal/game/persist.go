@@ -111,3 +111,73 @@ func (p *PGStore) SavePosition(ctx context.Context, id string, pos movement.Vec3
 	}
 	return nil
 }
+
+// ---- WP16: checkpoint fencing ----
+//
+// Two zones can hold writes for the same character in their write-behind
+// queues around a handoff (or a release): the old owner's last checkpoint
+// may still be queued, or retrying against a slow Postgres, when the new
+// owner writes. Each owner writes with its epoch (Unix ms at admission,
+// always above the previous owner's: handoff.go joinState) stored as
+// position.e, and a write with an older epoch than the stored one is
+// refused. So the newest owner's state always wins, whatever order the
+// queues drain in. Single-zone zones write with epoch 0: the original,
+// unfenced statements.
+
+// ErrFenced: a newer owner already wrote this character (skip, don't retry).
+var ErrFenced = fmt.Errorf("checkpoint superseded by a newer owner: %w", writebehind.ErrSkip)
+
+// epochFence is the WHERE clause guarding a write with epoch $5 (position
+// writes use $3; see SavePositionEpoch).
+const epochFence = `COALESCE((position->>'e')::bigint, 0) <= $5`
+
+// epochSaver is implemented by stores that can fence position writes.
+type epochSaver interface {
+	SavePositionEpoch(ctx context.Context, characterID string, pos movement.Vec3, epoch int64) error
+}
+
+func savePosition(ctx context.Context, store CharacterStore, id string, pos movement.Vec3, epoch int64) error {
+	if es, ok := store.(epochSaver); ok && epoch > 0 {
+		return es.SavePositionEpoch(ctx, id, pos, epoch)
+	}
+	return store.SavePosition(ctx, id, pos)
+}
+
+type posEpochJSON struct {
+	X float64 `json:"x"`
+	Y float64 `json:"y"`
+	Z float64 `json:"z"`
+	E int64   `json:"e"`
+}
+
+// SavePositionEpoch implements epochSaver. The JSON is built in Go (exact
+// shortest floats; a float8 -> numeric cast in SQL would round to 15
+// digits).
+func (p *PGStore) SavePositionEpoch(ctx context.Context, id string, pos movement.Vec3, epoch int64) error {
+	if !uuidRe.MatchString(id) {
+		return ErrNoRow
+	}
+	b, _ := json.Marshal(posEpochJSON{pos.X, pos.Y, pos.Z, epoch})
+	tag, err := p.Pool.Exec(ctx, `UPDATE characters SET position = $2::jsonb, updated_at = now()
+		WHERE id = $1::uuid AND COALESCE((position->>'e')::bigint, 0) <= $3`, id, b, epoch)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return p.missingOrFenced(ctx, id)
+	}
+	return nil
+}
+
+// missingOrFenced explains an UPDATE that touched no row.
+func (p *PGStore) missingOrFenced(ctx context.Context, id string) error {
+	var one int
+	err := p.Pool.QueryRow(ctx, `SELECT 1 FROM characters WHERE id = $1::uuid`, id).Scan(&one)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return ErrNoRow
+	}
+	if err != nil {
+		return err
+	}
+	return ErrFenced
+}

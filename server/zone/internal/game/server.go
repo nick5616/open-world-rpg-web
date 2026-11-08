@@ -13,6 +13,7 @@ package game
 import (
 	"context"
 	"crypto/ed25519"
+	"errors"
 	"hash/fnv"
 	"log/slog"
 	"math"
@@ -74,6 +75,11 @@ type Config struct {
 	Explore *explore.World
 	Parties PartyDirectory
 	Saves   *localsave.Store
+	// WP16 multiple zones (cluster.go, handoff.go, ghosts.go): nil = one zone
+	// owning the whole world (pre-WP16 behavior). IDBase starts the
+	// zone-local entity id counter (cluster zones: a per-zone range).
+	Cluster Cluster
+	IDBase  uint32
 	// Now is the wall clock (tickets, server time); tests override it.
 	Now func() time.Time
 }
@@ -108,6 +114,7 @@ type Server struct {
 	env      movement.Env        // WP10: this tick's movement env (stepEnv)
 	hap      []explore.Happening // scratch for exploreTick
 	party    partyState
+	cl       clusterState // WP16 (handoff.go)
 	// WP11: next earshot hand-off (earshot.go).
 	earshotNext time.Time
 
@@ -161,6 +168,9 @@ func New(cfg Config) *Server {
 	if s.saveDiv == 0 {
 		s.saveDiv = 1
 	}
+	if cfg.IDBase > 0 {
+		s.nextID = cfg.IDBase
+	}
 	s.m.init(cfg.Metrics)
 	s.loop = &gameloop.Loop{Interval: interval, Stats: s.stats, OnTick: s.onTick}
 	return s
@@ -171,6 +181,7 @@ func (s *Server) Start() {
 	s.sched = gameloop.New(s.cfg.SpinTail)
 	s.sched.Add(s.loop)
 	s.startParties()
+	s.startCluster() // WP16
 	s.log.Info("zone ticking", "hz", constants.TickRateHz, "spinTail", s.cfg.SpinTail.String(), "clock", gameloop.PreciseClock)
 }
 
@@ -190,11 +201,12 @@ func (s *Server) Stop(ctx context.Context) {
 			s.sched.Close() // waits for the current tick; no tick runs after this
 		}
 		close(s.stopped)
+		s.clusterStop() // WP16: standby connections, held handoff states
 		for {
 			select {
 			case sess := <-s.joins:
 				s.kick(sess, proto.KickCodeShutdown, "zone shutting down")
-				close(sess.joined)
+				sess.markJoined()
 				continue
 			default:
 			}
@@ -260,6 +272,7 @@ func (s *Server) onTick() {
 	s.exploreTick(tick)             // WP12: towers, waypoints, discoveries, party ring (explore.go)
 	s.caveTick(tick)                // WP09: cave cell interest + each entity's cave system (caves.go)
 	s.miningTick(tick, s.cfg.Now()) // WP09: pickups, respawns, WorldEdits interest (mining.go)
+	s.handoffTick(tick, now)        // WP16: handoffs, mirrored entities, presence (handoff.go, ghosts.go)
 
 	// Quantize once per entity and rebuild the grid; every client's snapshot
 	// reads these.
@@ -270,6 +283,7 @@ func (s *Server) onTick() {
 		e.quantize(s.cfg.Ground)
 		s.grid.Insert(int32(i), e.Move.Pos.X, e.Move.Pos.Z)
 	}
+	s.gridRemotes()    // WP16: mirrored entities after the local ones (ghosts.go)
 	s.earshotTick(now) // WP11: proximity voice positions every 250 ms (earshot.go)
 
 	// Checkpoint each character every SAVE_INTERVAL_S, staggered by id so
@@ -300,12 +314,16 @@ func (s *Server) onTick() {
 
 // join admits a handshaken session (tick goroutine).
 func (s *Server) join(sess *session) {
-	defer close(sess.joined)
+	defer sess.markJoined()
 	if s.stopping.Load() {
 		s.kick(sess, proto.KickCodeShutdown, "zone shutting down")
 		return
 	}
 	if sess.closed.Load() {
+		return
+	}
+	if sess.ho != nil && sess.ho.standby {
+		s.joinStandby(sess) // WP16: pre-connected, not owned here yet (handoff.go)
 		return
 	}
 	spawn := sess.spawn
@@ -322,7 +340,7 @@ func (s *Server) join(sess *session) {
 		return
 	}
 	e := &Entity{
-		ID:          s.nextID,
+		ID:          s.joinID(sess), // WP16: world-stable ids in a cluster
 		Kind:        proto.EntityKindPlayer,
 		Name:        sess.claims.CharacterName,
 		CharacterID: sess.claims.CharacterID,
@@ -331,13 +349,13 @@ func (s *Server) join(sess *session) {
 		HealthMax:   100,
 		ListenOnly:  sess.claims.IsLocalProfile, // WP11: local profiles hear voice but never transmit (spec 11)
 	}
-	s.nextID++
 	e.Move = movement.NewState(spawn) // WP10: full stamina wheel, ground mode
 	if g := movement.GroundAt(s.cfg.Ground, spawn.X, spawn.Y, spawn.Z); e.Move.Pos.Y < g {
 		e.Move.Pos.Y = g
 	}
 	e.prevValid = e.Move
 	e.view = e.Move
+	s.joinState(sess, e) // WP16: a handed-over character continues its exact state
 	e.quantize(s.cfg.Ground)
 	sess.ent = e
 	if s.cfg.DownBudgetKbps > 0 {
@@ -352,7 +370,7 @@ func (s *Server) join(sess *session) {
 	if k := sess.conn.Kind(); int(k) < len(s.m.transports) {
 		s.m.transports[k].Add(1)
 	}
-	s.ents = append(s.ents, e)
+	s.insertEntity(e)
 	s.sessions = append(s.sessions, sess)
 	s.byChar[e.CharacterID] = sess
 	if e.PartyID != 0 {
@@ -380,7 +398,8 @@ func (s *Server) join(sess *session) {
 	if err := sess.conn.SendReliable(proto.Encode(welcome)); err != nil {
 		sess.closed.Store(true)
 	}
-	s.exploreJoin(sess) // WP12: progress, pins (after Welcome, which the client needs first)
+	s.exploreJoin(sess)   // WP12: progress, pins (after Welcome, which the client needs first)
+	s.clusterJoined(sess) // WP16: owner record, arrival checkpoint
 	s.log.Info("join", "entity", e.ID, "character", e.CharacterID, "name", e.Name, "remote", sess.conn.RemoteAddr(),
 		"x", math.Round(spawn.X*100)/100, "z", math.Round(spawn.Z*100)/100)
 }
@@ -427,6 +446,7 @@ func (s *Server) leave(sess *session) {
 	if s.cfg.Queue != nil {
 		s.checkpoint(e)
 	}
+	s.clusterLeave(e) // WP16
 	s.log.Info("leave", "entity", e.ID, "character", e.CharacterID)
 }
 
@@ -437,8 +457,13 @@ func (s *Server) checkpoint(e *Entity) {
 		return
 	}
 	id, pos, store, log := e.CharacterID, e.Move.Pos, s.cfg.Store, s.log
+	epoch, fenced := e.epoch, &s.cl.stats.fenced // WP16: checkpoint fence (persist.go)
 	s.cfg.Queue.Enqueue(writebehind.Op{Key: "pos:" + id, Run: func(ctx context.Context) error {
-		err := store.SavePosition(ctx, id, pos)
+		err := savePosition(ctx, store, id, pos, epoch)
+		if errors.Is(err, ErrFenced) {
+			fenced.Add(1)
+			return err
+		}
 		if err != nil && errorsIsSkip(err) {
 			// Expected until WP04 creates character rows: log once per
 			// character, not every 30 s.

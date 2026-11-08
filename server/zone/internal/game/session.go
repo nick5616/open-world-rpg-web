@@ -37,6 +37,10 @@ type session struct {
 	spawn  movement.Vec3
 	joined chan struct{}
 	closed atomic.Bool
+	// WP16: handoff state (handoff.go); joinOnce guards joined, which a
+	// standby session closes twice (standby, then admission).
+	ho       *sessHandoff
+	joinOnce sync.Once
 
 	mu    sync.Mutex
 	inbox []proto.Message
@@ -189,13 +193,8 @@ func (s *Server) accept(c transport.Conn, spawnHint *movement.Vec3) {
 		c.Close(1002, "expected Hello")
 		return
 	}
-	claims, err := ticket.Verify(s.cfg.TicketKey, string(hello.Ticket), ticket.AudienceZone(s.cfg.ZoneID), s.cfg.Now())
-	if err == nil && claims.WorldID != s.cfg.WorldID {
-		err = errWrongWorld
-	}
-	if err == nil && claims.CharacterID == "" {
-		err = errNoCharacter
-	}
+	// WP16: a director ticket, or a cluster zone's pre-connect token (handoff.go).
+	claims, ho, err := s.verifyHello(hello)
 	if err != nil {
 		s.kickConn(c, proto.KickCodeBadTicket, err.Error())
 		return
@@ -203,9 +202,11 @@ func (s *Server) accept(c transport.Conn, spawnHint *movement.Vec3) {
 	c.SetReadLimit(sessionReadLimit)
 
 	sess := &session{conn: c, claims: claims, joined: make(chan struct{}),
-		buckets: newBuckets(), violations: ratelimit.New(100, 10), frameBudget: frameBudget()}
-	sess.spawn = s.spawnFor(claims, spawnHint)
-	sess.x = s.loadExplore(claims, hello.SaveBlob, &sess.spawn, spawnHint != nil) // WP12
+		buckets: newBuckets(), violations: ratelimit.New(100, 10), frameBudget: frameBudget(), ho: ho}
+	if !s.clusterAccept(sess) { // WP16: standby, or live state from the previous owner
+		sess.spawn = s.spawnFor(claims, spawnHint)
+		sess.x = s.loadExplore(claims, hello.SaveBlob, &sess.spawn, spawnHint != nil) // WP12
+	}
 
 	select {
 	case s.joins <- sess:
@@ -455,17 +456,17 @@ func (s *Server) sendSnapshot(sess *session, tick uint32, serverTime float64) (n
 				s.idxs = append(s.idxs, m.idx)
 			}
 		}
+		s.remotePartyMembers(e.PartyID) // WP16: party members on other zones
 	}
-	// ents is sorted by ID, so sorting indices sorts by entity ID, which the
-	// encoder's merge with the baseline needs.
-	slices.Sort(s.idxs)
-	s.idxs = slices.Compact(s.idxs)
+	// The encoder's merge with the baseline needs interest sorted by entity
+	// ID (ents is sorted by ID; WP16 mirrors are sorted in, ghosts.go).
+	s.sortInterest()
 
 	last := sess.enc.Last()
 	s.cands = s.cands[:0]
 	cw := s.caves()
 	for _, i := range s.idxs {
-		o := s.ents[i]
+		o := s.entAt(i)
 		// Personal pickups: only their owner sees them (WP09).
 		if o.Kind == proto.EntityKindPickup && o.Owner != e.ID {
 			continue
@@ -509,3 +510,6 @@ func (s *Server) sendSnapshot(sess *session, tick uint32, serverTime float64) (n
 	}
 	return near, mid, far, party, len(buf)
 }
+
+// markJoined closes joined once (WP16: a standby session joins twice).
+func (sess *session) markJoined() { sess.joinOnce.Do(func() { close(sess.joined) }) }

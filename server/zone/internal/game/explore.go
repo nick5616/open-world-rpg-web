@@ -106,6 +106,7 @@ type ProgressSnapshot struct {
 	Waypoints    []byte
 	Discoveries  []byte
 	Pins         []byte // JSON
+	Epoch        int64  // WP16: owner epoch; > 0 fences the write (persist.go)
 }
 
 func (s *Server) snapshotProgress(p *explore.Progress) ProgressSnapshot {
@@ -416,6 +417,7 @@ func (s *Server) saveProgressSoon(sess *session, force bool) {
 		return
 	}
 	snap := s.snapshotProgress(x.prog)
+	snap.Epoch = e.epoch // WP16: checkpoint fence (persist.go)
 	x.prog.MarkSaved()
 	id, log := e.CharacterID, s.log
 	s.cfg.Queue.Enqueue(writebehind.Op{Key: "progress:" + id, Run: func(ctx context.Context) error {
