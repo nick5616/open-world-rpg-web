@@ -16,7 +16,6 @@ import (
 	"math"
 	"time"
 
-	"lodestone/server/pkg/caves"
 	"lodestone/server/pkg/movement"
 	"lodestone/server/pkg/proto"
 	"lodestone/server/pkg/towns"
@@ -413,18 +412,34 @@ func (s *Server) shaftInteract(e *Entity, m *proto.Interact) {
 		s.refuseTown(e, m.TargetID, TownRefuseNoCaveBelow)
 		return
 	}
+	// Down the shaft: the chamber of the linked system nearest the shaft
+	// (horizontally) whose floor lies at least 6 m below the shaft's ground;
+	// the system's deepest chamber if none does (the mouth may sit uphill).
 	g := cw.CaveGraph()
 	for _, sys := range g.Systems {
 		if sys.SiteIndex != st.Link {
 			continue
 		}
+		best, bestD, deepest := -1, math.Inf(1), -1
 		for c := sys.FirstChamber; c < sys.FirstChamber+sys.Chambers; c++ {
 			ch := g.Chambers[c]
-			if ch.Flags&caves.ChamberEntrance != 0 {
-				s.log.Info("mineshaft descent", "character", e.CharacterID, "structure", st.Site, "cave", sys.SiteIndex)
-				s.Teleport(e, movement.Vec3{X: ch.X, Y: ch.Floor + 0.2, Z: ch.Z})
-				return
+			if deepest < 0 || ch.Floor < g.Chambers[deepest].Floor {
+				deepest = c
 			}
+			if ch.Floor < st.Y-6 {
+				if d := math.Hypot(ch.X-st.X, ch.Z-st.Z); d < bestD {
+					best, bestD = c, d
+				}
+			}
+		}
+		if best < 0 {
+			best = deepest
+		}
+		if best >= 0 {
+			ch := g.Chambers[best]
+			s.log.Info("mineshaft descent", "character", e.CharacterID, "structure", st.Site, "cave", sys.SiteIndex, "y", ch.Floor)
+			s.Teleport(e, movement.Vec3{X: ch.X, Y: ch.Floor + 0.2, Z: ch.Z})
+			return
 		}
 	}
 	s.refuseTown(e, m.TargetID, TownRefuseNoCaveBelow)

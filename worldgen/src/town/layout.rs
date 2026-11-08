@@ -331,73 +331,84 @@ pub fn build_settlements(a: &Atlas, net: &Net, t: &mut Towns) {
             }
         }
 
-        // Market stalls inside the square, facing its centre, clear of the
-        // street mouths; then the bounty board and the well.
+        // Square furniture, in priority order: the bounty board (its keeper
+        // depends on it), the market stalls, the well. Each takes the first
+        // free angle on a ring inside the square that is clear of the street
+        // mouths, of the doorways of buildings facing the square, and of the
+        // others; constraints relax in passes so small squares still fit the
+        // required pieces. A well that finds no room stands nearer the middle.
         let n_stalls = 1 + size as usize;
-        let mut stall_angles: Vec<f64> = Vec::new();
         let base = seq.range(0.0, TAU);
-        // Keep the doorways of buildings facing the square clear: no stall,
-        // board or well in front of an inn or forge door.
         let doors: Vec<(f64, f64)> = t.buildings[set_first_building as usize..]
             .iter()
             .filter(|b| b.street == NONE && b.floors > 0)
             .map(|b| (libm::atan2(b.front_z - s.z, b.front_x - s.x), (b.door_w * 0.5 + 3.0) / square))
             .collect();
-        let mut k = 0;
-        while stall_angles.len() < n_stalls + 2 && k < 48 {
-            let ang = base + k as f64 * TAU / 48.0;
-            k += 1;
-            if angles.iter().any(|&a| ang_diff(a, ang) < 0.55)
-                || stall_angles.iter().any(|&a| ang_diff(a, ang) < 0.6)
-                || doors.iter().any(|&(a, h)| ang_diff(a, ang) < h + 0.12)
-            {
-                continue;
+        let rr = square - 2.6;
+        let mut taken: Vec<f64> = Vec::new();
+        let mut items: Vec<u8> = vec![pk::BOARD];
+        items.extend(std::iter::repeat_n(pk::STALL, n_stalls));
+        items.push(pk::WELL);
+        const SQUARE_PASSES: [(f64, f64, f64); 3] = [(0.55, 1.0, 0.6), (0.4, 0.5, 0.45), (0.28, 0.0, 0.34)];
+        for (i, &item) in items.iter().enumerate() {
+            let mut found = None;
+            'passes: for &(street_gap, door_k, spacing) in &SQUARE_PASSES {
+                for k in 0..48 {
+                    let ang = base + k as f64 * TAU / 48.0;
+                    if angles.iter().any(|&a| ang_diff(a, ang) < street_gap)
+                        || taken.iter().any(|&a| ang_diff(a, ang) < spacing)
+                        || doors.iter().any(|&(a, h)| ang_diff(a, ang) < (h + 0.12) * door_k)
+                    {
+                        continue;
+                    }
+                    found = Some(ang);
+                    break 'passes;
+                }
             }
-            stall_angles.push(ang);
-        }
-        for (i, &ang) in stall_angles.iter().enumerate() {
+            let (ang, r_at) = match (found, item) {
+                (Some(a), _) => (a, rr),
+                // The well: halfway out, midway between the first two streets.
+                (None, pk::WELL) => {
+                    let a0 = angles[0];
+                    let a1 = if angles.len() > 1 { angles[1] } else { a0 + TAU };
+                    ((a0 + a1) * 0.5, (square * 0.45).max(3.2))
+                }
+                (None, _) => continue,
+            };
+            taken.push(ang);
             let (cs, sn) = (libm::cos(ang), libm::sin(ang));
-            let rr = square - 2.6;
-            let (x, z) = (s.x + cs * rr, s.z + sn * rr);
-            if i < n_stalls {
-                // Front (-v) faces the square's centre: v axis points outward.
-                let o = Obb {
-                    cx: x,
-                    cz: z,
-                    c: sn,
-                    s: -cs,
-                    hx: 1.6,
-                    hz: 1.1,
-                };
-                let mut seq2 = Seq::new(a.seed ^ s.seed as u64, stream::LAYOUT + 1 + i as u64);
-                kit::build(
-                    &mut ctx,
-                    t,
-                    &o,
-                    role::STALL,
-                    style,
-                    local,
-                    &mut seq2,
-                    (s.x + cs * (rr - 3.0), s.z + sn * (rr - 3.0)),
-                    NONE,
-                    0.0,
-                );
-                local += 1;
-            } else if i == n_stalls {
-                town_prop(
-                    &mut ctx,
-                    t,
-                    &ter,
-                    x,
-                    z,
-                    ang + core::f64::consts::PI,
-                    pk::BOARD,
-                    0,
-                    pf::INTERACT,
-                    Some((0.9, 0.15, 2.2)),
-                );
-            } else {
-                town_prop(&mut ctx, t, &ter, x, z, ang, pk::WELL, 0, 0, Some((0.8, 0.8, 0.9)));
+            let (x, z) = (s.x + cs * r_at, s.z + sn * r_at);
+            match item {
+                pk::STALL => {
+                    // Front (-v) faces the square's centre: v axis points outward.
+                    let o = Obb {
+                        cx: x,
+                        cz: z,
+                        c: sn,
+                        s: -cs,
+                        hx: 1.6,
+                        hz: 1.1,
+                    };
+                    let mut seq2 = Seq::new(a.seed ^ s.seed as u64, stream::LAYOUT + 1 + i as u64);
+                    let front = (s.x + cs * (r_at - 3.0), s.z + sn * (r_at - 3.0));
+                    kit::build(&mut ctx, t, &o, role::STALL, style, local, &mut seq2, front, NONE, 0.0);
+                    local += 1;
+                }
+                pk::BOARD => {
+                    town_prop(
+                        &mut ctx,
+                        t,
+                        &ter,
+                        x,
+                        z,
+                        ang + core::f64::consts::PI,
+                        pk::BOARD,
+                        0,
+                        pf::INTERACT,
+                        Some((0.9, 0.15, 2.2)),
+                    );
+                }
+                _ => town_prop(&mut ctx, t, &ter, x, z, ang, pk::WELL, 0, 0, Some((0.8, 0.8, 0.9))),
             }
         }
         // Lanterns along the streets (spec 8) every 14 m, alternating sides.

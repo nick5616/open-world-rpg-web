@@ -51,6 +51,8 @@ export class WorldRuntime {
   /** WP09: the cave graph (systems, openings, veins) and the cave cells shared by collision and rendering. */
   readonly caveGraph: CaveGraph | null = null;
   readonly caveStore: CaveCellStore | null = null;
+  /** WP09's cave ground (inCave, floors, walls) under the towns layer; null without caves. */
+  readonly caveGround: CaveGround | null = null;
   /** WP20: the world's towns layer (settlements, buildings, roads, structures, NPCs) and its collision. */
   readonly towns: Towns | null = null;
   readonly townCollision: TownCollision | null = null;
@@ -76,7 +78,8 @@ export class WorldRuntime {
     try {
       this.caveGraph = parseCaveGraph(caveGraphBytes(wg, atlas));
       this.caveStore = new CaveCellStore(wg, atlas);
-      ground = new CaveGround(this.structureGround, this.caveGraph.openings, this.caveStore, this.terrainGround);
+      this.caveGround = new CaveGround(this.structureGround, this.caveGraph.openings, this.caveStore, this.terrainGround);
+      ground = this.caveGround;
     } catch (err) {
       console.warn('[world] no caves (worldgen.wasm without cave exports?)', err);
     }

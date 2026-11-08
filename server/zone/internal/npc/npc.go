@@ -166,17 +166,20 @@ func (w *World) Want(i int, todS float64) int {
 }
 
 // Place puts NPC i where it should be at time t (activation: an NPC
-// nobody watched has been living its schedule off-screen). The height
-// starts on the bare surface and climbs a step at a time (ground viewed at
-// the current level), so an NPC indoors lands on its floor (stilt houses
-// included), never on the roof and never in a cave below.
+// nobody watched has been living its schedule off-screen). The height is
+// the ground viewed from just above the bare surface, so an NPC indoors
+// lands on its floor (stilt houses included), never on the roof and never
+// in a cave below.
 func (w *World) Place(i int, todS float64, ground func(x, y, z float64) float64, surface func(x, z float64) float64) {
 	s := &w.NPCs[i]
 	s.Goal = w.Want(i, todS)
 	p := w.goalPoint(i, s.Goal, todS)
 	s.X, s.Z = p[0], p[1]
-	s.Y = surface(s.X, s.Z)
-	for k := 0; k < 6; k++ {
+	// From 2 m above the surface the level view sees every floor within
+	// 2.6 m (indoor floors on a downhill plinth, stilt floors, decks) but
+	// never a roof (wall tops are >= 2.8 m above any floor).
+	s.Y = surface(s.X, s.Z) + 2
+	for k := 0; k < 3; k++ {
 		s.Y = ground(s.X, s.Y, s.Z)
 	}
 	s.path, s.pathI, s.target = nil, 0, p
