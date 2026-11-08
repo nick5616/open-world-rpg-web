@@ -19,5 +19,7 @@ Shared Go packages for every service (module `lodestone/server/pkg`).
 | `snapshot` | Delta snapshots: per-client baseline ring encoder and the reference client decoder |
 | `ratelimit` | Token bucket (the-circle pattern) |
 | `writebehind` | Bounded, coalescing, retrying write-behind queue with flush on shutdown |
+| `accountapi` | (WP04) Session tokens + shared Postgres queries for accounts, local profiles, worlds, characters; `dbtest` scratch-DB helper |
+| `localsave` | (WP04) Local-profile save blobs: Ed25519 sign/verify + Redis newest-counter check |
 
 Test: `go test ./...` (includes the protocol golden vectors).
