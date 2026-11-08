@@ -3,7 +3,7 @@ import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['**/node_modules/**', '**/dist/**', 'refs/**', 'target/**', '**/gen/**', 'worldgen/pkg/**', 'client/public/**'] },
+  { ignores: ['.claude/**', '**/node_modules/**', '**/dist/**', 'refs/**', 'target/**', '**/gen/**', 'worldgen/pkg/**', 'client/public/**'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {

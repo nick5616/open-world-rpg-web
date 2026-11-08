@@ -186,7 +186,11 @@ func TestTwoProcessesAcrossZones(t *testing.T) {
 	}
 	wcancel0()
 	time.Sleep(300 * time.Millisecond)
-	if b.Count(client.Chat(sp.ChannelWhisper, "blocked line")) != 0 || b.Count(client.Type(sp.S2CTypeChat)) != before {
+	// Only the blocked line matters: unrelated system/party chat (e.g. a late
+	// party notice) may legitimately arrive in this window and made the old
+	// total-count check flaky under load.
+	_ = before
+	if b.Count(client.Chat(sp.ChannelWhisper, "blocked line")) != 0 {
 		t.Fatal("blocked whisper reached Bob across processes")
 	}
 
