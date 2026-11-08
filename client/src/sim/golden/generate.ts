@@ -6,11 +6,19 @@ import { SCENARIOS, runScenario } from './scenarios';
 import { goldenPath, serializeGolden, wasmPath } from './io';
 import { loadWorldgenGround } from '../worldgenGround';
 import { runWp10, scenarioGround, summarize, WP10_SCENARIOS, WP10_SEED } from './wp10';
+import { runWp13, WP13_SCENARIOS } from './wp13';
 
 for (const sc of SCENARIOS) {
   const g = runScenario(sc);
   writeFileSync(goldenPath(sc.name), serializeGolden(g));
   console.log(`wrote ${goldenPath(sc.name)} (${g.states.length} steps)`);
+}
+
+// WP13: dodge + dash variants on flat/plane ground.
+for (const sc of WP13_SCENARIOS) {
+  const g = runWp13(sc.name);
+  writeFileSync(goldenPath(`wp13_${sc.name}`), serializeGolden(g));
+  console.log(`wrote ${goldenPath(`wp13_${sc.name}`)} (${g.states.length} steps)`);
 }
 
 if (!existsSync(wasmPath)) {

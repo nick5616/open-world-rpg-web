@@ -83,7 +83,7 @@ func verticalOK(prev, next movement.State, g movement.Ground) bool {
 	if next.Pos.Y < ground-eps {
 		return false
 	}
-	up := max(prev.Vel.Y, constants.JumpForce, constants.UpdraftMaxLift-constants.GlideSinkSpeed, constants.ClimbJumpSpeed)
+	up := max(prev.Vel.Y, constants.JumpForce, constants.UpdraftMaxLift-constants.GlideSinkSpeed, constants.ClimbJumpSpeed, movement.MaxDashLift) // WP13: launch dashes
 	limit := max(prev.Pos.Y+up*movement.Dt, ground)
 	if next.Mode == movement.ModeSwim {
 		limit = max(limit, movement.WaterAt(g, next.Pos.X, next.Pos.Z)-constants.SwimFloatDepthM)

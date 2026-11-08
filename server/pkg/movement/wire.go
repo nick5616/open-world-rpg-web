@@ -16,7 +16,10 @@ import (
 func PackFlags(s State) uint8 { return s.Flags&0x0f | uint8(s.Lunge&0x0f)<<4 }
 
 // PackMoveExt is SelfState.moveExt for s.
-func PackMoveExt(s State) uint32 { return uint32(s.Stamina&0xffff) | uint32(s.Timer&0xff)<<16 }
+// WP13 (CR 005, protocol v3): bits 24-27 dash steps, 28-31 i-frame steps.
+func PackMoveExt(s State) uint32 {
+	return uint32(s.Stamina&0xffff) | uint32(s.Timer&0xff)<<16 | uint32(s.Dash&0xf)<<24 | uint32(s.IFrames&0xf)<<28
+}
 
 // StaminaX10 converts fine units to the display field (x10, one decimal).
 func StaminaX10(fine int) uint16 {
@@ -54,5 +57,7 @@ func FromSelf(st proto.SelfState) State {
 		Timer:      int(st.MoveExt >> 16 & 0xff),
 		Lunge:      int(st.Flags >> 4),
 		Flags:      st.Flags & 0x0f,
+		Dash:       int(st.MoveExt >> 24 & 0xf),
+		IFrames:    int(st.MoveExt >> 28 & 0xf),
 	}
 }
