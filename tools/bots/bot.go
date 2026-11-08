@@ -105,6 +105,7 @@ type bot struct {
 	sent        []proto.InputFrame // newest frames (resent to a new owner)
 	postSwitch  int                // prediction checks after a switch still to count as handoff checks
 	target      *movement.Vec3     // cross persona: where to walk
+	crosser     bool               // WP16 -mode cross: this bot keeps crossing borders
 	discoveries map[uint32]int     // discovery Events per site (a repeat = a duplicated grant)
 
 	// stats (reader goroutine writes under mu)
@@ -344,7 +345,7 @@ func (b *bot) decide(now time.Time) {
 	}
 	// WP16 cross persona: walk to a point past the nearest border between
 	// zones; on arrival pick the next one (usually back across).
-	if b.cfg.cross && b.cfg.view != nil {
+	if b.crosser && b.cfg.view != nil {
 		if b.target == nil || math.Hypot(b.target.X-px, b.target.Z-pz) < 8 {
 			b.crossTarget(px, pz)
 		}

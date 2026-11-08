@@ -57,6 +57,7 @@ func main() {
 		clusterArg = flag.String("cluster", "", "WP16: comma-separated http bases of cluster zones (any live one will do): follow handoffs, fail over, sample ownership")
 		giveUp     = flag.Duration("failover-giveup", 60*time.Second, "WP16: a bot that cannot reconnect for this long counts as dropped")
 		sampleArg  = flag.Duration("sample-every", 2*time.Second, "WP16: ownership sampling period (0 = off)")
+		crossFrac  = flag.Float64("cross-frac", 0.4, "WP16 cross mode: share of bots that keep crossing borders (the rest walk the whole world like -mode spread)")
 		borderM    = flag.Float64("border-spawn", 150, "WP16 cross mode: spawn within this distance of a border between zones")
 		printChars = flag.Bool("print-characters", false, "print the bots' deterministic character ids and names as JSON and exit (seed a scratch database with them)")
 		findBorder = flag.Float64("find-border", 0, "WP16: print a walkable crossing of the region line x = this value (JSON) and exit (needs the zone and its terrain)")
@@ -161,6 +162,7 @@ func main() {
 
 	rng := rand.New(rand.NewSource(*seed))
 	bots := make([]*bot, *n)
+	nearBorder := false
 	draw := func() (x, z float64) {
 		if cfg.radius > 0 {
 			r := cfg.radius * math.Sqrt(rng.Float64()) // uniform over the disc
@@ -170,7 +172,7 @@ func main() {
 		const margin = 100
 		for try := 0; ; try++ {
 			x, z = margin+rng.Float64()*(cfg.worldM-2*margin), margin+rng.Float64()*(cfg.worldM-2*margin)
-			if !cfg.cross || try > 200 {
+			if !nearBorder || try > 200 {
 				return x, z
 			}
 			// WP16 cross: start near a border between zones.
@@ -180,11 +182,13 @@ func main() {
 		}
 	}
 	for i := range bots {
+		nearBorder = cfg.cross && rng.Float64() < *crossFrac
 		x, z := draw()
 		if terrain != nil {
 			x, z = landSpawn(terrain, draw)
 		}
 		bots[i] = newBot(i+1, cfg, *seed*100003+int64(i), x, z)
+		bots[i].crosser = nearBorder
 	}
 	if terrain != nil {
 		// Generate the bots' own chunks before connecting: doing it during
