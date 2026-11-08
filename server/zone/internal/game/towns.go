@@ -151,10 +151,16 @@ func (s *Server) townsTick(tick uint32, now time.Time) {
 		st := &w.NPCs[i]
 		e.Move.Pos = movement.Vec3{X: st.X, Y: st.Y, Z: st.Z}
 		e.Move.Vel = movement.Vec3{X: st.VX, Z: st.VZ}
-		e.Yaw = st.Yaw
+		e.Yaw = wireYaw(st.Yaw)
 		e.prevValid = e.Move
 	}
 }
+
+// wireYaw turns a worldgen heading (radians from +x toward +z: forward =
+// (cos, sin)) into the camera-convention yaw players send and every
+// EntityRecord carries (forward = (-sin, -cos)), so NPCs and players share
+// one meaning of EntityRecord.yaw.
+func wireYaw(h float64) float64 { return math.Atan2(-math.Cos(h), -math.Sin(h)) }
 
 func (s *Server) activateNPC(i int, tod float64) {
 	w := s.cfg.Towns
@@ -164,7 +170,7 @@ func (s *Server) activateNPC(i int, tod float64) {
 	e := &Entity{ID: s.nextID, Kind: proto.EntityKindNpc, Name: d.Name, Level: d.Merchant, TypeID: uint16(d.Role) | uint16(d.Variant)<<8, Health: 100, HealthMax: 100}
 	s.nextID++
 	e.Move = movement.State{Pos: movement.Vec3{X: st.X, Y: st.Y, Z: st.Z}}
-	e.Yaw = st.Yaw
+	e.Yaw = wireYaw(st.Yaw)
 	e.prevValid = e.Move
 	e.view = e.Move
 	s.ents = append(s.ents, e) // ids only grow: stays sorted
