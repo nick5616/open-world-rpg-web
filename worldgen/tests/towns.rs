@@ -29,7 +29,12 @@ fn check(seed: u64) {
     for st in &t.settlements {
         let bs = &t.buildings[st.building_first as usize..(st.building_first + st.building_count) as usize];
         for r in [role::INN, role::FORGE, role::STALL, role::GARDEN] {
-            assert!(bs.iter().any(|b| b.role == r), "seed {seed} settlement {}: no {}", st.site, role::NAMES[r as usize]);
+            assert!(
+                bs.iter().any(|b| b.role == r),
+                "seed {seed} settlement {}: no {}",
+                st.site,
+                role::NAMES[r as usize]
+            );
         }
         let n = bs.iter().filter(|b| b.role != role::STALL && b.role != role::GARDEN).count();
         let (lo, hi) = ranges[st.size as usize];
@@ -45,7 +50,14 @@ fn check(seed: u64) {
     }
 
     let mut ids = HashSet::new();
-    for id in t.buildings.iter().map(|b| b.id).chain(t.props.iter().map(|p| p.id)).chain(t.npcs.iter().map(|n| n.id)).chain(t.pieces.iter().map(|p| p.id)) {
+    for id in t
+        .buildings
+        .iter()
+        .map(|b| b.id)
+        .chain(t.props.iter().map(|p| p.id))
+        .chain(t.npcs.iter().map(|n| n.id))
+        .chain(t.pieces.iter().map(|p| p.id))
+    {
         assert!(ids.insert(id), "seed {seed}: duplicate stable id {id:016x}");
     }
 
@@ -65,7 +77,12 @@ fn check(seed: u64) {
             let x = b.x + lu * b.c - lv * b.s;
             let z = b.z + lu * b.s + lv * b.c;
             let g = ground::collision_height(&a, x, z);
-            assert!(b.floor_y as f32 as f64 >= g - 1e-4, "seed {seed}: building {:016x} floor {} under ground {g}", b.id, b.floor_y);
+            assert!(
+                b.floor_y as f32 as f64 >= g - 1e-4,
+                "seed {seed}: building {:016x} floor {} under ground {g}",
+                b.id,
+                b.floor_y
+            );
         }
     }
     println!(
@@ -81,7 +98,11 @@ fn check(seed: u64) {
 #[test]
 fn towns_invariants() {
     // Debug builds are slow (about 10x): two worlds there, more in release.
-    let seeds: &[u64] = if cfg!(debug_assertions) { &[20261108, 99] } else { &[20261108, 7, 1234, 99, 42, 2026] };
+    let seeds: &[u64] = if cfg!(debug_assertions) {
+        &[20261108, 99]
+    } else {
+        &[20261108, 7, 1234, 99, 42, 2026]
+    };
     for &s in seeds {
         check(s);
     }

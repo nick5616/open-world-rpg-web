@@ -163,12 +163,15 @@ pub fn populate(a: &Atlas, si: usize, t: &mut Towns) {
             if rd.class != 1 || rd.points.len() < 3 {
                 continue;
             }
-            let p = rd.points[rd.points.len() - 3];
-            let yaw = super::geom::yaw16(libm::atan2(st.z - p[2], st.x - p[0]));
-            let side = if g == 0 { 3.0 } else { -3.0 };
-            let (dx, dz) = (p[0] - st.x, p[2] - st.z);
+            // 5 m inside the gate, 3 m to either side of the street, facing in.
+            let e = rd.points[rd.points.len() - 1];
+            let (dx, dz) = (e[0] - st.x, e[2] - st.z);
             let l = libm::sqrt(dx * dx + dz * dz).max(1e-6);
-            let (x, z) = (p[0] - dz / l * side, p[2] + dx / l * side);
+            let d = (st.wall_r - 5.0).max(st.square + 4.0);
+            let p = [st.x + dx / l * d, st.z + dz / l * d];
+            let yaw = super::geom::yaw16(libm::atan2(st.z - p[1], st.x - p[0]));
+            let side = if g == 0 { 3.0 } else { -3.0 };
+            let (x, z) = (p[0] - dz / l * side, p[1] + dx / l * side);
             push(t, &mut seq, &mut people, nrole::GUARD, NONE, NONE, x, z, yaw, 255, home_of(k));
             k += 1;
         }

@@ -75,7 +75,7 @@ pub fn serialize(a: &Atlas, t: &Towns) -> Vec<u8> {
             b[o + 10] = s.size;
             b[o + 11] = s.style;
             b[o + 12] = s.walled as u8;
-            b[o + 13] = 0;
+            b[o + 13] = libm::round(s.wall_r) as u8;
             b[o + 14] = s.region;
             put_f32(b, o + 16, s.x as f32);
             put_f32(b, o + 20, s.y as f32);

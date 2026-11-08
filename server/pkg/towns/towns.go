@@ -124,6 +124,7 @@ type Settlement struct {
 	Site                     int
 	Size, Style, Region      uint8
 	Walled                   bool
+	WallR                    float64 // town wall radius (m, 0 = none)
 	X, Y, Z, Radius, Square  float64
 	BuildingFirst, Buildings int
 	NPCFirst, NPCs           int
@@ -295,7 +296,7 @@ func Parse(b []byte) (*Towns, error) {
 	for i := 0; i < secs[SecSettlements].count; i++ {
 		o := rec(SecSettlements, i)
 		t.Settlements = append(t.Settlements, Settlement{
-			Index: i, ID: u64(o), Site: int(u16(o + 8)), Size: b[o+10], Style: b[o+11], Walled: b[o+12] != 0, Region: b[o+14],
+			Index: i, ID: u64(o), Site: int(u16(o + 8)), Size: b[o+10], Style: b[o+11], Walled: b[o+12] != 0, WallR: float64(b[o+13]), Region: b[o+14],
 			X: f32(o + 16), Y: f32(o + 20), Z: f32(o + 24), Radius: f32(o + 28), Square: f32(o + 32),
 			BuildingFirst: int(u16(o + 36)), Buildings: int(u16(o + 38)), NPCFirst: int(u16(o + 40)), NPCs: int(u16(o + 42)),
 			PropFirst: u32(o + 44), Props: u32(o + 48), BoxFirst: u32(o + 52), Boxes: u32(o + 56), RoadFirst: int(u16(o + 60)), Roads: int(u16(o + 62)),

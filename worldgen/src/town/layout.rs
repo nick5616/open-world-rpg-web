@@ -60,6 +60,7 @@ pub fn build_settlements(a: &Atlas, net: &Net, t: &mut Towns) {
         let box_first = t.boxes.len() as u32;
         let road_first = t.roads.len() as u16;
         let mut prop_n = 0u32;
+        let mut wall_r = 0.0;
 
         // Streets: one per road entry, topped up to a minimum count by
         // splitting the widest gap between them.
@@ -425,7 +426,14 @@ pub fn build_settlements(a: &Atlas, net: &Net, t: &mut Towns) {
             }
         }
         if walled {
-            town_wall(&mut ctx, t, &ter, s.x, s.z, r - 2.0, &angles, street_w, su);
+            // The wall hugs what was built (14 m beyond the farthest plot
+            // corner, fields included) rather than the whole atlas footprint,
+            // so a town reads as walled and the outskirts stay open; streets
+            // run on past the gates to meet the roads at the footprint edge.
+            let extent = placed.iter().flat_map(|o| o.corners()).map(|(x, z)| dist(x, z, s.x, s.z)).fold(0.0, f64::max);
+            let rw = (extent + 14.0).clamp(square + 30.0, r - 2.0);
+            town_wall(&mut ctx, t, &ter, s.x, s.z, rw, &angles, street_w, su);
+            wall_r = rw;
         }
 
         let building_count = t.buildings.len() as u16 - set_first_building;
@@ -435,6 +443,7 @@ pub fn build_settlements(a: &Atlas, net: &Net, t: &mut Towns) {
             size,
             style,
             walled,
+            wall_r,
             x: s.x,
             y: cy,
             z: s.z,

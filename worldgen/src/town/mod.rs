@@ -233,6 +233,8 @@ pub struct Settlement {
     pub size: u8,
     pub style: u8,
     pub walled: bool,
+    /// Town wall radius (m, 0 = no wall).
+    pub wall_r: f64,
     pub x: f64,
     pub y: f64,
     pub z: f64,

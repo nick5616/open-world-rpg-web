@@ -48,6 +48,8 @@ export interface Settlement {
   size: number;
   style: number;
   walled: boolean;
+  /** Town wall radius (m, 0 = no wall). */
+  wallRadius: number;
   region: number;
   x: number;
   y: number;
@@ -311,6 +313,7 @@ export function parseTowns(bytes: Uint8Array): Towns {
     size: u8(o + 10),
     style: u8(o + 11),
     walled: u8(o + 12) !== 0,
+    wallRadius: u8(o + 13),
     region: u8(o + 14),
     x: f32(o + 16),
     y: f32(o + 20),
