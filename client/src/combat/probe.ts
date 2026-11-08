@@ -30,6 +30,7 @@ function stat(xs: number[]): Stat {
 
 interface Live {
   s: Started;
+  waited: number;
   startAt: number;
   activeAt: number;
   activeEndAt: number;
@@ -60,15 +61,16 @@ export class CombatProbe {
     /** consumable press -> effect (spec <= 400 ms); speed kept while drinking. */
     drink: [] as number[],
     drinkSpeedRatio: [] as number[],
-    /** enemy wind-ups as telegraphed (ms) and telegraph -> resolution. */
+    /** enemy wind-ups as telegraphed (ms). */
     windup: [] as number[],
-    telegraphToStrike: [] as number[],
     /** local hit -> HitResult (network confirmation, not a feel target). */
     confirm: [] as number[],
   };
   counts = { presses: 0, started: 0, lostPresses: 0, accepted: 0, refused: 0, dodges: 0, evaded: 0, hurt: 0 };
   private lastActiveEnd = 0;
   private lastActiveEndSeq = 0;
+  private lastRecovery = 0;
+  private pendingRecovery = 0; // recovery of the newest started move (kept for symmetry with lastRecovery)
   private dodgeSinceEnd = false;
   private dodgeSeq = -1;
   private iframeSteps = 0;
@@ -76,7 +78,6 @@ export class CombatProbe {
   private drinkAt = 0;
   private speedBefore = 0;
   private speedDuring: number[] = [];
-  private telegraphs: number[] = [];
 
   press(kind: 'attack' | 'dodge' | 'drink', t: number): void {
     this.presses[kind].push(t);
@@ -85,16 +86,19 @@ export class CombatProbe {
 
   started(s: Started, t: number): void {
     this.counts.started++;
-    this.live.push({ s, startAt: t, activeAt: 0, activeEndAt: 0, hitAt: 0 });
+    this.live.push({ s, waited: t - s.pressedAt, startAt: t, activeAt: 0, activeEndAt: 0, hitAt: 0 });
     if (s.kind === 'move' && s.move?.kind === 'light') this.startupTable.push((s.startup * 1000) / MOVE_STEP_HZ);
     // A press that waited for the previous move: buffered.
     const waited = t - s.pressedAt;
     if (s.kind === 'move' && waited > STEP_MS * 1.5) this.samples.buffered.push(waited);
-    if (s.kind === 'move' && this.lastActiveEnd > 0 && s.seq >= this.lastActiveEndSeq) {
+    // Gaps are measured only for a follow-up pressed while the previous move
+    // was still recovering (a later press measures the player, not the move).
+    if (s.kind === 'move' && this.lastActiveEnd > 0 && s.seq >= this.lastActiveEndSeq && s.seq <= this.lastActiveEndSeq + this.lastRecovery + 1) {
       const gap = (s.seq - this.lastActiveEndSeq) * STEP_MS;
       if (this.dodgeSinceEnd) this.samples.cancelGap.push(gap);
       else if (waited > STEP_MS * 1.5) this.samples.recovery.push(gap);
     }
+    if (s.kind === 'move') this.pendingRecovery = s.recovery;
     this.dodgeSinceEnd = false;
   }
 
@@ -114,13 +118,15 @@ export class CombatProbe {
     for (const l of this.live) {
       if (!l.activeAt && seq >= l.s.seq + l.s.startup) {
         l.activeAt = t;
-        if (l.s.kind === 'move' && l.s.move?.kind === 'light') this.samples.startup.push(t - l.s.pressedAt);
+        // Press -> first hit frame, for presses that didn't wait for a previous move.
+        if (l.s.kind === 'move' && l.s.move?.kind === 'light' && l.waited < STEP_MS * 2.5) this.samples.startup.push(t - l.s.pressedAt);
       }
       if (!l.activeEndAt && seq >= l.s.seq + l.s.startup + l.s.active) {
         l.activeEndAt = t;
         if (l.s.kind === 'move') {
           this.lastActiveEnd = t;
           this.lastActiveEndSeq = seq;
+          this.lastRecovery = l.s.recovery;
           this.dodgeSinceEnd = false;
         }
       }
@@ -174,15 +180,13 @@ export class CombatProbe {
 
   telegraph(windupMs: number, t: number): void {
     this.samples.windup.push(windupMs);
-    this.telegraphs.push(t);
-    if (this.telegraphs.length > 32) this.telegraphs.shift();
+    void t;
   }
 
   strike(t: number, evaded: boolean): void {
     if (evaded) this.counts.evaded++;
     else this.counts.hurt++;
-    const tg = this.telegraphs.shift();
-    if (tg !== undefined && t - tg < 3000) this.samples.telegraphToStrike.push(t - tg);
+    void t;
   }
 
   summary(): Record<string, unknown> {

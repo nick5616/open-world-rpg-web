@@ -23,6 +23,30 @@ for your package; document each kind's use of `entityId`, `targetId`, `value`,
 | 1 | `notice` | `data` = UTF-8 text shown in the system channel |
 | 2 | `teleport` | `entityId` = who, `x/y/z` = destination (cm); clients cut interpolation |
 | 100 | `drowned` | WP10. Sent reliably to the player whose movement step drowned them and respawned them at the shore (the step does both, identically on client and server, so this is only for UI: a fade, a notice). `entityId` = who, `x/y/z` = the shore point (cm), `value` = 0 |
+| 200 | `damage` | WP13. An enemy took damage (to players within 64 m except the attacker, who gets HitResult): `entityId` = attacker (player), `targetId` = enemy, `value` = damage, `x/y/z` = hit point (cm), `data` = u8 HitResult flags \| u8 enemy health % |
+| 201 | `enemy_died` | WP13. Within 96 m: `entityId` = enemy, `targetId` = killer, `value` = XP granted to each eligible player, `x/y/z` = where, `data` = name (elites, bosses; empty for commons) |
+| 202 | `player_hurt` | WP13. To you: an enemy hit you. `entityId` = you, `targetId` = enemy, `value` = damage after shields, `x/y/z` = the enemy, `data` = u8 enemy attack id |
+| 203 | `player_downed` | WP13. Within 64 m: `entityId` = the downed player, `targetId` = enemy, `value` = ms until the respawn (PLAYER_RESPAWN_S) at their respawn point (core teleport 2 follows) |
+| 204 | `telegraph` | WP13. An enemy started a wind-up (to players within 70 m): `entityId` = enemy, `targetId` = attack id (combat.yaml enemyAttacks), `value` = wind-up ms (300-600), `x/y/z` = area centre (cm), `data` = u8 shape (0 cone, 1 circle, 2 ground, 3 line, 4 projectile) \| u16 yaw (turn x65536) \| u16 radius cm \| u16 reach cm \| u8 arc/2 deg \| u16 width cm \| u16 active ms |
+| 205 | `enemy_projectile` | WP13. An enemy launched a projectile (within 70 m): `entityId` = enemy, `targetId` = attack id, `x/y/z` = origin (cm), `data` = i16 vx, vy, vz (cm/s / 2) \| u16 radius cm \| u16 range cm |
+| 206 | `status` | WP13. A status landed on an enemy (within 64 m): `entityId` = player, `targetId` = enemy, `value` = status id (combat.yaml statuses), `data` = u8 duration in ticks |
+| 207 | `evaded` | WP13. To you: an enemy strike missed. `entityId` = you, `targetId` = enemy, `value` = 1 dodge (i-frames), 2 parry, 3 outside the area |
+| 208 | `boss_phase` | WP13. Within 120 m: `entityId` = boss, `targetId` = new phase index (0-based), `value` = phase count, `data` = u16 invulnerable transition ms \| UTF-8 boss name |
+| 209 | `boss_engaged` | WP13. Within 70 m, once per fight: `entityId` = boss, `targetId` = enemy type id, `value` = health after party scaling, `data` = boss name |
+| 210 | `boss_defeated` | WP13. Within 160 m: `entityId` = boss, `targetId` = enemy type id, `value` = fight length in seconds (engage to kill), `data` = boss name. WP14's loot hook and weekly lockout key off the same kill (combat.KillInfo) |
+| 211 | `camp_cleared` | WP13. Within 120 m: `targetId` = group id, `value` = group kind (1 camp, 2 bandit, 3 guardian, 4 pack, 6 test), `x/y/z` = anchor, `data` = site name |
+| 212 | `combat_sync` | WP13. To you after join and after every change: `value` = active loadout, `data` = u8 version(1) \| u8 active \| 2 x (u8 weapon id \| 4 x u16 spell id, 0 empty \| i8 gem element, -1 none) \| u16 n + n x u16 known spell ids \| u8 n + n x (u8 skill id \| u32 xp) \| u16 mana max x10 \| u8 drink charges \| u16 skill points left \| u8 character level |
+| 213 | `mana` | WP13. To you, on change at most 5 Hz: `value` = mana x10, `targetId` = mana max x10 |
+| 214 | `cast` | WP13. Another player's attack or cast started (within 64 m, not to the caster): `entityId` = caster, `targetId` = attack/spell/form id (\| 0x8000 = a dash variant), `x/y/z` = origin, `data` = u16 yaw \| i16 pitch |
+| 215 | `refused` | WP13. To you: an attack, cast or combat Interact was refused. `targetId` = attack/spell id (or the Interact action), `value` = reason (HitResult refusal codes below), `data` = u32 start seq |
+| 216 | `skill_up` | WP13. To you: `targetId` = skill id (combat.yaml skills), `value` = new level, `data` = UTF-8 technique key unlocked at this level (empty if none) |
+| 217 | `heal` | WP13. To the healed player: `entityId` = healer, `targetId` = you, `value` = amount (`data` = [1] for a heal over time) |
+| 218 | `consumable` | WP13. To you: `targetId` = 1 use started / 0 effect applied, `value` = charges left, `data` = [heal] when applied |
+| 219 | `shield` | WP13. To you: `targetId` = spell id (0 = absorbed a hit), `value` = shield points left |
+| 220 | `boss_reset` | WP13. Within 120 m: nobody fought the boss for 15 s, it healed and returned to phase 1: `entityId` = boss, `data` = name |
+| 221 | `respawned` | WP13. To you: back on your feet at full health (`value` = health max) |
+| 222 | `strike_hit` | WP13. Within 64 m except the victim: an enemy strike landed on a player (hit flash): `entityId` = player, `targetId` = enemy, `value` = damage |
+
 | 600 | `tower_unlocked` | WP12. You stood on a tower's top (zone-validated): `entityId` = you, `targetId` = atlas site index of the tower, `value` = region index now revealed, `x/y/z` = top centre (cm), `data` = UTF-8 region name. Granted once per character. |
 | 601 | `waypoint_activated` | WP12. You touched a waypoint stone for the first time: `targetId` = site index, `x/y/z` = stone (cm), `data` = name (a settlement waypoint carries its settlement's name). |
 | 602 | `discovery` | WP12. You entered a POI's discovery radius for the first time: `targetId` = site index, `value` = XP granted, `x/y/z` = site (cm), `data` = name (may be empty). |
@@ -37,6 +61,13 @@ for your package; document each kind's use of `entityId`, `targetId`, `value`,
 | 703 | `drop_spawned` | WP09. To the owner: `entityId` = pickup entity, `targetId` = owner, `value` = quantity, `data` = item id (UTF-8, `ore:<name>` / `gem:<name>:<cut>` until WP14 defines items) |
 | 704 | `item_granted` | WP09 (grant hook for WP14). To the player: `entityId` = player, `targetId` = the pickup taken, `value` = quantity, `data` = item id |
 | 706 | `mine_refused` | WP09. To the miner: `value` = 1 too far, 2 already mined, 3 unknown vein, 4 swinging too fast; `data` = u64 vein id |
+
+HitResult refusal codes (HitResult.flags when `accepted` is false; also
+Event 215 `value`): 1 not an enemy (a player: PvP never), 2 unknown target,
+3 dead, 4 unknown attack, 5 out of reach, 6 no line of sight, 7 too many
+hits, 8 stale, 9 illegal (too fast, not unlocked), 10 invulnerable (boss
+transition), 11 required status missing, 12 cooldown, 13 mana, 14 spell not
+known, 15 you are down.
 
 Fast travel itself is the core `teleport` (2): the zone moves you and sends it
 to you and to everyone who currently has you in their snapshot.
@@ -56,6 +87,7 @@ to a thing" verb. `targetKind` is a registry like Event kinds; `action` and
 | 30-39 | suggested: WP20 towns (doors, NPCs, boards) | | | |
 | 40 `vein` | WP09 | vein stable id | 1 = pickaxe swing (25 damage, >= 250 ms apart, within 4.5 m of the eye) | tool tier (0 for now) |
 | 41 `pickup` | WP09 (WP14 may move pickups to 20-29) | pickup entity id | 1 = take (owner only, within reach) | 0 |
+| 50 `combat` | WP13 | 0 | 1 = swap loadout, 2 = equip weapon, 3 = equip spell, 4 = learn a tree node, 5 = set the socketed gem (dev builds only; WP14 sockets) | 1: loadout (0/1); 2: loadout \| weapon id << 8; 3: loadout \| slot << 4 \| spell id << 8 (0 clears); 4: spell id; 5: loadout \| (element + 1) << 8 |
 
 WorldEdits for `vein_mined` (WP09) carry 16 bytes of `params` (f32 x, y, z,
 carve radius 1.5) and `expiresAt` = respawn time; a delta whose `expiresAt`

@@ -280,7 +280,13 @@ func coordinate(ctx context.Context, base string, party []*bot, camp, boss *game
 				phase = "boss"
 				bossT0 = time.Now()
 				for _, b := range party {
-					b.setPlan(nil, 0, inArea(bossAt, boss.Radius+16))
+					// Fight in the arena; anyone sent back to their respawn point
+					// walks back to the staging point and rejoins (the boss only
+					// resets if the whole party is gone for 15 s).
+					b.setPlan(&stage, boss.Radius+30, inArea(bossAt, boss.Radius+16))
+					b.mu.Lock()
+					b.safe = &stage
+					b.mu.Unlock()
 				}
 			}
 		case "boss":
@@ -352,6 +358,7 @@ type bot struct {
 	planLeash float64
 	planPref  func(combatbot.EnemyView) bool
 	planDirty bool
+	safe      *movement.Vec3
 	kickMsg   string
 }
 
@@ -433,7 +440,7 @@ func (b *bot) run(ctx context.Context) {
 		}
 		b.mu.Lock()
 		if b.planDirty {
-			b.brain.Goal, b.brain.Leash, b.brain.PreferIDs = b.planGoal, b.planLeash, b.planPref
+			b.brain.Goal, b.brain.Leash, b.brain.PreferIDs, b.brain.Safe = b.planGoal, b.planLeash, b.planPref, b.safe
 			if b.planGoal == nil {
 				b.brain.Leash = 1e9
 			}
@@ -597,7 +604,7 @@ func (b *bot) summary() map[string]any {
 	s := map[string]any{"weapon": b.weapon, "claimsAccepted": b.accepted, "claimsRefused": b.refused, "refusedBy": b.refusedBy,
 		"damageDealt": b.dmgDealt, "damageTaken": b.hurt, "evaded": b.evaded, "downs": b.downs, "corrections": b.corr, "kills": b.kills}
 	if b.brain != nil {
-		s["attacks"], s["dodges"], s["drinks"], s["casts"] = b.brain.Attacks, b.brain.Dodges, b.brain.Drinks, b.brain.Casts
+		s["attacks"], s["dodges"], s["drinks"], s["casts"], s["retreats"] = b.brain.Attacks, b.brain.Dodges, b.brain.Drinks, b.brain.Casts, b.brain.Retreats
 	}
 	return s
 }

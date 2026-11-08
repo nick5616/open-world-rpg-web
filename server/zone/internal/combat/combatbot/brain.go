@@ -81,6 +81,11 @@ type Brain struct {
 	Spell     *combatdefs.Spell
 	spellNext uint32
 	Casts     int
+	// Safe is where the bot backs off to when hurt with no draughts left,
+	// until out-of-combat regeneration has it back above 80 % (nil = never).
+	Safe       *movement.Vec3
+	retreating bool
+	Retreats   int
 
 	// Stats
 	Attacks, Claims, Dodges, Drinks int
@@ -254,7 +259,21 @@ func (b *Brain) Step(es []EnemyView, serverTick uint32) (proto.InputFrame, []Cla
 	b.pend = keep
 
 	in, threat := b.threatened()
+	if b.Safe != nil {
+		if !b.retreating && b.HP < 0.3 && b.Charges == 0 {
+			b.retreating = true
+			b.Retreats++
+		}
+		if b.retreating && b.HP > 0.8 {
+			b.retreating = false
+		}
+	}
 	switch {
+	case b.retreating:
+		yaw = yawTo(b.Safe.X-b.State.Pos.X, b.Safe.Z-b.State.Pos.Z)
+		if hdist(*b.Safe, b.State.Pos) > 2 {
+			f.Flags |= proto.InputFlagForward | proto.InputFlagSprint
+		}
 	case b.Goal != nil && (t == nil || hdist(*b.Goal, b.State.Pos) > b.Leash):
 		yaw = yawTo(b.Goal.X-b.State.Pos.X, b.Goal.Z-b.State.Pos.Z)
 		if hdist(*b.Goal, b.State.Pos) > 1.5 {

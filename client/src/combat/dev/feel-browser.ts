@@ -13,7 +13,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { chromium, type Page } from 'playwright';
+import { chromium } from 'playwright';
 import { devTicket } from '../../net/dev/devTicket';
 import { buildZone, repoRoot, startZone, waitHttp } from '../../sim/dev/traversalRun';
 import { spawn } from 'node:child_process';
@@ -56,8 +56,13 @@ interface Group {
 
 async function main() {
   const zone = await startZone(buildZone(), SEED);
-  const dbg = (await (await fetch(`http://127.0.0.1:${zone.port}/debug/combat`)).json()) as { groups: Group[] };
-  const groups = dbg.groups.filter((g) => (g.kind === 'pack' || g.kind === 'camp') && g.level <= 3);
+  let dbg: { groups: Group[] } | null = null;
+  for (let i = 0; i < 60 && !dbg?.groups; i++) {
+    dbg = (await (await fetch(`http://127.0.0.1:${zone.port}/debug/combat`)).json()) as { groups: Group[] } | null;
+    if (!dbg?.groups) await sleep(250);
+  }
+  if (!dbg) throw new Error("zone published no combat debug");
+  const groups = dbg.groups.filter((g) => g.kind === 'pack' || g.kind === 'camp' || g.kind === 'guardian');
   groups.sort((a, b) => a.level - b.level || Math.hypot(a.x - 1228, a.z - 2410) - Math.hypot(b.x - 1228, b.z - 2410));
   const target = groups[0];
   if (!target) throw new Error('no low-level group on the official world');
@@ -114,7 +119,7 @@ async function main() {
     // A2: presses during the animation (buffer) -> recovery measured.
     for (let i = 0; i < 6; i++) {
       await click(30);
-      await sleep(200);
+      await sleep(270); // the move lasts ~370 ms: this press lands ~100 ms before it ends, inside the 150 ms buffer
       await click(30);
       await sleep(900);
     }
