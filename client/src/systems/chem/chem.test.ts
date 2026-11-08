@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { biomeMaterial, ChemSim, inWorld, MAT_NONE, MAT_WATER, seedWords, type ChemSource } from './sim';
 import { ChemGround, chemRuntime, pillarHeight } from './ground';
-import { EventSync } from './sync';
+import { BitmapSync, EventSync } from './sync';
 import { FlatGround } from '../../sim/ground';
 
 interface Scenario {
@@ -97,5 +97,25 @@ describe('chemistry simulation (Go twin vectors)', () => {
     expect(g.collide).toBeUndefined();
     chemRuntime.view = null;
     expect(g.heightAt(101, 101)).toBe(5);
+  });
+
+  it('the bitmap fallback shows what the zone sent, behind the same interface', () => {
+    const src: ChemSource = { material: () => 1, height: () => 10, water: () => 11 };
+    const v = new BitmapSync(src);
+    const d = new Uint8Array(8 + 256);
+    new DataView(d.buffer).setBigInt64(0, 77n, true);
+    // chunk 65 = (cx 1, cz 1): local cell 0 burning, local cell 5 burnt
+    d[8] = 1;
+    d[8 + 1] = 2 << 2;
+    v.onEvent({ kind: 525, targetId: 65, value: 0, x: 0, y: 0, z: 0, data: d });
+    expect(v.stateAt(32, 32)).toBe(1);
+    expect(v.stateAt(37, 32)).toBe(2);
+    expect(v.liftAt(65, 20, 65)).toBeGreaterThan(0);
+    let burning = 0;
+    v.forEachActive((_, st) => (burning += st === 1 ? 1 : 0));
+    expect(burning).toBe(1);
+    const empty = new Uint8Array(8 + 256);
+    v.onEvent({ kind: 525, targetId: 65, value: 0, x: 0, y: 0, z: 0, data: empty });
+    expect(v.stateAt(32, 32)).toBe(0);
   });
 });
