@@ -36,7 +36,14 @@ const CPU_PROFILE = process.argv.includes('--cpu-profile');
 const TAG = arg('tag', `${BOTS}-${ZONES}z-${PROFILE}${KILL_AFTER ? '-failover' : ''}`);
 const BASE_PORT = Number(arg('base-port', '18300'));
 const EXE = process.platform === 'win32' ? '.exe' : '';
+// WP19: unique binary names per run (the machine is shared; tools that look
+// at process names never confuse two runs), an optional prebuilt zone binary
+// (e.g. a baseline build) and the evidence file prefix.
+const RUN = `${Date.now().toString(36)}${process.pid}`;
+const ZONE_BIN = arg('zone-bin', '');
+const PREFIX = arg('evidence-prefix', 'wp16-soak');
 const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'lodestone-wp16-'));
+const bin = (name) => (name === 'zone' && ZONE_BIN ? ZONE_BIN : path.join(TMP, `soak-${name}-${RUN}${EXE}`));
 const DB = `lodestone_wp04_wp16${arg('db', 'soak')}`;
 const EVIDENCE = path.join(root, 'docs', 'evidence');
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -80,13 +87,14 @@ try {
   const pgUrl = go(['run', './server/account/cmd/devdb', 'create', DB]).trim().split('\n').pop();
   step(`scratch database ${DB}`);
   for (const [name, pkg] of [['director', './server/director'], ['zone', './server/zone'], ['bots', './tools/bots'], ['seedbots', './tools/bots/cmd/seedbots'], ['mintworld', './server/pkg/cmd/mintworld']]) {
-    go(['build', '-o', path.join(TMP, name + EXE), pkg]);
+    if (name === 'zone' && ZONE_BIN) continue;
+    go(['build', '-o', bin(name), pkg]);
   }
   step('built director, zone, bots, seedbots, mintworld');
   const dbEnv = { LODESTONE_PG_URL: pgUrl };
-  step(spawnSync(path.join(TMP, 'mintworld' + EXE), ['-official'], { cwd: root, env: env(dbEnv), encoding: 'utf8' }).stdout.trim().split('\n').pop());
-  const chars = spawnSync(path.join(TMP, 'bots' + EXE), ['-print-characters', '-n', String(BOTS)], { cwd: root, env: env(), encoding: 'utf8', maxBuffer: 64 << 20 }).stdout;
-  step(spawnSync(path.join(TMP, 'seedbots' + EXE), [], { cwd: root, env: env(dbEnv), input: chars, encoding: 'utf8' }).stdout.trim());
+  step(spawnSync(bin('mintworld'), ['-official'], { cwd: root, env: env(dbEnv), encoding: 'utf8' }).stdout.trim().split('\n').pop());
+  const chars = spawnSync(bin('bots'), ['-print-characters', '-n', String(BOTS)], { cwd: root, env: env(), encoding: 'utf8', maxBuffer: 64 << 20 }).stdout;
+  step(spawnSync(bin('seedbots'), [], { cwd: root, env: env(dbEnv), input: chars, encoding: 'utf8' }).stdout.trim());
 
   const zones = [];
   for (let i = 0; i < ZONES; i++) {
@@ -100,7 +108,7 @@ try {
       if (!(await waitHttp(`http://127.0.0.1:${proxyPort}/config`, 15000))) throw new Error(`netsim for ${id} not up`);
       publicWs = `ws://127.0.0.1:${proxyPort}/ws`;
     }
-    z.child = start(id, path.join(TMP, 'zone' + EXE), [], {
+    z.child = start(id, bin('zone'), [], {
       ...dbEnv,
       LODESTONE_ZONE_PORT: String(port),
       LODESTONE_ZONE_ID: id,
@@ -119,7 +127,7 @@ try {
   }
   // The director starts after the zones, so its first plan sees every pool
   // zone at once and splits the world evenly (zoneregistry.Plan).
-  start('director', path.join(TMP, 'director' + EXE), [], { ...dbEnv, LODESTONE_DIRECTOR_PORT: String(ports.director), LODESTONE_DIRECTOR_ASSIGN_EVERY: '1s' });
+  start('director', bin('director'), [], { ...dbEnv, LODESTONE_DIRECTOR_PORT: String(ports.director), LODESTONE_DIRECTOR_ASSIGN_EVERY: '1s' });
   if (!(await waitHttp(`http://127.0.0.1:${ports.director}/healthz`, 30000))) throw new Error('director not healthy');
   step(`director (assigner) on :${ports.director}`);
 
@@ -136,7 +144,7 @@ try {
 
   const seeds = zones.map((z) => z.debug).join(',');
   const out = path.join(TMP, 'bots.json');
-  const bots = start('bots', path.join(TMP, 'bots' + EXE), ['-url', `ws://127.0.0.1:${zones[0].port}/ws`, '-cluster', seeds, '-mode', 'cross', '-n', String(BOTS), '-duration', DURATION, '-ramp', `${Math.max(4, Math.round(BOTS / 40))}s`, '-warmup', '20s', '-json', out], {});
+  const bots = start('bots', bin('bots'), ['-url', `ws://127.0.0.1:${zones[0].port}/ws`, '-cluster', seeds, '-mode', 'cross', '-n', String(BOTS), '-duration', DURATION, '-ramp', `${Math.max(4, Math.round(BOTS / 40))}s`, '-warmup', '20s', '-json', out], {});
   const botsDone = new Promise((r) => bots.on('exit', (code) => r(code)));
   step(`bots started (${BOTS}, cross mode)`);
 
@@ -154,8 +162,8 @@ try {
     const prof = path.join(TMP, 'cpu.pprof');
     const buf = Buffer.from(await (await fetch(`${best.z.debug}/debug/pprof/profile?seconds=20`)).arrayBuffer());
     fs.writeFileSync(prof, buf);
-    const top = spawnSync('go', ['tool', 'pprof', '-top', '-nodecount=40', path.join(TMP, 'zone' + EXE), prof], { cwd: root, env: env(), encoding: 'utf8' }).stdout;
-    fs.writeFileSync(path.join(EVIDENCE, `wp16-soak-${TAG}-cpu-${best.z.id}.txt`), `CPU profile, 20 s, ${best.z.id} with ${best.n} players
+    const top = spawnSync('go', ['tool', 'pprof', '-top', '-nodecount=40', bin('zone'), prof], { cwd: root, env: env(), encoding: 'utf8' }).stdout;
+    fs.writeFileSync(path.join(EVIDENCE, `${PREFIX}-${TAG}-cpu-${best.z.id}.txt`), `CPU profile, 20 s, ${best.z.id} with ${best.n} players
 
 ${top}`);
     step(`cpu profile of ${best.z.id} (${best.n} players) saved`);
@@ -196,7 +204,7 @@ ${top}`);
     lines.push(`zone log ${z.id}: ${JSON.stringify(counts)}`);
   }
   fs.mkdirSync(EVIDENCE, { recursive: true });
-  fs.copyFileSync(out, path.join(EVIDENCE, `wp16-soak-${TAG}.json`));
+  fs.copyFileSync(out, path.join(EVIDENCE, `${PREFIX}-${TAG}.json`));
   exitCode = code === 0 ? 0 : 1;
   step(exitCode === 0 ? 'SOAK PASS' : 'SOAK FAIL');
 } catch (e) {
@@ -204,7 +212,7 @@ ${top}`);
 } finally {
   for (const c of children.reverse()) killTree(c);
   fs.mkdirSync(EVIDENCE, { recursive: true });
-  fs.writeFileSync(path.join(EVIDENCE, `wp16-soak-${TAG}.txt`), lines.join('\n') + '\n');
+  fs.writeFileSync(path.join(EVIDENCE, `${PREFIX}-${TAG}.txt`), lines.join('\n') + '\n');
   try {
     go(['run', './server/account/cmd/devdb', 'drop', DB]);
   } catch {}
