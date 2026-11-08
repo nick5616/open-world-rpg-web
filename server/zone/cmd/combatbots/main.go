@@ -290,6 +290,16 @@ func coordinate(ctx context.Context, base string, party []*bot, camp, boss *game
 				}
 			}
 		case "boss":
+			// A wipe (everyone down at once) sends the party back to the
+			// staging point to pull again together, as players would.
+			if allDown(party) {
+				logf("party wiped; regrouping at the staging point")
+				phase = "regroup"
+				for _, b := range party {
+					b.setPlan(&stage, 2, func(combatbot.EnemyView) bool { return false })
+				}
+				continue
+			}
 			if bg != nil && bg.Cleared {
 				res.BossDefeated = true
 				logf("BOSS GROUP CLEARED %.0f s after the pull", time.Since(bossT0).Seconds())
@@ -298,6 +308,19 @@ func coordinate(ctx context.Context, base string, party []*bot, camp, boss *game
 			}
 		}
 	}
+}
+
+// allDown reports every bot downed (HP 0 from its newest SelfState).
+func allDown(party []*bot) bool {
+	for _, b := range party {
+		b.mu.Lock()
+		down := b.brain != nil && b.brain.HP <= 0
+		b.mu.Unlock()
+		if !down {
+			return false
+		}
+	}
+	return true
 }
 
 func collect(res *Result, party []*bot) {
@@ -347,6 +370,7 @@ type bot struct {
 	accepted  int
 	refused   int
 	refusedBy map[uint8]int
+	hurtBy    map[string]int
 	downs     int
 	kills     []string
 	bossSecs  float64
@@ -363,7 +387,7 @@ type bot struct {
 }
 
 func newBot(name, weapon string, priv []byte, info zoneInfo, g movement.Ground, url string, x, z float64) *bot {
-	return &bot{name: name, weapon: weapon, priv: priv, info: info, ground: g, url: url, spawn: movement.Vec3{X: x, Z: z}, refusedBy: map[uint8]int{}}
+	return &bot{name: name, weapon: weapon, priv: priv, info: info, ground: g, url: url, spawn: movement.Vec3{X: x, Z: z}, refusedBy: map[uint8]int{}, hurtBy: map[string]int{}}
 }
 
 func (b *bot) setPlan(goal *movement.Vec3, leash float64, pref func(combatbot.EnemyView) bool) {
@@ -579,6 +603,11 @@ func (b *bot) event(ev *proto.Event) {
 		}
 	case combat.EvPlayerHurt:
 		b.hurt += int(ev.Value)
+		if len(ev.Data) > 0 {
+			if a := combatdefs.D.AttackByID(int(ev.Data[0])); a != nil {
+				b.hurtBy[a.Key] += int(ev.Value)
+			}
+		}
 	case combat.EvEvaded:
 		b.evaded++
 	case combat.EvBossEngaged:
@@ -602,7 +631,7 @@ func (b *bot) summary() map[string]any {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	s := map[string]any{"weapon": b.weapon, "claimsAccepted": b.accepted, "claimsRefused": b.refused, "refusedBy": b.refusedBy,
-		"damageDealt": b.dmgDealt, "damageTaken": b.hurt, "evaded": b.evaded, "downs": b.downs, "corrections": b.corr, "kills": b.kills}
+		"damageDealt": b.dmgDealt, "damageTaken": b.hurt, "damageTakenBy": b.hurtBy, "evaded": b.evaded, "downs": b.downs, "corrections": b.corr, "kills": b.kills}
 	if b.brain != nil {
 		s["attacks"], s["dodges"], s["drinks"], s["casts"], s["retreats"] = b.brain.Attacks, b.brain.Dodges, b.brain.Drinks, b.brain.Casts, b.brain.Retreats
 	}

@@ -279,7 +279,9 @@ func (b *Brain) Step(es []EnemyView, serverTick uint32) (proto.InputFrame, []Cla
 		if hdist(*b.Goal, b.State.Pos) > 1.5 {
 			f.Flags |= proto.InputFlagForward
 			if hdist(*b.Goal, b.State.Pos) > 20 {
-				f.Flags |= proto.InputFlagSprint
+				if b.State.Stamina*2 > b.State.StaminaMax {
+					f.Flags |= proto.InputFlagSprint
+				}
 			}
 		}
 	case t != nil:
@@ -289,7 +291,9 @@ func (b *Brain) Step(es []EnemyView, serverTick uint32) (proto.InputFrame, []Cla
 		if d > reach {
 			f.Flags |= proto.InputFlagForward
 			if d > 12 {
-				f.Flags |= proto.InputFlagSprint
+				if b.State.Stamina*2 > b.State.StaminaMax {
+					f.Flags |= proto.InputFlagSprint
+				}
 			}
 		} else if d < reach*0.45 && b.Weapon.Key != "sword" && b.Weapon.Key != "spear" {
 			f.Flags |= proto.InputFlagBack
@@ -312,7 +316,17 @@ func (b *Brain) Step(es []EnemyView, serverTick uint32) (proto.InputFrame, []Cla
 
 	// Dodge a telegraphed strike: i-frames from now cover the next 9 steps,
 	// and the dodge carries us 2.4 m out of most shapes as well.
-	if threat != nil && in <= 4 && seq >= b.dodgeAt+14 && !movement.Dashing(b.State) && b.State.IFrames == 0 {
+	canDodge := b.State.Flags&movement.FlagExhausted == 0 && b.State.Stamina >= dodgeCost
+	if threat != nil && in <= 20 && in > 4 && !canDodge {
+		// No dodge left: walk out of the telegraphed area instead.
+		away := yawTo(b.State.Pos.X-threat.Center.X, b.State.Pos.Z-threat.Center.Z)
+		if threat.Shape == 0 || threat.Shape == 3 {
+			away = threat.Yaw + math.Pi/2*b.strafeDir
+		}
+		yaw = away
+		f.Flags = f.Flags&^(proto.InputFlagAttack|proto.InputFlagBack) | proto.InputFlagForward
+	}
+	if threat != nil && canDodge && in <= 4 && seq >= b.dodgeAt+14 && !movement.Dashing(b.State) && b.State.IFrames == 0 {
 		f.Flags |= proto.InputFlagDodge
 		f.CastSlot = 0
 		f.Flags &^= proto.InputFlagForward | proto.InputFlagSprint
@@ -340,6 +354,9 @@ func (b *Brain) Step(es []EnemyView, serverTick uint32) (proto.InputFrame, []Cla
 	b.State = movement.StepFrame(b.State, f, b.Ground)
 	return f, claims
 }
+
+// dodgeCost is the plain dodge's stamina in fine units.
+var dodgeCost = int(math.Round(constants.DodgeStamina * constants.StaminaFinePerPoint))
 
 func sizeOf(typeID uint16) float64 {
 	id, _, _ := combatdefs.UnpackTypeID(typeID)
