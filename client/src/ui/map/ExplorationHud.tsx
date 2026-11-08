@@ -8,7 +8,7 @@ import { useEffect } from 'react';
 import { DEBUG } from '../../config';
 import { localPlayer } from '../../state/live';
 import { Compass, compassMarks } from './Compass';
-import { MapScreen } from './MapScreen';
+import { MapScreen, mapView } from './MapScreen';
 import { pruneToasts, setMapOpen, useExploration, type Toast } from './store';
 import { useMapWorld } from './world';
 import { hasBit } from './events';
@@ -94,6 +94,8 @@ function installMapHandle() {
     fastTravel: (site: number) => useExploration.getState().actions?.fastTravel(site),
     setPin: (x: number, z: number, party = false, color = 0) => useExploration.getState().actions?.setPin(x, z, party, color),
     compass: () => compassMarks(),
+    /** Page coordinates of a world point on the open map (null when closed). */
+    mapScreenPos: (x: number, z: number) => mapView.toScreen?.(x, z) ?? null,
     player: () => ({ ...localPlayer.pos, yaw: localPlayer.yaw }),
   };
   (window as unknown as { __lodestoneMap: typeof handle }).__lodestoneMap = handle;

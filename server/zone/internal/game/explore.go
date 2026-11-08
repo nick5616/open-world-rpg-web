@@ -278,7 +278,11 @@ func (s *Server) exploreTick(tick uint32) {
 func (s *Server) announce(sess *session, h explore.Happening) {
 	w := s.cfg.Explore
 	site := &w.Atlas.Sites[h.Site]
-	ev := &proto.Event{EntityID: sess.ent.ID, TargetID: uint32(h.Site), X: cm(site.X), Y: cm(site.Y), Z: cm(site.Z), Data: []byte(site.Name)}
+	name := site.Name
+	if name == "" && site.Link >= 0 && site.Link < len(w.Atlas.Sites) {
+		name = w.Atlas.Sites[site.Link].Name // a settlement's waypoint takes the settlement's name (worldgen README)
+	}
+	ev := &proto.Event{EntityID: sess.ent.ID, TargetID: uint32(h.Site), X: cm(site.X), Y: cm(site.Y), Z: cm(site.Z), Data: []byte(name)}
 	switch h.Kind {
 	case explore.TowerUnlocked:
 		ev.Kind, ev.Value = EventTowerUnlocked, int32(h.Region)
@@ -296,7 +300,7 @@ func (s *Server) announce(sess *session, h explore.Happening) {
 		ev.Kind = EventRespawnPoint
 	}
 	s.sendEvent(sess, ev)
-	s.log.Info("exploration", "character", sess.ent.CharacterID, "kind", ev.Kind, "site", h.Site, "name", site.Name, "xp", h.XP)
+	s.log.Info("exploration", "character", sess.ent.CharacterID, "kind", ev.Kind, "site", h.Site, "name", name, "xp", h.XP)
 }
 
 // handleInteract applies one Interact message (tick goroutine).

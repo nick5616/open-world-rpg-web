@@ -84,15 +84,17 @@ export function towerGeometry(t: RadialStructure): THREE.BufferGeometry {
   // Bricks: u along the circumference at a reference radius, v by height.
   const uv = lathe.getAttribute('uv') as THREE.BufferAttribute;
   const pos = lathe.getAttribute('position') as THREE.BufferAttribute;
-  const circ = (2 * Math.PI * STONE_REF_R) / BRICK_W / 4; // texture holds 4 bricks across
+  // Whole texture repeats around the circumference, or the courses break at the seam.
+  const circ = Math.round((2 * Math.PI * STONE_REF_R) / BRICK_W / 4); // texture holds 4 bricks across
   for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * circ, pos.getY(i) / (BRICK_H * 8));
-  const parts: THREE.BufferGeometry[] = [lathe.toNonIndexed()];
+  const flat = (g: THREE.BufferGeometry) => (g.index ? g.toNonIndexed() : g);
+  const parts: THREE.BufferGeometry[] = [flat(lathe)];
   // Flagstone top.
   const top = new THREE.CircleGeometry(t.r[0], segs);
   top.rotateX(-Math.PI / 2);
   const tuv = top.getAttribute('uv') as THREE.BufferAttribute;
   for (let i = 0; i < tuv.count; i++) tuv.setXY(i, tuv.getX(i) * 3, tuv.getY(i) * 3);
-  parts.push(top.toNonIndexed());
+  parts.push(flat(top));
   // Merlons around the rim.
   const merlons = 12;
   for (let i = 0; i < merlons; i++) {
@@ -101,7 +103,7 @@ export function towerGeometry(t: RadialStructure): THREE.BufferGeometry {
     m.translate(0, 0.45, 0);
     m.rotateY(-a);
     m.translate(Math.cos(a) * (t.r[0] - 0.3), 0, Math.sin(a) * (t.r[0] - 0.3));
-    parts.push(m.toNonIndexed());
+    parts.push(flat(m));
   }
   for (const p of parts) {
     for (const name of Object.keys(p.attributes)) if (name !== 'position' && name !== 'normal' && name !== 'uv') p.deleteAttribute(name);

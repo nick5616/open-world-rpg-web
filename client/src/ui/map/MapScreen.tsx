@@ -27,6 +27,9 @@ interface Hit {
   pin?: Pin;
 }
 
+/** Live transform of the open map (headless scripts click sites through it). */
+export const mapView: { toScreen: ((x: number, z: number) => { x: number; y: number }) | null } = { toScreen: null };
+
 const PAPER_CSS = `rgb(${PAPER.join(',')})`;
 
 /** Which sites the map shows and how. */
@@ -56,7 +59,7 @@ function MapView() {
   const [selected, setSelected] = useState<Site | null>(null);
   const [hover, setHover] = useState<string | null>(null);
   const [pinColor, setPinColor] = useState(0);
-  const view = useRef({ zoom: 1, cx: localPlayer.pos.x, cz: localPlayer.pos.z, drag: null as null | { x: number; y: number; cx: number; cz: number; moved: boolean } });
+  const view = useRef({ zoom: 1, cx: (data?.worldSize ?? 4096) / 2, cz: (data?.worldSize ?? 4096) / 2, drag: null as null | { x: number; y: number; cx: number; cz: number; moved: boolean } });
   const hits = useRef<Hit[]>([]);
 
   // Free the mouse for the map.
@@ -217,9 +220,16 @@ function MapView() {
       ctx.stroke();
       ctx.restore();
       hits.current = out;
+      mapView.toScreen = (x: number, z: number) => {
+        const r = canvas.getBoundingClientRect();
+        return { x: r.left + sx(x), y: r.top + sy(z) };
+      };
     };
     draw();
-    return () => cancelAnimationFrame(raf);
+    return () => {
+      cancelAnimationFrame(raf);
+      mapView.toScreen = null;
+    };
   }, [data, selected]);
 
   const toWorld = (cx: number, cy: number) => {
@@ -258,7 +268,7 @@ function MapView() {
     }
     const w = toWorld(e.clientX, e.clientY);
     const h = hitAt(w.lx, w.ly);
-    setHover(h?.site ? (h.site.name ?? h.site.kind.replace('_', ' ')) : h?.pin ? (h.pin.party ? `Party pin (${h.pin.owner})` : 'Your pin') : null);
+    setHover(h?.site ? siteName(h.site, data?.sites) : h?.pin ? (h.pin.party ? `Party pin (${h.pin.owner})` : 'Your pin') : null);
   };
   const onPointerUp = (e: React.PointerEvent) => {
     const d = view.current.drag;
@@ -292,17 +302,23 @@ function MapView() {
   const travel = selected && canFastTravel(selected, progress.towers, progress.waypoints);
 
   return (
-    <div data-testid="map-screen" style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(10,8,6,0.82)', display: 'grid', gridTemplateColumns: '1fr 260px', font: '14px system-ui, sans-serif', color: '#2b2116' }}>
+    <div data-testid="map-screen" style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(10,8,6,0.82)', display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 260px', font: '14px system-ui, sans-serif', color: '#2b2116' }}>
+      {/* The canvas sits absolutely in its cell: its pixel size must never feed back into the grid's column width. */}
+      <div style={{ position: 'relative', minWidth: 0, overflow: 'hidden' }}>
       <canvas
         ref={canvasRef}
         data-testid="map-canvas"
-        style={{ width: '100%', height: '100%', display: 'block', cursor: hover ? 'pointer' : 'grab' }}
+        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block', cursor: hover ? 'pointer' : 'grab' }}
         onPointerDown={onPointerDown}
+        // The game grabs pointer lock on a mousedown on ANY canvas (input/useMouseLook.ts);
+        // locking onto the map would swallow every later click, including the Travel button.
+        onMouseDown={(e) => e.stopPropagation()}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onContextMenu={onContextMenu}
         onWheel={onWheel}
       />
+      </div>
       <aside style={{ background: PAPER_CSS, padding: 16, display: 'flex', flexDirection: 'column', gap: 10, borderLeft: '3px solid #6b5537', overflow: 'auto' }}>
         <div style={{ font: '600 20px Georgia, serif' }}>{data?.names[0] ?? 'Map'}</div>
         <div data-testid="map-revealed" style={{ fontSize: 13 }}>
@@ -311,7 +327,7 @@ function MapView() {
         {hover && <div style={{ fontStyle: 'italic' }}>{hover}</div>}
         {selected ? (
           <div style={{ padding: 10, background: 'rgba(255,255,255,0.35)', borderRadius: 4 }}>
-            <div style={{ fontWeight: 600 }}>{selected.name ?? selected.kind.replace('_', ' ')}</div>
+            <div style={{ fontWeight: 600 }}>{siteName(selected, data?.sites)}</div>
             <div style={{ fontSize: 12, opacity: 0.8, marginBottom: 8 }}>{selected.kind.replace('_', ' ')} · {data?.regions[selected.region]?.name}</div>
             {travel ? (
               <button data-testid="map-travel" onClick={() => { actions?.fastTravel(selected.index); setMapOpen(false); }} disabled={!actions}>
@@ -338,6 +354,11 @@ function MapView() {
       </aside>
     </div>
   );
+}
+
+/** Display name: its own, else (settlement waypoints) the linked settlement's, else its kind. */
+export function siteName(s: Site, sites?: Site[]): string {
+  return s.name ?? (s.link >= 0 ? sites?.[s.link]?.name : null) ?? s.kind.replace('_', ' ');
 }
 
 function popcount(v: number): number {
