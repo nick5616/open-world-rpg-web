@@ -218,13 +218,11 @@ func analyze(ev []event, pos map[string][]posSample, ready map[string]float64, b
 			if !used[i] {
 				s.Extra++
 			}
-			if i > 0 && o.T-os[i-1].T <= flapWindowMs && o.On != os[i-1].On {
-				// A reversal right after the previous change. Count it only
-				// when the zone did not also reverse (then it is the zone's
-				// flap, counted below).
-				if !zoneReversedNear(zs, os[i-1].T, o.T) {
-					s.Flaps++
-				}
+			if i > 0 && o.T-os[i-1].T <= flapWindowMs && o.On != os[i-1].On && (!used[i] || !used[i-1]) {
+				// A quick reversal that no zone decision asked for (when the
+				// zone itself reversed, both changes are matched and it is
+				// counted as a zone flap below).
+				s.Flaps++
 			}
 		}
 		for i := 1; i < len(zs); i++ {
@@ -251,7 +249,7 @@ func analyze(ev []event, pos map[string][]posSample, ready map[string]float64, b
 	if len(lat) > 0 {
 		s.Within500 = math.Round(float64(within)/float64(len(lat))*10000) / 10000
 	}
-	s.Pass = s.Matched > 0 && s.Missed == 0 && s.Flaps == 0 && s.ZoneFlaps == 0 && s.LatencyMs.P99 <= 500
+	s.Pass = s.Matched > 0 && s.Missed == 0 && s.Extra == 0 && s.Flaps == 0 && s.ZoneFlaps == 0 && s.LatencyMs.P99 <= 500
 	switch {
 	case s.Pass:
 		s.Verdict = "PASS: every earshot change reached the listener, p99 within 500 ms, no flapping"
@@ -259,16 +257,6 @@ func analyze(ev []event, pos map[string][]posSample, ready map[string]float64, b
 		s.Verdict = "FAIL"
 	}
 	return s
-}
-
-func zoneReversedNear(zs []transition, t0, t1 float64) bool {
-	n := 0
-	for _, z := range zs {
-		if z.T >= t0-matchWindowMs && z.T <= t1 {
-			n++
-		}
-	}
-	return n >= 2
 }
 
 // crossing finds when the pair's distance last crossed the join radius

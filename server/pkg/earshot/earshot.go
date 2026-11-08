@@ -1,7 +1,7 @@
 // Package earshot is the zone -> social message that carries proximity-voice
 // earshot sets (spec 10 "Proximity voice" 1, WP11). Zones compute who can hear
 // whom every EARSHOT_INTERVAL_MS and publish it here; the social service's
-// voice leader turns the sets into LiveKit subscriptions.
+// voice leader turns the sets into LiveKit subscriptions. CR 003 documents it.
 //
 // Wire: one JSON object per Redis pub/sub message on Channel(worldID):
 //
@@ -9,15 +9,18 @@
 //	 "sets":{"<listener charId>":["<speaker charId>", ...]},
 //	 "gone":["<charId>"]}
 //
-//   - sets: listener -> the speakers they should hear, nearest first. A listener
-//     with nobody in earshot is present with an empty list when it changed.
-//   - full: true on every FullEvery-th message: `sets` then lists EVERY player
-//     the zone owns, and the receiver drops any listener it attributed to this
-//     zone that is missing. Pub/sub is fire-and-forget, so this bounds how long
-//     a lost delta can leave a subscription wrong (2 s).
-//   - full false: only listeners whose set changed since the previous message.
+// Fields:
+//   - sets: listener -> the speakers they should hear, sorted by id. A
+//     listener with nobody in earshot is present with an empty list when
+//     that changed (and in every full message).
+//   - full: true on every FullEvery-th message; sets then lists EVERY player
+//     the zone owns, and the receiver drops any listener it attributed to
+//     this zone that is missing. Pub/sub is fire-and-forget, so this bounds
+//     how long a lost delta can leave a subscription wrong (2 s).
+//   - full false: only listeners whose set changed since the previous
+//     message. No change, no message.
 //   - gone: players who left this zone since the previous message.
-//   - t: server Unix milliseconds when the sets were computed (latency
+//   - t: server Unix milliseconds when the positions were taken (latency
 //     metrics: the receiver measures apply time - t).
 //
 // Why a dedicated channel and not the social bus (social:{worldId}, spec 11):
