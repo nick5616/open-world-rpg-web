@@ -36,6 +36,10 @@ jobs:
       - name: Tests (TS, Go, Rust)
         run: npm test
       - name: Build worldgen.wasm
-        run: cargo build -p worldgen --target wasm32-unknown-unknown --release
+        run: npm run build:wasm
+      - name: Install headless Chromium
+        run: npx playwright install chromium
+      - name: Determinism golden tests (Node, Chromium, Go/wazero, native)
+        run: npm run test:golden
       - name: Build client
         run: npm run build -w client
