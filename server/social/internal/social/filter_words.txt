@@ -1,0 +1,51 @@
+# Profanity filter word list (filter.go explains the syntax).
+# Kept deliberately short: it is a default courtesy for global and zone chat,
+# not moderation. Moderators extend it; players can switch it off for themselves.
+#
+# Allow-list first: game terms that look like profanity.
+!bitchin
+!bitchinn
+!scunthorpe
+!assassin
+!assassins
+!cockatrice
+!dickens
+#
+*fuck*
+shit*
+cunt*
+motherfucker*
+asshole*
+ass
+asses
+arse
+arsehole*
+bitch
+bitches
+bastard*
+dick
+dicks
+dickhead*
+cock
+cocks
+pussy
+pussies
+slut*
+whore*
+wanker*
+twat*
+bollocks
+prick
+pricks
+douche*
+jackass
+dumbass
+# Slurs: whole-word and prefix forms.
+nigger*
+nigga*
+faggot*
+fag
+fags
+retard
+retards
+retarded
