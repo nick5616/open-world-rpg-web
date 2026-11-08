@@ -25,9 +25,11 @@ type Entity struct {
 	Yaw, Pitch float64 // radians, from the newest applied input
 	Health     uint16
 	HealthMax  uint16
-	Stamina    float64
-	StaminaMax float64
 	LastSeq    uint32 // newest applied input frame (acked in snapshots)
+	// Stamina, mode and the traversal timers live in Move (WP10): they are
+	// part of the shared step and travel in SelfState.
+
+	drownedEvent bool // WP10: a frame this tick drowned + respawned the player (Event 100)
 
 	prevValid movement.State // last state that passed validation
 	idx       int32          // index in Server.ents this tick (grid payload)
@@ -68,7 +70,7 @@ const maxGuessSteps = 16
 // Only the view is extrapolated: SelfState (reconciliation), validation,
 // AOI and persistence all use the confirmed Move, and combat validation must
 // use confirmed history too (WP10).
-func (e *Entity) updateView(g movement.Ground) {
+func (e *Entity) updateView(g movement.Ground, env movement.Env) {
 	n := e.applied
 	e.applied = 0
 	e.guess += stepsPerTick - n
@@ -80,9 +82,9 @@ func (e *Entity) updateView(g movement.Ground) {
 	e.view = e.Move
 	if e.guess > 0 && e.LastSeq != 0 {
 		f := e.lastFrame
-		f.Flags &^= proto.InputFlagJump | proto.InputFlagJumpEdge
+		f.Flags &^= proto.InputFlagJump | proto.InputFlagJumpEdge | proto.InputFlagGlideToggle
 		for i := 0; i < e.guess; i++ {
-			e.view = movement.StepFrame(e.view, f, g)
+			e.view = movement.StepFrameEnv(e.view, f, g, env)
 		}
 	}
 	e.easeView(prev)
@@ -124,11 +126,10 @@ func (e *Entity) easeView(prev movement.State) {
 
 // quantize refreshes the wire view others see (spec 9 quantization), from
 // the extrapolated view (updateView).
-func (e *Entity) quantize(g movement.Ground) {
-	var act uint8
-	if !movement.Grounded(e.view, g) {
-		act |= proto.ActivityAirborne
-	}
+func (e *Entity) quantize(_ movement.Ground) {
+	// WP10: activity bits (climbing, gliding, swimming, airborne) come from
+	// the step's mode, so remote players can pose them.
+	act := movement.Activity(e.view)
 	hp := uint8(0)
 	if e.HealthMax > 0 {
 		hp = uint8(math.Round(float64(e.Health) * 100 / float64(e.HealthMax)))
@@ -154,40 +155,25 @@ func (e *Entity) quantize(g movement.Ground) {
 
 // selfState is the player's own authoritative state, exact health, for
 // reconciliation. Position/velocity here are what the client replays from.
-func (e *Entity) selfState(g movement.Ground) proto.SelfState {
-	mode := proto.MoveModeGround
-	var act uint8
-	if !movement.Grounded(e.Move, g) {
-		mode = proto.MoveModeAir
-		act |= proto.ActivityAirborne
-	}
-	return proto.SelfState{
-		X:          proto.MetersToCm(e.Move.Pos.X),
-		Y:          proto.MetersToCm(e.Move.Pos.Y),
-		Z:          proto.MetersToCm(e.Move.Pos.Z),
-		Vx:         proto.VelToCms(e.Move.Vel.X),
-		Vy:         proto.VelToCms(e.Move.Vel.Y),
-		Vz:         proto.VelToCms(e.Move.Vel.Z),
-		Health:     e.Health,
-		HealthMax:  e.HealthMax,
-		Stamina:    uint16(math.Round(e.Stamina * 10)),
-		StaminaMax: uint16(math.Round(e.StaminaMax * 10)),
-		Mode:       mode,
-		AirJumps:   uint8(e.Move.AirJumps),
-		Activity:   act,
-	}
+// WP10: the whole movement state (mode, exact stamina, timers, flags) so
+// the client can replay from it (movement.SelfFields, protocol v2).
+func (e *Entity) selfState(_ movement.Ground) proto.SelfState {
+	st := proto.SelfState{Health: e.Health, HealthMax: e.HealthMax}
+	movement.SelfFields(&st, e.Move)
+	return st
 }
 
 // applyFrame steps movement for one input frame and validates the result.
 // Returns false if the step was rejected and the player snapped back.
-func (e *Entity) applyFrame(f proto.InputFrame, g movement.Ground) bool {
-	next := movement.StepFrame(e.Move, f, g)
+func (e *Entity) applyFrame(f proto.InputFrame, g movement.Ground, env movement.Env) bool {
+	next := movement.StepFrameEnv(e.Move, f, g, env)
 	e.Yaw = proto.U16ToYaw(f.Yaw)
 	e.Pitch = proto.I16ToPitch(f.Pitch)
 	e.LastSeq = f.Seq
 	e.lastFrame = f
 	e.applied++
-	vertOK := verticalOK(e.Move, next, g) // WP07, terrain.go; before the clamp
+	vertOK := verticalOK(e.Move, next, g) // WP07/WP10, traversal.go; before the clamp
+	horizOK := horizontalOK(e.Move, next) // per mode (WP10)
 
 	// World bounds: the v1 world spans [0, WORLD_SIZE_M) on x and z. The
 	// client does not clamp, so a player pressing into the edge gets a
@@ -202,14 +188,17 @@ func (e *Entity) applyFrame(f proto.InputFrame, g movement.Ground) bool {
 		next.Vel.Z = 0
 	}
 
-	// Max-speed validation (spec 9 security). The step itself is ours, so
-	// this only trips on bugs or on modes the server doesn't simulate yet;
-	// the violator snaps back to the last valid state with no horizontal
-	// momentum, and the client's reconciliation shows that as a correction.
-	if !vertOK || movement.HorizontalSpeed(next) > movement.MaxLegitHorizontalSpeed || math.IsNaN(next.Pos.X+next.Pos.Y+next.Pos.Z) {
+	// Max-speed validation per mode (spec 9 security). The step itself is
+	// ours, so this only trips on bugs; the violator snaps back to the last
+	// valid state with no horizontal momentum, and the client's
+	// reconciliation shows that as a correction.
+	if !vertOK || !horizOK || math.IsNaN(next.Pos.X+next.Pos.Y+next.Pos.Z) {
 		e.Move = e.prevValid
 		e.Move.Vel.X, e.Move.Vel.Z = 0, 0
 		return false
+	}
+	if respawned(e.Move, next) {
+		e.drownedEvent = true
 	}
 	e.Move = next
 	e.prevValid = next

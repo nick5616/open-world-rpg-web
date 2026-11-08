@@ -23,6 +23,8 @@
 //	LODESTONE_WORLDGEN_WASM      worldgen/pkg/worldgen.wasm (WP07 terrain; see terrain.go for the rest)
 //	LODESTONE_ZONE_REQUIRE_TERRAIN 1 to refuse flat ground when the wasm is missing (implied by LODESTONE_ENV=production)
 //	LODESTONE_ZONE_CHUNK_CACHE / _CHUNK_WORKERS / _WASM_INSTANCES  terrain cache size (3072 chunks), generators, query instances
+//	LODESTONE_ZONE_DEBUG_UPDRAFTS  WP10: "x,z,radius,top,lift[;...]" debug updraft columns (client: ?updraft=...)
+//	LODESTONE_ZONE_DEBUG_RAIN      WP10: 1 = always rain, 0 = never (default: the seeded weather stub)
 //	LODESTONE_PG_URL, LODESTONE_REDIS_ADDR
 package main
 
@@ -101,6 +103,10 @@ func main() {
 		log.Error("terrain: refusing to serve this world", "world", world.ID, "err", err)
 		os.Exit(1)
 	}
+	updraft, rain := game.DebugEnvFromEnv() // WP10 dev overrides of the movement env
+	if updraft != nil || rain != nil {
+		log.Warn("debug movement env active", "updrafts", os.Getenv("LODESTONE_ZONE_DEBUG_UPDRAFTS"), "rain", os.Getenv("LODESTONE_ZONE_DEBUG_RAIN"))
+	}
 	cfg := game.Config{
 		ZoneID:     env.Str("LODESTONE_ZONE_ID", defaultZoneID),
 		WorldID:    world.ID,
@@ -110,6 +116,8 @@ func main() {
 		DevSpawn:   env.Bool("LODESTONE_ZONE_DEV_SPAWN", devKey),
 		TicketKey:  pub,
 		Ground:     ground, // WP07: wasm terrain (terrain.go), flat only without worldgen.wasm
+		Updraft:    updraft,
+		Rain:       rain,
 		SpinTail:   gameloop.DefaultSpinTail(),
 		// Decision 0005: 150 kbps leaves headroom under the 160 kbps budget
 		// for reliable traffic. 0 restores WP03's unlimited ring table.

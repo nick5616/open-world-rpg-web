@@ -234,7 +234,7 @@ func TestWelcomeThenAuthoritativeMovementMatchesPrediction(t *testing.T) {
 		w.X != 10000 || w.Z != 20000 || w.EntityID == 0 || w.ProtocolVersion != proto.ProtocolVersion {
 		t.Fatalf("welcome %+v", w.ToJSON())
 	}
-	sim := movement.State{Pos: movement.Vec3{X: 100, Z: 200}}
+	sim := movement.NewState(movement.Vec3{X: 100, Z: 200})
 	cl.walk(60, proto.InputFlagForward|proto.InputFlagSprint, 0.7, &sim)
 	cl.walk(20, proto.InputFlagForward|proto.InputFlagJump, 0.7, &sim)
 	// Wait for the snapshot acking our last frame.

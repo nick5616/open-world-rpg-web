@@ -747,16 +747,22 @@ const MaxLegitHorizontalSpeed = constants.BaseMoveSpeed * constants.SprintMultip
 // leave in state next coming from prev (spec 9: validated against max speed
 // for the current mode). Glide and swim approach their speeds from whatever
 // the player had, so the bound is the larger of the mode's speed and the
-// previous speed; climbing moves at most at the lunge speed (or mantles).
+// previous speed; climbing moves at most at the lunge speed (or mantles). A
+// step that changes mode ran the old mode's physics first (walking into a
+// lake accelerates like walking), so it gets the larger of both bounds.
 func MaxHorizontalSpeed(prev, next State) float64 {
 	const slack = 1e-6
-	switch next.Mode {
+	return max(modeSpeedBound(next.Mode, prev), modeSpeedBound(prev.Mode, prev)) + slack
+}
+
+func modeSpeedBound(mode int, prev State) float64 {
+	switch mode {
 	case ModeClimb:
-		return max(constants.ClimbJumpSpeed, constants.ClimbSlipSpeed, constants.ClimbSpeed) + slack
+		return max(constants.ClimbJumpSpeed, constants.ClimbSlipSpeed, constants.ClimbSpeed)
 	case ModeGlide:
-		return max(constants.GlideSpeed, HorizontalSpeed(prev), MaxLegitHorizontalSpeed) + slack
+		return max(constants.GlideSpeed, HorizontalSpeed(prev))
 	case ModeSwim:
-		return max(constants.SwimSpeed, HorizontalSpeed(prev)) + slack
+		return max(constants.SwimSpeed, HorizontalSpeed(prev))
 	}
 	return MaxLegitHorizontalSpeed
 }

@@ -27,6 +27,7 @@ type metrics struct {
 	frames          atomic.Int64
 	framesDropped   atomic.Int64
 	speedViolations atomic.Int64
+	drowned         atomic.Int64 // WP10: drowning respawns
 	rateLimited     atomic.Int64
 	protoErrors     atomic.Int64
 	snapshotsShed   atomic.Int64
@@ -139,6 +140,7 @@ func (s *Server) publish(hist map[*session][]bwSample, depth func() int, extra f
 	r.SetInt("zone_input_frames_skipped_total", s.m.framesSkipped.Load())
 	r.SetInt("zone_input_frames_synthesized_total", s.m.framesSynthesized.Load())
 	r.SetInt("zone_speed_violations_total", s.m.speedViolations.Load())
+	r.SetInt("zone_drowned_total", s.m.drowned.Load())
 	r.SetInt("zone_rate_limited_total", s.m.rateLimited.Load())
 	r.SetInt("zone_protocol_errors_total", s.m.protoErrors.Load())
 	r.SetInt("zone_snapshots_shed_total", s.m.snapshotsShed.Load())

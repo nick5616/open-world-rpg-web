@@ -104,7 +104,7 @@ func TestTerrainMovementMatchesPrediction(t *testing.T) {
 	local := testTerrain(t) // the "client": its own cache, cold
 	// Welcome is cm-quantized; a client spawned by hint knows the exact
 	// point and snaps to its own ground, as the server did.
-	sim := movement.State{Pos: movement.Vec3{X: sx, Y: local.HeightAt(sx, sz), Z: sz}}
+	sim := movement.NewState(movement.Vec3{X: sx, Y: local.HeightAt(sx, sz), Z: sz})
 	if w.X != proto.MetersToCm(sx) || w.Y != proto.MetersToCm(sim.Pos.Y) || w.Z != proto.MetersToCm(sz) {
 		t.Fatalf("spawn not on the ground: welcome %+v, ground %v", w.ToJSON(), sim.Pos.Y)
 	}
@@ -186,14 +186,15 @@ func TestVerticalOK(t *testing.T) {
 			t.Errorf("%s: got %v want %v", c.name, got, c.ok)
 		}
 	}
-	// Snapping up onto a ledge (no slope limit yet, client-identical) is legal.
+	// Snapping up onto the ground is legal for validation (the step decides
+	// what is walkable; WP10 slope rules live there, identical to the client).
 	if !verticalOK(movement.State{Pos: movement.Vec3{Y: 0}}, movement.State{Pos: movement.Vec3{Y: 10}}, g) {
 		t.Error("ground snap onto higher terrain rejected")
 	}
 	// Every real Step on real terrain passes.
 	tr := testTerrain(t)
 	s := tr.SpawnPoint("v")
-	st := movement.State{Pos: s}
+	st := movement.NewState(s)
 	for i := 0; i < 600; i++ {
 		flags := uint16(proto.InputFlagForward | proto.InputFlagSprint)
 		if i%50 == 0 {

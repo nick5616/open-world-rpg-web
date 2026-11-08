@@ -78,21 +78,4 @@ func (s *Server) hintSpawn(h movement.Vec3) movement.Vec3 {
 	return h
 }
 
-// verticalOK is the terrain half of movement validation (spec 9: validated
-// against max speed for the current mode). The horizontal bound lives in
-// applyFrame; vertically, a grounded-or-airborne player's new height is
-// either physics (at most the previous height plus one step at the faster
-// of its vertical velocity and a jump) or the ground it snapped onto, and
-// never below the ground. Both hold exactly for movement.Step, so this only
-// trips on bugs and on modes the server doesn't simulate yet (climb, glide,
-// updrafts: WP10 must extend it). Checked on the step's own result, before
-// the world-edge clamp moves x/z.
-func verticalOK(prev, next movement.State, g movement.Ground) bool {
-	const eps = 1e-6
-	ground := g.HeightAt(next.Pos.X, next.Pos.Z)
-	if next.Pos.Y < ground-eps {
-		return false
-	}
-	rise := max(prev.Vel.Y, constants.JumpForce) * movement.Dt
-	return next.Pos.Y <= max(prev.Pos.Y+rise, ground)+eps
-}
+// verticalOK (WP07) moved to traversal.go when WP10 extended it per mode.

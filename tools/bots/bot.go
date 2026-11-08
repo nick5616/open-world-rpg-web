@@ -15,6 +15,7 @@ import (
 	"lodestone/server/pkg/snapshot"
 	"lodestone/server/pkg/ticket"
 	"lodestone/server/pkg/transport"
+	"lodestone/server/pkg/weather"
 	"lodestone/server/pkg/worldhost"
 )
 
@@ -70,6 +71,7 @@ type bot struct {
 	predSeq  [512]uint32
 	state    movement.State
 	welcomed bool
+	seed     uint64 // world seed from Welcome: the weather stub's rain (WP10)
 
 	// intent
 	heading     float64 // where we want to face
@@ -134,7 +136,8 @@ func newBot(id int, cfg *botConfig, seed int64, x, z float64) *bot {
 	b.st.Persona = b.persona.String()
 	b.heading = rng.Float64() * 2 * math.Pi
 	b.yaw = b.heading
-	b.state.Pos = movement.Vec3{X: x, Z: z}
+	// WP10: a full stamina wheel, like the zone's join (sprinting drains it).
+	b.state = movement.NewState(movement.Vec3{X: x, Z: z})
 	return b
 }
 
@@ -238,7 +241,10 @@ func (b *bot) run(ctx context.Context) {
 			for k := 0; k < framesPerPacket; k++ {
 				f := b.nextFrame()
 				frames = append(frames, f)
-				b.state = movement.StepFrame(b.state, f, b.cfg.ground())
+				// WP10: same env as the zone (rain from the weather stub at
+				// world time; bots share the zone's clock on one machine).
+				env := movement.Env{Raining: weather.IsRaining(b.seed, weather.WorldTimeS(nowMs()))}
+				b.state = movement.StepFrameEnv(b.state, f, b.cfg.ground(), env)
 				clampWorld(&b.state, b.cfg.worldM)
 				b.pred[f.Seq%512], b.predSeq[f.Seq%512] = b.state, f.Seq
 				b.lastFrame = f
@@ -372,6 +378,7 @@ func (b *bot) reader(done chan struct{}) {
 		case *proto.Welcome:
 			b.welcomed = true
 			b.st.Connected = true
+			b.seed = msg.Seed
 			b.state.Pos = movement.Vec3{X: proto.CmToMeters(msg.X), Y: proto.CmToMeters(msg.Y), Z: proto.CmToMeters(msg.Z)}
 			if b.cfg.terrain != nil && b.cfg.ticket == "" {
 				// Dev spawn: x and z are our exact %.2f hint, but Welcome's y is
@@ -425,9 +432,8 @@ func (b *bot) checkPrediction(seq uint32, self *proto.SelfState) {
 		// Diverged (e.g. frames dropped by the server's frame budget): adopt
 		// the server state, like a client reconciliation would.
 		b.st.PredResyncs++
-		b.state.Pos = movement.Vec3{X: proto.CmToMeters(self.X), Y: proto.CmToMeters(self.Y), Z: proto.CmToMeters(self.Z)}
-		b.state.Vel = movement.Vec3{X: proto.CmsToVel(self.Vx), Y: proto.CmsToVel(self.Vy), Z: proto.CmsToVel(self.Vz)}
-		b.state.AirJumps = int(self.AirJumps)
+		// WP10: SelfState carries the whole movement state (mode, stamina, timers).
+		b.state = movement.FromSelf(*self)
 		for i := range b.predSeq {
 			b.predSeq[i] = 0
 		}

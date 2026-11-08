@@ -42,9 +42,14 @@ type Config struct {
 	// DevSpawn lets a client pick its spawn with /ws?spawn=x,z. Only for dev
 	// and soak bots (main enables it only with the dev ticket key or
 	// LODESTONE_ZONE_DEV_SPAWN=1); real spawns come from the character row.
-	DevSpawn     bool
-	TicketKey    ed25519.PublicKey
-	Ground       movement.Ground
+	DevSpawn  bool
+	TicketKey ed25519.PublicKey
+	Ground    movement.Ground
+	// WP10: the updraft hook for the movement step (debug columns from
+	// LODESTONE_ZONE_DEBUG_UPDRAFTS until WP15 feeds it) and a rain
+	// override (nil: the weather stub decides from seed + world time).
+	Updraft      movement.UpdraftField
+	Rain         *bool
 	SpinTail     time.Duration
 	SaveInterval time.Duration
 	// DownBudgetKbps caps each client's snapshot bytes (decision 0005); the
@@ -83,6 +88,7 @@ type Server struct {
 	cands    []snapshot.Candidate
 	w        proto.Writer
 	saveDiv  uint32
+	env      movement.Env // WP10: this tick's movement env (stepEnv)
 
 	// Shared with the metrics goroutine.
 	connsMu sync.Mutex
@@ -191,6 +197,7 @@ func (s *Server) onTick() {
 	s.tick++
 	tick := s.tick
 	now := time.Now()
+	s.env = s.stepEnv() // WP10: rain + updrafts for every step this tick
 
 	for {
 		select {
@@ -218,7 +225,7 @@ func (s *Server) onTick() {
 	s.grid.Reset()
 	for i, e := range s.ents {
 		e.idx = int32(i)
-		e.updateView(s.cfg.Ground)
+		e.updateView(s.cfg.Ground, s.env)
 		e.quantize(s.cfg.Ground)
 		s.grid.Insert(int32(i), e.Move.Pos.X, e.Move.Pos.Z)
 	}
@@ -280,11 +287,9 @@ func (s *Server) join(sess *session) {
 		Level:       1,
 		Health:      100,
 		HealthMax:   100,
-		Stamina:     constants.StaminaMax,
-		StaminaMax:  constants.StaminaMax,
 	}
 	s.nextID++
-	e.Move.Pos = spawn
+	e.Move = movement.NewState(spawn) // WP10: full stamina wheel, ground mode
 	if g := s.cfg.Ground.HeightAt(spawn.X, spawn.Z); e.Move.Pos.Y < g {
 		e.Move.Pos.Y = g
 	}
