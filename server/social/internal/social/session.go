@@ -365,8 +365,13 @@ func (s *Session) dispatch(typ string, b []byte, now time.Time) {
 			s.send(sp.S2CPong{Type: sp.S2CTypePong, T: m.T, ServerTime: float64(nowMs())})
 		}
 	case sp.C2STypeVoiceToken:
-		// Proximity voice (LiveKit) is a later package; say so plainly.
-		s.sendErr(sp.ErrorCodeNotAllowed, "Voice is not available yet.")
+		// WP11 (voice.go). The social bucket: a client re-requesting tokens
+		// in a loop must not make us sign JWTs at frame rate.
+		if !s.lim.social.Take(now) {
+			s.limited(now, sp.ErrorCodeRateLimited, "slow down")
+			return
+		}
+		s.voiceToken(ctx)
 	case sp.C2STypeReport:
 		if m, ok := decode[sp.C2SReport](b); ok {
 			if !s.lim.report.Take(now) {
