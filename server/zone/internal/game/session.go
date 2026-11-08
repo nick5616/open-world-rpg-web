@@ -47,6 +47,7 @@ type session struct {
 	left        bool
 	ackTick     uint32
 	enc         snapshot.Encoder
+	budget      snapshot.BudgetStats // last published encoder counters
 	frameBudget ratelimit.Bucket
 	frames      []proto.InputFrame
 
@@ -74,16 +75,45 @@ func newBuckets() [256]*ratelimit.Bucket {
 // spawn point (soak bots use it to spread out or cluster).
 func (s *Server) Handler(ws *transport.WebSocket) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var hint *movement.Vec3
-		if s.cfg.DevSpawn {
-			if v := r.URL.Query().Get("spawn"); v != "" {
-				if p, ok := parseSpawn(v); ok {
-					hint = &p
-				}
-			}
-		}
+		hint := s.spawnHint(r)
 		ws.Handler(func(c transport.Conn) { s.accept(c, hint) }).ServeHTTP(w, r)
 	})
+}
+
+// AcceptWebTransport is the WebTransport session handler (same handshake
+// and session code as /ws; the transport is invisible past this point).
+func (s *Server) AcceptWebTransport(r *http.Request, c transport.Conn) {
+	s.accept(c, s.spawnHint(r))
+}
+
+func (s *Server) spawnHint(r *http.Request) *movement.Vec3 {
+	if !s.cfg.DevSpawn {
+		return nil
+	}
+	if v := r.URL.Query().Get("spawn"); v != "" {
+		if p, ok := parseSpawn(v); ok {
+			return &p
+		}
+	}
+	return nil
+}
+
+// budgetBurstTicks: unused byte allowance carries over for up to 3 ticks
+// (100 ms), enough for a burst of first-sight records with names, short
+// enough that the 5 s per-client kbps metric never sees the cap exceeded.
+const budgetBurstTicks = 3
+
+// priorityWeight is how fast an entity's send priority grows under the byte
+// budget (decision 0005): 2 at your feet, 1 at 8 m, 0.22 at the near ring's
+// edge (64 m), so in a crowd the people next to you update several times as
+// often as those across the square. Party members get +2 on top: you watch
+// your friends.
+func priorityWeight(d float64, party bool) float64 {
+	w := 16 / (d + 8)
+	if party {
+		w += 2
+	}
+	return w
 }
 
 func parseSpawn(v string) (movement.Vec3, bool) {
@@ -330,7 +360,8 @@ func (s *Server) sendSnapshot(sess *session, tick uint32, serverTime float64) (n
 		o := s.ents[i]
 		d := math.Hypot(o.Move.Pos.X-px, o.Move.Pos.Z-pz)
 		known := last != nil && last.Find(o.ID) != nil
-		r := aoi.Classify(d, o.Kind, known, e.PartyID != 0 && o.PartyID == e.PartyID)
+		sameParty := e.PartyID != 0 && o.PartyID == e.PartyID
+		r := aoi.Classify(d, o.Kind, known, sameParty)
 		switch r {
 		case aoi.None:
 			continue
@@ -343,11 +374,16 @@ func (s *Server) sendSnapshot(sess *session, tick uint32, serverTime float64) (n
 		case aoi.Party:
 			party++
 		}
-		s.cands = append(s.cands, snapshot.Candidate{State: &o.q, Due: aoi.Due(r, tick, o.ID)})
+		s.cands = append(s.cands, snapshot.Candidate{State: &o.q, Due: aoi.Due(r, tick, o.ID), Weight: priorityWeight(d, sameParty)})
 	}
 
 	st := e.selfState(s.cfg.Ground)
 	snap := sess.enc.Build(tick, sess.ackTick, e.LastSeq, serverTime, &st, s.cands)
+	if bs := sess.enc.Stats(); bs != sess.budget {
+		s.m.recordsSent.Add(int64(bs.Sent - sess.budget.Sent))
+		s.m.recordsDeferred.Add(int64(bs.Deferred - sess.budget.Deferred))
+		sess.budget = bs
+	}
 	s.w.Reset()
 	proto.WriteMessage(&s.w, snap)
 	buf := make([]byte, len(s.w.B))

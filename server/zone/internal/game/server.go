@@ -27,6 +27,7 @@ import (
 	"lodestone/server/pkg/proto"
 	"lodestone/server/pkg/snapshot"
 	"lodestone/server/pkg/svc"
+	"lodestone/server/pkg/transport"
 	"lodestone/server/pkg/writebehind"
 	"lodestone/server/zone/internal/aoi"
 )
@@ -46,10 +47,13 @@ type Config struct {
 	Ground       movement.Ground
 	SpinTail     time.Duration
 	SaveInterval time.Duration
-	Store        CharacterStore // nil: no persistence
-	Queue        *writebehind.Queue
-	Metrics      *svc.Metrics
-	Log          *slog.Logger
+	// DownBudgetKbps caps each client's snapshot bytes (decision 0005); the
+	// ring table stays the maximum rate. 0 = unlimited (WP03 behavior).
+	DownBudgetKbps float64
+	Store          CharacterStore // nil: no persistence
+	Queue          *writebehind.Queue
+	Metrics        *svc.Metrics
+	Log            *slog.Logger
 	// Now is the wall clock (tickets, server time); tests override it.
 	Now func() time.Time
 }
@@ -285,6 +289,18 @@ func (s *Server) join(sess *session) {
 	e.prevValid = e.Move
 	e.quantize(s.cfg.Ground)
 	sess.ent = e
+	if s.cfg.DownBudgetKbps > 0 {
+		// Charge each snapshot its transport framing so the cap matches what
+		// the per-client kbps metric (and the spec 9 budget) measures.
+		overhead := 4 // WebSocket header of a 126..65535-byte server frame
+		if sess.conn.Kind() == proto.TransportWebtransport {
+			overhead = transport.WTDatagramOverhead
+		}
+		sess.enc.SetBudget(s.cfg.DownBudgetKbps*1000/8, constants.TickRateHz, budgetBurstTicks, overhead)
+	}
+	if k := sess.conn.Kind(); int(k) < len(s.m.transports) {
+		s.m.transports[k].Add(1)
+	}
 	s.ents = append(s.ents, e)
 	s.sessions = append(s.sessions, sess)
 	s.byChar[e.CharacterID] = sess
@@ -336,6 +352,9 @@ func (s *Server) leave(sess *session) {
 	e := sess.ent
 	if e == nil {
 		return
+	}
+	if k := sess.conn.Kind(); int(k) < len(s.m.transports) {
+		s.m.transports[k].Add(-1)
 	}
 	if s.byChar[e.CharacterID] == sess {
 		delete(s.byChar, e.CharacterID)

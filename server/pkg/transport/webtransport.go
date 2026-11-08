@@ -59,6 +59,25 @@ type WebTransport struct {
 	server *webtransport.Server
 	ready  chan struct{}
 	addr   net.Addr
+	active sync.WaitGroup // sessions whose handler has not returned
+}
+
+// Drain waits (up to timeout) for every session to finish closing. Call it
+// after kicking everyone and before cancelling Serve's context: cancelling
+// closes all QUIC connections at once, which would cut off the kick frames
+// and close codes still being flushed.
+func (t *WebTransport) Drain(timeout time.Duration) bool {
+	done := make(chan struct{})
+	go func() {
+		t.active.Wait()
+		close(done)
+	}()
+	select {
+	case <-done:
+		return true
+	case <-time.After(timeout):
+		return false
+	}
 }
 
 // Kind identifies the transport.
@@ -122,6 +141,8 @@ func (t *WebTransport) ServeRequests(ctx context.Context, accept RequestAcceptFu
 	webtransport.ConfigureHTTP3Server(h3)
 	srv := &webtransport.Server{H3: h3, CheckOrigin: check}
 	mux.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
+		t.active.Add(1)
+		defer t.active.Done()
 		sess, err := srv.Upgrade(w, r)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
@@ -137,7 +158,15 @@ func (t *WebTransport) ServeRequests(ctx context.Context, accept RequestAcceptFu
 			return
 		}
 		c := newWTConn(sess, str, r.RemoteAddr, false, t.ReliableQueue)
-		defer c.Close(CloseNormal, "")
+		defer func() {
+			// Wait for the close (kick frame and code) to go out so Drain
+			// means "everyone was told".
+			c.Close(CloseNormal, "")
+			select {
+			case <-c.Done():
+			case <-time.After(2 * time.Second):
+			}
+		}()
 		accept(r, c)
 	})
 
@@ -244,7 +273,7 @@ func padB64(s string) string {
 // frame header (~4) and share packets, so they are counted at 8. Neither
 // includes UDP/IP, matching the WebSocket figure that excludes TCP/IP.
 const (
-	wtDatagramOverhead = 27
+	WTDatagramOverhead = 27
 	wtStreamOverhead   = 8
 	// maxDatagramPayload is conservative: QUIC's minimum path MTU is 1200
 	// bytes minus headers; quic-go computes the exact limit per connection
@@ -374,7 +403,7 @@ func (c *wtConn) readDatagrams() {
 		if err != nil {
 			return
 		}
-		c.stats.BytesIn.Add(int64(len(b)) + wtDatagramOverhead)
+		c.stats.BytesIn.Add(int64(len(b)) + WTDatagramOverhead)
 		c.stats.FramesIn.Add(1)
 		if len(b) == 0 || int64(len(b)) > c.readLimit.Load() {
 			continue
@@ -540,6 +569,13 @@ func (c *wtConn) streamWriter() {
 			case <-time.After(300 * time.Millisecond):
 			}
 			_ = c.sess.CloseWithError(webtransport.SessionErrorCode(code), msg)
+			// CloseWithError only queues the close capsule; wait until it is
+			// written (the session context ends) so a server shutting down
+			// right after doesn't tear the QUIC connection down first.
+			select {
+			case <-c.sess.Context().Done():
+			case <-time.After(time.Second):
+			}
 			c.markClosed(nil)
 			return
 		}
@@ -604,7 +640,7 @@ func (c *wtConn) datagramWriter() {
 			c.markClosed(nil)
 			return
 		}
-		c.stats.BytesOut.Add(int64(len(b)) + wtDatagramOverhead)
+		c.stats.BytesOut.Add(int64(len(b)) + WTDatagramOverhead)
 		c.stats.FramesOut.Add(1)
 	}
 }
