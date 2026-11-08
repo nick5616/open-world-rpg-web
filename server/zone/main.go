@@ -101,6 +101,8 @@ func main() {
 		log.Error("terrain: refusing to serve this world", "world", world.ID, "err", err)
 		os.Exit(1)
 	}
+	ground, exploreWorld := withStructures(ground, terrain, log) // WP12: towers on the ground, exploration (explore.go)
+	parties, saves := exploreServices(world.ID, log)
 	cfg := game.Config{
 		ZoneID:     env.Str("LODESTONE_ZONE_ID", defaultZoneID),
 		WorldID:    world.ID,
@@ -115,6 +117,9 @@ func main() {
 		// for reliable traffic. 0 restores WP03's unlimited ring table.
 		DownBudgetKbps: env.Float("LODESTONE_ZONE_DOWN_BUDGET_KBPS", 150),
 		Store:          store,
+		Explore:        exploreWorld,
+		Parties:        parties,
+		Saves:          saves,
 		Queue:          queue,
 		Metrics:        s.Metrics,
 		Log:            log,
