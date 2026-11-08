@@ -26,6 +26,11 @@
 //
 // Evidence: docs/evidence/g3-acceptance.txt, g3-acceptance.json, g3-*.png
 // (see docs/evidence/g3-README.md).
+//
+// Weather is pinned dry (zone LODESTONE_ZONE_DEBUG_RAIN=0, client ?rain=0,
+// as WP10's runs do): the seeded rain stub (half climb speed, a slip every
+// 3 s) makes the Spire's 14.8 m wall to the ledge longer than one stamina
+// wheel, so a run that happens to start in a rain window could not climb.
 import { spawn, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import net from 'node:net';
@@ -454,7 +459,7 @@ try {
   check(await waitHttp(`http://${H}:${PORT.social}/healthz`, 30000), `social healthy on :${PORT.social} (voice via ${LIVEKIT})`);
   start('director', bin('director'), [], svcEnv);
   check(await waitHttp(`http://${H}:${PORT.director}/healthz`, 30000), `director healthy on :${PORT.director}`);
-  start('zone', bin('zone'), [], { ...svcEnv, LODESTONE_ZONE_PORT: String(PORT.zone), LODESTONE_ZONE_ID: ZONE_ID, LODESTONE_ZONE_WT_ADDR: 'off', LODESTONE_ZONE_PUBLIC_URL: `ws://${H}:${PORT.zone}/ws` });
+  start('zone', bin('zone'), [], { ...svcEnv, LODESTONE_ZONE_PORT: String(PORT.zone), LODESTONE_ZONE_ID: ZONE_ID, LODESTONE_ZONE_WT_ADDR: 'off', LODESTONE_ZONE_PUBLIC_URL: `ws://${H}:${PORT.zone}/ws`, LODESTONE_ZONE_DEBUG_RAIN: '0' });
   check(await waitHttp(`http://${H}:${PORT.zone}/healthz`, 90000), `zone healthy on :${PORT.zone}`);
   const zoneInfo = await (await fetch(`http://${H}:${PORT.zone}/debug/zone`)).json();
   result.world = { worldId: zoneInfo.worldId, seed: zoneInfo.seed, genVersion: zoneInfo.genVersion, atlasHash: zoneInfo.atlasHash };
@@ -474,7 +479,7 @@ try {
     const page = await ctx.newPage();
     page.on('console', (m) => consoleLog.push(`[${label}] ${m.type()}: ${m.text()}`));
     page.on('pageerror', (e) => consoleLog.push(`[${label}] pageerror: ${e.message}`));
-    await page.goto(`http://${H}:${PORT.vite}/?debug=1&autoplay=1&transport=ws&voiceRawMic=1`);
+    await page.goto(`http://${H}:${PORT.vite}/?debug=1&autoplay=1&transport=ws&voiceRawMic=1&rain=0`);
     pages.push(page);
   }
   const [a, b] = pages;
