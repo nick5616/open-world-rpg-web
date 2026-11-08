@@ -36,6 +36,9 @@ const REBIN_MOVE_M = 6;
 const GRASS_REBIN_MOVE_M = 2;
 /** Rocks and bushes cast shadows only this close (tree LODs cast to treeMeshDistance). */
 const SHADOW_NEAR_M = 70;
+const TREE_SHADOW_M = 100;
+/** Re-binning is O(records in range): at most this often, however fast the camera moves. */
+const REBIN_MIN_MS = 150;
 
 interface KindStyle {
   arch: number;
@@ -128,6 +131,8 @@ export class ScatterManager {
   private lastRebin = new THREE.Vector3(1e9, 0, 0);
   private lastGrassRebin = new THREE.Vector3(1e9, 0, 0);
   private dirty = true;
+  private lastRebinAt = -1e9;
+  private lastGrassAt = -1e9;
   private grassDirty = true;
   private lastRequestAt = -1e9;
   private hidden = new Set<bigint>();
@@ -151,7 +156,15 @@ export class ScatterManager {
       const m1 = this.mat({ fade: new THREE.Vector4(LOD0_M - BAND, LOD0_M + BAND, 0, 0), sway: 0.006, flutter: 0.002 });
       const bb = createBillboardMaterial(this.impostors.texture, i, TREE_ARCHETYPES.length, new THREE.Vector4(0, 0, 0, 0), light);
       this.materials.push(bb);
-      this.treeBins[i] = [this.bin(lod0[i], m0, true, `tree ${a} lod0`), this.bin(lod1[i], m1, true, `tree ${a} lod1`), this.bin(quad, bb, false, `tree ${a} impostor`)];
+      // [lod0, lod1 (casts shadows), impostor, lod1 far (no shadows: past
+      // TREE_SHADOW_M a tree's shadow is a few texels of the last cascade,
+      // and every caster is redrawn once per cascade)]
+      this.treeBins[i] = [
+        this.bin(lod0[i], m0, true, `tree ${a} lod0`),
+        this.bin(lod1[i], m1, true, `tree ${a} lod1`),
+        this.bin(quad, bb, false, `tree ${a} impostor`),
+        this.bin(lod1[i], m1, false, `tree ${a} lod1 far`),
+      ];
     });
     const rockGeom = rock();
     const rockMat = this.mat({ fade: new THREE.Vector4(-1, 0, 0, 0), sway: 0, flutter: 0, roughness: 0.95 });
@@ -287,8 +300,14 @@ export class ScatterManager {
       this.lastRequestAt = nowMs;
       this.request(p);
     }
-    if (this.dirty || p.distanceTo(this.lastRebin) > REBIN_MOVE_M) this.rebin(p);
-    if (this.tier.grassDistance > 0 && (this.grassDirty || p.distanceTo(this.lastGrassRebin) > GRASS_REBIN_MOVE_M)) this.rebinGrass(p);
+    if ((this.dirty || p.distanceTo(this.lastRebin) > REBIN_MOVE_M) && nowMs - this.lastRebinAt > REBIN_MIN_MS) {
+      this.lastRebinAt = nowMs;
+      this.rebin(p);
+    }
+    if (this.tier.grassDistance > 0 && (this.grassDirty || p.distanceTo(this.lastGrassRebin) > GRASS_REBIN_MOVE_M) && nowMs - this.lastGrassAt > 60) {
+      this.lastGrassAt = nowMs;
+      this.rebinGrass(p);
+    }
   }
 
   private request(p: THREE.Vector3): void {
@@ -364,27 +383,37 @@ export class ScatterManager {
     const treeM = t.treeMeshDistance;
     const rockFar = Math.min(400, t.scatterDistance * 0.5);
     const R2 = (t.scatterDistance + 10) ** 2;
+    const smallFar = Math.max(rockFar, t.smallScatterDistance) + 8;
     for (const c of this.chunks.values()) {
       const cdx = Math.max(0, Math.abs(c.cx * 64 + 32 - p.x) - 32);
       const cdz = Math.max(0, Math.abs(c.cz * 64 + 32 - p.z) - 32);
-      if (cdx * cdx + cdz * cdz > R2) continue;
+      const cd2 = cdx * cdx + cdz * cdz;
+      if (cd2 > R2) continue;
+      // Records are ordered trees, rocks, bushes, tufts (worldgen README). A
+      // chunk beyond every small-scatter range only needs its trees, so stop
+      // at the first non-tree record: most records are tufts.
+      const treesOnly = cd2 > smallFar * smallFar;
       const rec = c.records;
       const n = rec.length / SCATTER_STRIDE;
       for (let i = 0; i < n; i++) {
         const o = i * SCATTER_STRIDE;
         const layer = rec[o];
+        if (treesOnly && layer !== LAYER_TREE) break;
         const x = rec[o + 3];
         const z = rec[o + 5];
         const dx = x - p.x;
+        const dy = rec[o + 4] - p.y;
         const dz = z - p.z;
-        const d = Math.sqrt(dx * dx + dz * dz);
+        // 3D, like the shader's fades: flying over a forest must not bin
+        // trees 50 m below into the near LOD the shader then fades out.
+        const d = Math.sqrt(dx * dx + dy * dy + dz * dz);
         if (this.hidden.size && this.hidden.has(c.ids[i])) continue;
         if (layer === LAYER_TREE) {
           if (d > t.scatterDistance + 10) continue;
           const st = TREE_STYLE[rec[o + 1]] ?? TREE_STYLE[0];
           const lods = this.treeBins[st.arch];
           if (d < LOD0_M + BAND + 2) this.put(lods[0], c, i, st);
-          if (d > LOD0_M - BAND - 2 && d < treeM + BAND * 2 + 2) this.put(lods[1], c, i, st);
+          if (d > LOD0_M - BAND - 2 && d < treeM + BAND * 2 + 2) this.put(d < TREE_SHADOW_M ? lods[1] : lods[3], c, i, st);
           if (d > treeM - BAND * 2 - 2) this.put(lods[2], c, i, st);
         } else if (layer === LAYER_ROCK) {
           if (d < rockFar + 4) this.put(d < SHADOW_NEAR_M ? this.rockBin : this.rockFarBin, c, i, ROCK_STYLE[rec[o + 1]] ?? ROCK_STYLE[0]);

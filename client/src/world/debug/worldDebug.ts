@@ -85,6 +85,7 @@ class WorldDebug {
         genMs: { mean: t.genMs.reduce((a, b) => a + b, 0) / Math.max(1, t.genMs.length), p95: percentile(t.genMs, 95), max: Math.max(0, ...t.genMs) },
         meshMs: { mean: t.meshMs.reduce((a, b) => a + b, 0) / Math.max(1, t.meshMs.length), p95: percentile(t.meshMs, 95), max: Math.max(0, ...t.meshMs) },
         uploadMsMax: t.uploadMsMax,
+        prof: { ...t.prof },
         gpuBytes: this.terrain?.gpuBytes() ?? 0,
       },
       scatter: s && { chunks: s.chunks, instances: s.instances, grassClumps: s.grassClumps, tris: s.tris, rebinMs: s.rebinMs, genMs: { mean: s.genMs.reduce((a, b) => a + b, 0) / Math.max(1, s.genMs.length), p95: percentile(s.genMs, 95), max: Math.max(0, ...s.genMs) } },

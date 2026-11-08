@@ -133,14 +133,18 @@ export class WorkerPool {
 
   /** Cancel every queued job whose key fails the predicate. */
   retain(keep: (key: string) => boolean): number {
-    let n = 0;
-    for (const p of [...this.queue]) {
-      if (!keep(p.key)) {
-        this.cancel(p.key);
-        n++;
-      }
+    // One pass (cancel() per key would be O(n^2) on a long queue).
+    const dropped: Pending[] = [];
+    this.queue = this.queue.filter((p) => {
+      if (keep(p.key)) return true;
+      dropped.push(p);
+      return false;
+    });
+    for (const p of dropped) {
+      this.byKey.delete(p.key);
+      p.resolve(null);
     }
-    return n;
+    return dropped.length;
   }
 
   private pump(): void {

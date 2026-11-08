@@ -28,13 +28,13 @@ import { createTerrainMaterial, type TerrainMaterial, type TerrainShared } from 
 
 const MORPH_SECONDS = 0.6;
 const RESELECT_MS = 100;
-const RESELECT_MOVE_M = 2;
+const RESELECT_JUMP_M = 48;
 /** Tiles kept in GPU memory; ~170 KB each with water, so ~100 MB at the cap. */
 const MAX_TILES = 700;
 const EVICT_AFTER_MS = 8000;
 /** Detail margin over the macro heightmap (NODEP amplitude is at most 25.5 m). */
 const DETAIL_MARGIN = 26;
-const SHADOW_CAST_M = 80;
+const SHADOW_CAST_M = 64;
 /** Pool keys of tile jobs ("lod:cx:cz"); scatter/grass jobs use "s:"/"g:" prefixes. */
 const TILE_KEY = /^\d+:-?\d+:-?\d+$/;
 
@@ -69,6 +69,8 @@ export interface TerrainStats {
   meshMs: number[];
   cacheHits: number;
   uploadMsMax: number;
+  /** Decaying max of main-thread ms per update stage (profiling long tasks). */
+  prof: { reselect: number; upload: number; resolve: number };
 }
 
 export interface TerrainParams {
@@ -145,7 +147,7 @@ export class TerrainManager {
   readonly heightBounds: HeightBounds;
   /** 1 texel per chunk over the quadtree domain: 255 where a tile is drawn (horizon mesh discards there). */
   readonly coverage: THREE.DataTexture;
-  readonly stats: TerrainStats = { queued: 0, inFlight: 0, loaded: 0, drawn: 0, drawnTris: 0, wanted: 0, missingWanted: 0, uploadsLastFrame: 0, genMs: [], meshMs: [], cacheHits: 0, uploadMsMax: 0 };
+  readonly stats: TerrainStats = { queued: 0, inFlight: 0, loaded: 0, drawn: 0, drawnTris: 0, wanted: 0, missingWanted: 0, uploadsLastFrame: 0, genMs: [], meshMs: [], cacheHits: 0, uploadMsMax: 0, prof: { reselect: 0, upload: 0, resolve: 0 } };
   /** Called for every new tile mesh (sun shadows opt it in to cascades). */
   onMaterial: ((m: THREE.Material) => void) | null = null;
   onMaterialDisposed: ((m: THREE.Material) => void) | null = null;
@@ -163,6 +165,8 @@ export class TerrainManager {
   private coverageData: Uint8Array;
   private coverageDirty = true;
   private disposed = false;
+  private resolveDirty = true;
+  private merging = false;
 
   constructor(
     private readonly pool: WorkerPool,
@@ -214,14 +218,25 @@ export class TerrainManager {
   update(camera: THREE.Camera, velocity: THREE.Vector3, dt: number, nowMs: number): void {
     if (this.disposed) return;
     const p = camera.position;
-    if (nowMs - this.lastSelectAt > RESELECT_MS || p.distanceTo(this.lastSelectPos) > RESELECT_MOVE_M) {
+    // Time-based, not distance-based: at 80 m/s a 2 m rule re-selected every
+    // frame (four quadtree walks + queue re-ranking per frame). Prefetch
+    // covers the 100 ms between selections; a teleport re-selects at once.
+    const t0 = performance.now();
+    if (nowMs - this.lastSelectAt > RESELECT_MS || p.distanceTo(this.lastSelectPos) > RESELECT_JUMP_M) {
       this.reselect(camera, velocity, nowMs);
       this.lastSelectAt = nowMs;
       this.lastSelectPos.copy(p);
     }
+    const t1 = performance.now();
     this.upload(nowMs);
+    const t2 = performance.now();
     this.resolve(nowMs);
     this.animate(dt);
+    const t3 = performance.now();
+    const pr = this.stats.prof;
+    pr.reselect = Math.max(pr.reselect * 0.99, t1 - t0);
+    pr.upload = Math.max(pr.upload * 0.99, t2 - t1);
+    pr.resolve = Math.max(pr.resolve * 0.99, t3 - t2);
     if (this.coverageDirty) {
       this.coverage.needsUpdate = true;
       this.coverageDirty = false;
@@ -237,6 +252,7 @@ export class TerrainManager {
     const sel = selectTiles({ ...base, x: p.x, y: p.y, z: p.z, wasSplit: this.wasSplit });
     this.wasSplit = sel.split;
     this.wanted = sel.leaves;
+    this.resolveDirty = true;
 
     // Prefetch: where we'll be in ~2.5 s (sprinting/gliding goes further ahead
     // automatically, it is velocity times time), and 60 m along the view.
@@ -327,6 +343,7 @@ export class TerrainManager {
       const key = keyOf(d);
       if (this.tiles.has(key)) continue;
       this.tiles.set(key, this.makeTile(d, nowMs));
+      this.resolveDirty = true;
       n++;
     }
     this.stats.uploadsLastFrame = n;
@@ -378,17 +395,31 @@ export class TerrainManager {
   }
 
   private resolve(nowMs: number): void {
+    // Only when something changed: a new selection, a new tile, or a merge in progress.
+    if (!this.resolveDirty && !this.merging) return;
+    this.resolveDirty = false;
     const loaded = (k: string) => this.tiles.has(k);
     const next = resolveDrawn(this.wanted, loaded);
     // Merge: a parent replacing drawn children waits until the children have
     // morphed into its shape, so the swap itself changes no pixel.
+    const kidsOf = new Map<string, TileId[]>();
+    for (const c of this.drawnSet.values()) {
+      const p = parentOf(c);
+      if (!p) continue;
+      const pk = keyOf(p);
+      const l = kidsOf.get(pk);
+      if (l) l.push(c);
+      else kidsOf.set(pk, [c]);
+    }
+    this.merging = false;
     for (const [k, t] of [...next]) {
       if (t.lod === 0) continue;
-      const kids = [...this.drawnSet.values()].filter((c) => c.lod === t.lod - 1 && parentOf(c) && keyOf(parentOf(c)!) === k);
-      if (!kids.length) continue;
+      const kids = kidsOf.get(k);
+      if (!kids) continue;
       const kidTiles = kids.map((c) => this.tiles.get(keyOf(c))).filter((x): x is Tile => !!x);
       if (kidTiles.length !== kids.length) continue;
       if (kidTiles.every((x) => x.k >= 0.999)) continue; // done: let the parent in
+      this.merging = true;
       next.delete(k);
       for (const x of kidTiles) {
         x.kTarget = 1;

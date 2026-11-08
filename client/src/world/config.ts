@@ -77,7 +77,7 @@ export const WORLD_TIERS: Record<QualityTier, WorldTier> = {
     waterDetail: true,
   },
   high: {
-    lodSplit: 1.3,
+    lodSplit: 1.25,
     uploadsPerFrame: 4,
     uploadBudgetMs: 5,
     scatterDistance: 1000,
