@@ -1,0 +1,54 @@
+{
+  "clients": 50,
+  "durationS": 20,
+  "ratePerClientPerS": 40,
+  "perChannel": {
+    "global": {
+      "Sent": 8000,
+      "Accepted": 100
+    },
+    "local": {
+      "Sent": 8000,
+      "Accepted": 1200
+    },
+    "party": {
+      "Sent": 8000,
+      "Accepted": 1350
+    },
+    "whisper": {
+      "Sent": 8000,
+      "Accepted": 1200
+    },
+    "zone": {
+      "Sent": 8000,
+      "Accepted": 650
+    }
+  },
+  "boundPerClient": {
+    "global": 3,
+    "local": 25,
+    "party": 28,
+    "whisper": 25,
+    "zone": 14
+  },
+  "maxAcceptedByOneClient": {
+    "global": 2,
+    "local": 24,
+    "party": 27,
+    "whisper": 24,
+    "zone": 13
+  },
+  "errorFramesByCode": {
+    "rate_limited": 1000,
+    "slow_mode": 849
+  },
+  "observerReceived": {
+    "global": 100,
+    "local": 1200,
+    "whisper": 1200,
+    "zone": 650
+  },
+  "violations": null,
+  "pass": true,
+  "connectFailures": 0
+}

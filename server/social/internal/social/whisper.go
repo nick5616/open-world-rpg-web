@@ -127,19 +127,22 @@ func (s *Session) whisper(ctx context.Context, now time.Time, to, raw string) {
 		s.whisperStatus(targetName, sp.WhisperStatusOffline)
 		return
 	}
-	// Blocked by the target: the sender sees "delivered" and nothing happens.
-	// Telling them would let anyone probe who blocked them.
+	m := &sp.ChatMessage{ID: newMsgID(), Channel: sp.ChannelWhisper, FromID: s.charID, FromName: s.name, ToName: targetName,
+		Text: text, Ts: float64(nowMs())}
+	// Blocked by the target: the sender sees exactly what a delivered whisper
+	// looks like (their own echo plus "delivered") and nothing else happens.
+	// Telling them would let anyone probe who blocked them. Not stored, so an
+	// unblock later never surfaces it.
 	if blocked, err := s.hub.store.IsBlocked(ctx, targetID, s.charID); err != nil {
 		s.sendErr(sp.ErrorCodeInternal, "Whisper not sent; try again.")
 		return
 	} else if blocked {
 		s.hub.metrics.Add(`social_whispers_total{status="dropped_blocked"}`, 1)
+		s.hub.publish(ctx, &envelope{Kind: kindChat, World: s.worldID, Msg: m, Targets: []string{s.charID}})
 		s.whisperStatus(targetName, sp.WhisperStatusDelivered)
 		return
 	}
 
-	m := &sp.ChatMessage{ID: newMsgID(), Channel: sp.ChannelWhisper, FromID: s.charID, FromName: s.name, ToName: targetName,
-		Text: text, Ts: float64(nowMs())}
 	ttl := time.Duration(constants.HistoryWhisperTtlS) * time.Second
 	key := keyChat(s.worldID, sp.ChannelWhisper, convScope(s.charID, targetID))
 	pipe := s.hub.rdb.TxPipeline()
