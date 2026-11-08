@@ -348,7 +348,7 @@ func (s *Server) fastTravel(sess *session, site int, now time.Time) {
 // speed check nor view easing treats the jump as movement. WP13's respawn
 // uses it with RespawnPoint.
 func (s *Server) Teleport(e *Entity, pos movement.Vec3) {
-	if g := s.cfg.Ground.HeightAt(pos.X, pos.Z); pos.Y < g {
+	if g := movement.GroundAt(s.cfg.Ground, pos.X, pos.Y, pos.Z); pos.Y < g { // WP09: cave floors too
 		pos.Y = g
 	}
 	// WP10: a teleport resets motion and mode but keeps the stamina wheel (a

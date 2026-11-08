@@ -1,0 +1,132 @@
+# Build, test (including the determinism golden tests) and deploy on merge
+# to main (spec 13; WP18). Modeled on wizard-wars .github/workflows/deploy.yml
+# (google-github-actions/auth with a service-account key, setup-gcloud, build
+# and push images, deploy), with the steps living in infra/deploy.mjs so a
+# human runs exactly the same thing: `npm run deploy`.
+#
+# It cannot run without the repository secrets: the `gate` job checks for
+# them and every other job is skipped (with a notice) when any is missing, so
+# forks and unconfigured clones stay green and nothing is ever half-deployed.
+# ci.yml is untouched and keeps running on every push and PR.
+#
+# Required repository settings (Settings > Secrets and variables > Actions):
+#   secrets.GCP_SA_KEY           JSON key of a deployer service account (roles:
+#                                infra/README.md "CI deployer")
+#   secrets.NETLIFY_AUTH_TOKEN   Netlify personal access token
+#   vars.LODESTONE_GCP_PROJECT   GCP project id
+# Optional variables: LODESTONE_GCP_REGION, LODESTONE_GCP_ZONE,
+#   LODESTONE_GAME_HOST, LODESTONE_NETLIFY_CLIENT_SITE_ID,
+#   LODESTONE_NETLIFY_CREATOR_SITE_ID, VITE_FIREBASE_API_KEY,
+#   VITE_FIREBASE_APP_ID, LODESTONE_CREATOR_LLM ("1")
+name: deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# One deploy at a time, and never cancel one halfway.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    outputs:
+      enabled: ${{ steps.check.outputs.enabled }}
+    steps:
+      - id: check
+        env:
+          HAS_GCP_KEY: ${{ secrets.GCP_SA_KEY != '' }}
+          HAS_NETLIFY: ${{ secrets.NETLIFY_AUTH_TOKEN != '' }}
+          PROJECT: ${{ vars.LODESTONE_GCP_PROJECT }}
+        run: |
+          if [ "$HAS_GCP_KEY" = "true" ] && [ "$HAS_NETLIFY" = "true" ] && [ -n "$PROJECT" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice title=deploy skipped::Set secrets.GCP_SA_KEY, secrets.NETLIFY_AUTH_TOKEN and vars.LODESTONE_GCP_PROJECT to enable deploys (infra/README.md)."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  test:
+    needs: gate
+    if: needs.gate.outputs.enabled == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.work
+          cache-dependency-path: '**/go.sum'
+      - run: rustup show
+      - uses: Swatinem/rust-cache@v2
+      - run: npm ci
+      - name: Generated code is fresh
+        run: npm run gen:check
+      - name: Build worldgen.wasm
+        run: npm run build:wasm
+      - name: Lint and typecheck
+        run: npm run lint
+      - name: Tests (TS, Go, Rust)
+        env:
+          LODESTONE_REQUIRE_WASM: '1'   # terrain tests must not skip before a deploy
+        run: npm test
+      - name: Install headless Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Determinism golden tests (Node, Chromium, Go/wazero, native)
+        run: npm run test:golden
+      - name: Deploy plan (dry run, no cloud calls)
+        run: node infra/deploy.mjs --target gcp --dry-run --project "${{ vars.LODESTONE_GCP_PROJECT }}"
+
+  deploy:
+    needs: [gate, test]
+    if: needs.gate.outputs.enabled == 'true'
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: rustup show
+      - uses: Swatinem/rust-cache@v2
+      - run: npm ci
+      - run: npm install -g netlify-cli@26
+
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Deploy (infra/deploy.mjs)
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          LODESTONE_GCP_PROJECT: ${{ vars.LODESTONE_GCP_PROJECT }}
+          LODESTONE_GCP_REGION: ${{ vars.LODESTONE_GCP_REGION }}
+          LODESTONE_GCP_ZONE: ${{ vars.LODESTONE_GCP_ZONE }}
+          LODESTONE_GAME_HOST: ${{ vars.LODESTONE_GAME_HOST }}
+          LODESTONE_NETLIFY_CLIENT_SITE_ID: ${{ vars.LODESTONE_NETLIFY_CLIENT_SITE_ID }}
+          LODESTONE_NETLIFY_CREATOR_SITE_ID: ${{ vars.LODESTONE_NETLIFY_CREATOR_SITE_ID }}
+          LODESTONE_CREATOR_LLM: ${{ vars.LODESTONE_CREATOR_LLM }}
+          VITE_FIREBASE_API_KEY: ${{ vars.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_APP_ID: ${{ vars.VITE_FIREBASE_APP_ID }}
+        run: node infra/deploy.mjs --target gcp --yes --tag "${GITHUB_SHA::12}" --transcript deploy-transcript.txt
+
+      - name: Keep the deploy transcript
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deploy-transcript
+          path: deploy-transcript.txt
+          if-no-files-found: ignore

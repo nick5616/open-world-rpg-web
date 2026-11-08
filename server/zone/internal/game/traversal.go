@@ -76,6 +76,7 @@ func respawned(prev, next movement.State) bool {
 // world-edge clamp moves x/z.
 func verticalOK(prev, next movement.State, g movement.Ground) bool {
 	const eps = 1e-6
+	g = movement.AtLevel(g, prev.Pos.Y) // WP09: the ground the step used (cave floors underground)
 	ground := g.HeightAt(next.Pos.X, next.Pos.Z)
 	if respawned(prev, next) {
 		return next.Mode == movement.ModeGround && math.Abs(next.Pos.Y-ground) <= eps && movement.WaterAt(g, next.Pos.X, next.Pos.Z) < ground

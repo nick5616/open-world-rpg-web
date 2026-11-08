@@ -1,4 +1,4 @@
-// WP13 (CR 005): the dodge and mobility-spell dashes inside the shared
+// WP13 (CR 009): the dodge and mobility-spell dashes inside the shared
 // movement step. Line-for-line twin of server/pkg/movement/dash.go: a dash
 // starts on a step whose input has the dodge flag, castSlot names the
 // variant (0 = plain dodge, constants DODGE_*; 1..15 = combat.yaml dashes),

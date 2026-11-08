@@ -10,6 +10,7 @@ import { localPlayer, netStats, worldClock } from './state/live';
 import { netDebug, netRuntime, useNetStore } from './net/netStore';
 import { divergenceProbe } from './sim/dev/divergenceProbe';
 import type { ReadySession } from './account/types';
+import { voiceDebugHook } from './voice/debugHook';
 
 export function installDevHandle(): void {
   const handle = {
@@ -17,6 +18,8 @@ export function installDevHandle(): void {
     net: netStats,
     /** WP06: zone connection state (transport, corrections, interpolation, drawn remotes). */
     netDebug,
+    /** WP11: voice mixer (who is subscribed, positions, panner gains, output L/R levels). */
+    voiceDebug: () => voiceDebugHook.fn?.() ?? null,
     screen: (s: Screen) => useAppStore.getState().setScreen(s),
     teleport: (t: TeleportTarget) => useDebugStore.getState().teleport(t),
     /** Radians; pass null to give look back to the mouse. */

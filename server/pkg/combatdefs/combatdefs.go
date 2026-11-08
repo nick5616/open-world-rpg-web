@@ -1,4 +1,4 @@
-// Package combatdefs is the Go view of contracts/combat.yaml (WP13, CR 005):
+// Package combatdefs is the Go view of contracts/combat.yaml (WP13, CR 009):
 // weapons and their moves, spells and trees, elemental forms, dash variants,
 // enemies, enemy attacks, bosses, affixes and spawn tables. `npm run gen`
 // normalizes the YAML into combat_gen.json (embedded here) and into the

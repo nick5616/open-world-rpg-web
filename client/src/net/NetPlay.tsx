@@ -14,7 +14,8 @@ import { DEFAULT_GROUND } from '../scene/groundContext';
 import { useAppStore } from '../stores/appStore';
 import { useDebugStore } from '../stores/debugStore';
 import { localPlayer, netStats } from '../state/live';
-import { startSocial, stopSocial } from '../social';
+import { startSocial, stopSocial, useSocialStore } from '../social';
+import { requestVoiceToken, startVoice, stopVoice, voiceInputFlags } from '../voice';
 import { netRuntime, useNetStore } from './netStore';
 import { RemotePlayers } from './RemotePlayers';
 import { envAt } from '../sim/stepEnv';
@@ -51,6 +52,11 @@ function forwardingGround(): GroundQuery & { target: GroundQuery } {
     target: DEFAULT_GROUND as GroundQuery,
     heightAt: (x: number, z: number) => g.target.heightAt(x, z),
     normalAt: (x: number, z: number) => g.target.normalAt?.(x, z) ?? { x: 0, y: 1, z: 0 },
+    waterAt: (x: number, z: number) => (g.target.waterAt ? g.target.waterAt(x, z) : -Infinity),
+    // WP09: the step views the ground at the player's level (caves); forward
+    // it, or prediction would walk the surface while the zone walks the cave.
+    // A target without caves is its own level view: steps are unchanged.
+    atLevel: (y: number): GroundQuery => (g.target.atLevel ? g.target.atLevel(y) : g.target),
   };
   return g;
 }
@@ -108,8 +114,19 @@ export function NetPlay({ ready }: { ready: ReadySession }) {
       zoneId: () => ready.zoneId,
       position: () => ({ x: localPlayer.pos.x, z: localPlayer.pos.z }),
     });
-    return () => stopSocial();
-  }, [ready]);
+    // WP11 proximity voice rides on the social session (voice_token).
+    startVoice({
+      requestToken: () => requestVoiceToken(),
+      listenOnly: () => useSocialStore.getState().me?.isLocalProfile ?? ready.isLocalProfile,
+      partyIds: () => (useSocialStore.getState().party?.members ?? []).map((m) => m.characterId),
+      ground, // occlusion samples the same terrain the player walks on
+      rawMic: new URLSearchParams(location.search).has('voiceRawMic'),
+    });
+    return () => {
+      stopVoice();
+      stopSocial();
+    };
+  }, [ready, ground]);
 
   const reconnect = useCallback(async () => {
     setPhase({ kind: 'connecting' });
@@ -130,7 +147,8 @@ export function NetPlay({ ready }: { ready: ReadySession }) {
       spawn: { x: w.x / 100, y: w.y / 100, z: w.z / 100 },
       online: true,
       onStep: (r) => {
-        if (!r.fly) session.pushStep(r.seq, r.input, r.state, r.env);
+        // WP11: the speaking bit rides in the input flags (InputFlag.speaking).
+        if (!r.fly) session.pushStep(r.seq, { ...r.input, flags: r.input.flags | voiceInputFlags() }, r.state, r.env);
       },
       afterFrame: () => session.flushInput(),
       takeCorrection: () => session.prediction.takeCorrection(),

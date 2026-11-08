@@ -13,6 +13,7 @@ Shared Go packages for every service (module `lodestone/server/pkg`).
 | `migrate`, `cmd/migrate` | Applies `contracts/migrations` (`npm run migrate`) |
 | `ticket` | Ed25519 connect tickets (director signs, zone/social verify); dev key when env unset |
 | `zoneregistry` | Redis `zones:{worldId}` registry: zones announce, director picks |
+| `earshot` | (WP11) The zone -> social earshot message on Redis `voice:{worldId}` (CR 005) |
 | `movement` | Authoritative movement step (wizard-wars port); the contract WP02's TS prediction mirrors, with trajectory vectors (see its README) |
 | `gameloop` | Shared fixed-rate scheduler: one grid, coarse sleep + spin tail (`LODESTONE_SPIN_MS`), bounded catch-up, debt forgiveness, tick/jitter stats; QPC clock on Windows |
 | `transport` | `Conn` interface with reliable vs unreliable (latest-wins) sends; WebSocket server/dialer; WebTransport server/dialer (quic-go/webtransport-go: datagrams + one length-prefixed stream), `NewDevCert` (ECDSA, <14 days, hash for `serverCertificateHashes`), `CloseCode` |
@@ -21,6 +22,7 @@ Shared Go packages for every service (module `lodestone/server/pkg`).
 | `writebehind` | Bounded, coalescing, retrying write-behind queue with flush on shutdown |
 | `accountapi` | (WP04) Session tokens + shared Postgres queries for accounts, local profiles, worlds, characters; `dbtest` scratch-DB helper |
 | `localsave` | (WP04) Local-profile save blobs: Ed25519 sign/verify + Redis newest-counter check |
+| `caves` | WP09: cave buffer readers, mouth masks, cave-system id, cave collision (bit-exact port of the TS queries), `Ground` (movement.LevelGround + Collider) |
 | `structures` | (WP12) structure overlay on the ground query: towers (and later WP20 buildings) as height functions max-combined with the terrain, bit-identical to the TS twin in `client/src/world/structures`; Go reader of the atlas site table |
 | `worldhost` | (WP07) wazero host for `worldgen.wasm`: pooled instances, chunk cache by interest (`Terrain`, a `movement.Ground`), genVersion/atlas-hash pin, minting, land spawns; `worldhost/mintdb` writes minted `worlds` rows (see its README) |
 | `cmd/mintworld` | (WP07) Mint a world / the official row from a seed |

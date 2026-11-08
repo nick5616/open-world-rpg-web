@@ -32,6 +32,11 @@ for your package; document each kind's use of `entityId`, `targetId`, `value`,
 | 606 | `fast_travel_denied` | WP12. `targetId` = requested site, `value` = reason: 1 not a fast-travel point, 2 not unlocked, 3 cooldown (2 s). |
 | 607 | `party` | WP12. Your party changed: `value` = the snapshot `partyId` of your party as u32 bits (0 = none). Remote entities with the same `partyId` are your party (compass, map). |
 | 608 | `respawn_point` | WP12. The last waypoint you touched changed (spec 8: death respawns you there): `targetId` = site index, `data` = name. |
+| 701 | `vein_hit` | WP09. To the miner: `entityId` = miner, `value` = vein hit points left, `x/y/z` = vein (cm), `data` = u64 vein id LE + u16 max hit points |
+| 702 | `vein_break` | WP09. To each player who helped break it: `entityId` = player, `targetId` = their pickup's entity id, `value` = seconds until respawn, `data` = u64 vein id |
+| 703 | `drop_spawned` | WP09. To the owner: `entityId` = pickup entity, `targetId` = owner, `value` = quantity, `data` = item id (UTF-8, `ore:<name>` / `gem:<name>:<cut>` until WP14 defines items) |
+| 704 | `item_granted` | WP09 (grant hook for WP14). To the player: `entityId` = player, `targetId` = the pickup taken, `value` = quantity, `data` = item id |
+| 706 | `mine_refused` | WP09. To the miner: `value` = 1 too far, 2 already mined, 3 unknown vein, 4 swinging too fast; `data` = u64 vein id |
 
 Fast travel itself is the core `teleport` (2): the zone moves you and sends it
 to you and to everyone who currently has you in their snapshot.
@@ -49,3 +54,10 @@ to a thing" verb. `targetKind` is a registry like Event kinds; `action` and
 | 11 `pin` | WP12 | `x cm \| z cm << 32` (both u32, inside the world) | 1 = set personal pin, 2 = clear personal pin, 3 = set your party pin, 4 = clear your party pin | set: `slot (0-9) \| colour << 8`; clear: slot; party set: colour |
 | 20-29 | suggested: WP14 loot (chests, pickups) | | | |
 | 30-39 | suggested: WP20 towns (doors, NPCs, boards) | | | |
+| 40 `vein` | WP09 | vein stable id | 1 = pickaxe swing (25 damage, >= 250 ms apart, within 4.5 m of the eye) | tool tier (0 for now) |
+| 41 `pickup` | WP09 (WP14 may move pickups to 20-29) | pickup entity id | 1 = take (owner only, within reach) | 0 |
+
+WorldEdits for `vein_mined` (WP09) carry 16 bytes of `params` (f32 x, y, z,
+carve radius 1.5) and `expiresAt` = respawn time; a delta whose `expiresAt`
+is at or before the server time means the edit expired (the vein respawned
+and the carve is restored). See server/zone/README.md "Caves and mining".

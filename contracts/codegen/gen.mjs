@@ -9,7 +9,7 @@ import { parseProtocol, genTs, genGo, genGoVectorTest, buildVectors } from './li
 import { parseConstants, genConstantsTs, genConstantsGo, genConstantsRust } from './lib/constants.mjs';
 import { parseSocial, genSocialTs, genSocialGo } from './lib/social.mjs';
 import { parseWorldSpec, genWorldSpecTs, genWorldSpecGo, genWorldSpecRust } from './lib/worldspec.mjs';
-import { parseCombat, genCombatTs, genCombatJson } from './lib/combat.mjs'; // WP13 (CR 005)
+import { parseCombat, genCombatTs, genCombatJson } from './lib/combat.mjs'; // WP13 (CR 009)
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const rd = (...p) => fs.readFileSync(path.join(root, ...p), 'utf8');

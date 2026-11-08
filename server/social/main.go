@@ -66,8 +66,22 @@ func run(s *svc.Server) error {
 		VoiceURL:       env.Str("LODESTONE_LIVEKIT_URL", env.DefaultLiveKitURL),
 	}
 	hub := social.NewHub(cfg, rdb, &social.Store{Pool: pool}, s.Log, s.Metrics)
+	vs, err := newVoice(cfg.VoiceURL, rdb, hub, s) // WP11 (voice.go)
+	if err != nil {
+		return err
+	}
+	if vs != nil {
+		hub.SetVoice(vs)
+		vs.Start()
+		s.Mux.Handle("GET /debug/voice", vs.DebugHandler())
+	}
 	hub.Start()
 	s.Log.Info("social hub started", "node", hub.Node())
 	s.Mux.Handle("GET /ws", hub.Handler())
-	return s.Run(svc.CORS(origin, s.Mux), func(ctx context.Context) { hub.Stop(ctx) })
+	return s.Run(svc.CORS(origin, s.Mux), func(ctx context.Context) {
+		hub.Stop(ctx)
+		if vs != nil {
+			vs.Stop()
+		}
+	})
 }

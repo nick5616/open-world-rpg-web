@@ -168,7 +168,7 @@ func NewStateMax(pos Vec3, staminaMaxPoints float64) State {
 
 // Grounded reports whether s stands on g (same test the walk step uses).
 func Grounded(s State, g Ground) bool {
-	return s.Pos.Y <= g.HeightAt(s.Pos.X, s.Pos.Z)+groundEps
+	return s.Pos.Y <= AtLevel(g, s.Pos.Y).HeightAt(s.Pos.X, s.Pos.Z)+groundEps // WP09: caves.go
 }
 
 // WaterAt is g's water surface at (x, z), or -Inf when g has no water.
@@ -219,6 +219,7 @@ func StepEnv(s State, flags uint16, yaw float64, g Ground, env Env) State {
 // stepFull is StepEnv with the frame's castSlot (the dash variant when the
 // dodge flag is set, WP13 dash.go).
 func stepFull(s State, flags uint16, castSlot uint8, yaw float64, g Ground, env Env) State {
+	g = AtLevel(g, s.Pos.Y) // WP09: caves see the ground at the player's level (caves.go)
 	wx, wz := wishDir(flags, yaw)
 	s0 := s
 	s, dashing := beginDash(s, flags, castSlot, yaw, wx, wz)
@@ -234,6 +235,7 @@ func stepFull(s State, flags uint16, castSlot uint8, yaw float64, g Ground, env 
 		out = stepWalk(s, flags, wx, wz, g, dashing)
 	}
 	out.Dash, out.IFrames = s.Dash, s.IFrames
+	out = collideStep(g, out) // WP09: cave walls and ceilings (caves.go)
 	return finish(s0, out)
 }
 

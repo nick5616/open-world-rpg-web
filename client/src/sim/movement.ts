@@ -78,6 +78,7 @@ import {
 } from '@lodestone/contracts';
 import type { GroundQuery } from './ground';
 import { beginDash } from './dash';
+import { atLevel, collideStep } from './caves';
 
 export interface Vec3 {
   x: number;
@@ -284,7 +285,7 @@ export function wishDirFromFlags(flags: number, yaw: number): Vec2xz {
 
 /** True when `pos` stands on the ground (see GROUND_EPS). */
 export function isGrounded(pos: Vec3, ground: GroundQuery): boolean {
-  return pos.y <= ground.heightAt(pos.x, pos.z) + GROUND_EPS;
+  return pos.y <= atLevel(ground, pos.y).heightAt(pos.x, pos.z) + GROUND_EPS; // WP09: caves.ts
 }
 
 /** Water surface at (x, z), or -Infinity where the ground has no water data (flat test worlds). */
@@ -402,7 +403,8 @@ function finish(prev: MoveState, s: MoveState): MoveState {
  * position like WP02's step did. Order inside each mode is the contract with
  * the Go port (README.md).
  */
-export function stepMovement(state: MoveState, input: MoveInput, ground: GroundQuery, dt: number = STEP_DT, env: Readonly<StepEnv> = NO_ENV): MoveState {
+export function stepMovement(state: MoveState, input: MoveInput, groundIn: GroundQuery, dt: number = STEP_DT, env: Readonly<StepEnv> = NO_ENV): MoveState {
+  const ground = atLevel(groundIn, state.pos.y); // WP09: caves see the ground at the player's level (caves.ts)
   const yaw = u16ToYaw(input.yaw);
   const wish = wishDirFromFlags(input.flags, yaw);
   // WP13: dodge / dash bookkeeping first (Go stepFull -> beginDash).
@@ -422,6 +424,7 @@ export function stepMovement(state: MoveState, input: MoveInput, ground: GroundQ
     default:
       out = stepWalk(st, input.flags, wish, ground, dt, dashed.dashing);
   }
+  out = collideStep(ground, out); // WP09: cave walls and ceilings (caves.ts)
   out.dash = st.dash ?? 0;
   out.iframes = st.iframes ?? 0;
   return finish(state, out);

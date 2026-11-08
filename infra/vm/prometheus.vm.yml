@@ -1,0 +1,14 @@
+# Prometheus on the game VM (optional `obs` compose profile). Scrapes the
+# services on the compose network; LODESTONE_METRICS_TOKEN guards /metrics,
+# and startup.sh copies it to /opt/lodestone/metrics-token for this file.
+global:
+  scrape_interval: 15s
+scrape_configs:
+  - job_name: zone
+    authorization: { credentials_file: /etc/prometheus/metrics-token }
+    static_configs: [{ targets: ["zone:8092"] }]
+  - job_name: social
+    authorization: { credentials_file: /etc/prometheus/metrics-token }
+    static_configs: [{ targets: ["social:8093"] }]
+  - job_name: caddy
+    static_configs: [{ targets: ["caddy:9180"] }]

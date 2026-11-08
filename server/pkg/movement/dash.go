@@ -1,6 +1,6 @@
 package movement
 
-// WP13 (CR 005): the dodge and the mobility-spell dashes, inside the shared
+// WP13 (CR 009): the dodge and the mobility-spell dashes, inside the shared
 // step so client prediction and the zone agree on where a dodging player
 // ends up (a dodge that only existed on one side would be a correction on
 // every press). The TS twin is client/src/sim/dash.ts; change both together.

@@ -53,6 +53,7 @@ type session struct {
 	frames      []proto.InputFrame // received, not yet applied (sorted at apply)
 	gapSince    uint32             // tick a missing frame started holding the buffer, 0 = none
 	consumed    uint32             // newest frame seq applied or refused (LastSeq counts applied only)
+	editChunks  map[[2]int32]bool  // WP09: chunks whose WorldEdits this client has (mining.go)
 
 	// Reader-owned.
 	buckets    [256]*ratelimit.Bucket
@@ -120,16 +121,25 @@ func priorityWeight(d float64, party bool) float64 {
 }
 
 func parseSpawn(v string) (movement.Vec3, bool) {
+	// x,z (on the surface) or, since WP09, x,y,z (on the floor under y: dev
+	// spawns inside caves). A missing y is NaN.
 	parts := strings.Split(v, ",")
-	if len(parts) != 2 {
+	if len(parts) != 2 && len(parts) != 3 {
 		return movement.Vec3{}, false
 	}
 	x, err1 := strconv.ParseFloat(parts[0], 64)
-	z, err2 := strconv.ParseFloat(parts[1], 64)
-	if err1 != nil || err2 != nil || math.IsNaN(x) || math.IsNaN(z) {
+	z, err2 := strconv.ParseFloat(parts[len(parts)-1], 64)
+	y, err3 := math.NaN(), error(nil)
+	if len(parts) == 3 {
+		y, err3 = strconv.ParseFloat(parts[1], 64)
+		if err3 == nil && (math.IsNaN(y) || math.IsInf(y, 0)) {
+			return movement.Vec3{}, false
+		}
+	}
+	if err1 != nil || err2 != nil || err3 != nil || math.IsNaN(x) || math.IsNaN(z) {
 		return movement.Vec3{}, false
 	}
-	return movement.Vec3{X: x, Z: z}, true
+	return movement.Vec3{X: x, Y: y, Z: z}, true
 }
 
 // kick sends Kick (reliable) and closes with 4000+code so a client that
@@ -310,6 +320,7 @@ func (s *Server) drain(sess *session, now time.Time) {
 	sess.mu.Unlock()
 	for _, m := range msgs {
 		if it, ok := m.(*proto.Interact); ok {
+			s.interact(sess.ent, it, now)   // WP09 mining (mining.go)
 			s.handleInteract(sess, it, now) // WP12: fast travel, pins (explore.go)
 			continue
 		}
@@ -452,8 +463,17 @@ func (s *Server) sendSnapshot(sess *session, tick uint32, serverTime float64) (n
 
 	last := sess.enc.Last()
 	s.cands = s.cands[:0]
+	cw := s.caves()
 	for _, i := range s.idxs {
 		o := s.ents[i]
+		// Personal pickups: only their owner sees them (WP09).
+		if o.Kind == proto.EntityKindPickup && o.Owner != e.ID {
+			continue
+		}
+		// Underground interest clipping (spec 9, WP09 caves.go).
+		if cw != nil && !(e.PartyID != 0 && o.PartyID == e.PartyID) && !s.caveVisible(cw, e, o) {
+			continue
+		}
 		d := math.Hypot(o.Move.Pos.X-px, o.Move.Pos.Z-pz)
 		known := last != nil && last.Find(o.ID) != nil
 		sameParty := e.PartyID != 0 && o.PartyID == e.PartyID

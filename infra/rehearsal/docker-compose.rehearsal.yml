@@ -1,0 +1,63 @@
+# Local rehearsal of the production topology (WP18): layered on top of
+# infra/vm/docker-compose.vm.yml by `node infra/deploy.mjs --target local`.
+# The VM file runs unchanged (zone, social, LiveKit, Postgres, Redis, Caddy);
+# this file adds what production runs elsewhere:
+#
+#   director, account, creator   Cloud Run in production (same images, same
+#                                env shape: LODESTONE_LAZY_DEPS, production
+#                                keys, the director's wake gate with the fake
+#                                provider standing in for GCE)
+#   client, creator-web          Netlify in production (static builds served
+#                                by Caddy with Netlify's headers/redirects)
+#
+# Own compose project (lodestone-rehearsal), own ports (28xxx), own volumes:
+# it never touches the dev infra (project "lodestone") and tears down only
+# itself.
+services:
+  director:
+    image: ${LODESTONE_REGISTRY}/director:${LODESTONE_TAG}
+    env_file: [.env]
+    environment:
+      LODESTONE_PG_URL: postgres://lodestone:${POSTGRES_PASSWORD}@postgres:5432/lodestone?sslmode=disable
+      LODESTONE_REDIS_ADDR: redis:6379
+      LODESTONE_LAZY_DEPS: "1"
+      LODESTONE_SOCIAL_URL: ${LODESTONE_PUBLIC_WS_SCHEME}://${LODESTONE_GAME_HOST}${LODESTONE_PUBLIC_HTTP_PORT_SUFFIX}/social/ws
+      LODESTONE_WAKE_PROVIDER: ${LODESTONE_REHEARSAL_WAKE_PROVIDER:-fake}
+      LODESTONE_WAKE_FAKE_BOOT: ${LODESTONE_REHEARSAL_WAKE_BOOT:-8s}
+      LODESTONE_WAKE_READY_URLS: http://zone:8092/healthz,http://social:8093/healthz
+    ports: ["127.0.0.1:${LODESTONE_DIRECTOR_PUBLISH:-28090}:8090"]
+
+  account:
+    image: ${LODESTONE_REGISTRY}/account:${LODESTONE_TAG}
+    env_file: [.env]
+    environment:
+      LODESTONE_PG_URL: postgres://lodestone:${POSTGRES_PASSWORD}@postgres:5432/lodestone?sslmode=disable
+      LODESTONE_REDIS_ADDR: redis:6379
+      LODESTONE_LAZY_DEPS: "1"
+    ports: ["127.0.0.1:${LODESTONE_ACCOUNT_PUBLISH:-28091}:8091"]
+    depends_on:
+      mint: { condition: service_completed_successfully }
+
+  creator:
+    image: ${LODESTONE_REGISTRY}/creator:${LODESTONE_TAG}
+    env_file: [.env]
+    environment:
+      LODESTONE_PG_URL: postgres://lodestone:${POSTGRES_PASSWORD}@postgres:5432/lodestone?sslmode=disable
+      LODESTONE_REDIS_ADDR: redis:6379
+      LODESTONE_LAZY_DEPS: "1"
+    ports: ["127.0.0.1:${LODESTONE_CREATOR_PUBLISH:-28094}:8094"]
+    depends_on:
+      mint: { condition: service_completed_successfully }
+
+  client:
+    image: caddy:2.10-alpine
+    command: ["caddy", "run", "--config", "/etc/caddy/Caddyfile.static", "--adapter", "caddyfile"]
+    environment:
+      CREATOR_UPSTREAM: creator:8094
+    volumes:
+      - ./Caddyfile.static:/etc/caddy/Caddyfile.static:ro
+      - ${LODESTONE_CLIENT_DIST}:/srv/client:ro
+      - ${LODESTONE_CREATOR_DIST}:/srv/creator:ro
+    ports:
+      - "127.0.0.1:${LODESTONE_CLIENT_PUBLISH:-28173}:8080"
+      - "127.0.0.1:${LODESTONE_CREATOR_WEB_PUBLISH:-28177}:8081"

@@ -35,14 +35,19 @@ services:
   livekit:
     image: livekit/livekit-server:v1.8
     # --dev: built-in devkey/secret ("devkey" / "secret"), fine for local only.
-    # Media ports are a small UDP range so Docker Desktop maps them quickly. Ports
-    # stay below 10000: Windows Hyper-V reserves random blocks in 49152+ (57177-
-    # 57924 was reserved on the dev machine when 57880 was tried).
-    command: ["--dev", "--bind", "0.0.0.0", "--node-ip", "127.0.0.1", "--config-body", "rtc: {port_range_start: 7900, port_range_end: 7950, tcp_port: 7881, use_external_ip: false}"]
+    # Ports stay below 10000: Windows Hyper-V reserves random blocks in 49152+
+    # (57177-57924 was reserved on the dev machine when 57880 was tried).
+    # Media (WP11): ONE muxed UDP port (udp_port) instead of a port range. With a
+    # range LiveKit takes one port per peer connection and every participant has
+    # two, so the old 7900-7950 range capped a room at ~25 participants (the
+    # 50-bot voice soak failed at bot 26, docs/evidence/wp11-voice-soak-*.txt).
+    # The mux also maps instantly on Docker Desktop. TCP 7881 stays as the
+    # fallback for networks that block UDP.
+    command: ["--dev", "--bind", "0.0.0.0", "--node-ip", "127.0.0.1", "--config-body", "rtc: {udp_port: 7882, tcp_port: 7881, use_external_ip: false}"]
     ports:
       - "${LODESTONE_LIVEKIT_PORT:-7880}:7880"
       - "7881:7881"
-      - "7900-7950:7900-7950/udp"
+      - "7882:7882/udp"
 
 volumes:
   pgdata:

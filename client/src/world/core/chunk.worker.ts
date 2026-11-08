@@ -5,7 +5,8 @@
 // IndexedDB mesh cache, all off the main thread. Results go back as
 // transferred ArrayBuffers.
 
-import { fnv1a64, hex64, loadWorldgen, parseChunk, type AtlasHandle, type Worldgen } from '@lodestone/worldgen';
+import { caveCellBytes, caveGraphBytes, fnv1a64, hex64, loadWorldgen, parseCaveGraph, parseChunk, type AtlasHandle, type CaveOpening, type Worldgen } from '@lodestone/worldgen';
+import { holeIndex } from '../caves/holes';
 import { buildTileMesh, tileBytes, tileTransferables, type TileMeshData } from '../terrain/tileMesh';
 import { generateGrass } from '../scatter/grassGen';
 import { evictMeshes, meshGet, meshKey, meshPut, worldDb } from './cacheDb';
@@ -45,6 +46,18 @@ async function init(m: InitMsg) {
   post({ type: 'ready', genVersion: wg.genVersion });
 }
 
+/** Cave openings for mouth holes, built on first use (the first cave call builds the world's cave graph, ~40 ms, once per worker). */
+let openings: CaveOpening[] | null = null;
+function caveOpenings(): CaveOpening[] {
+  if (openings) return openings;
+  try {
+    openings = parseCaveGraph(caveGraphBytes(wg!, atlas!)).openings;
+  } catch {
+    openings = []; // a pre-WP09 wasm: no caves, no holes
+  }
+  return openings;
+}
+
 async function tileJob(id: number, cx: number, cz: number, lod: number) {
   const key = meshKey(atlasHash, wg!.genVersion, lod, cx, cz);
   if (db) {
@@ -67,6 +80,9 @@ async function tileJob(id: number, cx: number, cz: number, lod: number) {
   // evaluated at integer meters where collision_height returns the f32
   // lattice value itself.
   const tile = buildTileMesh(chunk, (x, z) => wg!.collisionHeight(atlas!, x, z), hash, seaY);
+  // WP09: drop the triangles a cave mouth replaces (lod 0-1 tiles near a mouth).
+  const holes = holeIndex(caveOpenings(), cx, cz, lod);
+  if (holes) tile.holes = holes;
   const t2 = performance.now();
   if (db) {
     // Store before transferring (transfer detaches the buffers). The clone is
@@ -126,6 +142,12 @@ async function handle(m: JobMsg) {
       const t0 = performance.now();
       const bytes = wg!.buildChunkBytes(atlas!, m.cx, m.cz, m.lod);
       post({ type: 'hash', id: m.id, hash: hex64(fnv1a64(bytes)), ms: performance.now() - t0 });
+      return;
+    }
+    case 'cave': {
+      const t0 = performance.now();
+      const bytes = caveCellBytes(wg!, atlas!, m.cx, m.cy, m.cz, m.edits);
+      post({ type: 'cave', id: m.id, cx: m.cx, cy: m.cy, cz: m.cz, bytes, genMs: performance.now() - t0 }, [bytes.buffer]);
       return;
     }
     case 'evict': {

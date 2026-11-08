@@ -35,9 +35,9 @@ const (
 	EvStrikeHit    = 222 // an enemy strike landed on a player (observers: the hit flash)
 )
 
-// Interact registry (contracts/events.md "Interact": targetKind 40 combat).
+// Interact registry (contracts/events.md "Interact": targetKind 50 combat; 40/41 are WP09 mining).
 const (
-	InteractCombat = 40
+	InteractCombat = 50
 
 	ActSwapLoadout = 1 // arg = loadout (0/1)
 	ActEquipWeapon = 2 // arg = loadout | weapon id << 8

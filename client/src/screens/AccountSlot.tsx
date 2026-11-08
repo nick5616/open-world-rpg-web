@@ -7,6 +7,7 @@ import { AccountScreen } from '../account';
 import type { ReadySession } from '../account/types';
 import { useNetStore } from '../net/netStore';
 import { useAppStore } from '../stores/appStore';
+import { WakeGate } from '../wake/WakeGate';
 
 export function AccountSlot() {
   const setScreen = useAppStore((s) => s.setScreen);
@@ -17,7 +18,10 @@ export function AccountSlot() {
   };
   return (
     <div style={{ height: '100%', overflow: 'auto' }}>
-      <AccountScreen onReady={onReady} />
+      {/* WP18: the account service's database sleeps with the game VM. */}
+      <WakeGate>
+        <AccountScreen onReady={onReady} />
+      </WakeGate>
       <div style={{ display: 'flex', gap: 10, justifyContent: 'center', padding: '12px 0 24px' }}>
         <button onClick={() => setScreen('title')}>Back</button>
         <button

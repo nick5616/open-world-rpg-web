@@ -26,7 +26,7 @@ export function packFlags(s: Pick<MoveState, 'flags' | 'lunge'>): number {
   return (s.flags & 0x0f) | ((s.lunge & 0x0f) << 4);
 }
 
-/** WP13 (protocol v3): bits 24-27 dash steps, 28-31 dodge i-frame steps. */
+/** WP13 (protocol v4): bits 24-27 dash steps, 28-31 dodge i-frame steps. */
 export function packMoveExt(s: Pick<MoveState, 'stamina' | 'timer' | 'dash' | 'iframes'>): number {
   return ((s.stamina & 0xffff) | ((s.timer & 0xff) << 16) | (((s.dash ?? 0) & 0xf) << 24) | (((s.iframes ?? 0) & 0xf) << 28)) >>> 0;
 }

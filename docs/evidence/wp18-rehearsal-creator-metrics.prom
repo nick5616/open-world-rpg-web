@@ -1,0 +1,34 @@
+# HELP creator_mints_total Worlds minted, by source (seed, sliders, vibe)
+# HELP creator_rejected_total Specs rejected by the normalize gate
+# HELP creator_vibe_total Vibe requests, by outcome (model, cached, failed, disabled)
+# HELP go_gc_cycles_total Completed GC cycles.
+# HELP go_goroutines Live goroutines.
+# HELP go_heap_bytes Bytes in live and unswept heap objects.
+# HELP http_request_duration_seconds Plain HTTP request latency histogram.
+# HELP http_requests_total Plain HTTP requests by status class (WebSocket upgrades excluded).
+# HELP lodestone_build_info Always 1; labels name the build (LODESTONE_VERSION) and Go version.
+# HELP process_uptime_seconds Seconds since the service started.
+go_gc_cycles_total 6
+go_goroutines 31
+go_heap_bytes 22923808
+http_request_duration_seconds_bucket{le="+Inf"} 4
+http_request_duration_seconds_bucket{le="0.001"} 4
+http_request_duration_seconds_bucket{le="0.005"} 4
+http_request_duration_seconds_bucket{le="0.01"} 4
+http_request_duration_seconds_bucket{le="0.025"} 4
+http_request_duration_seconds_bucket{le="0.05"} 4
+http_request_duration_seconds_bucket{le="0.1"} 4
+http_request_duration_seconds_bucket{le="0.25"} 4
+http_request_duration_seconds_bucket{le="0.5"} 4
+http_request_duration_seconds_bucket{le="1"} 4
+http_request_duration_seconds_bucket{le="2.5"} 4
+http_request_duration_seconds_bucket{le="5"} 4
+http_request_duration_seconds_count 4
+http_request_duration_seconds_sum 0.000179
+http_requests_total{code="1xx"} 0
+http_requests_total{code="2xx"} 3
+http_requests_total{code="3xx"} 0
+http_requests_total{code="4xx"} 1
+http_requests_total{code="5xx"} 0
+lodestone_build_info{version="rehearsal-09422c11da40",go="go1.27.3"} 1
+process_uptime_seconds 26

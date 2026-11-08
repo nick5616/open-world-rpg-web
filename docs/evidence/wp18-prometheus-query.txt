@@ -1,0 +1,65 @@
+player Obsafvco connected
+player Obsbvwoz connected
+
+== Prometheus targets (http://127.0.0.1:9390/api/v1/targets)
+account   env=dev        http://host.docker.internal:8091/metrics      down
+account   env=rehearsal  http://host.docker.internal:28091/metrics     up
+creator   env=dev        http://host.docker.internal:8094/metrics      down
+creator   env=rehearsal  http://host.docker.internal:28094/metrics     up
+director  env=dev        http://host.docker.internal:8090/metrics      down
+director  env=rehearsal  http://host.docker.internal:28090/metrics     up
+social    env=rehearsal  http://host.docker.internal:28093/metrics     up
+social    env=dev        http://host.docker.internal:8093/metrics      down
+zone      env=dev        http://host.docker.internal:8092/metrics      down
+zone      env=rehearsal  http://host.docker.internal:28092/metrics     up
+
+== Prometheus queries (env="rehearsal")
+> sum(zone_players{env="rehearsal"})
+    {} = 2
+> zone_tick_ms{env="rehearsal"}
+    zone_tick_ms{"instance":"host.docker.internal:28092","job":"zone","q":"max"} = 0.503
+    zone_tick_ms{"instance":"host.docker.internal:28092","job":"zone","q":"p50"} = 0.064
+    zone_tick_ms{"instance":"host.docker.internal:28092","job":"zone","q":"p99"} = 0.161
+> zone_client_down_kbps{env="rehearsal"}
+    zone_client_down_kbps{"instance":"host.docker.internal:28092","job":"zone","q":"avg"} = 17.8
+    zone_client_down_kbps{"instance":"host.docker.internal:28092","job":"zone","q":"max"} = 18.21
+    zone_client_down_kbps{"instance":"host.docker.internal:28092","job":"zone","q":"p50"} = 18.21
+    zone_client_down_kbps{"instance":"host.docker.internal:28092","job":"zone","q":"p99"} = 18.21
+> zone_client_up_kbps{env="rehearsal"}
+    zone_client_up_kbps{"instance":"host.docker.internal:28092","job":"zone","q":"avg"} = 0.45
+    zone_client_up_kbps{"instance":"host.docker.internal:28092","job":"zone","q":"max"} = 0.56
+    zone_client_up_kbps{"instance":"host.docker.internal:28092","job":"zone","q":"p50"} = 0.56
+    zone_client_up_kbps{"instance":"host.docker.internal:28092","job":"zone","q":"p99"} = 0.56
+> zone_aoi_entities_avg{env="rehearsal"}
+    zone_aoi_entities_avg{"instance":"host.docker.internal:28092","job":"zone","ring":"far"} = 0
+    zone_aoi_entities_avg{"instance":"host.docker.internal:28092","job":"zone","ring":"mid"} = 0
+    zone_aoi_entities_avg{"instance":"host.docker.internal:28092","job":"zone","ring":"near"} = 1
+    zone_aoi_entities_avg{"instance":"host.docker.internal:28092","job":"zone","ring":"party"} = 0
+> zone_writebehind_depth{env="rehearsal"}
+    zone_writebehind_depth{"instance":"host.docker.internal:28092","job":"zone"} = 0
+> sum by (env) (rate(zone_bytes_out_total{env="rehearsal"}[1m])) * 8
+    {} = 30681.64957451451
+> director_wake_starts_total{env="rehearsal"}
+    director_wake_starts_total{"instance":"host.docker.internal:28090","job":"director"} = 1
+> director_tickets_issued_total{env="rehearsal"}
+    director_tickets_issued_total{"instance":"host.docker.internal:28090","job":"director","kind":"local"} = 3
+> social_sessions{env="rehearsal"}
+    social_sessions{"instance":"host.docker.internal:28093","job":"social"} = 2
+> lodestone_build_info{env="rehearsal"}
+    lodestone_build_info{"go":"go1.27.3","instance":"host.docker.internal:28093","job":"social","version":"rehearsal-e5eb455a5316"} = 1
+    lodestone_build_info{"go":"go1.27.3","instance":"host.docker.internal:28092","job":"zone","version":"rehearsal-e5eb455a5316"} = 1
+    lodestone_build_info{"go":"go1.27.3","instance":"host.docker.internal:28091","job":"account","version":"rehearsal-e5eb455a5316"} = 1
+    lodestone_build_info{"go":"go1.27.3","instance":"host.docker.internal:28094","job":"creator","version":"rehearsal-e5eb455a5316"} = 1
+    lodestone_build_info{"go":"go1.27.3","instance":"host.docker.internal:28090","job":"director","version":"rehearsal-e5eb455a5316"} = 1
+> sum by (job) (http_requests_total{env="rehearsal"})
+    {"job":"social"} = 43
+    {"job":"zone"} = 44
+    {"job":"account"} = 64
+    {"job":"creator"} = 39
+    {"job":"director"} = 49
+> go_goroutines{env="rehearsal"}
+    go_goroutines{"instance":"host.docker.internal:28093","job":"social"} = 41
+    go_goroutines{"instance":"host.docker.internal:28092","job":"zone"} = 50
+    go_goroutines{"instance":"host.docker.internal:28091","job":"account"} = 34
+    go_goroutines{"instance":"host.docker.internal:28094","job":"creator"} = 30
+    go_goroutines{"instance":"host.docker.internal:28090","job":"director"} = 17

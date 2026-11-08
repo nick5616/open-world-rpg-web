@@ -1,0 +1,53 @@
+# Local Prometheus + Grafana (WP18): `npm run infra:obs` / `npm run infra:obs:down`.
+# Its own compose project ("lodestone-obs") on free ports, so it never
+# collides with the dev infra (55432, 56379, 7880-7950) or the services
+# (8090-8094), and stays below the Windows Hyper-V reserved ranges:
+#
+#   Prometheus  http://localhost:9390
+#   Grafana     http://localhost:3390   (anonymous viewer; admin / lodestone)
+#
+# Prometheus scrapes the dev services on the host (npm run dev: 8090-8094)
+# and the local rehearsal (28090-28094) through host.docker.internal; targets
+# that are not running just show as down.
+name: lodestone-obs
+
+services:
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=7d
+      - --web.listen-address=:9390
+      - --web.enable-lifecycle
+    ports:
+      - "127.0.0.1:${LODESTONE_PROMETHEUS_PORT:-9390}:9390"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"   # Linux; Docker Desktop has it built in
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./metrics-token:/etc/prometheus/metrics-token:ro
+      - promdata:/prometheus
+
+  grafana:
+    image: grafana/grafana:12.1.0
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: lodestone
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_USERS_DEFAULT_THEME: dark
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/lodestone-overview.json
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_NEWS_NEWS_FEED_ENABLED: "false"
+    ports:
+      - "127.0.0.1:${LODESTONE_GRAFANA_PORT:-3390}:3000"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafanadata:/var/lib/grafana
+    depends_on: [prometheus]
+
+volumes:
+  promdata:
+  grafanadata:

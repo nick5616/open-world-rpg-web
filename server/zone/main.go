@@ -19,6 +19,7 @@
 //	LODESTONE_ZONE_WT_CERT/_KEY  PEM files; unset: self-signed 10-day ECDSA cert, hash in #certHash=
 //	LODESTONE_ZONE_DOWN_BUDGET_KBPS  per-client snapshot byte budget (decision 0005), default 150, 0 = off
 //	LODESTONE_ZONE_NO_DB / _NO_REDIS  1 to run without Postgres / Redis
+//	LODESTONE_ZONE_EARSHOT       0 to stop publishing proximity-voice earshot sets (WP11, voice.go)
 //	LODESTONE_TICKET_PUBLIC_KEY  base64 Ed25519 key (dev key + warning when unset)
 //	LODESTONE_WORLDGEN_WASM      worldgen/pkg/worldgen.wasm (WP07 terrain; see terrain.go for the rest)
 //	LODESTONE_ZONE_REQUIRE_TERRAIN 1 to refuse flat ground when the wasm is missing (implied by LODESTONE_ENV=production)
@@ -132,7 +133,14 @@ func main() {
 		Metrics:        s.Metrics,
 		Log:            log,
 	}
+	if r := startEarshot(ctx, cfg.WorldID, cfg.ZoneID, s.Metrics, log); r != nil {
+		cfg.Earshot = r // WP11 proximity voice (voice.go)
+	}
+	ground, caveTerrain := withCaves(ground, terrain, log) // WP09 (caves.go)
+	cfg.Ground = ground
+	miningConfig(&cfg, pool)
 	zone := game.New(cfg)
+	restoreEdits(ctx, zone, log)
 
 	origins := strings.Split(env.Str("LODESTONE_CORS_ORIGIN", "*"), ",")
 	ws := &transport.WebSocket{OriginPatterns: origins}
@@ -164,6 +172,10 @@ func main() {
 	if terrain != nil {
 		defer terrain.Close()
 		serveTerrain(ctx, s, terrain)
+	}
+	if caveTerrain != nil {
+		defer caveTerrain.Caves.Close()
+		serveCaves(ctx, s, caveTerrain, zone)
 	}
 	go zone.RunMetrics(ctx, queue.Depth, func(m *svc.Metrics) {
 		st := &queue.Stats

@@ -75,6 +75,8 @@ type client struct {
 	frame *snapshot.Frame
 	snap  *proto.Snapshot
 	welc  *proto.Welcome
+	edits []*proto.WorldEdits // WP09 mining tests (absorb)
+	evs   []*proto.Event
 }
 
 func (h *harness) dial(query string) *client {

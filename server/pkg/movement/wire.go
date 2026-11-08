@@ -16,7 +16,7 @@ import (
 func PackFlags(s State) uint8 { return s.Flags&0x0f | uint8(s.Lunge&0x0f)<<4 }
 
 // PackMoveExt is SelfState.moveExt for s.
-// WP13 (CR 005, protocol v3): bits 24-27 dash steps, 28-31 i-frame steps.
+// WP13 (CR 009, protocol v4): bits 24-27 dash steps, 28-31 i-frame steps.
 func PackMoveExt(s State) uint32 {
 	return uint32(s.Stamina&0xffff) | uint32(s.Timer&0xff)<<16 | uint32(s.Dash&0xf)<<24 | uint32(s.IFrames&0xf)<<28
 }

@@ -73,6 +73,8 @@ export interface TileMeshData {
   water: WaterMeshData | null;
   /** FNV-1a 64 of the source chunk buffer (hex): the debug tool compares regenerations against it. */
   chunkHash: string;
+  /** WP09: own index (tileIndex minus the triangles over a cave mouth), only on tiles touching a mouth mask. */
+  holes?: Uint16Array;
 }
 
 /** Heights outside the tile (for edge normals), in world meters. Must be the same height function. */
@@ -325,6 +327,7 @@ export function tileGrid(): Uint8Array {
 export function tileTransferables(t: TileMeshData): ArrayBuffer[] {
   const out = [t.position, t.morph, t.normal, t.normalC, t.splatA, t.splatB, t.biome].map((a) => a.buffer as ArrayBuffer);
   if (t.water) out.push(t.water.vertices.buffer as ArrayBuffer, t.water.index.buffer as ArrayBuffer);
+  if (t.holes) out.push(t.holes.buffer as ArrayBuffer);
   return out;
 }
 

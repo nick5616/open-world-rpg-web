@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 	"github.com/redis/go-redis/v9"
 
 	"lodestone/server/director/internal/director"
+	"lodestone/server/director/internal/wake"
 	"lodestone/server/pkg/accountapi"
 	"lodestone/server/pkg/env"
 	"lodestone/server/pkg/localsave"
@@ -62,13 +64,16 @@ func run(s *svc.Server) error {
 		return err
 	}
 	defer pool.Close()
-	if err := pool.Ping(ctx); err != nil {
-		return fmt.Errorf("postgres: %w", err)
+	// WP18: CheckDep is fatal as before unless LODESTONE_LAZY_DEPS=1 (Cloud
+	// Run: Postgres and Redis sleep with the game VM, and the director must
+	// stay up to wake it).
+	if err := s.CheckDep(ctx, "postgres", pool.Ping); err != nil {
+		return err
 	}
 	rdb := redis.NewClient(&redis.Options{Addr: env.RedisAddr()})
 	defer rdb.Close()
-	if err := rdb.Ping(ctx).Err(); err != nil {
-		return fmt.Errorf("redis: %w", err)
+	if err := s.CheckDep(ctx, "redis", func(c context.Context) error { return rdb.Ping(c).Err() }); err != nil {
+		return err
 	}
 	social := env.Str("LODESTONE_SOCIAL_URL", fmt.Sprintf("ws://localhost:%d/ws", env.Int("LODESTONE_SOCIAL_PORT", env.DefaultSocialPort)))
 	if social == "" {
@@ -82,6 +87,32 @@ func run(s *svc.Server) error {
 		Log:            s.Log, Metrics: s.Metrics,
 	}
 	d.Register(s.Mux)
+	handler, stopWake, err := withWake(s, rdb)
+	if err != nil {
+		return err
+	}
+	defer stopWake()
 	s.Log.Info("director ready", "social", social, "production", prod)
-	return s.Run(svc.CORS(env.Str("LODESTONE_CORS_ORIGIN", "*"), s.Mux), nil)
+	return s.Run(svc.CORS(env.Str("LODESTONE_CORS_ORIGIN", "*"), handler), nil)
+}
+
+// withWake mounts wake-on-demand (WP18, internal/wake): POST /v1/wake for the
+// client's "waking the world" screen and, with a provider configured, the
+// gate that starts the game VM on connect plus the idle stopper. Without
+// LODESTONE_WAKE_PROVIDER the world is always awake (local dev, tests).
+func withWake(s *svc.Server, rdb *redis.Client) (http.Handler, func(), error) {
+	w, err := wake.FromEnv(rdb, s.Log, s.Metrics)
+	if errors.Is(err, wake.ErrNotConfigured) {
+		wake.AlwaysAwake(s.Mux)
+		return s.Mux, func() {}, nil
+	}
+	if err != nil {
+		return nil, nil, err
+	}
+	w.Register(s.Mux, env.Str("LODESTONE_WAKE_CRON_TOKEN", ""))
+	ctx, cancel := context.WithCancel(context.Background())
+	go w.Loop(ctx, env.Duration("LODESTONE_WAKE_CHECK_EVERY", time.Minute))
+	s.Log.Info("wake on demand", "provider", w.Provider.Name(), "idleAfter", w.IdleAfter.String())
+	gated := map[string]bool{"/v1/connect": true, "/v1/social-ticket": true}
+	return w.Gate(gated, s.Mux), cancel, nil
 }

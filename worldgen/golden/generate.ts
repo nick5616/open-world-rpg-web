@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 import type { WorldSpec } from '@lodestone/contracts';
 import { BIOMES, fnv1a64, hex64, loadWorldgen, type AtlasData } from '../js/src/index';
 import { f64Bits, type GoldenChunk, type GoldenFile, type GoldenWorld } from '../js/src/golden';
+import { generateCaves } from '../js/src/caveGolden';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const wasmPath = path.join(here, '..', 'pkg', 'worldgen.wasm');
@@ -122,7 +123,11 @@ for (const { label, spec } of presets()) {
     atlas: { hash: hex64(atlas.hash), bytes: bytes.length, gzipBytes: zlib.gzipSync(bytes, { level: 9 }).length },
     chunks,
     collision,
+    // WP09: cave cells across depth bands, graph, masks, collision vectors.
+    caves: generateCaves(wg, atlas),
   });
+  const cv = worlds.at(-1)!.caves!;
+  console.log(`  caves: ${cv.graph.systems} systems, ${cv.cells.length} cells (${[...new Set(cv.cells.map((c) => c.tag))].join(" ")}), ${cv.floors.length} floors, ${cv.collide.length} collide, ${cv.masks.length} masks`);
   const biomes = BIOMES.map((b) => `${b}:${chunks.filter((c) => c.tag === `biome:${b}`).length}`).join(' ');
   console.log(`${label}: atlas ${bytes.length} B (gzip ${worlds.at(-1)!.atlas.gzipBytes} B), ${chunks.length} chunks [${biomes}]`);
   atlas.free();
@@ -132,7 +137,11 @@ const golden: GoldenFile = { hashAlgo: 'fnv1a64', genVersion: wg.genVersion, abi
 // One chunk / collision point per line keeps diffs readable.
 const json = JSON.stringify(golden, null, 1)
   .replace(/\{\n\s+"cx": (-?\d+),\n\s+"cz": (-?\d+),\n\s+"lod": (\d+),\n\s+"tag": ("[^"]*"),\n\s+"hash": ("[0-9a-f]+")\n\s+\}/g, '{"cx":$1,"cz":$2,"lod":$3,"tag":$4,"hash":$5}')
-  .replace(/\{\n\s+"x": ([-\d.e]+),\n\s+"z": ([-\d.e]+),\n\s+"h": ("[0-9a-f]+")\n\s+\}/g, '{"x":$1,"z":$2,"h":$3}');
+  .replace(/\{\n\s+"x": ([-\d.e]+),\n\s+"z": ([-\d.e]+),\n\s+"h": ("[0-9a-f]+")\n\s+\}/g, '{"x":$1,"z":$2,"h":$3}')
+  // WP09 cave rays: one per line.
+  .replace(/\{\n\s+"o": \[[^\]]*\],\n\s+"d": \[[^\]]*\],\n\s+"max": [\d.]+,\n\s+"t": "[0-9a-f]+"\n\s+\}/g, (m) => m.replace(/\s+/g, ''))
+  // WP09 cave entries: any object of plain values (cells, floors, masks...) on one line.
+  .replace(/\{\n\s+"(?:cx|x|veinId)": (?:"[^"\n]*"|-?[\d.e+-]+),\n(?:\s+"[A-Za-z]+": (?:"[^"\n]*"|-?[\d.e+-]+),?\n)+\s+\}/g, (m) => m.replace(/\n\s*/g, '').replace(/": /g, '":'));
 fs.writeFileSync(path.join(here, 'golden.json'), json + '\n');
 const total = worlds.reduce((n, w) => n + w.chunks.length, 0);
 console.log(`wrote golden.json: ${worlds.length} worlds, ${total} chunks, genVersion ${wg.genVersion}`);

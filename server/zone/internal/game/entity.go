@@ -3,6 +3,7 @@ package game
 import (
 	"errors"
 	"math"
+	"time"
 
 	"lodestone/server/pkg/constants"
 	"lodestone/server/pkg/movement"
@@ -21,6 +22,7 @@ type Entity struct {
 	Level       uint8
 	PartyID     uint32        // 0 = none; WP12 sets it from the social service's party (party.go)
 	x           *exploreState // WP12 exploration progress (explore.go), shared with the session
+	ListenOnly  bool          // WP11: local profile, its speaking bit is never shown
 
 	Move       movement.State
 	Yaw, Pitch float64 // radians, from the newest applied input
@@ -44,6 +46,16 @@ type Entity struct {
 	view      movement.State
 	viewRaw   movement.State // view before easing (carried forward next tick)
 	viewOff   movement.Vec3  // decaying horizontal easing offset
+
+	// Caves and mining (WP09).
+	caveSys   int       // cave system this tick (-1 surface), for interest clipping
+	lastSwing time.Time // last accepted pickaxe swing
+	// Pickups: personal drops only their owner sees and can take.
+	Owner     uint32
+	Item      string
+	Qty       int
+	RollSeed  uint64
+	DespawnAt time.Time
 }
 
 // stepsPerTick: 60 Hz input frames, 30 Hz ticks.
@@ -131,6 +143,7 @@ func (e *Entity) quantize(_ movement.Ground) {
 	// WP10: activity bits (climbing, gliding, swimming, airborne) come from
 	// the step's mode, so remote players can pose them.
 	act := movement.Activity(e.view)
+	act |= e.speakingActivity() // WP11 (earshot.go)
 	hp := uint8(0)
 	if e.HealthMax > 0 {
 		hp = uint8(math.Round(float64(e.Health) * 100 / float64(e.HealthMax)))

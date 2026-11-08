@@ -36,6 +36,8 @@ type metrics struct {
 	framesSkipped                atomic.Int64    // lost frames given up on (hole longer than maxSynthFrames)
 	framesSynthesized            atomic.Int64    // lost frames filled by repeating the last input
 	transports                   [3]atomic.Int64 // live sessions by proto.Transport
+	// Mining (WP09).
+	veinsMined, veinsRespawned, itemsGranted, editsSent atomic.Int64
 
 	// AOI accumulators (tick writes, publisher swaps out).
 	aoiSamples, aoiNear, aoiMid, aoiFar, aoiParty, aoiMax, snapBytes, snapCount atomic.Int64
@@ -51,6 +53,8 @@ func (m *metrics) init(reg *svc.Metrics) {
 	reg.Help("zone_players", "Connected players.")
 	reg.Help("zone_client_down_kbps", "Per-client downlink over the last 5 s, quantiles across clients (incl. WebSocket framing).")
 	reg.Help("zone_client_up_kbps", "Per-client uplink over the last 5 s, quantiles across clients.")
+	reg.Help("zone_bytes_in_total", "Bytes received from clients (incl. framing), monotonic; rate() / zone_players = per-client uplink.")
+	reg.Help("zone_bytes_out_total", "Bytes sent to clients (incl. framing), monotonic; rate() / zone_players = per-client downlink.")
 	reg.Help("zone_aoi_entities_avg", "Average interest set size per client by ring, last second.")
 	reg.Help("zone_aoi_entities_max", "Largest interest set of any client, last second.")
 	reg.Help("zone_snapshot_bytes_avg", "Average encoded snapshot size, last second.")
@@ -139,6 +143,10 @@ func (s *Server) publish(hist map[*session][]bwSample, depth func() int, extra f
 	r.SetInt("zone_input_frames_dropped_total", s.m.framesDropped.Load())
 	r.SetInt("zone_input_frames_skipped_total", s.m.framesSkipped.Load())
 	r.SetInt("zone_input_frames_synthesized_total", s.m.framesSynthesized.Load())
+	r.SetInt("zone_veins_mined_total", s.m.veinsMined.Load())
+	r.SetInt("zone_veins_respawned_total", s.m.veinsRespawned.Load())
+	r.SetInt("zone_items_granted_total", s.m.itemsGranted.Load())
+	r.SetInt("zone_world_edits_sent_total", s.m.editsSent.Load())
 	r.SetInt("zone_speed_violations_total", s.m.speedViolations.Load())
 	r.SetInt("zone_drowned_total", s.m.drowned.Load())
 	r.SetInt("zone_rate_limited_total", s.m.rateLimited.Load())
@@ -180,6 +188,15 @@ func (s *Server) publish(hist map[*session][]bwSample, depth func() int, extra f
 		seen[sess] = true
 		st := sess.conn.Stats()
 		smp := bwSample{now, st.BytesIn.Load(), st.BytesOut.Load()}
+		// WP18: monotonic totals for rate() in Prometheus (the live-client
+		// sums below drop when a client leaves). A client that leaves
+		// between two samples loses at most its last second.
+		var prevIn, prevOut int64
+		if p := hist[sess]; len(p) > 0 {
+			prevIn, prevOut = p[len(p)-1].in, p[len(p)-1].out
+		}
+		r.Add("zone_bytes_in_total", smp.in-prevIn)
+		r.Add("zone_bytes_out_total", smp.out-prevOut)
 		h := append(hist[sess], smp)
 		if len(h) > 6 {
 			h = h[len(h)-6:]

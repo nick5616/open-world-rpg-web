@@ -45,6 +45,7 @@ export class WorkerPool {
   readonly done: Record<JobType, { n: number; ms: number }> = {
     atlas: { n: 0, ms: 0 },
     tile: { n: 0, ms: 0 },
+    cave: { n: 0, ms: 0 },
     scatter: { n: 0, ms: 0 },
     grass: { n: 0, ms: 0 },
     hash: { n: 0, ms: 0 },

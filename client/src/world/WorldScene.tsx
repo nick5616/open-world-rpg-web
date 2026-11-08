@@ -28,6 +28,7 @@ import { PostFX } from './post/postfx';
 import { advanceWind, setPrevailingWind } from './wind';
 import { worldDebug, frameInfo } from './debug/worldDebug';
 import { LodOverlay } from './debug/lodOverlay';
+import { CaveManager } from './caves/caveManager';
 
 interface Props {
   runtime: WorldRuntime;
@@ -88,8 +89,11 @@ export function WorldScene({ runtime }: Props) {
     const root = new THREE.Group();
     root.name = 'world';
     root.add(terrain.group, scatter.group, sea, sky.mesh, hemi);
+    // WP09: caves (streamed near mouths and underground; the light pool lives in it).
+    const caves = runtime.caveGraph ? new CaveManager(runtime, QUALITY_PRESETS[useQualityStore.getState().tier].maxLights) : null;
+    if (caves) root.add(caves.group);
     setPrevailingWind(runtime.data.params[PARAM.windDirDeg] ?? 0, 3 + (runtime.data.params[PARAM.stormFrequency] ?? 0.3) * 4);
-    return { shared, waterU, terrain, sea, sky, hemi, scatter, root, lighting: makeSkyLighting(), horizon: null as THREE.Mesh | null };
+    return { shared, waterU, terrain, sea, sky, hemi, scatter, caves, root, lighting: makeSkyLighting(), horizon: null as THREE.Mesh | null };
     // Built once per runtime; tier changes go through setParams/applyTier below.
   }, [runtime, gl]);
 
@@ -152,6 +156,7 @@ export function WorldScene({ runtime }: Props) {
     world.terrain.onMaterialDisposed = (m) => sun.forget(m);
     world.scatter.onMaterial = (m) => sun.setupMaterial(m);
     for (const m of world.scatter.allMaterials()) if (m instanceof THREE.MeshStandardMaterial) sun.setupMaterial(m);
+    for (const m of world.caves?.sunMaterials() ?? []) if (m instanceof THREE.MeshStandardMaterial) sun.setupMaterial(m);
     world.terrain.group.traverse((o) => {
       if (o instanceof THREE.Mesh && o.material instanceof THREE.MeshStandardMaterial) {
         sun.setupMaterial(o.material);
@@ -210,24 +215,28 @@ export function WorldScene({ runtime }: Props) {
     if (!useDebugStore.getState().freezeTime) worldClock.timeOfDayS = (worldClock.timeOfDayS + Math.min(delta, 0.25)) % DAY_LENGTH_S;
     advanceWind(dt);
 
+    // WP09: caves first, so this frame's light knows how far underground we are.
+    world.caves?.update(camera, dt, now);
+    const under = world.caves?.underground ?? 0;
     // Light and sky for this time of day.
     const L = skyLighting(worldClock.timeOfDayS, world.lighting);
     world.sky.uniforms.uSunDir.value.copy(L.sunDir);
     world.sky.mesh.position.copy(camera.position);
     world.hemi.color.copy(L.skyColor);
     world.hemi.groundColor.copy(L.groundColor);
-    world.hemi.intensity = L.hemiIntensity;
+    // Underground: no sun or sky light, ambient near black (spec 7).
+    world.hemi.intensity = L.hemiIntensity * (1 - 0.9 * under);
     const w = world.waterU;
     w.uSunDir.value.copy(L.sunDir);
     w.uLightColor.value.copy(L.lightColor).multiplyScalar(L.lightIntensity / 3);
-    w.uAmbient.value.copy(L.skyColor).multiplyScalar(L.hemiIntensity);
+    w.uAmbient.value.copy(L.skyColor).multiplyScalar(L.hemiIntensity * (1 - 0.9 * under));
     w.uTime.value += dt;
     world.sea.position.set(Math.round(camera.position.x / 64) * 64, runtime.seaY, Math.round(camera.position.z / 64) * 64);
     world.sea.updateMatrixWorld();
 
     const f = fx.current;
     if (f) {
-      f.sun.update(camera, L.lightDir, L.lightColor, L.lightIntensity);
+      f.sun.update(camera, L.lightDir, L.lightColor, L.lightIntensity * (1 - under));
       // Valley fog: thick at dawn, thin by midday, a little back at dusk.
       const hour = (worldClock.timeOfDayS / DAY_LENGTH_S) * 24;
       const morning = Math.exp(-(((hour - 6.5) / 1.8) ** 2));
@@ -235,11 +244,11 @@ export function WorldScene({ runtime }: Props) {
       const fogU = f.post.fog;
       fogU.u('uSunDir').value.copy(L.sunDir);
       (fogU.u('uSunColor').value as THREE.Color).copy(L.lightColor).multiplyScalar(L.lightIntensity * 0.6 * sunVisibility(L.sunDir.y));
-      fogU.u('uFogDensity').value = 0.0004 + 0.0045 * morning + 0.0015 * evening;
+      fogU.u('uFogDensity').value = (0.0004 + 0.0045 * morning + 0.0015 * evening) * (1 - under);
       fogU.u('uFogFalloff').value = 1 / 38;
       fogU.u('uFogBase').value = runtime.seaY + 18;
-      fogU.u('uHaze').value = 1 / 14000;
-      fogU.u('uExposure').value = 1.0 + (1 - L.day) * 1.6;
+      fogU.u('uHaze').value = (1 / 14000) * (1 - under);
+      fogU.u('uExposure').value = (1.0 + (1 - L.day) * 1.6) * (1 - under) + 1.6 * under;
       // Grade: time of day, then the biome under the player (eased, so crossing a border is a drift, not a cut).
       const g = f.post.grade;
       const day = L.day;
@@ -259,7 +268,7 @@ export function WorldScene({ runtime }: Props) {
       gain.multiply(biomeGrade.gain);
       g.u('uSaturation').value = sat + biomeGrade.sat;
       g.u('uContrast').value = THREE.MathUtils.lerp(GRADE.night.contrast, GRADE.day.contrast, day);
-      f.post.update(L.sunDir, L.lightColor, sunVisibility(L.sunDir.y));
+      f.post.update(L.sunDir, L.lightColor, sunVisibility(L.sunDir.y) * (1 - under));
     }
 
     // Streaming. Velocity from the simulated player (feet), for prediction.

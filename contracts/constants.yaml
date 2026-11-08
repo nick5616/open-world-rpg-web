@@ -111,7 +111,7 @@ groups:
     ENEMY_WAKE_M: {type: f64, value: 96, doc: "Enemies sleep until a player is this close."}
 
   combat:
-    # ---- WP13 (CR 005): spec 8 "Combat feel" targets and the shared dodge.
+    # ---- WP13 (CR 009): spec 8 "Combat feel" targets and the shared dodge.
     # The feel numbers are acceptance criteria (docs/evidence/wp13-feel.md);
     # tests on both sides check every weapon move and enemy attack in
     # contracts/combat.yaml against them. Dodge values feed the shared

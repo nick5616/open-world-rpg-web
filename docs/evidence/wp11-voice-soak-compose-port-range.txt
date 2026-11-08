@@ -1,0 +1,42 @@
+WP11 voice soak (spec 14 scenario 3) — 2026-11-08T06:37:50-08:00
+machine: windows/amd64, 16 CPUs; LiveKit 1.8 (docker, --dev); bots: Go + pion (server-sdk-go v2.19.0), synthetic Opus speech 32 kbps
+bots 50, voice-ready 26; phases: settle 6 s, clustered 3s, disperse 6s (walk 4.9 m/s outward), apart 6 s, regroup 6s, regrouped 3s
+zone earshot messages 54 (19 full)
+earshot pair changes after voice-ready: 100; reflected at the listener: 98; missed: 2
+latency zone decision -> listener hears (TrackSubscribed) / stops hearing (last audio packet + 20 ms = forwarding stopped) (ms): n=98 p50 25 / p95 224 / p99 238 / max 238 (mean 48)
+  subscribe: n=37 p50 36 / p95 238 / p99 238 / max 238 (mean 89)
+  unsubscribe, media stopped: n=61 p50 23 / p95 49 / p99 58 / max 58 (mean 23)
+  unsubscribe, track ended (includes LiveKit's 1 s downtrack flush, sfu/downtrack.go flushTimeout): n=61 p50 1016 / p95 1056 / p99 1057 / max 1057 (mean 1018)
+  within 500 ms: 100.00%
+latency distance crossing (40 m in / 48 m out) -> listener event (ms, 0 pairs not driven by the 12-cap): n=0 p50 0 / p95 0 / p99 0 / max 0 (mean 0)
+initial subscriptions (pair already in earshot when voice-ready): 303, latency n=301 p50 3820 / p95 4538 / p99 4701 / max 4874 (mean 3804)
+observed subscription changes 101 over 40 pairs ever subscribed; max changes per pair 2; histogram map[0:269 1:95 2:3]
+flaps (reversal within 2 s): listener 0, zone 0; extra observed changes without a zone decision: 3
+audio: 487040 RTP packets received by bots on subscribed tracks
+bot errors: 24 [vbot-26: livekit: could not connect after timeout vbot-27: livekit: could not connect after timeout vbot-28: livekit: could not connect after timeout vbot-29: livekit: could not connect after timeout vbot-30: livekit: could not connect after timeout vbot-31: livekit: could not connect after timeout vbot-32: livekit: could not connect after timeout vbot-33: livekit: could not connect after timeout vbot-34: livekit: could not connect after timeout vbot-35: livekit: could not connect after timeout vbot-36: livekit: could not connect after timeout vbot-37: livekit: could not connect after timeout vbot-38: livekit: could not connect after timeout vbot-39: livekit: could not connect after timeout vbot-40: livekit: could not connect after timeout vbot-41: livekit: could not connect after timeout vbot-42: livekit: could not connect after timeout vbot-43: livekit: could not connect after timeout vbot-44: livekit: could not connect after timeout vbot-45: livekit: could not connect after timeout vbot-46: livekit: could not connect after timeout vbot-47: livekit: could not connect after timeout vbot-48: livekit: could not connect after timeout vbot-49: livekit: could not connect after timeout]
+social metrics:
+  voice_apply_latency_ms{q="0.5"} 3.903076171875
+  voice_apply_latency_ms{q="0.95"} 43.25
+  voice_apply_latency_ms{q="0.99"} 43.843994140625
+  voice_apply_latency_ms{q="1"} 43.843994140625
+  voice_earshot_msgs_total 53
+  voice_leader_worlds 21
+  voice_participants 0
+  voice_pass_ms 0
+  voice_sub_changes_total{op="subscribe"} 404
+  voice_sub_changes_total{op="unsubscribe"} 61
+  voice_subscriptions 0
+  voice_tokens_total{mode="publish"} 50
+social /debug/voice: {"applyLatencyMs":{"0.5":3.903076171875,"0.95":43.25,"0.99":43.843994140625,"1":43.843994140625},"node":"social-f10e07a9","worlds":[{"world":"00000000-0000-4000-8000-00000000b011","leader":true,"stats":{"participants":26,"appliedSubscriptions":277,"listenersWithEarshot":26,"lastPassMs":0}},{"world":"022935ec-4e4f-4ac0-904a-85fe45a0f660","leader":true,"stats":{"participants":0,"appliedSubscriptions":0,"listenersWithEarshot":0,"lastPassMs":0}},{"world":"0a84fed2-a963-495d-a13e-dc3f7a4cf082","leader":true,"stats":{"participants":0,"appliedSubscriptions":0,"listenersWithEarshot":0,"lastPassMs":0}},{"world":"2b44c630-85dc-4d5d-b422-1b5cc46fb909","leader":true,"stats":{"participants":0,"appliedSubscriptions":0,"listenersWithEarshot":0,"lastPassMs":0}},{"world":"3d69ab4c-3084-43dc-84da-79d5139b8c35","leader":true,"stats":{"participants":0,"appliedSubscriptions":0,"listenersWithEarshot":0,"lastPassMs":0}},{"world":"3fbcae54-5c11-48ec-a6e0-abf992bb7d74","leader":true,"stats":{"participants":0,"appliedSubscriptions":0,"listenersWithEarshot":0,"lastPassMs":0}},{"world":"3ffdbad5-2f62-4c8a-a0a0-b06046714c6e","leader":true,"stats":{"participants":0,"appliedSubscriptions":0,"listenersWithEarshot":0,"lastPassMs":0}},{"world":"513ef893-1c8b-4fbc-984d-8cf3ef4d904f","leader":true,"stats":{"participants":0,"appliedSubscriptions":0,"listenersWithEarshot":0,"lastPassMs":0}},{"world":"60eab089-d40b-4f15-8fea-af48d79ace98","leader":true,"stats":{"participants":0,"appliedSubscriptions":0,"listenersWithEarshot":0,"lastPassMs":0}},{"world":"638a940a-192b-410b-8e73-d068f70fd6c0","leader":true,"stats":{"participants":0,"appliedSubscriptions":0,"listenersWithEarshot":0,"lastPassMs":0}},{"world":"78b84df4-ba8c-41e1-8966-fc21159620c1","leader":true,"stats":{"participants":0,"appliedSubscriptions":0,"listenersWithEarshot":0,"lastPassMs":0}},{"world":"8bc20b1e-0bcc-43cd-9b7b-1cfe44b4b101","leader":true,"stats":{"participants":0,"appliedSubscriptions":0,"listenersWithEarshot":0,"lastPassMs":0}},{"world":"919d938c-0c24-4cb1-98dc-bcfd2230f3b1","leader":true,"stats":{"participants":0,"appliedSubscriptions":0,"listenersWithEarshot":0,"lastPassMs":0}},{"world":"93c9e2b8-3de8-4a93-8b92-9236551d170b","leader":true,"stats":{"participants":0,"appliedSubscriptions":0,"listenersWithEarshot":0,"lastPassMs":0}},{"world":"97958621-bfd6-48a0-8ecb-2548fe5f9558","leader":true,"stats":{"participants":0,"appliedSubscriptions":0,"listenersWithEarshot":0,"lastPassMs":0}},{"world":"c5206c5d-d9f3-4aa0-a47c-91cd399a64d4","leader":true,"stats":{"participants":0,"appliedSubscriptions":0,"listenersWithEarshot":0,"lastPassMs":0}},{"world":"d5209175-51ec-4884-9bfc-0714663dfa6b","leader":true,"stats":{"participants":0,"appliedSubscriptions":0,"listenersWithEarshot":0,"lastPassMs":0}},{"world":"d7e43267-e0c7-4bec-850c-63131b792e01","leader":true,"stats":{"participants":0,"appliedSubscriptions":0,"listenersWithEarshot":0,"lastPassMs":0}},{"world":"e1a8982b-b4a0-4906-853c-468ad352bed1","leader":true,"stats":{"participants":0,"appliedSubscriptions":0,"listenersWithEarshot":0,"lastPassMs":0}},{"world":"f3d8fa0d-db27-43da-9d10-8feecadedc73","leader":true,"stats":{"participants":0,"appliedSubscriptions":0,"listenersWithEarshot":0,"lastPassMs":0}},{"world":"f82688fa-0f34-4a25-8e48-08dac4df4d53","leader":true,"stats":{"participants":0,"appliedSubscriptions":0,"listenersWithEarshot":0,"lastPassMs":0}}]}
+zone metrics:
+  zone_earshot_changes_total 207
+  zone_earshot_compute_us 75
+  zone_earshot_failed_total 0
+  zone_earshot_pairs 600
+  zone_earshot_published_total 54
+  zone_earshot_skipped_total 0
+  zone_players 50
+  zone_tick_ms{q="max"} 2.001
+  zone_tick_ms{q="p50"} 0.333
+  zone_tick_ms{q="p99"} 1.382
+VERDICT: FAIL

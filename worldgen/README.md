@@ -6,19 +6,21 @@ Workers), Node and Go zone servers (wazero). A world is
 `(seed, WorldSpec, genVersion)`; nothing world-shaped ever goes over the wire.
 
 This file is the contract for WP05 (client renderer), WP07 (Go host), WP09
-(caves), WP12 (map/towers) and WP20 (towns/structures): the wasm ABI and every
+(caves: section "Caves"), WP12 (map/towers) and WP20 (towns/structures): the wasm ABI and every
 buffer layout, byte for byte. `worldgen/js/src/format.ts` is the reference
 reader and must stay in sync with this document.
 
 | Path | What |
 | --- | --- |
-| `src/` | The crate: `spec.rs` (spec_from_seed, validation), `names.rs` (name grammars), `rng.rs` / `noise.rs` (counter hashing, gradient noise), `atlas/` (pass 1), `ground.rs` (height function + collision queries), `chunk.rs` (pass 2), `abi.rs` (wasm exports), `gen/` (generated from contracts, never edit) |
+| `src/` | The crate: `spec.rs` (spec_from_seed, validation), `names.rs` (name grammars), `rng.rs` / `noise.rs` (counter hashing, gradient noise), `atlas/` (pass 1), `ground.rs` (height function + collision queries), `chunk.rs` (pass 2), `abi.rs` (wasm exports), `cave/` (WP09 caves, gems and veins), `gen/` (generated from contracts, never edit) |
 | `js/` | `@lodestone/worldgen`, the typed TS loader (README there) |
 | `golden/` | Golden table `golden.json` and its generator |
 | `harness/` | Chromium (Web Worker) and Go/wazero hosts of the golden table |
 | `debug/` | Vite debug map on port 5180 |
 | `scripts/` | `build-wasm.mjs`, `test-golden.mjs` |
 | `examples/atlas_stats.rs` | Native sanity report: `cargo run -p worldgen --release --example atlas_stats -- 42` |
+| `examples/cave_stats.rs` | Cave report (systems, depths, veins, cell build times): `cargo run -p worldgen --release --example cave_stats -- 20261108` |
+| `tests/caves.rs` | Cave invariants: every chamber of every system reachable from the sky (4 worlds), border vertices shared, edits, system query |
 | `pkg/` | Build output (gitignored): `worldgen.wasm`, `worldgen-<sha256:16>.wasm`, `manifest.json` |
 
 ## Commands
@@ -307,6 +309,162 @@ the same triangles.
 Cost: `collision_height` ~1.7 us per call from Node (10,000 random queries in
 17 ms); `raycast` ~4 height samples per 1 m cell crossed.
 
+## Caves (WP09)
+
+The overworld is a heightfield; the underground is a density volume grown
+from a graph per cave mouth (spec 7). Code: `src/cave/` (module table in
+`src/cave/mod.rs`). All of it is new output next to WP01's: no existing
+buffer changed, every chunk/atlas hash of genVersion 1 still holds, and the
+cave hashes joined the golden table (`docs/cr/006-cave-exports.md`).
+
+### Exports (same rules as the ABI above: scratch results, 0 = error)
+
+| Export | Wasm signature | Returns |
+| --- | --- | --- |
+| `cave_graph(atlas_ptr)` | `(i32) -> i32` | Cave graph buffer (below). The first cave call on an instance builds every system of the world (~10 ms native, ~40 ms in a browser worker, 15 ms wazero), cached per instance by (seed, spec, genVersion). |
+| `cave_build(atlas_ptr, cx, cy, cz)` | `(i32, i32, i32, i32) -> i32` | Cave cell buffer (spec 5 `cave_build`): density, surface-nets mesh, collision columns, veins, decorations. Valid cells: cx, cz 0..63, cy -8..23 (32 m tall cells, -256..768 m). |
+| `cave_build_edited(atlas_ptr, cx, cy, cz, edits_ptr, edits_len)` | `(i32 x 6) -> i32` | Same with world edits applied (carve spheres open the density; listed veins come back flagged mined). Edits: 32-byte records `u64 vein id, f32 x, y, z, radius, 8 reserved`; hosts pass the edits touching the cell sorted by vein id. |
+| `cave_mask(atlas_ptr, cx, cz)` | `(i32, i32, i32) -> i32` | Mouth mask of overworld chunk (cx, cz): 24-byte header (`LDCM`, u16 format 1, u16 genVersion, i32 cx, i32 cz, u32 masked count, u32 0) + 64 x 64 x 2 bits, bit `((z*64 + x) << 1) | tri`. |
+| `cave_system_at(atlas_ptr, x, y, z)` | `(i32, f64, f64, f64) -> i32` | Cave-system index whose planned air (chambers and tunnels, padded 2 m, no noise) contains the point; -1 none; -2 error. |
+
+### Generation
+
+1. **Graph** (`graph.rs`): from each mouth site, an entry ramp starts on the
+   open hillside (where the ground has fallen 1.4 m below the mouth) and
+   descends ~20 degrees into an entrance chamber 8-20 m under the mouth; a
+   "spine" of chambers descends toward `caveMaxDepth * (0.5 + 0.42 *
+   caveDensity)` with tunnels no steeper than 30 degrees (long steep drops
+   become ravines: stretched, narrow slots); side branches and up to two
+   loops; with probability `0.25 + 0.35 * caveDensity` a sinkhole shaft from
+   a mid-depth chamber to the sky. 4 + 7 x caveDensity (+0..2) chambers,
+   within 150 m of the mouth (mouths are >= 350 m apart, so systems never
+   merge). Every chamber is placed at the end of a new tunnel from one
+   already in the graph: connected by construction. Every placement keeps
+   3 m of rock plus the noise amplitude above it (checked against the real
+   surface; the macro heightmap minus 72 m is a quick accept). Deeper means
+   tighter (chamber 9.5 -> 5 m, tunnels 3.3 -> 2.3 m radius).
+2. **Density** (`field.rs`): negative = air. Chambers are flat-floored
+   ellipsoids, tunnels flat-floored capsule chains (3 segments along a
+   quadratic Bezier), joined with a smooth minimum (k = 2.5 m), displaced
+   by two-octave 3D gradient noise (1.3 m, at most 35% of a tunnel's radius
+   so nothing pinches shut; zero within r_mask + 2 m of an opening). Near
+   openings everything above the terrain surface is air ("zone"); elsewhere
+   a roof clamp keeps 2.5 m of rock under the surface.
+3. **Mesh** (`cell.rs`): 33 x 17 x 33 samples at 2 m plus one padding layer
+   on the low sides; surface nets (vertex = mean of edge crossings, normal =
+   minus the field gradient); a cell owns the sample edges based in [0,32) x
+   [0,16) x [0,32), so neighbors' shared vertices are bit-identical and
+   meshes close without stitching. Reproduced-surface triangles beyond
+   r_mask + 2 m are dropped (a 2 m overlap ring under the rock-arch prop).
+4. **Veins and decorations** (`veins.rs`): per chamber 1-6 veins, marched
+   from the chamber center to the wall along a seeded direction; gem chance
+   `(0.06 + 0.6 * (depth / caveMaxDepth) ^ gemRarityCurve) x biome affinity`;
+   gem element from the region's dominant (4) / secondary (2) / others (0.4)
+   x affinity, Dark grows with depth, Void (amethyst) only in the deepest
+   quarter, Light (sunstone) where daylight reaches; ores by depth band
+   (copper, iron, silver, sunsteel only in sunlit veins at mid/deep or near
+   peaks, voidglass deepest). Starmetal: `veins::crater_veins` hook for WP20
+   meteor craters (returns nothing yet). Glowing fungi, crystal shards and
+   stalagmites on chamber floors.
+5. **Depth bands**: depth = mouth surface height - y. Shallow < 64 m, mid
+   < 160 m, deep >= 160 m.
+
+### Stable ids
+
+Veins: `stable_id(7, mouth site index, chamber index (within its system), vein index)`.
+The zone files a vein's world edit under the chunk `(floor(x/64), floor(z/64))` of its position.
+
+### Cave cell buffer (`LDCV`, format 1)
+
+Header (96 bytes): 0 magic, 4 u16 format, 6 u16 genVersion, 8 u32 length,
+12 i32 cx, 16 i32 cy, 20 i32 cz, 24 u32 flags (1 has mesh, 2 mouth zone,
+4 edited), 28 u32 vertex count, 32 u32 triangle count, 36 u32 density
+offset, 40 positions offset, 44 normals offset, 48 indices offset, 52
+columns offset, 56 columns length (bytes), 60 veins offset, 64 u16 vein
+count, 66 u16 deco count, 68 u32 deco offset, 72 u16 system (0xFFFF none),
+74 u8 depth band, 76 f32 min y, 80 f32 max y of the mesh.
+
+| Section | Content |
+| --- | --- |
+| density | 33 x 17 x 33 i8: field x 15.875 clamped to +-127, index (j*33 + k)*33 + i, sample (cx*64 + 2i, cy*32 + 2j, cz*64 + 2k); negative = air. Informational: the mesh is authoritative. |
+| positions | f32 x 3 per vertex, world meters |
+| normals | i8 x 4 per vertex: normal (x127, into the air) and the vertex's depth band |
+| indices | u16 x 3 per triangle, counter-clockwise seen from the air |
+| columns | CSR collision index: u32 offsets[34*34 + 1], then u32 triangle ids; bin (bx, bz) = floor((v - origin + 2) / 2) clamped to 0..33 covers local x/z in [-2, 66) |
+| veins | 32-byte records: u64 id, f32 x, y, z, i8 nx, ny, nz (out of the wall), u8 kind (0 ore, 1 gem), u8 material (ore id: copper, iron, silver, sunsteel, starmetal, voidglass; gem id: ruby, sapphire, topaz, emerald, aquamarine, sunstone, onyx, amethyst, opal, moonstone), u8 element, u16 hit points, u8 crystals (3..7), u8 flags (1 sunlit, 2 mined), u8 band, u8 chamber. A vein lives in exactly the cell containing its position. |
+| decos | 16-byte records: f32 x, y, z, u8 kind (0 fungus, 1 crystal, 2 stalagmite), u8 element tint, u8 scale, u8 yaw |
+
+### Cave graph buffer (`LDCG`, format 1)
+
+Header (64 bytes): 0 magic, 4 u16 format, 6 u16 genVersion, 8 u32 length,
+12 u32 systems, 16 chambers, 20 tunnels, 24 openings, 28 veins, 32/36/40/44/48
+u32 offsets of those sections, 52 f32 caveMaxDepth, 56 f32 gemRarityCurve.
+
+- System (72 B): u64 id (= the mouth site's id), u16 site index, u8 region,
+  biome, element, element2, flags, deepest band, f32 mouth y, u32 first
+  chamber, u16 chambers, u16 tunnels, u32 first tunnel, u16 first opening,
+  u16 openings, u32 first vein, u16 veins, u16 deepest chamber (local),
+  f32 x 6 bbox (incl. margins), f32 max depth.
+- Chamber (32 B): f32 x, y, z, rx, ry, floor, depth; u8 flags (1 entrance,
+  2 sunlit, 4 shaft, 8 deepest), u8 band, u16 parent (local, 0xFFFF root).
+- Tunnel (72 B): u16 a, u16 b (local chambers; entry: 0, 0), u8 kind (0
+  entry, 1 tunnel, 2 ravine, 3 shaft), 3 pad, f32 radius, f32 vertical
+  stretch, f32 floor depth (x radius below the axis), f32 x 12 axis points
+  (4 points, 3 segments), 4 pad. The enemy nav graph is chambers + these
+  polylines.
+- Opening (32 B): f32 x, y (surface), z, r_mask, r_zone; u16 system, u16
+  tunnel, u8 kind (0 mouth, 1 sinkhole), pad, u16 yaw (facing out of the
+  hill, fraction of a turn x 65536), 4 pad.
+- Veins: the 32-byte vein records of every system (the zone's vein registry).
+
+### Mouth masks
+
+A heightfield triangle of the 1 m surface mesh (cell (x0, z0), triangle 0
+below the diagonal, 1 above) is dropped when its centroid `(x0 + 1/3, z0 +
+1/3)` / `(x0 + 2/3, z0 + 2/3)` lies strictly within `r_mask` of an opening
+(f64 arithmetic on the f32 graph values). Hosts apply the rule from the
+graph's openings (`caveTriMasked` / `caves.TriMasked`); `cave_mask` is the
+reference. The client's lod 0-1 terrain tiles drop the same triangles (and
+skirts crossing the hole); a rock arch and rim boulders sit over the seam.
+
+### Cave collision and ground dispatch (TS `cave.ts`, Go `server/pkg/caves`)
+
+Pure host code over the cell buffers' f32 triangles, identical in TS and Go
+(f64, same operation order, no FMA), pinned by the golden table's floor and
+collide vectors. Constants: MAX_STEP_UP_M 0.6, PLAYER_CAPSULE_RADIUS 0.4,
+wall = triangle normal y < cos 50 deg (0.6428), ceiling = normal y <= -0.5.
+
+- `floorAt(x, y, z)`: the highest up-facing triangle (normal y > 0) whose
+  plane height at (x, z) is in [y - 34, y + 0.6], (x, z) inside its xz
+  projection (barycentric, 1e-9 tolerance), searched in the cells whose
+  2 m-padded box contains (x, z) and whose y range overlaps.
+- `collide(x, y, z)`: 2 passes x 2 body spheres (feet + 1.0 and + 1.5 m,
+  radius 0.4), each over the wall triangles near the sphere (cells cy, cz,
+  cx ascending; per cell its candidate ids sorted and deduplicated, fixed
+  at the start of that sphere's pass): closest point on the triangle
+  (Ericson 5.1.5); if closer than the radius, push horizontally along the
+  xz part of (center - closest) by (radius - distance) (along the
+  triangle's normal xz if that is degenerate). Then one ceiling pass with
+  the high sphere: overlap pushes y down and reports `ceiling`.
+- `raycast(o, d, max)`: probes every 1.5 m along the ray gather the
+  triangles within 1.2 m (same candidate order as `collide`) and test
+  them two-sided (Moller-Trumbore); the nearest hit, stopping once it lies
+  behind the probes; -1 for none. Line of sight, aim and spell impacts.
+- Ground dispatch (`CaveGroundCore` / `caves.Ground`): the surface ground
+  (terrain, or terrain + structures) on the open surface; in a mouth hole
+  (point masked) or more than 1 m under the surface ("in a cave") the floor
+  under feet height y: the highest cave floor in [y - 34, y + 0.6], else the
+  lowest ledge in (y + 0.6, y + 3], else y inside rock (trilinear density of
+  the cell >= 0), else y - 35 (open pit); a masked point with no cells keeps
+  the surface. `collide` is a no-op outside caves.
+- The movement step (WP10's state machine) views the ground at the
+  player's level once per step and runs one `collide` pass after the mode
+  step: `server/pkg/movement/caves.go`, `client/src/sim/caves.ts`.
+
+Cost (Chromium worker, golden table run): cave_build mean 0.8 ms, max 3.7 ms
+over 220 cells around system chambers (budget 12 ms); the cave graph once
+per worker ~38 ms.
+
 ## How the world is made
 
 **spec_from_seed** picks every field inside tasteful sub-ranges of the schema
@@ -425,5 +583,8 @@ allowed without a bump.
   clamping is the creator tool's job (spec 6).
 - **FNV-1a 64** stays the content hash (WP00's choice): trivial to
   reimplement in any host, ~0.1 ms per chunk.
-- **Caves are not generated yet** (WP09 owns `cave_build`); cave mouths are
-  placed as sites with a downhill-facing yaw so WP09 can grow systems from them.
+- **Caves** (WP09) grow from the cave-mouth sites (downhill-facing yaw);
+  see "Caves" above. They are new exports, not a change to chunks: the
+  overworld chunk does not carry the mouth mask (spec 7 wording); hosts
+  apply the analytic mask rule from the cave graph, which kept every chunk
+  hash and genVersion 1.

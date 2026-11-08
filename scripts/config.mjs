@@ -14,8 +14,8 @@ export const config = {
 
 export function serviceEnv() {
   return {
-    LODESTONE_PG_URL: process.env.LODESTONE_PG_URL ?? `postgres://lodestone:lodestone@localhost:${config.pgPort}/lodestone?sslmode=disable`,
-    LODESTONE_REDIS_ADDR: process.env.LODESTONE_REDIS_ADDR ?? `localhost:${config.redisPort}`,
+    LODESTONE_PG_URL: process.env.LODESTONE_PG_URL ?? `postgres://lodestone:lodestone@127.0.0.1:${config.pgPort}/lodestone?sslmode=disable`,
+    LODESTONE_REDIS_ADDR: process.env.LODESTONE_REDIS_ADDR ?? `127.0.0.1:${config.redisPort}`,
     LODESTONE_LIVEKIT_URL: process.env.LODESTONE_LIVEKIT_URL ?? `ws://localhost:${config.livekitPort}`,
     LODESTONE_LIVEKIT_KEY: process.env.LODESTONE_LIVEKIT_KEY ?? 'devkey',
     LODESTONE_LIVEKIT_SECRET: process.env.LODESTONE_LIVEKIT_SECRET ?? 'secret',

@@ -1,4 +1,4 @@
-// combat.yaml -> normalized combat tables (WP13, CR 005).
+// combat.yaml -> normalized combat tables (WP13, CR 009).
 //
 // The YAML is written for people (maps keyed by name, milliseconds); the
 // normalized form is written for code: arrays with a `key` and a numeric

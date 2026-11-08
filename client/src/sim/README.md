@@ -357,3 +357,12 @@ npm run golden -w client      # regenerate after an intended change (then update
 npm run test -w client        # fails if stepMovement no longer reproduces the files bit-exactly
 npm run compare:ww -w client  # re-run the wizard-wars side-by-side (needs refs/)
 ```
+
+## Caves (WP09)
+
+The step (WP10) is a heightfield state machine; caves plug in through two optional hooks, identical in TS (`client/src/sim/caves.ts`, `GroundQuery.atLevel` / `collide`) and Go (`server/pkg/movement/caves.go`, `LevelGround` / `Collider`):
+
+1. At the start of a step the ground is viewed at the player's feet height (`AtLevel(y)`). In a cave (a mouth hole, or more than 1 m under the surface) that view's `HeightAt` is the highest cave floor in [y - 34, y + MAX_STEP_UP_M]; with none, the lowest ledge within 3 m above (a real step: the walk/step-up/climb rules decide), else `y` inside rock (walls are never slopes to climb), else y - 35 over an open pit. Its water is -Inf (no swimming in the lake overhead). Elsewhere it is the surface ground (terrain + WP12 structures) unchanged, so every mode, slope probe and climb works on it as on terrain.
+2. After the mode step, one wall/ceiling push-out (not while climbing): horizontal velocity slides along the push (`v -= n * min(0, v.n)`), a ceiling stops a rising jump, a grounded player is re-snapped to the floor at the pushed point.
+
+Grounds without caves implement neither and step exactly as before (every WP02/WP10 golden unchanged). `server/pkg/caves.Ground`, `worldhost.CaveTerrain` and the client's `CaveGround` (over `StructureGround`) implement both. Golden cave walk: `client/src/world/caves/cavePath.test.ts` (TS) replayed by `server/pkg/caves/path_test.go` (Go).
