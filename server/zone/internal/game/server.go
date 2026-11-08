@@ -58,10 +58,15 @@ type Config struct {
 	// ring table stays the maximum rate. 0 = unlimited (WP03 behavior).
 	DownBudgetKbps float64
 	Store          CharacterStore // nil: no persistence
-	Earshot        Earshot        // WP11 proximity voice (earshot.go); nil: none
-	Queue          *writebehind.Queue
-	Metrics        *svc.Metrics
-	Log            *slog.Logger
+	// Mining (WP09): vein respawn window (spec 7: a seeded 6-24 h; tests
+	// shorten it), world edit persistence and the item grant hook (WP14).
+	VeinRespawnMin, VeinRespawnMax time.Duration
+	EditStore                      EditStore // nil: edits live in memory only
+	Granter                        Granter   // nil: grants are logged and evented only
+	Earshot                        Earshot   // WP11 proximity voice (earshot.go); nil: none
+	Queue                          *writebehind.Queue
+	Metrics                        *svc.Metrics
+	Log                            *slog.Logger
 	// WP12 exploration (explore.go, party.go): the world's sites and towers
 	// (nil: no exploration, e.g. flat ground), the social service's parties
 	// (nil: no party ring) and the local-profile save store (nil: blobs in
@@ -98,6 +103,8 @@ type Server struct {
 	cands    []snapshot.Candidate
 	w        proto.Writer
 	saveDiv  uint32
+	mine     mining              // WP09 (mining.go)
+	calls    chan func()         // run on the tick goroutine (Do, caves.go)
 	env      movement.Env        // WP10: this tick's movement env (stepEnv)
 	hap      []explore.Happening // scratch for exploreTick
 	party    partyState
@@ -127,6 +134,12 @@ func New(cfg Config) *Server {
 	if cfg.MaxPlayers <= 0 {
 		cfg.MaxPlayers = 400
 	}
+	if cfg.VeinRespawnMin <= 0 {
+		cfg.VeinRespawnMin = 6 * time.Hour
+	}
+	if cfg.VeinRespawnMax <= 0 {
+		cfg.VeinRespawnMax = 24 * time.Hour
+	}
 	if cfg.SaveInterval <= 0 {
 		cfg.SaveInterval = constants.SaveIntervalS * time.Second
 	}
@@ -135,6 +148,7 @@ func New(cfg Config) *Server {
 		cfg:     cfg,
 		log:     cfg.Log,
 		joins:   make(chan *session, 256),
+		calls:   make(chan func(), 16),
 		stopped: make(chan struct{}),
 		byChar:  map[string]*session{},
 		parties: map[uint32][]*Entity{},
@@ -233,8 +247,19 @@ func (s *Server) onTick() {
 		s.drain(sess, now)
 		i++
 	}
-	s.terrainTick(tick) // WP07: chunk cache interest (terrain.go)
-	s.exploreTick(tick) // WP12: towers, waypoints, discoveries, party ring (explore.go)
+	for { // Do (caves.go): debug reads and test pokes, between ticks' phases
+		select {
+		case f := <-s.calls:
+			f()
+			continue
+		default:
+		}
+		break
+	}
+	s.terrainTick(tick)             // WP07: chunk cache interest (terrain.go)
+	s.exploreTick(tick)             // WP12: towers, waypoints, discoveries, party ring (explore.go)
+	s.caveTick(tick)                // WP09: cave cell interest + each entity's cave system (caves.go)
+	s.miningTick(tick, s.cfg.Now()) // WP09: pickups, respawns, WorldEdits interest (mining.go)
 
 	// Quantize once per entity and rebuild the grid; every client's snapshot
 	// reads these.
@@ -251,7 +276,7 @@ func (s *Server) onTick() {
 	// the queue sees a trickle, not a burst every 30 s.
 	if s.cfg.Queue != nil {
 		for _, e := range s.ents {
-			if (tick+e.ID)%s.saveDiv == 0 {
+			if e.Kind == proto.EntityKindPlayer && (tick+e.ID)%s.saveDiv == 0 {
 				s.checkpoint(e)
 			}
 		}
@@ -308,7 +333,7 @@ func (s *Server) join(sess *session) {
 	}
 	s.nextID++
 	e.Move = movement.NewState(spawn) // WP10: full stamina wheel, ground mode
-	if g := s.cfg.Ground.HeightAt(spawn.X, spawn.Z); e.Move.Pos.Y < g {
+	if g := movement.GroundAt(s.cfg.Ground, spawn.X, spawn.Y, spawn.Z); e.Move.Pos.Y < g {
 		e.Move.Pos.Y = g
 	}
 	e.prevValid = e.Move

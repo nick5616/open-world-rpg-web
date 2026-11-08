@@ -35,6 +35,7 @@ type goldenFile struct {
 			X, Z float64
 			H    string
 		} `json:"collision"`
+		Caves *goldenCaves `json:"caves"` // WP09
 	} `json:"worlds"`
 }
 
@@ -61,6 +62,7 @@ func load(t *testing.T) ([]byte, *goldenFile) {
 // check runs the table (or its first maxChunks chunks per world) and returns
 // failures plus LOD-0 chunk times.
 func check(t *testing.T, ctx context.Context, h *Host, g *goldenFile, maxChunks int) (fails []string, chunks, points int, ms []float64) {
+	lastCaves = caveCounters{}
 	if v := h.GenVersion(ctx); v != g.GenVersion {
 		fails = append(fails, fmt.Sprintf("genVersion %d != %d", v, g.GenVersion))
 	}
@@ -97,6 +99,9 @@ func check(t *testing.T, ctx context.Context, h *Host, g *goldenFile, maxChunks 
 			}
 			chunks++
 		}
+		if w.Caves != nil {
+			fails = append(fails, checkCaves(ctx, h, w.Label, ap, w.Caves, maxChunks, &lastCaves)...)
+		}
 		for _, p := range w.Collision {
 			v := h.CollisionHeight(ctx, ap, p.X, p.Z)
 			if s := fmt.Sprintf("%016x", math.Float64bits(v)); s != p.H {
@@ -128,8 +133,12 @@ func TestGolden(t *testing.T) {
 	}
 	fmt.Printf("[golden:go] wazero compiler: %d worlds, %d chunks, %d collision points, %d failures; lod0 chunk mean %.2f ms p95 %.2f ms\n",
 		len(g.Worlds), chunks, points, len(fails), mean, ms[len(ms)*95/100])
+	fmt.Printf("[golden:go] caves: %d cells, %d masks, %d graphs match; cave_build max %.2f ms\n", lastCaves.cells, lastCaves.masks, lastCaves.graphs, lastCaves.maxMs)
 	for _, f := range fails {
 		t.Error(f)
+	}
+	if lastCaves.cells < 100 {
+		t.Errorf("only %d cave cells checked", lastCaves.cells)
 	}
 	if chunks < 200 {
 		t.Fatalf("only %d chunks checked", chunks)

@@ -10,6 +10,7 @@ import type { WorldSpec } from '@lodestone/contracts';
 import { parseAtlas, parseChunk, type AtlasData, type ChunkData } from './format';
 
 export * from './format';
+export * from './cave';
 
 /** Raw exports of worldgen.wasm (README "Exports"). Pointers are i32 offsets. */
 export interface WorldgenExports {

@@ -12,6 +12,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"sync"
 
 	"lodestone/server/pkg/movement"
 	"lodestone/server/pkg/structures"
@@ -52,6 +53,14 @@ func openTerrain(info zoneInfo, mode string) (*worldhost.Terrain, error) {
 	return worldhost.NewTerrain(mt.World, worldhost.TerrainOptions{}), nil
 }
 
+// caveGrounds: one cave-aware ground per terrain (WP09), built on first use.
+// The zone simulates on worldhost.CaveTerrain, so a bot that walks into a
+// cave mouth must predict on it too or it reads the hole as a mismatch.
+var (
+	caveGrounds sync.Map // *worldhost.Terrain -> movement.Ground
+	caveMu      sync.Mutex
+)
+
 // withStructures puts the atlas towers on the terrain (WP12), as the zone
 // does, so a bot walking into a tower climbs it on both sides.
 func withStructures(t *worldhost.Terrain) movement.Ground {
@@ -63,15 +72,30 @@ func withStructures(t *worldhost.Terrain) movement.Ground {
 	return structures.Wrap(t, o)
 }
 
-// ground is what prediction steps on: the terrain, or WP03's flat plane.
+// ground is what prediction steps on: the terrain with the towers (WP12)
+// and caves under it (WP09), or WP03's flat plane.
 func (c *botConfig) ground() movement.Ground {
+	if c.terrain == nil {
+		return movement.Flat{}
+	}
+	if g, ok := caveGrounds.Load(c.terrain); ok {
+		return g.(movement.Ground)
+	}
+	caveMu.Lock() // one cave cache (and worker) per terrain, not one per racing bot
+	defer caveMu.Unlock()
+	if g, ok := caveGrounds.Load(c.terrain); ok {
+		return g.(movement.Ground)
+	}
+	var surface movement.Ground = c.terrain
 	if c.structures != nil {
-		return c.structures
+		surface = c.structures
 	}
-	if c.terrain != nil {
-		return c.terrain
+	g := surface
+	if cv, err := worldhost.NewCaves(c.terrain.World(), worldhost.CaveOptions{Workers: 1}); err == nil {
+		g = worldhost.NewCaveTerrain(c.terrain, surface, cv)
 	}
-	return movement.Flat{}
+	actual, _ := caveGrounds.LoadOrStore(c.terrain, g)
+	return actual.(movement.Ground)
 }
 
 // landSpawn redraws a spawn until it is a dry cell (bots spawning in the sea

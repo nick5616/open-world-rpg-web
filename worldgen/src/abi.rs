@@ -24,7 +24,7 @@ thread_local! {
     static LAST_LEN: RefCell<u32> = const { RefCell::new(0) };
 }
 
-fn set_error(msg: &str) {
+pub(crate) fn set_error(msg: &str) {
     ERROR.with(|e| {
         let mut e = e.borrow_mut();
         e.clear();
@@ -32,11 +32,11 @@ fn set_error(msg: &str) {
     });
 }
 
-fn set_len(n: usize) {
+pub(crate) fn set_len(n: usize) {
     LAST_LEN.with(|l| *l.borrow_mut() = n as u32);
 }
 
-fn scratch_result(data: Vec<u8>) -> *const u8 {
+pub(crate) fn scratch_result(data: Vec<u8>) -> *const u8 {
     set_len(data.len());
     SCRATCH.with(|s| {
         let mut s = s.borrow_mut();
@@ -140,7 +140,7 @@ pub unsafe extern "C" fn atlas_build(spec_ptr: *const u8, spec_len: usize, seed_
 }
 
 /// View the atlas at `ptr`, trusting the length in its header.
-unsafe fn atlas_slice<'a>(ptr: *const u8) -> Result<&'a [u8], String> {
+pub(crate) unsafe fn atlas_slice<'a>(ptr: *const u8) -> Result<&'a [u8], String> {
     if ptr.is_null() {
         return Err("null atlas pointer".into());
     }

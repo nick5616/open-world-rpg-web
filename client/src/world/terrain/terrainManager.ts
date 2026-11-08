@@ -352,7 +352,7 @@ export class TerrainManager {
 
   private makeTile(d: TileMeshData, nowMs: number): Tile {
     const g = new THREE.BufferGeometry();
-    g.setIndex(this.index);
+    g.setIndex(d.holes ? new THREE.BufferAttribute(d.holes, 1) : this.index); // WP09: mouth holes
     g.setAttribute('position', new THREE.BufferAttribute(d.position, 3));
     g.setAttribute('aMorph', new THREE.BufferAttribute(d.morph, 1));
     g.setAttribute('aNrm', new THREE.BufferAttribute(d.normal, 4, true));

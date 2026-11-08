@@ -16,6 +16,24 @@ export interface GroundQuery {
    * function the zone swims on. Absent = no water anywhere.
    */
   waterAt?(x: number, z: number): number;
+  /**
+   * Caves (WP09): this ground viewed at feet height y. In a cave the view's
+   * heightAt is the cave floor under that level (see ./caves.ts); grounds
+   * without caves omit it. Go twin: movement.LevelGround.
+   */
+  atLevel?(y: number): GroundQuery;
+  /** Caves (WP09): push a player (feet at x, y, z) out of walls and ceilings; writes into out. Go twin: movement.Collider. */
+  collide?(x: number, y: number, z: number, out: CollideResult): CollideResult;
+}
+
+/** Result of GroundQuery.collide: pushed feet position, horizontal push, ceiling hit. */
+export interface CollideResult {
+  x: number;
+  y: number;
+  z: number;
+  pushX: number;
+  pushZ: number;
+  ceiling: boolean;
 }
 
 /** Infinite flat plane at a fixed height: the WP02 placeholder world. */

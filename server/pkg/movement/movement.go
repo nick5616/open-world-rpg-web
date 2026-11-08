@@ -165,7 +165,7 @@ func NewStateMax(pos Vec3, staminaMaxPoints float64) State {
 
 // Grounded reports whether s stands on g (same test the walk step uses).
 func Grounded(s State, g Ground) bool {
-	return s.Pos.Y <= g.HeightAt(s.Pos.X, s.Pos.Z)+groundEps
+	return s.Pos.Y <= AtLevel(g, s.Pos.Y).HeightAt(s.Pos.X, s.Pos.Z)+groundEps // WP09: caves.go
 }
 
 // WaterAt is g's water surface at (x, z), or -Inf when g has no water.
@@ -210,6 +210,7 @@ func Step(s State, flags uint16, yaw float64, g Ground) State {
 // StepEnv is the full step: dispatch on the carried mode, then the shared
 // stamina/timer bookkeeping (finish). Mirrors stepMovement in TS.
 func StepEnv(s State, flags uint16, yaw float64, g Ground, env Env) State {
+	g = AtLevel(g, s.Pos.Y) // WP09: caves see the ground at the player's level (caves.go)
 	wx, wz := wishDir(flags, yaw)
 	var out State
 	switch s.Mode {
@@ -222,6 +223,7 @@ func StepEnv(s State, flags uint16, yaw float64, g Ground, env Env) State {
 	default:
 		out = stepWalk(s, flags, wx, wz, g)
 	}
+	out = collideStep(g, out) // WP09: cave walls and ceilings (caves.go)
 	return finish(s, out)
 }
 

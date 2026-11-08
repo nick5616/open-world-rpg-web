@@ -1,0 +1,49 @@
+# WP09 cave paths: walkability (TS step on the cave ground) and client == server (the TS golden walk replayed by the Go step)
+date: 2026-11-08T15:44:38.897Z
+
+## TS (vitest, client/src/world/caves/cavePath.test.ts)
+[cave-path] 32/32 systems walked to the deepest chamber
+  sys 0: reached depth 182 m in 69 s at (534.1, -79.3, 751.0)
+  sys 1: reached depth 190 m in 68 s at (1003.6, -86.1, 573.0)
+  sys 2: reached depth -39 m in 88 s at (1379.5, 222.7, 675.8)
+  sys 3: reached depth 177 m in 62 s at (1827.1, -75.6, 348.4)
+  sys 4: reached depth 170 m in 63 s at (2876.9, -137.5, 296.7)
+  sys 5: reached depth 189 m in 64 s at (2019.8, -64.2, 984.3)
+  sys 6: reached depth 186 m in 66 s at (3782.4, -143.1, 515.4)
+  sys 7: reached depth 203 m in 79 s at (3855.7, -163.7, 766.0)
+  sys 8: reached depth 169 m in 56 s at (341.3, -115.5, 1919.4)
+  sys 9: reached depth 202 m in 66 s at (964.0, 72.2, 1213.5)
+  sys 10: reached depth 188 m in 60 s at (1729.0, -57.2, 1434.5)
+  sys 11: reached depth 178 m in 65 s at (1386.8, 15.7, 1244.8)
+  sys 12: reached depth 198 m in 92 s at (2494.3, -90.7, 1971.3)
+  sys 13: reached depth 197 m in 62 s at (2767.9, -84.2, 1530.0)
+  sys 14: reached depth 182 m in 64 s at (3257.7, -116.5, 1167.7)
+  sys 15: reached depth 178 m in 66 s at (3752.0, -77.9, 1550.3)
+  sys 16: reached depth 187 m in 62 s at (590.4, 35.6, 2176.8)
+  sys 17: reached depth 182 m in 68 s at (581.4, -87.8, 2817.9)
+  sys 18: reached depth 181 m in 66 s at (1463.7, -20.6, 2481.0)
+  sys 19: reached depth 198 m in 76 s at (1278.2, -19.2, 2097.3)
+  sys 20: reached depth 182 m in 62 s at (2934.7, -17.7, 2315.2)
+  sys 21: reached depth 191 m in 71 s at (2920.2, -76.9, 2700.7)
+  sys 22: reached depth 187 m in 68 s at (3715.6, -142.8, 2903.5)
+  sys 23: reached depth 168 m in 58 s at (3165.3, -72.4, 2586.7)
+  sys 24: reached depth 181 m in 63 s at (832.4, -147.0, 3573.3)
+  sys 25: reached depth 179 m in 70 s at (980.9, -141.7, 3090.5)
+  sys 26: reached depth 186 m in 68 s at (1635.8, -121.3, 3745.9)
+  sys 27: reached depth 181 m in 67 s at (1205.5, -122.2, 3505.6)
+  sys 28: reached depth 185 m in 66 s at (2791.1, -79.0, 3379.5)
+  sys 29: reached depth 168 m in 61 s at (2463.7, -84.3, 3721.5)
+  sys 30: reached depth 179 m in 58 s at (3610.3, -80.9, 3492.5)
+  sys 31: reached depth 175 m in 66 s at (3184.5, -124.7, 3259.5)
+ ✓ src/world/caves/cavePath.test.ts (2 tests) 8556ms
+   ✓ cave path: mouth to deepest chamber > walks there, and the committed trajectory replays bit for bit 819ms
+   ✓ cave walkability across systems > the scripted walker reaches the deepest chamber of most systems 7736ms
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+
+## Go (server/pkg/caves: golden cave vectors + golden cave walk)
+[golden:go] cave queries (server/pkg/caves): 585 floors, 540 collides, 150 system ids, 405 rays, 0 failures
+--- PASS: TestGoldenCaveQueries (4.30s)
+[cave-path:go] 4146 frames replayed, 139 sampled states (118 bit-exact), max |Go - TS| 8.88e-16, 0 over 1e-9; end (534.07, -79.30, 750.95), deepest chamber floor -78.99, system 0
+--- PASS: TestGoldenCavePath (1.14s)
+ok  	lodestone/server/pkg/caves	6.786s

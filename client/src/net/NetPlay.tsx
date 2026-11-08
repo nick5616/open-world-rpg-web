@@ -52,6 +52,11 @@ function forwardingGround(): GroundQuery & { target: GroundQuery } {
     target: DEFAULT_GROUND as GroundQuery,
     heightAt: (x: number, z: number) => g.target.heightAt(x, z),
     normalAt: (x: number, z: number) => g.target.normalAt?.(x, z) ?? { x: 0, y: 1, z: 0 },
+    waterAt: (x: number, z: number) => (g.target.waterAt ? g.target.waterAt(x, z) : -Infinity),
+    // WP09: the step views the ground at the player's level (caves); forward
+    // it, or prediction would walk the surface while the zone walks the cave.
+    // A target without caves is its own level view: steps are unchanged.
+    atLevel: (y: number): GroundQuery => (g.target.atLevel ? g.target.atLevel(y) : g.target),
   };
   return g;
 }

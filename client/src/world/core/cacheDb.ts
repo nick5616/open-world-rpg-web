@@ -20,7 +20,8 @@ export const ATLAS_STORE = 'cache:atlas';
 export const MESH_STORE = 'cache:terrain-mesh';
 export const META_STORE = 'cache:terrain-meta';
 /** Bump when TileMeshData's layout changes so stale cached meshes are never read. */
-export const MESH_FORMAT = 2;
+// 3: WP09 tiles carry mouth holes (an own index over cave mouths).
+export const MESH_FORMAT = 3;
 /** Spec 12: LRU cap of 500 MB for built chunk meshes. */
 export const MESH_CACHE_CAP_BYTES = 500 * 1024 * 1024;
 

@@ -64,6 +64,7 @@ takes the beauty shots).
 | `structures/` | (WP12) Structure overlay on the ground (`WorldRuntime.ground` = terrain + towers), towers from the atlas, tower and waypoint-stone visuals. README there (how WP20 adds structures). |
 | `debug/` | `worldDebug.ts` (stats + window handle), `lodOverlay.ts`, `WorldDebugSection.tsx` (debug panel). |
 | `bench/traversal.mjs` | The traversal benchmark. |
+| `caves/` | WP09: cave cells (workers), cave-aware ground, mouth holes in tiles, cave meshes, gems, fungi, light pool, arches, mining, reverb. README there. |
 | `testing/wasm.ts` | Test helper: the real worldgen.wasm in Node. |
 
 ## Decisions (details in `docs/decisions/0009-world-rendering.md`)

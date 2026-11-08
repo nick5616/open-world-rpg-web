@@ -21,6 +21,7 @@ import {
   type Kick,
   type Snapshot,
   type Welcome,
+  type WorldEdits,
 } from '@lodestone/contracts';
 import type { GroundQuery } from '../sim/ground';
 import type { MoveInput, MoveState, StepEnv } from '../sim/movement';
@@ -81,6 +82,9 @@ export class ZoneSession {
   /** WP12: reliable gameplay Events (contracts/events.md) and local-profile save blobs. */
   onEvent: ((e: ZoneEvent) => void) | null = null;
   onSaveBlob: ((blob: Uint8Array) => void) | null = null;
+  /** WP09: world edits (mined veins), and extra Event listeners (mining 700-799) next to onEvent. */
+  onWorldEdits: ((m: WorldEdits) => void) | null = null;
+  readonly eventListeners = new Set<(e: ZoneEvent) => void>();
 
   /** Counters for tests and the acceptance log. */
   readonly stats = { snapshots: 0, stale: 0, noBaseline: 0, inputPackets: 0, framesSent: 0, decodeErrors: 0, earlySnapshots: 0 };
@@ -188,7 +192,7 @@ export class ZoneSession {
     this.lastSend = t;
   }
 
-  /** Send an Interact (reliable; WP12 fast travel and pins, contracts/events.md "Interact"). */
+  /** Send an Interact (reliable; WP12 fast travel and pins, WP09 mining: contracts/events.md "Interact"). */
   sendInteract(targetKind: number, targetId: bigint, action: number, arg = 0): void {
     if (this.phase !== 'playing' || !this.transport) return;
     this.transport.sendReliable(encodeMessage({ type: 'Interact', targetKind, targetId, action, arg }));
@@ -235,12 +239,16 @@ export class ZoneSession {
         break;
       case 'Event':
         this.onEvent?.(m);
+        for (const l of this.eventListeners) l(m);
         break;
       case 'SaveBlob':
         this.onSaveBlob?.(m.blob);
         break;
+      case 'WorldEdits':
+        this.onWorldEdits?.(m);
+        break;
       default:
-        break; // HitResult, WorldEdits...: later packages
+        break; // HitResult...: later packages
     }
   }
 
