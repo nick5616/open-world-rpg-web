@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"net/http/pprof"
 	"strconv"
 	"strings"
 	"time"
@@ -142,4 +143,18 @@ func clusterMetrics(m *svc.Metrics, zone *game.Server) {
 	for k, v := range zone.ClusterStats() {
 		m.SetInt("zone_cluster_"+k, v)
 	}
+}
+
+// servePprof mounts Go's profiler under /debug/pprof/ when
+// LODESTONE_ZONE_PPROF=1 (soaks: where does the tick go?). Off by default:
+// profiles expose internals and cost CPU while being taken.
+func servePprof(s *svc.Server, log *slog.Logger) {
+	if !env.Bool("LODESTONE_ZONE_PPROF", false) {
+		return
+	}
+	s.Mux.HandleFunc("GET /debug/pprof/", pprof.Index)
+	s.Mux.HandleFunc("GET /debug/pprof/profile", pprof.Profile)
+	s.Mux.HandleFunc("GET /debug/pprof/trace", pprof.Trace)
+	s.Mux.HandleFunc("GET /debug/pprof/symbol", pprof.Symbol)
+	log.Warn("pprof enabled on /debug/pprof/ (LODESTONE_ZONE_PPROF)")
 }

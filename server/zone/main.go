@@ -155,6 +155,7 @@ func main() {
 	origins := strings.Split(env.Str("LODESTONE_CORS_ORIGIN", "*"), ",")
 	ws := &transport.WebSocket{OriginPatterns: origins}
 	s.Mux.Handle("GET /ws", zone.Handler(ws))
+	servePprof(s, log) // WP16 soaks: LODESTONE_ZONE_PPROF=1
 	// Identity for tools: bots read it so their self-signed dev tickets name
 	// the right audience and world without flags.
 	s.Mux.HandleFunc("GET /debug/zone", func(w http.ResponseWriter, _ *http.Request) {

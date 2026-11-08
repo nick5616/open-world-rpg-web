@@ -1,17 +1,5 @@
-[2026-11-08T18:58:56.275Z] WP16 soak "1000-clean": 1000 bots, 3 zones, 10m, netsim clean
-[2026-11-08T18:58:59.508Z] scratch database lodestone_wp04_wp16soak
-[2026-11-08T18:59:11.805Z] built director, zone, bots, seedbots, mintworld
-[2026-11-08T18:59:13.766Z] }
-[2026-11-08T18:59:14.922Z] seeded 1000 bot characters (1000 new) into lodestone_wp04_wp16soak, world 97e572f2-6e36-446b-8956-b44f0e24c858
-[2026-11-08T18:59:16.024Z] director (assigner) on :18300
-[2026-11-08T18:59:18.317Z] zone-primary on :18310
-[2026-11-08T18:59:19.851Z] zone-pool-1 on :18312
-[2026-11-08T18:59:21.383Z] zone-pool-2 on :18314
-[2026-11-08T18:59:23.000Z] region owners (x-major rows): [["zone-pool-1","zone-pool-1","zone-pool-1","zone-pool-1"],["zone-pool-1","zone-pool-1","zone-pool-1","zone-pool-1"],["zone-pool-2","zone-pool-2","zone-pool-2","zone-pool-2"],["zone-primary","zone-primary","zone-primary","zone-primary"]]
-[2026-11-08T18:59:23.049Z] bots started (1000, cross mode)
-[2026-11-08T19:09:53.264Z] bots exited 3
+WP16 first 1000-bot run (3 zones, every bot a border crosser, before the interest-sort and ack-floor fixes and the epoch-aware sampler). Kept as a record of what it found; see docs/STATUS.md WP16.
 
----- bots summary ----
 == bots: cross, 1000/1000 connected, 626 s wall (windows/amd64, go1.27.3)
 downlink kbps   avg  129.68  p50  136.13  p95  147.31  max  149.20   (budget 64)
 uplink kbps     avg   11.13  p50   11.13  p95   11.14  max   11.19   (budget 24)
@@ -54,7 +42,3 @@ ownership: 300 samples, max owned twice 2, max playing-but-unowned 6, unowned tw
   zone zone-primary owned 269  tick p50 19.22 p99 34.32 max 83.01 ms  players 272  stats map[cancels:0 checkpoints_fenced:513 ghost_frames_dropped:0 ghost_frames_in:34415 handoffs_in:2925 handoffs_out:2895 pending_drops:0 preconnects:255 released:0 remote_entities:731 standby_drops:14 standbys_joined:289 states_lost:0]
   zone zone-pool-2  owned 454  tick p50 36.77 p99 64.41 max 136.21 ms  players 455  stats map[cancels:18 checkpoints_fenced:1291 ghost_frames_dropped:0 ghost_frames_in:37268 handoffs_in:7331 handoffs_out:7365 pending_drops:0 preconnects:519 released:0 remote_entities:546 standby_drops:20 standbys_joined:530 states_lost:0]
 FAIL: downlink max 149.2 kbps > 64; 0 decode / 31 apply errors; zone zone-pool-1 tick p99 33.86 ms > 12; zone zone-primary tick p99 34.32 ms > 12; zone zone-pool-2 tick p99 64.41 ms > 12; characters owned by two zones at once (max 2 in one sample)
-zone log zone-primary: {"handoffOut":2895,"handoffIn":2925,"released":0,"lost":0,"errors":0}
-zone log zone-pool-1: {"handoffOut":4436,"handoffIn":4440,"released":0,"lost":0,"errors":0}
-zone log zone-pool-2: {"handoffOut":7365,"handoffIn":7331,"released":0,"lost":0,"errors":0}
-[2026-11-08T19:09:53.331Z] SOAK FAIL

@@ -107,6 +107,7 @@ try {
       LODESTONE_ZONE_MAX_PLAYERS: '1200',
       LODESTONE_ZONE_EARSHOT: '0',
       LODESTONE_ZONE_DEBUG_URL: z.debug,
+      LODESTONE_ZONE_PPROF: '1', // a mid-run CPU profile of the busiest zone goes into the evidence
     });
     if (!(await waitHttp(`${z.debug}/healthz`, 60000))) throw new Error(`${id} not healthy`);
     zones.push(z);
@@ -135,6 +136,26 @@ try {
   const botsDone = new Promise((r) => bots.on('exit', (code) => r(code)));
   step(`bots started (${BOTS}, cross mode)`);
 
+  // Mid-run CPU profile of the busiest zone (where does the tick go?).
+  const profileAt = Math.min(parseDur(DURATION) / 2, KILL_AFTER ? parseDur(KILL_AFTER) - 30000 : Infinity);
+  const profiling = (async () => {
+    await sleep(Math.max(30000, profileAt));
+    let best = null;
+    for (const z of zones) {
+      const d = await (await fetch(`${z.debug}/debug/cluster`)).json().catch(() => null);
+      if (d && (!best || d.view.characters.length > best.n)) best = { z, n: d.view.characters.length };
+    }
+    if (!best) return;
+    const prof = path.join(TMP, 'cpu.pprof');
+    const buf = Buffer.from(await (await fetch(`${best.z.debug}/debug/pprof/profile?seconds=20`)).arrayBuffer());
+    fs.writeFileSync(prof, buf);
+    const top = spawnSync('go', ['tool', 'pprof', '-top', '-nodecount=40', path.join(TMP, 'zone' + EXE), prof], { cwd: root, env: env(), encoding: 'utf8' }).stdout;
+    fs.writeFileSync(path.join(EVIDENCE, `wp16-soak-${TAG}-cpu-${best.z.id}.txt`), `CPU profile, 20 s, ${best.z.id} with ${best.n} players
+
+${top}`);
+    step(`cpu profile of ${best.z.id} (${best.n} players) saved`);
+  })().catch((e) => step(`profile failed: ${e}`));
+
   if (KILL_AFTER) {
     await sleep(parseDur(KILL_AFTER));
     const victim = zones[zones.length - 1];
@@ -152,6 +173,7 @@ try {
     }
   }
   const code = await botsDone;
+  await profiling;
   step(`bots exited ${code}`);
   const summaryTxt = fs.readFileSync(path.join(TMP, 'bots.log'), 'utf8');
   const sumStart = summaryTxt.indexOf('== bots:');
