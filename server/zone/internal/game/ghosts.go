@@ -49,6 +49,9 @@ const (
 	// presenceMaxAge: entries older than this (a dead zone's leftovers)
 	// are ignored.
 	presenceMaxAge = 5 * time.Second
+	// presenceGC: entries this old are deleted (zones remove their own on
+	// logout; a crashed zone's entries are swept by the survivors).
+	presenceGC = time.Minute
 )
 
 // remoteInfo is a mirrored entity's source state.
@@ -125,8 +128,12 @@ func (s *Server) applyGhosts(f *ghostFrame, now time.Time) {
 func (s *Server) applyPresence(m map[string][]byte, now time.Time) {
 	own := s.cl.c.Owners()
 	nowMs := s.serverTimeMs()
-	for _, b := range m {
+	for k, b := range m {
 		zone, g, err := decodePresence(b)
+		if err == nil && nowMs-g.T > float64(presenceGC/time.Millisecond) {
+			s.cl.departed = append(s.cl.departed, k) // a dead zone's leftovers: anyone may sweep them
+			continue
+		}
 		if err != nil || zone == s.cl.self || nowMs-g.T > float64(presenceMaxAge/time.Millisecond) {
 			continue
 		}

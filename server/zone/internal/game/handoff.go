@@ -916,3 +916,20 @@ func (s *Server) ClusterStats() map[string]int64 {
 		"checkpoints_fenced": st.fenced.Load(),
 	}
 }
+
+// ClusterView is /debug/cluster's simulation part: the characters this zone
+// owns now (the soak checker unions these across zones to prove nobody is
+// owned twice or by nobody), standby and mirrored counts.
+func (s *Server) ClusterView(ctx context.Context) (map[string]any, error) {
+	var out map[string]any
+	err := s.Do(ctx, func() {
+		chars := make([]string, 0, len(s.sessions))
+		for _, sess := range s.sessions {
+			if sess.ent != nil {
+				chars = append(chars, sess.ent.CharacterID)
+			}
+		}
+		out = map[string]any{"tick": s.tick, "characters": chars, "standby": len(s.cl.standby), "remote": len(s.cl.remote), "pending": len(s.cl.pending)}
+	})
+	return out, err
+}
