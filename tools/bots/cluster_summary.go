@@ -76,7 +76,7 @@ func scrapeZones(view *clusterView) []map[string]any {
 	return out
 }
 
-func clusterVerdict(s *Summary, bots []*bot, own *ownershipStats, zones []map[string]any, tickBudget float64) {
+func clusterVerdict(s *Summary, bots []*bot, own *ownershipStats, zones []map[string]any, tickBudget float64, strictTick bool) {
 	c := &ClusterSummary{Ownership: own, Zones: zones, ZoneTick: map[string]float64{}}
 	var gaps, fo, rw []float64
 	for _, b := range bots {
@@ -121,7 +121,11 @@ func clusterVerdict(s *Summary, bots []*bot, own *ownershipStats, zones []map[st
 		if p99, ok := m[`zone_tick_ms{q="p99"}`]; ok {
 			c.ZoneTick[id] = p99
 			if p99 > tickBudget {
-				fail("zone %s tick p99 %.2f ms > %.0f", id, p99, tickBudget)
+				if strictTick {
+					fail("zone %s tick p99 %.2f ms > %.0f", id, p99, tickBudget)
+				} else {
+					s.Warnings = append(s.Warnings, fmt.Sprintf("zone %s tick p99 %.2f ms > %.0f (spec 9 budget, informational here)", id, p99, tickBudget))
+				}
 			}
 		}
 	}

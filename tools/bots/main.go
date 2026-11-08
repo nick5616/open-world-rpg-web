@@ -61,7 +61,7 @@ func main() {
 		borderM    = flag.Float64("border-spawn", 150, "WP16 cross mode: spawn within this distance of a border between zones")
 		printChars = flag.Bool("print-characters", false, "print the bots' deterministic character ids and names as JSON and exit (seed a scratch database with them)")
 		findBorder = flag.Float64("find-border", 0, "WP16: print a walkable crossing of the region line x = this value (JSON) and exit (needs the zone and its terrain)")
-		tickBudget = flag.Float64("tick-budget", 0, "zone tick p99 budget in ms (default 5, or 12 with -cluster: spec 9's 300-player budget)")
+		tickBudget = flag.Float64("tick-budget", 0, "zone tick p99 budget in ms (default 5; with -cluster 12, spec 9's 300-player budget, reported as a warning unless set explicitly: scenario 2's verdict is drops and duplicates, the tick budget is scenario 1's)")
 	)
 	flag.Parse()
 	if *printChars {
@@ -259,12 +259,13 @@ func main() {
 	cancel()
 	wg.Wait()
 
+	strictTick := *tickBudget > 0
 	if view != nil && *tickBudget == 0 {
 		*tickBudget = 12
 	}
 	sum := summarize(bots, *mode, *n, cfg.radius, time.Since(start), scrape, *tickBudget)
 	if view != nil {
-		clusterVerdict(&sum, bots, owners, zones, *tickBudget)
+		clusterVerdict(&sum, bots, owners, zones, *tickBudget, strictTick)
 	}
 	if terrain != nil {
 		sum.Terrain = terrainSummary(info, terrain, bots)
@@ -345,6 +346,7 @@ type Summary struct {
 	BudgetTickP99  float64            `json:"budgetTickP99Ms"`
 	Pass           bool               `json:"pass"`
 	Failures       []string           `json:"failures,omitempty"`
+	Warnings       []string           `json:"warnings,omitempty"`
 	Cluster        *ClusterSummary    `json:"cluster,omitempty"`
 	PerBot         []botStats         `json:"perBot"`
 }
@@ -494,6 +496,9 @@ func printSummary(s Summary) {
 	}
 	if c := s.Cluster; c != nil {
 		printCluster(c)
+	}
+	for _, w := range s.Warnings {
+		fmt.Println("WARNING:", w)
 	}
 	if s.Pass {
 		fmt.Println("PASS")
