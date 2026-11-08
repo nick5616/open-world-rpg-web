@@ -23,6 +23,7 @@ import (
 	"lodestone/server/pkg/transport"
 	"lodestone/server/pkg/writebehind"
 	"lodestone/server/pkg/zoneregistry"
+	"lodestone/server/zone/internal/explore"
 )
 
 // ---- in-memory cluster ----
@@ -644,4 +645,24 @@ func TestStaleCheckpointIsFencedAfterHandoff(t *testing.T) {
 		t.Fatalf("stored position regressed to A's: %v", store.pos["char-p"])
 	}
 	_ = b
+}
+
+// Regression (soak smoke run): a standby connection re-admitted after an
+// earlier activation on the same zone must take the handed-over progress,
+// not the progress it carried from that earlier activation (which lacked a
+// discovery made on the other zone: granted twice).
+func TestReadmissionTakesHandedOverProgress(t *testing.T) {
+	s := New(Config{ZoneID: "z", WorldID: testWorld, Cluster: newMemHub().zone("z"), Log: slog.New(slog.NewTextHandler(io.Discard, nil))})
+	s.cl.c = s.cfg.Cluster
+	old := explore.NewProgress()
+	sess := &session{ho: &sessHandoff{}, x: &exploreState{prog: old}}
+	fresh := explore.NewProgress()
+	fresh.XP = 50
+	sess.ho.state = &HandoffState{Progress: fresh, Move: movement.NewState(movement.Vec3{X: 1, Z: 2})}
+	s.resetForAdmission(sess)
+	e := &Entity{CharacterID: "c"}
+	s.joinState(sess, e)
+	if sess.x == nil || sess.x.prog.XP != 50 {
+		t.Fatalf("re-admitted session kept stale progress: %+v", sess.x)
+	}
 }

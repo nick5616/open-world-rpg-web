@@ -583,6 +583,7 @@ func (s *Server) resetForAdmission(sess *session) {
 	sess.consumed = 0
 	sess.editChunks = nil
 	sess.left = false
+	sess.x = nil // replaced from the handoff state (joinState)
 	sess.mu.Lock()
 	clear(sess.inbox)
 	sess.inbox = sess.inbox[:0]
@@ -808,9 +809,9 @@ func (s *Server) joinState(sess *session, e *Entity) {
 		e.Level = st.Level
 	}
 	sess.consumed = st.LastSeq
-	if sess.x == nil {
-		sess.x = s.exploreFromState(st)
-	}
+	// Always the handed-over progress: a standby connection that was active
+	// here before still carries that activation's (stale) exploration state.
+	sess.x = s.exploreFromState(st)
 	if k := sess.x.partyKey; k != "" {
 		e.PartyID = PartyHash(k)
 	}

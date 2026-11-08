@@ -401,7 +401,7 @@ func (s *Server) join(sess *session) {
 	s.exploreJoin(sess)   // WP12: progress, pins (after Welcome, which the client needs first)
 	s.clusterJoined(sess) // WP16: owner record, arrival checkpoint
 	s.log.Info("join", "entity", e.ID, "character", e.CharacterID, "name", e.Name, "remote", sess.conn.RemoteAddr(),
-		"x", math.Round(spawn.X*100)/100, "z", math.Round(spawn.Z*100)/100)
+		"x", math.Round(e.Move.Pos.X*100)/100, "z", math.Round(e.Move.Pos.Z*100)/100)
 }
 
 // leave removes a session and its entity, checkpointing the character
