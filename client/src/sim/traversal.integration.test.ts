@@ -10,18 +10,19 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { loadWorldgenGround, type WorldgenGround } from './worldgenGround';
-import { buildZone, goAvailable, repoRoot, runTimeline, startZone, type ZoneProc } from './dev/traversalRun';
+import { loadWorldgenGround } from './worldgenGround';
+import { buildZone, goAvailable, repoRoot, runTimeline, startZone, zoneGround, type ZoneProc } from './dev/traversalRun';
+import type { GroundQuery } from './ground';
 
 const wasm = path.join(repoRoot, 'worldgen', 'pkg', 'worldgen.wasm');
 const enabled = goAvailable() && fs.existsSync(wasm);
 
 describe.skipIf(!enabled)('traversal against the real zone process on generated terrain', () => {
   let zone: ZoneProc;
-  let ground: WorldgenGround;
+  let ground: GroundQuery;
 
   beforeAll(async () => {
-    ground = await loadWorldgenGround(fs.readFileSync(wasm), '20261108');
+    ground = zoneGround(await loadWorldgenGround(fs.readFileSync(wasm), '20261108'));
     zone = await startZone(buildZone(), '20261108', { LODESTONE_ZONE_DEBUG_RAIN: '1' });
   }, 180000);
 

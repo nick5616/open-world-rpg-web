@@ -1,8 +1,6 @@
 // WP10 headless browser run: the real game client (Vite dev server, headless
-// Chromium, real keyboard events) connected straight to the real zone binary
-// on the generated official world, with `?ground=worldgen` so the browser
-// predicts on worldgen.wasm's surface (WP05's streamed terrain will replace
-// the debug visual). For each traversal it logs per-mode prediction vs server
+// Chromium, real keyboard events, WP05's streamed terrain, WP12's towers)
+// connected straight to the real zone binary on the generated official world. For each traversal it logs per-mode prediction vs server
 // divergence from inside the game loop (window.__lodestone.probe) and takes
 // screenshots with the debug HUD and stamina wheel. A Node client climbs next
 // to an observing browser player to capture the remote climbing pose.
@@ -18,7 +16,7 @@ import { chromium, type Page } from 'playwright';
 import { devTicket } from '../../net/dev/devTicket';
 import { UpdraftColumns } from '../updraft';
 import { loadWorldgenGround } from '../worldgenGround';
-import { buildZone, formatRun, freePort, repoRoot, runTimeline, startZone, waitHttp, type ZoneProc } from './traversalRun';
+import { buildZone, formatRun, freePort, repoRoot, runTimeline, startZone, waitHttp, zoneGround, type ZoneProc } from './traversalRun';
 
 const SEED = '20261108';
 const updraftSpec = '1122,2268,15,385,6';
@@ -31,7 +29,7 @@ const note = (s: string) => {
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 interface LodestoneHandle {
-  player(): { pos: { x: number; y: number; z: number }; mode: string; stamina: number; exhausted: boolean };
+  player(): { pos: { x: number; y: number; z: number }; vel: { x: number; y: number; z: number }; mode: string; stamina: number; exhausted: boolean; seq: number; airJumps: number };
   setLook(yaw: number | null, pitch?: number): void;
   setQuality(q: string): void;
   setFreezeTime(v: boolean): void;
@@ -55,7 +53,7 @@ async function openGame(clientPort: number, zone: ZoneProc, name: string, at: { 
   const browser = await chromium.launch({ headless: true, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
   page.on('pageerror', (e) => note(`  [${name}] pageerror: ${e.message}`));
-  await page.goto(`http://127.0.0.1:${clientPort}/?debug=1&ground=worldgen&rain=0&updraft=${updraftSpec}`, { waitUntil: 'networkidle' });
+  await page.goto(`http://127.0.0.1:${clientPort}/?debug=1&rain=0&updraft=${updraftSpec}`, { waitUntil: 'networkidle' });
   await page.waitForFunction(() => !!(window as unknown as W).__lodestone, null, { polling: 200, timeout: 30000 });
   const ticket = devTicket({ characterId: `wp10-browser-${name}-${Date.now()}`, characterName: `Browser${name.replace(/[^a-z]/gi, '')}`.slice(0, 16), worldId: zone.worldId, zoneId: zone.zoneId });
   await page.evaluate(
@@ -67,7 +65,7 @@ async function openGame(clientPort: number, zone: ZoneProc, name: string, at: { 
   await page.evaluate(
     ([y, p]) => {
       const l = (window as unknown as W).__lodestone;
-      l.setQuality('medium');
+      l.setQuality('low');
       l.setFreezeTime(true);
       l.setTimeOfDay(0.45 * 3600);
       l.setLook(y, p);
@@ -100,20 +98,47 @@ async function finish(page: Page, name: string, results: Record<string, unknown>
   return probe?.maxDivM ?? Infinity;
 }
 
-const key = async (page: Page, down: string[], ms: number) => {
-  for (const k of down) await page.keyboard.down(k);
-  await sleep(ms);
-  for (const k of [...down].reverse()) await page.keyboard.up(k);
-};
-// 150 ms: SwiftShader runs the page at ~10 fps and keys are sampled per rendered frame.
-const tap = (page: Page, k: string) => key(page, [k], 150);
+type Pred = (arg: number) => boolean;
+
+/**
+ * SwiftShader runs the real client at a few fps, and the 60 Hz sim is capped
+ * at 8 steps per rendered frame, so game time runs slower than wall time.
+ * Everything below therefore waits on the game's own state (steps, modes),
+ * never on wall-clock sleeps.
+ */
+async function until(page: Page, fn: Pred, arg = 0, timeout = 240000): Promise<void> {
+  await page.waitForFunction(fn, arg, { polling: 50, timeout });
+}
+async function steps(page: Page, n: number): Promise<void> {
+  const s0 = await page.evaluate(() => (window as unknown as W).__lodestone.player().seq);
+  await until(page, (target) => (window as unknown as W).__lodestone.player().seq >= target, s0 + n);
+}
+/** Hold a key until the game state shows it took effect (keys are sampled per rendered frame). */
+async function pressUntil(page: Page, k: string, fn: Pred, arg = 0): Promise<void> {
+  await page.keyboard.down(k);
+  try {
+    await until(page, fn, arg, 60000);
+  } finally {
+    await page.keyboard.up(k);
+  }
+}
+
+/** Jump, double jump, then (once falling) the third press opens the glider. */
+async function jumpToGlide(page: Page): Promise<void> {
+  await pressUntil(page, 'Space', () => (window as unknown as W).__lodestone.player().mode === 'air');
+  await steps(page, 12);
+  await pressUntil(page, 'Space', () => (window as unknown as W).__lodestone.player().airJumps >= 1);
+  await until(page, () => (window as unknown as W).__lodestone.player().vel.y < -1);
+  await pressUntil(page, 'Space', () => (window as unknown as W).__lodestone.player().mode === 'glide');
+}
 
 async function main(): Promise<void> {
   const wasm = path.join(repoRoot, 'worldgen', 'pkg', 'worldgen.wasm');
-  const ground = await loadWorldgenGround(fs.readFileSync(wasm), SEED);
-  note(`WP10 headless browser run ${new Date().toISOString()}: Chromium (SwiftShader) + Vite dev client with ?ground=worldgen vs the real zone binary on seed ${SEED}`);
+  const ground = zoneGround(await loadWorldgenGround(fs.readFileSync(wasm), SEED));
+  note(`WP10 headless browser run ${new Date().toISOString()}: Chromium (SwiftShader) + Vite dev client (WP05 terrain, WP12 towers) vs the real zone binary on seed ${SEED}`);
+  note('(SwiftShader renders the real client at a few fps, so the run is paced by game steps, not wall time.)');
   const bin = buildZone();
-  const zone = await startZone(bin, SEED, { LODESTONE_ZONE_DEBUG_RAIN: '0', LODESTONE_ZONE_DEBUG_UPDRAFTS: updraftSpec });
+  const zone = await startZone(bin, SEED, { LODESTONE_ZONE_DEBUG_RAIN: '0', LODESTONE_ZONE_DEBUG_UPDRAFTS: updraftSpec, LODESTONE_ZONE_EXIT_AFTER: '30m' });
   const clientPort = await freePort();
   const vite = await startVite(clientPort);
   const results: Record<string, unknown> = {};
@@ -123,43 +148,69 @@ async function main(): Promise<void> {
     note('climb (ledge below the 14.5 m cliff, facing west):');
     let page = await openGame(clientPort, zone, 'climb', { x: 1336.2, z: 2339.35 }, Math.PI / 2, 0.35);
     await page.keyboard.down('KeyW');
-    await sleep(2600);
+    await until(page, () => (window as unknown as W).__lodestone.player().mode === 'climb');
+    await steps(page, 120);
     await shot(page, 'climb-grab');
-    await sleep(3000);
+    await steps(page, 180);
     await shot(page, 'climb-mid');
-    // Keep climbing until the mantle puts us on the top, then let go and
-    // turn around to look back down the cliff.
-    await page.waitForFunction(() => {
+    await until(page, () => {
       const p = (window as unknown as W).__lodestone.player();
       return p.pos.y > 221 && p.mode !== 'climb';
-    }, null, { polling: 50, timeout: 15000 });
-    await sleep(250);
+    });
+    await steps(page, 15);
     await page.keyboard.up('KeyW');
     await shot(page, 'climb-mantled');
     await page.evaluate(() => (window as unknown as W).__lodestone.setLook(-Math.PI / 2, -0.75));
-    await sleep(1500);
+    await steps(page, 30);
     await shot(page, 'climb-top-looking-down');
     worst = Math.max(worst, await finish(page, 'climb', results));
+
+    // --- WP12 tower: climb with a rest on the ledge, glide from the top.
+    note('tower (14 m west of the tower at (1888, 1760), facing east):');
+    page = await openGame(clientPort, zone, 'tower', { x: 1874, z: 1760 }, -Math.PI / 2, 0.45);
+    const topY = ground.heightAt(1888, 1760);
+    await page.keyboard.down('KeyW');
+    await until(page, () => (window as unknown as W).__lodestone.player().mode === 'climb');
+    await steps(page, 150);
+    await shot(page, 'tower-climb');
+    await until(page, (top) => {
+      const p = (window as unknown as W).__lodestone.player();
+      return p.mode !== 'climb' && p.pos.y > top - 15;
+    }, topY);
+    await page.keyboard.up('KeyW');
+    await until(page, () => (window as unknown as W).__lodestone.player().stamina >= 99.9);
+    await shot(page, 'tower-ledge-rested');
+    await page.keyboard.down('KeyW');
+    await until(page, (top) => {
+      const p = (window as unknown as W).__lodestone.player();
+      return p.mode !== 'climb' && p.pos.y >= top - 0.01;
+    }, topY);
+    await shot(page, 'tower-top');
+    await steps(page, 20);
+    await jumpToGlide(page);
+    await page.evaluate(() => (window as unknown as W).__lodestone.setLook(-Math.PI / 2, -0.4));
+    await steps(page, 150);
+    await shot(page, 'tower-glide');
+    await page.keyboard.up('KeyW');
+    worst = Math.max(worst, await finish(page, 'tower', results));
 
     // --- glide off the peak.
     note('glide (the 360 m peak, facing south over the drop):');
     page = await openGame(clientPort, zone, 'glide', { x: 1122, z: 2301 }, Math.PI, -0.45);
     await page.keyboard.down('KeyW');
-    await key(page, ['ShiftLeft'], 1400);
-    await tap(page, 'Space');
-    await sleep(380);
-    await tap(page, 'Space');
-    await sleep(480);
-    await tap(page, 'Space');
-    await sleep(2500);
+    await page.keyboard.down('ShiftLeft');
+    await steps(page, 80);
+    await page.keyboard.up('ShiftLeft');
+    await jumpToGlide(page);
+    await steps(page, 150);
     await shot(page, 'glide');
     await page.keyboard.down('KeyA');
-    await sleep(1500);
+    await steps(page, 90);
     await page.keyboard.up('KeyA');
-    await tap(page, 'KeyG');
-    await sleep(500);
-    await tap(page, 'KeyG');
-    await sleep(1500);
+    await pressUntil(page, 'KeyG', () => (window as unknown as W).__lodestone.player().mode === 'air');
+    await steps(page, 30);
+    await pressUntil(page, 'KeyG', () => (window as unknown as W).__lodestone.player().mode === 'glide');
+    await steps(page, 90);
     await page.keyboard.up('KeyW');
     await shot(page, 'glide-late');
     worst = Math.max(worst, await finish(page, 'glide', results));
@@ -168,12 +219,14 @@ async function main(): Promise<void> {
     note('swim (dry shore south of the lake, facing north):');
     page = await openGame(clientPort, zone, 'swim', { x: 1418, z: 1858 }, Math.PI, -0.15);
     await page.keyboard.down('KeyW');
-    await sleep(6500);
+    await until(page, () => (window as unknown as W).__lodestone.player().mode === 'swim');
+    await steps(page, 120);
     await shot(page, 'swim');
     await page.keyboard.up('KeyW');
     await page.evaluate(() => (window as unknown as W).__lodestone.setLook(0, -0.15));
     await page.keyboard.down('KeyW');
-    await sleep(5000);
+    await until(page, () => (window as unknown as W).__lodestone.player().mode !== 'swim');
+    await steps(page, 30);
     await page.keyboard.up('KeyW');
     await shot(page, 'swim-ashore');
     worst = Math.max(worst, await finish(page, 'swim', results));

@@ -74,4 +74,6 @@ fields leaves one mask bit free in SelfState's u16 mask.
 | `server/zone` (WP03/WP06/WP07) | SelfState via `movement.SelfFields`, env per tick, per-mode validation, Event 100 |
 | `tools/bots` (WP03/WP07) | predict with `NewState` and the weather env; resync with `FromSelf` |
 | `worldgen` (WP01), `server/pkg/worldhost` (WP07) | `water_height` export and wrappers (additive) |
+| `server/pkg/structures`, `client/src/world/structures/overlay.ts` (WP12), `client/src/world/core/ground.ts` (WP05) | `WaterAt` / `waterAt` pass the terrain's water through the combined ground (additive) |
+| `server/zone` WP12 tests, `Server.Teleport` | tower climbs follow WP10 rules (`movement.PlanClimb`), teleports keep the stamina wheel |
 | Generated code | `npm run gen` (TS, Go, Rust constants; protocol TS/Go; golden vectors) |

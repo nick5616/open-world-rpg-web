@@ -278,6 +278,16 @@ sampled per rendered frame, so at very low frame rates (headless
 SwiftShader ~10 fps) a tap shorter than a frame can be missed (WP02
 behavior).
 
+### Towers (WP12)
+
+Since WP12 the game and the zone simulate on terrain + the structure overlay
+(`StructureGround` / `structures.Ground`: height = max(terrain, structure
+tops)). The step only reads `heightAt`/`waterAt`, so tower walls (80°) are
+climbed like any steep slope, the ledge is walkable (resting there refills
+the wheel), the top is mantled and glided from. Water passes through to the
+terrain's. On a slope a tower's downhill face can be taller than one wheel
+climbs; approach from the uphill side.
+
 ### Env (rain, updrafts)
 
 Online, `NetPlay` builds the env per step from the zone's seed and the
@@ -303,11 +313,14 @@ overrides: `?rain=1|0` and `?updraft=x,z,r,top,lift` (zone:
 
 ## Golden trajectories
 
-WP10 adds eight **terrain goldens** (`golden/movement_wp10_*.json`, format
+WP10 adds nine **terrain goldens** (`golden/movement_wp10_*.json`, format
 version 2) on the official world (seed 20261108) through worldgen.wasm:
 `climb`, `climb_rain`, `climb_kick`, `glide`, `glide_updraft`, `swim`
-(incl. drowning), `slope`, `stamina` (scripts in `golden/wp10.ts`; sites in
-`docs/evidence/wp10-sites.txt`). Rows are
+(incl. drowning), `slope`, `stamina`, and `tower` on the combined ground
+(terrain + WP12's tower overlay, `ground.structures: "towers"`): climb the
+80° lower wall, rest on the ledge, climb the upper wall, mantle, glide from
+the top. Scripts in `golden/wp10.ts` (`planClimb` = Go `movement.PlanClimb`);
+sites in `docs/evidence/wp10-sites.txt`. Rows are
 `[x,y,z,vx,vy,vz,airJumps,mode,stamina,timer,lunge,flags]`; the header
 carries `env` (raining, updraft columns) and `staminaMax`. They need
 `npm run build:wasm`; the TS test (`traversal.test.ts`) and the Go replay

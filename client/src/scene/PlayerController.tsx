@@ -65,7 +65,12 @@ export function PlayerController({ onStep, driver }: Props) {
   const consumeLook = useMouseLook();
   // Created once; later ground swaps go through setGround so the player keeps their state.
   const [sim] = useState(() => {
-    const p = driver?.spawn ?? { x: SPAWN.x, y: ground.heightAt(SPAWN.x, SPAWN.z), z: SPAWN.z };
+    const p = { ...(driver?.spawn ?? { x: SPAWN.x, y: ground.heightAt(SPAWN.x, SPAWN.z), z: SPAWN.z }) };
+    // WP10: Welcome's y is cm-rounded while the zone stands exactly on the
+    // ground; start on the identical surface, or the first step is a tiny
+    // fall and (on a slope, where it turns into a slide) costs corrections.
+    const gy = ground.heightAt(p.x, p.z);
+    if (Math.abs(gy - p.y) < 0.01) p.y = gy;
     return new LocalSim(ground, p);
   });
   const look = useRef({ yaw: 0, pitch: 0 });

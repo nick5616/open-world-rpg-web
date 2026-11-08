@@ -6,18 +6,19 @@
 // Builds and runs the real zone binary on the generated official world
 // (seed 20261108, no DB/Redis), connects this package's Node client
 // (LocalSim + ZoneSession + prediction on worldgen.wasm terrain) over
-// WebSocket and plays scripted timelines in real time: climb the 14.5 m cliff
-// and mantle, the same climb in rain (second zone with rain forced), glide
-// off the 360 m peak (towers have no geometry yet, so the highest nearby
-// terrain stands in), ride a debug updraft, swim the lake out and back, and
-// swim until drowning. Writes per-mode max divergence to
-// docs/evidence/wp10-acceptance.{txt,json} and exits non-zero above 10 cm.
+// WebSocket and plays scripted timelines in real time on the zone's ground
+// (terrain + WP12 towers): climb the 14.5 m cliff and mantle, climb a WP12
+// tower (80 degree walls, rest on the ledge) and glide from its top, the same
+// cliff in rain (second zone with rain forced), glide off the 360 m peak,
+// ride a debug updraft, swim the lake out and back, and swim until drowning.
+// Writes per-mode max divergence to docs/evidence/wp10-acceptance.{txt,json} and exits non-zero above 10 cm.
 
 import fs from 'node:fs';
 import path from 'node:path';
 import { UpdraftColumns, type UpdraftColumn } from '../updraft';
 import { loadWorldgenGround } from '../worldgenGround';
-import { buildZone, formatRun, goAvailable, repoRoot, runTimeline, startZone, type Beat, type RunResult, type ZoneProc } from './traversalRun';
+import { MoveMode } from '@lodestone/contracts';
+import { buildZone, formatRun, goAvailable, repoRoot, runTimeline, startZone, zoneGround, type Beat, type RunResult, type ZoneProc } from './traversalRun';
 
 const SEED = '20261108';
 const LIMIT_M = 0.1;
@@ -69,6 +70,39 @@ const swim: Beat[] = [
   { dur: 5, held: fwd, yawDeg: 0, note: 'turn, swim back, walk out' },
   { dur: 2.5, note: 'stand: regen after 1 s' },
 ];
+// WP12 tower at site (1888, 1760): approach from 14 m west, facing east.
+const towerSite = { x: 1874, z: 1760, yawDeg: -90 };
+function towerIndex(g: ReturnType<typeof zoneGround>): number {
+  for (let i = 0; i < g.overlay.length; i++) {
+    const t = g.overlay.at(i) as unknown as { cx: number; cz: number };
+    if (Math.hypot(t.cx - 1888, t.cz - 1760) < 1) return i;
+  }
+  throw new Error('no tower at (1888, 1760)');
+}
+let climbedOnce = false;
+function towerTimeline(topY: number): Beat[] {
+  return [
+    { dur: 0.3 },
+    {
+      dur: 14,
+      held: fwd,
+      note: 'walk into the 80 degree lower wall, climb it to the ledge',
+      until: (s) => {
+        if (s.mode === MoveMode.climb) climbedOnce = true;
+        return climbedOnce && s.mode === MoveMode.ground;
+      },
+    },
+    { dur: 3, note: 'rest on the ledge: the wheel refills (1 s delay, 40/s)' },
+    { dur: 14, held: fwd, note: 'climb the upper wall, mantle onto the top', until: (s) => s.mode === MoveMode.ground && s.pos.y >= topY - 0.01 },
+    { dur: 0.7, held: fwd, note: 'run across the top' },
+    { dur: 0.35, held: fwd, press: 'jump', note: 'jump off the far edge' },
+    { dur: 0.45, held: fwd, press: 'jump', note: 'double jump' },
+    { dur: 5, held: fwd, press: 'jump', note: 'third press: glide from the tower top' },
+    { dur: 2, held: { forward: true, left: true }, note: 'steer' },
+    { dur: 4, held: fwd, press: 'glide', note: 'G: close the glider, fall, land' },
+  ];
+}
+
 const drown: Beat[] = [
   { dur: 0.3 },
   { dur: 19, held: fwd, note: 'swim for the deep middle until the wheel is empty, drown, respawn at the shore' },
@@ -79,7 +113,10 @@ async function main(): Promise<void> {
   if (!goAvailable()) throw new Error('Go not found (PATH or ~/sdk/go/bin)');
   const wasm = path.join(repoRoot, 'worldgen', 'pkg', 'worldgen.wasm');
   if (!fs.existsSync(wasm)) throw new Error('build the wasm first: npm run build:wasm');
-  const ground = await loadWorldgenGround(fs.readFileSync(wasm), SEED);
+  // Terrain + WP12 towers: exactly the zone's ground.
+  const ground = zoneGround(await loadWorldgenGround(fs.readFileSync(wasm), SEED));
+  const tw = ground.overlay.at(towerIndex(ground)) as unknown as { topY: number };
+  const towerBeats = towerTimeline(tw.topY);
   console.log('building zone...');
   const bin = buildZone();
   const zones: ZoneProc[] = [];
@@ -93,6 +130,7 @@ async function main(): Promise<void> {
     const wetEnv = { raining: true, updraft: null };
     const plan: [string, ZoneProc, typeof climbSite, Beat[], typeof dryEnv | typeof wetEnv][] = [
       ['climb', dry, climbSite, climb, dryEnv],
+      ['tower', dry, towerSite, towerBeats, dryEnv],
       ['climb-rain', wet, climbSite, climbRain, wetEnv],
       ['glide', dry, peak, glide, dryEnv],
       ['glide-updraft', dry, peakNorth, glideUpdraft, dryEnv],

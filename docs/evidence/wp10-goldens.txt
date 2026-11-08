@@ -1,7 +1,7 @@
 # WP10 terrain goldens: TS generator summary (npm run golden -w client), the Go replay
 # (go test ./movement -run 'TerrainGoldens|ClientGoldens' -v) and the zone validation replay
 # (go test ./internal/game -run ValidationPassesEveryLegitMode -v).
-# 2026-11-08T14:23:28Z, worldgen.wasm sha256 ad2e60caf6bcf5be, seed 20261108
+# 2026-11-08T14:59:55Z, worldgen.wasm sha256 ad2e60caf6bcf5be, seed 20261108
 
 wrote movement_flat.json (690 steps)
 wrote movement_plane.json (690 steps)
@@ -26,6 +26,9 @@ wrote movement_wp10_swim.json
 wrote movement_wp10_slope.json
   slope: 740 steps, modes {"ground":445,"climb":295}, end stamina 82.8 flags 0
   353:ground->climb@(1111.8,226.0,2398.1) 648:climb->ground@(1111.8,226.0,2398.1)
+wrote movement_wp10_tower.json
+  tower: 2092 steps, modes {"ground":614,"climb":838,"air":160,"glide":480}, end stamina 95.4 flags 0
+  50:ground->climb@(1877.4,161.2,1760.0) 497:climb->ground@(1880.6,175.9,1760.0) 686:ground->climb@(1881.5,175.9,1760.0) 1077:climb->ground@(1884.3,188.9,1760.0) 1328:ground->air@(1891.4,189.0,1760.0) 1373:air->glide@(1895.1,191.0,1760.0) 1853:glide->air@(1961.9,175.0,1750.8) 1968:air->ground@(1974.1,137.2,1738.6)
 wrote movement_wp10_stamina.json
   stamina: 900 steps, modes {"ground":900}, end stamina 100.0 flags 0
   
@@ -33,35 +36,38 @@ wrote movement_wp10_stamina.json
     client_golden_test.go:64: movement_flat.json: 690 frames, max |go - ts| = 2.6645352591003757e-15
     client_golden_test.go:64: movement_plane.json: 690 frames, max |go - ts| = 1.4210854715202004e-14
 --- PASS: TestReplaysClientGoldens (0.02s)
-    terrain_golden_test.go:151: climb/wasm: 616 frames, modes map[0:138 2:478], max |go - ts| = 6.409494854920721e-31
-    terrain_golden_test.go:151: climb/terrain: 616 frames, modes map[0:138 2:478], max |go - ts| = 6.409494854920721e-31
-    terrain_golden_test.go:151: climb_kick/wasm: 501 frames, modes map[0:106 1:84 2:311], max |go - ts| = 6.409494854920721e-31
-    terrain_golden_test.go:151: climb_kick/terrain: 501 frames, modes map[0:106 1:84 2:311], max |go - ts| = 6.409494854920721e-31
-    terrain_golden_test.go:151: climb_rain/wasm: 900 frames, modes map[0:209 2:691], max |go - ts| = 6.409494854920721e-31
-    terrain_golden_test.go:151: climb_rain/terrain: 900 frames, modes map[0:209 2:691], max |go - ts| = 6.409494854920721e-31
-    terrain_golden_test.go:151: glide/wasm: 1034 frames, modes map[0:179 1:295 3:560], max |go - ts| = 1.7763568394002505e-15
-    terrain_golden_test.go:151: glide/terrain: 1034 frames, modes map[0:179 1:295 3:560], max |go - ts| = 1.7763568394002505e-15
-    terrain_golden_test.go:151: glide_updraft/wasm: 744 frames, modes map[0:90 1:54 3:600], max |go - ts| = 1.9721522630525295e-30
-    terrain_golden_test.go:151: glide_updraft/terrain: 744 frames, modes map[0:90 1:54 3:600], max |go - ts| = 1.9721522630525295e-30
-    terrain_golden_test.go:151: slope/wasm: 740 frames, modes map[0:445 2:295], max |go - ts| = 2.220446049250313e-16
-    terrain_golden_test.go:151: slope/terrain: 740 frames, modes map[0:445 2:295], max |go - ts| = 2.220446049250313e-16
-    terrain_golden_test.go:151: stamina/wasm: 900 frames, modes map[0:900], max |go - ts| = 0
-    terrain_golden_test.go:151: stamina/terrain: 900 frames, modes map[0:900], max |go - ts| = 0
-    terrain_golden_test.go:151: swim/wasm: 2180 frames, modes map[0:632 4:1548], max |go - ts| = 1.3805065841367707e-30
-    terrain_golden_test.go:151: swim/terrain: 2180 frames, modes map[0:632 4:1548], max |go - ts| = 1.3805065841367707e-30
---- PASS: TestReplaysClientTerrainGoldens (1.04s)
+    terrain_golden_test.go:167: climb/wasm: 616 frames, modes map[0:138 2:478], max |go - ts| = 6.409494854920721e-31
+    terrain_golden_test.go:167: climb/terrain: 616 frames, modes map[0:138 2:478], max |go - ts| = 6.409494854920721e-31
+    terrain_golden_test.go:167: climb_kick/wasm: 501 frames, modes map[0:106 1:84 2:311], max |go - ts| = 6.409494854920721e-31
+    terrain_golden_test.go:167: climb_kick/terrain: 501 frames, modes map[0:106 1:84 2:311], max |go - ts| = 6.409494854920721e-31
+    terrain_golden_test.go:167: climb_rain/wasm: 900 frames, modes map[0:209 2:691], max |go - ts| = 6.409494854920721e-31
+    terrain_golden_test.go:167: climb_rain/terrain: 900 frames, modes map[0:209 2:691], max |go - ts| = 6.409494854920721e-31
+    terrain_golden_test.go:167: glide/wasm: 1034 frames, modes map[0:179 1:295 3:560], max |go - ts| = 1.7763568394002505e-15
+    terrain_golden_test.go:167: glide/terrain: 1034 frames, modes map[0:179 1:295 3:560], max |go - ts| = 1.7763568394002505e-15
+    terrain_golden_test.go:167: glide_updraft/wasm: 744 frames, modes map[0:90 1:54 3:600], max |go - ts| = 1.9721522630525295e-30
+    terrain_golden_test.go:167: glide_updraft/terrain: 744 frames, modes map[0:90 1:54 3:600], max |go - ts| = 1.9721522630525295e-30
+    terrain_golden_test.go:167: slope/wasm: 740 frames, modes map[0:445 2:295], max |go - ts| = 2.220446049250313e-16
+    terrain_golden_test.go:167: slope/terrain: 740 frames, modes map[0:445 2:295], max |go - ts| = 2.220446049250313e-16
+    terrain_golden_test.go:167: stamina/wasm: 900 frames, modes map[0:900], max |go - ts| = 0
+    terrain_golden_test.go:167: stamina/terrain: 900 frames, modes map[0:900], max |go - ts| = 0
+    terrain_golden_test.go:167: swim/wasm: 2180 frames, modes map[0:632 4:1548], max |go - ts| = 1.3805065841367707e-30
+    terrain_golden_test.go:167: swim/terrain: 2180 frames, modes map[0:632 4:1548], max |go - ts| = 1.3805065841367707e-30
+    terrain_golden_test.go:167: tower/wasm+towers: 2092 frames, modes map[0:614 1:160 2:838 3:480], max |go - ts| = 2.1693674893577825e-30
+    terrain_golden_test.go:167: tower/terrain+towers: 2092 frames, modes map[0:614 1:160 2:838 3:480], max |go - ts| = 2.1693674893577825e-30
+--- PASS: TestReplaysClientTerrainGoldens (1.19s)
 PASS
-ok  	lodestone/server/pkg/movement	2.206s
+ok  	lodestone/server/pkg/movement	2.488s
 
-    traversal_test.go:84: climb: 616 frames applied, 0 violations, 0 drowning respawns
-    traversal_test.go:84: climb_kick: 501 frames applied, 0 violations, 0 drowning respawns
-    traversal_test.go:84: climb_rain: 900 frames applied, 0 violations, 0 drowning respawns
-    traversal_test.go:84: glide: 1034 frames applied, 0 violations, 0 drowning respawns
-    traversal_test.go:84: glide_updraft: 744 frames applied, 0 violations, 0 drowning respawns
-    traversal_test.go:84: slope: 740 frames applied, 0 violations, 0 drowning respawns
-    traversal_test.go:84: stamina: 900 frames applied, 0 violations, 0 drowning respawns
-    traversal_test.go:84: swim: 2180 frames applied, 0 violations, 1 drowning respawns
---- PASS: TestValidationPassesEveryLegitMode (0.84s)
+    traversal_test.go:97: climb: 616 frames applied, 0 violations, 0 drowning respawns
+    traversal_test.go:97: climb_kick: 501 frames applied, 0 violations, 0 drowning respawns
+    traversal_test.go:97: climb_rain: 900 frames applied, 0 violations, 0 drowning respawns
+    traversal_test.go:97: glide: 1034 frames applied, 0 violations, 0 drowning respawns
+    traversal_test.go:97: glide_updraft: 744 frames applied, 0 violations, 0 drowning respawns
+    traversal_test.go:97: slope: 740 frames applied, 0 violations, 0 drowning respawns
+    traversal_test.go:97: stamina: 900 frames applied, 0 violations, 0 drowning respawns
+    traversal_test.go:97: swim: 2180 frames applied, 0 violations, 1 drowning respawns
+    traversal_test.go:97: tower: 2092 frames applied, 0 violations, 0 drowning respawns
+--- PASS: TestValidationPassesEveryLegitMode (0.88s)
 --- PASS: TestPerModeValidationRejects (0.00s)
 PASS
-ok  	lodestone/server/zone/internal/game	1.375s
+ok  	lodestone/server/zone/internal/game	1.637s

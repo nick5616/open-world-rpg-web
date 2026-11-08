@@ -1,125 +1,170 @@
 {
   "seed": "20261108",
-  "worstM": 0.007613709582087114,
+  "worstM": 0.007953480742520261,
   "results": {
     "climb": {
       "probe": {
-        "snapshots": 457,
-        "maxDivM": 0.007451089484664424,
+        "snapshots": 2519,
+        "maxDivM": 0.007588362601185282,
         "perMode": {
           "ground": {
-            "snapshots": 197,
-            "maxDivM": 0.006165442284948834,
-            "maxY": 223.75,
+            "snapshots": 801,
+            "maxDivM": 0.005227290400812073,
+            "maxY": 224.18,
             "minY": 206.09
           },
           "climb": {
-            "snapshots": 260,
-            "maxDivM": 0.007451089484664424,
-            "maxY": 222.08,
-            "minY": 207.99
+            "snapshots": 1718,
+            "maxDivM": 0.007588362601185282,
+            "maxY": 222.15,
+            "minY": 208.06
           }
         },
         "transitions": [
-          "seq 18: start -> ground at (1336.20, 206.09, 2339.35)",
-          "seq 110: ground -> climb at (1334.32, 207.99, 2339.37)",
-          "seq 629: climb -> ground at (1324.66, 222.37, 2341.09)"
+          "seq 34: start -> ground at (1336.20, 206.09, 2339.35)",
+          "seq 70: ground -> climb at (1334.26, 208.06, 2339.39)",
+          "seq 590: climb -> ground at (1324.39, 222.67, 2341.10)"
         ]
       },
       "prediction": {
         "reconciles": 0,
-        "agreements": 134,
+        "agreements": 97,
+        "maxError": 0
+      }
+    },
+    "tower": {
+      "probe": {
+        "snapshots": 2269,
+        "maxDivM": 0.007953480742520261,
+        "perMode": {
+          "ground": {
+            "snapshots": 495,
+            "maxDivM": 0.007071208061465642,
+            "maxY": 188.95,
+            "minY": 161.15
+          },
+          "climb": {
+            "snapshots": 1086,
+            "maxDivM": 0.007953480742520261,
+            "maxY": 188.95,
+            "minY": 161.15
+          },
+          "air": {
+            "snapshots": 42,
+            "maxDivM": 0.006617155380152931,
+            "maxY": 191.02,
+            "minY": 189.61
+          },
+          "glide": {
+            "snapshots": 646,
+            "maxDivM": 0.007362251042096118,
+            "maxY": 190.55,
+            "minY": 183.08
+          }
+        },
+        "transitions": [
+          "seq 25: start -> ground at (1874.26, 161.27, 1760.00)",
+          "seq 71: ground -> climb at (1877.52, 161.15, 1760.01)",
+          "seq 521: climb -> ground at (1880.81, 175.95, 1760.01)",
+          "seq 771: ground -> climb at (1881.53, 175.95, 1760.01)",
+          "seq 1166: climb -> ground at (1884.51, 188.95, 1760.01)",
+          "seq 1252: ground -> air at (1891.33, 189.61, 1760.01)",
+          "seq 1305: air -> glide at (1895.69, 190.55, 1760.01)"
+        ]
+      },
+      "prediction": {
+        "reconciles": 0,
+        "agreements": 195,
         "maxError": 0
       }
     },
     "glide": {
       "probe": {
-        "snapshots": 366,
-        "maxDivM": 0.006723687329370168,
+        "snapshots": 1724,
+        "maxDivM": 0.007951143830959897,
         "perMode": {
           "ground": {
-            "snapshots": 98,
-            "maxDivM": 0.006649821432270353,
+            "snapshots": 129,
+            "maxDivM": 0.006295524425670903,
             "maxY": 360.62,
-            "minY": 276.07
+            "minY": 355.38
           },
           "air": {
-            "snapshots": 122,
-            "maxDivM": 0.006723687329370168,
-            "maxY": 358.86,
-            "minY": 269.19
+            "snapshots": 179,
+            "maxDivM": 0.007951143830959897,
+            "maxY": 357.42,
+            "minY": 340.68
           },
           "glide": {
-            "snapshots": 146,
-            "maxDivM": 0.006630056067268469,
-            "maxY": 358.44,
-            "minY": 348.91
+            "snapshots": 1416,
+            "maxDivM": 0.00753192776830522,
+            "maxY": 356.78,
+            "minY": 330.82
           }
         },
         "transitions": [
-          "seq 18: start -> ground at (1122.00, 360.62, 2301.00)",
-          "seq 168: ground -> air at (1122.00, 357.49, 2311.67)",
-          "seq 229: air -> glide at (1122.00, 358.44, 2319.19)",
-          "seq 520: glide -> air at (1128.79, 348.66, 2359.91)",
-          "seq 671: air -> ground at (1144.81, 282.87, 2375.93)",
-          "seq 717: ground -> air at (1148.82, 275.27, 2382.90)"
+          "seq 16: start -> ground at (1122.00, 360.62, 2301.00)",
+          "seq 131: ground -> air at (1122.00, 356.04, 2313.67)",
+          "seq 187: air -> glide at (1122.00, 356.78, 2320.61)",
+          "seq 515: glide -> air at (1129.43, 345.66, 2366.67)",
+          "seq 555: air -> glide at (1133.63, 338.92, 2370.93)"
         ]
       },
       "prediction": {
         "reconciles": 0,
-        "agreements": 145,
+        "agreements": 93,
         "maxError": 0
       }
     },
     "swim": {
       "probe": {
-        "snapshots": 350,
-        "maxDivM": 0.006452319003526908,
+        "snapshots": 2506,
+        "maxDivM": 0.006327520192813819,
         "perMode": {
           "ground": {
-            "snapshots": 205,
-            "maxDivM": 0.006452319003526908,
-            "maxY": 128.33,
-            "minY": 126.54
+            "snapshots": 860,
+            "maxDivM": 0.006327520192813819,
+            "maxY": 128.32,
+            "minY": 126.56
           },
           "swim": {
-            "snapshots": 145,
-            "maxDivM": 0.0028076963492888957,
+            "snapshots": 1646,
+            "maxDivM": 0.0044516643129298905,
             "maxY": 126.63,
             "minY": 126.63
           }
         },
         "transitions": [
-          "seq 18: start -> ground at (1418.00, 128.03, 1858.00)",
-          "seq 282: ground -> swim at (1418.00, 126.63, 1876.32)",
-          "seq 530: swim -> ground at (1418.00, 126.54, 1875.80)"
+          "seq 16: start -> ground at (1418.00, 128.03, 1858.00)",
+          "seq 250: ground -> swim at (1418.00, 126.63, 1875.87)",
+          "seq 698: swim -> ground at (1418.00, 126.56, 1875.68)"
         ]
       },
       "prediction": {
         "reconciles": 0,
-        "agreements": 75,
+        "agreements": 101,
         "maxError": 0
       }
     },
     "observer": {
       "probe": {
-        "snapshots": 246,
+        "snapshots": 382,
         "maxDivM": 0.005516542548153967,
         "perMode": {
           "ground": {
-            "snapshots": 246,
+            "snapshots": 382,
             "maxDivM": 0.005516542548153967,
-            "maxY": 198.99,
+            "maxY": 199.13,
             "minY": 198.99
           }
         },
         "transitions": [
-          "seq 27: start -> ground at (1340.90, 198.99, 2336.34)"
+          "seq 16: start -> ground at (1340.81, 199.13, 2336.38)"
         ]
       },
       "prediction": {
         "reconciles": 0,
-        "agreements": 75,
+        "agreements": 30,
         "maxError": 0
       }
     }

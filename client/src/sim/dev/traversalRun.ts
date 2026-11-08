@@ -18,7 +18,18 @@ import { WebSocket as NodeWebSocket } from 'ws';
 import { NO_BUTTONS, type HeldButtons } from '../inputFrame';
 import { LocalSim } from '../localSim';
 import { cloneMoveState, type MoveState, type StepEnv } from '../movement';
+import type { GroundQuery } from '../ground';
+import { StructureGround } from '../../world/structures/overlay';
+import { towersFromAtlas } from '../../world/structures/towers';
 import type { WorldgenGround } from '../worldgenGround';
+
+/**
+ * The ground the zone simulates on since WP12: terrain + the tower overlay
+ * (server/zone/explore.go). Node clients must predict on the same.
+ */
+export function zoneGround(terrain: WorldgenGround): StructureGround {
+  return new StructureGround(terrain, towersFromAtlas(terrain.atlas.data, terrain).overlay);
+}
 import { devTicket } from '../../net/dev/devTicket';
 import type { WebSocketLike } from '../../net/transport';
 import { ZoneSession } from '../../net/zoneSession';
@@ -113,6 +124,8 @@ export interface Beat {
   press?: 'jump' | 'glide';
   /** Free text for the log. */
   note?: string;
+  /** End the beat early once the predicted state satisfies this (dur is then the timeout). */
+  until?: (s: MoveState) => boolean;
 }
 
 export interface ModeStat {
@@ -146,7 +159,7 @@ const wsFactory = (url: string) => new NodeWebSocket(url) as unknown as WebSocke
  * Connect to the zone at a dev spawn, play the timeline in real time and
  * measure prediction vs server per mode.
  */
-export async function runTimeline(zone: ZoneProc, ground: WorldgenGround, name: string, at: { x: number; z: number; yawDeg: number }, beats: Beat[], env: StepEnv): Promise<RunResult> {
+export async function runTimeline(zone: ZoneProc, ground: GroundQuery, name: string, at: { x: number; z: number; yawDeg: number }, beats: Beat[], env: StepEnv): Promise<RunResult> {
   const session = new ZoneSession({
     wsUrl: `ws://127.0.0.1:${zone.port}/ws?spawn=${at.x.toFixed(2)},${at.z.toFixed(2)}`,
     ticket: devTicket({ characterId: `wp10-${name}-${Date.now()}`, characterName: `Wp10${name.replace(/[^a-z]/gi, '').slice(0, 10)}`, worldId: zone.worldId, zoneId: zone.zoneId }),
@@ -237,6 +250,9 @@ export async function runTimeline(zone: ZoneProc, ground: WorldgenGround, name: 
       await new Promise((r) => setTimeout(r, 50));
       held = { ...held, [key]: b.held?.[key] ?? false };
       await new Promise((r) => setTimeout(r, Math.max(0, b.dur * 1000 - 50)));
+    } else if (b.until) {
+      const t1 = performance.now();
+      while (performance.now() - t1 < b.dur * 1000 && !b.until(sim.state)) await new Promise((r) => setTimeout(r, 10));
     } else {
       await new Promise((r) => setTimeout(r, b.dur * 1000));
     }
