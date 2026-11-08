@@ -159,7 +159,7 @@ for (let i = 0; i < 3; i++) {
 note('frame windows (SwiftShader software GL, not a GPU number)', frames);
 
 note('page errors', errors);
-writeFileSync(join(out, 'wp02-headless.log'), log.join('\n') + '\n');
+writeFileSync(join(out, 'wp02-headless.txt'), log.join('\n') + '\n');
 await browser.close();
 
 const ok = errors.length === 0 && Math.abs(walkSpeed - 4.889) < 0.05 && Math.abs(sprintSpeed - 7.822) < 0.08 && maxAirJumps === 1 && maxY > 1.6 && landed.grounded;
