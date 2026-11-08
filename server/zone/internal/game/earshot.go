@@ -38,11 +38,23 @@ func (s *Server) earshotTick(now time.Time) {
 	s.earshotNext = s.earshotNext.Add(earshotInterval)
 	// A fresh slice every time: the runner owns it after Offer.
 	ps := make([]voice.Player, 0, len(s.sessions))
+	cw := s.caves()
 	for _, e := range s.ents {
 		if e.Kind != proto.EntityKindPlayer || e.CharacterID == "" {
 			continue
 		}
-		ps = append(ps, voice.Player{ID: e.CharacterID, X: e.Move.Pos.X, Y: e.Move.Pos.Y, Z: e.Move.Pos.Z})
+		p := voice.Player{ID: e.CharacterID, X: e.Move.Pos.X, Y: e.Move.Pos.Y, Z: e.Move.Pos.Z}
+		// WP09 x WP11 (G3): the cave rule needs the cave system, which
+		// caveTick refreshed this tick (same as interest clipping), and the
+		// mouth a surface player stands at (same radius as interest).
+		if cw != nil {
+			if e.caveSys >= 0 {
+				p.Cave = uint32(e.caveSys) + 1
+			} else if m := cw.NearMouth(p.X, p.Z, mouthAOIM); m >= 0 {
+				p.Mouth = uint32(m) + 1
+			}
+		}
+		ps = append(ps, p)
 	}
 	s.cfg.Earshot.Offer(ps, s.serverTimeMs())
 }

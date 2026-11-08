@@ -17,9 +17,14 @@ import (
 type Player struct {
 	ID      string  // character id (= LiveKit identity)
 	X, Y, Z float64 // feet position, m (every head is PLAYER_HEIGHT above it, so distances are the same)
-	// Cave is the cave system the player is in, 0 = open air. Nothing sets it
-	// yet: caves are WP09. The rule is already here so WP09 only fills it.
+	// Cave is the cave system the player is in plus one, 0 = open air (the
+	// zone fills it from the WP09 cave graph, game/earshot.go).
 	Cave uint32
+	// Mouth, for a player in open air, is the cave system (plus one) whose
+	// opening they stand near, else 0: they hear (and are heard by) that
+	// system's dwellers with the cave radii, as interest clipping shows
+	// them to each other (spec 9 "plus its mouths").
+	Mouth uint32
 }
 
 // Neighbors calls fn with the index of every player that might be within r of
@@ -67,12 +72,13 @@ func NewComputer() *Computer {
 // Open air: 40 m / 48 m. Same cave system: 30 m / 38 m (spec 10: rock walls
 // keep voices close). One underground and one not, or different systems:
 // never, because spec 9 clips a cave dweller's world to their system plus its
-// mouths. Cave mouths (hearing someone just outside) are WP09's to refine.
+// mouths; someone in open air near one of the system's openings (Mouth) is
+// heard with the cave radii.
 func (c *Computer) radii(a, b *Player) (join, leave float64, ok bool) {
 	switch {
 	case a.Cave == 0 && b.Cave == 0:
 		return c.OpenM, c.OpenM + c.HystM, true
-	case a.Cave == b.Cave:
+	case a.Cave == b.Cave, a.Cave == 0 && a.Mouth == b.Cave, b.Cave == 0 && b.Mouth == a.Cave:
 		return c.CaveM, c.CaveM + c.HystM, true
 	}
 	return 0, 0, false

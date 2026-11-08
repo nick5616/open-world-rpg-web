@@ -33,6 +33,7 @@ radio branch (300 Hz-3 kHz band, soft clip, no pan). The listener is your
 camera (eye height, yaw, pitch); positions update every frame from
 `drawnRemotes` (the interpolation's output). Occlusion is re-checked at 4 Hz
 per speaker by sampling the ground height between the two heads.
+G3 integration fix: underground, samples in open cave air (`GroundQuery.caveAir`, WP09's cave density from loaded cells) no longer count, so the surface overhead doesn't muffle two people in the same cave; rock between them still does.
 
 ## Talking
 

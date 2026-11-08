@@ -6,12 +6,15 @@
 // level (`atLevel`, client/src/sim/caves.ts), so prediction and the server
 // agree underground exactly as they do on the surface.
 
-import { CaveGroundCore, type CaveCollideResult, type CaveOpening } from '@lodestone/worldgen';
+import { CaveGroundCore, caveRock, type CaveCellSource, type CaveCollideResult, type CaveOpening } from '@lodestone/worldgen';
 import type { GroundQuery } from '../../sim/ground';
 import type { CaveCellStore } from './caveStore';
 
 export class CaveGround implements GroundQuery {
   readonly core: CaveGroundCore;
+
+  /** The store without synchronous builds (missing cells read as rock). */
+  private readonly loaded: CaveCellSource;
 
   constructor(
     readonly surface: GroundQuery,
@@ -22,6 +25,12 @@ export class CaveGround implements GroundQuery {
   ) {
     const water = surface.waterAt ? (x: number, z: number) => surface.waterAt!(x, z) : undefined;
     this.core = new CaveGroundCore((x, z) => surface.heightAt(x, z), openings, store, water, (x, z) => terrain.heightAt(x, z));
+    this.loaded = { cell: (cx, cy, cz) => (store.has(cx, cy, cz) ? store.cell(cx, cy, cz) : undefined) };
+  }
+
+  /** Open cave air at (x, y, z) from the loaded cells (voice occlusion; see GroundQuery.caveAir). */
+  caveAir(x: number, y: number, z: number): boolean {
+    return this.core.inCave(x, y, z) && !caveRock(this.loaded, x, y, z);
   }
 
   /** The surface (non-step callers: rendering, overlays, spawns). */
