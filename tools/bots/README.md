@@ -39,6 +39,7 @@ go run ./tools/bots -n 150 -mode clustered -radius 300 -duration 75s -json clust
 | `-ticket` | | connect ONE bot with this ticket, or `@file`, e.g. from the director's `POST /v1/connect` (no dev spawn: the character row decides) |
 | `-json` | | write the summary (plus per-bot rows) as JSON |
 | `-metrics`, `-metrics-out` | derived from `-url` | scrape the zone's `/metrics` before disconnecting and save it |
+| `-terrain` | auto | `auto`: when the zone reports terrain (`atlasHash` in `/debug/zone`), rebuild the same world with `worldgen.wasm` (refusing if the atlas hash differs), predict on it, spawn on dry land, turn back from the sea; `on` requires it; `off` predicts on flat ground |
 
 The summary prints downlink/uplink kbps (avg/p50/p95/max across bots,
 including WebSocket framing, excluding TCP/IP), entities in view, snapshot
@@ -47,7 +48,24 @@ AOI metrics, then `PASS` or `FAIL` against the WP03 budgets (exit code 3 on
 FAIL). RTT is measured with `time.Now`, which moves in ~0.5 ms steps on
 Windows, so local RTTs read as 0-0.1 ms.
 
+## Terrain (WP07)
+
+With terrain, all bots share one `worldhost.Terrain` (a thread-safe chunk
+cache) built from the zone's `/debug/zone` (seed, spec, genVersion,
+atlasHash). Their chunks are generated before connecting, each bot keeps
+asking for chunks around itself, and on Welcome a dev-spawned bot takes y
+from its own terrain (Welcome's y is cm-rounded; the server stands exactly
+on the ground). The summary adds `predictionMismatches` (checks off by >= 1
+cm before that bot's first resync; after a resync a bot replays from
+cm-quantized state, so 1 cm rounding noise is expected) and a `terrain`
+block (world, the bots' height range, cache counters), and prints the zone's
+`zone_terrain_*` metrics. Use `-ramp 10s` on a busy machine: starved bots
+send bunched packets that trip the zone's frame budget (dropped frames show
+up as resyncs, unrelated to terrain).
+
 ## Test
 
-Exercised end to end by the soaks (`docs/evidence/wp03-soak-*`); the zone's
-own tests cover the protocol paths. `go vet ./...` must stay clean.
+Exercised end to end by the soaks (`docs/evidence/wp03-soak-*`,
+`docs/evidence/wp07-soak-*`); the zone's own tests cover the protocol paths.
+`go test ./...` covers personas, the verdict and (with the built wasm) land
+spawns and sea avoidance. `go vet ./...` must stay clean.
