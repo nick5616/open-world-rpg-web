@@ -1,0 +1,24 @@
+# WP04 dev smoke: account (:8091) + director (:8090), default config, shared dev DB — 2026-11-08T11:32:44.598Z
+$ GET http://localhost:8091/healthz
+200 {"ok":true,"svc":"account","uptimeS":3}
+$ GET http://localhost:8090/healthz
+200 {"ok":true,"svc":"director","uptimeS":3}
+$ GET http://localhost:8091/v1/auth/config
+200 {"devAuth":true,"firebase":null,"localProfiles":true,"providers":[]}
+$ GET http://localhost:8091/v1/worlds
+200 {"worlds":[{"id":"36b6018e-aa4b-49c1-9987-ea3223d5f94e","name":"Lodestone","seed":"20261108","spec":{"note":"replace with worldgen spec_from_seed (WP01)","seed":"20261108","placeholder":true},"genVersion":"placeholder","atlasHash":"placeholder","official":true}]}
+$ GET http://localhost:8090/v1/worlds/36b6018e-aa4b-49c1-9987-ea3223d5f94e/status
+200 {"awake":false,"players":0,"worldId":"36b6018e-aa4b-49c1-9987-ea3223d5f94e","zones":0}
+$ account log
+{"time":"2026-11-08T03:32:41.0723122-08:00","level":"WARN","msg":"using the insecure development key; set it for any shared deployment","svc":"account","env":"LODESTONE_SESSION_PRIVATE_KEY"}
+{"time":"2026-11-08T03:32:41.0723122-08:00","level":"WARN","msg":"using the insecure development key; set it for any shared deployment","svc":"account","env":"LODESTONE_SAVE_PRIVATE_KEY"}
+{"time":"2026-11-08T03:32:41.1831983-08:00","level":"INFO","msg":"official world","svc":"account","id":"36b6018e-aa4b-49c1-9987-ea3223d5f94e","seed":"20261108","created":true}
+{"time":"2026-11-08T03:32:41.1831983-08:00","level":"WARN","msg":"dev auth enabled: anyone can sign in by username (LODESTONE_DEV_AUTH=0 to disable)","svc":"account"}
+{"time":"2026-11-08T03:32:41.1831983-08:00","level":"INFO","msg":"account ready","svc":"account","firebase":false,"devAuth":true,"production":false}
+{"time":"2026-11-08T03:32:41.1831983-08:00","level":"INFO","msg":"listening","svc":"account","addr":":8091"}
+$ director log
+{"time":"2026-11-08T03:32:41.594442-08:00","level":"WARN","msg":"using the insecure development key; set it for any shared deployment","svc":"director","env":"LODESTONE_TICKET_PRIVATE_KEY"}
+{"time":"2026-11-08T03:32:41.594442-08:00","level":"WARN","msg":"using the insecure development key; set it for any shared deployment","svc":"director","env":"LODESTONE_SESSION_PUBLIC_KEY"}
+{"time":"2026-11-08T03:32:41.594442-08:00","level":"WARN","msg":"using the insecure development key; set it for any shared deployment","svc":"director","env":"LODESTONE_SAVE_PUBLIC_KEY"}
+{"time":"2026-11-08T03:32:41.6137569-08:00","level":"INFO","msg":"director ready","svc":"director","social":"ws://localhost:8093/ws","production":false}
+{"time":"2026-11-08T03:32:41.6137569-08:00","level":"INFO","msg":"listening","svc":"director","addr":":8090"}

@@ -3,6 +3,8 @@ package director
 import (
 	"encoding/json"
 	"os"
+	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -25,6 +27,11 @@ func TestAcceptanceTicketFile(t *testing.T) {
 	path := env.Str("LODESTONE_WP04_TICKET_FILE", "")
 	if path == "" {
 		t.Skip("set LODESTONE_WP04_TICKET_FILE (written by client/src/account/dev/acceptance.mjs)")
+	}
+	if !filepath.IsAbs(path) {
+		// Relative paths are from the repo root (go test runs in the package dir).
+		_, file, _, _ := runtime.Caller(0)
+		path = filepath.Join(filepath.Dir(file), "..", "..", "..", "..", path)
 	}
 	raw, err := os.ReadFile(path)
 	if err != nil {
