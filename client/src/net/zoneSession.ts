@@ -20,6 +20,8 @@ import {
   type Kick,
   type Snapshot,
   type Welcome,
+  type Event as ZoneEvent,
+  type WorldEdits,
 } from '@lodestone/contracts';
 import type { GroundQuery } from '../sim/ground';
 import type { MoveInput, MoveState } from '../sim/movement';
@@ -77,6 +79,9 @@ export class ZoneSession {
   onWelcome: ((w: Welcome) => void) | null = null;
   onEnd: ((e: SessionEnd) => void) | null = null;
   onFrame: ((f: Frame) => void) | null = null;
+  /** WP09: world edits (mined veins) and gameplay events (mining 700-799, contracts/events.md). */
+  onWorldEdits: ((m: WorldEdits) => void) | null = null;
+  onEvent: ((m: ZoneEvent) => void) | null = null;
 
   /** Counters for tests and the acceptance log. */
   readonly stats = { snapshots: 0, stale: 0, noBaseline: 0, inputPackets: 0, framesSent: 0, decodeErrors: 0, earlySnapshots: 0 };
@@ -202,6 +207,12 @@ export class ZoneSession {
     return { downKbps: ((tr.bytesIn - a.down) * 8) / 1000 / dt, upKbps: ((tr.bytesOut - a.up) * 8) / 1000 / dt };
   }
 
+  /** WP09: an interaction (mining: targetKind 1 = vein, action 1 = swing; 2 = pickup). Reliable. */
+  sendInteract(targetKind: number, targetId: bigint, action: number, arg = 0): void {
+    if (this.phase !== 'playing') return;
+    this.transport?.sendReliable(encodeMessage({ type: 'Interact', targetKind, targetId, action, arg }));
+  }
+
   private handleFrame(b: Uint8Array): void {
     let m;
     try {
@@ -223,8 +234,14 @@ export class ZoneSession {
       case 'Kick':
         this.handleKick(m);
         break;
+      case 'WorldEdits':
+        this.onWorldEdits?.(m);
+        break;
+      case 'Event':
+        this.onEvent?.(m);
+        break;
       default:
-        break; // Event, HitResult, SaveBlob...: later packages
+        break; // HitResult, SaveBlob...: later packages
     }
   }
 

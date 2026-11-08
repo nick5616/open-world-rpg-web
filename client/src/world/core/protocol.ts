@@ -20,7 +20,9 @@ export type JobMsg =
   | { type: 'scatter'; id: number; cx: number; cz: number }
   | { type: 'grass'; id: number; cx: number; cz: number; density: number }
   | { type: 'hash'; id: number; cx: number; cz: number; lod: number }
-  | { type: 'evict'; id: number; cap: number };
+  | { type: 'evict'; id: number; cap: number }
+  /** WP09: one cave cell, built with these encoded edits (32-byte records, may be empty). */
+  | { type: 'cave'; id: number; cx: number; cy: number; cz: number; edits: Uint8Array };
 
 export type JobType = JobMsg['type'];
 
@@ -50,4 +52,5 @@ export type ResultMsg =
   | { type: 'grass'; id: number; grass: GrassData; genMs: number }
   | { type: 'hash'; id: number; hash: string; ms: number }
   | { type: 'evict'; id: number; bytes: number; deleted: number }
+  | { type: 'cave'; id: number; cx: number; cy: number; cz: number; bytes: Uint8Array; genMs: number }
   | { type: 'error'; id: number; message: string };

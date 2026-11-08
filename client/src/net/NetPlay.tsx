@@ -8,7 +8,7 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react
 import type { Welcome } from '@lodestone/contracts';
 import type { ReadySession } from '../account/types';
 import { WorldCanvas } from '../world/WorldCanvas';
-import type { GroundQuery } from '../sim/ground';
+import type { CollideResult, GroundQuery } from '../sim/ground';
 import type { PlayerDriver } from '../scene/PlayerController';
 import { DEFAULT_GROUND } from '../scene/groundContext';
 import { useAppStore } from '../stores/appStore';
@@ -48,6 +48,20 @@ function forwardingGround(): GroundQuery & { target: GroundQuery } {
     target: DEFAULT_GROUND as GroundQuery,
     heightAt: (x: number, z: number) => g.target.heightAt(x, z),
     normalAt: (x: number, z: number) => g.target.normalAt?.(x, z) ?? { x: 0, y: 1, z: 0 },
+    // WP09: caves. Forward the cave queries too, or prediction would walk
+    // the heightfield while the zone walks the cave (identity when the
+    // target has no caves, so non-cave grounds step exactly as before).
+    floorAt: (x: number, y: number, z: number) => (g.target.floorAt ? g.target.floorAt(x, y, z) : g.target.heightAt(x, z)),
+    collide: (x: number, y: number, z: number, out: CollideResult) => {
+      if (g.target.collide) return g.target.collide(x, y, z, out);
+      out.x = x;
+      out.y = y;
+      out.z = z;
+      out.pushX = 0;
+      out.pushZ = 0;
+      out.ceiling = false;
+      return out;
+    },
   };
   return g;
 }
