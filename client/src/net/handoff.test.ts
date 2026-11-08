@@ -4,7 +4,7 @@
 // prediction kept), and a dropped active connection fails over through the
 // reconnect callback and snaps to the checkpoint.
 import { describe, expect, it } from 'vitest';
-import { decodeMessage, encodeMessage, PROTOCOL_VERSION, type Message, type Welcome } from '@lodestone/contracts';
+import { decodeMessage, encodeMessage, PROTOCOL_VERSION, type AnyMessage as Message, type Welcome } from '@lodestone/contracts';
 import type { GroundQuery } from '../sim/ground';
 import { newMoveState } from '../sim/movement';
 import type { WebSocketLike } from './transport';
