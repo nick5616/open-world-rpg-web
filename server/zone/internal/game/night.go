@@ -393,6 +393,7 @@ func (s *Server) dawn(tick uint32) {
 		delete(n.defs, town)
 	}
 	n.dawnClean = tick + 2*constants.TickRateHz
+	n.planned = map[int]float64{} // tonight's attacks that never found anyone
 	s.broadcast(&proto.Event{Kind: EventDawn, Value: int32(burned), TargetID: uint32(fled), Data: []byte("Dawn breaks. The demons burn.")}, movement.Vec3{}, 0)
 	s.log.Info("dawn", "burned", burned, "fled", fled)
 }
