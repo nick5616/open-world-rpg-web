@@ -13,7 +13,8 @@
     "compare:ww": "vite-node scripts/compare-wizard-wars.ts",
     "shots": "node scripts/headless-shots.mjs",
     "net:accept": "node src/net/dev/acceptance.mjs",
-    "net:solo-smoke": "node src/net/dev/solo-smoke.mjs"
+    "net:solo-smoke": "node src/net/dev/solo-smoke.mjs",
+    "bench": "node src/world/bench/traversal.mjs"
   },
   "dependencies": {
     "@lodestone/contracts": "*",

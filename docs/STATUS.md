@@ -266,3 +266,48 @@ Assumptions:
   - `server/pkg/go.mod/go.sum`: webtransport-go.
   - `server/pkg/README.md`.
   - `server/zone` (owned).
+
+## WP05: Chunk streaming, terrain rendering and textures ✅
+
+Branch `wp/05-terrain`. Details: `client/src/world/README.md`, decisions `docs/decisions/0009-world-rendering.md`, texture pipeline `tools/textures/README.md`.
+
+Works:
+- `npm run dev:solo` → Play: the solo player spawns on land at the atlas spawn (seed 20261108, same as WP04's official world; `?seed=` for others) and walks generated terrain. Ground = `WorldGround` straight over the wasm `collision_height` (the function WP07 runs): unit-tested bit-equal to the wasm and to `chunkSurfaceHeight` at 2,000 points; the lod-0 tile mesh is the same surface (same lattice, same diagonal, tested). The Vite config builds `worldgen.wasm` on first start if missing.
+- Workers: `min(hardwareConcurrency - 2, 4)` running worldgen.wasm (one compiled `Module` shared), priority queue with dedupe/cancel, transferred buffers; jobs for tiles, scatter, grass, atlas, hash, LRU eviction. Atlas built in a worker (~0.55 s) or loaded from IndexedDB (verified by hash); built tile meshes cached in IndexedDB keyed (atlasHash, genVersion, mesh format, lod, cx, cz), LRU cap 500 MB, read/written inside workers. Stores live in WP04's `lodestone` DB as `cache:atlas`, `cache:terrain-mesh`, `cache:terrain-meta` (prefix `cache:`, so `clearCaches()` never touches saves).
+- Terrain: plain three.js chunk manager. Quadtree of worldgen's own chunk tiles (65 × 65 at 2^lod m), split by distance with hysteresis, balanced to one level; predictive streaming (current view + 2.5 s along velocity + 60 m along the look direction + an idle "next ring"); uploads time-sliced (≤ 4 tiles and ≤ 5 ms per frame on high). Geomorphing: tiles replacing their parent ease out of the parent's shape over 0.6 s, merges ease in before the swap, edges bordering coarser tiles are stitched exactly to the coarser lattice, skirts cover transients. Distant terrain beyond the streamed tiles is one mesh straight from the atlas heightmap (coverage texture keeps the two from overlapping).
+- Splat shader on `MeshStandardMaterial`: 9 texture-array layers (grass, dirt, highland rock, snow, sand, mud, forest floor, cliff, badlands cliff) blended by the generator's 6 splat weights + biome, height-blended, triplanar rock on slopes > ~50°, anti-tiling second sample, moisture/biome grass tint, flat measured mean colours until the arrays arrive (pbrMaterial rule), normal maps off on low.
+- Textures: 11 CC0 sets downloaded from 3dtextures.me by `tools/textures/fetch-sets.mjs` (reads each post's Drive folder) + 2 reused from refs/3d-portfolio-website (only marble-white and stone-column existed there; no terrain sets). `tools/textures/build-textures.mjs` (port of build-textures.mjs): per-set color/normal/ORM WebP, and KTX2 (Basis Universal, `ktx2-encoder` npm package driven in 2D-array mode) arrays: color 900 KB, normal 2.36 MB, ORM 378 KB. `pbrMaterial.ts` rules applied in the terrain loader. `CREDITS.md`.
+- Scatter: procedural trees (3 archetypes × 2 mesh LODs + runtime-rendered impostor billboards beyond 200 m), rocks, bushes, grass tufts from the generator records, plus dense grass clumps from workers; world-wide InstancedMeshes re-binned by distance, per-instance dithered LOD cross-fades and far-edge fade-in on the GPU; stable ids kept per instance (`idAt`, `hide(id)`).
+- Shared wind field `client/src/world/wind.ts` (CPU `windAt`/`windGust` + `WIND_GLSL`, from WorldSpec windDirection) drives grass, leaves, bushes, clouds.
+- Sky: analytic single scattering (Rayleigh + Mie, Kasten–Young airmass) driven by the world clock, sun disk, moon, stars, drifting clouds; sun/moon light colour and sky ambient from the same model. Water: tile water with exact per-vertex depth fade + camera-following sea plane, sky reflection, moving normals, glints, foam. Shadows: CSM, 3 cascades high / 2 medium / none low, patched so other packages' plain materials use cascade 0 only. Post: height fog with sun in-scattering from depth, god rays at half res (high), bloom (medium/high), ACES, lift/gamma/gain grade per time of day and biome. Every effect has a tier switch (`client/src/world/config.ts` WORLD_TIERS + WP02 presets).
+- Debug: HUD chunk queue / loaded filled; F4 adds terrain tile outlines coloured by LOD; debug panel World section: "Regenerate chunk + compare hash" (worker build, main-thread build and the hash the loaded mesh was built from: MATCH in the benchmark) and per-biome teleports; `window.__lodestoneWorld`.
+- Traversal benchmark `client/src/world/bench/traversal.mjs` (`npm run bench -w client`, against the production build): headless Chromium on the real GPU via ANGLE/D3D11 (an RTX 3070, the spec's high-tier reference class), 20 s walk + a 43 s flight at 80 m/s through forest → highlands → snowpeak → badlands → wetland → meadow, then beauty shots. Results (`docs/evidence/wp05-traversal.md`, `wp05-traversal-{high,low}.json`, log `wp05-traversal-run.txt`):
+
+  | Budget | High 1920×1080 | Low 1280×720 |
+  | --- | --- | --- |
+  | Draw calls ≤ 400 | max 215 | max 79 |
+  | Triangles ≤ 1.5 M | max 1.46 M all passes (1.01 M visible + shadow maps) | max 0.47 M (no shadows on low) |
+  | Long tasks > 50 ms | 0 | 0 |
+  | JS heap ≤ 600 MB | max 73 MB | max 61 MB |
+  | Chunk generation ≤ 8 ms (worker, wasm) | p95 5.8 ms, mean 3.3 ms (mesh build +2.5 ms) | p95 6.4 ms, mean 4.3 ms |
+  | Download before first playable ≤ 15 MB gz | 4.3 MB (JS 0.41, wasm 0.38, KTX2 3.7) | 2.0 MB (no normal array on low) |
+  | Frame time (16.6 / 33 ms) | p99 16.8 ms at vsync, 0 dropped; uncapped (`LODESTONE_BENCH_UNCAPPED=1`, earlier build) p50 1.7–2.3 ms, p99 9 ms | p99 16.8 ms at vsync |
+  | First playable | 3.05 s after navigation (local preview server) | 1.85 s |
+
+- Screenshots: `docs/evidence/wp05-meadow.png`, `wp05-forest.png`, `wp05-snowpeak.png`, `wp05-valley-sunset.png`, `wp05-dawn-fog.png`, `wp05-lod-tiles.png` (LOD outlines), `wp05-debug-panel.png` (hash MATCH).
+- Tests: 34 vitest tests in `client/src/world` (quadtree coverage/balance/hysteresis/fallback, tile index diagonal, lod-0 mesh = collision surface, full morph = parent lattice, skirt/face orientation, water depth, worker pool priorities/cancel, LRU, ground = wasm, spawn on land, grass determinism, wind convention, atmosphere colours, CSM patch, texture manifest contract); `node --test` for tools/textures. tsc/eslint clean.
+
+Known gaps:
+- Frame-time budgets are verified only on an RTX 3070 (headless, real GPU). The low tier's "integrated GPU at 720p" budget is not measured on integrated hardware; SwiftShader (software GL) is far slower than any GPU and not representative. Medium tier not benchmarked separately.
+- "No visible pops at walking speed" is by construction (time-based geomorphs, stitched edges, dithered scatter LODs) and checked by eye in captures; there is no automated pixel-pop metric.
+- Trees, rocks and bushes are procedural low-poly meshes; impostors are single-view billboards rendered at load, not baked octahedral impostors; leaves are solid canopies (shadows dapple per canopy, not per leaf; no alpha-tested leaf cards).
+- Not built (spec 12 extras outside the WP05 list): SSAO, cloud shadows, weather particles, rain wetness (a `uWet` uniform exists in the terrain shader), snow accumulation, fireflies/dust motes, ambient soundscapes, LUT files (grading is parametric), dynamic resolution, far cascades updated every few frames, shader warmup for world materials (programs compile during the loading veil instead).
+- Horizon tiles per region are not baked at mint: the distant mesh is built on the client from the atlas heightmap (one 129 × 129 mesh, cheap).
+- Water has no refraction or reflections of terrain (by spec), and river surfaces follow the 2 m water lattice.
+- The mesh cache key adds the atlas hash and a mesh-format version to the spec's (genVersion, chunk, lod).
+- The texture pipeline needs `npm install` of `sharp` and `ktx2-encoder` (devDependencies of `tools/textures`); built outputs are committed.
+
+Assumptions:
+- Solo world = `spec_from_seed(20261108)` regenerated locally (no server to download the atlas from); online, WP06 should pass the world's seed/atlas.
+- Spawn: solo teleports to the atlas spawn via the debug-store teleport (the controller's hard-move API); online spawn stays with the zone server (`WorldCanvas spawnOnLand` defaults to SOLO).
+- Shared files touched (minimal): `client/src/scene/GameCanvas.tsx` (`environment` and `ownComposer` props), `client/src/screens/PlayScreen.tsx` (`<WorldCanvas />` instead of `<GameCanvas />`; takes the same props, so WP06's `onStep` moves over unchanged), `client/src/hud/DebugPanel.tsx` (mounts the World section), `client/vite.config.ts` (build wasm if missing; ES-module workers), `client/package.json` (`bench` script), `package-lock.json` (new `tools/textures` workspace), `CREDITS.md` (new, root), `docs/decisions/0009-world-rendering.md` (new). No contract or worldgen changes.

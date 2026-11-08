@@ -7,7 +7,8 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { Welcome } from '@lodestone/contracts';
 import type { ReadySession } from '../account/types';
-import { GameCanvas } from '../scene/GameCanvas';
+import { WorldCanvas } from '../world/WorldCanvas';
+import type { GroundQuery } from '../sim/ground';
 import type { PlayerDriver } from '../scene/PlayerController';
 import { DEFAULT_GROUND } from '../scene/groundContext';
 import { useAppStore } from '../stores/appStore';
@@ -34,7 +35,25 @@ function Overlay({ children }: { children: ReactNode }) {
   );
 }
 
+/**
+ * Prediction and interpolation need the same ground the zone simulates on
+ * (WP07: generated terrain), but the world runtime only exists after Welcome
+ * tells us the seed and the wasm/atlas load. The session is built first with
+ * this forwarding ground, which switches to the terrain before the player
+ * controller mounts (WorldCanvas mounts the canvas only once the runtime is
+ * loaded), so no predicted step ever runs on the flat placeholder.
+ */
+function forwardingGround(): GroundQuery & { target: GroundQuery } {
+  const g = {
+    target: DEFAULT_GROUND as GroundQuery,
+    heightAt: (x: number, z: number) => g.target.heightAt(x, z),
+    normalAt: (x: number, z: number) => g.target.normalAt?.(x, z) ?? { x: 0, y: 1, z: 0 },
+  };
+  return g;
+}
+
 export function NetPlay({ ready }: { ready: ReadySession }) {
+  const ground = useMemo(forwardingGround, []);
   const [phase, setPhase] = useState<Phase>({ kind: 'connecting' });
   const [session, setSession] = useState<ZoneSession | null>(null);
   const [attempt, setAttempt] = useState(0);
@@ -49,7 +68,7 @@ export function NetPlay({ ready }: { ready: ReadySession }) {
       wsUrl: ready.zoneEndpoint,
       wtUrl: ready.zoneWtEndpoint,
       ticket,
-      ground: DEFAULT_GROUND,
+      ground,
       saveBlob: ready.save ? new TextEncoder().encode(JSON.stringify(ready.save)) : undefined,
       prefer: preferredTransport(),
     });
@@ -116,9 +135,9 @@ export function NetPlay({ ready }: { ready: ReadySession }) {
   return (
     <>
       {driver && session && (
-        <GameCanvas driver={driver}>
+        <WorldCanvas driver={driver} seed={phase.kind === 'playing' ? phase.welcome.seed.toString() : undefined} onRuntime={(r) => (ground.target = r.ground)}>
           <RemotePlayers session={session} />
-        </GameCanvas>
+        </WorldCanvas>
       )}
       {phase.kind === 'connecting' && (
         <Overlay>
