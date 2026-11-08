@@ -194,7 +194,7 @@ pub unsafe extern "C" fn chunk_build(atlas_ptr: *const u8, cx: i32, cz: i32, lod
 /// `atlas_ptr` must point at a valid atlas buffer.
 #[no_mangle]
 pub unsafe extern "C" fn collision_height(atlas_ptr: *const u8, x: f64, z: f64) -> f64 {
-    match atlas_slice(atlas_ptr).and_then(|b| Atlas::parse(b)) {
+    match atlas_slice(atlas_ptr).and_then(Atlas::parse) {
         Ok(a) if x.is_finite() && z.is_finite() => crate::ground::collision_height(&a, x, z),
         Ok(_) => {
             set_error("non-finite coordinate");
@@ -214,7 +214,7 @@ pub unsafe extern "C" fn collision_height(atlas_ptr: *const u8, x: f64, z: f64) 
 /// `atlas_ptr` must be a valid atlas; `out_ptr` must have 24 writable bytes.
 #[no_mangle]
 pub unsafe extern "C" fn ground_normal(atlas_ptr: *const u8, x: f64, z: f64, out_ptr: *mut u8) -> f64 {
-    match atlas_slice(atlas_ptr).and_then(|b| Atlas::parse(b)) {
+    match atlas_slice(atlas_ptr).and_then(Atlas::parse) {
         Ok(a) if x.is_finite() && z.is_finite() => {
             let (n, slope) = crate::ground::ground_normal(&a, x, z);
             let out = core::slice::from_raw_parts_mut(out_ptr, 24);
@@ -239,7 +239,7 @@ pub unsafe extern "C" fn ground_normal(atlas_ptr: *const u8, x: f64, z: f64, out
 #[no_mangle]
 #[allow(clippy::too_many_arguments)]
 pub unsafe extern "C" fn raycast(atlas_ptr: *const u8, ox: f64, oy: f64, oz: f64, dx: f64, dy: f64, dz: f64, max_dist: f64) -> f64 {
-    match atlas_slice(atlas_ptr).and_then(|b| Atlas::parse(b)) {
+    match atlas_slice(atlas_ptr).and_then(Atlas::parse) {
         Ok(a) => crate::ground::raycast(&a, ox, oy, oz, dx, dy, dz, max_dist),
         Err(e) => {
             set_error(&e);

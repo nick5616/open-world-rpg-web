@@ -12,7 +12,12 @@ fn main() {
     println!("seed {seed}: {} (grammar {}, palette {})", s.name, s.name_grammar, s.palette);
     let t = Instant::now();
     let bytes = atlas::build(&s, seed).expect("atlas");
-    println!("atlas: {} bytes in {:.1} ms, hash {:016x}", bytes.len(), t.elapsed().as_secs_f64() * 1e3, worldgen::hash_bytes(&bytes));
+    println!(
+        "atlas: {} bytes in {:.1} ms, hash {:016x}",
+        bytes.len(),
+        t.elapsed().as_secs_f64() * 1e3,
+        worldgen::hash_bytes(&bytes)
+    );
     let a = Atlas::parse(&bytes).unwrap();
     let mut biomes = [0usize; 6];
     let mut land = 0;
@@ -31,7 +36,10 @@ fn main() {
             lakes += 1;
         }
     }
-    println!("land nodes {land} ({:.1}%), river nodes {rivers}, lake nodes {lakes}", 100.0 * land as f64 / NN as f64);
+    println!(
+        "land nodes {land} ({:.1}%), river nodes {rivers}, lake nodes {lakes}",
+        100.0 * land as f64 / NN as f64
+    );
     for (b, n) in spec::BIOME_NAMES.iter().zip(biomes) {
         println!("  {b:10} {:5.1}%", 100.0 * n as f64 / land as f64);
     }
@@ -49,7 +57,10 @@ fn main() {
     for (k, v) in counts {
         println!("  {k:22} {v}");
     }
-    println!("coverage (walkable nodes seeing a POI within 800 m): {:.1}%", 100.0 * a.param(param::COVERAGE_800));
+    println!(
+        "coverage (walkable nodes seeing a POI within 800 m): {:.1}%",
+        100.0 * a.param(param::COVERAGE_800)
+    );
     println!("spawn: ({:.0}, {:.0})", a.param(param::SPAWN_X), a.param(param::SPAWN_Z));
     let t = Instant::now();
     let mut n = 0;

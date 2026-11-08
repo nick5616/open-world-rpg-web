@@ -168,11 +168,21 @@ pub fn place(w: &mut World) {
                 continue;
             }
             let (x, z) = node_xz(k);
-            cands.push(Cand { k, x, z, region: region_of(x, z), vis: viewshed(&w.h, x, z, 10.0, VIS_RADIUS) });
+            cands.push(Cand {
+                k,
+                x,
+                z,
+                region: region_of(x, z),
+                vis: viewshed(&w.h, x, z, 10.0, VIS_RADIUS),
+            });
         }
     }
 
-    let mut p = Placer { w, sites: Vec::new(), region_count: vec![0; super::format::REGIONS] };
+    let mut p = Placer {
+        w,
+        sites: Vec::new(),
+        region_count: vec![0; super::format::REGIONS],
+    };
 
     // ---- 1. settlements
     let dens = w.spec.settlement_density;
@@ -236,7 +246,9 @@ pub fn place(w: &mut World) {
     for &(_, i) in &ranked {
         let s = &p.sites[i];
         let roomy = mean_slope(&w.slope, s.node, 4) < 7.0;
-        let far = towns.iter().all(|&(tx, tz)| libm::sqrt((tx - s.x) * (tx - s.x) + (tz - s.z) * (tz - s.z)) > 900.0);
+        let far = towns
+            .iter()
+            .all(|&(tx, tz)| libm::sqrt((tx - s.x) * (tx - s.x) + (tz - s.z) * (tz - s.z)) > 900.0);
         if towns.len() < n_towns && roomy && far {
             towns.push((s.x, s.z));
             p.sites[i].size = S::SIZE_TOWN;
@@ -391,7 +403,9 @@ pub fn place(w: &mut World) {
             let (radius, vis_h) = STRUCT_SIZE[t as usize];
             let mut best: Option<(f64, usize)> = None;
             for &k in &nodes {
-                let Some(v) = struct_score(t, w, k, &prom, behind(k), &p, rand01(seed, 100 + (r * 16 + c) as u64, k)) else { continue };
+                let Some(v) = struct_score(t, w, k, &prom, behind(k), &p, rand01(seed, 100 + (r * 16 + c) as u64, k)) else {
+                    continue;
+                };
                 if best.is_none_or(|b| v > b.0) {
                     let (x, z) = node_xz(k);
                     if p.spacing_ok(x, z, radius, S::CAT_STRUCTURE, t, 600.0) {
@@ -484,8 +498,11 @@ pub fn place(w: &mut World) {
         site_vis.push(v);
     }
     let walk_total = walk.count().max(1);
-    let mut heap: std::collections::BinaryHeap<(usize, std::cmp::Reverse<usize>)> =
-        cands.iter().enumerate().map(|(ci, c)| (c.vis.gain(&walk, &cover), std::cmp::Reverse(ci))).collect();
+    let mut heap: std::collections::BinaryHeap<(usize, std::cmp::Reverse<usize>)> = cands
+        .iter()
+        .enumerate()
+        .map(|(ci, c)| (c.vis.gain(&walk, &cover), std::cmp::Reverse(ci)))
+        .collect();
     let mut fill_n = 0u64;
     while let Some((g, std::cmp::Reverse(ci))) = heap.pop() {
         let uncovered = walk_total - walk.and_count(&cover);
@@ -602,8 +619,17 @@ const STRUCT_BIOME: [[f64; 6]; 9] = [
     [0.3, 0.5, 0.4, 0.3, 0.6, 0.6], // demon lair
 ];
 /// (footprint radius m, visible height m) per structure type.
-const STRUCT_SIZE: [(f64, f64); 9] =
-    [(25.0, 8.0), (10.0, 18.0), (15.0, 6.0), (12.0, 8.0), (30.0, 6.0), (15.0, 30.0), (40.0, 4.0), (30.0, 10.0), (30.0, 10.0)];
+const STRUCT_SIZE: [(f64, f64); 9] = [
+    (25.0, 8.0),
+    (10.0, 18.0),
+    (15.0, 6.0),
+    (12.0, 8.0),
+    (30.0, 6.0),
+    (15.0, 30.0),
+    (40.0, 4.0),
+    (30.0, 10.0),
+    (30.0, 10.0),
+];
 const STRUCT_NOUN: [&str; 9] = ["Ruins", "Watchtower", "Mine", "Shrine", "Hideout", "Sanctum", "Crater", "Temple", "Lair"];
 
 fn element_boost(t: u8, e1: u8, e2: u8) -> f64 {
@@ -700,10 +726,9 @@ const LANDMARK_NOUN: [&str; 8] = ["Stones", "Elder Tree", "Arch", "Monolith", "B
 fn poi_noun(kind: u8, size: u8, seq: &mut Seq) -> &'static str {
     match kind {
         S::POI_TOWER => "Spire",
-        S::POI_CAVE_MOUTH => *seq.pick(&["Hollow", "Grotto", "Deep", "Maw", "Cavern"]),
+        S::POI_CAVE_MOUTH => seq.pick(&["Hollow", "Grotto", "Deep", "Maw", "Cavern"]),
         S::POI_WAYPOINT => "Waystone",
         S::POI_LANDMARK => LANDMARK_NOUN[(size as usize).min(7)],
-        _ => *seq.pick(&["Camp", "Warren", "Den", "Roost"]),
+        _ => seq.pick(&["Camp", "Warren", "Den", "Roost"]),
     }
 }
-

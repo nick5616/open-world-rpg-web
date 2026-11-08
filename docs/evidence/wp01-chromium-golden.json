@@ -1,0 +1,38 @@
+{
+  "host": "chromium-worker",
+  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/131.0.6778.33 Safari/537.36",
+  "hardwareConcurrency": 16,
+  "crossOriginIsolated": true,
+  "worlds": 5,
+  "chunks": 288,
+  "collisions": 320,
+  "failures": [],
+  "atlasMs": [
+    312.7149999961257,
+    372.304999999702,
+    361.4949999973178,
+    374.64500000327826,
+    248.80500000715256
+  ],
+  "goldenChunkMs": {
+    "n": 258,
+    "mean": 2.749186046190502,
+    "p50": 2.6599999964237213,
+    "p95": 3.9099999964237213,
+    "max": 6.100000001490116,
+    "min": 1.0649999976158142
+  },
+  "bench": {
+    "atlasMs": 279.4399999976158,
+    "chunks": {
+      "n": 200,
+      "mean": 2.3547250001132487,
+      "p50": 2.3599999994039536,
+      "p95": 3.6950000002980232,
+      "max": 4.350000001490116,
+      "min": 1.1950000002980232
+    },
+    "scatterPerChunk": 84.11
+  },
+  "browserVersion": "131.0.6778.33"
+}

@@ -58,10 +58,7 @@ pub fn unit2(h: u64) -> f64 {
 /// Callers guarantee the tuple is unique; the bijection keeps the id unique.
 pub fn stable_id(layer: u8, a: i32, b: i32, index: u32) -> u64 {
     debug_assert!(index < (1 << 24));
-    let packed = ((layer as u64) << 56)
-        | (((a as u16) as u64) << 40)
-        | (((b as u16) as u64) << 24)
-        | (index as u64 & 0xFF_FFFF);
+    let packed = ((layer as u64) << 56) | (((a as u16) as u64) << 40) | (((b as u16) as u64) << 24) | (index as u64 & 0xFF_FFFF);
     mix64(packed)
 }
 
@@ -72,7 +69,9 @@ pub struct Seq {
 
 impl Seq {
     pub fn new(seed: u64, stream: u64) -> Self {
-        Seq { state: hash(seed, stream, 0, 0, 0) }
+        Seq {
+            state: hash(seed, stream, 0, 0, 0),
+        }
     }
     pub fn next_u64(&mut self) -> u64 {
         self.state = self.state.wrapping_add(0x9E37_79B9_7F4A_7C15);
@@ -87,7 +86,7 @@ impl Seq {
     /// Integer in [0, n).
     pub fn below(&mut self, n: usize) -> usize {
         debug_assert!(n > 0);
-        ((self.next_u64() >> 32) * n as u64 >> 32) as usize
+        (((self.next_u64() >> 32) * n as u64) >> 32) as usize
     }
     pub fn pick<'a, T>(&mut self, items: &'a [T]) -> &'a T {
         &items[self.below(items.len())]

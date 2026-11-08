@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Worldgen Atlas</title>
+    <style>
+      :root { color-scheme: dark; --bg: #14161a; --panel: #1d2026; --text: #e6e6e6; --muted: #9aa0a8; --line: #2c3038; }
+      body { margin: 0; background: var(--bg); color: var(--text); font: 13px/1.4 system-ui, sans-serif; }
+      header { display: flex; gap: 12px; align-items: center; padding: 8px 12px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+      header h1 { font-size: 15px; margin: 0 8px 0 0; }
+      header label { color: var(--muted); display: flex; gap: 4px; align-items: center; }
+      input[type='text'] { width: 160px; background: var(--panel); color: var(--text); border: 1px solid var(--line); padding: 3px 6px; }
+      button { background: #2d5b8a; color: white; border: 0; padding: 4px 10px; cursor: pointer; }
+      main { display: flex; gap: 12px; padding: 12px; align-items: flex-start; flex-wrap: wrap; }
+      #map { width: 1024px; height: 1024px; max-width: 100%; image-rendering: pixelated; border: 1px solid var(--line); cursor: crosshair; }
+      aside { width: 360px; display: flex; flex-direction: column; gap: 10px; }
+      .card { background: var(--panel); border: 1px solid var(--line); padding: 8px 10px; }
+      .card h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin: 0 0 6px; }
+      table { border-collapse: collapse; width: 100%; font-size: 12px; }
+      td { padding: 1px 4px; vertical-align: top; }
+      td.n { text-align: right; font-variant-numeric: tabular-nums; }
+      .sw { display: inline-block; width: 10px; height: 10px; margin-right: 4px; vertical-align: -1px; border: 1px solid #0006; }
+      #chunk { width: 320px; height: 320px; border: 1px solid var(--line); }
+      #status { color: var(--muted); }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Lodestone worldgen</h1>
+      <label>seed <input id="seed" type="text" value="7" /></label>
+      <button id="go">Generate</button>
+      <button id="rnd">Random</button>
+      <label><input type="checkbox" id="l-biome" checked /> biomes</label>
+      <label><input type="checkbox" id="l-rivers" checked /> rivers</label>
+      <label><input type="checkbox" id="l-sites" checked /> sites</label>
+      <label><input type="checkbox" id="l-labels" checked /> labels</label>
+      <label><input type="checkbox" id="l-regions" checked /> regions</label>
+      <label><input type="checkbox" id="l-cover" /> 800 m coverage</label>
+      <span id="status"></span>
+    </header>
+    <main>
+      <canvas id="map" width="1024" height="1024"></canvas>
+      <aside>
+        <div class="card" id="world"></div>
+        <div class="card"><h2>Legend</h2><div id="legend"></div></div>
+        <div class="card"><h2>Detail: 5 x 5 chunks (click the map)</h2><canvas id="chunk" width="65" height="65"></canvas><div id="chunkinfo"></div></div>
+        <div class="card"><h2>Regions</h2><div id="regions"></div></div>
+      </aside>
+    </main>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

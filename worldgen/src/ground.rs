@@ -73,7 +73,9 @@ impl<'a> Ground<'a> {
                 if w == 0 || a.flow(k) == NO_FLOW {
                     continue;
                 }
-                let Some(dk) = downstream(a.section(crate::atlas::format::sec::FLOW), k) else { continue };
+                let Some(dk) = downstream(a.section(crate::atlas::format::sec::FLOW), k) else {
+                    continue;
+                };
                 let width = w as f64;
                 let ha = a.height(k);
                 let hb = a.height(dk).max(a.water(dk));
@@ -133,7 +135,14 @@ impl<'a> Ground<'a> {
     pub fn blend(&self, x: f64, z: f64) -> NodeBlend {
         let (k00, k10, k01, k11, fu, fv) = cell(x, z);
         let w = [(1.0 - fu) * (1.0 - fv), fu * (1.0 - fv), (1.0 - fu) * fv, fu * fv];
-        let mut nb = NodeBlend { amp: 0.0, terrace: 0.0, ridge: 0.0, lake: 0.0, sea: 0.0, settlement: 0.0 };
+        let mut nb = NodeBlend {
+            amp: 0.0,
+            terrace: 0.0,
+            ridge: 0.0,
+            lake: 0.0,
+            sea: 0.0,
+            settlement: 0.0,
+        };
         for (n, k) in [k00, k10, k01, k11].into_iter().enumerate() {
             let p = self.a.nodep(k);
             let wn = w[n];
@@ -153,17 +162,37 @@ impl<'a> Ground<'a> {
         nb
     }
 
-    /// Lake level at a point: the highest lake among the four nodes around it.
+    /// Any lake node within one node of the cell around (x, z)? (The lake
+    /// warp is under 14 m, so a warped lookup never leaves this window.)
     #[inline]
-    fn lake_level(&self, x: f64, z: f64) -> f64 {
-        let (k00, k10, k01, k11, _, _) = cell(x, z);
-        let mut w = self.sea_y;
-        for k in [k00, k10, k01, k11] {
-            if self.a.nodep(k)[3] & flag::LAKE != 0 {
-                w = w.max(self.a.water(k));
+    fn near_lake(&self, x: f64, z: f64) -> bool {
+        let i = (libm::floor(x / RES) as i64).clamp(0, N as i64 - 2);
+        let j = (libm::floor(z / RES) as i64).clamp(0, N as i64 - 2);
+        for jj in (j - 1).max(0)..=(j + 2).min(N as i64 - 1) {
+            for ii in (i - 1).max(0)..=(i + 2).min(N as i64 - 1) {
+                if self.a.nodep(idx(ii as usize, jj as usize))[3] & flag::LAKE != 0 {
+                    return true;
+                }
             }
         }
-        w
+        false
+    }
+
+    /// Lake mask (bilinear weight of lake nodes, 0..1) and lake level (the
+    /// highest lake among the four nodes around the point).
+    #[inline]
+    fn lake_at(&self, x: f64, z: f64) -> (f64, f64) {
+        let (k00, k10, k01, k11, fu, fv) = cell(x, z);
+        let w = [(1.0 - fu) * (1.0 - fv), fu * (1.0 - fv), (1.0 - fu) * fv, fu * fv];
+        let mut level = f64::NEG_INFINITY;
+        let mut weight = 0.0;
+        for (n, k) in [k00, k10, k01, k11].into_iter().enumerate() {
+            if self.a.nodep(k)[3] & flag::LAKE != 0 {
+                level = level.max(self.a.water(k));
+                weight += w[n];
+            }
+        }
+        (weight, level)
     }
 
     /// Ground height (f64, before the f32 rounding of the surface) and the
@@ -190,10 +219,7 @@ impl<'a> Ground<'a> {
             let f = smoothstep(0.25, 0.75, t - k);
             h += (sea_y + (k + f) * step - h) * nb.terrace;
         }
-        if nb.lake > 0.0 && h > hm {
-            h += (hm - h) * nb.lake;
-        }
-        let mut water = self.lake_level(x, z);
+        let mut water = self.sea_y;
         if !self.rivers.is_empty() {
             // Warp the lookup point so D8 river polylines meander.
             let wx = x + WARP_AMP * noise(self.s_warp, x / 90.0, z / 90.0);
@@ -227,6 +253,26 @@ impl<'a> Ground<'a> {
                     if d < s.half_w + 1.5 {
                         water = water.max(surface);
                     }
+                }
+            }
+        }
+        if self.near_lake(x, z) {
+            // Lakes go last so they override river banks. The shore follows a
+            // warped bilinear lake mask (an organic contour, not the 32 m node
+            // cells): ground ramps gently up to a low bank (level + 0.3 m) by
+            // mask 0.3, then blends from bank to the natural lake bed by 0.75.
+            // Water is only reported inside mask 0.15, so the filled flats
+            // around a lake (just under its level) never show as flooded cells.
+            let lx = x + 14.0 * noise(self.s_warp ^ 0x1b87_3593, x / 70.0, z / 70.0);
+            let lz = z + 14.0 * noise(self.s_warp ^ 0xcc9e_2d51, x / 70.0, z / 70.0);
+            let (lw, level) = self.lake_at(lx, lz);
+            if lw > 0.0 {
+                let depth = (level - hm).clamp(2.0, 12.0);
+                let bank = h.max(level + 0.3);
+                let h1 = h + (bank - h) * smoothstep(0.0, 0.3, lw);
+                h = h1 + (level - depth - h1) * smoothstep(0.3, 0.75, lw);
+                if lw > 0.15 {
+                    water = water.max(level);
                 }
             }
         }
@@ -267,7 +313,11 @@ fn seg_dist(px: f64, pz: f64, s: &RiverSeg) -> (f64, f64) {
     let dx = s.bx - s.ax;
     let dz = s.bz - s.az;
     let l2 = dx * dx + dz * dz;
-    let t = if l2 > 0.0 { (((px - s.ax) * dx + (pz - s.az) * dz) / l2).clamp(0.0, 1.0) } else { 0.0 };
+    let t = if l2 > 0.0 {
+        (((px - s.ax) * dx + (pz - s.az) * dz) / l2).clamp(0.0, 1.0)
+    } else {
+        0.0
+    };
     let qx = s.ax + dx * t - px;
     let qz = s.az + dz * t - pz;
     (libm::sqrt(qx * qx + qz * qz), t)
@@ -343,8 +393,20 @@ pub fn raycast(a: &Atlas, ox: f64, oy: f64, oz: f64, dx: f64, dy: f64, dz: f64, 
     let step_z = if dz > 0.0 { 1.0 } else { -1.0 };
     let t_dx = if dx != 0.0 { 1.0 / libm::fabs(dx) } else { f64::INFINITY };
     let t_dz = if dz != 0.0 { 1.0 / libm::fabs(dz) } else { f64::INFINITY };
-    let mut t_mx = if dx > 0.0 { (ix + 1.0 - ox) * t_dx } else if dx < 0.0 { (ox - ix) * t_dx } else { f64::INFINITY };
-    let mut t_mz = if dz > 0.0 { (iz + 1.0 - oz) * t_dz } else if dz < 0.0 { (oz - iz) * t_dz } else { f64::INFINITY };
+    let mut t_mx = if dx > 0.0 {
+        (ix + 1.0 - ox) * t_dx
+    } else if dx < 0.0 {
+        (ox - ix) * t_dx
+    } else {
+        f64::INFINITY
+    };
+    let mut t_mz = if dz > 0.0 {
+        (iz + 1.0 - oz) * t_dz
+    } else if dz < 0.0 {
+        (oz - iz) * t_dz
+    } else {
+        f64::INFINITY
+    };
     let mut t0 = 0.0;
     loop {
         let t1 = t_mx.min(t_mz).min(max_d);

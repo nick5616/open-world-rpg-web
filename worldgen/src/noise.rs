@@ -5,22 +5,24 @@
 
 /// 16 unit gradient directions (k * 22.5 degrees), written as literals so no
 /// trig runs at noise time and the constants parse identically everywhere.
+use core::f64::consts::FRAC_1_SQRT_2;
+
 const GRAD: [(f64, f64); 16] = [
     (1.0, 0.0),
     (0.923_879_532_511_286_7, 0.382_683_432_365_089_8),
-    (0.707_106_781_186_547_6, 0.707_106_781_186_547_6),
+    (FRAC_1_SQRT_2, FRAC_1_SQRT_2),
     (0.382_683_432_365_089_8, 0.923_879_532_511_286_7),
     (0.0, 1.0),
     (-0.382_683_432_365_089_8, 0.923_879_532_511_286_7),
-    (-0.707_106_781_186_547_6, 0.707_106_781_186_547_6),
+    (-FRAC_1_SQRT_2, FRAC_1_SQRT_2),
     (-0.923_879_532_511_286_7, 0.382_683_432_365_089_8),
     (-1.0, 0.0),
     (-0.923_879_532_511_286_7, -0.382_683_432_365_089_8),
-    (-0.707_106_781_186_547_6, -0.707_106_781_186_547_6),
+    (-FRAC_1_SQRT_2, -FRAC_1_SQRT_2),
     (-0.382_683_432_365_089_8, -0.923_879_532_511_286_7),
     (0.0, -1.0),
     (0.382_683_432_365_089_8, -0.923_879_532_511_286_7),
-    (0.707_106_781_186_547_6, -0.707_106_781_186_547_6),
+    (FRAC_1_SQRT_2, -FRAC_1_SQRT_2),
     (0.923_879_532_511_286_7, -0.382_683_432_365_089_8),
 ];
 
@@ -108,7 +110,7 @@ pub fn ridged(seed: u32, x: f64, z: f64, period: f64, octaves: u32, gain: f64) -
     for o in 0..octaves {
         let n = noise(seed.wrapping_add(o.wrapping_mul(0x9E37_79B9)), px, pz);
         let r = 1.0 - libm::fabs(n) * 1.5;
-        let r = if r < 0.0 { 0.0 } else { r };
+        let r = r.max(0.0);
         let r = r * r * weight;
         weight = if r * 2.0 > 1.0 { 1.0 } else { r * 2.0 };
         sum += r * amp;
@@ -157,13 +159,7 @@ pub fn smoothstep(e0: f64, e1: f64, x: f64) -> f64 {
 
 #[inline]
 pub fn clamp01(x: f64) -> f64 {
-    if x < 0.0 {
-        0.0
-    } else if x > 1.0 {
-        1.0
-    } else {
-        x
-    }
+    x.clamp(0.0, 1.0)
 }
 
 #[inline]

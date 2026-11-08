@@ -35,7 +35,12 @@ impl Bits {
     }
     /// |self & mask & !cover|
     pub fn gain(&self, mask: &Bits, cover: &Bits) -> usize {
-        self.w.iter().zip(&mask.w).zip(&cover.w).map(|((a, m), c)| (a & m & !c).count_ones() as usize).sum()
+        self.w
+            .iter()
+            .zip(&mask.w)
+            .zip(&cover.w)
+            .map(|((a, m), c)| (a & m & !c).count_ones() as usize)
+            .sum()
     }
     pub fn and_count(&self, mask: &Bits) -> usize {
         self.w.iter().zip(&mask.w).map(|(a, m)| (a & m).count_ones() as usize).sum()

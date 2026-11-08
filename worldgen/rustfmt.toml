@@ -1,0 +1,2 @@
+# Long lines read better than wrapped ones in the numeric generator code.
+max_width = 160

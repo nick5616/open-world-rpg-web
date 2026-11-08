@@ -9,8 +9,8 @@
 //! seams match. Scatter, containers and spawn anchors exist only at LOD 0.
 
 use crate::atlas::format::{put_f32, put_u16, put_u32, put_u64, site as S, Atlas, SiteRec, N, RES};
-use crate::atlas::terrain::seed32;
 use crate::atlas::region_of;
+use crate::atlas::terrain::seed32;
 use crate::gen::constants::{CHUNK_SAMPLES, CHUNK_SIZE_M};
 use crate::ground::{tri_interp, tri_normal, Ground};
 use crate::noise::{noise, smoothstep};
@@ -90,7 +90,14 @@ const LAYERS: [Layer; 4] = [
         min_d: 6.0,
         density: [0.05, 0.07, 0.3, 0.22, 0.28, 0.03],
         max_slope: 60.0,
-        kinds: [&[3.0, 1.0, 0.0, 0.5, 0.0], &[1.0, 0.5, 0.0, 3.0, 0.0], &[2.0, 2.0, 1.0, 0.5, 0.0], &[1.0, 0.5, 0.5, 0.0, 3.0], &[1.0, 1.0, 2.0, 0.0, 0.0], &[0.5, 0.5, 0.0, 3.0, 0.0]],
+        kinds: [
+            &[3.0, 1.0, 0.0, 0.5, 0.0],
+            &[1.0, 0.5, 0.0, 3.0, 0.0],
+            &[2.0, 2.0, 1.0, 0.5, 0.0],
+            &[1.0, 0.5, 0.5, 0.0, 3.0],
+            &[1.0, 1.0, 2.0, 0.0, 0.0],
+            &[0.5, 0.5, 0.0, 3.0, 0.0],
+        ],
     },
     Layer {
         id: LAYER_BUSH,
@@ -98,7 +105,14 @@ const LAYERS: [Layer; 4] = [
         min_d: 3.0,
         density: [0.08, 0.22, 0.1, 0.03, 0.1, 0.22],
         max_slope: 40.0,
-        kinds: [&[2.0, 1.5, 0.0, 0.0, 0.0, 0.5], &[1.0, 1.0, 3.0, 0.0, 0.0, 0.0], &[1.0, 0.0, 0.0, 0.5, 0.0, 3.0], &[1.0, 0.0, 0.0, 0.0, 0.0, 1.0], &[0.5, 0.0, 0.0, 3.0, 0.0, 0.0], &[0.5, 0.0, 1.0, 0.0, 3.0, 0.0]],
+        kinds: [
+            &[2.0, 1.5, 0.0, 0.0, 0.0, 0.5],
+            &[1.0, 1.0, 3.0, 0.0, 0.0, 0.0],
+            &[1.0, 0.0, 0.0, 0.5, 0.0, 3.0],
+            &[1.0, 0.0, 0.0, 0.0, 0.0, 1.0],
+            &[0.5, 0.0, 0.0, 3.0, 0.0, 0.0],
+            &[0.5, 0.0, 1.0, 0.0, 3.0, 0.0],
+        ],
     },
     Layer {
         id: LAYER_GRASS,
@@ -106,12 +120,26 @@ const LAYERS: [Layer; 4] = [
         min_d: 1.6,
         density: [0.55, 0.22, 0.3, 0.03, 0.06, 0.5],
         max_slope: 40.0,
-        kinds: [&[3.0, 1.5, 1.5, 0.0, 0.0, 0.0], &[2.0, 1.0, 0.5, 0.0, 0.0, 0.0], &[2.0, 0.5, 0.3, 0.5, 0.0, 0.0], &[0.0, 0.0, 0.0, 0.0, 1.0, 0.0], &[0.0, 0.0, 0.0, 3.0, 0.0, 0.0], &[1.0, 1.0, 0.0, 0.0, 0.0, 3.0]],
+        kinds: [
+            &[3.0, 1.5, 1.5, 0.0, 0.0, 0.0],
+            &[2.0, 1.0, 0.5, 0.0, 0.0, 0.0],
+            &[2.0, 0.5, 0.3, 0.5, 0.0, 0.0],
+            &[0.0, 0.0, 0.0, 0.0, 1.0, 0.0],
+            &[0.0, 0.0, 0.0, 3.0, 0.0, 0.0],
+            &[1.0, 1.0, 0.0, 0.0, 0.0, 3.0],
+        ],
     },
 ];
 
 /// Container kinds: 0 chest, 1 buried cache, 2 urn, 3 crate.
-const CONTAINER_KINDS: [[f64; 4]; 6] = [[2.0, 1.0, 0.0, 1.0], [2.0, 1.0, 0.0, 0.5], [1.0, 0.5, 2.0, 0.0], [2.0, 0.0, 1.0, 0.0], [1.0, 2.0, 1.0, 0.0], [2.0, 0.5, 1.0, 0.0]];
+const CONTAINER_KINDS: [[f64; 4]; 6] = [
+    [2.0, 1.0, 0.0, 1.0],
+    [2.0, 1.0, 0.0, 0.5],
+    [1.0, 0.5, 2.0, 0.0],
+    [2.0, 0.0, 1.0, 0.0],
+    [1.0, 2.0, 1.0, 0.0],
+    [2.0, 0.5, 1.0, 0.0],
+];
 
 /// Spawn-anchor enemy tables: 0..5 = the biome's wild table, then special
 /// tables for anchors tied to a site.
@@ -208,7 +236,17 @@ pub fn build(a: &Atlas, cx: i32, cz: i32, lod: u32) -> Result<Vec<u8>, String> {
     let mut spawns: Vec<Rec> = Vec::new();
     let in_world = (0..64).contains(&cx) && (0..64).contains(&cz);
     if lod == 0 && in_world {
-        let ctx = Ctx { a, g: &g, cx, cz, x0, z0, hg: &hg, water: &water, sites: nearby_sites(a, x0, z0) };
+        let ctx = Ctx {
+            a,
+            g: &g,
+            cx,
+            cz,
+            x0,
+            z0,
+            hg: &hg,
+            water: &water,
+            sites: nearby_sites(a, x0, z0),
+        };
         for layer in &LAYERS {
             ctx.scatter_layer(layer, &mut scatter);
         }
@@ -636,7 +674,16 @@ impl<'a, 'b> Ctx<'a, 'b> {
 
 #[allow(clippy::too_many_arguments)]
 fn rec(id: u64, x: f64, y: f64, z: f64, kind: u8, variant: u8, danger: f64, h: u64) -> Rec {
-    Rec { id, x: x as f32, y: y as f32, z: z as f32, kind, variant, scale: libm::round(danger.clamp(0.0, 1.0) * 255.0) as u8, yaw: (h >> 40) as u8 }
+    Rec {
+        id,
+        x: x as f32,
+        y: y as f32,
+        z: z as f32,
+        kind,
+        variant,
+        scale: libm::round(danger.clamp(0.0, 1.0) * 255.0) as u8,
+        yaw: (h >> 40) as u8,
+    }
 }
 
 fn mix_rows<const K: usize>(bw: &[f64; 6], rows: &[[f64; K]; 6]) -> [f64; K] {
@@ -724,7 +771,9 @@ mod tests {
         for (cx, cz) in [(30, 30), (31, 30), (12, 40)] {
             let c = build(&a, cx, cz, 0).unwrap();
             let off = crate::atlas::format::get_u32(&c, 52) as usize;
-            let n = crate::atlas::format::get_u16(&c, 56) as usize + crate::atlas::format::get_u16(&c, 58) as usize + crate::atlas::format::get_u16(&c, 60) as usize;
+            let n = crate::atlas::format::get_u16(&c, 56) as usize
+                + crate::atlas::format::get_u16(&c, 58) as usize
+                + crate::atlas::format::get_u16(&c, 60) as usize;
             for r in 0..n {
                 let o = off + r * REC;
                 ids.push(crate::atlas::format::get_u64(&c, o));

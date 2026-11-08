@@ -100,7 +100,15 @@ pub mod site {
     pub const ST_SUNKEN_TEMPLE: u8 = 7;
     pub const ST_DEMON_LAIR: u8 = 8;
     pub const STRUCTURE_NAMES: [&str; 9] = [
-        "ruin", "watchtower", "mineshaft", "shrine", "bandit_camp", "wizard_tower", "meteor_crater", "sunken_temple", "demon_lair",
+        "ruin",
+        "watchtower",
+        "mineshaft",
+        "shrine",
+        "bandit_camp",
+        "wizard_tower",
+        "meteor_crater",
+        "sunken_temple",
+        "demon_lair",
     ];
 }
 
@@ -131,11 +139,14 @@ impl Default for Writer {
 
 impl Writer {
     pub fn new() -> Self {
-        Writer { buf: vec![0u8; DATA_START], dir: [(0, 0); SECTION_COUNT] }
+        Writer {
+            buf: vec![0u8; DATA_START],
+            dir: [(0, 0); SECTION_COUNT],
+        }
     }
 
     pub fn section(&mut self, id: usize, data: &[u8]) {
-        while self.buf.len() % 8 != 0 {
+        while !self.buf.len().is_multiple_of(8) {
             self.buf.push(0);
         }
         self.dir[id] = (self.buf.len() as u32, data.len() as u32);
@@ -147,7 +158,7 @@ impl Writer {
     }
 
     pub fn finish(mut self) -> Vec<u8> {
-        while self.buf.len() % 8 != 0 {
+        while !self.buf.len().is_multiple_of(8) {
             self.buf.push(0);
         }
         let len = self.buf.len() as u32;
@@ -262,7 +273,15 @@ impl<'a> Atlas<'a> {
         if get_u16(b, 28) as usize != N {
             return Err("atlas grid size mismatch".into());
         }
-        for (s, per) in [(sec::HEIGHT, 4), (sec::WATER, 4), (sec::RIVER, 1), (sec::BIOME, 1), (sec::NODEP, 4), (sec::TEMP, 1), (sec::MOIST, 1)] {
+        for (s, per) in [
+            (sec::HEIGHT, 4),
+            (sec::WATER, 4),
+            (sec::RIVER, 1),
+            (sec::BIOME, 1),
+            (sec::NODEP, 4),
+            (sec::TEMP, 1),
+            (sec::MOIST, 1),
+        ] {
             if len[s] != NN * per {
                 return Err(format!("atlas section {s} has wrong size"));
             }
@@ -270,7 +289,14 @@ impl<'a> Atlas<'a> {
         if len[sec::PARAMS] != param::COUNT * 8 {
             return Err("atlas params wrong size".into());
         }
-        let a = Atlas { b, off, len, seed: get_u64(b, 16), gen_version: get_u16(b, 6), sea_y: get_f32(b, 32) as f64 };
+        let a = Atlas {
+            b,
+            off,
+            len,
+            seed: get_u64(b, 16),
+            gen_version: get_u16(b, 6),
+            sea_y: get_f32(b, 32) as f64,
+        };
         Ok(a)
     }
 

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* global WebAssembly */
 // `npm run build:wasm`: release-build worldgen.wasm into worldgen/pkg/ with a
 // manifest. The pinned artifact is worldgen-<sha256:16>.wasm (spec 5,
 // "the pinned thing is worldgen-<hash>.wasm"); worldgen.wasm is a copy under

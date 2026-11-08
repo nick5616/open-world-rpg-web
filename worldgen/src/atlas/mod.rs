@@ -14,7 +14,7 @@ pub mod terrain;
 pub mod viewshed;
 
 use crate::gen::constants::{REGION_CHUNKS, WORLD_REGIONS};
-use crate::gen::worldspec::{NAME_GRAMMAR_VALUES, PALETTE_VALUES, WorldSpec};
+use crate::gen::worldspec::{WorldSpec, NAME_GRAMMAR_VALUES, PALETTE_VALUES};
 use crate::noise::{clamp01, smoothstep};
 use crate::rng::{hash, unit, weighted_pick};
 use crate::spec;
@@ -290,7 +290,10 @@ fn serialize(w: &World) -> Vec<u8> {
     p(param::DEMON_INTENSITY, s.demon_intensity);
     p(param::LOOT_THEME_MASK, spec::loot_theme_mask(s) as f64);
     p(param::PALETTE, PALETTE_VALUES.iter().position(|v| *v == s.palette).unwrap_or(0) as f64);
-    p(param::NAME_GRAMMAR, NAME_GRAMMAR_VALUES.iter().position(|v| *v == s.name_grammar).unwrap_or(0) as f64);
+    p(
+        param::NAME_GRAMMAR,
+        NAME_GRAMMAR_VALUES.iter().position(|v| *v == s.name_grammar).unwrap_or(0) as f64,
+    );
     p(param::COVERAGE_800, w.coverage_frac);
     p(param::SPAWN_X, w.spawn.0);
     p(param::SPAWN_Z, w.spawn.1);
