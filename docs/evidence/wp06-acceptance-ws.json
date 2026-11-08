@@ -1,0 +1,154 @@
+{
+  "mode": "ws",
+  "profile": "thailand",
+  "transport": "websocket",
+  "walkSeconds": 18.261,
+  "rttMs": {
+    "A": 183,
+    "B": 209
+  },
+  "bandwidthKbps": {
+    "A": {
+      "downKbps": 8.469077016769491,
+      "upKbps": 14.515253861900431
+    },
+    "B": {
+      "downKbps": 8.986811481768815,
+      "upKbps": 14.448409619860357
+    }
+  },
+  "local": {
+    "A": {
+      "reconciles": 0,
+      "agreements": 251,
+      "corrMaxCm": 0,
+      "corrP95Cm": 0,
+      "over5cm": 0
+    },
+    "B": {
+      "reconciles": 0,
+      "agreements": 271,
+      "corrMaxCm": 0,
+      "corrP95Cm": 0,
+      "over5cm": 0
+    }
+  },
+  "remote": {
+    "A sees B": {
+      "reconciles": 0,
+      "agreements": 251,
+      "logLen": 0,
+      "extrapEvents": 2,
+      "extrapFrames": 4,
+      "frozenFrames": 0,
+      "interpFrames": 643,
+      "visibleJumps": 0,
+      "teleports": 0,
+      "extrapPctFrames": 0.6182380216383307,
+      "maxJumpCm": 2.943323917283486,
+      "maxHandbackCm": 2.943323917283486,
+      "linkDelayMs": 293.547533708945,
+      "arrival": {
+        "baseLag": 54.330078125,
+        "p50": 57.888916015625,
+        "p95": 244.73095703125,
+        "max": 320.06982421875,
+        "delay": 293.547533708945,
+        "n": 256
+      }
+    },
+    "B sees A": {
+      "reconciles": 0,
+      "agreements": 271,
+      "logLen": 0,
+      "extrapEvents": 1,
+      "extrapFrames": 1,
+      "frozenFrames": 0,
+      "interpFrames": 645,
+      "visibleJumps": 1,
+      "teleports": 0,
+      "extrapPctFrames": 0.15479876160990713,
+      "maxJumpCm": 23.725185043402554,
+      "maxHandbackCm": 0,
+      "linkDelayMs": 305.50368029458684,
+      "arrival": {
+        "baseLag": 79.330078125,
+        "p50": 42.005859375,
+        "p95": 258.992919921875,
+        "max": 328.966064453125,
+        "delay": 305.50368029458684,
+        "n": 256
+      }
+    }
+  },
+  "screenshots": {
+    "A": {
+      "dist": 14.085844122406044,
+      "lod": 0,
+      "mode": "interp",
+      "delayMs": 293.547533708945
+    },
+    "B": {
+      "dist": 14.079854241457726,
+      "lod": 0,
+      "mode": "interp",
+      "delayMs": 305.50368029458684
+    }
+  },
+  "drawnVsTrue": {
+    "B drawn by A vs B true (m)": 0.003318297874918986,
+    "A drawn by B vs A true (m)": 0.005135743378436562
+  },
+  "stats": {
+    "A": {
+      "snapshots": 709,
+      "stale": 0,
+      "noBaseline": 0,
+      "inputPackets": 607,
+      "framesSent": 1444,
+      "decodeErrors": 0,
+      "earlySnapshots": 0
+    },
+    "B": {
+      "snapshots": 707,
+      "stale": 0,
+      "noBaseline": 0,
+      "inputPackets": 603,
+      "framesSent": 1446,
+      "decodeErrors": 0,
+      "earlySnapshots": 0
+    }
+  },
+  "zoneMetrics": [
+    "zone_budget_records_sent_total 1224",
+    "zone_client_down_kbps{q=\"avg\"} 9.01",
+    "zone_client_down_kbps{q=\"max\"} 9.1",
+    "zone_client_down_kbps{q=\"p50\"} 9.1",
+    "zone_client_down_kbps{q=\"p99\"} 9.1",
+    "zone_client_up_kbps{q=\"avg\"} 15.15",
+    "zone_client_up_kbps{q=\"max\"} 15.46",
+    "zone_client_up_kbps{q=\"p50\"} 15.46",
+    "zone_client_up_kbps{q=\"p99\"} 15.46",
+    "zone_sessions{transport=\"websocket\"} 2",
+    "zone_snapshots_shed_total 40"
+  ],
+  "jumps": {
+    "A sees B": [],
+    "B sees A": [
+      {
+        "atMs": 1794141678265,
+        "cm": 23.7,
+        "dtMs": 37,
+        "mode": "interp",
+        "handback": false,
+        "id": 1
+      }
+    ]
+  },
+  "correctionLog": {
+    "A": [],
+    "B": []
+  },
+  "correctionsA": [],
+  "correctionsB": []
+}

@@ -120,6 +120,8 @@ export interface InterpMetrics {
   maxJumpM: number;
   /** Discontinuity when real data replaced a dead-reckoned position (m). */
   maxHandbackM: number;
+  /** The last visible jumps with context (diagnostics for the acceptance log). */
+  jumps: { atMs: number; cm: number; dtMs: number; mode: string; handback: boolean; id: number }[];
 }
 
 function lerp(a: number, b: number, t: number): number {
@@ -141,7 +143,8 @@ export class EntityInterpolation {
   private devs: number[] = [];
   private ticksSinceDelay = 0;
   private jitterDelay = INTERP_DELAY_NEAR_MS;
-  readonly metrics: InterpMetrics = { frames: 0, interpFrames: 0, extrapFrames: 0, extrapEvents: 0, frozenFrames: 0, teleports: 0, visibleJumps: 0, maxJumpM: 0, maxHandbackM: 0 };
+  private nowMs = 0;
+  readonly metrics: InterpMetrics = { frames: 0, interpFrames: 0, extrapFrames: 0, extrapEvents: 0, frozenFrames: 0, teleports: 0, visibleJumps: 0, maxJumpM: 0, maxHandbackM: 0, jumps: [] };
 
   constructor(private ground: GroundQuery | null = null) {}
 
@@ -271,6 +274,7 @@ export class EntityInterpolation {
    */
   update(nowMs: number, frameDtMs: number, out: RemoteView[] = []): RemoteView[] {
     out.length = 0;
+    this.nowMs = nowMs;
     const dt = Math.min(250, Math.max(0, frameDtMs));
     for (const tr of this.tracks.values()) {
       const target = Math.min(MAX_DELAY_MS[tr.ring], Math.max(RING_FLOOR[tr.ring], this.jitterDelay, tr.interval * 1.5 + TICK_MS * 0.5));
@@ -390,6 +394,10 @@ export class EntityInterpolation {
         if (visible > VISIBLE_JUMP_M) this.metrics.visibleJumps++;
         if (visible > this.metrics.maxJumpM) this.metrics.maxJumpM = visible;
         if (handback && visible > this.metrics.maxHandbackM) this.metrics.maxHandbackM = visible;
+        if (visible > VISIBLE_JUMP_M) {
+          this.metrics.jumps.push({ atMs: Math.round(this.nowMs), cm: Math.round(visible * 1000) / 10, dtMs: Math.round(dt), mode: v.mode, handback, id: v.id });
+          if (this.metrics.jumps.length > 50) this.metrics.jumps.shift();
+        }
       }
     }
     sm.lastX = v.x;

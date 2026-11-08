@@ -3,6 +3,7 @@ package game
 import (
 	"math"
 	"testing"
+	"time"
 
 	"lodestone/server/pkg/movement"
 	"lodestone/server/pkg/proto"
@@ -80,5 +81,63 @@ func TestViewGuessIsBoundedAndDecays(t *testing.T) {
 	idle.updateView(g)
 	if idle.view != idle.Move {
 		t.Fatal("no input yet: nothing to extrapolate")
+	}
+}
+
+// Frames lost for good are filled with the previous input, so a walker
+// keeps exactly the path their client predicted.
+func TestLostFramesRepeatTheLastInput(t *testing.T) {
+	h := newHarness(t, nil)
+	cl := h.dial("?spawn=500,500")
+	cl.join(h, "c1", "Lossy")
+	var fs []proto.InputFrame
+	for s := uint32(1); s <= 10; s++ {
+		if s == 5 || s == 6 {
+			continue
+		}
+		fs = append(fs, proto.InputFrame{Seq: s, Flags: proto.InputFlagForward})
+	}
+	cl.send(&proto.Input{Frames: fs})
+	cl.drainFor(300 * time.Millisecond)
+	sim := movement.State{Pos: movement.Vec3{X: 500, Z: 500}}
+	for i := 0; i < 10; i++ {
+		sim = movement.Step(sim, proto.InputFlagForward, 0, movement.Flat{})
+	}
+	if cl.snap.AckInputSeq != 10 || cl.frame.Self.Z != proto.MetersToCm(sim.Pos.Z) {
+		t.Fatalf("ack %d z %d, want 10 steps (z %d)", cl.snap.AckInputSeq, cl.frame.Self.Z, proto.MetersToCm(sim.Pos.Z))
+	}
+	if n := h.srv.m.framesSynthesized.Load(); n != 2 {
+		t.Fatalf("synthesized %d frames, want 2", n)
+	}
+}
+
+// Datagrams reorder: a packet carrying frames 5-8 that overtakes the one with
+// 1-4 must not make the zone skip 1-4 (the player would be snapped back).
+func TestReorderedInputWaitsForTheGap(t *testing.T) {
+	h := newHarness(t, nil)
+	cl := h.dial("?spawn=500,500")
+	cl.join(h, "c1", "Reorder")
+	mk := func(from, to uint32) []proto.InputFrame {
+		var fs []proto.InputFrame
+		for s := from; s <= to; s++ {
+			fs = append(fs, proto.InputFrame{Seq: s, Flags: proto.InputFlagForward})
+		}
+		return fs
+	}
+	cl.send(&proto.Input{Frames: mk(1, 1)})
+	time.Sleep(50 * time.Millisecond)
+	cl.send(&proto.Input{Frames: mk(5, 8)})
+	time.Sleep(15 * time.Millisecond)
+	cl.send(&proto.Input{Frames: mk(2, 4)})
+	cl.drainFor(300 * time.Millisecond)
+	sim := movement.State{Pos: movement.Vec3{X: 500, Z: 500}}
+	for i := 0; i < 8; i++ {
+		sim = movement.Step(sim, proto.InputFlagForward, 0, movement.Flat{})
+	}
+	if cl.snap.AckInputSeq != 8 || cl.frame.Self.Z != proto.MetersToCm(sim.Pos.Z) {
+		t.Fatalf("ack %d z %d, want 8 frames applied (z %d)", cl.snap.AckInputSeq, cl.frame.Self.Z, proto.MetersToCm(sim.Pos.Z))
+	}
+	if h.srv.m.framesSkipped.Load() != 0 {
+		t.Fatalf("skipped %d frames", h.srv.m.framesSkipped.Load())
 	}
 }

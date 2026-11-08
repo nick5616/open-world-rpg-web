@@ -49,7 +49,9 @@ type session struct {
 	enc         snapshot.Encoder
 	budget      snapshot.BudgetStats // last published encoder counters
 	frameBudget ratelimit.Bucket
-	frames      []proto.InputFrame
+	frames      []proto.InputFrame // received, not yet applied (sorted at apply)
+	gapSince    uint32             // tick a missing frame started holding the buffer, 0 = none
+	consumed    uint32             // newest frame seq applied or refused (LastSeq counts applied only)
 
 	// Reader-owned.
 	buckets    [256]*ratelimit.Bucket
@@ -297,7 +299,6 @@ func (s *Server) drain(sess *session, now time.Time) {
 	msgs := sess.inbox
 	sess.inbox = sess.spare[:0]
 	sess.mu.Unlock()
-	e := sess.ent
 	for _, m := range msgs {
 		in, ok := m.(*proto.Input)
 		if !ok {
@@ -308,26 +309,104 @@ func (s *Server) drain(sess *session, now time.Time) {
 		if in.AckTick > sess.ackTick && in.AckTick <= s.tick {
 			sess.ackTick = in.AckTick
 		}
-		// Frames: newest plus repeats, any order. Apply every NEW frame in
-		// seq order as one fixed 1/60 s step each.
-		sess.frames = append(sess.frames[:0], in.Frames...)
-		slices.SortFunc(sess.frames, func(a, b proto.InputFrame) int { return cmpU32(a.Seq, b.Seq) })
-		for _, f := range sess.frames {
-			if f.Seq <= e.LastSeq {
-				continue
+		// Frames: newest plus repeats, any order; collected across this
+		// tick's packets and applied below.
+		for _, f := range in.Frames {
+			if f.Seq > sess.consumed {
+				sess.frames = append(sess.frames, f)
 			}
-			if !sess.frameBudget.Take(now) {
-				s.m.framesDropped.Add(1)
-				continue
-			}
-			if !e.applyFrame(f, s.cfg.Ground) {
-				s.m.speedViolations.Add(1)
-			}
-			s.m.frames.Add(1)
 		}
 	}
 	clear(msgs)
 	sess.spare = msgs
+	s.applyFrames(sess, now)
+}
+
+// gapWaitTicks: how long a missing frame may hold back the ones after it.
+// Datagrams reorder (the netsim "thailand" relay reorders by 2+ packets about
+// 1% of the time, as real jittery paths do); applying frame N+1 before N
+// arrives would drop N for good and cost the player a reconciliation snap.
+// Two ticks (67 ms) is past any plausible reordering; a frame still missing
+// then was truly lost (all its redundant copies), so skip it. Over WebSocket
+// frames never arrive out of order and this never waits.
+const gapWaitTicks = 2
+
+// maxBufferedFrames caps frames held behind a gap (0.5 s of input).
+const maxBufferedFrames = 30
+
+// maxSynthFrames: longest run of lost frames filled by repeating the last
+// input (133 ms); a longer hole is skipped.
+const maxSynthFrames = 8
+
+// fillGap handles frames lost for good (every redundant copy dropped)
+// before frame next: rather than skip them, which puts the server a step or
+// two behind the client's prediction and costs a visible 8-16 cm snap, repeat
+// the player's previous input for each (Quake's "duplicate the last
+// command"). Walking or holding still through a loss then matches the
+// prediction exactly; a turn or key change inside the hole is reconciled
+// as usual. Synthesized frames pass the frame budget like real ones, so this
+// grants no extra simulation time. Jump edges are never repeated.
+func (s *Server) fillGap(sess *session, next uint32, now time.Time) {
+	e := sess.ent
+	missing := next - sess.consumed - 1
+	if missing > maxSynthFrames || e.LastSeq == 0 {
+		s.m.framesSkipped.Add(int64(missing))
+		return
+	}
+	f := e.lastFrame
+	f.Flags &^= proto.InputFlagJumpEdge
+	for seq := sess.consumed + 1; seq < next; seq++ {
+		f.Seq = seq
+		sess.consumed = seq
+		if !sess.frameBudget.Take(now) {
+			s.m.framesDropped.Add(1)
+			continue
+		}
+		e.applyFrame(f, s.cfg.Ground)
+		s.m.framesSynthesized.Add(1)
+	}
+}
+
+// applyFrames applies buffered input frames in seq order, one fixed 1/60 s
+// step each, waiting briefly for a missing frame (see gapWaitTicks).
+func (s *Server) applyFrames(sess *session, now time.Time) {
+	e := sess.ent
+	fr := sess.frames
+	slices.SortFunc(fr, func(a, b proto.InputFrame) int { return cmpU32(a.Seq, b.Seq) })
+	fr = slices.CompactFunc(fr, func(a, b proto.InputFrame) bool { return a.Seq == b.Seq })
+	i := 0
+	for ; i < len(fr); i++ {
+		f := fr[i]
+		if f.Seq <= sess.consumed {
+			continue
+		}
+		if sess.consumed != 0 && f.Seq != sess.consumed+1 {
+			if sess.gapSince == 0 {
+				sess.gapSince = s.tick
+			}
+			if s.tick-sess.gapSince < gapWaitTicks && len(fr)-i < maxBufferedFrames {
+				break // hold the rest until the gap fills or times out
+			}
+			s.fillGap(sess, f.Seq, now)
+		}
+		sess.gapSince = 0
+		// Consumed whether applied or dropped by the frame budget: a frame
+		// refused for speed-hack reasons must not hold back later ones.
+		sess.consumed = f.Seq
+		if !sess.frameBudget.Take(now) {
+			s.m.framesDropped.Add(1)
+			continue
+		}
+		if !e.applyFrame(f, s.cfg.Ground) {
+			s.m.speedViolations.Add(1)
+		}
+		s.m.frames.Add(1)
+	}
+	if i >= len(fr) {
+		sess.gapSince = 0
+	}
+	n := copy(fr, fr[i:])
+	sess.frames = fr[:n]
 }
 
 // sendSnapshot computes the client's interest set and sends a delta snapshot.

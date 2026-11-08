@@ -1,0 +1,29 @@
+[2026-11-08T12:40:33.630Z] WP06 acceptance: profile thailand, modes ws, wt
+[2026-11-08T12:40:38.461Z] scratch database lodestone_wp04_wp06e2e
+[2026-11-08T12:40:44.233Z] built account, director, zone
+[2026-11-08T12:40:45.301Z] PASS account healthy on :18191
+[2026-11-08T12:40:46.374Z] PASS director healthy on :18190
+[2026-11-08T12:40:46.901Z] PASS netsim "thailand" on ws :8095 and udp :8096
+[2026-11-08T12:40:46.904Z] netsim config {"latency":80,"jitter":20,"loss":0.03,"bw":0,"spikeEvery":0,"spikeMs":0,"dropAfter":0}
+[2026-11-08T12:40:48.005Z] PASS zone healthy on :18192
+[2026-11-08T12:40:48.007Z] zone wtEndpoint https://localhost:8096/wt#certHash=6gEwxHALK/8CAGDckH76hzx8hHNlAlaVN7USo/nhHn4=
+[2026-11-08T12:40:48.558Z] PASS vite on :5176
+[2026-11-08T12:40:54.565Z] --- WebSocket (TCP proxy) ---
+[2026-11-08T12:40:56.769Z] PASS both connected over websocket  {"A":[{"kind":"websocket","ok":true,"ms":16.19999999552965}],"B":[{"kind":"websocket","ok":true,"ms":12.599999994039536}]}
+[2026-11-08T12:41:23.868Z] PASS each browser draws the other player (by name)  {"A->Bruno":{"dist":14.085844122406044,"lod":0,"mode":"interp","delayMs":293.547533708945},"B->Alyssa":{"dist":14.079854241457726,"lod":0,"mode":"interp","delayMs":305.50368029458684}}
+[2026-11-08T12:41:23.868Z] PASS no local correction over 5 cm while walking  {"A":{"reconciles":0,"agreements":251,"corrMaxCm":0,"corrP95Cm":0,"over5cm":0},"B":{"reconciles":0,"agreements":271,"corrMaxCm":0,"corrP95Cm":0,"over5cm":0}}
+[2026-11-08T12:41:23.868Z] PASS no remote teleports
+[2026-11-08T12:41:23.868Z] PASS no remote discontinuity over 30 cm (each eased over 70 ms)  {"A sees B":{"jumps":0,"maxCm":2.9,"extrapEvents":2},"B sees A":{"jumps":1,"maxCm":23.7,"extrapEvents":1}}
+[2026-11-08T12:41:23.868Z] PASS uplink within 24 kbps  {"A":{"downKbps":8.469077016769491,"upKbps":14.515253861900431},"B":{"downKbps":8.986811481768815,"upKbps":14.448409619860357}}
+[2026-11-08T12:41:23.868Z] rtt A 183 ms, B 209 ms; walked 18.3 s
+[2026-11-08T12:41:24.025Z] --- WebTransport (UDP relay) ---
+[2026-11-08T12:41:26.299Z] PASS both connected over webtransport  {"A":[{"kind":"webtransport","ok":true,"ms":718.3999999985099}],"B":[{"kind":"webtransport","ok":true,"ms":397.5}]}
+[2026-11-08T12:41:53.811Z] PASS each browser draws the other player (by name)  {"A->Bruno":{"dist":28.370234088518387,"lod":1,"mode":"interp","delayMs":179.62376572662833},"B->Alyssa":{"dist":28.3747292408199,"lod":1,"mode":"interp","delayMs":160.84043957534442}}
+[2026-11-08T12:41:53.811Z] FAIL no local correction over 5 cm while walking  {"A":{"reconciles":1,"agreements":282,"corrMaxCm":17.00359694405222,"corrP95Cm":17.00359694405222,"over5cm":1},"B":{"reconciles":1,"agreements":279,"corrMaxCm":8.684609053575306,"corrP95Cm":8.684609053575306,"over5cm":1}}
+[2026-11-08T12:41:53.811Z] PASS no remote teleports
+[2026-11-08T12:41:53.811Z] PASS no remote discontinuity over 30 cm (each eased over 70 ms)  {"A sees B":{"jumps":0,"maxCm":0,"extrapEvents":0},"B sees A":{"jumps":1,"maxCm":7.3,"extrapEvents":2}}
+[2026-11-08T12:41:53.811Z] PASS uplink within 24 kbps  {"A":{"downKbps":14.073516874770085,"upKbps":19.517576851697967},"B":{"downKbps":14.192536142600355,"upKbps":20.105345735806253}}
+[2026-11-08T12:41:53.811Z] rtt A 135 ms, B 150 ms; walked 18.6 s
+[2026-11-08T12:41:53.999Z] PASS no page errors in either browser  []
+[2026-11-08T12:41:56.936Z] dropped lodestone_wp04_wp06e2e
+[2026-11-08T12:41:56.936Z] FAILED: no local correction over 5 cm while walking

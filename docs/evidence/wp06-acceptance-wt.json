@@ -1,0 +1,174 @@
+{
+  "mode": "wt",
+  "profile": "thailand",
+  "transport": "webtransport",
+  "walkSeconds": 18.586,
+  "rttMs": {
+    "A": 135,
+    "B": 150
+  },
+  "bandwidthKbps": {
+    "A": {
+      "downKbps": 14.073516874770085,
+      "upKbps": 19.517576851697967
+    },
+    "B": {
+      "downKbps": 14.192536142600355,
+      "upKbps": 20.105345735806253
+    }
+  },
+  "local": {
+    "A": {
+      "reconciles": 1,
+      "agreements": 282,
+      "corrMaxCm": 17.00359694405222,
+      "corrP95Cm": 17.00359694405222,
+      "over5cm": 1
+    },
+    "B": {
+      "reconciles": 1,
+      "agreements": 279,
+      "corrMaxCm": 8.684609053575306,
+      "corrP95Cm": 8.684609053575306,
+      "over5cm": 1
+    }
+  },
+  "remote": {
+    "A sees B": {
+      "reconciles": 1,
+      "agreements": 282,
+      "logLen": 1,
+      "extrapEvents": 0,
+      "extrapFrames": 0,
+      "frozenFrames": 0,
+      "interpFrames": 581,
+      "visibleJumps": 0,
+      "teleports": 0,
+      "extrapPctFrames": 0,
+      "maxJumpCm": 0,
+      "maxHandbackCm": 0,
+      "linkDelayMs": 179.62376572662833,
+      "arrival": {
+        "baseLag": 52.94189453125,
+        "p50": 57.666015625,
+        "p95": 96.60009765625,
+        "max": 165.176025390625,
+        "delay": 179.62376572662833,
+        "n": 256
+      }
+    },
+    "B sees A": {
+      "reconciles": 1,
+      "agreements": 279,
+      "logLen": 1,
+      "extrapEvents": 2,
+      "extrapFrames": 2,
+      "frozenFrames": 0,
+      "interpFrames": 583,
+      "visibleJumps": 1,
+      "teleports": 0,
+      "extrapPctFrames": 0.3418803418803419,
+      "maxJumpCm": 7.293133154719905,
+      "maxHandbackCm": 0,
+      "linkDelayMs": 160.84043957534442,
+      "arrival": {
+        "baseLag": 60.76611328125,
+        "p50": 47.77197265625,
+        "p95": 87.8779296875,
+        "max": 170.11376953125,
+        "delay": 160.84043957534442,
+        "n": 256
+      }
+    }
+  },
+  "screenshots": {
+    "A": {
+      "dist": 28.370234088518387,
+      "lod": 1,
+      "mode": "interp",
+      "delayMs": 179.62376572662833
+    },
+    "B": {
+      "dist": 28.3747292408199,
+      "lod": 1,
+      "mode": "interp",
+      "delayMs": 160.84043957534442
+    }
+  },
+  "drawnVsTrue": {
+    "B drawn by A vs B true (m)": 0.005951504567041151,
+    "A drawn by B vs A true (m)": 0.005684860831003608
+  },
+  "stats": {
+    "A": {
+      "snapshots": 578,
+      "stale": 77,
+      "noBaseline": 0,
+      "inputPackets": 651,
+      "framesSent": 1473,
+      "decodeErrors": 0,
+      "earlySnapshots": 0
+    },
+    "B": {
+      "snapshots": 570,
+      "stale": 88,
+      "noBaseline": 0,
+      "inputPackets": 666,
+      "framesSent": 1492,
+      "decodeErrors": 0,
+      "earlySnapshots": 1
+    }
+  },
+  "zoneMetrics": [
+    "zone_budget_records_sent_total 2453",
+    "zone_client_down_kbps{q=\"avg\"} 14.57",
+    "zone_client_down_kbps{q=\"max\"} 14.7",
+    "zone_client_down_kbps{q=\"p50\"} 14.7",
+    "zone_client_down_kbps{q=\"p99\"} 14.7",
+    "zone_client_up_kbps{q=\"avg\"} 19.65",
+    "zone_client_up_kbps{q=\"max\"} 19.69",
+    "zone_client_up_kbps{q=\"p50\"} 19.69",
+    "zone_client_up_kbps{q=\"p99\"} 19.69",
+    "zone_sessions{transport=\"webtransport\"} 2",
+    "zone_snapshots_shed_total 171"
+  ],
+  "jumps": {
+    "A sees B": [],
+    "B sees A": [
+      {
+        "atMs": 1794141709092,
+        "cm": 7.3,
+        "dtMs": 31,
+        "mode": "interp",
+        "handback": false,
+        "id": 4
+      }
+    ]
+  },
+  "correctionLog": {
+    "A": [
+      {
+        "t": 12512.60000000149,
+        "magnitude": 0.1700359694405222,
+        "unacked": 14,
+        "ackSeq": 619,
+        "knownAck": true
+      }
+    ],
+    "B": [
+      {
+        "t": 23007.79999999702,
+        "magnitude": 0.08684609053575307,
+        "unacked": 16,
+        "ackSeq": 1271,
+        "knownAck": true
+      }
+    ]
+  },
+  "correctionsA": [
+    0.1700359694405222
+  ],
+  "correctionsB": [
+    0.08684609053575307
+  ]
+}

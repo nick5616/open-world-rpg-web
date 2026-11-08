@@ -59,7 +59,7 @@ export class ClientPrediction {
   private lastAckSeq = 0;
 
   /** Every reconciliation (for the acceptance log and the HUD). */
-  readonly log: { t: number; magnitude: number; unacked: number }[] = [];
+  readonly log: { t: number; magnitude: number; unacked: number; ackSeq: number; knownAck: boolean }[] = [];
   reconciles = 0;
   agreements = 0;
   maxError = 0;
@@ -138,7 +138,7 @@ export class ClientPrediction {
     const magnitude = Math.hypot(error.x, error.y, error.z);
     this.reconciles++;
     if (magnitude > this.maxError) this.maxError = magnitude;
-    this.log.push({ t: nowMs, magnitude, unacked: this.pending.length });
+    this.log.push({ t: nowMs, magnitude, unacked: this.pending.length, ackSeq, knownAck: !!acked });
     if (this.log.length > 5000) this.log.shift();
     this.correction = { state, error, magnitude, ackSeq, unacked: this.pending.length };
     return this.correction;

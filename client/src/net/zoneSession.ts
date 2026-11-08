@@ -102,6 +102,14 @@ export class ZoneSession {
   /** Connect, send Hello and resolve with Welcome (rejects on kick/close). */
   async start(): Promise<Welcome> {
     const { transport, attempts } = await connectTransport({ wsUrl: this.opts.wsUrl, wtUrl: this.opts.wtUrl, prefer: this.opts.prefer, wtTimeoutMs: this.opts.wtTimeoutMs, wsFactory: this.opts.wsFactory });
+    if (this.phase === 'closed') {
+      // Closed while connecting (React StrictMode mounts effects twice in
+      // dev; a player backing out). Logging in anyway would leave a zombie
+      // session that the zone's duplicate-login rule pits against the real
+      // one.
+      transport.close(1000, 'cancelled');
+      throw new Error('session closed before it connected');
+    }
     this.transport = transport;
     this.attempts = attempts;
     this.phase = 'handshake';

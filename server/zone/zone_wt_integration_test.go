@@ -12,6 +12,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -41,7 +42,15 @@ func TestZoneProcessWebTransport(t *testing.T) {
 	if out, err := exec.Command("go", "build", "-o", bin, ".").CombinedOutput(); err != nil {
 		t.Fatalf("build: %v\n%s", err, out)
 	}
+	// The zone needs the number free on TCP and UDP.
 	port := freePort(t)
+	for i := 0; i < 20; i++ {
+		if u, err := net.ListenPacket("udp", fmt.Sprintf("127.0.0.1:%d", port)); err == nil {
+			u.Close()
+			break
+		}
+		port = freePort(t)
+	}
 	world := fmt.Sprintf("itest-wt-%d", time.Now().UnixNano())
 	zoneID := "zone-itest-wt"
 	cmd := exec.Command(bin)

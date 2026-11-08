@@ -32,6 +32,8 @@ type metrics struct {
 	snapshotsShed   atomic.Int64
 	// Byte budget (decision 0005): records sent vs deferred to a later tick.
 	recordsSent, recordsDeferred atomic.Int64
+	framesSkipped                atomic.Int64    // lost frames given up on (hole longer than maxSynthFrames)
+	framesSynthesized            atomic.Int64    // lost frames filled by repeating the last input
 	transports                   [3]atomic.Int64 // live sessions by proto.Transport
 
 	// AOI accumulators (tick writes, publisher swaps out).
@@ -134,6 +136,8 @@ func (s *Server) publish(hist map[*session][]bwSample, depth func() int, extra f
 	r.SetInt("zone_players", s.m.players.Load())
 	r.SetInt("zone_input_frames_total", s.m.frames.Load())
 	r.SetInt("zone_input_frames_dropped_total", s.m.framesDropped.Load())
+	r.SetInt("zone_input_frames_skipped_total", s.m.framesSkipped.Load())
+	r.SetInt("zone_input_frames_synthesized_total", s.m.framesSynthesized.Load())
 	r.SetInt("zone_speed_violations_total", s.m.speedViolations.Load())
 	r.SetInt("zone_rate_limited_total", s.m.rateLimited.Load())
 	r.SetInt("zone_protocol_errors_total", s.m.protoErrors.Load())
