@@ -285,6 +285,31 @@ try {
     await sleep(100);
     await sample('far-left');
   }
+  // Party radio (spec 10 "Proximity voice" 2): A invites B through chat, B
+  // accepts in the party frame, then B walks on to 80 m. Past earshot B
+  // stays subscribed (party) and switches to the flat radio branch.
+  await a.keyboard.press('Enter');
+  await a.getByTestId('chat-input').fill('/invite Bram');
+  await a.keyboard.press('Enter');
+  await a.keyboard.press('Escape');
+  await b.getByTestId('party-accept').waitFor({ timeout: 10000 });
+  await b.getByTestId('party-accept').dispatchEvent('click');
+  await a.waitForFunction(() => document.querySelectorAll('[data-testid="party-member"]').length === 2, null, { timeout: 10000 });
+  step('A and B are in a party');
+  await sleep(2500); // the voice leader refreshes parties every 2 s
+  let shotRadio = false;
+  await walkTo(b, pa.x - 80, pa.z - 4, async () => {
+    await sample('party');
+    const last = samples[samples.length - 1];
+    if (!shotRadio && last.mode === 'radio' && last.trueDist > 60) {
+      shotRadio = true;
+      await a.screenshot({ path: path.join(EVIDENCE, 'wp11-walkapart-party-radio.png') });
+    }
+  }, 20000);
+  for (let i = 0; i < 10; i++) {
+    await sleep(100);
+    await sample('party-far');
+  }
   // Settings panel (per-player volume and mute).
   const hit = await a.evaluate(() => {
     const r = document.querySelector('[data-testid="voice-settings-toggle"]').getBoundingClientRect();
@@ -307,7 +332,10 @@ try {
   step(`zone earshot metrics: ${zoneMetrics.join(' | ')}`);
 
   // ---- analysis ----
-  const sub = samples.filter((s) => s.subscribed && s.mode === 'spatial' && s.distance !== null);
+  // Proximity checks use the phases before the party was formed.
+  const prox = samples.filter((s) => !s.phase.startsWith('party'));
+  const partyFar = samples.filter((s) => s.phase.startsWith('party') && s.trueDist > 56);
+  const sub = prox.filter((s) => s.subscribed && s.mode === 'spatial' && s.distance !== null);
   const loud = (s) => Math.max(s.outL, s.outR);
   // Fade: output level vs distance. Expected from the model: 20*log10(gain).
   const near = sub.filter((s) => s.distance >= 3 && s.distance <= 7);
@@ -350,10 +378,10 @@ try {
   // transceiver for its downtrack flush), so the subscription check uses
   // 48 m + 1.75 s of walking. Inside 38 m A must always be subscribed.
   const silentFrom = 48 + 4.9 * 0.5;
-  const beyondSilent = samples.filter((s) => s.trueDist > silentFrom + 1);
+  const beyondSilent = prox.filter((s) => s.trueDist > silentFrom + 1);
   const silentDb = -70;
-  const beyond = samples.filter((s) => s.trueDist > 48 + 4.9 * 1.75);
-  const inside = samples.filter((s) => s.trueDist < 38);
+  const beyond = prox.filter((s) => s.trueDist > 48 + 4.9 * 1.75);
+  const inside = prox.filter((s) => s.trueDist < 38);
   const q = (xs) => {
     const s = [...xs].sort((x, y) => x - y);
     return { p50: s[Math.floor(s.length / 2)] ?? null, p95: s[Math.floor(s.length * 0.95)] ?? null, max: s.length ? s[s.length - 1] : null };
@@ -381,6 +409,14 @@ try {
     pannerVsDrawnHeadM: q(pannerVsDrawn),
     pannerVsTrueHeadM: q(pannerVsTrue),
     speakingIndicator: { domSpeakingSamples: speakingDom, zoneSpeakingBitSamples: zoneBit },
+    partyRadio: {
+      samplesBeyond56m: partyFar.length,
+      subscribed: partyFar.filter((s) => s.subscribed).length,
+      radioMode: partyFar.filter((s) => s.mode === 'radio').length,
+      audible: partyFar.filter((s) => loud(s) > silentDb).length,
+      meanAbsRminusLdb: +avg(partyFar, (s) => Math.abs(s.outR - s.outL)).toFixed(2),
+      meanLevelDb: +avg(partyFar, loud).toFixed(1),
+    },
     end: { mic: vEnd.mic, transmitting: vEnd.transmitting, ctx: vEnd.contextState },
     timeline: samples,
   };
@@ -402,6 +438,9 @@ try {
   check(zoneBit > 0, "speaking bit: A sees B's Activity.speaking from the zone while B holds V", result.speakingIndicator);
   const errors = consoleLog.filter((l) => /pageerror/.test(l));
   fs.writeFileSync(path.join(EVIDENCE, 'wp11-walkapart-console.txt'), consoleLog.join('\n') + '\n');
+  const pr = result.partyRadio;
+  check(pr.samplesBeyond56m > 5 && pr.subscribed === pr.samplesBeyond56m && pr.radioMode === pr.samplesBeyond56m, 'party radio: past earshot a party member stays subscribed and plays through the radio branch', pr);
+  check(pr.audible === pr.samplesBeyond56m && pr.meanAbsRminusLdb < 1.5, 'party radio: audible and flat (no pan, no distance loss)', pr);
   check(errors.length === 0, 'no page errors in either browser', errors.slice(0, 5));
 } catch (e) {
   failures.push(String(e));

@@ -4,15 +4,15 @@
 [B] debug: [vite] connecting...
 [B] debug: [vite] connected.
 [B] info: %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
-[A] warning: [GroupMarkerNotSet(crbug.com/242999)!:A0702F00745F0000]Automatic fallback to software WebGL has been deprecated. Please use the --enable-unsafe-swiftshader flag to opt in to lower security guarantees for trusted content.
-[B] warning: [GroupMarkerNotSet(crbug.com/242999)!:A0C02E0014310000]Automatic fallback to software WebGL has been deprecated. Please use the --enable-unsafe-swiftshader flag to opt in to lower security guarantees for trusted content.
-[A] warning: [.WebGL-0x487c04874000]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
-[B] warning: [.WebGL-0x7d9400150d00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
-[B] warning: [.WebGL-0x7d9400150d00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
-[A] warning: [.WebGL-0x487c04874000]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
-[B] warning: [.WebGL-0x7d9400150d00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
-[B] warning: [.WebGL-0x7d9400150d00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)
-[A] warning: [.WebGL-0x487c04874000]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
-[A] warning: [.WebGL-0x487c04874000]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)
-[A] info: publishing track {room: world-f3d8fa0d-db27-43da-9d10-8feecadedc73, roomID: RM_Vj8LaK9K5uXp, participant: f65ffb5d-da5e-4619-8f6e-3f028cb7f6a1, pID: PA_gHmmxeZo69F4, trackID: undefined}
-[B] info: publishing track {room: world-f3d8fa0d-db27-43da-9d10-8feecadedc73, roomID: RM_Vj8LaK9K5uXp, participant: bc6f094e-2c35-48f2-aa96-3d0e9053a5c3, pID: PA_EKu2MQ2sU4GC, trackID: undefined}
+[A] warning: [GroupMarkerNotSet(crbug.com/242999)!:A0702F006C5B0000]Automatic fallback to software WebGL has been deprecated. Please use the --enable-unsafe-swiftshader flag to opt in to lower security guarantees for trusted content.
+[B] warning: [GroupMarkerNotSet(crbug.com/242999)!:A0702F008C410000]Automatic fallback to software WebGL has been deprecated. Please use the --enable-unsafe-swiftshader flag to opt in to lower security guarantees for trusted content.
+[A] warning: [.WebGL-0x6d5c01cd5c00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
+[B] warning: [.WebGL-0x6c01668d00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
+[B] warning: [.WebGL-0x6c01668d00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
+[A] warning: [.WebGL-0x6d5c01cd5c00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
+[B] warning: [.WebGL-0x6c01668d00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
+[A] warning: [.WebGL-0x6d5c01cd5c00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
+[B] warning: [.WebGL-0x6c01668d00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)
+[A] warning: [.WebGL-0x6d5c01cd5c00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)
+[A] info: publishing track {room: world-ae68adef-ea93-4e84-9f13-7ff467a42bb0, roomID: RM_CuuR85eq8HuY, participant: 0753ad93-e0a2-4758-99c7-cb812f2394ed, pID: PA_SeNSZ77vJYxw, trackID: undefined}
+[B] info: publishing track {room: world-ae68adef-ea93-4e84-9f13-7ff467a42bb0, roomID: RM_CuuR85eq8HuY, participant: b77df709-485b-4181-be07-238f2dc2b862, pID: PA_TW362u6PqRkJ, trackID: undefined}
