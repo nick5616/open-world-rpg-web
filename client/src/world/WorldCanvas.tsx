@@ -17,6 +17,8 @@ import { MESH_CACHE, worldSeed } from './config';
 import { WorldScene } from './WorldScene';
 import { worldDebug } from './debug/worldDebug';
 import { tileSize } from './terrain/quadtree';
+// WP12: towers and waypoint stones (structure overlay visuals).
+import { StructuresLayer } from './structures/StructuresLayer';
 
 type Props = Omit<ComponentProps<typeof GameCanvas>, 'ground' | 'terrain' | 'environment' | 'ownComposer'> & {
   /** Teleport to the atlas spawn once loaded. Default: in solo (online, the zone server places you). */
@@ -83,7 +85,7 @@ export function WorldCanvas({ spawnOnLand = SOLO, seed, onRuntime, ...rest }: Pr
 
   return (
     <>
-      {runtime && <GameCanvas {...rest} ground={runtime.ground} terrain={<WorldScene runtime={runtime} />} environment={false} ownComposer />}
+      {runtime && <GameCanvas {...rest} ground={runtime.ground} terrain={<><WorldScene runtime={runtime} /><StructuresLayer runtime={runtime} /></>} environment={false} ownComposer />}
       {!playable && (
         <div data-testid="world-loading" style={{ position: 'fixed', inset: 0, zIndex: 40, display: 'grid', placeItems: 'center', background: runtime ? 'rgba(12,16,24,0.55)' : '#0c1018', color: '#e9ecef', font: '15px system-ui, sans-serif', pointerEvents: 'none', transition: 'background 0.4s' }}>
           <div style={{ textAlign: 'center' }}>

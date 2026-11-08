@@ -16,6 +16,10 @@ import { ATLAS_STORE, cacheGet, cachePut, worldDb } from './cacheDb';
 import { poolSize, WorkerPool, type WorkerLike } from './workerPool';
 import type { InitMsg, ResultMsg } from './protocol';
 import { WorldGround } from './ground';
+// WP12: towers stand on the terrain as a structure overlay on the ground query
+// (client/src/world/structures/README.md); prediction and the zone use the same.
+import { StructureGround } from '../structures/overlay';
+import { towersFromAtlas, type TowerSet } from '../structures/towers';
 
 export interface LoadTimings {
   wasmMs: number;
@@ -28,7 +32,11 @@ export interface LoadTimings {
 const newWorker = (): WorkerLike => new Worker(new URL('./chunk.worker.ts', import.meta.url), { type: 'module', name: 'worldgen' }) as unknown as WorkerLike;
 
 export class WorldRuntime {
-  readonly ground: WorldGround;
+  /** Terrain plus structures (towers): what movement walks and climbs. */
+  readonly ground: StructureGround;
+  /** The bare terrain (collision_height), for things that must ignore structures. */
+  readonly terrainGround: WorldGround;
+  readonly towers: TowerSet;
   readonly data: AtlasData;
   readonly atlasHashHex: string;
 
@@ -41,7 +49,9 @@ export class WorldRuntime {
   ) {
     this.data = atlas.data;
     this.atlasHashHex = hex64(atlas.hash);
-    this.ground = new WorldGround(wg, atlas);
+    this.terrainGround = new WorldGround(wg, atlas);
+    this.towers = towersFromAtlas(this.data, this.terrainGround);
+    this.ground = new StructureGround(this.terrainGround, this.towers.overlay);
   }
 
   get genVersion(): number {

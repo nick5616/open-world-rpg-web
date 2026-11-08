@@ -18,6 +18,8 @@ import { startSocial, stopSocial } from '../social';
 import { netRuntime, useNetStore } from './netStore';
 import { RemotePlayers } from './RemotePlayers';
 import { ZoneSession, type SessionEnd } from './zoneSession';
+// WP12: exploration Events, map actions, re-issued local save blobs.
+import { attachExploration } from '../ui/map/zoneLink';
 
 type Phase = { kind: 'connecting' } | { kind: 'playing'; welcome: Welcome } | { kind: 'ended'; end: SessionEnd } | { kind: 'error'; message: string };
 
@@ -73,6 +75,7 @@ export function NetPlay({ ready }: { ready: ReadySession }) {
       prefer: preferredTransport(),
     });
     netRuntime.session = s;
+    const detachExploration = attachExploration(s, ready);
     let live = true;
     s.onEnd = (end) => live && setPhase({ kind: 'ended', end });
     s.start().then(
@@ -85,6 +88,7 @@ export function NetPlay({ ready }: { ready: ReadySession }) {
     );
     return () => {
       live = false;
+      detachExploration();
       s.close('leaving');
       if (netRuntime.session === s) netRuntime.session = null;
       netStats.transport = netStats.rttMs = netStats.downKbps = netStats.upKbps = null;

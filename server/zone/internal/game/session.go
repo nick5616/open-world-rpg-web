@@ -44,6 +44,7 @@ type session struct {
 
 	// Tick-owned.
 	ent         *Entity
+	x           *exploreState // WP12 exploration (explore.go)
 	left        bool
 	ackTick     uint32
 	enc         snapshot.Encoder
@@ -194,6 +195,7 @@ func (s *Server) accept(c transport.Conn, spawnHint *movement.Vec3) {
 	sess := &session{conn: c, claims: claims, joined: make(chan struct{}),
 		buckets: newBuckets(), violations: ratelimit.New(100, 10), frameBudget: frameBudget()}
 	sess.spawn = s.spawnFor(claims, spawnHint)
+	sess.x = s.loadExplore(claims, hello.SaveBlob, &sess.spawn, spawnHint != nil) // WP12
 
 	select {
 	case s.joins <- sess:
@@ -307,9 +309,13 @@ func (s *Server) drain(sess *session, now time.Time) {
 	sess.inbox = sess.spare[:0]
 	sess.mu.Unlock()
 	for _, m := range msgs {
+		if it, ok := m.(*proto.Interact); ok {
+			s.handleInteract(sess, it, now) // WP12: fast travel, pins (explore.go)
+			continue
+		}
 		in, ok := m.(*proto.Input)
 		if !ok {
-			continue // HitClaim/Interact: combat and interaction land in WP10/WP11
+			continue // HitClaim: combat lands in WP13
 		}
 		// Baseline ack: newest snapshot the client has. Never trust an ack
 		// from the future.
