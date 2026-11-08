@@ -250,22 +250,15 @@ func (d *Director) connect(w http.ResponseWriter, r *http.Request, s accountapi.
 	})
 }
 
-// pickZone prefers zones that list the region explicitly over whole-world
-// zones (empty Regions). In v1 one process owns everything; once regions are
-// split onto their own servers (spec 9), the whole-world primary becomes the
-// fallback that must not keep absorbing players who belong elsewhere. Among
-// equals, zoneregistry.Pick takes the fewest players.
+// pickZone routes a region to its owner (WP16: zoneregistry.Owner, the same
+// function every cluster zone uses, so the director never sends a player to
+// a zone that would immediately hand them elsewhere). Zones that list the
+// region explicitly win over the primary / whole-world zones; ties go to
+// the lowest zone id, never to load (two zones splitting the players in one
+// place could not see each other). In v1 a single whole-world zone takes
+// everyone, as before.
 func pickZone(live []zoneregistry.Entry, r zoneregistry.Region) (zoneregistry.Entry, bool) {
-	explicit := make([]zoneregistry.Entry, 0, len(live))
-	for _, e := range live {
-		if len(e.Regions) > 0 {
-			explicit = append(explicit, e)
-		}
-	}
-	if z, ok := zoneregistry.Pick(explicit, r); ok {
-		return z, true
-	}
-	return zoneregistry.Pick(live, r)
+	return zoneregistry.Owner(live, r)
 }
 
 // socialTicket re-issues only the social ticket, for reconnecting the social

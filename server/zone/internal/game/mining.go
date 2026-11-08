@@ -391,7 +391,7 @@ func (s *Server) spawnPickup(owner *Entity, v caves.Vein, item string, qty int, 
 	p.Move.Pos = movement.Vec3{X: v.X + v.NX*0.7, Y: v.Y + v.NY*0.7 + 0.2, Z: v.Z + v.NZ*0.7}
 	p.prevValid = p.Move
 	p.view = p.Move
-	s.ents = append(s.ents, p) // ids only grow: stays sorted
+	s.insertEntity(p) // WP16: player ids are not in join order any more
 	return p
 }
 

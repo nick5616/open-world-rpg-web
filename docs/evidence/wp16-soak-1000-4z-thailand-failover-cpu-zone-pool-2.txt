@@ -1,0 +1,51 @@
+CPU profile, 20 s, zone-pool-2 with 329 players
+
+File: zone.exe
+Build ID: C:\Users\nickb\AppData\Local\Temp\lodestone-wp16-LhKDkR\zone.exe2026-11-08 11:41:49.5822051 -0800 PST
+Type: cpu
+Time: 2026-11-08 11:44:40 PST
+Duration: 20s, Total samples = 22.26s (111.30%)
+Showing nodes accounting for 16.36s, 73.50% of 22.26s total
+Dropped 469 nodes (cum <= 0.11s)
+Showing top 40 nodes out of 165
+      flat  flat%   sum%        cum   cum%
+     3.66s 16.44% 16.44%      4.11s 18.46%  runtime.cgocall
+     2.91s 13.07% 29.51%      2.91s 13.07%  runtime.osyield.func1
+     1.77s  7.95% 37.47%      1.83s  8.22%  lodestone/server/zone/internal/aoi.(*Grid).Query
+     0.88s  3.95% 41.42%      1.27s  5.71%  lodestone/server/pkg/snapshot.(*Encoder).buildBudgeted
+     0.64s  2.88% 44.29%      6.65s 29.87%  lodestone/server/zone/internal/game.(*Server).sendSnapshot
+     0.52s  2.34% 46.63%      0.52s  2.34%  lodestone/server/pkg/caves.TriMasked (inline)
+     0.44s  1.98% 48.61%      0.44s  1.98%  math.archHypot
+     0.43s  1.93% 50.54%      0.43s  1.93%  <unknown>
+     0.41s  1.84% 52.38%      0.41s  1.84%  runtime.semawakeup
+     0.36s  1.62% 54.00%      0.36s  1.62%  lodestone/server/pkg/snapshot.(*Frame).Find.func1 (inline)
+     0.34s  1.53% 55.53%      0.36s  1.62%  lodestone/server/zone/internal/game.(*Server).caveVisible
+     0.34s  1.53% 57.05%      0.42s  1.89%  slices.partitionOrdered[go.shape.uint64]
+     0.29s  1.30% 58.36%      0.29s  1.30%  runtime.netpollQueueTimer
+     0.27s  1.21% 59.57%      0.28s  1.26%  lodestone/server/pkg/worldhost.surfaceHeight
+     0.25s  1.12% 60.69%      0.25s  1.12%  internal/runtime/atomic.(*Uint32).CompareAndSwap (inline)
+     0.25s  1.12% 61.81%      0.25s  1.12%  sync/atomic.(*Int32).Add (inline)
+     0.22s  0.99% 62.80%      0.23s  1.03%  slices.insertionSortOrdered[go.shape.uint64]
+     0.21s  0.94% 63.75%      0.52s  2.34%  runtime.netpoll
+     0.16s  0.72% 64.47%      0.93s  4.18%  lodestone/server/pkg/worldhost.(*Terrain).HeightAt
+     0.15s  0.67% 65.14%      3.05s 13.70%  runtime.stealWork
+     0.14s  0.63% 65.77%      0.98s  4.40%  lodestone/server/zone/internal/game.(*Server).sortInterest
+     0.14s  0.63% 66.40%      0.28s  1.26%  runtime.lock2
+     0.13s  0.58% 66.98%      0.13s  0.58%  internal/runtime/maps.ctrlGroup.matchH2 (inline)
+     0.13s  0.58% 67.57%      0.49s  2.20%  sort.Search (inline)
+     0.12s  0.54% 68.10%      0.12s  0.54%  memeqbody
+     0.12s  0.54% 68.64%      0.12s  0.54%  runtime.asyncPreempt
+     0.12s  0.54% 69.18%      0.16s  0.72%  runtime.mallocgcTinySC2
+     0.12s  0.54% 69.72%      0.30s  1.35%  runtime.selectgo
+     0.11s  0.49% 70.22%      0.23s  1.03%  lodestone/server/pkg/snapshot.Diff
+     0.07s  0.31% 70.53%      0.43s  1.93%  github.com/coder/websocket.(*mu).lock
+     0.07s  0.31% 70.84%         1s  4.49%  io.(*multiReader).Read
+     0.07s  0.31% 71.16%      1.05s  4.72%  lodestone/server/pkg/gameloop.monoNow
+     0.07s  0.31% 71.47%      0.56s  2.52%  lodestone/server/pkg/snapshot.(*Frame).Find
+     0.07s  0.31% 71.79%      0.17s  0.76%  lodestone/server/pkg/structures.(*Overlay).Top
+     0.07s  0.31% 72.10%      0.93s  4.18%  lodestone/server/zone/internal/game.(*Entity).applyFrame
+     0.07s  0.31% 72.42%      0.15s  0.67%  runtime.chanrecv
+     0.06s  0.27% 72.69%      1.10s  4.94%  bufio.(*Reader).fill
+     0.06s  0.27% 72.96%      1.85s  8.31%  lodestone/server/pkg/transport.(*wsConn).Recv
+     0.06s  0.27% 73.23%      0.30s  1.35%  lodestone/server/pkg/worldhost.(*Chunk).Height
+     0.06s  0.27% 73.50%      0.22s  0.99%  runtime.reentersyscall

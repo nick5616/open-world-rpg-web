@@ -49,5 +49,9 @@ export function netDebug() {
     remotes: drawnRemotes.views,
     lod: { ...drawnRemotes.lod },
     end: s.end,
+    // WP16
+    zoneId: s.zoneId,
+    standby: [...s.standby.keys()],
+    transfers: s.transfers.slice(),
   };
 }

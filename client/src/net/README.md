@@ -63,3 +63,14 @@ uplink stays under 24 kbps.
 afterwards) and private ports: account 18191, director 18190, zone 18192
 tcp+udp, netsim 8095/8096, Vite 5191. It refuses to start if one of them is
 taken. Evidence goes to `docs/evidence/wp06-*`.
+
+## Multiple zones (WP16)
+
+`ZoneSession` handles zone handoffs and failover internally, so `NetPlay`, `RemotePlayers` and the HUD keep one session object for the whole play session (decision 0016, CR 008):
+
+- `ZoneTransfer` kind 0 → open a standby connection to the named zone (WebTransport or WebSocket, as for the first connection) and send Hello with the one-time token; kind 1 → close it.
+- A `Welcome` on a standby connection → `switchTo`: that connection becomes active, the old one becomes a standby (the old zone keeps it for the way back), the snapshot decoder is replaced (each zone has its own baselines), every frame after the last acknowledged one is resent. Prediction, interpolation (entity ids are world-stable) and clock sync carry on. `session.zoneId` follows; `session.transfers` logs each switch with its gap.
+- The active connection dropping without a terminal kick, with `reconnect` given (NetPlay passes one that asks the director for a fresh ticket) → `failover`: reconnect to whoever owns the region now (backoff 0.25 → 2 s, gives up after 60 s), then snap to the checkpoint from the first snapshot (`ClientPrediction.force`; no input goes out until the renderer took that correction). No "connection lost" overlay unless it gives up.
+- `netDebug()` adds `zoneId`, `standby` and `transfers`.
+
+Acceptance: `node client/src/net/dev/handoff-acceptance.mjs [--profile thailand] [--failover]` (two Chromium processes walk across a border between two zone processes and back; `--failover` then kills the zone owning them).

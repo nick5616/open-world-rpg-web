@@ -173,7 +173,7 @@ func (s *Server) activateNPC(i int, tod float64) {
 	e.Yaw = wireYaw(st.Yaw)
 	e.prevValid = e.Move
 	e.view = e.Move
-	s.ents = append(s.ents, e) // ids only grow: stays sorted
+	s.insertEntity(e) // WP16: player ids are world-stable, not in join order
 	s.town.active[i] = e
 	s.town.byEnt[e.ID] = i
 }

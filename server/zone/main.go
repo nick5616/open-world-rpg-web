@@ -26,6 +26,7 @@
 //	LODESTONE_ZONE_CHUNK_CACHE / _CHUNK_WORKERS / _WASM_INSTANCES  terrain cache size (3072 chunks), generators, query instances
 //	LODESTONE_ZONE_DEBUG_UPDRAFTS  WP10: "x,z,radius,top,lift[;...]" debug updraft columns (client: ?updraft=...)
 //	LODESTONE_ZONE_DEBUG_RAIN      WP10: 1 = always rain, 0 = never (default: the seeded weather stub)
+//	LODESTONE_ZONE_CLUSTER / _ROLE / _REGIONS ...  WP16 multiple zones (cluster.go; off by default)
 //	LODESTONE_PG_URL, LODESTONE_REDIS_ADDR
 package main
 
@@ -133,6 +134,15 @@ func main() {
 		Metrics:        s.Metrics,
 		Log:            log,
 	}
+	// WP16: multiple zones (cluster.go). nil = one zone owning the whole world.
+	clus, idBase, err := clusterFromEnv(ctx, cfg.WorldID, cfg.ZoneID, log)
+	if err != nil {
+		log.Error("cluster", "err", err)
+		os.Exit(1)
+	}
+	if clus != nil {
+		cfg.Cluster, cfg.IDBase = clus.r, idBase
+	}
 	if r := startEarshot(ctx, cfg.WorldID, cfg.ZoneID, s.Metrics, log); r != nil {
 		cfg.Earshot = r // WP11 proximity voice (voice.go)
 	}
@@ -148,6 +158,7 @@ func main() {
 	origins := strings.Split(env.Str("LODESTONE_CORS_ORIGIN", "*"), ",")
 	ws := &transport.WebSocket{OriginPatterns: origins}
 	s.Mux.Handle("GET /ws", zone.Handler(ws))
+	servePprof(s, log) // WP16 soaks: LODESTONE_ZONE_PPROF=1
 	// Identity for tools: bots read it so their self-signed dev tickets name
 	// the right audience and world without flags.
 	s.Mux.HandleFunc("GET /debug/zone", func(w http.ResponseWriter, _ *http.Request) {
@@ -189,6 +200,9 @@ func main() {
 		m.SetInt("zone_writebehind_retries_total", st.Retries.Load())
 		m.SetInt("zone_writebehind_failed_total", st.Failed.Load())
 		m.SetInt("zone_writebehind_skipped_total", st.Skipped.Load())
+		if clus != nil {
+			clusterMetrics(m, zone) // WP16
+		}
 	})
 
 	var rdb *redis.Client
@@ -199,7 +213,12 @@ func main() {
 			Endpoint:   env.Str("LODESTONE_ZONE_PUBLIC_URL", fmt.Sprintf("ws://localhost:%d/ws", port)),
 			WTEndpoint: wtEndpoint,
 		}
-		go announce(ctx, rdb, cfg.WorldID, entry, zone, log)
+		if clus != nil {
+			go clus.announce(ctx, entry, port, zone) // WP16: role, regions, short TTL
+			clus.serveCluster(s, zone)
+		} else {
+			go announce(ctx, rdb, cfg.WorldID, entry, zone, log)
+		}
 	}
 
 	log.Info("zone config", "zone", cfg.ZoneID, "world", cfg.WorldID, "seed", cfg.Seed, "genVersion", cfg.GenVersion, "devSpawn", cfg.DevSpawn)

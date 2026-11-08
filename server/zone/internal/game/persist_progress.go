@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 
 	"lodestone/server/zone/internal/explore"
 )
@@ -65,12 +66,22 @@ func (p *PGStore) SaveProgress(ctx context.Context, id string, s ProgressSnapsho
 		return ErrNoRow
 	}
 	return pgx.BeginFunc(ctx, p.Pool, func(tx pgx.Tx) error {
-		tag, err := tx.Exec(ctx, `UPDATE characters SET level = $2, xp = $3, last_waypoint = $4, updated_at = now() WHERE id = $1::uuid`, id, s.Level, s.XP, s.LastWaypoint)
+		var tag pgconn.CommandTag
+		var err error
+		if s.Epoch > 0 {
+			// WP16 fence (persist.go savePosition): also bumps the epoch, so
+			// an older owner's late position write is refused too.
+			tag, err = tx.Exec(ctx, `UPDATE characters SET level = $2, xp = $3, last_waypoint = $4, updated_at = now(),
+				position = jsonb_set(COALESCE(position, '{}'::jsonb), '{e}', to_jsonb($5::bigint))
+				WHERE id = $1::uuid AND `+epochFence+``, id, s.Level, s.XP, s.LastWaypoint, s.Epoch)
+		} else {
+			tag, err = tx.Exec(ctx, `UPDATE characters SET level = $2, xp = $3, last_waypoint = $4, updated_at = now() WHERE id = $1::uuid`, id, s.Level, s.XP, s.LastWaypoint)
+		}
 		if err != nil {
 			return err
 		}
 		if tag.RowsAffected() == 0 {
-			return ErrNoRow
+			return p.missingOrFenced(ctx, id)
 		}
 		_, err = tx.Exec(ctx, `
 			INSERT INTO character_progress (character_id, towers, waypoints, discoveries, pins)

@@ -35,7 +35,7 @@ node client/src/account/dev/acceptance.mjs   # from repo root: browser → direc
 
 1. Region = `floor(position / 1024 m)` on x and z, clamped to the 4×4 world (`accountapi.RegionOf`). Position comes from the character row, or for local profiles from the presented save blob (spawn if none).
 2. Live entries only (heartbeat within 15 s).
-3. Zones that list the region explicitly win over whole-world zones (`regions: []`); among equals, fewest players (`zoneregistry.Pick`). In v1 a single whole-world zone takes everyone.
+3. WP16: the region's owner by `zoneregistry.Owner`, the same function every cluster zone uses: a zone listing the region explicitly wins over the primary / whole-world zones; ties go to the lowest zone id, never to load (players split across two zones in one place could not see each other). In v1 a single whole-world zone takes everyone.
 4. None: `503 waking_world` with `Retry-After: 5`. Waking the game VM on demand (spec 13) is WP19's infra hook; this service only reports.
 
 ## Errors
@@ -135,3 +135,7 @@ answers `{"state":"awake","awake":true,"provider":"none"}`.
 - Tests: `go test ./internal/wake` (fake clock: start, debounce, readiness,
   15-minute stop, players keep it awake, broken store, provider outage, HTTP
   gate and cron auth, GCE REST against a fake Compute API, Redis store).
+
+## Region assignment (WP16)
+
+The director assigns regions to pool zones (spec 9: "assigned by the director through the Redis zone registry"): every `LODESTONE_DIRECTOR_ASSIGN_EVERY` (2 s; 0 disables) it scans `zones:*`, takes a per-world Redis lease (`zoneassignlead:{worldId}`, so one Cloud Run instance writes), computes `zoneregistry.Plan` and writes `zoneassign:{worldId}` when it changed. Plan: sticky; a dead pool zone's regions go back to the primary; a joining pool zone takes ceil(n/(k+1)) of the primary's regions as a contiguous stripe; regions pinned by a zone's own config are left alone. Worlds with only legacy (role-less) zones are untouched. Failover does not depend on this loop: the dead zone's entry goes stale after its own 3 s TTL and `Owner` already routes its regions to the primary. Details: `docs/decisions/0016-handoff.md`, `internal/director/assign.go`.
