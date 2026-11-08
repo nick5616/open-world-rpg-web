@@ -1,25 +1,24 @@
-[   1.31s] world world-wp15-demon seed 20261108: world time 1794182104, 22:01, night true, night 498383, moon 4, 30 towns
-[   1.35s] Sol joined as entity 1 at (2068.5, 77.6, 2420.5) with a sword
-[   1.35s] Sol: world clock offset 1774 s: 22:02, night true, moon 4
-[   1.36s] Sol stands 70 m outside the ward of Draedmore at (2068, 2420)
-[   1.38s] Sol: 3 demons rose (rank 0) at (2060, 2466)
-[   2.86s] phase 1: 3 demons rose ([2 3 4]); fighting with an ordinary sword for 30 s
-[  16.35s] Sol at (2078, 79, 2450) hp 90%  attacks 9 dodges 13  accepted 9 refused 0  corrections 0
-[  31.35s] Sol at (2081, 79, 2448) hp 79%  attacks 19 dodges 28  accepted 18 refused 1  corrections 0
-[  32.86s] phase 1 result: 19 hits accepted on demons, 375 damage dealt, 19 'shrugged' events, demon health dipped to 53% (lowest seen), demons killed by steel: 0, demons alive: 3/3
-[  32.86s] CHECK a demon survives ordinary damage: true (damage dealt 375 >= the pack's full health and every demon alive)
-[  32.86s] phase 2: Sol takes up a sunsteel blade (Interact 50 action 6, material sunsteel)
-[  39.15s] Sol killed a demon (4, +30 xp)
-[  46.35s] Sol at (2087, 78, 2440) hp 80%  attacks 41 dodges 39  accepted 26 refused 15  corrections 0
-[  46.85s] Sol killed a demon (2, +30 xp)
-[  50.98s] Sol killed a demon (3, +30 xp)
-[  51.38s] phase 2 result: 14 hits accepted, 290 damage, demons killed by Sol: 3, alive: 0 (18.5 s)
-[  51.38s] CHECK a demon dies to sunsteel: true
-[  51.41s] Sol: 3 demons rose (rank 0) at (2054, 2423)
-[  52.88s] phase 3: 3 fresh demons; setting the world clock to 05:59:52 (offset 2911 s)
-[  52.91s] Sol: world clock offset 2910 s: 05:57, night true, moon 4
-[  61.35s] Sol at (2079, 78, 2420) hp 100%  attacks 55 dodges 51  accepted 40 refused 15  corrections 0
-[  61.41s] Sol: DAWN: Dawn breaks. The demons burn. (burned 3, fled 0)
-[  61.65s] phase 3 result: dawn events 1, demons burned 3 of 3, alive 0, killed by Sol 0
-[  61.65s] CHECK sunrise burns demons in the open: true
-[  61.65s] PASS
+[   1.21s] world world-wp15-demon seed 20261108: world time 1794182104, 22:01, night true, night 498383, moon 4, 30 towns
+[   1.24s] Sol joined as entity 1 at (2068.5, 77.6, 2420.5) with a sword
+[   1.24s] Sol: world clock offset 161 s: 22:02, night true, moon 4
+[   1.25s] Sol stands 70 m outside the ward of Draedmore at (2068, 2420)
+[   1.27s] Sol: 3 demons rose (rank 0) at (2060, 2466)
+[   2.75s] phase 1: 3 demons rose ([2 3 4]); fighting with an ordinary sword for 40 s
+[  16.24s] Sol at (2082, 78, 2443) hp 100%  attacks 12 dodges 12  accepted 12 refused 0  corrections 0
+[  31.24s] Sol at (2080, 79, 2453) hp 78%  attacks 19 dodges 25  accepted 16 refused 3  corrections 0
+[  42.75s] phase 1 result: 21 hits accepted on demons, 411 damage dealt, 21 'shrugged' events, demon health dipped to 46% (lowest seen), demons killed by steel: 0, demons alive: 3/3
+[  42.75s] CHECK a demon survives ordinary damage: true (damage dealt 411 >= the pack's full health and every demon alive)
+[  42.75s] phase 2: Sol takes up a sunsteel blade (Interact 50 action 6, material sunsteel)
+[  44.91s] Sol killed a demon (4, +30 xp)
+[  46.24s] Sol at (2079, 79, 2448) hp 92%  attacks 30 dodges 38  accepted 27 refused 3  corrections 0
+[  48.14s] Sol killed a demon (2, +30 xp)
+[  50.24s] Sol killed a demon (3, +30 xp)
+[  50.27s] phase 2 result: 12 hits accepted, 280 damage, demons killed by Sol: 3, alive: 0 (7.5 s)
+[  50.27s] CHECK a demon dies to sunsteel: true
+[  50.31s] Sol: 3 demons rose (rank 0) at (2045, 2430)
+[  51.77s] phase 3: 3 fresh demons; setting the world clock to 05:59:52 (offset 1299 s)
+[  51.81s] Sol: world clock offset 1298 s: 05:57, night true, moon 4
+[  60.31s] Sol: DAWN: Dawn breaks. The demons burn. (burned 3, fled 0)
+[  60.54s] phase 3 result: dawn events 1, demons burned 3 of 3, alive 0, killed by Sol 0
+[  60.54s] CHECK sunrise burns demons in the open: true
+[  60.54s] PASS
