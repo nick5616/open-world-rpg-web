@@ -13,6 +13,7 @@
 import * as THREE from 'three';
 import { Activity } from '@lodestone/contracts';
 import type { RemoteView } from './interpolation';
+import { isSpeaking } from '../voice/levels';
 
 const LOD_MID_M = 25;
 const LOD_LOW_M = 90;
@@ -168,7 +169,9 @@ export class Avatar {
   }
 
   private drawPlate(v: RemoteView): void {
-    const labels = activityLabels(v.activity);
+    // WP11: someone we hear shows "speaking" from our own analyser at once,
+    // without waiting for the zone's activity bit to round-trip.
+    const labels = activityLabels(isSpeaking(v.name) ? v.activity | Activity.speaking : v.activity);
     const key = `${v.name}|${v.level}|${labels.join(',')}`;
     if (key === this.plateKey) return;
     this.plateKey = key;

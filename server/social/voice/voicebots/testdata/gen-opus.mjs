@@ -14,6 +14,7 @@ import { writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
+/* global AudioEncoder, AudioData -- they run inside the page (page.evaluate) */
 
 const out = path.join(path.dirname(fileURLToPath(import.meta.url)), 'speech.opus.bin');
 const browser = await chromium.launch();
