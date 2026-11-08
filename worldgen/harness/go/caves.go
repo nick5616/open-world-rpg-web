@@ -83,7 +83,7 @@ type goldenCaves struct {
 	Edited []struct {
 		Cx, Cy, Cz int32
 		RawEdits   []map[string]any `json:"edits"`
-		Hash     string           `json:"hash"`
+		Hash       string           `json:"hash"`
 	} `json:"edited"`
 	Masks []struct {
 		Cx, Cz int32
