@@ -94,7 +94,17 @@ try {
   const dbEnv = { LODESTONE_PG_URL: pgUrl };
   step(spawnSync(bin('mintworld'), ['-official'], { cwd: root, env: env(dbEnv), encoding: 'utf8' }).stdout.trim().split('\n').pop());
   const chars = spawnSync(bin('bots'), ['-print-characters', '-n', String(BOTS)], { cwd: root, env: env(), encoding: 'utf8', maxBuffer: 64 << 20 }).stdout;
-  step(spawnSync(bin('seedbots'), [], { cwd: root, env: env(dbEnv), input: chars, encoding: 'utf8' }).stdout.trim());
+  const seeded = spawnSync(bin('seedbots'), [], { cwd: root, env: env(dbEnv), input: chars, encoding: 'utf8' }).stdout.trim();
+  step(seeded);
+  // WP19b: our director owns this world's region assignment from the start.
+  // On shared infra a long-running dev director scans the same Redis and,
+  // if it takes the world's lease first, assigns with ITS code (no load
+  // moves): start ours before the zones, dedicated to this world.
+  const worldID = (/world ([0-9a-f-]{36})/.exec(seeded) ?? [])[1];
+  if (!worldID) throw new Error(`no world id in seedbots output: ${seeded}`);
+  start('director', bin('director'), [], { ...dbEnv, LODESTONE_DIRECTOR_PORT: String(ports.director), LODESTONE_DIRECTOR_ASSIGN_EVERY: '1s', LODESTONE_DIRECTOR_ONLY_WORLD: worldID });
+  if (!(await waitHttp(`http://127.0.0.1:${ports.director}/healthz`, 30000))) throw new Error('director not healthy');
+  step(`director (assigner, world ${worldID}) on :${ports.director}`);
 
   const zones = [];
   for (let i = 0; i < ZONES; i++) {
@@ -125,12 +135,6 @@ try {
     zones.push(z);
     step(`${id} on :${port}${PROFILE !== 'clean' ? ` behind netsim "${PROFILE}" :${proxyPort}` : ''}`);
   }
-  // The director starts after the zones, so its first plan sees every pool
-  // zone at once and splits the world evenly (zoneregistry.Plan).
-  start('director', bin('director'), [], { ...dbEnv, LODESTONE_DIRECTOR_PORT: String(ports.director), LODESTONE_DIRECTOR_ASSIGN_EVERY: '1s' });
-  if (!(await waitHttp(`http://127.0.0.1:${ports.director}/healthz`, 30000))) throw new Error('director not healthy');
-  step(`director (assigner) on :${ports.director}`);
-
   // Wait for the director's split to reach every zone.
   let owners;
   for (let t = 0; t < 60; t++) {

@@ -60,6 +60,16 @@ func (d *Director) RunAssigner(ctx context.Context, every time.Duration) {
 }
 
 func (d *Director) assignAll(ctx context.Context, every time.Duration) {
+	if d.OnlyWorld != "" {
+		// WP19b: a director dedicated to one world (soaks on shared infra).
+		// Called from start-up on, before the world's zones register, so it
+		// holds the world's lease before any other director scanning the
+		// same Redis can take it.
+		if _, err := d.AssignOnce(ctx, d.OnlyWorld, every*3); err != nil {
+			d.Log.Warn("region assignment failed", "world", d.OnlyWorld, "err", err)
+		}
+		return
+	}
 	var cursor uint64
 	for {
 		keys, next, err := d.RDB.Scan(ctx, cursor, "zones:*", 100).Result()
