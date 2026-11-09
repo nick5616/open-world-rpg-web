@@ -892,7 +892,7 @@ Known gaps:
 - The G4 browser acceptance (`tools/acceptance/g4.mjs`) waits 90 s for natural demons outside the spawn town before raising them with the dev Interact: the spawn town is now the Haven, so it will always take the dev path (by design).
 - The client shows the attunement as a notice only; the cinematic is `pt/ux`'s (Event 902).
 - Bots (`tools/bots`, combat/night bots) predict with the default 100-point stamina wheel; a levelled bot character gets one correction when its wheel grows.
-- `go test ./server/pkg/gameloop` `TestLoopTicksAtRate` failed once in the full parallel run on the loaded machine and passed alone (timing test, untouched).
+- Checks (after merging main incl. G4): gen:check, build:wasm, test:golden, go vet, typecheck, eslint, `npm test -w client` (31 files), `npm run lint` all green; `go test` every module green except three timing/socket tests that failed once each in full runs on the shared, loaded machine and pass alone, untouched by this branch: `gameloop.TestLoopTicksAtRate`, `social.TestTwoProcessesAcrossZones`, `zone.TestZoneProcessWebTransport`.
 - The tier names, slime names and boon numbers are proposals for Nicole.
 - `go test -race` not run (no cgo toolchain).
 
