@@ -18,8 +18,8 @@ import { PIECE, SK } from './structures';
 import { TEX } from './textures';
 
 export const CELL_M = 1024;
-/** Ribbon lift above the terrain (m): ring streets over radial streets over roads, plazas on top. */
-export const LIFT = { road: 0.07, street: 0.09, ring: 0.11, plaza: 0.13, pave: 0.08, scorch: 0.05 } as const;
+/** Ribbon lift above the terrain (m): ring streets over radial streets over footpaths over roads, plazas on top. */
+export const LIFT = { road: 0.07, path: 0.08, street: 0.09, ring: 0.11, plaza: 0.13, pave: 0.08, scorch: 0.05 } as const;
 /** Resample spacing along a road (m) and across it (m). */
 const ALONG = 2;
 const ACROSS = 1;
@@ -93,7 +93,8 @@ export function drawRoad(mb: MeshBuilder, road: TownRoad, heightAt: HeightAt, sk
   const k = Math.max(2, Math.ceil(w / ACROSS));
   const cobble = road.surface === 1;
   if (cobble) P(mb, 'cobble', road.cls === 1 ? [0.95, 0.93, 0.9] : [0.9, 0.88, 0.85]);
-  else mb.paint(TEX.dirt, 0, [1, 1, 1]);
+  // Footpaths (genVersion 2, class 2): lighter, trodden earth.
+  else mb.paint(TEX.dirt, 0, road.cls === 2 ? [1.08, 1.02, 0.9] : [1, 1, 1]);
   const rows: { p: V3[]; d: number; skip: boolean }[] = [];
   for (let i = 0; i < pts.length; i++) {
     const a = pts[Math.max(0, i - 1)];
@@ -266,7 +267,7 @@ export function buildRoadCells(t: Towns, heightAt: HeightAt): CellMesh[] {
     const bb = bridgeBoxes.get(r.index) ?? [];
     const skip = (x: number, z: number) => bb.some((b) => inBox(b, x, z, 0.3));
     const ring = r.cls === 1 && r.from === r.to && r.from >= 0 && r.points.length >= 9 && Math.hypot(r.points[0] - r.points[r.points.length - 3], r.points[2] - r.points[r.points.length - 1]) < 1;
-    const lift = r.cls === 0 ? LIFT.road : ring ? LIFT.ring : LIFT.street;
+    const lift = r.cls === 0 ? LIFT.road : r.cls === 2 ? LIFT.path : ring ? LIFT.ring : LIFT.street;
     // Split long roads by cell so each cell's mesh stays local (culling).
     const p = r.points;
     const n = p.length / 3;

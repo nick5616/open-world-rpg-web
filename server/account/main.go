@@ -160,6 +160,43 @@ func providers(s string) map[string]string {
 	return m
 }
 
+// renewDevWorld: outside production, an official world minted on an older
+// genVersion than the built worldgen.wasm is renewed in place onto it
+// (playtest 1 towns/density moved the generator to genVersion 2; spec 5
+// rule 5 "world renewal"; mintdb.RenewOfficial keeps the row, its
+// characters and their progress). LODESTONE_WORLD_RENEW=0 turns it off;
+// production never renews by itself (operators run `mintworld -official
+// -renew`, docs/decisions/0022-towns-terrain-density.md).
+func renewDevWorld(ctx context.Context, log *slog.Logger, db accountapi.DB, w accountapi.World) {
+	if accountapi.IsProduction() || !env.Bool("LODESTONE_WORLD_RENEW", true) {
+		return
+	}
+	cur, err := worldhost.LoadFromEnv(ctx)
+	if err != nil {
+		return
+	}
+	defer cur.Close(ctx)
+	if v, ok := worldhost.ParseGenVersion(w.GenVersion); !ok || v >= cur.GenVersion() {
+		return
+	}
+	old, err := worldhost.LoadForGenVersion(ctx, w.GenVersion)
+	if err != nil || old.GenVersionString() != w.GenVersion {
+		log.Warn("official world is on an older genVersion and its archived generator is missing; not renewing", "genVersion", w.GenVersion, "err", err)
+		if old != nil {
+			_ = old.Close(ctx)
+		}
+		return
+	}
+	defer old.Close(ctx)
+	res, err := mintdb.RenewOfficial(ctx, db, cur, old)
+	if err != nil {
+		log.Warn("official world renewal failed; zones keep serving it on its archived generator", "err", err)
+		return
+	}
+	log.Info("official world renewed (dev)", "id", res.After.ID, "genVersion", res.Before.GenVersion+" -> "+res.After.GenVersion,
+		"atlasHash", res.Before.AtlasHash+" -> "+res.After.AtlasHash, "movedCharacters", res.Moved)
+}
+
 // seedWorld makes sure one official world exists and is minted: spec from
 // worldgen's spec_from_seed, the wasm's gen_version and the atlas hash
 // (WP07, server/pkg/worldhost/mintdb; a placeholder row from before is
@@ -184,6 +221,9 @@ func seedWorld(ctx context.Context, log *slog.Logger, db accountapi.DB) error {
 	}
 	if err == nil {
 		log.Info("official world", "id", w.ID, "seed", w.Seed, "genVersion", w.GenVersion, "atlasHash", w.AtlasHash, "action", action)
+		if action == mintdb.AlreadyMinted {
+			renewDevWorld(ctx, log, db, w)
+		}
 		return nil
 	}
 	if !errors.Is(err, worldhost.ErrNoWasm) {

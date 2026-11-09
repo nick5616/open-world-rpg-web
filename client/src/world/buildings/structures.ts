@@ -11,14 +11,18 @@
 // sharpened logs, everything else a stone/wood block. Paving is drawn on
 // the terrain by the decal layer (roads.ts), not here.
 
-import { STRUCTURE_KINDS, type Towns, type TownPiece } from '@lodestone/worldgen';
+import { TOWN_STRUCTURE_KINDS, type Towns, type TownPiece } from '@lodestone/worldgen';
 import { MeshBuilder, at, dirOf, local, type Frame, type MeshData, type V3 } from './meshBuilder';
 import { boxAt, boxFrame, type Box } from './kit';
 import { drawProp, P, type Emitter, type PropCtx } from './props';
 import { TEX, type TexName } from './textures';
 
-export const PIECE = { pave: 0, wall: 1, corner: 2, room: 3, tower: 4, ramp: 5, pillars: 6, tent: 7, palisade: 8, campfire: 9, shaft: 10, altar: 11, crater: 12, lair: 13, rubble: 14 } as const;
-export const SK = Object.fromEntries(STRUCTURE_KINDS.map((k, i) => [k, i])) as Record<(typeof STRUCTURE_KINDS)[number], number>;
+export const PIECE = {
+  pave: 0, wall: 1, corner: 2, room: 3, tower: 4, ramp: 5, pillars: 6, tent: 7, palisade: 8, campfire: 9, shaft: 10, altar: 11, crater: 12, lair: 13, rubble: 14,
+  // genVersion 2 landmarks (one piece holding all the landmark's boxes).
+  stones: 15, tree: 16, arch: 17, monolith: 18, bones: 19, crystals: 20, statue: 21, spring: 22,
+} as const;
+export const SK = Object.fromEntries(TOWN_STRUCTURE_KINDS.map((k, i) => [k, i])) as Record<(typeof TOWN_STRUCTURE_KINDS)[number], number>;
 
 const CELL = 6;
 
@@ -39,6 +43,8 @@ const MASONRY: { tex: TexName; tint: V3 }[] = [
   { tex: 'rock', tint: [0.6, 0.55, 0.5] }, // meteor crater
   { tex: 'mossStone', tint: [0.85, 0.95, 0.88] }, // sunken temple
   { tex: 'rock', tint: [0.42, 0.3, 0.32] }, // demon lair
+  { tex: 'stone', tint: [0.86, 0.84, 0.8] }, // landmark (genVersion 2)
+  { tex: 'logs', tint: [0.7, 0.62, 0.52] }, // enemy camp (genVersion 2)
 ];
 
 const pieceFrame = (p: TownPiece): Frame => ({ cx: p.x, cz: p.z, c: p.c, s: p.s });
@@ -96,6 +102,10 @@ function drawPieceBox(mb: MeshBuilder, b: Box, p: TownPiece | null, kind: number
     return;
   }
   const pk = p?.kind ?? PIECE.wall;
+  if (pk >= PIECE.stones) {
+    drawLandmarkBox(mb, f, b, pk, top, heightAt);
+    return;
+  }
   switch (pk) {
     case PIECE.tent: {
       // A-frame tent over the box: ridge along u, canvas to the ground at +-v.
@@ -222,13 +232,88 @@ function drawTowerTrim(mb: MeshBuilder, f: Frame, b: Box, top: number, wood: boo
   }
 }
 
-/** Per-piece decoration that has no box: the shaft's head frame and pit. */
+/**
+ * Landmark boxes (genVersion 2): standing stones, an elder tree's trunk and
+ * roots, arch piers and lintel, a monolith, giant ribs and skull, crystal
+ * spires, a colossus and its plinth, hot-spring rocks. Each is drawn inside
+ * its collision box (decoration above or around it comes from the piece).
+ */
+function drawLandmarkBox(mb: MeshBuilder, f: Frame, b: Box, pk: number, top: number, heightAt: (x: number, z: number) => number): void {
+  const r = Math.min(b.hx, b.hz);
+  const R = Math.max(b.hx, b.hz);
+  const g = heightAt(b.cx, b.cz);
+  switch (pk) {
+    case PIECE.stones:
+      P(mb, 'rock', [0.78, 0.78, 0.74]);
+      if (top - g < 0.8) mb.box(f, -b.hx, b.hx, b.y0, top, -b.hz, b.hz);
+      else mb.cyl(f, 0, 0, b.y0, top, R * 0.95, 5, { r1: R * 0.6 });
+      return;
+    case PIECE.tree:
+      P(mb, 'wood', [0.55, 0.45, 0.36]);
+      if (top - g < 0.8) mb.cyl(f, 0, 0, b.y0, top, r, 6, { r1: r * 0.5 });
+      else mb.cyl(f, 0, 0, b.y0, top, R * 1.05, 8, { r1: R * 0.8 });
+      return;
+    case PIECE.bones:
+      P(mb, 'plain', [0.88, 0.84, 0.72]);
+      if (top - g < 0.8) mb.cyl(f, 0, 0, b.y0, top, R, 7, { r1: R * 0.8 });
+      else mb.cyl(f, 0, 0, b.y0, top, R * 1.1, 6, { r1: 0.05 });
+      return;
+    case PIECE.crystals:
+      P(mb, 'glow', [0.5, 0.8, 1.1], 128 + 70);
+      mb.cyl(f, 0, 0, b.y0, top - R * 0.8, R * 1.05, 6);
+      mb.cyl(f, 0, 0, top - R * 0.8, top, R * 1.05, 6, { r1: 0.02 });
+      return;
+    case PIECE.spring:
+      P(mb, 'rock', [0.62, 0.6, 0.58]);
+      mb.box(f, -b.hx, b.hx, b.y0, top, -b.hz, b.hz);
+      return;
+    case PIECE.monolith:
+      P(mb, 'rock', [0.35, 0.34, 0.38]);
+      mb.box(f, -b.hx, b.hx, b.y0, top, -b.hz, b.hz);
+      P(mb, 'glow', [0.55, 0.85, 1.0], 128 + 40);
+      for (let y = g + 1.2; y < top - 0.6; y += 1.1) mb.box(f, -0.18, 0.18, y, y + 0.5, -b.hz - 0.01, -b.hz + 0.02, { bottom: true });
+      return;
+    default:
+      // Arch piers and lintel, the colossus and its plinth: dressed stone.
+      P(mb, 'stone', [0.92, 0.9, 0.86]);
+      mb.box(f, -b.hx, b.hx, b.y0, top, -b.hz, b.hz, { bottom: true });
+  }
+}
+
+/** Per-piece decoration that has no box: the shaft's head frame and pit; landmark canopies, statues and pools. */
 function drawPieceDecor(mb: MeshBuilder, p: TownPiece, kind: number, mas: { tex: TexName; tint: V3 }, t: Towns, si: number): void {
   const f = pieceFrame(p);
   void mas;
   void t;
   void si;
   void kind;
+  if (p.kind === PIECE.tree) {
+    // The elder tree's canopy: stacked broad crowns on a tall trunk.
+    const y = p.y + 6.5;
+    P(mb, 'wood', [0.55, 0.45, 0.36]);
+    mb.cyl(f, 0, 0, y - 0.5, y + 4, 0.75, 7, { r1: 0.45 });
+    P(mb, 'plain', [0.32, 0.5, 0.24]);
+    mb.cyl(f, 0, 0, y, y + 3.5, 7.5, 9, { r1: 5.5 });
+    mb.cyl(f, 0, 0, y + 3.5, y + 7, 5.5, 9, { r1: 3.2 });
+    mb.cyl(f, 0, 0, y + 7, y + 10.5, 3.2, 8, { r1: 0.3 });
+  } else if (p.kind === PIECE.statue) {
+    // A robed colossus on the figure box: body, shoulders, head, a raised arm.
+    const y = p.y + 1.3;
+    P(mb, 'stone', [0.9, 0.88, 0.84]);
+    mb.cyl(f, 0, 0, y + 5.5, y + 6.5, 0.45, 8, { r1: 0.38 });
+    mb.box(f, -1.0, 1.0, y + 4.6, y + 5.5, -0.5, 0.5, { bottom: true });
+    mb.box(f, 0.75, 1.05, y + 5.0, y + 7.8, -0.15, 0.15, { bottom: true });
+  } else if (p.kind === PIECE.spring) {
+    // The pool: a still, glinting disc inside the rocks, and a wisp of steam.
+    P(mb, 'water', [0.75, 0.95, 1.0]);
+    const y = p.y + 0.12;
+    const pts: V3[] = [];
+    for (let k = 0; k < 12; k++) pts.push(at(f, Math.cos((k / 12) * Math.PI * 2) * 2.8, y, Math.sin((k / 12) * Math.PI * 2) * 2.8));
+    mb.poly(pts.reverse(), [0, 1, 0]);
+  } else if (p.kind === PIECE.arch) {
+    P(mb, 'stone', [0.85, 0.83, 0.8]);
+    mb.box(f, -2.3, 2.3, p.y + p.sy, p.y + p.sy + 0.35, -0.45, 0.45, { bottom: true });
+  }
   if (p.kind === PIECE.shaft) {
     const y = p.y;
     P(mb, 'plain', [0.03, 0.03, 0.03]);

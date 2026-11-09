@@ -13,6 +13,16 @@
 //	go run ./server/pkg/cmd/mintworld -seed 20261108             # print only
 //	go run ./server/pkg/cmd/mintworld -official                   # upgrade/insert the official row
 //	go run ./server/pkg/cmd/mintworld -seed 42 -spec my-spec.json # creator spec
+//	go run ./server/pkg/cmd/mintworld -official -renew            # world renewal onto this wasm's genVersion
+//
+// -renew (playtest 1, docs/decisions/0022): moves a minted official world on
+// an older genVersion onto the loaded worldgen.wasm in place (same id, seed
+// and spec; new gen_version and atlas_hash), refusing unless every old site
+// keeps its index and id (per-character progress is indexed by site);
+// characters saved near a settlement whose ground changed start again at the
+// spawn. It needs the archived build of the old genVersion
+// (worldgen/archive/, LODESTONE_WORLDGEN_ARCHIVE) to rebuild and check the
+// old world. Zones and clients must run the new build afterwards.
 package main
 
 import (
@@ -36,6 +46,7 @@ func main() {
 	specFile := flag.String("spec", "", "WorldSpec JSON file (default: spec_from_seed)")
 	official := flag.Bool("official", false, "write the official world row in LODESTONE_PG_URL")
 	name := flag.String("name", "", "row name for a newly created official world (default LODESTONE_WORLD_NAME, else the spec's name)")
+	renew := flag.Bool("renew", false, "with -official: renew a world minted on an older genVersion onto this wasm (world renewal, spec 5 rule 5)")
 	flag.Parse()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
@@ -61,6 +72,26 @@ func main() {
 			fail(err)
 		}
 		defer pool.Close()
+		if *renew {
+			cur, _, err := mintdb.Official(ctx, accountapi.DB{Pool: pool})
+			if err != nil {
+				fail(err)
+			}
+			old, err := worldhost.LoadForGenVersion(ctx, cur.GenVersion)
+			if err != nil {
+				fail(err)
+			}
+			defer old.Close(ctx)
+			res, err := mintdb.RenewOfficial(ctx, accountapi.DB{Pool: pool}, mod, old)
+			if err != nil {
+				fail(err)
+			}
+			out(map[string]any{"action": res.Action, "id": res.After.ID, "seed": res.After.Seed,
+				"genVersion":      map[string]string{"before": res.Before.GenVersion, "after": res.After.GenVersion},
+				"atlasHash":       map[string]string{"before": res.Before.AtlasHash, "after": res.After.AtlasHash},
+				"movedCharacters": res.Moved, "keptSites": res.KeptAll, "wasmSha256": mod.SHA256(), "oldWasmSha256": old.SHA256(), "ms": time.Since(start).Milliseconds()})
+			return
+		}
 		w, action, err := mintdb.EnsureOfficial(ctx, accountapi.DB{Pool: pool},
 			func() (*worldhost.Module, error) { return mod, nil },
 			accountapi.World{Name: env.Str("LODESTONE_WORLD_NAME", *name), Seed: fmt.Sprint(*seed)})

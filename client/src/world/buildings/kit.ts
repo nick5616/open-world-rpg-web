@@ -149,6 +149,8 @@ export function drawBuildingShell(mb: MeshBuilder, t: Towns, b: Building, height
   mb.originY = b.floorY;
   const roofTex = look.roofs.length ? look.roofs[(b.variant >> 2) % look.roofs.length] : 'adobe';
   const stilts = (b.flags & BUILDING_FLAG.stilts) !== 0;
+  const posts = (b.flags & BUILDING_FLAG.posts) !== 0;
+  const stepped = (b.flags & BUILDING_FLAG.stepped) !== 0;
 
   for (let i = b.boxFirst; i < b.boxFirst + b.boxCount; i++) {
     const bx = boxAt(t, i);
@@ -156,13 +158,31 @@ export function drawBuildingShell(mb: MeshBuilder, t: Towns, b: Building, height
     switch (bx.kind) {
       case BK.floor: {
         const solid = (bx.flags & BOX_FLAG.solid) !== 0;
-        if (solid) {
-          // Floor slab: plank floor on top, foundation (or a stilt skirt) down to baseY.
-          P(mb, stilts ? 'reed' : look.found, stilts ? [0.55, 0.5, 0.42] : [1, 1, 1]);
-          mb.slopedBox(f, -bx.hx, bx.hx, -bx.hz, bx.hz, bx.y0, bx.y1, bx.y2, { top: false });
+        // genVersion 2: the porch deck is solid too; it is the floor box in front of the door wall.
+        const porch = local(F, bx.cx, bx.cz)[1] < -b.hz + 0.01;
+        if (solid && !porch) {
+          // Floor slab: plank floor on top, the foundation down to baseY:
+          // stone plinth, stepped plinth (genVersion 2: courses following the
+          // slope), timber posts and cribbing on steep lots, or a stilt skirt.
+          if (posts) drawPosts(mb, f, bx, b.floorY, heightAt);
+          else {
+            P(mb, stilts ? 'reed' : look.found, stilts ? [0.55, 0.5, 0.42] : [1, 1, 1]);
+            mb.slopedBox(f, -bx.hx, bx.hx, -bx.hz, bx.hz, bx.y0, bx.y1, bx.y2, { top: false });
+            if (!stilts) drawPlinthTrim(mb, f, bx, b.floorY, look, stepped, heightAt);
+          }
           P(mb, 'floor');
           mb.slopedBox(f, -bx.hx, bx.hx, -bx.hz, bx.hz, bx.y1 - 0.001, bx.y1, bx.y2, { sides: false });
           if (stilts) drawStilts(mb, f, bx, b.floorY);
+        } else if (solid) {
+          // Porch deck on a slope (solid since genVersion 2): deck, posts and a
+          // board skirt down to the ground, an awning on posts.
+          P(mb, 'floor', [0.92, 0.85, 0.75]);
+          mb.slopedBox(f, -bx.hx, bx.hx, -bx.hz, bx.hz, bx.y1 - 0.3, bx.y1, bx.y2, { bottom: true });
+          P(mb, 'planks', [0.62, 0.52, 0.42]);
+          mb.slopedBox(f, -bx.hx + 0.06, bx.hx - 0.06, -bx.hz + 0.06, bx.hz - 0.06, bx.y0, bx.y1 - 0.3, bx.y1 - 0.3, { top: false });
+          P(mb, 'wood', [0.6, 0.48, 0.36]);
+          for (const su of [-1, 1]) for (const sv of [-1, 1]) mb.box(f, su * bx.hx - 0.1 * su - 0.08, su * bx.hx - 0.1 * su + 0.08, bx.y0, bx.y1 - 0.3, sv * bx.hz - 0.1 * sv - 0.08, sv * bx.hz - 0.1 * sv + 0.08, { top: false });
+          drawPorchAwning(mb, F, b, bx, wallTop, roofTex);
         } else {
           // Porch deck (walkable, not solid): deck, fascia, posts, an awning on posts.
           P(mb, 'floor', [0.92, 0.85, 0.75]);
@@ -191,8 +211,12 @@ export function drawBuildingShell(mb: MeshBuilder, t: Towns, b: Building, height
         drawRoofHalf(mb, bx, roofTex, look, tint, b);
         break;
       case BK.ramp: {
-        P(mb, b.style === STYLE.stone || b.style === STYLE.adobe ? (b.style === STYLE.adobe ? 'adobe' : 'stone') : 'planks', [0.9, 0.85, 0.78]);
-        mb.slopedBox(f, -bx.hx, bx.hx, -bx.hz, bx.hz, bx.y0, bx.y1, bx.y2, { topPaint: { ...mb.save(), layer: TEX.floor, tile: 2 } });
+        const tex: TexName = b.style === STYLE.stone || b.style === STYLE.adobe ? (b.style === STYLE.adobe ? 'adobe' : 'stone') : 'planks';
+        if (Math.abs(bx.y2 - bx.y1) > STEPS_RISE) drawSteps(mb, f, bx, tex);
+        else {
+          P(mb, tex, [0.9, 0.85, 0.78]);
+          mb.slopedBox(f, -bx.hx, bx.hx, -bx.hz, bx.hz, bx.y0, bx.y1, bx.y2, { topPaint: { ...mb.save(), layer: TEX.floor, tile: 2 } });
+        }
         break;
       }
       case BK.fence:
@@ -220,7 +244,98 @@ export function drawBuildingShell(mb: MeshBuilder, t: Towns, b: Building, height
     mb.box(F, b.hx - 0.02, b.hx + e, y - 0.12, y + 0.1, -b.hz, b.hz, { bottom: true });
   }
   if ((b.flags & BUILDING_FLAG.chimney) !== 0) drawChimney(mb, t, b, F, wallTop);
-  void heightAt;
+}
+
+/** Door rise (m) from which worldgen's door ramp is drawn as steps (worldgen town/kit.rs STEPS_RISE). */
+export const STEPS_RISE = 0.55;
+
+/**
+ * Steps on a door ramp box (its u axis points up the flight, y1 at -hx, y2 at
+ * +hx): treads of ~0.2 m rise whose nosings sit on the walkable slope, and a
+ * stringer on each side. Collision stays the ramp's sloped top (worldgen).
+ */
+export function drawSteps(mb: MeshBuilder, f: Frame, bx: Box, tex: TexName): number {
+  const rise = bx.y2 - bx.y1;
+  const n = Math.max(2, Math.round(Math.abs(rise) / 0.2));
+  const L = 2 * bx.hx;
+  P(mb, tex, [0.88, 0.82, 0.74]);
+  for (let k = 0; k < n; k++) {
+    const u0 = -bx.hx + (k * L) / n;
+    const u1 = -bx.hx + ((k + 1) * L) / n;
+    const top = bx.y1 + ((k + 1) * rise) / n;
+    mb.box(f, u0, u1, bx.y0, top, -bx.hz + 0.08, bx.hz - 0.08, { topPaint: { ...mb.save(), layer: TEX.floor, tile: 2 } });
+  }
+  P(mb, 'wood', [0.5, 0.4, 0.3]);
+  for (const v0 of [-bx.hz, bx.hz - 0.08]) mb.slopedBox(f, -bx.hx, bx.hx, v0, v0 + 0.08, bx.y0, bx.y1 + 0.12, bx.y2 + 0.12, {});
+  return n;
+}
+
+/**
+ * Plinth trim: a projecting cap course under the floor line, and for a
+ * stepped foundation (genVersion 2) a footing that steps down with the
+ * ground in ~1.5 m runs along every side, so the plinth reads as built on
+ * the slope.
+ */
+function drawPlinthTrim(mb: MeshBuilder, f: Frame, bx: Box, floorY: number, look: Look, stepped: boolean, heightAt: (x: number, z: number) => number): void {
+  P(mb, look.found, [0.82, 0.8, 0.78]);
+  mb.box(f, -bx.hx - 0.08, bx.hx + 0.08, floorY - 0.2, floorY - 0.05, -bx.hz - 0.08, bx.hz + 0.08, { bottom: true });
+  if (!stepped) return;
+  P(mb, look.found, [0.72, 0.7, 0.68]);
+  const run = (len: number) => Math.max(1, Math.round(len / 1.5));
+  for (const [axis, side] of [['u', -1], ['u', 1], ['v', -1], ['v', 1]] as const) {
+    const len = 2 * (axis === 'u' ? bx.hz : bx.hx);
+    const n = run(len);
+    for (let k = 0; k < n; k++) {
+      const a0 = -len / 2 + (k * len) / n;
+      const a1 = -len / 2 + ((k + 1) * len) / n;
+      const mid = (a0 + a1) / 2;
+      const [u, v] = axis === 'u' ? [side * bx.hx, mid] : [mid, side * bx.hz];
+      const [x, z] = [f.cx + u * f.c - v * f.s, f.cz + u * f.s + v * f.c];
+      const top = Math.min(floorY - 0.3, heightAt(x, z) + 0.4);
+      if (axis === 'u') mb.box(f, side * bx.hx - 0.14, side * bx.hx + 0.14, bx.y0, top, a0, a1);
+      else mb.box(f, a0, a1, bx.y0, top, side * bx.hz - 0.14, side * bx.hz + 0.14);
+    }
+  }
+}
+
+/**
+ * Timber posts and cribbing (genVersion 2, steep lots): a beam band under
+ * the floor, a recessed board skirt over the collision outline, posts
+ * every ~2 m round the outline from below the ground to the beam, and
+ * cross braces on each side where it stands tall.
+ */
+function drawPosts(mb: MeshBuilder, f: Frame, bx: Box, floorY: number, heightAt: (x: number, z: number) => number): void {
+  P(mb, 'wood', [0.45, 0.34, 0.25]);
+  mb.box(f, -bx.hx - 0.04, bx.hx + 0.04, floorY - 0.32, floorY - 0.02, -bx.hz - 0.04, bx.hz + 0.04, { top: false, bottom: true });
+  P(mb, 'planks', [0.55, 0.47, 0.38]);
+  mb.slopedBox(f, -bx.hx + 0.02, bx.hx - 0.02, -bx.hz + 0.02, bx.hz - 0.02, bx.y0, floorY - 0.32, floorY - 0.32, { top: false });
+  P(mb, 'wood', [0.42, 0.33, 0.25]);
+  const at2 = (u: number, v: number): [number, number] => [f.cx + u * f.c - v * f.s, f.cz + u * f.s + v * f.c];
+  for (const [hu, hv, alongU] of [
+    [bx.hx, bx.hz, true],
+    [bx.hz, bx.hx, false],
+  ] as const) {
+    const n = Math.max(1, Math.round((2 * hu) / 2));
+    for (const sv of [-1, 1]) {
+      let prev: { a: number; g: number } | null = null;
+      for (let k = 0; k <= n; k++) {
+        const a = -hu + (k * 2 * hu) / n;
+        const [u, v] = alongU ? [a, sv * hv] : [sv * hv, a];
+        const [x, z] = at2(u, v);
+        const g = heightAt(x, z);
+        mb.box(f, u - 0.1, u + 0.1, Math.min(bx.y0, g - 0.3), floorY - 0.32, v - 0.1, v + 0.1, { top: false });
+        if (prev && floorY - Math.max(g, prev.g) > 1.4) {
+          // A brace from the low end of this bay up to the beam.
+          const lo = Math.max(g, prev.g) + 0.2;
+          const [ua, va] = alongU ? [prev.a, sv * hv] : [sv * hv, prev.a];
+          const [ub, vb] = alongU ? [a, sv * hv] : [sv * hv, a];
+          const o = 0.06 * sv;
+          mb.poly([at(f, ua, lo, va + (alongU ? o : 0)), at(f, ua + (alongU ? 0.14 : 0), lo, va + (alongU ? o : 0.14)), at(f, ub, floorY - 0.4, vb + (alongU ? o : 0)), at(f, ub - (alongU ? 0.14 : 0), floorY - 0.4, vb + (alongU ? o : -0.14))], dirOf(f, alongU ? 0 : sv, 0, alongU ? sv : 0));
+        }
+        prev = { a, g };
+      }
+    }
+  }
 }
 
 /** A wall box: style face outside, inner finish inside, windows on long enough walls. */

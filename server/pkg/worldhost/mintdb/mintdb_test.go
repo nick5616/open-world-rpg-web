@@ -44,7 +44,7 @@ func TestUpgradesPlaceholderThenLeavesItAlone(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if action != Upgraded || w.ID != ph.ID || w.Seed != "20261108" || w.GenVersion != "1" || len(w.AtlasHash) != 16 || w.Name != "Lodestone" {
+	if action != Upgraded || w.ID != ph.ID || w.Seed != "20261108" || w.GenVersion != "2" || len(w.AtlasHash) != 16 || w.Name != "Lodestone" {
 		t.Fatalf("upgrade: %s %+v", action, w)
 	}
 	var spec struct {
@@ -92,11 +92,11 @@ func TestCreatesWhenMissing(t *testing.T) {
 	db := accountapi.DB{Pool: pool}
 	load, _ := loader(t)
 	w, action, err := EnsureOfficial(context.Background(), db, load, accountapi.World{Name: "Lodestone", Seed: "7"})
-	if err != nil || action != Created || w.Seed != "7" || w.GenVersion != "1" || !w.Official {
+	if err != nil || action != Created || w.Seed != "7" || w.GenVersion != "2" || !w.Official {
 		t.Fatalf("%v %s %+v", err, action, w)
 	}
 	// Golden table: seed-7's spec_from_seed atlas.
-	if w.AtlasHash != "f2242d3b06f316cc" {
-		t.Fatalf("atlas hash %s, golden f2242d3b06f316cc", w.AtlasHash)
+	if w.AtlasHash != "e0e3c0c797584a62" {
+		t.Fatalf("atlas hash %s, golden e0e3c0c797584a62", w.AtlasHash)
 	}
 }
