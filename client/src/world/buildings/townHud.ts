@@ -16,6 +16,12 @@ import { netRuntime } from '../../net/netStore';
 import { promptFor, type Candidate } from './interact';
 import { escapeHtml } from './npcs';
 import { openStationOffline } from '../../ui/inventory/store'; // WP14
+// Playtest 1: bounty locations and map previews.
+import { localPlayer } from '../../state/live';
+import { useMapWorld } from '../../ui/map/world';
+import { setMapOpen } from '../../ui/map/store';
+import { setQuestPreview } from '../../ui/quests/store';
+import { whereText, type QuestMarker } from '../../ui/quests/events';
 import { ACT, BOUNTY_KIND_LABEL, decodeBounties, decodeShop, EV, INTERACT, itemName, MERCHANT_LABEL, NPC_ROLE_LABEL, REFUSAL, utf8, type Bounty, type ShopItem } from './townEvents';
 
 interface PanelState {
@@ -41,6 +47,27 @@ const OFFLINE_LINES: Record<number, string[]> = {
   5: ['The barley is coming in nicely this year.', 'Crows again. Always the crows.'],
   6: ['Keep the peace and we will get along.', 'Move along, nothing to see.'],
 };
+
+/**
+ * Playtest 1: where a board job takes you (distance and direction from
+ * here) and its map marker: the target site's area, or for a delivery the
+ * board itself. Null when the atlas isn't loaded.
+ */
+function bountyPlace(b: Bounty, board: Candidate | null): { text: string; marker: QuestMarker } | null {
+  const px = localPlayer.pos.x;
+  const pz = localPlayer.pos.z;
+  if (b.site >= 0) {
+    const site = useMapWorld.getState().data?.sites[b.site];
+    if (!site) return null;
+    const marker: QuestMarker = { x: site.x, z: site.z, r: Math.max(30, site.radius + 10), label: site.name ?? 'Bounty target' };
+    return { text: `${site.name ?? 'Target'}: ${whereText(px, pz, marker)}`, marker };
+  }
+  if (b.kind === 1 && board) {
+    const marker: QuestMarker = { x: board.x, z: board.z, label: 'Hand in at this board' };
+    return { text: 'Hand in here, at this board', marker };
+  }
+  return null;
+}
 
 const hashStr = (s: string) => {
   let h = 2166136261;
@@ -77,11 +104,20 @@ export class TownHud {
   private readonly onClick = (e: MouseEvent) => {
     const b = (e.target as HTMLElement).closest('button');
     if (!b) return;
+    const b0 = b;
     const a = b.dataset.act;
     const s = this.session();
     const p = this.panel;
     if (a === 'close') this.close();
-    else if (!s || !p) this.toast('(offline) Connect to a zone to trade and take bounties');
+    else if (a === 'preview' && p?.bounties) {
+      // Playtest 1: show where the job is on the map before accepting.
+      const b = p.bounties.list.find((x) => x.id === Number(b0.dataset.arg));
+      const where = b ? bountyPlace(b, this.pending) : null;
+      if (b && where) {
+        setQuestPreview({ title: b.text, markers: [where.marker], from: 'bounty' });
+        setMapOpen(true);
+      }
+    } else if (!s || !p) this.toast('(offline) Connect to a zone to trade and take bounties');
     else if (a === 'buy' && p.npcEntityId !== null) {
       s.sendInteract(INTERACT.npc, BigInt(p.npcEntityId), ACT.buy, Number(b.dataset.arg));
       this.lastAction = `buy ${b.dataset.arg}`;
@@ -249,8 +285,14 @@ export class TownHud {
     if (p.bounties) {
       h += `<div style="margin-top:8px;font-weight:600;color:#f3d48a">Bounties</div>`;
       if (!p.bounties.list.length) h += '<div style="opacity:.7">No bounties today.</div>';
-      for (const b of p.bounties.list)
-        h += `<div style="padding:5px 0;border-bottom:1px solid #ffffff14"><div><b>${BOUNTY_KIND_LABEL[b.kind] ?? 'Job'}</b>: ${escapeHtml(b.text)}</div><div style="display:flex;justify-content:space-between;align-items:center;opacity:.9"><span>Reward ${b.reward} g${b.qty > 1 ? ` · x${b.qty}` : ''}</span>${b.accepted ? '<span style="color:#9fd38a">Accepted</span>' : btn('accept', b.id, 'Accept')}</div></div>`;
+      for (const b of p.bounties.list) {
+        // Playtest 1: where the job takes you, before you accept (and a map preview).
+        const where = bountyPlace(b, this.pending);
+        const state = b.done ? '<span style="color:#9fd38a">Completed</span>' : b.accepted ? '<span style="color:#9fd38a">Accepted</span>' : btn('accept', b.id, 'Accept');
+        h += `<div data-bounty="${b.id}" style="padding:5px 0;border-bottom:1px solid #ffffff14"><div><b>${BOUNTY_KIND_LABEL[b.kind] ?? 'Job'}</b>: ${escapeHtml(b.text)}</div>`;
+        if (where) h += `<div data-testid="bounty-where" style="display:flex;justify-content:space-between;align-items:center;gap:6px;font-size:12px;color:#d9c79c;margin:2px 0"><span>&#9673; ${escapeHtml(where.text)}</span>${btn('preview', b.id, 'Show on map')}</div>`;
+        h += `<div style="display:flex;justify-content:space-between;align-items:center;opacity:.9"><span>Reward ${b.reward} g${b.qty > 1 ? ` · x${b.qty}` : ''}</span>${state}</div></div>`;
+      }
     }
     if (p.canRest) h += `<div style="margin-top:10px">${btn('rest', 0, 'Rest at the inn')}</div>`;
     if (p.station) h += `<p style="margin:10px 0 0;opacity:.9">${escapeHtml(p.station)}</p>`;

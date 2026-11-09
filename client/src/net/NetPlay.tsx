@@ -30,6 +30,8 @@ import { attachInventory, LootLayer } from '../ui/inventory';
 // WP15: world clock, demons, town defense, chemistry (fire, ice, pillars, rain).
 import { attachNight, nightWorld } from '../systems/night';
 import { NightLayer } from '../systems/NightLayer';
+import { ensureQuestHook, unhookQuests } from '../ui/quests/link';
+import { QuestLayer } from '../ui/quests/QuestLayer';
 import { NightHud } from '../systems/NightHud';
 
 type Phase = { kind: 'connecting' } | { kind: 'playing'; welcome: Welcome } | { kind: 'ended'; end: SessionEnd } | { kind: 'error'; message: string };
@@ -104,6 +106,7 @@ export function NetPlay({ ready }: { ready: ReadySession }) {
     const detachCombat = attachCombat(s, ground);
     const detachInventory = attachInventory(s); // WP14
     const detachNight = attachNight(s);
+    ensureQuestHook(); // playtest 1: quest log (ui/quests), before Hello so Event 950 is never missed
     let live = true;
     s.onEnd = (end) => live && setPhase({ kind: 'ended', end });
     s.start().then(
@@ -120,6 +123,7 @@ export function NetPlay({ ready }: { ready: ReadySession }) {
       detachCombat();
       detachInventory(); // WP14
       detachNight();
+      unhookQuests();
       s.close('leaving');
       if (netRuntime.session === s) netRuntime.session = null;
       netStats.transport = netStats.rttMs = netStats.downKbps = netStats.upKbps = null;
@@ -192,6 +196,7 @@ export function NetPlay({ ready }: { ready: ReadySession }) {
           {/* WP14 */}
           <LootLayer />
           <NightLayer />
+          <QuestLayer />
         </WorldCanvas>
       )}
       {driver && session && <NightHud />}

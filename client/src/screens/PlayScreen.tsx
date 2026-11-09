@@ -21,6 +21,7 @@ import { CombatHud } from '../combat/CombatHud';
 import { VoiceHud } from '../voice';
 // WP14: inventory (I), crafting panel (forge/cook stations), loot toasts, Bitchin' banner, [E] containers/pickups (client/src/ui/inventory/README.md).
 import { CraftPanel, InventoryScreen, LootHud } from '../ui/inventory';
+import { QuestHud } from '../ui/quests/QuestHud';
 
 function DebugLayer() {
   useDebugHotkeys();
@@ -52,6 +53,8 @@ export default function PlayScreen() {
       <LootHud />
       <InventoryScreen />
       <CraftPanel />
+      {/* Playtest 1: quest tracker, offers with location previews, journal (J) */}
+      <QuestHud />
     </>
   );
 }
