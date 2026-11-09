@@ -166,22 +166,36 @@ func TestFireSpreadsDownwindAndBurnsOut(t *testing.T) {
 	s := NewSim(42, 270, src, 0) // wind from the west: blows toward +x
 	no := false
 	s.Rain = &no
-	s.Schedule(Op{Step: 1, Kind: OpIgnite, Cell: CellID(500, 500)})
-	s.AdvanceTo(60) // 12 s
-	minX, maxX := 500, 500
-	s.Cells(func(id uint32, st uint8, _ int64) {
-		ix, _ := CellXZ(id)
-		minX, maxX = min(minX, ix), max(maxX, ix)
-	})
-	if maxX-500 <= 500-minX+2 {
-		t.Fatalf("fire should run downwind (+x): %d..%d", minX, maxX)
+	// A fire spell's 3 x 3 cells; v5 spread (docs/cr/016) makes small patch
+	// fires, so look at where the whole fire went after a minute.
+	for dx := -1; dx <= 1; dx++ {
+		for dz := -1; dz <= 1; dz++ {
+			s.Schedule(Op{Step: 1, Kind: OpIgnite, Cell: CellID(500+dx, 500+dz)})
+		}
 	}
 	// The first cell burns out in about 20 s (16-24 s).
+	s.AdvanceTo(2)
 	st, until := s.State(CellID(500, 500))
 	if st != StBurning || until < 1+80 || until > 1+120 {
 		t.Fatalf("ignition cell: state %d until %d", st, until)
 	}
-	s.AdvanceTo(int64(until))
+	s.AdvanceTo(300) // 60 s
+	down, up := 0, 0
+	s.Cells(func(id uint32, st uint8, _ int64) {
+		ix, _ := CellXZ(id)
+		if ix > 501 {
+			down++
+		}
+		if ix < 499 {
+			up++
+		}
+	})
+	if down <= up {
+		t.Fatalf("fire should run downwind (+x): %d cells downwind, %d upwind", down, up)
+	}
+	if n := s.burning; n > 200 {
+		t.Fatalf("v5 fires stay small: %d burning after 60 s", n)
+	}
 	if st, _ := s.State(CellID(500, 500)); st != StBurnt {
 		t.Fatal("should be burnt out")
 	}

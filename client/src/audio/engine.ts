@@ -5,15 +5,18 @@
 // the first user gesture.
 //
 // Per animation frame it moves the listener with the camera and turns the
-// local player's movement into steps and splashes; four times a second it
-// samples the world for the music director and the ambience. Zone Events
-// arrive through session.eventListeners and go through the trigger map.
+// local player's movement into steps and splashes; ten times a second it
+// samples where the listener is (roof, walls, cave depth, what is underfoot,
+// the fires and water around) and steers the ambience, the positional loops,
+// the reverb and the bus damping (envTick); four times a second it feeds the
+// music director and the ducking (slowTick). Zone Events arrive through
+// session.eventListeners and go through the trigger map.
 
 import { DAY_LENGTH_S, DEFENSE_WARNING_S, type Event as ZoneEvent } from '@lodestone/contracts';
 import { localPlayer, worldClock } from '../state/live';
 import { netRuntime } from '../net/netStore';
 import { useCombatHud } from '../combat/store';
-import { useNightHud } from '../systems/night';
+import { nightRuntime, useNightHud } from '../systems/night';
 import { useVoiceStore } from '../voice/store';
 import { voiceLevels } from '../voice/levels';
 import { worldDebug } from '../world/debug/worldDebug';
@@ -21,7 +24,7 @@ import { useExploration } from '../ui/map/store';
 import { useInventory } from '../ui/inventory/store';
 import { useSocialStore } from '../social/store';
 import { useAudioSettings } from './settings';
-import { busInput, getAudioContext, masterNode, onAudioReady } from './context';
+import { busEnvFilter, busInput, getAudioContext, masterNode, onAudioReady } from './context';
 import { audioWorld, setTriggerSink, type Vec3 } from './bridge';
 import { SfxEngine, type PlayOpts } from './sfx';
 import { CUES, type CueId } from './cues';
@@ -30,9 +33,26 @@ import { MovementSounds } from './movement';
 import { MusicDirector, type MusicInputs, type TimedInput } from './music/director';
 import { MusicPlayer } from './music/player';
 import { runTrigger, runZoneEvent, type TriggerApi, type TriggerName, type TriggerPayload } from './triggers';
+import { caveLeak, duckLevels, interiorMix, RainIntensity, Smooth, weatherMix } from './acoustics';
+import { LoopVoices } from './loops';
+import { selectLoops, type LoopEmitter } from './loopPool';
+import { nextStrike } from './emitters';
+import { SPACE_CAVE } from './spatial';
+import type { StepSurface } from './surface';
+import { WorldProbe } from './worldProbe';
 
 const EYE = 1.6;
 const HOUR_S = DAY_LENGTH_S / 24;
+/** Listener / occlusion / loop pass (ms): 10 Hz, not per frame of every source. */
+const ENV_MS = 100;
+/** Water probe (ms). */
+const WATER_MS = 500;
+/** Fires further than this are not even scored. */
+const FIRE_SCAN_M = 70;
+/** A smith is heard hammering within this range, by day. */
+const HAMMER_M = 36;
+/** Below this `underground` the listener is still on the surface (shelter, water, smiths). */
+const CAVE_IN = 0.3;
 /** Cues decoded right after boot (the ones that must answer instantly). */
 const PRELOAD: CueId[] = ['ui_click', 'ui_confirm', 'ui_open', 'ui_close', 'ui_error', 'map_open', 'map_close', 'step_soft', 'step_hard', 'jump', 'land', 'swing_sword', 'swing_heavy', 'thrust_spear', 'bow_draw', 'bow_release', 'bolt', 'hit', 'hit_crit', 'arrow_hit', 'player_hurt', 'mine_stone', 'mine_gem', 'vein_break', 'loot_common', 'telegraph', 'splash', 'glide_open', 'climb_grab', 'cast_fire', 'cast_ice', 'impact_fire', 'impact_ice'];
 
@@ -41,7 +61,20 @@ export class AudioEngine {
   readonly music: MusicPlayer;
   readonly director = new MusicDirector();
   readonly ambience: Ambience;
+  readonly loops: LoopVoices;
+  readonly probe = new WorldProbe();
   private movement = new MovementSounds();
+  private rain = new RainIntensity();
+  private roof = new Smooth(0, 0.3);
+  private indoors = new Smooth(0, 0.3);
+  private surface: StepSurface = 'soft';
+  private lastEnv = 0;
+  private lastWater = -1e9;
+  private water: LoopEmitter | null = null;
+  private hammers = new Map<string, { next: number; left: number }>();
+  private hidden = typeof document !== 'undefined' && document.visibilityState === 'hidden';
+  /** The last environment pass (debug handle). */
+  env: Record<string, unknown> = {};
   private unsubs: (() => void)[] = [];
   /** The instant cues are decoded. */
   preloaded = false;
@@ -56,6 +89,8 @@ export class AudioEngine {
   private stingDuckUntil = 0;
   private analyser: AnalyserNode;
   private meterBuf = new Float32Array(2048);
+  /** Forced rain for tests and the debug handle (null = follow the weather). */
+  forcedRain: boolean | null = null;
   /** Forced music state for tests and the debug handle (null = follow the world). */
   forced: Partial<MusicInputs> | null = null;
   private voidUntil = 0;
@@ -76,6 +111,13 @@ export class AudioEngine {
     this.sfx = new SfxEngine(ctx, { sfx: sfxBus, ui: busInput('ui')!, ambience: busInput('ambience')! });
     this.music = new MusicPlayer(ctx, busInput('music')!);
     this.ambience = new Ambience(ctx, busInput('ambience')!, this.sfx.reverbSend);
+    this.loops = new LoopVoices(ctx, busInput('ambience')!, this.sfx.reverbSend);
+    // A hidden tab fades music, ambience and effects out (voice chat stays);
+    // rAF stops in the background, so this cannot wait for slowTick.
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', this.onVisibility);
+      this.unsubs.push(() => document.removeEventListener('visibilitychange', this.onVisibility));
+    }
     // UI panels opening and closing (map, inventory, sound settings): their
     // stores, so the panels themselves need no audio code.
     let mapOpen = useExploration.getState().mapOpen;
@@ -149,9 +191,14 @@ export class AudioEngine {
     this.lastFrame = t;
     this.updateListener();
     if (dt > 0) {
-      for (const [name, payload] of this.movement.update({ mode: localPlayer.mode, grounded: localPlayer.grounded, pos: localPlayer.pos, vel: localPlayer.vel, airJumps: localPlayer.airJumps, underground: audioWorld.underground, inTown: audioWorld.inTown }, dt)) this.trigger(name, payload);
+      for (const [name, payload] of this.movement.update({ mode: localPlayer.mode, grounded: localPlayer.grounded, pos: localPlayer.pos, vel: localPlayer.vel, airJumps: localPlayer.airJumps, underground: audioWorld.underground, inTown: audioWorld.inTown, surface: this.surface }, dt)) this.trigger(name, payload);
     }
     this.ambience.tick(t);
+    if (t - this.lastEnv >= ENV_MS) {
+      const envDt = this.lastEnv ? Math.min(0.5, (t - this.lastEnv) / 1000) : ENV_MS / 1000;
+      this.lastEnv = t;
+      this.envTick(t, envDt);
+    }
     if (t - this.lastSlow > 250) {
       this.lastSlow = t;
       this.slowTick(t);
@@ -236,7 +283,6 @@ export class AudioEngine {
   private slowTick(nowMs: number): void {
     this.attachSession();
     audioWorld.inTown = this.inTown();
-    const night = useNightHud.getState();
     const hud = useCombatHud.getState();
     const hour = worldClock.timeOfDayS / HOUR_S;
     const inputs: MusicInputs = {
@@ -254,35 +300,118 @@ export class AudioEngine {
     this.director.introSeconds = this.music.introSeconds;
     this.music.apply(decision);
 
-    // Ducking: voices first (spec 10: voice keeps priority), then big stings.
+    this.applyDucks(nowMs);
+  }
+
+  /**
+   * Ducking (acoustics.ts duckLevels): voices first (spec 10: voice keeps
+   * priority), then big stings (music and a little ambience); a hidden tab
+   * fades music, ambience and effects out.
+   */
+  private applyDucks(nowMs: number): void {
     const t = this.ctx.currentTime;
-    const speaking = this.anyoneSpeaking();
-    const musicDuck = speaking ? 0.35 : this.stingDuckUntil > nowMs ? 0.5 : 1;
-    busInput('music')?.gain.setTargetAtTime(musicDuck, t, musicDuck < 1 ? 0.08 : 0.6);
-    busInput('ambience')?.gain.setTargetAtTime(speaking ? 0.6 : 1, t, 0.3);
-    busInput('sfx')?.gain.setTargetAtTime(speaking ? 0.8 : 1, t, 0.3);
+    const d = duckLevels({ speaking: this.anyoneSpeaking(), sting: this.stingDuckUntil > nowMs, hidden: this.hidden });
+    busInput('music')?.gain.setTargetAtTime(d.music, t, this.hidden ? 0.25 : d.music < 1 ? 0.08 : 0.6);
+    busInput('ambience')?.gain.setTargetAtTime(d.ambience, t, this.hidden ? 0.25 : 0.3);
+    busInput('sfx')?.gain.setTargetAtTime(d.sfx, t, this.hidden ? 0.25 : 0.3);
+  }
 
-    // Cave reverb follows the cave state CaveManager writes.
-    this.sfx.setChamberRadius(audioWorld.chamberRadius);
-    this.sfx.setReverb(audioWorld.underground);
+  private onVisibility = () => {
+    this.hidden = document.visibilityState === 'hidden';
+    this.applyDucks(performance.now());
+  };
 
-    // Ambience targets.
-    const surface = 1 - audioWorld.underground;
-    const raining = night.online ? night.raining : localPlayer.raining;
+  /**
+   * The 10 Hz environment pass: where the listener is (shelter, cave, what
+   * is underfoot) -> weather through the shelter, interior reverb and
+   * damping, the positional loops (fires, water), far voices re-placed,
+   * the smiths' hammering.
+   */
+  private envTick(nowMs: number, dt: number): void {
+    this.probe.attach(worldDebug.runtime ?? null);
+    if (this.probe.ready && !this.sfx.spaceOf) this.sfx.spaceOf = (x, y, z) => this.probe.spaceOf(x, y, z);
+    const feet = localPlayer.pos;
+    const u = audioWorld.underground;
+    const cave = u > CAVE_IN;
+    const leak = caveLeak(u, audioWorld.caveMouthM);
+    const sh = this.probe.shelterAt(feet.x, feet.y, feet.z);
+    const roof = this.roof.update(cave ? 0 : sh.roof, dt);
+    const indoors = this.indoors.update(cave ? 0 : sh.indoors, dt);
+    const space = cave ? SPACE_CAVE : sh.building;
+    this.sfx.listenerSpace = space;
+    this.sfx.leak = leak;
+    this.surface = this.probe.surfaceAt(feet.x, feet.y, feet.z, u, audioWorld.inTown);
+
+    // Weather through the shelter.
+    const night = useNightHud.getState();
+    const raining = this.forcedRain ?? (night.online ? night.raining : localPlayer.raining);
+    const rain = this.rain.update(raining, dt, nowMs / 1000);
+    const shelter = { roof, indoors };
+    const w = weatherMix(rain, shelter, leak);
     const v = localPlayer.vel;
     const speed = Math.hypot(v.x, v.y, v.z);
     const gliding = localPlayer.mode === 'glide' || (localPlayer.mode === 'air' && v.y < -8);
-    const altitude = Math.min(1, Math.max(0, (localPlayer.pos.y - 60) / 160));
+    const altitude = Math.min(1, Math.max(0, (feet.y - 60) / 160));
+    const hour = worldClock.timeOfDayS / HOUR_S;
     const isNight = hour >= 18.5 || hour < 6;
     this.ambience.setTargets({
-      wind: surface * Math.min(1, 0.18 + altitude * 0.4 + (raining ? 0.2 : 0) + (gliding ? Math.min(0.6, speed / 30) : 0)),
+      wind: Math.min(1, 0.18 + altitude * 0.4 + rain * 0.25 + (gliding ? Math.min(0.6, speed / 30) : 0)),
       windSpeed: gliding ? Math.min(1, speed / 25) : altitude * 0.4,
-      rain: raining ? surface * (audioWorld.inTown ? 0.8 : 1) : 0,
-      fire: surface * Math.min(1, night.burning / 30),
-      insects: isNight && !raining && !audioWorld.inTown ? surface : 0,
+      rain: w.rain,
+      roofRain: w.roofRain,
+      insects: isNight && rain < 0.2 && !audioWorld.inTown ? 1 : 0,
       water: localPlayer.mode === 'swim' ? 1 : 0,
-      drips: audioWorld.underground,
+      drips: u,
+      weatherGain: w.gain,
+      weatherLowpassHz: w.lowpassHz,
     });
+
+    // Interior: small-room reverb indoors, the chamber reverb underground, a touch of damping.
+    const im = interiorMix(shelter, sh.roomRadius, u, audioWorld.chamberRadius);
+    if (im.reverb > 0.02) this.sfx.setChamberRadius(im.radius);
+    this.sfx.setReverb(im.reverb);
+    const t = this.ctx.currentTime;
+    busEnvFilter('sfx')?.frequency.setTargetAtTime(im.busLowpassHz, t, 0.3);
+    busEnvFilter('ambience')?.frequency.setTargetAtTime(im.busLowpassHz, t, 0.3);
+
+    // Positional loops: fires near, burning grass, water.
+    if (nowMs - this.lastWater > WATER_MS) {
+      this.lastWater = nowMs;
+      this.water = cave ? null : this.probe.waterNear(feet.x, feet.z);
+    }
+    const emitters: LoopEmitter[] = [...this.probe.firesNear(feet.x, feet.z, FIRE_SCAN_M), ...this.probe.chemistryFires(nightRuntime.view)];
+    if (this.water) emitters.push(this.water);
+    const L = this.sfx.listener;
+    this.loops.update(selectLoops(emitters, { x: L.x, y: L.y, z: L.z, space, leak }, this.loops.playing));
+    this.sfx.updateSpatial();
+    this.hammering(nowMs, hour, cave);
+
+    this.env = { roof: +roof.toFixed(2), indoors: +indoors.toFixed(2), building: sh.building, space, leak: +leak.toFixed(3), rain: +rain.toFixed(2), weatherGain: +w.gain.toFixed(2), weatherLowpassHz: Math.round(w.lowpassHz), roofRain: +w.roofRain.toFixed(2), reverb: +im.reverb.toFixed(2), busLowpassHz: Math.round(im.busLowpassHz), surface: this.surface, loops: this.loops.debug(), water: this.water?.kind ?? null, thunders: this.ambience.thunders, probe: this.probe.stats };
+  }
+
+  /** A smith at every forge nearby hammers in bursts by day (emitters.ts nextStrike). */
+  private hammering(nowMs: number, hour: number, cave: boolean): void {
+    if (cave || hour < 7 || hour >= 19) {
+      this.hammers.clear();
+      return;
+    }
+    const feet = localPlayer.pos;
+    const seen = new Set<string>();
+    for (const h of this.probe.forgesNear(feet.x, feet.z, HAMMER_M)) {
+      if (Math.hypot(h.x - feet.x, h.z - feet.z) > HAMMER_M) continue;
+      seen.add(h.id);
+      let st = this.hammers.get(h.id);
+      if (!st) this.hammers.set(h.id, (st = { next: nowMs + 400 + Math.random() * 2500, left: 0 }));
+      // Due before the next pass: start it on time (sample-exact), not on the tick.
+      if (st.next < nowMs + ENV_MS) {
+        this.play('forge_hammer', { at: { x: h.x, y: h.y, z: h.z }, volume: 0.55, delay: Math.max(0, (st.next - nowMs) / 1000) });
+        const n = nextStrike(st.left);
+        st.left = n.left;
+        st.next += n.delayS * 1000;
+        if (st.next < nowMs) st.next = nowMs + n.delayS * 1000;
+      }
+    }
+    for (const id of this.hammers.keys()) if (!seen.has(id)) this.hammers.delete(id);
   }
 
   /** Output level (RMS dBFS of the master), for the headless check. */
@@ -307,6 +436,9 @@ export class AudioEngine {
       voices: this.sfx.activeVoices,
       stolen: this.sfx.stolen,
       culled: this.sfx.culled,
+      suppressed: this.sfx.suppressed,
+      loopVoices: this.loops.count,
+      env: this.env,
       played: Object.fromEntries(this.sfx.played),
       recent: this.sfx.log.slice(-30),
       world: { ...audioWorld },
@@ -320,6 +452,7 @@ export class AudioEngine {
     this.session?.eventListeners.delete(this.onEvent);
     this.music.dispose();
     this.ambience.dispose();
+    this.loops.clear();
   }
 }
 
@@ -359,6 +492,14 @@ function installDebug(): void {
       if (engine) engine.forced = p;
     },
     level: () => engine?.level() ?? -200,
+    /** The environment pass: shelter, cave leak, rain, surface, loop voices. */
+    env: () => engine?.env ?? null,
+    /** Force rain on/off for the ambience (null follows the weather). */
+    forceRain: (r: boolean | null) => {
+      if (engine) engine.forcedRain = r;
+    },
+    /** A thunder rumble from a strike this far away (m). */
+    thunder: (m = 1500) => engine?.ambience.thunder(m),
     /** Are these cues decoded (headless checks wait on it)? */
     loaded: (cues: CueId[]) => !!engine && cues.every((c) => engine!.sfx.isLoaded(c)),
     /** Decode these cues now. */

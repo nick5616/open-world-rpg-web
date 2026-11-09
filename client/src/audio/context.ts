@@ -8,8 +8,8 @@
 //
 //   music ─┐
 //   sfx ───┤  each: duck gain -> volume gain ─> master -> limiter -> destination
-//   ambience┤
-//   ui ────┤
+//   ambience┤  (sfx and ambience: duck -> environment low-pass -> volume; the
+//   ui ────┤   engine closes the low-pass a little indoors and underground)
 //   voice ─┘  (WP11's VoiceMixer output)
 
 import { BUSES, useAudioSettings, type BusName } from './settings';
@@ -22,7 +22,12 @@ interface Graph {
   input: Record<Exclude<BusName, 'master'>, GainNode>;
   /** The user volume stage of each bus. */
   volume: Record<BusName, GainNode>;
+  /** The environment low-pass of the world buses (20 kHz = open). */
+  env: Record<EnvBus, BiquadFilterNode>;
 }
+
+/** Buses that carry sounds of the world (interior damping applies); UI, music and voice stay dry. */
+export type EnvBus = 'sfx' | 'ambience';
 
 let graph: Graph | null = null;
 const readyListeners = new Set<(g: Graph) => void>();
@@ -45,15 +50,24 @@ function build(ctx: AudioContext): Graph {
   master.connect(limiter).connect(ctx.destination);
   const volume = { master } as Record<BusName, GainNode>;
   const input = {} as Graph['input'];
+  const env = {} as Graph['env'];
   for (const b of BUSES) {
     if (b === 'master') continue;
     const duck = ctx.createGain();
     const vol = ctx.createGain();
-    duck.connect(vol).connect(master);
+    if (b === 'sfx' || b === 'ambience') {
+      const f = ctx.createBiquadFilter();
+      f.type = 'lowpass';
+      f.frequency.value = 20000;
+      f.Q.value = 0.5;
+      duck.connect(f).connect(vol);
+      env[b] = f;
+    } else duck.connect(vol);
+    vol.connect(master);
     input[b] = duck;
     volume[b] = vol;
   }
-  return { ctx, master, limiter, input, volume };
+  return { ctx, master, limiter, input, volume, env };
 }
 
 function applySettings(): void {
@@ -96,6 +110,11 @@ export function getAudioContext(): AudioContext | null {
 /** A bus input to connect sources to (null before the first gesture). */
 export function busInput(bus: Exclude<BusName, 'master'>): GainNode | null {
   return graph?.input[bus] ?? null;
+}
+
+/** The environment low-pass of a world bus (null before the first gesture). */
+export function busEnvFilter(bus: EnvBus): BiquadFilterNode | null {
+  return graph?.env[bus] ?? null;
 }
 
 /** Where WP11's voice mixer plays: the voice bus of this context, or straight out for a context of its own. */

@@ -14,6 +14,10 @@ export interface CueDef {
   volume?: number;
   /** +/- random playback-rate fraction per play. */
   pitch?: number;
+  /** Base playback rate (a cue that reuses another's files, pitched: wooden steps). */
+  rate?: number;
+  /** +/- random gain fraction per play (default 0.1 when the cue has a pitch spread: repeats never sound identical). */
+  gainVar?: number;
   /** Placed in the world when the caller gives a position. */
   spatial?: boolean;
   refDistance?: number;
@@ -60,6 +64,9 @@ export const CUES = {
   step_soft: sfx('step_soft', { volume: 0.32, pitch: 0.08, maxVoices: 2, priority: 1 }),
   step_hard: sfx('step_hard', { volume: 0.32, pitch: 0.08, maxVoices: 2, priority: 1 }),
   step_snow: sfx('step_snow', { volume: 0.3, pitch: 0.08, maxVoices: 2, priority: 1 }),
+  // Audio QoL: the same knocks lower and duller on planks and decks; wading is a small stroke.
+  step_wood: sfx('step_hard', { volume: 0.34, pitch: 0.07, rate: 0.8, maxVoices: 2, priority: 1 }),
+  step_water: sfx('swim_stroke', { volume: 0.2, pitch: 0.12, rate: 1.35, maxVoices: 2, priority: 1 }),
   jump: sfx('jump', { volume: 0.35, pitch: 0.06, maxVoices: 1 }),
   land: sfx('land', { volume: 0.5, pitch: 0.06, maxVoices: 1, cooldownMs: 150 }),
   dash: sfx('dash', { volume: 0.55, pitch: 0.05, maxVoices: 2 }),

@@ -7,7 +7,11 @@
 //      each audible on the master analyser;
 //   4. SFX play for real movement (walking, jumping) and for triggers /
 //      zone events (swing, spell, level-up, Bitchin' loot, dusk);
-//   5. the settings panel (K) persists volumes and mute silences the master.
+//   5. the settings panel (K) persists volumes and mute silences the master;
+//   6. audio QoL: the 10 Hz environment pass runs, town fires get capped
+//      positional loop voices, rain indoors is quiet, muffled and drums on
+//      the roof, a burst of identical hits is limited, thunder and a hidden
+//      tab fade work.
 //   node client/src/audio/dev/audio-browser.mjs  -> docs/evidence/audio-headless.txt (+ audio-settings.png)
 import { spawn, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -174,6 +178,78 @@ try {
   check('jump from Space', (played.jump ?? 0) >= 1, `jump ${played.jump ?? 0}, land ${played.land ?? 0}`);
   for (const cue of ['swing_sword', 'cast_fire', 'impact_ice', 'level_up_small', 'loot_bitchin', 'dusk', 'loot_rare']) check(`sfx ${cue}`, (played[cue] ?? 0) >= 1);
   log(`played: ${JSON.stringify(played)}; decoded SFX ${s2.decodedMB} MB; voices stolen ${s2.stolen}, culled ${s2.culled}`);
+
+  // Audio QoL: environment pass, positional fire loops, rain under a roof,
+  // voice limiting, thunder, hidden-tab fade.
+  const env0 = await page.evaluate(() => window.__lodestoneAudio.env());
+  check('environment pass runs (shelter, surface, cave leak)', !!env0 && typeof env0.roof === 'number' && typeof env0.surface === 'string' && env0.leak === 1, JSON.stringify(env0 && { roof: env0.roof, indoors: env0.indoors, surface: env0.surface, leak: env0.leak, probe: env0.probe }));
+  // Into the biggest house of the town (solo spawns in one), in the rain.
+  const house = await page.evaluate(() => {
+    const T = window.__lodestoneTowns;
+    const si = T.largestTown();
+    const s = T.settlements()[si];
+    const bs = T.buildings(si).filter((b) => b.floors > 0 && !(b.flags & 8) && (b.role === 'house' || b.role === 'inn'));
+    bs.sort((a, b) => b.hx * b.hz - a.hx * a.hz);
+    const b = bs[0];
+    return b ? { si, dx: b.x - s.x, dz: b.z - s.z, y: b.floorY + 0.05, role: b.role, out: Math.max(s.radius, 30) + 35 } : null;
+  });
+  await page.evaluate(() => window.__lodestoneAudio.forceRain(true));
+  if (house) {
+    // Outside the town first, then inside.
+    await page.evaluate((h) => window.__lodestoneTowns.teleportTo(h.si, { dx: 0, dz: h.out }), house);
+    await page.waitForTimeout(6000);
+    const out = await page.evaluate(() => window.__lodestoneAudio.env());
+    await page.evaluate((h) => window.__lodestoneTowns.teleportTo(h.si, { dx: h.dx, dz: h.dz, y: h.y }), house);
+    // The shelter crossfade glides per environment pass (10 Hz in the game;
+    // SwiftShader draws a frame or two a second here): wait for it to settle.
+    let inn = null;
+    for (let t0 = Date.now(); Date.now() - t0 < 30000; ) {
+      await page.waitForTimeout(1000);
+      inn = await page.evaluate(() => window.__lodestoneAudio.env());
+      if (inn.indoors > 0.97 && inn.roofRain > 0.2) break;
+    }
+    log(`rain outside: ${JSON.stringify({ roof: out.roof, indoors: out.indoors, rain: out.rain, weatherGain: out.weatherGain, weatherLowpassHz: out.weatherLowpassHz, roofRain: out.roofRain })}`);
+    log(`rain inside a ${house.role}: ${JSON.stringify({ roof: inn.roof, indoors: inn.indoors, rain: inn.rain, weatherGain: inn.weatherGain, weatherLowpassHz: inn.weatherLowpassHz, roofRain: inn.roofRain, reverb: inn.reverb, busLowpassHz: inn.busLowpassHz, surface: inn.surface })}`);
+    check('rain builds up outdoors', out.rain > 0.2 && out.weatherGain > 0.9, `rain ${out.rain}, weather gain ${out.weatherGain}`);
+    check('indoors the rain is quiet and muffled, the roof drums, the room rings a little', inn.indoors > 0.9 && inn.weatherGain < 0.35 && inn.weatherLowpassHz < 1500 && inn.roofRain > 0.2 && inn.reverb > 0.2 && inn.busLowpassHz < 15000, `indoors ${inn.indoors}, gain ${inn.weatherGain}, lowpass ${inn.weatherLowpassHz} Hz, roof rain ${inn.roofRain}, reverb ${inn.reverb}`);
+    check('footsteps on planks indoors', inn.surface === 'wood', `surface ${inn.surface}`);
+  } else check('a house to walk into', false, 'no closed house in the largest town');
+  await page.evaluate(() => window.__lodestoneAudio.forceRain(null));
+  // Night in town: the hearths, braziers and torches nearby get loop voices (capped).
+  let loops = null;
+  for (let t0 = Date.now(); Date.now() - t0 < 20000; ) {
+    loops = await page.evaluate(() => window.__lodestoneAudio.state());
+    if (loops.loopVoices > 0) break;
+    await page.waitForTimeout(500);
+  }
+  check('town fires play as positional loops, capped', loops.loopVoices >= 1 && loops.loopVoices <= 8, `${loops.loopVoices} voices: ${JSON.stringify(loops.env.loops.slice(0, 8))}; ${loops.env.probe.fires} fire emitters indexed`);
+  // Eight identical hits in one frame (an area hit) are not eight stacked sounds.
+  const lim = await page.evaluate(() => {
+    const a = window.__lodestoneAudio;
+    const p = window.__lodestone.player().pos;
+    const before = a.state().suppressed;
+    for (let i = 0; i < 8; i++) a.play('hit', { x: p.x + i, y: p.y + 1, z: p.z });
+    for (let i = 0; i < 3; i++) a.play('hit_crit', { x: p.x + 2, y: p.y + 1, z: p.z });
+    return a.state().suppressed - before;
+  });
+  check('a burst of identical hits is limited (stacks and duplicates dropped)', lim >= 5 + 2, `${lim} suppressed of 11`);
+  await page.evaluate(() => window.__lodestoneAudio.thunder(900));
+  // A hidden tab fades music, ambience and effects.
+  await page.evaluate(() => window.__lodestoneAudio.force({ underground: 0, inTown: false, hour: 10 }));
+  await page.waitForTimeout(1500);
+  const shown = await page.evaluate(() => window.__lodestoneAudio.level());
+  await page.evaluate(() => {
+    Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
+    document.dispatchEvent(new window.Event('visibilitychange'));
+  });
+  await page.waitForTimeout(2000);
+  const hiddenLevel = await page.evaluate(() => window.__lodestoneAudio.level());
+  await page.evaluate(() => {
+    Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true });
+    document.dispatchEvent(new window.Event('visibilitychange'));
+    window.__lodestoneAudio.force(null);
+  });
+  check('a hidden tab fades the game out', shown > -60 && hiddenLevel < shown - 30, `shown ${shown.toFixed(1)} dBFS, hidden ${hiddenLevel.toFixed(1)} dBFS`);
 
   // Settings panel (K): sliders persist; mute silences the master.
   const focus = await page.evaluate(() => {

@@ -23,6 +23,8 @@ import { VoiceHud } from '../voice';
 import { CraftPanel, InventoryScreen, LootHud } from '../ui/inventory';
 // Playtest 1: level-up fanfare, character panel (C), area notices, crystal tower prompt (client/src/ui/progression/README.md).
 import { ProgressionHud } from '../ui/progression';
+// Playtest 2: skill tree (N) and build overview (B) (client/src/ui/skills/README.md).
+import { SkillScreen } from '../ui/skills';
 import { QuestHud } from '../ui/quests/QuestHud';
 // Sound and music: boots the audio engine after the first playable frame; K = sound settings (client/src/audio/README.md).
 import { AudioRoot } from '../audio/ui/AudioRoot';
@@ -58,6 +60,7 @@ export default function PlayScreen() {
       <InventoryScreen />
       <CraftPanel />
       <ProgressionHud />
+      <SkillScreen />
       {/* Playtest 1: quest tracker, offers with location previews, journal (J) */}
       <QuestHud />
       <AudioRoot />

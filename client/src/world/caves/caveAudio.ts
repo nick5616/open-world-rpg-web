@@ -25,9 +25,10 @@ export class CaveAudio {
     audioWorld.chamberRadius = r;
   }
 
-  /** 0 on the surface, 1 deep underground (eased by the caller). */
-  setUnderground(u: number, now: number): void {
+  /** 0 on the surface, 1 deep underground (eased by the caller); `mouthM` = distance to the nearest cave opening (surface weather fades with it). */
+  setUnderground(u: number, now: number, mouthM = Infinity): void {
     audioWorld.underground = u;
+    audioWorld.caveMouthM = mouthM;
     void now;
   }
 
