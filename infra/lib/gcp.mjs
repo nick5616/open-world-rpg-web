@@ -215,6 +215,10 @@ export function deployGcp(r, cfg, { only } = {}) {
     r.run(['gcloud', 'storage', 'cp', '--no-clobber', '--cache-control', 'public, max-age=31536000, immutable', '--content-type', 'application/wasm', `worldgen/pkg/${m.file}`, `${dest}${m.file}`, ...P]);
     r.run(['gcloud', 'storage', 'cp', '--no-clobber', '--cache-control', 'public, max-age=31536000, immutable', '--content-type', 'application/json', 'worldgen/pkg/manifest.json', `${dest}${m.file.replace(/\.wasm$/, '.json')}`, ...P]);
     out.urls.wasm = `https://storage.googleapis.com/${cfg.wasmBucket}/worldgen/${m.file}`;
+    // Archived generators (CR 014, worldgen/archive/): every pinned genVersion stays in the bucket too.
+    for (const v of JSON.parse(fs.readFileSync(path.join(root, 'worldgen', 'archive', 'manifest.json'), 'utf8')).versions) {
+      r.run(['gcloud', 'storage', 'cp', '--no-clobber', '--cache-control', 'public, max-age=31536000, immutable', '--content-type', 'application/wasm', `worldgen/archive/${v.file}`, `${dest}${v.file}`, ...P]);
+    }
   }
 
   if (want('vm')) {

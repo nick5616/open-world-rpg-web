@@ -38,8 +38,11 @@ COPY --from=build /out/zone /out/migrate /out/mintworld /usr/local/bin/
 # The same worldgen.wasm bytes the client build ships (content hash in the
 # manifest; LODESTONE_WORLDGEN_WASM_SHA256 can pin it per deployment).
 COPY worldgen/pkg/worldgen.wasm worldgen/pkg/manifest.json /app/worldgen/
+# Archived generators for worlds pinned to an older genVersion (CR 014;
+# worldgen/archive/README.md): the zone and `mintworld -renew` load them.
+COPY worldgen/archive/ /app/worldgen/archive/
 COPY contracts/migrations/ /app/migrations/
-ENV LODESTONE_WORLDGEN_WASM=/app/worldgen/worldgen.wasm \
+ENV LODESTONE_WORLDGEN_WASM=/app/worldgen/worldgen.wasm     LODESTONE_WORLDGEN_ARCHIVE=/app/worldgen/archive \
     LODESTONE_MIGRATIONS=/app/migrations \
     LODESTONE_VERSION=${VERSION} \
     LODESTONE_ZONE_PORT=8092

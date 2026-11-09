@@ -54,7 +54,7 @@ below. `ptr`/`len` are i32 offsets into linear memory.
 
 | Export | Wasm signature | Returns / effect |
 | --- | --- | --- |
-| `gen_version()` | `() -> i32` | Generator major version (output-defining, currently 1) |
+| `gen_version()` | `() -> i32` | Generator major version (output-defining, currently 2; genVersion 1 is archived in `archive/`) |
 | `abi_version()` | `() -> i32` | 1; loaders refuse other values |
 | `alloc(len)` | `(i32) -> i32` | 8-aligned block for the host; 0 on failure |
 | `free(ptr, len)` | `(i32, i32) -> ()` | Release a block from `alloc` or `atlas_build` (same `len`) |
@@ -468,6 +468,22 @@ per worker ~38 ms.
 
 ## Towns, roads and structures (WP20)
 
+> **genVersion 2 (playtest 1, `docs/cr/014-towns-terrain-density.md`,
+> decision 0022):** hamlets and villages stand on natural ground (only
+> walled towns keep levelled footprints); buildings get foundations
+> (building flags 64 stepped plinth, 128 timber posts; porch decks are
+> `walk | solid`; door ramps above a 0.55 m rise are drawn as steps);
+> footpaths (ROADS class 2, `src/town/paths.rs`: `from` = building, `to` =
+> the path it joins) connect every door, garden gate and stall to the
+> streets; layouts are tighter (layout radius 0.8 / 0.7 / 0.85 of the atlas
+> footprint, squares 7 / 9 / 12 m, streets 3.0 / 3.4 / 4.6 m, 0.5 m front
+> gap, 1.2 m alleys, back lanes 7.5 m behind); landmarks and enemy camps are
+> built (STRUCTURES kinds 9 / 10, PIECES kinds 15-22: stones, tree, arch,
+> monolith, bones, crystals, statue, spring); the atlas appends extra
+> hamlets and minor points of interest after the coverage pass (step 6 of
+> "How the world is made"). Numbers below that changed are given as
+> genVersion 2 values where they matter to readers.
+
 The settlement and structure sites of the atlas become towns, roads and
 structures in a second pure function of the atlas, `towns_build` (code:
 `src/town/`, module table in `src/town/mod.rs`). Like the caves it is new
@@ -645,7 +661,13 @@ are inspired by.
    behind a ridge"); waypoints (one per settlement + one wilderness per region),
    landmarks (each region's most prominent peak), enemy camps; then lazy-greedy
    gap filling (landmarks, camps, ruins) until <= 2% of walkable land lacks a
-   POI visible within 800 m, or the per-region budget (44 sites) is spent.
+   POI visible within 800 m, or the per-region budget (44 sites) is spent. Since genVersion 2 a density step follows, appending only (every
+   earlier site keeps its index and id): 6 + 10 x `settlementDensity` extra
+   hamlets (>= 270 m from other settlements, <= 6 per region, each with its
+   waypoint), then minor points of interest farthest-first (landmarks, small
+   ruins, shrines, ruined watchtowers, enemy camps never within 750 m of the
+   spawn) until every candidate is within 120 m of a site edge (<= 80 sites
+   per region). `examples/poi_density.rs` reports the spacing.
    Candidates are peaks, ridge crests, river bends, valley mouths and a 96 m
    grid. Viewsheds are radial line-of-sight sweeps on the macro grid.
 7. Regions: biome mix, dominant + secondary element (`elementWeights` x the
@@ -689,9 +711,13 @@ refactors and speedups must leave the table untouched. `ABI_VERSION` covers
 export signatures and buffer layouts; the TS loader refuses a mismatch. The
 deployable artifact is `pkg/worldgen-<sha256:16>.wasm`; `manifest.json`
 records its hash, size, genVersion and rustc version (pinned by
-rust-toolchain.toml so builds are reproducible). Until the first world is
-minted, genVersion 1 is still being tuned and `npm run golden:update` is
-allowed without a bump.
+rust-toolchain.toml so builds are reproducible). genVersion 1 is minted
+(the official world) and frozen: its build lives in `archive/` with
+`golden/golden-v1.json`, checked by `npm run test:golden` in Node and
+Go/wazero, and loaded by hosts for worlds pinned to it
+(`archive/README.md`). genVersion 2 is current. Before a `golden:update`
+for a new version, review the diff with `npx vite-node worldgen/golden/review.ts`
+(sites kept / added, chunk height changes by neighbourhood).
 
 ## Performance (this machine: i7-11700K, Windows 11)
 
@@ -716,9 +742,11 @@ allowed without a bump.
   kind tags; WP20 builds towns, roads and buildings from settlement and
   structure sites (it can use the per-site seed and yaw). Roads, layouts and buildings
   are WP20's `towns_build` (section "Towns, roads and structures").
-- **Settlement footprints are pre-flattened** (detail amplitude x0.25, no
+- **Walled-town footprints are pre-flattened** (genVersion 1 flattened
+  every settlement; since genVersion 2 hamlets and villages keep the natural
+  ground and their buildings stand on foundations) (detail amplitude x0.25, no
   terraces) so buildings fit; trees, rocks and bushes are kept out of every
-  site footprint.
+  site footprint (settlements: the layout radius since genVersion 2).
 - **Every region is guaranteed land**, which can make outlying regions small
   islands at low `landFraction`.
 - **The atlas embeds the canonical spec JSON**, so an atlas file alone
