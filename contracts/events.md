@@ -18,6 +18,7 @@ for your package; document each kind's use of `entityId`, `targetId`, `value`,
 | 900-949 | Playtest 1 progression and difficulty (character stats, stamped areas, tower attunement; CR 012). 904-949 reserved |
 | 950-969 | Playtest 1 quests (CR 013: quest log, offers, steps, completion) |
 | 970-979 | Playtest 1 building doors (CR 013; WP20 follow-up) |
+| 980-999 | Playtest 2 PvP and duels (CR 017: the PvP flag, kill feed, duel challenge, state and result). 988-999 reserved |
 
 ## Registered kinds
 
@@ -117,13 +118,33 @@ for your package; document each kind's use of `entityId`, `targetId`, `value`,
 | 703 | `drop_spawned` | WP09. To the owner: `entityId` = pickup entity, `targetId` = owner, `value` = quantity, `data` = item id (UTF-8, `ore:<name>` / `gem:<name>:<cut>` until WP14 defines items) |
 | 704 | `item_granted` | WP09 (grant hook for WP14). To the player: `entityId` = player, `targetId` = the pickup taken, `value` = quantity, `data` = item id |
 | 706 | `mine_refused` | WP09. To the miner: `value` = 1 too far, 2 already mined, 3 unknown vein, 4 swinging too fast; `data` = u64 vein id |
+| 980 | `pvp_state` | Playtest 2 (CR 017). To you, whenever your PvP flag changes (and when you arrive flagged from another zone; never to a player who has not touched the flag): `entityId` = you, `value` = bits: 1 flagged (also while turning off), 2 turning off, 4 you stand in a safe zone (only while flagged); `targetId` = ms until a waiting turn-off applies (0 none), `data` = UTF-8 safe zone name (bit 4: a settlement's name, or "the Haven") |
+| 981 | `pvp_refused` | Playtest 2. To you: an Interact 70 was refused. `value` = reason: 1 you fought within `pvp.combatLockS`, 2 a flag request within `pvp.toggleCooldownS` (`targetId` = ms left), 3 already in that state, 4 no such player on this zone, 5 a duel needs the same party (flag for PvP instead), 6 farther than `pvp.duel.challengeRangeM`, 7 you or they already have a duel or a challenge, 8 nothing to answer or yield, 9 you or they are down, 10 bad action; `targetId` (reasons 4-9) = the player asked about |
+| 982 | `pvp_hit` | Playtest 2. To you: a player hit you (open PvP or your duel). `entityId` = the attacker, `targetId` = you, `value` = health lost, `x/y/z` = the attacker, `data` = u8 1 if it was a duel hit. Players within 64 m (not you) get `strike_hit` (222) with `targetId` = the attacker; the attacker gets the HitResult |
+| 983 | `pvp_kill` | Playtest 2. Kill feed, to the killer, the victim and players within 64 m of the victim: `entityId` = killer, `targetId` = victim, `x/y/z` = where, `data` = UTF-8 JSON `{"killer": name, "victim": name}`. The victim also gets the usual `player_downed` (203, `targetId` = the killer) and respawns as from any death (nothing dropped) |
+| 984 | `duel_challenge` | Playtest 2. To the challenged: a party member challenges you. `entityId` = challenger, `targetId` = duel id, `value` = ms to answer (`pvp.duel.answerS`), `x/y/z` = the challenger, `data` = UTF-8 challenger name. Answer with Interact 70 action 3 |
+| 985 | `duel_state` | Playtest 2. To each duelist (phase 1: the challenger only): `entityId` = the opponent, `targetId` = duel id, `value` = phase: 1 challenge sent, waiting for the answer, 2 accepted: countdown, 3 fight; `x/y/z` = the ring's centre (cm; phases 2-3, the midpoint of the two at the accept), `data` = u16 ring radius cm \| u32 ms until the phase ends (1: the challenge expires, 2: the fight starts, 3: the time cap) \| UTF-8 opponent name |
+| 986 | `duel_ended` | Playtest 2. To both: `entityId` = winner (0 none), `targetId` = loser (0 none), `value` = reason: 1 the loser dropped to 1 health, 2 the loser stayed outside the ring longer than `pvp.duel.outsideForfeitS`, 3 the loser logged out or left the zone, 4 time is up (`pvp.duel.maxS`): a draw, 5 the loser yielded, 6 declined, 7 the challenge went unanswered, 8 called off (the challenger withdrew, or something else downed a duelist); `x/y/z` = the ring's centre, `data` = UTF-8 announcement. After reasons 1-5 both get back the health the duel took and the mana they had at the accept; the zone also posts the line to the party chat of the party members it hosts |
+| 987 | `duel_outside` | Playtest 2. To a duelist: `value` = ms before you forfeit for standing outside the ring (`pvp.duel.outsideForfeitS`), 0 = back inside; `targetId` = duel id |
 
 HitResult refusal codes (HitResult.flags when `accepted` is false; also
-Event 215 `value`): 1 not an enemy (a player: PvP never), 2 unknown target,
-3 dead, 4 unknown attack, 5 out of reach, 6 no line of sight, 7 too many
-hits, 8 stale, 9 illegal (too fast, not unlocked), 10 invulnerable (boss
-transition), 11 required status missing, 12 cooldown, 13 mana, 14 spell not
-known, 15 you are down.
+Event 215 `value`): 1 not an enemy (a player you may not fight: one of you
+is not flagged for PvP, CR 017), 2 unknown target, 3 dead, 4 unknown attack,
+5 out of reach, 6 no line of sight, 7 too many hits, 8 stale, 9 illegal (too
+fast, not unlocked; a heal or other zero-damage spell on a player), 10
+invulnerable (boss transition), 11 required status missing, 12 cooldown, 13
+mana, 14 spell not known, 15 you are down, 16 PvP: you or they stand in a
+safe zone (a settlement or the Haven), 17 PvP: a party member (challenge them
+to a duel instead).
+
+Player-vs-player claims (playtest 2, CR 017): a HitClaim naming a player is
+validated like one naming an enemy (the logged attack, reach plus
+HIT_RANGE_SLACK_M against any sample of the victim's last HIT_HISTORY_MS,
+terrain line of sight) only when the PvP rules allow it: both flagged, not in
+the same party, neither in a safe zone; or the two fighters of a duel,
+anywhere and whatever their flags. Damage = the same hit against a physical
+enemy x `pvp.damageMult` (combat.yaml), then the victim's armor and shield;
+no statuses, skill XP, kill XP or loot come from players.
 
 Fast travel itself is the core `teleport` (2): the zone moves you and sends it
 to you and to everyone who currently has you in their snapshot.
@@ -155,6 +176,7 @@ to a thing" verb. `targetKind` is a registry like Event kinds; `action` and
 | 51 `chem` | WP15 | dev actions: `x cm \| z cm << 32` (u32 each) | 1 = ignite, 2 = freeze, 3 = extinguish, 4 = raise a pillar (dev only); 10 = choose my chemistry sync path (anyone) | 1-3: radius in cells; 10: 1 events, 2 bitmap |
 | 52 `night` | WP15 (dev only) | 0 | 1 = the nearest town's ward falters (a defense event now), 2 = set the world clock offset, 3 = raise demons near me | 2: offset seconds (i32 bits); 3: 0 lesser pack, 1 greater, 2 lord |
 | 60 `quest` | Playtest 1 (CR 013) | quest id (Event 950/951) | 1 = accept an offer (951), 2 = abandon, 3 = hand in (a delivery's items, within 10 m of its settlement's bounty board or bounty keeper; reading that board or talking to that keeper hands in too), 4 = track (`targetId` 0 = none) | 0 |
+| 70 `pvp` | Playtest 2 (CR 017) | 1: 0; 2: the party member's entity id; 3: the challenger's entity id (0 = whoever challenged you); 4: 0 | 1 = set your PvP flag (on: at once; off: after `pvp.flagOffDelayS`, restarted by any PvP hit meanwhile; requests `pvp.toggleCooldownS` apart, refused within `pvp.combatLockS` of fighting; 980 or 981), 2 = challenge a party member within `pvp.duel.challengeRangeM` to a duel (984 to them, 985 to you, or 981), 3 = answer a challenge, 4 = yield: withdraw your challenge, decline one, or forfeit your duel (986) | 1: 1 on, 0 off; 3: 1 accept, 0 decline; else 0 |
 
 WorldEdits for `vein_mined` (WP09) carry 16 bytes of `params` (f32 x, y, z,
 carve radius 1.5) and `expiresAt` = respawn time; a delta whose `expiresAt`
@@ -166,8 +188,10 @@ Players (pt/ux weapons) carry their active loadout's weapon look in
 bits 0-3 = combat.yaml weapon id (0 none), bits 4-7 = material code (0
 ordinary, else 1 + the index in items.yaml `materials`: 4 iron, 5 silver,
 6 sunsteel...; the equipped item's material, else the loadout's dev
-material), bits 8-11 = socketed gem element + 1 (0 none). The zone sets it
-only when the loadout or gear changes (with every `combat_sync`), never per
+material), bits 8-11 = socketed gem element + 1 (0 none); playtest 2 (CR
+017): bit 12 = flagged for PvP (also while a turn-off waits), bit 13 = in a
+duel (countdown or fight). The zone sets it
+only when the loadout, gear, PvP flag or duel changes (with every `combat_sync`), never per
 tick; it rides the usual delta coding, ghosts and handoffs. The same
 per-loadout material codes end `combat_sync` (212) for the owner's own
 first-person view. See server/zone/internal/game/weaponlook.go and

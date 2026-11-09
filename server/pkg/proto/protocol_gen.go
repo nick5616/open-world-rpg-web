@@ -721,7 +721,7 @@ func (m *ClockPing) ToJSON() map[string]any {
 	return out
 }
 
-// HitClaim (c2s, reliable): WP13: one predicted hit on one ENEMY. attackSeq = the input frame seq that started the attack or cast; tick = the newest snapshot tick the client had (what it saw); x/y/z = attack origin, or the impact point for aimed area spells and runes. The zone validates leniently (spec 9) and answers with HitResult. Claims on players are always refused.
+// HitClaim (c2s, reliable): WP13: one predicted hit on one enemy (or, playtest 2, a player you may fight). attackSeq = the input frame seq that started the attack or cast; tick = the newest snapshot tick the client had (what it saw); x/y/z = attack origin, or the impact point for aimed area spells and runes. The zone validates leniently (spec 9) and answers with HitResult. Claims on players are refused unless the PvP rules allow the hit (playtest 2, docs/cr/017-pvp-duels.md: both flagged, different parties, no safe zone; or a duel).
 type HitClaim struct {
 	AttackSeq uint32
 	AttackID  uint16
