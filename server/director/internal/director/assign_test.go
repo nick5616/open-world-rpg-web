@@ -85,6 +85,13 @@ func TestAssignerRebalancesByLoad(t *testing.T) {
 	if err != nil || len(plan["b"]) != 8 {
 		t.Fatalf("plan %v err %v", plan, err)
 	}
+	// Right after Plan changed the map, load moves wait two cooldowns.
+	if again, _ := d.AssignOnce(ctx, world, 5*time.Second); again != nil {
+		t.Fatalf("moved right after a Plan change: %v", again)
+	}
+	now = now.Add(21 * time.Second)
+	announce(zoneregistry.Entry{ZoneID: "p", Endpoint: "ws://p", Role: zoneregistry.RolePrimary, Load: crowd})
+	announce(zoneregistry.Entry{ZoneID: "b", Endpoint: "ws://b", Role: zoneregistry.RolePool})
 	plan, err = d.AssignOnce(ctx, world, 5*time.Second) // then one load move
 	if err != nil || len(plan["b"]) != 9 {
 		t.Fatalf("want one crowded region moved to b, got %v err %v", plan, err)

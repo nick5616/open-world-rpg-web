@@ -119,10 +119,11 @@ func (d *Director) AssignOnce(ctx context.Context, worldID string, lease time.Du
 		return nil, err
 	}
 	next := zoneregistry.Plan(live, cur)
+	planChanged := !sameAssignment(cur, next)
 	// WP19b: then at most one load move (rebalance.go), and only once the
 	// zones have had RebalanceCooldown to hand the last moved region's
 	// players over and report their new load.
-	if d.Rebalance != nil && sameAssignment(cur, next) {
+	if d.Rebalance != nil && !planChanged {
 		d.rebalMu.Lock()
 		last := d.lastRebalance[worldID]
 		d.rebalMu.Unlock()
@@ -142,6 +143,17 @@ func (d *Director) AssignOnce(ctx context.Context, worldID string, lease time.Du
 	}
 	if sameAssignment(cur, next) {
 		return nil, nil
+	}
+	if d.Rebalance != nil && planChanged {
+		// Plan itself changed the map (a pool zone died or joined): its
+		// players are failing over or being handed off right now and the
+		// reported loads are stale. Hold load moves for two cooldowns.
+		d.rebalMu.Lock()
+		if d.lastRebalance == nil {
+			d.lastRebalance = map[string]time.Time{}
+		}
+		d.lastRebalance[worldID] = d.now().Add(d.RebalanceCooldown)
+		d.rebalMu.Unlock()
 	}
 	if err := zoneregistry.WriteAssignment(ctx, d.RDB, worldID, next); err != nil {
 		return nil, err

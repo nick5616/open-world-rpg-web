@@ -1,0 +1,73 @@
+[2026-11-09T11:31:16.065Z] WP16 soak "after-1000-4z-thailand-failover": 1000 bots, 4 zones, 6m, netsim thailand, kill a pool zone after 3m
+[2026-11-09T11:31:23.530Z] scratch database lodestone_wp04_wp16wp19bthai2
+[2026-11-09T11:31:53.333Z] built director, zone, bots, seedbots, mintworld
+[2026-11-09T11:31:58.497Z] }
+[2026-11-09T11:32:00.591Z] seeded 1000 bot characters (1000 new) into lodestone_wp04_wp16wp19bthai2, world dd598c70-b343-4ab5-a7fe-19190446ea46
+[2026-11-09T11:32:02.123Z] director (assigner, world dd598c70-b343-4ab5-a7fe-19190446ea46) on :18700
+[2026-11-09T11:32:08.158Z] zone-primary on :18710 behind netsim "thailand" :18711
+[2026-11-09T11:32:12.305Z] zone-pool-1 on :18712 behind netsim "thailand" :18713
+[2026-11-09T11:32:17.001Z] zone-pool-2 on :18714 behind netsim "thailand" :18715
+[2026-11-09T11:32:21.146Z] zone-pool-3 on :18716 behind netsim "thailand" :18717
+[2026-11-09T11:32:22.822Z] region owners (x-major rows): [["zone-pool-1","zone-pool-1","zone-pool-1","zone-pool-1"],["zone-pool-1","zone-pool-1","zone-pool-1","zone-pool-1"],["zone-pool-2","zone-pool-2","zone-pool-2","zone-pool-2"],["zone-pool-3","zone-pool-3","zone-primary","zone-primary"]]
+[2026-11-09T11:32:22.895Z] bots started (1000, cross mode)
+[2026-11-09T11:35:23.021Z] HARD KILL zone-pool-3 (owned 219 players): simulating a reclaimed spot VM
+[2026-11-09T11:35:29.120Z] failover: zone-pool-3's regions owned by others after 4.1 s: [["zone-pool-1","zone-primary","zone-pool-1","zone-pool-1"],["zone-pool-1","zone-primary","zone-pool-1","zone-primary"],["zone-pool-2","zone-primary","zone-pool-2","zone-pool-2"],["zone-primary","zone-primary","zone-primary","zone-primary"]]
+[2026-11-09T11:39:09.645Z] bots exited 3
+
+---- bots summary ----
+== bots: cross, 1000/1000 connected, 386 s wall (windows/amd64, go1.27.3)
+downlink kbps   avg   60.00  p50   62.34  p95   94.30  max  102.79   (budget 160)
+uplink kbps     avg    8.33  p50    8.34  p95    8.50  max    8.66   (budget 24)
+entities/view   avg   115.9  p50   125.0  p95   186.5  max   240.9
+snapshot bytes  avg   369.5  p50   384.4  p95   573.0  max   619.5
+rtt ms          p50  260.69  max  306.76
+snapshots 7605640 (full 99236), decode errors 0, apply errors 0
+prediction: 4334512 checks, 63192 mismatches (>= 1 cm), max error 194112 cm, 398479 resyncs
+terrain: {"atlasHash":"50ae4562cfd25265","botCache":{"chunks":2901,"pending":0,"hits":242233815,"misses":416,"generated":2190,"evicted":386,"dropped":0,"genErrors":0,"genMeanMs":10.639409178082193,"genMaxMs":1661.6957,"wasmQueries":416},"botHeightMaxM":314.36,"botHeightMinM":10,"genVersion":"1","seaLevel":26.04,"seed":20261108,"wasmSha256":"42a66cc191bee49dc3df23031ee1fdb24c1ef4cbe6079fbdbfa68fa07cd4372b"}
+personas map[idler:146 jumper:255 strafer:199 walker:400] kicks map[] errors map[]
+  zone_tick_ms{q="p50"}                    17.874
+  zone_tick_ms{q="p99"}                    312.079
+  zone_tick_ms{q="max"}                    1119.482
+  zone_tick_jitter_ms{q="p50"}             5.501
+  zone_tick_jitter_ms{q="p99"}             281.745
+  zone_tick_jitter_ms{q="max"}             1086.149
+  zone_players                             313
+  zone_client_down_kbps{q="max"}           150.21
+  zone_client_up_kbps{q="max"}             14.1
+  zone_aoi_entities_avg{ring="near"}       5.67
+  zone_aoi_entities_avg{ring="mid"}        26.56
+  zone_aoi_entities_avg{ring="far"}        79.19
+  zone_aoi_entities_max                    240
+  zone_snapshot_bytes_avg                  310.81
+  zone_writebehind_depth                   453
+  zone_speed_violations_total              0
+  zone_input_frames_dropped_total          29635
+  zone_terrain_chunks                      2866
+  zone_terrain_queries_total{path="cache"} 2.61283349e+08
+  zone_terrain_queries_total{path="wasm"}  3333
+  zone_terrain_generated_total             2850
+  zone_terrain_gen_ms_mean                 12.532824526315789
+  zone_terrain_gen_ms_max                  847.1945
+  zone_terrain_dropped_total               0
+handoffs 3829 by 725 bots; gap ms p50 190.9 p95 8886.3 max 35589.4; prediction after switch: 15177 checks, 10364 mismatches (504 introduced by the switch, the rest inherited from the old zone), max 175424 cm; id changes 0
+pre-connects 2109 (failed 0), standby kicks 0, drops 216, failovers 216 (gave up 0), failover ms p50 6188 max 7607, rewind m p50 65.3 max 238.6
+discoveries 731, duplicated 0, re-granted after a failover (lost with the dead zone's unsaved queue) 9
+ownership: 176 samples, listed twice across a handoff 11, truly owned twice 0, max playing-but-unowned 35, unowned two samples running 11, last [zone-pool-1=363 zone-pool-2=304 zone-primary=314]
+  zone zone-pool-2  owned 303  tick p50 17.86 p99 376.81 max 862.09 ms  players 305  stats map[cancels:145 checkpoints_fenced:146 ghost_frames_dropped:0 ghost_frames_in:16145 handoffs_in:1178 handoffs_out:1281 pending_drops:0 preconnects:574 released:0 remote_entities:1097 standby_drops:0 standbys_joined:497 states_lost:0]
+  zone zone-pool-1  owned 363  tick p50 18.80 p99 368.30 max 699.79 ms  players 363  stats map[cancels:188 checkpoints_fenced:114 ghost_frames_dropped:0 ghost_frames_in:16190 handoffs_in:950 handoffs_out:975 pending_drops:11 preconnects:542 released:0 remote_entities:1052 standby_drops:0 standbys_joined:487 states_lost:0]
+  zone zone-primary owned 315  tick p50 17.87 p99 312.08 max 1119.48 ms  players 313  stats map[cancels:137 checkpoints_fenced:147 ghost_frames_dropped:0 ghost_frames_in:16099 handoffs_in:1255 handoffs_out:1266 pending_drops:0 preconnects:784 released:0 remote_entities:1025 standby_drops:0 standbys_joined:723 states_lost:0]
+WARNING: zone zone-pool-2 tick p99 376.81 ms > 12 (spec 9 budget, informational here)
+WARNING: zone zone-pool-1 tick p99 368.30 ms > 12 (spec 9 budget, informational here)
+WARNING: zone zone-primary tick p99 312.08 ms > 12 (spec 9 budget, informational here)
+FAIL: 11 playing bots owned by no zone for two samples in a row
+zone log zone-primary: {"handoffOut":1266,"handoffIn":1255,"released":0,"lost":0,"errors":0}
+zone log zone-pool-1: {"handoffOut":976,"handoffIn":951,"released":0,"lost":0,"errors":0}
+zone log zone-pool-2: {"handoffOut":1283,"handoffIn":1180,"released":0,"lost":0,"errors":0}
+zone log zone-pool-3: {"handoffOut":327,"handoffIn":447,"released":0,"lost":0,"errors":0}
+director load moves: 5
+  2026-11-09T03:32:57.6783639-08:00 region 1,1 (51 players) zone-pool-1 -> zone-pool-3
+  2026-11-09T03:33:07.7065606-08:00 region 2,1 (122 players) zone-pool-2 -> zone-primary
+  2026-11-09T03:33:18.7023517-08:00 region 0,1 (50 players) zone-pool-1 -> zone-pool-3
+  2026-11-09T03:35:33.8111566-08:00 region 1,1 (71 players) zone-primary -> zone-pool-1
+  2026-11-09T03:35:44.0524594-08:00 region 3,2 (69 players) zone-primary -> zone-pool-2
+[2026-11-09T11:39:09.682Z] SOAK FAIL
