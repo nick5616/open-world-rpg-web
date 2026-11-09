@@ -8,7 +8,7 @@
 
 import { create } from 'zustand';
 import type { Event as ZoneEvent } from '@lodestone/contracts';
-import { decodeBitchin, decodeContainers, decodeCrafted, decodeInventory, decodeLootGranted, decodeRefusedTarget, decodeStationOpened, EV, stationKind805, u64, utf8, type Container, type Inventory, type StationKind } from './events';
+import { decodeBitchin, decodeContainers, decodeCrafted, decodeInventory, decodeLootGranted, decodeRefusedTarget, decodeStationOpened, EV, LOOT_SOURCE, stationKind805, u64, utf8, type Container, type Inventory, type StationKind } from './events';
 import { baseName, CONTAINER_LABEL, displayName, isHolo, rarityColor, REFUSAL, type WireItem } from './items';
 
 export type ToastKind = 'loot' | 'warn' | 'info';
@@ -92,7 +92,9 @@ export function reduceItemEvent(s: InventoryState, ev: ZoneEvent, now: number): 
     }
     case EV.lootGranted: {
       const list = decodeLootGranted(ev.data);
-      const t = list.map((e) => makeToast('loot', `${displayName(e)}${e.q > 1 ? ` x${e.q}` : ''}`, now, { color: rarityColor(e.r), holo: isHolo(e.r), detail: e.n ? baseName(e.b) : undefined }));
+      // A craft sends 405 (crafted) and then 401 (source 4) for the same item;
+      // the 405 already toasted "Crafted ...", so the grant stays silent.
+      const t = ev.targetId === LOOT_SOURCE.craft ? [] : list.map((e) => makeToast('loot', `${displayName(e)}${e.q > 1 ? ` x${e.q}` : ''}`, now, { color: rarityColor(e.r), holo: isHolo(e.r), detail: e.n ? baseName(e.b) : undefined }));
       return { toasts: pushToasts(s, now, ...t), stats: { ...stats, grants: stats.grants + list.length } };
     }
     case EV.bitchin: {

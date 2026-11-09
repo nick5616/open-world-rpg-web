@@ -17,7 +17,7 @@ generated table (`contracts/items.yaml` -> `ITEMS` in `@lodestone/contracts`).
 | `store.ts` | zustand store: inventory, containers, open station, last crafted, toasts, banner, panel flags, actions; pure `reduceItemEvent` |
 | `link.ts` | `attachInventory(session)` (called by `net/NetPlay.tsx` before Hello so the first 400 is never missed) and `ensureInventoryHook()` (re-hooks `netRuntime.session` if it changed and nobody attached it); the Interact senders |
 | `InventoryScreen.tsx` | The inventory (I): equipment column, 8x5 bag, gem and ore pouches, purse, the item card and actions; `window.__lodestoneInventory` is installed here |
-| `CraftPanel.tsx` | Smithing (forge/anvil: smelting and forging) or cooking (hearth/campfire: cooking and brewing) recipes with have/need, blueprint, Craft, last crafted |
+| `CraftPanel.tsx` | Smithing (forge/anvil: smelting and forging) or cooking (hearth/campfire: cooking and brewing) recipes with have/need, blueprint, Craft, last crafted; your Smithing level and progress (combat_sync skill XP) |
 | `LootHud.tsx` | Toasts, the Bitchin' banner, the `[E]` prompt and its key |
 | `LootLayer.tsx` | R3F: non-ore/gem pickups (bobbing, rarity colour, light beam for rare+, colour-cycling beam for Bitchin') and Event 406 containers (chest, buried cache, urn, crate; opened ones dimmed, chest lid open). Mounted next to `<CombatLayer />` in NetPlay |
 | `ItemIcon.tsx`, `styles.ts` | Inline-SVG icons per item kind; the shared CSS (holographic gradient, banner, tiles) |

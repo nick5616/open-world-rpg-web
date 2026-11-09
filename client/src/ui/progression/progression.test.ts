@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { COMBAT, type Event as ZoneEvent } from '@lodestone/contracts';
 import { decodeArea, decodeStats, encodeArea, encodeStats, PEV, STATS_REASON } from './events';
-import { gainLines, learnable, statsAt, tierLevel, unlocksAt, upcoming } from './gains';
+import { gainLines, learnable, skillLevel, skillProgress, skillXpFor, statsAt, tierLevel, unlocksAt, upcoming } from './gains';
 import { reduceProgressionEvent, type ProgressionState } from './store';
 import { towerPrompt, type TowerLike } from './towerPrompt';
 
@@ -103,5 +103,19 @@ describe('crystal tower prompt', () => {
     expect(towerPrompt(towers, 101, 60, 100, () => true, () => true)?.kind).toBe('attuned');
     expect(towerPrompt(towers, 120, 10, 100, () => true, no)?.kind).toBe('return');
     expect(towerPrompt(towers, 120, 10, 100, () => true, () => true)).toBeNull();
+  });
+});
+
+describe('skill progress (combat.yaml skills)', () => {
+  it('matches the Go curve and splits XP into the current level', () => {
+    expect([1, 2, 3, 4].map(skillXpFor)).toEqual([0, 12, 36, 70]);
+    expect(skillLevel(35)).toBe(2);
+    expect(skillLevel(36)).toBe(3);
+    expect(skillProgress(0)).toEqual({ level: 1, into: 0, span: 12, frac: 0, max: false });
+    expect(skillProgress(53)).toEqual({ level: 3, into: 17, span: 34, frac: 0.5, max: false });
+  });
+  it('caps at 100', () => {
+    expect(skillProgress(skillXpFor(100) + 5)).toEqual({ level: 100, into: 0, span: 0, frac: 1, max: true });
+    expect(skillProgress(skillXpFor(100) - 1).level).toBe(99);
   });
 });

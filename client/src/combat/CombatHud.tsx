@@ -12,6 +12,8 @@ import { useCombatHud } from './store';
 import { spellById } from './timeline';
 import { netRuntime } from '../net/netStore';
 import { useHudHeight } from '../hud/layout';
+import { useInventory } from '../ui/inventory/store';
+import { loadoutWeaponLabel } from '../ui/inventory/items';
 
 const spellByKey = new Map(COMBAT.spells.map((s) => [s.key, s]));
 const KEYS = ['1', '2', '3', '4'];
@@ -47,6 +49,7 @@ export function CombatHud() {
   const charges = useCombatHud((s) => s.charges);
   const downedUntil = useCombatHud((s) => s.downedUntil);
   const selected = useCombatHud((s) => s.selected);
+  const invItems = useInventory((s) => s.inv?.items);
   const root = useRef<HTMLDivElement>(null);
   const stack = useRef<HTMLDivElement>(null);
   useHudHeight(stack, '--ls-hotbar-h', active);
@@ -106,7 +109,7 @@ export function CombatHud() {
         <div style={{ display: 'flex', gap: 6 }}>
           <div data-testid="slot-weapon" data-selected={selected < 0 ? 'true' : 'false'} style={{ position: 'relative', padding: '6px 10px', background: 'rgba(8,10,16,0.6)', borderRadius: 4, minWidth: 74, textAlign: 'center', boxSizing: 'border-box', ...(selected < 0 ? SELECTED_STYLE : { border: '1px solid transparent' }) }} title="X swaps loadouts · Z (or right mouse while selected): parry / draw / charge / heavy">
             {selected < 0 && <RmbBadge />}
-            <div style={{ fontWeight: 600, textTransform: 'capitalize' }}>{lo?.weapon ?? '-'}</div>
+            <div data-testid="weapon-name" style={{ fontWeight: 600, maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{lo ? loadoutWeaponLabel(lo.weapon, activeLoadout, invItems) : '-'}</div>
             <div style={{ opacity: 0.6, fontSize: 11 }}>{SECONDARY[lo?.weapon ?? ''] ?? 'secondary'} · Z</div>
           </div>
           {(lo?.spells ?? []).map((k, i) => {
