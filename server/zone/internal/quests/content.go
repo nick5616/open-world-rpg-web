@@ -142,6 +142,83 @@ func Ward(p WardPlaces, nowMs int64) *Quest {
 		Settlement: p.Settlement, Steps: steps, Gold: WardGold, XP: WardXP, Accepted: nowMs}
 }
 
+// The first quest (playtest 2, new player onboarding): before the Ward, a
+// townsperson of the Haven town asks a new character to thin out the
+// slimes in the meadows around it, so the first goal is close by and
+// teaches talking (E) and fighting; the last line sends them on to the
+// blacksmith, and finishing it starts the Ward.
+const (
+	MeadowsKey    = "story:meadows"
+	MeadowsID     = 0x534c494d // "SLIM"
+	MeadowsSlimes = 5
+	MeadowsGold   = 15
+	MeadowsXP     = 60
+	MeadowsFamily = "slime"
+)
+
+// MeadowsReward is what the giver hands over on the way out (besides the
+// gold and XP): draughts for the road and a first piece of armour.
+var MeadowsReward = []ItemQty{{Item: "potion:health", Qty: 2}, {Item: "armor:leather_cap", Qty: 1}}
+
+// MeadowsPlaces is what "Slimes in the meadows" points at: the giver and the
+// nearest slime packs around the town.
+type MeadowsPlaces struct {
+	Settlement int
+	Town       string
+	Giver      string // the townsperson's name
+	GiverRole  int    // towns role (the talk steps match role + settlement)
+	GiverTitle string // "farmer"
+	GiverAt    Place
+	Packs      []Place // slime packs (areas), nearest first
+	Smith      string  // who the last line sends you to
+}
+
+// Meadows builds the starter quest; nil without a giver or slimes to mark.
+func Meadows(p MeadowsPlaces, nowMs int64) *Quest {
+	if p.Giver == "" || len(p.Packs) == 0 {
+		return nil
+	}
+	giver := []Marker{}
+	if p.GiverAt.OK {
+		giver = append(giver, Marker{X: p.GiverAt.X, Z: p.GiverAt.Z, Label: p.Giver + ", " + p.GiverTitle})
+	}
+	var packs []Marker
+	for _, pk := range p.Packs {
+		packs = append(packs, Marker{X: pk.X, Z: pk.Z, R: math.Max(pk.R, 18), Label: "Slimes"})
+	}
+	where := ""
+	if len(p.Packs) > 0 && p.Packs[0].Where != "" {
+		where = " The nearest lot is " + p.Packs[0].Where + "."
+	}
+	smith := nameOr(p.Smith, "the blacksmith")
+	talk := Objective{Kind: ObjTalk, Role: p.GiverRole, Settlement: p.Settlement, Site: -1}
+	steps := []Step{
+		{
+			Text:    fmt.Sprintf("Talk to %s, the %s of %s", p.Giver, p.GiverTitle, p.Town),
+			Note:    "Walk up to them and press E to talk. Townsfolk give quests and trade.",
+			Say:     fmt.Sprintf("You're new here? Then you're just in time. The slimes have crept out of the meadows again and they're eating everything green. Thin them out for me: five should teach them.%s Left click swings your sword, 1 to 4 cast the spells you know, F dodges. They're slow and soft; you'll be fine.", where),
+			Obj:     talk,
+			Markers: giver,
+		},
+		{
+			Text:    fmt.Sprintf("Kill %d slimes in the meadows around %s", MeadowsSlimes, p.Town),
+			Note:    "The marked meadows have slimes. Left click attacks, 1-4 cast spells, F dodges. Health comes back out of combat; R drinks a draught.",
+			Obj:     Objective{Kind: ObjKill, Family: MeadowsFamily, Count: MeadowsSlimes, Settlement: -1, Site: -1},
+			Markers: packs,
+		},
+		{
+			Text:    fmt.Sprintf("Return to %s in %s", p.Giver, p.Town),
+			Note:    "Your reward waits in town.",
+			Say:     fmt.Sprintf("Ha! That'll keep them off the cabbages. Here's your pay, a couple of draughts for the road, and my old cap: wear it (I, your pack). Now, if you mean to stay out after dark, go and see %s at the forge. Slimes are nothing next to what walks at night.", smith),
+			Obj:     talk,
+			Markers: giver,
+			Grant:   MeadowsReward,
+		},
+	}
+	return &Quest{ID: MeadowsID, Key: MeadowsKey, Kind: KindStory, Title: "Slimes in the meadows", Giver: p.Giver + ", " + p.GiverTitle + " of " + p.Town,
+		Settlement: p.Settlement, Steps: steps, Gold: MeadowsGold, XP: MeadowsXP, Accepted: nowMs}
+}
+
 func nameOr(s, or string) string {
 	if s == "" {
 		return or

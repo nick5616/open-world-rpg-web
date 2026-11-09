@@ -8,7 +8,7 @@
 // A quest is a list of steps; exactly one step is current. A step has one
 // objective (talk to an NPC role in a settlement, hold items, reach a place,
 // know a spell, clear the enemies at a site, kill a demon near a site, hand
-// items in at a settlement) and the markers the map and compass show while
+// items in at a settlement, kill a number of one enemy family) and the markers the map and compass show while
 // it is current. Steps whose objective already holds when they become
 // current complete at once (a player who already mined the ore skips to the
 // blueprint). Everything a quest needs is stored in the log itself (the
@@ -32,6 +32,7 @@ const (
 	ObjClear  = "clear"  // the enemies at Site (within R of X, Z) are dead
 	ObjSlay   = "slay"   // kill a demon within R of (X, Z)
 	ObjTurnIn = "turnin" // hand Items[0] in at Settlement's board or bounty keeper
+	ObjKill   = "kill"   // kill Count enemies of Family (playtest 2: the starter quest's slimes)
 )
 
 // Quest kinds (Event 950 `kind`).
@@ -81,6 +82,8 @@ type Objective struct {
 	X          float64   `json:"x,omitempty"`
 	Z          float64   `json:"z,omitempty"`
 	R          float64   `json:"r,omitempty"`
+	Family     string    `json:"family,omitempty"` // kill: the enemy family (combat.yaml), "" any
+	Count      int       `json:"count,omitempty"`  // kill: how many
 }
 
 // Step is one stage of a quest.
@@ -109,6 +112,9 @@ type Quest struct {
 	// Progress is the current step's count (have/turn-in: units held), for
 	// the HUD only; the objective is re-evaluated, never trusted from here.
 	Progress int `json:"progress,omitempty"`
+	// Tally counts the current kill step's kills (saved: kills are events,
+	// not a state the world can be asked about again).
+	Tally int `json:"tally,omitempty"`
 }
 
 // Current is the current step (nil when finished).
@@ -282,7 +288,8 @@ type Happening struct {
 
 // Signal is an event in the world a step may be waiting for.
 type Signal struct {
-	Kind       string // ObjTalk, ObjClear, ObjSlay, ObjTurnIn
+	Kind       string // ObjTalk, ObjClear, ObjSlay, ObjTurnIn, ObjKill
+	Family     string // kill: the enemy's family
 	Role       int
 	Settlement int
 	Site       int     // clear: the cleared group's site (-1 none)
@@ -291,9 +298,11 @@ type Signal struct {
 
 // met reports whether the step's objective holds now (state objectives) or
 // is satisfied by sig (event objectives).
-func met(s *Step, f Facts, sig *Signal) bool {
+func met(q *Quest, s *Step, f Facts, sig *Signal) bool {
 	o := &s.Obj
 	switch o.Kind {
+	case ObjKill:
+		return q.Tally >= max(1, o.Count)
 	case ObjHave:
 		for _, it := range o.Items {
 			if f.Have(it.Item) >= it.Qty {
@@ -324,8 +333,10 @@ func met(s *Step, f Facts, sig *Signal) bool {
 }
 
 // progress is the HUD count for a step.
-func progress(s *Step, f Facts) int {
+func progress(q *Quest, s *Step, f Facts) int {
 	switch s.Obj.Kind {
+	case ObjKill:
+		return min(q.Tally, max(1, s.Obj.Count))
 	case ObjHave, ObjTurnIn:
 		if len(s.Obj.Items) > 0 {
 			return min(f.Have(s.Obj.Items[0].Item), s.Obj.Items[0].Qty)
@@ -343,17 +354,26 @@ func (l *Log) Advance(f Facts, sig *Signal, out []Happening) []Happening {
 		qs := sig
 		for {
 			s := q.Current()
-			if s == nil || !met(s, f, qs) {
+			if s == nil {
+				break
+			}
+			if qs != nil && qs.Kind == ObjKill && s.Obj.Kind == ObjKill && (s.Obj.Family == "" || s.Obj.Family == qs.Family) {
+				q.Tally++ // the kill is used up by this step
+				l.dirty = true
+				qs = nil
+			}
+			if !met(q, s, f, qs) {
 				break
 			}
 			out = append(out, Happening{Quest: q, Step: q.Step})
 			q.Step++
 			q.Progress = 0
+			q.Tally = 0
 			l.dirty = true
 			qs = nil // one signal completes one step; later steps need their own
 		}
 		if s := q.Current(); s != nil {
-			if p := progress(s, f); p != q.Progress {
+			if p := progress(q, s, f); p != q.Progress {
 				q.Progress = p
 				l.dirty = true
 			}

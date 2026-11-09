@@ -52,6 +52,9 @@ func view(q *Quest) WireQuest {
 		if (s.Obj.Kind == ObjHave || s.Obj.Kind == ObjTurnIn) && len(s.Obj.Items) > 0 && s.Obj.Items[0].Qty > 1 {
 			w.Need = s.Obj.Items[0].Qty
 		}
+		if s.Obj.Kind == ObjKill && s.Obj.Count > 1 {
+			w.Need = s.Obj.Count
+		}
 		w.TurnIn = s.Obj.Kind == ObjTurnIn
 	}
 	return w
