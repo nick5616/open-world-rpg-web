@@ -5,7 +5,8 @@ import type { CellMesh } from './roads';
 import type { StructureMesh } from './structures';
 
 export type BuildingsIn =
-  | { type: 'init'; atlas: Uint8Array }
+  /** wasmUrl: the world's generator (WorldRuntime.wasmUrl; archived builds for older genVersions). */
+  | { type: 'init'; atlas: Uint8Array; wasmUrl: string }
   | { type: 'settlement'; id: number; index: number }
   | { type: 'structure'; id: number; index: number }
   /** Find scatter to hide in the not-yet-checked chunks within `radius` of (x, z), at most `max` chunks per reply. */

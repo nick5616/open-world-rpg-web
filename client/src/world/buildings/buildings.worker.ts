@@ -13,7 +13,6 @@
 // terrain").
 
 import { loadWorldgen, parseTowns, townsBytes, type AtlasHandle, type Towns, type Worldgen } from '@lodestone/worldgen';
-import wasmUrl from '../../../../worldgen/pkg/worldgen.wasm?url';
 import { buildSettlementMesh } from './kit';
 import { meshTransferables } from './meshBuilder';
 import { buildRoadCells } from './roads';
@@ -35,7 +34,7 @@ let ready = false;
 const post = (m: BuildingsOut, transfer: Transferable[] = []) => self.postMessage(m, transfer);
 const heightAt = (x: number, z: number) => wg!.collisionHeight(atlas!, x, z);
 
-async function init(atlasBytes: Uint8Array): Promise<void> {
+async function init(atlasBytes: Uint8Array, wasmUrl: string): Promise<void> {
   const t0 = performance.now();
   const module = await WebAssembly.compileStreaming(fetch(wasmUrl)).catch(async () => WebAssembly.compile(await (await fetch(wasmUrl)).arrayBuffer()));
   wg = await loadWorldgen(module);
@@ -95,7 +94,7 @@ function handle(m: BuildingsIn): void {
   try {
     switch (m.type) {
       case 'init':
-        void init(m.atlas).catch((err) => post({ type: 'error', id: 0, message: `init: ${String(err)}` }));
+        void init(m.atlas, m.wasmUrl).catch((err) => post({ type: 'error', id: 0, message: `init: ${String(err)}` }));
         break;
       case 'settlement': {
         const t0 = performance.now();

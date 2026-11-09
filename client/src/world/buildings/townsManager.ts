@@ -121,7 +121,7 @@ export class TownsManager {
     this.worker.onmessage = (e: MessageEvent<BuildingsOut>) => this.onMessage(e.data);
     this.worker.onerror = (e) => console.warn('[towns] worker error', e.message);
     const atlas = runtime.atlas.bytes();
-    this.post({ type: 'init', atlas }, [atlas.buffer]);
+    this.post({ type: 'init', atlas, wasmUrl: runtime.wasmUrl }, [atlas.buffer]);
   }
 
   private post(m: BuildingsIn, transfer: Transferable[] = []): void {

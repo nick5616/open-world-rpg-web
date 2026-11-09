@@ -29,13 +29,16 @@ import (
 //   - placeholder world row (seeded before minting existed): opened from
 //     spec_from_seed(seed), exactly what minting stores; the account service
 //     mints the row on its next start (or run server/pkg/cmd/mintworld).
-//   - minted row: gen_version must match the wasm and the rebuilt atlas must
+//   - minted row: gen_version must match the wasm (or an archived build of
+//     that version, worldgen/archive/) and the rebuilt atlas must
 //     match atlas_hash, else the zone refuses to start (spec 5 rule 6: a
 //     world never shifts under its players).
 func loadTerrain(ctx context.Context, w game.World, log *slog.Logger) (movement.Ground, *worldhost.Terrain, game.World, error) {
 	require := env.Bool("LODESTONE_ZONE_REQUIRE_TERRAIN", false) || env.Str("LODESTONE_ENV", "development") == "production"
 	start := time.Now()
-	mod, err := worldhost.LoadFromEnv(ctx)
+	// The generator this world is pinned to: worldgen.wasm, or the archived
+	// build of an older genVersion (worldgen/archive/README.md).
+	mod, err := worldhost.LoadForGenVersion(ctx, w.GenVersion)
 	if err != nil {
 		if errors.Is(err, worldhost.ErrNoWasm) && !require {
 			log.Warn("NO TERRAIN: worldgen.wasm not found; simulating on flat ground (dev only). Run `npm run build:wasm`.", "err", err)

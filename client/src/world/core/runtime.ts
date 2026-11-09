@@ -11,7 +11,7 @@
 //  4. The worker pool, each worker with its own copy of the atlas.
 
 import { caveGraphBytes, hex64, loadWorldgen, parseCaveGraph, type AtlasData, type AtlasHandle, type CaveGraph, type Worldgen } from '@lodestone/worldgen';
-import wasmUrl from '../../../../worldgen/pkg/worldgen.wasm?url';
+import { wasmUrlFor } from './wasmFor';
 import { ATLAS_STORE, cacheGet, cachePut, worldDb } from './cacheDb';
 import { poolSize, WorkerPool, type WorkerLike } from './workerPool';
 import type { InitMsg, ResultMsg } from './protocol';
@@ -73,6 +73,8 @@ export class WorldRuntime {
     readonly pool: WorkerPool,
     readonly seed: string,
     readonly timings: LoadTimings,
+    /** The generator this world runs on (archived builds for older genVersions: ./wasmFor). */
+    readonly wasmUrl: string,
     townsBytes: Uint8Array | null = null,
   ) {
     this.data = atlas.data;
@@ -119,9 +121,10 @@ export class WorldRuntime {
     return { x: this.data.spawn.x, z: this.data.spawn.z };
   }
 
-  static async load(seed: string, opts: { meshCache: boolean; onStatus?: (s: string) => void }): Promise<WorldRuntime> {
+  static async load(seed: string, opts: { meshCache: boolean; onStatus?: (s: string) => void; genVersion?: string }): Promise<WorldRuntime> {
     const t0 = performance.now();
     opts.onStatus?.('Loading generator');
+    const wasmUrl = wasmUrlFor(opts.genVersion);
     const [module, db] = await Promise.all([WebAssembly.compileStreaming(fetch(wasmUrl)).catch(async () => WebAssembly.compile(await (await fetch(wasmUrl)).arrayBuffer())), worldDb()]);
     const wg = await loadWorldgen(module);
     const t1 = performance.now();
@@ -157,7 +160,7 @@ export class WorldRuntime {
     opts.onStatus?.('Raising towns');
     const towns = await townsP;
     const t4 = performance.now();
-    return new WorldRuntime(wg, atlas, pool, seed, { wasmMs: t1 - t0, atlasMs: t2 - t1, atlasSource: source, poolMs: t3 - t2, totalMs: t4 - t0, townsMs: towns?.ms }, towns?.bytes ?? null);
+    return new WorldRuntime(wg, atlas, pool, seed, { wasmMs: t1 - t0, atlasMs: t2 - t1, atlasSource: source, poolMs: t3 - t2, totalMs: t4 - t0, townsMs: towns?.ms }, wasmUrl, towns?.bytes ?? null);
   }
 
   dispose(): void {

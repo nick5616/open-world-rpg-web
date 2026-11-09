@@ -40,7 +40,9 @@ func openTerrain(info zoneInfo, mode string) (*worldhost.Terrain, error) {
 	if info.AtlasHash == "" {
 		return nil, fmt.Errorf("-terrain on, but the zone reports no terrain (flat fallback, or an old zone)")
 	}
-	mod, err := worldhost.LoadFromEnv(context.Background())
+	// The generator the zone's world is pinned to (an archived build for an
+	// older genVersion: worldgen/archive/README.md).
+	mod, err := worldhost.LoadForGenVersion(context.Background(), info.GenVersion)
 	if err != nil {
 		return nil, err
 	}
