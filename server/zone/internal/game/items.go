@@ -629,7 +629,7 @@ func (s *Server) applyGear(sess *session) {
 		p.Charges = n
 		changed = true
 	}
-	if _, look := weaponLooks(sess); look != e.TypeID {
+	if _, look := weaponLooks(sess); look != e.TypeID&^typePvPMask {
 		changed = true // pt/ux: a different material (iron -> sunsteel sword) shows on the avatar
 	}
 	if changed {

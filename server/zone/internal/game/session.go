@@ -350,6 +350,10 @@ func (s *Server) drainTaken(sess *session, now time.Time) {
 				s.questInteract(sess, it) // quests: accept, abandon, turn in, track (quests.go)
 				continue
 			}
+			if it.TargetKind == InteractPvP {
+				s.pvpInteract(sess, it) // playtest 2: PvP flag, duels (pvp.go, duel.go)
+				continue
+			}
 			if it.TargetKind == combat.InteractCombat {
 				s.handleCombatInteract(sess, it) // WP13: loadouts, equip, learn (combat.go)
 				continue

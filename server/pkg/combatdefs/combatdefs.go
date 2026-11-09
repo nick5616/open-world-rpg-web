@@ -390,6 +390,8 @@ type Defs struct {
 	// Leveling and Difficulty are playtest 1's (CR 012, decision 0021).
 	Leveling   Leveling   `json:"leveling"`
 	Difficulty Difficulty `json:"difficulty"`
+	// PvP is playtest 2's opt-in PvP and party duels (CR 017).
+	PvP PvP `json:"pvp"`
 
 	// Indexes (built at load).
 	moveByID    map[int]*Move
@@ -653,6 +655,24 @@ type Difficulty struct {
 	DemonSafeBelow   int              `json:"demonSafeBelow"`
 	DemonSafeMarginM float64          `json:"demonSafeMarginM"`
 	Tiers            []DifficultyTier `json:"tiers"`
+}
+
+// PvP is combat.yaml's pvp block (playtest 2, CR 017): open PvP between
+// flagged players outside safe zones, duels between party members.
+type PvP struct {
+	DamageMult        float64 `json:"damageMult"`
+	FlagOffDelayS     float64 `json:"flagOffDelayS"`
+	ToggleCooldownS   float64 `json:"toggleCooldownS"`
+	CombatLockS       float64 `json:"combatLockS"`
+	SettlementMarginM float64 `json:"settlementMarginM"`
+	Duel              struct {
+		ChallengeRangeM float64 `json:"challengeRangeM"`
+		AnswerS         float64 `json:"answerS"`
+		CountdownS      float64 `json:"countdownS"`
+		RingRadiusM     float64 `json:"ringRadiusM"`
+		OutsideForfeitS float64 `json:"outsideForfeitS"`
+		MaxS            float64 `json:"maxS"`
+	} `json:"duel"`
 }
 
 // Haven is the Haven tier (index 0).

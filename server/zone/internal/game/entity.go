@@ -41,6 +41,7 @@ type Entity struct {
 	cbt         *combat.Player
 	npc         *combat.Enemy
 	npcActivity uint8
+	pvp         *pvpPlayer // playtest 2: PvP flag and duel (pvp.go); nil until first used
 
 	drownedEvent bool // WP10: a frame this tick drowned + respawned the player (Event 100)
 

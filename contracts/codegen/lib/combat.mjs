@@ -317,6 +317,18 @@ export function parseCombat(doc, consts) {
   if (tiers[0].demons !== 0) fail('difficulty.tiers.haven: no demons in the Haven');
   const difficulty = { cellM: df.cellM, havenRadiusM: df.havenRadiusM, maxStep: df.maxStep, neighbourWeight: df.neighbourWeight, dangerBonus: df.dangerBonus, maxLevel: df.maxLevel, stampReachM: df.stampReachM, demonSafeBelow: df.demonSafeBelow, demonSafeMarginM: df.demonSafeMarginM, tiers };
 
+  // Playtest 2 (CR 017): opt-in PvP and party duels.
+  const pv = doc.pvp;
+  if (!pv || !pv.duel) fail('pvp: missing (CR 017)');
+  for (const k of ['damageMult', 'flagOffDelayS', 'toggleCooldownS', 'combatLockS', 'settlementMarginM']) num(pv[k], `pvp.${k}`);
+  for (const k of ['challengeRangeM', 'answerS', 'countdownS', 'ringRadiusM', 'outsideForfeitS', 'maxS']) num(pv.duel[k], `pvp.duel.${k}`);
+  if (pv.damageMult <= 0 || pv.damageMult > 1) fail('pvp.damageMult: 0 < m <= 1 (PvP never hits harder than PvE)');
+  if (pv.duel.ringRadiusM * 2 < pv.duel.challengeRangeM) fail('pvp.duel.ringRadiusM: the ring must hold two players challengeRangeM apart');
+  const pvp = {
+    damageMult: pv.damageMult, flagOffDelayS: pv.flagOffDelayS, toggleCooldownS: pv.toggleCooldownS, combatLockS: pv.combatLockS, settlementMarginM: pv.settlementMarginM,
+    duel: { challengeRangeM: pv.duel.challengeRangeM, answerS: pv.duel.answerS, countdownS: pv.duel.countdownS, ringRadiusM: pv.duel.ringRadiusM, outsideForfeitS: pv.duel.outsideForfeitS, maxS: pv.duel.maxS },
+  };
+
   const pairs = {};
   for (const [a, list] of Object.entries(doc.effectiveness.pairs)) pairs[elIndex(a, 'effectiveness')] = list.map((d) => elIndex(d, 'effectiveness'));
 
@@ -348,6 +360,7 @@ export function parseCombat(doc, consts) {
     demons,
     leveling,
     difficulty,
+    pvp,
   };
 }
 
@@ -408,6 +421,8 @@ export interface CombatDefs {
   leveling: LevelingDef;
   /** Playtest 1 (CR 012): discovery-stamped area difficulty. */
   difficulty: DifficultyDef;
+  /** Playtest 2 (CR 017): opt-in PvP and party duels. */
+  pvp: PvpDef;
 }
 export interface LevelingDef {
   health: { base: number; perLevel: number }; damagePctPerLevel: number; stamina: { perLevel: number; max: number };
@@ -418,6 +433,10 @@ export interface DifficultyTierDef { key: string; name: string; minLevel: number
 export interface DifficultyDef {
   cellM: number; havenRadiusM: number; maxStep: number; neighbourWeight: number; dangerBonus: number; maxLevel: number; stampReachM: number;
   demonSafeBelow: number; demonSafeMarginM: number; tiers: DifficultyTierDef[];
+}
+export interface PvpDef {
+  damageMult: number; flagOffDelayS: number; toggleCooldownS: number; combatLockS: number; settlementMarginM: number;
+  duel: { challengeRangeM: number; answerS: number; countdownS: number; ringRadiusM: number; outsideForfeitS: number; maxS: number };
 }
 `;
 

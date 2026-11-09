@@ -754,25 +754,14 @@ func (w *World) evade(p *Player, s *strike, how int32) {
 	w.toPlayer(p.ID, Out{Ev: ev(EvEvaded, p.ID, s.enemy.ID, how, p.Pos, nil)})
 }
 
-// hurtPlayer is THE ONLY way a player loses health, and its only callers are
-// enemy strikes and enemy projectiles (spec 2: no PvP of any kind).
+// hurtPlayer is how enemies lower a player's health; its only callers are
+// enemy strikes and enemy projectiles. The only other way is a PvP hit the
+// game layer allowed (hurtByPlayer, pvp.go; playtest 2, CR 017).
 func (w *World) hurtPlayer(p *Player, dmg float64, src *Enemy, att *combatdefs.EnemyAttack) {
 	if p.Downed || src == nil {
 		return
 	}
-	if p.Profile.Knows("thick_bark") {
-		dmg *= 0.95
-	}
-	if p.Profile.Knows("undergrowth") {
-		dmg *= 0.95
-	}
-	dmg *= 1 - p.Gear.ArmorPct/100 // WP14 armor
-	if p.shield > 0 && w.tick < p.shieldEnd {
-		a := math.Min(p.shield, dmg)
-		p.shield -= a
-		dmg -= a
-		w.toPlayer(p.ID, Out{Ev: ev(EvShield, p.ID, 0, int32(math.Round(p.shield)), p.Pos, nil)})
-	}
+	dmg, _ = w.mitigate(p, dmg)
 	dmg = math.Round(dmg)
 	p.lastHurtTick = w.tick
 	p.inCombatTick = w.tick
@@ -788,16 +777,42 @@ func (w *World) hurtPlayer(p *Player, dmg float64, src *Enemy, att *combatdefs.E
 	w.toPlayer(p.ID, Out{Ev: ev(EvPlayerHurt, p.ID, src.ID, int32(dmg), src.Pos, []byte{byte(aid)})})
 	w.near(p.Pos, 64, p.ID, Out{Ev: ev(EvStrikeHit, p.ID, src.ID, int32(dmg), p.Pos, nil)})
 	if p.HP <= 0 {
-		p.HP = 0
-		p.Downed = true
-		p.respawnTick = w.tick + secondsToTicks(constants.PlayerRespawnS)
-		w.Stats.Downs++
-		w.near(p.Pos, 64, 0, Out{Ev: ev(EvPlayerDowned, p.ID, src.ID, int32(constants.PlayerRespawnS*1000), p.Pos, nil)})
-		for _, e := range w.enemies {
-			delete(e.threat, p.ID)
-			if e.Target == p.ID {
-				e.Target = 0
-			}
+		w.downPlayer(p, src.ID)
+	}
+}
+
+// mitigate applies a player's passives, armor and shield to incoming damage.
+func (w *World) mitigate(p *Player, dmg float64) (float64, bool) {
+	if p.Profile.Knows("thick_bark") {
+		dmg *= 0.95
+	}
+	if p.Profile.Knows("undergrowth") {
+		dmg *= 0.95
+	}
+	dmg *= 1 - p.Gear.ArmorPct/100 // WP14 armor
+	shielded := false
+	if p.shield > 0 && w.tick < p.shieldEnd {
+		a := math.Min(p.shield, dmg)
+		p.shield -= a
+		dmg -= a
+		shielded = a > 0
+		w.toPlayer(p.ID, Out{Ev: ev(EvShield, p.ID, 0, int32(math.Round(p.shield)), p.Pos, nil)})
+	}
+	return dmg, shielded
+}
+
+// downPlayer puts a player at 0 health down until the respawn (by = the
+// enemy or, in open PvP, the player that did it).
+func (w *World) downPlayer(p *Player, by uint32) {
+	p.HP = 0
+	p.Downed = true
+	p.respawnTick = w.tick + secondsToTicks(constants.PlayerRespawnS)
+	w.Stats.Downs++
+	w.near(p.Pos, 64, 0, Out{Ev: ev(EvPlayerDowned, p.ID, by, int32(constants.PlayerRespawnS*1000), p.Pos, nil)})
+	for _, e := range w.enemies {
+		delete(e.threat, p.ID)
+		if e.Target == p.ID {
+			e.Target = 0
 		}
 	}
 }

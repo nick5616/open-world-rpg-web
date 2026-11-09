@@ -22,8 +22,9 @@
 # the elemental forms and the new passives are PROPOSALS pending Nicole's
 # approval (docs/proposals/spell-names.md); they are listed under `pending`.
 # Ported wizard-wars names are unchanged.
-version: 3   # v2: WP15 (docs/cr/011-wp15-night-chemistry.md): materials, killsDemons on the Light tree and form, demons
+version: 4   # v2: WP15 (docs/cr/011-wp15-night-chemistry.md): materials, killsDemons on the Light tree and form, demons
              # v3: playtest 1 (docs/cr/012-progression-difficulty.md): slimes, the beginner table, leveling, discovery-stamped difficulty tiers
+             # v4: playtest 2 (docs/cr/017-pvp-duels.md): opt-in PvP and party duels (the pvp block)
 
 elements: [fire, ice, lightning, earth, wind, light, dark, void] # index = worldgen element id; 8 = physical
 
@@ -799,3 +800,30 @@ difficulty:
     - {key: perilous, name: Perilous Lands, minLevel: 8, beginner: 0, elite: 1, demons: 0.7, greater: 0.6, demonSpeed: 1, lords: false, bosses: true, defense: true}
     - {key: dread, name: Dreadlands, minLevel: 13, beginner: 0, elite: 1.3, demons: 1, greater: 1, demonSpeed: 1, lords: true, bosses: true, defense: true}
     - {key: deadly, name: The Deadlands, minLevel: 20, beginner: 0, elite: 1.6, demons: 1.25, greater: 1.5, demonSpeed: 1.05, lords: true, bosses: true, defense: true}
+
+pvp:
+  # Playtest 2 (CR 017): opt-in PvP between players who are not in the same
+  # party, and duels between party members. Applied by the zone
+  # (server/zone/internal/game/pvp.go, duel.go; combat.World.ClaimPlayer) and
+  # shown by the client (client/src/ui/pvp).
+  # Player-vs-player damage = what the same hit would deal to a physical
+  # enemy (level, skill, gear, crit) x damageMult, then the victim's armor and
+  # shields. Applies to open PvP and to duels.
+  damageMult: 0.5
+  # Turning the flag off takes flagOffDelayS; a PvP hit given or taken while
+  # it waits restarts the wait (no flagging off to escape a fight).
+  flagOffDelayS: 10
+  # Flag requests are at least toggleCooldownS apart, and refused within
+  # combatLockS of dealing or taking any damage.
+  toggleCooldownS: 5
+  combatLockS: 6
+  # Safe zones (no open PvP): every settlement out to its radius plus
+  # settlementMarginM, and the Haven (difficulty.havenRadiusM around spawn).
+  settlementMarginM: 20
+  duel:
+    challengeRangeM: 30   # challenger and challenged within this distance
+    answerS: 20           # the challenge expires unanswered after this
+    countdownS: 3         # 3-2-1 after accepting
+    ringRadiusM: 25       # around the midpoint of the two at the accept
+    outsideForfeitS: 5    # outside the ring longer than this forfeits
+    maxS: 180             # the fight is a draw after this

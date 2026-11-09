@@ -116,6 +116,10 @@ type Player struct {
 
 	frames [frameRing]frameRec
 	nFrame int
+	// Playtest 2 (CR 017): positions by zone tick, for PvP hit claims
+	// (ClaimPlayer looks back like Claim does over an enemy's history).
+	hist  [pvpHist]posRec
+	nHist int
 
 	lastHurtTick uint32
 	Downed       bool
@@ -250,7 +254,7 @@ func (p *Player) log(a Action) *Action {
 // Refusal reasons for HitResult.flags and the cast_refused Event
 // (contracts/events.md).
 const (
-	RefuseNotEnemy     = 1 // the target is a player (PvP never) or not an enemy
+	RefuseNotEnemy     = 1 // not an enemy, and not a player you may fight (one of you is not flagged for PvP: CR 017)
 	RefuseNoTarget     = 2
 	RefuseDead         = 3
 	RefuseUnknown      = 4
