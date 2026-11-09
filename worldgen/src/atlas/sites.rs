@@ -26,6 +26,14 @@ const VIS_RADIUS: f64 = 800.0;
 const TOWER_RADIUS: f64 = 1500.0;
 const TOWER_HEIGHT: f64 = 30.0;
 const MAX_SITES_PER_REGION: usize = 44;
+/// Density pass (genVersion 2): extra hamlets keep this far from other
+/// settlements (centre to centre), have this footprint radius, minor POIs
+/// are added until every candidate is within `DENSE_GAP` of a site edge, and
+/// a region holds at most `MAX_SITES_DENSE` sites in all.
+const EXTRA_SETTLE_SPACE: f64 = 270.0;
+const HAMLET_R: f64 = 40.0;
+const DENSE_GAP: f64 = 120.0;
+const MAX_SITES_DENSE: usize = 80;
 /// Gap filling stops once at most this fraction of walkable nodes lacks a
 /// visible POI within 800 m (spec 5's rule "as far as budget allows").
 const UNCOVERED_TARGET: f64 = 0.02;
@@ -546,6 +554,111 @@ pub fn place(w: &mut World) {
         cover.or(&v);
         site_vis.push(v);
     }
+
+    // ---- 6. density (genVersion 2, playtest 1 "the game feels a little too
+    // spread out"): extra hamlets between the settlements, then minor points
+    // of interest (landmarks, small ruins, shrines, enemy camps, watchtowers)
+    // wherever dry land is still far from everything. Appended after the
+    // coverage pass, so every earlier site keeps its index, id and place.
+    let first_dense = p.sites.len();
+    let extra_total = libm::round(6.0 + 10.0 * dens) as usize;
+    let mut extra = 0;
+    for &(s, k) in &scored {
+        if extra >= extra_total {
+            break;
+        }
+        let (x, z) = node_xz(k);
+        let r = region_of(x, z);
+        let in_region = p.sites.iter().filter(|st| st.category == S::CAT_SETTLEMENT && st.region as usize == r).count();
+        if in_region >= 6 || p.region_count[r] >= MAX_SITES_DENSE || !p.spacing_ok(x, z, HAMLET_R, S::CAT_SETTLEMENT, 0, EXTRA_SETTLE_SPACE) {
+            continue;
+        }
+        let si = p.push(k, S::CAT_SETTLEMENT, 0, S::SIZE_HAMLET, HAMLET_R, 12.0, s);
+        // Like every settlement, a waypoint stone in its square (4a).
+        let wi = p.push(k, S::CAT_POI, S::POI_WAYPOINT, 1, 4.0, 5.0, 0.0);
+        p.sites[wi].link = si as u16;
+        extra += 1;
+    }
+    // Minor points of interest, farthest-first: the candidate whose nearest
+    // site edge is farthest gets one, until every candidate is within
+    // DENSE_GAP of a site edge or its region is full.
+    let edge = |sites: &[Site], x: f64, z: f64| -> f64 {
+        sites
+            .iter()
+            .map(|st| libm::sqrt((st.x - x) * (st.x - x) + (st.z - z) * (st.z - z)) - st.radius)
+            .fold(f64::INFINITY, f64::min)
+    };
+    let mut cd: Vec<f64> = cands
+        .iter()
+        .map(|c| if w.slope[c.k] < 30.0 { edge(&p.sites, c.x, c.z) } else { f64::NEG_INFINITY })
+        .collect();
+    let mut dense_n = 0u64;
+    loop {
+        let mut best: Option<usize> = None;
+        for ci in 0..cands.len() {
+            if best.is_none_or(|b| cd[ci] > cd[b]) {
+                best = Some(ci);
+            }
+        }
+        let Some(ci) = best else { break };
+        if cd[ci] < DENSE_GAP {
+            break;
+        }
+        let c = &cands[ci];
+        if p.region_count[c.region] >= MAX_SITES_DENSE {
+            cd[ci] = f64::NEG_INFINITY;
+            continue;
+        }
+        let u = unit(hash(seed, STREAM_SITE ^ 0x4445_4E53, dense_n as i64, 0, 0)); // "DENS"
+        dense_n += 1;
+        let reg = &regions[c.region];
+        let slope = w.slope[c.k];
+        let d_spawn = libm::sqrt((c.x - spawn.0) * (c.x - spawn.0) + (c.z - spawn.1) * (c.z - spawn.1));
+        // Keep the spawn Haven (server difficulty: areas within 420 m of the
+        // spawn, cell corners to ~600 m) calm: no camps near it.
+        let camp_ok = d_spawn > 750.0 && p.dist_to_settlement(c.x, c.z) > 250.0 && slope < 18.0;
+        let weights = [
+            0.32,                                  // landmark
+            if slope < 25.0 { 0.24 } else { 0.0 }, // small ruin
+            0.16,                                  // shrine
+            if camp_ok { 0.16 } else { 0.0 },      // enemy camp
+            if slope < 25.0 { 0.12 } else { 0.0 }, // ruined watchtower
+        ];
+        let pick = weighted_pick(&weights, u);
+        let (cat, kind, size, radius, vis_h) = match pick {
+            0 => (S::CAT_POI, S::POI_LANDMARK, landmark_variant(w.biome[c.k], rand01(seed, 60, c.k)), 10.0, 12.0),
+            1 => (S::CAT_STRUCTURE, S::ST_RUIN, ((reg.danger * 2.0 + u) as u8).min(1), 16.0, 8.0),
+            2 => (S::CAT_STRUCTURE, S::ST_SHRINE, ((reg.danger * 2.0 + u) as u8).min(1), 12.0, 8.0),
+            3 => (
+                S::CAT_POI,
+                S::POI_ENEMY_CAMP,
+                ((reg.danger * 2.0 + rand01(seed, 61, c.k)) as u8).min(2),
+                16.0,
+                6.0,
+            ),
+            _ => (S::CAT_STRUCTURE, S::ST_WATCHTOWER, ((reg.danger * 2.0) as u8).min(1), 10.0, 18.0),
+        };
+        if !p.spacing_ok(c.x, c.z, radius, 255, 255, 0.0) {
+            cd[ci] = f64::NEG_INFINITY;
+            continue;
+        }
+        let i = p.push(c.k, cat, kind, size, radius, vis_h, cd[ci]);
+        if cat == S::CAT_STRUCTURE {
+            p.sites[i].element = if rand01(seed, 62, c.k) < 0.7 { reg.elem } else { reg.elem2 };
+            p.sites[i].yaw = (hash(seed, STREAM_SITE, c.k as i64, 9, 0) >> 48) as u16;
+        }
+        let (nx, nz, nr) = (p.sites[i].x, p.sites[i].z, p.sites[i].radius);
+        for (cj, cc) in cands.iter().enumerate() {
+            if cd[cj] > f64::NEG_INFINITY {
+                cd[cj] = cd[cj].min(libm::sqrt((nx - cc.x) * (nx - cc.x) + (nz - cc.z) * (nz - cc.z)) - nr);
+            }
+        }
+    }
+    for st in &p.sites[first_dense..] {
+        let v = viewshed(&w.h, st.x, st.z, st.vis_h, VIS_RADIUS);
+        cover.or(&v);
+        site_vis.push(v);
+    }
     let covered = walk.and_count(&cover);
 
     // Per-node count of visible sites (debug map, WP12 hints).
@@ -637,9 +750,7 @@ fn feature_nodes(w: &World, prom: &[f64], ground: &[bool]) -> Vec<usize> {
                         }
                     }
                 }
-                let ridge = (i + j) % 2 == 0
-                    && prom[k] > 10.0
-                    && ((h[k] > h[k - 1] && h[k] > h[k + 1]) || (h[k] > h[k - N] && h[k] > h[k + N]));
+                let ridge = (i + j) % 2 == 0 && prom[k] > 10.0 && ((h[k] > h[k - 1] && h[k] > h[k + 1]) || (h[k] > h[k - N] && h[k] > h[k + N]));
                 if (top && prom[k] > 12.0) || ridge {
                     out.push(k);
                 }

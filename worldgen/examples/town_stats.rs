@@ -67,15 +67,38 @@ fn main() {
             );
         }
         let roads: Vec<_> = t.roads.iter().filter(|r| r.class == 0).collect();
+        let paths: Vec<_> = t.roads.iter().filter(|r| r.class == worldgen::town::paths::CLASS_PATH).collect();
+        println!(
+            "  footpaths {} ({:.2} km), from doors {}, joining another path {}",
+            paths.len(),
+            paths.iter().map(|r| r.length).sum::<f64>() / 1000.0,
+            paths.iter().filter(|r| r.from != 0xFFFF).count(),
+            paths.iter().filter(|r| r.to != 0xFFFF).count()
+        );
+        let mut found = [0usize; 4];
+        for b in &t.buildings {
+            if b.floors > 0 {
+                found[match (b.flags & 4 != 0, b.flags & 64 != 0, b.flags & 128 != 0) {
+                    (true, _, _) => 3,
+                    (_, true, _) => 1,
+                    (_, _, true) => 2,
+                    _ => 0,
+                }] += 1;
+            }
+        }
+        println!(
+            "  foundations: plinth {}, stepped {}, posts {}, stilts {}",
+            found[0], found[1], found[2], found[3]
+        );
         println!(
             "  roads {} ({:.1} km), streets {}, bridges {}, signposts {}, settlements outside spec range {off}",
             roads.len(),
             roads.iter().map(|r| r.length).sum::<f64>() / 1000.0,
-            t.roads.len() - roads.len(),
+            t.roads.len() - roads.len() - paths.len(),
             t.bridges.len(),
             t.signs.len()
         );
-        let mut kinds = [0usize; 9];
+        let mut kinds = [0usize; 11]; // 9 atlas structure kinds, landmark, enemy camp
         for s in &t.structures {
             kinds[s.kind as usize] += 1;
         }

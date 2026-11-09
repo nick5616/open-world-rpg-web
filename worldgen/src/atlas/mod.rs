@@ -172,8 +172,9 @@ pub fn regions(w: &World, spawn: (f64, f64, f64)) -> Vec<Region> {
 const BIOME_AMP: [f64; 6] = [2.0, 3.0, 6.0, 7.0, 4.5, 0.8];
 
 /// Per-node parameters the chunk pass blends: detail amplitude, terrace and
-/// ridge weights, and flags. Settlement footprints are flattened here so WP20
-/// gets buildable ground without re-shaping terrain.
+/// ridge weights, and flags. Walled-town footprints are flattened here so
+/// WP20 gets buildable ground without re-shaping terrain; since genVersion 2
+/// hamlets and villages keep the natural ground.
 fn node_params(w: &World) -> Vec<u8> {
     let mut out = vec![0u8; NN * 4];
     let rough = 0.6 + 0.8 * w.spec.roughness;
@@ -208,9 +209,19 @@ fn node_params(w: &World) -> Vec<u8> {
                 let d = libm::sqrt((s.x - x) * (s.x - x) + (s.z - z) * (s.z - z));
                 if d <= s.radius + RES {
                     flags |= flag::SETTLEMENT;
-                    amp *= 0.25;
-                    terrace = 0.0;
-                    ridge = 0.0;
+                    if s.size == site::SIZE_TOWN {
+                        // Walled towns keep their levelled courts.
+                        amp *= 0.25;
+                        terrace = 0.0;
+                        ridge = 0.0;
+                    } else {
+                        // genVersion 2 (playtest 1): hamlets and villages sit
+                        // on the natural, uneven ground and their buildings
+                        // stand on foundations (town/kit.rs). Only mesa steps
+                        // and ridges are softened so lots stay buildable.
+                        terrace *= 0.3;
+                        ridge *= 0.5;
+                    }
                 }
             }
         }

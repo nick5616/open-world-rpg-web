@@ -1,8 +1,9 @@
+# POI spacing BEFORE (genVersion 1, base commit 56a0d36), cargo run -p worldgen --release --example poi_density -- 20261108 7 1234
 seed 20261108 "Highmarch of Beigleifeild" genVersion 1
   sites 194 on 10.10 km2 of dry land: 19.2 sites/km2
   by kind: bandit_camp 9, cave_mouth 32, enemy_camp 11, landmark 14, mineshaft 8, ruin 7, settlement:hamlet 17, settlement:town 2, settlement:village 11, shrine 12, sunken_temple 2, tower 16, watchtower 10, waypoint 33, wizard_tower 10
   walker -> nearest site edge (m): p50 85, p75 124, p90 161, p99 223, max 287; within 150 m 86.5%, 250 m 99.8%, 400 m 100.0%
-  same without waypoints: p50 85, p90 162, max 296; within 250 m 99.7%
+  walker -> nearest BUILT thing (no waypoint stones; gv1 drew no landmarks/enemy camps) (m): p50 95, p75 139, p90 179, p99 248, max 326; within 150 m 80.3%, 250 m 99.1%
   site nearest-neighbour spacing (m, settlement waypoints excluded): p10 143, p50 163, p90 226
   settlements 30: nearest-neighbour spacing p10 387, p50 407, p90 525, max 739
   coverage (800 m rule): 99.99%
@@ -10,7 +11,7 @@ seed 7 "Shores of Sonaliassver" genVersion 1
   sites 168 on 8.35 km2 of dry land: 20.1 sites/km2
   by kind: bandit_camp 4, cave_mouth 31, enemy_camp 8, landmark 15, mineshaft 6, ruin 14, settlement:hamlet 16, settlement:town 2, settlement:village 10, shrine 8, tower 16, watchtower 3, waypoint 32, wizard_tower 3
   walker -> nearest site edge (m): p50 86, p75 128, p90 168, p99 235, max 313; within 150 m 84.6%, 250 m 99.5%, 400 m 100.0%
-  same without waypoints: p50 88, p90 175, max 360; within 250 m 98.7%
+  walker -> nearest BUILT thing (no waypoint stones; gv1 drew no landmarks/enemy camps) (m): p50 99, p75 151, p90 203, p99 290, max 360; within 150 m 74.8%, 250 m 96.4%
   site nearest-neighbour spacing (m, settlement waypoints excluded): p10 143, p50 172, p90 264
   settlements 28: nearest-neighbour spacing p10 385, p50 435, p90 629, max 1004
   coverage (800 m rule): 99.91%
@@ -18,7 +19,7 @@ seed 1234 "The Ironbound Expanse" genVersion 1
   sites 191 on 9.80 km2 of dry land: 19.5 sites/km2
   by kind: bandit_camp 3, cave_mouth 31, enemy_camp 9, landmark 15, meteor_crater 1, mineshaft 7, ruin 8, settlement:hamlet 19, settlement:town 2, settlement:village 12, shrine 18, tower 16, watchtower 7, waypoint 36, wizard_tower 7
   walker -> nearest site edge (m): p50 84, p75 126, p90 165, p99 234, max 321; within 150 m 85.5%, 250 m 99.5%, 400 m 100.0%
-  same without waypoints: p50 85, p90 167, max 321; within 250 m 99.5%
+  walker -> nearest BUILT thing (no waypoint stones; gv1 drew no landmarks/enemy camps) (m): p50 95, p75 141, p90 184, p99 265, max 327; within 150 m 79.3%, 250 m 98.3%
   site nearest-neighbour spacing (m, settlement waypoints excluded): p10 143, p50 163, p90 233
   settlements 33: nearest-neighbour spacing p10 385, p50 391, p90 521, max 666
   coverage (800 m rule): 100.00%

@@ -85,6 +85,87 @@ fn check(seed: u64) {
             );
         }
     }
+    // genVersion 2 foundations: the foundation reaches below the ground
+    // everywhere under the building (no gap under a house on a slope).
+    for b in t.buildings.iter().filter(|b| b.floors > 0) {
+        for (u, v) in [(-1.0, -1.0), (1.0, -1.0), (1.0, 1.0), (-1.0, 1.0)] {
+            let (lu, lv) = (u * b.hx, v * b.hz);
+            let g = ground::collision_height(&a, b.x + lu * b.c - lv * b.s, b.z + lu * b.s + lv * b.c);
+            assert!(
+                b.base_y <= g,
+                "seed {seed}: building {:016x} foundation bottom {} above ground {g}",
+                b.id,
+                b.base_y
+            );
+        }
+    }
+
+    // genVersion 2 footpaths: every door (the foot of its steps) is on a
+    // street or the square, or has a footpath; every footpath ends on the
+    // network or on another footpath; no footpath runs through a solid box.
+    let near_pl = |pts: &[[f64; 3]], x: f64, z: f64, d: f64| pts.windows(2).any(|w| seg_d(x, z, w[0][0], w[0][2], w[1][0], w[1][2]) <= d);
+    for (si, st) in t.settlements.iter().enumerate() {
+        let streets: Vec<&town::Road> = t.roads.iter().filter(|r| r.class == 1 && r.settlement as usize == si).collect();
+        let on_net = |x: f64, z: f64, pad: f64| {
+            ((x - st.x).powi(2) + (z - st.z).powi(2)).sqrt() <= st.square + pad || streets.iter().any(|r| near_pl(&r.points, x, z, r.width * 0.5 + pad))
+        };
+        let paths: Vec<(usize, &town::Road)> = t
+            .roads
+            .iter()
+            .enumerate()
+            .filter(|(_, r)| r.class == town::paths::CLASS_PATH && r.settlement as usize == si)
+            .collect();
+        for &(_, p) in &paths {
+            let end = p.points.last().unwrap();
+            let ok = if p.to == 0xFFFF {
+                on_net(end[0], end[2], 1.6)
+            } else {
+                near_pl(&t.roads[p.to as usize].points, end[0], end[2], 1.6)
+            };
+            assert!(ok, "seed {seed} settlement {si}: footpath ends nowhere ({:.1}, {:.1})", end[0], end[2]);
+            let boxes = &t.boxes[st.box_first as usize..(st.box_first + st.box_count) as usize];
+            for q in &p.points[1..] {
+                for bx in boxes.iter().filter(|b| b.flags & town::bf::SOLID != 0) {
+                    let (dx, dz) = (q[0] - bx.cx as f64, q[2] - bx.cz as f64);
+                    let (u, v) = (dx * bx.c as f64 + dz * bx.s as f64, dz * bx.c as f64 - dx * bx.s as f64);
+                    assert!(
+                        u.abs() > bx.hx as f64 - 0.05 || v.abs() > bx.hz as f64 - 0.05,
+                        "seed {seed} settlement {si}: footpath (from {} to {}) through a solid box (kind {} owner {}) at ({:.1}, {:.1})",
+                        p.from,
+                        p.to,
+                        bx.kind,
+                        bx.owner,
+                        q[0],
+                        q[2]
+                    );
+                }
+            }
+        }
+        for bi in st.building_first as usize..(st.building_first + st.building_count) as usize {
+            let b = &t.buildings[bi];
+            if b.floors == 0 || paths.iter().any(|(_, p)| p.from as usize == bi) {
+                continue;
+            }
+            let ramp = t.boxes[b.box_first as usize..b.box_first as usize + b.box_count as usize]
+                .iter()
+                .find(|x| x.kind == town::bk::RAMP);
+            let (x, z) = match ramp {
+                Some(r) => (r.cx as f64 - r.c as f64 * (r.hx as f64 + 0.3), r.cz as f64 - r.s as f64 * (r.hx as f64 + 0.3)),
+                None => {
+                    let porch = if b.flags & town::bflag::PORCH != 0 { 2.0 } else { 0.0 };
+                    let v = -b.hz - porch - 0.7;
+                    (b.x + b.door_u * b.c - v * b.s, b.z + b.door_u * b.s + v * b.c)
+                }
+            };
+            // Paths start from a free cell within ~3 m of the door step foot.
+            let joined = paths.iter().any(|(_, p)| near_pl(&p.points, x, z, 3.2));
+            assert!(
+                on_net(x, z, 3.2) || joined,
+                "seed {seed} settlement {si}: door of building {bi} ({}) has no way to the street",
+                role::NAMES[b.role as usize]
+            );
+        }
+    }
     println!(
         "[towns] seed {seed}: {} settlements, {} buildings, {} boxes, {} npcs, {} structures in {ms:.0} ms",
         t.settlements.len(),
@@ -106,4 +187,15 @@ fn towns_invariants() {
     for &s in seeds {
         check(s);
     }
+}
+
+fn seg_d(px: f64, pz: f64, ax: f64, az: f64, bx: f64, bz: f64) -> f64 {
+    let (dx, dz) = (bx - ax, bz - az);
+    let l2 = dx * dx + dz * dz;
+    let t = if l2 > 0.0 {
+        (((px - ax) * dx + (pz - az) * dz) / l2).clamp(0.0, 1.0)
+    } else {
+        0.0
+    };
+    ((px - ax - dx * t).powi(2) + (pz - az - dz * t).powi(2)).sqrt()
 }

@@ -28,7 +28,12 @@ pub mod town;
 /// Generator major version. Any change that alters output bytes for an
 /// existing (seed, spec) bumps this and gets a new golden table (spec 5,
 /// "keeping old worlds working").
-pub const GEN_VERSION: u16 = 1;
+///
+/// 2 (playtest 1, docs/cr/014-towns-terrain-density.md): hamlets and villages
+/// on natural ground with foundations, footpaths, tighter towns, extra
+/// hamlets and minor points of interest, landmarks and enemy camps built.
+/// The genVersion 1 build is archived in worldgen/archive/.
+pub const GEN_VERSION: u16 = 2;
 
 /// Version of the wasm export signatures and buffer layouts in README.md.
 pub const ABI_VERSION: u32 = 1;

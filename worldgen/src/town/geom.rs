@@ -3,7 +3,8 @@
 
 use super::{bf, Box3};
 use crate::atlas::format::Atlas;
-use crate::ground::Ground;
+use crate::ground::{tri_interp, Ground};
+use std::cell::RefCell;
 
 /// Oriented rectangle in xz: centre, local u axis (c, s), half extents.
 #[derive(Clone, Copy, Debug)]
@@ -103,16 +104,83 @@ pub struct Span {
 
 pub struct Terrain<'a> {
     pub a: &'a Atlas<'a>,
+    memo: Option<Memo<'a>>,
+}
+
+/// Lattice samples of one area, computed on first use (a settlement's
+/// layout asks for the same lattice points again and again: every lot it
+/// tries, every role, every pass). The values are exactly what a fresh
+/// `Ground` gives (a sample only depends on the river segments within reach
+/// of it, and the area's `Ground` holds all of those), so a memoized and an
+/// unmemoized `Terrain` agree to the bit.
+struct Memo<'a> {
+    g: Ground<'a>,
+    x0: i64,
+    z0: i64,
+    n: usize,
+    hw: RefCell<Vec<(f32, f32)>>,
 }
 
 impl<'a> Terrain<'a> {
     pub fn new(a: &'a Atlas<'a>) -> Terrain<'a> {
-        Terrain { a }
+        Terrain { a, memo: None }
     }
 
-    /// Exact collision height (same as the `collision_height` export).
+    /// A terrain that memoizes the lattice over the square of half size `r`
+    /// around (x, z); queries outside it fall back to the plain path.
+    pub fn around(a: &'a Atlas<'a>, x: f64, z: f64, r: f64) -> Terrain<'a> {
+        let x0 = libm::floor(x - r);
+        let z0 = libm::floor(z - r);
+        let n = (libm::ceil(2.0 * r) as usize) + 2;
+        let g = Ground::new(a, x0, z0, x0 + n as f64, z0 + n as f64);
+        Terrain {
+            a,
+            memo: Some(Memo {
+                g,
+                x0: x0 as i64,
+                z0: z0 as i64,
+                n,
+                hw: RefCell::new(vec![(f32::NAN, f32::NAN); n * n]),
+            }),
+        }
+    }
+
+    /// (height, water) at an integer lattice point, rounded to f32 as the
+    /// chunks store them.
+    fn lattice(&self, x: f64, z: f64) -> (f32, f32) {
+        if let Some(m) = &self.memo {
+            let i = x as i64 - m.x0;
+            let j = z as i64 - m.z0;
+            if i >= 0 && j >= 0 && (i as usize) < m.n && (j as usize) < m.n {
+                let k = j as usize * m.n + i as usize;
+                let v = m.hw.borrow()[k];
+                if !v.0.is_nan() {
+                    return v;
+                }
+                let (h, w) = m.g.sample(x, z);
+                let v = (h as f32, w as f32);
+                m.hw.borrow_mut()[k] = v;
+                return v;
+            }
+        }
+        let g = Ground::new(self.a, x, z, x, z);
+        let (h, w) = g.sample(x, z);
+        (h as f32, w as f32)
+    }
+
+    /// Exact collision height (same as the `collision_height` export: the
+    /// same lattice values through the same `tri_interp`).
     pub fn height(&self, x: f64, z: f64) -> f64 {
-        crate::ground::collision_height(self.a, x, z)
+        if self.memo.is_none() {
+            return crate::ground::collision_height(self.a, x, z);
+        }
+        let x0 = libm::floor(x);
+        let z0 = libm::floor(z);
+        let h00 = self.lattice(x0, z0).0 as f64;
+        let h10 = self.lattice(x0 + 1.0, z0).0 as f64;
+        let h01 = self.lattice(x0, z0 + 1.0).0 as f64;
+        let h11 = self.lattice(x0 + 1.0, z0 + 1.0).0 as f64;
+        tri_interp(h00, h10, h01, h11, x - x0, z - z0)
     }
 
     /// Lattice extremes over the integer points covering `o` padded by 1 m.
@@ -122,7 +190,6 @@ impl<'a> Terrain<'a> {
         let z0 = libm::floor(o.cz - r);
         let x1 = libm::ceil(o.cx + r);
         let z1 = libm::ceil(o.cz + r);
-        let g = Ground::new(self.a, x0, z0, x1, z1);
         let mut sp = Span {
             min: f64::INFINITY,
             max: f64::NEG_INFINITY,
@@ -134,9 +201,8 @@ impl<'a> Terrain<'a> {
             let mut x = x0;
             while x <= x1 {
                 if o.contains(x, z, pad + 1.0) {
-                    let (h, w) = g.sample(x, z);
-                    let h = h as f32 as f64;
-                    let w = w as f32 as f64;
+                    let (h, w) = self.lattice(x, z);
+                    let (h, w) = (h as f64, w as f64);
                     sp.min = sp.min.min(h);
                     sp.max = sp.max.max(h);
                     if w > h + 0.05 {
@@ -158,6 +224,12 @@ impl<'a> Terrain<'a> {
 
     /// Ground sample (height, water) at one point, not on the lattice.
     pub fn sample(&self, x: f64, z: f64) -> (f64, f64) {
+        if let Some(m) = &self.memo {
+            let (fx, fz) = (x - m.x0 as f64, z - m.z0 as f64);
+            if fx >= 0.0 && fz >= 0.0 && fx <= m.n as f64 && fz <= m.n as f64 {
+                return m.g.sample(x, z);
+            }
+        }
         let g = Ground::new(self.a, x - 1.0, z - 1.0, x + 1.0, z + 1.0);
         g.sample(x, z)
     }

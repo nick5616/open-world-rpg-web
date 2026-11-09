@@ -42,10 +42,27 @@ pub mod pt {
     pub const CRATER: u8 = 12;
     pub const LAIR: u8 = 13;
     pub const RUBBLE: u8 = 14;
-    pub const NAMES: [&str; 15] = [
-        "pave", "wall", "corner", "room", "tower", "ramp", "pillars", "tent", "palisade", "campfire", "shaft", "altar", "crater", "lair", "rubble",
+    /// genVersion 2 landmark pieces (one per landmark, its boxes inside;
+    /// the piece variant is the landmark variant).
+    pub const STONES: u8 = 15;
+    pub const TREE: u8 = 16;
+    pub const ARCH: u8 = 17;
+    pub const MONOLITH: u8 = 18;
+    pub const BONES: u8 = 19;
+    pub const CRYSTALS: u8 = 20;
+    pub const STATUE: u8 = 21;
+    pub const SPRING: u8 = 22;
+    pub const NAMES: [&str; 23] = [
+        "pave", "wall", "corner", "room", "tower", "ramp", "pillars", "tent", "palisade", "campfire", "shaft", "altar", "crater", "lair", "rubble", "stones",
+        "tree", "arch", "monolith", "bones", "crystals", "statue", "spring",
     ];
 }
+
+/// Towns-buffer structure kinds beyond the nine atlas structure kinds
+/// (genVersion 2): landmarks and enemy camps are built too, so the POIs the
+/// map shows stand in the world.
+pub const SK_LANDMARK: u8 = 9;
+pub const SK_ENEMY_CAMP: u8 = 10;
 
 /// Open edges per piece type, bits by local direction: 1 front (-v),
 /// 2 right (+u), 4 back (+v), 8 left (-u).
@@ -116,6 +133,18 @@ fn kind(k: u8) -> Kind {
             base: 4,
             per_tier: 3,
         },
+        SK_ENEMY_CAMP => Kind {
+            anchor: pt::CAMPFIRE,
+            pool: &[(pt::TENT, 3.0), (pt::PALISADE, 2.0), (pt::RUBBLE, 1.0)],
+            base: 3,
+            per_tier: 1,
+        },
+        SK_LANDMARK => Kind {
+            anchor: pt::STONES,
+            pool: &[],
+            base: 1,
+            per_tier: 0,
+        },
         _ => Kind {
             anchor: pt::LAIR,
             pool: &[(pt::PILLARS, 2.0), (pt::WALL, 2.0), (pt::RUBBLE, 2.0)],
@@ -148,6 +177,7 @@ struct Builder<'a, 'b> {
     seq: Seq,
     prop_n: u32,
     piece_n: u32,
+    landmark_variant: u8,
 }
 
 impl Builder<'_, '_> {
@@ -427,6 +457,7 @@ impl Builder<'_, '_> {
                 let (cx, cz) = o.at(1.2, -1.0);
                 self.prop(t, cx, cz, self.ter.height(cx, cz), yaw, pk::BONES, v, 0);
             }
+            pt::STONES..=pt::SPRING => self.landmark(t, &o, p.t, lo, hi),
             _ => {
                 // Rubble: knee-high blocks you can step onto.
                 for k in 0..3 {
@@ -444,20 +475,157 @@ impl Builder<'_, '_> {
     }
 }
 
+impl Builder<'_, '_> {
+    /// A landmark (genVersion 2): one piece holding all its boxes, solid
+    /// only where taller than a step (decision 0020: no high walkable
+    /// edges), walkable where you can step onto it.
+    fn landmark(&mut self, t: &mut Towns, o: &Obb, ty: u8, lo: f64, hi: f64) {
+        let si = self.si;
+        let yaw = libm::atan2(o.s, o.c);
+        let stone = |b: &mut Self, t: &mut Towns, u: f64, v: f64, hu: f64, hv: f64, h: f64| {
+            let so = sub(o, u, v, hu, hv);
+            let sp = b.ter.span(&so, 0.0);
+            wall(&mut t.boxes, &so, sp.min - 0.8, sp.max + h, bk::PIECE, si);
+        };
+        let mut sy = 0.0f64;
+        match ty {
+            pt::STONES => {
+                // A ring of standing stones around a low, walkable altar stone.
+                let n = 7 + (self.seq.next_u64() % 3) as usize;
+                for k in 0..n {
+                    let a = k as f64 / n as f64 * core::f64::consts::TAU + self.seq.range(-0.15, 0.15);
+                    let (u, v) = (libm::cos(a) * 4.6, libm::sin(a) * 4.6);
+                    let h = self.seq.range(2.0, 3.6);
+                    let so = Obb::new(o.at(u, v).0, o.at(u, v).1, yaw + a, 0.32, 0.5);
+                    let sp = self.ter.span(&so, 0.0);
+                    wall(&mut t.boxes, &so, sp.min - 0.8, sp.max + h, bk::PIECE, si);
+                    sy = sy.max(h);
+                }
+                let ao = sub(o, 0.0, 0.0, 1.0, 0.6);
+                let sp = self.ter.span(&ao, 0.0);
+                push_flat(&mut t.boxes, &ao, sp.min - 0.5, sp.max + 0.45, bk::PIECE, bf::WALK | bf::SOLID, si);
+            }
+            pt::TREE => {
+                // An elder tree: the trunk is solid, the canopy (drawn up to
+                // ~17 m) is decoration.
+                stone(self, t, 0.0, 0.0, 0.9, 0.9, 7.0);
+                for k in 0..4 {
+                    let a = k as f64 * core::f64::consts::FRAC_PI_2 + 0.4;
+                    let (u, v) = (libm::cos(a) * 1.5, libm::sin(a) * 1.5);
+                    let ro = Obb::new(o.at(u, v).0, o.at(u, v).1, yaw + a, 0.6, 0.3);
+                    let sp = self.ter.span(&ro, 0.0);
+                    push_flat(&mut t.boxes, &ro, sp.min - 0.5, sp.max + 0.4, bk::PIECE, bf::WALK | bf::SOLID, si);
+                }
+                sy = 17.0;
+            }
+            pt::ARCH => {
+                // Two piers and a lintel high above the head.
+                let h = self.seq.range(4.6, 6.0);
+                stone(self, t, -2.3, 0.0, 0.6, 0.6, h);
+                stone(self, t, 2.3, 0.0, 0.6, 0.6, h);
+                push_flat(&mut t.boxes, &sub(o, 0.0, 0.0, 2.9, 0.6), hi + h - 0.1, hi + h + 0.9, bk::PIECE, bf::SOLID, si);
+                sy = h + 0.9;
+            }
+            pt::MONOLITH => {
+                let h = self.seq.range(7.0, 10.0);
+                stone(self, t, 0.0, 0.0, 0.9, 0.55, h);
+                sy = h;
+            }
+            pt::BONES => {
+                // A giant's ribcage: two rows of ribs and a skull you can climb onto.
+                for k in 0..5 {
+                    for side in [-1.0, 1.0] {
+                        let h = 2.6 + 1.6 * libm::sin(k as f64 / 4.0 * core::f64::consts::PI);
+                        stone(self, t, -4.0 + k as f64 * 2.0, side * 2.2, 0.22, 0.22, h);
+                        sy = sy.max(h);
+                    }
+                }
+                let ko = sub(o, 5.6, 0.0, 1.0, 0.9);
+                let sp = self.ter.span(&ko, 0.0);
+                push_flat(&mut t.boxes, &ko, sp.min - 0.5, sp.max + 0.55, bk::PIECE, bf::WALK | bf::SOLID, si);
+                let (bx, bz) = o.at(-1.0, 0.0);
+                self.prop(t, bx, bz, self.ter.height(bx, bz), yaw, pk::BONES, 1, 0);
+            }
+            pt::CRYSTALS => {
+                for k in 0..5 {
+                    let a = k as f64 * 1.3;
+                    let rr = if k == 0 { 0.0 } else { 2.2 };
+                    let h = if k == 0 { 4.5 } else { self.seq.range(1.6, 3.2) };
+                    stone(self, t, libm::cos(a) * rr, libm::sin(a) * rr, 0.45, 0.45, h);
+                    sy = sy.max(h);
+                }
+                for k in 0..3 {
+                    let a = 0.6 + k as f64 * 2.1;
+                    let (x, z) = o.at(libm::cos(a) * 3.4, libm::sin(a) * 3.4);
+                    self.prop(t, x, z, self.ter.height(x, z), a, pk::CRYSTAL, k as u8, pf::LIGHT);
+                }
+            }
+            pt::STATUE => {
+                // A colossus on a plinth (solid: taller than a step).
+                let po = sub(o, 0.0, 0.0, 1.4, 1.4);
+                let sp = self.ter.span(&po, 0.0);
+                push_flat(&mut t.boxes, &po, sp.min - 0.8, sp.max + 1.3, bk::PIECE, bf::SOLID, si);
+                let fo = sub(o, 0.0, 0.0, 0.7, 0.55);
+                push_flat(&mut t.boxes, &fo, sp.max + 1.3, sp.max + 6.8, bk::PIECE, bf::SOLID, si);
+                sy = 6.8 + (sp.max - hi);
+            }
+            _ => {
+                // A hot spring: a ring of warm rocks round a steaming pool.
+                for k in 0..9 {
+                    let a = k as f64 / 9.0 * core::f64::consts::TAU;
+                    let ro = Obb::new(
+                        o.at(libm::cos(a) * 3.4, libm::sin(a) * 3.4).0,
+                        o.at(libm::cos(a) * 3.4, libm::sin(a) * 3.4).1,
+                        yaw + a,
+                        0.7,
+                        0.5,
+                    );
+                    let sp = self.ter.span(&ro, 0.0);
+                    push_flat(&mut t.boxes, &ro, sp.min - 0.5, sp.max + 0.45, bk::PIECE, bf::WALK | bf::SOLID, si);
+                }
+                sy = 0.5;
+            }
+        }
+        let v = self.landmark_variant;
+        self.piece(t, o, hi, sy, ty, v);
+        let _ = lo;
+    }
+}
+
+/// Landmark variant (atlas site size) -> its piece.
+fn landmark_piece(variant: u8) -> u8 {
+    match variant {
+        0 => pt::STONES,
+        1 => pt::TREE,
+        2 => pt::ARCH,
+        3 => pt::MONOLITH,
+        4 => pt::BONES,
+        5 => pt::CRYSTALS,
+        6 => pt::STATUE,
+        _ => pt::SPRING,
+    }
+}
+
 pub fn build_structures(a: &Atlas, t: &mut Towns) {
     let ter = Terrain::new(a);
     let density = a.param(param::STRUCTURE_DENSITY);
     let sites = a.section(sec::SITES);
     for i in 0..a.site_count() {
         let s = a.site(i);
-        if s.category != site::CAT_STRUCTURE {
-            continue;
-        }
+        // genVersion 2: landmarks and enemy camps are built as structures too.
+        let skind = match (s.category, s.kind) {
+            (site::CAT_STRUCTURE, k) => k,
+            (site::CAT_POI, site::POI_LANDMARK) => SK_LANDMARK,
+            (site::CAT_POI, site::POI_ENEMY_CAMP) => SK_ENEMY_CAMP,
+            _ => continue,
+        };
         let rec = 8 + i * SITE_REC;
         let yaw_u16 = u16::from_le_bytes([sites[rec + 44], sites[rec + 45]]);
+        // POI sites carry no yaw: take one from the site seed.
+        let yaw_u16 = if s.category == site::CAT_POI { (s.seed >> 16) as u16 } else { yaw_u16 };
         let yaw = yaw_u16 as f64 / 65536.0 * 2.0 * core::f64::consts::PI;
-        let k = kind(s.kind);
-        let tier = s.size.min(2);
+        let k = kind(skind);
+        let tier = if skind == SK_LANDMARK { 0 } else { s.size.min(2) };
         let budget = libm::round((k.base + k.per_tier * tier as usize) as f64 * (0.7 + 0.6 * density)) as usize;
         let si = t.structures.len() as u16;
         let piece_first = t.pieces.len() as u32;
@@ -471,14 +639,16 @@ pub fn build_structures(a: &Atlas, t: &mut Towns) {
             z: s.z,
             c: libm::cos(yaw),
             s: libm::sin(yaw),
-            kind: s.kind,
+            kind: skind,
             tier,
             seq: Seq::new(a.seed ^ s.seed as u64, stream::JIGSAW),
             prop_n: 0,
             piece_n: 0,
+            landmark_variant: s.size,
         };
         let radius = s.radius.max(12.0);
-        let mut placed: Vec<Placed> = vec![Placed { i: 0, j: 0, t: k.anchor, r: 0 }];
+        let anchor = if skind == SK_LANDMARK { landmark_piece(s.size) } else { k.anchor };
+        let mut placed: Vec<Placed> = vec![Placed { i: 0, j: 0, t: anchor, r: 0 }];
         // Fixed companions.
         let tower_h = match s.kind {
             site::ST_WATCHTOWER => 4.6,
@@ -568,7 +738,7 @@ pub fn build_structures(a: &Atlas, t: &mut Towns) {
         t.structures.push(Structure {
             id: s.id,
             site: i as u16,
-            kind: s.kind,
+            kind: skind,
             tier,
             x: s.x,
             y,

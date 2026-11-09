@@ -3,7 +3,9 @@
 //!
 //!   cargo run -p worldgen --release --example poi_density -- 20261108 7 1234
 //!
-//! "Something to see" = any atlas site (settlement, structure, tower, cave
+//! "Something to see" = any atlas site; the second line counts only things
+//! built in the world (no waypoint stones; genVersion 1 drew no landmarks
+//! or enemy camps, genVersion 2 builds both as structures) (settlement, structure, tower, cave
 //! mouth, waypoint, landmark, enemy camp). Distances are to the site's edge
 //! (centre distance minus its footprint radius, at least 0), sampled on a
 //! 16 m grid over dry land (no sea, lake or river node nearby). Also prints
@@ -46,8 +48,12 @@ fn main() {
                     for st in &sites {
                         let d = (((st.x - x).powi(2) + (st.z - z).powi(2)).sqrt() - st.radius).max(0.0);
                         best = best.min(d);
-                        // Without waypoints (they sit in settlements or alone on a stone).
-                        if !(st.category == site::CAT_POI && st.kind == site::POI_WAYPOINT) {
+                        // Built things only: no waypoint stones, and in
+                        // genVersion 1 landmarks and enemy camps were map
+                        // markers with nothing drawn in the world.
+                        let waypoint = st.category == site::CAT_POI && st.kind == site::POI_WAYPOINT;
+                        let unbuilt_v1 = st.category == site::CAT_POI && (st.kind == site::POI_LANDMARK || st.kind == site::POI_ENEMY_CAMP);
+                        if !waypoint && (worldgen::GEN_VERSION >= 2 || !unbuilt_v1) {
                             best_minor = best_minor.min(d);
                         }
                     }
@@ -90,7 +96,12 @@ fn main() {
         let nn_all = nn(&|s| !(s.category == site::CAT_POI && s.kind == site::POI_WAYPOINT && s.size == 1));
         let nn_set = nn(&|s| s.category == site::CAT_SETTLEMENT);
         println!("seed {seed} \"{}\" genVersion {}", s.name, worldgen::GEN_VERSION);
-        println!("  sites {} on {:.2} km2 of dry land: {:.1} sites/km2", sites.len(), land_km2, sites.len() as f64 / land_km2);
+        println!(
+            "  sites {} on {:.2} km2 of dry land: {:.1} sites/km2",
+            sites.len(),
+            land_km2,
+            sites.len() as f64 / land_km2
+        );
         println!("  by kind: {}", by_kind.iter().map(|(k, v)| format!("{k} {v}")).collect::<Vec<_>>().join(", "));
         println!(
             "  walker -> nearest site edge (m): p50 {:.0}, p75 {:.0}, p90 {:.0}, p99 {:.0}, max {:.0}; within 150 m {:.1}%, 250 m {:.1}%, 400 m {:.1}%",
@@ -104,10 +115,13 @@ fn main() {
             within(&d_all, 400.0)
         );
         println!(
-            "  same without waypoints: p50 {:.0}, p90 {:.0}, max {:.0}; within 250 m {:.1}%",
+            "  walker -> nearest BUILT thing (no waypoint stones; gv1 drew no landmarks/enemy camps) (m): p50 {:.0}, p75 {:.0}, p90 {:.0}, p99 {:.0}, max {:.0}; within 150 m {:.1}%, 250 m {:.1}%",
             pct(&d_minor, 0.5),
+            pct(&d_minor, 0.75),
             pct(&d_minor, 0.9),
+            pct(&d_minor, 0.99),
             d_minor.last().copied().unwrap_or(0.0),
+            within(&d_minor, 150.0),
             within(&d_minor, 250.0)
         );
         println!(

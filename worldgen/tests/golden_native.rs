@@ -56,11 +56,23 @@ fn native_matches_golden() {
         // WP09: cave graph, cells (plain and edited) and mouth masks.
         if let Some(cv) = w.get("caves") {
             let c = worldgen::cave::world(&a).unwrap();
-            assert_eq!(format!("{:016x}", hash_bytes(&c.graph)), cv["graph"]["hash"].as_str().unwrap(), "{label} cave graph");
+            assert_eq!(
+                format!("{:016x}", hash_bytes(&c.graph)),
+                cv["graph"]["hash"].as_str().unwrap(),
+                "{label} cave graph"
+            );
             for cell in cv["cells"].as_array().unwrap().iter().take(max_chunks) {
-                let (cx, cy, cz) = (cell["cx"].as_i64().unwrap() as i32, cell["cy"].as_i64().unwrap() as i32, cell["cz"].as_i64().unwrap() as i32);
+                let (cx, cy, cz) = (
+                    cell["cx"].as_i64().unwrap() as i32,
+                    cell["cy"].as_i64().unwrap() as i32,
+                    cell["cz"].as_i64().unwrap() as i32,
+                );
                 let out = worldgen::cave::cell::build(&a, &c.world, cx, cy, cz, &[]).unwrap();
-                assert_eq!(format!("{:016x}", hash_bytes(&out)), cell["hash"].as_str().unwrap(), "{label} cave ({cx},{cy},{cz})");
+                assert_eq!(
+                    format!("{:016x}", hash_bytes(&out)),
+                    cell["hash"].as_str().unwrap(),
+                    "{label} cave ({cx},{cy},{cz})"
+                );
                 caves += 1;
             }
             for e in cv["edited"].as_array().unwrap() {
@@ -76,7 +88,11 @@ fn native_matches_golden() {
                         r: x["r"].as_f64().unwrap() as f32 as f64,
                     })
                     .collect();
-                let (cx, cy, cz) = (e["cx"].as_i64().unwrap() as i32, e["cy"].as_i64().unwrap() as i32, e["cz"].as_i64().unwrap() as i32);
+                let (cx, cy, cz) = (
+                    e["cx"].as_i64().unwrap() as i32,
+                    e["cy"].as_i64().unwrap() as i32,
+                    e["cz"].as_i64().unwrap() as i32,
+                );
                 let out = worldgen::cave::cell::build(&a, &c.world, cx, cy, cz, &edits).unwrap();
                 assert_eq!(format!("{:016x}", hash_bytes(&out)), e["hash"].as_str().unwrap(), "{label} edited cave");
                 caves += 1;
