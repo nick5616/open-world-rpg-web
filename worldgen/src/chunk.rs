@@ -440,7 +440,16 @@ impl<'a, 'b> Ctx<'a, 'b> {
         let mut other = false;
         for s in &self.sites {
             let d2 = (s.x - x) * (s.x - x) + (s.z - z) * (s.z - z);
-            if d2 <= s.radius * s.radius {
+            // genVersion 2: settlements keep trees out of their (tighter)
+            // layout radius only, so woods and orchards come up to the
+            // houses; the client still hides scatter on lots, streets and
+            // footpaths by stable id (client/src/world/buildings/clearance.ts).
+            let r = if s.category == S::CAT_SETTLEMENT {
+                s.radius * crate::town::layout::LAYOUT_SCALE[(s.size as usize).min(2)]
+            } else {
+                s.radius
+            };
+            if d2 <= r * r {
                 if s.category == S::CAT_SETTLEMENT {
                     settle = true;
                 } else {

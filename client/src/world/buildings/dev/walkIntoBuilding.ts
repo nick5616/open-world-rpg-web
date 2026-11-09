@@ -63,8 +63,11 @@ export interface WalkResult {
 
 export async function walkIntoBuilding(zone: ZoneProc, s: WalkSetup, name = 'inn'): Promise<WalkResult> {
   const b = s.building;
-  // Start 6 m in front of the door (porch included), facing it (+v).
-  const start = local(b, b.doorU, -b.hz - 6 - (b.flags & 1 ? 2 : 0));
+  // Start 6 m in front of the door (porch included), facing it (+v); on a
+  // slope (genVersion 2) at least 3 m beyond the foot of the door steps.
+  let stairs = 0;
+  for (let i = b.boxFirst; i < b.boxFirst + b.boxCount; i++) if (s.towns.boxes.kind[i] === 4) stairs = 2 * s.towns.boxes.f[i * 9 + 4];
+  const start = local(b, b.doorU, -b.hz - (b.flags & 1 ? 2 : 0) - Math.max(6, stairs + 3));
   // Facing the building's +v axis, world direction (-s, c). Movement yaw
   // follows the camera convention: forward = (-sin yaw, -cos yaw), so a
   // direction (dx, dz) is yaw atan2(-dx, -dz).

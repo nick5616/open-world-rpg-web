@@ -67,6 +67,39 @@ fn main() {
             );
         }
         let roads: Vec<_> = t.roads.iter().filter(|r| r.class == 0).collect();
+        // Compactness (playtest 1 "too spread out, even in the towns"), per
+        // size: mean distance of a building from the centre, mean gap to the
+        // nearest other building (outline to outline, approximated by the
+        // centre distance minus both half diagonals), farthest building.
+        for size in 0..3u8 {
+            let (mut n, mut dsum, mut gsum, mut far) = (0usize, 0.0, 0.0, 0.0f64);
+            for st in t.settlements.iter().filter(|s| s.size == size) {
+                let bs = &t.buildings[st.building_first as usize..(st.building_first + st.building_count) as usize];
+                for (i, b) in bs.iter().enumerate() {
+                    let d = ((b.x - st.x).powi(2) + (b.z - st.z).powi(2)).sqrt();
+                    let rb = (b.hx * b.hx + b.hz * b.hz).sqrt();
+                    let gap = bs
+                        .iter()
+                        .enumerate()
+                        .filter(|(j, _)| *j != i)
+                        .map(|(_, o)| ((o.x - b.x).powi(2) + (o.z - b.z).powi(2)).sqrt() - rb - (o.hx * o.hx + o.hz * o.hz).sqrt())
+                        .fold(f64::MAX, f64::min);
+                    n += 1;
+                    dsum += d;
+                    gsum += gap.max(0.0);
+                    far = far.max(d);
+                }
+            }
+            if n > 0 {
+                println!(
+                    "  {}: {n} buildings, mean distance from the centre {:.1} m, mean gap to the nearest building {:.1} m, farthest {:.0} m",
+                    ["hamlets", "villages", "towns"][size as usize],
+                    dsum / n as f64,
+                    gsum / n as f64,
+                    far
+                );
+            }
+        }
         let paths: Vec<_> = t.roads.iter().filter(|r| r.class == worldgen::town::paths::CLASS_PATH).collect();
         println!(
             "  footpaths {} ({:.2} km), from doors {}, joining another path {}",

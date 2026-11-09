@@ -26,15 +26,17 @@ const TAU: f64 = 2.0 * core::f64::consts::PI;
 /// towns"); genVersion 1 had squares 9 / 13 / 18 m, streets 4 / 4 / 5 m,
 /// lots 0.8 m off the street, 1.6 m between lots, back lane 10 m behind, a
 /// ring street at most 28 m out and the whole atlas radius.
-const SQUARE: [f64; 3] = [7.0, 10.0, 14.0];
+const SQUARE: [f64; 3] = [7.0, 9.0, 12.0];
+/// Layout radius / atlas radius per size (hamlet, village, town).
+pub const LAYOUT_SCALE: [f64; 3] = [0.8, 0.7, 0.85];
 const STREET_W: [f64; 3] = [3.0, 3.4, 4.6];
 /// Lot front to street edge (m).
 const FRONT_GAP: f64 = 0.5;
 /// Pad added to both lots in the overlap test: alleys are 2 x PLOT_PAD wide.
 const PLOT_PAD: f64 = 0.6;
 /// Back-lane lots start this far behind the street edge.
-const BACK_ROW: f64 = 8.5;
-const RING_MAX: f64 = 22.0;
+const BACK_ROW: f64 = 7.5;
+const RING_MAX: f64 = 18.0;
 
 /// Room a lot keeps in front of its door wall on this ground: a porch (2 m)
 /// where the style has porches or the door is high above the ground, and the
@@ -102,8 +104,8 @@ pub fn build_settlements(a: &Atlas, net: &Net, t: &mut Towns) {
         // genVersion 2 (playtest 1 "too spread out, even in the towns"): the
         // layout uses a tighter radius than the atlas footprint, a smaller
         // square, narrower streets and lots close to the street, so houses
-        // cluster (atlas radius 45 / 80 / 130 -> 36 / 64 / 110 m).
-        let r = s.radius * if walled { 0.85 } else { 0.8 };
+        // cluster (atlas radius 45 / 80 / 130 -> 36 / 56 / 110 m).
+        let r = s.radius * LAYOUT_SCALE[size as usize];
         let square = SQUARE[size as usize];
         let target = match size {
             0 => 5 + seq.below(4),

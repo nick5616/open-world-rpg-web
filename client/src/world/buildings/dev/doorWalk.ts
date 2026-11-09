@@ -79,7 +79,12 @@ export async function walkThroughDoor(zone: ZoneProc, s: DoorWalkSetup, door: To
   const vOf = (st: MoveState) => (st.pos.x - door.x) * vx + (st.pos.z - door.z) * vz;
   const half = door.thick / 2;
   const back = 3.5; // within reach (4.5 m eye to door), porch or not
-  const start = { x: door.x - back * vx, z: door.z - back * vz };
+  // genVersion 2 (sloped lots): a door up a porch and steps starts beyond the
+  // foot of the steps and walks up them until it is back within reach.
+  let stairs = 0;
+  for (let i = b.boxFirst; i < b.boxFirst + b.boxCount; i++) if (s.towns.boxes.kind[i] === 4) stairs = 2 * s.towns.boxes.f[i * 9 + 4];
+  const approach = Math.max(back, (b.flags & 1 ? 2 : 0) + stairs + 1.2);
+  const start = { x: door.x - approach * vx, z: door.z - approach * vz };
   const inward = Math.atan2(-vx, -vz);
   const yawIn = (inward * 180) / Math.PI;
   const yawOut = yawIn + 180;
@@ -107,6 +112,7 @@ export async function walkThroughDoor(zone: ZoneProc, s: DoorWalkSetup, door: To
     { x: start.x, z: start.z, yawDeg: yawIn },
     [
       { dur: 0.5, note: 'settle' },
+      ...(approach > back ? [{ dur: 6, held: { forward: true }, until: (st: MoveState) => vOf(st) >= -back + 0.5, note: 'up the steps' }] : []),
       { dur: 0.6, act: send(DOOR_ACT.close, 'closedOut'), note: 'close the door from the street' },
       { dur: 3.0, held: { forward: true }, until: track, note: 'walk into the closed door' },
       { dur: 0.6, act: send(DOOR_ACT.open, 'open'), note: 'open it' },
