@@ -6,6 +6,7 @@ package game
 import (
 	"context"
 	"encoding/binary"
+	"encoding/hex"
 	"io"
 	"log/slog"
 	"math"
@@ -359,5 +360,22 @@ func TestWildsNightIsSurvivable(t *testing.T) {
 		if sp := e.Def.Speed * e.SpeedMult; sp >= walk || e.SpeedMult >= 1 {
 			t.Fatalf("demon speed %.2f (mult %.2f): must be slower than walking (%.1f)", sp, e.SpeedMult, walk)
 		}
+	}
+}
+
+// Wire vectors shared with client/src/ui/progression/progression.test.ts.
+const (
+	statsVectorHex = "010104000100cc0100000000000028000000dc000000880079006a00f000050501010001"
+	areaVectorHex  = "01040300010f005665746572616e"
+)
+
+func TestProgressionWireVectors(t *testing.T) {
+	got := hex.EncodeToString(EncodeStats(StatsLevelUp, 4, 1, 460, 136, 121, 106, 24, 5, 5, 1, []byte{1}))
+	if got != statsVectorHex {
+		t.Fatalf("stats vector\n got %s\nwant %s", got, statsVectorHex)
+	}
+	got = hex.EncodeToString(EncodeArea(4, AreaFlagStampedByYou|AreaFlagHaven, 256, 15, "Veteran"))
+	if got != areaVectorHex {
+		t.Fatalf("area vector\n got %s\nwant %s", got, areaVectorHex)
 	}
 }

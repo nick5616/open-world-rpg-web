@@ -25,7 +25,7 @@ import type { GroundQuery } from '../sim/ground';
 import { MoveMode } from '@lodestone/contracts';
 import { groundAt } from '../sim/caves';
 import { NO_ENV, stepMovement, STEP_DT, type MoveInput, type MoveState, type StepEnv } from '../sim/movement';
-import { fromSelf, packFlags, packMoveExt } from '../sim/moveWire';
+import { fromSelf, packFlags, packMoveExt, staminaX10 } from '../sim/moveWire';
 import type { FullSelf } from './snapshotDecoder';
 
 export interface PredictedStep {
@@ -198,6 +198,9 @@ function agrees(p: MoveState, s: FullSelf): boolean {
     // WP10: discrete movement state must match exactly (integers on both sides).
     p.mode === s.mode &&
     packFlags(p) === s.flags &&
-    packMoveExt(p) === s.moveExt
+    packMoveExt(p) === s.moveExt &&
+    // Playtest 1: the stamina wheel grows with level and tower boons; a
+    // changed wheel restarts the replay from the server's (a 0 m correction).
+    (s.staminaMax === 0 || staminaX10(p.staminaMax) === s.staminaMax)
   );
 }
