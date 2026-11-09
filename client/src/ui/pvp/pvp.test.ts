@@ -1,4 +1,4 @@
-// Playtest 2 PvP and duels (CR 017): the client state machine, the hostile
+// Playtest 2 PvP and duels (CR 018): the client state machine, the hostile
 // rule the combat runtime uses, chat commands and the wire decoders.
 
 import { describe, expect, it } from 'vitest';
@@ -37,7 +37,7 @@ function run(events: ZoneEvent[], now = 1000, start: Partial<PvpState> = {}): Pv
   return s;
 }
 
-describe('flag state (980)', () => {
+describe('flag state (990)', () => {
   it('on, turning off with a countdown, safe zone, off', () => {
     let s = run([ev(PEV.state, { value: 1 })]);
     expect(s.flagged).toBe(true);
@@ -65,7 +65,7 @@ describe('flag state (980)', () => {
   });
 });
 
-describe('duel flow (984-987)', () => {
+describe('duel flow (994-997)', () => {
   it('challenge -> countdown -> fight -> outside -> back -> won', () => {
     let s = run([ev(PEV.challenge, { entityId: OPP, targetId: 3, value: 20000, data: enc.encode('Birch') })], 100);
     expect(s.challenge).toEqual({ duelId: 3, fromId: OPP, fromName: 'Birch', until: 20100 });
@@ -93,14 +93,14 @@ describe('duel flow (984-987)', () => {
     expect(run([ev(PEV.duelEnded, { value: DUEL_END.expired, data: enc.encode('went unanswered') })]).duel).toBeNull();
   });
 
-  it('decodes 985 exactly', () => {
+  it('decodes 995 exactly', () => {
     const d = decodeDuelState(ev(PEV.duelState, { entityId: OPP, targetId: 4, value: 1, data: duelData(2500, 20000, 'Bïrch') }));
     expect(d).toMatchObject({ duelId: 4, opponentId: OPP, opponentName: 'Bïrch', phase: 1, radius: 25, phaseMs: 20000 });
     expect(decodeDuelState(ev(PEV.duelState, { data: new Uint8Array(3) }))).toBeNull();
   });
 });
 
-describe('kill feed (983)', () => {
+describe('kill feed (993)', () => {
   it('names you, or both', () => {
     const k = (killer: number, victim: number) => ev(PEV.kill, { entityId: killer, targetId: victim, data: enc.encode(JSON.stringify({ killer: killer === SELF ? 'Ash' : 'Rook', victim: victim === SELF ? 'Ash' : 'Birch' })) });
     const s = run([k(SELF, OPP), k(OPP, SELF), k(11, 12)]);

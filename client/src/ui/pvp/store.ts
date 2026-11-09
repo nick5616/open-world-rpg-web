@@ -1,4 +1,4 @@
-// PvP and duel client state (playtest 2, CR 017): zustand, updated at event
+// PvP and duel client state (playtest 2, CR 018): zustand, updated at event
 // rate. `reducePvp` is a pure function of (state, event, now) so the whole
 // flow is unit-tested (pvp.test.ts); `hostileTo` decides which remote
 // players the combat runtime may predict hits on.
@@ -86,7 +86,7 @@ export const usePvp = create<PvpState>(() => ({ ...initialPvp(), actions: null }
 
 let feedId = 1;
 
-/** Apply one PvP Event (980-987); returns the patch (null: not ours). */
+/** Apply one PvP Event (990-997); returns the patch (null: not ours). */
 export function reducePvp(s: PvpState, ev: ZoneEvent, now: number): Partial<PvpState> | null {
   const self = s.selfId;
   switch (ev.kind) {

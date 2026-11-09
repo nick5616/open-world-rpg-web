@@ -6,7 +6,7 @@ package game
 // (combatFrame), then records the frame's outcome for the strike grace
 // window (combatAfterFrame). Hit claims are validated by combat.World and
 // answered with HitResult; claims naming a player go through the PvP rules
-// (playtest 2, CR 017: pvp.go, duel.go; refused unless both may fight). Each tick the world spawns groups near players,
+// (playtest 2, CR 018: pvp.go, duel.go; refused unless both may fight). Each tick the world spawns groups near players,
 // runs enemy AI and settles strikes; its outputs become entities (enemies
 // travel the existing snapshot/AOI path as EntityKind enemy), Events
 // (contracts/events.md 200-399), XP (WP12 progress), respawns (WP12
@@ -291,7 +291,7 @@ func (s *Server) handleHitClaim(sess *session, c *proto.HitClaim) {
 }
 
 // resolveClaim validates a claim: on a player through the PvP rules
-// (playtest 2, CR 017: pvp.go; refused unless both may fight), on anything
+// (playtest 2, CR 018: pvp.go; refused unless both may fight), on anything
 // else through the PvE path, which knows enemies only.
 func (s *Server) resolveClaim(sess *session, c *proto.HitClaim) combat.ClaimResult {
 	if t := s.entityByID(c.TargetID); t != nil && t.Kind == proto.EntityKindPlayer {

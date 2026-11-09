@@ -35,7 +35,7 @@ import { QuestLayer } from '../ui/quests/QuestLayer';
 import { NightHud } from '../systems/NightHud';
 // Playtest 1: character stats, area difficulty, tower attunement (Events 900-903).
 import { attachProgression } from '../ui/progression';
-// Playtest 2: opt-in PvP and party duels (Events 980-987, Interact 70; CR 017).
+// Playtest 2: opt-in PvP and party duels (Events 980-987, Interact 70; CR 018).
 import { attachPvp, DuelRing } from '../ui/pvp';
 
 type Phase = { kind: 'connecting' } | { kind: 'playing'; welcome: Welcome } | { kind: 'ended'; end: SessionEnd } | { kind: 'error'; message: string };

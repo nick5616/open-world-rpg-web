@@ -1,6 +1,6 @@
 package game
 
-// Opt-in PvP (playtest 2, CR 017: "Add pvp option if not in the same party
+// Opt-in PvP (playtest 2, CR 018: "Add pvp option if not in the same party
 // and duels if you are"). The rules live here; the hit itself is validated
 // and applied by combat.World.ClaimPlayer exactly like a PvE claim.
 //
@@ -15,7 +15,7 @@ package game
 //     or between the two fighters of a duel (duel.go), anywhere.
 //   - Damage is the PvE number x pvp.damageMult, then armor and shields. An
 //     open-PvP kill downs the victim (the usual respawn, nothing dropped)
-//     and sends the kill feed (983) to both and to players within 64 m.
+//     and sends the kill feed (993) to both and to players within 64 m.
 //
 // Wire cost: the flag is bit 12 of the player's snapshot typeId (bits 0-11
 // are the weapon look) and "dueling" is bit 13, changed only on a toggle, so
@@ -53,14 +53,14 @@ const (
 	typePvPMask        = TypePvPFlag | TypeDueling
 )
 
-// Event 980 value bits.
+// Event 990 value bits.
 const (
 	PvPStateFlagged = 1
 	PvPStateTurning = 2 // turning off: targetId = ms left
 	PvPStateSafe    = 4 // standing in a safe zone: data = its name
 )
 
-// Event 981 reasons.
+// Event 991 reasons.
 const (
 	PvPRefInCombat  = 1 // fought within pvp.combatLockS
 	PvPRefCooldown  = 2 // a request within pvp.toggleCooldownS (targetId = ms left)
@@ -86,7 +86,7 @@ type pvpPlayer struct {
 	safe       bool
 	safeName   string
 	duel       *duel
-	// Last 980 sent (resend only on change).
+	// Last 990 sent (resend only on change).
 	sent      bool
 	sentBits  int32
 	sentOffAt uint32
@@ -261,7 +261,7 @@ func (s *Server) pvpEngaged(e *Entity) {
 	}
 }
 
-// pvpKillFeed: Event 983 to the killer, the victim and players within 64 m.
+// pvpKillFeed: Event 993 to the killer, the victim and players within 64 m.
 func (s *Server) pvpKillFeed(killer, victim *Entity) {
 	b, _ := json.Marshal(map[string]string{"killer": killer.Name, "victim": victim.Name})
 	ev := proto.Encode(&proto.Event{Kind: combat.EvPvPKill, EntityID: killer.ID, TargetID: victim.ID, X: cm(victim.Move.Pos.X), Y: cm(victim.Move.Pos.Y), Z: cm(victim.Move.Pos.Z), Data: b})
@@ -339,7 +339,7 @@ func (s *Server) pvpSetFlag(sess *session, on bool) {
 	s.pvpSendState(e, true)
 }
 
-// pvpSendState sends Event 980 if anything in it changed (or force).
+// pvpSendState sends Event 990 if anything in it changed (or force).
 func (s *Server) pvpSendState(e *Entity, force bool) {
 	st := e.pvp
 	if st == nil {

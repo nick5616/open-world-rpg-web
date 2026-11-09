@@ -54,7 +54,7 @@ export interface CombatDefs {
   leveling: LevelingDef;
   /** Playtest 1 (CR 012): discovery-stamped area difficulty. */
   difficulty: DifficultyDef;
-  /** Playtest 2 (CR 017): opt-in PvP and party duels. */
+  /** Playtest 2 (CR 018): opt-in PvP and party duels. */
   pvp: PvpDef;
 }
 export interface LevelingDef {

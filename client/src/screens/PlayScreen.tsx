@@ -61,7 +61,7 @@ export default function PlayScreen() {
       <InventoryScreen />
       <CraftPanel />
       <ProgressionHud />
-      {/* Playtest 2: PvP flag, duel prompt, countdown, result, kill feed (CR 017) */}
+      {/* Playtest 2: PvP flag, duel prompt, countdown, result, kill feed (CR 018) */}
       <PvpHud />
       <SkillScreen />
       {/* Playtest 1: quest tracker, offers with location previews, journal (J) */}

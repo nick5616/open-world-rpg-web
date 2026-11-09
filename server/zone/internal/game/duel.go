@@ -1,12 +1,12 @@
 package game
 
-// Duels between party members (playtest 2, CR 017: "duels if you are [in
+// Duels between party members (playtest 2, CR 018: "duels if you are [in
 // the same party], which are a facilitated means").
 //
 //	challenge (Interact 70 action 2, within pvp.duel.challengeRangeM, same
-//	party) -> the challenged gets Event 984 and pvp.duel.answerS to answer
+//	party) -> the challenged gets Event 994 and pvp.duel.answerS to answer
 //	(action 3) -> accepted: a ring of pvp.duel.ringRadiusM around the
-//	midpoint, a 3-2-1 countdown (985 phase 2), the fight (985 phase 3).
+//	midpoint, a 3-2-1 countdown (995 phase 2), the fight (995 phase 3).
 //
 // Only the two duelists' hits on each other count as duel hits, anywhere
 // (towns and the Haven too: it is consensual and the ring keeps it in
@@ -16,7 +16,7 @@ package game
 // yields (action 4), logs out or leaves the zone, or after pvp.duel.maxS (a
 // draw); if an enemy downs a duelist it is called off. Both get back the
 // health the duel took and the mana they started with, hear the result
-// (986), and so does their party chat (the social bus).
+// (996), and so does their party chat (the social bus).
 
 import (
 	"fmt"
@@ -36,7 +36,7 @@ const (
 	duelFighting  duelPhase = 3
 )
 
-// Event 986 reasons.
+// Event 996 reasons.
 const (
 	duelDefeated  = 1 // the loser dropped to 1 health
 	duelOutside   = 2 // the loser stayed outside the ring too long
@@ -72,7 +72,7 @@ func (d *duel) index(e *Entity) int {
 func (d *duel) other(e *Entity) *Entity { return d.ents[1-d.index(e)] }
 
 // duelData: u16 ring radius cm | u32 ms until this phase ends | UTF-8
-// opponent name (Event 985).
+// opponent name (Event 995).
 func (s *Server) duelData(d *duel, opp *Entity) []byte {
 	b := le16(nil, uint16(math.Min(65535, d.radius*100)))
 	ms := uint32(0)
@@ -87,7 +87,7 @@ func (s *Server) sendDuelState(d *duel) {
 	for i, e := range d.ents {
 		opp := d.ents[1-i]
 		if d.phase == duelPending && i == 1 {
-			continue // the challenged has the challenge (984)
+			continue // the challenged has the challenge (994)
 		}
 		s.sendEventTo(e, &proto.Event{Kind: combat.EvDuelState, EntityID: opp.ID, TargetID: d.id, Value: int32(d.phase),
 			X: cm(d.center.X), Y: cm(d.center.Y), Z: cm(d.center.Z), Data: s.duelData(d, opp)})

@@ -1,4 +1,4 @@
-# CR 017: opt-in PvP and party duels (playtest 2)
+# CR 018: opt-in PvP and party duels (playtest 2)
 
 Nicole, playtest 2: "Add pvp option if not in the same party and duels if you are which are a facilitated means". Spec section 2 said "No PvP of any kind, no duels, no kill feeds"; this CR amends it (docs/SPEC.md section 2 notes the change). Players still cannot hurt each other unless both opt in, or agree to a duel.
 
@@ -21,7 +21,7 @@ Duel numbers: challenge within 30 m, 20 s to answer, 3-2-1 countdown, a 25 m rin
 ## Contract
 
 - `contracts/combat.yaml` v4: a `pvp` block (the numbers above; generated into `COMBAT.pvp` and `combatdefs.D.PvP`).
-- `contracts/events.md`: Interact targetKind 70 `pvp` (1 flag, 2 challenge, 3 answer, 4 yield); Events 980-987 (`pvp_state`, `pvp_refused`, `pvp_hit`, `pvp_kill`, `duel_challenge`, `duel_state`, `duel_ended`, `duel_outside`; 980-999 registered, 988-999 reserved); HitResult refusal codes 16 (safe zone) and 17 (same party), code 1 now also "a player you may not fight"; player typeId bit 12 = flagged, bit 13 = dueling (bits 0-11 stay the weapon look).
+- `contracts/events.md`: Interact targetKind 70 `pvp` (1 flag, 2 challenge, 3 answer, 4 yield); Events 990-997 (`pvp_state`, `pvp_refused`, `pvp_hit`, `pvp_kill`, `duel_challenge`, `duel_state`, `duel_ended`, `duel_outside`; 990-999 registered, 998-999 reserved); HitResult refusal codes 16 (safe zone) and 17 (same party), code 1 now also "a player you may not fight"; player typeId bit 12 = flagged, bit 13 = dueling (bits 0-11 stay the weapon look).
 - `contracts/protocol.yaml`: HitClaim's doc only (no wire change, protocol version stays 5, golden vectors unchanged).
 
 ## Wire cost

@@ -1,6 +1,6 @@
 package game
 
-// Playtest 2 (CR 017): opt-in PvP and party duels, driven in-process (fake
+// Playtest 2 (CR 018): opt-in PvP and party duels, driven in-process (fake
 // connections, one onTick per call, a simulated clock) so every timer is
 // exact: the rules matrix (flags x party x safe zone x duel), the flag's
 // anti-abuse timers, open-PvP hits and kills, and the duel lifecycle.
@@ -194,7 +194,7 @@ func TestPvPRulesMatrix(t *testing.T) {
 				a.party, b.party = 7, 9
 			}
 			how, reason, ok := pvpRule(a, b, duel)
-			// The expectation, written out as the rules read in CR 017.
+			// The expectation, written out as the rules read in CR 018.
 			var wantOK bool
 			var wantReason uint8
 			switch {
@@ -296,7 +296,7 @@ func TestPvPDamageIsScaledAndKillsRespawn(t *testing.T) {
 		t.Fatalf("PvP damage %v, want %v (PvE %v x %v)", got, want, pve, combatdefs.D.PvP.DamageMult)
 	}
 	if ev, _ := b.last(combat.EvPvPHit); ev == nil || ev.EntityID != a.ent().ID {
-		t.Fatalf("victim got no 982: %+v", ev)
+		t.Fatalf("victim got no 992: %+v", ev)
 	}
 	t.Logf("hit for %d (PvE %v x %v)", res.Damage, pve, combatdefs.D.PvP.DamageMult)
 
@@ -397,7 +397,7 @@ func TestPvPFlagTimers(t *testing.T) {
 }
 
 // TestPvPSafeZoneState: a flagged player walking into a settlement is told
-// (980 bit 4 + the town's name) and cannot be hit there.
+// (990 bit 4 + the town's name) and cannot be hit there.
 func TestPvPSafeZoneState(t *testing.T) {
 	r := newPvPRig(t)
 	a := r.add("Ash", 520, 1000)

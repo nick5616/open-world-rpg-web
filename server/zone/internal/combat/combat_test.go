@@ -133,7 +133,7 @@ func TestNoAttackOrSpellCanDamageAPlayer(t *testing.T) {
 
 // The structural half: only two functions lower a player's health:
 // hurtPlayer, whose call sites all pass an enemy as the source, and
-// hurtByPlayer (playtest 2, CR 017), called only from applyPlayerHit, which
+// hurtByPlayer (playtest 2, CR 018), called only from applyPlayerHit, which
 // only ClaimPlayer reaches (the game layer calls it after its PvP rules).
 func TestOnlyEnemiesCallHurtPlayer(t *testing.T) {
 	files, _ := filepath.Glob("*.go")

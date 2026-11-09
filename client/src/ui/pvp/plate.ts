@@ -1,4 +1,4 @@
-// The PvP marker on player nameplates (playtest 2, CR 017): crossed swords
+// The PvP marker on player nameplates (playtest 2, CR 018): crossed swords
 // drawn on the nameplate canvas (net/avatar.ts), red for a player flagged
 // for PvP, gold for one in a duel. Read from the snapshot typeId bits, so it
 // costs nothing on the wire beyond the toggle itself.

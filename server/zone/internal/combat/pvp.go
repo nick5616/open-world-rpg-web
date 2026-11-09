@@ -8,7 +8,7 @@ import (
 	"lodestone/server/pkg/proto"
 )
 
-// Player-vs-player hits (playtest 2, CR 017: opt-in PvP and party duels).
+// Player-vs-player hits (playtest 2, CR 018: opt-in PvP and party duels).
 //
 // The game layer decides WHETHER two players may hurt each other (flags,
 // parties, safe zones, duels: internal/game/pvp.go) and only then calls
@@ -238,17 +238,17 @@ func (p *Player) RestoreAfterDuel(healthTaken, manaBefore float64) {
 	p.Mana = math.Max(p.Mana, math.Min(p.ManaMax, manaBefore))
 }
 
-// PvP Event kinds (contracts/events.md 980-999, playtest 2). The combat
-// world emits only 982; the game layer owns the rest (internal/game/pvp.go).
+// PvP Event kinds (contracts/events.md 990-999, playtest 2). The combat
+// world emits only 992; the game layer owns the rest (internal/game/pvp.go).
 const (
-	EvPvPState      = 980 // to you: your flag, a pending turn-off, safe zone
-	EvPvPRefused    = 981 // to you: a PvP/duel Interact was refused
-	EvPvPHit        = 982 // to you: a player hit you
-	EvPvPKill       = 983 // kill feed: killer and victim (and players within 64 m)
-	EvDuelChallenge = 984 // to the challenged: accept or decline
-	EvDuelState     = 985 // to both duelists: waiting, countdown, fighting
-	EvDuelEnded     = 986 // to both duelists: winner, loser, reason
-	EvDuelOutside   = 987 // to a duelist: outside the ring (forfeit countdown) / back inside
+	EvPvPState      = 990 // to you: your flag, a pending turn-off, safe zone
+	EvPvPRefused    = 991 // to you: a PvP/duel Interact was refused
+	EvPvPHit        = 992 // to you: a player hit you
+	EvPvPKill       = 993 // kill feed: killer and victim (and players within 64 m)
+	EvDuelChallenge = 994 // to the challenged: accept or decline
+	EvDuelState     = 995 // to both duelists: waiting, countdown, fighting
+	EvDuelEnded     = 996 // to both duelists: winner, loser, reason
+	EvDuelOutside   = 997 // to a duelist: outside the ring (forfeit countdown) / back inside
 )
 
 // RefuseSafeZone and RefuseSameParty are the PvP refusal reasons (HitResult

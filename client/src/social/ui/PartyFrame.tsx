@@ -5,7 +5,7 @@ import { sendSocial } from '../session';
 import { useSocialStore } from '../store';
 import { button, channelColor, glass, nameColor } from './style';
 import { CORNER_BOTTOM } from '../../hud/layout'; // playtest 1: shared bottom layout
-import { playerIdByName, usePvp } from '../../ui/pvp'; // playtest 2: duels (CR 017)
+import { playerIdByName, usePvp } from '../../ui/pvp'; // playtest 2: duels (CR 018)
 
 export interface PartyFrameProps {
   /** 0..1 health for a party member, once the zone's party ring provides it. */

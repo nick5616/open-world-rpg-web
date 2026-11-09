@@ -50,7 +50,7 @@ The game is about a generated world that feels alive: you see a strange peak, yo
 
 **Non-goals (do not build these)**
 
-- **Not a competitive FPS.** No hitscan-vs-player lag compensation; Wizard Wars' `LagCompensation.js` is not ported. *Amended by CR 017 (playtest 2, Nicole: "Add pvp option if not in the same party and duels if you are"):* PvP is opt-in (both players flagged, not in the same party, outside settlements and the Haven) and party members can duel; player hits use the same lenient PvE validation at half damage. Without a flag or a duel, players still cannot damage each other.
+- **Not a competitive FPS.** No hitscan-vs-player lag compensation; Wizard Wars' `LagCompensation.js` is not ported. *Amended by CR 018 (playtest 2, Nicole: "Add pvp option if not in the same party and duels if you are"):* PvP is opt-in (both players flagged, not in the same party, outside settlements and the Haven) and party members can duel; player hits use the same lenient PvE validation at half damage. Without a flag or a duel, players still cannot damage each other.
 - **No trading in v1, but designed for it.** Players can drop items for others to pick up. Direct trades and markets come later; v1 items carry the fields and server hooks trading will need (section 8).
 - No authored story or quest scripting system in v1. Discovery, towns' bounty boards, structures, caves, nights and loot are the loop.
 - No player building or terraforming in v1 (see open questions).

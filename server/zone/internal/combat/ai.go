@@ -756,7 +756,7 @@ func (w *World) evade(p *Player, s *strike, how int32) {
 
 // hurtPlayer is how enemies lower a player's health; its only callers are
 // enemy strikes and enemy projectiles. The only other way is a PvP hit the
-// game layer allowed (hurtByPlayer, pvp.go; playtest 2, CR 017).
+// game layer allowed (hurtByPlayer, pvp.go; playtest 2, CR 018).
 func (w *World) hurtPlayer(p *Player, dmg float64, src *Enemy, att *combatdefs.EnemyAttack) {
 	if p.Downed || src == nil {
 		return
