@@ -51,23 +51,26 @@ type session struct {
 	inSerial bool
 
 	// Tick-owned.
-	ent         *Entity
-	x           *exploreState   // WP12 exploration (explore.go)
-	cprof       *combat.Profile // WP13: loaded before join (combat.go)
-	items       *charItems      // WP14: loaded before join (items.go)
-	quests      *questState     // quest log: loaded before join (quests.go)
-	left        bool
-	ackTick     uint32
-	ackFloor    uint32 // WP16: acks at or below this tick predate the session's current activation
-	enc         snapshot.Encoder
-	budget      snapshot.BudgetStats // last published encoder counters
-	relCharged  int64                // WP19b: conn's ReliableQueued already charged to the budget
-	frameBudget ratelimit.Bucket
-	frames      []proto.InputFrame // received, not yet applied (sorted at apply)
-	gapSince    uint32             // tick a missing frame started holding the buffer, 0 = none
-	consumed    uint32             // newest frame seq applied or refused (LastSeq counts applied only)
-	editChunks  map[[2]int32]bool  // WP09: chunks whose WorldEdits this client has (mining.go)
-	doors       *sessDoors         // building doors: settlements known, frame ground (doors.go)
+	ent    *Entity
+	x      *exploreState   // WP12 exploration (explore.go)
+	cprof  *combat.Profile // WP13: loaded before join (combat.go)
+	items  *charItems      // WP14: loaded before join (items.go)
+	quests *questState     // quest log: loaded before join (quests.go)
+	// Playtest 2: travel to a friend (friendtravel.go).
+	travel           *friendTravel
+	lastFriendTravel time.Time
+	left             bool
+	ackTick          uint32
+	ackFloor         uint32 // WP16: acks at or below this tick predate the session's current activation
+	enc              snapshot.Encoder
+	budget           snapshot.BudgetStats // last published encoder counters
+	relCharged       int64                // WP19b: conn's ReliableQueued already charged to the budget
+	frameBudget      ratelimit.Bucket
+	frames           []proto.InputFrame // received, not yet applied (sorted at apply)
+	gapSince         uint32             // tick a missing frame started holding the buffer, 0 = none
+	consumed         uint32             // newest frame seq applied or refused (LastSeq counts applied only)
+	editChunks       map[[2]int32]bool  // WP09: chunks whose WorldEdits this client has (mining.go)
+	doors            *sessDoors         // building doors: settlements known, frame ground (doors.go)
 
 	// Reader-owned.
 	buckets    [256]*ratelimit.Bucket
@@ -344,6 +347,10 @@ func (s *Server) drainTaken(sess *session, now time.Time) {
 		if it, ok := m.(*proto.Interact); ok {
 			if it.TargetKind == InteractChem || it.TargetKind == InteractNight {
 				s.nightInteract(sess, it) // WP15: chemistry sync mode, dev night tools (night.go)
+				continue
+			}
+			if it.TargetKind == InteractFriend {
+				s.friendInteract(sess, it, now) // playtest 2: travel to a friend (friendtravel.go)
 				continue
 			}
 			if it.TargetKind == InteractQuest {

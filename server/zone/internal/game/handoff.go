@@ -145,7 +145,9 @@ type clusterState struct {
 	gone        []uint32
 	departed    []string
 	presenceAt  time.Time
-	gw          proto.Writer
+	// Playtest 2 (friendtravel.go): the presence feed by character id.
+	presenceChar map[string]presenceSeen
+	gw           proto.Writer
 
 	stats clusterStats
 	// WP19b: players per region (x*WorldRegions+z), counted once a second.

@@ -6,6 +6,7 @@ import { useSocialStore } from '../store';
 import { ChatPanel, type ChatPanelProps } from './ChatPanel';
 import { FriendsPanel } from './FriendsPanel';
 import { PartyFrame, type PartyFrameProps } from './PartyFrame';
+import { TravelOverlay } from './TravelOverlay';
 import { button, glass } from './style';
 import { FRIENDS_BUTTON_RIGHT, TOP_BUTTON_TOP } from '../../hud/layout';
 
@@ -38,6 +39,7 @@ export function SocialOverlay(props: SocialOverlayProps) {
         Friends (O){incoming > 0 ? ` · ${incoming} request${incoming > 1 ? 's' : ''}` : ''}
       </button>
       {friendsOpen && <FriendsPanel onClose={() => setFriendsOpen(false)} />}
+      <TravelOverlay />
     </>
   );
 }

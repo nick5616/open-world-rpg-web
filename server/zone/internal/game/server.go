@@ -341,8 +341,9 @@ func (s *Server) onTick() {
 	s.phases.mark(phCombat)
 	s.townsTick(tick, s.cfg.Now()) // WP20: townsfolk near players (towns.go)
 	s.phases.mark(phTowns)
-	s.nightTick(tick)  // WP15: clock, demons, defense events, chemistry (night.go)
-	s.questsTick(tick) // quests: flagged rechecks, 2 Hz reach/clear checks (quests.go)
+	s.nightTick(tick)       // WP15: clock, demons, defense events, chemistry (night.go)
+	s.questsTick(tick)      // quests: flagged rechecks, 2 Hz reach/clear checks (quests.go)
+	s.friendTravelTick(now) // playtest 2: travel-to-friend channels (friendtravel.go)
 	s.phases.mark(phNight)
 
 	// Quantize once per entity and rebuild the grid; every client's snapshot
