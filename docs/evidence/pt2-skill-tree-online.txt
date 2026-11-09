@@ -1,8 +1,8 @@
-signed in as pt2skills4820 / Treetnsnn
+signed in as pt2skills17631 / Treezwqrk
 zone: known ["ember_flick","frost_bite","magma_dash"], free 3, loadout 1 ["ember_flick","frost_bite","magma_dash",null]
 ok   Glint is learnable for a new character
 ok   the zone learned Glint (combat_sync known: ["ember_flick","frost_bite","magma_dash","glint"])
-ok   Event 900 free points 3 -> 2
+ok   the zone's free skill points (combat_sync) 3 -> 2
 ok   node shows learned
 ok   drag to slot 1: the zone's loadout 1 = ["glint","frost_bite","magma_dash",null]
 ok   build overview renders the zone inventory

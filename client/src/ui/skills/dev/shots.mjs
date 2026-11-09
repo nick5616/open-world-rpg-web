@@ -112,7 +112,7 @@ say(`mock: ${JSON.stringify(mocked)}`);
 await page.keyboard.press('KeyN');
 await page.waitForSelector('[data-testid="skill-tree-fire"]');
 await sleep(400);
-check(await page.evaluate(() => !document.querySelector('[data-testid="lock-hint"]') || getComputedStyle(document.querySelector('[data-testid="lock-hint"]')).display === 'none'), 'look hint hidden while the screen is open');
+check(await page.evaluate(() => !document.querySelector('[data-testid="lock-hint"]') || window.getComputedStyle(document.querySelector('[data-testid="lock-hint"]')).display === 'none'), 'look hint hidden while the screen is open');
 const states = await page.evaluate(() => Object.fromEntries([...document.querySelectorAll('[data-testid^="skill-node-"]')].map((n) => [n.getAttribute('data-testid').slice(11), n.getAttribute('data-state')])));
 say(`fire states: ${JSON.stringify(states)}`);
 check(states.fireball === 'learned' && states.cauterize === 'learnable' && states.immolate === 'needsPrereq', 'fire node states (fireball learned, cauterize learnable, immolate needs a prerequisite)');

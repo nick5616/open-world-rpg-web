@@ -1,4 +1,4 @@
-client: http://127.0.0.1:39394
+client: http://127.0.0.1:31559
 mock: {"known":14,"spent":11,"spells":["Ember Flick","Frost Bite","Magma Dash","Spark Shot","Kindling","Fireball","Combustion","Glint","Sunstep","Radiant Lance","Spark Jab","Lightning Strike","Frost Needle","Brittle"]}
 ok   look hint hidden while the screen is open
 fire states: {"ember_flick":"learned","magma_dash":"learned","spark_shot":"learned","kindling":"learned","rune_ember":"learnable","fireball":"learned","combustion":"learned","cauterize":"learnable","immolate":"needsPrereq","backdraft":"needsPrereq","eruption":"needsPrereq","amaterasu":"needsPrereq","rune_magma":"needsPrereq","solar_flare":"needsPrereq","inferno_domain":"needsPrereq","phoenix":"needsPrereq","god_ray":"needsPrereq"}
