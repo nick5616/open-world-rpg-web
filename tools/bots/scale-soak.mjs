@@ -13,6 +13,10 @@
 //   node tools/bots/scale-soak.mjs --bots 300 --enemies 2000 --duration 3m
 //   node tools/bots/scale-soak.mjs --bots 300 --enemies 2000 --duration 3m --profile thailand
 //   node tools/bots/scale-soak.mjs ... --zone-bin path/to/zone.exe   (a prebuilt binary, e.g. a baseline)
+//   node tools/bots/scale-soak.mjs ... --bin-dir bin --zone-host 10.128.0.5 --zone-cpus 0,1,8,9
+//     (G5: prebuilt Linux binaries, the zone on a dedicated machine over ssh,
+//      pinned to 4 vCPUs; bots, netsim and sampling stay here. See
+//      tools/soak/linux/README.md.)
 //
 // Every 5 s the runner samples the zone's /debug/tickstats (60 s window
 // quantiles) and /debug/combat (enemies spawned, awake), so the evidence has
@@ -23,6 +27,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { env, killTree, root, waitHttp } from '../../scripts/lib.mjs';
+import { describeHost, remoteCommand, remoteKill } from './remote.mjs';
 
 const arg = (name, def) => {
   const i = process.argv.indexOf(`--${name}`);
@@ -42,6 +47,17 @@ const TAG = arg('tag', `${BOTS}b-${ENEMIES}e-${PROFILE}`);
 // --prefix names the evidence files (<prefix>-s1-<tag>.*); WP19's second
 // pass writes wp19b-*.
 const PREFIX = arg('prefix', 'wp19');
+// G5 (tools/soak/linux/README.md): --bin-dir holds prebuilt `zone` and `bots`
+// (no go build); --zone-host runs the zone on that machine over ssh (same
+// layout under --remote-dir); --zone-cpus / --bots-cpus pin with taskset
+// (Linux, e.g. "0,1,8,9" = 2 physical cores with their SMT siblings, what a
+// 4 vCPU cloud VM is).
+const BIN_DIR = arg('bin-dir', '');
+const ZONE_HOST = arg('zone-host', '');
+const REMOTE_DIR = arg('remote-dir', root);
+const ZONE_CPUS = arg('zone-cpus', '');
+const BOTS_CPUS = arg('bots-cpus', '');
+const ZONE_ADDR = ZONE_HOST || '127.0.0.1';
 const RUN = `${Date.now().toString(36)}${process.pid}`;
 const EXE = process.platform === 'win32' ? '.exe' : '';
 const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'lodestone-wp19-'));
@@ -58,6 +74,8 @@ function step(msg) {
 const children = [];
 function start(name, cmd, args, extra) {
   const out = fs.createWriteStream(path.join(TMP, `${name}.log`));
+  const cpus = { zone: ZONE_CPUS, bots: BOTS_CPUS }[name];
+  if (cpus && process.platform === 'linux' && cmd !== 'ssh') [cmd, args] = ['taskset', ['-c', cpus, cmd, ...args]];
   const child = spawn(cmd, args, { cwd: root, env: env(extra), stdio: ['ignore', 'pipe', 'pipe'] });
   child.stdout.pipe(out);
   child.stderr.pipe(out);
@@ -80,23 +98,27 @@ function pin(child, mask, name) {
 const getJSON = (url) => fetch(url).then((r) => r.json()).catch(() => null);
 
 let exitCode = 1;
+let remoteZone = ''; // set when the zone runs on --zone-host
 const series = [];
 let lastPhases = null; // /debug/tickstats phases (last minute) from the last sample
 try {
   step(`WP19 scenario 1 "${TAG}": ${BOTS} bots + ${ENEMIES} enemies in a ${RADIUS} m disc at ${CENTER}, ${DURATION}, netsim ${PROFILE}, zone GOMAXPROCS=${PROCS}`);
-  step(`machine: ${os.cpus().length} logical CPUs (${os.cpus()[0].model}), shared with other agents; load avg n/a on Windows`);
+  if (process.platform === 'win32') step(`machine: ${os.cpus().length} logical CPUs (${os.cpus()[0].model}), shared with other agents; load avg n/a on Windows`);
+  else step(`machine (bots${ZONE_HOST ? '' : ' and zone'}): ${os.cpus().length} vCPUs (${os.cpus()[0].model}), load avg ${os.loadavg().map((l) => l.toFixed(2)).join(' ')}${BOTS_CPUS ? `, bots pinned to CPUs ${BOTS_CPUS}` : ''}`);
+  if (ZONE_HOST) step(`zone machine ${ZONE_HOST}: ${describeHost(ZONE_HOST)}${ZONE_CPUS ? `; zone pinned to CPUs ${ZONE_CPUS}` : ''}`);
+  else if (ZONE_CPUS) step(`zone pinned to CPUs ${ZONE_CPUS}`);
   // Unique binary names per run (the machine is shared; never kill what we did not start).
-  const zoneBin = ZONE_BIN || path.join(TMP, `wp19-zone-${RUN}${EXE}`);
-  const botsBin = path.join(TMP, `wp19-bots-${RUN}${EXE}`);
-  for (const [out, pkg] of [...(ZONE_BIN ? [] : [[zoneBin, './server/zone']]), [botsBin, './tools/bots']]) {
+  const zoneBin = ZONE_BIN || (BIN_DIR ? path.join(BIN_DIR, `zone${EXE}`) : path.join(TMP, `wp19-zone-${RUN}${EXE}`));
+  const botsBin = BIN_DIR ? path.join(BIN_DIR, `bots${EXE}`) : path.join(TMP, `wp19-bots-${RUN}${EXE}`);
+  for (const [out, pkg] of [...(ZONE_BIN || BIN_DIR ? [] : [[zoneBin, './server/zone']]), ...(BIN_DIR ? [] : [[botsBin, './tools/bots']])]) {
     const r = spawnSync('go', ['build', '-o', out, pkg], { cwd: root, env: env(), encoding: 'utf8' });
     if (r.status !== 0) throw new Error(`go build ${pkg}: ${r.stderr}`);
   }
-  step(`built ${path.basename(zoneBin)}${ZONE_BIN ? ' (prebuilt)' : ''}, ${path.basename(botsBin)}`);
+  step(`${BIN_DIR ? 'prebuilt' : 'built'} ${path.basename(zoneBin)}${ZONE_BIN ? ' (prebuilt)' : ''}, ${path.basename(botsBin)}`);
 
   const worldId = `wp19-s1-${RUN}`;
   const [cx, cz] = CENTER.split(',').map(Number);
-  const zone = start('zone', zoneBin, [], {
+  const zoneEnv = {
     GOMAXPROCS: PROCS,
     LODESTONE_ZONE_PORT: String(PORT),
     LODESTONE_ZONE_ID: `wp19-zone-${RUN}`,
@@ -113,16 +135,21 @@ try {
     LODESTONE_ZONE_DEBUG_HORDE: `${cx},${cz},${RADIUS},${ENEMIES}`,
     LODESTONE_ZONE_DEBUG_RAIN: '0',
     LODESTONE_ZONE_PPROF: PPROF ? '1' : '0',
-  });
+  };
+  const zoneName = `lodestone-soak-zone-${RUN}`;
+  const zone = ZONE_HOST
+    ? start('zone', ...remoteCommand(ZONE_HOST, REMOTE_DIR, zoneBin, zoneName, zoneEnv, ZONE_CPUS), {})
+    : start('zone', zoneBin, [], zoneEnv);
+  if (ZONE_HOST) remoteZone = zoneName;
   const zoneExit = new Promise((r) => zone.on('exit', (code) => r(code)));
   pin(zone, ZONE_AFFINITY, 'zone');
-  if (!(await waitHttp(`http://127.0.0.1:${PORT}/healthz`, 120000))) throw new Error('zone not healthy');
-  step(`zone on :${PORT} (world ${worldId})`);
+  if (!(await waitHttp(`http://${ZONE_ADDR}:${PORT}/healthz`, 120000))) throw new Error('zone not healthy');
+  step(`zone on ${ZONE_HOST ? ZONE_HOST : ''}:${PORT} (world ${worldId})`);
 
-  let url = `ws://127.0.0.1:${PORT}/ws`;
+  let url = `ws://${ZONE_ADDR}:${PORT}/ws`;
   if (PROFILE !== 'clean') {
     const proxyPort = PORT + 1;
-    start('netsim', process.execPath, [path.join(root, 'tools/netsim/proxy.mjs'), '--profile', PROFILE, '--listen', String(proxyPort), '--target', `ws://127.0.0.1:${PORT}`]);
+    start('netsim', process.execPath, [path.join(root, 'tools/netsim/proxy.mjs'), '--profile', PROFILE, '--listen', String(proxyPort), '--target', `ws://${ZONE_ADDR}:${PORT}`]);
     if (!(await waitHttp(`http://127.0.0.1:${proxyPort}/config`, 15000))) throw new Error('netsim not up');
     url = `ws://127.0.0.1:${proxyPort}/ws`;
     step(`netsim "${PROFILE}" on :${proxyPort}`);
@@ -130,7 +157,7 @@ try {
 
   const out = path.join(TMP, 'bots.json');
   const prom = path.join(TMP, 'zone.prom');
-  const bots = start('bots', botsBin, ['-url', url, '-metrics', `http://127.0.0.1:${PORT}/metrics`, '-n', String(BOTS), '-mode', 'clustered', '-center', CENTER, '-radius', String(RADIUS),
+  const bots = start('bots', botsBin, ['-url', url, '-metrics', `http://${ZONE_ADDR}:${PORT}/metrics`, '-n', String(BOTS), '-mode', 'clustered', '-center', CENTER, '-radius', String(RADIUS),
     '-duration', DURATION, '-ramp', `${Math.max(10, Math.round(BOTS / 20))}s`, '-warmup', '30s', '-tick-budget', '12', '-json', out, '-metrics-out', prom], {});
   const botsDone = new Promise((r) => bots.on('exit', (code) => r(code)));
   pin(bots, BOTS_AFFINITY, 'bots');
@@ -144,7 +171,7 @@ try {
   if (PPROF) {
     (async () => {
       await sleep(90000);
-      const buf = Buffer.from(await (await fetch(`http://127.0.0.1:${PORT}/debug/pprof/profile?seconds=10`)).arrayBuffer());
+      const buf = Buffer.from(await (await fetch(`http://${ZONE_ADDR}:${PORT}/debug/pprof/profile?seconds=10`)).arrayBuffer());
       const prof = path.join(TMP, 'cpu.pprof');
       fs.writeFileSync(prof, buf);
       const top = spawnSync('go', ['tool', 'pprof', '-top', '-cum', '-nodecount=60', zoneBin, prof], { cwd: root, env: env(), encoding: 'utf8' }).stdout;
@@ -156,7 +183,7 @@ try {
     await sleep(5000);
     // Enemy counts from /metrics (zone_combat_awake/_enemies, every 10 s):
     // /debug/combat would make the zone build its debug snapshot every second.
-    const [ts, prom] = await Promise.all([getJSON(`http://127.0.0.1:${PORT}/debug/tickstats`), fetch(`http://127.0.0.1:${PORT}/metrics`).then((r) => r.text()).catch(() => '')]);
+    const [ts, prom] = await Promise.all([getJSON(`http://${ZONE_ADDR}:${PORT}/debug/tickstats`), fetch(`http://${ZONE_ADDR}:${PORT}/metrics`).then((r) => r.text()).catch(() => '')]);
     if (!ts) continue;
     const metric = (name) => Number((new RegExp(`^${name} (\\S+)`, 'm').exec(prom) ?? [])[1] ?? 0);
     const awake = metric('zone_combat_awake');
@@ -200,11 +227,13 @@ try {
   const postOK = worstPost && worstPost.p99 <= 12;
   step(`verdict: tick p99 ${tickOK ? 'PASS' : 'FAIL'} (${worst?.p99?.toFixed(2)} ms, t >= 60 s), after the join ramp ${postOK ? 'PASS' : 'FAIL'} (${worstPost?.p99?.toFixed(2)} ms), downlink max ${downOK ? 'PASS' : 'FAIL'} (${summary.downKbps?.max?.toFixed(1)} kbps, budget 160), awake >= 2000: ${minAwake >= ENEMIES * 0.95 ? 'yes' : 'no'} (${minAwake})`);
   exitCode = tickOK && downOK ? 0 : 3;
+  if (remoteZone) remoteKill(ZONE_HOST, remoteZone);
   killTree(zone);
   await Promise.race([zoneExit, sleep(5000)]);
 } catch (e) {
   step(`ERROR ${e.stack ?? e}`);
 } finally {
+  if (remoteZone) remoteKill(ZONE_HOST, remoteZone, 'KILL');
   for (const c of children.reverse()) killTree(c);
   fs.mkdirSync(EVIDENCE, { recursive: true });
   fs.writeFileSync(path.join(EVIDENCE, `${PREFIX}-s1-${TAG}.txt`), lines.join('\n') + '\n');

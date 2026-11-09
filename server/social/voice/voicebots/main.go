@@ -73,6 +73,7 @@ func main() {
 	spawn := flag.Bool("spawn", false, "build and start zone + social on private ports")
 	zonePort := flag.Int("zone-port", 18392, "zone port with -spawn")
 	socialPort := flag.Int("social-port", 18393, "social port with -spawn")
+	binDir := flag.String("bin-dir", "", "with -spawn: start prebuilt zone and social binaries from this directory instead of building them (G5 Linux soak: tools/soak/linux/README.md)")
 	livekitURL := flag.String("livekit", "ws://localhost:7880", "LiveKit URL the spawned social service hands out (see README: the compose LiveKit's UDP range fits ~25 participants)")
 	flag.StringVar(&cfg.zoneURL, "zone", "", "zone ws URL (default from -spawn)")
 	flag.StringVar(&cfg.zoneID, "zone-id", "zone-voicesoak", "zone id (ticket audience)")
@@ -102,7 +103,7 @@ func main() {
 	if *spawn {
 		// Killed by exit() on every path (os.Exit skips defers, and a
 		// leftover social on the port would silently serve the next run).
-		spawnServices(cfg, *zonePort, *socialPort, *livekitURL)
+		spawnServices(cfg, *zonePort, *socialPort, *livekitURL, *binDir)
 	}
 
 	rec := newRecorder()
@@ -291,7 +292,7 @@ func loadOpus(p string) ([][]byte, error) {
 
 // spawnServices builds the zone and social binaries from the workspace and
 // starts them on private ports against the shared infra.
-func spawnServices(cfg *config, zonePort, socialPort int, livekitURL string) {
+func spawnServices(cfg *config, zonePort, socialPort int, livekitURL, binDir string) {
 	for _, p := range []int{zonePort, socialPort} {
 		// A leftover service on the port would answer /healthz and silently
 		// serve this run with old code: refuse instead.
@@ -310,6 +311,11 @@ func spawnServices(cfg *config, zonePort, socialPort int, livekitURL string) {
 		exe = ".exe"
 	}
 	build := func(pkg, name string) string {
+		if binDir != "" {
+			out, err := filepath.Abs(filepath.Join(binDir, filepath.Base(pkg)+exe))
+			must(err)
+			return out
+		}
 		out := filepath.Join(tmp, name+exe)
 		cmd := exec.Command("go", "build", "-o", out, pkg)
 		cmd.Dir = root
