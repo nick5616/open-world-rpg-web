@@ -19,6 +19,7 @@ import { voiceLevels } from '../voice/levels';
 import { worldDebug } from '../world/debug/worldDebug';
 import { useExploration } from '../ui/map/store';
 import { useInventory } from '../ui/inventory/store';
+import { useSocialStore } from '../social/store';
 import { useAudioSettings } from './settings';
 import { busInput, getAudioContext, masterNode, onAudioReady } from './context';
 import { audioWorld, setTriggerSink, type Vec3 } from './bridge';
@@ -42,6 +43,10 @@ export class AudioEngine {
   readonly ambience: Ambience;
   private movement = new MovementSounds();
   private unsubs: (() => void)[] = [];
+  /** The instant cues are decoded. */
+  preloaded = false;
+  /** Every cue is decoded. */
+  allLoaded = false;
   private raf = 0;
   private lastFrame = 0;
   private lastSlow = 0;
@@ -88,6 +93,11 @@ export class AudioEngine {
         invOpen = s.invOpen;
         station = s.station;
       }),
+      // Spec 9: a whisper sound when the chat is closed.
+      useSocialStore.subscribe((s, p) => {
+        if (s.open) return;
+        for (const [tab, n] of Object.entries(s.unread)) if (tab.startsWith('w:') && n > (p.unread[tab] ?? 0)) return this.trigger('whisper', {});
+      }),
       useAudioSettings.subscribe((s) => {
         if (s.panelOpen !== soundOpen) this.trigger(s.panelOpen ? 'panel_open' : 'panel_close', {});
         soundOpen = s.panelOpen;
@@ -102,10 +112,25 @@ export class AudioEngine {
   }
 
   private async preload(): Promise<void> {
-    // One at a time: decoding is off the main thread, but fetch bursts are
-    // not free while chunks stream in.
-    for (const c of PRELOAD) await this.sfx.preload(c);
+    // A few at a time: decoding is off the main thread, but a burst of
+    // fetches competes with chunk streaming. ~150 KB in all.
+    const queue = [...PRELOAD];
+    await Promise.all(
+      Array.from({ length: 4 }, async () => {
+        for (let c = queue.shift(); c; c = queue.shift()) await this.sfx.preload(c);
+      }),
+    );
+    this.preloaded = true;
     void this.music.prefetchTimed();
+    // Then everything else, two at a time in the background (~1.2 MB of
+    // Opus in all), so stings and rarer cues are warm when they happen.
+    const rest = (Object.keys(CUES) as CueId[]).filter((c) => !PRELOAD.includes(c));
+    await Promise.all(
+      Array.from({ length: 2 }, async () => {
+        for (let c = rest.shift(); c; c = rest.shift()) await this.sfx.preload(c);
+      }),
+    );
+    this.allLoaded = true;
   }
 
   play(cue: CueId, opts?: PlayOpts): void {
@@ -272,6 +297,9 @@ export class AudioEngine {
     return {
       ctxState: this.ctx.state,
       sampleRate: this.ctx.sampleRate,
+      preloaded: this.preloaded,
+      allLoaded: this.allLoaded,
+      decodedMB: this.sfx.decodedMB,
       music: this.music.status(),
       director: this.director.state,
       inputs: this.lastInputs,
@@ -320,10 +348,22 @@ function installDebug(): void {
     state: () => engine?.debug() ?? { ctxState: getAudioContext()?.state ?? 'none' },
     play: (cue: CueId, at?: Vec3) => engine?.play(cue, at ? { at } : undefined),
     trigger: (name: TriggerName, payload: TriggerPayload = {}) => engine?.trigger(name, payload),
+    /** Run a zone Event through the trigger map, as if the zone sent it (data: bytes or a JSON value). */
+    zoneEvent: (kind: number, f: { entityId?: number; targetId?: number; value?: number; x?: number; y?: number; z?: number; json?: unknown } = {}) => {
+      if (!engine) return;
+      const data = f.json === undefined ? new Uint8Array(0) : new TextEncoder().encode(JSON.stringify(f.json));
+      runZoneEvent({ type: 'Event', kind, entityId: f.entityId ?? 0, targetId: f.targetId ?? 0, value: f.value ?? 0, x: f.x ?? 0, y: f.y ?? 0, z: f.z ?? 0, data }, engine.api);
+    },
     /** Force music inputs (e.g. {hour: 22} or {underground: 1}); null follows the world again. */
     force: (p: Partial<MusicInputs> | null) => {
       if (engine) engine.forced = p;
     },
     level: () => engine?.level() ?? -200,
+    /** Are these cues decoded (headless checks wait on it)? */
+    loaded: (cues: CueId[]) => !!engine && cues.every((c) => engine!.sfx.isLoaded(c)),
+    /** Decode these cues now. */
+    preload: (cues: CueId[]) => engine && Promise.all(cues.map((c) => engine!.sfx.preload(c))).then(() => true),
+    /** The engine itself (console poking). */
+    engine: () => engine,
   };
 }

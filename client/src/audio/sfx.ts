@@ -254,6 +254,13 @@ export class SfxEngine {
     }
   }
 
+  /** Decoded PCM held (MB). */
+  get decodedMB(): number {
+    let b = 0;
+    for (const buf of this.buffers.values()) if (buf) b += buf.length * buf.numberOfChannels * 4;
+    return Math.round(b / 1e5) / 10;
+  }
+
   get activeVoices(): number {
     const now = this.ctx.currentTime;
     return this.voices.filter((v) => v.ends > now).length;

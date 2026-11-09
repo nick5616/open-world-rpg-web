@@ -5,7 +5,7 @@
 // crossfades to it.
 //
 // Priority (highest first): timed event > void moment > cave > combat >
-// town > night > day. Hysteresis and dwell times keep it from flapping at
+// night > town (by day) > day. Hysteresis and dwell times keep it from flapping at
 // a cave mouth, a town wall or the edge of a fight.
 
 import { DAWN_HOUR, DUSK_HOUR } from '@lodestone/contracts';
@@ -57,7 +57,7 @@ export const CAVE_EXIT = 0.35;
 export const DWELL_S = 4;
 export const FINAL_SECONDS = 5;
 
-const PRIORITY: Record<MusicState, number> = { silence: 0, day: 1, night: 2, town: 3, combat: 4, cave: 5, void: 6, timed: 7 };
+const PRIORITY: Record<MusicState, number> = { silence: 0, day: 1, town: 2, night: 3, combat: 4, cave: 5, void: 6, timed: 7 };
 
 export function isNightHour(hour: number): boolean {
   return hour >= DUSK_HOUR || hour < DAWN_HOUR;
@@ -82,8 +82,9 @@ export class MusicDirector {
     if (i.voidMoment) return 'void';
     if (this.caveLatched ? i.underground > CAVE_EXIT : i.underground >= CAVE_ENTER) return 'cave';
     if (i.combat) return 'combat';
-    if (i.inTown) return 'town';
-    return isNightHour(i.hour) ? 'night' : 'day';
+    // Night is night in town too (the town voicing is a daytime thing).
+    if (isNightHour(i.hour)) return 'night';
+    return i.inTown ? 'town' : 'day';
   }
 
   update(i: MusicInputs, nowS: number): MusicDecision {

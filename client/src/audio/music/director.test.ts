@@ -50,10 +50,10 @@ describe('music director', () => {
     expect(d.update(at({ underground: CAVE_EXIT - 0.05 }), 10 + DWELL_S).state).toBe('day');
   });
 
-  it('priorities: timed > void > cave > combat > town > night > day', () => {
+  it('priorities: timed > void > cave > combat > night > town > day', () => {
     const d = new MusicDirector();
     expect(d.wanted(at({ inTown: true }))).toBe('town');
-    expect(d.wanted(at({ inTown: true, hour: 22 }))).toBe('town');
+    expect(d.wanted(at({ inTown: true, hour: 22 }))).toBe('night');
     expect(d.wanted(at({ inTown: true, combat: true }))).toBe('combat');
     expect(d.wanted(at({ combat: true, underground: 1 }))).toBe('cave');
     expect(d.wanted(at({ underground: 1, voidMoment: true }))).toBe('void');
