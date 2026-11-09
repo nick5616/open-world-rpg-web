@@ -17,6 +17,7 @@
 import * as THREE from 'three';
 import { makeTownMaterials, townTexture } from './buildings/townMaterial';
 import { caveRockMaterial } from './caves/caveVisuals';
+import { weaponMaterial } from '../combat/weapons/material';
 
 let kept: THREE.Object3D[] | null = null;
 
@@ -49,6 +50,17 @@ export function warmExtras(): THREE.Object3D[] {
     new THREE.Mesh(box, new THREE.MeshStandardMaterial({ roughness: 0.7 })),
     new THREE.Mesh(box, new THREE.MeshStandardMaterial({ roughness: 0.8, side: THREE.DoubleSide })),
     new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.Texture(), depthTest: false, transparent: true })),
+  );
+  // pt/ux weapon models (combat/weapons): one shared material, on your own
+  // first-person weapon and on every remote player's (vertex colours + `surf`).
+  const wg = townGeometry();
+  wg.setAttribute('surf', new THREE.BufferAttribute(new Float32Array(9), 3));
+  out.push(new THREE.Mesh(wg, weaponMaterial()));
+  // Enemy health bars and nameplates (combat layer, playtest 1): double-sided
+  // unlit bars drawn over everything, and an additive glow decal.
+  out.push(
+    new THREE.Mesh(box, new THREE.MeshBasicMaterial({ color: '#222222', depthTest: false, side: THREE.DoubleSide })),
+    new THREE.Mesh(box, new THREE.MeshBasicMaterial({ alphaMap: new THREE.Texture(), transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false })),
   );
   for (const o of out) o.frustumCulled = false;
   kept = out;
