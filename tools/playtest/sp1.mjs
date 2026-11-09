@@ -1,4 +1,4 @@
-/* global getComputedStyle, innerWidth, innerHeight, document, window */
+/* global getComputedStyle */
 // Playtest pass 1: onboarding, the HUD with each panel open, the starter quest state.
 import { launch, newCharacter, hudBoxes, overlaps, sleep, pl } from './lib.mjs';
 

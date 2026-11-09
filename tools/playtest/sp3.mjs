@@ -1,4 +1,3 @@
-/* global document, window */
 // Playtest pass 3: find the starter creatures, fight with the weapon and
 // every slotted spell, loot, check feedback (numbers, hit sounds, kill XP).
 import { launch, newCharacter, sleep, pl, walkTo, look, yawTo } from './lib.mjs';
