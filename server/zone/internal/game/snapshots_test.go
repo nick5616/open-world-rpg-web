@@ -2,6 +2,7 @@ package game
 
 import (
 	"bytes"
+	"fmt"
 	"math"
 	"math/rand"
 	"slices"
@@ -141,6 +142,7 @@ type recConn struct {
 	benchConn
 	mu    sync.Mutex
 	snaps [][]byte
+	rel   [][]byte
 }
 
 func (c *recConn) SendUnreliable(b []byte) bool {
@@ -148,6 +150,73 @@ func (c *recConn) SendUnreliable(b []byte) bool {
 	c.snaps = append(c.snaps, b)
 	c.mu.Unlock()
 	return true
+}
+
+// SendReliable records reliable frames too (WP19b: combat events are
+// delivered per session on workers, and charged to the snapshot budget).
+func (c *recConn) SendReliable(b []byte) error {
+	c.mu.Lock()
+	c.rel = append(c.rel, b)
+	c.mu.Unlock()
+	return c.benchConn.SendReliable(b)
+}
+
+// TestParallelTickMatchesSerial (WP19b): the whole tick on 4 workers (input
+// and movement, combat AI, event delivery, views, snapshots) sends every
+// client exactly the bytes, reliable and unreliable, that the one-worker
+// tick sends, and leaves every entity in the same place.
+func TestParallelTickMatchesSerial(t *testing.T) {
+	if testing.Short() {
+		t.Skip("scale")
+	}
+	type out struct {
+		snaps, rel [][][]byte
+		pos        []string
+	}
+	run := func(workers int) out {
+		w := newScaleWorldConn(t, 90, 600, 160, func() transport.Conn { return &recConn{benchConn: benchConn{done: make(chan struct{})}} })
+		w.srv.cfg.SnapshotWorkers = workers
+		w.srv.cbt.w.SetParallel(combatParallel, workers)
+		for i := 0; i < 300; i++ {
+			w.step()
+		}
+		var o out
+		for _, b := range w.bots {
+			c := b.sess.conn.(*recConn)
+			o.snaps = append(o.snaps, c.snaps)
+			o.rel = append(o.rel, c.rel)
+		}
+		for _, e := range w.srv.ents {
+			o.pos = append(o.pos, fmt.Sprintf("%d %v %v %d", e.ID, e.Move.Pos, e.view.Pos, e.Health))
+		}
+		return o
+	}
+	serial, par := run(1), run(4)
+	if !slices.Equal(serial.pos, par.pos) {
+		t.Fatal("entity states differ between 1 and 4 workers")
+	}
+	for i := range serial.snaps {
+		for name, pair := range map[string][2][][]byte{"snapshot": {serial.snaps[i], par.snaps[i]}, "reliable": {serial.rel[i], par.rel[i]}} {
+			a, b := pair[0], pair[1]
+			if len(a) != len(b) {
+				t.Fatalf("client %d: %d vs %d %s frames", i, len(a), len(b), name)
+			}
+			for k := range a {
+				if !bytes.Equal(a[k], b[k]) {
+					ma, _ := proto.DecodeMessage(a[k])
+					mb, _ := proto.DecodeMessage(b[k])
+					t.Fatalf("client %d %s frame %d differs:\n 1 worker: %+v\n4 workers: %+v", i, name, k, ma, mb)
+				}
+			}
+		}
+	}
+	reliable := 0
+	for _, r := range serial.rel {
+		reliable += len(r)
+	}
+	if reliable < 90*5 {
+		t.Fatalf("too few reliable frames (%d) to compare", reliable)
+	}
 }
 
 // TestParallelSnapshotsMatchSerial: building snapshots on 4 workers sends

@@ -795,7 +795,7 @@ func (w *World) hurtPlayer(p *Player, dmg float64, src *Enemy, att *combatdefs.E
 // consumables, respawn timers.
 func (w *World) playerUpkeep() {
 	tick := w.tick
-	for _, p := range w.players {
+	for _, p := range w.playerList { // WP19b: id order (was map order)
 		if p.Downed {
 			if tick >= p.respawnTick {
 				p.Downed = false

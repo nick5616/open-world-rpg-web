@@ -94,6 +94,9 @@ type World struct {
 	enemies map[uint32]*Enemy
 	order   []uint32 // enemy ids in spawn order (deterministic iteration)
 	players map[uint32]*Player
+	// playerList is players sorted by id (WP19b): playerUpkeep walks it so
+	// respawns and upkeep events come out in a fixed order, not map order.
+	playerList []*Player
 	strikes []*strike
 	shots   []*shot
 	winding []*Enemy   // WP19: enemies that entered Windup since the last prune (windupsOn)
@@ -417,11 +420,36 @@ func (w *World) Enemies() []*Enemy {
 }
 
 // AddPlayer registers a joining player.
-func (w *World) AddPlayer(p *Player) { w.players[p.ID] = p }
+func (w *World) AddPlayer(p *Player) {
+	if old := w.players[p.ID]; old != nil {
+		w.dropListed(p.ID)
+	}
+	w.players[p.ID] = p
+	i, _ := slices.BinarySearchFunc(w.playerList, p.ID, func(q *Player, id uint32) int { return cmpID(q.ID, id) })
+	w.playerList = slices.Insert(w.playerList, i, p)
+}
+
+// dropListed removes id from playerList.
+func (w *World) dropListed(id uint32) {
+	if i, ok := slices.BinarySearchFunc(w.playerList, id, func(q *Player, id uint32) int { return cmpID(q.ID, id) }); ok {
+		w.playerList = slices.Delete(w.playerList, i, i+1)
+	}
+}
+
+func cmpID(a, b uint32) int {
+	switch {
+	case a < b:
+		return -1
+	case a > b:
+		return 1
+	}
+	return 0
+}
 
 // RemovePlayer forgets a leaving player (threat, strikes).
 func (w *World) RemovePlayer(id uint32) {
 	delete(w.players, id)
+	w.dropListed(id)
 	for _, e := range w.enemies {
 		delete(e.threat, id)
 		delete(e.engaged, id)
