@@ -277,6 +277,27 @@ export const ZONE_EVENTS: Record<number, EventHandler> = {
   804: (_e, a) => a.play('rest'),
   805: (e, a) => a.play(e.targetId === 1 ? 'smelt' : 'station_open', { at: a.selfPos() }),
   807: (_e, a) => a.play('coins'),
+  // Playtest 2 PvP and duels (CR 017)
+  980: (e, a) => a.play(e.value & 1 ? 'ui_confirm' : 'ui_close'),
+  981: (_e, a) => a.play('ui_error'),
+  982: (_e, a) => {
+    a.play('player_hurt');
+    a.markCombat(8);
+  },
+  983: (e, a) => {
+    if (e.entityId === a.selfId()) a.play('enemy_die');
+  },
+  984: (_e, a) => a.play('notify'),
+  985: (e, a) => {
+    if (e.value === 3) {
+      a.play('wave_horn');
+      a.markCombat(10);
+    } else if (e.value === 2) a.play('ui_confirm');
+  },
+  986: (e, a) => a.play(e.entityId !== 0 && e.entityId === a.selfId() ? 'quest_complete' : e.targetId !== 0 && e.targetId === a.selfId() ? 'player_downed' : 'notify'),
+  987: (e, a) => {
+    if (e.value > 0) a.play('ui_error');
+  },
 };
 
 type TriggerFn = (p: TriggerPayload, api: TriggerApi) => void;
@@ -332,6 +353,8 @@ export const TRIGGERS = {
   door_close: (p, a) => a.play('door_close', at(p)),
   discovery_intro: (_p, a) => a.play('discovery'),
   chest_open: (p, a) => a.play('chest_open', at(p)),
+  // Playtest 2: the duel's 3-2-1 (client/src/ui/pvp)
+  duel_count: (_p, a) => a.play('telegraph'),
 } satisfies Record<string, TriggerFn>;
 
 export type TriggerName = keyof typeof TRIGGERS;

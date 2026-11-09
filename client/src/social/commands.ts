@@ -10,6 +10,8 @@ export type Command =
   /** `/w Name` with no text: open (or focus) that whisper tab. */
   | { kind: 'openWhisper'; to: string }
   | { kind: 'help' }
+  /** Playtest 2: a zone-side verb (/pvp, /duel, /yield) for the game's handler (session.ts setGameCommandHandler). */
+  | { kind: 'game'; verb: 'pvp' | 'duel' | 'yield'; args: string }
   | { kind: 'error'; message: string }
   | { kind: 'none' };
 
@@ -20,6 +22,7 @@ export const HELP_LINES = [
   '/friend Name · /unfriend Name · /accept Name · /decline Name',
   '/mute Name · /unmute Name · /block Name · /unblock Name',
   '/report Name [reason] · /filter on|off',
+  '/pvp [on|off] · /duel Name (a party member) · /duel accept|decline · /yield',
 ];
 
 const CHANNEL_ALIASES: Record<string, Channel> = {
@@ -106,6 +109,12 @@ export function parseInput(raw: string, ctx: InputContext): Command {
     case 'help':
     case '?':
       return { kind: 'help' };
+    case 'pvp':
+    case 'duel':
+      return { kind: 'game', verb: cmd, args: rest };
+    case 'yield':
+    case 'forfeit':
+      return { kind: 'game', verb: 'yield', args: rest };
   }
   if (cmd in NAME_VERBS) {
     const [name] = splitFirst(rest);
@@ -151,7 +160,7 @@ export function whisperTab(name: string): string {
  * picks the n-th match so repeated Tab presses walk the list.
  */
 export function completeName(input: string, candidates: Iterable<string>, cycle = 0): string | null {
-  const m = /^(\/(?:w|whisper|t|tell|invite|inv|kick|promote|friend|unfriend|accept|decline|mute|unmute|block|unblock|report)\s+)(\S*)$/i.exec(input);
+  const m = /^(\/(?:w|whisper|t|tell|invite|inv|kick|promote|friend|unfriend|accept|decline|mute|unmute|block|unblock|report|duel)\s+)(\S*)$/i.exec(input);
   if (!m) return null;
   const prefix = m[2].toLowerCase();
   const seen = new Set<string>();

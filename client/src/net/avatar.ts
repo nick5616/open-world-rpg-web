@@ -17,6 +17,7 @@ import { isSpeaking } from '../voice/levels';
 import { unpackLook, type WeaponKind } from '../combat/weapons/look';
 import { weaponGeometry } from '../combat/weapons/models';
 import { weaponMaterial } from '../combat/weapons/material';
+import { MARK_COLOR, drawSwords, pvpMark } from '../ui/pvp/plate';
 
 const LOD_MID_M = 25;
 const LOD_LOW_M = 90;
@@ -276,7 +277,8 @@ export class Avatar {
     // WP11: someone we hear shows "speaking" from our own analyser at once,
     // without waiting for the zone's activity bit to round-trip.
     const labels = activityLabels(isSpeaking(v.name) ? v.activity | Activity.speaking : v.activity);
-    const key = `${v.name}|${v.level}|${labels.join(',')}`;
+    const mark = pvpMark(v.typeId); // playtest 2: red crossed swords = flagged for PvP, gold = dueling
+    const key = `${v.name}|${v.level}|${labels.join(',')}|${mark}`;
     if (key === this.plateKey) return;
     this.plateKey = key;
     const c = this.plateCanvas.getContext('2d');
@@ -290,7 +292,9 @@ export class Avatar {
     c.textAlign = 'center';
     c.textBaseline = 'middle';
     c.fillStyle = '#f1f3f5';
-    c.fillText(`${v.name || '?'}  ·  ${v.level}`, 256, 39);
+    const label = `${v.name || '?'}  ·  ${v.level}`;
+    c.fillText(label, mark ? 276 : 256, 39);
+    if (mark) drawSwords(c, Math.max(44, 276 - Math.min(400, c.measureText(label).width) / 2 - 30), 39, 44, MARK_COLOR[mark]);
     if (labels.length) {
       c.font = '500 28px system-ui, "Segoe UI", sans-serif';
       const text = labels.join('  ');
