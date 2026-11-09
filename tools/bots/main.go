@@ -90,7 +90,7 @@ func main() {
 	// The zone may serve the official world (a generated uuid), so ask it
 	// rather than guess; fall back to the zone's dev defaults. It also names
 	// the terrain (seed, spec, genVersion, atlasHash).
-	info := zoneIdentity(*zoneURL)
+	info := zoneIdentity(*zoneURL, *metricsURL) // WP19: through a netsim proxy, -metrics points at the zone itself
 	if *zoneID == "" {
 		*zoneID = info.ZoneID
 	}
@@ -282,8 +282,12 @@ func main() {
 
 // zoneIdentity reads the zone's /debug/zone (ids, seed, genVersion, spec,
 // atlasHash), or returns the zone's dev ids if that fails.
-func zoneIdentity(ws string) zoneInfo {
-	u := strings.TrimSuffix(deriveMetricsURL(ws), "/metrics") + "/debug/zone"
+func zoneIdentity(ws, metrics string) zoneInfo {
+	base := deriveMetricsURL(ws)
+	if metrics != "" {
+		base = metrics
+	}
+	u := strings.TrimSuffix(base, "/metrics") + "/debug/zone"
 	var id zoneInfo
 	if body := fetch(u); body != "" && json.Unmarshal([]byte(body), &id) == nil && id.ZoneID != "" {
 		return id
