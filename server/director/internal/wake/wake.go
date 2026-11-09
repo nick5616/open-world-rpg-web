@@ -92,6 +92,12 @@ type Waker struct {
 
 	mu        sync.Mutex
 	lastStart time.Time // last Start call from this process
+	// stuckSince: first Start call of the current stopped spell (zero once the
+	// VM leaves Stopped). GCE accepts a start and fails it asynchronously
+	// (QUOTA_EXCEEDED, ZONE_RESOURCE_POOL_EXHAUSTED), which the director cannot
+	// see without operation permissions, so a VM that stays stopped is the signal.
+	stuckSince time.Time
+	stuckWarn  time.Time
 }
 
 func (w *Waker) now() time.Time {
@@ -141,12 +147,24 @@ func (w *Waker) Wake(ctx context.Context) Report {
 	if w.Activity != nil {
 		_ = w.Activity.Touch(ctx, now)
 	}
+	if st.State != Stopped {
+		w.mu.Lock()
+		w.stuckSince = time.Time{}
+		w.mu.Unlock()
+	}
 	switch st.State {
 	case Stopped:
 		w.mu.Lock()
 		fresh := now.Sub(w.lastStart) >= startDebounce
 		if fresh {
 			w.lastStart = now
+		}
+		if w.stuckSince.IsZero() {
+			w.stuckSince = now
+		} else if now.Sub(w.stuckSince) > 90*time.Second && now.Sub(w.stuckWarn) > time.Minute {
+			w.stuckWarn = now
+			w.Log.Error("wake: the game VM is still stopped after repeated start requests; the start is being refused (CPU quota, zone capacity or permissions) - see `gcloud compute operations list --filter=targetLink~<instance>`", "stoppedFor", now.Sub(w.stuckSince).Round(time.Second).String())
+			w.count("director_wake_stuck_total")
 		}
 		w.mu.Unlock()
 		if fresh {
