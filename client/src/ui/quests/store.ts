@@ -134,3 +134,40 @@ export function offerMarkers(q: QuestView): QuestMarker[] {
   });
   return out;
 }
+
+/** A townsperson where the client draws them (an NPC entity). */
+export interface PersonSpot {
+  name: string;
+  x: number;
+  z: number;
+}
+
+/**
+ * Playtest 2: a person's marker (a point labelled "Name, role", e.g. the
+ * blacksmith of a talk step) follows that person while they are drawn.
+ * Townsfolk leave their work spot in the evening, and the marker used to
+ * lead to an empty anvil. The nearest namesake within 300 m of the marker.
+ */
+export function followPeople(ms: QuestMarker[], people: readonly PersonSpot[]): QuestMarker[] {
+  let out = ms;
+  ms.forEach((m, i) => {
+    const comma = m.label.indexOf(', ');
+    if (m.r || comma <= 0) return;
+    const name = m.label.slice(0, comma);
+    let best: PersonSpot | null = null;
+    let bd = 300;
+    for (const p of people) {
+      if (p.name !== name) continue;
+      const d = Math.hypot(p.x - m.x, p.z - m.z);
+      if (d < bd) {
+        best = p;
+        bd = d;
+      }
+    }
+    if (best) {
+      if (out === ms) out = ms.slice();
+      out[i] = { ...m, x: best.x, z: best.z };
+    }
+  });
+  return out;
+}

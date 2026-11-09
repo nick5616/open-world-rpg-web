@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Event as ZoneEvent } from '@lodestone/contracts';
 import { compassWord, decodeQuestLog, QEV, whereText } from './events';
-import { offerMarkers, reduceQuestEvent, trackedQuest, useQuests, type QuestState } from './store';
+import { followPeople, offerMarkers, reduceQuestEvent, trackedQuest, useQuests, type QuestState } from './store';
 
 const enc = new TextEncoder();
 const ev = (kind: number, data: unknown, extra: Partial<ZoneEvent> = {}): ZoneEvent =>
@@ -73,5 +73,26 @@ describe('quest wording', () => {
     expect(whereText(0, 0, { x: 300, z: -300, label: '' })).toBe('420 m north-east');
     expect(whereText(0, 0, { x: 5, z: 0, label: '' })).toBe('here');
     expect(whereText(0, 0, { x: 0, z: 1500, label: '' })).toBe('1.5 km south');
+  });
+});
+
+describe('a person marker follows the person (playtest 2)', () => {
+  const ms = [
+    { x: 100, z: 100, label: 'Selina, blacksmith' },
+    { x: 400, z: 400, r: 20, label: 'Sunsteel ore (deep below)' },
+  ];
+  it('moves to the drawn namesake nearest the marker, and nothing else', () => {
+    const out = followPeople(ms, [
+      { name: 'Selina', x: 140, z: 160 },
+      { name: 'Selina', x: 900, z: 900 }, // another town's Selina
+      { name: 'Sunsteel ore (deep below)', x: 0, z: 0 },
+    ]);
+    expect(out[0]).toEqual({ x: 140, z: 160, label: 'Selina, blacksmith' });
+    expect(out[1]).toBe(ms[1]); // areas stay
+    expect(ms[0].x).toBe(100); // the quest's own markers are untouched
+  });
+  it('keeps the marker when the person is not drawn or too far', () => {
+    expect(followPeople(ms, [])).toBe(ms);
+    expect(followPeople(ms, [{ name: 'Selina', x: 900, z: 900 }])).toBe(ms);
   });
 });

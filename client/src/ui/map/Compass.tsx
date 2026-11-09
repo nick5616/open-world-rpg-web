@@ -10,6 +10,7 @@ import { drawnRemotes } from '../../net/netStore';
 import { PIN_COLORS } from './events';
 import { useExploration } from './store';
 import { trackedQuest } from '../quests/store'; // playtest 1: quest markers on the strip
+import { liveMarkers } from '../quests/live'; // playtest 2: a person's marker follows them
 
 const W = 560;
 const H = 46;
@@ -60,7 +61,7 @@ export function compassMarks(): CompassMark[] {
   // Playtest 1: the tracked quest's current markers (an area counts from its edge).
   // Only the nearest one is labelled (markers of one step are often close together).
   const q = trackedQuest();
-  const qm = (q?.markers ?? []).map((m) => ({ m, d: Math.max(0, Math.hypot(m.x - px, m.z - pz) - (m.r ?? 0)) })).sort((a, b) => a.d - b.d);
+  const qm = liveMarkers(q).map((m) => ({ m, d: Math.max(0, Math.hypot(m.x - px, m.z - pz) - (m.r ?? 0)) })).sort((a, b) => a.d - b.d);
   qm.forEach(({ m, d }, i) => out.push({ rel: wrapAngle(bearing(px, pz, m.x, m.z) - head), dist: d, color: '#ffd166', label: i === 0 ? m.label : '', kind: 'quest' }));
   return out;
 }
