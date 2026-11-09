@@ -90,11 +90,15 @@ const initial = (): Omit<ExplorationState, 'actions'> => ({
 
 export const useExploration = create<ExplorationState>(() => ({ ...initial(), actions: null }));
 
+/** Extra observers of every zone Event (the discovery intros, client/src/ui/intro). */
+export const zoneEventListeners = new Set<(ev: ZoneEvent) => void>();
+
 /** Apply one zone Event (call from the session's onEvent). */
 export function applyZoneEvent(ev: ZoneEvent, now = performance.now()): void {
   const st = useExploration.getState();
   const patch = reduceEvent(st, ev, now);
   if (patch) useExploration.setState(patch);
+  for (const l of zoneEventListeners) l(ev);
 }
 
 export function setExplorationActions(a: ExplorationActions | null): void {

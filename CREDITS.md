@@ -29,3 +29,10 @@ All PBR texture sets are from [3dtextures.me](https://3dtextures.me) by Gendo
 - `ktx2-encoder` (MIT) for building KTX2 textures; Basis Universal encoder (Apache-2.0).
 - `postprocessing` by Raoul van Rueden (Zlib).
 - Triplanar normal blending after Ben Golus, "Normal Mapping for a Triplanar Shader".
+
+## Design
+
+- Discovery intros (`client/src/ui/intro/`): the look and timing of the
+  region reveal in Nicole Belovoskey's 3d-portfolio-website (`HudToasts.tsx`,
+  `styles/gem.css`), rewritten for this client. Display face: Fraunces
+  (Undercase Type, SIL Open Font License) from Google Fonts.
