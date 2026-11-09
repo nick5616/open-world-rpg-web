@@ -54,7 +54,7 @@ function Panel() {
   };
   return (
     <div
-      data-testid="craft-panel"
+      data-testid="craft-panel" data-ui-panel
       className="ls-inv"
       style={{ position: 'fixed', right: '3%', top: '50%', transform: 'translateY(-50%)', width: 'min(420px, 92vw)', maxHeight: '86vh', overflowY: 'auto', boxSizing: 'border-box', background: PANEL_BG, border: `1px solid ${PANEL_BORDER}`, borderRadius: 10, padding: '14px 16px', color: TEXT, font: '13px/1.4 system-ui, sans-serif', zIndex: 41, boxShadow: '0 12px 40px rgba(0,0,0,0.6)' }}
     >

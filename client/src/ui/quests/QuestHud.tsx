@@ -198,7 +198,7 @@ function OfferCard() {
   const px = localPlayer.pos.x;
   const pz = localPlayer.pos.z;
   return (
-    <div data-testid="quest-offer" style={{ ...PANEL, position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: 'min(560px, 92vw)', maxHeight: '86vh', overflowY: 'auto', padding: '16px 18px', zIndex: 35 }}>
+    <div data-testid="quest-offer" data-ui-panel style={{ ...PANEL, position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: 'min(560px, 92vw)', maxHeight: '86vh', overflowY: 'auto', padding: '16px 18px', zIndex: 35 }}>
       <div style={{ fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: GOLD, opacity: 0.8 }}>Quest offered</div>
       <div style={{ font: '600 22px Georgia, serif', color: '#f6e7c0' }}>{q.title}</div>
       <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 10 }}>{q.giver}</div>
@@ -250,7 +250,7 @@ function Journal() {
   const px = localPlayer.pos.x;
   const pz = localPlayer.pos.z;
   return (
-    <div data-testid="quest-journal" style={{ ...PANEL, position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: 'min(760px, 94vw)', height: 'min(520px, 86vh)', display: 'grid', gridTemplateColumns: 'minmax(160px, 240px) 1fr', overflow: 'hidden', zIndex: 36 }}>
+    <div data-testid="quest-journal" data-ui-panel style={{ ...PANEL, position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: 'min(760px, 94vw)', height: 'min(520px, 86vh)', display: 'grid', gridTemplateColumns: 'minmax(160px, 240px) 1fr', overflow: 'hidden', zIndex: 36 }}>
       <div style={{ borderRight: '1px solid rgba(255,209,102,0.25)', overflowY: 'auto', padding: 10 }}>
         <div style={{ font: '600 18px Georgia, serif', color: GOLD, marginBottom: 8 }}>Journal</div>
         {log.quests.length === 0 && <div style={{ opacity: 0.7, fontSize: 13 }}>No quests. Bounty boards and townsfolk have work.</div>}

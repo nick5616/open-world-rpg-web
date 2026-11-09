@@ -321,7 +321,7 @@ function InventoryPanel() {
       }}
     >
       <div
-        data-testid="inventory-panel"
+        data-testid="inventory-panel" data-ui-panel
         style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', maxWidth: '97vw', maxHeight: '94vh', overflow: 'auto', boxSizing: 'border-box', background: PANEL_BG, border: `1px solid ${PANEL_BORDER}`, borderRadius: 10, padding: '14px 18px 16px', color: TEXT, font: '14px/1.4 system-ui, sans-serif', boxShadow: '0 12px 40px rgba(0,0,0,0.6)' }}
         onDragOver={(e) => {
           e.preventDefault();

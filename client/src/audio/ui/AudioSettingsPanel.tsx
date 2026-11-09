@@ -4,6 +4,7 @@
 
 import type { CSSProperties } from 'react';
 import { BUSES, useAudioSettings, type BusName } from '../settings';
+import { SOUND_BUTTON_W, TOP_BUTTON_TOP } from '../../hud/layout';
 
 const glass: CSSProperties = {
   background: 'rgba(10,13,20,0.78)',
@@ -34,7 +35,7 @@ export function SoundButton() {
       tabIndex={-1}
       onMouseDown={(e) => e.preventDefault()}
       onClick={() => setOpen(!open)}
-      style={{ ...glass, position: 'fixed', right: 12, top: 12, zIndex: 31, padding: '5px 9px', cursor: 'pointer', opacity: 0.8 }}
+      style={{ ...glass, position: 'fixed', right: 12, top: TOP_BUTTON_TOP, width: SOUND_BUTTON_W, boxSizing: 'border-box', textAlign: 'center', zIndex: 31, padding: '5px 9px', cursor: 'pointer', opacity: 0.8 }}
     >
       {muted ? 'Sound off' : 'Sound'}
     </button>
@@ -45,7 +46,7 @@ export function AudioSettingsPanel() {
   const s = useAudioSettings();
   if (!s.panelOpen) return null;
   return (
-    <div data-testid="sound-settings" style={{ ...glass, position: 'fixed', right: 12, top: 46, zIndex: 31, padding: '10px 14px', width: 240 }} onKeyDown={(e) => e.code === 'Escape' && s.setPanelOpen(false)}>
+    <div data-testid="sound-settings" data-ui-panel style={{ ...glass, position: 'fixed', right: 12, top: 46, zIndex: 31, padding: '10px 14px', width: 240 }} onKeyDown={(e) => e.code === 'Escape' && s.setPanelOpen(false)}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
         <strong>Sound</strong>
         <label style={{ display: 'flex', gap: 6, alignItems: 'center', cursor: 'pointer' }}>

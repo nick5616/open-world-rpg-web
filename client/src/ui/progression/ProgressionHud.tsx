@@ -147,7 +147,7 @@ function CharacterPanel() {
   const ready = spells.filter((s) => s.ready).slice(0, 8);
   const locked = spells.filter((s) => !s.ready).slice(0, 4);
   return (
-    <div data-testid="character-panel" style={{ ...PANEL, position: 'fixed', left: 24, top: 70, width: 430, maxHeight: 'calc(100vh - 150px)', overflowY: 'auto', padding: '14px 18px', zIndex: 35, font: '13px system-ui, sans-serif', pointerEvents: 'auto' }}>
+    <div data-testid="character-panel" data-ui-panel style={{ ...PANEL, position: 'fixed', left: 24, top: 70, width: 430, maxHeight: 'calc(100vh - 150px)', overflowY: 'auto', padding: '14px 18px', zIndex: 35, font: '13px system-ui, sans-serif', pointerEvents: 'auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
         <div style={{ font: '22px Georgia, serif' }}>{name}</div>
         <div style={{ font: '700 18px Georgia, serif', color: GOLD }}>Level {level}</div>

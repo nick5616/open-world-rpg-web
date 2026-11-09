@@ -144,6 +144,7 @@ export class TownHud {
     Object.assign(this.toastEl.style, { position: 'fixed', left: '50%', top: '18%', transform: 'translateX(-50%)', color: '#ffe9b0', font: '600 15px system-ui, sans-serif', textShadow: '0 1px 3px #000', pointerEvents: 'none', zIndex: '21', textAlign: 'center' });
     this.panelEl = document.createElement('div');
     this.panelEl.dataset.testid = 'town-panel';
+    this.panelEl.dataset.uiPanel = ''; // hides the pointer-lock hint while open (hud/layout.ts)
     Object.assign(this.panelEl.style, {
       position: 'fixed',
       right: '4%',

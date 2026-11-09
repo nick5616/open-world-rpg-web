@@ -15,7 +15,7 @@ export function FriendsPanel({ onClose }: { onClose: () => void }) {
   const outgoing = friends.filter((f) => f.state === 'pending_out');
   const small = { ...button, fontSize: 10, padding: '1px 5px' };
   return (
-    <div data-testid="friends-panel" style={{ ...glass, position: 'fixed', right: 12, top: 60, width: 260, maxHeight: '70vh', overflowY: 'auto', zIndex: 30, padding: 10 }}>
+    <div data-testid="friends-panel" data-ui-panel style={{ ...glass, position: 'fixed', right: 12, top: 60, width: 260, maxHeight: '70vh', overflowY: 'auto', zIndex: 30, padding: 10 }}>
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: 6, fontWeight: 600 }}>
         Friends <span style={{ opacity: 0.6, fontWeight: 400, marginLeft: 6 }}>{accepted.filter((f) => f.online).length} online</span>
         <button style={{ ...button, marginLeft: 'auto' }} onClick={onClose}>
