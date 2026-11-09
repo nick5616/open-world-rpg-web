@@ -25,6 +25,12 @@ if (!solo) {
   mustRun('docker', ['compose', '-f', 'infra/docker-compose.yml', 'up', '-d', 'livekit']);
   console.log('▶ migrations');
   mustRun('go', ['run', './server/pkg/cmd/migrate'], { env: senv });
+  // Mint, or renew onto this build's genVersion, the official world BEFORE the
+  // services start: otherwise the zone can read the old genVersion while the
+  // account service is still renewing it (decision 0022) and serve the wrong
+  // terrain until restarted.
+  console.log('▶ official world (mint / renew)');
+  mustRun('go', ['run', './server/pkg/cmd/mintworld', '-official', '-renew'], { env: senv });
 
   const services = [
     ['account', config.accountPort],
