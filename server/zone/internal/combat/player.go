@@ -116,6 +116,10 @@ type Player struct {
 
 	frames [frameRing]frameRec
 	nFrame int
+	// Playtest 2 (CR 019): positions by zone tick, for PvP hit claims
+	// (ClaimPlayer looks back like Claim does over an enemy's history).
+	hist  [pvpHist]posRec
+	nHist int
 
 	lastHurtTick uint32
 	Downed       bool
@@ -129,6 +133,12 @@ type Player struct {
 	manaSent     float64
 	manaSentTick uint32
 	inCombatTick uint32
+}
+
+// InCombatWithin reports whether the player hurt something or was hurt in
+// the last seconds (at combat tick now). Playtest 2's friend travel uses it.
+func (p *Player) InCombatWithin(now uint32, seconds float64) bool {
+	return p.inCombatTick != 0 && now-p.inCombatTick < secondsToTicks(seconds)
 }
 
 // NewPlayer builds the runtime state for a joining character.
@@ -250,7 +260,7 @@ func (p *Player) log(a Action) *Action {
 // Refusal reasons for HitResult.flags and the cast_refused Event
 // (contracts/events.md).
 const (
-	RefuseNotEnemy     = 1 // the target is a player (PvP never) or not an enemy
+	RefuseNotEnemy     = 1 // not an enemy, and not a player you may fight (one of you is not flagged for PvP: CR 019)
 	RefuseNoTarget     = 2
 	RefuseDead         = 3
 	RefuseUnknown      = 4
@@ -273,6 +283,7 @@ type FrameResult struct {
 	Started *Action          // an attack/cast/form that started this frame (legal or not)
 	Spent   bool             // mana changed
 	Drink   bool             // a consumable use started
+	Guard   bool             // CR 018: the secondary button went down (sword parry, spear charge, bow draw)
 }
 
 // Frame processes one input frame BEFORE the movement step runs on it
@@ -315,6 +326,11 @@ func (p *Player) Frame(f proto.InputFrame, before movement.State, g movement.Gro
 	// Sword parry: the secondary button's rising step opens the window.
 	if alt && !p.altPrev && w.ParrySteps > 0 {
 		p.parryEnd = seq + uint32(w.ParrySteps)
+	}
+	// CR 018: others see the guard / charge / draw start (staff and wand use
+	// the secondary as a heavy attack, which is an EvCast of its own).
+	if alt && !p.altPrev && w.Key != "staff" && w.Key != "wand" {
+		r.Guard = true
 	}
 
 	if f.Flags&proto.InputFlagAttack != 0 {

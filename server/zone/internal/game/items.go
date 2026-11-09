@@ -380,9 +380,7 @@ func (s *Server) itemsJoin(sess *session) {
 	if adopted {
 		s.syncAll(sess, "handoff sync") // first write at our epoch: fences the old owner's leftovers
 	}
-	if !ci.markers["starter"] {
-		s.grantStarter(sess)
-	}
+	s.topUpStarter(sess)
 	if p := sess.ent.cbt; p != nil {
 		p.OnDrink = func() (float64, bool) { return s.drink(sess) }
 	}
@@ -401,6 +399,7 @@ func (s *Server) grantStarter(sess *session) {
 		ci.inv.Add(it, &d)
 	}
 	ci.markers["starter"] = true
+	ci.markers[starterPickaxeMarker] = true // the kit has one (items.yaml starter)
 	if ci.persist == persistLocal {
 		// Rides the next save point (no blob issued at join just for this).
 		ci.version++
@@ -410,6 +409,49 @@ func (s *Server) grantStarter(sess *session) {
 		return
 	}
 	s.commitItems(sess, &d, &GrantMark{Key: "starter"}, "starter")
+}
+
+// starterPickaxeMarker: the once-per-character pickaxe for characters
+// created before the starter kit carried one (playtest 2: the starter
+// quest says "mine sunsteel ore" and players had no pickaxe to see).
+const starterPickaxeMarker = "starter:pickaxe"
+
+// topUpStarter grants the starter kit to a new character, and the kit's
+// later additions (the pickaxe, playtest 2) once to older ones.
+func (s *Server) topUpStarter(sess *session) {
+	ci := sess.items
+	switch {
+	case !ci.markers["starter"]:
+		s.grantStarter(sess)
+	case !ci.markers[starterPickaxeMarker]:
+		s.grantStarterPickaxe(sess)
+	}
+}
+
+// grantStarterPickaxe gives an older character the kit's pickaxe once,
+// unless they already carry one (the kit's, bought, looted). Carrying one
+// only sets the marker in memory: no journal op on every join for the
+// characters the new kit already equipped (their "starter" marker is the
+// only one stored). The stored marker comes with an actual grant, so a
+// pickaxe sold or dropped after that is not replaced for free.
+func (s *Server) grantStarterPickaxe(sess *session) {
+	ci := sess.items
+	ci.markers[starterPickaxeMarker] = true
+	if ci.inv.Count("tool:pickaxe") > 0 || !ci.inv.CanFit("tool:pickaxe", 1) {
+		return
+	}
+	var d items.Delta
+	it := items.Stack("tool:pickaxe", 1)
+	it.Prov = []items.Prov{{Ev: "starter", Char: sess.ent.CharacterID, At: s.cfg.Now().UnixMilli()}}
+	ci.inv.Add(it, &d)
+	if ci.persist == persistLocal {
+		ci.version++ // rides the next save point, like the starter kit
+		if sess.x != nil && sess.x.prog != nil {
+			sess.x.prog.MarkDirty()
+		}
+		return
+	}
+	s.commitItems(sess, &d, &GrantMark{Key: starterPickaxeMarker}, "starter pickaxe")
 }
 
 // ---- persistence ----
@@ -612,9 +654,18 @@ func (s *Server) applyGear(sess *session) {
 			}
 			ci.synced[l] = g.WeaponType
 		} else if ci.synced[l] != "" {
+			// The item left the main hand (unequipped, dropped, moved):
+			// the hand falls back to the loadout's default training weapon
+			// (combat.yaml start: the sword, the staff). Playtest 2: it kept
+			// the item's weapon type, so after equipping a spear or a bow
+			// there was no way back to the starter sword.
 			ci.synced[l] = ""
 			if lo.Gem >= 0 {
 				pr.SetGem(l, -1)
+				changed = true
+			}
+			if def := defaultWeapon(l); def != "" && lo.Weapon != def {
+				pr.EquipWeapon(l, def)
 				changed = true
 			}
 		}
@@ -629,13 +680,22 @@ func (s *Server) applyGear(sess *session) {
 		p.Charges = n
 		changed = true
 	}
-	if _, look := weaponLooks(sess); look != e.TypeID {
+	if _, look := weaponLooks(sess); look != e.TypeID&^typePvPMask {
 		changed = true // pt/ux: a different material (iron -> sunsteel sword) shows on the avatar
 	}
 	if changed {
 		s.sendCombatSync(sess)
 		s.saveCombat(sess, false)
 	}
+}
+
+// defaultWeapon is loadout l's starting (training) weapon, what an empty
+// main hand wields (combat.yaml start.loadouts: sword, staff).
+func defaultWeapon(l int) string {
+	if ls := combatdefs.D.Start.Loadouts; l >= 0 && l < len(ls) {
+		return ls[l].Weapon
+	}
+	return ""
 }
 
 // loadoutDrift: a combat Interact changed a loadout's weapon away from the

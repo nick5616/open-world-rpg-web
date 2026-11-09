@@ -32,6 +32,7 @@ import (
 	"time"
 
 	"lodestone/server/pkg/constants"
+	"lodestone/server/pkg/movement"
 	"lodestone/server/pkg/proto"
 )
 
@@ -142,6 +143,10 @@ func (s *Server) applyPresence(m map[string][]byte, now time.Time) {
 				continue
 			}
 		}
+		if s.cl.presenceChar == nil {
+			s.cl.presenceChar = map[string]presenceSeen{}
+		}
+		s.cl.presenceChar[k] = presenceSeen{pos: movement.Vec3{X: proto.CmToMeters(g.X), Y: proto.CmToMeters(g.Y), Z: proto.CmToMeters(g.Z)}, name: g.Name, t: g.T}
 		if s.entityByID(g.ID) != nil {
 			continue
 		}

@@ -42,6 +42,8 @@ export interface InventoryActions {
   takePickup(entityId: number): void;
   /** Interact 22/2: open the inn hearth / campfire (prop stable id); the zone answers with 404. */
   openCook(prop: bigint): void;
+  /** Interact 50/2: wield the loadout's default training weapon in an empty main hand (playtest 2). */
+  trainingWeapon?(loadout: number, weapon: string): void;
 }
 
 export interface InventoryState {

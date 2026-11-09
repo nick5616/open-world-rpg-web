@@ -78,6 +78,11 @@ type Hub struct {
 	metrics *svc.Metrics
 	node    string         // this process, for presence records and logs
 	voice   *voice.Service // WP11 proximity voice (voice.go); nil = unavailable
+	// voiceLocalListenOnly restores WP11's listen-only voice for local
+	// profiles (LODESTONE_VOICE_LOCAL_LISTEN_ONLY=1). Off by default since
+	// playtest 2: with no Google sign-in on the live deploy every player is
+	// a local profile, so nobody could talk.
+	voiceLocalListenOnly bool
 
 	mu       sync.RWMutex
 	sessions map[string]*Session // by character id (one live session per character)

@@ -69,9 +69,14 @@ type Config struct {
 	EditStore                      EditStore // nil: edits live in memory only
 	Granter                        Granter   // nil: grants are logged and evented only
 	Earshot                        Earshot   // WP11 proximity voice (earshot.go); nil: none
-	Queue                          *writebehind.Queue
-	Metrics                        *svc.Metrics
-	Log                            *slog.Logger
+	// VoiceLocalListenOnly: local profiles' speaking bit is never shown
+	// (WP11's listen-only rule, LODESTONE_VOICE_LOCAL_LISTEN_ONLY=1, as on
+	// the social service). Off by default since playtest 2: local profiles
+	// may talk.
+	VoiceLocalListenOnly bool
+	Queue                *writebehind.Queue
+	Metrics              *svc.Metrics
+	Log                  *slog.Logger
 	// WP12 exploration (explore.go, party.go): the world's sites and towers
 	// (nil: no exploration, e.g. flat ground), the social service's parties
 	// (nil: no party ring) and the local-profile save store (nil: blobs in
@@ -106,6 +111,9 @@ type Config struct {
 	// Playtest 1 discovery-stamped difficulty (difficulty.go); nil = the
 	// WP13 region danger curve.
 	Difficulty *DifficultySetup
+	// PartyChat posts a system line to these characters' party chat (the
+	// social bus; playtest 2 duel results, duel.go); nil = none.
+	PartyChat func(characterIDs []string, text string)
 	// Now is the wall clock (tickets, server time); tests override it.
 	Now func() time.Time
 }
@@ -155,6 +163,7 @@ type Server struct {
 	diff       diffState     // playtest 1 (difficulty.go)
 	qst        questsGlue    // playtest 1: quest logs (quests.go)
 	obst       obstacleState // enemies respect buildings (obstacles.go)
+	pvp        pvpState      // playtest 2: PvP flags, safe zones, duels (pvp.go, duel.go)
 	// WP11: next earshot hand-off (earshot.go).
 	earshotNext time.Time
 	phases      tickPhases // WP19: per-phase tick timing (phases.go)
@@ -261,6 +270,7 @@ func (s *Server) Stop(ctx context.Context) {
 			}
 			break
 		}
+		s.finalLocalSaves(ctx) // playtest 2: local profiles keep where they stood (explore.go)
 		for _, sess := range slices.Clone(s.sessions) {
 			s.kick(sess, proto.KickCodeShutdown, "zone shutting down")
 			s.leave(sess)
@@ -332,11 +342,13 @@ func (s *Server) onTick() {
 	s.handoffTick(tick, now)        // WP16: handoffs, mirrored entities, presence (handoff.go, ghosts.go)
 	s.phases.mark(phWorld)
 	s.combatTick(tick) // WP13: enemies, strikes, claims, respawns (combat.go)
+	s.pvpTick(tick)    // playtest 2: PvP flag timers, safe zones, duels (pvp.go, duel.go)
 	s.phases.mark(phCombat)
 	s.townsTick(tick, s.cfg.Now()) // WP20: townsfolk near players (towns.go)
 	s.phases.mark(phTowns)
-	s.nightTick(tick)  // WP15: clock, demons, defense events, chemistry (night.go)
-	s.questsTick(tick) // quests: flagged rechecks, 2 Hz reach/clear checks (quests.go)
+	s.nightTick(tick)       // WP15: clock, demons, defense events, chemistry (night.go)
+	s.questsTick(tick)      // quests: flagged rechecks, 2 Hz reach/clear checks (quests.go)
+	s.friendTravelTick(now) // playtest 2: travel-to-friend channels (friendtravel.go)
 	s.phases.mark(phNight)
 
 	// Quantize once per entity and rebuild the grid; every client's snapshot
@@ -409,7 +421,7 @@ func (s *Server) join(sess *session) {
 		Level:       1,
 		Health:      100,
 		HealthMax:   100,
-		ListenOnly:  sess.claims.IsLocalProfile, // WP11: local profiles hear voice but never transmit (spec 11)
+		ListenOnly:  sess.claims.IsLocalProfile && s.cfg.VoiceLocalListenOnly, // WP11 rule, off since playtest 2 (Config)
 	}
 	e.Move = movement.NewState(spawn) // WP10: full stamina wheel, ground mode
 	if g := movement.GroundAt(s.cfg.Ground, spawn.X, spawn.Y, spawn.Z); e.Move.Pos.Y < g {

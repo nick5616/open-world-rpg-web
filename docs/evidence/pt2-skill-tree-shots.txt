@@ -1,0 +1,37 @@
+client: http://127.0.0.1:31559
+mock: {"known":14,"spent":11,"spells":["Ember Flick","Frost Bite","Magma Dash","Spark Shot","Kindling","Fireball","Combustion","Glint","Sunstep","Radiant Lance","Spark Jab","Lightning Strike","Frost Needle","Brittle"]}
+ok   look hint hidden while the screen is open
+fire states: {"ember_flick":"learned","magma_dash":"learned","spark_shot":"learned","kindling":"learned","rune_ember":"learnable","fireball":"learned","combustion":"learned","cauterize":"learnable","immolate":"needsPrereq","backdraft":"needsPrereq","eruption":"needsPrereq","amaterasu":"needsPrereq","rune_magma":"needsPrereq","solar_flare":"needsPrereq","inferno_domain":"needsPrereq","phoenix":"needsPrereq","god_ray":"needsPrereq"}
+ok   fire node states (fireball learned, cauterize learnable, immolate needs a prerequisite)
+ok   Learn spends a point (4 -> 3) and Cauterize is learned
+ok   Immolate became learnable
+ok   drag to slot 4: loadout 1 = ["fireball","radiant_lance","lightning_strike","cauterize"]
+ok   pick + click a slot: loadout 2 = ["ember_flick","frost_needle","glint","fireball"]
+ok   tooltip: FireballFire · tier 3 · learnedTypeLobbedDamage85Cooldown2.2 sMana22Range54 mRadius2.5 mStatusBurnYour hitabout 240 (loadout 1, before the enemy's element)In lo
+ok   screen fits the 1920x1080 viewport
+screenshot docs/evidence/pt2-skill-tree-fire-1920x1080.png
+ok   Light tooltip says it kills demons
+screenshot docs/evidence/pt2-skill-tree-earth-1920x1080.png
+screenshot docs/evidence/pt2-skill-tree-weapon-skills-1920x1080.png
+ok   build shows "Sunsteel Blade"
+ok   build shows "Cut Topaz"
+ok   build shows "Silver Cuirass"
+ok   build shows "Loadout 1"
+ok   build shows "Loadout 2"
+ok   build shows "Weapon hits"
+ok   build shows "Crystal"
+ok   build shows "unspent"
+ok   build shows "Kindling"
+ok   build shows "Forge luck"
+ok   build shows "Loot find"
+ok   build shows "kills demons"
+ok   build fits the 1920x1080 viewport
+screenshot docs/evidence/pt2-skill-tree-build-1920x1080.png
+ok   build fits 1280x720
+screenshot docs/evidence/pt2-skill-tree-build-1280x720.png
+ok   tree fits 1280x720
+ok   no overlapping nodes at 1280x720 (Fire)
+screenshot docs/evidence/pt2-skill-tree-fire-1280x720.png
+screenshot docs/evidence/pt2-skill-tree-dark-1280x720.png
+ok   Esc closes the screen
+no page errors; all checks PASS

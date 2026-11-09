@@ -18,11 +18,12 @@
 import { useEffect, useRef, useState, type DragEvent, type ReactNode } from 'react';
 import { ITEM_ACT } from './events';
 import { ItemIcon } from './ItemIcon';
-import { affixLine, baseLine, baseName, displayName, EQ_LABEL, EQ_SLOTS, gemEffect, INV_COLS, INV_SLOTS, isArmor, isConsumable, isEquipped, isGem, isHolo, isWeapon, itemDef, kindLabel, parseSlot, rarityColor, rarityDef, uniqueInfo, type EqSlot, type WireItem } from './items';
+import { affixLine, baseLine, baseName, defaultWeapon, displayName, EQ_LABEL, EQ_SLOTS, trainingWeaponName, gemEffect, INV_COLS, INV_SLOTS, isArmor, isConsumable, isEquipped, isGem, isHolo, isWeapon, itemDef, kindLabel, parseSlot, rarityColor, rarityDef, uniqueInfo, type EqSlot, type WireItem } from './items';
 import { installInventoryDebug } from './dev';
 import { pushToast, setInventoryOpen, useInventory } from './store';
 import { ensureInventoryStyles, GOLD, PANEL_BG, PANEL_BORDER, TEXT } from './styles';
 import { isTextTarget } from '../../input/useKeyboard';
+import { useCombatHud } from '../../combat/store';
 
 const TILE = 52;
 const GAP = 6;
@@ -359,6 +360,8 @@ function InventoryPanel() {
                         <div className={isHolo(it.r) ? 'ls-holo-text' : undefined} style={{ color: rarityColor(it.r), fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 134 }}>
                           {displayName(it)}
                         </div>
+                      ) : slot === 'eq:main0' || slot === 'eq:main1' ? (
+                        <TrainingWeapon loadout={slot === 'eq:main0' ? 0 : 1} />
                       ) : (
                         <div style={{ opacity: 0.4 }}>empty</div>
                       )}
@@ -401,6 +404,30 @@ function InventoryPanel() {
   );
 }
 
+/**
+ * Playtest 2: an empty main hand wields the loadout's training weapon. Say
+ * which, and offer the default (the starter sword) when an older zone or a
+ * stale save left another training weapon there.
+ */
+function TrainingWeapon({ loadout }: { loadout: number }) {
+  const act = useActions();
+  const wielded = useCombatHud((s) => s.loadouts[loadout]?.weapon) ?? defaultWeapon(loadout);
+  const def = defaultWeapon(loadout);
+  return (
+    <div data-testid={`inv-training-${loadout}`}>
+      <div style={{ opacity: 0.75 }} title="Unequip a weapon to fight with this one">
+        {trainingWeaponName(wielded)}
+        {wielded === def ? ' (default)' : ''}
+      </div>
+      {wielded !== def && (
+        <button data-act={`training${loadout}`} style={{ marginTop: 3, fontSize: 11 }} onClick={() => act((a) => a.trainingWeapon?.(loadout, def))}>
+          Use {trainingWeaponName(def)}
+        </button>
+      )}
+    </div>
+  );
+}
+
 function ItemActions({ item, quick }: { item: WireItem; quick: string }) {
   const act = useActions();
   const def = itemDef(item.b);
@@ -413,7 +440,10 @@ function ItemActions({ item, quick }: { item: WireItem; quick: string }) {
         {label}
       </button>,
     );
-  if (eq) b('unequip', 'Unequip', () => send(ITEM_ACT.unequip, EQ_SLOTS.indexOf(item.s as EqSlot)));
+  if (eq && (item.s === 'eq:main0' || item.s === 'eq:main1')) {
+    const lo = item.s === 'eq:main0' ? 0 : 1;
+    b('unequip', `Unequip · use ${trainingWeaponName(defaultWeapon(lo))}`, () => send(ITEM_ACT.unequip, lo), { title: 'Back to your starting weapon; this one goes to the bag' });
+  } else if (eq) b('unequip', 'Unequip', () => send(ITEM_ACT.unequip, EQ_SLOTS.indexOf(item.s as EqSlot)));
   else if (isWeapon(item)) {
     b('equip1', 'Equip · Loadout 1', () => send(ITEM_ACT.equip, 0));
     b('equip2', 'Equip · Loadout 2', () => send(ITEM_ACT.equip, 1));

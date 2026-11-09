@@ -3,6 +3,20 @@ import { FlatGround, type GroundQuery } from '../sim/ground';
 import { chooseMode, headOf, inverseDistanceGain, listenerAxes, relativeToListener, terrainBetween } from './spatial';
 import { loadPrefs } from './store';
 import { TalkController, type Mic } from './talk';
+import { tokenCanPublish } from './token';
+
+describe('voice token grant (playtest 2)', () => {
+  const jwt = (claims: object) => {
+    const b64 = btoa(JSON.stringify(claims)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    return `eyJhbGciOiJIUzI1NiJ9.${b64}.sig`;
+  };
+  it('talks unless the token withholds canPublish (moderator mute)', () => {
+    expect(tokenCanPublish(jwt({ sub: 'c1', video: { roomJoin: true, canPublish: true, canPublishSources: ['microphone'] } }))).toBe(true);
+    expect(tokenCanPublish(jwt({ sub: 'c1', video: { roomJoin: true, canPublish: false } }))).toBe(false);
+    // Unreadable: the SFU enforces the grant anyway, so don't block the button.
+    expect(tokenCanPublish('not-a-jwt')).toBe(true);
+  });
+});
 
 describe('spatial math', () => {
   it('listener axes follow the camera convention (yaw 0 looks down -Z)', () => {

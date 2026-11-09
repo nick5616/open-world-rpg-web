@@ -147,7 +147,8 @@ func main() {
 		cfg.Cluster, cfg.IDBase = clus.r, idBase
 	}
 	if r := startEarshot(ctx, cfg.WorldID, cfg.ZoneID, s.Metrics, log); r != nil {
-		cfg.Earshot = r // WP11 proximity voice (voice.go)
+		cfg.Earshot = r                                                                 // WP11 proximity voice (voice.go)
+		cfg.VoiceLocalListenOnly = env.Bool("LODESTONE_VOICE_LOCAL_LISTEN_ONLY", false) // playtest 2: local profiles may talk
 	}
 	ground, caveTerrain := withCaves(ground, terrain, log) // WP09 (caves.go)
 	ground = withTowns(ground, terrain, &cfg, log)         // WP20: buildings on the ground, townsfolk (towns.go)
@@ -158,6 +159,7 @@ func main() {
 	cfg.Items = itemsSetup(pool, terrain, cfg.Combat, world.Spec, world.ID, log) // WP14 (items.go)
 	withNight(&cfg, terrain, world.Spec, devKey, log)                            // WP15: wards, demons, chemistry, ice/pillar ground (night.go)
 	cfg.Difficulty = difficultySetup(cfg.Combat, pool, world.ID, log)            // playtest 1: discovery-stamped areas (difficulty.go)
+	cfg.PartyChat = partyChat(world.ID, log)                                     // playtest 2: duel results in party chat (pvp.go)
 	zone := game.New(cfg)
 	serveCombatDebug(s.Mux, zone)                  // WP13
 	serveItemsDebug(s, zone, cfg.Items.Containers) // WP14

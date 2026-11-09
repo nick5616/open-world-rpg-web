@@ -17,6 +17,8 @@ prompt. Contract: `docs/cr/012-progression-difficulty.md`; why:
 
 Keys: **C** toggles the character panel (KeyC no longer crouches; crouch is
 Ctrl), **E** on a tower's top attunes (only while the attune prompt shows).
+Playtest 2: the panel's "Skill tree" and "Build overview" buttons open
+`client/src/ui/skills` (keys N and B).
 
 Offline (solo) the panel shows level-1 numbers, the tower prompt works
 from the map's tower list, and nothing is ever attuned (progress is the

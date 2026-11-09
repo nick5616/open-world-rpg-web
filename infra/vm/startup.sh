@@ -87,6 +87,8 @@ umask 022
 REGISTRY_HOST=$(md lodestone-registry-host)
 gcloud auth configure-docker "$REGISTRY_HOST" --quiet
 cd "$APP"
+# LiveKit asks for bigger UDP socket buffers (its boot log warns at 425984).
+sysctl -q -w net.core.rmem_max=5000000 net.core.wmem_max=5000000 || true
 docker compose pull --quiet
 docker compose up -d --remove-orphans
 

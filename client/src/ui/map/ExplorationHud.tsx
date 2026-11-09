@@ -15,6 +15,8 @@ import { hasBit } from './events';
 // Grand discovery intros (replace the discovery/tower/waypoint toasts): client/src/ui/intro/README.md.
 import { DiscoveryIntro } from '../intro/DiscoveryIntro';
 import { INTRO_TOAST_KINDS } from '../intro/intros';
+import { useNetStore } from '../../net/netStore';
+import { exploredFor, markExplored, saveExplored } from './explored';
 
 const TOAST_STYLE: Record<Toast['kind'], { accent: string; icon: string }> = {
   discovery: { accent: '#ffd166', icon: '✦' },
@@ -32,7 +34,7 @@ function Toasts() {
     return () => clearInterval(id);
   }, []);
   return (
-    <div style={{ position: 'fixed', top: 64, left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center', pointerEvents: 'none', zIndex: 13 }}>
+    <div style={{ position: 'fixed', top: 96, left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center', pointerEvents: 'none', zIndex: 13 }}>
       {toasts.filter((t) => !INTRO_TOAST_KINDS.has(t.kind)).map((t) => {
         const s = TOAST_STYLE[t.kind];
         return (
@@ -110,8 +112,32 @@ function popcount8(b: number): number {
   return n;
 }
 
+/** Playtest 2: remember where this character has walked (the map sketches it in). */
+function useExploredTracking() {
+  const worldId = useNetStore((s) => s.ready?.worldId) ?? 'offline';
+  const charId = useNetStore((s) => s.ready?.character.id) ?? 'offline';
+  const worldSize = useMapWorld((s) => s.data?.worldSize) ?? 0;
+  useEffect(() => {
+    if (!worldSize) return;
+    const e = exploredFor(worldId, String(charId), worldSize);
+    let n = 0;
+    const id = setInterval(() => {
+      markExplored(e, localPlayer.pos.x, localPlayer.pos.z);
+      if (++n % 20 === 0) saveExplored(e); // every 10 s
+    }, 500);
+    const flush = () => saveExplored(e);
+    window.addEventListener('pagehide', flush);
+    return () => {
+      clearInterval(id);
+      window.removeEventListener('pagehide', flush);
+      saveExplored(e);
+    };
+  }, [worldId, charId, worldSize]);
+}
+
 export function ExplorationHud() {
   useMapHotkeys();
+  useExploredTracking();
   useEffect(() => {
     if (DEBUG) installMapHandle();
   }, []);

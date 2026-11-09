@@ -18,7 +18,7 @@ import * as THREE from 'three';
 import type { SpellDef, FormDef } from '@lodestone/contracts';
 import { drawnRemotes } from '../../net/netStore';
 import type { RemoteView } from '../../net/interpolation';
-import { localPlayer } from '../../state/live';
+import { localPlayer, view } from '../../state/live';
 import { enemyInfo } from '../events';
 import { budget, col, fxTime, GEO, glowTexture, hot, rand, setFxTier } from './core';
 import { glowPool, smokePool, SHAPE_GLOW, SHAPE_PUFF, SHAPE_SPARK } from './particles';
@@ -93,6 +93,7 @@ const tmpV2 = new THREE.Vector3();
 const tmpQ = new THREE.Quaternion();
 const camPos = new THREE.Vector3();
 const HAND = new THREE.Vector3(-0.24, -0.22, -0.5);
+const tmpHand = { x: 0, y: 0, z: 0 };
 
 const basicCache = new Map<string, THREE.MeshBasicMaterial>();
 function coreMat(c: THREE.Color): THREE.MeshBasicMaterial {
@@ -196,6 +197,12 @@ export class SpellFxEngine {
   /** Where your own casts leave: the off hand in first person (camera space), or the override. */
   private selfHand(out: THREE.Vector3): THREE.Vector3 {
     if (this.handAnchor?.(out)) return out;
+    if (view.third) {
+      // Third person (T): your avatar's casting hand, not the lens.
+      const f = view.feet;
+      this.remoteHand(f.x, f.y, f.z, localPlayer.yaw, tmpHand);
+      return out.set(tmpHand.x, tmpHand.y, tmpHand.z);
+    }
     if (!this.camera) return out.set(localPlayer.pos.x, localPlayer.pos.y + EYE - 0.3, localPlayer.pos.z);
     return out.copy(HAND).applyMatrix4(this.camera.matrixWorld);
   }
@@ -1368,7 +1375,7 @@ export class SpellFxEngine {
     if (!hd.sprite.visible) return;
     this.selfHand(this.handPos);
     hd.sprite.position.copy(this.handPos);
-    const s = 0.05 + 0.05 * k + (charging ? Math.sin(t * 25) * 0.008 : 0);
+    const s = (0.05 + 0.05 * k + (charging ? Math.sin(t * 25) * 0.008 : 0)) * (view.third ? 4 : 1);
     hd.sprite.scale.set(s, s, 1);
     hd.mat.color.copy(hd.color);
     hd.mat.opacity = Math.min(1, k * 1.2);
