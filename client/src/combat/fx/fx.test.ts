@@ -299,6 +299,38 @@ describe('the runtime drives the FX engine', () => {
     e.clear();
     e.dispose();
   });
+  it('every castable spell, every form and every status plays through the engine without errors', () => {
+    vi.useFakeTimers({ toFake: ['performance'] });
+    try {
+      const e = new SpellFxEngine(4);
+      e.prims.ground = { heightAt: (x: number, z: number) => Math.sin(x * 0.1) + Math.cos(z * 0.1) };
+      drawnRemotes.views = [{ id: 50, x: 0, y: 0, z: -12, kind: 2, healthPct: 100, typeId: COMBAT.enemies[0].id } as RemoteView];
+      const cam = new THREE.PerspectiveCamera();
+      cam.position.set(0, 2, 6);
+      cam.updateMatrixWorld();
+      const frames = (n: number) => {
+        for (let i = 0; i < n; i++) {
+          vi.advanceTimersByTime(16);
+          e.update(cam, { width: 1280, height: 720, dpr: 1, maxPoint: 256 });
+        }
+      };
+      for (const sp of COMBAT.spells.filter((s) => s.type !== 'passive')) {
+        e.castFrom(sp, { x: 0, y: 0, z: 0 }, 0, 0, 0, 0, -0.1);
+        frames(20);
+      }
+      for (const f of COMBAT.forms) e.form(f, { x: 0, y: 0, z: 0 }, 0);
+      for (const s of COMBAT.statuses) e.status(50, s.id);
+      frames(200);
+      const st = e.stats();
+      expect(st.casts).toBeGreaterThan(60);
+      expect(st.ongoing).toBeLessThanOrEqual(48);
+      e.clear();
+      e.dispose();
+    } finally {
+      drawnRemotes.views = [];
+      vi.useRealTimers();
+    }
+  });
   it('a missing engine is a no-op and a throwing one never breaks combat', () => {
     setSpellFxEngine(null);
     expect(spellFx.projectile(null, 0, 0, 0, 0, 0, 0, 0, 0, 1)).toBe(0);
