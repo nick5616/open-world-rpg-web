@@ -6,8 +6,11 @@ package main
 // hand the townsfolk to the game. Its own file so main.go gains one line.
 
 import (
+	"context"
 	"log/slog"
 	"time"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"lodestone/server/pkg/env"
 	"lodestone/server/pkg/movement"
@@ -85,4 +88,27 @@ func withTowns(ground movement.Ground, terrain *worldhost.Terrain, cfg *game.Con
 	log.Info("towns ready", "settlements", len(tw.Settlements), "buildings", len(tw.Buildings), "boxes", tw.Boxes.Len(), "npcs", len(tw.NPCs),
 		"roads", len(tw.Roads), "bridges", tw.Bridges, "structures", len(tw.Structures), "bytes", len(b), "ms", time.Since(start).Milliseconds())
 	return out
+}
+
+// doorsConfig persists building door states in Postgres (door_state,
+// migration 0024) when the zone has a database and towns.
+func doorsConfig(cfg *game.Config, pool *pgxpool.Pool) {
+	if pool != nil && cfg.Towns != nil {
+		cfg.DoorStore = &game.PGDoorStore{Pool: pool}
+	}
+}
+
+// restoreDoors loads the persisted door states before the zone ticks, so
+// a restart (or a zone taking a region over) keeps closed doors closed.
+func restoreDoors(ctx context.Context, zone *game.Server, log *slog.Logger) {
+	rctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	n, err := zone.RestoreDoors(rctx)
+	if err != nil {
+		log.Warn("door states not restored (doors start open)", "err", err)
+		return
+	}
+	if n > 0 {
+		log.Info("door states restored", "closed", n)
+	}
 }

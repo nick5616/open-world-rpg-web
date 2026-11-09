@@ -142,6 +142,12 @@ const (
 	ctlTransfer = "transfer" // C's state is at key K: admit it (sender keeps a standby for C)
 	ctlRelease  = "release"  // C logged in on the sender: hand C's live state over (duplicate login across zones)
 	ctlNone     = "none"     // answer to release: C isn't live here
+	// Building doors (doors_sync.go): the zone owning a door's position is
+	// its authority. Door/DoorNo carry the asking character (or "" for an
+	// NPC); DoorSet has none.
+	ctlDoor    = "door"    // to the owner: please open (A 1) / close (A 2) door D for player By
+	ctlDoorNo  = "doorno"  // owner -> asker: refused, A = Event 972 reason
+	ctlDoorSet = "doorset" // owner -> every zone: door D is now open (A 1) / closed (A 2)
 )
 
 type ctlMsg struct {
@@ -149,6 +155,10 @@ type ctlMsg struct {
 	From string `json:"f"`
 	Char string `json:"c"`
 	Key  string `json:"k,omitempty"`
+	// Doors (ctlDoor*): the door prop's stable id, the action or state, who.
+	Door uint64 `json:"d,omitempty"`
+	A    int    `json:"a,omitempty"`
+	By   uint32 `json:"b,omitempty"`
 }
 
 func (m ctlMsg) encode() []byte { b, _ := json.Marshal(m); return b }
@@ -156,7 +166,8 @@ func (m ctlMsg) encode() []byte { b, _ := json.Marshal(m); return b }
 func decodeCtl(b []byte) (ctlMsg, error) {
 	var m ctlMsg
 	err := json.Unmarshal(b, &m)
-	if err == nil && (m.T == "" || m.Char == "") {
+	door := m.T == ctlDoor || m.T == ctlDoorNo || m.T == ctlDoorSet
+	if err == nil && (m.T == "" || (m.Char == "" && !door)) {
 		err = errors.New("control message without type or character")
 	}
 	return m, err

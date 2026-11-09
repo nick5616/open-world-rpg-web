@@ -153,6 +153,7 @@ func main() {
 	ground = withTowns(ground, terrain, &cfg, log)         // WP20: buildings on the ground, townsfolk (towns.go)
 	cfg.Ground = ground
 	miningConfig(&cfg, pool)
+	doorsConfig(&cfg, pool)                                                      // building doors persist (towns.go)
 	cfg.Combat = combatSetup(terrain, world.Seed, world.Spec, devKey, log)       // WP13 (combat.go)
 	cfg.Items = itemsSetup(pool, terrain, cfg.Combat, world.Spec, world.ID, log) // WP14 (items.go)
 	withNight(&cfg, terrain, world.Spec, devKey, log)                            // WP15: wards, demons, chemistry, ice/pillar ground (night.go)
@@ -164,6 +165,7 @@ func main() {
 	serveDifficultyDebug(s.Mux, zone)              // playtest 1
 	restoreEdits(ctx, zone, log)
 	restoreWorldItems(ctx, zone, log) // WP14: dropped items survive a restart (until they despawn)
+	restoreDoors(ctx, zone, log)      // building doors stay as they were left (towns.go)
 
 	origins := strings.Split(env.Str("LODESTONE_CORS_ORIGIN", "*"), ",")
 	ws := &transport.WebSocket{OriginPatterns: origins}

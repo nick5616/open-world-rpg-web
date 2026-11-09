@@ -30,11 +30,15 @@ package game
 // Cost: nothing per tick unless a change is pending (a short list) or a
 // settlement has ever had a door changed (baseline check twice a second);
 // the movement step only wraps the ground while some door is not open.
+//
+// Persistence and multiple zones (the zone owning a door's region decides
+// it, every other zone mirrors it): doors_sync.go.
 
 import (
 	"encoding/binary"
 	"math"
 	"slices"
+	"time"
 
 	"lodestone/server/pkg/constants"
 	"lodestone/server/pkg/movement"
@@ -102,6 +106,12 @@ type doorWorld struct {
 	dirty  []int // settlements whose doors ever changed (baseline checks)
 	opened map[int]int
 	closeQ []npcClose
+	// doors_sync.go: persistence and the other zones.
+	at      []time.Time // when the authority last decided each door
+	unsaved map[int]bool
+	flushes uint64
+	mirror  map[int]doorMirrorWant // another zone's change waiting for ours to settle
+	asked   map[int]uint32         // NPC open requests sent to the authority (tick)
 }
 
 // sessDoors is a session's door bookkeeping and its frame ground.
@@ -118,7 +128,8 @@ func (s *Server) doorsInit() {
 	}
 	tw := s.cfg.Towns.T
 	ds := towns.NewDoors(tw)
-	w := &doorWorld{s: ds, open: make([]bool, ds.Len()), pend: make([]*doorPend, ds.Len()), bySet: make([][]int, len(tw.Settlements)), epoch: make([]uint32, len(tw.Settlements)), opened: map[int]int{}}
+	w := &doorWorld{s: ds, open: make([]bool, ds.Len()), pend: make([]*doorPend, ds.Len()), bySet: make([][]int, len(tw.Settlements)), epoch: make([]uint32, len(tw.Settlements)), opened: map[int]int{},
+		at: make([]time.Time, ds.Len()), unsaved: map[int]bool{}, mirror: map[int]doorMirrorWant{}, asked: map[int]uint32{}}
 	for d := range ds.D {
 		w.open[d] = true
 		if si := ds.D[d].Settlement; si >= 0 && si < len(w.bySet) {
@@ -216,9 +227,16 @@ func doorData(id uint64, step uint32) []byte {
 	return binary.LittleEndian.AppendUint32(b, step)
 }
 
-// doorSchedule changes door d to `to` for everyone, from a stamped input
-// seq per player in range (Event 970 each).
+// doorSchedule is the authority's change of door d to `to`: applied here
+// and persisted / sent to the other zones (doors_sync.go doorChanged).
 func (s *Server) doorSchedule(d int, to bool, by uint32) {
+	s.doorApply(d, to, by)
+	s.doorChanged(d, to, by)
+}
+
+// doorApply changes door d to `to` for everyone on this zone, from a
+// stamped input seq per player in range (Event 970 each).
+func (s *Server) doorApply(d int, to bool, by uint32) {
 	w := s.town.doors
 	dr := &w.s.D[d]
 	was := !w.settledOpen(d)
@@ -263,6 +281,12 @@ func (s *Server) doorBlocked(d int) bool {
 	}
 	for _, sess := range s.sessions {
 		if e := sess.ent; e != nil && touch(e.Move.Pos, e.Move.Vel.X, e.Move.Vel.Z) {
+			return true
+		}
+	}
+	// WP16 ghost band: players another zone simulates, mirrored here.
+	for _, r := range s.cl.remote {
+		if r.Kind == proto.EntityKindPlayer && touch(r.Move.Pos, proto.CmsToVel(r.q.Vx), proto.CmsToVel(r.q.Vz)) {
 			return true
 		}
 	}
@@ -314,7 +338,7 @@ func (s *Server) doorInteract(sess *session, m *proto.Interact) {
 	case !to && s.doorBlocked(d):
 		s.refuseDoor(sess, dr.Prop, dr.ID, DoorRefuseBody)
 	default:
-		s.doorSchedule(d, to, e.ID)
+		s.doorWant(d, to, e.ID, e.CharacterID) // here, or by the door's zone (doors_sync.go)
 	}
 }
 
@@ -325,7 +349,11 @@ func (s *Server) doorsTick(tick uint32) {
 	if w == nil {
 		return
 	}
+	if len(w.unsaved) > 0 && tick%doorFlushTicks == 0 {
+		s.flushDoors()
+	}
 	if len(w.queue) > 0 {
+		var settled []int
 		w.queue = slices.DeleteFunc(w.queue, func(d int) bool {
 			p := w.pend[d]
 			if p == nil {
@@ -348,8 +376,15 @@ func (s *Server) doorsTick(tick uint32) {
 			w.open[d] = p.to
 			w.pend[d] = nil
 			w.recount(d, was)
+			settled = append(settled, d)
 			return true
 		})
+		for _, d := range settled { // another zone decided meanwhile
+			if m, ok := w.mirror[d]; ok {
+				delete(w.mirror, d)
+				s.doorMirror(d, m.to, m.by)
+			}
+		}
 	}
 	if tick%npcEveryTicks != 0 {
 		return
@@ -385,7 +420,7 @@ func (s *Server) doorsTick(tick uint32) {
 			if e := s.town.active[c.npc]; e != nil {
 				by = e.ID
 			}
-			s.doorSchedule(c.door, false, by)
+			s.doorWant(c.door, false, by, "")
 			return true
 		})
 	}
@@ -471,7 +506,14 @@ func (g npcDoors) Pass(i, b int) bool {
 	if e := g.s.town.active[i]; e != nil {
 		by = e.ID
 	}
-	g.s.doorSchedule(d, true, by) // a hand on the latch
+	if _, mine := g.s.doorOwner(d); !mine {
+		// Another zone's door: ask it (once every 2 s) and wait for its 970.
+		if t, ok := w.asked[d]; ok && g.s.tick-t < 60 {
+			return false
+		}
+		w.asked[d] = g.s.tick
+	}
+	g.s.doorWant(d, true, by, "") // a hand on the latch
 	w.opened[d] = i
 	return false
 }

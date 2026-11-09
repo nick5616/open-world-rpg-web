@@ -820,7 +820,7 @@ Known gaps:
 - The client applies ops 2 steps (400 ms) after the zone, so a player standing exactly where a pillar rises, ice forms or an updraft starts may see one prediction correction. Bots (`tools/bots`, nightbots) predict without the chemistry overlay.
 - Cells outside a client's 256 m interest can diverge until it comes back in range (a fresh baseline heals them); the acceptance keeps both clients inside the fire's range.
 - Network Light-magic kill is tested in-process only (the combat bot casts its slot spell only at targets its weapon can't reach); sunsteel and sunrise are tested over the network.
-- Enemies (and demons) still steer straight over the heightfield and walk through buildings (WP13 gap); demons shadow-step when stranded. Wave demons ignore the walls of walled towns.
+- Enemies (and demons) still steer straight over the heightfield (WP13 gap); demons shadow-step when stranded. ~~They walk through buildings~~ (fixed in pt/server-polish: every solid town box, i.e. the players' building collision, and closed doors block them; a stranded demon still shadow-steps, never into a building).
 - Lords exist only where the atlas has demon lairs (the official world has none, so no lord walks there; dev Interact 52/3 arg 2 raises one). Demon horn/eye decoration is a client overlay on WP13's capsule bodies, not a model.
 - Two zones of a WP16 cluster each run night spawning for their own players and defense events for towns near their players; a town on a region border with players on both sides could run the event on both zones (not handled). The dev "set time" Interact is per zone.
 - Rain visuals are streaks only (no wet materials: WP05's `uWet` not driven); no thunder/lightning flashes; the sky's moon disc does not show the phase (the HUD does).
@@ -955,7 +955,7 @@ Known gaps:
 - No spellbook/skill-tree screen yet: the Ward teaches Light with a tome that slots itself; other trees still need tomes.
 - NPC requests other than bounties don't exist yet (bounty keeper jobs are the NPC requests); slay bounties need a night and a demon near the site; a clear bounty at a site with no enemy group completes on arrival.
 - The account upgrade (local profile -> account) does not copy the quest log; a dead zone's unsaved quest changes are lost like other progress (WP16 gap).
-- Doors: state is in zone memory (a restart reopens all) and per zone in a WP16 cluster; bots predict without doors; the zone's view extrapolation ignores doors.
+- Doors: bots predict without doors; the zone's view extrapolation ignores doors. (~~State in zone memory, per zone in a cluster~~: persisted and owned by the region's zone since pt/server-polish.)
 - Remote avatars hold their weapon at rest only (remote swings aren't replicated); the intro sting was never heard in headless runs.
 - There is still no shader warm-up list on main (WP19 second pass): the new weapon material, quest beam and doors compile on first use.
 

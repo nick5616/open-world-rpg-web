@@ -93,6 +93,9 @@ type Config struct {
 	Towns       *npc.World
 	Stations    Stations
 	TimeOffsetS float64
+	// Building door states (doors_sync.go): persisted by the zone owning
+	// each door's region; nil = zone memory only.
+	DoorStore DoorStore
 	// WP14 items (items.go): persistence, world containers, loot themes,
 	// the drop despawn timer, the Bitchin' announcement; nil = memory-only
 	// items with the spec's timers.
@@ -262,6 +265,7 @@ func (s *Server) Stop(ctx context.Context) {
 			s.kick(sess, proto.KickCodeShutdown, "zone shutting down")
 			s.leave(sess)
 		}
+		s.flushDoors() // doors changed in the last second (doors_sync.go)
 		if s.cfg.Queue != nil {
 			if err := s.cfg.Queue.Flush(ctx); err != nil {
 				s.log.Error("write-behind flush", "err", err, "left", s.cfg.Queue.Depth())
