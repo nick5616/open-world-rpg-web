@@ -1,6 +1,6 @@
 package game
 
-// Duels between party members (playtest 2, CR 018: "duels if you are [in
+// Duels between party members (playtest 2, CR 019: "duels if you are [in
 // the same party], which are a facilitated means").
 //
 //	challenge (Interact 70 action 2, within pvp.duel.challengeRangeM, same

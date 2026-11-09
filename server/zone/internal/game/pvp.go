@@ -1,6 +1,6 @@
 package game
 
-// Opt-in PvP (playtest 2, CR 018: "Add pvp option if not in the same party
+// Opt-in PvP (playtest 2, CR 019: "Add pvp option if not in the same party
 // and duels if you are"). The rules live here; the hit itself is validated
 // and applied by combat.World.ClaimPlayer exactly like a PvE claim.
 //

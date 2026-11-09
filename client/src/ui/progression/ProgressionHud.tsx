@@ -251,7 +251,7 @@ function CharacterPanel() {
           </div>
         ))}
       </Section>
-      {/* Playtest 2: the PvP flag and how duels work (CR 018) */}
+      {/* Playtest 2: the PvP flag and how duels work (CR 019) */}
       <PvpPanelSection />
       {area && (
         <Section title="Where you stand">

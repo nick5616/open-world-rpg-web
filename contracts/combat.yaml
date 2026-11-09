@@ -24,7 +24,7 @@
 # Ported wizard-wars names are unchanged.
 version: 4   # v2: WP15 (docs/cr/011-wp15-night-chemistry.md): materials, killsDemons on the Light tree and form, demons
              # v3: playtest 1 (docs/cr/012-progression-difficulty.md): slimes, the beginner table, leveling, discovery-stamped difficulty tiers
-             # v4: playtest 2 (docs/cr/018-pvp-duels.md): opt-in PvP and party duels (the pvp block)
+             # v4: playtest 2 (docs/cr/019-pvp-duels.md): opt-in PvP and party duels (the pvp block)
 
 elements: [fire, ice, lightning, earth, wind, light, dark, void] # index = worldgen element id; 8 = physical
 
@@ -802,7 +802,7 @@ difficulty:
     - {key: deadly, name: The Deadlands, minLevel: 20, beginner: 0, elite: 1.6, demons: 1.25, greater: 1.5, demonSpeed: 1.05, lords: true, bosses: true, defense: true}
 
 pvp:
-  # Playtest 2 (CR 018): opt-in PvP between players who are not in the same
+  # Playtest 2 (CR 019): opt-in PvP between players who are not in the same
   # party, and duels between party members. Applied by the zone
   # (server/zone/internal/game/pvp.go, duel.go; combat.World.ClaimPlayer) and
   # shown by the client (client/src/ui/pvp).

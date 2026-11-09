@@ -1,6 +1,6 @@
 package main
 
-// Playtest 2 (CR 018): duel results in party chat. The zone posts a system
+// Playtest 2 (CR 019): duel results in party chat. The zone posts a system
 // line through the social service's bus (the same envelope as the
 // Bitchin' announcement, items.go), addressed to the party members it hosts.
 

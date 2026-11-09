@@ -53,8 +53,12 @@ interface LocalShot {
 
 interface Active {
   s: Started;
+  /** The view (InputFrame) yaw/pitch at the start: melee cones, as the zone validates them. */
   yaw: number;
   pitch: number;
+  /** Playtest 2: the converged crosshair aim (= yaw/pitch in first person): shots and aimed areas. */
+  aimYaw: number;
+  aimPitch: number;
   hit: Set<number>;
   impact: { x: number; y: number; z: number } | null;
   ticks: number; // area ticks claimed so far (lingering spells)
@@ -71,11 +75,19 @@ export class CombatRuntime {
   private shots: LocalShot[] = [];
   private pendingClaims = new Map<string, { at: number; x: number; y: number; z: number; kind: 'move' | 'spell' | 'form' }>();
   hitstopUntil = 0;
+  /** Playtest 2: the newest action this player started, and a counter (the own third-person avatar animates from it). */
+  lastStarted: Started | null = null;
+  startedCount = 0;
   private detach: (() => void) | null = null;
   ground: GroundQuery | null = null;
   enabled = true;
 
   constructor(private link: CombatLink) {}
+
+  /** Our own entity id (0 before Welcome). */
+  selfId(): number {
+    return this.link.selfId();
+  }
 
   /** Keyboard/mouse listeners (browser only). */
   attachInput(target: Window = window): void {
@@ -283,8 +295,10 @@ export class CombatRuntime {
     const yaw = localPlayer.yaw;
     const pitch = localPlayer.pitch;
     this.probe.started(s, performance.now());
+    this.lastStarted = s;
+    this.startedCount++;
     const total = s.startup + s.active + Math.max(0, s.spell?.durationSteps ?? 0);
-    this.actives.push({ s, yaw, pitch, hit: new Set(), impact: null, ticks: 0, until: s.seq + total + 1 });
+    this.actives.push({ s, yaw, pitch, aimYaw: localPlayer.aimYaw, aimPitch: localPlayer.aimPitch, hit: new Set(), impact: null, ticks: 0, until: s.seq + total + 1 });
     const color = s.spell?.color ?? (s.form ? '#ffd76a' : '#e8e8e8');
     if (s.move && s.move.speed === 0) fxQueue.push({ t: 'swing', arc: s.move.arc, reach: s.move.reach, color, durationMs: (s.startup + s.active) * STEP_MS, at: performance.now() });
     // Sound from the prediction, instantly (spec 8); client/src/audio/triggers.ts.
@@ -310,7 +324,7 @@ export class CombatRuntime {
         return;
       }
       if (m.radius > 1) {
-        if (seq === firstHit) this.areaAt(a, this.aimPoint(eye, a, m.reach), m.radius, s, '#c8c8c8');
+        if (seq === firstHit) this.areaAt(a, this.aimPoint(eye, a.aimYaw, a.aimPitch, m.reach), m.radius, s, '#c8c8c8');
         return;
       }
       if (seq >= firstHit + s.active) return;
@@ -360,8 +374,8 @@ export class CombatRuntime {
         const every = sp.type === 'beam' ? Math.max(1, Math.floor(Math.max(1, sp.durationSteps) / ticks)) : 1;
         if (seq < firstHit || (seq - firstHit) % every !== 0 || a.ticks >= ticks) return;
         a.ticks++;
-        const t = this.aimTarget(eye, localPlayer.yaw, localPlayer.pitch, sp.range, 6);
-        const end = t ? { x: t.x, y: t.y + 0.9, z: t.z } : this.aimPoint(eye, { ...a, yaw: localPlayer.yaw, pitch: localPlayer.pitch }, sp.range);
+        const t = this.aimTarget(eye, localPlayer.aimYaw, localPlayer.aimPitch, sp.range, 6);
+        const end = t ? { x: t.x, y: t.y + 0.9, z: t.z } : this.aimPoint(eye, localPlayer.aimYaw, localPlayer.aimPitch, sp.range);
         fxQueue.push({ t: 'beam', x: eye.x, y: eye.y - 0.3, z: eye.z, x2: end.x, y2: end.y, z2: end.z, color, durationMs: sp.type === 'beam' ? every * STEP_MS + 30 : 120, at: performance.now() });
         if (!t) return;
         this.predictHit(s, t, st.pos, 'spell', sp.type === 'beam');
@@ -382,7 +396,7 @@ export class CombatRuntime {
       }
       case 'direct': {
         if (seq !== firstHit) return;
-        const t = this.aimTarget(eye, a.yaw, a.pitch, sp.range, 12);
+        const t = this.aimTarget(eye, a.aimYaw, a.aimPitch, sp.range, 12);
         if (t) {
           fxQueue.push({ t: 'area', x: t.x, y: t.y, z: t.z, radius: 1.2, color, durationMs: 500, at: performance.now() });
           this.predictHit(s, t, st.pos, 'spell');
@@ -394,7 +408,7 @@ export class CombatRuntime {
       case 'rune': {
         const lingering = sp.type === 'rune' || sp.durationSteps > 0;
         if (seq === firstHit) {
-          a.impact = sp.selfCast || sp.type === 'domain' || sp.cone > 0 || sp.line > 0 ? { ...st.pos } : this.aimPoint(eye, a, sp.range);
+          a.impact = sp.selfCast || sp.type === 'domain' || sp.cone > 0 || sp.line > 0 ? { ...st.pos } : this.aimPoint(eye, a.aimYaw, a.aimPitch, sp.range);
           const r = sp.type === 'domain' ? sp.radius : sp.cone > 0 ? sp.radius : sp.line > 0 ? sp.line : sp.radius;
           fxQueue.push({ t: 'area', x: a.impact.x, y: a.impact.y, z: a.impact.z, radius: r, color, durationMs: Math.max(400, sp.durationSteps * STEP_MS), at: performance.now() });
         }
@@ -424,11 +438,11 @@ export class CombatRuntime {
   }
 
   /** The aim point on the terrain along the look ray (or at range). */
-  private aimPoint(eye: { x: number; y: number; z: number }, a: { yaw: number; pitch: number }, range: number): { x: number; y: number; z: number } {
-    const cp = Math.cos(a.pitch);
-    const dx = -Math.sin(a.yaw) * cp;
-    const dz = -Math.cos(a.yaw) * cp;
-    const dy = Math.sin(a.pitch);
+  private aimPoint(eye: { x: number; y: number; z: number }, yaw: number, pitch: number, range: number): { x: number; y: number; z: number } {
+    const cp = Math.cos(pitch);
+    const dx = -Math.sin(yaw) * cp;
+    const dz = -Math.cos(yaw) * cp;
+    const dy = Math.sin(pitch);
     for (let d = 1; d <= range; d += 0.5) {
       const x = eye.x + dx * d;
       const y = eye.y + dy * d;
@@ -462,8 +476,9 @@ export class CombatRuntime {
 
   private launch(s: Started, speed: number, gravity: number, radius: number, range: number, pierce: boolean, aoe: number, a: Active, yawOff = 0, color = '#e8d8a0'): void {
     const eye = { x: localPlayer.pos.x, y: localPlayer.pos.y + EYE - 0.15, z: localPlayer.pos.z };
-    const yaw = localPlayer.yaw + yawOff;
-    const pitch = localPlayer.pitch + (gravity > 0 ? 0.05 : 0);
+    // Playtest 2: the converged aim (third person: toward what the crosshair is on).
+    const yaw = localPlayer.aimYaw + yawOff;
+    const pitch = localPlayer.aimPitch + (gravity > 0 ? 0.05 : 0);
     const cp = Math.cos(pitch);
     const sh: LocalShot = { started: s, x: eye.x, y: eye.y, z: eye.z, vx: -Math.sin(yaw) * cp * speed, vy: Math.sin(pitch) * speed, vz: -Math.cos(yaw) * cp * speed, gravity, radius, left: range, hit: new Set(), pierce, aoe, fx: shotIds++ };
     this.shots.push(sh);

@@ -1,6 +1,6 @@
 package game
 
-// Playtest 2 (CR 018): opt-in PvP and party duels, driven in-process (fake
+// Playtest 2 (CR 019): opt-in PvP and party duels, driven in-process (fake
 // connections, one onTick per call, a simulated clock) so every timer is
 // exact: the rules matrix (flags x party x safe zone x duel), the flag's
 // anti-abuse timers, open-PvP hits and kills, and the duel lifecycle.
@@ -194,7 +194,7 @@ func TestPvPRulesMatrix(t *testing.T) {
 				a.party, b.party = 7, 9
 			}
 			how, reason, ok := pvpRule(a, b, duel)
-			// The expectation, written out as the rules read in CR 018.
+			// The expectation, written out as the rules read in CR 019.
 			var wantOK bool
 			var wantReason uint8
 			switch {

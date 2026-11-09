@@ -24,6 +24,35 @@ export const localPlayer = {
   drowned: false,
   /** Rain as the last movement step saw it (weather stub). */
   raining: false,
+  /**
+   * Playtest 2: the combat aim. First person it is the view (yaw, pitch);
+   * third person it is converged from the eye onto what the crosshair (the
+   * camera's ray) is on, so shots and casts land under the crosshair.
+   */
+  aimYaw: 0,
+  aimPitch: 0,
+};
+
+/** Playtest 2: local actions with no other hook, counted for the own third-person avatar. */
+export const localActions = {
+  /** Pickaxe swings at a vein (world/caves/caveManager.ts). */
+  mineSwings: 0,
+};
+
+/**
+ * Playtest 2 third person: what the camera is doing this frame. `eye` is the
+ * player's own eye (drawn), where interactions, mining and casts act from;
+ * in first person the camera sits there.
+ */
+export const view = {
+  third: false,
+  /** Drawn feet position (the interpolated render pose the camera follows). */
+  feet: { x: 0, y: 0, z: 0 },
+  eye: { x: 0, y: 0, z: 0 },
+  /** Third-person boom length after collision (m); 0 in first person. */
+  boom: 0,
+  /** Hide the own body: first person, or a boom so short the camera is in the head. */
+  hideBody: true,
 };
 
 /**

@@ -1,4 +1,4 @@
-# CR 018: opt-in PvP and party duels (playtest 2)
+# CR 019: opt-in PvP and party duels (playtest 2)
 
 Nicole, playtest 2: "Add pvp option if not in the same party and duels if you are which are a facilitated means". Spec section 2 said "No PvP of any kind, no duels, no kill feeds"; this CR amends it (docs/SPEC.md section 2 notes the change). Players still cannot hurt each other unless both opt in, or agree to a duel.
 

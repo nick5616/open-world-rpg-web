@@ -16,7 +16,7 @@
 import { useMemo } from 'react';
 import { createPortal, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
-import { localPlayer } from '../../state/live';
+import { localPlayer, view } from '../../state/live';
 import { combatRuntime } from '../link';
 import { useCombatHud } from '../store';
 import { moveOf } from '../timeline';
@@ -148,6 +148,10 @@ export function FirstPersonWeapon() {
   useFrame((_, delta) => {
     const rt = combatRuntime.current;
     if (!rt) return;
+    // Playtest 2: third person draws the weapon in the avatar's hand; the
+    // view model keeps running hidden (the probe's hitstop measurement).
+    // (Backed against a wall the boom collapses into the head: the view model returns.)
+    rig.root.visible = !view.third || view.hideBody;
     const now = performance.now();
     tickWeaponMaterial(scene, now);
 

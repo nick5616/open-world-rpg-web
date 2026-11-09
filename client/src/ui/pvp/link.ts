@@ -1,4 +1,4 @@
-// Connects a zone session to the PvP store (playtest 2, CR 018): Events
+// Connects a zone session to the PvP store (playtest 2, CR 019): Events
 // 990-997 in, Interact 70 out, PvP refusals of hit claims as messages, the
 // /pvp and /duel chat commands. NetPlay calls it right after attachCombat
 // (it chains the combat runtime's HitResult handler).

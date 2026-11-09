@@ -317,9 +317,9 @@ export function parseCombat(doc, consts) {
   if (tiers[0].demons !== 0) fail('difficulty.tiers.haven: no demons in the Haven');
   const difficulty = { cellM: df.cellM, havenRadiusM: df.havenRadiusM, maxStep: df.maxStep, neighbourWeight: df.neighbourWeight, dangerBonus: df.dangerBonus, maxLevel: df.maxLevel, stampReachM: df.stampReachM, demonSafeBelow: df.demonSafeBelow, demonSafeMarginM: df.demonSafeMarginM, tiers };
 
-  // Playtest 2 (CR 018): opt-in PvP and party duels.
+  // Playtest 2 (CR 019): opt-in PvP and party duels.
   const pv = doc.pvp;
-  if (!pv || !pv.duel) fail('pvp: missing (CR 018)');
+  if (!pv || !pv.duel) fail('pvp: missing (CR 019)');
   for (const k of ['damageMult', 'flagOffDelayS', 'toggleCooldownS', 'combatLockS', 'settlementMarginM']) num(pv[k], `pvp.${k}`);
   for (const k of ['challengeRangeM', 'answerS', 'countdownS', 'ringRadiusM', 'outsideForfeitS', 'maxS']) num(pv.duel[k], `pvp.duel.${k}`);
   if (pv.damageMult <= 0 || pv.damageMult > 1) fail('pvp.damageMult: 0 < m <= 1 (PvP never hits harder than PvE)');
@@ -421,7 +421,7 @@ export interface CombatDefs {
   leveling: LevelingDef;
   /** Playtest 1 (CR 012): discovery-stamped area difficulty. */
   difficulty: DifficultyDef;
-  /** Playtest 2 (CR 018): opt-in PvP and party duels. */
+  /** Playtest 2 (CR 019): opt-in PvP and party duels. */
   pvp: PvpDef;
 }
 export interface LevelingDef {

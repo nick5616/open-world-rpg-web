@@ -7,6 +7,8 @@ import { DebugHud } from '../hud/DebugHud';
 import { DebugPanel } from '../hud/DebugPanel';
 import { Crosshair, LockHint } from '../hud/Overlays';
 import { StaminaWheel } from '../hud/StaminaWheel';
+// Playtest 2: T toggles the third-person camera (hud/ViewHud.tsx, scene/thirdPerson.ts).
+import { ViewHud } from '../hud/ViewHud';
 import { useDebugHotkeys } from '../hud/useDebugHotkeys';
 import { useAppStore } from '../stores/appStore';
 import { NetPlay, useOnlineSession } from '../net/NetPlay';
@@ -51,6 +53,7 @@ export default function PlayScreen() {
       <Crosshair />
       <StaminaWheel />
       <LockHint />
+      <ViewHud />
       {DEBUG && <DebugLayer />}
       <SocialOverlay />
       <ExplorationHud />
@@ -61,7 +64,7 @@ export default function PlayScreen() {
       <InventoryScreen />
       <CraftPanel />
       <ProgressionHud />
-      {/* Playtest 2: PvP flag, duel prompt, countdown, result, kill feed (CR 018) */}
+      {/* Playtest 2: PvP flag, duel prompt, countdown, result, kill feed (CR 019) */}
       <PvpHud />
       <SkillScreen />
       {/* Playtest 1: quest tracker, offers with location previews, journal (J) */}

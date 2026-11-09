@@ -277,7 +277,7 @@ export const ZONE_EVENTS: Record<number, EventHandler> = {
   804: (_e, a) => a.play('rest'),
   805: (e, a) => a.play(e.targetId === 1 ? 'smelt' : 'station_open', { at: a.selfPos() }),
   807: (_e, a) => a.play('coins'),
-  // Playtest 2 PvP and duels (CR 018)
+  // Playtest 2 PvP and duels (CR 019)
   990: (e, a) => a.play(e.value & 1 ? 'ui_confirm' : 'ui_close'),
   991: (_e, a) => a.play('ui_error'),
   992: (_e, a) => {

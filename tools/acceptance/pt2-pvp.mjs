@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Playtest 2 (CR 018): opt-in PvP and party duels, end to end. A private
+// Playtest 2 (CR 019): opt-in PvP and party duels, end to end. A private
 // stack built from this checkout (account, director, zone, social on random
 // ports, a scratch database: a fresh world), the client from Vite, and two
 // headless Chromium players signed in with dev auth, driving the real UI:
@@ -235,7 +235,7 @@ async function flagOn(page) {
 let browsers = [];
 const errors = [];
 try {
-  step(`Playtest 2 PvP + duels (CR 018), run ${RUN}`);
+  step(`Playtest 2 PvP + duels (CR 019), run ${RUN}`);
   const taken = new Set();
   const PORT = { account: await freePort(taken), director: await freePort(taken), zone: await freePort(taken), social: await freePort(taken), vite: await freePort(taken) };
   ZONE = `http://${H}:${PORT.zone}`;
@@ -395,7 +395,7 @@ try {
     if (settlements.some((s) => Math.hypot(s.x - c.x, s.z - c.z) < 250)) continue;
     await rejoinAt(a, charA, c);
     await sleep(1000);
-    await flagOn(a); // a fresh session starts unflagged (CR 018)
+    await flagOn(a); // a fresh session starts unflagged (CR 019)
     await sleep(700); // 990 carries the safe-zone bit
     const p = await pl(a);
     const st = await pvp(a);

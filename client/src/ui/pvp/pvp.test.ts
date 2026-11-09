@@ -1,4 +1,4 @@
-// Playtest 2 PvP and duels (CR 018): the client state machine, the hostile
+// Playtest 2 PvP and duels (CR 019): the client state machine, the hostile
 // rule the combat runtime uses, chat commands and the wire decoders.
 
 import { describe, expect, it } from 'vitest';

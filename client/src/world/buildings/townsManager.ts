@@ -40,7 +40,7 @@ import { PK } from './props';
 import { SK } from './structures';
 import type { BuildingsIn, BuildingsOut } from './protocol';
 import { netRuntime } from '../../net/netStore';
-import { localPlayer } from '../../state/live';
+import { localPlayer, view } from '../../state/live';
 import { DoorSync } from './doors';
 import { DoorRenderer } from './doorsMesh';
 
@@ -384,7 +384,7 @@ export class TownsManager {
         }
       }
     }
-    this.hud.update(pickTarget(cam, fwd, cands));
+    this.hud.update(pickTarget(view.third ? view.eye : cam, fwd, cands)); // playtest 2: reach from the eye in third person
     this.stats.settlements = this.settlements.size;
     this.stats.structures = this.structures.size;
     this.stats.cells = this.cells.size;

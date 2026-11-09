@@ -1,4 +1,4 @@
-// PvP and duel client state (playtest 2, CR 018): zustand, updated at event
+// PvP and duel client state (playtest 2, CR 019): zustand, updated at event
 // rate. `reducePvp` is a pure function of (state, event, now) so the whole
 // flow is unit-tested (pvp.test.ts); `hostileTo` decides which remote
 // players the combat runtime may predict hits on.

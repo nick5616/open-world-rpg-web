@@ -1,4 +1,4 @@
-// Playtest 2 PvP and duels (CR 018): Event kinds 990-997, Interact 70 and
+// Playtest 2 PvP and duels (CR 019): Event kinds 990-997, Interact 70 and
 // the payload decoders. Mirrors server/zone/internal/game/pvp.go, duel.go
 // and contracts/events.md.
 

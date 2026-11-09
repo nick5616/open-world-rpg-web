@@ -603,7 +603,7 @@ func (w *World) applyDamage(e *Enemy, src uint32, dmg float64, element int, at m
 }
 
 // healPlayer heals a player (Light tree, lifesteal; players help each other
-// freely and hurt each other only through PvP rules: pvp.go, CR 018).
+// freely and hurt each other only through PvP rules: pvp.go, CR 019).
 func (w *World) healPlayer(by, p *Player, amount float64) {
 	if p.Downed || amount <= 0 {
 		return

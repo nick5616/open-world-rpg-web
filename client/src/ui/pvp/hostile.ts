@@ -1,4 +1,4 @@
-// The combat runtime's question (playtest 2, CR 018): is this remote player
+// The combat runtime's question (playtest 2, CR 019): is this remote player
 // someone I may attack right now? Reads the PvP store and my party (Event
 // 607, the map store). Kept free of React so the runtime can import it.
 

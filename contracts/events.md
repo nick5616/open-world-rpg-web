@@ -19,7 +19,7 @@ for your package; document each kind's use of `entityId`, `targetId`, `value`,
 | 950-969 | Playtest 1 quests (CR 013: quest log, offers, steps, completion) |
 | 970-979 | Playtest 1 building doors (CR 013; WP20 follow-up) |
 | 980-989 | Playtest 2 travel to a friend (CR 017). 983-989 reserved |
-| 990-999 | Playtest 2 PvP and duels (CR 018: the PvP flag, kill feed, duel challenge, state and result). 998-999 reserved |
+| 990-999 | Playtest 2 PvP and duels (CR 019: the PvP flag, kill feed, duel challenge, state and result). 998-999 reserved |
 
 ## Registered kinds
 
@@ -42,7 +42,7 @@ for your package; document each kind's use of `entityId`, `targetId`, `value`,
 | 211 | `camp_cleared` | WP13. Within 120 m: `targetId` = group id, `value` = group kind (1 camp, 2 bandit, 3 guardian, 4 pack, 6 test), `x/y/z` = anchor, `data` = site name |
 | 212 | `combat_sync` | WP13. To you after join and after every change: `value` = active loadout, `data` = u8 version(1) \| u8 active \| 2 x (u8 weapon id \| 4 x u16 spell id, 0 empty \| i8 gem element, -1 none) \| u16 n + n x u16 known spell ids \| u8 n + n x (u8 skill id \| u32 xp) \| u16 mana max x10 \| u8 drink charges \| u16 skill points left \| u8 character level \| 2 x u8 weapon look material code per loadout (pt/ux; see "Players" below; absent from older zones) |
 | 213 | `mana` | WP13. To you, on change at most 5 Hz: `value` = mana x10, `targetId` = mana max x10 |
-| 214 | `cast` | WP13. Another player's attack or cast started (within 64 m, not to the caster): `entityId` = caster, `targetId` = attack/spell/form id (\| 0x8000 = a dash variant), `x/y/z` = origin, `data` = u16 yaw \| i16 pitch |
+| 214 | `cast` | WP13. Another player's attack or cast started (within 64 m, not to the caster): `entityId` = caster, `targetId` = attack/spell/form id (\| 0x8000 = a dash variant; 0x4001 = the secondary button went down on a sword, spear or bow: parry stance, spear charge, bow draw (CR 018), once per press), `x/y/z` = origin, `data` = u16 yaw \| i16 pitch |
 | 215 | `refused` | WP13. To you: an attack, cast or combat Interact was refused. `targetId` = attack/spell id (or the Interact action), `value` = reason (HitResult refusal codes below), `data` = u32 start seq |
 | 216 | `skill_up` | WP13. To you: `targetId` = skill id (combat.yaml skills), `value` = new level, `data` = UTF-8 technique key unlocked at this level (empty if none) |
 | 217 | `heal` | WP13. To the healed player: `entityId` = healer, `targetId` = you, `value` = amount (`data` = [1] for a heal over time) |
@@ -122,7 +122,8 @@ for your package; document each kind's use of `entityId`, `targetId`, `value`,
 | 703 | `drop_spawned` | WP09. To the owner: `entityId` = pickup entity, `targetId` = owner, `value` = quantity, `data` = item id (UTF-8, `ore:<name>` / `gem:<name>:<cut>` until WP14 defines items) |
 | 704 | `item_granted` | WP09 (grant hook for WP14). To the player: `entityId` = player, `targetId` = the pickup taken, `value` = quantity, `data` = item id |
 | 706 | `mine_refused` | WP09. To the miner: `value` = 1 too far, 2 already mined, 3 unknown vein, 4 swinging too fast; `data` = u64 vein id |
-| 990 | `pvp_state` | Playtest 2 (CR 018). To you, whenever your PvP flag changes (and when you arrive flagged from another zone; never to a player who has not touched the flag): `entityId` = you, `value` = bits: 1 flagged (also while turning off), 2 turning off, 4 you stand in a safe zone (only while flagged); `targetId` = ms until a waiting turn-off applies (0 none), `data` = UTF-8 safe zone name (bit 4: a settlement's name, or "the Haven") |
+| 707 | `mine_swing` | CR 018 (playtest 2 avatar animation). Within 64 m of the miner, not to the miner: another player swung a pickaxe at a vein (an accepted swing, the one that sends them 701). `entityId` = miner, `x/y/z` = the vein (cm), `targetId`/`value`/`data` unused |
+| 990 | `pvp_state` | Playtest 2 (CR 019). To you, whenever your PvP flag changes (and when you arrive flagged from another zone; never to a player who has not touched the flag): `entityId` = you, `value` = bits: 1 flagged (also while turning off), 2 turning off, 4 you stand in a safe zone (only while flagged); `targetId` = ms until a waiting turn-off applies (0 none), `data` = UTF-8 safe zone name (bit 4: a settlement's name, or "the Haven") |
 | 991 | `pvp_refused` | Playtest 2. To you: an Interact 70 was refused. `value` = reason: 1 you fought within `pvp.combatLockS`, 2 a flag request within `pvp.toggleCooldownS` (`targetId` = ms left), 3 already in that state, 4 no such player on this zone, 5 a duel needs the same party (flag for PvP instead), 6 farther than `pvp.duel.challengeRangeM`, 7 you or they already have a duel or a challenge, 8 nothing to answer or yield, 9 you or they are down, 10 bad action; `targetId` (reasons 4-9) = the player asked about |
 | 992 | `pvp_hit` | Playtest 2. To you: a player hit you (open PvP or your duel). `entityId` = the attacker, `targetId` = you, `value` = health lost, `x/y/z` = the attacker, `data` = u8 1 if it was a duel hit. Players within 64 m (not you) get `strike_hit` (222) with `targetId` = the attacker; the attacker gets the HitResult |
 | 993 | `pvp_kill` | Playtest 2. Kill feed, to the killer, the victim and players within 64 m of the victim: `entityId` = killer, `targetId` = victim, `x/y/z` = where, `data` = UTF-8 JSON `{"killer": name, "victim": name}`. The victim also gets the usual `player_downed` (203, `targetId` = the killer) and respawns as from any death (nothing dropped) |
@@ -133,7 +134,7 @@ for your package; document each kind's use of `entityId`, `targetId`, `value`,
 
 HitResult refusal codes (HitResult.flags when `accepted` is false; also
 Event 215 `value`): 1 not an enemy (a player you may not fight: one of you
-is not flagged for PvP, CR 018), 2 unknown target, 3 dead, 4 unknown attack,
+is not flagged for PvP, CR 019), 2 unknown target, 3 dead, 4 unknown attack,
 5 out of reach, 6 no line of sight, 7 too many hits, 8 stale, 9 illegal (too
 fast, not unlocked; a heal or other zero-damage spell on a player), 10
 invulnerable (boss transition), 11 required status missing, 12 cooldown, 13
@@ -141,7 +142,7 @@ mana, 14 spell not known, 15 you are down, 16 PvP: you or they stand in a
 safe zone (a settlement or the Haven), 17 PvP: a party member (challenge them
 to a duel instead).
 
-Player-vs-player claims (playtest 2, CR 018): a HitClaim naming a player is
+Player-vs-player claims (playtest 2, CR 019): a HitClaim naming a player is
 validated like one naming an enemy (the logged attack, reach plus
 HIT_RANGE_SLACK_M against any sample of the victim's last HIT_HISTORY_MS,
 terrain line of sight) only when the PvP rules allow it: both flagged, not in
@@ -181,7 +182,7 @@ to a thing" verb. `targetKind` is a registry like Event kinds; `action` and
 | 52 `night` | WP15 (dev only) | 0 | 1 = the nearest town's ward falters (a defense event now), 2 = set the world clock offset, 3 = raise demons near me | 2: offset seconds (i32 bits); 3: 0 lesser pack, 1 greater, 2 lord |
 | 60 `quest` | Playtest 1 (CR 013) | quest id (Event 950/951) | 1 = accept an offer (951), 2 = abandon, 3 = hand in (a delivery's items, within 10 m of its settlement's bounty board or bounty keeper; reading that board or talking to that keeper hands in too), 4 = track (`targetId` 0 = none) | 0 |
 | 61 `friend` | Playtest 2 (CR 017) | FNV-1a 64 of the friend's character id (UTF-8 bytes; the zone matches it against its players and the world presence feed) | 1 = travel to them (a 3 s channel, Event 980), 2 = cancel a channel | 0 |
-| 70 `pvp` | Playtest 2 (CR 018) | 1: 0; 2: the party member's entity id; 3: the challenger's entity id (0 = whoever challenged you); 4: 0 | 1 = set your PvP flag (on: at once; off: after `pvp.flagOffDelayS`, restarted by any PvP hit meanwhile; requests `pvp.toggleCooldownS` apart, refused within `pvp.combatLockS` of fighting; 990 or 991), 2 = challenge a party member within `pvp.duel.challengeRangeM` to a duel (994 to them, 995 to you, or 991), 3 = answer a challenge, 4 = yield: withdraw your challenge, decline one, or forfeit your duel (996) | 1: 1 on, 0 off; 3: 1 accept, 0 decline; else 0 |
+| 70 `pvp` | Playtest 2 (CR 019) | 1: 0; 2: the party member's entity id; 3: the challenger's entity id (0 = whoever challenged you); 4: 0 | 1 = set your PvP flag (on: at once; off: after `pvp.flagOffDelayS`, restarted by any PvP hit meanwhile; requests `pvp.toggleCooldownS` apart, refused within `pvp.combatLockS` of fighting; 990 or 991), 2 = challenge a party member within `pvp.duel.challengeRangeM` to a duel (994 to them, 995 to you, or 991), 3 = answer a challenge, 4 = yield: withdraw your challenge, decline one, or forfeit your duel (996) | 1: 1 on, 0 off; 3: 1 accept, 0 decline; else 0 |
 
 WorldEdits for `vein_mined` (WP09) carry 16 bytes of `params` (f32 x, y, z,
 carve radius 1.5) and `expiresAt` = respawn time; a delta whose `expiresAt`

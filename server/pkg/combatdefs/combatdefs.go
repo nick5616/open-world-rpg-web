@@ -390,7 +390,7 @@ type Defs struct {
 	// Leveling and Difficulty are playtest 1's (CR 012, decision 0021).
 	Leveling   Leveling   `json:"leveling"`
 	Difficulty Difficulty `json:"difficulty"`
-	// PvP is playtest 2's opt-in PvP and party duels (CR 018).
+	// PvP is playtest 2's opt-in PvP and party duels (CR 019).
 	PvP PvP `json:"pvp"`
 
 	// Indexes (built at load).
@@ -657,7 +657,7 @@ type Difficulty struct {
 	Tiers            []DifficultyTier `json:"tiers"`
 }
 
-// PvP is combat.yaml's pvp block (playtest 2, CR 018): open PvP between
+// PvP is combat.yaml's pvp block (playtest 2, CR 019): open PvP between
 // flagged players outside safe zones, duels between party members.
 type PvP struct {
 	DamageMult        float64 `json:"damageMult"`

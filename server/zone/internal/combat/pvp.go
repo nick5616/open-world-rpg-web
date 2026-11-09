@@ -8,7 +8,7 @@ import (
 	"lodestone/server/pkg/proto"
 )
 
-// Player-vs-player hits (playtest 2, CR 018: opt-in PvP and party duels).
+// Player-vs-player hits (playtest 2, CR 019: opt-in PvP and party duels).
 //
 // The game layer decides WHETHER two players may hurt each other (flags,
 // parties, safe zones, duels: internal/game/pvp.go) and only then calls

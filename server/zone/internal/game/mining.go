@@ -51,7 +51,11 @@ const (
 	EventDropSpawned = 703
 	EventItemGranted = 704
 	EventMineRefused = 706
+	EventMineSwing   = 707 // CR 018: another player swung a pickaxe (observers within mineSwingM)
 )
+
+// mineSwingM: how far other players see a pickaxe swing (the combat FX radius, Event 214).
+const mineSwingM = 64
 
 // Refusal reasons (EventMineRefused value).
 const (
@@ -226,6 +230,7 @@ func (s *Server) interact(e *Entity, in *proto.Interact, now time.Time) {
 			return
 		}
 		e.lastSwing = now
+		s.mineSwingFX(e, v.X, v.Y, v.Z)
 		s.DamageVein(e, in.TargetID, pickaxeDamage, SourcePickaxe)
 	case in.TargetKind == InteractPickup && in.Action == ActionUse:
 		for _, p := range s.ents {
@@ -236,6 +241,23 @@ func (s *Server) interact(e *Entity, in *proto.Interact, now time.Time) {
 				return
 			}
 		}
+	}
+}
+
+// mineSwingFX tells the players near a miner (not the miner, who swung
+// locally) about a pickaxe swing, so their avatar animates it (CR 018):
+// entityId = miner, x/y/z = the vein (cm).
+func (s *Server) mineSwingFX(miner *Entity, x, y, z float64) {
+	var ev *proto.Event
+	for _, sess := range s.sessions {
+		o := sess.ent
+		if o == nil || o == miner || dist3(o.Move.Pos, miner.Move.Pos) > mineSwingM {
+			continue
+		}
+		if ev == nil {
+			ev = &proto.Event{Kind: EventMineSwing, EntityID: miner.ID, X: proto.MetersToCm(x), Y: proto.MetersToCm(y), Z: proto.MetersToCm(z)}
+		}
+		s.sendEvent(sess, ev)
 	}
 }
 

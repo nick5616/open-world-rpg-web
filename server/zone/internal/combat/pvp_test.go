@@ -8,7 +8,7 @@ import (
 	"lodestone/server/pkg/proto"
 )
 
-// Playtest 2 (CR 018): ClaimPlayer validates like Claim and scales damage;
+// Playtest 2 (CR 019): ClaimPlayer validates like Claim and scales damage;
 // duel hits stop at 1 health; open-PvP hits can down.
 
 func pvpPair(t *testing.T) (*World, *handPlayer, *handPlayer) {

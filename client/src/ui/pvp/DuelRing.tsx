@@ -1,4 +1,4 @@
-// The duel ring on the ground (playtest 2, CR 018): a glowing band and a
+// The duel ring on the ground (playtest 2, CR 019): a glowing band and a
 // low, fading curtain around the ring's centre, laid on the terrain (each
 // vertex at the ground height under it), gold while the duel counts down
 // and fights, red while you stand outside it. Built once per duel (two

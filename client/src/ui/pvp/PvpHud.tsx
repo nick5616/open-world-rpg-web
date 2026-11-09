@@ -1,4 +1,4 @@
-// PvP and duel HUD (playtest 2, CR 018): your PvP indicator (crossed
+// PvP and duel HUD (playtest 2, CR 019): your PvP indicator (crossed
 // swords, "turning off in 7 s", the safe zone you stand in), the duel
 // challenge prompt (Y accept / U decline), the 3-2-1 countdown, the "back
 // into the ring" warning, the duel clock, the result banner and the kill
