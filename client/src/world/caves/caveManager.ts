@@ -746,7 +746,7 @@ export class CaveManager {
         this.audio.setChamberRadius(r);
       }
     }
-    this.audio.setUnderground(this.underground, now);
+    this.audio.setUnderground(this.underground, now, nearMouth);
     this.stats.cells = this.store.cells.size;
     this.stats.meshes = this.meshes.size;
     this.stats.syncBuilds = this.store.syncBuilds;

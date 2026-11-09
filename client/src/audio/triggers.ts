@@ -34,7 +34,7 @@ export interface TriggerPayload {
   crit?: boolean;
   /** Landing speed (m/s) or similar magnitude. */
   speed?: number;
-  /** Surface for steps: soft | hard | snow | water. */
+  /** Surface for steps and landings: soft | hard | wood | snow | water (surface.ts). */
   surface?: string;
 }
 
@@ -94,6 +94,22 @@ export function swingCue(weapon: string | undefined, kind: string | undefined): 
       return kind === 'light' ? 'bolt' : 'wand_flick';
     default:
       return kind === 'heavy' || kind === 'plunge' || kind === 'riposte' ? 'swing_heavy' : 'swing_sword';
+  }
+}
+
+/** Footstep surface (surface.ts StepSurface) -> cue. */
+export function stepCue(surface: string | undefined): CueId {
+  switch (surface) {
+    case 'hard':
+      return 'step_hard';
+    case 'wood':
+      return 'step_wood';
+    case 'snow':
+      return 'step_snow';
+    case 'water':
+      return 'step_water';
+    default:
+      return 'step_soft';
   }
 }
 
@@ -285,7 +301,7 @@ export const TRIGGERS = {
   },
   dodge: (_p, a) => a.play('dash'),
   // Movement
-  step: (p, a) => a.play(p.surface === 'hard' ? 'step_hard' : p.surface === 'snow' ? 'step_snow' : p.surface === 'water' ? 'swim_stroke' : 'step_soft'),
+  step: (p, a) => a.play(stepCue(p.surface)),
   jump: (_p, a) => a.play('jump'),
   land: (p, a) => a.play('land', { volume: Math.min(1, 0.4 + (p.speed ?? 6) / 20) }),
   splash: (_p, a) => a.play('splash'),
