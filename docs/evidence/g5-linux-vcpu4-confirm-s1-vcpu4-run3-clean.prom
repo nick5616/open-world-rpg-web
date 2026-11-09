@@ -1,0 +1,141 @@
+# HELP go_gc_cycles_total Completed GC cycles.
+# HELP go_goroutines Live goroutines.
+# HELP go_heap_bytes Bytes in live and unswept heap objects.
+# HELP http_request_duration_seconds Plain HTTP request latency histogram.
+# HELP http_requests_total Plain HTTP requests by status class (WebSocket upgrades excluded).
+# HELP lodestone_build_info Always 1; labels name the build (LODESTONE_VERSION) and Go version.
+# HELP process_uptime_seconds Seconds since the service started.
+# HELP zone_aoi_entities_avg Average interest set size per client by ring, last second.
+# HELP zone_aoi_entities_max Largest interest set of any client, last second.
+# HELP zone_bytes_in_total Bytes received from clients (incl. framing), monotonic; rate() / zone_players = per-client uplink.
+# HELP zone_bytes_out_total Bytes sent to clients (incl. framing), monotonic; rate() / zone_players = per-client downlink.
+# HELP zone_client_down_kbps Per-client downlink over the last 5 s, quantiles across clients (incl. WebSocket framing).
+# HELP zone_client_up_kbps Per-client uplink over the last 5 s, quantiles across clients.
+# HELP zone_kicks_total Kicks by KickCode.
+# HELP zone_players Connected players.
+# HELP zone_snapshot_bytes_avg Average encoded snapshot size, last second.
+# HELP zone_terrain_chunks Chunks in the terrain cache (LOD 0 heights + records).
+# HELP zone_terrain_queries_total Ground queries by path: cache (pure Go from chunk heights) or wasm (direct collision_height on a miss).
+# HELP zone_tick_jitter_ms |tick spacing - 33.33 ms| quantiles over the last 60 s.
+# HELP zone_tick_jitter_ms_lifetime Tick jitter quantiles since start.
+# HELP zone_tick_ms Tick duration quantiles over the last 60 s (ms).
+# HELP zone_tick_ms_lifetime Tick duration quantiles since start (ms, 10 us buckets).
+# HELP zone_tick_spacing_ms Tick start spacing quantiles over the last 60 s.
+# HELP zone_writebehind_depth Write-behind queue depth (ops waiting or running).
+go_gc_cycles_total 11
+go_goroutines 627
+go_heap_bytes 1153945184
+http_request_duration_seconds_bucket{le="+Inf"} 104
+http_request_duration_seconds_bucket{le="0.001"} 104
+http_request_duration_seconds_bucket{le="0.005"} 104
+http_request_duration_seconds_bucket{le="0.01"} 104
+http_request_duration_seconds_bucket{le="0.025"} 104
+http_request_duration_seconds_bucket{le="0.05"} 104
+http_request_duration_seconds_bucket{le="0.1"} 104
+http_request_duration_seconds_bucket{le="0.25"} 104
+http_request_duration_seconds_bucket{le="0.5"} 104
+http_request_duration_seconds_bucket{le="1"} 104
+http_request_duration_seconds_bucket{le="2.5"} 104
+http_request_duration_seconds_bucket{le="5"} 104
+http_request_duration_seconds_count 104
+http_request_duration_seconds_sum 0.026239
+http_requests_total{code="1xx"} 0
+http_requests_total{code="2xx"} 104
+http_requests_total{code="3xx"} 0
+http_requests_total{code="4xx"} 0
+http_requests_total{code="5xx"} 0
+lodestone_build_info{version="dev",go="go1.27.3"} 1
+process_uptime_seconds 259
+zone_aoi_entities_avg{ring="far"} 157.28
+zone_aoi_entities_avg{ring="mid"} 349.98
+zone_aoi_entities_avg{ring="near"} 112.75
+zone_aoi_entities_avg{ring="party"} 0
+zone_aoi_entities_max 1243
+zone_budget_records_deferred_total 475414355
+zone_budget_records_sent_total 62540576
+zone_budget_reliable_charged_bytes_total 44707306
+zone_bytes_in_live_clients 103345222
+zone_bytes_in_total 103345222
+zone_bytes_out_live_clients 1384260321
+zone_bytes_out_total 1384260321
+zone_cave_build_ms_max 54.781765
+zone_cave_build_ms_mean 0.5632554322580645
+zone_cave_builds_total{path="sync"} 37
+zone_cave_builds_total{path="worker"} 428
+zone_cave_cells 465
+zone_cave_edits 0
+zone_client_down_kbps{q="avg"} 150.21
+zone_client_down_kbps{q="max"} 151.97
+zone_client_down_kbps{q="p50"} 150.23
+zone_client_down_kbps{q="p99"} 150.27
+zone_client_up_kbps{q="avg"} 11.16
+zone_client_up_kbps{q="max"} 11.16
+zone_client_up_kbps{q="p50"} 11.16
+zone_client_up_kbps{q="p99"} 11.16
+zone_combat_awake 2009
+zone_combat_downs_total 148
+zone_combat_enemies 2021
+zone_combat_evaded_total 14500
+zone_combat_kills_total 0
+zone_combat_player_hits_total 2537
+zone_downlink_budget_kbps 150
+zone_drowned_total 244
+zone_input_frames_dropped_total 0
+zone_input_frames_skipped_total 0
+zone_input_frames_synthesized_total 1
+zone_input_frames_total 4440769
+zone_items_granted_total 0
+zone_kicks_total{code="bad_ticket"} 0
+zone_kicks_total{code="duplicate_login"} 0
+zone_kicks_total{code="rate_limited"} 0
+zone_kicks_total{code="server_full"} 0
+zone_kicks_total{code="shutdown"} 0
+zone_kicks_total{code="transferred"} 0
+zone_kicks_total{code="version_mismatch"} 0
+zone_players 300
+zone_protocol_errors_total 0
+zone_rate_limited_total 0
+zone_sessions{transport="websocket"} 300
+zone_sessions{transport="webtransport"} 0
+zone_snapshot_bytes_avg 608.4
+zone_snapshots_shed_total 0
+zone_speed_violations_total 0
+zone_spin_seconds_total 3.446088905
+zone_terrain_chunks 607
+zone_terrain_dropped_total 0
+zone_terrain_evicted_total 0
+zone_terrain_gen_errors_total 0
+zone_terrain_gen_ms_max 13.395186
+zone_terrain_gen_ms_mean 4.709075076142132
+zone_terrain_generated_total 591
+zone_terrain_pending 0
+zone_terrain_queries_total{path="cache"} 150834893
+zone_terrain_queries_total{path="wasm"} 53655
+zone_tick_forgiven_total 0
+zone_tick_jitter_ms_lifetime{q="max"} 0.068
+zone_tick_jitter_ms_lifetime{q="p50"} 0.01
+zone_tick_jitter_ms_lifetime{q="p99"} 0.06
+zone_tick_jitter_ms{q="max"} 0.06
+zone_tick_jitter_ms{q="p50"} 0
+zone_tick_jitter_ms{q="p99"} 0.034
+zone_tick_ms_lifetime{q="max"} 18.003
+zone_tick_ms_lifetime{q="p50"} 8.38
+zone_tick_ms_lifetime{q="p99"} 10.43
+zone_tick_ms{q="max"} 12.346
+zone_tick_ms{q="p50"} 7.838
+zone_tick_ms{q="p99"} 9.1
+zone_tick_overruns_total 0
+zone_tick_spacing_ms{q="max"} 33.393
+zone_tick_spacing_ms{q="p50"} 33.333
+zone_ticks_total 7679
+zone_veins_mined_total 0
+zone_veins_respawned_total 0
+zone_world_edits_sent_total 0
+zone_writebehind_coalesced_total 0
+zone_writebehind_depth 0
+zone_writebehind_done_total 0
+zone_writebehind_dropped_total 0
+zone_writebehind_enqueued_total 0
+zone_writebehind_failed_total 0
+zone_writebehind_retries_total 0
+zone_writebehind_skipped_total 0
