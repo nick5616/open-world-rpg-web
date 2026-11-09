@@ -261,6 +261,7 @@ func (s *Server) Stop(ctx context.Context) {
 			}
 			break
 		}
+		s.finalLocalSaves(ctx) // playtest 2: local profiles keep where they stood (explore.go)
 		for _, sess := range slices.Clone(s.sessions) {
 			s.kick(sess, proto.KickCodeShutdown, "zone shutting down")
 			s.leave(sess)

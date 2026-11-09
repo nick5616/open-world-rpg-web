@@ -65,6 +65,11 @@ const (
 	// while its progress changes (each issue is a Redis round trip and a
 	// signed blob of a few KB down the wire), plus at the normal checkpoint.
 	localSaveEvery = 5 * time.Second
+	// localMoveSaveM: a local profile who walked this far since its last
+	// blob gets a new one at the next checkpoint (playtest 2: the position
+	// only rode along with other progress, so any reconnect, zone restart
+	// or reload put a player who had only walked back at their spawn).
+	localMoveSaveM = 2.0
 	// partyPinTTL: party pins live with the party record in Redis; they
 	// expire a while after the last change so abandoned parties don't
 	// leave keys behind forever.
@@ -503,11 +508,51 @@ func (s *Server) exploreLeave(sess *session) {
 }
 
 // exploreCheckpoint rides the periodic checkpoint (SAVE_INTERVAL_S).
+// Local profiles also get a new blob when they moved (their position lives
+// only in the blob they present on the next connect).
 func (s *Server) exploreCheckpoint(e *Entity) {
 	if e.x == nil {
 		return
 	}
 	if sess := s.byChar[e.CharacterID]; sess != nil && sess.ent == e {
+		if x := sess.x; x != nil && x.local != nil && !x.readOnly && localMoved(x, e) {
+			x.prog.MarkDirty()
+		}
 		s.saveProgressSoon(sess, true)
+	}
+}
+
+func localMoved(x *exploreState, e *Entity) bool {
+	p, q := e.Move.Pos, x.local.state.Position
+	return math.Hypot(math.Hypot(p.X-q.X, p.Y-q.Y), p.Z-q.Z) > localMoveSaveM
+}
+
+// finalLocalSaves issues a last blob, synchronously, to every connected
+// local profile before a shutdown kicks them (Stop): the write-behind queue
+// would run after the kick, when a blob can no longer be delivered, and the
+// browser would reconnect with an older position (playtest 2).
+func (s *Server) finalLocalSaves(ctx context.Context) {
+	if s.cfg.Saves == nil {
+		return
+	}
+	for _, sess := range s.sessions {
+		x, e := sess.x, sess.ent
+		if x == nil || x.local == nil || x.readOnly || e == nil || sess.closed.Load() {
+			continue
+		}
+		st := s.localState(sess).Marshal()
+		ictx, cancel := context.WithTimeout(ctx, time.Second)
+		b, err := s.cfg.Saves.Issue(ictx, x.local.profileID, e.CharacterID, s.cfg.WorldID, st)
+		cancel()
+		if err != nil {
+			s.log.Warn("final local save failed; the browser keeps its last blob", "character", e.CharacterID, "err", err)
+			continue
+		}
+		raw, _ := json.Marshal(b)
+		if err := sess.conn.SendReliable(proto.Encode(&proto.SaveBlob{Blob: raw})); err != nil {
+			s.log.Warn("final local save not delivered", "character", e.CharacterID, "counter", b.Counter)
+			continue
+		}
+		s.flushLocalDrops(e.CharacterID, true)
 	}
 }
