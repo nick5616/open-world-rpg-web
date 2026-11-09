@@ -9,6 +9,7 @@ import { submitChatInput } from '../session';
 import { FIXED_TABS, nameCandidates, useSocialStore, type Line } from '../store';
 import { NameMenu, type NameMenuTarget } from './NameMenu';
 import { button, channelColor, glass, nameColor, tabLabel } from './style';
+import { CHAT_WIDTH, CORNER_BOTTOM } from '../../hud/layout'; // playtest 1: shared bottom layout
 
 const WIDTH = 400;
 
@@ -119,7 +120,7 @@ export function ChatPanel({ extraNames }: ChatPanelProps) {
   return (
     <>
       {!s.open && (
-        <div style={{ position: 'fixed', left: 12, bottom: 12, zIndex: 30, display: 'flex', flexDirection: 'column', gap: 6, width: WIDTH, pointerEvents: 'none' }}>
+        <div style={{ position: 'fixed', left: 12, bottom: CORNER_BOTTOM, zIndex: 30, display: 'flex', flexDirection: 'column', gap: 6, width: CHAT_WIDTH, pointerEvents: 'none' }}>
           {s.toasts.map((t) => (
             <div
               key={t.id}
@@ -149,7 +150,7 @@ export function ChatPanel({ extraNames }: ChatPanelProps) {
       {s.open && (
         <div
           data-testid="chat-panel"
-          style={{ ...glass, position: 'fixed', left: 12, bottom: 12, width: WIDTH, height: 340, zIndex: 30, display: 'flex', flexDirection: 'column' }}
+          style={{ ...glass, position: 'fixed', left: 12, bottom: CORNER_BOTTOM, width: `max(${WIDTH * 0.7}px, ${CHAT_WIDTH})`, height: 340, maxHeight: `calc(100vh - 120px - ${CORNER_BOTTOM})`, zIndex: 30, display: 'flex', flexDirection: 'column' }}
         >
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3, padding: '6px 6px 4px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
             {[...FIXED_TABS, ...whisperTabs].map((tab) => {

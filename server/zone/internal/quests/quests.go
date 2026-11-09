@@ -1,0 +1,389 @@
+// Package quests is the zone's quest log (playtest 1, CR 013): accepted
+// bounties (WP20's board and bounty keeper), the starter story quest "Ward
+// against the night" and anything else built from steps of objectives, with
+// map markers for every step. Pure and tick-safe: no I/O, clocks or
+// goroutines. The glue to sessions, Events, rewards, persistence and the
+// handoff is internal/game/quests.go.
+//
+// A quest is a list of steps; exactly one step is current. A step has one
+// objective (talk to an NPC role in a settlement, hold items, reach a place,
+// know a spell, clear the enemies at a site, kill a demon near a site, hand
+// items in at a settlement) and the markers the map and compass show while
+// it is current. Steps whose objective already holds when they become
+// current complete at once (a player who already mined the ore skips to the
+// blueprint). Everything a quest needs is stored in the log itself (the
+// board changes daily, the world doesn't change under a quest), so a saved
+// log is self-contained.
+package quests
+
+import (
+	"encoding/json"
+	"errors"
+	"math"
+	"slices"
+)
+
+// Objective kinds.
+const (
+	ObjTalk   = "talk"   // talk to an NPC of Role in Settlement
+	ObjHave   = "have"   // hold any one of Items (alternatives)
+	ObjReach  = "reach"  // stand within R of (X, Z)
+	ObjKnow   = "know"   // know Spell
+	ObjClear  = "clear"  // the enemies at Site (within R of X, Z) are dead
+	ObjSlay   = "slay"   // kill a demon within R of (X, Z)
+	ObjTurnIn = "turnin" // hand Items[0] in at Settlement's board or bounty keeper
+)
+
+// Quest kinds (Event 950 `kind`).
+const (
+	KindBounty = 0 // a settlement's bounty board / bounty keeper
+	KindStory  = 1 // the starter line and other authored quests
+)
+
+// Limits.
+const (
+	MaxBounties = 5  // WP20's rule: at most five bounties held
+	MaxActive   = 12 // bounties + story quests
+	maxDone     = 64 // remembered completions (today's bounties, finished stories)
+)
+
+// Errors returned by Add.
+var (
+	ErrTooMany = errors.New("quest log full")
+	ErrHave    = errors.New("quest already active")
+	ErrDone    = errors.New("quest already completed")
+	ErrEmpty   = errors.New("quest has no steps")
+)
+
+// ItemQty is an item key (contracts/items.yaml) and a quantity.
+type ItemQty struct {
+	Item string `json:"item"`
+	Qty  int    `json:"qty"`
+}
+
+// Marker is a place the map and compass show for a step. R > 0 is an area
+// (a circle of that radius: "somewhere in here"), 0 a point.
+type Marker struct {
+	X     float64 `json:"x"`
+	Z     float64 `json:"z"`
+	R     float64 `json:"r,omitempty"`
+	Label string  `json:"label"`
+}
+
+// Objective is what completes a step.
+type Objective struct {
+	Kind       string    `json:"kind"`
+	Role       int       `json:"role,omitempty"`
+	Settlement int       `json:"settlement"`
+	Items      []ItemQty `json:"items,omitempty"`
+	Spell      string    `json:"spell,omitempty"`
+	Site       int       `json:"site"`
+	X          float64   `json:"x,omitempty"`
+	Z          float64   `json:"z,omitempty"`
+	R          float64   `json:"r,omitempty"`
+}
+
+// Step is one stage of a quest.
+type Step struct {
+	Text    string    `json:"text"`           // the objective in a line ("Mine 4 sunsteel ore")
+	Note    string    `json:"note,omitempty"` // where/how, shown under it
+	Say     string    `json:"say,omitempty"`  // what the NPC says when a talk step completes
+	Obj     Objective `json:"obj"`
+	Markers []Marker  `json:"markers,omitempty"`
+	Grant   []ItemQty `json:"grant,omitempty"` // handed over when the step completes
+}
+
+// Quest is one entry of the log.
+type Quest struct {
+	ID         uint32 `json:"id"`
+	Key        string `json:"key"` // "bounty:<settlement>:<id>", "story:ward"
+	Kind       uint8  `json:"kind"`
+	Title      string `json:"title"`
+	Giver      string `json:"giver"`
+	Settlement int    `json:"settlement"`
+	Step       int    `json:"step"`
+	Steps      []Step `json:"steps"`
+	Gold       int    `json:"gold"`
+	XP         int64  `json:"xp"`
+	Accepted   int64  `json:"accepted"` // unix ms
+	// Progress is the current step's count (have/turn-in: units held), for
+	// the HUD only; the objective is re-evaluated, never trusted from here.
+	Progress int `json:"progress,omitempty"`
+}
+
+// Current is the current step (nil when finished).
+func (q *Quest) Current() *Step {
+	if q.Step < 0 || q.Step >= len(q.Steps) {
+		return nil
+	}
+	return &q.Steps[q.Step]
+}
+
+// Log is a character's quest log.
+type Log struct {
+	V       int      `json:"v"`
+	Active  []*Quest `json:"active"`
+	Done    []string `json:"done,omitempty"`    // completed keys, newest last (bounded)
+	Started []string `json:"started,omitempty"` // story keys ever started (the starter is offered once)
+	Tracked uint32   `json:"tracked,omitempty"`
+	dirty   bool
+}
+
+// NewLog is an empty log.
+func NewLog() *Log { return &Log{V: 1} }
+
+// Load parses a saved log (empty or bad JSON gives a new log).
+func Load(b []byte) *Log {
+	l := NewLog()
+	if len(b) == 0 || json.Unmarshal(b, l) != nil {
+		return NewLog()
+	}
+	l.V = 1
+	l.Active = slices.DeleteFunc(l.Active, func(q *Quest) bool { return q == nil || q.Current() == nil })
+	return l
+}
+
+// JSON is the saved form.
+func (l *Log) JSON() []byte {
+	b, _ := json.Marshal(l)
+	return b
+}
+
+// Dirty reports unsaved changes; MarkSaved clears it; MarkDirty sets it.
+func (l *Log) Dirty() bool { return l.dirty }
+func (l *Log) MarkSaved()  { l.dirty = false }
+func (l *Log) MarkDirty()  { l.dirty = true }
+
+// Find returns the active quest with id (nil if none).
+func (l *Log) Find(id uint32) *Quest {
+	for _, q := range l.Active {
+		if q.ID == id {
+			return q
+		}
+	}
+	return nil
+}
+
+// ByKey returns the active quest with key (nil if none).
+func (l *Log) ByKey(key string) *Quest {
+	for _, q := range l.Active {
+		if q.Key == key {
+			return q
+		}
+	}
+	return nil
+}
+
+// IsDone reports whether key was completed (and is still remembered).
+func (l *Log) IsDone(key string) bool { return slices.Contains(l.Done, key) }
+
+// HasStarted reports whether a story quest was ever started.
+func (l *Log) HasStarted(key string) bool { return slices.Contains(l.Started, key) }
+
+// Bounties counts held bounties.
+func (l *Log) Bounties() int {
+	n := 0
+	for _, q := range l.Active {
+		if q.Kind == KindBounty {
+			n++
+		}
+	}
+	return n
+}
+
+// Add puts q in the log (refusing duplicates, completed keys and a full log).
+func (l *Log) Add(q *Quest) error {
+	switch {
+	case len(q.Steps) == 0:
+		return ErrEmpty
+	case l.ByKey(q.Key) != nil || l.Find(q.ID) != nil:
+		return ErrHave
+	case l.IsDone(q.Key):
+		return ErrDone
+	case len(l.Active) >= MaxActive || (q.Kind == KindBounty && l.Bounties() >= MaxBounties):
+		return ErrTooMany
+	}
+	l.Active = append(l.Active, q)
+	if q.Kind == KindStory && !l.HasStarted(q.Key) {
+		l.Started = append(l.Started, q.Key)
+	}
+	if l.Tracked == 0 || l.Find(l.Tracked) == nil {
+		l.Tracked = q.ID
+	}
+	l.dirty = true
+	return nil
+}
+
+// Remove drops quest id (abandon, or after completion). Returns it.
+func (l *Log) Remove(id uint32) *Quest {
+	for i, q := range l.Active {
+		if q.ID == id {
+			l.Active = slices.Delete(l.Active, i, i+1)
+			if l.Tracked == id {
+				l.Tracked = 0
+				if len(l.Active) > 0 {
+					l.Tracked = l.Active[0].ID
+				}
+			}
+			l.dirty = true
+			return q
+		}
+	}
+	return nil
+}
+
+// Track sets the tracked quest (0 or an active id).
+func (l *Log) Track(id uint32) bool {
+	if id != 0 && l.Find(id) == nil {
+		return false
+	}
+	if l.Tracked != id {
+		l.Tracked = id
+		l.dirty = true
+	}
+	return true
+}
+
+func (l *Log) markDone(key string) {
+	l.Done = append(l.Done, key)
+	if len(l.Done) > maxDone {
+		// Keep story completions forever; forget the oldest bounties.
+		for i, k := range l.Done {
+			if len(k) < 6 || k[:6] != "story:" {
+				l.Done = slices.Delete(l.Done, i, i+1)
+				break
+			}
+		}
+		if len(l.Done) > maxDone {
+			l.Done = l.Done[len(l.Done)-maxDone:]
+		}
+	}
+}
+
+// Facts is what the rules ask the world about a character.
+type Facts interface {
+	// Have counts units of item the character holds (equipped included).
+	Have(item string) int
+	// Knows reports whether the character knows spell.
+	Knows(spell string) bool
+	// Pos is the character's position (x, z).
+	Pos() (x, z float64)
+	// Quiet reports that no live enemy guards (x, z) within r (clear
+	// objectives complete on arrival when the place is already quiet).
+	Quiet(site int, x, z, r float64) bool
+}
+
+// Happening is something the glue must act on (rewards, Events).
+type Happening struct {
+	Quest    *Quest
+	Step     int  // the step that completed
+	Finished bool // the whole quest completed (Quest already removed)
+}
+
+// Signal is an event in the world a step may be waiting for.
+type Signal struct {
+	Kind       string // ObjTalk, ObjClear, ObjSlay, ObjTurnIn
+	Role       int
+	Settlement int
+	Site       int     // clear: the cleared group's site (-1 none)
+	X, Z       float64 // clear/slay: where it happened
+}
+
+// met reports whether the step's objective holds now (state objectives) or
+// is satisfied by sig (event objectives).
+func met(s *Step, f Facts, sig *Signal) bool {
+	o := &s.Obj
+	switch o.Kind {
+	case ObjHave:
+		for _, it := range o.Items {
+			if f.Have(it.Item) >= it.Qty {
+				return true
+			}
+		}
+	case ObjKnow:
+		return f.Knows(o.Spell)
+	case ObjReach:
+		x, z := f.Pos()
+		return math.Hypot(x-o.X, z-o.Z) <= o.R
+	case ObjTalk:
+		return sig != nil && sig.Kind == ObjTalk && sig.Role == o.Role && sig.Settlement == o.Settlement
+	case ObjClear:
+		if sig != nil && sig.Kind == ObjClear && (sig.Site == o.Site && o.Site >= 0 || math.Hypot(sig.X-o.X, sig.Z-o.Z) <= o.R) {
+			return true
+		}
+		if sig == nil {
+			x, z := f.Pos()
+			return math.Hypot(x-o.X, z-o.Z) <= o.R && f.Quiet(o.Site, o.X, o.Z, o.R+20)
+		}
+	case ObjSlay:
+		return sig != nil && sig.Kind == ObjSlay && math.Hypot(sig.X-o.X, sig.Z-o.Z) <= o.R
+	case ObjTurnIn:
+		return sig != nil && sig.Kind == ObjTurnIn && sig.Settlement == o.Settlement && len(o.Items) > 0 && f.Have(o.Items[0].Item) >= o.Items[0].Qty
+	}
+	return false
+}
+
+// progress is the HUD count for a step.
+func progress(s *Step, f Facts) int {
+	switch s.Obj.Kind {
+	case ObjHave, ObjTurnIn:
+		if len(s.Obj.Items) > 0 {
+			return min(f.Have(s.Obj.Items[0].Item), s.Obj.Items[0].Qty)
+		}
+	}
+	return 0
+}
+
+// Advance re-evaluates every active quest (sig nil: state objectives only,
+// e.g. after an inventory change or on the periodic position check) and
+// returns what completed. Completed quests are removed and remembered.
+func (l *Log) Advance(f Facts, sig *Signal, out []Happening) []Happening {
+	for i := 0; i < len(l.Active); i++ {
+		q := l.Active[i]
+		qs := sig
+		for {
+			s := q.Current()
+			if s == nil || !met(s, f, qs) {
+				break
+			}
+			out = append(out, Happening{Quest: q, Step: q.Step})
+			q.Step++
+			q.Progress = 0
+			l.dirty = true
+			qs = nil // one signal completes one step; later steps need their own
+		}
+		if s := q.Current(); s != nil {
+			if p := progress(s, f); p != q.Progress {
+				q.Progress = p
+				l.dirty = true
+			}
+			continue
+		}
+		l.Remove(q.ID)
+		l.markDone(q.Key)
+		out[len(out)-1].Finished = true
+		i--
+	}
+	return out
+}
+
+// Wants reports whether any current step needs the periodic position check
+// (reach and clear objectives), so the glue skips players who don't.
+func (l *Log) Wants() bool {
+	for _, q := range l.Active {
+		if s := q.Current(); s != nil && (s.Obj.Kind == ObjReach || s.Obj.Kind == ObjClear) {
+			return true
+		}
+	}
+	return false
+}
+
+// Needs reports whether any current step is an objective of kind k.
+func (l *Log) Needs(k string) bool {
+	for _, q := range l.Active {
+		if s := q.Current(); s != nil && s.Obj.Kind == k {
+			return true
+		}
+	}
+	return false
+}

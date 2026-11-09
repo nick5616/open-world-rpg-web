@@ -31,6 +31,10 @@ export default defineConfig({
   worker: { format: 'es' },
   build: {
     target: 'es2022',
+    // Audio (client/src/audio/assets): always hashed files, never base64 in
+    // the JS (Vite inlines files under 4 KB; short clicks would bloat the
+    // audio chunk and lose the immutable caching).
+    assetsInlineLimit: (file: string) => (/\.(ogg|m4a)$/.test(file) ? false : undefined),
     rollupOptions: {
       output: {
         manualChunks(id) {

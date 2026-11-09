@@ -4,6 +4,7 @@
 import { sendSocial } from '../session';
 import { useSocialStore } from '../store';
 import { button, channelColor, glass, nameColor } from './style';
+import { CORNER_BOTTOM } from '../../hud/layout'; // playtest 1: shared bottom layout
 
 export interface PartyFrameProps {
   /** 0..1 health for a party member, once the zone's party ring provides it. */
@@ -20,7 +21,7 @@ export function PartyFrame({ healthOf }: PartyFrameProps) {
   return (
     // Stacked just above the chat panel (12 px margin + 340 px panel + gap)
     // so neither covers the other and the crosshair stays clear.
-    <div style={{ position: 'fixed', left: 12, bottom: 362, zIndex: 25, display: 'flex', flexDirection: 'column', gap: 6, width: 210 }}>
+    <div style={{ position: 'fixed', left: 12, bottom: `calc(${CORNER_BOTTOM} + 350px)`, zIndex: 25, display: 'flex', flexDirection: 'column', gap: 6, width: 210 }}>
       {invites.map((inv) => (
         <div key={inv.partyId} data-testid="party-invite" style={{ ...glass, padding: 8 }}>
           <div style={{ marginBottom: 6 }}>

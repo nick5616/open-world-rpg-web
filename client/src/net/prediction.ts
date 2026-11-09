@@ -26,6 +26,7 @@ import { MoveMode } from '@lodestone/contracts';
 import { groundAt } from '../sim/caves';
 import { MoveFlag, NO_ENV, stepMovement, STEP_DT, type MoveInput, type MoveState, type StepEnv } from '../sim/movement';
 import { fromSelf, packFlags, packMoveExt, staminaX10 } from '../sim/moveWire';
+import { stepClock } from '../sim/stepClock';
 import type { FullSelf } from './snapshotDecoder';
 
 export interface PredictedStep {
@@ -68,6 +69,10 @@ export class ClientPrediction {
   /** Every reconciliation (for the acceptance log and the HUD). */
   readonly log: { t: number; magnitude: number; unacked: number; ackSeq: number; knownAck: boolean }[] = [];
   reconciles = 0;
+  /** Doors: re-predictions after a stamped world change arrived late (replayFrom); not server corrections. */
+  localReplays = 0;
+  /** State after the newest acked step (the base replayFrom starts from when every pending step is newer). */
+  private ackedState: MoveState | undefined;
   agreements = 0;
   /**
    * Playtest 1: replays that only adopted the server's stamina wheel (a
@@ -145,6 +150,7 @@ export class ClientPrediction {
 
     if (acked && agrees(acked.state, server)) {
       this.agreements++;
+      this.ackedState = acked.state;
       return null;
     }
     // Before any input is acked (ack 0) the server state is the spawn; with
@@ -164,7 +170,9 @@ export class ClientPrediction {
       const gy = groundAt(this.ground, state.pos.x, state.pos.y, state.pos.z);
       if (Math.abs(gy - state.pos.y) <= 0.0051) state.pos.y = gy;
     }
+    this.ackedState = state;
     for (const p of this.pending) {
+      stepClock.seq = p.seq; // doors: the state the zone used for this frame
       state = stepMovement(state, p.input, this.ground, STEP_DT, p.env ?? NO_ENV);
       p.state = state; // keep history consistent with the new timeline
     }
@@ -181,6 +189,36 @@ export class ClientPrediction {
     if (magnitude > this.maxError) this.maxError = magnitude;
     this.log.push({ t: nowMs, magnitude, unacked: this.pending.length, ackSeq, knownAck: !!acked });
     if (this.log.length > 5000) this.log.shift();
+    return this.correction;
+  }
+
+  /**
+   * Doors (client/src/world/buildings/doors.ts): a world change the zone
+   * applies from input seq `seq` on arrived after we had predicted past
+   * it. Re-run the pending steps from seq on the ground as it is now (the
+   * zone uses the new state from that frame, so this is what it computes)
+   * and hand the present to the renderer like a correction. Counted in
+   * localReplays, not reconciles: the server never disagreed. Null when
+   * nothing was predicted at or after seq, or nothing changed.
+   */
+  replayFrom(seq: number): Correction | null {
+    const i = this.pending.findIndex((p) => p.seq >= seq);
+    if (i < 0) return null;
+    let state = i > 0 ? this.pending[i - 1].state : this.ackedState;
+    if (!state) return null;
+    for (let k = i; k < this.pending.length; k++) {
+      const p = this.pending[k];
+      stepClock.seq = p.seq;
+      state = stepMovement(state, p.input, this.ground, STEP_DT, p.env ?? NO_ENV);
+      p.state = state;
+    }
+    this.localReplays++;
+    const ref = this.lastPredicted ?? state;
+    if (ref.pos.x === state.pos.x && ref.pos.y === state.pos.y && ref.pos.z === state.pos.z && ref.vel.x === state.vel.x && ref.vel.y === state.vel.y && ref.vel.z === state.vel.z && ref.mode === state.mode) return null;
+    const error = { x: ref.pos.x - state.pos.x, y: ref.pos.y - state.pos.y, z: ref.pos.z - state.pos.z };
+    const magnitude = Math.hypot(error.x, error.y, error.z);
+    this.lastPredicted = state;
+    this.correction = { state, error, magnitude, ackSeq: this.lastAckSeq, unacked: this.pending.length };
     return this.correction;
   }
 

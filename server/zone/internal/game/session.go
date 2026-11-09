@@ -51,6 +51,7 @@ type session struct {
 	x           *exploreState   // WP12 exploration (explore.go)
 	cprof       *combat.Profile // WP13: loaded before join (combat.go)
 	items       *charItems      // WP14: loaded before join (items.go)
+	quests      *questState     // quest log: loaded before join (quests.go)
 	left        bool
 	ackTick     uint32
 	ackFloor    uint32 // WP16: acks at or below this tick predate the session's current activation
@@ -61,6 +62,7 @@ type session struct {
 	gapSince    uint32             // tick a missing frame started holding the buffer, 0 = none
 	consumed    uint32             // newest frame seq applied or refused (LastSeq counts applied only)
 	editChunks  map[[2]int32]bool  // WP09: chunks whose WorldEdits this client has (mining.go)
+	doors       *sessDoors         // building doors: settlements known, frame ground (doors.go)
 
 	// Reader-owned.
 	buckets    [256]*ratelimit.Bucket
@@ -211,6 +213,7 @@ func (s *Server) accept(c transport.Conn, spawnHint *movement.Vec3) {
 		sess.x = s.loadExplore(claims, hello.SaveBlob, &sess.spawn, spawnHint != nil) // WP12
 		sess.cprof = s.loadCombat(claims.CharacterID, sess.x)                         // WP13
 		sess.items = s.loadItems(claims.CharacterID, sess.x)                          // WP14
+		sess.quests = s.loadQuests(claims.CharacterID, sess.x)                        // quests.go
 	}
 
 	select {
@@ -335,6 +338,10 @@ func (s *Server) drain(sess *session, now time.Time) {
 				s.nightInteract(sess, it) // WP15: chemistry sync mode, dev night tools (night.go)
 				continue
 			}
+			if it.TargetKind == InteractQuest {
+				s.questInteract(sess, it) // quests: accept, abandon, turn in, track (quests.go)
+				continue
+			}
 			if it.TargetKind == combat.InteractCombat {
 				s.handleCombatInteract(sess, it) // WP13: loadouts, equip, learn (combat.go)
 				continue
@@ -411,7 +418,8 @@ func (s *Server) fillGap(sess *session, next uint32, now time.Time) {
 			continue
 		}
 		f = s.combatFrame(sess, f) // WP13 (combat.go)
-		e.applyFrame(f, s.cfg.Ground, s.env)
+		// Building doors: the ground with the doors closed for this frame (doors.go).
+		e.applyFrame(f, s.frameGround(sess, f.Seq), s.env)
 		s.combatAfterFrame(sess, f)
 		s.m.framesSynthesized.Add(1)
 	}
@@ -448,7 +456,8 @@ func (s *Server) applyFrames(sess *session, now time.Time) {
 			continue
 		}
 		f = s.combatFrame(sess, f) // WP13: log attacks/casts, refuse illegal dashes (combat.go)
-		if !e.applyFrame(f, s.cfg.Ground, s.env) {
+		// Building doors: the ground with the doors closed for this frame (doors.go).
+		if !e.applyFrame(f, s.frameGround(sess, f.Seq), s.env) {
 			s.m.speedViolations.Add(1)
 		}
 		s.combatAfterFrame(sess, f)

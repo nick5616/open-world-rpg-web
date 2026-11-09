@@ -1,0 +1,1513 @@
+[
+ {
+  "id": "ui_click",
+  "kind": "sfx",
+  "files": [
+   "sfx/ui_click_1",
+   "sfx/ui_click_2",
+   "sfx/ui_click_3"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Hyperpop Soundpack (Gm, 150bpm)/FX/FX_Gm_150bpm_4.aif",
+   "SAMPLES:Novation Anniversary 3rd Drop/Indie Hip Hop (Amaj, 84bpm)/FX/One Shot 3.wav",
+   "SAMPLES:Novation Anniversary 3rd Drop/Indie Hip Hop (Amaj, 84bpm)/FX/One Shot 4.wav"
+  ],
+  "bytes": 9918
+ },
+ {
+  "id": "ui_confirm",
+  "kind": "sfx",
+  "files": [
+   "sfx/ui_confirm_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Pack 2nd Drop/Japanese LoFi/FX/FX 12.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Hyperpop Soundpack (Gm, 150bpm)/FX/FX_Gm_150bpm_4.aif"
+  ],
+  "bytes": 10963
+ },
+ {
+  "id": "ui_open",
+  "kind": "sfx",
+  "files": [
+   "sfx/ui_open_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary 3rd Drop/Indie Hip Hop (Amaj, 84bpm)/FX/One Shot 1.wav"
+  ],
+  "bytes": 9510
+ },
+ {
+  "id": "ui_close",
+  "kind": "sfx",
+  "files": [
+   "sfx/ui_close_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary 3rd Drop/Indie Hip Hop (Amaj, 84bpm)/FX/One Shot 1.wav"
+  ],
+  "bytes": 9725
+ },
+ {
+  "id": "ui_error",
+  "kind": "sfx",
+  "files": [
+   "sfx/ui_error_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Pack 2nd Drop/East Coast Hip Hop/FX/One-Shot 2.wav",
+   "SAMPLES:Novation Anniversary 3rd Drop/Indie Hip Hop (Amaj, 84bpm)/FX/One Shot 5.wav"
+  ],
+  "bytes": 8016
+ },
+ {
+  "id": "map_open",
+  "kind": "sfx",
+  "files": [
+   "sfx/map_open_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Old School Hip-Hop Soundpack (Em, 107bpm)/FX/FX_Em_107bpm_4.aif",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Noise Sweep FX.aif"
+  ],
+  "bytes": 9589
+ },
+ {
+  "id": "map_close",
+  "kind": "sfx",
+  "files": [
+   "sfx/map_close_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Old School Hip-Hop Soundpack (Em, 107bpm)/FX/FX_Em_107bpm_4.aif"
+  ],
+  "bytes": 7288
+ },
+ {
+  "id": "notify",
+  "kind": "sfx",
+  "files": [
+   "sfx/notify_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Pack 2nd Drop/Japanese LoFi/FX/FX 12.wav"
+  ],
+  "bytes": 7770
+ },
+ {
+  "id": "whisper",
+  "kind": "sfx",
+  "files": [
+   "sfx/whisper_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Pack 2nd Drop/Japanese LoFi/FX/FX 12.wav"
+  ],
+  "bytes": 6047
+ },
+ {
+  "id": "quest_accept",
+  "kind": "sfx",
+  "files": [
+   "sfx/quest_accept_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Pack 2nd Drop/East Coast Hip Hop/FX/One-Shot 6.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Hyperpop Soundpack (Gm, 150bpm)/FX/FX_Gm_150bpm_4.aif"
+  ],
+  "bytes": 18531
+ },
+ {
+  "id": "quest_complete",
+  "kind": "sfx",
+  "files": [
+   "sfx/quest_complete_1"
+  ],
+  "sources": [
+   "RPG:level up sound 2.aif",
+   "SAMPLES:Novation Anniversary Pack 2nd Drop/East Coast Hip Hop/FX/One-Shot 6.wav"
+  ],
+  "bytes": 24029
+ },
+ {
+  "id": "step_soft",
+  "kind": "sfx",
+  "files": [
+   "sfx/step_soft_1",
+   "sfx/step_soft_2",
+   "sfx/step_soft_3",
+   "sfx/step_soft_4"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums15.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums5.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums12.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums13.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums10.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums2.wav"
+  ],
+  "bytes": 11321
+ },
+ {
+  "id": "step_hard",
+  "kind": "sfx",
+  "files": [
+   "sfx/step_hard_1",
+   "sfx/step_hard_2",
+   "sfx/step_hard_3",
+   "sfx/step_hard_4"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums16.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums15.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums12.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums14.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums13.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums5.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums10.wav"
+  ],
+  "bytes": 11057
+ },
+ {
+  "id": "step_snow",
+  "kind": "sfx",
+  "files": [
+   "sfx/step_snow_1",
+   "sfx/step_snow_2",
+   "sfx/step_snow_3"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums5.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums15.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums12.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums13.wav"
+  ],
+  "bytes": 14904
+ },
+ {
+  "id": "jump",
+  "kind": "sfx",
+  "files": [
+   "sfx/jump_1",
+   "sfx/jump_2"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Fast FX.wav"
+  ],
+  "bytes": 8462
+ },
+ {
+  "id": "land",
+  "kind": "sfx",
+  "files": [
+   "sfx/land_1",
+   "sfx/land_2"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums13.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums5.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums16.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums15.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums2.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums14.wav"
+  ],
+  "bytes": 7748
+ },
+ {
+  "id": "dash",
+  "kind": "sfx",
+  "files": [
+   "sfx/dash_1",
+   "sfx/dash_2"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Fast FX.wav"
+  ],
+  "bytes": 15380
+ },
+ {
+  "id": "dodge",
+  "kind": "sfx",
+  "files": [
+   "sfx/dodge_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Fast FX.wav"
+  ],
+  "bytes": 5474
+ },
+ {
+  "id": "splash",
+  "kind": "sfx",
+  "files": [
+   "sfx/splash_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary 3rd Drop/EBM Energy (Fm, 120bpm)/FX/FX 0001 [2022-10-20 204338].wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums12.wav"
+  ],
+  "bytes": 9813
+ },
+ {
+  "id": "swim_stroke",
+  "kind": "sfx",
+  "files": [
+   "sfx/swim_stroke_1",
+   "sfx/swim_stroke_2"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Water FX.wav"
+  ],
+  "bytes": 17520
+ },
+ {
+  "id": "glide_open",
+  "kind": "sfx",
+  "files": [
+   "sfx/glide_open_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Swipe FX.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Old School Hip-Hop Soundpack (Em, 107bpm)/FX/FX_Em_107bpm_8.aif"
+  ],
+  "bytes": 7425
+ },
+ {
+  "id": "climb_grab",
+  "kind": "sfx",
+  "files": [
+   "sfx/climb_grab_1",
+   "sfx/climb_grab_2",
+   "sfx/climb_grab_3"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums15.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Old School Hip-Hop Soundpack (Em, 107bpm)/FX/FX_Em_107bpm_4.aif",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums14.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums5.wav"
+  ],
+  "bytes": 8183
+ },
+ {
+  "id": "swing_sword",
+  "kind": "sfx",
+  "files": [
+   "sfx/swing_sword_1",
+   "sfx/swing_sword_2",
+   "sfx/swing_sword_3"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Swipe FX.wav",
+   "SAMPLES:Novation Anniversary 3rd Drop/Indie Hip Hop (Amaj, 84bpm)/FX/One Shot 10.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Analog Synthwave Soundpack (Bbm, 134bpm)/FX/FX_Bbm_134bpm_7.aif"
+  ],
+  "bytes": 15081
+ },
+ {
+  "id": "swing_heavy",
+  "kind": "sfx",
+  "files": [
+   "sfx/swing_heavy_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Swipe FX.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Hyperpop Soundpack (Gm, 150bpm)/FX/FX_Gm_150bpm_10.aif"
+  ],
+  "bytes": 9129
+ },
+ {
+  "id": "thrust_spear",
+  "kind": "sfx",
+  "files": [
+   "sfx/thrust_spear_1",
+   "sfx/thrust_spear_2"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Fast FX.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Hyperpop Soundpack (Gm, 150bpm)/FX/FX_Gm_150bpm_13.aif",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Old School Hip-Hop Soundpack (Em, 107bpm)/FX/FX_Em_107bpm_3.aif"
+  ],
+  "bytes": 10518
+ },
+ {
+  "id": "swing_staff",
+  "kind": "sfx",
+  "files": [
+   "sfx/swing_staff_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Swipe FX.wav"
+  ],
+  "bytes": 7901
+ },
+ {
+  "id": "wand_flick",
+  "kind": "sfx",
+  "files": [
+   "sfx/wand_flick_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Pack 2nd Drop/Japanese LoFi/FX/FX 10.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Fast FX.wav"
+  ],
+  "bytes": 4327
+ },
+ {
+  "id": "bow_draw",
+  "kind": "sfx",
+  "files": [
+   "sfx/bow_draw_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary 3rd Drop/Indie Hip Hop (Amaj, 84bpm)/FX/One Shot 11.wav",
+   "synth"
+  ],
+  "bytes": 8114
+ },
+ {
+  "id": "bow_release",
+  "kind": "sfx",
+  "files": [
+   "sfx/bow_release_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Hyperpop Soundpack (Gm, 150bpm)/FX/FX_Gm_150bpm_4.aif",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Fast FX.wav"
+  ],
+  "bytes": 4920
+ },
+ {
+  "id": "bolt",
+  "kind": "sfx",
+  "files": [
+   "sfx/bolt_1",
+   "sfx/bolt_2"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Pack 2nd Drop/Japanese LoFi/FX/FX 10.wav"
+  ],
+  "bytes": 14718
+ },
+ {
+  "id": "hit",
+  "kind": "sfx",
+  "files": [
+   "sfx/hit_1",
+   "sfx/hit_2",
+   "sfx/hit_3",
+   "sfx/hit_4"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums4.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums12.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Hyperpop Soundpack (Gm, 150bpm)/FX/FX_Gm_150bpm_13.aif",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums2.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums13.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Hyperpop Soundpack (Gm, 150bpm)/FX/FX_Gm_150bpm_7.aif",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums10.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums5.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums15.wav"
+  ],
+  "bytes": 14101
+ },
+ {
+  "id": "hit_crit",
+  "kind": "sfx",
+  "files": [
+   "sfx/hit_crit_1",
+   "sfx/hit_crit_2"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums4.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums15.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Metallic FX.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Hit FX.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums2.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums12.wav"
+  ],
+  "bytes": 16730
+ },
+ {
+  "id": "hit_resist",
+  "kind": "sfx",
+  "files": [
+   "sfx/hit_resist_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Metallic FX.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums2.wav"
+  ],
+  "bytes": 7389
+ },
+ {
+  "id": "arrow_hit",
+  "kind": "sfx",
+  "files": [
+   "sfx/arrow_hit_1",
+   "sfx/arrow_hit_2"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary 3rd Drop/Horror Trap (Fm, 146bpm)/FX/Lantern Short_FX_Short_16-00_Retrigger_Bar_None [2020-10-26 153329].wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums15.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums5.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums12.wav"
+  ],
+  "bytes": 6574
+ },
+ {
+  "id": "parry",
+  "kind": "sfx",
+  "files": [
+   "sfx/parry_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Metallic FX.wav",
+   "SAMPLES:Novation Anniversary 3rd Drop/Acid Techno (Ab, 131bpm)/FX/STAB B 3.wav"
+  ],
+  "bytes": 10801
+ },
+ {
+  "id": "cast_fire",
+  "kind": "sfx",
+  "files": [
+   "sfx/cast_fire_1",
+   "sfx/cast_fire_2"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary 3rd Drop/Horror Trap (Fm, 146bpm)/FX/Carve SFX_FX_SFX_16-00_Retrigger_Bar_None [2020-10-26 153328].wav"
+  ],
+  "bytes": 18870
+ },
+ {
+  "id": "impact_fire",
+  "kind": "sfx",
+  "files": [
+   "sfx/impact_fire_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Pack 2nd Drop/Retro Disco/FX/FX 9.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums15.wav"
+  ],
+  "bytes": 16520
+ },
+ {
+  "id": "cast_ice",
+  "kind": "sfx",
+  "files": [
+   "sfx/cast_ice_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Metallic FX.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Airy FX.wav"
+  ],
+  "bytes": 10086
+ },
+ {
+  "id": "impact_ice",
+  "kind": "sfx",
+  "files": [
+   "sfx/impact_ice_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Pack 2nd Drop/East Coast Hip Hop/FX/One-Shot 5.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Metallic FX.wav"
+  ],
+  "bytes": 12238
+ },
+ {
+  "id": "cast_lightning",
+  "kind": "sfx",
+  "files": [
+   "sfx/cast_lightning_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Pack 2nd Drop/East Coast Hip Hop/FX/One-Shot 7.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Glitch FX.wav"
+  ],
+  "bytes": 8875
+ },
+ {
+  "id": "impact_lightning",
+  "kind": "sfx",
+  "files": [
+   "sfx/impact_lightning_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Glitch FX.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Cymbal Hit FX.wav"
+  ],
+  "bytes": 9295
+ },
+ {
+  "id": "cast_earth",
+  "kind": "sfx",
+  "files": [
+   "sfx/cast_earth_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Pack 2nd Drop/Japanese LoFi/FX/FX 4.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Old School Hip-Hop Soundpack (Em, 107bpm)/FX/FX_Em_107bpm_4.aif"
+  ],
+  "bytes": 11472
+ },
+ {
+  "id": "impact_earth",
+  "kind": "sfx",
+  "files": [
+   "sfx/impact_earth_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Pack 2nd Drop/Japanese LoFi/FX/FX 4.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Old School Hip-Hop Soundpack (Em, 107bpm)/FX/FX_Em_107bpm_4.aif",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums13.wav"
+  ],
+  "bytes": 19077
+ },
+ {
+  "id": "cast_wind",
+  "kind": "sfx",
+  "files": [
+   "sfx/cast_wind_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Noise Sweep FX.aif"
+  ],
+  "bytes": 15591
+ },
+ {
+  "id": "impact_wind",
+  "kind": "sfx",
+  "files": [
+   "sfx/impact_wind_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary 3rd Drop/EBM Energy (Fm, 120bpm)/FX/FX 0015 [2022-10-23 003255].wav"
+  ],
+  "bytes": 15020
+ },
+ {
+  "id": "cast_light",
+  "kind": "sfx",
+  "files": [
+   "sfx/cast_light_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary 3rd Drop/Acid Techno (Ab, 131bpm)/FX/FX STAB A 5.wav",
+   "SAMPLES:Novation Anniversary Pack 2nd Drop/Japanese LoFi/FX/FX 12.wav"
+  ],
+  "bytes": 13347
+ },
+ {
+  "id": "impact_light",
+  "kind": "sfx",
+  "files": [
+   "sfx/impact_light_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Pack 2nd Drop/East Coast Hip Hop/FX/One-Shot 6.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Hyperpop Soundpack (Gm, 150bpm)/FX/FX_Gm_150bpm_4.aif"
+  ],
+  "bytes": 13477
+ },
+ {
+  "id": "cast_dark",
+  "kind": "sfx",
+  "files": [
+   "sfx/cast_dark_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Deep FX.aif",
+   "SAMPLES:Novation Anniversary Pack 2nd Drop/Phonk Hip Hop/Vocals/Vocals 3.wav"
+  ],
+  "bytes": 13383
+ },
+ {
+  "id": "impact_dark",
+  "kind": "sfx",
+  "files": [
+   "sfx/impact_dark_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Short Delay FX.aif"
+  ],
+  "bytes": 12646
+ },
+ {
+  "id": "cast_void",
+  "kind": "sfx",
+  "files": [
+   "sfx/cast_void_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Control FX.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Abyss FX.wav"
+  ],
+  "bytes": 15236
+ },
+ {
+  "id": "impact_void",
+  "kind": "sfx",
+  "files": [
+   "sfx/impact_void_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Robot Scream FX.aif",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Hit FX.wav"
+  ],
+  "bytes": 23507
+ },
+ {
+  "id": "domain",
+  "kind": "sfx",
+  "files": [
+   "sfx/domain_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Long Tail FX.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Deep FX.aif"
+  ],
+  "bytes": 50415
+ },
+ {
+  "id": "spell_refused",
+  "kind": "sfx",
+  "files": [
+   "sfx/spell_refused_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary 3rd Drop/Indie Hip Hop (Amaj, 84bpm)/FX/One Shot 5.wav",
+   "SAMPLES:Novation Anniversary 3rd Drop/Indie Hip Hop (Amaj, 84bpm)/FX/One Shot 2.wav"
+  ],
+  "bytes": 6930
+ },
+ {
+  "id": "player_hurt",
+  "kind": "sfx",
+  "files": [
+   "sfx/player_hurt_1",
+   "sfx/player_hurt_2"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums13.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums2.wav",
+   "SAMPLES:Novation Anniversary 3rd Drop/Indie Hip Hop (Amaj, 84bpm)/FX/One Shot 4.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums10.wav"
+  ],
+  "bytes": 8120
+ },
+ {
+  "id": "player_downed",
+  "kind": "sfx",
+  "files": [
+   "sfx/player_downed_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Pack 2nd Drop/East Coast Hip Hop/FX/One-Shot 2.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Hit FX.wav"
+  ],
+  "bytes": 29950
+ },
+ {
+  "id": "respawn",
+  "kind": "sfx",
+  "files": [
+   "sfx/respawn_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Soft Riser FX.aif",
+   "SAMPLES:Novation Anniversary Pack 2nd Drop/Japanese LoFi/FX/FX 12.wav"
+  ],
+  "bytes": 45432
+ },
+ {
+  "id": "enemy_die",
+  "kind": "sfx",
+  "files": [
+   "sfx/enemy_die_1",
+   "sfx/enemy_die_2"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Hit FX.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Old School Hip-Hop Soundpack (Em, 107bpm)/FX/FX_Em_107bpm_4.aif"
+  ],
+  "bytes": 24004
+ },
+ {
+  "id": "heal",
+  "kind": "sfx",
+  "files": [
+   "sfx/heal_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Hyperpop Soundpack (Gm, 150bpm)/FX/FX_Gm_150bpm_8.aif",
+   "SAMPLES:Novation Anniversary Pack 2nd Drop/Japanese LoFi/FX/FX 12.wav"
+  ],
+  "bytes": 27348
+ },
+ {
+  "id": "shield",
+  "kind": "sfx",
+  "files": [
+   "sfx/shield_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Metallic FX.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Abyss FX.wav"
+  ],
+  "bytes": 24506
+ },
+ {
+  "id": "drink",
+  "kind": "sfx",
+  "files": [
+   "sfx/drink_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Water FX.wav"
+  ],
+  "bytes": 6083
+ },
+ {
+  "id": "telegraph",
+  "kind": "sfx",
+  "files": [
+   "sfx/telegraph_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary 3rd Drop/Indie Hip Hop (Amaj, 84bpm)/FX/One Shot 11.wav",
+   "SAMPLES:Novation Anniversary 3rd Drop/Horror Trap (Fm, 146bpm)/FX/Danger Harsh_FX_Harsh_16-00_Retrigger_Bar_None [2020-10-26 153328].wav"
+  ],
+  "bytes": 8004
+ },
+ {
+  "id": "enemy_shot",
+  "kind": "sfx",
+  "files": [
+   "sfx/enemy_shot_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Pack 2nd Drop/Japanese LoFi/FX/FX 10.wav"
+  ],
+  "bytes": 8610
+ },
+ {
+  "id": "beast_growl",
+  "kind": "sfx",
+  "files": [
+   "sfx/beast_growl_1",
+   "sfx/beast_growl_2"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Robot Scream FX.aif",
+   "SAMPLES:Novation Anniversary 3rd Drop/Horror Trap (Fm, 146bpm)/FX/Danger Harsh_FX_Harsh_16-00_Retrigger_Bar_None [2020-10-26 153328].wav"
+  ],
+  "bytes": 44561
+ },
+ {
+  "id": "demon_growl",
+  "kind": "sfx",
+  "files": [
+   "sfx/demon_growl_1",
+   "sfx/demon_growl_2",
+   "sfx/demon_growl_3"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Pack 2nd Drop/Phonk Hip Hop/Vocals/Vocals 3.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Robot Scream FX.aif",
+   "SAMPLES:Novation Anniversary 3rd Drop/Horror Trap (Fm, 146bpm)/FX/Danger Harsh_FX_Harsh_16-00_Retrigger_Bar_None [2020-10-26 153328].wav",
+   "SAMPLES:Novation Anniversary Pack 2nd Drop/Phonk Hip Hop/Vocals/Vocals 5.wav"
+  ],
+  "bytes": 62457
+ },
+ {
+  "id": "demons_rise",
+  "kind": "sfx",
+  "files": [
+   "sfx/demons_rise_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Long Tail FX.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Deep FX.aif",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Hit FX.wav"
+  ],
+  "bytes": 43298
+ },
+ {
+  "id": "demon_shrug",
+  "kind": "sfx",
+  "files": [
+   "sfx/demon_shrug_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary 3rd Drop/Horror Trap (Fm, 146bpm)/FX/Steel SFX_FX_SFX_16-00_Retrigger_Bar_None [2020-10-26 153330].wav"
+  ],
+  "bytes": 13556
+ },
+ {
+  "id": "demon_burn",
+  "kind": "sfx",
+  "files": [
+   "sfx/demon_burn_1",
+   "sfx/demon_burn_2"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary 3rd Drop/Horror Trap (Fm, 146bpm)/FX/Carve Effects_FX_Effects_16-00_Retrigger_Bar_None [2020-10-26 153327].wav",
+   "SAMPLES:Novation Anniversary 3rd Drop/EBM Energy (Fm, 120bpm)/FX/FX 0001 [2022-10-20 204338].wav"
+  ],
+  "bytes": 31347
+ },
+ {
+  "id": "lord_risen",
+  "kind": "sfx",
+  "files": [
+   "sfx/lord_risen_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Eerie FX.aif",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Robot Scream FX.aif",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Long Tail FX.wav"
+  ],
+  "bytes": 145258
+ },
+ {
+  "id": "boss_engaged",
+  "kind": "sfx",
+  "files": [
+   "sfx/boss_engaged_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Long Tail FX.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Hit FX.wav",
+   "SAMPLES:Novation Anniversary 3rd Drop/Horror Trap (Fm, 146bpm)/FX/Danger Harsh_FX_Harsh_16-00_Retrigger_Bar_None [2020-10-26 153328].wav"
+  ],
+  "bytes": 50259
+ },
+ {
+  "id": "boss_phase",
+  "kind": "sfx",
+  "files": [
+   "sfx/boss_phase_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Robot Scream FX.aif",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Hit FX.wav"
+  ],
+  "bytes": 37376
+ },
+ {
+  "id": "boss_defeated",
+  "kind": "sfx",
+  "files": [
+   "sfx/boss_defeated_1"
+  ],
+  "sources": [
+   "RPG:level up sound 3.aif",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Cymbal Hit FX.wav"
+  ],
+  "bytes": 45672
+ },
+ {
+  "id": "mine_stone",
+  "kind": "sfx",
+  "files": [
+   "sfx/mine_stone_1",
+   "sfx/mine_stone_2",
+   "sfx/mine_stone_3"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary 3rd Drop/Horror Trap (Fm, 146bpm)/FX/Lantern Short_FX_Short_16-00_Retrigger_Bar_None [2020-10-26 153329].wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums4.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Metallic FX.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums2.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums13.wav"
+  ],
+  "bytes": 9399
+ },
+ {
+  "id": "mine_gem",
+  "kind": "sfx",
+  "files": [
+   "sfx/mine_gem_1",
+   "sfx/mine_gem_2"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Metallic FX.wav",
+   "SAMPLES:Novation Anniversary Pack 2nd Drop/Japanese LoFi/FX/FX 12.wav"
+  ],
+  "bytes": 10818
+ },
+ {
+  "id": "vein_break",
+  "kind": "sfx",
+  "files": [
+   "sfx/vein_break_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Old School Hip-Hop Soundpack (Em, 107bpm)/FX/FX_Em_107bpm_4.aif",
+   "SAMPLES:Novation Anniversary Pack 2nd Drop/Japanese LoFi/FX/FX 4.wav"
+  ],
+  "bytes": 17911
+ },
+ {
+  "id": "loot_common",
+  "kind": "sfx",
+  "files": [
+   "sfx/loot_common_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Pack 2nd Drop/Japanese LoFi/FX/FX 12.wav"
+  ],
+  "bytes": 6135
+ },
+ {
+  "id": "loot_uncommon",
+  "kind": "sfx",
+  "files": [
+   "sfx/loot_uncommon_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Pack 2nd Drop/Japanese LoFi/FX/FX 12.wav"
+  ],
+  "bytes": 7665
+ },
+ {
+  "id": "loot_rare",
+  "kind": "sfx",
+  "files": [
+   "sfx/loot_rare_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Pack 2nd Drop/East Coast Hip Hop/FX/One-Shot 6.wav",
+   "SAMPLES:Novation Anniversary Pack 2nd Drop/Japanese LoFi/FX/FX 12.wav"
+  ],
+  "bytes": 13290
+ },
+ {
+  "id": "loot_epic",
+  "kind": "sfx",
+  "files": [
+   "sfx/loot_epic_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Hyperpop Soundpack (Gm, 150bpm)/FX/FX_Gm_150bpm_11.aif",
+   "SAMPLES:Novation Anniversary Pack 2nd Drop/East Coast Hip Hop/FX/One-Shot 6.wav"
+  ],
+  "bytes": 23384
+ },
+ {
+  "id": "loot_mythic",
+  "kind": "sfx",
+  "files": [
+   "sfx/loot_mythic_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Ripple Riser FX.wav",
+   "SAMPLES:Novation Anniversary Pack 2nd Drop/East Coast Hip Hop/FX/One-Shot 6.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Cymbal Hit FX.wav"
+  ],
+  "bytes": 50061
+ },
+ {
+  "id": "loot_bitchin",
+  "kind": "sfx",
+  "files": [
+   "sfx/loot_bitchin_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Ripple Riser FX.wav",
+   "RPG:level up sound 3.aif",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Cymbal Hit FX.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Hyperpop Soundpack (Gm, 150bpm)/FX/FX_Gm_150bpm_11.aif",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Glitch FX.wav"
+  ],
+  "bytes": 76732
+ },
+ {
+  "id": "coins",
+  "kind": "sfx",
+  "files": [
+   "sfx/coins_1",
+   "sfx/coins_2"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Pack 2nd Drop/Japanese LoFi/FX/FX 12.wav"
+  ],
+  "bytes": 13757
+ },
+ {
+  "id": "chest_open",
+  "kind": "sfx",
+  "files": [
+   "sfx/chest_open_1"
+  ],
+  "sources": [
+   "synth",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums13.wav",
+   "SAMPLES:Novation Anniversary Pack 2nd Drop/Japanese LoFi/FX/FX 12.wav"
+  ],
+  "bytes": 13335
+ },
+ {
+  "id": "item_drop",
+  "kind": "sfx",
+  "files": [
+   "sfx/item_drop_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary 3rd Drop/Indie Hip Hop (Amaj, 84bpm)/FX/One Shot 5.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums10.wav"
+  ],
+  "bytes": 7101
+ },
+ {
+  "id": "forge_hammer",
+  "kind": "sfx",
+  "files": [
+   "sfx/forge_hammer_1",
+   "sfx/forge_hammer_2",
+   "sfx/forge_hammer_3"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Metallic FX.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums15.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums4.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums12.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums2.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums13.wav"
+  ],
+  "bytes": 25354
+ },
+ {
+  "id": "smelt",
+  "kind": "sfx",
+  "files": [
+   "sfx/smelt_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary 3rd Drop/Horror Trap (Fm, 146bpm)/FX/Carve SFX_FX_SFX_16-00_Retrigger_Bar_None [2020-10-26 153328].wav",
+   "SAMPLES:Novation Anniversary 3rd Drop/EBM Energy (Fm, 120bpm)/FX/FX 0001 [2022-10-20 204338].wav"
+  ],
+  "bytes": 19506
+ },
+ {
+  "id": "craft_done",
+  "kind": "sfx",
+  "files": [
+   "sfx/craft_done_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Pack 2nd Drop/Japanese LoFi/FX/FX 12.wav",
+   "SAMPLES:Novation Anniversary Pack 2nd Drop/East Coast Hip Hop/FX/One-Shot 6.wav"
+  ],
+  "bytes": 22589
+ },
+ {
+  "id": "station_open",
+  "kind": "sfx",
+  "files": [
+   "sfx/station_open_1"
+  ],
+  "sources": [
+   "synth",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums12.wav"
+  ],
+  "bytes": 5867
+ },
+ {
+  "id": "npc_talk",
+  "kind": "sfx",
+  "files": [
+   "sfx/npc_talk_1",
+   "sfx/npc_talk_2",
+   "sfx/npc_talk_3"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary 3rd Drop/Indie Hip Hop (Amaj, 84bpm)/FX/One Shot 2.wav",
+   "SAMPLES:Novation Anniversary 3rd Drop/Indie Hip Hop (Amaj, 84bpm)/FX/One Shot 3.wav",
+   "SAMPLES:Novation Anniversary 3rd Drop/Indie Hip Hop (Amaj, 84bpm)/FX/One Shot 4.wav"
+  ],
+  "bytes": 11343
+ },
+ {
+  "id": "door_open",
+  "kind": "sfx",
+  "files": [
+   "sfx/door_open_1",
+   "sfx/door_open_2"
+  ],
+  "sources": [
+   "synth",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums10.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums12.wav"
+  ],
+  "bytes": 27770
+ },
+ {
+  "id": "door_close",
+  "kind": "sfx",
+  "files": [
+   "sfx/door_close_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums13.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Acoustic Drums Soundpack/Acoustic Drum Loops/Acoustic Drums16.wav",
+   "SAMPLES:Novation Anniversary Pack 2nd Drop/East Coast Hip Hop/FX/One-Shot 3.wav"
+  ],
+  "bytes": 6050
+ },
+ {
+  "id": "rest",
+  "kind": "sfx",
+  "files": [
+   "sfx/rest_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Chimes FX.wav"
+  ],
+  "bytes": 55310
+ },
+ {
+  "id": "dusk",
+  "kind": "sfx",
+  "files": [
+   "sfx/dusk_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Eerie FX.aif"
+  ],
+  "bytes": 74336
+ },
+ {
+  "id": "dawn",
+  "kind": "sfx",
+  "files": [
+   "sfx/dawn_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Airy FX.wav",
+   "SAMPLES:Novation Anniversary Pack 2nd Drop/East Coast Hip Hop/FX/One-Shot 6.wav"
+  ],
+  "bytes": 63243
+ },
+ {
+  "id": "ignite",
+  "kind": "sfx",
+  "files": [
+   "sfx/ignite_1",
+   "sfx/ignite_2"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary 3rd Drop/Horror Trap (Fm, 146bpm)/FX/Carve SFX_FX_SFX_16-00_Retrigger_Bar_None [2020-10-26 153328].wav",
+   "SAMPLES:Novation Anniversary 3rd Drop/EBM Energy (Fm, 120bpm)/FX/FX 0001 [2022-10-20 204338].wav"
+  ],
+  "bytes": 20381
+ },
+ {
+  "id": "extinguish",
+  "kind": "sfx",
+  "files": [
+   "sfx/extinguish_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary 3rd Drop/EBM Energy (Fm, 120bpm)/FX/FX 0001 [2022-10-20 204338].wav"
+  ],
+  "bytes": 14118
+ },
+ {
+  "id": "freeze",
+  "kind": "sfx",
+  "files": [
+   "sfx/freeze_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Pack 2nd Drop/East Coast Hip Hop/FX/One-Shot 5.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Metallic FX.wav"
+  ],
+  "bytes": 13177
+ },
+ {
+  "id": "pillar",
+  "kind": "sfx",
+  "files": [
+   "sfx/pillar_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Pack 2nd Drop/Japanese LoFi/FX/FX 4.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Old School Hip-Hop Soundpack (Em, 107bpm)/FX/FX_Em_107bpm_4.aif"
+  ],
+  "bytes": 22515
+ },
+ {
+  "id": "ward_falter",
+  "kind": "sfx",
+  "files": [
+   "sfx/ward_falter_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Decay Riser FX_Gm.wav",
+   "SAMPLES:Novation Anniversary 3rd Drop/Indie Hip Hop (Amaj, 84bpm)/FX/One Shot 8.wav"
+  ],
+  "bytes": 57884
+ },
+ {
+  "id": "ward_hit",
+  "kind": "sfx",
+  "files": [
+   "sfx/ward_hit_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Short Delay FX.aif",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Metallic FX.wav"
+  ],
+  "bytes": 11021
+ },
+ {
+  "id": "wave_horn",
+  "kind": "sfx",
+  "files": [
+   "sfx/wave_horn_1"
+  ],
+  "sources": [
+   "synth",
+   "SAMPLES:Novation Anniversary Pack 2nd Drop/Modern Hip Hop/FX/FX 9.wav"
+  ],
+  "bytes": 56142
+ },
+ {
+  "id": "defense_held",
+  "kind": "sfx",
+  "files": [
+   "sfx/defense_held_1"
+  ],
+  "sources": [
+   "RPG:level up sound 3.aif",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Cymbal Hit FX.wav"
+  ],
+  "bytes": 37894
+ },
+ {
+  "id": "defense_broken",
+  "kind": "sfx",
+  "files": [
+   "sfx/defense_broken_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Pack 2nd Drop/East Coast Hip Hop/FX/One-Shot 2.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Long Tail FX.wav",
+   "SAMPLES:Novation Anniversary 3rd Drop/Horror Trap (Fm, 146bpm)/FX/Danger Harsh_FX_Harsh_16-00_Retrigger_Bar_None [2020-10-26 153328].wav"
+  ],
+  "bytes": 68248
+ },
+ {
+  "id": "discovery",
+  "kind": "sfx",
+  "files": [
+   "sfx/discovery_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Textured Riser FX.aif",
+   "SAMPLES:Novation Anniversary Pack 2nd Drop/East Coast Hip Hop/FX/One-Shot 6.wav",
+   "SAMPLES:Novation Anniversary Pack 2nd Drop/Japanese LoFi/FX/FX 12.wav"
+  ],
+  "bytes": 57016
+ },
+ {
+  "id": "tower_riser",
+  "kind": "sfx",
+  "files": [
+   "sfx/tower_riser_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Shade Riser FX.aif"
+  ],
+  "bytes": 67715
+ },
+ {
+  "id": "tower_attune",
+  "kind": "sfx",
+  "files": [
+   "sfx/tower_attune_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Ripple Riser FX.wav",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Tower FX.wav",
+   "RPG:level up sound 2.aif"
+  ],
+  "bytes": 110761
+ },
+ {
+  "id": "waypoint",
+  "kind": "sfx",
+  "files": [
+   "sfx/waypoint_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Pack 2nd Drop/World Flute Trap/FX/Fx1 0020 [2020-08-03 062925].wav",
+   "SAMPLES:Novation Anniversary Pack 2nd Drop/Japanese LoFi/FX/FX 12.wav"
+  ],
+  "bytes": 31107
+ },
+ {
+  "id": "level_up_small",
+  "kind": "sfx",
+  "files": [
+   "sfx/level_up_small_1"
+  ],
+  "sources": [
+   "RPG:level up sound 1.aif"
+  ],
+  "bytes": 23716
+ },
+ {
+  "id": "level_up",
+  "kind": "sfx",
+  "files": [
+   "sfx/level_up_1"
+  ],
+  "sources": [
+   "RPG:level up sound 2.aif"
+  ],
+  "bytes": 24039
+ },
+ {
+  "id": "level_up_big",
+  "kind": "sfx",
+  "files": [
+   "sfx/level_up_big_1"
+  ],
+  "sources": [
+   "RPG:level up sound 3.aif"
+  ],
+  "bytes": 38518
+ },
+ {
+  "id": "skill_up",
+  "kind": "sfx",
+  "files": [
+   "sfx/skill_up_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Hyperpop Soundpack (Gm, 150bpm)/FX/FX_Gm_150bpm_11.aif"
+  ],
+  "bytes": 18508
+ },
+ {
+  "id": "camp_cleared",
+  "kind": "sfx",
+  "files": [
+   "sfx/camp_cleared_1"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation FX Soundpack/FX/Cymbal Hit FX.wav",
+   "SAMPLES:Novation Anniversary Pack 2nd Drop/East Coast Hip Hop/FX/One-Shot 6.wav"
+  ],
+  "bytes": 28198
+ },
+ {
+  "id": "future_land_1",
+  "kind": "music",
+  "files": [
+   "music/future_land_1"
+  ],
+  "sources": [
+   "RPG:future land 1.aif"
+  ],
+  "bytes": 4187196,
+  "lufs": -16,
+  "seconds": 186.28
+ },
+ {
+  "id": "future_land_2",
+  "kind": "music",
+  "files": [
+   "music/future_land_2"
+  ],
+  "sources": [
+   "RPG:future land 2.aif"
+  ],
+  "bytes": 4188799,
+  "lufs": -16,
+  "seconds": 186.28
+ },
+ {
+  "id": "night",
+  "kind": "music",
+  "files": [
+   "music/night"
+  ],
+  "sources": [
+   "RPG:future land 2.aif"
+  ],
+  "bytes": 1432384,
+  "lufs": -18,
+  "seconds": 65.37
+ },
+ {
+  "id": "void_realm",
+  "kind": "music",
+  "files": [
+   "music/void_realm"
+  ],
+  "sources": [
+   "RPG:void realm.aif"
+  ],
+  "bytes": 3256160,
+  "lufs": -17.2,
+  "seconds": 134.22
+ },
+ {
+  "id": "time_crunch_intro",
+  "kind": "music",
+  "files": [
+   "music/time_crunch_intro"
+  ],
+  "sources": [
+   "RPG:time crunch intro.aif"
+  ],
+  "bytes": 678489,
+  "lufs": -18.1,
+  "seconds": 28.71
+ },
+ {
+  "id": "time_crunch_loop",
+  "kind": "music",
+  "files": [
+   "music/time_crunch_loop"
+  ],
+  "sources": [
+   "RPG:time crunch loop.aif"
+  ],
+  "bytes": 335654,
+  "lufs": -17.7,
+  "seconds": 14.36
+ },
+ {
+  "id": "time_crunch_final",
+  "kind": "music",
+  "files": [
+   "music/time_crunch_final"
+  ],
+  "sources": [
+   "RPG:time crunch 5 sec left.aif"
+  ],
+  "bytes": 344882,
+  "lufs": -16.2,
+  "seconds": 14.36
+ },
+ {
+  "id": "combat",
+  "kind": "music",
+  "files": [
+   "music/combat"
+  ],
+  "sources": [
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Analog Synthwave Soundpack (Bbm, 134bpm)/Drums/Drum Loop_Bbm_134bpm_1.aif",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Analog Synthwave Soundpack (Bbm, 134bpm)/Bass/Bass Loop_Bbm_134bpm_5.aif",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Analog Synthwave Soundpack (Bbm, 134bpm)/Melodic/Melodic Loop_Bbm_134bpm_16.aif",
+   "SAMPLES:Novation Anniversary Soundpack 1st Drop/Novation Analog Synthwave Soundpack (Bbm, 134bpm)/Melodic/Melodic Loop_Bbm_134bpm_4.aif"
+  ],
+  "bytes": 625528,
+  "lufs": -17,
+  "seconds": 28.66
+ }
+]

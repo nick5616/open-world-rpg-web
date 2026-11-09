@@ -1,0 +1,25 @@
+zone :40116 (seed 20261108), vite :29027
+tower: site #35 tower "The Forgotten Spire" (1888, 1760), dropped at (1844, 1804)
+  region entry: "The Forgotten Heights" / Highlands / Uncharted · climb its tower to map it
+  shot pt-ux-intro-region-entry.png: region:5 "The Forgotten Heights" / Highlands / Uncharted · climb its tower to map it at 1744 ms of 5200 (in 936 ms)
+  discovery Event -> intro; store toasts (hidden from the HUD): [{"kind":"discovery","title":"Discovered: The Forgotten Spire","detail":"+40 XP"}]
+  shot pt-ux-intro-frames-1.png: site:35 "The Forgotten Spire" / Tower of The Forgotten Heights / +40 XP at 419 ms of 4400 (in 792 ms)
+  shot pt-ux-intro-frames-2.png: site:35 "The Forgotten Spire" / Tower of The Forgotten Heights / +40 XP at 1873 ms of 4400 (in 792 ms)
+  shot pt-ux-intro-frames-3.png: site:35 "The Forgotten Spire" / Tower of The Forgotten Heights / +40 XP at 4142 ms of 4400 (in 792 ms)
+tower (again, fresh character): site #35 tower "The Forgotten Spire" (1888, 1760), dropped at (1844, 1804)
+  region entry: "The Forgotten Heights" / Highlands / Uncharted · climb its tower to map it
+  discovery Event -> intro; store toasts (hidden from the HUD): [{"kind":"discovery","title":"Discovered: The Forgotten Spire","detail":"+40 XP"}]
+  shot pt-ux-intro-tower.png: site:35 "The Forgotten Spire" / Tower of The Forgotten Heights / +40 XP at 1669 ms of 4400 (in 792 ms)
+town: site #9 settlement "Draedmore" (1920, 2272), dropped at (2027, 2379)
+  region entry: "The Burning Leas" / Meadows / Uncharted · climb its tower to map it
+  discovery Event -> intro; store toasts (hidden from the HUD): [{"kind":"discovery","title":"Discovered: Draedmore","detail":"+100 XP"},{"kind":"level","title":"Level 2"}]
+  shot pt-ux-intro-town.png: site:9 "Draedmore" / Town · The Burning Leas / +100 XP at 1679 ms of 4400 (in 792 ms)
+discovery: site #119 shrine "The Forgotten Shrine" (2048, 2112), dropped at (2015, 2145)
+  region entry: "The Burning Leas" / Meadows / Uncharted · climb its tower to map it
+  discovery Event -> intro; store toasts (hidden from the HUD): [{"kind":"discovery","title":"Discovered: The Forgotten Shrine","detail":"+50 XP"}]
+  shot pt-ux-intro-discovery.png: site:119 "The Forgotten Shrine" / Shrine · The Hollow Meadows / +50 XP at 700 ms of 4400 (in 792 ms)
+region reveal: spawn on tower #39 "The Ironbound Spire"
+  history: [{"at":2282.6000000089407,"key":"site:39","variant":"major","title":"The Ironbound Spire","subtitle":"Tower of The Burning Leas"},{"at":6720.20000000298,"key":"reveal:9","variant":"region","title":"The Burning Leas","subtitle":"Meadows"}]
+  shot pt-ux-intro-region.png: reveal:9 "The Burning Leas" / Meadows / Map updated · tower unlocked for fast travel at 1869 ms of 5200 (in 936 ms)
+  shot pt-ux-intro-1080.png (1920x1080, dev handle)
+  shot pt-ux-intro-800.png (800x600, dev handle)

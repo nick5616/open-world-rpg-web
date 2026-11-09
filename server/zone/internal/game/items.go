@@ -524,6 +524,7 @@ func (s *Server) sendInventory(sess *session) {
 	}
 	b, _ := json.Marshal(inv)
 	s.sendEvent(sess, &proto.Event{Kind: EventInventory, EntityID: sess.ent.ID, Value: int32(inv.Gold), Data: b})
+	s.questsChanged(sess) // quests.go: "hold items" objectives
 }
 
 func (s *Server) refuseItem(sess *session, kind, action uint8, reason int32) {
@@ -627,6 +628,9 @@ func (s *Server) applyGear(sess *session) {
 		ci.charges = n
 		p.Charges = n
 		changed = true
+	}
+	if _, look := weaponLooks(sess); look != e.TypeID {
+		changed = true // pt/ux: a different material (iron -> sunsteel sword) shows on the avatar
 	}
 	if changed {
 		s.sendCombatSync(sess)
@@ -898,6 +902,7 @@ func (s *Server) useItem(sess *session, it *items.Item, d *items.Delta) error {
 			return items.ErrNotAllowed
 		}
 		ci.inv.Spend(it.Base, 1, d)
+		learnedSpellIntoSlot(e.cbt, key) // quests.go: no spellbook screen yet
 		s.sendCombatSync(sess)
 		s.saveCombat(sess, false)
 		return nil

@@ -478,6 +478,7 @@ func (s *Server) localState(sess *session) localsave.State {
 	st.Progress.Pins = p.PinsJSON()
 	combatIntoLocal(e, (*[]byte)(&st.Progress.SkillTree), &st.Progress.SpellsKnown, &st.Progress.SpellsEquipped) // WP13
 	itemsIntoLocal(sess, &st)                                                                                    // WP14
+	questsIntoLocal(sess, &st.Quests)                                                                            // quests.go
 	st.LastWaypoint = nil
 	if p.LastWaypoint >= 0 {
 		id := int64(s.cfg.Explore.Atlas.Sites[p.LastWaypoint].ID)

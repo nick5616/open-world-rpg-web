@@ -61,6 +61,7 @@ type State struct {
 	VX, VZ     float64
 	Goal       int
 	path       [][2]float64
+	doors      []int // doors[k] = building whose door the walk into path[k] goes through, -1 none
 	pathI      int
 	target     [2]float64
 	wanderSlot int64
@@ -81,6 +82,20 @@ type World struct {
 	SiteName func(site int) string
 	// Sites lists atlas sites usable as bounty targets.
 	Sites []Site
+	// Doors gates walks through building doors (nil: every door open). The
+	// zone glue (internal/game/doors.go) opens a closed door for the NPC and
+	// closes it behind them.
+	Doors DoorGate
+}
+
+// DoorGate lets the zone gate NPC walks through building doors.
+type DoorGate interface {
+	// Pass reports whether NPC i may walk on through building b's door
+	// now (asked every step while on the door segment); when the door is
+	// closed the gate may open it, and the NPC waits.
+	Pass(i, b int) bool
+	// Through tells the gate NPC i has walked through building b's door.
+	Through(i, b int)
 }
 
 // Site is the part of an atlas site the bounty board needs.
@@ -186,7 +201,7 @@ func (w *World) Place(i int, todS float64, ground func(x, y, z float64) float64,
 	for k := 0; k < 3; k++ {
 		s.Y = ground(s.X, s.Y, s.Z)
 	}
-	s.path, s.pathI, s.target = nil, 0, p
+	s.path, s.doors, s.pathI, s.target = nil, nil, 0, p
 	s.wanderSlot = int64(todS / 25)
 	s.VX, s.VZ = 0, 0
 	s.Yaw = s.Def.WorkYaw
@@ -203,7 +218,7 @@ func (w *World) Step(i int, todS, dt float64, ground func(x, y, z float64) float
 		s.Goal = g
 		s.wanderSlot = slot
 		s.target = w.goalPoint(i, g, todS)
-		s.path = w.Route(s.Def.Settlement, s.X, s.Z, s.target[0], s.target[1])
+		s.path, s.doors = w.route(s.Def.Settlement, s.X, s.Z, s.target[0], s.target[1])
 		s.pathI = 0
 		s.At = false
 	}
@@ -211,12 +226,22 @@ func (w *World) Step(i int, todS, dt float64, ground func(x, y, z float64) float
 	if !s.At && s.path != nil {
 		left := WalkSpeed * dt
 		for left > 0 && s.pathI < len(s.path) {
+			door := -1
+			if w.Doors != nil && s.pathI < len(s.doors) {
+				door = s.doors[s.pathI]
+			}
+			if door >= 0 && !w.Doors.Pass(i, door) {
+				break // wait for the door
+			}
 			p := s.path[s.pathI]
 			dx, dz := p[0]-s.X, p[1]-s.Z
 			d := math.Hypot(dx, dz)
 			if d <= left {
 				s.X, s.Z = p[0], p[1]
 				left -= d
+				if door >= 0 {
+					w.Doors.Through(i, door)
+				}
 				s.pathI++
 				continue
 			}
@@ -228,7 +253,7 @@ func (w *World) Step(i int, todS, dt float64, ground func(x, y, z float64) float
 		}
 		if s.pathI >= len(s.path) {
 			s.At = true
-			s.path = nil
+			s.path, s.doors = nil, nil
 			if s.Goal == GoalWork {
 				s.Yaw = s.Def.WorkYaw
 			}
@@ -241,16 +266,26 @@ func (w *World) Step(i int, todS, dt float64, ground func(x, y, z float64) float
 // out of the building the start is in (through its door), along the street
 // graph, into the building of the target. The start point is not included.
 func (w *World) Route(si int, ax, az, bx, bz float64) [][2]float64 {
+	p, _ := w.route(si, ax, az, bx, bz)
+	return p
+}
+
+// route is Route plus, per point, the building whose door the walk into
+// that point goes through (-1 none): out of a building between its inside
+// and outside door points, in between outside and inside.
+func (w *World) route(si int, ax, az, bx, bz float64) ([][2]float64, []int) {
 	g := w.graphs[si]
 	var out [][2]float64
+	var doors []int
 	ba := w.building(ax, az, si)
 	bb := w.building(bx, bz, si)
 	if ba >= 0 && ba == bb {
-		return [][2]float64{{bx, bz}}
+		return [][2]float64{{bx, bz}}, []int{-1}
 	}
 	from := [2]float64{ax, az}
 	if ba >= 0 {
 		out = append(out, w.doorPath(ba, false)...)
+		doors = append(doors, -1, ba, -1) // inside -> outside crosses the door
 		from = out[len(out)-1]
 	}
 	to := [2]float64{bx, bz}
@@ -259,9 +294,16 @@ func (w *World) Route(si int, ax, az, bx, bz float64) [][2]float64 {
 		tail = w.doorPath(bb, true)
 		to = tail[0]
 	}
-	out = append(out, g.path(from, to)...)
+	mid := g.path(from, to)
+	out = append(out, mid...)
+	for range mid {
+		doors = append(doors, -1)
+	}
 	out = append(out, tail...)
-	return append(out, [2]float64{bx, bz})
+	if bb >= 0 {
+		doors = append(doors, -1, -1, bb) // front -> outside -> inside: the last step crosses
+	}
+	return append(out, [2]float64{bx, bz}), append(doors, -1)
 }
 
 // doorPath: inside the door, outside it, the street point in front (or the

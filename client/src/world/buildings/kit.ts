@@ -502,7 +502,9 @@ export function buildSettlementMesh(t: Towns, si: number, heightAt: (x: number, 
     for (let pi = b.propFirst; pi < b.propFirst + b.propCount; pi++) {
       const p = t.props[pi];
       // Outdoors (doors, fields, flower beds, market stalls) belongs to the shell.
-      const outdoor = p.kind === PK.door || p.kind === PK.crops || p.kind === PK.wardBed || b.floors === 0;
+      // Door leaves are drawn (and swung) by doorsMesh.ts, one instanced draw for every door.
+      if (p.kind === PK.door) continue;
+      const outdoor = p.kind === PK.crops || p.kind === PK.wardBed || b.floors === 0;
       shell.originY = 0;
       drawProp(outdoor ? shell : interior, p, propDims(t, p, boxByPos), ctx);
     }
