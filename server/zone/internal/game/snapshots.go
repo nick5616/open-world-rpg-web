@@ -33,8 +33,6 @@ import (
 	"math"
 	"math/bits"
 	"runtime"
-	"sync"
-	"sync/atomic"
 
 	"lodestone/server/pkg/proto"
 	"lodestone/server/pkg/snapshot"
@@ -94,35 +92,11 @@ func (s *Server) sendSnapshots(tick uint32, serverTime float64) {
 	for _, sc := range s.snapScr[:workers] {
 		sc.sum = snapSums{}
 	}
-	if workers == 1 {
-		sc := s.snapScr[0]
-		for _, sess := range s.sessions {
-			s.sendSnapshot(sc, sess, tick, serverTime)
-		}
-	} else {
-		var next atomic.Int64
-		var wg sync.WaitGroup
-		run := func(sc *snapScratch) {
-			for {
-				i := int(next.Add(snapChunk)) - snapChunk
-				if i >= n {
-					return
-				}
-				for _, sess := range s.sessions[i:min(n, i+snapChunk)] {
-					s.sendSnapshot(sc, sess, tick, serverTime)
-				}
-			}
-		}
-		wg.Add(workers - 1)
-		for _, sc := range s.snapScr[1:workers] {
-			go func() {
-				defer wg.Done()
-				run(sc)
-			}()
-		}
-		run(s.snapScr[0]) // the tick goroutine works too
-		wg.Wait()
-	}
+	// WP19b: the shared pool (par.go), which returns when every client is
+	// done rather than when every helper goroutine has exited.
+	parallelFor(n, workers, snapChunk, func(worker, i int) {
+		s.sendSnapshot(s.snapScr[worker], s.sessions[i], tick, serverTime)
+	})
 	var t snapSums
 	for _, sc := range s.snapScr[:workers] {
 		t.near += sc.sum.near
@@ -297,11 +271,19 @@ func (s *Server) sendSnapshot(sc *snapScratch, sess *session, tick uint32, serve
 		sc.cands = append(sc.cands, snapshot.Candidate{State: &s.qs[i], Due: aoi.Due(r, tick, o.id), Weight: priorityWeight(d, sameParty), NameID: o.nameID})
 	}
 
+	// WP19b (decision 0005): reliable traffic queued since the last snapshot
+	// (combat events, hit results, inventory, ...) comes out of the same
+	// downlink budget, so snapshot + events stay within it.
+	if q := sess.conn.Stats().ReliableQueued.Load(); q != sess.relCharged {
+		sess.enc.Charge(int(q - sess.relCharged))
+		sess.relCharged = q
+	}
 	st := e.selfState(s.cfg.Ground)
 	snap := sess.enc.Build(tick, sess.ackTick, e.LastSeq, serverTime, &st, sc.cands)
 	if bs := sess.enc.Stats(); bs != sess.budget {
 		s.m.recordsSent.Add(int64(bs.Sent - sess.budget.Sent))
 		s.m.recordsDeferred.Add(int64(bs.Deferred - sess.budget.Deferred))
+		s.m.budgetCharged.Add(int64(bs.Charged - sess.budget.Charged))
 		sess.budget = bs
 	}
 	sc.w.Reset()

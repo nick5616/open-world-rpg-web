@@ -95,6 +95,8 @@ type BudgetStats struct {
 	Deferred uint64
 	// Sent counts records that were due and changed and went out.
 	Sent uint64
+	// Charged counts non-snapshot bytes charged to the budget (Charge).
+	Charged uint64
 }
 
 // SetBudget caps snapshot bytes for this client (decision 0005: the AOI ring
@@ -116,6 +118,23 @@ func (e *Encoder) SetBudget(bytesPerSec float64, tickRate int, burstTicks float6
 	e.burst = e.perTick * burstTicks
 	e.overhead = overhead
 	e.tokens = e.perTick
+}
+
+// Charge spends n bytes of the client's allowance on traffic other than
+// snapshots (WP19b, decision 0005: reliable events ride the same downlink,
+// so they come out of the same budget). The next snapshots get that much
+// less room for entity records. The debt is capped at one burst (budget
+// carry-over) so a one-off large reliable message (an inventory on join)
+// costs a few ticks of entity updates, not seconds. No-op without a budget.
+func (e *Encoder) Charge(n int) {
+	if e.perTick <= 0 || n <= 0 {
+		return
+	}
+	e.tokens -= float64(n)
+	if e.tokens < -e.burst {
+		e.tokens = -e.burst
+	}
+	e.stats.Charged += uint64(n)
 }
 
 // accCursor walks the sorted accumulator slices alongside sorted interest.

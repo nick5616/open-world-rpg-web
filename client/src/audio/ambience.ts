@@ -27,13 +27,22 @@ export interface AmbienceTargets {
   drips: number;
 }
 
-function noiseBuffer(ctx: AudioContext, seconds: number, brown: boolean): AudioBuffer {
+/**
+ * Yields to the event loop (WP19b: buffers of ~1 M samples synthesized in one
+ * go were a 70-90 ms main-thread long task on the first key press, when the
+ * engine unlocks; in slices of SYNTH_SLICE samples each piece is ~1 ms).
+ */
+export const SYNTH_SLICE = 32768;
+export const yieldToLoop = () => new Promise<void>((r) => setTimeout(r, 0));
+
+async function noiseBuffer(ctx: AudioContext, seconds: number, brown: boolean): Promise<AudioBuffer> {
   const len = Math.floor(ctx.sampleRate * seconds);
   const b = ctx.createBuffer(2, len, ctx.sampleRate);
   for (let ch = 0; ch < 2; ch++) {
     const d = b.getChannelData(ch);
     let last = 0;
     for (let i = 0; i < len; i++) {
+      if (i % SYNTH_SLICE === SYNTH_SLICE - 1) await yieldToLoop();
       const w = Math.random() * 2 - 1;
       if (brown) {
         last = (last + 0.02 * w) / 1.02;
@@ -62,7 +71,8 @@ export class Ambience {
   private dropAt = 0;
   private chirpAt = 0;
   private targets: AmbienceTargets = { wind: 0, windSpeed: 0, rain: 0, fire: 0, insects: 0, water: 0, drips: 0 };
-  private white: AudioBuffer;
+  private white: AudioBuffer | null = null; // WP19b: null until synthesized (noiseBuffer)
+  private disposed = false;
   private dripAt = 0;
 
   constructor(
@@ -71,15 +81,24 @@ export class Ambience {
     /** The cave reverb send (drips only make sense wet). */
     private readonly wet: AudioNode | null = null,
   ) {
+    // WP19b: the noise is synthesized in slices (noiseBuffer); each bed's
+    // loop joins its (silent, gain 0 at first) chain once its buffer is
+    // ready, a few hundred ms after the engine starts.
     const brown = noiseBuffer(ctx, 6, true);
-    this.white = noiseBuffer(ctx, 4, false);
-    const loop = (buf: AudioBuffer) => {
-      const s = ctx.createBufferSource();
-      s.buffer = buf;
-      s.loop = true;
-      s.start(ctx.currentTime, Math.random() * buf.duration);
-      this.sources.push(s);
-      return s;
+    const white = noiseBuffer(ctx, 4, false);
+    void white.then((b) => (this.white = b));
+    const loop = (buf: Promise<AudioBuffer>) => {
+      const head = ctx.createGain();
+      void buf.then((b) => {
+        if (this.disposed) return;
+        const s = ctx.createBufferSource();
+        s.buffer = b;
+        s.loop = true;
+        s.start(ctx.currentTime, Math.random() * b.duration);
+        this.sources.push(s);
+        s.connect(head);
+      });
+      return head;
     };
     // wind
     this.windBand = ctx.createBiquadFilter();
@@ -106,7 +125,7 @@ export class Ambience {
     lp.frequency.value = 7000;
     this.rain = ctx.createGain();
     this.rain.gain.value = 0;
-    loop(this.white).connect(hp).connect(lp).connect(this.rain).connect(out);
+    loop(white).connect(hp).connect(lp).connect(this.rain).connect(out);
     // fire: rumble bed + pops (in tick)
     const fb = ctx.createBiquadFilter();
     fb.type = 'bandpass';
@@ -186,6 +205,7 @@ export class Ambience {
 
   private burst(seconds: number, filterType: BiquadFilterType, freq: number, q: number, peak: number, out: AudioNode, pan = 0): void {
     const ctx = this.ctx;
+    if (!this.white) return; // still being synthesized (first few hundred ms)
     const s = ctx.createBufferSource();
     s.buffer = this.white;
     const f = ctx.createBiquadFilter();
@@ -231,6 +251,7 @@ export class Ambience {
   }
 
   dispose(): void {
+    this.disposed = true;
     for (const s of this.sources) {
       try {
         s.stop();

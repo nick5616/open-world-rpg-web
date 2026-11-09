@@ -125,6 +125,9 @@ type Server struct {
 	nextID   uint32
 	ents     []*Entity // sorted by ID (IDs only grow, removal keeps order)
 	sessions []*session
+	inBatch  []*session         // WP19b: plain sessions waiting for a parallel run (inputs.go)
+	cbtEnc   [][]byte           // WP19b: this tick's encoded combat events (deliverCombatAll)
+	held     []transport.Holder // WP19b: connections held for this tick (inputs.go)
 	byChar   map[string]*session
 	parties  map[uint32][]*Entity
 	grid     *aoi.Grid // players (and anything with a party id): far ring reach
@@ -293,15 +296,16 @@ func (s *Server) onTick() {
 		break
 	}
 
-	for i := 0; i < len(s.sessions); {
-		sess := s.sessions[i]
-		if sess.closed.Load() {
-			s.leave(sess) // removes sessions[i]; don't advance
-			continue
-		}
-		s.drain(sess, now)
-		i++
-	}
+	// WP19b: hold every connection's writer wake-ups until the tick is done
+	// (transport.Holder): sends queue, the writers run after the tick
+	// instead of competing with its workers for the zone's cores.
+	s.holdConns()
+	defer s.releaseConns()
+
+	// Leaves and every session's messages, in session order; plain
+	// movement runs on the workers (WP19b, inputs.go).
+	s.takeInputs()
+	s.applyInputs(now)
 	s.phases.mark(phInputs)
 	for { // Do (caves.go): debug reads and test pokes, between ticks' phases
 		select {
@@ -330,12 +334,17 @@ func (s *Server) onTick() {
 
 	// Quantize once per entity and rebuild the grid; every client's snapshot
 	// reads these.
-	s.grid.Reset()
-	s.gridOthers.Reset()
-	for i, e := range s.ents {
+	// View extrapolation and quantization touch only their own entity, so
+	// they run on the workers (WP19b, par.go); the grids fill in id order.
+	parallelFor(len(s.ents), s.phaseWorkers(len(s.ents)), viewChunk, func(_, i int) {
+		e := s.ents[i]
 		e.idx = int32(i)
 		e.updateView(s.cfg.Ground, s.env)
 		e.quantize(s.cfg.Ground)
+	})
+	s.grid.Reset()
+	s.gridOthers.Reset()
+	for i, e := range s.ents {
 		s.gridFor(e).Insert(int32(i), e.Move.Pos.X, e.Move.Pos.Z)
 	}
 	s.gridRemotes()    // WP16: mirrored entities after the local ones (ghosts.go)

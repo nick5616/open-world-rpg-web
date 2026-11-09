@@ -61,6 +61,7 @@ import (
 	"lodestone/server/pkg/snapshot"
 	"lodestone/server/pkg/ticket"
 	"lodestone/server/pkg/transport"
+	"lodestone/server/pkg/zoneregistry"
 	"lodestone/server/zone/internal/explore"
 )
 
@@ -147,6 +148,8 @@ type clusterState struct {
 	gw          proto.Writer
 
 	stats clusterStats
+	// WP19b: players per region (x*WorldRegions+z), counted once a second.
+	regionLoad [constants.WorldRegions * constants.WorldRegions]atomic.Int32
 }
 
 type clusterStats struct {
@@ -357,6 +360,37 @@ func (s *Server) handoffTick(tick uint32, now time.Time) {
 	s.updateRemotes(now)
 	s.publishGhosts(tick)
 	s.publishPresence(now)
+	if tick%constants.TickRateHz == 0 {
+		s.countRegionLoad()
+	}
+}
+
+// countRegionLoad publishes how many players this zone simulates in each
+// region (WP19b: the registry heartbeat carries it; the director moves
+// regions off a zone well over its share, zoneregistry.Rebalance).
+func (s *Server) countRegionLoad() {
+	var n [constants.WorldRegions * constants.WorldRegions]int32
+	for _, sess := range s.sessions {
+		if e := sess.ent; e != nil {
+			r := zoneregistry.RegionAt(e.Move.Pos.X, e.Move.Pos.Z)
+			n[r.X*constants.WorldRegions+r.Z]++
+		}
+	}
+	for i := range n {
+		s.cl.regionLoad[i].Store(n[i])
+	}
+}
+
+// RegionLoad is the last per-region player count (any goroutine; regions
+// with nobody are left out).
+func (s *Server) RegionLoad() []zoneregistry.RegionLoad {
+	var out []zoneregistry.RegionLoad
+	for i := range s.cl.regionLoad {
+		if v := s.cl.regionLoad[i].Load(); v > 0 {
+			out = append(out, zoneregistry.RegionLoad{X: i / constants.WorldRegions, Z: i % constants.WorldRegions, Players: int(v)})
+		}
+	}
+	return out
 }
 
 // handoffCheck decides pre-connects, cancels and transfers for one player.

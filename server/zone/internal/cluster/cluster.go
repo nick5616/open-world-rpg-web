@@ -262,6 +262,9 @@ type Announcer struct {
 	Static  bool               // Regions are pinned by env (never read the assignment)
 	Every   time.Duration
 	Players func() int
+	// Load reports players per region (WP19b: the director's load moves);
+	// nil = not reported.
+	Load func() []zoneregistry.RegionLoad
 }
 
 // Run heartbeats until ctx ends; on exit the caller removes the entry.
@@ -272,6 +275,9 @@ func (a *Announcer) Run(ctx context.Context) {
 	for {
 		e := a.Entry
 		e.Players = a.Players()
+		if a.Load != nil {
+			e.Load = a.Load()
+		}
 		actx, cancel := context.WithTimeout(ctx, 2*time.Second)
 		if e.Role == zoneregistry.RolePool && !a.Static {
 			if rs, err := zoneregistry.ReadAssignment(actx, a.R.RDB, a.R.World, e.ZoneID); err == nil {

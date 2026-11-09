@@ -57,6 +57,10 @@ type Group struct {
 	// in when it spawns (playtest 1, World.Areas); set for every atlas group.
 	AreaLevel bool
 	tier      *combatdefs.DifficultyTier // the area's tier at the last spawn (nil: none)
+	// WP19b partitioned AI (par.go), valid for the tick aiTick.
+	aiTick   uint32
+	aiSerial bool
+	aiPart   int32
 }
 
 // Areas is the playtest-1 discovery-stamped difficulty (internal/difficulty
@@ -101,13 +105,25 @@ type World struct {
 	enemies map[uint32]*Enemy
 	order   []uint32 // enemy ids in spawn order (deterministic iteration)
 	players map[uint32]*Player
-	strikes []*strike
-	shots   []*shot
-	winding []*Enemy   // WP19: enemies that entered Windup since the last prune (windupsOn)
-	pg      playerGrid // WP19: players by cell, valid during Step
-	alloc   func() uint32
-	tick    uint32
-	rng     uint64
+	// playerList is players sorted by id (WP19b): playerUpkeep walks it so
+	// respawns and upkeep events come out in a fixed order, not map order.
+	playerList []*Player
+	strikes    []*strike
+	shots      []*shot
+	winding    []*Enemy   // WP19: enemies that entered Windup since the last prune (windupsOn)
+	pg         playerGrid // WP19: players by cell, valid during Step
+	// WP19b partitioned AI (par.go).
+	par        Parallel
+	parWorkers int
+	aiPar      bool // this World is a pass-2 worker copy
+	aiw        []*aiWorker
+	aiParts    []aiPart
+	aiFlat     []*Enemy
+	aiList     []*Enemy
+	windAt     map[uint32]int
+	alloc      func() uint32
+	tick       uint32
+	rng        uint64
 
 	// Outputs, drained by the host each tick.
 	Events  []Out
@@ -429,6 +445,7 @@ func (w *World) removeEnemy(e *Enemy) {
 		return
 	}
 	delete(w.enemies, e.ID)
+	e.gone = true // WP19b: thinkAll's merge pass skips it without a map lookup
 	if i := slices.Index(w.order, e.ID); i >= 0 {
 		w.order = slices.Delete(w.order, i, i+1)
 	}
@@ -448,11 +465,36 @@ func (w *World) Enemies() []*Enemy {
 }
 
 // AddPlayer registers a joining player.
-func (w *World) AddPlayer(p *Player) { w.players[p.ID] = p }
+func (w *World) AddPlayer(p *Player) {
+	if old := w.players[p.ID]; old != nil {
+		w.dropListed(p.ID)
+	}
+	w.players[p.ID] = p
+	i, _ := slices.BinarySearchFunc(w.playerList, p.ID, func(q *Player, id uint32) int { return cmpID(q.ID, id) })
+	w.playerList = slices.Insert(w.playerList, i, p)
+}
+
+// dropListed removes id from playerList.
+func (w *World) dropListed(id uint32) {
+	if i, ok := slices.BinarySearchFunc(w.playerList, id, func(q *Player, id uint32) int { return cmpID(q.ID, id) }); ok {
+		w.playerList = slices.Delete(w.playerList, i, i+1)
+	}
+}
+
+func cmpID(a, b uint32) int {
+	switch {
+	case a < b:
+		return -1
+	case a > b:
+		return 1
+	}
+	return 0
+}
 
 // RemovePlayer forgets a leaving player (threat, strikes).
 func (w *World) RemovePlayer(id uint32) {
 	delete(w.players, id)
+	w.dropListed(id)
 	for _, e := range w.enemies {
 		delete(e.threat, id)
 		delete(e.engaged, id)
@@ -568,22 +610,7 @@ func (w *World) Step(tick uint32) {
 		w.wakeTick()
 	}
 	w.pruneWinding() // WP19
-	for _, id := range slices.Clone(w.order) {
-		e := w.enemies[id]
-		if e == nil {
-			continue
-		}
-		if e.State == Dead {
-			if tick-e.diedTick > secondsToTicks(1.5) {
-				w.removeEnemy(e)
-			}
-			continue
-		}
-		if e.State != Asleep {
-			w.think(e)
-		}
-		e.record(tick)
-	}
+	w.thinkAll(tick) // WP19b: partitioned across workers (par.go)
 	w.stepShots()
 	w.settleStrikes()
 	w.playerUpkeep()

@@ -64,6 +64,10 @@ type Entry struct {
 	// Debug is the zone's HTTP base (http://host:port) for tools (bots read
 	// /debug/cluster from any live zone).
 	Debug string `json:"debug,omitempty"`
+	// Load is the players this zone simulates per region (WP19b,
+	// rebalance.go): the director moves regions off a zone well over its
+	// share. Omitted by zones that do not report it.
+	Load []RegionLoad `json:"load,omitempty"`
 }
 
 // Key returns the Redis key for a world.

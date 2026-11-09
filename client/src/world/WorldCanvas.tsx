@@ -79,7 +79,9 @@ export function WorldCanvas({ spawnOnLand = SOLO, seed, genVersion, onRuntime, .
         const s = tileSize(t.lod);
         return t.lod <= 1 && p.x >= t.cx * 64 && p.x < t.cx * 64 + s && p.z >= t.cz * 64 && p.z < t.cz * 64 + s;
       });
-      if ((under && worldDebug.textureBytes > 0) || performance.now() - t0 > 15000) {
+      // WP19b: and the shader warm-up done (warmup.ts), so play starts with
+      // every program compiled instead of compiling them in the first frames.
+      if ((under && worldDebug.textureBytes > 0 && (worldDebug.shadersWarm || new URLSearchParams(location.search).has('nowarmup'))) || performance.now() - t0 > 15000) {
         worldDebug.firstPlayableMs = performance.now();
         setPlayable(true);
       }

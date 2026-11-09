@@ -56,6 +56,7 @@ type wsConn struct {
 	remote string
 	client bool // client-side frames are masked (+4 header bytes)
 	stats  Stats
+	k      wake // WP19b: holdable writer wake-ups (Holder)
 
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -118,11 +119,21 @@ func (w *wsConn) SendReliable(b []byte) error {
 	}
 	w.reliable = append(w.reliable, b)
 	w.mu.Unlock()
-	w.poke()
+	w.stats.ReliableQueued.Add(int64(len(b) + wsHeaderLen(len(b), w.client)))
+	w.k.poke(w.poke)
 	return nil
 }
 
-func (w *wsConn) SendUnreliable(b []byte) bool {
+func (w *wsConn) SendUnreliable(b []byte) bool { return w.sendUnreliable(b, false) }
+
+// SendUrgent implements Holder.
+func (w *wsConn) SendUrgent(b []byte) bool { return w.sendUnreliable(b, true) }
+
+// Hold and Release implement Holder (WP19b).
+func (w *wsConn) Hold()    { w.k.hold() }
+func (w *wsConn) Release() { w.k.release(w.poke) }
+
+func (w *wsConn) sendUnreliable(b []byte, urgent bool) bool {
 	if len(b) == 0 {
 		return false
 	}
@@ -141,7 +152,11 @@ func (w *wsConn) SendUnreliable(b []byte) bool {
 	}
 	w.unreliable = append(w.unreliable, b)
 	w.mu.Unlock()
-	w.poke()
+	if urgent {
+		w.poke()
+	} else {
+		w.k.poke(w.poke)
+	}
 	return true
 }
 

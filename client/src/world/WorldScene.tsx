@@ -29,6 +29,12 @@ import { advanceWind, setPrevailingWind } from './wind';
 import { worldDebug, frameInfo } from './debug/worldDebug';
 import { LodOverlay } from './debug/lodOverlay';
 import { CaveManager } from './caves/caveManager';
+import { warmShaders } from './warmup';
+import { warmExtras } from './warmExtras';
+import { DEBUG } from '../config';
+
+// `?nowarmup` (debug builds): skip the shader warm-up, to measure without it.
+const NO_WARMUP = DEBUG && typeof location !== 'undefined' && new URLSearchParams(location.search).has('nowarmup');
 
 interface Props {
   runtime: WorldRuntime;
@@ -152,6 +158,8 @@ export function WorldScene({ runtime }: Props) {
 
   // Tier-dependent pieces: shadows, post chain, manager knobs.
   const fx = useRef<{ sun: SunShadows; post: PostFX } | null>(null);
+  // WP19b: the post chain the last shader warm-up ran for (useFrame).
+  const warm = useRef<{ post: PostFX | null; pending: boolean }>({ post: null, pending: false });
   // Cheap knobs (no recompile): auto quality steps move these.
   useEffect(() => {
     world.terrain.setParams({ lodSplit: tier.lodSplit, viewDistance: preset.viewDistance, uploadsPerFrame: tier.uploadsPerFrame, uploadBudgetMs: tier.uploadBudgetMs, normalMaps: shaderPreset.normalMaps });
@@ -290,6 +298,29 @@ export function WorldScene({ runtime }: Props) {
     netStats.chunkQueue = runtime.pool.queued + runtime.pool.inFlight;
     netStats.chunksLoaded = world.terrain.stats.loaded;
     overlay.update(showTiles, world.terrain.drawnTiles(), camera.position, now);
+
+    // WP19b shader warm-up (warmup.ts): once per post chain (load, and an
+    // explicit shader-tier change), as soon as the first terrain is in the
+    // scene, compile every material in parallel before drawing with it.
+    // While it runs nothing is drawn (the loading veil is up at load; on a
+    // tier change the last frame stays on screen) so no draw call forces a
+    // synchronous compile.
+    if (f && warm.current.post !== f.post && world.terrain.stats.loaded > 0 && !NO_WARMUP) {
+      const w = { post: f.post, pending: true };
+      warm.current = w;
+      worldDebug.shadersWarm = false;
+      warmShaders(gl, scene, camera, warmExtras())
+        .then((r) => {
+          worldDebug.warmup = r;
+          if (!r.done) console.warn('[world] shader warm-up hit its time limit', r);
+        })
+        .catch((err) => console.warn('[world] shader warm-up failed', err))
+        .finally(() => {
+          w.pending = false;
+          worldDebug.shadersWarm = true;
+        });
+    }
+    if (f && warm.current.pending) return;
 
     // Render (counting the whole frame: shadow passes, scene, post).
     const info = gl.info;

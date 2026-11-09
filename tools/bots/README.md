@@ -109,3 +109,10 @@ node tools/bots/scale-soak.mjs ... --pprof                 # 10 s CPU profile at
 `handoff-soak.mjs` (scenario 2) gained `--zone-bin`, `--evidence-prefix` and
 `--base-port`/`--db` are used to keep runs apart; binaries get unique names
 per run (`soak-<name>-<run>.exe`).
+
+WP19b: `scale-soak.mjs --prefix wp19b` names the evidence
+(`<prefix>-s1-<tag>.*`), and next to the worst 60 s window from t = 60 s it
+reports the worst window that starts after the join ramp and the bots' warmup
+(`postRampWorstP99`: a window ending at t = 60 s still holds the 300 joins,
+500 camps spawning and every first-sight record). `handoff-soak.mjs` lists the
+director's load moves (`zoneregistry.Rebalance`) in its evidence.
