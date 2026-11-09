@@ -166,7 +166,10 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((e) => {
-  console.error(e);
-  process.exit(1);
-});
+main().then(
+  () => process.exit(0), // the Vite child keeps the event loop alive on Windows
+  (e) => {
+    console.error(e);
+    process.exit(1);
+  },
+);
