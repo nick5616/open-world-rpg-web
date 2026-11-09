@@ -82,12 +82,39 @@ export function upcoming(level: number, n = 4): UpcomingLevel[] {
   return out;
 }
 
+/** Cumulative skill XP that reaches skill level `n` (combatdefs XPForLevel). */
+export function skillXpFor(n: number): number {
+  return n <= 1 ? 0 : Math.round(COMBAT.skills.xpBase * Math.pow(n - 1, COMBAT.skills.xpExp));
+}
+
+export const SKILL_MAX = 100;
+
 /** Skill level for cumulative skill XP (combatdefs SkillLevel). */
 export function skillLevel(xp: number): number {
-  const need = (n: number) => (n <= 1 ? 0 : Math.round(COMBAT.skills.xpBase * Math.pow(n - 1, COMBAT.skills.xpExp)));
   let lv = 1;
-  while (lv < 100 && xp >= need(lv + 1)) lv++;
+  while (lv < SKILL_MAX && xp >= skillXpFor(lv + 1)) lv++;
   return lv;
+}
+
+export interface SkillProgress {
+  level: number;
+  /** XP earned inside the current level. */
+  into: number;
+  /** XP the current level spans (0 at the cap). */
+  span: number;
+  /** 0..1 toward the next level (1 at the cap). */
+  frac: number;
+  max: boolean;
+}
+
+/** Where cumulative skill XP stands: the level and the progress toward the next. */
+export function skillProgress(xp: number): SkillProgress {
+  const level = skillLevel(Math.max(0, xp));
+  if (level >= SKILL_MAX) return { level, into: 0, span: 0, frac: 1, max: true };
+  const lo = skillXpFor(level);
+  const span = skillXpFor(level + 1) - lo;
+  const into = Math.max(0, xp - lo);
+  return { level, into, span, frac: span > 0 ? Math.min(1, into / span) : 0, max: false };
 }
 
 /** A weapon skill's next technique (null when all are learned). */

@@ -23,6 +23,9 @@ export const EV = {
   stationOpened: 805,
 } as const;
 
+/** Event 401 targetId: where the items came from (contracts/events.md row 401). */
+export const LOOT_SOURCE = { kill: 1, container: 2, vein: 3, craft: 4, purchase: 5, starter: 6, pickup: 7, gem: 8, quest: 9 } as const;
+
 export const INTERACT = { container: 20, item: 21, craft: 22, pickup: 41 } as const;
 
 /** Interact 21 actions. */

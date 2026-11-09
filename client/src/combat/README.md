@@ -12,7 +12,7 @@ zone session (`link.ts`), offline play has no enemies.
 | `store.ts` | HUD state (zustand, event-rate) and the FX queue |
 | `CombatLayer.tsx` | Enemies, telegraph decals, projectiles, areas, beams, sparks, floating numbers; mounts the first-person weapon (`weapons/`) and feeds it the melee swings |
 | `weapons/` | Procedural weapon models, the first-person weapon and the weapon look other players see (pt/ux, below) |
-| `CombatHud.tsx` | Health, mana, weapon + four spell slots with cooldowns, draughts, boss bar, toasts, downed overlay |
+| `CombatHud.tsx` | Health, mana, weapon (the equipped item's name, else the type) + four spell slots with cooldowns, draughts, boss bar, toasts, downed overlay |
 | `link.ts` | Session attach, PlayerDriver hooks, `window.__lodestoneCombat` (probe, HUD) |
 | `dev/feel-browser.ts` | Headless Chromium feel run against the real zone (`npm run combat:browser -w client`) |
 

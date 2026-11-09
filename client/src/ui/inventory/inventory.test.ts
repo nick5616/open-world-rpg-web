@@ -1,8 +1,8 @@
 // WP14 client: Event decoders, item helpers and the store reducer.
 import { describe, expect, it } from 'vitest';
 import { ITEMS, type Event as ZoneEvent } from '@lodestone/contracts';
-import { decodeBitchin, decodeContainers, decodeCrafted, decodeInventory, decodeLootGranted, decodeRefusedTarget, decodeStationOpened, encodeContainers, EV, stationKind805, u64 } from './events';
-import { affixLine, baseName, countOf, displayName, formatStat, isHolo, itemDef, kindLabel, parseSlot, rarityColor, rarityDef, recipeGroup, recipesFor, recipeStatus, socketTarget, uniqueInfo, type WireItem } from './items';
+import { decodeBitchin, decodeContainers, decodeCrafted, decodeInventory, decodeLootGranted, decodeRefusedTarget, decodeStationOpened, encodeContainers, EV, LOOT_SOURCE, stationKind805, u64 } from './events';
+import { affixLine, baseName, countOf, displayName, formatStat, isHolo, itemDef, kindLabel, loadoutWeaponLabel, parseSlot, rarityColor, rarityDef, recipeGroup, recipesFor, recipeStatus, smithingView, socketTarget, uniqueInfo, type WireItem } from './items';
 import { initialInventoryState, reduceItemEvent, type InventoryState } from './store';
 import { mockItems } from './dev';
 
@@ -168,6 +168,19 @@ describe('reducer', () => {
     expect(c.toasts?.[0].text).toBe('Crafted Iron Ingot');
   });
 
+  it('a craft toasts once: 405 says "Crafted ...", its 401 (source craft) stays silent', () => {
+    let s = state();
+    const out = item('weapon:sunsteel_blade', 'inv:3', { r: 2 });
+    s = { ...s, ...reduceItemEvent(s, ev(EV.crafted, JSON.stringify(out), 1, 12), 100)! };
+    s = { ...s, ...reduceItemEvent(s, ev(EV.lootGranted, '[{"b":"weapon:sunsteel_blade","q":1,"r":2}]', 1, LOOT_SOURCE.craft), 101)! };
+    expect(s.toasts.map((t) => t.text)).toEqual(['Crafted Sunsteel Blade']);
+    expect(s.stats.grants).toBe(1);
+    expect(s.lastCrafted?.key).toBe('weapon:sunsteel_blade');
+    // Other sources still toast.
+    const k = reduceItemEvent(state(), ev(EV.lootGranted, '[{"b":"weapon:sunsteel_blade","q":1,"r":2}]', 1, LOOT_SOURCE.purchase), 100)!;
+    expect(k.toasts?.map((t) => t.text)).toEqual(['Sunsteel Blade']);
+  });
+
   it('opens stations on 805 (forge/anvil) and 404 (cook)', () => {
     const d = new Uint8Array(10);
     new DataView(d.buffer).setBigUint64(0, 99n, true);
@@ -194,5 +207,40 @@ describe('reducer', () => {
   it('ignores other Event kinds', () => {
     expect(reduceItemEvent(state(), ev(800, ''), 0)).toBeNull();
     expect(reduceItemEvent(state(), ev(412, ''), 0)).toBeNull();
+  });
+});
+
+describe('combat HUD weapon label', () => {
+  const blade = item('weapon:sunsteel_blade', 'eq:main0', { h: 9 });
+  it('names the equipped item, not the weapon type', () => {
+    expect(loadoutWeaponLabel('sword', 0, [item('food:bread', 'inv:0'), blade])).toBe('Sunsteel Blade');
+    expect(loadoutWeaponLabel('sword', 0, [{ ...blade, n: 'Dawnbreaker', r: 5 }])).toBe('Dawnbreaker');
+  });
+  it('uses the active loadout main hand', () => {
+    const bow = item('weapon:silver_bow', 'eq:main1', { h: 10 });
+    expect(loadoutWeaponLabel('bow', 1, [blade, bow])).toBe('Silver-Strung Bow');
+    expect(loadoutWeaponLabel('sword', 1, [blade])).toBe('Sword');
+  });
+  it('falls back to the weapon type', () => {
+    expect(loadoutWeaponLabel('sword', 0, null)).toBe('Sword');
+    expect(loadoutWeaponLabel('spear', 0, [])).toBe('Spear');
+    // A training weapon picked while the item is still equipped: the types disagree.
+    expect(loadoutWeaponLabel('staff', 0, [blade])).toBe('Staff');
+    expect(loadoutWeaponLabel('', 0, [])).toBe('-');
+  });
+});
+
+describe('crafting panel Smithing', () => {
+  it('shows level and progress at the forge from the synced skill XP', () => {
+    const v = smithingView('forge', null, true, 30)!;
+    // Level 2 starts at 12 XP, level 3 at 36 (combat.yaml skills: 12 x (n-1)^1.6).
+    expect(v).toEqual({ level: 2, progress: { level: 2, into: 18, span: 24, frac: 0.75, max: false } });
+    const z = smithingView('anvil', null, true, undefined)!;
+    expect(z).toMatchObject({ level: 1, progress: { into: 0, span: 12, frac: 0 } });
+  });
+  it('cooking shows the level only; offline falls back to Event 404', () => {
+    expect(smithingView('cook', 4, true, 40)).toEqual({ level: 3, progress: null });
+    expect(smithingView('cook', 4, false, undefined)).toEqual({ level: 4, progress: null });
+    expect(smithingView('forge', null, false, undefined)).toBeNull();
   });
 });
