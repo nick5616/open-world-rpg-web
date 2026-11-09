@@ -13,7 +13,7 @@ included.
 | `settings.ts` | Volume per bus + mute, in localStorage `lodestone.audio.v1` (validated like the voice prefs). |
 | `bridge.ts` | What game code calls: `emitSound(name, payload)` and the `audioWorld` state (underground, chamber radius, distance to the cave mouth, in town, fighting). Tiny, never pulls the engine in. |
 | `ui/AudioRoot.tsx` | Mounted by PlayScreen. Boots the engine (lazy chunk) after the first playable frame, on idle. K or the "Sound" button opens the settings panel; every HUD button clicks. |
-| `engine.ts` | The engine (lazy chunk): listener follows the camera and movement sounds every frame; the environment pass 10x a second (shelter, cave leak, surface underfoot, weather, interior reverb, positional loops, far voices re-placed, smiths); music director and ducking 4x a second; hidden-tab fade; zone Events through the trigger map; the `window.__lodestoneAudio` debug handle. |
+| `engine.ts` | The engine (lazy chunk, 88 KB / 28 KB gzip with the QoL pass): listener follows the camera and movement sounds every frame; the environment pass 10x a second (shelter, cave leak, surface underfoot, weather, interior reverb, positional loops, far voices re-placed, smiths); music director and ducking 4x a second; hidden-tab fade; zone Events through the trigger map; the `window.__lodestoneAudio` debug handle. |
 | `triggers.ts` | **The trigger map**: zone Event kind -> cue (`ZONE_EVENTS`) and named client moments -> cue (`TRIGGERS`). |
 | `cues.ts` | Every cue: files (variants, random pick), bus, volume, pitch spread, 3D or not, voice limits, cooldown, music ducking. |
 | `sfx.ts` | One-shot player: buffer cache, voice pool and caps, admission through `voiceLimit.ts`, variant/pitch/gain variation, equal-power panning (direction only) with `spatial.ts` distance, air and occlusion per voice (re-evaluated at 10 Hz for long ones), distance culling, the reverb bus (IR sized by the chamber or room radius, ported from WP09's cave audio). WP19b: the IR is synthesized in 32 k-sample slices with a yield between them (a newer radius supersedes one in progress), so it is never a main-thread long task. |
@@ -47,7 +47,7 @@ compressed and decodes on first play (all 161 files decoded would be
 once; per-cue caps, cooldowns, duplicate and stack limits collapse crowds;
 3D sounds past their range never start; 8 positional loop voices at most;
 panning is equal-power (HRTF stays for voices). The loop textures are
-rendered once at 32 kHz mono (about 1.3 MB of PCM for all four).
+rendered once at 32 kHz mono, 6-9 s each (about 3.4 MB of PCM for all four).
 
 ## Space and distance (audio QoL pass)
 

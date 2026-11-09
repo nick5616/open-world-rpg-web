@@ -1,5 +1,5 @@
 // Seamless loop textures rendered once, off the main thread, through an
-// OfflineAudioContext (no assets, a few hundred KB of PCM each): the fire
+// OfflineAudioContext (no assets; 0.8-1.2 MB of PCM each): the fire
 // every hearth, torch and campfire plays (rumble, hiss, crackles and pops),
 // a river's flow, a lake shore's lapping, and rain drumming on a roof. A
 // sample loop would repeat audibly or cost megabytes; noise through filters

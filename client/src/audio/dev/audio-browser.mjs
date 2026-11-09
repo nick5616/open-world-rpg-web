@@ -200,8 +200,14 @@ try {
     await page.waitForTimeout(6000);
     const out = await page.evaluate(() => window.__lodestoneAudio.env());
     await page.evaluate((h) => window.__lodestoneTowns.teleportTo(h.si, { dx: h.dx, dz: h.dz, y: h.y }), house);
-    await page.waitForTimeout(4000);
-    const inn = await page.evaluate(() => window.__lodestoneAudio.env());
+    // The shelter crossfade glides per environment pass (10 Hz in the game;
+    // SwiftShader draws a frame or two a second here): wait for it to settle.
+    let inn = null;
+    for (let t0 = Date.now(); Date.now() - t0 < 30000; ) {
+      await page.waitForTimeout(1000);
+      inn = await page.evaluate(() => window.__lodestoneAudio.env());
+      if (inn.indoors > 0.97 && inn.roofRain > 0.2) break;
+    }
     log(`rain outside: ${JSON.stringify({ roof: out.roof, indoors: out.indoors, rain: out.rain, weatherGain: out.weatherGain, weatherLowpassHz: out.weatherLowpassHz, roofRain: out.roofRain })}`);
     log(`rain inside a ${house.role}: ${JSON.stringify({ roof: inn.roof, indoors: inn.indoors, rain: inn.rain, weatherGain: inn.weatherGain, weatherLowpassHz: inn.weatherLowpassHz, roofRain: inn.roofRain, reverb: inn.reverb, busLowpassHz: inn.busLowpassHz, surface: inn.surface })}`);
     check('rain builds up outdoors', out.rain > 0.2 && out.weatherGain > 0.9, `rain ${out.rain}, weather gain ${out.weatherGain}`);
@@ -234,13 +240,13 @@ try {
   const shown = await page.evaluate(() => window.__lodestoneAudio.level());
   await page.evaluate(() => {
     Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
-    document.dispatchEvent(new Event('visibilitychange'));
+    document.dispatchEvent(new window.Event('visibilitychange'));
   });
   await page.waitForTimeout(2000);
   const hiddenLevel = await page.evaluate(() => window.__lodestoneAudio.level());
   await page.evaluate(() => {
     Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true });
-    document.dispatchEvent(new Event('visibilitychange'));
+    document.dispatchEvent(new window.Event('visibilitychange'));
     window.__lodestoneAudio.force(null);
   });
   check('a hidden tab fades the game out', shown > -60 && hiddenLevel < shown - 30, `shown ${shown.toFixed(1)} dBFS, hidden ${hiddenLevel.toFixed(1)} dBFS`);

@@ -74,6 +74,7 @@ export class LoopVoices {
         const nv = this.start(e.id, e.kind, tg.gain, e.x, e.y, e.z);
         if (!nv) continue;
         v = nv;
+        v.lp.frequency.value = Math.max(200, tg.lowpassHz);
       }
       v.gain.gain.setTargetAtTime(tg.gain, t, FADE_IN_TAU);
       v.lp.frequency.setTargetAtTime(Math.max(200, tg.lowpassHz), t, 0.15);
