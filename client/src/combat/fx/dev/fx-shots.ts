@@ -84,7 +84,7 @@ async function main() {
   let base = process.env.LODESTONE_FX_URL;
   if (!base) {
     const port = 20000 + Math.floor(Math.random() * 25000);
-    const viteBin = createRequire(path.join(repoRoot, 'client', 'package.json')).resolve('vite/bin/vite.js');
+    const viteBin = path.join(path.dirname(createRequire(path.join(repoRoot, 'client', 'package.json')).resolve('vite/package.json')), 'bin', 'vite.js');
     vite = spawn(process.execPath, [viteBin, '--port', String(port), '--strictPort', '--host', '127.0.0.1'], { cwd: path.join(repoRoot, 'client'), stdio: 'ignore' });
     base = `http://127.0.0.1:${port}`;
     await waitHttp(`${base}/`, 90000);

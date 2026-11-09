@@ -1066,7 +1066,8 @@ export class SpellFxEngine {
         if (col) (sh.mat.uniforms.uColor.value as THREE.Color).copy(col);
         sh.mat.uniforms.uHex.value = top === 'freeze' || top === 'petrify' ? 1 : 0;
         sh.mat.uniforms.uTime.value = t;
-        sh.mat.uniforms.uOpacity.value = (top === 'freeze' || top === 'petrify' ? 0.85 : 0.55) * (0.8 + 0.2 * Math.sin(t * 6 + id));
+        // (a rim, not a wall: the enemy and its telegraph stay readable through it)
+        sh.mat.uniforms.uOpacity.value = (top === 'freeze' || top === 'petrify' ? 0.6 : 0.35) * (0.8 + 0.2 * Math.sin(t * 6 + id));
         sh.mesh.position.set(v.x, v.y + info.height, v.z);
         sh.mesh.scale.set(info.radius * 1.5 + 0.1, info.height * 1.15 + 0.1, info.radius * 1.5 + 0.1);
       } else if (e.shell) {

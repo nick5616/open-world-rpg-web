@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* global requestAnimationFrame, PerformanceObserver, localStorage, window */
+/* global requestAnimationFrame, PerformanceObserver, localStorage */
 // Spell FX cast-spam benchmark (playtest 2). Headless Chromium on the real
 // GPU (ANGLE D3D11) in the real generated world (solo, debug build: the FX
 // layer is mounted for the bench), then:

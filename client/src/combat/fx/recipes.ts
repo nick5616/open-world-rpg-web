@@ -11,7 +11,7 @@ import * as THREE from 'three';
 import { glowPool, smokePool, SHAPE_GLOW, SHAPE_SPARK, SHAPE_STAR, SHAPE_PUFF } from './particles';
 import { budget, col, fxCount, hdr, hot, pick, rand, TAU } from './core';
 import type { FxPrims } from './transients';
-import { PALETTES, type Family, type Palette, type SpellVisual } from './spellVisual';
+import { PALETTES, type Palette, type SpellVisual } from './spellVisual';
 import { screenFlash, screenKick, screenShake } from './screen';
 
 export interface V3 {
@@ -584,7 +584,7 @@ export function areaBurst(fx: FxPrims, v: SpellVisual, x: number, y: number, z: 
       const half = ((a.cone / 2) * Math.PI) / 180;
       for (let i = 0; i < 7; i++) {
         const ang = a.yaw + rand(-half, half) * 0.9;
-        const d = rand(1.2, r);
+        const d = rand(Math.min(2.2, r * 0.5), r); // (not at the caster's feet: first-person readability)
         fx.spike('ice', x - Math.sin(ang) * d, z - Math.cos(ang) * d, y, { height: rand(0.6, 1.1), width: 0.16, yaw: ang, tiltX: 0.4, delay: d / 20, hold: 0.35 });
       }
     }
