@@ -152,6 +152,7 @@ export function towerUnlockedIntro(ev: ZoneEvent, w: IntroWorld | null): IntroSp
   return {
     key: `reveal:${r}`,
     variant: 'region',
+    covers: [`region:${r}`],
     eyebrow: 'Region revealed',
     title,
     subtitle: region ? biomeLabel(region.biome) : undefined,

@@ -33,6 +33,8 @@ export interface IntroSpec {
   detail?: string;
   /** Ornament diamond color. */
   accent?: string;
+  /** Keys this intro makes redundant (a region reveal covers that region's entry intro). */
+  covers?: string[];
 }
 
 export interface ActiveIntro extends IntroSpec {
@@ -123,7 +125,8 @@ export function enqueueIntro(s0: IntroQueueState, spec: IntroSpec, now: number):
     return s;
   }
   const item = { ...spec, id: s.nextId };
-  let queue = [...s.queue, item];
+  const covered = new Set(spec.covers ?? []);
+  let queue = [...s.queue.filter((q) => !covered.has(q.key)), item];
   while (queue.length > MAX_WAITING) {
     // Drop the lowest-priority waiting intro, oldest first.
     let drop = 0;
@@ -135,7 +138,7 @@ export function enqueueIntro(s0: IntroQueueState, spec: IntroSpec, now: number):
   const next: IntroQueueState = {
     current,
     queue,
-    seen: { ...s.seen, [spec.key]: now },
+    seen: { ...s.seen, ...Object.fromEntries([...covered].map((k) => [k, now])), [spec.key]: now },
     lastCardAt: spec.variant === 'card' ? now : s.lastCardAt,
     nextId: s.nextId + 1,
   };

@@ -109,6 +109,14 @@ describe('intro queue', () => {
     expect(enqueueIntro(d, spec('card:9', 'card'), 1e4 + 1).current).toBeNull();
   });
 
+  it('a region reveal covers that region\'s entry intro (waiting or later)', () => {
+    const reveal = introForEvent(ev(EV.towerUnlocked, 1, 1, 'The Forgotten Heights'), world)!;
+    let s = run([spec('site:1'), regionIntro(world.regions[1], false), reveal]);
+    expect(s.queue.map((q) => q.key)).toEqual(['reveal:1']);
+    s = tickIntro(tickIntro(s, 1e6), 2e6);
+    expect(enqueueIntro(s, regionIntro(world.regions[1], true), 3e6).current).toBeNull();
+  });
+
   it('skip retires the current intro and starts the next', () => {
     const s = skipIntro(run([spec('a'), spec('b')], 0), 50);
     expect(s.current?.key).toBe('b');

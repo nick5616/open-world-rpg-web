@@ -17,12 +17,13 @@
 // compass and any remaining WP12 toasts, clear of the crosshair.
 
 import { useEffect, useState, type CSSProperties } from 'react';
+import type { Event as ZoneEvent } from '@lodestone/contracts';
 import { DEBUG } from '../../config';
 import { localPlayer } from '../../state/live';
 import { hasBit } from '../map/events';
 import { useExploration, zoneEventListeners } from '../map/store';
 import { useMapWorld } from '../map/world';
-import { INTRO_TOAST_KINDS, introForEvent, regionIndexAt, regionIntro, townCard, type IntroWorld } from './intros';
+import { INTRO_FOR_EVENT, INTRO_TOAST_KINDS, introForEvent, regionIndexAt, regionIntro, townCard, type IntroWorld } from './intros';
 import { advanceIntro, introHistory, pushIntro, resetIntros, skipCurrentIntro, useIntro, type ActiveIntro, type IntroSpec, type IntroVariant } from './queue';
 import { installStingUnlock, playSting, setStingVolume, stingVolume, type StingKind } from './sting';
 
@@ -70,7 +71,7 @@ const label = (size: string): CSSProperties => ({
   textTransform: 'lowercase',
   letterSpacing: '0.18em',
   color: 'rgba(243, 234, 210, 0.85)',
-  textShadow: '0 0 8px rgba(243, 234, 210, 0.25), 0 1px 3px rgba(0,0,0,0.8)',
+  textShadow: '0 0 8px rgba(243, 234, 210, 0.25), 0 1px 2px rgba(0,0,0,0.95), 0 0 6px rgba(0,0,0,0.5)',
 });
 
 /** Ornament rule (reference .botw-rule): lines fading out from a glowing diamond. */
@@ -121,11 +122,11 @@ function IntroCard({ intro, exiting }: { intro: ActiveIntro; exiting: boolean })
         maxWidth: 'min(92vw, 980px)',
         padding: grand ? '22px clamp(28px, 6vw, 96px) 26px' : '14px 56px 16px',
         // A soft shadow pool behind the text (reference .botw-prompt): legible on a bright sky.
-        background: 'radial-gradient(closest-side, rgba(4, 8, 14, 0.5), rgba(4, 8, 14, 0.22) 60%, rgba(4, 8, 14, 0))',
+        background: 'radial-gradient(closest-side, rgba(4, 8, 14, 0.58), rgba(4, 8, 14, 0.3) 62%, rgba(4, 8, 14, 0))',
         animation: exiting ? `ldIntroOut ${intro.outMs}ms ease-in-out both` : `ldIntroIn ${inMs}ms ease-out both`,
       }}
     >
-      {intro.eyebrow && <div style={{ ...label(sz.label), marginBottom: sz.gap, color: accent, textShadow: `0 0 10px ${accent}88, 0 1px 3px rgba(0,0,0,0.8)`, animation: `ldIntroFade ${inMs}ms ease-out both` }}>{intro.eyebrow}</div>}
+      {intro.eyebrow && <div style={{ ...label(sz.label), fontWeight: 700, marginBottom: sz.gap, color: accent, textShadow: `0 0 10px ${accent}66, 0 1px 2px rgba(0,0,0,0.95), 0 0 6px rgba(0,0,0,0.7)`, animation: `ldIntroFade ${inMs}ms ease-out both` }}>{intro.eyebrow}</div>}
       <div
         data-testid="discovery-intro-title"
         style={{
@@ -146,7 +147,7 @@ function IntroCard({ intro, exiting }: { intro: ActiveIntro; exiting: boolean })
       <Rule width={sz.rule} accent={accent} delay={Math.round(inMs * 0.35)} ms={Math.round(inMs * 1.2)} />
       {intro.subtitle && <div style={{ ...label(sz.label), animation: `ldIntroFade ${inMs}ms ease-out ${Math.round(inMs * 0.55)}ms both` }}>{intro.subtitle}</div>}
       {intro.detail && (
-        <div style={{ marginTop: 6, font: `500 ${intro.variant === 'card' ? 11 : 13}px system-ui, sans-serif`, letterSpacing: '0.04em', color: 'rgba(243, 234, 210, 0.7)', textShadow: '0 1px 3px rgba(0,0,0,0.9)', animation: `ldIntroFade ${inMs}ms ease-out ${Math.round(inMs * 0.8)}ms both` }}>
+        <div style={{ marginTop: 6, font: `500 ${intro.variant === 'card' ? 11 : 13}px system-ui, sans-serif`, letterSpacing: '0.04em', color: 'rgba(243, 234, 210, 0.86)', textShadow: '0 1px 2px rgba(0,0,0,0.95), 0 0 6px rgba(0,0,0,0.6)', animation: `ldIntroFade ${inMs}ms ease-out ${Math.round(inMs * 0.8)}ms both` }}>
           {intro.detail}
         </div>
       )}
@@ -159,16 +160,39 @@ function currentWorld(): IntroWorld | null {
   return d ? { sites: d.sites, regions: d.regions } : null;
 }
 
-/** Zone Events -> intros. */
+/** Longest an intro Event waits for the atlas (names, kinds) before showing with what it carries. */
+const WORLD_WAIT_MS = 8000;
+
+/** Zone Events -> intros. Events that arrive before the atlas has loaded (a join on a tower top) wait for it. */
 function useEventIntros() {
   useEffect(() => {
-    const onEvent: Parameters<typeof zoneEventListeners.add>[0] = (ev) => {
-      const spec = introForEvent(ev, currentWorld());
-      if (spec) pushIntro(spec);
+    let pending: ZoneEvent[] = [];
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const flush = () => {
+      clearTimeout(timer);
+      timer = undefined;
+      const w = currentWorld();
+      const evs = pending;
+      pending = [];
+      for (const ev of evs) {
+        const spec = introForEvent(ev, w);
+        if (spec) pushIntro(spec);
+      }
     };
+    const onEvent = (ev: ZoneEvent) => {
+      if (!INTRO_FOR_EVENT[ev.kind]) return;
+      pending.push({ ...ev, data: ev.data.slice() });
+      if (currentWorld()) flush();
+      else timer ??= setTimeout(flush, WORLD_WAIT_MS);
+    };
+    const offWorld = useMapWorld.subscribe((s) => {
+      if (s.data && pending.length) flush();
+    });
     zoneEventListeners.add(onEvent);
     return () => {
       zoneEventListeners.delete(onEvent);
+      offWorld();
+      clearTimeout(timer);
     };
   }, []);
 }
