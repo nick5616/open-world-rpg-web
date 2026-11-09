@@ -25,11 +25,16 @@ import { VoiceHud } from '../voice';
 import { CraftPanel, InventoryScreen, LootHud } from '../ui/inventory';
 // Playtest 1: level-up fanfare, character panel (C), area notices, crystal tower prompt (client/src/ui/progression/README.md).
 import { ProgressionHud } from '../ui/progression';
+import { PvpHud } from '../ui/pvp';
 // Playtest 2: skill tree (N) and build overview (B) (client/src/ui/skills/README.md).
 import { SkillScreen } from '../ui/skills';
 import { QuestHud } from '../ui/quests/QuestHud';
 // Sound and music: boots the audio engine after the first playable frame; K = sound settings (client/src/audio/README.md).
 import { AudioRoot } from '../audio/ui/AudioRoot';
+// Playtest 2: spell FX (online it is CombatLayer's; debug solo mounts it for the FX gallery and cast-spam bench).
+import { SpellFxLayer } from '../combat/fx/SpellFxLayer';
+// `?nofx`: solo without the FX layer (the A/B of the spell FX benchmark, combat/fx/dev/fx-bench.mjs).
+const NO_FX = typeof location !== 'undefined' && new URLSearchParams(location.search).has('nofx');
 
 function DebugLayer() {
   useDebugHotkeys();
@@ -48,7 +53,7 @@ export default function PlayScreen() {
   const online = !SOLO && ready !== null;
   return (
     <>
-      {online ? <NetPlay ready={ready} /> : <WorldCanvas />}
+      {online ? <NetPlay ready={ready} /> : <WorldCanvas>{DEBUG && !NO_FX && <SpellFxLayer />}</WorldCanvas>}
       <Crosshair />
       <StaminaWheel />
       <LockHint />
@@ -63,6 +68,8 @@ export default function PlayScreen() {
       <InventoryScreen />
       <CraftPanel />
       <ProgressionHud />
+      {/* Playtest 2: PvP flag, duel prompt, countdown, result, kill feed (CR 019) */}
+      <PvpHud />
       <SkillScreen />
       {/* Playtest 1: quest tracker, offers with location previews, journal (J) */}
       <QuestHud />

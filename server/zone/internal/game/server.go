@@ -111,6 +111,9 @@ type Config struct {
 	// Playtest 1 discovery-stamped difficulty (difficulty.go); nil = the
 	// WP13 region danger curve.
 	Difficulty *DifficultySetup
+	// PartyChat posts a system line to these characters' party chat (the
+	// social bus; playtest 2 duel results, duel.go); nil = none.
+	PartyChat func(characterIDs []string, text string)
 	// Now is the wall clock (tickets, server time); tests override it.
 	Now func() time.Time
 }
@@ -160,6 +163,7 @@ type Server struct {
 	diff       diffState     // playtest 1 (difficulty.go)
 	qst        questsGlue    // playtest 1: quest logs (quests.go)
 	obst       obstacleState // enemies respect buildings (obstacles.go)
+	pvp        pvpState      // playtest 2: PvP flags, safe zones, duels (pvp.go, duel.go)
 	// WP11: next earshot hand-off (earshot.go).
 	earshotNext time.Time
 	phases      tickPhases // WP19: per-phase tick timing (phases.go)
@@ -338,6 +342,7 @@ func (s *Server) onTick() {
 	s.handoffTick(tick, now)        // WP16: handoffs, mirrored entities, presence (handoff.go, ghosts.go)
 	s.phases.mark(phWorld)
 	s.combatTick(tick) // WP13: enemies, strikes, claims, respawns (combat.go)
+	s.pvpTick(tick)    // playtest 2: PvP flag timers, safe zones, duels (pvp.go, duel.go)
 	s.phases.mark(phCombat)
 	s.townsTick(tick, s.cfg.Now()) // WP20: townsfolk near players (towns.go)
 	s.phases.mark(phTowns)

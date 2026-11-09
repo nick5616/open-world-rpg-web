@@ -3,7 +3,7 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CONTROL_PRESETS, QUALITY_PRESETS, QUALITY_STORAGE_KEY, TIER_ORDER, migrateQuality, sanitizeOverrides, tierForSetting, type QualityTier } from './qualityStore';
-import { effectsTierFor, grassFor, pixelRatioFor, resolveGraphics } from './graphics';
+import { grassFor, pixelRatioFor, resolveGraphics } from './graphics';
 import { FrameSampler, classifyGpu, refineTier } from './gpuDetect';
 import { STYLES, STYLE_ORDER } from '../world/style/styles';
 import { WORLD_TIERS } from '../world/config';
@@ -69,9 +69,10 @@ describe('quality presets', () => {
     expect(grassFor(0)).toEqual({ grassDistance: 0, grassDensity: 0 });
     expect(grassFor(1)).toEqual({ grassDistance: 36, grassDensity: 2.4 });
   });
-  it('effects quality: explicit wins, auto follows the graphics tier', () => {
-    expect(effectsTierFor('auto', 'medium')).toBe('medium');
-    expect(effectsTierFor('ultra', 'low')).toBe('ultra');
+  it('the spell screen pass runs from Medium up, never in Retro', () => {
+    expect(resolveGraphics('low', 'low', {}, 'lodestone').spellScreen).toBe(false);
+    expect(resolveGraphics('high', 'high', {}, 'lodestone').spellScreen).toBe(true);
+    expect(resolveGraphics('high', 'high', {}, 'retro').spellScreen).toBe(false);
   });
 });
 

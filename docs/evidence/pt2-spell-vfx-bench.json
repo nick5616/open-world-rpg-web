@@ -1,0 +1,463 @@
+{
+ "high": {
+  "uncapped": {
+   "tier": "high",
+   "casters": 10,
+   "fx": {
+    "setting": "auto",
+    "tier": "ultra",
+    "gpuCap": "ultra"
+   },
+   "casts": 133,
+   "idle": {
+    "frames": 795,
+    "fps": 132.5,
+    "p50": 5.7,
+    "p95": 11.7,
+    "p99": 31.9,
+    "max": 395.2,
+    "over33ms": 7,
+    "longTasks": 1,
+    "worstLongTaskMs": 205
+   },
+   "spam": {
+    "frames": 1626,
+    "fps": 135.6,
+    "p50": 6.9,
+    "p95": 11.2,
+    "p99": 14.8,
+    "max": 95.7,
+    "over33ms": 3,
+    "longTasks": 3,
+    "worstLongTaskMs": 104
+   },
+   "peak": {
+    "rings": 16,
+    "flashes": 13,
+    "scorches": 16,
+    "sigils": 16,
+    "zones": 7,
+    "domes": 2,
+    "beams": 3,
+    "shells": 4,
+    "lights": 4,
+    "bolts": 23,
+    "boltSegments": 328,
+    "spikes": 148,
+    "projectiles": 4,
+    "ongoing": 31,
+    "statuses": 0,
+    "particles": 3130,
+    "casts": 133,
+    "remoteCasts": 0,
+    "shots": 36,
+    "impacts": 23,
+    "maxUpdateMs": 5.0999999940395355,
+    "maxCastMs": 12.799999982118607
+   },
+   "slowFrames": [
+    {
+     "dt": 28,
+     "casts": [
+      "*inferno_domain"
+     ]
+    },
+    {
+     "dt": 64,
+     "casts": [
+      "*heavens_exhale"
+     ]
+    },
+    {
+     "dt": 79,
+     "casts": [
+      "*ice_wall"
+     ]
+    },
+    {
+     "dt": 96,
+     "casts": [
+      "*frost_nova"
+     ]
+    }
+   ],
+   "newPrograms": [
+    "(programs: 66 before, 66 after)"
+   ]
+  },
+  "uncappedNoFx": {
+   "tier": "high",
+   "casters": 10,
+   "fx": null,
+   "casts": 0,
+   "idle": {
+    "frames": 1292,
+    "fps": 215.3,
+    "p50": 4.2,
+    "p95": 7.7,
+    "p99": 10.7,
+    "max": 14.9,
+    "over33ms": 0,
+    "longTasks": 0,
+    "worstLongTaskMs": 0
+   },
+   "peak": {}
+  },
+  "vsync": {
+   "tier": "high",
+   "casters": 10,
+   "fx": {
+    "setting": "auto",
+    "tier": "ultra",
+    "gpuCap": "ultra"
+   },
+   "casts": 133,
+   "idle": {
+    "frames": 359,
+    "fps": 60,
+    "p50": 16.7,
+    "p95": 16.8,
+    "p99": 16.8,
+    "max": 16.8,
+    "over33ms": 0,
+    "longTasks": 0,
+    "worstLongTaskMs": 0
+   },
+   "spam": {
+    "frames": 719,
+    "fps": 60,
+    "p50": 16.7,
+    "p95": 16.7,
+    "p99": 16.8,
+    "max": 16.8,
+    "over33ms": 0,
+    "longTasks": 0,
+    "worstLongTaskMs": 0
+   },
+   "peak": {
+    "rings": 15,
+    "flashes": 10,
+    "scorches": 7,
+    "sigils": 12,
+    "zones": 12,
+    "domes": 2,
+    "beams": 3,
+    "shells": 4,
+    "lights": 4,
+    "bolts": 10,
+    "boltSegments": 133,
+    "spikes": 138,
+    "projectiles": 4,
+    "ongoing": 30,
+    "statuses": 0,
+    "particles": 3997,
+    "casts": 133,
+    "remoteCasts": 0,
+    "shots": 27,
+    "impacts": 15,
+    "maxUpdateMs": 37.79999998211861,
+    "maxCastMs": 6.5
+   },
+   "slowFrames": [],
+   "newPrograms": [
+    "(programs: 66 before, 66 after)"
+   ]
+  },
+  "turnFx": {
+   "tier": "high",
+   "pan": {
+    "frames": 361,
+    "p50": 16.7,
+    "p95": 16.7,
+    "p99": 16.8,
+    "max": 16.8,
+    "over33ms": 0,
+    "over50ms": 0
+   },
+   "flick": {
+    "frames": 83,
+    "p50": 16.7,
+    "p95": 16.8,
+    "p99": 16.8,
+    "max": 16.8,
+    "over33ms": 0,
+    "over50ms": 0
+   },
+   "longTasks": 0,
+   "worstLongTaskMs": 0
+  },
+  "turnNoFx": {
+   "tier": "high",
+   "pan": {
+    "frames": 329,
+    "p50": 16.7,
+    "p95": 16.8,
+    "p99": 50,
+    "max": 133.4,
+    "over33ms": 9,
+    "over50ms": 3
+   },
+   "flick": {
+    "frames": 85,
+    "p50": 16.7,
+    "p95": 16.8,
+    "p99": 16.8,
+    "max": 16.8,
+    "over33ms": 0,
+    "over50ms": 0
+   },
+   "longTasks": 2,
+   "worstLongTaskMs": "115"
+  },
+  "uncappedRepeat": {
+   "tier": "high",
+   "casters": 10,
+   "fx": {
+    "setting": "auto",
+    "tier": "ultra",
+    "gpuCap": "ultra"
+   },
+   "casts": 142,
+   "idle": {
+    "frames": 1607,
+    "fps": 267.8,
+    "p50": 3.5,
+    "p95": 5.2,
+    "p99": 6.3,
+    "max": 11.2,
+    "over33ms": 0,
+    "longTasks": 0,
+    "worstLongTaskMs": 0
+   },
+   "spam": {
+    "frames": 2733,
+    "fps": 227.8,
+    "p50": 4.1,
+    "p95": 6.3,
+    "p99": 8.8,
+    "max": 12.1,
+    "over33ms": 0,
+    "longTasks": 0,
+    "worstLongTaskMs": 0
+   },
+   "peak": {
+    "rings": 16,
+    "flashes": 15,
+    "scorches": 16,
+    "sigils": 15,
+    "zones": 12,
+    "domes": 2,
+    "beams": 2,
+    "shells": 3,
+    "lights": 4,
+    "bolts": 24,
+    "boltSegments": 294,
+    "spikes": 179,
+    "projectiles": 6,
+    "ongoing": 30,
+    "statuses": 0,
+    "particles": 3843,
+    "casts": 142,
+    "remoteCasts": 0,
+    "shots": 31,
+    "impacts": 17,
+    "maxUpdateMs": 4.100000023841858,
+    "maxCastMs": 6.800000011920929
+   },
+   "slowFrames": [],
+   "newPrograms": [
+    "(programs: 66 before, 66 after)"
+   ],
+   "idleEngine": {
+    "maxUpdateMs": 1.2999999821186066,
+    "idleSlow": []
+   }
+  }
+ },
+ "low": {
+  "uncapped": {
+   "tier": "low",
+   "casters": 10,
+   "fx": {
+    "setting": "auto",
+    "tier": "low",
+    "gpuCap": "ultra"
+   },
+   "casts": 130,
+   "idle": {
+    "frames": 3190,
+    "fps": 531.6,
+    "p50": 1.8,
+    "p95": 2.6,
+    "p99": 3.3,
+    "max": 5.6,
+    "over33ms": 0,
+    "longTasks": 0,
+    "worstLongTaskMs": 0
+   },
+   "spam": {
+    "frames": 5429,
+    "fps": 452.5,
+    "p50": 2.1,
+    "p95": 3,
+    "p99": 4.8,
+    "max": 10,
+    "over33ms": 0,
+    "longTasks": 0,
+    "worstLongTaskMs": 0
+   },
+   "peak": {
+    "rings": 18,
+    "flashes": 22,
+    "scorches": 16,
+    "sigils": 8,
+    "zones": 9,
+    "domes": 2,
+    "beams": 6,
+    "shells": 4,
+    "lights": 0,
+    "bolts": 23,
+    "boltSegments": 335,
+    "spikes": 85,
+    "projectiles": 7,
+    "ongoing": 26,
+    "statuses": 0,
+    "particles": 2322,
+    "casts": 130,
+    "remoteCasts": 0,
+    "shots": 47,
+    "impacts": 32,
+    "maxUpdateMs": 3.199999988079071,
+    "maxCastMs": 5.199999988079071
+   },
+   "slowFrames": [],
+   "newPrograms": [
+    "(programs: 52 before, 52 after)"
+   ]
+  },
+  "uncappedNoFx": {
+   "tier": "low",
+   "casters": 10,
+   "fx": null,
+   "casts": 0,
+   "idle": {
+    "frames": 3670,
+    "fps": 611.6,
+    "p50": 1.6,
+    "p95": 2.3,
+    "p99": 2.9,
+    "max": 6.4,
+    "over33ms": 0,
+    "longTasks": 0,
+    "worstLongTaskMs": 0
+   },
+   "peak": {}
+  },
+  "vsync": {
+   "tier": "low",
+   "casters": 10,
+   "fx": {
+    "setting": "auto",
+    "tier": "low",
+    "gpuCap": "ultra"
+   },
+   "casts": 128,
+   "idle": {
+    "frames": 359,
+    "fps": 60,
+    "p50": 16.7,
+    "p95": 16.8,
+    "p99": 16.8,
+    "max": 16.8,
+    "over33ms": 0,
+    "longTasks": 0,
+    "worstLongTaskMs": 0
+   },
+   "spam": {
+    "frames": 720,
+    "fps": 60,
+    "p50": 16.7,
+    "p95": 16.7,
+    "p99": 16.8,
+    "max": 16.8,
+    "over33ms": 0,
+    "longTasks": 0,
+    "worstLongTaskMs": 0
+   },
+   "peak": {
+    "rings": 14,
+    "flashes": 11,
+    "scorches": 16,
+    "sigils": 8,
+    "zones": 8,
+    "domes": 2,
+    "beams": 4,
+    "shells": 1,
+    "lights": 0,
+    "bolts": 15,
+    "boltSegments": 228,
+    "spikes": 101,
+    "projectiles": 6,
+    "ongoing": 22,
+    "statuses": 0,
+    "particles": 1007,
+    "casts": 128,
+    "remoteCasts": 0,
+    "shots": 46,
+    "impacts": 30,
+    "maxUpdateMs": 6.300000011920929,
+    "maxCastMs": 9.699999988079071
+   },
+   "slowFrames": [],
+   "newPrograms": [
+    "(programs: 52 before, 52 after)"
+   ]
+  },
+  "turnFx": {
+   "tier": "low",
+   "pan": {
+    "frames": 360,
+    "p50": 16.7,
+    "p95": 16.8,
+    "p99": 16.8,
+    "max": 16.8,
+    "over33ms": 0,
+    "over50ms": 0
+   },
+   "flick": {
+    "frames": 83,
+    "p50": 16.7,
+    "p95": 16.8,
+    "p99": 16.8,
+    "max": 16.8,
+    "over33ms": 0,
+    "over50ms": 0
+   },
+   "longTasks": 0,
+   "worstLongTaskMs": 0
+  },
+  "turnNoFx": {
+   "tier": "low",
+   "pan": {
+    "frames": 360,
+    "p50": 16.7,
+    "p95": 16.7,
+    "p99": 16.8,
+    "max": 16.8,
+    "over33ms": 0,
+    "over50ms": 0
+   },
+   "flick": {
+    "frames": 82,
+    "p50": 16.7,
+    "p95": 16.8,
+    "p99": 16.8,
+    "max": 16.8,
+    "over33ms": 0,
+    "over50ms": 0
+   },
+   "longTasks": 0,
+   "worstLongTaskMs": 0
+  }
+ }
+}

@@ -35,6 +35,8 @@ import { QuestLayer } from '../ui/quests/QuestLayer';
 import { NightHud } from '../systems/NightHud';
 // Playtest 1: character stats, area difficulty, tower attunement (Events 900-903).
 import { attachProgression } from '../ui/progression';
+// Playtest 2: opt-in PvP and party duels (Events 990-997, Interact 70; CR 019).
+import { attachPvp, DuelRing } from '../ui/pvp';
 
 type Phase = { kind: 'connecting' } | { kind: 'playing'; welcome: Welcome } | { kind: 'ended'; end: SessionEnd } | { kind: 'error'; message: string };
 
@@ -109,6 +111,7 @@ export function NetPlay({ ready }: { ready: ReadySession }) {
     const detachInventory = attachInventory(s); // WP14
     const detachNight = attachNight(s);
     const detachProgression = attachProgression(s);
+    const detachPvp = attachPvp(s); // after attachCombat: chains its HitResult handler
     ensureQuestHook(); // playtest 1: quest log (ui/quests), before Hello so Event 950 is never missed
     let live = true;
     s.onEnd = (end) => live && setPhase({ kind: 'ended', end });
@@ -127,6 +130,7 @@ export function NetPlay({ ready }: { ready: ReadySession }) {
       detachInventory(); // WP14
       detachNight();
       detachProgression();
+      detachPvp();
       unhookQuests();
       s.close('leaving');
       if (netRuntime.session === s) netRuntime.session = null;
@@ -200,6 +204,7 @@ export function NetPlay({ ready }: { ready: ReadySession }) {
           <LootLayer />
           <NightLayer />
           <QuestLayer />
+          <DuelRing />
         </WorldCanvas>
       )}
       {driver && session && <NightHud />}

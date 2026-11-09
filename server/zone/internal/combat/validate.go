@@ -58,9 +58,13 @@ func (w *World) refuse(r uint8) ClaimResult {
 	return ClaimResult{Reason: r}
 }
 
-// RefusePlayerTarget is the verdict for a claim that names a player (the
-// game layer calls it when the target id is a player entity): never.
+// RefusePlayerTarget is the verdict for a claim that names a player the
+// attacker may not fight (the game layer's PvP rules said no).
 func (w *World) RefusePlayerTarget() ClaimResult { return w.refuse(RefuseNotEnemy) }
+
+// RefusePvP refuses a claim on a player with a PvP reason (RefuseNotEnemy,
+// RefuseSafeZone, RefuseSameParty, RefuseNoTarget), counted like any refusal.
+func (w *World) RefusePvP(reason uint8) ClaimResult { return w.refuse(reason) }
 
 // Claim validates and applies one hit claim from p.
 func (w *World) Claim(p *Player, c *proto.HitClaim) ClaimResult {
@@ -113,7 +117,7 @@ func (w *World) Claim(p *Player, c *proto.HitClaim) ClaimResult {
 		if inReach && sawLOS {
 			return
 		}
-		if w.geometryOK(p, a, e, tp, impact) {
+		if w.geometryOK(p, a, e.Radius(), e.Height(), tp, impact) {
 			inReach = true
 			if !needsLOS(a, p.Pos, tp) || w.lineOfSight(a.Pos, p.Pos, tp, e.Height()) {
 				sawLOS = true
@@ -232,10 +236,11 @@ func (w *World) clear(a, b movement.Vec3) bool {
 	return true
 }
 
-// geometryOK checks one target sample against the action's shape.
-func (w *World) geometryOK(p *Player, a *Action, e *Enemy, tp movement.Vec3, impact movement.Vec3) bool {
-	r := e.Radius() + constants.HitRangeSlackM
-	vertical := func(o movement.Vec3, extra float64) bool { return math.Abs(tp.Y-o.Y) <= 3+e.Height()+extra }
+// geometryOK checks one target sample (radius and centre height: an
+// enemy's, or a player's for PvP) against the action's shape.
+func (w *World) geometryOK(p *Player, a *Action, radius, height float64, tp movement.Vec3, impact movement.Vec3) bool {
+	r := radius + constants.HitRangeSlackM
+	vertical := func(o movement.Vec3, extra float64) bool { return math.Abs(tp.Y-o.Y) <= 3+height+extra }
 	inCone := func(o movement.Vec3, yaw, reach, arcDeg float64) bool {
 		d := hdist(o, tp)
 		if d > reach+r || !vertical(o, 0) {
@@ -597,8 +602,8 @@ func (w *World) applyDamage(e *Enemy, src uint32, dmg float64, element int, at m
 	return dealt, shielded
 }
 
-// healPlayer heals a player (Light tree, lifesteal; players can help each
-// other, never hurt each other).
+// healPlayer heals a player (Light tree, lifesteal; players help each other
+// freely and hurt each other only through PvP rules: pvp.go, CR 019).
 func (w *World) healPlayer(by, p *Player, amount float64) {
 	if p.Downed || amount <= 0 {
 		return

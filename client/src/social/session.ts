@@ -94,6 +94,15 @@ export function sendSocial(msg: C2S): void {
   socket.send(msg);
 }
 
+// Playtest 2: /pvp, /duel and /yield go to the zone, not the social
+// service; the PvP link (client/src/ui/pvp/link.ts) registers the handler.
+// It returns an error line for the chat, or null.
+let gameCommand: ((verb: string, args: string) => string | null) | null = null;
+
+export function setGameCommandHandler(fn: ((verb: string, args: string) => string | null) | null): void {
+  gameCommand = fn;
+}
+
 /** Run one line from the chat input. Returns true if the input should be cleared. */
 export function submitChatInput(text: string): boolean {
   const s = useSocialStore.getState();
@@ -110,6 +119,11 @@ export function submitChatInput(text: string): boolean {
     case 'openWhisper':
       s.openWhisper(cmd.to);
       return true;
+    case 'game': {
+      const err = gameCommand ? gameCommand(cmd.verb, cmd.args) : 'Not in the world.';
+      if (err) s.localNotice(err, 'error');
+      return true;
+    }
     case 'send':
       if (cmd.msg.type === 'whisper') s.openWhisper(cmd.msg.to);
       sendSocial(cmd.msg);

@@ -38,7 +38,9 @@ export const HUD_CSS = `
    makes "Click to look around" noise: hide it while one is open. */
 body:has([data-ui-panel]:not([style*="display: none"])) [data-testid="lock-hint"] { display: none !important; }
 /* The sound, graphics and friends panels open under the top-right buttons, over the quest tracker. */
-body:has([data-testid="sound-settings"], [data-testid="graphics-settings"], [data-testid="friends-panel"]) [data-testid="quest-tracker"] { visibility: hidden; }
+body:has([data-testid="sound-settings"], [data-testid="graphics-settings"], [data-testid="friends-panel"], [data-testid="craft-panel"]) [data-testid="quest-tracker"] { visibility: hidden; }
+/* The "[E] ..." prompt is noise once the thing it offers is open. */
+body:has([data-ui-panel]:not([style*="display: none"])) [data-testid="town-prompt"] { visibility: hidden; }
 /* A shop / NPC dialogue sits on the right: loot toasts (a purchase, a quest reward) move to its left. */
 body:has([data-testid="town-panel"]:not([style*="display: none"])) [data-testid="loot-toasts"] { right: calc(4% + min(380px, 86vw) + 14px) !important; }
 @media (max-width: ${NARROW_PX}px) {

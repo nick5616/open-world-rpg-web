@@ -20,6 +20,7 @@ import { FANFARE_MS, isAttuned, pruneProgression, setPanelOpen, useProgression, 
 import { towerPrompt, type TowerPrompt, type TowerLike } from './towerPrompt';
 import { useIntro } from '../intro/queue';
 import { openSkillScreen } from '../skills/store';
+import { PvpPanelSection } from '../pvp/PvpHud';
 
 const GOLD = '#ffd166';
 const PANEL: CSSProperties = { background: 'rgba(12,14,20,0.94)', border: '1px solid rgba(255,209,102,0.35)', borderRadius: 6, color: '#f1f3f5', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' };
@@ -29,16 +30,16 @@ const PANEL: CSSProperties = { background: 'rgba(12,14,20,0.94)', border: '1px s
 
 function LevelUpFanfare() {
   const f = useProgression((s) => s.fanfare);
-  // A discovery card owns the top of the screen; the fanfare drops below it
+  // A discovery card owns the screen; the fanfare waits for it to finish
   // (playtest 2: a new character's first town gave both at once, stacked).
   const introUp = useIntro((s) => !!s.current);
   const id = f?.id;
   useEffect(() => {
     // The level-up sound comes from the audio system (Event 604 -> level up sound 1-3).
   }, [id]);
-  if (!f) return null;
+  if (!f || introUp) return null; // shown after the discovery card (the store holds it meanwhile)
   return (
-    <div key={f.id} data-testid="levelup-fanfare" className="pt-fanfare" style={{ position: 'fixed', top: introUp ? '44%' : '15%', left: '50%', transform: 'translateX(-50%)', zIndex: 40, pointerEvents: 'none', textAlign: 'center', ['--pt-ms' as string]: `${FANFARE_MS}ms` }}>
+    <div key={f.id} data-testid="levelup-fanfare" className="pt-fanfare" style={{ position: 'fixed', top: '15%', left: '50%', transform: 'translateX(-50%)', zIndex: 20, pointerEvents: 'none', textAlign: 'center', ['--pt-ms' as string]: `${FANFARE_MS}ms` }}>
       <div style={{ font: '600 15px Georgia, serif', letterSpacing: 6, color: GOLD, textShadow: '0 0 12px rgba(255,209,102,0.7)' }}>LEVEL UP</div>
       <div style={{ font: '700 64px Georgia, serif', color: '#fff8e1', lineHeight: 1.05, textShadow: '0 0 24px rgba(255,209,102,0.9), 0 2px 4px #000' }}>Level {f.level}</div>
       <div style={{ font: 'italic 16px Georgia, serif', color: '#f1f3f5', margin: '4px 0 10px', textShadow: '0 1px 3px #000' }}>You feel stronger.</div>
@@ -250,6 +251,8 @@ function CharacterPanel() {
           </div>
         ))}
       </Section>
+      {/* Playtest 2: the PvP flag and how duels work (CR 019) */}
+      <PvpPanelSection />
       {area && (
         <Section title="Where you stand">
           <Row label={area.haven ? 'The Haven' : area.tierName} value={`area level ${area.level}`} sub={area.by && !area.haven ? `shaped by ${area.by}` : undefined} />
@@ -306,7 +309,7 @@ export function ProgressionHud() {
   const prompt = useTowerPrompt();
   useProgressionKeys(prompt);
   useEffect(() => {
-    const id = setInterval(() => pruneProgression(), 500);
+    const id = setInterval(() => pruneProgression(performance.now(), !!useIntro.getState().current), 500);
     return () => clearInterval(id);
   }, []);
   useEffect(() => {

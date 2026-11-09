@@ -9,18 +9,21 @@
 // number appears when HitResult confirms it (a refused claim just shows no
 // number).
 
-import { COMBAT, HITSTOP_MS, InputFlag, MOVE_STEP_HZ, type Event as ZoneEvent, type HitResult, type MoveDef, type SpellDef } from '@lodestone/contracts';
+import { COMBAT, HITSTOP_MS, InputFlag, MOVE_STEP_HZ, i16ToPitch, u16ToYaw, type Event as ZoneEvent, type HitResult, type MoveDef, type SpellDef } from '@lodestone/contracts';
 import type { GroundQuery } from '../sim/ground';
 import type { MoveState } from '../sim/movement';
 import type { RemoteView } from '../net/interpolation';
 import { drawnRemotes } from '../net/netStore';
 import { localPlayer } from '../state/live';
 import { CombatTimeline, spellById, weaponById, type CombatButtons, type Started } from './timeline';
-import { EV, INTERACT_COMBAT, ACT, decodeSync, decodeTelegraph, enemyInfo } from './events';
+import { EV, INTERACT_COMBAT, ACT, ELEMENT_COLORS, decodeSync, decodeTelegraph, enemyInfo } from './events';
 import { fxQueue, pushNumber, toast, useCombatHud } from './store';
 import { CombatProbe } from './probe';
 import { nextSelection, validSelection, WheelStepper } from './spellSelect';
 import { emitSound } from '../audio/bridge';
+import { isHostilePlayer } from '../ui/pvp/hostile';
+// Playtest 2: every spell visual goes through the FX engine (fx/README in ../README.md).
+import { spellFx } from './fx/api';
 
 const STEP_MS = 1000 / MOVE_STEP_HZ;
 const EYE = 1.6;
@@ -64,7 +67,6 @@ interface Active {
   until: number; // seq the action stops checking
 }
 
-let shotIds = 1;
 
 export class CombatRuntime {
   readonly timeline = new CombatTimeline();
@@ -300,15 +302,24 @@ export class CombatRuntime {
     this.actives.push({ s, yaw, pitch, aimYaw: localPlayer.aimYaw, aimPitch: localPlayer.aimPitch, hit: new Set(), impact: null, ticks: 0, until: s.seq + total + 1 });
     const color = s.spell?.color ?? (s.form ? '#ffd76a' : '#e8e8e8');
     if (s.move && s.move.speed === 0) fxQueue.push({ t: 'swing', arc: s.move.arc, reach: s.move.reach, color, durationMs: (s.startup + s.active) * STEP_MS, at: performance.now() });
+    if (s.spell) {
+      // Hand flourish, windup telegraph (where an area will land, the target
+      // of a long direct spell), dash trails, shields: spellFx (fx/engine.ts).
+      const sp = s.spell;
+      const eye = { x: before.pos.x, y: before.pos.y + EYE, z: before.pos.z };
+      const aim = sp.windupMs > 0 && (sp.type === 'aoe' || sp.type === 'rune') && !sp.selfCast && !sp.cone && !sp.line ? this.aimPoint(eye, localPlayer.aimYaw, localPlayer.aimPitch, sp.range) : null;
+      const target = sp.type === 'direct' && sp.windupMs > 0 ? this.aimTarget(eye, localPlayer.aimYaw, localPlayer.aimPitch, sp.range, 12) : null;
+      spellFx.castStart(sp, 'self', aim, yaw, target ? target.id : null);
+    }
     // Sound from the prediction, instantly (spec 8); client/src/audio/triggers.ts.
     if (s.spell) emitSound('cast', { element: s.spell.tree, kind: s.spell.type });
     else emitSound('attack', { weapon: this.timeline.weapon().key, kind: s.move?.kind ?? 'heavy' });
     void before;
   }
 
-  /** The enemies the player sees (interpolated, as drawn this frame). */
+  /** The enemies the player sees (interpolated, as drawn this frame), and the players they may fight (playtest 2 PvP and duels, ui/pvp). */
   private enemies(): RemoteView[] {
-    return drawnRemotes.views.filter((v) => v.kind === 2 && v.healthPct > 0);
+    return drawnRemotes.views.filter((v) => (v.kind === 2 && v.healthPct > 0) || isHostilePlayer(v));
   }
 
   private activeStep(a: Active, seq: number, st: MoveState): void {
@@ -346,7 +357,7 @@ export class CombatRuntime {
         const ok = f.shape === 'aoe' ? Math.hypot(e.x - st.pos.x, e.z - st.pos.z) <= f.radius + r : f.shape === 'cone' ? inCone(st.pos, a.yaw, f.reach + r, f.arc, e) : inLine(st.pos, a.yaw, f.reach, f.width / 2 + r, e);
         if (ok) this.predictHit(s, e, st.pos, 'form');
       }
-      fxQueue.push({ t: 'area', x: st.pos.x, y: st.pos.y, z: st.pos.z, radius: Math.max(f.radius, f.reach), color: '#ffd76a', durationMs: 300, at: performance.now() });
+      spellFx.form(f, 'self', a.yaw);
       return;
     }
     const sp = s.spell!;
@@ -363,7 +374,7 @@ export class CombatRuntime {
           const n = Math.max(1, sp.spread);
           for (let i = 0; i < n; i++) {
             const off = n > 1 ? ((i - (n - 1) / 2) * sp.spreadDeg * Math.PI) / 180 : 0;
-            this.launch(s, sp.speed, sp.gravity, Math.max(0.2, Math.min(sp.radius, 1)), sp.range, sp.pierce, sp.radius > 1 ? sp.radius : 0, a, off, color);
+            this.launch(s, sp.speed, sp.gravity, Math.max(0.2, Math.min(sp.radius, 1)), sp.range, sp.pierce, sp.radius > 1 ? sp.radius : 0, a, off, color, n > 1);
           }
         }
         return;
@@ -375,7 +386,8 @@ export class CombatRuntime {
         a.ticks++;
         const t = this.aimTarget(eye, localPlayer.aimYaw, localPlayer.aimPitch, sp.range, 6);
         const end = t ? { x: t.x, y: t.y + 0.9, z: t.z } : this.aimPoint(eye, localPlayer.aimYaw, localPlayer.aimPitch, sp.range);
-        fxQueue.push({ t: 'beam', x: eye.x, y: eye.y - 0.3, z: eye.z, x2: end.x, y2: end.y, z2: end.z, color, durationMs: sp.type === 'beam' ? every * STEP_MS + 30 : 120, at: performance.now() });
+        // One beam per cast (same id every tick: it stays up and re-aims).
+        spellFx.beam(`l${s.seq}`, sp, 'self', end, sp.type === 'beam' ? every * STEP_MS + 60 : 160);
         if (!t) return;
         this.predictHit(s, t, st.pos, 'spell', sp.type === 'beam');
         if (sp.chain > 0) {
@@ -386,7 +398,7 @@ export class CombatRuntime {
             for (const e of this.enemies()) if (!used.has(e.id) && Math.hypot(e.x - prev.x, e.z - prev.z) < 8 && (!best || Math.hypot(e.x - prev.x, e.z - prev.z) < Math.hypot(best.x - prev.x, best.z - prev.z))) best = e;
             if (!best) break;
             used.add(best.id);
-            fxQueue.push({ t: 'beam', x: prev.x, y: prev.y + 0.9, z: prev.z, x2: best.x, y2: best.y + 0.9, z2: best.z, color, durationMs: 150, at: performance.now() });
+            spellFx.chain(sp, { x: prev.x, y: prev.y + enemyInfo(prev).height, z: prev.z }, { x: best.x, y: best.y + enemyInfo(best).height, z: best.z });
             this.predictHit(s, best, prev, 'spell');
             prev = best;
           }
@@ -397,7 +409,7 @@ export class CombatRuntime {
         if (seq !== firstHit) return;
         const t = this.aimTarget(eye, a.aimYaw, a.aimPitch, sp.range, 12);
         if (t) {
-          fxQueue.push({ t: 'area', x: t.x, y: t.y, z: t.z, radius: 1.2, color, durationMs: 500, at: performance.now() });
+          spellFx.targetHit(sp, t.x, t.y, t.z, enemyInfo(t).height * 2);
           this.predictHit(s, t, st.pos, 'spell');
         }
         return;
@@ -408,8 +420,9 @@ export class CombatRuntime {
         const lingering = sp.type === 'rune' || sp.durationSteps > 0;
         if (seq === firstHit) {
           a.impact = sp.selfCast || sp.type === 'domain' || sp.cone > 0 || sp.line > 0 ? { ...st.pos } : this.aimPoint(eye, a.aimYaw, a.aimPitch, sp.range);
-          const r = sp.type === 'domain' ? sp.radius : sp.cone > 0 ? sp.radius : sp.line > 0 ? sp.line : sp.radius;
-          fxQueue.push({ t: 'area', x: a.impact.x, y: a.impact.y, z: a.impact.z, radius: r, color, durationMs: Math.max(400, sp.durationSteps * STEP_MS), at: performance.now() });
+          const p = a.impact;
+          if (sp.type === 'rune') spellFx.rune(sp, p.x, p.y, p.z);
+          else spellFx.area(sp, p.x, p.y, p.z, { radius: sp.radius, cone: sp.cone, line: sp.line, yaw: a.yaw }, lingering ? sp.durationSteps * STEP_MS : 0, sp.selfCast || sp.type === 'domain' ? 'self' : null);
         }
         if (!a.impact) return;
         const ticks = Math.max(1, sp.hits);
@@ -473,16 +486,18 @@ export class CombatRuntime {
     return best;
   }
 
-  private launch(s: Started, speed: number, gravity: number, radius: number, range: number, pierce: boolean, aoe: number, a: Active, yawOff = 0, color = '#e8d8a0'): void {
+  private launch(s: Started, speed: number, gravity: number, radius: number, range: number, pierce: boolean, aoe: number, a: Active, yawOff = 0, color = '#e8d8a0', spread = false): void {
     const eye = { x: localPlayer.pos.x, y: localPlayer.pos.y + EYE - 0.15, z: localPlayer.pos.z };
     // Playtest 2: the converged aim (third person: toward what the crosshair is on).
     const yaw = localPlayer.aimYaw + yawOff;
     const pitch = localPlayer.aimPitch + (gravity > 0 ? 0.05 : 0);
     const cp = Math.cos(pitch);
-    const sh: LocalShot = { started: s, x: eye.x, y: eye.y, z: eye.z, vx: -Math.sin(yaw) * cp * speed, vy: Math.sin(pitch) * speed, vz: -Math.cos(yaw) * cp * speed, gravity, radius, left: range, hit: new Set(), pierce, aoe, fx: shotIds++ };
+    const sh: LocalShot = { started: s, x: eye.x, y: eye.y, z: eye.z, vx: -Math.sin(yaw) * cp * speed, vy: Math.sin(pitch) * speed, vz: -Math.cos(yaw) * cp * speed, gravity, radius, left: range, hit: new Set(), pierce, aoe, fx: 0 };
     this.shots.push(sh);
     void a;
-    fxQueue.push({ t: 'projectile', id: sh.fx, x: sh.x, y: sh.y, z: sh.z, vx: sh.vx, vy: sh.vy, vz: sh.vz, gravity, radius: Math.max(0.12, radius), color, life: range / Math.max(1, speed), at: performance.now(), enemy: false });
+    void color;
+    // The visual starts at your off hand and is ended by update() below (hit, ground, range).
+    sh.fx = spellFx.projectile(s.spell ?? null, sh.x, sh.y, sh.z, sh.vx, sh.vy, sh.vz, gravity, Math.max(0.12, radius), range / Math.max(1, speed), { local: true, explode: aoe, pierce, spread, kind: 'arrow' });
   }
 
   /** Per rendered frame: local projectiles and hitstop. */
@@ -502,6 +517,7 @@ export class CombatRuntime {
         const g = this.ground ? this.ground.heightAt(sh.x, sh.z) : -1e9;
         if (sh.left <= 0 || sh.y < g) {
           if (sh.aoe > 0) this.explode(sh);
+          spellFx.projectileEnd(sh.fx, sh.x, Math.max(sh.y, g + 0.05), sh.z, sh.y < g ? 'ground' : 'expire', sh.aoe);
           alive = false;
           break;
         }
@@ -513,14 +529,17 @@ export class CombatRuntime {
             sh.hit.add(e.id);
             if (sh.aoe > 0) {
               this.explode(sh);
+              spellFx.projectileEnd(sh.fx, sh.x, sh.y, sh.z, 'hit', sh.aoe);
               alive = false;
               break;
             }
             this.predictHit(sh.started, e, localPlayer.pos, sh.started.kind);
             if (!sh.pierce) {
+              spellFx.projectileEnd(sh.fx, sh.x, sh.y, sh.z, 'hit');
               alive = false;
               break;
             }
+            spellFx.projectileHit(sh.fx, sh.x, sh.y, sh.z);
           }
         }
       }
@@ -530,7 +549,7 @@ export class CombatRuntime {
   }
 
   private explode(sh: LocalShot): void {
-    fxQueue.push({ t: 'area', x: sh.x, y: sh.y, z: sh.z, radius: sh.aoe, color: sh.started.spell?.color ?? '#ffaa44', durationMs: 350, at: performance.now() });
+    // The explosion visual is the projectile's end (spellFx.projectileEnd with the radius).
     emitSound('impact', { at: { x: sh.x, y: sh.y, z: sh.z }, element: sh.started.spell?.tree ?? 'earth' });
     for (const e of this.enemies()) {
       if (Math.hypot(e.x - sh.x, e.z - sh.z) <= sh.aoe + enemyInfo(e).radius) this.predictHit(sh.started, e, { x: sh.x, y: sh.y, z: sh.z }, sh.started.kind, true);
@@ -538,7 +557,8 @@ export class CombatRuntime {
   }
 
   private areaAt(a: Active, p: { x: number; y: number; z: number }, radius: number, s: Started, color: string): void {
-    fxQueue.push({ t: 'area', x: p.x, y: p.y, z: p.z, radius, color, durationMs: 500, at: performance.now() });
+    spellFx.slam(p.x, p.y, p.z, radius);
+    void color;
     for (const e of this.enemies()) if (Math.hypot(e.x - p.x, e.z - p.z) <= radius + enemyInfo(e).radius) this.predictHit(s, e, p, 'move', true);
     void a;
   }
@@ -551,6 +571,8 @@ export class CombatRuntime {
     const now = performance.now();
     const at = { x: e.x, y: e.y + enemyInfo(e).height, z: e.z };
     fxQueue.push({ t: 'spark', x: at.x, y: at.y, z: at.z, color: s.spell?.color ?? '#fff3c0', at: now });
+    const gem = this.timeline.loadout.gem;
+    spellFx.hit(s.spell ?? null, at.x, at.y, at.z, { tint: !s.spell && gem >= 0 ? ELEMENT_COLORS[gem] : null, heavy: kind === 'form' || s.move?.kind === 'heavy' });
     if (!impactIsOrigin) emitSound('impact', { at, element: s.spell?.tree, weapon: this.timeline.weapon().key });
     if (kind === 'move' || kind === 'form') this.hitstopUntil = Math.max(this.hitstopUntil, now + HITSTOP_MS);
     this.probe.localHit(s, now, kind === 'move' || kind === 'form' ? HITSTOP_MS : 0);
@@ -612,12 +634,27 @@ export class CombatRuntime {
         const vz = d.getInt16(4, true) / 50;
         const range = d.getUint16(8, true) / 100;
         const sp = Math.max(1, Math.hypot(vx, vy, vz));
-        fxQueue.push({ t: 'projectile', id: shotIds++, x: ev.x / 100, y: ev.y / 100, z: ev.z / 100, vx, vy, vz, gravity: 0, radius: d.getUint16(6, true) / 100, color: '#ff5050', life: range / sp, at: now, enemy: true });
+        void sp;
+        spellFx.enemyProjectile(ev.entityId, Number(ev.targetId), ev.x / 100, ev.y / 100, ev.z / 100, vx, vy, vz, d.getUint16(6, true) / 100, range);
         return;
       }
+      case EV.cast: {
+        // Another player's attack, cast, form or dash (contracts/events.md 214).
+        if (ev.data.length < 4) return;
+        const d = new DataView(ev.data.buffer, ev.data.byteOffset, ev.data.byteLength);
+        spellFx.remoteCast(ev.entityId, Number(ev.targetId), ev.x / 100, ev.y / 100, ev.z / 100, u16ToYaw(d.getUint16(0, true)), i16ToPitch(d.getInt16(2, true)));
+        return;
+      }
+      case EV.status:
+        spellFx.status(Number(ev.targetId), ev.value);
+        return;
+      case EV.shield:
+        if (ev.entityId === self || ev.entityId === 0) spellFx.shieldPoints(ev.value);
+        return;
       case EV.damage:
         pushNumber(ev.x / 100, ev.y / 100 + 0.4, ev.z / 100, ev.value, 'dealt');
         fxQueue.push({ t: 'spark', x: ev.x / 100, y: ev.y / 100, z: ev.z / 100, color: '#fff3c0', at: now });
+        spellFx.hit(null, ev.x / 100, ev.y / 100, ev.z / 100);
         return;
       case EV.playerHurt:
         if (ev.entityId === self) {

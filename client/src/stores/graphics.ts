@@ -11,7 +11,7 @@
 // work) without touching what is stored, so switching back restores them.
 
 import { useMemo } from 'react';
-import { CONTROL_PRESETS, QUALITY_PRESETS, TIER_ORDER, useQualityStore, type EffectsSetting, type GraphicsControls, type Overrides, type QualityTier, type VisualStyle } from './qualityStore';
+import { CONTROL_PRESETS, QUALITY_PRESETS, TIER_ORDER, useQualityStore, type GraphicsControls, type Overrides, type QualityTier, type VisualStyle } from './qualityStore';
 import { WORLD_TIERS, type WorldTier } from '../world/config';
 import { STYLES, type RetroProfile } from '../world/style/styles';
 
@@ -38,6 +38,8 @@ export interface ResolvedGraphics {
   maxLights: number;
   /** Terrain texture anisotropy. */
   anisotropy: number;
+  /** Spell screen effect (shockwave/shake/flash, combat/fx/screen.ts) in the post chain: medium and up, not Retro. */
+  spellScreen: boolean;
   retro: RetroProfile | null;
 }
 
@@ -101,6 +103,7 @@ export function resolveGraphics(tier: QualityTier, shaderTier: QualityTier, over
     normalMaps: sp.normalMaps,
     maxLights: sp.maxLights,
     anisotropy: TIER_ORDER.indexOf(shaderTier) >= TIER_ORDER.indexOf('high') ? 8 : 4,
+    spellScreen: shaderTier !== 'low' && !retro,
     retro,
   };
 }
@@ -113,11 +116,6 @@ export function resolveGraphics(tier: QualityTier, shaderTier: QualityTier, over
 export function pixelRatioFor(g: ResolvedGraphics, devicePixelRatio: number, cssHeight: number): number {
   if (g.retro) return Math.min(1, g.retro.lines / Math.max(1, cssHeight));
   return Math.max(0.25, Math.min(devicePixelRatio || 1, g.controls.dprCap) * g.controls.renderScale);
-}
-
-/** Spell FX tier: an explicit effects setting, else the graphics tier (see combat/fx/quality.ts). */
-export function effectsTierFor(effects: EffectsSetting, tier: QualityTier): Exclude<EffectsSetting, 'auto'> {
-  return effects === 'auto' ? tier : effects;
 }
 
 /** Non-reactive read (useFrame and other non-React code). */

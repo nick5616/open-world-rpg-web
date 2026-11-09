@@ -142,8 +142,12 @@ export interface EnemyInfo {
 
 const cache = new Map<number, EnemyInfo>();
 
-/** Unpack an enemy's typeId (combatdefs.TypeID): bits 0-7 id, 8-11 element+1, 12-14 affix. */
-export function enemyInfo(e: { typeId?: number }): EnemyInfo {
+/** A player as a hit target (playtest 2 PvP: the zone's player radius 0.4 m, centre 0.9 m). */
+const PLAYER_TARGET: EnemyInfo = { key: 'player', name: 'Player', family: 'player', element: 8, affix: 0, size: 1, color: '#e9ecef', radius: 0.4, height: 0.9, behavior: 'player' };
+
+/** Unpack an enemy's typeId (combatdefs.TypeID): bits 0-7 id, 8-11 element+1, 12-14 affix. Players (kind 1) are PvP targets. */
+export function enemyInfo(e: { typeId?: number; kind?: number }): EnemyInfo {
+  if (e.kind === 1) return PLAYER_TARGET;
   const t = e.typeId ?? 0;
   let info = cache.get(t);
   if (info) return info;

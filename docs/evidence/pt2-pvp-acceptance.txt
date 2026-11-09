@@ -1,0 +1,75 @@
+[2026-11-09T21:22:16.723Z] Playtest 2 PvP + duels (CR 019), run mw9rokr7
+[2026-11-09T21:22:16.731Z] private ports {"account":30528,"director":36344,"zone":24108,"social":23890,"vite":37754}; logs in C:\Users\nickb\AppData\Local\Temp\lodestone-pvp-ElQB5D
+[2026-11-09T21:22:20.315Z] scratch database lodestone_wp04_pvp_mw9rokr7
+[2026-11-09T21:22:46.948Z] built account, director, zone, social from this checkout
+[2026-11-09T21:22:49.198Z] PASS account healthy on :30528
+[2026-11-09T21:22:50.335Z] PASS social healthy on :23890
+[2026-11-09T21:22:51.398Z] PASS director healthy on :36344
+[2026-11-09T21:22:54.801Z] PASS zone healthy on :24108
+[2026-11-09T21:22:58.702Z] PASS vite on :37754
+[2026-11-09T21:23:22.821Z]   both playing: Corin at (1921.5, 2275.5), Della at (1922.5, 2273.5)
+[2026-11-09T21:23:23.332Z] PASS Corin flagged from the character panel
+[2026-11-09T21:23:23.905Z]   screenshot pt2-pvp-01-character-panel-pvp-on-A.png
+[2026-11-09T21:23:24.681Z] PASS both flagged (panel toggle, /pvp on); spawn is a safe zone: "Draedmore"  {"safe":true,"name":"Draedmore"}
+[2026-11-09T21:23:24.743Z] PASS Della's snapshot typeId carries the PvP bit (red crossed swords on the nameplate)
+[2026-11-09T21:23:28.333Z] PASS in the safe zone 3 claims refused with 16 (safe zone), Della's health unchanged
+[2026-11-09T21:23:28.426Z]   screenshot pt2-pvp-02-safe-zone-refused-A.png
+[2026-11-09T21:23:39.985Z]   candidate (2822, 2276): mode idle, flagged true, safe false 
+[2026-11-09T21:23:39.985Z] PASS found open ground outside the Haven and towns (rejoined at a dev spawn point; a fresh session is unflagged, so flagged again)  {"x":2821.5,"y":157.4876480102539,"z":2275.5}
+[2026-11-09T21:23:52.932Z] PASS Della flagged on open ground (no safe zone)
+[2026-11-09T21:23:54.196Z]   screenshot pt2-pvp-03-pvp-hit-A.png
+[2026-11-09T21:24:00.133Z] PASS open PvP: 9 hits accepted in 9 swings, damage [10,15,11,17,10,11]... (sword light 18 PvE x the level's damage x 0.5)
+[2026-11-09T21:24:00.138Z] PASS kill feed on both (Event 993)  {"a":["You defeated Della"],"b":["Corin defeated you"]}
+[2026-11-09T21:24:00.350Z]   screenshot pt2-pvp-04-kill-feed-A.png
+[2026-11-09T21:24:00.585Z]   screenshot pt2-pvp-05-kill-feed-downed-B.png
+[2026-11-09T21:24:02.510Z] PASS Della respawned at full health (112)
+[2026-11-09T21:24:06.440Z] PASS party formed (/invite + the party frame); the zone sees both in one party
+[2026-11-09T21:24:06.620Z]   view A {"canvas":true,"w":1280,"h":720,"lost":false,"cam":{"x":2821.5,"y":157.4876480102539,"z":2275.5},"pngBytes":137058,"byteMean":128}; view B {"canvas":true,"w":1280,"h":720,"lost":false,"cam":{"x":2821.5,"y":158.00414276123047,"z":2273.5},"pngBytes":97269,"byteMean":128}
+[2026-11-09T21:24:07.565Z]   Della stands 2.00 m in front of Corin
+[2026-11-09T21:24:07.781Z]   screenshot pt2-pvp-06-party-frame-duel-button-A.png
+[2026-11-09T21:24:07.828Z] PASS the challenged gets the prompt (Accept Y / Decline U, 20 s)  "Corin challenges you to a duel To 1 health, inside a 25 m ring. Health and mana come back after. Accept Y Decline U"
+[2026-11-09T21:24:07.830Z] PASS Corin sees "challenge sent"
+[2026-11-09T21:24:08.098Z]   screenshot pt2-pvp-07-duel-challenge-B.png
+[2026-11-09T21:24:08.170Z] PASS 3-2-1 countdown on Corin's screen (saw "3")
+[2026-11-09T21:24:08.378Z]   screenshot pt2-pvp-08-duel-countdown-A.png
+[2026-11-09T21:24:08.380Z] PASS duel ring: 25 m around the midpoint  {"center":{"x":2821.5,"y":157.75,"z":2274.5},"radius":25}
+[2026-11-09T21:24:11.190Z] PASS the fight starts after the countdown
+[2026-11-09T21:24:13.654Z]   screenshot pt2-pvp-09-duel-fight-ring-A.png
+[2026-11-09T21:24:18.009Z] PASS the duel ends at 1 health after 9 swings: Corin wins, Della loses  {"a":"Victory!|Corin defeated Della in a duel (6 s).","b":"Defeat|Corin defeated Della in a duel (6 s)."}
+[2026-11-09T21:24:18.256Z]   screenshot pt2-pvp-10-duel-won-A.png
+[2026-11-09T21:24:18.503Z]   screenshot pt2-pvp-11-duel-lost-B.png
+[2026-11-09T21:24:18.509Z] PASS Event 996 reason 1 (dropped to 1 health)  {"value":1}
+[2026-11-09T21:24:18.511Z] PASS 9 duel hits landed on Della (Event 992)
+[2026-11-09T21:24:19.321Z] PASS Della's health is back after the duel (112 / 112; 112 before)
+[2026-11-09T21:24:19.323Z]   party chat (if the dev handle exposes it): null
+[2026-11-09T21:24:19.324Z] PASS zone log: duel ended, reason 1
+[2026-11-09T21:24:19.324Z] PASS no page errors in either browser  []
+[2026-11-09T21:24:19.324Z]   console errors/warnings: 45
+[2026-11-09T21:24:19.324Z]     [A] warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+[2026-11-09T21:24:19.324Z]     [A] warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+[2026-11-09T21:24:19.324Z]     [A] warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+[2026-11-09T21:24:19.324Z]     [A] warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+[2026-11-09T21:24:19.324Z]     [A] warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+[2026-11-09T21:24:19.324Z]     [A] warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+[2026-11-09T21:24:19.324Z]     [A] warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+[2026-11-09T21:24:19.324Z]     [A] warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+[2026-11-09T21:24:19.324Z]     [A] warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+[2026-11-09T21:24:19.324Z]     [B] warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+[2026-11-09T21:24:19.324Z]     [B] warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+[2026-11-09T21:24:19.324Z]     [B] warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+[2026-11-09T21:24:19.324Z]     [B] warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+[2026-11-09T21:24:19.324Z]     [B] warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+[2026-11-09T21:24:19.324Z]     [B] warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+[2026-11-09T21:24:19.324Z]     [B] warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+[2026-11-09T21:24:19.324Z]     [B] warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+[2026-11-09T21:24:19.324Z]     [B] warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+[2026-11-09T21:24:19.324Z]     [A] warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+[2026-11-09T21:24:19.324Z]     [A] warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+[2026-11-09T21:24:19.324Z]     [A] warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+[2026-11-09T21:24:19.324Z]     [A] warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+[2026-11-09T21:24:19.324Z]     [A] warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+[2026-11-09T21:24:19.324Z]     [A] warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+[2026-11-09T21:24:19.324Z]     [A] warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+[2026-11-09T21:24:27.782Z] dropped lodestone_wp04_pvp_mw9rokr7
+[2026-11-09T21:24:27.782Z] summary: setup: PASS (5/5) | 2 pvp: PASS (9/9) | 3 duel: PASS (12/12)
+[2026-11-09T21:24:27.782Z] ALL PASS

@@ -18,6 +18,7 @@ import * as THREE from 'three';
 import { makeTownMaterials, townTexture } from './buildings/townMaterial';
 import { caveRockMaterial } from './caves/caveVisuals';
 import { weaponMaterial } from '../combat/weapons/material';
+import { spellFxWarmObjects } from '../combat/fx/warm';
 
 let kept: THREE.Object3D[] | null = null;
 
@@ -62,6 +63,9 @@ export function warmExtras(): THREE.Object3D[] {
     new THREE.Mesh(box, new THREE.MeshBasicMaterial({ color: '#222222', depthTest: false, side: THREE.DoubleSide })),
     new THREE.Mesh(box, new THREE.MeshBasicMaterial({ alphaMap: new THREE.Texture(), transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false })),
   );
+  // Playtest 2 spell FX (combat/fx/warm.ts): particles, ribbons, every custom
+  // spell shader, lit spikes, sprites and cores, so the first cast never compiles.
+  out.push(...spellFxWarmObjects());
   for (const o of out) o.frustumCulled = false;
   kept = out;
   return out;

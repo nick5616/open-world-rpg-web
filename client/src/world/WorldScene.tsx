@@ -174,7 +174,7 @@ export function WorldScene({ runtime }: Props) {
     world.scatter.applyTier(wt);
     world.waterU.uDetail.value = wt.waterDetail ? 1 : 0;
   }, [world, wt, viewDistance, g.normalMaps]);
-  const { shadowCascades, shadowDistance, shadowMapSize, bloom, godRays, msaa, fxaa } = g;
+  const { shadowCascades, shadowDistance, shadowMapSize, bloom, godRays, msaa, fxaa, spellScreen } = g;
   useEffect(() => {
     const sun = new SunShadows(world.root, camera, { cascades: shadowCascades, distance: shadowDistance, mapSize: shadowMapSize });
     world.terrain.onMaterial = (m) => sun.setupMaterial(m);
@@ -189,7 +189,8 @@ export function WorldScene({ runtime }: Props) {
       }
     });
     gl.shadowMap.enabled = shadowCascades > 0;
-    const post = new PostFX(gl, scene, camera, { multisampling: msaa, bloom, godRays, fxaa });
+    // Playtest 2 spell screen effect (shockwave/shake/flash): medium and up, never in Retro (it is meant to be cheap).
+    const post = new PostFX(gl, scene, camera, { multisampling: msaa, bloom, godRays, fxaa, spellScreen });
     const s = gl.getSize(new THREE.Vector2());
     post.setSize(s.x, s.y);
     fx.current = { sun, post };
@@ -200,7 +201,7 @@ export function WorldScene({ runtime }: Props) {
       sun.dispose();
       post.dispose();
     };
-  }, [world, camera, gl, scene, shadowCascades, shadowDistance, shadowMapSize, bloom, godRays, msaa, fxaa]);
+  }, [world, camera, gl, scene, shadowCascades, shadowDistance, shadowMapSize, bloom, godRays, msaa, fxaa, spellScreen]);
 
   // Resize, and a pixel-ratio change (render scale, DPR cap, Retro's low
   // internal resolution) resizes the post chain's buffers too.

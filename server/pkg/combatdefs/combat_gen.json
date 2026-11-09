@@ -1,5 +1,5 @@
 {
- "version": 3,
+ "version": 4,
  "stepHz": 60,
  "elements": [
   "fire",
@@ -9202,5 +9202,20 @@
     "defense": true
    }
   ]
+ },
+ "pvp": {
+  "damageMult": 0.5,
+  "flagOffDelayS": 10,
+  "toggleCooldownS": 5,
+  "combatLockS": 6,
+  "settlementMarginM": 20,
+  "duel": {
+   "challengeRangeM": 30,
+   "answerS": 20,
+   "countdownS": 3,
+   "ringRadiusM": 25,
+   "outsideForfeitS": 5,
+   "maxS": 180
+  }
  }
 }

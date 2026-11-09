@@ -23,6 +23,8 @@ import { useGraphics } from '../../stores/graphics';
 import { STYLE_ORDER, STYLES } from '../../world/style/styles';
 import { GRAPHICS_BUTTON_RIGHT, GRAPHICS_BUTTON_W, TOP_BUTTON_TOP } from '../../hud/layout';
 import { useAudioSettings } from '../../audio/settings';
+// Spell FX quality: the FX layer's own resolver (graphics High = FX Ultra, GPU cap on auto); the setting lives in the quality store.
+import { currentFxTier } from '../../combat/fx/quality';
 
 export const useGraphicsUi = create<{ open: boolean; setOpen: (v: boolean) => void }>((set) => ({ open: false, setOpen: (open) => set({ open }) }));
 
@@ -208,7 +210,7 @@ export function GraphicsPanel() {
         <Seg testid="graphics-fps" value={c.maxFps} options={FPS_CHOICES} label={(v) => (v === 0 ? 'Unlimited' : String(v))} onChange={(v) => q.setControl('maxFps', v)} />
       </Row>
       <Row name="Spell effects" hint="Particles, lights, shake and flashes of spells">
-        <Seg testid="graphics-effects" value={q.effects} options={EFFECTS_SETTINGS} label={(v) => FX_LABEL[v]} onChange={(v) => q.setEffects(v)} />
+        <Seg testid="graphics-effects" value={q.effects} options={EFFECTS_SETTINGS} label={(v) => (v === 'auto' && q.effects === 'auto' ? `Auto (${FX_LABEL[currentFxTier()]})` : FX_LABEL[v])} onChange={(v) => q.setEffects(v)} />
       </Row>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, fontSize: 11, opacity: 0.75 }}>

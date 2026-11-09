@@ -27,6 +27,7 @@ import { unpackLook, type WeaponKind } from '../combat/weapons/look';
 import { weaponGeometry } from '../combat/weapons/models';
 import { weaponMaterial } from '../combat/weapons/material';
 import { AvatarAnimator, type AnimInput, type LimbPose, type Pose } from './avatarAnim';
+import { MARK_COLOR, drawSwords, pvpMark } from '../ui/pvp/plate';
 
 export const LOD_MID_M = 25;
 export const LOD_LOW_M = 80;
@@ -227,6 +228,7 @@ export class Avatar {
   private plateName = '\u0000';
   private plateLevel = -1;
   private plateAct = -1;
+  private plateMark = '';
   private high: THREE.Group;
   private glider: THREE.Mesh;
   // the rig
@@ -477,10 +479,12 @@ export class Avatar {
     // WP11: someone we hear shows "speaking" from our own analyser at once,
     // without waiting for the zone's activity bit to round-trip.
     const act = isSpeaking(v.name) ? v.activity | Activity.speaking : v.activity;
-    if (v.name === this.plateName && v.level === this.plateLevel && act === this.plateAct) return;
+    const mark = pvpMark(v.typeId); // playtest 2 (CR 019): red crossed swords = flagged for PvP, gold = dueling
+    if (v.name === this.plateName && v.level === this.plateLevel && act === this.plateAct && mark === this.plateMark) return;
     this.plateName = v.name;
     this.plateLevel = v.level;
     this.plateAct = act;
+    this.plateMark = mark;
     const labels = activityLabels(act);
     const c = this.plateCanvas?.getContext('2d');
     if (!c || !this.plateTex) return;
@@ -493,7 +497,9 @@ export class Avatar {
     c.textAlign = 'center';
     c.textBaseline = 'middle';
     c.fillStyle = '#f1f3f5';
-    c.fillText(`${v.name || '?'}  ·  ${v.level}`, 256, 39);
+    const label = `${v.name || '?'}  ·  ${v.level}`;
+    c.fillText(label, mark ? 276 : 256, 39);
+    if (mark) drawSwords(c, Math.max(44, 276 - Math.min(400, c.measureText(label).width) / 2 - 30), 39, 44, MARK_COLOR[mark]);
     if (labels.length) {
       c.font = '500 28px system-ui, "Segoe UI", sans-serif';
       const text = labels.join('  ');

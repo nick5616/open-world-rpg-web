@@ -48,7 +48,9 @@ export function pickTarget(eye: { x: number; y: number; z: number }, fwd: { x: n
     // Close things subtend more of the view: widen the cone a little up close.
     const lim = d < 1.5 ? cosMin - 0.15 : cosMin;
     if (cos < lim) continue;
-    const score = cos * 4 - d * 0.1;
+    // Playtest 2: a blacksmith stands at her anvil; looking roughly at both,
+    // talking to the person wins (about 12 degrees of aim).
+    const score = cos * 4 - d * 0.1 + (c.kind === 'npc' ? 0.6 : 0);
     if (score > bestScore) {
       bestScore = score;
       best = c;
