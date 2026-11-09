@@ -19,6 +19,13 @@ export const ACTION_ATTUNE = 2;
 /** WP13 combat Interact: learn a tree node with a skill point. */
 export const INTERACT_COMBAT = 50;
 export const ACTION_LEARN = 4;
+/** Combat Interact: put a known spell in a loadout slot (arg = loadout | slot << 4 | spell id << 8; id 0 clears). */
+export const ACTION_EQUIP_SPELL = 3;
+
+/** The ACTION_EQUIP_SPELL argument. */
+export function equipSpellArg(loadout: number, slot: number, spellId: number): number {
+  return (loadout & 0xf) | ((slot & 0xf) << 4) | (spellId << 8);
+}
 
 export const STATS_REASON = { sync: 0, levelUp: 1, attuned: 2 } as const;
 

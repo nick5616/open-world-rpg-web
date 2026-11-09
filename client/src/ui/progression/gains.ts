@@ -162,3 +162,9 @@ export function xpForLevel(level: number): number {
   for (let l = 1; l < level; l++) xp += 60 + 40 * l;
   return xp;
 }
+
+/** Known spells that can sit in a loadout slot (passives work on their own), in tree order. */
+export function slottable(known: readonly string[]): { key: string; id: number; name: string; tree: string; tier: number }[] {
+  const k = new Set(known);
+  return COMBAT.spells.filter((s) => k.has(s.key) && s.type !== 'passive').map((s) => ({ key: s.key, id: s.id, name: COMBAT.names[s.key] ?? s.name, tree: s.tree, tier: s.tier }));
+}

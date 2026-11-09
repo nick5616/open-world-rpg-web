@@ -27,6 +27,8 @@ export interface Notice {
 export interface ProgressionActions {
   attune(site: number): void;
   learn(spellId: number): void;
+  /** Put a known spell in a loadout slot (spellId 0 empties it). */
+  equipSpell(loadout: number, slot: number, spellId: number): void;
 }
 
 export interface ProgressionState {
