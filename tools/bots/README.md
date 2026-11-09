@@ -116,3 +116,8 @@ reports the worst window that starts after the join ramp and the bots' warmup
 (`postRampWorstP99`: a window ending at t = 60 s still holds the 300 joins,
 500 camps spawning and every first-sight record). `handoff-soak.mjs` lists the
 director's load moves (`zoneregistry.Rebalance`) in its evidence.
+
+G5: both drivers take `--bin-dir` (prebuilt binaries), `--zone-host` (zones on
+another machine over ssh, `remote.mjs`) and `--zone-cpus` (taskset);
+`handoff-soak.mjs` also `--infra-host`. Used for the dedicated Linux runs:
+`tools/soak/linux/README.md`.
