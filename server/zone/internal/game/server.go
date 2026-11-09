@@ -137,6 +137,7 @@ type Server struct {
 	snapScr    []*snapScratch // WP19: one per snapshot worker (snapshots.go)
 	views      []entView      // WP19: per grid index, this tick (snapshots.go buildViews)
 	qs         []snapshot.EntState
+	hist       snapshot.History // G5: the tick's states, shared by every client's encoder (snapshots.go)
 	saveDiv    uint32
 	mine       mining              // WP09 (mining.go)
 	calls      chan func()         // run on the tick goroutine (Do, caves.go)

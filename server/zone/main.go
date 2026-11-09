@@ -28,6 +28,7 @@
 //	LODESTONE_ZONE_DEBUG_RAIN      WP10: 1 = always rain, 0 = never (default: the seeded weather stub)
 //	LODESTONE_ZONE_CLUSTER / _ROLE / _REGIONS ...  WP16 multiple zones (cluster.go; off by default)
 //	LODESTONE_ZONE_TIME_OFFSET_S / _NO_DEMONS / _NO_CHEM / _DEV_NIGHT / _CHEM_SYNC / _DEBUG_DEFENSE  WP15 night and chemistry (night.go)
+//	LODESTONE_ZONE_GOGC / _MEMLIMIT_MB  GC pacing, default 300 / 3072 MiB unless GOGC / GOMEMLIMIT are set (gc.go)
 //	LODESTONE_PG_URL, LODESTONE_REDIS_ADDR
 package main
 
@@ -69,6 +70,7 @@ func main() {
 	port := env.Int("LODESTONE_ZONE_PORT", env.DefaultZonePort)
 	s := svc.New("zone", fmt.Sprintf(":%d", port))
 	log := s.Log
+	tuneGC(log) // G5: GOGC 300 + soft memory limit by default (gc.go)
 
 	pub, devKey, err := ticket.PublicKeyFromEnv()
 	if err != nil {

@@ -77,7 +77,7 @@ func (s *Server) snapshotWorkers() int {
 
 // sendSnapshots builds and queues every client's snapshot for this tick.
 func (s *Server) sendSnapshots(tick uint32, serverTime float64) {
-	s.buildViews()
+	s.buildViews(tick)
 	n := len(s.sessions)
 	workers := s.snapshotWorkers()
 	if workers > (n+snapChunk-1)/snapChunk {
@@ -122,12 +122,16 @@ type entView struct {
 	partyID uint32
 	kind    proto.EntityKind
 	nameID  uint32
-	caveSys int32 // cave system this tick (-1 surface): caveVisible only runs when it differs from the viewer's
+	caveSys int32       // cave system this tick (-1 surface): caveVisible only runs when it differs from the viewer's
+	due     aoi.DueMask // G5: which rings update it this tick (aoi.Due), once per entity instead of per client
 }
 
 // buildViews fills s.views and s.qs for every grid index (after the grid
-// and mirrors are placed; read-only during the snapshot phase).
-func (s *Server) buildViews() {
+// and mirrors are placed; read-only during the snapshot phase), and opens
+// the tick's shared state store (G5: every client's encoder refers to these
+// states instead of copying them into its frames; Candidate.Ref = 1 + grid
+// index).
+func (s *Server) buildViews(tick uint32) {
 	n := len(s.ents) + len(s.cl.remote)
 	if cap(s.views) < n {
 		s.views = make([]entView, n, n+n/4)
@@ -138,9 +142,17 @@ func (s *Server) buildViews() {
 		if e.q.Name != e.nameOf { // names rarely change: intern once per entity
 			e.nameOf, e.nameID = e.q.Name, snapshot.NameID(e.q.Name)
 		}
-		s.views[i] = entView{x: e.Move.Pos.X, z: e.Move.Pos.Z, id: e.ID, owner: e.Owner, partyID: e.PartyID, kind: e.Kind, caveSys: int32(e.caveSys), nameID: e.nameID}
+		s.views[i] = entView{x: e.Move.Pos.X, z: e.Move.Pos.Z, id: e.ID, owner: e.Owner, partyID: e.PartyID, kind: e.Kind, caveSys: int32(e.caveSys), nameID: e.nameID, due: aoi.DueAll(tick, e.ID)}
 		s.qs[i] = e.q
+		// Unchanged since when (snapshot.History.Set): a break in the
+		// series (new entity, absent last tick) counts as a change.
+		if e.histTick+1 != tick || e.histQ != e.q {
+			e.histSince = tick
+		}
+		e.histQ, e.histTick = e.q, tick
+		s.hist.Set(i, &s.qs[i], e.nameID, e.histSince)
 	}
+	s.hist.Begin(tick, n)
 	for i, e := range s.ents {
 		put(i, e)
 	}
@@ -172,9 +184,11 @@ func (s *Server) gatherInterest(sc *snapScratch, e *Entity) {
 		sc.mark = make([]uint64, words)
 	}
 	mark := sc.mark[:words]
-	set := func(i int32) { mark[i>>6] |= 1 << (uint(i) & 63) }
-	s.grid.Query(e.Move.Pos.X, e.Move.Pos.Z, aoi.QueryRadius, set)
-	s.gridOthers.Query(e.Move.Pos.X, e.Move.Pos.Z, aoi.QueryRadiusOthers, set)
+	s.grid.QueryMark(e.Move.Pos.X, e.Move.Pos.Z, aoi.QueryRadius, mark)
+	// G5: the second grid's entities (no players, no party ids) are never
+	// in a ring at or beyond QueryRadiusOthers, so the square's corner
+	// cells, which cannot hold anything closer, are not walked.
+	s.gridOthers.QueryMarkWithin(e.Move.Pos.X, e.Move.Pos.Z, aoi.QueryRadiusOthers, mark)
 	self := e.idx
 	mark[self>>6] &^= 1 << (uint(self) & 63)
 	if e.PartyID != 0 {
@@ -238,38 +252,39 @@ func (s *Server) sendSnapshot(sc *snapScratch, sess *session, tick uint32, serve
 	px, pz := e.Move.Pos.X, e.Move.Pos.Z
 	s.gatherInterest(sc, e)
 
-	known := sess.enc.Known() // the newest frame's ids, walked alongside the sorted interest
-	var near, mid, far, party int
-	sc.cands = sc.cands[:0]
+	known := sess.enc.Known()    // the newest frame's ids, walked alongside the sorted interest
+	var count [aoi.Party + 1]int // per ring
+	cands := sc.cands[:0]
+	if cap(cands) < len(sc.idxs) {
+		cands = make([]snapshot.Candidate, 0, len(sc.idxs)+len(sc.idxs)/4)
+	}
 	cw := s.caves()
+	myParty, mySys := e.PartyID, int32(e.caveSys)
 	for _, i := range sc.idxs {
 		o := &s.views[i]
 		// Personal pickups: only their owner sees them (WP09).
 		if o.kind == proto.EntityKindPickup && o.owner != 0 && o.owner != e.ID { // WP14: owner 0 = a dropped item, public
 			continue
 		}
+		sameParty := myParty != 0 && o.partyID == myParty
 		// Underground interest clipping (spec 9, WP09 caves.go).
-		if cw != nil && o.caveSys != int32(e.caveSys) && !(e.PartyID != 0 && o.partyID == e.PartyID) && !s.caveVisible(cw, e, s.entAt(i)) {
+		if cw != nil && o.caveSys != mySys && !sameParty && !s.caveVisible(cw, e, s.entAt(i)) {
 			continue
 		}
 		dx, dz := o.x-px, o.z-pz
 		d := math.Sqrt(dx*dx + dz*dz)
-		sameParty := e.PartyID != 0 && o.partyID == e.PartyID
-		r := aoi.Classify(d, o.kind, known.Has(o.id), sameParty)
-		switch r {
-		case aoi.None:
+		// G5: whether the client knows the entity only matters at the far
+		// ring's edge (aoi.UsesKnown), so the newest frame is searched for
+		// those few instead of walked for everyone.
+		r := aoi.Classify(d, o.kind, aoi.UsesKnown(d, o.kind) && known.Has(o.id), sameParty)
+		if r == aoi.None {
 			continue
-		case aoi.Near:
-			near++
-		case aoi.Mid:
-			mid++
-		case aoi.Far:
-			far++
-		case aoi.Party:
-			party++
 		}
-		sc.cands = append(sc.cands, snapshot.Candidate{State: &s.qs[i], Due: aoi.Due(r, tick, o.id), Weight: priorityWeight(d, sameParty), NameID: o.nameID})
+		count[r]++
+		cands = append(cands, snapshot.Candidate{State: &s.qs[i], Due: o.due.Has(r), Weight: priorityWeight(d, sameParty), NameID: o.nameID, Ref: uint32(i) + 1})
 	}
+	sc.cands = cands
+	near, mid, far, party := count[aoi.Near], count[aoi.Mid], count[aoi.Far], count[aoi.Party]
 
 	// WP19b (decision 0005): reliable traffic queued since the last snapshot
 	// (combat events, hit results, inventory, ...) comes out of the same
@@ -279,6 +294,7 @@ func (s *Server) sendSnapshot(sc *snapScratch, sess *session, tick uint32, serve
 		sess.relCharged = q
 	}
 	st := e.selfState(s.cfg.Ground)
+	sess.enc.SetHistory(&s.hist) // G5 (a handoff resets the encoder)
 	snap := sess.enc.Build(tick, sess.ackTick, e.LastSeq, serverTime, &st, sc.cands)
 	if bs := sess.enc.Stats(); bs != sess.budget {
 		s.m.recordsSent.Add(int64(bs.Sent - sess.budget.Sent))

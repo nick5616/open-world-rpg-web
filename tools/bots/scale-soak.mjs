@@ -134,6 +134,10 @@ try {
     LODESTONE_ZONE_MAX_PLAYERS: String(BOTS + 50),
     LODESTONE_ZONE_DEBUG_HORDE: `${cx},${cz},${RADIUS},${ENEMIES}`,
     LODESTONE_ZONE_DEBUG_RAIN: '0',
+    // No night demons: at night (real clock) they would kill standing bots
+    // and the zone would teleport them to spawn; scenario 1's enemies are
+    // the horde's ordinary ones.
+    LODESTONE_ZONE_NO_DEMONS: '1',
     LODESTONE_ZONE_PPROF: PPROF ? '1' : '0',
   };
   const zoneName = `lodestone-soak-zone-${RUN}`;

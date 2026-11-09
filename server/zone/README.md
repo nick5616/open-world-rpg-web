@@ -724,6 +724,39 @@ result does not depend on the number of workers.
   `-cpuprofile` with it on Windows). It reports per-phase means
   (`inputs-ms`, `combat-ms`, ...).
 
+### G5: 4 vCPU (2 cores + SMT siblings)
+
+Scenario 1 passed on 4 dedicated cores but not on a real 4 vCPU slice (two
+cores and their hyperthreads share execution units). Less work per tick,
+nothing changed on the wire (`docs/decisions/v1-capacity.md` "4 vCPU
+follow-up"; a digest of every snapshot and reliable byte of two
+deterministic scale runs, 90 clients x 400 ticks and 300 clients x 300
+ticks with 600 / 2,000 enemies, is identical before and after):
+
+- **Shared state store for snapshot baselines** (`server/pkg/snapshot`
+  `History`, `snapshots.go buildViews`): the tick's quantized states are
+  written once into a store every client's encoder refers to; frames hold
+  24-byte references instead of 40-byte copies, and "changed since the
+  baseline" is answered from a fingerprint and the entity's
+  unchanged-since tick (`Entity.histSince`) without touching the baseline
+  state. Baseline memory per crowded client ~40 % smaller.
+- **Interest loop**: due rings per entity once per tick (`aoi.DueAll`,
+  was a modulo per client per entity); the second grid skips the 200 m
+  square's corner cells (`aoi.QueryMarkWithin`); grid hits go straight into
+  the bitset (`aoi.QueryMark`); the newest frame is searched only for
+  players at the far ring's edge (`aoi.UsesKnown`).
+- **World phase**: every entity's cave system on the workers
+  (`caveTick`); the terrain cache answers without a lock or a shared
+  counter (`worldhost.Terrain`); the chem ground no longer boxes its inner
+  ground on every query (`night.go`).
+- **Combat**: `spawnTick`'s once-a-second spike (`internal/combat`).
+- Benchmark: `scale_bench_test.go` adds the process CPU per tick
+  (`cpu-ms` on Linux, `cpu-Mcycles` on Windows, where process times are
+  sampled too coarsely) and `snapshots-p99-ms` / `combat-p99-ms`.
+  Reproduce the 4 vCPU case on Windows with `start /affinity F000`
+  (logical CPUs 12-15 = cores 6-7 and their siblings; check the topology)
+  and on Linux with `tools/soak/linux/bench-inprocess.sh`.
+
 
 ## Progression and difficulty (playtest 1)
 

@@ -75,3 +75,7 @@ order (`playerList`), so respawns and upkeep events no longer come out in
 map order.
 
 G4: a leashed `combatbot` (a `Goal` + `Leash`, e.g. the night bots at a ward garden) no longer picks enemies beyond leash + reach; it used to lock onto an older pack it could never reach and stand at the leash edge with 0 attacks through a whole defense (`combatbot/brain_test.go`).
+
+### G5: 4 vCPU (2 cores + SMT)
+
+`spawnTick` (once a second) marks a group "a player is within ENEMY_SPAWN_M" with a pass number on the group instead of a map rebuilt every pass, and skips the distance test for a group already marked this pass (no other player can change its marks). With 300 players among 500 camps it was ~150,000 `Hypot` calls and ~40,000 map writes in one tick: a +1.2 ms spike every 30th tick on two cores with SMT, i.e. inside the tick p99. Same marks, same spawns and despawns (all combat tests unchanged).

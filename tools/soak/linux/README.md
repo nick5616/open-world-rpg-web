@@ -100,7 +100,20 @@ The in-process benchmark can run on the zone VM too (`GOOS=linux go test -c
 ./server/zone/internal/game`, then `LODESTONE_BENCH_TERRAIN=1 taskset -c
 <cpus> ./game.test -test.run '^$' -test.bench Scale/p300_e2000 -test.cpu 4
 -test.benchtime 900x` from a directory below `/opt/lodestone`, so it finds
-`worldgen/pkg/worldgen.wasm`).
+`worldgen/pkg/worldgen.wasm`). Since the 4 vCPU follow-up (`g5-tick-vcpu4`)
+`build.sh` stages it as `bin/game.test`, and on the zone VM
+
+```bash
+cd /opt/lodestone && ./bench-inprocess.sh        # 3 runs each on 0,1,8,9 and 0-3, alternating
+./bench-inprocess.sh 5 0,1,8,9                     # 5 runs, one CPU set
+```
+
+prints one `BenchmarkScale` line per run (tick p50/p99/max, phase means,
+`snapshots-p99-ms`, `combat-p99-ms`, `cpu-ms` = process CPU per tick).
+Compare with `docs/evidence/g5-linux-inprocess-bench.txt` (main @ 1d1f626).
+The scale and handoff drivers now start their zones with
+`LODESTONE_ZONE_NO_DEMONS=1` (night demons killed and teleported bots), and
+zones default to GOGC 300 with a 3 GiB soft limit (`server/zone/gc.go`).
 
 ## Notes
 

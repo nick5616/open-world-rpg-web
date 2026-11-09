@@ -48,6 +48,10 @@ type Group struct {
 	Spawned  bool
 	Awake    bool
 	lastNear uint32 // tick a player was last within ENEMY_DESPAWN_M
+	// nearPass: the spawnTick pass that last found a player within
+	// ENEMY_SPAWN_M (G5: was a map rebuilt every second, ~1 ms of map
+	// writes once per second with 300 players among 500 camps).
+	nearPass uint64
 	respawn  uint32 // tick it may spawn again (0 = now)
 	spawns   int
 	Arena    *Arena
@@ -102,9 +106,11 @@ type World struct {
 	Atlas   *AtlasInfo
 	Groups  []*Group
 	groupAt map[[2]int][]*Group // 256 m cells
-	enemies map[uint32]*Enemy
-	order   []uint32 // enemy ids in spawn order (deterministic iteration)
-	players map[uint32]*Player
+	// spawnPass counts spawnTick passes (Group.nearPass).
+	spawnPass uint64
+	enemies   map[uint32]*Enemy
+	order     []uint32 // enemy ids in spawn order (deterministic iteration)
+	players   map[uint32]*Player
 	// playerList is players sorted by id (WP19b): playerUpkeep walks it so
 	// respawns and upkeep events come out in a fixed order, not map order.
 	playerList []*Player
@@ -622,17 +628,25 @@ func (w *World) spawnTick() {
 		return
 	}
 	spawnR, despawnR := constants.EnemySpawnM, constants.EnemyDespawnM
-	near := map[*Group]bool{}
+	w.spawnPass++
+	pass := w.spawnPass
 	for _, p := range w.players {
 		cx, cz := int(math.Floor(p.Pos.X/cellM)), int(math.Floor(p.Pos.Z/cellM))
 		for dz := -1; dz <= 1; dz++ {
 			for dx := -1; dx <= 1; dx++ {
 				for _, g := range w.groupAt[[2]int{cx + dx, cz + dz}] {
+					if g.nearPass == pass {
+						// G5: a player within ENEMY_SPAWN_M already set
+						// both marks this pass; no other player can change
+						// them (300 players x 500 camps was a 1.2 ms Hypot
+						// spike once a second).
+						continue
+					}
 					d := math.Hypot(g.Anchor.X-p.Pos.X, g.Anchor.Z-p.Pos.Z)
 					if d <= despawnR {
 						g.lastNear = w.tick
 						if d <= spawnR {
-							near[g] = true
+							g.nearPass = pass
 						}
 					}
 				}
@@ -640,7 +654,7 @@ func (w *World) spawnTick() {
 		}
 	}
 	for _, g := range w.Groups {
-		if near[g] && !g.Spawned && w.tick >= g.respawn && w.areaReady(g) {
+		if g.nearPass == pass && !g.Spawned && w.tick >= g.respawn && w.areaReady(g) {
 			w.spawnGroup(g)
 		}
 		if g.Spawned && w.tick-g.lastNear > secondsToTicks(constants.EnemyDespawnS) {
