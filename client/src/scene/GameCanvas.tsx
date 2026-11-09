@@ -43,6 +43,7 @@ function CameraInScene() {
 export function GameCanvas({ ground = DEFAULT_GROUND, terrain, onStep, driver, children, environment, ownComposer }: Props) {
   const tier = useQualityStore((s) => s.tier);
   const preset = QUALITY_PRESETS[tier];
+  const shaderTier = useQualityStore((s) => s.shaderTier); // WP19: shadows never flip on an auto step
   const showCells = useDebugStore((s) => s.showCells);
 
   return (
@@ -56,7 +57,7 @@ export function GameCanvas({ ground = DEFAULT_GROUND, terrain, onStep, driver, c
       // Cap the backing-store scale: a 2-3x hi-dpi display otherwise renders
       // 4-9x the pixels. The monitor lowers it further (via the tier) when frames run long.
       dpr={[1, preset.dpr]}
-      shadows={preset.shadows}
+      shadows={QUALITY_PRESETS[shaderTier].shadows}
       onCreated={(state) => {
         // Dev-only handle for perf tooling (renderer.info, draw calls).
         if (DEBUG) (window as unknown as { __r3f?: unknown }).__r3f = state;

@@ -69,12 +69,15 @@ type pendingClaim struct {
 }
 
 type combatGlue struct {
-	debug   atomic.Pointer[CombatDebugInfo]
-	w       *combat.World
-	setup   CombatSetup
-	byID    map[uint32]*Entity // enemy entity by id
-	pending []pendingClaim
-	lastLog time.Time
+	debug atomic.Pointer[CombatDebugInfo]
+	// debugWanted: Unix ms of the last CombatDebug read (WP19: publish on demand).
+	debugWanted atomic.Int64
+	debugAt     atomic.Int64 // Unix ms of the last publish
+	w           *combat.World
+	setup       CombatSetup
+	byID        map[uint32]*Entity // enemy entity by id
+	pending     []pendingClaim
+	lastLog     time.Time
 }
 
 // World exposes the combat world (tests, the debug endpoint).
@@ -148,6 +151,40 @@ func devPlacement(w *combat.World, log func(string, ...any)) {
 		g := w.TestBoss(movement.Vec3{X: x, Z: z}, f[3], lvl, el)
 		log("dev boss", "group", g.ID, "x", x, "z", z, "boss", f[3])
 	}
+	if spec := strings.TrimSpace(os.Getenv("LODESTONE_ZONE_DEBUG_HORDE")); spec != "" {
+		devHorde(w, spec, log)
+	}
+}
+
+// devHorde reads LODESTONE_ZONE_DEBUG_HORDE="cx,cz,radius,enemies[,level]"
+// (WP19, spec 14 soak scenario 1: "300 bots in one region plus 2,000 awake
+// enemies"): camps of four mixed commons spread evenly over the disc
+// (sunflower spiral), each nudged onto walkable dry ground. They spawn and
+// wake by the ordinary rules, so they are awake exactly while players are
+// near.
+func devHorde(w *combat.World, spec string, log func(string, ...any)) {
+	f := strings.Split(spec, ",")
+	if len(f) < 4 {
+		log("dev horde: want cx,cz,radius,enemies[,level]", "spec", spec)
+		return
+	}
+	cx, _ := strconv.ParseFloat(f[0], 64)
+	cz, _ := strconv.ParseFloat(f[1], 64)
+	radius, _ := strconv.ParseFloat(f[2], 64)
+	n, _ := strconv.Atoi(f[3])
+	lvl := 3
+	if len(f) >= 5 {
+		lvl, _ = strconv.Atoi(f[4])
+	}
+	comps := [][]string{{"boar", "boar", "wolf", "wolf"}, {"cutthroat", "archer", "cutthroat", "brute"}, {"ram", "stalker", "scuttler", "lurker"}, {"ember_imp", "mud_golem", "shade", "void_mite"}}
+	groups := n / 4
+	for g := 0; g < groups; g++ {
+		r := radius * math.Sqrt((float64(g)+0.5)/float64(groups))
+		a := float64(g) * 2.399963229728653 // golden angle
+		x, z := w.WalkableNear(cx+r*math.Cos(a), cz+r*math.Sin(a), 24, 4)
+		w.TestGroup(movement.Vec3{X: x, Z: z}, comps[g%len(comps)], lvl, "")
+	}
+	log("dev horde", "groups", groups, "enemies", groups*4, "cx", cx, "cz", cz, "radius", radius, "level", lvl)
 }
 
 // loadCombat runs on the connection goroutine before join (like
@@ -422,11 +459,21 @@ func (s *Server) combatTick(tick uint32) {
 			syncPlayerHealth(e)
 		}
 	}
-	if tick%constants.TickRateHz == 0 {
+	// WP19: the debug snapshot walks every group and allocates a record per
+	// enemy (~1.5 ms with 2,000 enemies, every 30th tick: a p99 spike), so
+	// it is built only while someone reads /debug/combat (CombatDebug).
+	if tick%constants.TickRateHz == 0 && time.Now().UnixMilli()-s.cbt.debugWanted.Load() < combatDebugKeepMs {
 		s.publishCombatDebug(tick)
 	}
 	if tick%(constants.TickRateHz*10) == 0 {
 		st := w.Stats
+		awake := 0
+		for _, ent := range s.cbt.byID {
+			if en := ent.npc; en != nil && en.State != combat.Asleep && en.Alive() {
+				awake++
+			}
+		}
+		s.m.reg.SetInt("zone_combat_awake", int64(awake)) // WP19: soak scenario 1 checks "2,000 awake enemies"
 		s.m.reg.SetInt("zone_combat_enemies", int64(len(s.cbt.byID)))
 		s.m.reg.SetInt("zone_combat_kills_total", st.Kills)
 		s.m.reg.SetInt("zone_combat_player_hits_total", st.PlayerHits)
@@ -586,7 +633,24 @@ func (s *Server) publishCombatDebug(tick uint32) {
 		info.Groups = append(info.Groups, d)
 	}
 	s.cbt.debug.Store(info)
+	s.cbt.debugAt.Store(time.Now().UnixMilli())
 }
 
 // CombatDebug returns the newest debug snapshot (nil before the first).
-func (s *Server) CombatDebug() *CombatDebugInfo { return s.cbt.debug.Load() }
+// WP19: the tick builds it only while it is being read (combatDebugKeepMs
+// after the last read), so a read after a quiet spell waits for the next
+// publish (at most ~1 s) instead of returning a stale or missing snapshot.
+func (s *Server) CombatDebug() *CombatDebugInfo {
+	now := time.Now().UnixMilli()
+	s.cbt.debugWanted.Store(now)
+	for deadline := now + 2500; ; {
+		if d := s.cbt.debug.Load(); (d != nil && now-s.cbt.debugAt.Load() < 1500) || time.Now().UnixMilli() > deadline || s.stopping.Load() {
+			return s.cbt.debug.Load()
+		}
+		time.Sleep(20 * time.Millisecond)
+		now = time.Now().UnixMilli()
+	}
+}
+
+// combatDebugKeepMs: keep publishing this long after the last read.
+const combatDebugKeepMs = 10_000

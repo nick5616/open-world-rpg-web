@@ -20,7 +20,7 @@ export function TownsLayer({ runtime }: { runtime: WorldRuntime }) {
   const manager = useMemo(() => {
     if (!runtime.towns) return null;
     try {
-      return new TownsManager(runtime, townLightCount(QUALITY_PRESETS[useQualityStore.getState().tier].maxLights));
+      return new TownsManager(runtime, townLightCount(QUALITY_PRESETS[useQualityStore.getState().shaderTier].maxLights));
     } catch (err) {
       console.warn('[towns] layer unavailable', err);
       return null;

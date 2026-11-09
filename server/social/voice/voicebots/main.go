@@ -61,6 +61,10 @@ type config struct {
 	priv      ed25519.PrivateKey
 	speakFlag bool
 	traceBot  int
+	// WP19: -netsim puts tools/netsim proxies between the bots and the spawned
+	// zone and social (scenario 4); scrapes keep using the direct URLs.
+	netsim               string
+	zoneHTTP, socialHTTP string
 }
 
 func main() {
@@ -82,6 +86,7 @@ func main() {
 	disperse := flag.Duration("disperse", 20*time.Second, "walk outward")
 	regroup := flag.Duration("regroup", 22*time.Second, "walk back")
 	out := flag.String("out", "", "evidence path prefix (writes .txt, .json)")
+	flag.StringVar(&cfg.netsim, "netsim", "", "with -spawn: route the bots' zone and social sockets through tools/netsim/proxy.mjs with this profile (e.g. thailand); LiveKit media is not impaired")
 	opusPath := flag.String("opus", "testdata/speech.opus.bin", "Opus packets ([u16 len][bytes]...)")
 	flag.Parse()
 	cfg.cx, cfg.cz = 2048, 2048
@@ -183,9 +188,16 @@ func main() {
 	phase("regrouped", 0, *hold)
 	rec.phase("end")
 
-	socialMetrics := scrape(strings.Replace(strings.Replace(cfg.socialURL, "ws://", "http://", 1), "/ws", "/metrics", 1), "voice_")
-	socialDebug := scrape(strings.Replace(strings.Replace(cfg.socialURL, "ws://", "http://", 1), "/ws", "/debug/voice", 1), "")
-	zoneMetrics := scrape(strings.Replace(strings.Replace(cfg.zoneURL, "ws://", "http://", 1), "/ws", "/metrics", 1), "zone_earshot|zone_tick_ms{|zone_players")
+	zoneHTTP, socialHTTP := cfg.zoneHTTP, cfg.socialHTTP
+	if zoneHTTP == "" {
+		zoneHTTP = strings.Replace(strings.Replace(cfg.zoneURL, "ws://", "http://", 1), "/ws", "", 1)
+	}
+	if socialHTTP == "" {
+		socialHTTP = strings.Replace(strings.Replace(cfg.socialURL, "ws://", "http://", 1), "/ws", "", 1)
+	}
+	socialMetrics := scrape(socialHTTP+"/metrics", "voice_")
+	socialDebug := scrape(socialHTTP+"/debug/voice", "")
+	zoneMetrics := scrape(zoneHTTP+"/metrics", "zone_earshot|zone_tick_ms{|zone_players")
 
 	for _, b := range bots {
 		b.leave()
@@ -307,8 +319,8 @@ func spawnServices(cfg *config, zonePort, socialPort int, livekitURL string) {
 		}
 		return out
 	}
-	zoneBin := build("./server/zone", "zone")
-	socialBin := build("./server/social", "social")
+	zoneBin := build("./server/zone", fmt.Sprintf("voicesoak-zone-%d", os.Getpid()))
+	socialBin := build("./server/social", fmt.Sprintf("voicesoak-social-%d", os.Getpid()))
 	logDir := envOr("VOICESOAK_LOGS", tmp)
 	start := func(bin, name string, env ...string) *exec.Cmd {
 		f, err := os.Create(filepath.Join(logDir, name+".log"))
@@ -350,6 +362,36 @@ func spawnServices(cfg *config, zonePort, socialPort int, livekitURL string) {
 	}
 	logf("spawned zone :%d and social :%d (logs in %s)", zonePort, socialPort, logDir)
 	spawned = append(spawned, z, s)
+	if cfg.netsim != "" {
+		cfg.zoneHTTP, cfg.socialHTTP = fmt.Sprintf("http://127.0.0.1:%d", zonePort), fmt.Sprintf("http://127.0.0.1:%d", socialPort)
+		for i, p := range []int{zonePort, socialPort} {
+			listen := p + 100
+			f, err := os.Create(filepath.Join(logDir, fmt.Sprintf("netsim-%d.log", p)))
+			must(err)
+			cmd := exec.Command("node", filepath.Join(root, "tools", "netsim", "proxy.mjs"), "--profile", cfg.netsim,
+				"--listen", fmt.Sprint(listen), "--target", fmt.Sprintf("ws://127.0.0.1:%d", p))
+			cmd.Stdout, cmd.Stderr = f, f
+			must(cmd.Start())
+			spawned = append(spawned, cmd)
+			u := fmt.Sprintf("http://127.0.0.1:%d/config", listen)
+			for deadline := time.Now().Add(15 * time.Second); ; {
+				if r, err := http.Get(u); err == nil {
+					r.Body.Close()
+					break
+				}
+				if time.Now().After(deadline) {
+					must(fmt.Errorf("netsim on :%d not up", listen))
+				}
+				time.Sleep(200 * time.Millisecond)
+			}
+			if i == 0 {
+				cfg.zoneURL = fmt.Sprintf("ws://127.0.0.1:%d/ws", listen)
+			} else {
+				cfg.socialURL = fmt.Sprintf("ws://127.0.0.1:%d/ws", listen)
+			}
+		}
+		logf("netsim %q in front of zone and social: %s, %s", cfg.netsim, cfg.zoneURL, cfg.socialURL)
+	}
 }
 
 func scrape(u, filter string) string {

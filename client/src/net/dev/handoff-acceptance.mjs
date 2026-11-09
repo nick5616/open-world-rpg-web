@@ -36,7 +36,9 @@ const DB = 'lodestone_wp04_wp16e2e';
 const PORT = { account: 18391, director: 18390, zoneA: 18392, proxyA: 18393, zoneB: 18396, proxyB: 18397, vite: 5193 };
 const EXE = process.platform === 'win32' ? '.exe' : '';
 const BORDER_X = 2048;
-const OUT = FAILOVER ? 'wp16-failover-browsers' : 'wp16-border-browsers';
+// WP19: --prefix renames the evidence (default wp16) so re-runs keep WP16's files.
+const PREFIX = arg('prefix', 'wp16');
+const OUT = FAILOVER ? `${PREFIX}-failover-browsers` : `${PREFIX}-border-browsers`;
 
 fs.mkdirSync(EVIDENCE, { recursive: true });
 const lines = [];
@@ -205,7 +207,7 @@ try {
   const [da0, db0] = [await debug(a), await debug(b)];
   check(da0.zoneId === 'zone-west' && db0.zoneId === 'zone-west', 'both start on zone-west (the director routed them by region)', { A: da0.zoneId, B: db0.zoneId });
   check(da0.standby.includes('zone-east') && db0.standby.includes('zone-east'), 'both pre-connected to zone-east (within the 64 m ghost band)', { A: da0.standby, B: db0.standby });
-  await a.screenshot({ path: path.join(EVIDENCE, 'wp16-border-start-a.png') });
+  await a.screenshot({ path: path.join(EVIDENCE, `${PREFIX}-border-start-a.png`) });
 
   const pre = { A: counters(da0), B: counters(db0) };
   const samples = [];
@@ -220,17 +222,47 @@ try {
   // eased remote lurch that has nothing to do with zones: leave it out of
   // the measured window.
   const shotFrom = Date.now();
-  await a.screenshot({ path: path.join(EVIDENCE, 'wp16-border-east-a.png') });
+  await a.screenshot({ path: path.join(EVIDENCE, `${PREFIX}-border-east-a.png`) });
   await sleep(1500);
   const shotTo = Date.now();
   const resume = [await debug(a), await debug(b)];
   const excluded = { A: diffC(counters(resume[0]), counters(mid[0])), B: diffC(counters(resume[1]), counters(mid[1])) };
+  // WP19 diagnostic (--cpu-profile): a CDP CPU profile of browser A's main
+  // thread during the walk back, summarized by self time.
+  const cdp = process.argv.includes('--cpu-profile') ? await a.context().newCDPSession(a) : null;
+  const programs = () => a.evaluate(() => (window.__r3f?.gl?.info?.programs ?? []).map((p) => `${p.name}#${p.id}`));
+  const progBefore = cdp ? await programs() : [];
+  if (cdp) {
+    await cdp.send('Profiler.enable');
+    await cdp.send('Profiler.setSamplingInterval', { interval: 1000 });
+    await cdp.send('Profiler.start');
+  }
   await walkTogether(a, b, Math.PI / 2, 45000, samples, (s) => s.A.x < BORDER_X - 15 && s.B.x < BORDER_X - 15);
+  if (cdp) {
+    const { profile } = await cdp.send('Profiler.stop');
+    fs.writeFileSync(path.join(TMP, 'a-walkback.cpuprofile'), JSON.stringify(profile));
+    const byId = new Map(profile.nodes.map((n) => [n.id, n]));
+    const self = new Map();
+    const dts = profile.timeDeltas;
+    profile.samples.forEach((id, i) => {
+      const n = byId.get(id);
+      const k = `${n.callFrame.functionName || '(anon)'} ${n.callFrame.url.split('/').pop()}:${n.callFrame.lineNumber}`;
+      self.set(k, (self.get(k) ?? 0) + (dts[i] ?? 0) / 1000);
+    });
+    const top = [...self.entries()].sort((x, y) => y[1] - x[1]).slice(0, 25);
+    step(`browser A main thread, walk back, self ms: ${top.map(([k, v]) => `${k}=${v.toFixed(0)}`).join(' | ')}`);
+    const progAfter = await programs();
+    step(`shader programs compiled during the walk back: ${JSON.stringify(progAfter.filter((p) => !progBefore.includes(p)))} (of ${progAfter.length})`);
+  }
   await sleep(1500);
   samples.push(await sample(a, b));
   const walkS = (Date.now() - t0) / 1000;
+  // WP19: auto quality tier changes (each recompiles every shader).
+  const qa = await a.evaluate(() => window.__lodestone?.quality?.() ?? null);
+  const qb = await b.evaluate(() => window.__lodestone?.quality?.() ?? null);
+  step(`quality tier changes: A ${JSON.stringify(qa)} B ${JSON.stringify(qb)}`);
   const [da, dbb] = [await debug(a), await debug(b)];
-  await b.screenshot({ path: path.join(EVIDENCE, 'wp16-border-back-b.png') });
+  await b.screenshot({ path: path.join(EVIDENCE, `${PREFIX}-border-back-b.png`) });
   // Measured = everything since pre, minus the screenshot interval.
   const raw = { A: counters(da), B: counters(dbb) };
   const post = { A: subC(raw.A, excluded.A), B: subC(raw.B, excluded.B) };
@@ -301,7 +333,7 @@ try {
     await sleep(1000);
     const [ga, gb] = [await debug(a), await debug(b)];
     check(ga.prediction.reconciles - preF[0].reconciles === 0 && gb.prediction.reconciles - preF[1].reconciles === 0, 'zero corrections walking on the survivor after the failover');
-    await a.screenshot({ path: path.join(EVIDENCE, 'wp16-failover-a.png') });
+    await a.screenshot({ path: path.join(EVIDENCE, `${PREFIX}-failover-a.png`) });
   }
   fs.writeFileSync(path.join(EVIDENCE, `${OUT}.json`), JSON.stringify(result, null, 2) + '\n');
   const errors = consoleLog.filter((l) => /pageerror/.test(l));

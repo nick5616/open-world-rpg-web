@@ -65,3 +65,11 @@ GOWORK=off go vet . && gofmt -l .
 
 (`npm run lint` / `npm run test:go` walk the `go.work` modules only, so run
 these by hand when changing this module.)
+
+## Scenario 4 (WP19)
+
+`-netsim thailand` (with `-spawn`) starts `tools/netsim/proxy.mjs` in front
+of the spawned zone and social (ports +100) and points the bots at the
+proxies; scrapes keep the direct URLs. LiveKit media is not impaired (that
+needs Linux netem). Binaries are named `voicesoak-<svc>-<pid>`. Pass a fresh
+`-world <uuid>` per run on shared infra.

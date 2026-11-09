@@ -92,6 +92,8 @@ type World struct {
 	players map[uint32]*Player
 	strikes []*strike
 	shots   []*shot
+	winding []*Enemy   // WP19: enemies that entered Windup since the last prune (windupsOn)
+	pg      playerGrid // WP19: players by cell, valid during Step
 	alloc   func() uint32
 	tick    uint32
 	rng     uint64
@@ -433,13 +435,78 @@ func (w *World) near(at movement.Vec3, r float64, except uint32, e Out) {
 // playersNear returns registered players within r of p (sorted by id).
 func (w *World) playersNear(p movement.Vec3, r float64) []*Player {
 	var out []*Player
-	for _, pl := range w.players {
+	w.eachPlayerNear(p.X, p.Z, r, func(pl *Player) {
 		if math.Hypot(pl.Pos.X-p.X, pl.Pos.Z-p.Z) <= r && math.Abs(pl.Pos.Y-p.Y) < r {
 			out = append(out, pl)
 		}
-	}
+	})
 	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
 	return out
+}
+
+// playerGrid buckets players by 32 m cell for the duration of one Step
+// (WP19). Every "players near X" question used to scan every player: with
+// 2,000 awake enemies and 300 players that was hundreds of thousands of
+// distance checks a tick (acquire alone 10 % of the tick). Player positions
+// do not change inside Step (the host sets them before it; RecordFrame runs
+// between Steps), so the grid is exact while valid, and outside Step (claims
+// arriving with input frames) callers fall back to the full scan.
+type playerGrid struct {
+	n     int
+	cells [][]*Player
+	used  []int32
+	valid bool
+}
+
+const playerCellM = 32.0
+
+func (g *playerGrid) cellOf(v float64) int {
+	c := int(math.Floor(v / playerCellM))
+	return max(0, min(g.n-1, c))
+}
+
+func (w *World) buildPlayerGrid() {
+	g := &w.pg
+	if g.cells == nil {
+		g.n = int(math.Ceil(float64(constants.WorldSizeM) / playerCellM))
+		g.cells = make([][]*Player, g.n*g.n)
+	}
+	for _, c := range g.used {
+		clear(g.cells[c])
+		g.cells[c] = g.cells[c][:0]
+	}
+	g.used = g.used[:0]
+	for _, p := range w.players {
+		c := int32(g.cellOf(p.Pos.Z)*g.n + g.cellOf(p.Pos.X))
+		if len(g.cells[c]) == 0 {
+			g.used = append(g.used, c)
+		}
+		g.cells[c] = append(g.cells[c], p)
+	}
+	g.valid = true
+}
+
+// eachPlayerNear calls fn for every player that may be within r of (x, z)
+// horizontally (a superset: callers apply their exact test), or for every
+// player when the grid is not valid. Visit order carries no meaning:
+// callers pick by score with id tie-breaks or sort.
+func (w *World) eachPlayerNear(x, z, r float64, fn func(*Player)) {
+	g := &w.pg
+	if !g.valid {
+		for _, p := range w.players {
+			fn(p)
+		}
+		return
+	}
+	x0, x1 := g.cellOf(x-r), g.cellOf(x+r)
+	z0, z1 := g.cellOf(z-r), g.cellOf(z+r)
+	for cz := z0; cz <= z1; cz++ {
+		for cx := x0; cx <= x1; cx++ {
+			for _, p := range g.cells[cz*g.n+cx] {
+				fn(p)
+			}
+		}
+	}
 }
 
 // Step advances combat by one zone tick: group spawning (1 Hz, staggered),
@@ -447,12 +514,15 @@ func (w *World) playersNear(p movement.Vec3, r float64) []*Player {
 // upkeep (mana, regen, consumables, respawns).
 func (w *World) Step(tick uint32) {
 	w.tick = tick
+	w.buildPlayerGrid() // WP19: exact for this Step only
+	defer func() { w.pg.valid = false }()
 	if tick%constants.TickRateHz == 0 {
 		w.spawnTick()
 	}
 	if tick%15 == 0 {
 		w.wakeTick()
 	}
+	w.pruneWinding() // WP19
 	for _, id := range slices.Clone(w.order) {
 		e := w.enemies[id]
 		if e == nil {
@@ -523,12 +593,11 @@ func (w *World) wakeTick() {
 			continue
 		}
 		awake := false
-		for _, p := range w.players {
-			if math.Hypot(g.Anchor.X-p.Pos.X, g.Anchor.Z-p.Pos.Z) <= constants.EnemyWakeM {
+		w.eachPlayerNear(g.Anchor.X, g.Anchor.Z, constants.EnemyWakeM, func(p *Player) {
+			if !awake && math.Hypot(g.Anchor.X-p.Pos.X, g.Anchor.Z-p.Pos.Z) <= constants.EnemyWakeM {
 				awake = true
-				break
 			}
-		}
+		})
 		if awake == g.Awake {
 			continue
 		}

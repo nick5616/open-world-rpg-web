@@ -42,6 +42,15 @@ interface QualityState {
   setting: QualitySetting;
   /** Effective tier. Equals `setting` unless the setting is 'auto'. */
   tier: QualityTier;
+  /**
+   * WP19: the tier for everything that shapes shaders (shadow cascades, post
+   * chain, normal maps, light pools). Equals `tier`, except that auto steps
+   * leave it alone: a step that recompiles every shader froze the page for
+   * ~4.7 s on ANGLE/D3D11 (the "lurch" in the two-browser runs), so auto
+   * mode adapts with the cheap knobs (resolution, view distance, scatter,
+   * grass, terrain detail) and only an explicit setting recompiles.
+   */
+  shaderTier: QualityTier;
   setSetting: (s: QualitySetting) => void;
   /** Auto mode only: move one step down/up. No-ops at the ends or when pinned. */
   stepDown: () => void;
@@ -61,7 +70,11 @@ export const useQualityStore = create<QualityState>()(
     (set, get) => ({
       setting: 'auto',
       tier: initialAutoTier(),
-      setSetting: (setting) => set({ setting, tier: setting === 'auto' ? initialAutoTier() : setting }),
+      shaderTier: initialAutoTier(),
+      setSetting: (setting) => {
+        const tier = setting === 'auto' ? initialAutoTier() : setting;
+        set({ setting, tier, shaderTier: tier });
+      },
       stepDown: () => {
         const { setting, tier } = get();
         if (setting !== 'auto') return;
@@ -81,7 +94,8 @@ export const useQualityStore = create<QualityState>()(
       partialize: (s) => ({ setting: s.setting }),
       merge: (persisted, current) => {
         const setting = (persisted as { setting?: QualitySetting } | undefined)?.setting ?? current.setting;
-        return { ...current, setting, tier: setting === 'auto' ? current.tier : setting };
+        const tier = setting === 'auto' ? current.tier : setting;
+        return { ...current, setting, tier, shaderTier: tier };
       },
     },
   ),

@@ -38,3 +38,13 @@ go -C server/zone test ./internal/combat/...
   dies in 2-5 hits and the fight lasts 3-10 s; elites of each affix 10-30 s;
   Warden and Archon fights with 1, 2 and 4 players last 2-5 minutes through
   3 phases; a party of two clears a camp and then a boss.
+
+## Scale (WP19)
+
+- `windupsOn` (at most two wind-ups on one player) walks an index of
+  enemies that entered Windup instead of every enemy: it was O(enemies) per
+  chasing enemy, 22 % of a 300-player / 2,000-enemy tick.
+- A player grid (32 m cells), valid only inside `Step` (positions do not
+  move there), answers `acquire`, `playersNear` and the wake rule; outside
+  `Step` (claims with input frames) they fall back to the full scan.
+- `scale_test.go` proves both against the old full scans.

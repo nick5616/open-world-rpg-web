@@ -35,6 +35,15 @@ describe('quality store', () => {
     for (let i = 0; i < 5; i++) useQualityStore.getState().stepUp();
     expect(useQualityStore.getState().tier).toBe('high');
   });
+  it('auto steps never change the shader tier (no recompile freeze, WP19)', () => {
+    const start = useQualityStore.getState().shaderTier;
+    useQualityStore.getState().stepDown();
+    useQualityStore.getState().stepDown();
+    expect(useQualityStore.getState().tier).toBe('low');
+    expect(useQualityStore.getState().shaderTier).toBe(start);
+    useQualityStore.getState().setSetting('low');
+    expect(useQualityStore.getState().shaderTier).toBe('low');
+  });
   it('a pinned setting ignores the monitor', () => {
     useQualityStore.getState().setSetting('medium');
     useQualityStore.getState().stepDown();

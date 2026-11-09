@@ -267,45 +267,19 @@ func (s *Server) publishPresence(now time.Time) {
 }
 
 // gridRemotes inserts the mirrors into the AOI grid after the local
-// entities (grid build in onTick).
+// entities (grid build in onTick). WP19: mirrors are sorted by id first, so
+// their grid indices are a second id-sorted run that each client's
+// interest merges with the local one (snapshots.go gatherInterest) instead
+// of sorting (id, index) keys per client. Nothing else depends on
+// s.cl.remote's order.
 func (s *Server) gridRemotes() {
+	byID := func(a, b *Entity) int { return cmpU32(a.ID, b.ID) }
+	if !slices.IsSortedFunc(s.cl.remote, byID) {
+		slices.SortStableFunc(s.cl.remote, byID)
+	}
 	base := int32(len(s.ents))
 	for j, r := range s.cl.remote {
 		r.idx = base + int32(j)
-		s.grid.Insert(r.idx, r.Move.Pos.X, r.Move.Pos.Z)
-	}
-}
-
-// sortInterest orders interest indices by entity id (the encoder merges
-// with the baseline by id). Without mirrors, index order is id order.
-func (s *Server) sortInterest() {
-	if len(s.cl.remote) == 0 {
-		slices.Sort(s.idxs)
-		s.idxs = slices.Compact(s.idxs)
-		return
-	}
-	// Sort (id << 32 | index) keys: a plain integer sort, several times
-	// faster than a comparator that looks up both entities (measured in the
-	// 1,000-bot soak, where it showed in the tick).
-	keys := s.cl.keys[:0]
-	for _, i := range s.idxs {
-		keys = append(keys, uint64(s.entAt(i).ID)<<32|uint64(uint32(i)))
-	}
-	slices.Sort(keys)
-	s.idxs = s.idxs[:0]
-	last := int32(-1)
-	for _, k := range keys {
-		if i := int32(uint32(k)); i != last {
-			s.idxs = append(s.idxs, i)
-			last = i
-		}
-	}
-	s.cl.keys = keys
-}
-
-// remotePartyMembers appends mirrored members of party p (any distance).
-func (s *Server) remotePartyMembers(p uint32) {
-	for _, m := range s.cl.remoteParty[p] {
-		s.idxs = append(s.idxs, m.idx)
+		s.gridFor(r).Insert(r.idx, r.Move.Pos.X, r.Move.Pos.Z)
 	}
 }

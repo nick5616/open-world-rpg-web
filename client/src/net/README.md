@@ -74,3 +74,16 @@ taken. Evidence goes to `docs/evidence/wp06-*`.
 - `netDebug()` adds `zoneId`, `standby` and `transfers`.
 
 Acceptance: `node client/src/net/dev/handoff-acceptance.mjs [--profile thailand] [--failover]` (two Chromium processes walk across a border between two zone processes and back; `--failover` then kills the zone owning them).
+
+## Diagnostics (WP19)
+
+Each entry of `interp.metrics.jumps` also carries `alongCm` (jump along +
+or against - the motion), `lagStepMs` (render-clock baseline change that
+frame), `delayMs` and `gapMs` (server-time spacing of the samples drawn):
+enough to tell a render-clock jump from a server-side burst. The remote
+"lurch" of the WP16 border runs was neither: an auto quality step recompiled
+every shader and froze the page (`docs/evidence/wp19-lurch-investigation.txt`).
+`handoff-acceptance.mjs` gained `--prefix` (evidence names) and
+`--cpu-profile` (CDP profile of browser A during the walk back, plus the
+shader programs compiled and the quality tier changes,
+`window.__lodestone.quality()`).

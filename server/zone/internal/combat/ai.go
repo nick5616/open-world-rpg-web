@@ -219,24 +219,38 @@ func (e *Enemy) leash() float64 {
 func (w *World) acquire(e *Enemy, mult float64) *Player {
 	var best *Player
 	bestScore := -1.0
-	for _, p := range w.players {
+	consider := func(p *Player) {
 		if p.Downed {
-			continue
+			return
 		}
 		d := hdist(p.Pos, e.Pos)
 		if math.Abs(p.Pos.Y-e.Pos.Y) > 12 || hdist(p.Pos, e.Home) > e.leash()+e.Def.Aggro {
-			continue
+			return
 		}
 		if e.Demon != nil && w.DemonHooks.Sheltered != nil && w.DemonHooks.Sheltered(e, p) {
-			continue // WP15: inside an active ward
+			return // WP15: inside an active ward
 		}
 		th := e.threat[p.ID]
 		if d > e.Def.Aggro*mult && th == 0 {
-			continue
+			return
 		}
 		score := th + 100/(d+1)
 		if score > bestScore || (score == bestScore && best != nil && p.ID < best.ID) {
 			best, bestScore = p, score
+		}
+	}
+	// WP19: only players within aggro range (the player grid) or holding
+	// threat can pass the test above, so look at just those. The pick is the
+	// best (score, then lowest id), which no visit order can change; a
+	// player seen twice is the same candidate twice.
+	w.eachPlayerNear(e.Pos.X, e.Pos.Z, e.Def.Aggro*mult, consider)
+	if w.pg.valid {
+		for id, th := range e.threat {
+			if th != 0 {
+				if p := w.players[id]; p != nil {
+					consider(p)
+				}
+			}
 		}
 	}
 	return best
@@ -374,14 +388,34 @@ func (w *World) pickAttack(e *Enemy, d float64) *combatdefs.EnemyAttack {
 	return best
 }
 
+// windupsOn counts enemies winding up on target right now. WP19: it walks
+// w.winding (every enemy that entered Windup since the last prune) instead
+// of every enemy: the old scan over w.order made each chasing enemy's
+// pickAttack O(enemies), 22 % of a 300-player / 2,000-enemy tick
+// (docs/evidence/wp19-*). windup() is the only way into Windup, so the
+// count is exactly the old one.
 func (w *World) windupsOn(target uint32) int {
 	n := 0
-	for _, id := range w.order {
-		if o := w.enemies[id]; o != nil && o.State == Windup && o.Target == target {
+	for _, o := range w.winding {
+		if o.State == Windup && o.Target == target && w.enemies[o.ID] == o {
 			n++
 		}
 	}
 	return n
+}
+
+// pruneWinding drops enemies no longer winding up (start of each Step).
+func (w *World) pruneWinding() {
+	keep := w.winding[:0]
+	for _, o := range w.winding {
+		if o.State == Windup && w.enemies[o.ID] == o {
+			keep = append(keep, o)
+		} else {
+			o.inWinding = false
+		}
+	}
+	clear(w.winding[len(keep):])
+	w.winding = keep
 }
 
 // windup starts a telegraphed attack: the shape is decided now and sent to
@@ -390,6 +424,10 @@ func (w *World) windup(e *Enemy, a *combatdefs.EnemyAttack, p *Player) {
 	tick := w.tick
 	e.attack = a
 	e.State, e.stateAt = Windup, tick
+	if !e.inWinding { // WP19: windupsOn's index
+		e.inWinding = true
+		w.winding = append(w.winding, e)
+	}
 	e.Vel = movement.Vec3{}
 	w.face(e, p.Pos)
 	e.attackYaw = e.Yaw

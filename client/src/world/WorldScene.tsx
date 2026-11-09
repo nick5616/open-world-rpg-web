@@ -57,6 +57,11 @@ export function WorldScene({ runtime }: Props) {
   const tierName = useQualityStore((s) => s.tier);
   const preset = QUALITY_PRESETS[tierName];
   const tier = WORLD_TIERS[tierName];
+  // WP19: shader-shaping knobs follow shaderTier (auto steps leave it alone,
+  // see qualityStore): shadow cascades, post chain, normal maps, MSAA.
+  const shaderName = useQualityStore((s) => s.shaderTier);
+  const shaderPreset = QUALITY_PRESETS[shaderName];
+  const shaderTier = WORLD_TIERS[shaderName];
   const showTiles = useDebugStore((s) => s.showCells);
 
   // Long-lived world objects (independent of tier).
@@ -70,7 +75,7 @@ export function WorldScene({ runtime }: Props) {
       viewDistance: preset.viewDistance,
       uploadsPerFrame: tier.uploadsPerFrame,
       uploadBudgetMs: tier.uploadBudgetMs,
-      normalMaps: preset.normalMaps,
+      normalMaps: shaderPreset.normalMaps,
     });
     waterU.uCoverage.value = terrain.coverage;
     waterU.uAtlasHeight.value = atlasHeightTexture(runtime.data.height, runtime.data.gridN);
@@ -90,7 +95,7 @@ export function WorldScene({ runtime }: Props) {
     root.name = 'world';
     root.add(terrain.group, scatter.group, sea, sky.mesh, hemi);
     // WP09: caves (streamed near mouths and underground; the light pool lives in it).
-    const caves = runtime.caveGraph ? new CaveManager(runtime, QUALITY_PRESETS[useQualityStore.getState().tier].maxLights) : null;
+    const caves = runtime.caveGraph ? new CaveManager(runtime, QUALITY_PRESETS[useQualityStore.getState().shaderTier].maxLights) : null;
     if (caves) root.add(caves.group);
     setPrevailingWind(runtime.data.params[PARAM.windDirDeg] ?? 0, 3 + (runtime.data.params[PARAM.stormFrequency] ?? 0.3) * 4);
     return { shared, waterU, terrain, sea, sky, hemi, scatter, caves, root, lighting: makeSkyLighting(), horizon: null as THREE.Mesh | null };
@@ -129,7 +134,7 @@ export function WorldScene({ runtime }: Props) {
   useEffect(() => {
     let alive = true;
     const t0 = performance.now();
-    loadTerrainTextures(gl, preset.normalMaps, tierName === 'high' ? 8 : 4)
+    loadTerrainTextures(gl, shaderPreset.normalMaps, shaderName === 'high' ? 8 : 4)
       .then((tx) => {
         if (!alive) return;
         world.shared.tColor.value = tx.color;
@@ -143,15 +148,18 @@ export function WorldScene({ runtime }: Props) {
     return () => {
       alive = false;
     };
-  }, [gl, world, preset.normalMaps, tierName]);
+  }, [gl, world, shaderPreset.normalMaps, shaderName]);
 
   // Tier-dependent pieces: shadows, post chain, manager knobs.
   const fx = useRef<{ sun: SunShadows; post: PostFX } | null>(null);
+  // Cheap knobs (no recompile): auto quality steps move these.
   useEffect(() => {
-    world.terrain.setParams({ lodSplit: tier.lodSplit, viewDistance: preset.viewDistance, uploadsPerFrame: tier.uploadsPerFrame, uploadBudgetMs: tier.uploadBudgetMs, normalMaps: preset.normalMaps });
+    world.terrain.setParams({ lodSplit: tier.lodSplit, viewDistance: preset.viewDistance, uploadsPerFrame: tier.uploadsPerFrame, uploadBudgetMs: tier.uploadBudgetMs, normalMaps: shaderPreset.normalMaps });
     world.scatter.applyTier(tier);
     world.waterU.uDetail.value = tier.waterDetail ? 1 : 0;
-    const sun = new SunShadows(world.root, camera, { cascades: preset.shadows ? preset.shadowCascades : 0, distance: tier.shadowDistance, mapSize: tier.shadowMapSize });
+  }, [world, tier, preset, shaderPreset.normalMaps]);
+  useEffect(() => {
+    const sun = new SunShadows(world.root, camera, { cascades: shaderPreset.shadows ? shaderPreset.shadowCascades : 0, distance: shaderTier.shadowDistance, mapSize: shaderTier.shadowMapSize });
     world.terrain.onMaterial = (m) => sun.setupMaterial(m);
     world.terrain.onMaterialDisposed = (m) => sun.forget(m);
     world.scatter.onMaterial = (m) => sun.setupMaterial(m);
@@ -163,8 +171,8 @@ export function WorldScene({ runtime }: Props) {
         o.material.needsUpdate = true;
       }
     });
-    gl.shadowMap.enabled = preset.shadows;
-    const post = new PostFX(gl, scene, camera, { multisampling: tierName === 'high' ? 4 : tierName === 'medium' ? 2 : 0, bloom: tier.bloom, godRays: tier.godRays });
+    gl.shadowMap.enabled = shaderPreset.shadows;
+    const post = new PostFX(gl, scene, camera, { multisampling: shaderName === 'high' ? 4 : shaderName === 'medium' ? 2 : 0, bloom: shaderTier.bloom, godRays: shaderTier.godRays });
     const s = gl.getSize(new THREE.Vector2());
     post.setSize(s.x, s.y);
     fx.current = { sun, post };
@@ -175,7 +183,7 @@ export function WorldScene({ runtime }: Props) {
       sun.dispose();
       post.dispose();
     };
-  }, [world, camera, gl, scene, tierName, tier, preset]);
+  }, [world, camera, gl, scene, shaderName, shaderTier, shaderPreset]);
 
   useEffect(() => {
     fx.current?.post.setSize(size.width, size.height);

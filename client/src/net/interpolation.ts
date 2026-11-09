@@ -123,7 +123,21 @@ export interface InterpMetrics {
   /** Discontinuity when real data replaced a dead-reckoned position (m). */
   maxHandbackM: number;
   /** The last visible jumps with context (diagnostics for the acceptance log). */
-  jumps: { atMs: number; cm: number; dtMs: number; mode: string; handback: boolean; id: number }[];
+  jumps: {
+    atMs: number;
+    cm: number;
+    dtMs: number;
+    mode: string;
+    handback: boolean;
+    id: number;
+    /** WP19 diagnostics: jump along (+) or against (-) the entity's motion, cm. */
+    alongCm?: number;
+    /** Change of the render clock's baseline lag since the previous frame, ms. */
+    lagStepMs?: number;
+    /** The entity's delay and the server-time gap between the samples drawn. */
+    delayMs?: number;
+    gapMs?: number;
+  }[];
 }
 
 function lerp(a: number, b: number, t: number): number {
@@ -146,6 +160,11 @@ export class EntityInterpolation {
   private ticksSinceDelay = 0;
   private jitterDelay = INTERP_DELAY_NEAR_MS;
   private nowMs = 0;
+  // WP19 diagnostics for the jump log: baseLag change this frame, and the
+  // sample gap the last interpolated view was drawn across.
+  private lagStep = 0;
+  private lastBaseLag: number | null = null;
+  private lastGap = 0;
   readonly metrics: InterpMetrics = { frames: 0, interpFrames: 0, extrapFrames: 0, extrapEvents: 0, frozenFrames: 0, teleports: 0, visibleJumps: 0, maxJumpM: 0, maxHandbackM: 0, jumps: [] };
 
   constructor(private ground: GroundQuery | null = null) {}
@@ -277,6 +296,8 @@ export class EntityInterpolation {
   update(nowMs: number, frameDtMs: number, out: RemoteView[] = []): RemoteView[] {
     out.length = 0;
     this.nowMs = nowMs;
+    this.lagStep = this.lastBaseLag === null || this.baseLag === null ? 0 : this.baseLag - this.lastBaseLag;
+    this.lastBaseLag = this.baseLag;
     const dt = Math.min(250, Math.max(0, frameDtMs));
     for (const tr of this.tracks.values()) {
       const target = Math.min(MAX_DELAY_MS[tr.ring], Math.max(RING_FLOOR[tr.ring], this.jitterDelay, tr.interval * 1.5 + TICK_MS * 0.5));
@@ -316,6 +337,7 @@ export class EntityInterpolation {
       // Drop samples we'll never need again (keep one before the render time).
       if (i > 1) buf.splice(0, i - 1);
       const t = Math.max(0, Math.min(1, (rt - a.t) / (b.t - a.t)));
+      this.lastGap = b.t - a.t;
       this.metrics.interpFrames++;
       if (tr.lastMode === 'extrap') this.noteHandback(tr);
       tr.lastMode = 'interp';
@@ -397,7 +419,21 @@ export class EntityInterpolation {
         if (visible > this.metrics.maxJumpM) this.metrics.maxJumpM = visible;
         if (handback && visible > this.metrics.maxHandbackM) this.metrics.maxHandbackM = visible;
         if (visible > VISIBLE_JUMP_M) {
-          this.metrics.jumps.push({ atMs: Math.round(this.nowMs), cm: Math.round(visible * 1000) / 10, dtMs: Math.round(dt), mode: v.mode, handback, id: v.id });
+          const s = tr.samples[tr.samples.length - 1];
+          const sp = s ? Math.hypot(s.vx, s.vz) : 0;
+          const along = sp > 0.1 ? (jx * s.vx + jz * s.vz) / sp : 0;
+          this.metrics.jumps.push({
+            atMs: Math.round(this.nowMs),
+            cm: Math.round(visible * 1000) / 10,
+            dtMs: Math.round(dt),
+            mode: v.mode,
+            handback,
+            id: v.id,
+            alongCm: Math.round(along * 1000) / 10,
+            lagStepMs: Math.round(this.lagStep * 10) / 10,
+            delayMs: Math.round(tr.delay),
+            gapMs: Math.round(this.lastGap),
+          });
           if (this.metrics.jumps.length > 50) this.metrics.jumps.shift();
         }
       }

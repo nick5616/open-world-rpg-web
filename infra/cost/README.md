@@ -37,3 +37,5 @@ Idle total, rough: **~$12/month**, dominated by the static IP and disks.
 - [ ] Whether the static IP is worth $7.30/month (vs. ephemeral + dynamic host).
 - [ ] Egress per player measured from `rate(zone_bytes_out_total)` on the cost
       dashboard vs. the 160 kbps budget.
+
+**WP19:** measured results, players per zone, bandwidth per player and the cost estimate per month and per peak CCU are in `docs/decisions/v1-capacity.md` (no real bill yet).

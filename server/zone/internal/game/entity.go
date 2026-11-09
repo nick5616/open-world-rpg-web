@@ -47,6 +47,8 @@ type Entity struct {
 	prevValid movement.State // last state that passed validation
 	idx       int32          // index in Server.ents this tick (grid payload)
 	q         snapshot.EntState
+	nameID    uint32 // WP19: snapshot.NameID(nameOf), cached for the snapshot phase
+	nameOf    string
 
 	// View extrapolation (WP06): what OTHER clients see when this player's
 	// input is late. See updateView.

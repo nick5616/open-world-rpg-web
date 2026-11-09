@@ -59,6 +59,7 @@ export function SkyAndSun() {
   const camera = useThree((s) => s.camera);
   const tier = useQualityStore((s) => s.tier);
   const preset = QUALITY_PRESETS[tier];
+  const shaderTier = useQualityStore((s) => s.shaderTier); // WP19
   const sky = useRef<THREE.Mesh>(null);
   const sun = useRef<THREE.DirectionalLight>(null);
   const hemi = useRef<THREE.HemisphereLight>(null);
@@ -145,7 +146,7 @@ export function SkyAndSun() {
       <hemisphereLight ref={hemi} args={['#cfe3ff', '#4a5a3a', 1]} />
       <directionalLight
         ref={sun}
-        castShadow={preset.shadows}
+        castShadow={QUALITY_PRESETS[shaderTier].shadows}
         color="#fff4e0"
         shadow-mapSize-width={tier === 'high' ? 2048 : 1024}
         shadow-mapSize-height={tier === 'high' ? 2048 : 1024}
