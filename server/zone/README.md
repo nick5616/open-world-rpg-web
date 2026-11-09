@@ -473,6 +473,31 @@ caves are unchanged) and fills `Config.Towns` (`internal/npc`). Game glue:
 - **Bounties**: seeded per settlement per in-game day; accepted ones live in
   zone memory per character (max 5); `Server.AcceptedBounties` /
   `Server.CompleteBounty` are the completion hooks for WP13/WP14/WP15.
+- **Doors** (`internal/game/doors.go`, playtest follow-up; contracts/events.md
+  Interact 34, Events 970-972): every building door with a closed front
+  opens and closes with Interact 34 (open 1, close 2, toggle 3; 4.5 m from
+  the eye). Doors start open. A change is never "now": each player within
+  260 m of the settlement gets Event 970 stamped with the input seq it
+  applies from (newest applied frame + round trip in frames from the ack
+  lag, capped at 60, + 12), and `applyFrames` steps that player's frames on
+  `frameGround(sess, seq)` (the zone ground with the doors closed for that
+  frame, `towns.WithDoors`): old state before the stamp, new from it on,
+  exactly what the client predicts. The change settles once every stamped
+  player passed its seq (or after 3 s). Refused (972): a body in the
+  doorway when closing (players and active NPCs, radius + 0.1 m + 0.25 s
+  of their speed), a change still pending, already in that state, too far,
+  unknown. Players coming within 200 m of a settlement whose doors changed
+  since they last heard get a baseline (971). NPCs (`npc.DoorGate`) open
+  a closed door on their route, wait, walk through and close it behind
+  them once the doorway is clear. Cost: the ground is only wrapped while
+  some door is not open; the tick touches doors only while a change is
+  pending, and checks baselines twice a second only for settlements whose
+  doors ever changed. Tests: `internal/game/doors_test.go` (close, walk
+  into it, open, walk in, close from inside, push, refused on a body,
+  second player gets every change, late joiner's baseline, prediction ==
+  server; NPCs open and close behind them), cross-process
+  `client/src/world/buildings/doorWalk.integration.test.ts` (evidence
+  `docs/evidence/pt-ux-door-walkthrough.txt`).
 - `LODESTONE_ZONE_NO_TOWNS=1` turns the layer off; a pre-WP20 wasm logs
   NO TOWNS and keeps the old ground.
 - Tests: `internal/npc` (schedules, street walking, bounties),
