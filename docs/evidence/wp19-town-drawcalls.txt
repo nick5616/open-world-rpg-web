@@ -1,0 +1,42 @@
+building the client (VITE_SOLO=1) into C:\Users\nickb\AppData\Local\Temp\lodestone-wp20-D0vRzz
+# WP20 towns bench (headless Chromium, ANGLE (NVIDIA, NVIDIA GeForce RTX 3070 (0x00002488) Direct3D11 vs_5_0 ps_5_0, D3D11), 1600x900, high tier, uncapped, production build)
+date: 2026-11-09T01:12:54.845Z; playable after 7197 ms
+largest town: #9 "Draedmore" (town, cottage, walled true), 40 buildings, 22 NPCs, radius 130 m at (1920, 2272)
+overview (whole town, from above at an angle): 215 draw calls (31 in shadow passes), 1498k tris, frame 3.58 ms mean / 5.5 p95; without the towns layer: 162 calls, 1210k tris, 7.16 ms
+screenshot docs/evidence/wp20-town-overview.png
+top-down (whole town and walls): 167 draw calls (41 in shadow passes), 1088k tris, frame 3.06 ms mean / 4.5 p95; without the towns layer: 110 calls, 857k tris, 2.31 ms
+screenshot docs/evidence/wp20-town-top.png
+street level (looking along a street to the square): 292 draw calls (87 in shadow passes), 1816k tris, frame 3.34 ms mean / 4.7 p95; without the towns layer: 216 calls, 1515k tris, 2.74 ms
+screenshot docs/evidence/wp20-street.png
+interior (inn, looking at the door): 261 draw calls (64 in shadow passes), 1741k tris, frame 3.31 ms mean / 4.5 p95
+screenshot docs/evidence/wp20-interior.png
+screenshot docs/evidence/wp20-interior-house.png
+NPCs in the square: 251 draw calls (60 in shadow passes), 1677k tris, frame 3.16 ms mean / 4.3 p95
+screenshot docs/evidence/wp20-npcs.png
+target near Fenia: {"kind":"npc","name":"Fenia","role":1,"entityId":null,"stableId":"16224443885322019154"}
+screenshot docs/evidence/wp20-npc-talk-prompt.png
+after E: panel {"title":"Fenia","line":"(offline) \"Have a look, have a look! Fair prices for fair folk.\"","shop":0,"bounties":0}
+screenshot docs/evidence/wp20-npc-talk-panel.png
+forge target: {"kind":"forge","name":"","role":-1,"entityId":null,"stableId":"33461356418492015"}
+screenshot docs/evidence/wp20-forge.png
+screenshot docs/evidence/wp20-forge-panel.png
+screenshot docs/evidence/wp20-forge-street.png
+road and bridge: 277 draw calls (71 in shadow passes), 1884k tris, frame 3.2 ms mean / 4.1 p95
+screenshot docs/evidence/wp20-road-bridge.png
+signpost target: {"kind":"sign","name":"Signpost: Dekairnan 681 m  ·  Glaisgair 93 m  ·  Baiscach 298 m","role":-1,"entityId":null,"stableId":"9138992586635644519"}
+screenshot docs/evidence/wp20-signpost.png
+screenshot docs/evidence/wp20-structures-ruin.png
+screenshot docs/evidence/wp20-structures-watchtower.png
+screenshot docs/evidence/wp20-structures-bandit-camp.png
+screenshot docs/evidence/wp20-structures-wizard-tower.png
+screenshot docs/evidence/wp20-structures-shrine.png
+screenshot docs/evidence/wp20-structures-mineshaft.png
+screenshot docs/evidence/wp20-structures-sunken-temple.png
+screenshot docs/evidence/wp20-styles-timber.png
+screenshot docs/evidence/wp20-styles-stilt.png
+screenshot docs/evidence/wp20-styles-stone.png
+night overview: 264 draw calls (76 in shadow passes), 1708k tris, frame 3.08 ms mean / 4 p95
+screenshot docs/evidence/wp20-town-night.png
+screenshot docs/evidence/wp20-street-night.png
+towns layer: worker ready after 5731 ms (towns_build 210 ms incl. wasm, textures 552 ms, roads 383 ms, all in the worker); max settlement/structure build 24.4 ms (worker); max main-thread upload step 3.20 ms; 2296 scatter objects hidden
+no page errors

@@ -1,0 +1,269 @@
+{
+  "tier": "high",
+  "when": "2026-11-09T01:10:56.674Z",
+  "url": "http://127.0.0.1:5187",
+  "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 3070 (0x00002488) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  },
+  "vsync": true,
+  "loadMs": 6726,
+  "firstPlayableMs": 6669.0999999940395,
+  "load": {
+    "wasmMs": 30,
+    "atlasMs": 522.2000000029802,
+    "atlasSource": "built",
+    "poolMs": 14.700000002980232,
+    "totalMs": 766,
+    "townsMs": 204
+  },
+  "textures": {
+    "bytes": 3728957,
+    "ms": 4878.600000008941
+  },
+  "download": {
+    "files": 23,
+    "bytes": 7778512,
+    "gzipBytes": 5079197,
+    "byType": {
+      "other": {
+        "files": 3,
+        "bytes": 127792,
+        "gzip": 34948
+      },
+      "js": {
+        "files": 13,
+        "bytes": 2234439,
+        "gzip": 649491
+      },
+      "wasm": {
+        "files": 3,
+        "bytes": 1686325,
+        "gzip": 665433
+      },
+      "json": {
+        "files": 1,
+        "bytes": 999,
+        "gzip": 368
+      },
+      "ktx2": {
+        "files": 3,
+        "bytes": 3728957,
+        "gzip": 3720839
+      }
+    }
+  },
+  "route": [
+    {
+      "to": "forest",
+      "kind": "cave_mouth",
+      "x": 2848,
+      "z": 2752
+    },
+    {
+      "to": "highlands",
+      "kind": "tower",
+      "x": 2944,
+      "z": 2560
+    },
+    {
+      "to": "snowpeak",
+      "kind": "landmark",
+      "x": 3296,
+      "z": 2848
+    },
+    {
+      "to": "badlands",
+      "kind": "cave_mouth",
+      "x": 3200,
+      "z": 2528
+    },
+    {
+      "to": "wetland",
+      "kind": "sunken_temple",
+      "x": 3136,
+      "z": 3328
+    },
+    {
+      "to": "meadow",
+      "kind": "settlement",
+      "x": 2560,
+      "z": 2752
+    }
+  ],
+  "phases": [
+    {
+      "name": "walk",
+      "seconds": 20,
+      "frames": 1199,
+      "frameMs": {
+        "mean": 16.68,
+        "p50": 16.7,
+        "p95": 16.7,
+        "p99": 16.8,
+        "max": 33.3
+      },
+      "framesOverBudget": 1,
+      "drawCalls": {
+        "mean": 250,
+        "max": 256
+      },
+      "triangles": {
+        "mean": 1669047,
+        "max": 1716947
+      },
+      "visibleTriangles": {
+        "max": 1173103
+      },
+      "shadowTriangles": {
+        "max": 552273
+      },
+      "heapMB": {
+        "max": 77.6
+      },
+      "longTasks": [],
+      "chunkGenMs": {
+        "mean": 3.6955112222572812,
+        "p95": 5.9000000059604645,
+        "max": 8.700000002980232
+      },
+      "chunkMeshMs": {
+        "mean": 2.7576059846212146,
+        "p95": 4.200000002980232,
+        "max": 5.5999999940395355
+      },
+      "scatterGenMs": {
+        "mean": 3.3656250000931323,
+        "p95": 4.5,
+        "max": 6
+      },
+      "tilesBuilt": 401,
+      "queueMax": 117,
+      "uploadMsMax": 0.09,
+      "rebinMsMax": 7.3,
+      "terrainMsMax": {
+        "reselect": 2.24,
+        "upload": 0.48,
+        "resolve": 1.15
+      }
+    },
+    {
+      "name": "fly",
+      "seconds": 42.8,
+      "frames": 2549,
+      "frameMs": {
+        "mean": 16.8,
+        "p50": 16.7,
+        "p95": 16.7,
+        "p99": 16.8,
+        "max": 333.3
+      },
+      "framesOverBudget": 3,
+      "drawCalls": {
+        "mean": 230,
+        "max": 303
+      },
+      "triangles": {
+        "mean": 1484274,
+        "max": 2041801
+      },
+      "visibleTriangles": {
+        "max": 1189097
+      },
+      "shadowTriangles": {
+        "max": 885646
+      },
+      "heapMB": {
+        "max": 77.6
+      },
+      "longTasks": [
+        347
+      ],
+      "chunkGenMs": {
+        "mean": 3.323731342425097,
+        "p95": 5.5999999940395355,
+        "max": 10.899999991059303
+      },
+      "chunkMeshMs": {
+        "mean": 2.5502985075338565,
+        "p95": 3.7999999970197678,
+        "max": 6.700000002980232
+      },
+      "scatterGenMs": {
+        "mean": 2.941245791198128,
+        "p95": 4.5999999940395355,
+        "max": 6.700000002980232
+      },
+      "tilesBuilt": 670,
+      "queueMax": 8,
+      "uploadMsMax": 0.18,
+      "rebinMsMax": 9.4,
+      "terrainMsMax": {
+        "reselect": 1.94,
+        "upload": 0.3,
+        "resolve": 2.22
+      }
+    }
+  ],
+  "regen": {
+    "chunk": "(30, 35) lod 0",
+    "stored": "ad9fa5b91df5e6b8",
+    "worker": "ad9fa5b91df5e6b8",
+    "main": "ad9fa5b91df5e6b8",
+    "match": true,
+    "workerMs": 4.600000008940697
+  },
+  "errors": [],
+  "budgets": {
+    "drawCalls": {
+      "budget": 400,
+      "max": 303,
+      "pass": true
+    },
+    "triangles": {
+      "budget": 1500000,
+      "maxAllPasses": 2041801,
+      "maxVisible": 1189097,
+      "pass": false
+    },
+    "longTasks": {
+      "budget": "none over 50 ms",
+      "count": 1,
+      "maxMs": 347,
+      "pass": false
+    },
+    "heap": {
+      "budgetMB": 600,
+      "maxMB": 77.6,
+      "pass": true
+    },
+    "chunkGen": {
+      "budgetMs": 8,
+      "p95": 5.9000000059604645,
+      "max": 10.899999991059303,
+      "mean": 3.51,
+      "pass": true
+    },
+    "download": {
+      "budgetMB": 15,
+      "gzipMB": 4.84,
+      "pass": true
+    },
+    "frameTime": {
+      "budgetMs": 16.6,
+      "p99": 16.8,
+      "pass": true,
+      "note": "measured on ANGLE (NVIDIA, NVIDIA GeForce RTX 3070 (0x00002488) Direct3D11 vs_5_0 ps_5_0, D3D11)"
+    }
+  },
+  "shots": [
+    "wp05-meadow.png",
+    "wp05-forest.png",
+    "wp05-snowpeak.png",
+    "wp05-valley-sunset.png",
+    "wp05-dawn-fog.png",
+    "wp05-lod-tiles.png",
+    "wp05-debug-panel.png"
+  ]
+}
