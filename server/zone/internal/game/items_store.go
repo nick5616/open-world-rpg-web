@@ -75,7 +75,7 @@ func (p *PGStore) LoadItems(ctx context.Context, id string) ([]*items.Item, []st
 	// the starter kit. Kill/vein/take keys are unique by construction and
 	// never need loading.
 	mrows, err := p.Pool.Query(ctx, `SELECT grant_key FROM loot_grants WHERE character_id = $1::uuid
-		AND (grant_key LIKE 'container:%' OR grant_key LIKE 'boss:%' OR grant_key = 'starter')`, id)
+		AND (grant_key LIKE 'container:%' OR grant_key LIKE 'boss:%' OR grant_key = 'starter' OR grant_key LIKE 'starter:%')`, id)
 	if err != nil {
 		return nil, nil, false, err
 	}

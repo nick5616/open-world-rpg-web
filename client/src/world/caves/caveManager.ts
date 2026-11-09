@@ -534,7 +534,9 @@ export class CaveManager {
     this.audio.crumble();
     this.store.setEdit({ veinId: v.id, x: v.x, y: v.y, z: v.z, r: 1.5 });
     const item = v.kind === 'gem' ? `gem:${veinMaterialName(v)}:rough` : `ore:${veinMaterialName(v)}`;
-    const qty = v.kind === 'gem' ? 1 : 1 + Math.floor(v.size / 3);
+    // Playtest 2: a sunsteel vein yields at least a blade's worth (4), like the zone's rollDrop.
+    const base = v.kind === 'gem' ? 1 : 1 + Math.floor(v.size / 3);
+    const qty = v.kind !== 'gem' && veinMaterialName(v) === 'sunsteel' ? Math.max(base, 4) : base;
     this.spawnPickup(v.x + v.nx * 0.7, v.y + v.ny * 0.7 + 0.2, v.z + v.nz * 0.7, item, qty, null);
     this.toast(`${veinMaterialName(v)} ${v.kind === 'gem' ? 'cluster' : 'vein'} broken`);
   }

@@ -42,6 +42,26 @@ export const INV_COLS = 8;
 /** Equipment slots in Interact 21/4 (unequip) argument order. */
 export const EQ_SLOTS = ['eq:main0', 'eq:main1', 'eq:head', 'eq:body', 'eq:legs'] as const;
 export type EqSlot = (typeof EQ_SLOTS)[number];
+
+/**
+ * Playtest 2: an empty main hand wields the loadout's default training
+ * weapon (combat.yaml start: Loadout 1 the sword, Loadout 2 the staff);
+ * unequipping a weapon item falls back to it (the zone's applyGear).
+ */
+export function defaultWeapon(loadout: number): string {
+  return COMBAT.start.loadouts[loadout]?.weapon ?? 'sword';
+}
+
+/** "Training Sword". */
+export function trainingWeaponName(weapon: string): string {
+  return `Training ${weapon.charAt(0).toUpperCase()}${weapon.slice(1)}`;
+}
+
+/** Interact 50/2 (combat equipWeapon) argument: loadout | weapon id << 8 (0 when unknown). */
+export function trainingEquipArg(loadout: number, weapon: string): number {
+  const w = COMBAT.weapons.find((x) => x.key === weapon);
+  return w ? ((loadout & 0xff) | (w.id << 8)) >>> 0 : 0;
+}
 export const EQ_LABEL: Record<EqSlot, string> = { 'eq:main0': 'Main hand · Loadout 1', 'eq:main1': 'Main hand · Loadout 2', 'eq:head': 'Head', 'eq:body': 'Body', 'eq:legs': 'Legs' };
 
 const defs = new Map<string, ItemDef>(ITEMS.items.map((d) => [d.key, d]));

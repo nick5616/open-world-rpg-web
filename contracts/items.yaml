@@ -160,7 +160,7 @@ items:
   herb:heartleaf: {name: Heartleaf, value: 5}
   hide:wolf: {name: Wolf Pelt, value: 6}
   seed:wardbloom: {name: Wardbloom Seed, value: 30}
-  # ---- tools (v1: carried, not yet required; spec 7's pickaxe is implicit) ----
+  # ---- tools (v1: carried, not yet required; spec 7's pickaxe is implicit; every character starts with one) ----
   tool:pickaxe: {name: Pickaxe, value: 40}
   tool:torch: {name: Torch, value: 6}
   tool:rope: {name: Rope, value: 10}
@@ -252,8 +252,10 @@ recipes:
   brew_greater_health: {station: cook, inputs: {herb:heartleaf: 2, potion:health: 1}, output: potion:greater_health, xp: 10}
 
 # What a new character carries (spec 8's consumables replace WP13's
-# stand-in draught; granted once per character, exactly once).
-starter: {potion:health: 3, currency:gold: 20}
+# stand-in draught; granted once per character, exactly once). Playtest 2:
+# a pickaxe, because the starter quest's second step is "mine sunsteel ore"
+# (characters made before it get one once on join, marker starter:pickaxe).
+starter: {potion:health: 3, currency:gold: 20, tool:pickaxe: 1}
 
 # Loot tables (rolled by the zone per eligible player, spec 8 personal loot).
 loot:

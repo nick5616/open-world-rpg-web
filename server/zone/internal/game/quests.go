@@ -762,12 +762,13 @@ func (s *Server) resolveOre(g *caves.Graph, st *towns.Settlement, town string, p
 		n    int
 		x, z float64
 		r    float64
-		y    float64
+		y    float64 // the deepest vein's height
 	}
 	var best *cand
 	for si := range g.Systems {
 		sys := &g.Systems[si]
 		var xs, zs []float64
+		vy := math.Inf(1)
 		for vi := sys.FirstVein; vi < sys.FirstVein+sys.VeinCount && vi < len(g.Veins); vi++ {
 			v := &g.Veins[vi]
 			if v.Kind == caves.KindGem || v.MaterialName() != "sunsteel" {
@@ -778,6 +779,7 @@ func (s *Server) resolveOre(g *caves.Graph, st *towns.Settlement, town string, p
 				continue
 			}
 			xs, zs = append(xs, v.X), append(zs, v.Z)
+			vy = math.Min(vy, v.Y)
 		}
 		if len(xs) == 0 {
 			continue
@@ -791,14 +793,12 @@ func (s *Server) resolveOre(g *caves.Graph, st *towns.Settlement, town string, p
 		for i := range xs {
 			r = math.Max(r, math.Hypot(xs[i]-cx, zs[i]-cz))
 		}
-		d := math.Hypot(cx-st.X, cz-st.Z)
-		// Prefer seams with two or more veins (4 ore) unless one is much closer.
-		score := d
-		if len(xs) < 2 {
-			score += 600
-		}
+		// The nearest seam: one sunsteel vein yields a blade's worth
+		// (mining.go sunsteelMinOre), and the official world's seams are all
+		// single veins at the bottom of a sunlit shaft.
+		score := math.Hypot(cx-st.X, cz-st.Z)
 		if best == nil || score < best.d {
-			best = &cand{sys: si, d: score, n: len(xs), x: cx, z: cz, r: math.Min(60, r+10), y: sys.MouthY}
+			best = &cand{sys: si, d: score, n: len(xs), x: cx, z: cz, r: math.Min(60, r+10), y: vy}
 		}
 	}
 	if best == nil {
@@ -821,6 +821,33 @@ func (s *Server) resolveOre(g *caves.Graph, st *towns.Settlement, town string, p
 	}
 	p.Ore = quests.Place{OK: true, X: best.x, Z: best.z, R: best.r, Name: name, Where: quests.Where(st.X, st.Z, mx, mz, town)}
 	p.Mouth = quests.Place{OK: true, X: mx, Z: mz, Name: "Cave mouth: " + name}
+	// Playtest 2: the seam is ~140 m below ground at the bottom of the shaft
+	// whose daylight makes the ore; mark the shaft too (glide down it) and
+	// say how deep it is, or players search the surface under the marker.
+	for oi := sys.FirstOpening; oi < sys.FirstOpening+sys.Openings && oi < len(g.OpeningsList); oi++ {
+		o := &g.OpeningsList[oi]
+		if !o.Sinkhole || math.Hypot(o.X-best.x, o.Z-best.z) > best.r+30 {
+			continue
+		}
+		if !p.Shaft.OK || math.Hypot(o.X-best.x, o.Z-best.z) < math.Hypot(p.Shaft.X-best.x, p.Shaft.Z-best.z) {
+			p.Shaft = quests.Place{OK: true, X: o.X, Z: o.Z, Name: "Sunlit shaft: " + name}
+		}
+	}
+	top := sys.MouthY
+	if p.Shaft.OK {
+		top = math.Max(top, s.surfaceAt(p.Shaft.X, p.Shaft.Z, top))
+	}
+	if !math.IsInf(best.y, 0) && top > best.y {
+		p.OreDepth = top - best.y
+	}
+}
+
+// surfaceAt is the overworld height at (x, z), or def without terrain.
+func (s *Server) surfaceAt(x, z, def float64) float64 {
+	if s.cfg.Ground == nil {
+		return def
+	}
+	return s.cfg.Ground.HeightAt(x, z)
 }
 
 // learnedSpellIntoSlot: a spell learned from a tome goes into the first
