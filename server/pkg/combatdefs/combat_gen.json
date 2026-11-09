@@ -8532,7 +8532,7 @@
    "keepAway": 0,
    "id": 50,
    "family": "slime",
-   "hp": 52,
+   "hp": 74,
    "speed": 3.6,
    "aggro": 12,
    "attacks": [
@@ -8551,7 +8551,7 @@
    "keepAway": 0,
    "id": 51,
    "family": "slime",
-   "hp": 60,
+   "hp": 80,
    "speed": 3.2,
    "aggro": 12,
    "attacks": [
@@ -9074,7 +9074,7 @@
    "base": 100,
    "perLevel": 12
   },
-  "damagePctPerLevel": 8,
+  "damagePctPerLevel": 10,
   "stamina": {
    "perLevel": 2,
    "max": 60

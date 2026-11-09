@@ -597,10 +597,10 @@ enemies:
   crystal_golem: {id: 42, family: cave, hp: 94, speed: 3.5, aggro: 14, attacks: [golem_punch, elemental_burst], behavior: melee, xp: 34, size: 1.4, color: '#8fd4ff'}
   # slimes (playtest 1, CR 012): beginner creatures. The Haven around the
   # world spawn holds nothing else; quiet lands (area level 1-3) mix them
-  # with the biome's beasts. 2-3 hits with the starting sword, slower than a
+  # with the biome's beasts. 3-4 hits with the starting sword, slower than a
   # walking player, short aggro.
-  slime: {id: 50, family: slime, hp: 52, speed: 3.6, aggro: 12, attacks: [slime_bump, slime_hop], behavior: melee, xp: 10, size: 0.8, color: '#7fd36b'}
-  moss_slime: {id: 51, family: slime, hp: 60, speed: 3.2, aggro: 12, attacks: [slime_bump, slime_hop], behavior: melee, xp: 12, size: 0.95, color: '#4f8f3a'}
+  slime: {id: 50, family: slime, hp: 74, speed: 3.6, aggro: 12, attacks: [slime_bump, slime_hop], behavior: melee, xp: 10, size: 0.8, color: '#7fd36b'}
+  moss_slime: {id: 51, family: slime, hp: 80, speed: 3.2, aggro: 12, attacks: [slime_bump, slime_hop], behavior: melee, xp: 12, size: 0.95, color: '#4f8f3a'}
   # demons (WP15, CR 011; spec 8 "Night and demons"). They regenerate from
   # ordinary damage (demon.regen = fraction of max health per second) and
   # die only to killsDemons hits (sunsteel, Light), or at sunrise. Ranks:
@@ -741,12 +741,14 @@ leveling:
   # (combat.Player.SetLevel, the movement state's stamina wheel) and shown by
   # the client's character panel (C). Mana keeps `mana.base/perLevel`.
   # Curve vs enemies (decision 0021): enemies gain +10 % health and +6 %
-  # damage per level; players +8 % damage and +12 health (12 % of the base)
-  # per level, so an at-level common still dies in 2-5 hits (within ~17 %
-  # of the level-1 count at level 30, before weapon skill and gear) and an
-  # over-levelled player feels it: +8 levels kill commons in 1-3 hits.
+  # damage per level (WP13); players gain +10 % damage (the same as enemy
+  # health, so an at-level common takes the level-1 number of hits at any
+  # level: 2-5) and +12 health (12 % of the base, ahead of enemy damage, so
+  # a levelled character survives more) per level. Over-levelled players
+  # feel it: 8 levels above an area, commons die in about two thirds of the
+  # hits. Weapon skill (+1 %/level) and gear come on top.
   health: {base: 100, perLevel: 12}
-  damagePctPerLevel: 8
+  damagePctPerLevel: 10
   # Stamina wheel: +2 per level above 1 (capped), on top of the 100 start.
   stamina: {perLevel: 2, max: 60}
   # Spell skill points (spec 8 "character level still exists for health and
