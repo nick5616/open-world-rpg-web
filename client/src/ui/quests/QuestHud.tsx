@@ -11,6 +11,7 @@ import { localPlayer } from '../../state/live';
 import { setMapOpen } from '../map/store';
 import { headingOf } from '../map/Compass';
 import { ensureQuestHook } from './link';
+import { netRuntime } from '../../net/netStore';
 import { distanceText, whereText, type QuestMarker, type QuestView } from './events';
 import { dismissOffer, offerMarkers, pruneNotes, setJournalOpen, setQuestPreview, trackedQuest, useQuests } from './store';
 
@@ -308,6 +309,8 @@ function installQuestHandle() {
       setQuestPreview({ title, markers, from: 'quest' });
       setMapOpen(true);
     },
+    /** Any Interact on the live session (headless scripts: talk, read a board, abandon...). */
+    send: (kind: number, id: string | number, action: number, arg = 0) => netRuntime.session?.sendInteract(kind, BigInt(id), action, arg),
   };
   (window as unknown as { __lodestoneQuests: typeof handle }).__lodestoneQuests = handle;
 }

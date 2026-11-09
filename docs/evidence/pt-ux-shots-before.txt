@@ -1,0 +1,14 @@
+BEFORE (main client): town "Draedmore" (1920, 2272) r 130; camp (2113, 2324)
+zone :26609, vite :27288 (.before\client)
+blacksmith Selina at (1907.7, 2291.1); board 17272084059553085431 at (1907.2, 2263.4)
+camp: 2 enemies drawn: Swift Thornback Boar (2105, 2322) yaw 1.44, #55 (2109, 2322) yaw 5.09
+  Swift Thornback Boar: facing the Behind player -0.97 (negative = its back is to them)
+  #55: facing the Behind player 0.94 (negative = its back is to them)
+shot pt-ux-healthbars-before-east.png (looking west at the camp)
+shot pt-ux-healthbars-before-west.png (looking east at the camp)
+
+zone log (quests):
+{"time":"2026-11-09T02:49:44.0834702-08:00","level":"INFO","msg":"ward places","svc":"zone","settlement":9,"town":"Draedmore","smith":"Selina","ore":true,"oreName":"Faeldstoich Deep","oreWhere":"490 m south-west of Draedmore","shrine":"The Forgotten Shrine"}
+{"time":"2026-11-09T02:49:44.0834702-08:00","level":"INFO","msg":"quest started","svc":"zone","character":"pt-ux-before-1794221381152-1","quest":"story:ward","settlement":9}
+{"time":"2026-11-09T02:50:02.4571055-08:00","level":"INFO","msg":"quest started","svc":"zone","character":"pt-ux-before-1794221401699-2","quest":"story:ward","settlement":9}
+{"time":"2026-11-09T02:50:08.5909986-08:00","level":"INFO","msg":"quest started","svc":"zone","character":"pt-ux-before-1794221407725-3","quest":"story:ward","settlement":9}

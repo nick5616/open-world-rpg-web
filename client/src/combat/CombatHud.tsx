@@ -11,6 +11,7 @@ import { combatRuntime } from './link';
 import { useCombatHud } from './store';
 import { spellById } from './timeline';
 import { netRuntime } from '../net/netStore';
+import { useHudHeight } from '../hud/layout';
 
 const spellByKey = new Map(COMBAT.spells.map((s) => [s.key, s]));
 const KEYS = ['1', '2', '3', '4'];
@@ -28,10 +29,11 @@ function RmbBadge() {
   );
 }
 
-function Bar({ id, color, width }: { id: string; color: string; width: number }) {
+function Bar({ id, color, width, label }: { id: string; color: string; width: number; label?: React.ReactNode }) {
   return (
-    <div style={{ width, height: 10, background: 'rgba(0,0,0,0.55)', borderRadius: 3, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.25)' }}>
+    <div style={{ position: 'relative', width, height: 13, background: 'rgba(0,0,0,0.55)', borderRadius: 3, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.25)' }}>
       <div data-bar={id} style={{ width: '100%', height: '100%', background: color, transformOrigin: 'left', transition: 'transform 80ms linear' }} />
+      {label && <div style={{ position: 'absolute', inset: 0, textAlign: 'center', font: '600 10px/13px system-ui, sans-serif', textShadow: '0 1px 2px #000' }}>{label}</div>}
     </div>
   );
 }
@@ -46,6 +48,8 @@ export function CombatHud() {
   const downedUntil = useCombatHud((s) => s.downedUntil);
   const selected = useCombatHud((s) => s.selected);
   const root = useRef<HTMLDivElement>(null);
+  const stack = useRef<HTMLDivElement>(null);
+  useHudHeight(stack, '--ls-hotbar-h', active);
 
   useEffect(() => {
     if (!active) return;
@@ -97,7 +101,8 @@ export function CombatHud() {
           </div>
         </div>
       )}
-      <div style={{ position: 'absolute', bottom: 22, left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
+      {/* Playtest 1 layout (hud/layout.ts): one centre stack at the bottom, measured into --ls-hotbar-h so the lock hint, chat and voice stack around it. */}
+      <div ref={stack} data-testid="combat-stack" style={{ position: 'absolute', bottom: 10, left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, maxWidth: 'calc(2 * var(--ls-center-half, 260px))', width: 'max-content', paddingTop: 10 }}>
         <div style={{ display: 'flex', gap: 6 }}>
           <div data-testid="slot-weapon" data-selected={selected < 0 ? 'true' : 'false'} style={{ position: 'relative', padding: '6px 10px', background: 'rgba(8,10,16,0.6)', borderRadius: 4, minWidth: 74, textAlign: 'center', boxSizing: 'border-box', ...(selected < 0 ? SELECTED_STYLE : { border: '1px solid transparent' }) }} title="X swaps loadouts · Z (or right mouse while selected): parry / draw / charge / heavy">
             {selected < 0 && <RmbBadge />}
@@ -124,11 +129,10 @@ export function CombatHud() {
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <Bar id="hp" color="linear-gradient(#e05050, #a02020)" width={250} />
-          <span data-hp style={{ fontSize: 11, minWidth: 64 }} />
-          <Bar id="mana" color="linear-gradient(#5aa0ff, #2050c0)" width={180} />
+          <Bar id="hp" color="linear-gradient(#e05050, #a02020)" width={250} label={<span data-hp />} />
+          <Bar id="mana" color="linear-gradient(#5aa0ff, #2050c0)" width={170} />
         </div>
-        <div data-testid="combat-hint" style={{ opacity: 0.55, fontSize: 11 }}>{COMBAT_HINT}</div>
+        <div data-testid="combat-hint" style={{ opacity: 0.6, fontSize: 11, lineHeight: '14px', textAlign: 'center', textShadow: '0 1px 2px #000' }}>{COMBAT_HINT}</div>
       </div>
       {toastMsg && now - toastMsg.at < 1500 && (
         <div key={toastMsg.at} style={{ position: 'absolute', top: '38%', left: '50%', transform: 'translateX(-50%)', fontSize: 20, fontWeight: 700, textShadow: '0 0 6px #000' }}>
