@@ -119,12 +119,14 @@ export function setPanelOpen(open: boolean): void {
   useProgression.setState({ panelOpen: open });
 }
 
-export function pruneProgression(now = performance.now()): void {
+/** holdFanfare: a discovery card is up; the level-up waits for it instead of expiring underneath (playtest 2). */
+export function pruneProgression(now = performance.now(), holdFanfare = false): void {
   const s = useProgression.getState();
   const notices = s.notices.filter((x) => now - x.at < NOTICE_MS);
   const patch: Partial<ProgressionState> = {};
   if (notices.length !== s.notices.length) patch.notices = notices;
-  if (s.fanfare && now - s.fanfare.at > FANFARE_MS) patch.fanfare = null;
+  if (s.fanfare && holdFanfare) patch.fanfare = { ...s.fanfare, at: now };
+  else if (s.fanfare && now - s.fanfare.at > FANFARE_MS) patch.fanfare = null;
   if (Object.keys(patch).length) useProgression.setState(patch);
 }
 

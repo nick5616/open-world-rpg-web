@@ -1,6 +1,6 @@
 // Playtest pass 2: follow the starter quest like a new player (talk, walk to
 // the marker, mine), fighting what attacks on the way. Logs every snag.
-import { launch, newCharacter, sleep, pl, walkTo, look, yawTo } from './lib.mjs';
+import { launch, newCharacter, sleep, pl, walkTo, go, look, yawTo } from './lib.mjs';
 
 const out = process.argv[2] ?? 'tmp/playtest2';
 const t = await launch(out);
@@ -49,7 +49,10 @@ try {
   const w = await walkTo(page, m.x, m.z, { stopAt: 2.2, timeoutMs: 60000 });
   note(`walked to ${m.label}: ok=${w.ok} d=${w.d.toFixed(1)} in ${(w.ms / 1000).toFixed(1)} s`);
   const me = (await pl(page)).pos;
-  await look(page, yawTo(me, m.x, m.z), 0);
+  // face the giver where she actually stands now (NPCs wander a little)
+  const npc = await page.evaluate(([mx, mz]) => (window.__lodestoneDrawn?.() ?? []).filter((e) => e.kind === 5).map((e) => ({ x: e.x, y: e.y, z: e.z, d: Math.hypot(e.x - mx, e.z - mz) })).sort((a, b) => a.d - b.d)[0], [m.x, m.z]);
+  const at = npc && npc.d < 6 ? npc : { x: m.x, y: me.y, z: m.z };
+  await look(page, yawTo(me, at.x, at.z), Math.atan2(at.y + 1.3 - (me.y + 1.6), Math.max(0.5, Math.hypot(at.x - me.x, at.z - me.z))));
   await sleep(600);
   await shot('at-giver');
   const prompt = await page.evaluate(() => document.querySelector('[data-testid="town-prompt"]')?.textContent ?? '');
@@ -75,7 +78,7 @@ try {
     const t0 = Date.now();
     let res;
     for (let i = 0; i < 40; i++) {
-      res = await walkTo(page, ore.x, ore.z, { stopAt: 4, timeoutMs: 15000, sprint: true });
+      res = await go(page, ore.x, ore.z, { stopAt: 4, timeoutMs: 15000, sprint: true });
       const h = await hud();
       const near = (await enemies()).filter((e) => e.d < 10);
       if (near.length) {

@@ -34,7 +34,7 @@ function Toasts() {
     return () => clearInterval(id);
   }, []);
   return (
-    <div style={{ position: 'fixed', top: 64, left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center', pointerEvents: 'none', zIndex: 13 }}>
+    <div style={{ position: 'fixed', top: 96, left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center', pointerEvents: 'none', zIndex: 13 }}>
       {toasts.filter((t) => !INTRO_TOAST_KINDS.has(t.kind)).map((t) => {
         const s = TOAST_STYLE[t.kind];
         return (
