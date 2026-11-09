@@ -199,6 +199,7 @@ export class Ambience {
     const t = ctx.currentTime + th.delayS;
     const s = ctx.createBufferSource();
     s.buffer = this.brown;
+    s.loop = true; // a long, slowed rumble outlasts the 6 s noise buffer
     s.playbackRate.value = 0.6 + Math.random() * 0.25;
     const f = ctx.createBiquadFilter();
     f.type = 'lowpass';
@@ -215,7 +216,7 @@ export class Ambience {
     p.pan.value = Math.random() * 1.2 - 0.6;
     s.connect(f).connect(g).connect(p).connect(this.weatherLp);
     const dur = th.attackS + 1.2 + th.decayS;
-    s.start(t, Math.random() * Math.max(0, this.brown.duration - dur * s.playbackRate.value - 0.1));
+    s.start(t, Math.random() * this.brown.duration);
     s.stop(t + dur);
     this.thunders++;
   }

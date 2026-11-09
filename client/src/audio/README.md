@@ -9,18 +9,28 @@ included.
 
 | File | What |
 | --- | --- |
-| `context.ts` | The one AudioContext and its buses: master (with a safety limiter) and music, sfx, ambience, ui, voice, each a duck stage plus a volume stage. In the main bundle: the first click or key (the title screen's Play) creates and resumes it, as autoplay rules require. |
+| `context.ts` | The one AudioContext and its buses: master (with a safety limiter) and music, sfx, ambience, ui, voice, each a duck stage plus a volume stage; sfx and ambience also carry an environment low-pass (interior damping). In the main bundle: the first click or key (the title screen's Play) creates and resumes it, as autoplay rules require. |
 | `settings.ts` | Volume per bus + mute, in localStorage `lodestone.audio.v1` (validated like the voice prefs). |
-| `bridge.ts` | What game code calls: `emitSound(name, payload)` and the `audioWorld` state (underground, chamber radius, in town, fighting). Tiny, never pulls the engine in. |
+| `bridge.ts` | What game code calls: `emitSound(name, payload)` and the `audioWorld` state (underground, chamber radius, distance to the cave mouth, in town, fighting). Tiny, never pulls the engine in. |
 | `ui/AudioRoot.tsx` | Mounted by PlayScreen. Boots the engine (lazy chunk) after the first playable frame, on idle. K or the "Sound" button opens the settings panel; every HUD button clicks. |
-| `engine.ts` | The engine (lazy chunk, 66 KB / 20 KB gzip): listener follows the camera, movement sounds every frame, music director and ambience 4x a second, zone Events through the trigger map, ducking, the `window.__lodestoneAudio` debug handle. |
+| `engine.ts` | The engine (lazy chunk): listener follows the camera and movement sounds every frame; the environment pass 10x a second (shelter, cave leak, surface underfoot, weather, interior reverb, positional loops, far voices re-placed, smiths); music director and ducking 4x a second; hidden-tab fade; zone Events through the trigger map; the `window.__lodestoneAudio` debug handle. |
 | `triggers.ts` | **The trigger map**: zone Event kind -> cue (`ZONE_EVENTS`) and named client moments -> cue (`TRIGGERS`). |
 | `cues.ts` | Every cue: files (variants, random pick), bus, volume, pitch spread, 3D or not, voice limits, cooldown, music ducking. |
-| `sfx.ts` | One-shot player: buffer cache, voice pool and caps, equal-power 3D panning, distance culling, cave reverb bus (IR sized by the chamber radius, ported from WP09's cave audio). WP19b: the IR is synthesized in 32 k-sample slices with a yield between them (a newer radius supersedes one in progress), so it is never a main-thread long task. |
+| `sfx.ts` | One-shot player: buffer cache, voice pool and caps, admission through `voiceLimit.ts`, variant/pitch/gain variation, equal-power panning (direction only) with `spatial.ts` distance, air and occlusion per voice (re-evaluated at 10 Hz for long ones), distance culling, the reverb bus (IR sized by the chamber or room radius, ported from WP09's cave audio). WP19b: the IR is synthesized in 32 k-sample slices with a yield between them (a newer radius supersedes one in progress), so it is never a main-thread long task. |
+| `spatial.ts` | Pure: the distance curve (inverse distance easing to silence at the range), air absorption, occlusion between spaces (outdoors, a closed building, a cave), the loop categories (torch ... forge, wildfire, river, shore) with their ranges. |
+| `acoustics.ts` | Pure: listener surroundings -> mix: cave leak, weather through the shelter (gain, low-pass, rain on the roof), interior reverb and damping, rain intensity ramp, ducking levels, thunder. |
+| `shelter.ts` | Pure over the towns buffer: roof over the head (5-point probe of the town collision boxes), inside a closed building, its room size, the acoustic space of a point, the town box underfoot. |
+| `surface.ts` | Pure: footstep surface (soft, hard, wood, water, snow) from depth, the box underfoot, water depth, biome, town. |
+| `voiceLimit.ts` | Pure: which one-shots may start (cooldown, duplicates, stacks), never the same variant twice, pitch/gain spread. |
+| `loopPool.ts` | Pure: which positional loops get a voice (top 8 by audible gain, a bias for the playing ones), burning cells clustered into fires. |
+| `emitters.ts` | Pure: fire props and camp campfires -> loop emitters, forges -> smiths, a point grid, the smith's rhythm. |
+| `loops.ts` | The positional loop voices (fade in, glide, fade out and stop). |
+| `synth.ts` | Noise buffers and the loop textures rendered once through an OfflineAudioContext: fire, river flow, shore lapping, rain on a roof. |
+| `worldProbe.ts` | The engine's view of the loaded world (towns, terrain, water, atlas biome, chemistry fire) feeding the pure modules. |
 | `music/director.ts` | Pure state machine: which musical state the world asks for (unit-tested). |
 | `music/player.ts`, `music/tracks.ts` | Crossfading playback: long tracks streamed through media elements, short loops (combat, time crunch) decoded and looped sample-exact. |
-| `ambience.ts` | Synthesized beds: wind, rain, fire crackle, night insects, underwater hush, cave drips. WP19b: the noise buffers (~1 M samples) are synthesized in slices and each bed joins its chain when ready: in one go it was a 67-86 ms long task when the engine booted (traversal benchmark). |
-| `movement.ts` | Footsteps, jumps, landings, splashes, glider, climbing from `localPlayer` state (unit-tested). |
+| `ambience.ts` | Synthesized beds: wind, rain, rain on the roof, thunder, night insects, underwater hush, cave drips; wind, open-air rain, thunder and insects through one shelter-controlled "weather" submix. WP19b: the noise buffers (~1 M samples) are synthesized in slices and each bed joins its chain when ready: in one go it was a 67-86 ms long task when the engine booted (traversal benchmark). |
+| `movement.ts` | Footsteps (on the sampled surface), jumps, landings, splashes, glider, climbing from `localPlayer` state (unit-tested). |
 | `assets/` | Built files (Ogg Opus + AAC each), imported through Vite: content-hashed `/assets/` names, immutable cache, never inlined. |
 | `cueFiles.gen.ts` | Generated by `tools/audio/build-audio.mjs`: cue -> files. |
 
@@ -33,9 +43,71 @@ codec per browser is fetched: 6.8 MB of Opus music for all 8 tracks
 of PCM); everything else downloads in the background but stays
 compressed and decodes on first play (all 161 files decoded would be
 46 MB). Committed:
-17.6 MB (both codecs). 40 voices at most at
-once; per-cue caps and cooldowns collapse crowds; 3D sounds past their
-range never start; panning is equal-power (HRTF stays for voices).
+17.6 MB (both codecs). 40 one-shot voices at most at
+once; per-cue caps, cooldowns, duplicate and stack limits collapse crowds;
+3D sounds past their range never start; 8 positional loop voices at most;
+panning is equal-power (HRTF stays for voices). The loop textures are
+rendered once at 32 kHz mono (about 1.3 MB of PCM for all four).
+
+## Space and distance (audio QoL pass)
+
+Everything placed in the world is heard from where you stand, through what
+stands between you and it. The pure parts are unit-tested; the engine runs
+them at 10 Hz (never per frame per source) and glides gains and filters to
+the results, so nothing clicks or zippers.
+
+- **Distance** (`spatial.ts`): full volume inside a cue's `refDistance`,
+  inverse distance beyond (the physical 6 dB per doubling), easing to
+  exactly silent at `maxDistance` over the last 35 % (the Web Audio models
+  stop attenuating at their max, so a sound used to vanish at -23 dB).
+  Far sounds also lose their top end (air: ~16 kHz at 10 m, ~5 kHz at
+  60 m). The panner only pans. Sounds that last (demon rises, boss roars,
+  domains) are re-placed as you move.
+- **Walls and rock**: the space of a point is a closed building (towns
+  buffer; an open-fronted forge counts as outdoors), a cave (more than 3 m
+  under the terrain) or outdoors. One wall between you and a source: x0.42
+  and 1.1 kHz low-pass; two: x0.22, 700 Hz. From a cave, the surface comes
+  through as much as leaks in (below); a cave is barely heard from above.
+- **Positional loops** (`loops.ts`, `loopPool.ts`, `emitters.ts`): every
+  torch (heard to 12 m), brazier (18 m), hearth (16 m, muffled from the
+  street), campfire (26 m), forge (30 m, deeper) and camp campfire piece,
+  burning grass (cells clustered on a 12 m grid, louder and carrying
+  further the more burn), rivers (55 m, flowing) and lake/sea shores (34 m,
+  lapping; a ring probe of the water surface twice a second) is an emitter;
+  only the 8 loudest at the listener get a voice, a playing one keeps its
+  slot unless a newcomer is 1.6x louder, and voices fade in (0.3 s) and
+  out (0.25 s, then stop and disconnect). By day a smith hammers at every
+  forge within 36 m (bursts of 2-4 strikes ~0.45 s apart, then 2.5-6 s),
+  scheduled sample-exact.
+- **Rain and weather** (`acoustics.ts`): rain builds over ~15 s from a
+  drizzle and dies away over ~10 s (the weather is on/off), breathing a
+  little while it falls; above 0.6 a thunder rumble from a strike 0.6-5 km
+  away every 25-80 s, arriving at the speed of sound, quieter and darker
+  the further. Wind, open-air rain, thunder and insects go through one
+  weather submix: under a porch or bridge (roof over your head, a 5-point
+  probe) it is a little quieter and duller, inside walls x0.22 and
+  low-passed to ~650 Hz while a "rain on the roof" drumming layer rises in
+  its place. Walking through a doorway crossfades over ~0.3 s. In a cave,
+  surface weather fades with the distance to the nearest opening and the
+  depth (`caveLeak`: ~0.6 at the mouth, ~0.25 ten metres in, under 0.05 by
+  thirty) and is low-passed down to ~300 Hz; no roof drumming underground.
+- **Interiors and caves**: indoors a small-room reverb (send 0.32, sized
+  by the room) and a gentle 11 kHz low-pass on the sfx and ambience buses;
+  underground the chamber reverb (as before) and a 7.5 kHz low-pass. UI,
+  music and voice stay dry.
+- **One-shot hygiene** (`voiceLimit.ts`): per-cue cooldowns as before; the
+  same cue at the same place (1.2 m) within 70 ms is one sound; at most 3
+  starts of one cue in 45 ms (an area hit on eight enemies); never the same
+  variant twice in a row; +/-10 % gain on top of each cue's pitch spread; a
+  4 ms ramp when a file starts mid-way.
+- **Footsteps by surface**: grass/dirt (`step_soft`), stone in towns, caves
+  and on stone town boxes (`step_hard`), planks on floors, decks, bridges
+  and ramps (`step_wood`: the stone knocks a fifth lower), wading in
+  shallow water (`step_water`), snow in the snowpeak biome (`step_snow`).
+- **Mix**: music ducks to 35 % while anyone in voice speaks (ambience 60 %,
+  sfx 80 %) and to 50 % under big stings (ambience 72 %); a hidden tab
+  fades music, ambience and effects out in ~0.5 s (voice chat stays) and
+  back in when you return.
 
 ## Music
 
@@ -76,8 +148,10 @@ take a world position.
 | `quest_accept` | 1 | D2 East Coast Hip Hop: One-Shot 6; D1 Hyperpop: FX_Gm_150bpm_4 | Event 803 bounty_accepted; trigger `quest_accept` |
 | `quest_complete` | 1 | **Nicole: level up sound 2**; D2 East Coast Hip Hop: One-Shot 6 | trigger `quest_complete`  |
 | `step_soft` | 4 | D1 Acoustic Drums: Acoustic Drums15; D1 Acoustic Drums: Acoustic Drums5; D1 Acoustic Drums: Acoustic Drums12; D1 Acoustic Drums: Acoustic Drums13; D1 Acoustic Drums: Acoustic Drums10; D1 Acoustic Drums: Acoustic Drums2 | Footsteps on grass/dirt (movement.ts, per stride) |
-| `step_hard` | 4 | D1 Acoustic Drums: Acoustic Drums16; D1 Acoustic Drums: Acoustic Drums15; D1 Acoustic Drums: Acoustic Drums12; D1 Acoustic Drums: Acoustic Drums14; D1 Acoustic Drums: Acoustic Drums13; D1 Acoustic Drums: Acoustic Drums5; D1 Acoustic Drums: Acoustic Drums10 | Footsteps in towns and caves |
-| `step_snow` | 3 | D1 Acoustic Drums: Acoustic Drums5; D1 Acoustic Drums: Acoustic Drums15; D1 Acoustic Drums: Acoustic Drums12; D1 Acoustic Drums: Acoustic Drums13 | Footsteps on snow (cue ready; surface detection not wired) |
+| `step_hard` | 4 | D1 Acoustic Drums: Acoustic Drums16; D1 Acoustic Drums: Acoustic Drums15; D1 Acoustic Drums: Acoustic Drums12; D1 Acoustic Drums: Acoustic Drums14; D1 Acoustic Drums: Acoustic Drums13; D1 Acoustic Drums: Acoustic Drums5; D1 Acoustic Drums: Acoustic Drums10 | Footsteps on stone: town streets, stone town boxes, caves |
+| `step_snow` | 3 | D1 Acoustic Drums: Acoustic Drums5; D1 Acoustic Drums: Acoustic Drums15; D1 Acoustic Drums: Acoustic Drums12; D1 Acoustic Drums: Acoustic Drums13 | Footsteps in the snowpeak biome |
+| `step_wood` | (4) | `step_hard`'s files at 0.8x | Footsteps on building floors, decks, bridges, ramps |
+| `step_water` | (2) | `swim_stroke`'s files at 1.35x, quiet | Wading in shallow water |
 | `jump` | 2 | D1 FX: Fast FX | Leaving the ground / double jump |
 | `land` | 2 | D1 Acoustic Drums: Acoustic Drums13; D1 Acoustic Drums: Acoustic Drums5; D1 Acoustic Drums: Acoustic Drums16; D1 Acoustic Drums: Acoustic Drums15; D1 Acoustic Drums: Acoustic Drums2; D1 Acoustic Drums: Acoustic Drums14 | Landing from a fall over 3 m/s (louder with speed) |
 | `dash` | 2 | D1 FX: Fast FX | Dodge/dash (trigger `dodge`) |
@@ -147,7 +221,7 @@ take a world position.
 | `coins` | 2 | D2 Japanese LoFi: FX 12 | Gold only loot (Event 401 currency); Event 807 purchase |
 | `chest_open` | 1 | synthesized; D1 Acoustic Drums: Acoustic Drums13; D2 Japanese LoFi: FX 12 | Event 407 container_opened; trigger `chest_open` |
 | `item_drop` | 1 | D3 Indie Hip Hop: One Shot 5; D1 Acoustic Drums: Acoustic Drums10 | Event 408 dropped |
-| `forge_hammer` | 3 | D1 FX: Metallic FX; D1 Acoustic Drums: Acoustic Drums15; D1 Acoustic Drums: Acoustic Drums4; D1 Acoustic Drums: Acoustic Drums12; D1 Acoustic Drums: Acoustic Drums2; D1 Acoustic Drums: Acoustic Drums13 | Event 405 crafted (with craft_done) |
+| `forge_hammer` | 3 | D1 FX: Metallic FX; D1 Acoustic Drums: Acoustic Drums15; D1 Acoustic Drums: Acoustic Drums4; D1 Acoustic Drums: Acoustic Drums12; D1 Acoustic Drums: Acoustic Drums2; D1 Acoustic Drums: Acoustic Drums13 | Event 405 crafted (with craft_done); a smith at every forge within 36 m by day (07:00-19:00) |
 | `smelt` | 1 | D3 Horror Trap: Carve SFX; D3 EBM Energy: FX 0001 | Event 805 station_opened, forge |
 | `craft_done` | 1 | D2 Japanese LoFi: FX 12; D2 East Coast Hip Hop: One-Shot 6 | Event 405 crafted |
 | `station_open` | 1 | synthesized; D1 Acoustic Drums: Acoustic Drums12 | Event 404 station (cooking), 805 anvil |
@@ -178,9 +252,11 @@ take a world position.
 
 Ambience (synthesized, `ambience.ts`): wind (louder up high, in rain and
 with speed while gliding or falling), rain (seeded weather or the zone's
-override), fire crackle (by the number of burning cells, `useNightHud.burning`),
-night insects (surface, dry, outside towns), underwater hush (swimming),
-cave drips (underground, through the cave reverb).
+override, at the rain intensity), rain on the roof (under cover), thunder
+(heavy rain), night insects (dry nights outside towns), underwater hush
+(swimming), cave drips (underground, through the cave reverb). Fires and
+water are positional loops (`loops.ts`, rendered by `synth.ts`), not beds:
+see "Space and distance".
 
 ## Not-yet-wired hooks (for the merge)
 
@@ -195,7 +271,6 @@ Defined and tested in `triggers.ts`; each is one line at its call site:
 | `emitSound('discovery_intro')` | pt/ux discovery intros | riser + shimmer |
 | `emitSound('chest_open', { at })` | a client-side chest lid animation (Event 407 already plays it) | creak + lid + sparkle |
 | `emitSound('tower_attuning')` | the start of an attunement build-up, if pt/progression adds one | riser (`tower_riser`) |
-| `step_snow` cue | footsteps: pass `surface: 'snow'` from `movement.ts` once a biome query is cheap there | crunchy steps |
 | `beast_growl` cue | an enemy aggro event, if the zone ever sends one | growl |
 
 Events that exist on main but are deliberately silent: 212 combat_sync,
@@ -226,6 +301,11 @@ and rebuild with `--only night`.
   darker and roomier) until it is re-exported; see above for the one-line swap.
 - Remote players' footsteps are not voiced (crowds); remote attacks and
   casts are (Event 214, spatial).
+- Smiths hammer at every forge by day whether or not the blacksmith NPC is
+  standing at it (online NPCs wander); doors do not change occlusion (an
+  open doorway muffles like a wall); occlusion is by space (building,
+  cave, outdoors), not ray-cast; the water probe hears a river or a shore,
+  not waterfalls (worldgen has no waterfall feature to find).
 - No biome-specific day ambience beyond wind/insects (birds, water
   bodies): the noise beds stand in.
 - The Gentleman Library (Kontakt piano, encrypted .nkx/.nkc) cannot be
@@ -234,15 +314,26 @@ and rebuild with `--only night`.
 ## Testing
 
 - `npx vitest run src/audio`: director state machine, trigger map (every
-  cue built, every element and rarity distinct, zone events), movement
-  sounds, settings validation.
+  cue built, every element and rarity distinct, zone events, footsteps by
+  surface), movement sounds, settings validation; audio QoL: distance,
+  air and occlusion curves (`spatial.test.ts`), cave leak, weather through
+  the shelter, interiors, rain intensity, ducking, thunder
+  (`acoustics.test.ts`), roofs/indoors/underfoot on synthetic buildings and
+  on the official world's 400 first closed buildings (`shelter.test.ts`,
+  needs worldgen.wasm), voice limiting and variation (`voiceLimit.test.ts`),
+  loop selection and fire clustering (`loopPool.test.ts`), world emitters,
+  smith rhythm, footstep surfaces (`emitters.test.ts`).
 - `node client/src/audio/dev/audio-browser.mjs`: headless Chromium, solo,
   no servers (random port). Checks the context is created inside the Play
   gesture and runs, no audio request before the first playable frame,
   day -> night -> town-night -> cave -> combat -> timed (intro, 5 s left)
   music audible on the master analyser, footsteps and jumps from real
-  input, SFX for triggers and zone events, settings persistence and mute.
+  input, SFX for triggers and zone events, the environment pass, rain
+  outside vs inside a house (quiet, muffled, roof drumming, room reverb,
+  wooden floor), town fires as capped loop voices, a burst of hits
+  limited, thunder, the hidden-tab fade, settings persistence and mute.
   Writes `docs/evidence/audio-headless.txt` and `audio-settings.png`.
-- Console: `__lodestoneAudio.state()`, `.play('loot_bitchin')`,
+- Console: `__lodestoneAudio.state()`, `.env()` (shelter, leak, rain,
+  surface, loop voices), `.forceRain(true)`, `.thunder(1500)`, `.play('loot_bitchin')`,
   `.trigger('level_up', {level: 10})`, `.zoneEvent(501)`,
   `.force({hour: 22})` / `.force({underground: 1})` / `.force(null)`.

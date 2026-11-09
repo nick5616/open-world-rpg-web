@@ -89,6 +89,8 @@ export class AudioEngine {
   private stingDuckUntil = 0;
   private analyser: AnalyserNode;
   private meterBuf = new Float32Array(2048);
+  /** Forced rain for tests and the debug handle (null = follow the weather). */
+  forcedRain: boolean | null = null;
   /** Forced music state for tests and the debug handle (null = follow the world). */
   forced: Partial<MusicInputs> | null = null;
   private voidUntil = 0;
@@ -342,7 +344,7 @@ export class AudioEngine {
 
     // Weather through the shelter.
     const night = useNightHud.getState();
-    const raining = night.online ? night.raining : localPlayer.raining;
+    const raining = this.forcedRain ?? (night.online ? night.raining : localPlayer.raining);
     const rain = this.rain.update(raining, dt, nowMs / 1000);
     const shelter = { roof, indoors };
     const w = weatherMix(rain, shelter, leak);
@@ -492,6 +494,10 @@ function installDebug(): void {
     level: () => engine?.level() ?? -200,
     /** The environment pass: shelter, cave leak, rain, surface, loop voices. */
     env: () => engine?.env ?? null,
+    /** Force rain on/off for the ambience (null follows the weather). */
+    forceRain: (r: boolean | null) => {
+      if (engine) engine.forcedRain = r;
+    },
     /** A thunder rumble from a strike this far away (m). */
     thunder: (m = 1500) => engine?.ambience.thunder(m),
     /** Are these cues decoded (headless checks wait on it)? */
