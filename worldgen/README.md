@@ -602,6 +602,13 @@ Constants: MAX_STEP_UP_M 0.6, PLAYER_CAPSULE_RADIUS 0.4, head 1.9 m.
   roof within a step is ground, a wall is pushed out of, and a ceiling
   stops a jump; walls are not climbable (they are not in the height
   function). Non-step callers see the base surface.
+- Doors (playtest follow-up; host code only, the buffer is unchanged): TS
+  `doors.ts` `TownDoors` / Go `towns.Doors` take each closable doorway's
+  box from the buffer (the lintel box lowered to the other walls' bottom,
+  copied f32 values) and push a body out of the closed ones after the
+  town collision (`after` / `After`, same per-box arithmetic). Doors start
+  open; the golden collide vectors above never include them. Vectors:
+  `server/pkg/towns/testdata/doors.json`.
 
 ## How the world is made
 

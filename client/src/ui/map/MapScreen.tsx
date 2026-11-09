@@ -18,6 +18,9 @@ import { hasBit, MAX_PERSONAL_PINS, PIN_COLORS, type Pin } from './events';
 import { setMapOpen, useExploration } from './store';
 import { mapTerrain, useMapWorld } from './world';
 import { PAPER, siteGlyph } from './mapRender';
+// Playtest 1: quest markers and offer previews.
+import { trackedQuest, useQuests } from '../quests/store';
+import { whereText } from '../quests/events';
 
 interface Hit {
   x: number;
@@ -61,11 +64,28 @@ function MapView() {
   const [pinColor, setPinColor] = useState(0);
   const view = useRef({ zoom: 1, cx: (data?.worldSize ?? 4096) / 2, cz: (data?.worldSize ?? 4096) / 2, drag: null as null | { x: number; y: number; cx: number; cz: number; moved: boolean } });
   const hits = useRef<Hit[]>([]);
+  const preview = useQuests((s) => s.preview);
+  const tracked = useQuests((s) => trackedQuest(s));
 
   // Free the mouse for the map.
   useEffect(() => {
     if (document.pointerLockElement) document.exitPointerLock();
   }, []);
+
+  // Playtest 1: a quest preview opens the map framed on where it takes you
+  // (and you). Closing the map drops the preview (QuestHud subscribes).
+  useEffect(() => {
+    const p = useQuests.getState().preview;
+    if (p && p.markers.length && data) {
+      const xs = [...p.markers.map((m) => m.x), localPlayer.pos.x];
+      const zs = [...p.markers.map((m) => m.z), localPlayer.pos.z];
+      const pad = Math.max(120, ...p.markers.map((m) => (m.r ?? 0) * 1.6));
+      const span = Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...zs) - Math.min(...zs)) + pad * 2;
+      view.current.cx = (Math.max(...xs) + Math.min(...xs)) / 2;
+      view.current.cz = (Math.max(...zs) + Math.min(...zs)) / 2;
+      view.current.zoom = Math.min(8, Math.max(1, data.worldSize / span));
+    }
+  }, [data]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -178,6 +198,16 @@ function MapView() {
         drawPin(ctx, x, y, PIN_COLORS[p.color % PIN_COLORS.length], p.party ? (p.owner[0] ?? '?').toUpperCase() : '');
         out.push({ x, y: y - 12, r: 10, pin: p });
       }
+
+      // Playtest 1: quest markers (every active quest's current step; the
+      // tracked one in gold) and a preview of where an offer would take you.
+      const qs = useQuests.getState();
+      const placed: { x: number; y: number }[] = [];
+      for (const q of qs.log.quests) {
+        const tracked = q.id === (trackedQuest(qs)?.id ?? -1);
+        for (const m of q.markers) drawQuestMarker(ctx, sx(m.x), sy(m.z), (m.r ?? 0) * k, tracked ? '#ffd166' : '#e8a33d', tracked ? m.label : '', tracked ? 1 : 0.6, false, placed);
+      }
+      if (qs.preview) for (const m of qs.preview.markers) drawQuestMarker(ctx, sx(m.x), sy(m.z), (m.r ?? 0) * k, '#7fe3ff', m.label, 1, true, placed);
 
       // Party members (drawn remotes in my party: the party ring keeps them at any distance).
       if (st.partyId) {
@@ -325,6 +355,29 @@ function MapView() {
           Regions revealed: {popcount(progress.revealed)} / {data?.regions.length ?? 16} · Level {progress.level} · {progress.xp.toString()} XP
         </div>
         {hover && <div style={{ fontStyle: 'italic' }}>{hover}</div>}
+        {preview ? (
+          <div data-testid="map-quest-preview" style={{ padding: 10, background: 'rgba(127,227,255,0.18)', border: '1px dashed #2b7a8f', borderRadius: 4 }}>
+            <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, opacity: 0.75 }}>{preview.from === 'quest' ? 'Quest' : 'Where it takes you'}</div>
+            <div style={{ fontWeight: 600, margin: '2px 0 6px' }}>{preview.title}</div>
+            {preview.markers.map((m, i) => (
+              <div key={i} style={{ fontSize: 12 }}>
+                ◈ {m.label}: {whereText(localPlayer.pos.x, localPlayer.pos.z, m)}
+                {m.r ? ` (area ~${Math.round(m.r)} m)` : ''}
+              </div>
+            ))}
+          </div>
+        ) : tracked ? (
+          <div data-testid="map-quest" style={{ padding: 10, background: 'rgba(255,209,102,0.18)', borderLeft: '3px solid #c58f12', borderRadius: 4 }}>
+            <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, opacity: 0.75 }}>Tracked quest</div>
+            <div style={{ fontWeight: 600 }}>{tracked.title}</div>
+            <div style={{ fontSize: 12, marginTop: 2 }}>{tracked.text}</div>
+            {tracked.markers.map((m, i) => (
+              <div key={i} style={{ fontSize: 12, opacity: 0.85 }}>
+                ◆ {m.label}: {whereText(localPlayer.pos.x, localPlayer.pos.z, m)}
+              </div>
+            ))}
+          </div>
+        ) : null}
         {selected ? (
           <div style={{ padding: 10, background: 'rgba(255,255,255,0.35)', borderRadius: 4 }}>
             <div style={{ fontWeight: 600 }}>{siteName(selected, data?.sites)}</div>
@@ -436,6 +489,51 @@ function drawSite(ctx: CanvasRenderingContext2D, s: Site, x: number, y: number, 
     ctx.setLineDash([]);
   }
   ctx.globalAlpha = 1;
+}
+
+/** A quest marker: an area circle (rPx > 0) with a centre diamond, or a point diamond. */
+export function drawQuestMarker(ctx: CanvasRenderingContext2D, x: number, y: number, rPx: number, color: string, label: string, alpha: number, dashed: boolean, placed: { x: number; y: number }[] = []) {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  if (rPx > 4) {
+    ctx.fillStyle = color + '33';
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    if (dashed) ctx.setLineDash([6, 4]);
+    ctx.beginPath();
+    ctx.arc(x, y, rPx, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  ctx.fillStyle = color;
+  ctx.strokeStyle = '#1d140a';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(x, y - 9);
+  ctx.lineTo(x + 6, y);
+  ctx.lineTo(x, y + 9);
+  ctx.lineTo(x - 6, y);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = '#1d140a';
+  ctx.font = '800 10px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('!', x, y + 4);
+  if (label) {
+    ctx.font = '600 12px system-ui, sans-serif';
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'rgba(255,248,230,0.85)';
+    // Stack labels that would overlap one already drawn this frame.
+    let ly = y - 14;
+    while (placed.some((p) => Math.abs(p.x - x) < 90 && Math.abs(p.y - ly) < 13)) ly -= 14;
+    placed.push({ x, y: ly });
+    ctx.strokeText(label, x, ly);
+    ctx.fillStyle = '#2b1d08';
+    ctx.fillText(label, x, ly);
+  }
+  ctx.restore();
 }
 
 function drawPin(ctx: CanvasRenderingContext2D, x: number, y: number, color: string, letter: string) {

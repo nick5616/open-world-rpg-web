@@ -9,6 +9,7 @@ import { localPlayer } from '../../state/live';
 import { drawnRemotes } from '../../net/netStore';
 import { PIN_COLORS } from './events';
 import { useExploration } from './store';
+import { trackedQuest } from '../quests/store'; // playtest 1: quest markers on the strip
 
 const W = 560;
 const H = 46;
@@ -37,7 +38,7 @@ export interface CompassMark {
   dist: number;
   color: string;
   label: string;
-  kind: 'party' | 'pin';
+  kind: 'party' | 'pin' | 'quest';
 }
 
 /** What the strip shows right now (exported for the dev handle and tests). */
@@ -56,6 +57,11 @@ export function compassMarks(): CompassMark[] {
   for (const p of st.pins) {
     out.push({ rel: wrapAngle(bearing(px, pz, p.x, p.z) - head), dist: Math.hypot(p.x - px, p.z - pz), color: PIN_COLORS[p.color % PIN_COLORS.length], label: p.party ? p.owner : '', kind: 'pin' });
   }
+  // Playtest 1: the tracked quest's current markers (an area counts from its edge).
+  // Only the nearest one is labelled (markers of one step are often close together).
+  const q = trackedQuest();
+  const qm = (q?.markers ?? []).map((m) => ({ m, d: Math.max(0, Math.hypot(m.x - px, m.z - pz) - (m.r ?? 0)) })).sort((a, b) => a.d - b.d);
+  qm.forEach(({ m, d }, i) => out.push({ rel: wrapAngle(bearing(px, pz, m.x, m.z) - head), dist: d, color: '#ffd166', label: i === 0 ? m.label : '', kind: 'quest' }));
   return out;
 }
 
@@ -110,7 +116,13 @@ export function Compass() {
         ctx.lineWidth = 1.5;
         ctx.beginPath();
         if (m.kind === 'party') ctx.arc(x, 18, 5, 0, Math.PI * 2);
-        else {
+        else if (m.kind === 'quest') {
+          ctx.moveTo(x, 10);
+          ctx.lineTo(x + 6, 18);
+          ctx.lineTo(x, 26);
+          ctx.lineTo(x - 6, 18);
+          ctx.closePath();
+        } else {
           ctx.moveTo(x, 24);
           ctx.lineTo(x - 5, 14);
           ctx.lineTo(x + 5, 14);
@@ -118,6 +130,7 @@ export function Compass() {
         }
         ctx.fill();
         ctx.stroke();
+        if (m.kind === 'quest' && !m.label) continue; // the step's other markers: the diamond only
         ctx.font = '600 10px system-ui, sans-serif';
         ctx.fillStyle = '#f1f3f5';
         const dist = m.dist >= 1000 ? `${(m.dist / 1000).toFixed(1)} km` : `${Math.round(m.dist)} m`;

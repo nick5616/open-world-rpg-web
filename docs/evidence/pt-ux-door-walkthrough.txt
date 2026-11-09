@@ -1,0 +1,57 @@
+# Playtest doors: walk through a closing/opening door, client prediction (TS worldgen/js doors.ts + DoorGround + DoorSync) vs the zone binary (Go server/pkg/towns doors.go, stamped Events 970), official world seed 20261108
+date 2026-11-09T10:35:43.139Z
+script per door: close it from the street, walk into it (blocked), open it, walk in, turn, close it behind you from inside, push into it (blocked), open it, walk out
+
+## inn (direct)
+door 114 (prop 1210, id faa5995f203fc41b) of building 1e88f2c6e6d4773f (inn, style 5) at (1935.51, 82.17, 2284.07), doorway 1.80 m x 0.30 m
+door events: 4 door_state, 0 baselines, 0 refused, 0 late re-predictions (localReplays 0)
+closed from the street: body centre stopped 0.550 m outside the door's mid-plane (limit 0.550); closed from inside: stopped 0.550 m inside (limit 0.550); got inside true, back out true
+== d0: 11.7 s, 703 steps, 351 compared snapshots; spawn (1932.74, 81.74, 2281.92)
+   per mode: ground: 351 snapshots, max 0.76 cm, y 81.7..82.2
+   overall max divergence 0.76 cm; corrections 0 (max 0.00 cm), agreements 328; drowned events 0
+   end: ground at (1933.46, 81.69, 2282.48), stamina 100.0
+   transitions:
+     0.07s seq 2: start -> ground at (1932.74, 81.74, 2281.92) stamina 100.0
+PASS
+
+## house 1 (direct)
+door 115 (prop 1234, id 63d3c8ee5309d06) of building ad6e0acc176d1d63 (farm, style 5) at (1897.60, 82.60, 2274.58), doorway 1.40 m x 0.30 m
+door events: 4 door_state, 1 baselines, 0 refused, 0 late re-predictions (localReplays 0)
+closed from the street: body centre stopped 0.550 m outside the door's mid-plane (limit 0.550); closed from inside: stopped 0.550 m inside (limit 0.550); got inside true, back out true
+== d1: 11.7 s, 701 steps, 350 compared snapshots; spawn (1897.73, 82.41, 2271.08)
+   per mode: ground: 350 snapshots, max 0.75 cm, y 82.3..82.6
+   overall max divergence 0.75 cm; corrections 0 (max 0.00 cm), agreements 349; drowned events 0
+   end: ground at (1897.72, 82.38, 2272.00), stamina 100.0
+   transitions:
+     0.07s seq 2: start -> ground at (1897.73, 82.41, 2271.08) stamina 100.0
+PASS
+
+## house 2 (direct)
+door 116 (prop 1244, id 45b706ef71f2ed8a) of building a351d6d1217c87e0 (house, style 5) at (1896.15, 82.82, 2267.62), doorway 1.40 m x 0.30 m
+door events: 4 door_state, 1 baselines, 0 refused, 0 late re-predictions (localReplays 0)
+closed from the street: body centre stopped 0.550 m outside the door's mid-plane (limit 0.550); closed from inside: stopped 0.550 m inside (limit 0.550); got inside true, back out true
+== d2: 11.7 s, 701 steps, 350 compared snapshots; spawn (1896.02, 82.42, 2271.12)
+   per mode: ground: 350 snapshots, max 0.81 cm, y 82.4..82.8
+   overall max divergence 0.81 cm; corrections 0 (max 0.00 cm), agreements 350; drowned events 0
+   end: ground at (1896.10, 82.67, 2270.21), stamina 100.0
+   transitions:
+     0.03s seq 1: start -> ground at (1896.02, 82.42, 2271.12) stamina 100.0
+PASS
+
+## inn through netsim (90 ms each way + 8 ms jitter, no loss)
+door 114 (prop 1210, id faa5995f203fc41b) of building 1e88f2c6e6d4773f (inn, style 5) at (1935.51, 82.17, 2284.07), doorway 1.80 m x 0.30 m
+door events: 4 door_state, 1 baselines, 0 refused, 0 late re-predictions (localReplays 0)
+closed from the street: body centre stopped 0.550 m outside the door's mid-plane (limit 0.550); closed from inside: stopped 0.550 m inside (limit 0.550); got inside true, back out true
+== d3: 11.7 s, 702 steps, 343 compared snapshots; spawn (1932.74, 81.74, 2281.92)
+   per mode: ground: 343 snapshots, max 0.76 cm, y 81.7..82.2
+   overall max divergence 0.76 cm; corrections 0 (max 0.00 cm), agreements 293; drowned events 0
+   end: ground at (1933.53, 81.69, 2282.53), stamina 100.0
+   transitions:
+     0.28s seq 4: start -> ground at (1932.74, 81.74, 2281.92) stamina 100.0
+PASS
+
+zone log (towns):
+{"time":"2026-11-09T02:35:42.9085435-08:00","level":"INFO","msg":"towns ready","svc":"zone","settlements":30,"buildings":408,"boxes":6277,"npcs":254,"roads":141,"bridges":11,"structures":58,"bytes":522880,"ms":338}
+
+total: 4 walks, corrections 0, max divergence 0.81 cm
+ALL PASS

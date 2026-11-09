@@ -19,6 +19,7 @@ import { CombatTimeline, spellById, weaponById, type CombatButtons, type Started
 import { EV, INTERACT_COMBAT, ACT, decodeSync, decodeTelegraph, enemyInfo } from './events';
 import { fxQueue, pushNumber, toast, useCombatHud } from './store';
 import { CombatProbe } from './probe';
+import { nextSelection, validSelection, WheelStepper } from './spellSelect';
 
 const STEP_MS = 1000 / MOVE_STEP_HZ;
 const EYE = 1.6;
@@ -81,6 +82,17 @@ export class CombatRuntime {
       return !!el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
     };
     const now = () => performance.now();
+    // Playtest 1: the right button uses the wheel's selection (the weapon's
+    // secondary, or a spell slot); Z holds the weapon's secondary always.
+    let rmbCast = false;
+    const altDown = () => {
+      this.buttons.altDown = true;
+      this.buttons.altPress++;
+    };
+    const altUp = () => {
+      this.buttons.altDown = false;
+      this.buttons.altRelease++;
+    };
     const onDown = (e: MouseEvent) => {
       if ((e.target as HTMLElement | null)?.tagName !== 'CANVAS') return;
       if (e.button === 0) {
@@ -88,16 +100,29 @@ export class CombatRuntime {
         this.buttons.attackPress++;
         this.probe.press('attack', now());
       } else if (e.button === 2) {
-        this.buttons.altDown = true;
-        this.buttons.altPress++;
+        const sel = useCombatHud.getState().selected;
+        if (sel >= 0 && this.timeline.loadout.spells[sel]) {
+          rmbCast = true;
+          this.buttons.castPress[sel] = now();
+        } else altDown();
       } else if (e.button === 1) this.buttons.techniquePress++;
     };
     const onUp = (e: MouseEvent) => {
       if (e.button === 0) this.buttons.attackDown = false;
       if (e.button === 2) {
-        this.buttons.altDown = false;
-        this.buttons.altRelease++;
+        if (rmbCast) rmbCast = false;
+        else if (this.buttons.altDown) altUp();
       }
+    };
+    const wheel = new WheelStepper();
+    const onWheel = (e: WheelEvent) => {
+      const el = e.target as HTMLElement | null;
+      if (el?.tagName !== 'CANVAS' || el.closest('[data-testid="map-screen"]')) return;
+      const dir = wheel.step(e.deltaY, now());
+      if (dir) this.cycleSelection(dir);
+    };
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (e.code === 'KeyZ' && this.buttons.altDown) altUp();
     };
     const onKey = (e: KeyboardEvent) => {
       if (isText(e.target) || e.repeat) return;
@@ -112,8 +137,14 @@ export class CombatRuntime {
         case 'Digit1':
         case 'Digit2':
         case 'Digit3':
-        case 'Digit4':
-          this.buttons.castPress[Number(e.code.slice(5)) - 1] = t;
+        case 'Digit4': {
+          const slot = Number(e.code.slice(5)) - 1;
+          this.buttons.castPress[slot] = t;
+          if (this.timeline.loadout.spells[slot]) useCombatHud.getState().set({ selected: slot });
+          break;
+        }
+        case 'KeyZ':
+          altDown();
           break;
         case 'KeyQ':
           this.buttons.formPress++;
@@ -140,12 +171,16 @@ export class CombatRuntime {
     target.addEventListener('mousedown', onDown);
     target.addEventListener('mouseup', onUp);
     target.addEventListener('keydown', onKey);
+    target.addEventListener('keyup', onKeyUp);
+    target.addEventListener('wheel', onWheel, { passive: true });
     target.addEventListener('contextmenu', noMenu);
     target.addEventListener('blur', release);
     this.detach = () => {
       target.removeEventListener('mousedown', onDown);
       target.removeEventListener('mouseup', onUp);
       target.removeEventListener('keydown', onKey);
+      target.removeEventListener('keyup', onKeyUp);
+      target.removeEventListener('wheel', onWheel);
       target.removeEventListener('contextmenu', noMenu);
       target.removeEventListener('blur', release);
     };
@@ -178,6 +213,25 @@ export class CombatRuntime {
     else this.buttons.castPress[what] = t;
   }
 
+  /** Wheel: move the right-button selection (weapon, then non-empty spell slots). */
+  cycleSelection(dir: 1 | -1): number {
+    const hud = useCombatHud.getState();
+    const next = nextSelection(validSelection(hud.selected, this.timeline.loadout.spells), this.timeline.loadout.spells, dir);
+    hud.set({ selected: next, selectedAt: performance.now() });
+    return next;
+  }
+
+  /** Scripted: select a slot (-1 weapon) / use the selection as the right button would. */
+  select(slot: number): void {
+    useCombatHud.getState().set({ selected: validSelection(slot, this.timeline.loadout.spells), selectedAt: performance.now() });
+  }
+
+  useSelected(): void {
+    const sel = useCombatHud.getState().selected;
+    if (sel >= 0 && this.timeline.loadout.spells[sel]) this.buttons.castPress[sel] = performance.now();
+    else this.press('alt');
+  }
+
   swapLoadout(): void {
     const hud = useCombatHud.getState();
     const next = hud.activeLoadout === 0 ? 1 : 0;
@@ -190,6 +244,8 @@ export class CombatRuntime {
     const hud = useCombatHud.getState();
     const lo = hud.loadouts[hud.activeLoadout];
     if (lo) this.timeline.loadout = { weapon: lo.weapon, spells: lo.spells, gem: lo.gem };
+    const sel = validSelection(hud.selected, this.timeline.loadout.spells);
+    if (sel !== hud.selected) hud.set({ selected: sel });
   }
 
   /**

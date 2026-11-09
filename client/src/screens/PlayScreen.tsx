@@ -23,6 +23,7 @@ import { VoiceHud } from '../voice';
 import { CraftPanel, InventoryScreen, LootHud } from '../ui/inventory';
 // Playtest 1: level-up fanfare, character panel (C), area notices, crystal tower prompt (client/src/ui/progression/README.md).
 import { ProgressionHud } from '../ui/progression';
+import { QuestHud } from '../ui/quests/QuestHud';
 
 function DebugLayer() {
   useDebugHotkeys();
@@ -55,6 +56,8 @@ export default function PlayScreen() {
       <InventoryScreen />
       <CraftPanel />
       <ProgressionHud />
+      {/* Playtest 1: quest tracker, offers with location previews, journal (J) */}
+      <QuestHud />
     </>
   );
 }

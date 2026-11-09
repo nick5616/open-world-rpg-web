@@ -21,6 +21,7 @@ import (
 	"lodestone/server/pkg/towns"
 	"lodestone/server/pkg/weather"
 	"lodestone/server/zone/internal/npc"
+	"lodestone/server/zone/internal/quests"
 )
 
 // Interact target kinds and actions owned by towns (contracts/events.md).
@@ -65,7 +66,6 @@ const (
 	npcDeactivateM = 260 // ... and are dropped beyond this (hysteresis)
 	npcEveryTicks  = 15  // activation check twice a second
 	townReachM     = 4.5 // spec "4 m from the eye" plus latency slack
-	maxBounties    = 5
 	shaftReachM    = 8
 )
 
@@ -76,11 +76,11 @@ type Stations interface {
 }
 
 type townsState struct {
-	active   map[int]*Entity // npc index -> entity
-	byEnt    map[uint32]int  // entity id -> npc index
-	accepted map[string][]npc.Bounty
-	props    map[uint64]int // interactable prop id -> towns prop index
-	structs  map[uint64]int // structure id -> structure index
+	active  map[int]*Entity // npc index -> entity
+	byEnt   map[uint32]int  // entity id -> npc index
+	props   map[uint64]int  // interactable prop id -> towns prop index
+	structs map[uint64]int  // structure id -> structure index
+	doors   *doorWorld      // building doors (doors.go)
 }
 
 func (s *Server) timeOfDay(now time.Time) float64 {
@@ -102,7 +102,6 @@ func (s *Server) townsInit() {
 	}
 	t.active = map[int]*Entity{}
 	t.byEnt = map[uint32]int{}
-	t.accepted = map[string][]npc.Bounty{}
 	t.props = map[uint64]int{}
 	t.structs = map[uint64]int{}
 	tw := s.cfg.Towns.T
@@ -114,6 +113,7 @@ func (s *Server) townsInit() {
 	for i := range tw.Structures {
 		t.structs[tw.Structures[i].ID] = i
 	}
+	s.doorsInit() // building doors (doors.go)
 }
 
 // townsTick activates settlements near players, steps active NPCs and
@@ -157,6 +157,7 @@ func (s *Server) townsTick(tick uint32, now time.Time) {
 		e.Yaw = wireYaw(st.Yaw)
 		e.prevValid = e.Move
 	}
+	s.doorsTick(tick) // building doors: settle changes, baselines, NPCs closing behind them (doors.go)
 }
 
 // wireYaw turns a worldgen heading (radians from +x toward +z: forward =
@@ -199,11 +200,13 @@ func eyeDist(e *Entity, x, y, z float64) float64 {
 func (s *Server) townInteract(sess *session, m *proto.Interact, now time.Time) {
 	w := s.cfg.Towns
 	e := sess.ent
-	if w == nil || e == nil || m.TargetKind < InteractNPC || m.TargetKind > InteractShaft {
+	if w == nil || e == nil || m.TargetKind < InteractNPC || m.TargetKind > InteractShaft && m.TargetKind != InteractDoor {
 		return
 	}
 	s.townsInit()
 	switch m.TargetKind {
+	case InteractDoor:
+		s.doorInteract(sess, m) // building doors (doors.go)
 	case InteractNPC:
 		s.npcInteract(e, m, now)
 	case InteractBoard:
@@ -237,6 +240,9 @@ func (s *Server) npcInteract(e *Entity, m *proto.Interact, now time.Time) {
 			ov = 1
 		}
 		s.townEvent(e, &proto.Event{Kind: EventNPCSay, EntityID: ne.ID, TargetID: uint32(d.Role), Value: ov, Data: []byte(w.Say(i, tod, open))})
+		if sess := s.byChar[e.CharacterID]; sess != nil {
+			s.questsTalk(sess, d.Role, d.Settlement, ne.ID) // quests.go: talk steps, the blacksmith's starter offer
+		}
 		if !open {
 			return
 		}
@@ -331,19 +337,16 @@ func (s *Server) boardInteract(e *Entity, m *proto.Interact, now time.Time) {
 }
 
 func (s *Server) sendBounties(e *Entity, settlement int, from uint32, now time.Time) {
+	if sess := s.byChar[e.CharacterID]; sess != nil {
+		s.questsTurnIn(sess, settlement) // quests.go: held deliveries for this settlement are handed in here
+	}
 	bs := s.cfg.Towns.Bounties(settlement, s.gameDay(now))
-	have := s.town.accepted[e.CharacterID]
-	data := npc.EncodeBounties(bs, func(id uint32) bool {
-		for _, b := range have {
-			if b.ID == id {
-				return true
-			}
-		}
-		return false
-	})
+	data := npc.EncodeBountiesState(bs, func(id uint32) byte { return s.questsBountyState(e, settlement, id) })
 	s.townEvent(e, &proto.Event{Kind: EventBounties, EntityID: from, TargetID: uint32(settlement), Data: data})
 }
 
+// acceptBounty: an accepted job becomes a quest in the character's
+// persisted log (quests.go; WP20 kept them in zone memory).
 func (s *Server) acceptBounty(e *Entity, settlement int, id uint32, from uint32, now time.Time) {
 	var pick *npc.Bounty
 	bs := s.cfg.Towns.Bounties(settlement, s.gameDay(now))
@@ -352,41 +355,46 @@ func (s *Server) acceptBounty(e *Entity, settlement int, id uint32, from uint32,
 			pick = &bs[k]
 		}
 	}
-	have := s.town.accepted[e.CharacterID]
-	switch {
-	case pick == nil:
+	if pick == nil {
 		s.refuseTown(e, uint64(id), TownRefuseNoSuch)
 		return
-	case len(have) >= maxBounties:
-		s.refuseTown(e, uint64(id), TownRefuseTooMany)
+	}
+	job := bountyJob{ID: pick.ID, Kind: pick.Kind, Site: pick.Site, Qty: pick.Qty, Reward: pick.Reward, Text: pick.Text, Item: pick.Item, Settlement: settlement}
+	if r := s.questsBountyAccepted(e, job, now); r != 0 {
+		s.refuseTown(e, uint64(id), r)
 		return
 	}
-	for _, b := range have {
-		if b.ID == id {
-			s.refuseTown(e, uint64(id), TownRefuseHave)
-			return
-		}
-	}
-	s.town.accepted[e.CharacterID] = append(have, *pick)
 	s.log.Info("bounty accepted", "character", e.CharacterID, "bounty", id, "text", pick.Text)
 	s.townEvent(e, &proto.Event{Kind: EventBountyAccepted, EntityID: e.ID, TargetID: id, Value: int32(pick.Reward), Data: []byte(pick.Text)})
 	s.sendBounties(e, settlement, from, now)
 }
 
-// AcceptedBounties is the hook WP13/WP14/WP15 complete bounties through
-// (kills, deliveries, demons): the jobs a player holds this session.
-func (s *Server) AcceptedBounties(e *Entity) []npc.Bounty { return s.town.accepted[e.CharacterID] }
-
-// CompleteBounty removes a held bounty (the caller grants the reward).
-func (s *Server) CompleteBounty(e *Entity, id uint32) bool {
-	have := s.town.accepted[e.CharacterID]
-	for k, b := range have {
-		if b.ID == id {
-			s.town.accepted[e.CharacterID] = append(have[:k:k], have[k+1:]...)
-			return true
+// AcceptedBounties lists the bounties a player holds (from the quest log).
+func (s *Server) AcceptedBounties(e *Entity) []npc.Bounty {
+	sess := s.byChar[e.CharacterID]
+	if sess == nil || sess.quests == nil {
+		return nil
+	}
+	var out []npc.Bounty
+	for _, q := range sess.quests.log.Active {
+		if q.Kind == quests.KindBounty {
+			out = append(out, npc.Bounty{ID: q.ID, Text: q.Title, Reward: uint32(q.Gold), Settlement: q.Settlement, Site: -1})
 		}
 	}
-	return false
+	return out
+}
+
+// CompleteBounty removes a held bounty without its quest rewards (the
+// caller grants the reward). Bounties normally complete through their
+// quest objectives (quests.go).
+func (s *Server) CompleteBounty(e *Entity, id uint32) bool {
+	sess := s.byChar[e.CharacterID]
+	if sess == nil || sess.quests == nil || sess.quests.log.Remove(id) == nil {
+		return false
+	}
+	s.sendQuestLog(sess)
+	s.saveQuests(sess)
+	return true
 }
 
 func (s *Server) stationInteract(e *Entity, m *proto.Interact) {
