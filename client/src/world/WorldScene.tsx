@@ -180,7 +180,7 @@ export function WorldScene({ runtime }: Props) {
       }
     });
     gl.shadowMap.enabled = shaderPreset.shadows;
-    const post = new PostFX(gl, scene, camera, { multisampling: shaderName === 'high' ? 4 : shaderName === 'medium' ? 2 : 0, bloom: shaderTier.bloom, godRays: shaderTier.godRays });
+    const post = new PostFX(gl, scene, camera, { multisampling: shaderName === 'high' ? 4 : shaderName === 'medium' ? 2 : 0, bloom: shaderTier.bloom, godRays: shaderTier.godRays, spellScreen: shaderName !== 'low' });
     const s = gl.getSize(new THREE.Vector2());
     post.setSize(s.x, s.y);
     fx.current = { sun, post };

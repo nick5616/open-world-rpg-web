@@ -1,7 +1,9 @@
 // The 3D half of combat (WP13): enemies drawn from the interpolation buffer
-// (EntityKind enemy, typeId -> look), telegraph decals, projectiles, area
-// spells, beams, hit sparks, floating damage numbers and the first-person
-// weapon with its swing. Mounted inside the world canvas by NetPlay.
+// (EntityKind enemy, typeId -> look), telegraph decals, the enemy hit flash,
+// floating damage numbers and the first-person weapon with its swing.
+// Mounted inside the world canvas by NetPlay. Every spell visual (yours,
+// other players', enemy projectiles, statuses) is the spell FX engine's
+// (fx/SpellFxLayer.tsx, playtest 2), mounted here.
 //
 // Everything is imperative three.js in one useFrame (no React state per
 // frame), with small pooled geometries and materials: a camp is a handful
@@ -18,15 +20,14 @@ import { ELEMENT_COLORS, enemyInfo } from './events';
 import { fxQueue, type Fx } from './store';
 // The newest melee swing (set from the FX queue below, read by the weapon).
 import { FirstPersonWeapon, swing } from './weapons/FirstPersonWeapon';
+import { SpellFxLayer } from './fx/SpellFxLayer';
 
 const geo = {
   body: new THREE.CapsuleGeometry(0.45, 0.7, 4, 10),
   head: new THREE.SphereGeometry(0.28, 12, 10),
   ring: new THREE.RingGeometry(0.85, 1, 48),
   disc: new THREE.CircleGeometry(1, 48),
-  sphere: new THREE.SphereGeometry(1, 10, 8),
   bar: new THREE.PlaneGeometry(1, 0.09),
-  spark: new THREE.OctahedronGeometry(0.12, 0),
 };
 
 interface EnemyMesh {
@@ -182,7 +183,8 @@ function telegraphMesh(f: Extract<Fx, { t: 'telegraph' }>): THREE.Object3D {
       m.rotation.x = -Math.PI / 2;
   }
   m.position.set(f.x, f.y + 0.08, f.z);
-  m.renderOrder = 5;
+  // Readability: enemy telegraphs draw over spell ground effects (renderOrder 2-4).
+  m.renderOrder = 6;
   return m;
 }
 
@@ -262,10 +264,8 @@ export function CombatLayer() {
       let until = now + 400;
       switch (f.t) {
         case 'spark': {
-          obj = new THREE.Mesh(geo.spark, new THREE.MeshBasicMaterial({ color: f.color }));
-          obj.position.set(f.x, f.y, f.z);
-          until = now + 200;
-          for (const [, m] of enemies) if (m.root.position.distanceTo(new THREE.Vector3(f.x, f.y - 1, f.z)) < 2.5) m.flash = HITSTOP_MS / 1000;
+          // The hit flash on the enemy; the burst itself is the spell FX engine's.
+          for (const [, m] of enemies) if (Math.hypot(m.root.position.x - f.x, m.root.position.y - (f.y - 1), m.root.position.z - f.z) < 2.5) m.flash = HITSTOP_MS / 1000;
           break;
         }
         case 'number': {
@@ -279,27 +279,6 @@ export function CombatLayer() {
           obj = telegraphMesh(f);
           until = now + f.windupMs + 250;
           break;
-        case 'projectile':
-          obj = new THREE.Mesh(geo.sphere, new THREE.MeshBasicMaterial({ color: f.color }));
-          obj.scale.setScalar(f.radius);
-          obj.position.set(f.x, f.y, f.z);
-          until = now + f.life * 1000;
-          break;
-        case 'area': {
-          const m = new THREE.Mesh(geo.disc, new THREE.MeshBasicMaterial({ color: f.color, transparent: true, opacity: 0.35, side: THREE.DoubleSide, depthWrite: false }));
-          m.rotation.x = -Math.PI / 2;
-          m.position.set(f.x, f.y + 0.1, f.z);
-          m.scale.setScalar(Math.max(0.3, f.radius));
-          obj = m;
-          until = now + f.durationMs;
-          break;
-        }
-        case 'beam': {
-          const g = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(f.x, f.y, f.z), new THREE.Vector3(f.x2, f.y2, f.z2)]);
-          obj = new THREE.Line(g, new THREE.LineBasicMaterial({ color: f.color }));
-          until = now + f.durationMs;
-          break;
-        }
         case 'swing':
           swing.at = f.at;
           swing.dur = f.durationMs + 120;
@@ -317,27 +296,35 @@ export function CombatLayer() {
       const f = l.fx;
       if (now >= l.until) {
         root.remove(l.obj);
+        disposeFx(l.obj);
         live.splice(i, 1);
         continue;
       }
-      if (f.t === 'projectile') {
-        const t = (now - f.at) / 1000;
-        l.obj.position.set(f.x + f.vx * t, f.y + f.vy * t - 0.5 * f.gravity * t * t, f.z + f.vz * t);
-      } else if (f.t === 'number') {
+      if (f.t === 'number') {
         l.obj.position.y += delta * 1.2;
         ((l.obj as THREE.Sprite).material as THREE.SpriteMaterial).opacity = Math.max(0, (l.until - now) / 400);
       } else if (f.t === 'telegraph') {
         const k = Math.min(1, (now - f.at) / Math.max(1, f.windupMs));
         const mat = (l.obj as THREE.Mesh).material as THREE.MeshBasicMaterial;
         mat.opacity = 0.2 + 0.45 * k;
-      } else if (f.t === 'spark') {
-        l.obj.scale.setScalar(1 + (now - f.at) / 60);
-      } else if (f.t === 'area') {
-        const mat = (l.obj as THREE.Mesh).material as THREE.MeshBasicMaterial;
-        mat.opacity = 0.35 * Math.max(0, (l.until - now) / Math.max(1, f.durationMs));
       }
     }
   });
 
-  return <Weapon />;
+  return (
+    <>
+      <Weapon />
+      <SpellFxLayer />
+    </>
+  );
+}
+
+/** Numbers and telegraphs own their material (and a number its canvas texture; a telegraph its sector geometry). */
+function disposeFx(o: THREE.Object3D): void {
+  const m = (o as THREE.Mesh).material as THREE.Material & { map?: THREE.Texture | null };
+  m?.map?.dispose();
+  m?.dispose();
+  const g = (o as THREE.Mesh).geometry;
+  // (a Sprite shares one geometry across three.js: never dispose it)
+  if (g && g !== geo.disc && !(o as THREE.Sprite).isSprite) g.dispose();
 }
