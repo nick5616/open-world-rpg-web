@@ -517,6 +517,7 @@ ordered item transaction queue), `items_store.go` (Postgres),
   `LODESTONE_ZONE_TEST_ITEM_TX_DELAY_MS` / `_COMMIT_DELAY_MS` (kill-mid-grant
   test hooks only).
 - **Debug**: `GET /debug/items?char=<id>`, `GET /debug/containers?x=&z=&r=`.
+- **G4 fix**: Event 406 is resent whenever the set of listed containers changes, not only on a new chunk (a chunk the terrain cache finished after you entered used to leave its chest without an [E] prompt; `TestContainerListResentWhenALateChunkArrives`).
 - **Tests**: `go test ./internal/items/`, `./internal/game/ -run "Item|Drop|Loot|Smelt|Buy"`
   (in process, incl. the real 10-minute despawn on the zone clock and the
   handoff), `TestItemOpExactlyOnceAndFence` (Postgres), and the process

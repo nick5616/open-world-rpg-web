@@ -38,3 +38,5 @@ go -C server/zone test ./internal/combat/...
   dies in 2-5 hits and the fight lasts 3-10 s; elites of each affix 10-30 s;
   Warden and Archon fights with 1, 2 and 4 players last 2-5 minutes through
   3 phases; a party of two clears a camp and then a boss.
+
+G4: a leashed `combatbot` (a `Goal` + `Leash`, e.g. the night bots at a ward garden) no longer picks enemies beyond leash + reach; it used to lock onto an older pack it could never reach and stand at the leash edge with 0 attacks through a whole defense (`combatbot/brain_test.go`).
