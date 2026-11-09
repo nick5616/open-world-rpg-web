@@ -20,6 +20,7 @@ import { FANFARE_MS, isAttuned, pruneProgression, setPanelOpen, useProgression, 
 import { towerPrompt, type TowerPrompt, type TowerLike } from './towerPrompt';
 import { useIntro } from '../intro/queue';
 import { openSkillScreen } from '../skills/store';
+import { PvpPanelSection } from '../pvp/PvpHud';
 
 const GOLD = '#ffd166';
 const PANEL: CSSProperties = { background: 'rgba(12,14,20,0.94)', border: '1px solid rgba(255,209,102,0.35)', borderRadius: 6, color: '#f1f3f5', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' };
@@ -250,6 +251,8 @@ function CharacterPanel() {
           </div>
         ))}
       </Section>
+      {/* Playtest 2: the PvP flag and how duels work (CR 019) */}
+      <PvpPanelSection />
       {area && (
         <Section title="Where you stand">
           <Row label={area.haven ? 'The Haven' : area.tierName} value={`area level ${area.level}`} sub={area.by && !area.haven ? `shaped by ${area.by}` : undefined} />

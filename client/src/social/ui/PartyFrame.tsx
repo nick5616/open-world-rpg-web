@@ -5,6 +5,7 @@ import { sendSocial } from '../session';
 import { useSocialStore } from '../store';
 import { button, channelColor, glass, nameColor } from './style';
 import { CORNER_BOTTOM } from '../../hud/layout'; // playtest 1: shared bottom layout
+import { playerIdByName, usePvp } from '../../ui/pvp'; // playtest 2: duels (CR 019)
 
 export interface PartyFrameProps {
   /** 0..1 health for a party member, once the zone's party ring provides it. */
@@ -16,6 +17,8 @@ export function PartyFrame({ healthOf }: PartyFrameProps) {
   const invites = useSocialStore((s) => s.invites);
   const me = useSocialStore((s) => s.me);
   const dismissInvite = useSocialStore((s) => s.dismissInvite);
+  const pvp = usePvp((s) => s.actions);
+  const dueling = usePvp((s) => s.duel !== null);
   if (!party && invites.length === 0) return null;
   const lead = party?.leaderId === me?.characterId;
   return (
@@ -61,6 +64,21 @@ export function PartyFrame({ healthOf }: PartyFrameProps) {
                   <span style={{ color: nameColor(m.name), fontWeight: 600 }}>{m.name}</span>
                   {m.characterId === party.leaderId && <span title="leader">★</span>}
                   <span style={{ marginLeft: 'auto', fontSize: 11, opacity: 0.7 }}>{m.online ? (m.region ?? '') : 'offline'}</span>
+                  {!self && m.online && pvp && (
+                    <button
+                      data-testid="party-duel"
+                      title={`Challenge ${m.name} to a duel`}
+                      disabled={dueling}
+                      style={{ ...button, fontSize: 10, padding: '1px 5px' }}
+                      onClick={() => {
+                        const id = playerIdByName(m.name);
+                        if (id) pvp.challenge(id);
+                        else useSocialStore.getState().localNotice(`${m.name} is not nearby.`, 'error');
+                      }}
+                    >
+                      Duel
+                    </button>
+                  )}
                 </div>
                 {hp !== undefined && (
                   <div style={{ height: 4, background: 'rgba(255,255,255,0.1)', borderRadius: 2, marginTop: 2 }}>

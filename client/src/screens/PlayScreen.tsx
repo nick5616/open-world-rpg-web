@@ -25,6 +25,7 @@ import { VoiceHud } from '../voice';
 import { CraftPanel, InventoryScreen, LootHud } from '../ui/inventory';
 // Playtest 1: level-up fanfare, character panel (C), area notices, crystal tower prompt (client/src/ui/progression/README.md).
 import { ProgressionHud } from '../ui/progression';
+import { PvpHud } from '../ui/pvp';
 // Playtest 2: skill tree (N) and build overview (B) (client/src/ui/skills/README.md).
 import { SkillScreen } from '../ui/skills';
 import { QuestHud } from '../ui/quests/QuestHud';
@@ -63,6 +64,8 @@ export default function PlayScreen() {
       <InventoryScreen />
       <CraftPanel />
       <ProgressionHud />
+      {/* Playtest 2: PvP flag, duel prompt, countdown, result, kill feed (CR 019) */}
+      <PvpHud />
       <SkillScreen />
       {/* Playtest 1: quest tracker, offers with location previews, journal (J) */}
       <QuestHud />

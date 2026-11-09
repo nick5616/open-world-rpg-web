@@ -21,6 +21,7 @@ import { fxQueue, pushNumber, toast, useCombatHud } from './store';
 import { CombatProbe } from './probe';
 import { nextSelection, validSelection, WheelStepper } from './spellSelect';
 import { emitSound } from '../audio/bridge';
+import { isHostilePlayer } from '../ui/pvp/hostile';
 
 const STEP_MS = 1000 / MOVE_STEP_HZ;
 const EYE = 1.6;
@@ -306,9 +307,9 @@ export class CombatRuntime {
     void before;
   }
 
-  /** The enemies the player sees (interpolated, as drawn this frame). */
+  /** The enemies the player sees (interpolated, as drawn this frame), and the players they may fight (playtest 2 PvP and duels, ui/pvp). */
   private enemies(): RemoteView[] {
-    return drawnRemotes.views.filter((v) => v.kind === 2 && v.healthPct > 0);
+    return drawnRemotes.views.filter((v) => (v.kind === 2 && v.healthPct > 0) || isHostilePlayer(v));
   }
 
   private activeStep(a: Active, seq: number, st: MoveState): void {

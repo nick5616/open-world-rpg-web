@@ -5,8 +5,8 @@ package game
 // attack/cast starts and strips illegal dashes BEFORE the movement step
 // (combatFrame), then records the frame's outcome for the strike grace
 // window (combatAfterFrame). Hit claims are validated by combat.World and
-// answered with HitResult; claims naming a player are always refused (spec
-// 2: no PvP of any kind). Each tick the world spawns groups near players,
+// answered with HitResult; claims naming a player go through the PvP rules
+// (playtest 2, CR 019: pvp.go, duel.go; refused unless both may fight). Each tick the world spawns groups near players,
 // runs enemy AI and settles strikes; its outputs become entities (enemies
 // travel the existing snapshot/AOI path as EntityKind enemy), Events
 // (contracts/events.md 200-399), XP (WP12 progress), respawns (WP12
@@ -226,10 +226,12 @@ func (s *Server) combatJoin(sess *session) {
 	s.cbt.w.AddPlayer(p)
 	syncPlayerHealth(e)
 	s.sendCombatSync(sess)
+	s.pvpJoin(sess) // playtest 2: arriving flagged (zone handoff)
 }
 
 func (s *Server) combatLeave(sess *session) {
 	if e := sess.ent; e != nil && e.cbt != nil {
+		s.pvpLeave(sess) // playtest 2: a duelist who leaves loses the duel
 		s.saveCombat(sess, true)
 		s.cbt.w.RemovePlayer(e.ID)
 	}
@@ -240,7 +242,7 @@ func (s *Server) sendCombatSync(sess *session) {
 	// pt/ux: the weapon look rides in the player's typeId for others
 	// (weaponlook.go) and, per loadout, at the end of combat_sync for you.
 	mats, look := weaponLooks(sess)
-	e.TypeID = look
+	e.TypeID = look | e.pvpTypeBits() // playtest 2: bits 12-13 are the PvP flag and dueling (pvp.go)
 	s.sendEvent(sess, &proto.Event{Kind: combat.EvCombatSync, EntityID: e.ID, Value: int32(e.cbt.Profile.Active), Data: append(combat.EncodeSync(e.cbt), mats[0], mats[1])})
 	s.questsChanged(sess) // quests.go: "know a spell" objectives
 }
@@ -280,18 +282,22 @@ func (s *Server) handleHitClaim(sess *session, c *proto.HitClaim) {
 	if e == nil || e.cbt == nil {
 		return
 	}
-	// PvP never (spec 2): a claim that names a player is refused before
-	// anything else looks at it.
-	if t := s.entityByID(c.TargetID); t != nil && t.Kind == proto.EntityKindPlayer {
-		s.sendHitResult(sess, c, s.cbt.w.RefusePlayerTarget())
-		return
-	}
-	res := s.cbt.w.Claim(e.cbt, c)
+	res := s.resolveClaim(sess, c)
 	if res.Pending {
 		s.cbt.pending = append(s.cbt.pending, pendingClaim{sess: sess, claim: *c, until: s.tick + claimRetryTicks})
 		return
 	}
 	s.sendHitResult(sess, c, res)
+}
+
+// resolveClaim validates a claim: on a player through the PvP rules
+// (playtest 2, CR 019: pvp.go; refused unless both may fight), on anything
+// else through the PvE path, which knows enemies only.
+func (s *Server) resolveClaim(sess *session, c *proto.HitClaim) combat.ClaimResult {
+	if t := s.entityByID(c.TargetID); t != nil && t.Kind == proto.EntityKindPlayer {
+		return s.pvpClaim(sess, c, t)
+	}
+	return s.cbt.w.Claim(sess.ent.cbt, c)
 }
 
 func (s *Server) sendHitResult(sess *session, c *proto.HitClaim, r combat.ClaimResult) {
@@ -385,7 +391,7 @@ func (s *Server) combatTick(tick uint32) {
 			if pc.sess.left || pc.sess.ent == nil || pc.sess.ent.cbt == nil {
 				continue
 			}
-			res := w.Claim(pc.sess.ent.cbt, &pc.claim)
+			res := s.resolveClaim(pc.sess, &pc.claim)
 			if res.Pending {
 				if tick < pc.until {
 					keep = append(keep, pc)

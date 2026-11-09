@@ -158,7 +158,8 @@ type World struct {
 // Stats are cumulative counters.
 type Stats struct {
 	ClaimsAccepted, ClaimsRefused, Kills, PlayerHits, Evaded, Downs int64
-	RefusedBy                                                       [16]int64
+	PvPHits                                                         int64 // playtest 2: accepted player-vs-player claims
+	RefusedBy                                                       [24]int64
 }
 
 const cellM = 256.0
@@ -645,6 +646,9 @@ func (w *World) eachPlayerNear(x, z, r float64, fn func(*Player)) {
 // upkeep (mana, regen, consumables, respawns).
 func (w *World) Step(tick uint32) {
 	w.tick = tick
+	for _, p := range w.playerList {
+		p.notePos(tick) // playtest 2: PvP claims look back over these (pvp.go)
+	}
 	w.buildPlayerGrid() // WP19: exact for this Step only
 	defer func() { w.pg.valid = false }()
 	if tick%constants.TickRateHz == 0 {
