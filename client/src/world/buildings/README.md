@@ -65,6 +65,57 @@ here: the boxes come from worldgen's towns buffer (`worldgen/README.md`
   806). The panel frees the pointer lock; Esc or E closes it. Offline the
   same prompts open a local "(offline)" panel.
 
+## Doors (playtest follow-up)
+
+Every building with floors and a closed front (forges have an open front)
+has a door that opens and closes with E (`[E] Open door` / `[E] Close
+door`), for everyone nearby, with collision that stays bit-identical between
+prediction and the zone.
+
+- **Boxes** (`worldgen/js/src/doors.ts` `TownDoors`, Go twin
+  `server/pkg/towns/doors.go`): a door's box is the building's lintel box
+  (the doorway, door width x wall thickness) lowered to the floor, every
+  value copied from the towns buffer (no arithmetic, so TS and Go hold the
+  same f32 numbers). Closed doors push the body out after the town
+  collision (same per-box arithmetic, two passes, ascending door index);
+  open doors are not there. The WP20 town collision and its golden vectors
+  never see door boxes, and doors start **open** (a WP20 doorway), so
+  nothing changed for anything that never closes a door.
+- **States stamped by step** (`DoorStates`): the zone never changes a door
+  "now". It sends each nearby player Event 970 with the input seq the
+  change applies from (beyond everything that client will have predicted
+  when it arrives: its newest frame + the round trip + 12 steps) and
+  simulates that player's frames with the old state before it and the new
+  one from it on. `doorGround.ts` (on `WorldRuntime.ground`, between the
+  town ground and WP15's chemistry overlay) asks `DoorStates.openAt(d,
+  stepClock.seq)`; `LocalSim` and the reconciliation replay set
+  `sim/stepClock.ts` per step. A change that arrives after we already
+  predicted its step (a very long round trip) re-predicts from it
+  (`ClientPrediction.replayFrom`, counted in `localReplays`, not as a
+  correction). Baselines (971) bring newcomers up to date.
+- **Wire** (`doors.ts` `DoorSync`): Events 970-972 into the states,
+  refusals (972) as toasts, E -> Interact 34 (open 1 / close 2); offline
+  (solo) the door toggles locally from the next step.
+- **Leaves** (`doorsMesh.ts`): one `InstancedMesh` (one draw call plus its
+  shadow passes) for every leaf within 110 m; a leaf hangs on the inner
+  face of the wall and swings into the room over ~0.45 s, starting at the
+  step the collision changes; doorways wider than 1.6 m get two leaves.
+  The static leaves are no longer in the settlement shell.
+- **NPCs** open a closed door they need, wait for it, walk through and
+  close it behind them; through an open door they just walk
+  (`server/zone/internal/game/doors.go`).
+- Tests: `doors.test.ts` (door boxes and push-out replay
+  `server/pkg/towns/testdata/doors.json` bit for bit, states, door ground,
+  DoorSync), `doorWalk.integration.test.ts` (Node client vs the zone binary:
+  close, walk into it, open, walk in, close behind you, push into it, open,
+  walk out: 0 corrections). Evidence: `npx vite-node
+  src/world/buildings/dev/door-acceptance.ts` ->
+  `docs/evidence/pt-ux-door-walkthrough.txt` (also through the netsim proxy
+  at ~190 ms RTT); screenshots `npx vite-node
+  src/world/buildings/dev/door-shots.ts` -> `docs/evidence/pt-ux-door-closed.png`,
+  `pt-ux-door-open.png`.
+- Debug: `__lodestoneTowns.doors(si)`, `toggleDoor(d)`, `doorStats()`.
+
 ## Files
 
 | File | What |
@@ -82,6 +133,8 @@ here: the boxes come from worldgen's towns buffer (`worldgen/README.md`
 | `townMaterial.ts` | The patched material and `geometryOf`. |
 | `npcs.ts` | Townsfolk renderer and labels. |
 | `interact.ts`, `townHud.ts`, `townEvents.ts` | Target selection, the HUD/panel, Event payload decoders. |
+| `doors.ts`, `doorGround.ts`, `doorsMesh.ts` | Doors: Events 970-972 and Interact 34 (`DoorSync`), the door overlay on the movement ground, the instanced swinging leaves. |
+| `dev/doorWalk.ts`, `dev/door-acceptance.ts`, `dev/door-shots.ts`, `doorWalk.integration.test.ts` | Door walk-through prediction check vs the zone binary, its evidence run, screenshots. |
 | `townsDebug.ts` | `window.__lodestoneTowns`. |
 | `dev/townBench.mjs` | Headless measurement + screenshots. |
 | `townGround.ts`, `towns.worker.ts`, `dev/walkIntoBuilding.ts`, `dev/walk-acceptance.ts`, `walkIntoBuilding.integration.test.ts` | Lead's (movement ground, towns buffer worker, walk-in acceptance). |
@@ -135,3 +188,10 @@ worker; the main thread's largest step is wrapping one mesh (a few ms).
   which is what the zone sets for NPCs.
 - Offline NPCs stand still at their work spots (schedules run in the zone).
 - The station panel is a placeholder until WP14 (smelting, forging).
+- Doors: open leaves have no collision (as before); a closed door is
+  pushed out of after the town collision rather than inside its passes; a
+  client that stops sending input (a hidden tab) holds a change "pending"
+  for up to 3 s (others get "still swinging" meanwhile); door state lives
+  in the zone's memory (a restart reopens every door; WP16 zones each keep
+  their own) and `tools/bots` predict without doors (a bot walking into a
+  door someone closed gets corrected).

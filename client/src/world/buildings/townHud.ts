@@ -88,6 +88,8 @@ export class TownHud {
   private readonly listener = (e: ZoneEvent) => this.onEvent(e);
   /** Last action (headless scripts check what E did). */
   lastAction: string | null = null;
+  /** E on a door (TownsManager: DoorSync.toggle; Interact 34 online, local offline). */
+  doorAct: ((door: number) => void) | null = null;
 
   private readonly onKey = (e: KeyboardEvent) => {
     if (e.repeat) return;
@@ -200,6 +202,11 @@ export class TownHud {
   /** E on a target: Interact online, a local line offline. */
   act(c: Candidate): void {
     if (c.kind === 'sign') return;
+    if (c.kind === 'door') {
+      this.doorAct?.(c.index);
+      this.lastAction = `door ${c.index} ${c.role === 1 ? 'close' : 'open'}`;
+      return;
+    }
     const s = this.session();
     this.pending = c;
     if (s) {

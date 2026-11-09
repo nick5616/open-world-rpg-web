@@ -16,7 +16,7 @@ for your package; document each kind's use of `entityId`, `targetId`, `value`,
 | 700-799 | WP09 mining (vein hit, vein break) |
 | 800-899 | WP20 towns and NPCs (dialogue, shop, bounty) |
 | 950-969 | Playtest 1 quests (CR 013: quest log, offers, steps, completion) |
-| 970-979 | Playtest 1 doors (CR 013) |
+| 970-979 | Playtest 1 building doors (CR 013; WP20 follow-up) |
 
 ## Registered kinds
 
@@ -97,6 +97,9 @@ for your package; document each kind's use of `entityId`, `targetId`, `value`,
 | 804 | `rested` | WP20. You rested at an inn: `entityId` = you, `value` = health restored |
 | 805 | `station_opened` | WP20 (forge interaction point for WP14). You used a forge or anvil: `entityId` = you, `targetId` = station kind (1 forge, 2 anvil), `data` = u64 prop stable id LE + u16 settlement index. WP14's `Config.Stations` records the open station and lets this event through: the client opens the smithing panel (smelting, forging; Interact 22) on it |
 | 806 | `town_refused` | WP20. `value` = reason: 1 too far, 2 unknown target, 3 closed for the night, 4 no such item or bounty, 5 already accepted, 6 too many bounties (max 5), 7 nothing to rest for, 8 no cave below; `data` = u64 target id LE |
+| 970 | `door_state` | Doors. A building door opens or closes (to every player within 260 m of the settlement's edge, each with its own step): `entityId` = who changed it (player or NPC entity id; 0 = the zone), `targetId` = door prop index (towns buffer PROPS), `value` = new state (1 open, 0 closed), `x/y/z` = the door (cm), `data` = `u64 door prop stable id LE \| u32 step LE`: your input seq from which the new state applies (0 = it already applies). The zone picks a step beyond everything you will have predicted when this arrives (your newest applied frame + the round trip in frames + 12) and steps your frames with the old state before it and the new one from it on; clients do the same, so prediction never disagrees. Doors start open |
+| 971 | `door_baseline` | Doors. On coming within 200 m of a settlement whose doors changed since you last heard: `targetId` = settlement index, `data` = `u8 version(1) \| u16 count \| count x (u32 door prop index \| u8 open before step \| u8 open from step \| u32 step (0 = settled))`. Lists the settlement's doors that are not settled open; every unlisted door of the settlement is open |
+| 972 | `door_refused` | Doors. To you: Interact 34 refused. `targetId` = door prop index (0xFFFFFFFF unknown), `value` = reason: 1 too far, 2 not a door / bad action, 3 someone is in the doorway (a player or NPC touching it, with a margin for their speed), 4 still swinging (a change is pending), 5 already in that state; `data` = u64 target id LE |
 | 807 | `purchase` | WP20. `value` = price, `targetId` = quantity, `data` = item id. Since WP14 the price is paid in gold (`currency:gold`, CR 010) and the item lands in the inventory (401 + 400); not enough gold or no room refuses with 403 instead (zones configured with an external `Config.Granter` keep the WP20 behaviour) |
 | 950 | `quest_log` | Playtest 1 (CR 013). To you after join and after every change: your whole quest log. `entityId` = you, `targetId` = tracked quest id (0 none), `value` = active quests, `data` = UTF-8 JSON `{"v":1,"tracked":id,"quests":[{id, key, kind (0 bounty, 1 story), title, giver, step, steps:[{text, done}], text, note?, progress, need (0 = no count), markers:[{x, z, r?, label}], gold, xp, turnIn?}]}`. `markers` are the current step's places in meters (`r` > 0: an area circle of that radius, else a point); `text`/`note` the current step and its hint; `progress`/`need` a count (e.g. 2 of 4 ore) |
 | 951 | `quest_offer` | Playtest 1. To you: a quest you may accept (Interact 60 action 1 with `targetId`). `entityId` = the NPC offering it (0 none), `targetId` = quest id, `data` = UTF-8 JSON: one quest of 950's shape plus `stepMarkers` (every step's markers, so the offer can preview where the quest takes place). Today: a blacksmith offers "Ward against the night" to a character who dropped it |
@@ -139,7 +142,8 @@ to a thing" verb. `targetKind` is a registry like Event kinds; `action` and
 | 31 `board` | WP20 | bounty board prop stable id (towns buffer) | 1 = read (802), 2 = accept | accept: bounty id |
 | 32 `station` | WP20 (WP14 hooks in) | forge or anvil prop stable id | 1 = use (805) | 0 |
 | 33 `shaft` | WP20 | mineshaft structure stable id (= its atlas site id) | 1 = descend (teleport into the linked cave system's entrance chamber; core `teleport` event) | 0 |
-| 34-39 | reserved WP20 (doors, chests are WP14's 20-29) | | | |
+| 34 `door` | WP20 follow-up (playtest UX) | door prop stable id (towns buffer PROPS kind 0, buildings with floors and a closed front; forges have none) | 1 = open, 2 = close, 3 = toggle (4.5 m from the eye; 970 to everyone near, or 972) | 0 |
+| 35-39 | reserved WP20 (chests are WP14's 20-29) | | | |
 | 40 `vein` | WP09 | vein stable id | 1 = pickaxe swing (25 damage, >= 250 ms apart, within 4.5 m of the eye) | tool tier (0 for now) |
 | 41 `pickup` | WP09, WP14 | pickup entity id | 1 = take: personal pickups owner only (auto-taken on touch), public pickups (dropped items, snapshot `owner` none) anyone within 4.5 m | 0 |
 | 50 `combat` | WP13 | 0 | 1 = swap loadout, 2 = equip weapon, 3 = equip spell, 4 = learn a tree node, 5 = set the socketed gem (dev builds only; WP14 sockets), 6 = set the weapon material (WP15; dev builds only; WP14's equipped item gear also carries it) | 1: loadout (0/1); 2: loadout \| weapon id << 8; 3: loadout \| slot << 4 \| spell id << 8 (0 clears); 4: spell id; 5: loadout \| (element + 1) << 8; 6: loadout \| material id << 8 (combat.yaml materials; 3 = sunsteel, 0 = ordinary) |

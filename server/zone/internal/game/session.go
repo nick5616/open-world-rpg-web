@@ -62,6 +62,7 @@ type session struct {
 	gapSince    uint32             // tick a missing frame started holding the buffer, 0 = none
 	consumed    uint32             // newest frame seq applied or refused (LastSeq counts applied only)
 	editChunks  map[[2]int32]bool  // WP09: chunks whose WorldEdits this client has (mining.go)
+	doors       *sessDoors         // building doors: settlements known, frame ground (doors.go)
 
 	// Reader-owned.
 	buckets    [256]*ratelimit.Bucket
@@ -417,7 +418,8 @@ func (s *Server) fillGap(sess *session, next uint32, now time.Time) {
 			continue
 		}
 		f = s.combatFrame(sess, f) // WP13 (combat.go)
-		e.applyFrame(f, s.cfg.Ground, s.env)
+		// Building doors: the ground with the doors closed for this frame (doors.go).
+		e.applyFrame(f, s.frameGround(sess, f.Seq), s.env)
 		s.combatAfterFrame(sess, f)
 		s.m.framesSynthesized.Add(1)
 	}
@@ -454,7 +456,8 @@ func (s *Server) applyFrames(sess *session, now time.Time) {
 			continue
 		}
 		f = s.combatFrame(sess, f) // WP13: log attacks/casts, refuse illegal dashes (combat.go)
-		if !e.applyFrame(f, s.cfg.Ground, s.env) {
+		// Building doors: the ground with the doors closed for this frame (doors.go).
+		if !e.applyFrame(f, s.frameGround(sess, f.Seq), s.env) {
 			s.m.speedViolations.Add(1)
 		}
 		s.combatAfterFrame(sess, f)

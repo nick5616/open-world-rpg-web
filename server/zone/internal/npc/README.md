@@ -16,7 +16,10 @@ their posts round the clock (the inn is open at night). Villagers wander
 within 5 m of their work spot by day. The zone glue
 (`internal/game/towns.go`) spawns a settlement's NPCs as snapshot entities
 while a player is within 200 m of its edge and steps them on the movement
-ground (floors, ramps).
+ground (floors, ramps). Doors: `World.Doors` (`DoorGate`) is asked every
+step an NPC walks a door segment of its route; the zone glue
+(`internal/game/doors.go`) opens a closed door (the NPC waits for it) and
+closes it behind them; nil = every door open.
 
 ## Test
 
