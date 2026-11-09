@@ -195,7 +195,10 @@ export const ZONE_EVENTS: Record<number, EventHandler> = {
     if (!entries.length) return;
     const gold = entries.every((x) => x.b.startsWith('currency:'));
     if (gold) return a.play('coins');
-    a.play(lootCue(Math.max(...entries.map((x) => x.r))));
+    const r = Math.max(...entries.map((x) => x.r));
+    // A craft (source 4 in targetId) already rang the forge on 405; only an epic+ result adds its sting.
+    if (e.targetId === 4 && r < 3) return;
+    a.play(lootCue(r));
   },
   402: (e, a) => a.play('loot_bitchin', { volume: e.entityId === a.selfId() ? 1 : 0.55 }),
   403: (_e, a) => a.play('ui_error'),

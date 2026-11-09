@@ -95,6 +95,11 @@ describe('trigger map', () => {
     expect(played.at(-1)?.cue).toBe('loot_epic');
     runZoneEvent(ev(401, { data: json([{ b: 'currency:gold', q: 30, r: 0 }]) }), a);
     expect(played.at(-1)?.cue).toBe('coins');
+    const n = played.length;
+    runZoneEvent(ev(401, { targetId: 4, data: json([{ b: 'sword', q: 1, r: 1 }]) }), a); // common craft: forge sound only
+    expect(played).toHaveLength(n);
+    runZoneEvent(ev(401, { targetId: 4, data: json([{ b: 'sword', q: 1, r: 4 }]) }), a);
+    expect(played.at(-1)?.cue).toBe('loot_epic');
     runZoneEvent(ev(402, { entityId: 9 }), a);
     expect(played.at(-1)).toMatchObject({ cue: 'loot_bitchin', volume: 0.55 });
     runZoneEvent(ev(402, { entityId: 7 }), a);
