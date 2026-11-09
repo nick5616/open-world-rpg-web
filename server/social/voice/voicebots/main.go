@@ -65,6 +65,9 @@ type config struct {
 	// zone and social (scenario 4); scrapes keep using the direct URLs.
 	netsim               string
 	zoneHTTP, socialHTTP string
+	// demons: let the spawned zone raise night demons (off by default, see
+	// the -demons flag).
+	demons bool
 }
 
 func main() {
@@ -88,6 +91,7 @@ func main() {
 	regroup := flag.Duration("regroup", 22*time.Second, "walk back")
 	out := flag.String("out", "", "evidence path prefix (writes .txt, .json)")
 	flag.StringVar(&cfg.netsim, "netsim", "", "with -spawn: route the bots' zone and social sockets through tools/netsim/proxy.mjs with this profile (e.g. thailand); LiveKit media is not impaired")
+	flag.BoolVar(&cfg.demons, "demons", false, "with -spawn: keep night demons on in the spawned zone (off by default: from dusk to dawn, every real hour from :46 to :15, they kill the standing bots and the zone respawns them at the world spawn, which is not the scenario; G5 voice-under-thailand failure)")
 	opusPath := flag.String("opus", "testdata/speech.opus.bin", "Opus packets ([u16 len][bytes]...)")
 	flag.Parse()
 	cfg.cx, cfg.cz = 2048, 2048
@@ -188,6 +192,9 @@ func main() {
 	phase("regroup", -1, *regroup)
 	phase("regrouped", 0, *hold)
 	rec.phase("end")
+	// Stand still a little longer so a change the zone decided just before
+	// "end" can still be observed (an unsubscribe shows ~1 s later).
+	time.Sleep(endTailMs * time.Millisecond)
 
 	zoneHTTP, socialHTTP := cfg.zoneHTTP, cfg.socialHTTP
 	if zoneHTTP == "" {
@@ -198,7 +205,7 @@ func main() {
 	}
 	socialMetrics := scrape(socialHTTP+"/metrics", "voice_")
 	socialDebug := scrape(socialHTTP+"/debug/voice", "")
-	zoneMetrics := scrape(zoneHTTP+"/metrics", "zone_earshot|zone_tick_ms{|zone_players")
+	zoneMetrics := scrape(zoneHTTP+"/metrics", "zone_earshot|zone_tick_ms{|zone_players|zone_input_frames|zone_drowned")
 
 	for _, b := range bots {
 		b.leave()
@@ -224,8 +231,11 @@ func main() {
 	var sb strings.Builder
 	fmt.Fprintf(&sb, "WP11 voice soak (spec 14 scenario 3) — %s\n", time.Now().Format(time.RFC3339))
 	fmt.Fprintf(&sb, "machine: %s/%s, %d CPUs; LiveKit 1.8 (docker, --dev); bots: Go + pion (server-sdk-go v2.19.0), synthetic Opus speech 32 kbps\n", runtime.GOOS, runtime.GOARCH, runtime.NumCPU())
-	fmt.Fprintf(&sb, "bots %d, voice-ready %d; phases: settle 6 s, clustered %v, disperse %v (walk 4.9 m/s outward), apart 6 s, regroup %v, regrouped %v\n",
-		s.Bots, s.Ready, *hold, *disperse, *regroup, *hold)
+	fmt.Fprintf(&sb, "bots %d, voice-ready %d; phases: settle 6 s, clustered %v, disperse %v (walk 4.9 m/s outward), apart 6 s, regroup %v, regrouped %v, tail %v\n",
+		s.Bots, s.Ready, *hold, *disperse, *regroup, *hold, endTailMs*time.Millisecond)
+	if *spawn {
+		fmt.Fprintf(&sb, "spawned zone: night demons %t, world clock offset %q s, netsim %q\n", cfg.demons, os.Getenv("LODESTONE_ZONE_TIME_OFFSET_S"), cfg.netsim)
+	}
 	fmt.Fprintf(&sb, "zone earshot messages %d (%d full)\n", s.ZoneMessages, fulls)
 	fmt.Fprintf(&sb, "earshot pair changes after voice-ready: %d; reflected at the listener: %d; missed: %d\n", s.ZoneTransitions, s.Matched, s.Missed)
 	fmt.Fprintf(&sb, "latency zone decision -> listener hears (TrackSubscribed) / stops hearing (last audio packet + 20 ms = forwarding stopped) (ms): %s\n", fq(s.LatencyMs))
@@ -236,6 +246,7 @@ func main() {
 	fmt.Fprintf(&sb, "initial subscriptions (pair already in earshot when voice-ready): %d, latency %s\n", s.Initial, fq(s.InitialLatencyMs))
 	fmt.Fprintf(&sb, "observed subscription changes %d over %d pairs ever subscribed; max changes per pair %d; histogram %v\n", s.ObservedChanges, s.PairsSubscribed, s.MaxChangesPerPair, s.ChangesHistogram)
 	fmt.Fprintf(&sb, "flaps (reversal within 2 s): listener %d, zone %d; extra observed changes without a zone decision: %d\n", s.Flaps, s.ZoneFlaps, s.Extra)
+	fmt.Fprintf(&sb, "zone teleports of bots (death respawns; the scenario has none): %d\n", s.Teleports)
 	fmt.Fprintf(&sb, "audio: %d RTP packets received by bots on subscribed tracks\n", rec.packets.Load())
 	fmt.Fprintf(&sb, "bot errors: %d %v\n", len(errs), errs)
 	fmt.Fprintf(&sb, "social metrics:\n%s\nsocial /debug/voice: %s\nzone metrics:\n%s\n", socialMetrics, socialDebug, zoneMetrics)
@@ -346,6 +357,7 @@ func spawnServices(cfg *config, zonePort, socialPort int, livekitURL, binDir str
 		"LODESTONE_ZONE_DEV_SPAWN=1",
 		"LODESTONE_WORLDGEN_WASM="+filepath.Join(tmp, "absent.wasm"), // flat ground: bots predict exactly
 		"LODESTONE_ZONE_PUBLIC_URL="+fmt.Sprintf("ws://127.0.0.1:%d/ws", zonePort),
+		fmt.Sprintf("LODESTONE_ZONE_NO_DEMONS=%t", !cfg.demons),
 	)
 	s := start(socialBin, "social", fmt.Sprintf("LODESTONE_SOCIAL_PORT=%d", socialPort), "LODESTONE_LIVEKIT_URL="+livekitURL)
 	cfg.zoneURL = fmt.Sprintf("ws://127.0.0.1:%d/ws", zonePort)

@@ -73,3 +73,39 @@ of the spawned zone and social (ports +100) and points the bots at the
 proxies; scrapes keep the direct URLs. LiveKit media is not impaired (that
 needs Linux netem). Binaries are named `voicesoak-<svc>-<pid>`. Pass a fresh
 `-world <uuid>` per run on shared infra.
+
+## G5: night demons, not netsim (branch `g5-voice-netsim`)
+
+The G5 Linux soak's voice-under-thailand runs failed (8 and 26 decisions
+"missed", 1 and 3 zone flaps, 25-35 % more decisions than clean). Cause: the
+spawned zone runs the WP15 world clock, and from dusk to dawn (every real
+hour from :46:15 to :15:00, `DayLengthS` 3600, `DuskHour` 18.5, `DawnHour` 6)
+**night demons rise around the standing bots and kill them**; the zone
+respawns each at the world spawn (`Teleport`), the bot ignored the Event and
+kept simulating where it thought it was, so the zone's positions (up to 98 m
+off) produced decisions the scenario never had. The clean Linux run ended at
+16:45:49 (day), thailand run 1 straddled dusk, run 2 was all night; netsim was
+a bystander (same code, thailand by day 862/862 PASS, by night 1,280
+decisions, 35 missed, 4 zone flaps FAIL; clean by night fails the same way).
+All 34 "missed" of the two Linux runs were also decisions in the last second
+before "end", which the analysis could never match (an unsubscribe is observed when
+the track ends ~1 s later).
+
+Changes:
+
+- `-spawn` starts the zone with `LODESTONE_ZONE_NO_DEMONS=1` (`-demons` keeps
+  them, e.g. to soak voice with deaths).
+- Bots follow the zone's teleport Event (kind 2) for their own entity and
+  record it (`tp`); the summary reports `teleports` and any teleport makes the
+  verdict **INVALID** (the run is not the scenario).
+- After "end" the bots stand `endTailMs` (2.5 s) more; listener events in the
+  tail count as reflecting decisions made before "end" (decisions after "end"
+  still do not count, unmatched tail events are not extras).
+- The zone metrics scrape adds `zone_input_frames_*` and `zone_drowned_total`.
+
+Pin the clock to measure night or day on purpose: the spawned zone inherits
+`LODESTONE_ZONE_TIME_OFFSET_S` (seconds added to the wall clock; game hour =
+((unix + offset) mod 3600) / 150). After the fix, at night, 3 runs each:
+thailand 874/866/874 decisions all reflected, clean 868/876/868, 0 missed,
+0 flaps, 0 teleports, p99 275-319 ms (desktop). Evidence:
+`docs/evidence/g5-voice-netsim-*` (overview `g5-voice-netsim-summary.md`).

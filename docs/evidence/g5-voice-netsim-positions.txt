@@ -1,0 +1,131 @@
+== base-th-day (zone position fed to earshot vs the bot's own position)
+max zone-vs-bot deviation (m, t, bot): [(2.1949484707280975, 53248, 'b35'), (2.0844249670950488, 17515, 'b21'), (2.081232515251011, 43515, 'b28'), (2.0803205514455545, 43015, 'b37'), (2.027085283874576, 14748, 'b16'), (2.027031942283866, 46515, 'b34'), (2.0251827527643855, 20515, 'b12'), (2.024785433074206, 52481, 'b00'), (2.0234071840102503, 54748, 'b43'), (2.0217762023860835, 14014, 'b13')]
+zone moves >5cm per 250ms while standing: [(('b00', 'apart'), 3), (('b05', 'apart'), 3), (('b25', 'apart'), 3), (('b14', 'apart'), 3), (('b02', 'apart'), 3), (('b47', 'apart'), 3), (('b07', 'apart'), 3), (('b39', 'apart'), 3), (('b20', 'apart'), 2), (('b01', 'apart'), 2), (('b33', 'apart'), 2), (('b48', 'apart'), 2), (('b09', 'apart'), 2), (('b49', 'apart'), 2), (('b32', 'apart'), 2), (('b37', 'apart'), 2), (('b44', 'apart'), 2), (('b16', 'apart'), 2), (('b36', 'apart'), 2), (('b21', 'apart'), 2)]
+== base-th-night (zone position fed to earshot vs the bot's own position)
+max zone-vs-bot deviation (m, t, bot): [(98.38310603437124, 56397, 'b17'), (94.33226369405821, 56397, 'b37'), (89.80637964145097, 56397, 'b14'), (20.361585613144662, 18397, 'b03'), (18.783505143660335, 14397, 'b06'), (18.549969331893127, 67163, 'b32'), (10.285647108970485, 67397, 'b34'), (8.609487594343738, 28897, 'b41'), (8.531596177812343, 65164, 'b44'), (8.479810921610955, 65897, 'b08')]
+zone moves >5cm per 250ms while standing: [(('b20', 'apart'), 2), (('b01', 'apart'), 2), (('b48', 'apart'), 2), (('b09', 'apart'), 2), (('b49', 'apart'), 2), (('b32', 'apart'), 2), (('b37', 'apart'), 2), (('b44', 'apart'), 2), (('b16', 'apart'), 2), (('b36', 'apart'), 2), (('b21', 'apart'), 2), (('b17', 'apart'), 2), (('b05', 'apart'), 2), (('b22', 'apart'), 2), (('b31', 'apart'), 2), (('b12', 'apart'), 2), (('b30', 'apart'), 2), (('b23', 'apart'), 2), (('b42', 'apart'), 2), (('b25', 'apart'), 2)]
+== dbg-clean-2 (zone position fed to earshot vs the bot's own position)
+max zone-vs-bot deviation (m, t, bot): [(93.49612212753587, 38877, 'b40'), (20.74248093233553, 24611, 'b06'), (18.52708763381292, 23877, 'b03'), (17.7012427233952, 29877, 'b43'), (16.88881678335416, 67644, 'b20'), (14.70088188424216, 65644, 'b33'), (13.421010563209515, 66110, 'b00'), (12.808435593538675, 65377, 'b46'), (11.345453041375938, 65110, 'b17'), (9.55297259776929, 67144, 'b25')]
+zone moves >5cm per 250ms while standing: [(('b20', 'apart'), 1), (('b20', 'regrouped'), 1), (('b01', 'apart'), 1), (('b01', 'regrouped'), 1), (('b33', 'apart'), 1), (('b33', 'regrouped'), 1), (('b48', 'apart'), 1), (('b09', 'apart'), 1), (('b49', 'apart'), 1), (('b32', 'apart'), 1), (('b37', 'apart'), 1), (('b44', 'apart'), 1), (('b16', 'apart'), 1), (('b36', 'apart'), 1), (('b21', 'apart'), 1), (('b17', 'apart'), 1), (('b17', 'regrouped'), 1), (('b05', 'apart'), 1), (('b22', 'apart'), 1), (('b22', 'regrouped'), 1)]
+
+== G5 Linux thailand run 2: every missed or flapped pair (t ms from the first phase)
+Traceback (most recent call last):
+  File "C:\Users\nickb\AppData\Local\Temp\claude\331e3c022c1a112f\8ed6ed21-5b16-43ca-ad6a-ffb7223e5088\scratchpad\missed.py", line 2, in <module>
+phases [(0, 'clustered'), (10000, 'disperse'), (30000, 'apart'), (36000, 'regroup'), (58000, 'regrouped'), (68000, 'end')]
+b00 <- b01  flap ready 0
+   zone [(-7222, 'in'), (10778, 'out'), (12512, 'in'), (56278, 'out')]
+   obs  [(-5475, 'sub'), (11792, 'unsub'), (12548, 'sub'), (57292, 'unsub')]
+   mstop [10784, 56283]
+b02 <- b03  flap ready 0
+   zone [(-7722, 'in'), (10545, 'out'), (10778, 'in')]
+   obs  [(-5970, 'sub'), (11560, 'unsub'), (11581, 'sub')]
+   mstop [10560]
+b04 <- b05 bad  ready 0
+   zone [(-6722, 'in'), (25511, 'out'), (44045, 'in'), (67778, 'out')]
+   obs  [(-5472, 'sub'), (26525, 'unsub'), (44063, 'sub')]
+   mstop [25524]
+b04 <- b06 bad  ready 0
+   zone [(67778, 'in')]
+   obs  []
+   mstop []
+b04 <- b07 bad  ready 0
+   zone [(-6488, 'in'), (67778, 'out')]
+   obs  [(-4477, 'sub')]
+   mstop []
+b04 <- b08 bad  ready 0
+   zone [(-6722, 'in'), (26045, 'out'), (43778, 'in'), (67778, 'out')]
+   obs  [(-5955, 'sub'), (27060, 'unsub'), (43802, 'sub')]
+   mstop [26064]
+b04 <- b09 bad  ready 0
+   zone [(-6722, 'in'), (10778, 'out'), (67778, 'in')]
+   obs  [(-5469, 'sub'), (11935, 'unsub')]
+   mstop [10785]
+b04 <- b10 bad  ready 0
+   zone [(67778, 'in')]
+   obs  []
+   mstop []
+b04 <- b11 bad  ready 0
+   zone [(-6722, 'in'), (21545, 'out'), (47545, 'in'), (67778, 'out')]
+   obs  [(-5968, 'sub'), (22559, 'unsub'), (47583, 'sub')]
+   mstop [21566]
+b04 <- b03 bad  ready 0
+   zone [(67778, 'in')]
+   obs  []
+   mstop []
+b12 <- b13 bad  ready 0
+   zone [(-6222, 'in'), (20778, 'out'), (47778, 'in'), (67778, 'out')]
+   obs  [(-4974, 'sub'), (21796, 'unsub'), (47802, 'sub')]
+   mstop [20785]
+b14 <- b15 bad  ready 0
+   zone [(47045, 'in'), (67778, 'out')]
+   obs  [(47085, 'sub')]
+   mstop []
+b14 <- b16 bad  ready 0
+   zone [(67778, 'in')]
+   obs  []
+   mstop []
+b14 <- b03  flap ready 0
+   zone [(10778, 'in'), (12045, 'out'), (56045, 'in')]
+   obs  [(10808, 'sub'), (13059, 'unsub'), (56089, 'sub')]
+   mstop [12064]
+b09 <- b05 bad  ready 0
+   zone [(12512, 'in'), (27545, 'out'), (42545, 'in'), (67045, 'out')]
+   obs  [(12547, 'sub'), (28559, 'unsub'), (42563, 'sub')]
+   mstop [27561]
+b09 <- b17 bad  ready 0
+   zone [(-7222, 'in'), (67045, 'out')]
+   obs  [(-5472, 'sub')]
+   mstop []
+b18 <- b19 bad  ready 0
+   zone [(-6722, 'in'), (67045, 'out')]
+   obs  [(-5469, 'sub')]
+   mstop []
+b16 <- b05 bad  ready 0
+   zone [(-6488, 'in'), (22545, 'out'), (46545, 'in'), (67778, 'out')]
+   obs  [(-5474, 'sub'), (23561, 'unsub'), (46585, 'sub')]
+   mstop [22565]
+b16 <- b07 bad  ready 0
+   zone [(-6488, 'in'), (67778, 'out')]
+   obs  [(-4477, 'sub')]
+   mstop []
+b16 <- b08 bad  ready 0
+   zone [(-6488, 'in'), (67778, 'out')]
+   obs  [(-5835, 'sub')]
+   mstop []
+b16 <- b11 bad  ready 0
+   zone [(-6488, 'in'), (24278, 'out'), (45045, 'in'), (67778, 'out')]
+   obs  [(-5833, 'sub'), (25291, 'unsub'), (45087, 'sub')]
+   mstop [24281]
+b16 <- b19 bad  ready 0
+   zone [(-6488, 'in'), (20045, 'out'), (48545, 'in'), (67778, 'out')]
+   obs  [(-5469, 'sub'), (21059, 'unsub'), (48564, 'sub')]
+   mstop [20061]
+b16 <- b20 bad  ready 0
+   zone [(10778, 'in'), (67778, 'out')]
+   obs  [(10800, 'sub')]
+   mstop []
+b21 <- b22 bad  ready 0
+   zone [(-7988, 'in'), (21778, 'out'), (47045, 'in'), (67045, 'out')]
+   obs  [(-6390, 'sub'), (22792, 'unsub'), (47083, 'sub')]
+   mstop [21782]
+b21 <- b23 bad  ready 0
+   zone [(-7988, 'in'), (24545, 'out'), (45045, 'in'), (67045, 'out')]
+   obs  [(-6390, 'sub'), (25561, 'unsub'), (45087, 'sub')]
+   mstop [24564]
+b21 <- b24 bad  ready 0
+   zone [(-7988, 'in'), (67045, 'out')]
+   obs  [(-5947, 'sub')]
+   mstop []
+b25 <- b26 bad  ready 0
+   zone [(-8722, 'in'), (67778, 'out')]
+   obs  [(-6888, 'sub')]
+   mstop []
+b03 <- b24 bad  ready 0
+   zone [(-7722, 'in'), (24278, 'out'), (44778, 'in'), (67778, 'out')]
+   obs  [(-5934, 'sub'), (25293, 'unsub'), (44800, 'sub')]
+   mstop [24300]
+b13 <- b12 bad  ready 0
+   zone [(47778, 'in'), (67778, 'out')]
+   obs  [(47807, 'sub')]
+   mstop []
+missed 26

@@ -50,7 +50,13 @@ type bot struct {
 	errs     []string
 	zoneConn transport.Conn
 	leaving  atomic.Bool
+	entityID uint32 // our zone entity (Welcome), to spot our own teleports
 }
+
+// eventTeleport is the zone's Event kind for "the server moved this entity"
+// (server/zone/internal/game/explore.go EventTeleport: fast travel, a death
+// respawn at the waypoint or world spawn).
+const eventTeleport = 2
 
 func newBot(i int, cfg *config, rec *recorder, rng *rand.Rand) *bot {
 	b := &bot{id: i, cfg: cfg, rec: rec, charID: uuidish(rng), name: fmt.Sprintf("vbot-%02d", i)}
@@ -109,6 +115,7 @@ func (b *bot) joinZone(ctx context.Context) error {
 			case *proto.Welcome:
 				b.mu.Lock()
 				b.pos.Pos = movement.Vec3{X: proto.CmToMeters(msg.X), Y: 0, Z: proto.CmToMeters(msg.Z)}
+				b.entityID = msg.EntityID
 				b.mu.Unlock()
 				if first {
 					first = false
@@ -124,6 +131,23 @@ func (b *bot) joinZone(ctx context.Context) error {
 				b.mu.Lock()
 				_, _ = b.dec.Apply(msg)
 				b.mu.Unlock()
+			case *proto.Event:
+				// The zone moved us itself (G5 voice-under-thailand failure:
+				// night demons killed standing bots and the zone respawned
+				// them at the world spawn while the bot kept simulating where
+				// it thought it was, so the zone's earshot followed positions
+				// the scenario never had). Follow it like the real client
+				// does, and record it: the analysis reports any teleport and
+				// does not pass such a run.
+				b.mu.Lock()
+				mine := msg.Kind == eventTeleport && msg.EntityID == b.entityID
+				if mine {
+					b.pos = movement.NewState(movement.Vec3{X: proto.CmToMeters(msg.X), Y: proto.CmToMeters(msg.Y), Z: proto.CmToMeters(msg.Z)})
+				}
+				b.mu.Unlock()
+				if mine {
+					b.rec.add(event{T: nowMs(), Kind: "tp", L: b.charID})
+				}
 			}
 		}
 	}()
