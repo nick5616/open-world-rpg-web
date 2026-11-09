@@ -14,6 +14,7 @@
 
 import { VOICE_MAX_DISTANCE_M, VOICE_REF_DISTANCE_M } from '@lodestone/contracts';
 import { voiceLevels } from './levels';
+import { voiceDestination } from '../audio/context';
 import { inverseDistanceGain, listenerAxes, OCCLUSION_MUFFLED_HZ, OCCLUSION_OPEN_HZ, relativeToListener, type Vec3, type VoiceMode } from './spatial';
 
 /** What the runtime tells the mixer about one speaker each frame. */
@@ -81,10 +82,15 @@ export class VoiceMixer {
   private mutes = new Set<string>();
   private masterVolume = 1;
 
+  /** False when the game's shared context was passed in (client/src/audio): never close it. */
+  private readonly ownsCtx: boolean;
+
   constructor(ctx?: AudioContext) {
+    this.ownsCtx = !ctx;
     this.ctx = ctx ?? new AudioContext({ latencyHint: 'interactive' });
     this.master = this.ctx.createGain();
-    this.master.connect(this.ctx.destination);
+    // Through the game mixer's voice bus when sharing its context (volume slider, master mute).
+    this.master.connect(voiceDestination(this.ctx));
     // Output meters (left/right RMS of everything we play): the two-browser
     // test reads them to prove fade and pan from what actually comes out.
     this.splitter = this.ctx.createChannelSplitter(2);
@@ -307,7 +313,8 @@ export class VoiceMixer {
 
   close(): void {
     for (const id of [...this.chains.keys()]) this.remove(id);
-    this.ctx.close().catch(() => {});
+    if (this.ownsCtx) this.ctx.close().catch(() => {});
+    else this.master.disconnect();
   }
 }
 

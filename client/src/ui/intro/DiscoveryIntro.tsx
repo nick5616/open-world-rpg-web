@@ -25,7 +25,8 @@ import { useExploration, zoneEventListeners } from '../map/store';
 import { useMapWorld } from '../map/world';
 import { INTRO_FOR_EVENT, INTRO_TOAST_KINDS, introForEvent, regionIndexAt, regionIntro, townCard, type IntroWorld } from './intros';
 import { advanceIntro, introHistory, pushIntro, resetIntros, skipCurrentIntro, useIntro, type ActiveIntro, type IntroSpec, type IntroVariant } from './queue';
-import { installStingUnlock, playSting, setStingVolume, stingVolume, type StingKind } from './sting';
+import { installStingUnlock, setStingVolume, stingVolume, type StingKind } from './sting';
+import { emitSound } from '../../audio/bridge';
 
 const FONT_HREF = 'https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&display=swap';
 /** Fraunces from Google Fonts; offline (or blocked) it falls back to Georgia. */
@@ -289,7 +290,8 @@ export function DiscoveryIntro() {
     if (!current) return;
     const now = performance.now();
     const st = STING[current.variant];
-    if (st && now - current.startedAt < 250) playSting(st, current.inMs);
+    // Sound: the audio system plays the discovery cue (client/src/audio, 'discovery_intro').
+    if (st && now - current.startedAt < 250) emitSound('discovery_intro');
     const outAt = setTimeout(() => setExitingId(current.id), Math.max(0, current.endsAt - current.outMs - now));
     const endAt = setTimeout(() => advanceIntro(), Math.max(0, current.endsAt - now) + 20);
     return () => {

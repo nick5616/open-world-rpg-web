@@ -24,36 +24,12 @@ const PANEL: CSSProperties = { background: 'rgba(12,14,20,0.94)', border: '1px s
 
 // ---- the level-up fanfare ----
 
-function chime(): void {
-  // A short rising arpeggio, synthesized (no assets); silent if audio is unavailable.
-  try {
-    const Ctx = (window as unknown as { AudioContext?: typeof AudioContext }).AudioContext;
-    if (!Ctx) return;
-    const ctx = new Ctx();
-    const t0 = ctx.currentTime;
-    [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => {
-      const o = ctx.createOscillator();
-      const g = ctx.createGain();
-      o.type = 'triangle';
-      o.frequency.value = f;
-      g.gain.setValueAtTime(0, t0 + i * 0.11);
-      g.gain.linearRampToValueAtTime(0.12, t0 + i * 0.11 + 0.02);
-      g.gain.exponentialRampToValueAtTime(0.0001, t0 + i * 0.11 + 0.6);
-      o.connect(g).connect(ctx.destination);
-      o.start(t0 + i * 0.11);
-      o.stop(t0 + i * 0.11 + 0.65);
-    });
-    setTimeout(() => void ctx.close(), 1500);
-  } catch {
-    // no audio: the banner is enough
-  }
-}
 
 function LevelUpFanfare() {
   const f = useProgression((s) => s.fanfare);
   const id = f?.id;
   useEffect(() => {
-    if (id !== undefined) chime();
+    // The level-up sound comes from the audio system (Event 604 -> level up sound 1-3).
   }, [id]);
   if (!f) return null;
   return (
