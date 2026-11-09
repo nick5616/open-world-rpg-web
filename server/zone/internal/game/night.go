@@ -483,13 +483,26 @@ func (s *Server) spawnSpot(x, z float64) bool {
 func (s *Server) huntTopUp(idx int64) {
 	n := &s.night
 	w := n.cfg.World
-	want := w.HuntersPerPlayer(idx)
-	if want <= 0 {
+	base := w.HuntersPerPlayer(idx)
+	if base <= 0 {
 		return
 	}
 	for _, sess := range s.sessions {
 		e := sess.ent
-		if e == nil || e.cbt == nil || e.cbt.Downed || e.caveSys >= 0 || w.WardAt(e.Move.Pos.X, e.Move.Pos.Z) >= 0 {
+		if e == nil || e.cbt == nil || e.cbt.Downed {
+			continue
+		}
+		// caveSys is only maintained with a cave world (caves.go); without
+		// one every entity reads 0 and nobody was ever hunted (playtest 1 fix).
+		underground := e.caveSys >= 0 && s.caves() != nil
+		if underground || w.WardAt(e.Move.Pos.X, e.Move.Pos.Z) >= 0 {
+			continue
+		}
+		// Playtest 1 (difficulty.go): the area's tier scales the hunt (none
+		// in the Haven and quiet lands, a straggler in the wilds) and
+		// low-level players are left alone near towns.
+		want, greaterMult, ok := s.huntersFor(e, base, w.Scale(idx))
+		if !ok {
 			continue
 		}
 		p := e.Move.Pos
@@ -498,34 +511,38 @@ func (s *Server) huntTopUp(idx int64) {
 			k := n.spawnN[e.ID]
 			n.spawnN[e.ID]++
 			count := min(3, want-have)
-			if at, ok := s.findSpawn(idx, e.ID, k, p); ok {
+			if at, ok := s.findSpawn(idx, e.ID, k, p, true); ok {
 				keys := make([]string, count)
 				for i := range keys {
 					keys[i] = combatdefs.D.Demons.Lesser[i%len(combatdefs.D.Demons.Lesser)]
 				}
 				g := s.cbt.w.SpawnDemons(at, keys, s.cbt.w.LevelAt(at.X, at.Z))
+				s.paceDemons(g)
 				s.trackDemons(g, e.ID, "lesser", -1)
 			}
 		}
-		if w.Roll(idx, uint64(e.ID), uint64(n.spawnN[e.ID])) < w.GreaterChance(idx) && s.demonsNear(p, 140, "greater") == 0 {
+		if w.Roll(idx, uint64(e.ID), uint64(n.spawnN[e.ID])) < w.GreaterChance(idx)*greaterMult && s.demonsNear(p, 140, "greater") == 0 {
 			n.spawnN[e.ID]++
-			if at, ok := s.findSpawn(idx, e.ID, n.spawnN[e.ID]+1000, p); ok {
+			if at, ok := s.findSpawn(idx, e.ID, n.spawnN[e.ID]+1000, p, true); ok {
 				key := night.GreaterFor(s.cbt.w.ElementAt(at.X, at.Z))
 				g := s.cbt.w.SpawnDemons(at, []string{key}, s.cbt.w.LevelAt(at.X, at.Z))
+				s.paceDemons(g)
 				s.trackDemons(g, e.ID, "greater", -1)
 			}
 		}
 	}
 }
 
-func (s *Server) findSpawn(idx int64, player uint32, k int, p movement.Vec3) (movement.Vec3, bool) {
+// natural: a night spawn (playtest 1: never in an area whose tier has no
+// demons); dev raises go anywhere.
+func (s *Server) findSpawn(idx int64, player uint32, k int, p movement.Vec3, natural bool) (movement.Vec3, bool) {
 	w := s.night.cfg.World
 	a0 := w.SpawnAngle(idx, player, k)
 	d := w.SpawnDistance(idx, player, k)
 	for i := 0; i < 8; i++ {
 		a := a0 + float64(i)*math.Pi/4
 		x, z := p.X+d*math.Cos(a), p.Z+d*math.Sin(a)
-		if s.spawnSpot(x, z) {
+		if s.spawnSpot(x, z) && (!natural || s.demonSpotOK(x, z)) {
 			return movement.Vec3{X: x, Z: z}, true
 		}
 	}
@@ -537,7 +554,7 @@ func (s *Server) findSpawn(idx int64, player uint32, k int, p movement.Vec3) (mo
 func (s *Server) lordTick(idx int64) {
 	n := &s.night
 	for i, l := range n.cfg.World.Lairs {
-		if n.lords[i] {
+		if n.lords[i] || !s.lordsAllowed(l.X, l.Z) { // playtest 1: lords walk only in dread lands and worse
 			continue
 		}
 		near := false
@@ -593,6 +610,10 @@ func (s *Server) defenseTick(t float64, idx int64) {
 		}
 		delete(n.planned, town)
 		tw := &n.cfg.World.Towns[town]
+		if !s.defenseAllowed(tw.X, tw.Z) { // playtest 1: gentle lands' wards hold
+			s.log.Info("defense skipped: the area's tier keeps its ward", "town", town)
+			continue
+		}
 		if len(s.playersNear(tw.X, tw.Z, tw.Radius+constants.DefenseJoinM)) > 0 {
 			s.StartDefense(town)
 		} else {
@@ -1173,7 +1194,7 @@ func (s *Server) nightInteract(sess *session, m *proto.Interact) {
 			idx := weather.NightIndex(s.worldTimeS())
 			p := e.Move.Pos
 			n.spawnN[e.ID]++
-			at, ok := s.findSpawn(idx, e.ID, n.spawnN[e.ID]+5000, p)
+			at, ok := s.findSpawn(idx, e.ID, n.spawnN[e.ID]+5000, p, false)
 			if !ok {
 				refuse(4)
 				return
@@ -1213,4 +1234,16 @@ func ParseForceDefense(v string, spawnTown int) (town int, delayS float64) {
 		}
 	}
 	return
+}
+
+// paceDemons applies the area's demon speed (playtest 1: slower demons in
+// the wilds, so a player without sunsteel or Light can still walk away).
+func (s *Server) paceDemons(g *combat.Group) {
+	m := s.demonSpeed(g.Anchor.X, g.Anchor.Z)
+	if m == 1 {
+		return
+	}
+	for _, e := range g.Members {
+		e.SpeedMult *= m
+	}
 }

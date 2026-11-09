@@ -53,9 +53,9 @@ type Pin struct {
 // characters row's level / xp / last_waypoint, and personal pins (migration
 // 0004 `character_progress.pins`). Owned by the tick.
 type Progress struct {
-	Towers       Bitset
-	Waypoints    Bitset
-	Discoveries  Bitset
+	Towers      Bitset
+	Waypoints   Bitset
+	Discoveries Bitset
 	// Attuned: tower crystals attuned (playtest 1, migration 0021
 	// character_progress.attuned): each first attunement is a permanent boon.
 	Attuned      Bitset

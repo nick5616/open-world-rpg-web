@@ -93,7 +93,7 @@ type Player struct {
 	// WP14: what the equipped items add (internal/items Gear; the zero
 	// value is the WP13 training kit) and the inventory-backed consumable
 	// (nil: WP13's stand-in draught with refilling charges).
-	Gear      Gear
+	Gear Gear
 	// Boons are permanent rewards outside the level curve (playtest 1:
 	// tower attunements add health and skill points; CR 012).
 	Boons     Boons

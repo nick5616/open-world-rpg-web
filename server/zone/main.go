@@ -154,10 +154,12 @@ func main() {
 	cfg.Combat = combatSetup(terrain, world.Seed, world.Spec, devKey, log)       // WP13 (combat.go)
 	cfg.Items = itemsSetup(pool, terrain, cfg.Combat, world.Spec, world.ID, log) // WP14 (items.go)
 	withNight(&cfg, terrain, world.Spec, devKey, log)                            // WP15: wards, demons, chemistry, ice/pillar ground (night.go)
+	cfg.Difficulty = difficultySetup(cfg.Combat, pool, world.ID, log)            // playtest 1: discovery-stamped areas (difficulty.go)
 	zone := game.New(cfg)
 	serveCombatDebug(s.Mux, zone)                  // WP13
 	serveItemsDebug(s, zone, cfg.Items.Containers) // WP14
 	serveNightDebug(s.Mux, zone)                   // WP15
+	serveDifficultyDebug(s.Mux, zone)              // playtest 1
 	restoreEdits(ctx, zone, log)
 	restoreWorldItems(ctx, zone, log) // WP14: dropped items survive a restart (until they despawn)
 

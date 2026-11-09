@@ -16,6 +16,9 @@ type Claim struct {
 	PlayerLevel int
 	CharID      string
 	Name        string
+	// Known are the neighbours' levels the zone knew when it asked (the
+	// provisional fallback when the store fails; stores read their own).
+	Known map[int]int
 }
 
 // Store persists stamps. Claim is first-writer-wins: it returns the stamp

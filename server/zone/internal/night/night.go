@@ -101,6 +101,19 @@ func (w *World) WardAt(x, z float64) int {
 	return -1
 }
 
+// NearWard is the town whose ward, widened by margin metres, covers (x, z),
+// or -1 (playtest 1: low-level players are not hunted near towns).
+func (w *World) NearWard(x, z, margin float64) int {
+	for i := range w.Towns {
+		t := &w.Towns[i]
+		r := t.WardRadius() + margin
+		if dx, dz := x-t.X, z-t.Z; dx*dx+dz*dz < r*r {
+			return i
+		}
+	}
+	return -1
+}
+
 // NearLantern reports a point within LANTERN_WARD_M of a road lantern.
 func (w *World) NearLantern(x, z float64) bool {
 	cx, cz := int(math.Floor(x/lanternCell)), int(math.Floor(z/lanternCell))

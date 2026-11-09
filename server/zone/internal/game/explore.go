@@ -268,8 +268,7 @@ func (s *Server) exploreTick(tick uint32) {
 			s.announce(sess, h)
 		}
 		if x.prog.Level != levelBefore {
-			e.Level = uint8(min(255, x.prog.Level))
-			s.sendEvent(sess, &proto.Event{Kind: EventLevelUp, EntityID: e.ID, Value: int32(x.prog.Level)})
+			s.levelChanged(sess, levelBefore) // playtest 1: 604 + stats, refill (progression.go)
 		}
 		s.sendProgress(sess)
 		s.saveProgressSoon(sess, false)
@@ -313,8 +312,11 @@ func (s *Server) handleInteract(sess *session, m *proto.Interact, now time.Time)
 	}
 	switch m.TargetKind {
 	case InteractSite:
-		if m.Action == ActionFastTravel {
+		switch m.Action {
+		case ActionFastTravel:
 			s.fastTravel(sess, int(m.TargetID), now)
+		case ActionAttune: // playtest 1: a tower's crystal (progression.go)
+			s.attune(sess, int(m.TargetID))
 		}
 	case InteractPin:
 		s.pinAction(sess, m)

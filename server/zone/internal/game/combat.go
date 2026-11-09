@@ -518,9 +518,9 @@ func (s *Server) grantCombatXP(g combat.XPGrant) {
 	if sess == nil {
 		return
 	}
+	before := ent.x.prog.Level
 	if ent.x.prog.AddXP(g.XP) {
-		ent.Level = uint8(min(255, ent.x.prog.Level))
-		s.sendEvent(sess, &proto.Event{Kind: EventLevelUp, EntityID: ent.ID, Value: int32(ent.x.prog.Level)})
+		s.levelChanged(sess, before) // playtest 1: 604 + stats, refill (progression.go)
 	}
 	if s.cfg.Explore != nil {
 		s.sendProgress(sess)
