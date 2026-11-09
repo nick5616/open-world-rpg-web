@@ -236,7 +236,8 @@ func TestZoneProcessEndToEnd(t *testing.T) {
 }
 
 func waitHealthy(t *testing.T, url string) {
-	deadline := time.Now().Add(15 * time.Second)
+	// 60 s: startup builds combat, towns and caves tables since WP13/WP20; 15 s flaked on a loaded machine.
+	deadline := time.Now().Add(60 * time.Second)
 	for time.Now().Before(deadline) {
 		if r, err := http.Get(url); err == nil {
 			r.Body.Close()
