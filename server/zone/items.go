@@ -98,7 +98,8 @@ func (c *terrainContainers) ContainersNear(x, z, r float64) []game.ContainerInfo
 				}
 				ci := game.ContainerInfo{ID: rec.ID, X: float64(rec.X), Y: float64(rec.Y), Z: float64(rec.Z), Kind: int(rec.Kind), Element: -1,
 					// Extra is the region's danger x255 (worldgen/README.md "Record"):
-					// item level 1 at the spawn, ~15 at the most dangerous edge.
+					// 1..15 by danger. Only the fallback: the zone rolls at the
+					// area's discovery-stamped level when it knows it (loot.go).
 					Level: 1 + int(math.Round(float64(rec.Extra)/255*14))}
 				if int(rec.Variant) < len(lootThemeValues) {
 					ci.Theme = lootThemeValues[rec.Variant]

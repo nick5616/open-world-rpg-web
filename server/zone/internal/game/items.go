@@ -163,7 +163,7 @@ type ContainerInfo struct {
 	X, Y, Z float64
 	Kind    int    // 0 chest, 1 buried cache, 2 urn, 3 crate
 	Theme   string // loot theme ("" none)
-	Level   int    // from the region's danger
+	Level   int    // fallback item level (worldgen's region danger curve): used only without discovery-stamped difficulty or while the area is unknown (loot.go lootLevelAt)
 	Element int    // region element (-1 unknown)
 }
 

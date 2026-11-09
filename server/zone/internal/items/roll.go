@@ -452,7 +452,7 @@ var ContainerKinds = []string{"chest", "buried_cache", "urn", "crate"}
 type ContainerContext struct {
 	Kind    int     // 0 chest, 1 buried cache, 2 urn, 3 crate
 	Theme   string  // loot theme (container variant)
-	Level   int     // from the region's danger
+	Level   int     // item level (the zone: the area's discovery-stamped level)
 	Element int     // region element, -1 none
 	Luck    float64 // extra luck (Opal)
 }

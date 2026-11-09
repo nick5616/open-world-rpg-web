@@ -592,7 +592,12 @@ func (s *Server) openContainer(sess *session, id uint64, now time.Time) {
 	if e.cbt != nil {
 		luck = items.LuckFrom(ci.inv.Gear(e.cbt.Profile.Active))
 	}
-	loot := items.ContainerLoot(items.NewRNG(seed), items.ContainerContext{Kind: c.Kind, Theme: c.Theme, Level: c.Level, Element: c.Element, Luck: luck})
+	// Item level: the area's (playtest 1 discovery-stamped difficulty, the
+	// level its enemies have), so the Haven's chests give starter loot and
+	// harder areas better. Stamps never change, so a roll lost to a crash
+	// still rolls the same items again.
+	level := s.lootLevelAt(c.X, c.Z, c.Level)
+	loot := items.ContainerLoot(items.NewRNG(seed), items.ContainerContext{Kind: c.Kind, Theme: c.Theme, Level: level, Element: c.Element, Luck: luck})
 	var d items.Delta
 	var got []*items.Item
 	spill := 0
@@ -621,7 +626,7 @@ func (s *Server) openContainer(sess *session, id uint64, now time.Time) {
 	for _, it := range loot {
 		bases = append(bases, fmt.Sprintf("%s x%d (%s)", it.Base, it.Qty, items.D.Rarities[it.Rarity].Key))
 	}
-	s.log.Info("container opened", "character", e.CharacterID, "container", id, "kind", items.ContainerKinds[min(max(c.Kind, 0), 3)], "rollSeed", seed, "items", bases, "spilled", spill)
+	s.log.Info("container opened", "character", e.CharacterID, "container", id, "kind", items.ContainerKinds[min(max(c.Kind, 0), 3)], "level", level, "rollSeed", seed, "items", bases, "spilled", spill)
 	s.sendEvent(sess, &proto.Event{Kind: EventContainerOpened, EntityID: e.ID, Value: int32(len(loot)), Data: binary.LittleEndian.AppendUint64(nil, id)})
 	s.sendGranted(sess, SourceContainer, got)
 	s.sendContainers(sess, true)

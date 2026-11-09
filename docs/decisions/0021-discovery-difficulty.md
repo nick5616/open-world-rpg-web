@@ -200,8 +200,10 @@ notice after.
 
 ## Gaps and follow-ups
 
-- Container item levels (WP14 chests) still use region danger, not the
-  stamp.
+- ~~Container item levels (WP14 chests) still use region danger, not the
+  stamp.~~ Done (pt/server-polish): chests roll at the area's level
+  (`internal/game/difficulty.go` `lootLevelAt`); worldgen's danger curve
+  is only the fallback while an area is unknown or difficulty is off.
 - Kill XP is not reduced for enemies far below the player (farming slimes
   at level 10 still pays 10 XP each; the curve makes it slow, not zero).
 - A town's defense event checks the tier where the town stands; a town on
