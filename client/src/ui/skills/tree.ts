@@ -21,7 +21,7 @@ export const ELEMENT_COLOR: Record<string, string> = {
   lightning: '#ffe066',
   earth: '#7cc35a',
   wind: '#8fe8d2',
-  light: '#ffd76a',
+  light: '#fff0b3',
   dark: '#e0607e',
   void: '#a98bff',
 };

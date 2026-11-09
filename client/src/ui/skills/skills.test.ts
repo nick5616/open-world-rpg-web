@@ -200,7 +200,8 @@ describe('build overview', () => {
   it('spent vs unspent points, per tree', () => {
     expect(v.points).toMatchObject({ total: 15, free: 4, spent: 11 });
     expect(v.points.parts.reduce((a, p) => a + p.value, 0)).toBe(15);
-    expect(v.points.perTree.reduce((a, t) => a + t.learned, 0)).toBe(11);
+    expect(v.points.perTree.reduce((a, t) => a + t.learned, 0)).toBe(MOCK.known.length);
+    expect(v.points.perTree.map((t) => t.tree)).toEqual(TREE_ORDER);
   });
   it('passives, tree multipliers and elements', () => {
     expect(v.passives.map((p) => p.key).sort()).toEqual(['brittle', 'combustion', 'kindling']);

@@ -37,7 +37,11 @@ function sendStats(level: number, attuned: number, known: readonly string[]) {
 
 export function installSkillsDebug(): () => void {
   const handle = {
-    state: () => ({ ...useSkillScreen.getState(), known: useCombatHud.getState().known, loadouts: useCombatHud.getState().loadouts, free: useProgression.getState().stats?.skillFree }),
+    // free: what the screen shows (combat_sync's points while combat runs, else Event 900's).
+    state: () => {
+      const c = useCombatHud.getState();
+      return { ...useSkillScreen.getState(), known: c.known, loadouts: c.loadouts, activeLoadout: c.activeLoadout, free: c.active ? c.skillPoints : useProgression.getState().stats?.skillFree };
+    },
     open: (tab?: SkillTab) => openSkillScreen(tab),
     close: () => closeSkillScreen(),
     pick: (key: string | null) => useSkillScreen.setState({ picked: key }),

@@ -3,7 +3,9 @@
 // slot you click next).
 
 import { create } from 'zustand';
-import { TREE_ORDER } from './tree';
+import { spellByKey, TREE_ORDER } from './tree';
+
+const spellTree = (key: string) => spellByKey.get(key)?.tree;
 
 /** A spell tree key ('fire'...), 'skills' (weapon skills and techniques) or 'build' (the build overview). */
 export type SkillTab = string;
@@ -31,7 +33,9 @@ export function closeSkillScreen(): void {
 
 export function setSkillTab(tab: SkillTab): void {
   const s = useSkillScreen.getState();
-  useSkillScreen.setState({ tab, lastTree: TREE_ORDER.includes(tab) ? tab : s.lastTree, picked: TREE_ORDER.includes(tab) ? s.picked : null });
+  // A picked spell stays picked only on its own tree.
+  const keep = s.picked && TREE_ORDER.includes(tab) && spellTree(s.picked) === tab;
+  useSkillScreen.setState({ tab, lastTree: TREE_ORDER.includes(tab) ? tab : s.lastTree, picked: keep ? s.picked : null });
 }
 
 /** The key: same tab toggles closed, another tab switches. */

@@ -13,7 +13,7 @@
 import { COMBAT, ITEMS, STAMINA_MAX, type ItemStat, type SpellDef } from '@lodestone/contracts';
 import { skillLevel } from '../progression/gains';
 import { displayName, EQ_LABEL, ELEMENT_NAMES, formatStat, itemDef, rarityColor, STAT_LABEL, type EqSlot, type WireItem } from '../inventory/items';
-import { cap, passiveLines, SKILL_NAMES, spellByKey, spellName, statusLabel, type EffectLine } from './tree';
+import { cap, ELEMENT_COLOR, passiveLines, SKILL_NAMES, spellByKey, spellName, statusLabel, TREE_ORDER, treeByKey, type EffectLine } from './tree';
 
 /** Armor caps damage reduction from equipment (gear.go armorCap). */
 export const ARMOR_CAP = 60;
@@ -289,13 +289,14 @@ function slotView(slot: EqSlot, it: WireItem | null): SlotView {
     lines,
     sockets,
     emptySockets: (it.k ?? []).filter((x) => !x).length,
-    killsDemons: !!mat?.killsDemons,
-    stagger: !!mat?.demonStagger,
+    // The demon rule reads the weapon's material only (combat.yaml materials).
+    killsDemons: d?.kind === 'weapon' && !!mat?.killsDemons,
+    stagger: d?.kind === 'weapon' && !!mat?.demonStagger,
   };
 }
 
 /** Element colours by combat element index (gems, forms). */
-export const ELEMENT_HEX = ['#ff7a3d', '#7cc8ff', '#ffe066', '#7cc35a', '#8fe8d2', '#ffd76a', '#e0607e', '#a98bff'];
+export const ELEMENT_HEX = COMBAT.elements.map((e) => ELEMENT_COLOR[e] ?? '#e9e4f2');
 
 const hasTech = (skill: string, level: number, tech: string) => !!COMBAT.skills.list.find((s) => s.key === skill)?.techniques.some((t) => t.key === tech && level >= t.level);
 const techLevel = (skill: string, tech: string) => COMBAT.skills.list.find((s) => s.key === skill)?.techniques.find((t) => t.key === tech)?.level ?? 0;
@@ -429,7 +430,8 @@ export function buildOverview(inp: BuildInput): BuildView {
   if (inp.attuned) pointParts.push({ from: `${inp.attuned} crystal${inp.attuned === 1 ? '' : 's'} attuned`, value: LV.attune.skillPoints * inp.attuned });
   const total = inp.skillTotal || sum(pointParts);
   const free = Math.max(0, inp.skillFree);
-  const perTree = COMBAT.trees.map((t) => ({ tree: t.key, learned: t.nodes.filter((n) => known.has(n.key) && !COMBAT.start.spells.includes(n.key)).length, total: t.nodes.length }));
+  // Known nodes per tree, the starting spells included (the same counts as the tree tabs).
+  const perTree = TREE_ORDER.map((k) => treeByKey.get(k)!).map((t) => ({ tree: t.key, learned: t.nodes.filter((n) => known.has(n.key)).length, total: t.nodes.length }));
 
   // Passives and elemental effects.
   const passives: PassiveView[] = COMBAT.spells.filter((s) => s.type === 'passive' && known.has(s.key)).map((s) => ({ key: s.key, name: spellName(s.key), tree: s.tree, lines: passiveLines(s) }));

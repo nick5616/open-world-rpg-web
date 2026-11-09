@@ -24,7 +24,7 @@ import { installSkillsDebug } from './dev';
 const GOLD = '#ffd166';
 const INK = '#f1f3f5';
 const DIM = 'rgba(241,243,245,0.6)';
-const PANEL: CSSProperties = { background: 'rgba(12,14,20,0.96)', border: '1px solid rgba(255,209,102,0.35)', borderRadius: 8, color: INK, boxShadow: '0 16px 40px rgba(0,0,0,0.6)' };
+const PANEL: CSSProperties = { background: 'rgba(11,13,19,0.985)', backdropFilter: 'blur(6px)', border: '1px solid rgba(255,209,102,0.35)', borderRadius: 8, color: INK, boxShadow: '0 16px 40px rgba(0,0,0,0.6)' };
 const CARD: CSSProperties = { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '10px 12px' };
 const BTN: CSSProperties = { font: '12px system-ui, sans-serif', padding: '4px 12px', borderRadius: 4, border: '1px solid rgba(255,209,102,0.5)', background: 'rgba(255,209,102,0.12)', color: INK, cursor: 'pointer' };
 
@@ -116,7 +116,8 @@ function SpellCard({ k, st, c, compact }: { k: string; st: NodeState; c: Char; c
         {namePending(k) && <Tag color={GOLD}>name pending</Tag>}
       </div>
       <div style={{ color: DIM, fontSize: 11 }}>
-        {cap(s.tree)} · tier {s.tier} · {s.type === 'passive' ? 'passive' : s.type}
+        {cap(s.tree)} · tier {s.tier}
+        {st.needsLevel > 1 ? ` (level ${st.needsLevel}+)` : ''}
         {st.status === 'learned' && <span style={{ color: '#8ce99a' }}> · learned</span>}
       </div>
       {need && <div style={{ color: st.status === 'learnable' ? GOLD : st.status === 'noPoints' ? '#ffc078' : '#ff8787', margin: '4px 0' }}>{need}</div>}
@@ -187,7 +188,10 @@ function SlotRow({ c, loadout, picked }: { c: Char; loadout: number; picked: str
                 if (canPlace && c.online) {
                   equip(loadout, i, picked);
                   useSkillScreen.setState({ picked: null });
-                } else if (k) useSkillScreen.setState({ picked: k, tab: s?.tree ?? useSkillScreen.getState().tab });
+                } else if (k && s) {
+                  setSkillTab(s.tree);
+                  useSkillScreen.setState({ picked: k });
+                }
               }}
               title={k ? `${spellName(k)} · drag away or press x to clear` : 'Empty: drag a learned spell here'}
               style={{
@@ -673,7 +677,7 @@ function BuildTab({ c }: { c: Char }) {
                 <TreeCount key={t.tree} tree={t.tree} learned={t.learned} total={t.total} />
               ))}
             </div>
-            <div style={{ fontSize: 10.5, color: DIM, marginTop: 6 }}>Learned beyond the three starting spells (skill points or tomes).</div>
+            <div style={{ fontSize: 10.5, color: DIM, marginTop: 6 }}>Known spells per tree, the three starting spells included. Each node beyond them took a skill point or a tome.</div>
           </div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>

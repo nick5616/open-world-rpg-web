@@ -19,7 +19,7 @@ const spellByKey = new Map(COMBAT.spells.map((s) => [s.key, s]));
 const KEYS = ['1', '2', '3', '4'];
 
 /** Playtest 1 controls (client/src/combat/README.md "Controls"). */
-export const COMBAT_HINT = 'LMB attack · Wheel select · RMB use selected · Z parry/draw/charge · 1-4 cast · F dodge · Q form · N skill tree · B build';
+export const COMBAT_HINT = 'LMB attack · Wheel select · RMB use selected · Z parry/draw/charge · 1-4 cast · F dodge · Q form · N skills · B build';
 const SECONDARY: Record<string, string> = { sword: 'parry', spear: 'charge', bow: 'draw', staff: 'heavy', wand: 'heavy' };
 const SELECTED_STYLE: React.CSSProperties = { border: '1px solid #ffd166', boxShadow: '0 0 0 2px rgba(255,209,102,0.55), 0 0 12px rgba(255,209,102,0.45)', transform: 'translateY(-3px)', transition: 'transform 90ms ease-out, box-shadow 90ms' };
 
