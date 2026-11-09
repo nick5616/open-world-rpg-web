@@ -18,7 +18,10 @@ func (w *World) Frame(p *Player, f proto.InputFrame, before movement.State) Fram
 		w.toPlayer(p.ID, Out{Ev: ev(EvConsumable, p.ID, 1, int32(p.Charges), p.Pos, nil)})
 	}
 	if r.Frame.Flags&proto.InputFlagDodge != 0 && r.Frame.CastSlot != 0 {
-		w.castFX(p, int(r.Frame.CastSlot)|0x8000, f, before)
+		w.castFX(p, int(r.Frame.CastSlot)|CastFXDash, f, before)
+	}
+	if r.Guard {
+		w.castFX(p, CastFXGuard, f, before)
 	}
 	a := r.Started
 	if a == nil {
@@ -54,8 +57,9 @@ func (w *World) Frame(p *Player, f proto.InputFrame, before movement.State) Fram
 
 // castFX tells nearby players (not the caster, who predicted it) that an
 // attack or cast started, so they can draw it: entityId = caster, targetId
-// = attack id (| 0x8000 for a dash variant), x/y/z = origin, data = u16 yaw
-// | i16 pitch.
+// = attack id (| CastFXDash for a dash variant; CastFXGuard for the
+// secondary button going down, CR 016), x/y/z = origin, data = u16 yaw |
+// i16 pitch.
 func (w *World) castFX(p *Player, id int, f proto.InputFrame, before movement.State) {
 	data := binary.LittleEndian.AppendUint16(nil, f.Yaw)
 	data = binary.LittleEndian.AppendUint16(data, uint16(f.Pitch))

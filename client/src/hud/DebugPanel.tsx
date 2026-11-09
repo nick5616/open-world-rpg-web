@@ -9,6 +9,7 @@ import { useAppStore } from '../stores/appStore';
 import { useQualityStore, type QualitySetting } from '../stores/qualityStore';
 import { localPlayer, worldClock } from '../state/live';
 import { WorldDebugSection } from '../world/debug/WorldDebugSection';
+import { CameraSettings } from './ViewHud';
 
 const box: CSSProperties = { position: 'fixed', top: 10, right: 10, zIndex: 30, width: 280, font: '13px system-ui, sans-serif', color: '#e9ecef', background: 'rgba(12,15,24,0.92)', border: '1px solid #343a40', borderRadius: 6, padding: 12 };
 const row: CSSProperties = { display: 'flex', alignItems: 'center', gap: 8, margin: '8px 0' };
@@ -80,6 +81,9 @@ export function DebugPanel() {
           ))}
         </select>
       </label>
+      <div style={row}>
+        <CameraSettings compact />
+      </div>
       <WorldDebugSection />
       <div style={{ ...row, justifyContent: 'space-between' }}>
         <button onClick={() => setScreen('title')}>Back to title</button>

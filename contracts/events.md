@@ -40,7 +40,7 @@ for your package; document each kind's use of `entityId`, `targetId`, `value`,
 | 211 | `camp_cleared` | WP13. Within 120 m: `targetId` = group id, `value` = group kind (1 camp, 2 bandit, 3 guardian, 4 pack, 6 test), `x/y/z` = anchor, `data` = site name |
 | 212 | `combat_sync` | WP13. To you after join and after every change: `value` = active loadout, `data` = u8 version(1) \| u8 active \| 2 x (u8 weapon id \| 4 x u16 spell id, 0 empty \| i8 gem element, -1 none) \| u16 n + n x u16 known spell ids \| u8 n + n x (u8 skill id \| u32 xp) \| u16 mana max x10 \| u8 drink charges \| u16 skill points left \| u8 character level \| 2 x u8 weapon look material code per loadout (pt/ux; see "Players" below; absent from older zones) |
 | 213 | `mana` | WP13. To you, on change at most 5 Hz: `value` = mana x10, `targetId` = mana max x10 |
-| 214 | `cast` | WP13. Another player's attack or cast started (within 64 m, not to the caster): `entityId` = caster, `targetId` = attack/spell/form id (\| 0x8000 = a dash variant), `x/y/z` = origin, `data` = u16 yaw \| i16 pitch |
+| 214 | `cast` | WP13. Another player's attack or cast started (within 64 m, not to the caster): `entityId` = caster, `targetId` = attack/spell/form id (\| 0x8000 = a dash variant; 0x4001 = the secondary button went down on a sword, spear or bow: parry stance, spear charge, bow draw (CR 016), once per press), `x/y/z` = origin, `data` = u16 yaw \| i16 pitch |
 | 215 | `refused` | WP13. To you: an attack, cast or combat Interact was refused. `targetId` = attack/spell id (or the Interact action), `value` = reason (HitResult refusal codes below), `data` = u32 start seq |
 | 216 | `skill_up` | WP13. To you: `targetId` = skill id (combat.yaml skills), `value` = new level, `data` = UTF-8 technique key unlocked at this level (empty if none) |
 | 217 | `heal` | WP13. To the healed player: `entityId` = healer, `targetId` = you, `value` = amount (`data` = [1] for a heal over time) |
@@ -117,6 +117,7 @@ for your package; document each kind's use of `entityId`, `targetId`, `value`,
 | 703 | `drop_spawned` | WP09. To the owner: `entityId` = pickup entity, `targetId` = owner, `value` = quantity, `data` = item id (UTF-8, `ore:<name>` / `gem:<name>:<cut>` until WP14 defines items) |
 | 704 | `item_granted` | WP09 (grant hook for WP14). To the player: `entityId` = player, `targetId` = the pickup taken, `value` = quantity, `data` = item id |
 | 706 | `mine_refused` | WP09. To the miner: `value` = 1 too far, 2 already mined, 3 unknown vein, 4 swinging too fast; `data` = u64 vein id |
+| 707 | `mine_swing` | CR 016 (playtest 2 avatar animation). Within 64 m of the miner, not to the miner: another player swung a pickaxe at a vein (an accepted swing, the one that sends them 701). `entityId` = miner, `x/y/z` = the vein (cm), `targetId`/`value`/`data` unused |
 
 HitResult refusal codes (HitResult.flags when `accepted` is false; also
 Event 215 `value`): 1 not an enemy (a player: PvP never), 2 unknown target,

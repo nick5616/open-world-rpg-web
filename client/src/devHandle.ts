@@ -6,7 +6,8 @@
 import { useAppStore, type Screen } from './stores/appStore';
 import { useDebugStore, type TeleportTarget } from './stores/debugStore';
 import { useQualityStore, type QualitySetting } from './stores/qualityStore';
-import { localPlayer, netStats, worldClock } from './state/live';
+import { localPlayer, netStats, view, worldClock } from './state/live';
+import { useViewStore } from './stores/viewStore';
 import { netDebug, netRuntime, useNetStore } from './net/netStore';
 import { divergenceProbe, resetProbe } from './sim/dev/divergenceProbe';
 import type { ReadySession } from './account/types';
@@ -55,6 +56,15 @@ export function installDevHandle(): void {
       worldClock.timeOfDayS = s;
     },
     setQuality: (q: QualitySetting) => useQualityStore.getState().setSetting(q),
+    /** Playtest 2: 'first' | 'third' person camera (optional shoulder 1 right / -1 left, boom distance m). */
+    setView: (mode: 'first' | 'third', shoulder?: 1 | -1, distance?: number) => {
+      const v = useViewStore.getState();
+      v.setMode(mode);
+      if (shoulder) v.setShoulder(shoulder);
+      if (distance) v.setDistance(distance);
+    },
+    /** Playtest 2: the third-person camera this frame (boom length after collision, eye, converged aim). */
+    viewState: () => JSON.parse(JSON.stringify({ ...view, aimYaw: localPlayer.aimYaw, aimPitch: localPlayer.aimPitch })) as typeof view & { aimYaw: number; aimPitch: number },
     /**
      * WP10 headless runs: connect straight to a zone with a dev ticket (no
      * account/director round trip). Fields not given are stubbed; social is

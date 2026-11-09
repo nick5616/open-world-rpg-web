@@ -12,7 +12,7 @@
 import { useRef } from 'react';
 import { createPortal, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
-import { localPlayer } from '../state/live';
+import { localPlayer, view } from '../state/live';
 import { useCombatHud } from '../combat/store';
 import { weaponGeometry } from '../combat/weapons/models';
 import { tickWeaponMaterial, weaponMaterial } from '../combat/weapons/material';
@@ -37,6 +37,7 @@ function Arms() {
   useFrame((state, delta) => {
     const g = rig.current;
     if (!g) return;
+    g.visible = !view.third; // playtest 2: third person shows the whole body instead
     const dt = Math.min(delta, 0.1);
     const lp = localPlayer;
     const hs = Math.hypot(lp.vel.x, lp.vel.z);

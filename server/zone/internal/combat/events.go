@@ -35,6 +35,15 @@ const (
 	EvStrikeHit    = 222 // an enemy strike landed on a player (observers: the hit flash)
 )
 
+// EvCast targetIds that are not attack/spell/form ids (CR 016).
+const (
+	// CastFXDash flags a mobility dash variant (targetId = variant | CastFXDash).
+	CastFXDash = 0x8000
+	// CastFXGuard: the secondary button went down on a sword, spear or bow
+	// (parry stance, spear charge, bow draw), so other players can pose it.
+	CastFXGuard = 0x4001
+)
+
 // Interact registry (contracts/events.md "Interact": targetKind 50 combat; 40/41 are WP09 mining).
 const (
 	InteractCombat = 50

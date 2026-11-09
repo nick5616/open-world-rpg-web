@@ -434,3 +434,35 @@ func TestCaveInterestClipping(t *testing.T) {
 	}
 	t.Logf("inside sees %v; above sees %v; mouth sees %v", names(in), names(above), names(mouth))
 }
+
+// CR 016: a pickaxe swing shows on the miner's avatar for players nearby
+// (Event 707), not for the miner (who animated it locally).
+func TestMineSwingSeenByOthers(t *testing.T) {
+	ct := testCaveTerrain(t)
+	h := newHarness(t, func(c *Config) { c.Ground = ct })
+	v, stand := pickVein(t, ct)
+	spawn := "?spawn=" + ftoa(stand.X) + "," + ftoa(stand.Y+0.3) + "," + ftoa(stand.Z)
+	a := h.dial(spawn)
+	wa := a.join(h, "swing-a", "Miner")
+	b := h.dial(spawn)
+	b.join(h, "swing-b", "Watcher")
+	a.pump(300 * time.Millisecond)
+	b.pump(300 * time.Millisecond)
+
+	a.send(&proto.Interact{TargetKind: InteractVein, TargetID: v.ID, Action: ActionUse})
+	a.pump(400 * time.Millisecond)
+	b.pump(100 * time.Millisecond)
+	if len(a.eventsOf(EventVeinHit)) != 1 {
+		t.Fatalf("the swing did not land: hits %v refusals %v", a.eventsOf(EventVeinHit), a.eventsOf(EventMineRefused))
+	}
+	if n := len(a.eventsOf(EventMineSwing)); n != 0 {
+		t.Fatalf("the miner got %d mine_swing events of their own swing", n)
+	}
+	got := b.eventsOf(EventMineSwing)
+	if len(got) != 1 || got[0].EntityID != wa.EntityID {
+		t.Fatalf("watcher got %+v, want one mine_swing from entity %d", got, wa.EntityID)
+	}
+	if dx := proto.CmToMeters(got[0].X) - v.X; math.Abs(dx) > 0.02 {
+		t.Fatalf("mine_swing x %.2f, vein at %.2f", proto.CmToMeters(got[0].X), v.X)
+	}
+}

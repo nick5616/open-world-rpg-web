@@ -36,7 +36,7 @@ import {
 } from '@lodestone/worldgen';
 import type { WorldRuntime } from '../core/runtime';
 import type { ResultMsg } from '../core/protocol';
-import { localPlayer } from '../../state/live';
+import { localActions, localPlayer, view } from '../../state/live';
 import { netRuntime } from '../../net/netStore';
 import type { CaveGround } from './caveGround';
 import type { CaveCellStore, StoredCell } from './caveStore';
@@ -96,6 +96,7 @@ interface LocalPickup {
 const tmpM = new THREE.Matrix4();
 const tmpQ = new THREE.Quaternion();
 const tmpV = new THREE.Vector3();
+const eyeV = new THREE.Vector3();
 const tmpS = new THREE.Vector3();
 const UP = new THREE.Vector3(0, 1, 0);
 
@@ -516,6 +517,7 @@ export class CaveManager {
     const now = performance.now();
     if (!v || now - this.lastSwing < SWING_MS) return;
     this.lastSwing = now;
+    localActions.mineSwings++; // playtest 2: the own third-person avatar swings too
     this.audio.hit(v.kind === 'gem');
     this.spark(v);
     const session = netRuntime.session;
@@ -724,8 +726,10 @@ export class CaveManager {
     else if (this.meshes.size) for (const k of [...this.meshes.keys()]) this.disposeMesh(k);
     if (this.visualsDirty) this.rebuildVisuals();
     this.updateLights(cam, forward);
-    this.target = this.underground > 0.05 || nearMouth < 30 ? this.findTarget(cam, forward) : null;
-    this.updatePickups(dt, cam);
+    // Playtest 2: third person, mining and pickups act from the player's eye, not the camera behind.
+    const eye = view.third ? eyeV.set(view.eye.x, view.eye.y, view.eye.z) : cam;
+    this.target = this.underground > 0.05 || nearMouth < 30 ? this.findTarget(eye, forward) : null;
+    this.updatePickups(dt, eye);
     this.updateHud();
     if (now > this.nextAudio) {
       this.nextAudio = now + 400;
