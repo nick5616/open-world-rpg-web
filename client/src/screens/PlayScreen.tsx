@@ -31,6 +31,9 @@ import { SkillScreen } from '../ui/skills';
 import { QuestHud } from '../ui/quests/QuestHud';
 // Sound and music: boots the audio engine after the first playable frame; K = sound settings (client/src/audio/README.md).
 import { AudioRoot } from '../audio/ui/AudioRoot';
+// Playtest 2 onboarding: Esc menu (controls, sound, plug-in settings, leave) and contextual tips (client/src/ui/menu, ui/tips).
+import { EscMenu } from '../ui/menu/EscMenu';
+import { TipsHud } from '../ui/tips/TipsHud';
 
 function DebugLayer() {
   useDebugHotkeys();
@@ -70,6 +73,8 @@ export default function PlayScreen() {
       {/* Playtest 1: quest tracker, offers with location previews, journal (J) */}
       <QuestHud />
       <AudioRoot />
+      <TipsHud />
+      <EscMenu />
     </>
   );
 }
