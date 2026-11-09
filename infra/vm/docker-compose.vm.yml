@@ -20,7 +20,14 @@ name: lodestone-vm
 
 x-service-env: &service-env
   env_file: [.env]
-  restart: unless-stopped
+  # on-failure, not unless-stopped: Docker restarts unless-stopped containers
+  # when the daemon starts at boot, so a woken VM briefly ran the PREVIOUS
+  # containers, the director saw them healthy and sent players in, and then
+  # the startup script recreated everything (first real deploy: "the database
+  # system is shutting down" on /v1/connect). With on-failure only the
+  # startup script (compose up, in dependency order) starts the stack; crashes
+  # still restart.
+  restart: on-failure
   logging:
     driver: json-file
     options: { max-size: "20m", max-file: "5" }

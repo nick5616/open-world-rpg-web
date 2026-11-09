@@ -73,3 +73,5 @@ on the number of workers or how groups are handed out
 the same passes on the caller). `playerUpkeep` now walks players in id
 order (`playerList`), so respawns and upkeep events no longer come out in
 map order.
+
+G4: a leashed `combatbot` (a `Goal` + `Leash`, e.g. the night bots at a ward garden) no longer picks enemies beyond leash + reach; it used to lock onto an older pack it could never reach and stand at the leash edge with 0 attacks through a whole defense (`combatbot/brain_test.go`).

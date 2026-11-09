@@ -12,6 +12,23 @@ import { divergenceProbe, resetProbe } from './sim/dev/divergenceProbe';
 import type { ReadySession } from './account/types';
 import { voiceDebugHook } from './voice/debugHook';
 
+/** G4: Events and HitResults of the live session, recorded once tapped (headless acceptance). */
+const tap: { session: unknown; events: { t: number; kind: number; entityId: number; targetId: number; value: number }[]; hits: { t: number; targetId: number; accepted: boolean; damage: number; targetHealthPct: number; flags: number }[] } = { session: null, events: [], hits: [] };
+function ensureTap(): void {
+  const s = netRuntime.session;
+  if (!s || tap.session === s) return;
+  tap.session = s;
+  s.eventListeners.add((e) => {
+    tap.events.push({ t: Date.now(), kind: e.kind, entityId: e.entityId, targetId: Number(e.targetId), value: e.value });
+    if (tap.events.length > 20000) tap.events.splice(0, 5000);
+  });
+  const prev = s.onHitResult;
+  s.onHitResult = (r) => {
+    tap.hits.push({ t: Date.now(), targetId: r.targetId, accepted: r.accepted, damage: r.damage, targetHealthPct: r.targetHealthPct, flags: r.flags });
+    prev?.(r);
+  };
+}
+
 export function installDevHandle(): void {
   // WP19: auto quality tier changes with their time (each one recompiles
   // shaders; see qualityGuard.ts).
@@ -47,6 +64,41 @@ export function installDevHandle(): void {
     probe: () => (netRuntime.session ? JSON.parse(JSON.stringify(divergenceProbe(netRuntime.session))) : null),
     /** G3: start the probe over (per-phase numbers in one long session). */
     probeReset: () => netRuntime.session && resetProbe(netRuntime.session),
+    /** G4: the online character (ids for the zone's debug endpoints). */
+    session: () => {
+      const r = useNetStore.getState().ready;
+      return r ? { characterId: r.character.id, name: r.character.name, worldId: r.worldId, zoneId: r.zoneId, zoneEndpoint: r.zoneEndpoint } : null;
+    },
+    /**
+     * G4: rejoin the zone at a dev spawn point (zone LODESTONE_ZONE_DEV_SPAWN;
+     * `?spawn=x,z`, or `x,y,z` in a cave) with a fresh director ticket for the
+     * same character. Leave first (`screen('title')`) and wait until the zone
+     * has let the character go, or its duplicate-login rule keeps the old position.
+     */
+    rejoinAt: async (at: { x: number; z: number; y?: number }) => {
+      const r = useNetStore.getState().ready;
+      if (!r) throw new Error('rejoinAt: not online');
+      const resp = await r.refreshTickets();
+      const u = new URL(resp.zone.endpoint);
+      u.searchParams.set('spawn', at.y === undefined ? `${at.x.toFixed(2)},${at.z.toFixed(2)}` : `${at.x.toFixed(2)},${at.y.toFixed(2)},${at.z.toFixed(2)}`);
+      useNetStore.getState().setReady({ ...r, ticket: resp.ticket, socialTicket: resp.socialTicket, ticketExpiresAt: resp.expiresAt, zoneId: resp.zone.zoneId, zoneEndpoint: u.toString(), zoneWtEndpoint: undefined });
+      useAppStore.getState().setScreen('play');
+    },
+    /** G4: own health from the latest SelfState (what the HUD bar draws). */
+    selfHealth: () => {
+      const f = netRuntime.session?.latestFrame?.self;
+      return f ? { health: f.health, healthMax: f.healthMax } : null;
+    },
+    /** G4: start recording the live session's Events and HitResults (idempotent; call again after a reconnect). */
+    tap: () => {
+      ensureTap();
+      return { events: tap.events.length, hits: tap.hits.length };
+    },
+    /** G4: recorded Events (optionally only some kinds) and HitResults since `since` (ms epoch). */
+    tapped: (kinds: number[] | null = null, since = 0) => {
+      ensureTap();
+      return { events: tap.events.filter((e) => e.t >= since && (!kinds || kinds.includes(e.kind))), hits: tap.hits.filter((h) => h.t >= since) };
+    },
     connectZone: (r: Pick<ReadySession, 'ticket' | 'zoneEndpoint' | 'zoneId' | 'worldId'> & { name?: string }) => {
       const ready: ReadySession = {
         ticket: r.ticket,
