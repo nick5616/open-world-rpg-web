@@ -14,7 +14,7 @@ import { useExploration } from '../map/store';
 import { hasBit } from '../map/events';
 import { useMapWorld } from '../map/world';
 import { useNetStore } from '../../net/netStore';
-import { learnable, nextTechnique, skillLevel, statsAt, upcoming } from './gains';
+import { learnable, nextTechnique, skillLevel, slottable, statsAt, upcoming } from './gains';
 import { installProgressionDebug } from './dev';
 import { FANFARE_MS, isAttuned, pruneProgression, setPanelOpen, useProgression, type Notice } from './store';
 import { towerPrompt, type TowerPrompt, type TowerLike } from './towerPrompt';
@@ -127,6 +127,38 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
+/** The active loadout's four spell slots: pick any known castable spell (a spell already in another slot moves). */
+function SpellSlots({ slots, known, disabled, onPick }: { slots: readonly (string | null)[]; known: readonly string[]; disabled: boolean; onPick: (slot: number, spellId: number) => void }) {
+  const options = slottable(known);
+  return (
+    <div>
+      {[0, 1, 2, 3].map((i) => {
+        const cur = slots[i] ?? '';
+        return (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '2px 0' }}>
+            <span style={{ width: 16, color: GOLD }}>{i + 1}</span>
+            <select
+              data-testid={`spell-slot-${i}`}
+              value={cur}
+              disabled={disabled}
+              onChange={(e) => onPick(i, options.find((o) => o.key === e.target.value)?.id ?? 0)}
+              style={{ flex: 1, font: '12px system-ui, sans-serif', background: 'rgba(0,0,0,0.35)', color: '#f1ead8', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 4, padding: '2px 4px' }}
+            >
+              <option value="">(empty)</option>
+              {options.map((o) => (
+                <option key={o.key} value={o.key}>
+                  {o.name} · {o.tree} {o.tier}
+                </option>
+              ))}
+            </select>
+          </div>
+        );
+      })}
+      <div style={{ fontSize: 11, opacity: 0.6, marginTop: 3 }}>New spells fill an empty slot by themselves. Cast with 1-4, or wheel to select and right-click.</div>
+    </div>
+  );
+}
+
 const SKILL_NAMES: Record<string, string> = { swordsmanship: 'Swordsmanship', spearmanship: 'Spearmanship', archery: 'Archery', spellcraft: 'Spellcraft', mining: 'Mining', smithing: 'Smithing' };
 
 function CharacterPanel() {
@@ -137,6 +169,8 @@ function CharacterPanel() {
   const skillXp = useCombatHud((s) => s.skillXp);
   const freePoints = useCombatHud((s) => s.skillPoints);
   const combatActive = useCombatHud((s) => s.active);
+  const loadouts = useCombatHud((s) => s.loadouts);
+  const activeLoadout = useCombatHud((s) => s.activeLoadout);
   const name = useNetStore((s) => s.ready?.character.name) ?? 'Adventurer';
   const level = stats?.level ?? 1;
   const base = statsAt(level, stats?.attunedCount ?? 0);
@@ -168,19 +202,8 @@ function CharacterPanel() {
         <Row label="Skill points" value={<span style={{ color: free > 0 ? GOLD : undefined }}>{free} unspent</span>} sub={`of ${stats?.skillTotal ?? base.skillPoints}`} />
         <Row label="Crystals attuned" value={stats?.attunedCount ?? 0} sub="each: a permanent boon" />
       </Section>
-      {area && (
-        <Section title="Where you stand">
-          <Row label={area.haven ? 'The Haven' : area.tierName} value={`area level ${area.level}`} sub={area.by && !area.haven ? `shaped by ${area.by}` : undefined} />
-          <div style={{ fontSize: 11, opacity: 0.65, marginTop: 3 }}>New lands take the measure of the first explorer to reach them: the stronger you are, the harder the places you discover.</div>
-        </Section>
-      )}
-      <Section title="Coming next">
-        {upcoming(level).map((u) => (
-          <div key={u.level} style={{ display: 'flex', gap: 10, padding: '2px 0' }}>
-            <span style={{ width: 54, color: GOLD, flex: 'none' }}>Level {u.level}</span>
-            <span style={{ opacity: 0.85 }}>{u.lines.join(' · ')}</span>
-          </div>
-        ))}
+      <Section title={`Spell slots · loadout ${activeLoadout + 1} (X swaps)`}>
+        <SpellSlots slots={loadouts[activeLoadout]?.spells ?? []} known={known} disabled={!actions} onPick={(slot, id) => actions?.equipSpell(activeLoadout, slot, id)} />
       </Section>
       <Section title={`Learn spells${free > 0 ? ` (${free} point${free === 1 ? '' : 's'} to spend)` : ''}`}>
         {ready.length === 0 && <div style={{ opacity: 0.6 }}>Nothing new to learn right now.</div>}
@@ -202,6 +225,20 @@ function CharacterPanel() {
         {locked.map((s) => (
           <div key={s.key} style={{ opacity: 0.5, padding: '2px 0' }}>
             {s.name} <span style={{ fontSize: 11 }}>· {s.tree} tier {s.tier} · needs level {s.needsLevel}</span>
+          </div>
+        ))}
+      </Section>
+      {area && (
+        <Section title="Where you stand">
+          <Row label={area.haven ? 'The Haven' : area.tierName} value={`area level ${area.level}`} sub={area.by && !area.haven ? `shaped by ${area.by}` : undefined} />
+          <div style={{ fontSize: 11, opacity: 0.65, marginTop: 3 }}>New lands take the measure of the first explorer to reach them: the stronger you are, the harder the places you discover.</div>
+        </Section>
+      )}
+      <Section title="Coming next">
+        {upcoming(level).map((u) => (
+          <div key={u.level} style={{ display: 'flex', gap: 10, padding: '2px 0' }}>
+            <span style={{ width: 54, color: GOLD, flex: 'none' }}>Level {u.level}</span>
+            <span style={{ opacity: 0.85 }}>{u.lines.join(' · ')}</span>
           </div>
         ))}
       </Section>

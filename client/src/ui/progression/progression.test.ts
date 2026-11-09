@@ -119,3 +119,22 @@ describe('skill progress (combat.yaml skills)', () => {
     expect(skillProgress(skillXpFor(100) - 1).level).toBe(99);
   });
 });
+
+describe('spell slots (assigning learned spells)', () => {
+  it('packs the equip argument like the server reads it', async () => {
+    const { equipSpellArg } = await import('./events');
+    const arg = equipSpellArg(1, 3, 1002);
+    expect(arg & 0xf).toBe(1);
+    expect((arg >> 4) & 0xf).toBe(3);
+    expect(arg >> 8).toBe(1002);
+    expect(equipSpellArg(0, 2, 0) >> 8).toBe(0); // clears
+  });
+  it('offers known castable spells only (no passives, nothing unknown)', async () => {
+    const { slottable } = await import('./gains');
+    const keys = slottable(['ember_flick', 'kindling', 'spark_shot']).map((s) => s.key);
+    expect(keys).toContain('ember_flick');
+    expect(keys).toContain('spark_shot');
+    expect(keys).not.toContain('kindling');
+    expect(keys).not.toContain('fireball');
+  });
+});

@@ -350,6 +350,9 @@ func (s *Server) handleCombatInteract(sess *session, m *proto.Interact) {
 	case combat.ActLearn:
 		if sp := combatdefs.D.SpellByID(int(m.Arg)); sp != nil {
 			ok = pr.LearnWith(sp.Key, p.Level, p.Boons.SkillPoints) == combat.LearnOK
+			if ok {
+				learnedSpellIntoSlot(p, sp.Key) // a free slot in the active loadout, like tomes
+			}
 		}
 	case combat.ActSetGem:
 		if s.cbt.setup.Dev {
