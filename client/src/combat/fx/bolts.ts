@@ -87,6 +87,8 @@ export function crackle(s: BoltSlot, rnd: () => number = Math.random): void {
   for (let k = 0; k < s.forks; k++) fork(s, Math.min(3, L * 0.25), s.jitter * 0.6, rnd);
 }
 
+const warmSlot = newBoltSlot();
+
 /** The single ribbon mesh every bolt is written into each frame. */
 export class RibbonBuffer {
   readonly mesh: THREE.Mesh;
@@ -170,6 +172,17 @@ export class RibbonBuffer {
       this.color[vi * 4 + 3] = alpha;
     }
     this.segs++;
+  }
+
+  /** One invisible segment (the draw warm-up: makes the GPU build this draw's variant at load). */
+  addWarm(x: number, y: number, z: number): void {
+    const s = warmSlot;
+    s.n = 2;
+    s.polys = 1;
+    s.polyStart[0] = 0;
+    s.polyLen[0] = 2;
+    s.pts.set([x, y, z, x, y + 0.01, z]);
+    this.addSlot(s, 0.001, 0);
   }
 
   end(): void {

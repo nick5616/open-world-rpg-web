@@ -135,8 +135,10 @@ export class SpellFxEngine {
   handAnchor: ((out: THREE.Vector3) => boolean) | null = null;
   private selfShield: { v: SpellVisual; until: number; o: Ongoing | null } | null = null;
   private lastT = 0;
+  /** Frames left of the draw warm-up (prewarm). */
+  private warmFrames = 0;
   /** Counters for the debug handle and bench. */
-  readonly counts = { casts: 0, remoteCasts: 0, shots: 0, impacts: 0 };
+  readonly counts = { casts: 0, remoteCasts: 0, shots: 0, impacts: 0, maxUpdateMs: 0, maxCastMs: 0 };
 
   constructor(lightCount: number) {
     const p = FX_PROFILES.ultra;
@@ -1113,6 +1115,12 @@ export class SpellFxEngine {
 
   /** Plays a whole cast (windup, then the spell) from a caster at (x, y, z) feet: remote casts, the gallery, the bench. */
   castFrom(sp: SpellDef, caster: Anchor, x: number, y: number, z: number, yaw: number, pitch: number): void {
+    const c0 = performance.now();
+    this.castFromInner(sp, caster, x, y, z, yaw, pitch);
+    this.counts.maxCastMs = Math.max(this.counts.maxCastMs, performance.now() - c0);
+  }
+
+  private castFromInner(sp: SpellDef, caster: Anchor, x: number, y: number, z: number, yaw: number, pitch: number): void {
     const eye = { x, y: y + EYE, z };
     const aim = sp.type === 'aoe' || sp.type === 'rune' ? this.aimPoint(eye, yaw, pitch, sp.range || 30) : null;
     const tgt = sp.type === 'direct' && sp.windupMs > 0 ? this.aimTarget(eye, yaw, pitch, sp.range || 30, 12) : null;
@@ -1248,6 +1256,7 @@ export class SpellFxEngine {
 
   update(camera: THREE.Camera, viewport: { width: number; height: number; dpr: number; maxPoint: number }): void {
     this.camera = camera;
+    const t0 = performance.now();
     const t = fxTime();
     const dt = Math.min(0.05, Math.max(0, t - (this.lastT || t)));
     this.lastT = t;
@@ -1274,6 +1283,7 @@ export class SpellFxEngine {
     this.updateStatuses(t, dt);
     this.updateHand(t, dt);
     this.prims.update(t, camera);
+    if (this.warmFrames > 0) this.warmDraw(--this.warmFrames > 0);
 
     // Particle pools: clock, scale (pixels per world unit at 1 m), resolution, upload.
     const cam = camera as THREE.PerspectiveCamera;
@@ -1290,6 +1300,59 @@ export class SpellFxEngine {
     glowPool.material.uniforms.uHdr.value = 1 + (budget.profile.hdr - 1) * 0.2;
     this.prims.ribbons.material.uniforms.uHdr.value = budget.profile.hdr;
     screenTick(t, dt);
+    this.counts.maxUpdateMs = Math.max(this.counts.maxUpdateMs, performance.now() - t0);
+  }
+
+  /**
+   * Draw warm-up: for a few frames every idle pooled object, one projectile
+   * per look and the hand glow are drawn invisibly next to the camera, so
+   * the GPU builds every draw variant while the world is loading instead of
+   * at the first casts (SpellFxLayer calls it once the world's shader
+   * warm-up is done).
+   */
+  prewarm(frames = 3): void {
+    this.warmFrames = frames;
+  }
+
+  private warmDraw(on: boolean): void {
+    if (!this.camera) return;
+    this.camera.getWorldPosition(tmpV);
+    this.camera.getWorldDirection(tmpV2);
+    // 3 m ahead of the lens, invisible (zero opacity, a speck of a boulder)
+    const x = tmpV.x + tmpV2.x * 3;
+    const y = tmpV.y + tmpV2.y * 3;
+    const z = tmpV.z + tmpV2.z * 3;
+    this.prims.warm(on, x, y, z);
+    const looks: [THREE.BufferGeometry, THREE.Material][] = [
+      [GEO.sphereLow, coreMat(col('#ffffff'))],
+      [GEO.needle, coreMat(col('#ffffff'))],
+      [GEO.octa, coreMat(col('#ffffff'))],
+      [GEO.sphere, coreMat(col('#0a0014'))],
+      [GEO.dodeca, boulderMat()],
+      [GEO.icosa1, coreMat(col('#ffffff'))],
+      [GEO.crescent, coreMat(col('#ffffff'))],
+    ];
+    let i = 0;
+    for (const p of this.projs) {
+      if (p.on) continue;
+      if (i >= looks.length) break;
+      p.mesh.visible = on;
+      p.halo.visible = on && i === 0;
+      if (on) {
+        p.mesh.geometry = looks[i][0];
+        p.mesh.material = looks[i][1];
+        p.mesh.position.set(x, y, z);
+        p.mesh.scale.setScalar(0.0005);
+        p.halo.position.set(x, y, z);
+        p.halo.scale.set(0.0005, 0.0005, 1);
+      }
+      i++;
+    }
+    this.hand.sprite.visible = on;
+    if (on) {
+      this.hand.sprite.position.set(x, y, z);
+      this.hand.mat.opacity = 0;
+    }
   }
 
   /** The off-hand glow: a pulse on every cast, a growing charge during windups. */

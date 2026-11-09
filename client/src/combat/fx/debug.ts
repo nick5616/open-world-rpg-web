@@ -17,7 +17,7 @@ export interface FxDebug {
   tier(): { setting: FxSetting; tier: string; gpuCap: string | null };
   setFx(s: FxSetting): void;
   cast(key: string, o?: { ahead?: number; side?: number; yaw?: number; pitch?: number }): boolean;
-  spam(casters: number, ms: number, o?: { radius?: number; keys?: string[] }): Promise<{ casts: number }>;
+  spam(casters: number, ms: number, o?: { radius?: number; keys?: string[] }): Promise<{ casts: number; log: { t: number; key: string }[] }>;
   screen(): ReturnType<typeof screenState>;
   clear(): void;
 }
@@ -51,6 +51,7 @@ export function installFxDebug(engine: SpellFxEngine): () => void {
       const t0 = performance.now();
       const next = new Array<number>(casters).fill(0).map(() => t0 + Math.random() * 800);
       let casts = 0;
+      const log: { t: number; key: string }[] = [];
       await new Promise<void>((done) => {
         const tick = () => {
           const now = performance.now();
@@ -65,14 +66,17 @@ export function installFxDebug(engine: SpellFxEngine): () => void {
             const tx = localPlayer.pos.x + (Math.random() - 0.5) * 8;
             const tz = localPlayer.pos.z + (Math.random() - 0.5) * 8;
             const yaw = Math.atan2(-(tx - x), -(tz - z));
-            cast(pool[(Math.random() * pool.length) | 0], x, z, yaw, -0.08);
+            const sp = pool[(Math.random() * pool.length) | 0];
+            if (!sp) continue; // (keys none: the bench's no-cast baseline)
+            cast(sp, x, z, yaw, -0.08);
+            log.push({ t: now, key: sp.key });
             casts++;
           }
           requestAnimationFrame(tick);
         };
         requestAnimationFrame(tick);
       });
-      return { casts };
+      return { casts, log };
     },
     screen: () => screenState(),
     clear: () => engine.clear(),

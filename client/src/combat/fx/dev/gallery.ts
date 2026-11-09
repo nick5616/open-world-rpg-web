@@ -243,7 +243,8 @@ const frame = (t: number) => {
 };
 // Warm the FX programs before the first cast (as the world's warm-up does).
 renderer.compileAsync(scene, camera).then(() => {
-  gallery.ready = true;
+  engine.prewarm(); // and draw every FX variant once (engine.ts prewarm)
   requestAnimationFrame(frame);
+  setTimeout(() => (gallery.ready = true), 300);
 });
 void view;

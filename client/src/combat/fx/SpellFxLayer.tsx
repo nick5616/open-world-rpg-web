@@ -17,6 +17,7 @@ import { setSpellFxEngine } from './api';
 import { fxLightCount, getGpuCap, setGpuCap, minFxTier, currentFxTier, setFxSetting, getFxSetting, type FxSetting } from './quality';
 import { classifyGpu, FrameSampler, gpuInfo } from './gpu';
 import { installFxDebug } from './debug';
+import { worldDebug } from '../../world/debug/worldDebug';
 
 const sampler = new FrameSampler();
 let gpuClass: ReturnType<typeof classifyGpu> | null = null;
@@ -56,7 +57,14 @@ export function SpellFxLayer() {
     engine.prims.ground = ground;
   }, [engine, ground]);
 
+  // Draw warm-up once the world's shader warm-up is done (or after ~2 s
+  // without a world): see SpellFxEngine.prewarm.
+  const warm = useMemo(() => ({ frames: 0, done: false }), [engine]);
   useFrame((state, delta) => {
+    if (!warm.done && (worldDebug.shadersWarm || ++warm.frames > 120)) {
+      warm.done = true;
+      engine.prewarm();
+    }
     engine.update(state.camera, { width: state.size.width, height: state.size.height, dpr: state.viewport.dpr, maxPoint });
     // Frame-time sample (skips the first second of loading hitches): caps the auto default only.
     if (!sampler.result) {

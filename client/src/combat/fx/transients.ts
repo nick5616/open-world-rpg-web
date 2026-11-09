@@ -421,8 +421,9 @@ export class FxPrims {
     if (set.spikes.length === 0) return;
     // Readability: never grow a spike in your face (self-centred rings in first person).
     if (Math.hypot(x - this.cam.x, z - this.cam.z) < 1.5 && this.cam.y - gy < 2.6) return;
-    // Full: recycle the oldest (index 0 after compaction is not guaranteed oldest; good enough).
-    const idx = set.n < set.spikes.length ? set.n++ : Math.floor(Math.random() * set.spikes.length);
+    // The tier's cap (quality.ts spikes); full: recycle a random live one.
+    const cap = Math.min(set.spikes.length, budget.profile.spikes);
+    const idx = set.n < cap ? set.n++ : Math.floor(Math.random() * Math.min(set.n, cap));
     const s = set.spikes[idx];
     tmpE.set(o.tiltX ?? 0, o.yaw ?? Math.random() * Math.PI * 2, o.tiltZ ?? 0, 'YXZ');
     s.q.setFromEuler(tmpE);
@@ -654,11 +655,56 @@ export class FxPrims {
         b.next = t + b.every;
         crackle(b);
       }
+      if (this.ribbons.segments >= budget.profile.boltSegments) continue; // the tier's bolt budget
       const fade = Math.min(1, (1 - age / b.dur) * 1.5);
       const flick = b.flicker && Math.random() < 0.2 ? 0.35 : 1;
       this.ribbons.addSlot(b, b.width, b.alpha * fade * flick);
     }
     this.ribbons.end();
+  }
+
+  /**
+   * Draw warm-up (with SpellFxEngine.prewarm): every idle pooled object drawn
+   * invisibly (zero opacity, one spike, one ribbon segment) at (x, y, z) for
+   * a couple of frames at load. compileAsync links the programs, but ANGLE
+   * (D3D11) still builds each draw's shader variant on its first real draw:
+   * 60-110 ms hitches at the first casts without this (fx-bench.mjs).
+   */
+  warm(on: boolean, x: number, y: number, z: number): void {
+    const idle = <T extends Slot & { mesh?: THREE.Object3D; sprite?: THREE.Object3D }>(arr: T[], zero: (s: T) => void) => {
+      for (const s of arr) {
+        if (s.on) continue;
+        const o = (s.mesh ?? s.sprite)!;
+        o.visible = on;
+        if (on) {
+          o.position.set(x, y, z);
+          zero(s);
+        }
+      }
+    };
+    const u = (s: { mat: THREE.Material }) => ((s.mat as THREE.ShaderMaterial).uniforms.uOpacity.value = 0);
+    idle(this.rings, u);
+    idle(this.sigils, u);
+    idle(this.zones, u);
+    idle(this.domes, u);
+    idle(this.beams, u);
+    idle(this.shells, u);
+    idle(this.scorches, (s) => (s.mat.opacity = 0));
+    idle(this.flashes, (s) => (s.mat.opacity = 0));
+    if (!on) return;
+    for (const style of SPIKE_STYLES) {
+      const set = this.spikes[style];
+      if (set.mesh.count > 0) continue;
+      tmpM.makeScale(0.001, 0.001, 0.001).setPosition(x, y, z);
+      set.mesh.setMatrixAt(0, tmpM);
+      set.mesh.count = 1;
+      set.mesh.instanceMatrix.needsUpdate = true;
+    }
+    if (this.ribbons.segments === 0) {
+      this.ribbons.begin();
+      this.ribbons.addWarm(x, y, z);
+      this.ribbons.end();
+    }
   }
 
   /** Every pooled object off (tests, scene changes). */
