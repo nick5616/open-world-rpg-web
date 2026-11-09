@@ -9,7 +9,7 @@
 # therefore needs a new genVersion (spec section 5). Changing a movement value
 # changes client prediction AND server simulation together, which is the point
 # of keeping them here.
-version: 4   # v4: WP15 night, demons and chemistry (docs/cr/011-wp15-night-chemistry.md)
+version: 5   # v5: fire spread tuned down (docs/cr/016-fire-spread.md); v4: WP15 night, demons and chemistry (docs/cr/011-wp15-night-chemistry.md)
 
 groups:
   world:
@@ -210,15 +210,15 @@ groups:
     CHEM_INTEREST_M: {type: f64, value: 256, doc: "Clients receive chemistry events and baselines for chunks within this distance."}
     CHEM_BITMAP_HZ: {type: i32, value: 2, doc: "Bitmap fallback rate per active chunk (spec 8: server-sent burned-cell bitmaps per chunk at 2 Hz)."}
     CHEM_WIND_WINDOW_S: {type: i32, value: 120, doc: "The chemistry wind (direction sector and strength) changes every this many seconds of world time, seeded."}
-    FIRE_GRASS_SPREAD_PERMILLE: {type: i32, value: 45, doc: "Per step, per burning orthogonal neighbor, chance in 1000 that dry grass catches (before wind and rain)."}
-    FIRE_BRUSH_SPREAD_PERMILLE: {type: i32, value: 30, doc: "Same for woody brush (forest undergrowth): slower to catch, burns longer."}
-    FIRE_DAMP_SPREAD_PERMILLE: {type: i32, value: 12, doc: "Same for damp wetland grass."}
+    FIRE_GRASS_SPREAD_PERMILLE: {type: i32, value: 2, doc: "Per step, per burning orthogonal neighbor, chance in 1000 that dry grass catches (before wind and rain)."}
+    FIRE_BRUSH_SPREAD_PERMILLE: {type: i32, value: 2, doc: "Same for woody brush (forest undergrowth): slower to catch, burns longer."}
+    FIRE_DAMP_SPREAD_PERMILLE: {type: i32, value: 1, doc: "Same for damp wetland grass."}
     FIRE_GRASS_BURN_STEPS: {type: i32, value: 80, doc: "A grass cell burns this many steps plus a seeded 0..FIRE_BURN_JITTER_STEPS (spec 8: burns out in about 20 s)."}
     FIRE_BRUSH_BURN_STEPS: {type: i32, value: 110, doc: "Brush burn time in steps (plus jitter)."}
     FIRE_BURN_JITTER_STEPS: {type: i32, value: 40, doc: "Seeded extra burn steps per cell."}
     FIRE_REGROW_STEPS: {type: i32, value: 18000, doc: "Burnt cells regrow after one in-game day (3600 s at 5 Hz)."}
     FIRE_RAIN_OUT_PERMILLE: {type: i32, value: 40, doc: "While it rains, each burning cell goes out with this chance in 1000 per step, and spread chances are divided by 5."}
-    FIRE_MAX_BURNING: {type: i32, value: 6000, doc: "No new spread while this many cells burn (bounds the zone's and clients' work)."}
+    FIRE_MAX_BURNING: {type: i32, value: 1200, doc: "No new spread while this many cells burn (bounds the zone's and clients' work)."}
     FIRE_UPDRAFT_LIFT: {type: f64, value: 7, doc: "Lift (m/s) over burning cells (any burning cell in the 3 x 3 block under a point), fed to the movement step's UpdraftField hook."}
     FIRE_UPDRAFT_TOP_M: {type: f64, value: 40, doc: "The fire's updraft column reaches this far above the burning cell's ground."}
     FREEZE_STEPS: {type: i32, value: 300, doc: "Ice on water freezes a walkable sheet for 60 s (spec 8)."}

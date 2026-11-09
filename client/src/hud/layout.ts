@@ -37,6 +37,10 @@ export const HUD_CSS = `
 /* A panel that freed the mouse on purpose (shop, inventory, map, journal...)
    makes "Click to look around" noise: hide it while one is open. */
 body:has([data-ui-panel]:not([style*="display: none"])) [data-testid="lock-hint"] { display: none !important; }
+/* The sound and friends panels open under the top-right buttons, over the quest tracker. */
+body:has([data-testid="sound-settings"], [data-testid="friends-panel"]) [data-testid="quest-tracker"] { visibility: hidden; }
+/* A shop / NPC dialogue sits on the right: loot toasts (a purchase, a quest reward) move to its left. */
+body:has([data-testid="town-panel"]:not([style*="display: none"])) [data-testid="loot-toasts"] { right: calc(4% + min(380px, 86vw) + 14px) !important; }
 @media (max-width: ${NARROW_PX}px) {
   :root {
     --ls-corner-bottom: calc(var(--ls-hotbar-h) + var(--ls-hint-h) + 20px);

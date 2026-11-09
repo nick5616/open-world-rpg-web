@@ -19,6 +19,33 @@ import { nightFrame, nightFx, nightRuntime, useNightHud } from './night';
 
 const MAX_FLAMES = 4000;
 const MAX_SCORCH = 8000;
+const tx = new THREE.Vector3();
+const tz = new THREE.Vector3();
+const tn = new THREE.Vector3();
+
+/** A radial falloff for scorch blotches (white centre, transparent rim, a little noise). */
+function scorchAlpha(): THREE.Texture | null {
+  if (typeof document === 'undefined') return null;
+  const n = 64;
+  const c = document.createElement('canvas');
+  c.width = c.height = n;
+  const ctx = c.getContext('2d');
+  if (!ctx) return null;
+  const img = ctx.createImageData(n, n);
+  for (let y = 0; y < n; y++)
+    for (let x = 0; x < n; x++) {
+      const d = Math.hypot(x - n / 2 + 0.5, y - n / 2 + 0.5) / (n / 2);
+      const noise = ((Math.sin(x * 12.9898 + y * 78.233) * 43758.5453) % 1 + 1) % 1;
+      const a = Math.max(0, Math.min(1, (1 - d) * 1.6 - noise * 0.25));
+      const i = (y * n + x) * 4;
+      img.data[i] = img.data[i + 1] = img.data[i + 2] = Math.round(a * 255);
+      img.data[i + 3] = 255;
+    }
+  ctx.putImageData(img, 0, 0);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.NoColorSpace;
+  return t;
+}
 const MAX_ICE = 4000;
 const RAIN = 1800;
 
@@ -116,7 +143,11 @@ export function NightLayer() {
     flames.count = 0;
     flames.renderOrder = 6;
     const quad = new THREE.PlaneGeometry(2, 2).rotateX(-Math.PI / 2);
-    const scorch = new THREE.InstancedMesh(quad, new THREE.MeshStandardMaterial({ color: '#16110d', roughness: 1, transparent: true, opacity: 0.85, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }), MAX_SCORCH);
+    // Scorch: soft round blotches a bit wider than a cell (so neighbours merge
+    // into one burn) and laid on the slope (playtest: flat 2 m squares at the
+    // cell centre's height floated as black rectangles on hillsides).
+    const scorchQuad = new THREE.PlaneGeometry(2.8, 2.8).rotateX(-Math.PI / 2);
+    const scorch = new THREE.InstancedMesh(scorchQuad, new THREE.MeshStandardMaterial({ color: '#1c1610', roughness: 1, transparent: true, opacity: 0.8, alphaMap: scorchAlpha(), depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }), MAX_SCORCH);
     scorch.frustumCulled = false;
     scorch.count = 0;
     const ice = new THREE.InstancedMesh(quad, new THREE.MeshStandardMaterial({ color: '#cfe8ff', roughness: 0.15, metalness: 0.1, transparent: true, opacity: 0.88, emissive: '#26405a', emissiveIntensity: 0.3 }), MAX_ICE);
@@ -197,7 +228,16 @@ export function NightLayer() {
         if (ns >= MAX_SCORCH || !nightRuntime.runtime) return;
         const x = cellCenter(cellX(id));
         const z = cellCenter(cellZ(id));
-        m4.compose(v3.set(x, nightRuntime.runtime.terrainGround.heightAt(x, z) + 0.06, z), q.identity(), one);
+        const g = nightRuntime.runtime.terrainGround;
+        const h = g.heightAt(x, z);
+        // Tangent basis from the terrain's slope across the cell: the quad's
+        // corners follow the ground instead of hanging off the downhill side.
+        const sx = (g.heightAt(x + 1, z) - g.heightAt(x - 1, z)) / 2;
+        const sz = (g.heightAt(x, z + 1) - g.heightAt(x, z - 1)) / 2;
+        tx.set(1, sx, 0);
+        tz.set(0, sz, 1);
+        tn.crossVectors(tz, tx).normalize();
+        m4.makeBasis(tx, tn, tz).setPosition(x, h + 0.05, z);
         parts.scorch.setMatrixAt(ns++, m4);
       });
       parts.flames.count = nf;

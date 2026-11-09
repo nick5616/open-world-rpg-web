@@ -17,6 +17,7 @@ import { drawnRemotes } from '../../net/netStore';
 import { hasBit, MAX_PERSONAL_PINS, PIN_COLORS, type Pin } from './events';
 import { setMapOpen, useExploration } from './store';
 import { mapTerrain, useMapWorld } from './world';
+import { anyExploredIn, currentExplored, exploredMask } from './explored';
 import { PAPER, siteGlyph } from './mapRender';
 // Playtest 1: quest markers and offer previews.
 import { trackedQuest, useQuests } from '../quests/store';
@@ -62,7 +63,8 @@ function MapView() {
   const [selected, setSelected] = useState<Site | null>(null);
   const [hover, setHover] = useState<string | null>(null);
   const [pinColor, setPinColor] = useState(0);
-  const view = useRef({ zoom: 1, cx: (data?.worldSize ?? 4096) / 2, cz: (data?.worldSize ?? 4096) / 2, drag: null as null | { x: number; y: number; cx: number; cz: number; moved: boolean } });
+  // Playtest 2: open on you, zoomed to your surroundings (the wheel zooms out to the world).
+  const view = useRef({ zoom: 4, cx: localPlayer.pos.x || (data?.worldSize ?? 4096) / 2, cz: localPlayer.pos.z || (data?.worldSize ?? 4096) / 2, drag: null as null | { x: number; y: number; cx: number; cz: number; moved: boolean } });
   const hits = useRef<Hit[]>([]);
   const preview = useQuests((s) => s.preview);
   const tracked = useQuests((s) => trackedQuest(s));
@@ -91,6 +93,32 @@ function MapView() {
     const canvas = canvasRef.current;
     if (!canvas || !data) return;
     const terrain = mapTerrain();
+    // Playtest 2: the terrain sketch through the explored-cells mask (rebuilt when it grows).
+    let sketch: HTMLCanvasElement | null = null;
+    let sketchVersion = -1;
+    const exploredSketch = (): HTMLCanvasElement | null => {
+      const e = currentExplored();
+      if (!e || !terrain) return null;
+      if (sketch && sketchVersion === e.version) return sketch;
+      const mask = exploredMask(e);
+      if (!mask) return null;
+      sketch = sketch ?? document.createElement('canvas');
+      sketch.width = terrain.width;
+      sketch.height = terrain.height;
+      const g = sketch.getContext('2d');
+      if (!g) return null;
+      g.clearRect(0, 0, sketch.width, sketch.height);
+      g.globalCompositeOperation = 'source-over';
+      g.imageSmoothingEnabled = true;
+      g.filter = 'blur(6px)';
+      g.drawImage(mask, 0, 0, sketch.width, sketch.height);
+      g.filter = 'none';
+      g.globalCompositeOperation = 'source-in';
+      g.drawImage(terrain, 0, 0);
+      g.globalCompositeOperation = 'source-over';
+      sketchVersion = e.version;
+      return sketch;
+    };
     let raf = 0;
     const draw = () => {
       raf = requestAnimationFrame(draw);
@@ -145,10 +173,21 @@ function MapView() {
             ctx.stroke();
           }
           ctx.restore();
-          ctx.fillStyle = 'rgba(110,90,60,0.55)';
-          ctx.textAlign = 'center';
-          ctx.fillText('Unexplored', x0 + size / 2, y0 + size / 2);
+          const ex = currentExplored();
+          if (!ex || !anyExploredIn(ex, rx, rz, rs)) {
+            ctx.fillStyle = 'rgba(110,90,60,0.55)';
+            ctx.textAlign = 'center';
+            ctx.fillText('Unexplored', x0 + size / 2, y0 + size / 2);
+          }
         }
+      }
+      // Where you have walked: the terrain sketch, softly faded in at the edges.
+      const sk = exploredSketch();
+      if (sk) {
+        ctx.save();
+        ctx.globalAlpha = 0.92;
+        ctx.drawImage(sk, sx(0), sy(0), data.worldSize * k, data.worldSize * k);
+        ctx.restore();
       }
       // Region borders and names (names only where revealed).
       ctx.strokeStyle = 'rgba(60,45,25,0.45)';
