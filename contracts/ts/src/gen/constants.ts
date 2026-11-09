@@ -337,11 +337,11 @@ export const CHEM_BITMAP_HZ = 2;
 /** The chemistry wind (direction sector and strength) changes every this many seconds of world time, seeded. */
 export const CHEM_WIND_WINDOW_S = 120;
 /** Per step, per burning orthogonal neighbor, chance in 1000 that dry grass catches (before wind and rain). */
-export const FIRE_GRASS_SPREAD_PERMILLE = 45;
+export const FIRE_GRASS_SPREAD_PERMILLE = 2;
 /** Same for woody brush (forest undergrowth): slower to catch, burns longer. */
-export const FIRE_BRUSH_SPREAD_PERMILLE = 30;
+export const FIRE_BRUSH_SPREAD_PERMILLE = 2;
 /** Same for damp wetland grass. */
-export const FIRE_DAMP_SPREAD_PERMILLE = 12;
+export const FIRE_DAMP_SPREAD_PERMILLE = 1;
 /** A grass cell burns this many steps plus a seeded 0..FIRE_BURN_JITTER_STEPS (spec 8: burns out in about 20 s). */
 export const FIRE_GRASS_BURN_STEPS = 80;
 /** Brush burn time in steps (plus jitter). */
@@ -353,7 +353,7 @@ export const FIRE_REGROW_STEPS = 18000;
 /** While it rains, each burning cell goes out with this chance in 1000 per step, and spread chances are divided by 5. */
 export const FIRE_RAIN_OUT_PERMILLE = 40;
 /** No new spread while this many cells burn (bounds the zone's and clients' work). */
-export const FIRE_MAX_BURNING = 6000;
+export const FIRE_MAX_BURNING = 1200;
 /** Lift (m/s) over burning cells (any burning cell in the 3 x 3 block under a point), fed to the movement step's UpdraftField hook. */
 export const FIRE_UPDRAFT_LIFT = 7;
 /** The fire's updraft column reaches this far above the burning cell's ground. */

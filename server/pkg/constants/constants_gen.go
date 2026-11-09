@@ -512,13 +512,13 @@ const ChemBitmapHz = 2
 const ChemWindWindowS = 120
 
 // FireGrassSpreadPermille: Per step, per burning orthogonal neighbor, chance in 1000 that dry grass catches (before wind and rain).
-const FireGrassSpreadPermille = 45
+const FireGrassSpreadPermille = 2
 
 // FireBrushSpreadPermille: Same for woody brush (forest undergrowth): slower to catch, burns longer.
-const FireBrushSpreadPermille = 30
+const FireBrushSpreadPermille = 2
 
 // FireDampSpreadPermille: Same for damp wetland grass.
-const FireDampSpreadPermille = 12
+const FireDampSpreadPermille = 1
 
 // FireGrassBurnSteps: A grass cell burns this many steps plus a seeded 0..FIRE_BURN_JITTER_STEPS (spec 8: burns out in about 20 s).
 const FireGrassBurnSteps = 80
@@ -536,7 +536,7 @@ const FireRegrowSteps = 18000
 const FireRainOutPermille = 40
 
 // FireMaxBurning: No new spread while this many cells burn (bounds the zone's and clients' work).
-const FireMaxBurning = 6000
+const FireMaxBurning = 1200
 
 // FireUpdraftLift: Lift (m/s) over burning cells (any burning cell in the 3 x 3 block under a point), fed to the movement step's UpdraftField hook.
 const FireUpdraftLift float64 = 7
