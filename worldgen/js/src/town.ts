@@ -12,6 +12,7 @@
 // floor/collide vectors, checked in every host.
 import { MAX_STEP_UP_M, PLAYER_CAPSULE_RADIUS } from '@lodestone/contracts';
 import type { AtlasHandle, Worldgen } from './index';
+import { STRUCTURE_KINDS } from './format';
 
 export const TOWNS_MAGIC = 0x5754444c; // "LDTW"
 export const TOWNS_FORMAT = 1;
@@ -24,7 +25,8 @@ export const TOWN_REC = [64, 96, 40, 32, 40, 24, 12, 48, 32, 56, 40, 32, 0] as c
 export const BUILDING_STYLES = ['timber', 'stone', 'adobe', 'stilt', 'log', 'cottage'] as const;
 export const BUILDING_ROLES = ['house', 'inn', 'forge', 'stall', 'garden', 'farm', 'workshop', 'storehouse', 'gatehouse'] as const;
 export const ROOF_KINDS = ['gable', 'hip', 'flat', 'none'] as const;
-export const BUILDING_FLAG = { porch: 1, chimney: 2, stilts: 4, openFront: 8, field: 16, jetty: 32 } as const;
+/** Building flags; `stepped` and `posts` (foundations on natural ground) since genVersion 2. */
+export const BUILDING_FLAG = { porch: 1, chimney: 2, stilts: 4, openFront: 8, field: 16, jetty: 32, stepped: 64, posts: 128 } as const;
 export const BOX_KINDS = ['floor', 'wall', 'upper', 'roof', 'ramp', 'furniture', 'fence', 'townWall', 'gate', 'deck', 'bridgeRamp', 'piece', 'townProp', 'railing'] as const;
 export const BOX_FLAG = { walk: 1, solid: 2, ceil: 4 } as const;
 export const PROP_KINDS = [
@@ -36,7 +38,15 @@ export const PROP_FLAG = { interact: 1, light: 2 } as const;
 export const NPC_ROLES = ['villager', 'merchant', 'blacksmith', 'innkeeper', 'bounty', 'farmer', 'guard'] as const;
 export const MERCHANT_KINDS = ['general', 'provisions', 'herbalist', 'tools'] as const;
 // Settlement sizes and structure kinds: SETTLEMENT_SIZES / STRUCTURE_KINDS in ./format (atlas site tables).
-export const PIECE_KINDS = ['pave', 'wall', 'corner', 'room', 'tower', 'ramp', 'pillars', 'tent', 'palisade', 'campfire', 'shaft', 'altar', 'crater', 'lair', 'rubble'] as const;
+/** Structure kinds in the towns buffer: the nine atlas structure kinds, then (genVersion 2) landmarks and enemy camps, which are built too. */
+export const TOWN_STRUCTURE_KINDS = [...STRUCTURE_KINDS, 'landmark', 'enemy_camp'] as const;
+/** Piece kinds; 15-22 are the genVersion 2 landmark pieces (one per landmark, variant = the landmark variant). */
+export const PIECE_KINDS = [
+  'pave', 'wall', 'corner', 'room', 'tower', 'ramp', 'pillars', 'tent', 'palisade', 'campfire', 'shaft', 'altar', 'crater', 'lair', 'rubble',
+  'stones', 'tree', 'arch', 'monolith', 'bones', 'crystals', 'statue', 'spring',
+] as const;
+/** Road classes: 0 road, 1 town street, 2 footpath (genVersion 2: `from` = the building it serves, `to` = the footpath it joins, none = it ends on a street or the square). */
+export const ROAD_CLASS = { road: 0, street: 1, path: 2 } as const;
 /** Stable-id layers of the towns layer (README "Stable ids"). */
 export const TOWN_LAYER = { building: 0x20, prop: 0x21, npc: 0x22, piece: 0x23, bridge: 0x24, sign: 0x25 } as const;
 const NONE = 0xffff;

@@ -1,0 +1,30 @@
+# golden review: genVersion 1 (worldgen-42a66cc191bee49d.wasm) -> 2 (worldgen/pkg/worldgen.wasm), table golden-v1.json
+## seed-7: sites 168 -> 227; 168 kept (168 at the same index with the same id), 0 gone, 59 added (settlement 3, waypoint 3, ruin 10, landmark 29, watchtower 3, shrine 10, enemy_camp 1)
+   spawn (2592, 1888) -> (2592, 1888); coverage 99.91% -> 99.96%
+   chunks near open          32: heights changed in 0, max |dh| 0.000 m
+   chunks near settlement    18: heights changed in 12, max |dh| 1.910 m
+   chunks near walled-town    4: heights changed in 0, max |dh| 0.000 m
+   chunks near lod>0          6: heights changed in 5, max |dh| 1.769 m
+## seed-1234: sites 191 -> 291; 191 kept (191 at the same index with the same id), 0 gone, 100 added (settlement 13, waypoint 13, landmark 27, enemy_camp 1, ruin 23, shrine 15, watchtower 8)
+   spawn (1376, 1792) -> (1376, 1792); coverage 100.00% -> 100.00%
+   chunks near open          25: heights changed in 0, max |dh| 0.000 m
+   chunks near settlement    26: heights changed in 14, max |dh| 1.978 m
+   chunks near walled-town    4: heights changed in 0, max |dh| 0.000 m
+   chunks near lod>0          6: heights changed in 2, max |dh| 1.887 m
+## seed-99: sites 170 -> 248; 170 kept (170 at the same index with the same id), 0 gone, 78 added (settlement 11, waypoint 11, landmark 24, watchtower 3, ruin 18, shrine 10, enemy_camp 1)
+   spawn (2080, 1888) -> (2080, 1888); coverage 99.97% -> 99.97%
+   chunks near open          30: heights changed in 0, max |dh| 0.000 m
+   chunks near settlement    20: heights changed in 13, max |dh| 0.964 m
+   chunks near walled-town    3: heights changed in 0, max |dh| 0.000 m
+   chunks near lod>0          6: heights changed in 5, max |dh| 1.609 m
+## extreme-high: sites 216 -> 297; 216 kept (216 at the same index with the same id), 0 gone, 81 added (settlement 3, waypoint 3, shrine 15, landmark 35, watchtower 10, ruin 13, enemy_camp 2)
+   spawn (3616, 1632) -> (3616, 1632); coverage 100.00% -> 100.00%
+   chunks near open          38: heights changed in 0, max |dh| 0.000 m
+   chunks near settlement    10: heights changed in 7, max |dh| 2.297 m
+   chunks near lod>0          6: heights changed in 2, max |dh| 7.887 m
+## extreme-low: sites 102 -> 160; 102 kept (102 at the same index with the same id), 0 gone, 58 added (settlement 6, waypoint 6, landmark 21, ruin 4, shrine 18, watchtower 3)
+   spawn (2016, 1408) -> (2016, 1408); coverage 99.50% -> 100.00%
+   chunks near open          16: heights changed in 0, max |dh| 0.000 m
+   chunks near settlement    22: heights changed in 8, max |dh| 1.987 m
+   chunks near lod>0          6: heights changed in 2, max |dh| 1.791 m
+chunks away from hamlets/villages (or at walled towns) whose heights changed: 0 (intended: 0)

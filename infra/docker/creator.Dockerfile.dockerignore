@@ -13,6 +13,7 @@
 !worldgen/harness/go/
 !worldgen/pkg/worldgen.wasm
 !worldgen/pkg/manifest.json
+!worldgen/archive/
 !contracts/migrations/
 !contracts/worldspec.schema.json
 **/node_modules

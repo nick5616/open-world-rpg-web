@@ -194,7 +194,7 @@ export function NetPlay({ ready }: { ready: ReadySession }) {
   return (
     <>
       {driver && session && (
-        <WorldCanvas driver={driver} seed={phase.kind === 'playing' ? phase.welcome.seed.toString() : undefined} onRuntime={(r) => { ground.target = r.ground; nightWorld(r); }}>
+        <WorldCanvas driver={driver} seed={phase.kind === 'playing' ? phase.welcome.seed.toString() : undefined} genVersion={phase.kind === 'playing' ? phase.welcome.genVersion : undefined} onRuntime={(r) => { ground.target = r.ground; nightWorld(r); }}>
           <RemotePlayers session={session} />
           <CombatLayer />
           {/* WP14 */}

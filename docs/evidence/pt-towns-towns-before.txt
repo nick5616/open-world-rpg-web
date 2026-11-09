@@ -1,0 +1,27 @@
+seed 20261108 "Highmarch of Beigleifeild": towns built in 128.2 ms native, buffer 522880 bytes, hash 9c2252a23320ea47
+  settlements 30 per region [1, 3, 3, 1, 1, 1, 3, 1, 2, 2, 5, 2, 1, 2, 1, 1] (min 1)
+  hamlets: 139 buildings, mean distance from the centre 18.8 m, mean gap to the nearest building 2.4 m, farthest 38 m
+  villages: 190 buildings, mean distance from the centre 28.2 m, mean gap to the nearest building 2.8 m, farthest 48 m
+  towns: 79 buildings, mean distance from the centre 39.9 m, mean gap to the nearest building 2.6 m, farthest 60 m
+  footpaths 0 (-0.00 km), from doors 0, joining another path 0
+  foundations: plinth 328, stepped 0, posts 0, stilts 5
+  roads 52 (16.1 km), streets 89, bridges 11, signposts 16, settlements outside spec range 0
+  structures 58 [7, 10, 8, 12, 9, 10, 0, 2, 0, 0, 0], pieces 211, buildings 408, boxes 6277, props 4002, npcs 254, veins 0
+seed 7 "Shores of Sonaliassver": towns built in 818.5 ms native, buffer 502320 bytes, hash 9f5dad3161012970
+  settlements 28 per region [1, 1, 1, 1, 1, 3, 5, 2, 2, 1, 1, 3, 2, 1, 2, 1] (min 1)
+  hamlets: 122 buildings, mean distance from the centre 18.5 m, mean gap to the nearest building 2.4 m, farthest 38 m
+  villages: 198 buildings, mean distance from the centre 29.9 m, mean gap to the nearest building 2.6 m, farthest 65 m
+  towns: 95 buildings, mean distance from the centre 52.8 m, mean gap to the nearest building 1.7 m, farthest 117 m
+  footpaths 0 (-0.00 km), from doors 0, joining another path 0
+  foundations: plinth 262, stepped 0, posts 0, stilts 83
+  roads 45 (13.5 km), streets 83, bridges 8, signposts 16, settlements outside spec range 0
+  structures 38 [14, 3, 6, 8, 4, 3, 0, 0, 0, 0, 0], pieces 120, buildings 415, boxes 6242, props 3839, npcs 263, veins 0
+seed 1234 "The Ironbound Expanse": towns built in 143.4 ms native, buffer 530464 bytes, hash 1c4fac5c08996bd6
+  settlements 33 per region [2, 2, 2, 1, 3, 3, 1, 1, 3, 3, 1, 2, 1, 4, 2, 2] (min 1)
+  hamlets: 135 buildings, mean distance from the centre 17.8 m, mean gap to the nearest building 2.5 m, farthest 38 m
+  villages: 209 buildings, mean distance from the centre 26.9 m, mean gap to the nearest building 2.6 m, farthest 47 m
+  towns: 81 buildings, mean distance from the centre 40.5 m, mean gap to the nearest building 2.7 m, farthest 66 m
+  footpaths 0 (-0.00 km), from doors 0, joining another path 0
+  foundations: plinth 339, stepped 0, posts 0, stilts 4
+  roads 57 (15.7 km), streets 97, bridges 8, signposts 20, settlements outside spec range 0
+  structures 51 [8, 7, 7, 18, 3, 7, 1, 0, 0, 0, 0], pieces 195, buildings 425, boxes 6302, props 4133, npcs 266, veins 3

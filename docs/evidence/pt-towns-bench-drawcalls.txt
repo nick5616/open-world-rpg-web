@@ -1,0 +1,43 @@
+building the client (VITE_SOLO=1) into C:\Users\nickb\AppData\Local\Temp\lodestone-wp20-ANSB0g
+# WP20 towns bench (headless Chromium, ANGLE (NVIDIA, NVIDIA GeForce RTX 3070 (0x00002488) Direct3D11 vs_5_0 ps_5_0, D3D11), 1600x900, high tier, uncapped, production build)
+date: 2026-11-09T15:41:29.487Z; playable after 7947 ms
+largest town: #9 "Draedmore" (town, cottage, walled true), 40 buildings, 22 NPCs, radius 110.5 m at (1920, 2272)
+overview (whole town, from above at an angle): 277 draw calls (63 in shadow passes), 1678k tris, frame 3.13 ms mean / 3.9 p95; without the towns layer: 182 calls, 1306k tris, 6.51 ms
+screenshot docs/evidence/pt-towns-bench-town-overview.png
+top-down (whole town and walls): 183 draw calls (55 in shadow passes), 1165k tris, frame 2.83 ms mean / 3.9 p95; without the towns layer: 111 calls, 881k tris, 2.69 ms
+screenshot docs/evidence/pt-towns-bench-town-top.png
+street level (looking along a street to the square): 305 draw calls (95 in shadow passes), 1820k tris, frame 3.21 ms mean / 4.1 p95; without the towns layer: 210 calls, 1522k tris, 2.7 ms
+screenshot docs/evidence/pt-towns-bench-street.png
+interior (inn, looking at the door): 303 draw calls (83 in shadow passes), 1868k tris, frame 3.35 ms mean / 4.3 p95
+screenshot docs/evidence/pt-towns-bench-interior.png
+screenshot docs/evidence/pt-towns-bench-interior-house.png
+NPCs in the square: 281 draw calls (73 in shadow passes), 1805k tris, frame 3.31 ms mean / 4.4 p95
+screenshot docs/evidence/pt-towns-bench-npcs.png
+target near Fenia: {"kind":"npc","name":"Fenia","role":1,"entityId":null,"stableId":"16224443885322019154"}
+screenshot docs/evidence/pt-towns-bench-npc-talk-prompt.png
+after E: panel {"title":"Fenia","line":"(offline) \"Have a look, have a look! Fair prices for fair folk.\"","shop":0,"bounties":0}
+screenshot docs/evidence/pt-towns-bench-npc-talk-panel.png
+forge target: {"kind":"forge","name":"","role":-1,"entityId":null,"stableId":"33461356418492015"}
+screenshot docs/evidence/pt-towns-bench-forge.png
+screenshot docs/evidence/pt-towns-bench-forge-panel.png
+screenshot docs/evidence/pt-towns-bench-forge-street.png
+road and bridge: 285 draw calls (93 in shadow passes), 1752k tris, frame 3.42 ms mean / 4.5 p95
+screenshot docs/evidence/pt-towns-bench-road-bridge.png
+signpost target: {"kind":"sign","name":"Signpost: Glaisgair 157 m  ·  Baiscach 236 m  ·  Baiscach 236 m","role":-1,"entityId":null,"stableId":"9138992586635644519"}
+screenshot docs/evidence/pt-towns-bench-signpost.png
+screenshot docs/evidence/pt-towns-bench-structures-ruin.png
+screenshot docs/evidence/pt-towns-bench-structures-watchtower.png
+screenshot docs/evidence/pt-towns-bench-structures-bandit-camp.png
+screenshot docs/evidence/pt-towns-bench-structures-wizard-tower.png
+screenshot docs/evidence/pt-towns-bench-structures-shrine.png
+screenshot docs/evidence/pt-towns-bench-structures-mineshaft.png
+screenshot docs/evidence/pt-towns-bench-structures-sunken-temple.png
+screenshot docs/evidence/pt-towns-bench-styles-timber.png
+screenshot docs/evidence/pt-towns-bench-styles-stilt.png
+screenshot docs/evidence/pt-towns-bench-styles-stone.png
+screenshot docs/evidence/pt-towns-bench-styles-adobe.png
+night overview: 285 draw calls (89 in shadow passes), 1755k tris, frame 3.65 ms mean / 5 p95
+screenshot docs/evidence/pt-towns-bench-town-night.png
+screenshot docs/evidence/pt-towns-bench-street-night.png
+towns layer: worker ready after 6492 ms (towns_build 511 ms incl. wasm, textures 449 ms, roads 413 ms, all in the worker); max settlement/structure build 26.6 ms (worker); max main-thread upload step 3.20 ms; 9807 scatter objects hidden
+no page errors

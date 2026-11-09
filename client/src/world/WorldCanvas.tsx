@@ -27,11 +27,13 @@ type Props = Omit<ComponentProps<typeof GameCanvas>, 'ground' | 'terrain' | 'env
   spawnOnLand?: boolean;
   /** World seed; online play passes the zone's Welcome seed, solo uses the URL/env default. */
   seed?: string;
+  /** The world's genVersion (online: Welcome.genVersion), so a world pinned to an older generator loads its archived wasm. */
+  genVersion?: string;
   /** Called with the loaded runtime before the canvas mounts (online play swaps its prediction ground to it). */
   onRuntime?: (r: WorldRuntime) => void;
 };
 
-export function WorldCanvas({ spawnOnLand = SOLO, seed, onRuntime, ...rest }: Props) {
+export function WorldCanvas({ spawnOnLand = SOLO, seed, genVersion, onRuntime, ...rest }: Props) {
   const [runtime, setRuntime] = useState<WorldRuntime | null>(null);
   const [status, setStatus] = useState('Loading world');
   const [error, setError] = useState<string | null>(null);
@@ -40,7 +42,7 @@ export function WorldCanvas({ spawnOnLand = SOLO, seed, onRuntime, ...rest }: Pr
   useEffect(() => {
     let alive = true;
     let loaded: WorldRuntime | null = null;
-    WorldRuntime.load(seed ?? worldSeed(), { meshCache: MESH_CACHE, onStatus: (s) => alive && setStatus(s) })
+    WorldRuntime.load(seed ?? worldSeed(), { meshCache: MESH_CACHE, genVersion, onStatus: (s) => alive && setStatus(s) })
       .then((r) => {
         if (!alive) {
           r.dispose();
@@ -64,7 +66,7 @@ export function WorldCanvas({ spawnOnLand = SOLO, seed, onRuntime, ...rest }: Pr
       loaded?.dispose();
     };
   // onRuntime is read once per load on purpose (a new callback identity must not reload the world).
-  }, [spawnOnLand, seed]);
+  }, [spawnOnLand, seed, genVersion]);
 
   // First playable frame: a tile at lod <= 1 drawn under the player and the
   // terrain textures in (or given up on: the flat fallback is playable too).

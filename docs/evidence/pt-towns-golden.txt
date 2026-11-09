@@ -1,0 +1,48 @@
+# WP01 golden determinism run
+date: 2026-11-09T15:50:58.591Z
+machine: 11th Gen Intel(R) Core(TM) i7-11700K @ 3.60GHz x16, win32 10.0.22621, node v20.18.0
+wasm: worldgen-1dcd2ffc09618d97.wasm (617354 B, genVersion 2, abi 1, rustc 1.99.1 (58cf8f9c3 2026-10-13))
+
+## build: PASS
+worldgen.wasm 617354 bytes, sha256 1dcd2ffc09618d97, genVersion 2, abi 1
+
+## node: PASS
+[golden:node] 5 worlds, 288 chunks, 320 collision points, 0 failures; atlas 446/473/445/535/326 ms; lod0 chunk mean 2.99 p95 4.20 max 5.61 ms
+[golden:node] caves: 237 cells, 1680 collision/system queries, 0 failures expected; cave_build mean 1.60 p95 2.66 max 4.10 ms
+[golden:node] towns: 5 worlds (hash, counts, every region settled), 3500 building floor/collide vectors; towns_build 730/490/468/477/230 ms
+[golden:node] 10000 collision_height queries in 21.6 ms (2.2 us each)
+[golden:node] atlas 316128 B raw, 127501 B gzipped (budget 2097152)
+Tests  5 passed (5)
+
+## chromium: PASS
+[golden:chromium] Chromium 131.0.6778.33 worker: 5 worlds, 288 chunks, 320 collision points, 0 failures
+[golden:chromium] detail chunk (LOD 0, 200 chunks, worker, crossOriginIsolated=true): mean 2.40 ms, p50 2.36, p95 4.03, max 4.59 (budget 8 ms); atlas 425 ms; 85 scatter/chunk
+[golden:chromium] caves: 237 golden cells, 1680 collision/system queries; cave_build in worker over 220 cells (105 with mesh): mean 0.83 ms, p95 2.10, max 3.51 (budget 12 ms); cave graph (all systems, once) 34.5 ms
+[golden:chromium] towns: 5 worlds (hash, counts, every region settled), 3500 building floor/collide vectors; towns_build in worker 657/432/394/410/186 ms
+
+## go: PASS
+[golden:go] wazero compiler: 5 worlds, 288 chunks, 320 collision points, 0 failures; lod0 chunk mean 3.94 ms p95 5.93 ms
+[golden:go] caves: 237 cells, 30 masks, 5 graphs match; cave_build max 6.63 ms
+[golden:go] towns: 5 worlds match; towns_build max 1023 ms
+--- PASS: TestGolden (8.84s)
+[golden:go] wazero interpreter: 1 world, 12 chunks, 64 collision points, 0 failures
+--- PASS: TestGoldenInterpreter (49.06s)
+
+## native: PASS
+[golden:native] 288 chunks, 237 cave cells, 5 town worlds match
+
+## archive gv1 node: PASS
+[golden:node] 5 worlds, 288 chunks, 320 collision points, 0 failures; atlas 403/478/421/515/294 ms; lod0 chunk mean 2.91 p95 4.18 max 5.51 ms
+[golden:node] caves: 237 cells, 1680 collision/system queries, 0 failures expected; cave_build mean 1.51 p95 2.53 max 4.37 ms
+[golden:node] towns: 5 worlds (hash, counts, every region settled), 3500 building floor/collide vectors; towns_build 1212/206/154/384/51 ms
+[golden:node] 10000 collision_height queries in 18.8 ms (1.9 us each)
+[golden:node] atlas 312224 B raw, 123699 B gzipped (budget 2097152)
+Tests  5 passed (5)
+
+## archive gv1 go: PASS
+[golden:go] wazero compiler: 5 worlds, 288 chunks, 320 collision points, 0 failures; lod0 chunk mean 3.98 ms p95 5.80 ms
+[golden:go] caves: 237 cells, 30 masks, 5 graphs match; cave_build max 6.12 ms
+[golden:go] towns: 5 worlds match; towns_build max 1982 ms
+--- PASS: TestGolden (8.51s)
+
+RESULT: PASS (all hosts agree)

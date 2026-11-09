@@ -32,6 +32,7 @@ pub mod jigsaw;
 pub mod kit;
 pub mod layout;
 pub mod npc;
+pub mod paths;
 pub mod roads;
 
 use crate::atlas::format::{sec, Atlas};
@@ -216,6 +217,10 @@ pub mod bflag {
     pub const OPEN_FRONT: u8 = 8;
     pub const FIELD: u8 = 16;
     pub const JETTY: u8 = 32;
+    /// genVersion 2: a stepped stone plinth (courses follow the slope).
+    pub const STEPPED: u8 = 64;
+    /// genVersion 2: timber posts and cribbing under the downhill side.
+    pub const POSTS: u8 = 128;
 }
 
 /// Roof kinds (byte 53).
@@ -376,6 +381,7 @@ pub fn build(a: &Atlas) -> Result<Towns, String> {
     layout::build_settlements(a, &net, &mut t);
     roads::finish(a, net, &mut t);
     jigsaw::build_structures(a, &mut t);
+    paths::to_sights(a, &mut t);
     Ok(t)
 }
 

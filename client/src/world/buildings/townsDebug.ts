@@ -1,7 +1,7 @@
 // window.__lodestoneTowns: debug handle for headless scripts (townBench.mjs)
 // and the browser console. Debug builds only, like window.__lodestoneWorld.
 
-import { BUILDING_ROLES, BUILDING_STYLES, NPC_ROLES, SETTLEMENT_SIZES, STRUCTURE_KINDS } from '@lodestone/worldgen';
+import { BUILDING_ROLES, BUILDING_STYLES, NPC_ROLES, SETTLEMENT_SIZES, TOWN_STRUCTURE_KINDS } from '@lodestone/worldgen';
 import { DEBUG } from '../../config';
 import { useDebugStore } from '../../stores/debugStore';
 import { frameInfo } from '../debug/worldDebug';
@@ -16,7 +16,7 @@ export function installTownsDebug(m: TownsManager): () => void {
       t.settlements.map((s) => ({ index: s.index, name: sites[s.site]?.name ?? '', size: SETTLEMENT_SIZES[s.size], style: BUILDING_STYLES[s.style], walled: s.walled, x: s.x, y: s.y, z: s.z, radius: s.radius, square: s.square, buildings: s.buildingCount, npcs: s.npcCount })),
     /** The biggest town: size 2 with the most buildings (falls back to the biggest settlement). */
     largestTown: () => [...t.settlements].sort((a, b) => b.size - a.size || b.buildingCount - a.buildingCount)[0]?.index ?? -1,
-    structures: () => t.structures.map((s) => ({ index: s.index, id: s.id.toString(), kind: STRUCTURE_KINDS[s.kind], tier: s.tier, x: s.x, y: s.y, z: s.z, radius: s.radius, link: s.link, pieces: s.pieceCount })),
+    structures: () => t.structures.map((s) => ({ index: s.index, id: s.id.toString(), kind: TOWN_STRUCTURE_KINDS[s.kind], tier: s.tier, x: s.x, y: s.y, z: s.z, radius: s.radius, link: s.link, pieces: s.pieceCount })),
     buildings: (si: number) => {
       const s = t.settlements[si];
       return t.buildings.slice(s.buildingFirst, s.buildingFirst + s.buildingCount).map((b) => ({ index: b.index, role: BUILDING_ROLES[b.role], style: BUILDING_STYLES[b.style], x: b.x, z: b.z, floorY: b.floorY, hx: b.hx, hz: b.hz, c: b.c, s: b.s, floors: b.floors, doorU: b.doorU, doorW: b.doorW, frontX: b.frontX, frontZ: b.frontZ, flags: b.flags }));

@@ -7,7 +7,22 @@ Every host must reproduce every hash bit for bit: Node
 native Rust (`worldgen/tests/golden_native.rs`). Run all with
 `npm run test:golden`.
 
-Contents (genVersion 1): 5 worlds (seeds 7, 1234, 99 from `spec_from_seed`,
+**Tables:** `golden.json` is the current generator (**genVersion 2**,
+playtest 1 towns/terrain/density, `docs/cr/014-towns-terrain-density.md`).
+`golden-v1.json` is genVersion 1, frozen with the official world minted on
+it; `npm run test:golden` checks it against the archived build
+`worldgen/archive/worldgen-42a66cc191bee49d.wasm` in Node and Go/wazero
+(`worldgen/archive/manifest.json` lists every archived version and its
+table). The genVersion 2 table was regenerated after reviewing the diff
+with `npx vite-node worldgen/golden/review.ts`
+(`docs/evidence/pt-towns-golden-review.txt`: every genVersion 1 site kept
+at its index and id, chunk heights changed only around hamlets and
+villages). For a future genVersion: rename `golden.json` to
+`golden-v<N>.json`, copy the outgoing `worldgen-<hash>.wasm` into
+`worldgen/archive/` and list it in the manifest, bump `GEN_VERSION`,
+review, then `npm run golden:update`.
+
+Contents (both versions, same picking rules): 5 worlds (seeds 7, 1234, 99 from `spec_from_seed`,
 plus two hand-made extremes of the schema ranges), 288 chunks: 6 per biome
 per world where the biome exists (every biome appears >= 18 times), lakes,
 rivers, sea, coast, settlement / structure / tower / cave-mouth / camp

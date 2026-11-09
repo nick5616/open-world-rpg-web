@@ -57,6 +57,43 @@ pub fn footprint(r: u8, style: u8, seq: &mut Seq) -> (f64, f64) {
     }
 }
 
+/// Chance of a porch by style (log 0.7, stilt 1, cottage 0.3, others 0).
+pub fn porch_chance(style: u8) -> f64 {
+    match style {
+        STYLE_LOG => 0.7,
+        STYLE_STILT => 1.0,
+        STYLE_COTTAGE => 0.3,
+        _ => 0.0,
+    }
+}
+
+/// Whether a style ever builds porches.
+pub fn has_porches(style: u8) -> bool {
+    porch_chance(style) > 0.0
+}
+
+/// Foundation thresholds (lattice range under the footprint, m): a stepped
+/// plinth from STEPPED_RELIEF, timber posts with cribbing from POSTS_RELIEF.
+pub const STEPPED_RELIEF: f64 = 0.9;
+pub const POSTS_RELIEF: f64 = 2.2;
+/// Water depth (m, over the lowest ground under the lot) a stilt house may
+/// stand in.
+pub const STILT_WADE: f64 = 1.8;
+/// Door rise (floor above the ground in front, m) that earns a porch deck.
+pub const PORCH_RISE: f64 = 1.3;
+/// Door rise from which the door ramp is drawn as steps.
+pub const STEPS_RISE: f64 = 0.55;
+
+/// Horizontal length of the door ramp / steps for a rise (m): a gentle ramp
+/// for a small rise, ~33 degree steps beyond STEPS_RISE.
+pub fn stair_len(rise: f64) -> f64 {
+    if rise <= STEPS_RISE {
+        (rise * 2.2).max(1.2)
+    } else {
+        (rise * 1.55).max(1.2)
+    }
+}
+
 /// Extra depth a role needs behind the building (farm fields).
 pub fn field_depth(r: u8) -> f64 {
     if r == role::FARM {
@@ -138,14 +175,22 @@ pub fn build(c: &mut Ctx, t: &mut Towns, o: &Obb, r: u8, style: u8, local: u32, 
     if r == role::FORGE {
         flags |= bflag::CHIMNEY;
     }
-    let porch_p = match style {
-        STYLE_LOG => 0.7,
-        STYLE_STILT => 1.0,
-        STYLE_COTTAGE => 0.3,
-        _ => 0.0,
-    };
+    let porch_p = porch_chance(style);
     if floors > 0 && r != role::FORGE && seq.unit() < porch_p {
         flags |= bflag::PORCH;
+    }
+    // genVersion 2: the ground under a hamlet or village is natural, so the
+    // foundation follows the slope (playtest 1). Relief = lattice range under
+    // the footprint: a low stone plinth, a stepped plinth whose courses
+    // follow the ground, or timber posts with cribbing on steep lots.
+    let sp0 = c.ter.span(o, 0.0);
+    let relief = sp0.max - sp0.min;
+    if floors > 0 && style != STYLE_STILT {
+        if relief >= POSTS_RELIEF {
+            flags |= bflag::POSTS;
+        } else if relief >= STEPPED_RELIEF {
+            flags |= bflag::STEPPED;
+        }
     }
     if style == STYLE_TIMBER && floors == 2 {
         flags |= bflag::JETTY;
@@ -163,14 +208,29 @@ pub fn build(c: &mut Ctx, t: &mut Towns, o: &Obb, r: u8, style: u8, local: u32, 
     } else {
         [0.0, -o.hx * 0.45, o.hx * 0.45][(seq.next_u64() % 3) as usize]
     };
+    // Floor on the highest lattice point under the footprint, so the floor
+    // is above the ground everywhere inside it.
+    let lift = if flags & bflag::STILTS != 0 {
+        1.4
+    } else if flags & bflag::POSTS != 0 {
+        0.35
+    } else {
+        0.25
+    };
+    // Stilt houses may stand in shallow water: their floor clears it too.
+    let top = if sp0.wet { sp0.max.max(sp0.max_water) } else { sp0.max };
+    let floor_y = if floors == 0 { c.ter.height(o.cx, o.cz) } else { top + lift };
+    // A door high above the ground in front gets a porch deck (on posts) to
+    // step out onto before the stairs, whatever the style's porch habit.
+    if floors > 0 && r != role::FORGE && flags & bflag::PORCH == 0 {
+        let (gx, gz) = o.at(door_u, -o.hz - 0.6);
+        if floor_y - c.ter.height(gx, gz) > PORCH_RISE {
+            flags |= bflag::PORCH;
+        }
+    }
     let porch_d = if flags & bflag::PORCH != 0 { 2.0 } else { 0.0 };
-
-    // Floor on the highest lattice point under the footprint (and porch),
-    // so the floor is above the ground everywhere inside it.
     let fp = sub(o, 0.0, -porch_d * 0.5, o.hx, o.hz + porch_d * 0.5);
     let sp = c.ter.span(&fp, 0.0);
-    let lift = if flags & bflag::STILTS != 0 { 1.4 } else { 0.25 };
-    let floor_y = if floors == 0 { c.ter.height(o.cx, o.cz) } else { sp.max + lift };
     let base_y = sp.min - 0.6;
     let wall_top = floor_y + floors as f64 * storey;
     let box_first = t.boxes.len() as u32;
@@ -252,23 +312,29 @@ pub fn build(c: &mut Ctx, t: &mut Towns, o: &Obb, r: u8, style: u8, local: u32, 
             );
         }
         if porch_d > 0.0 {
+            // genVersion 2: the porch deck is solid like the floor slab (on a
+            // slope it stands well above the ground; its flat top is a floor
+            // from the door and from the stairs, a wall from beside it).
             push_flat(
                 &mut t.boxes,
                 &sub(o, 0.0, -o.hz - porch_d * 0.5, o.hx, porch_d * 0.5),
                 base_y,
                 floor_y,
                 bk::FLOOR,
-                bf::WALK,
+                bf::WALK | bf::SOLID,
                 bi,
             );
         }
-        // Door ramp (or steps) from the ground in front up to the floor.
+        // Door ramp, or steps once the rise passes STEPS_RISE (renderers
+        // draw treads on the same sloped top), from the ground in front up
+        // to the floor. Walkable only: a sloped top's highest end would make
+        // a solid box a wall to someone standing on its lower end.
         let out_v = -o.hz - porch_d;
         let (gx, gz) = o.at(door_u, out_v - 0.6);
         let g_front = c.ter.height(gx, gz);
         let rise = floor_y - g_front;
         if rise > 0.3 {
-            let l = (rise * 2.2).max(1.2);
+            let l = stair_len(rise);
             let (ox, oz) = o.at(door_u, out_v - l);
             let g_out = c.ter.height(ox, oz);
             let (cx, cz) = o.at(door_u, out_v - l * 0.5);

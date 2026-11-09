@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math"
 	"os"
 	"path/filepath"
@@ -58,7 +59,7 @@ func testWorld(t testing.TB) *World {
 
 func TestModuleBasics(t *testing.T) {
 	m := testModule(t)
-	if m.GenVersion() != 1 {
+	if m.GenVersion() != 2 { // playtest 1 towns/density (docs/cr/014); genVersion 1 is archived
 		t.Fatalf("genVersion %d", m.GenVersion())
 	}
 	if len(m.SHA256()) != 64 {
@@ -340,19 +341,21 @@ func TestGroundNormalAndRaycast(t *testing.T) {
 func TestPinAndMint(t *testing.T) {
 	m := testModule(t)
 	w := testWorld(t)
-	if err := m.CheckGenVersion("1"); err != nil {
+	gv := m.GenVersionString()
+	if err := m.CheckGenVersion(gv); err != nil {
 		t.Fatal(err)
 	}
-	if err := m.CheckGenVersion("v1"); err != nil {
+	if err := m.CheckGenVersion("v" + gv); err != nil {
 		t.Fatal(err)
 	}
-	for _, bad := range []string{"2", "0", "d38abb3027caa709", "1.0"} {
+	next := fmt.Sprint(m.GenVersion() + 1)
+	for _, bad := range []string{next, "0", "d38abb3027caa709", gv + ".0"} {
 		if err := m.CheckGenVersion(bad); !errors.Is(err, ErrGenVersion) {
 			t.Fatalf("%q accepted: %v", bad, err)
 		}
 	}
 	spec := w.SpecJSON()
-	good := WorldRow{Seed: officialSeed, Spec: spec, GenVersion: "1", AtlasHash: Hex64(w.AtlasHash)}
+	good := WorldRow{Seed: officialSeed, Spec: spec, GenVersion: gv, AtlasHash: Hex64(w.AtlasHash)}
 	mt, ph, err := m.OpenRow(good, WorldOptions{MaxInstances: 1})
 	if err != nil || ph || mt.AtlasHash != Hex64(w.AtlasHash) {
 		t.Fatalf("good row: %v %v %+v", err, ph, mt.AtlasHash)
@@ -363,20 +366,20 @@ func TestPinAndMint(t *testing.T) {
 	var anyJSON map[string]any
 	_ = json.Unmarshal(spec, &anyJSON)
 	reordered, _ := json.Marshal(anyJSON) // Go sorts keys
-	mt, _, err = m.OpenRow(WorldRow{Seed: officialSeed, Spec: reordered, GenVersion: "1", AtlasHash: good.AtlasHash}, WorldOptions{MaxInstances: 1})
+	mt, _, err = m.OpenRow(WorldRow{Seed: officialSeed, Spec: reordered, GenVersion: gv, AtlasHash: good.AtlasHash}, WorldOptions{MaxInstances: 1})
 	if err != nil {
 		t.Fatalf("reordered spec: %v", err)
 	}
 	mt.World.Close()
 
-	if _, _, err := m.OpenRow(WorldRow{Seed: officialSeed, Spec: spec, GenVersion: "2"}, WorldOptions{}); !errors.Is(err, ErrGenVersion) {
+	if _, _, err := m.OpenRow(WorldRow{Seed: officialSeed, Spec: spec, GenVersion: next}, WorldOptions{}); !errors.Is(err, ErrGenVersion) {
 		t.Fatalf("wrong gen version: %v", err)
 	}
-	if _, _, err := m.OpenRow(WorldRow{Seed: officialSeed, Spec: spec, GenVersion: "1", AtlasHash: "0123456789abcdef"}, WorldOptions{}); !errors.Is(err, ErrAtlasHash) {
+	if _, _, err := m.OpenRow(WorldRow{Seed: officialSeed, Spec: spec, GenVersion: gv, AtlasHash: "0123456789abcdef"}, WorldOptions{}); !errors.Is(err, ErrAtlasHash) {
 		t.Fatalf("wrong atlas hash: %v", err)
 	}
 	mt, ph, err = m.OpenRow(WorldRow{Seed: officialSeed, Spec: []byte(`{"placeholder":true}`), GenVersion: "placeholder", AtlasHash: "placeholder"}, WorldOptions{MaxInstances: 1})
-	if err != nil || !ph || mt.AtlasHash != good.AtlasHash || mt.GenVersion != "1" || mt.Name == "" {
+	if err != nil || !ph || mt.AtlasHash != good.AtlasHash || mt.GenVersion != m.GenVersionString() || mt.Name == "" {
 		t.Fatalf("placeholder row: %v %v %+v", err, ph, mt)
 	}
 	mt.World.Close()

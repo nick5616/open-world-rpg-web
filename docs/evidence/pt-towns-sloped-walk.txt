@@ -1,0 +1,160 @@
+# Playtest 1 sloped lots: walk into buildings and through their doors, client prediction (TS town.ts + doors.ts) vs the zone binary (Go server/pkg/towns), official world seed 20261108, genVersion 2
+date 2026-11-09T15:25:14.727Z
+walk-in: from 3+ m beyond the foot of the door steps, up them (and over the porch), through the door to the back wall, jump under the ceiling, turn, out again (WP20 script). door: close from outside, walk into it, open, walk in, close behind, push, open, walk out (pt/ux script).
+
+## timber posts (steepest lots): building 360 (workshop, flags 130) in settlement 24 (size 0), ground range under it 2.66 m, door steps rise 0.66 m, floor 171.21, foundation bottom 167.03
+walk-in:
+building 5436b7b3dc8d9f34 (workshop, style 5) at (2859.06, 1683.45) floor y 171.21, 1 floor(s), door 1.40 m at u 0.00
+start (2849.99, 1681.00) yaw -105.1 deg; 514 predicted samples inside the walls; deepest v 1.847 (back wall limit 2.697); inside y 171.206..171.206; jumped false
+== s0: 18.0 s, 1079 steps, 539 compared snapshots; spawn (2849.99, 171.66, 1681)
+   per mode: ground: 521 snapshots, max 0.79 cm, y 170.6..176.5; air: 18 snapshots, max 0.68 cm, y 171.4..172.3
+   overall max divergence 0.79 cm; corrections 0 (max 0.00 cm), agreements 494; drowned events 0
+   end: ground at (2827.93, 176.46, 1675.03), stamina 100.0
+   transitions:
+     0.03s seq 1: start -> ground at (2849.99, 171.66, 1681.00) stamina 100.0
+     8.07s seq 483: ground -> air at (2860.84, 171.40, 1683.94) stamina 100.0
+     8.67s seq 519: air -> ground at (2860.84, 171.21, 1683.94) stamina 100.0
+PASS
+door:
+door 271 (prop 2840, id 2f6f88f35878ddb5) of building 5436b7b3dc8d9f34 (workshop, style 5) at (2855.93, 171.21, 1682.61), doorway 1.40 m x 0.30 m
+door events: 4 door_state, 0 baselines, 0 refused, 0 late re-predictions (localReplays 0)
+closed from the street: body centre stopped 0.550 m outside the door's mid-plane (limit 0.550); closed from inside: stopped 0.550 m inside (limit 0.550); got inside true, back out true
+== sd0: 11.7 s, 703 steps, 352 compared snapshots; spawn (2852.55, 170.94, 1681.69)
+   per mode: ground: 352 snapshots, max 0.77 cm, y 170.6..171.2
+   overall max divergence 0.77 cm; corrections 0 (max 0.00 cm), agreements 352; drowned events 0
+   end: ground at (2853.51, 170.75, 1681.95), stamina 100.0
+   transitions:
+     0.03s seq 1: start -> ground at (2852.55, 170.94, 1681.69) stamina 100.0
+PASS
+
+## timber posts (steepest lots): building 434 (house, flags 131) in settlement 34 (size 0), ground range under it 2.49 m, door steps rise 2.20 m, floor 57.76, foundation bottom 53.93
+walk-in:
+building a4a8b9b7cda58702 (house, style 0) at (2970.78, 2934.58) floor y 57.76, 1 floor(s), door 1.40 m at u 1.83
+start (2982.87, 2933.88) yaw 102.0 deg; 599 predicted samples inside the walls; deepest v 2.993 (back wall limit 2.993); inside y 57.758..57.758; jumped false
+== s1: 18.0 s, 1077 steps, 537 compared snapshots; spawn (2982.87, 55.70, 2933.88)
+   per mode: ground: 519 snapshots, max 0.74 cm, y 55.5..57.8; air: 18 snapshots, max 0.71 cm, y 58.0..58.8
+   overall max divergence 0.74 cm; corrections 0 (max 0.00 cm), agreements 533; drowned events 0
+   end: ground at (2983.52, 55.69, 2934.00), stamina 100.0
+   transitions:
+     0.07s seq 2: start -> ground at (2982.87, 55.70, 2933.88) stamina 100.0
+     8.07s seq 483: ground -> air at (2968.37, 57.95, 2937.67) stamina 100.0
+     8.67s seq 519: air -> ground at (2968.37, 57.76, 2937.66) stamina 100.0
+PASS
+door:
+door 315 (prop 3404, id 96b9c577e1d46332) of building a4a8b9b7cda58702 (house, style 0) at (2974.63, 57.76, 2935.64), doorway 1.40 m x 0.30 m
+door events: 4 door_state, 0 baselines, 0 refused, 0 late re-predictions (localReplays 0)
+closed from the street: body centre stopped 0.550 m outside the door's mid-plane (limit 0.550); closed from inside: stopped 0.550 m inside (limit 0.550); got inside true, back out true
+== sd1: 12.5 s, 751 steps, 374 compared snapshots; spawn (2980.97, 55.71, 2934.29)
+   per mode: ground: 374 snapshots, max 0.75 cm, y 55.6..57.8
+   overall max divergence 0.75 cm; corrections 0 (max 0.00 cm), agreements 374; drowned events 0
+   end: ground at (2977.08, 57.52, 2935.12), stamina 100.0
+   transitions:
+     0.07s seq 2: start -> ground at (2980.97, 55.71, 2934.29) stamina 100.0
+PASS
+
+## stepped plinth with a porch: building 329 (inn, flags 67) in settlement 21 (size 0), ground range under it 2.00 m, door steps rise 0.60 m, floor 117.96, foundation bottom 115.02
+walk-in:
+building 31c1f0e8427f6dc1 (inn, style 5) at (2671.43, 2048.00) floor y 117.96, 2 floor(s), door 1.80 m at u 0.00
+start (2658.88, 2048.00) yaw -90.0 deg; 521 predicted samples inside the walls; deepest v 2.894 (back wall limit 3.844); inside y 117.963..117.963; jumped false
+== s2: 17.9 s, 1075 steps, 536 compared snapshots; spawn (2658.88, 117.62, 2048)
+   per mode: ground: 517 snapshots, max 0.63 cm, y 117.4..118.0; air: 19 snapshots, max 0.51 cm, y 118.1..119.0
+   overall max divergence 0.63 cm; corrections 0 (max 0.00 cm), agreements 536; drowned events 0
+   end: ground at (2640.30, 117.77, 2048.00), stamina 100.0
+   transitions:
+     0.07s seq 2: start -> ground at (2658.88, 117.62, 2048.00) stamina 100.0
+     8.03s seq 481: ground -> air at (2674.32, 118.06, 2048.00) stamina 100.0
+     8.67s seq 519: air -> ground at (2674.32, 117.96, 2048.00) stamina 100.0
+PASS
+door:
+door 251 (prop 2588, id 8d60915b7b6127) of building 31c1f0e8427f6dc1 (inn, style 5) at (2667.03, 117.96, 2048.00), doorway 1.80 m x 0.30 m
+door events: 4 door_state, 0 baselines, 0 refused, 0 late re-predictions (localReplays 0)
+closed from the street: body centre stopped 0.550 m outside the door's mid-plane (limit 0.550); closed from inside: stopped 0.550 m inside (limit 0.550); got inside true, back out true
+== sd2: 12.1 s, 725 steps, 362 compared snapshots; spawn (2662.63, 117.51, 2048)
+   per mode: ground: 362 snapshots, max 0.66 cm, y 117.4..118.0
+   overall max divergence 0.66 cm; corrections 0 (max 0.00 cm), agreements 361; drowned events 0
+   end: ground at (2664.53, 117.79, 2048.00), stamina 100.0
+   transitions:
+     0.07s seq 2: start -> ground at (2662.63, 117.51, 2048.00) stamina 100.0
+PASS
+
+## stepped plinth with a porch: building 235 (inn, flags 99) in settlement 14 (size 0), ground range under it 1.90 m, door steps rise 1.75 m, floor 52.77, foundation bottom 49.75
+walk-in:
+building d8c95f7f30be6f3b (inn, style 0) at (2821.34, 3248.43) floor y 52.77, 2 floor(s), door 1.80 m at u 0.00
+start (2817.25, 3235.84) yaw -162.0 deg; 538 predicted samples inside the walls; deepest v 3.586 (back wall limit 4.536); inside y 52.768..52.768; jumped false
+== s3: 18.0 s, 1077 steps, 537 compared snapshots; spawn (2817.25, 50.95, 3235.84)
+   per mode: ground: 519 snapshots, max 0.80 cm, y 50.4..52.8; air: 18 snapshots, max 0.70 cm, y 53.0..53.8
+   overall max divergence 0.80 cm; corrections 0 (max 0.00 cm), agreements 537; drowned events 0
+   end: ground at (2814.58, 50.36, 3229.01), stamina 100.0
+   transitions:
+     0.07s seq 2: start -> ground at (2817.25, 50.95, 3235.84) stamina 100.0
+     8.07s seq 483: ground -> air at (2822.45, 52.96, 3251.84) stamina 100.0
+     8.67s seq 519: air -> ground at (2822.45, 52.77, 3251.84) stamina 100.0
+PASS
+door:
+door 182 (prop 1848, id 78557e3d6fbd71c1) of building d8c95f7f30be6f3b (inn, style 0) at (2819.77, 52.77, 3243.59), doorway 1.80 m x 0.30 m
+door events: 4 door_state, 0 baselines, 0 refused, 0 late re-predictions (localReplays 0)
+closed from the street: body centre stopped 0.550 m outside the door's mid-plane (limit 0.550); closed from inside: stopped 0.550 m inside (limit 0.550); got inside true, back out true
+== sd3: 12.4 s, 741 steps, 371 compared snapshots; spawn (2818, 51.04, 3238.17)
+   per mode: ground: 371 snapshots, max 0.78 cm, y 51.0..52.8
+   overall max divergence 0.78 cm; corrections 0 (max 0.00 cm), agreements 371; drowned events 0
+   end: ground at (2818.99, 52.52, 3241.21), stamina 100.0
+   transitions:
+     0.03s seq 1: start -> ground at (2818.00, 51.04, 3238.17) stamina 100.0
+PASS
+
+## tallest door steps: building 357 (house, flags 67) in settlement 24 (size 0), ground range under it 1.64 m, door steps rise 2.99 m, floor 174.66, foundation bottom 171.46
+walk-in:
+building 4ef920f07f53794 (house, style 5) at (2841.41, 1682.82) floor y 174.66, 1 floor(s), door 1.40 m at u 0.00
+start (2853.16, 1686.00) yaw 74.9 deg; 506 predicted samples inside the walls; deepest v 3.001 (back wall limit 3.001); inside y 174.664..174.664; jumped false
+== s4: 18.0 s, 1077 steps, 537 compared snapshots; spawn (2853.16, 171.03, 1686)
+   per mode: ground: 519 snapshots, max 0.78 cm, y 166.8..174.7; air: 18 snapshots, max 0.69 cm, y 174.9..175.7
+   overall max divergence 0.78 cm; corrections 0 (max 0.00 cm), agreements 537; drowned events 0
+   end: ground at (2871.27, 166.82, 1690.71), stamina 100.0
+   transitions:
+     0.07s seq 2: start -> ground at (2853.16, 171.03, 1686.00) stamina 100.0
+     8.07s seq 483: ground -> air at (2842.71, 174.86, 1683.17) stamina 100.0
+     8.67s seq 519: air -> ground at (2842.25, 174.66, 1682.57) stamina 100.0
+PASS
+door:
+door 268 (prop 2814, id f29f86a5eb1b04bf) of building 4ef920f07f53794 (house, style 5) at (2844.84, 174.66, 1683.75), doorway 1.40 m x 0.30 m
+door events: 4 door_state, 1 baselines, 0 refused, 0 late re-predictions (localReplays 0)
+closed from the street: body centre stopped 0.550 m outside the door's mid-plane (limit 0.550); closed from inside: stopped 0.550 m inside (limit 0.550); got inside true, back out true
+== sd4: 12.6 s, 755 steps, 377 compared snapshots; spawn (2851.28, 171.47, 1685.49)
+   per mode: ground: 377 snapshots, max 0.75 cm, y 171.5..174.7
+   overall max divergence 0.75 cm; corrections 0 (max 0.00 cm), agreements 377; drowned events 0
+   end: ground at (2847.26, 174.36, 1684.40), stamina 100.0
+   transitions:
+     0.07s seq 2: start -> ground at (2851.28, 171.47, 1685.49) stamina 100.0
+PASS
+
+## tallest door steps: building 247 (workshop, flags 7) in settlement 15 (size 0), ground range under it 1.79 m, door steps rise 2.89 m, floor 28.95, foundation bottom 24.56
+walk-in:
+building 2a20e3408947d438 (workshop, style 3) at (3210.25, 3595.00) floor y 28.95, 1 floor(s), door 1.40 m at u 0.00
+start (3198.01, 3595.00) yaw -90.0 deg; 464 predicted samples inside the walls; deepest v 1.518 (back wall limit 2.368); inside y 28.951..28.951; jumped false
+== s5: 17.9 s, 1076 steps, 537 compared snapshots; spawn (3198.01, 25.82, 3595)
+   per mode: ground: 518 snapshots, max 0.73 cm, y 25.2..28.9; air: 19 snapshots, max 0.60 cm, y 29.1..30.0
+   overall max divergence 0.73 cm; corrections 0 (max 0.00 cm), agreements 537; drowned events 0
+   end: ground at (3179.20, 25.77, 3597.11), stamina 100.0
+   transitions:
+     0.07s seq 2: start -> ground at (3198.01, 25.82, 3595.00) stamina 100.0
+     8.03s seq 481: ground -> air at (3211.77, 29.05, 3595.00) stamina 100.0
+     8.67s seq 519: air -> ground at (3211.77, 28.95, 3595.00) stamina 100.0
+PASS
+door:
+door 189 (prop 1942, id 16b3c67e48c93e4f) of building 2a20e3408947d438 (workshop, style 3) at (3207.33, 28.95, 3595.00), doorway 1.40 m x 0.30 m
+door events: 4 door_state, 0 baselines, 0 refused, 0 late re-predictions (localReplays 0)
+closed from the street: body centre stopped 0.550 m outside the door's mid-plane (limit 0.550); closed from inside: stopped 0.550 m inside (limit 0.550); got inside true, back out true
+== sd5: 12.7 s, 761 steps, 379 compared snapshots; spawn (3199.96, 25.96, 3595)
+   per mode: ground: 379 snapshots, max 0.67 cm, y 26.0..28.9
+   overall max divergence 0.67 cm; corrections 0 (max 0.00 cm), agreements 379; drowned events 0
+   end: ground at (3204.83, 28.71, 3595.00), stamina 100.0
+   transitions:
+     0.07s seq 2: start -> ground at (3199.96, 25.96, 3595.00) stamina 100.0
+PASS
+
+zone log (towns):
+{"time":"2026-11-09T07:25:13.9446502-08:00","level":"INFO","msg":"terrain ready","svc":"zone","wasm":"C:\\Users\\nickb\\repos\\open-world-rpg-web\\.claude\\worktrees\\agent-a05ddda57bb892bf1\\worldgen\\pkg\\worldgen.wasm","wasmSha256":"11c63cf451fe3c5f5b6d4a1c4a643c4dbddc2b2456e3a9e354f72228838c7cc6","genVersion":"2","atlasHash":"5b0cbaaec16d87b7","world":"Highmarch of Beigleifeild","spawnX":1920,"spawnZ":2272,"seaLevel":26.040000915527344,"ms":1057}
+{"time":"2026-11-09T07:25:14.7066897-08:00","level":"INFO","msg":"towns ready","svc":"zone","settlements":42,"buildings":486,"boxes":7756,"npcs":301,"roads":264,"bridges":13,"structures":155,"bytes":635752,"ms":702}
+
+total: 6 sloped buildings, 12 walks, corrections 0, max divergence 0.80 cm
+ALL PASS

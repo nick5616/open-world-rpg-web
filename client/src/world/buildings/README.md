@@ -195,3 +195,32 @@ worker; the main thread's largest step is wrapping one mesh (a few ms).
   in the zone's memory (a restart reopens every door; WP16 zones each keep
   their own) and `tools/bots` predict without doors (a bot walking into a
   door someone closed gets corrected).
+
+## Towns on natural terrain (playtest 1, genVersion 2)
+
+`docs/cr/014-towns-terrain-density.md`, decision 0022. The worldgen
+records changed meaning, not layout, so everything above holds:
+
+- **Foundations** (`kit.ts`): the floor slab's foundation is drawn by the
+  building flags: stone plinth with a cap course; `stepped` (64): a footing
+  that steps down with the ground in ~1.5 m runs (`drawPlinthTrim`, reads
+  `heightAt`); `posts` (128): beam band, recessed board skirt over the
+  collision outline, posts every ~2 m from below the ground, braces where
+  tall (`drawPosts`). The porch deck (a floor box in front of the door wall)
+  is solid since genVersion 2 and drawn on posts with a board skirt. Door
+  ramps rising more than 0.55 m are drawn as steps (`drawSteps`: treads
+  whose nosings sit on the walkable slope, stringers).
+- **Footpaths** (`roads.ts`): ROADS class 2, trodden-earth ribbons at
+  `LIFT.path` (between roads and streets); scatter on them is hidden like on
+  streets (`clearance.ts` covers every road record).
+- **Landmarks and enemy camps** (`structures.ts`): towns-buffer structure
+  kinds 9 / 10 (`TOWN_STRUCTURE_KINDS`); landmark pieces 15-22 draw standing
+  stones, an elder tree (canopy decoration over a solid trunk), an arch,
+  a rune monolith, giant ribs, glowing crystal spires, a colossus, a hot
+  spring; camps reuse the bandit-camp pieces in log masonry.
+- **Archived generators**: the runtime compiles the wasm of the world's
+  genVersion (`core/wasmFor.ts`, Welcome `genVersion` online) and hands its
+  URL to this worker (`init.wasmUrl`).
+- Evidence: `docs/evidence/pt-towns-*` (before/after shots from
+  `dev/townsTerrainShots.mjs`, sloped-lot walk/door agreement from
+  `dev/sloped-acceptance.ts`).

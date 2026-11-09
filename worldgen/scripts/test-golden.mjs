@@ -27,11 +27,24 @@ const steps = [
   ['native', 'cargo', ['test', '-q', '-p', 'worldgen', '--release', '--test', 'golden_native', '--', '--nocapture'], root],
 ];
 
+// Archived generators (spec 5 "keeping old worlds working"): every pinned
+// genVersion's content-hashed wasm must still reproduce its own golden table
+// in Node and Go/wazero (Chromium and native Rust run the current build only:
+// the archived source lives at the git commit in the manifest).
+const archive = JSON.parse(fs.readFileSync(path.join(root, 'worldgen', 'archive', 'manifest.json'), 'utf8'));
+for (const v of archive.versions) {
+  const wasm = path.join(root, 'worldgen', 'archive', v.file);
+  const table = path.join(root, 'worldgen', 'golden', v.golden);
+  const ae = { ...e, LODESTONE_GOLDEN_WASM: wasm, LODESTONE_GOLDEN_FILE: table };
+  steps.push([`archive gv${v.genVersion} node`, 'npx', ['vitest', 'run', 'test/golden.test.ts', '--reporter=verbose'], path.join(root, 'worldgen', 'js'), ae]);
+  steps.push([`archive gv${v.genVersion} go`, 'go', ['test', '-v', '-count=1', '-run', '^TestGolden$', './...'], path.join(root, 'worldgen', 'harness', 'go'), ae]);
+}
+
 const lines = [`# WP01 golden determinism run`, `date: ${new Date().toISOString()}`, `machine: ${os.cpus()[0]?.model} x${os.cpus().length}, ${os.platform()} ${os.release()}, node ${process.version}`];
 const failed = [];
-for (const [name, cmd, args, cwd] of steps) {
+for (const [name, cmd, args, cwd, stepEnv] of steps) {
   console.log(`\n━━ ${name}: ${cmd} ${args.join(' ')}`);
-  const r = spawnSync(cmd, args, { cwd, env: e, shell, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+  const r = spawnSync(cmd, args, { cwd, env: stepEnv ?? e, shell, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
   // eslint-disable-next-line no-control-regex -- strip ANSI color codes from tool output
   const out = `${r.stdout ?? ''}${r.stderr ?? ''}`.replace(/\x1b\[[0-9;]*m/g, '');
   process.stdout.write(out);

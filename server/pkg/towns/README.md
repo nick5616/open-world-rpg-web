@@ -51,3 +51,13 @@ vectors (door pass alone and after the town collision) on two
 `client/src/world/buildings/doors.test.ts`. `TestDoorsBlockWhenClosed`:
 every inn/house door blocks from both sides when closed, open doors change
 nothing.
+
+## genVersion 2 (playtest 1, CR 014)
+
+New enum values only (format 1 unchanged): road class `ClassPath` (2,
+footpaths: `From` = building served, `To` = footpath joined, -1 none),
+building flags `BuildingStepped` (64) / `BuildingPosts` (128), structure
+kinds `StructLandmark` (9) / `StructEnemyCamp` (10). Collision is
+unchanged code; porch decks now carry `FlagSolid`. `zone/internal/npc`
+walks a back-lane building's footpath chain to its door. Door vectors
+regenerated on genVersion 2 (`go test ./towns -run DoorVectors -update`).

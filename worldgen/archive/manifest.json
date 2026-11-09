@@ -1,0 +1,13 @@
+{
+  "doc": "Superseded worldgen builds kept loadable for worlds pinned to them (spec 5 'keeping old worlds working'; worldgen/archive/README.md). Each entry is the content-hashed wasm a genVersion shipped as, its golden table (checked by npm run test:golden in Node and Go/wazero) and the commit its source and toolchain live at.",
+  "versions": [
+    {
+      "genVersion": 1,
+      "file": "worldgen-42a66cc191bee49d.wasm",
+      "sha256": "42a66cc191bee49dc3df23031ee1fdb24c1ef4cbe6079fbdbfa68fa07cd4372b",
+      "bytes": 579496,
+      "golden": "golden-v1.json",
+      "source": "git 56a0d36 (main before playtest towns/density), rustc 1.99.1 (58cf8f9c3 2026-10-13)"
+    }
+  ]
+}

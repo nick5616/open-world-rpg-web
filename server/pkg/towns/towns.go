@@ -114,8 +114,33 @@ const (
 	StructDemonLair
 )
 
-// StructureNames are the structure kind names by id.
-var StructureNames = [9]string{"ruin", "watchtower", "mineshaft", "shrine", "bandit camp", "wizard tower", "meteor crater", "sunken temple", "demon lair"}
+// Towns-buffer structure kinds beyond the atlas ones (genVersion 2:
+// landmarks and enemy camps are built too).
+const (
+	StructLandmark  = 9
+	StructEnemyCamp = 10
+)
+
+// StructureNames are the towns-buffer structure kind names by id.
+var StructureNames = [11]string{"ruin", "watchtower", "mineshaft", "shrine", "bandit camp", "wizard tower", "meteor crater", "sunken temple", "demon lair", "landmark", "camp"}
+
+// Road classes. A footpath (genVersion 2) has From = the building it serves
+// (-1 none) and To = the footpath it joins (-1: it ends on a street or the
+// square); its first point is the foot of the door steps.
+const (
+	ClassRoad   = 0
+	ClassStreet = 1
+	ClassPath   = 2
+)
+
+// Building flags (worldgen/README.md "Towns"); Stepped and Posts are the
+// genVersion 2 foundations.
+const (
+	BuildingPorch   = 1
+	BuildingStilts  = 4
+	BuildingStepped = 64
+	BuildingPosts   = 128
+)
 
 // Settlement is one settlement layout.
 type Settlement struct {
@@ -185,7 +210,8 @@ type NPC struct {
 	WorkYaw                    float64
 }
 
-// Road is a road (Class 0) or a town street (Class 1): x, y, z points.
+// Road is a road (Class 0), a town street (Class 1) or a footpath (Class 2):
+// x, y, z points.
 type Road struct {
 	Index          int
 	Points         [][3]float64

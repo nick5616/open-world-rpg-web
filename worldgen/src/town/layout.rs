@@ -13,6 +13,7 @@
 
 use super::geom::{dist, push_flat, sub, yaw16, Obb, Terrain};
 use super::kit::{self, Ctx};
+use super::paths;
 use super::roads::{ang_diff, Net, ROAD_WIDTH};
 use super::{bf, bk, layer, npc, pf, pk, role, stream, Prop, Road, Settlement, Towns};
 use crate::atlas::format::{sec, site, Atlas, SITE_REC};
@@ -20,6 +21,58 @@ use crate::rng::{stable_id, Seq};
 
 const NONE: u16 = 0xFFFF;
 const TAU: f64 = 2.0 * core::f64::consts::PI;
+
+/// genVersion 2 layout scale (playtest 1 "too spread out, even in the
+/// towns"); genVersion 1 had squares 9 / 13 / 18 m, streets 4 / 4 / 5 m,
+/// lots 0.8 m off the street, 1.6 m between lots, back lane 10 m behind, a
+/// ring street at most 28 m out and the whole atlas radius.
+const SQUARE: [f64; 3] = [7.0, 9.0, 12.0];
+/// Layout radius / atlas radius per size (hamlet, village, town).
+pub const LAYOUT_SCALE: [f64; 3] = [0.8, 0.7, 0.85];
+const STREET_W: [f64; 3] = [3.0, 3.4, 4.6];
+/// Lot front to street edge (m).
+const FRONT_GAP: f64 = 0.5;
+/// Pad added to both lots in the overlap test: alleys are 2 x PLOT_PAD wide.
+const PLOT_PAD: f64 = 0.6;
+/// Back-lane lots start this far behind the street edge.
+const BACK_ROW: f64 = 7.5;
+const RING_MAX: f64 = 18.0;
+
+/// Room a lot keeps in front of its door wall on this ground: a porch (2 m)
+/// where the style has porches or the door is high above the ground, and the
+/// door ramp or steps (kit::stair_len), measured from the lowest ground along
+/// the front edge (the door's place along it is not known yet). On a street
+/// the steps may run over the lot's front gap and a quarter of the street;
+/// a back-lane lot faces the back of another lot instead, so it keeps the
+/// whole flight plus room for the footpath to pass.
+fn front_need(ter: &Terrain, o: &Obb, rl: u8, style: u8, street_w: f64, back_lane: bool) -> f64 {
+    if matches!(rl, role::STALL | role::GARDEN) {
+        return 0.0;
+    }
+    // Estimated floor: the highest of the corners and the centre (the kit
+    // uses the whole lattice under the lot; this is only a reservation).
+    let mut top = ter.height(o.cx, o.cz);
+    for (x, z) in o.corners() {
+        top = top.max(ter.height(x, z));
+    }
+    let lift = if style == kit::STYLE_STILT { 1.4 } else { 0.35 };
+    let floor = top + lift;
+    let mut g = f64::INFINITY;
+    for u in [-0.45, 0.0, 0.45] {
+        let (x, z) = o.at(u * o.hx, -o.hz - 0.6);
+        g = g.min(ter.height(x, z));
+    }
+    let rise = floor - g;
+    let porch = kit::has_porches(style) || rise > kit::PORCH_RISE;
+    let mut need = if porch && rl != role::FORGE { 2.0 } else { 0.0 };
+    let allowance = if back_lane { -1.6 } else { FRONT_GAP + 0.25 * street_w };
+    if rise > 0.3 {
+        need += (kit::stair_len(rise) - allowance).max(0.0);
+    } else if back_lane {
+        need += 1.6;
+    }
+    need.min(10.0)
+}
 
 /// A place a building can front onto: a point on a street (or the square's
 /// edge) and the direction from there into the plot.
@@ -38,16 +91,22 @@ fn site_biome(a: &Atlas, i: usize) -> u8 {
 }
 
 pub fn build_settlements(a: &Atlas, net: &Net, t: &mut Towns) {
-    let ter = Terrain::new(a);
     for (si, &site_i) in net.sites.iter().enumerate() {
         let s = a.site(site_i);
+        // Lattice memo over the atlas footprint plus room for steps, walls
+        // and gate towers (genVersion 2: every lot is measured on the ground).
+        let ter = Terrain::around(a, s.x, s.z, s.radius + 16.0);
         let biome = site_biome(a, site_i);
         let style = kit::style_of_biome(biome);
         let mut seq = Seq::new(a.seed ^ s.seed as u64, stream::LAYOUT);
         let size = s.size.min(2);
-        let r = s.radius;
-        let square = [9.0, 13.0, 18.0][size as usize];
         let walled = size == site::SIZE_TOWN;
+        // genVersion 2 (playtest 1 "too spread out, even in the towns"): the
+        // layout uses a tighter radius than the atlas footprint, a smaller
+        // square, narrower streets and lots close to the street, so houses
+        // cluster (atlas radius 45 / 80 / 130 -> 36 / 56 / 110 m).
+        let r = s.radius * LAYOUT_SCALE[size as usize];
+        let square = SQUARE[size as usize];
         let target = match size {
             0 => 5 + seq.below(4),
             1 => 12 + seq.below(11),
@@ -83,7 +142,7 @@ pub fn build_settlements(a: &Atlas, net: &Net, t: &mut Towns) {
             angles.push((angles[best.1] + best.0 * 0.5) % TAU);
         }
         angles.sort_by(|x, y| x.partial_cmp(y).unwrap());
-        let street_w = if size == site::SIZE_TOWN { 5.0 } else { 4.0 };
+        let street_w = STREET_W[size as usize];
         let mut segs: Vec<(f64, f64, f64, f64, f64)> = Vec::new(); // street segments (ax, az, bx, bz, half width)
         let mut slots: Vec<Slot> = Vec::new();
         for &ang in &angles {
@@ -115,7 +174,7 @@ pub fn build_settlements(a: &Atlas, net: &Net, t: &mut Towns) {
                         nz: dx * side,
                         street: ri,
                         along: d,
-                        clear: street_w * 0.5 + 0.8,
+                        clear: street_w * 0.5 + FRONT_GAP,
                     });
                 }
                 d += 2.0;
@@ -125,7 +184,7 @@ pub fn build_settlements(a: &Atlas, net: &Net, t: &mut Towns) {
         if size >= site::SIZE_VILLAGE {
             // Close enough to the square that the core reads as a town, not
             // a ring of houses at the edge (towns: 46 m, villages: 41 m).
-            let rr = square + ((r - square) * 0.5).min(28.0);
+            let rr = square + ((r - square) * 0.5).min(RING_MAX);
             let n = libm::ceil(TAU * rr / 4.0) as usize;
             let ri = t.roads.len() as u16;
             let mut pts = Vec::with_capacity(n + 1);
@@ -148,7 +207,7 @@ pub fn build_settlements(a: &Atlas, net: &Net, t: &mut Towns) {
                         nz: sn * side,
                         street: ri,
                         along: k as f64 * 4.0,
-                        clear: street_w * 0.5 + 0.8,
+                        clear: street_w * 0.5 + FRONT_GAP,
                     });
                 }
             }
@@ -185,18 +244,23 @@ pub fn build_settlements(a: &Atlas, net: &Net, t: &mut Towns) {
 
         let mut placed: Vec<Obb> = Vec::new();
         let limit = if walled { r - 7.0 } else { r - 3.0 };
-        let fits = |o: &Obb, extra_back: f64, placed: &[Obb], tol: f64| -> bool {
-            let full = sub(o, 0.0, extra_back * 0.5, o.hx, o.hz + extra_back * 0.5);
+        // Top-up houses (below the spec's minimum) may use the whole atlas
+        // footprint when the tighter layout radius is full.
+        let limit_wide = if walled { s.radius - 7.0 } else { s.radius - 3.0 };
+        // Cheap tests first (footprint ring, other lots, streets), then the
+        // terrain under the lot.
+        let clear_of = |o: &Obb, extra_back: f64, extra_front: f64, placed: &[Obb], lim: f64| -> bool {
+            let full = sub(o, 0.0, (extra_back - extra_front) * 0.5, o.hx, o.hz + (extra_back + extra_front) * 0.5);
             for (x, z) in full.corners() {
                 let d = dist(x, z, s.x, s.z);
-                if d > limit || d < square + 1.0 {
+                if d > lim || d < square + 1.0 {
                     return false;
                 }
             }
             if dist(full.cx, full.cz, s.x, s.z) < square + 1.0 {
                 return false;
             }
-            if placed.iter().any(|p| p.overlaps(&full, 0.8)) {
+            if placed.iter().any(|p| p.overlaps(&full, PLOT_PAD)) {
                 return false;
             }
             for &(ax, az, bx, bz, hw) in &segs {
@@ -204,8 +268,14 @@ pub fn build_settlements(a: &Atlas, net: &Net, t: &mut Towns) {
                     return false;
                 }
             }
+            true
+        };
+        let ground_ok = |o: &Obb, extra_back: f64, tol: f64| -> bool {
             let sp = ter.span(o, 0.6);
-            if sp.wet || sp.max - sp.min > tol {
+            // Stilt houses (wetland) may stand in shallow water (genVersion 2:
+            // the ground under a wetland hamlet is no longer levelled).
+            let wet = sp.wet && !(style == kit::STYLE_STILT && sp.max_water - sp.min < kit::STILT_WADE);
+            if wet || sp.max - sp.min > tol {
                 return false;
             }
             if extra_back > 0.0 {
@@ -245,7 +315,7 @@ pub fn build_settlements(a: &Atlas, net: &Net, t: &mut Towns) {
                 nz: sl.nz,
                 street: sl.street,
                 along: sl.along,
-                clear: sl.clear + 10.0,
+                clear: sl.clear + BACK_ROW,
             })
             .collect();
         let mut ctx = Ctx {
@@ -261,70 +331,116 @@ pub fn build_settlements(a: &Atlas, net: &Net, t: &mut Towns) {
         let band = |sl: &Slot| (dist(sl.x, sl.z, s.x, s.z) / 6.0) as i64;
         let mut by_dist: Vec<usize> = (0..slots.len()).collect();
         by_dist.sort_by_key(|&i| (band(&slots[i]), crate::rng::mix64(i as u64 ^ s.seed as u64)));
-        // Plot tolerance passes: lattice range under the footprint (m), and
-        // whether back-lane plots are allowed. Required buildings get a
-        // last, steep pass (their floor then sits on a taller plinth).
-        const PASSES: [(f64, bool); 4] = [(2.4, false), (3.4, true), (4.6, true), (7.0, true)];
+        // Plot tolerance passes: lattice range under the footprint (m),
+        // whether back-lane plots are allowed, which roles may use the pass
+        // (0 all, 1 inn and forge, 2 inn, forge and ward garden), whether
+        // the whole atlas footprint may be used, and whether the lot keeps
+        // its front room for a porch and steps. Required buildings get
+        // steep passes (their floor then sits on a taller foundation), then
+        // the wider footprint, then steps that may run into the street.
+        const PASSES: [(f64, bool, u8, bool, bool); 6] = [
+            (2.4, false, 0, false, true),
+            (3.4, true, 0, false, true),
+            (4.6, true, 0, false, true),
+            (7.0, true, 1, false, true),
+            (7.0, true, 2, true, true),
+            (9.0, false, 2, true, false),
+        ];
         let min_count = [4usize, 10, 30][size as usize];
         let mut houses = 0usize;
         let mut extra = 0usize;
         let mut ri = 0usize;
+        let planned = roles.len();
         while ri < roles.len() {
             let rl = roles[ri];
             ri += 1;
-            let (w, d) = kit::footprint(rl, style, &mut seq);
+            let (w0, d0) = kit::footprint(rl, style, &mut seq);
             let back = kit::field_depth(rl);
             let required = matches!(rl, role::INN | role::FORGE);
+            // Essential: the inn, forge and ward garden, and the top-up houses
+            // that bring a settlement to the spec's minimum.
+            let essential = required || rl == role::GARDEN || ri > planned;
             let mut done = false;
-            for (pass, &(tol, use_back)) in PASSES.iter().enumerate() {
-                if pass == 3 && !required {
+            // A required building that found no lot tries once more at 75 %
+            // of its footprint (every settlement has an inn, a forge and a
+            // ward garden).
+            for attempt in 0..2 {
+                if done || (attempt == 1 && !essential) {
                     break;
                 }
-                // Required buildings try the square first, then streets
-                // nearest the square; others walk the slot list from a
-                // rotating cursor, so houses spread over every street.
-                let mut order: Vec<&Slot> = Vec::new();
-                if required {
-                    order.extend(square_slots.iter());
-                    let mut near: Vec<&Slot> = slots.iter().collect();
-                    if use_back {
-                        near.extend(back_slots.iter());
-                    }
-                    near.sort_by(|p, q| p.along.partial_cmp(&q.along).unwrap());
-                    order.extend(near);
-                } else {
-                    order.extend(by_dist.iter().map(|&i| &slots[i]));
-                    order.extend(square_slots.iter());
-                    if use_back {
-                        order.extend(by_dist.iter().map(|&i| &back_slots[i]));
-                    }
-                }
-                for sl in order {
-                    let (cx, cz) = (sl.x + sl.nx * (sl.clear + d * 0.5), sl.z + sl.nz * (sl.clear + d * 0.5));
-                    let o = Obb {
-                        cx,
-                        cz,
-                        c: sl.nz,
-                        s: -sl.nx,
-                        hx: w * 0.5,
-                        hz: d * 0.5,
-                    };
-                    if fits(&o, back, &placed, tol) {
-                        placed.push(sub(&o, 0.0, back * 0.5, o.hx, o.hz + back * 0.5));
-                        kit::build(&mut ctx, t, &o, rl, style, local, &mut seq, (sl.x, sl.z), sl.street, sl.along);
-                        local += 1;
-                        houses += 1;
-                        done = true;
+                let k = if attempt == 0 { 1.0 } else { 0.75 };
+                let (w, d) = (w0 * k, d0 * k);
+                for &(tol, use_back, who, wide, keep_front) in PASSES.iter() {
+                    if (who == 1 && !required) || (who == 2 && !essential) {
                         break;
                     }
-                }
-                if done {
-                    break;
+                    let lim = if wide || ri > planned { limit_wide } else { limit };
+                    // Required buildings try the square first, then streets
+                    // nearest the square; others walk the slot list from a
+                    // rotating cursor, so houses spread over every street.
+                    let mut order: Vec<&Slot> = Vec::new();
+                    if required {
+                        order.extend(square_slots.iter());
+                        let mut near: Vec<&Slot> = slots.iter().collect();
+                        if use_back {
+                            near.extend(back_slots.iter());
+                        }
+                        near.sort_by(|p, q| p.along.partial_cmp(&q.along).unwrap());
+                        order.extend(near);
+                    } else {
+                        order.extend(by_dist.iter().map(|&i| &slots[i]));
+                        order.extend(square_slots.iter());
+                        if use_back {
+                            order.extend(by_dist.iter().map(|&i| &back_slots[i]));
+                        }
+                    }
+                    for sl in order {
+                        // The lot sits back from the street by what its front
+                        // needs on this ground: a porch and the door steps
+                        // (genVersion 2: towns on natural terrain), re-measured
+                        // once at the shifted spot.
+                        let plot = |front: f64| -> Obb {
+                            let k = sl.clear + front + d * 0.5;
+                            Obb {
+                                cx: sl.x + sl.nx * k,
+                                cz: sl.z + sl.nz * k,
+                                c: sl.nz,
+                                s: -sl.nx,
+                                hx: w * 0.5,
+                                hz: d * 0.5,
+                            }
+                        };
+                        let o0 = plot(0.0);
+                        if !clear_of(&o0, back, 0.0, &placed, lim) {
+                            continue;
+                        }
+                        let room = if keep_front { 1.0 } else { 0.0 };
+                        let lane = sl.clear > street_w * 0.5 + FRONT_GAP + 1.0 && sl.street != NONE;
+                        let mut front = room * front_need(&ter, &o0, rl, style, street_w, lane);
+                        let mut o = plot(front);
+                        let again = room * front_need(&ter, &o, rl, style, street_w, lane);
+                        if again > front + 0.3 {
+                            front = again;
+                            o = plot(front);
+                        }
+                        if clear_of(&o, back, front, &placed, lim) && ground_ok(&o, back, tol) {
+                            placed.push(sub(&o, 0.0, (back - front) * 0.5, o.hx, o.hz + (back + front) * 0.5));
+                            kit::build(&mut ctx, t, &o, rl, style, local, &mut seq, (sl.x, sl.z), sl.street, sl.along);
+                            local += 1;
+                            // The spec's counts leave out stalls and ward gardens.
+                            houses += (rl != role::GARDEN) as usize;
+                            done = true;
+                            break;
+                        }
+                    }
+                    if done {
+                        break;
+                    }
                 }
             }
             // Top up to the spec's minimum for the settlement size with
             // small houses (bounded: a cramped site may stay below it).
-            if ri == roles.len() && houses < min_count && extra < 24 {
+            if ri == roles.len() && houses < min_count && extra < 40 {
                 roles.push(role::HOUSE);
                 extra += 1;
             }
@@ -436,6 +552,24 @@ pub fn build_settlements(a: &Atlas, net: &Net, t: &mut Towns) {
             wall_r = rw;
         }
 
+        // Footpaths from every door, gate and stand to the streets and the
+        // square (genVersion 2, playtest 1 "paths to get everywhere").
+        paths::build(
+            a,
+            t,
+            &paths::Town {
+                settlement: su,
+                x: s.x,
+                z: s.z,
+                r: r + 4.0,
+                square,
+                wade: if style == kit::STYLE_STILT { kit::STILT_WADE } else { 0.4 },
+                building_first: set_first_building as usize,
+                box_first: box_first as usize,
+                prop_first: prop_first as usize,
+                streets: &segs,
+            },
+        );
         let building_count = t.buildings.len() as u16 - set_first_building;
         t.settlements.push(Settlement {
             id: s.id,

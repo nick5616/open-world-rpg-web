@@ -40,16 +40,28 @@ type goldenFile struct {
 	} `json:"worlds"`
 }
 
+// load reads worldgen/pkg/worldgen.wasm and golden/golden.json, or an
+// archived generator and its own table (LODESTONE_GOLDEN_WASM and
+// LODESTONE_GOLDEN_FILE, set by `npm run test:golden` for every entry of
+// worldgen/archive/manifest.json: spec 5, old genVersions stay loadable).
 func load(t *testing.T) ([]byte, *goldenFile) {
 	t.Helper()
-	wasm, err := os.ReadFile(filepath.Join("..", "..", "pkg", "worldgen.wasm"))
+	wasmPath := filepath.Join("..", "..", "pkg", "worldgen.wasm")
+	if p := os.Getenv("LODESTONE_GOLDEN_WASM"); p != "" {
+		wasmPath = p
+	}
+	tablePath := filepath.Join("..", "..", "golden", "golden.json")
+	if p := os.Getenv("LODESTONE_GOLDEN_FILE"); p != "" {
+		tablePath = p
+	}
+	wasm, err := os.ReadFile(wasmPath)
 	if err != nil {
 		if os.Getenv("LODESTONE_REQUIRE_WASM") == "1" {
 			t.Fatalf("worldgen.wasm not built: %v", err)
 		}
 		t.Skipf("worldgen.wasm not built (npm run build:wasm): %v", err)
 	}
-	raw, err := os.ReadFile(filepath.Join("..", "..", "golden", "golden.json"))
+	raw, err := os.ReadFile(tablePath)
 	if err != nil {
 		t.Fatal(err)
 	}
