@@ -114,7 +114,7 @@ export const STYLES: Record<VisualStyle, StyleProfile> = {
     nightFog: 0.0035,
     haze: 1.6,
     fogRange: null,
-    nightExposure: 1.0,
+    nightExposure: 0.8,
     skySat: 1.18,
     skyBright: 1.08,
     skyBands: 0,

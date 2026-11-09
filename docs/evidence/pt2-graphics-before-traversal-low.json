@@ -1,0 +1,352 @@
+{
+  "tier": "low",
+  "when": "2026-11-09T21:27:35.626Z",
+  "url": "http://127.0.0.1:5381",
+  "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 3070 (0x00002488) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+  "viewport": {
+    "width": 1280,
+    "height": 720
+  },
+  "vsync": true,
+  "loadMs": 3873,
+  "firstPlayableMs": 3296.0999999940395,
+  "programsAtPlayable": 40,
+  "load": {
+    "wasmMs": 17.599999994039536,
+    "atlasMs": 853.5,
+    "atlasSource": "built",
+    "poolMs": 111.09999999403954,
+    "totalMs": 1440.199999988079,
+    "townsMs": 480.90000000596046
+  },
+  "textures": {
+    "bytes": 1308866,
+    "ms": 452.69999998807907
+  },
+  "download": {
+    "files": 893,
+    "bytes": 34886416,
+    "gzipBytes": 9670422,
+    "byType": {
+      "other": {
+        "files": 6,
+        "bytes": 395603,
+        "gzip": 89140
+      },
+      "tsx": {
+        "files": 53,
+        "bytes": 1829765,
+        "gzip": 609469
+      },
+      "js": {
+        "files": 25,
+        "bytes": 9991207,
+        "gzip": 1988222
+      },
+      "ts": {
+        "files": 463,
+        "bytes": 18781894,
+        "gzip": 4628300
+      },
+      "mjs": {
+        "files": 14,
+        "bytes": 56294,
+        "gzip": 18382
+      },
+      "wasm": {
+        "files": 6,
+        "bytes": 2381038,
+        "gzip": 916165
+      },
+      "json": {
+        "files": 2,
+        "bytes": 1705,
+        "gzip": 844
+      },
+      "ktx2": {
+        "files": 2,
+        "bytes": 1308866,
+        "gzip": 1300393
+      },
+      "ogg": {
+        "files": 161,
+        "bytes": 70022,
+        "gzip": 55505
+      },
+      "m4a": {
+        "files": 161,
+        "bytes": 70022,
+        "gzip": 55529
+      }
+    }
+  },
+  "route": [
+    {
+      "to": "forest",
+      "kind": "settlement",
+      "x": 1376,
+      "z": 1824
+    },
+    {
+      "to": "highlands",
+      "kind": "ruin",
+      "x": 1184,
+      "z": 1664
+    },
+    {
+      "to": "snowpeak",
+      "kind": "shrine",
+      "x": 864,
+      "z": 1824
+    },
+    {
+      "to": "badlands",
+      "kind": "ruin",
+      "x": 1248,
+      "z": 2656
+    },
+    {
+      "to": "wetland",
+      "kind": "sunken_temple",
+      "x": 832,
+      "z": 3104
+    },
+    {
+      "to": "meadow",
+      "kind": "landmark",
+      "x": 1280,
+      "z": 2912
+    }
+  ],
+  "phases": [
+    {
+      "name": "walk",
+      "seconds": 20.1,
+      "frames": 1166,
+      "frameMs": {
+        "mean": 17.28,
+        "p50": 16.7,
+        "p95": 16.8,
+        "p99": 16.8,
+        "max": 300.1
+      },
+      "framesOverBudget": 7,
+      "drawCalls": {
+        "mean": 119,
+        "max": 123
+      },
+      "triangles": {
+        "mean": 604538,
+        "max": 636161
+      },
+      "visibleTriangles": {
+        "max": 636161
+      },
+      "shadowTriangles": {
+        "max": 0
+      },
+      "heapMB": {
+        "max": 98.2
+      },
+      "longTasks": [
+        122,
+        228
+      ],
+      "longTaskAt": [
+        {
+          "start": 4417,
+          "ms": 122
+        },
+        {
+          "start": 4760,
+          "ms": 228
+        }
+      ],
+      "programsLinked": [
+        {
+          "t": 4789,
+          "name": "town-solid",
+          "key": "physical,STANDARD,,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,1,3,0,0,1,0,0,0,0,0,0,2,0,0,0,0,2051,131074,srgb,lodestone-town-v1",
+          "similar": [
+            "physical,STANDARD,,highp,srgb,false,,uv,false,false,false,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,0,0,0,0,0,0,0,0,0,0,0,2,4,0,0,0,1,131074,srgb,onBeforeCompile() {\n  }",
+            "physical,STANDARD,,highp,srgb,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,3,131074,srgb,onBeforeCompile() {\n  }",
+            "physical,STANDARD,,highp,srgb,false,,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,0,0,0,0,0,0,0,0,0,0,0,2,4,0,0,0,3,131074,srgb,onBeforeCompile() {\n  }",
+            "physical,STANDARD,,highp,srgb,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,0,0,0,0,0,0,0,0,0,0,0,2,4,0,0,0,7,131074,srgb,onBeforeCompile() {\n  }",
+            "physical,STANDARD,,highp,srgb,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,0,0,0,0,0,0,0,0,0,0,0,2,4,0,0,0,2049,131074,srgb,lodestone-weapon-v1",
+            "physical,STANDARD,,highp,srgb,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,0,0,0,0,0,0,0,0,0,0,0,2,4,0,0,0,1,131074,srgb,onBeforeCompile() {\n  }",
+            "physical,STANDARD,,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,1,3,0,0,1,0,0,0,0,0,0,2,0,0,0,0,1,131074,srgb,onBeforeCompile() {\n  }",
+            "physical,STANDARD,,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,1,3,0,0,1,0,0,0,0,0,0,2,0,0,0,0,2049,131074,srgb,lodestone-weapon-v1",
+            "physical,STANDARD,,highp,srgb-linear,false,,uv,false,false,false,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,1,3,0,0,1,0,0,0,0,0,0,2,0,0,0,0,1,131074,srgb,onBeforeCompile() {\n  }",
+            "physical,STANDARD,,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,1,3,0,0,1,0,0,0,0,0,0,2,0,0,0,0,7,131074,srgb,onBeforeCompile() {\n  }",
+            "physical,STANDARD,,highp,srgb-linear,false,,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,1,3,0,0,1,0,0,0,0,0,0,2,0,0,0,0,3,131074,srgb,onBeforeCompile() {\n  }",
+            "physical,STANDARD,,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,1,3,0,0,1,0,0,0,0,0,0,2,0,0,0,0,1,133122,srgb,onBeforeCompile() {\n  }",
+            "physical,STANDARD,,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,1,3,0,0,1,0,0,0,0,0,0,2,0,0,0,0,1,131074,srgb,lodestone-terrain-1",
+            "physical,STANDARD,,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,1,3,0,0,1,0,0,0,0,0,0,2,0,0,0,0,2055,131074,srgb,lodestone-scatter-1-fs",
+            "physical,STANDARD,,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,1,3,0,0,1,0,0,0,0,0,0,2,0,0,0,0,2055,133122,srgb,lodestone-scatter-1-ds",
+            "physical,STANDARD,,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,1,3,0,0,1,0,0,0,0,0,0,2,0,0,0,0,2049,133122,srgb,lodestone-grass-1",
+            "physical,STANDARD,,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,1,3,0,0,1,0,0,0,0,0,0,2,0,0,0,0,3,131078,srgb,onBeforeCompile() {\n  }",
+            "physical,STANDARD,,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,1,3,0,0,1,0,0,0,0,0,0,2,0,0,0,0,7,131074,srgb,lodestone-cave-fungus-1",
+            "physical,STANDARD,,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,1,3,0,0,1,0,0,0,0,0,0,2,0,0,0,0,2049,131074,srgb,lodestone-town-v1",
+            "physical,STANDARD,,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,1,3,0,0,1,0,0,0,0,0,0,2,0,0,0,0,1,131078,srgb,lodestone-cave-rock-1",
+            "physical,STANDARD,,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,1,3,0,0,1,0,0,0,0,0,0,2,0,0,0,0,2049,131074,srgb,lodestone-horizon-1"
+          ]
+        }
+      ],
+      "chunkGenMs": {
+        "mean": 6.588888893524806,
+        "p95": 12.200000017881393,
+        "max": 12.200000017881393
+      },
+      "chunkMeshMs": {
+        "mean": 5.388888888888889,
+        "p95": 6.4000000059604645,
+        "max": 6.4000000059604645
+      },
+      "scatterGenMs": {
+        "mean": 5.533333334657881,
+        "p95": 6.4000000059604645,
+        "max": 6.4000000059604645
+      },
+      "tilesBuilt": 9,
+      "queueMax": 0,
+      "uploadMsMax": 0.06,
+      "rebinMsMax": 5.6,
+      "terrainMsMax": {
+        "reselect": 3.63,
+        "upload": 0.23,
+        "resolve": 3.84
+      }
+    },
+    {
+      "name": "fly",
+      "seconds": 39,
+      "frames": 2307,
+      "frameMs": {
+        "mean": 16.92,
+        "p50": 16.7,
+        "p95": 16.8,
+        "p99": 16.8,
+        "max": 116.7
+      },
+      "framesOverBudget": 9,
+      "drawCalls": {
+        "mean": 101,
+        "max": 128
+      },
+      "triangles": {
+        "mean": 552814,
+        "max": 812734
+      },
+      "visibleTriangles": {
+        "max": 812734
+      },
+      "shadowTriangles": {
+        "max": 0
+      },
+      "heapMB": {
+        "max": 98.2
+      },
+      "longTasks": [
+        52,
+        90,
+        101,
+        89
+      ],
+      "longTaskAt": [
+        {
+          "start": 43619,
+          "ms": 52
+        },
+        {
+          "start": 43800,
+          "ms": 90
+        },
+        {
+          "start": 44044,
+          "ms": 101
+        },
+        {
+          "start": 44371,
+          "ms": 89
+        }
+      ],
+      "programsLinked": [],
+      "chunkGenMs": {
+        "mean": 4.067709815281723,
+        "p95": 5.9000000059604645,
+        "max": 18.700000017881393
+      },
+      "chunkMeshMs": {
+        "mean": 3.1721194874426377,
+        "p95": 4.700000017881393,
+        "max": 8.299999982118607
+      },
+      "scatterGenMs": {
+        "mean": 4.11906077432863,
+        "p95": 5.9000000059604645,
+        "max": 23.600000023841858
+      },
+      "tilesBuilt": 703,
+      "queueMax": 12,
+      "uploadMsMax": 0.07,
+      "rebinMsMax": 4.4,
+      "terrainMsMax": {
+        "reselect": 1.67,
+        "upload": 0.3,
+        "resolve": 1.26
+      }
+    }
+  ],
+  "regen": {
+    "chunk": "(19, 45) lod 0",
+    "stored": "14fd37d9e972ddb0",
+    "worker": "14fd37d9e972ddb0",
+    "main": "14fd37d9e972ddb0",
+    "match": true,
+    "workerMs": 4.0999999940395355
+  },
+  "errors": [],
+  "budgets": {
+    "drawCalls": {
+      "budget": 400,
+      "max": 128,
+      "pass": true
+    },
+    "triangles": {
+      "budget": 1500000,
+      "maxAllPasses": 812734,
+      "maxVisible": 812734,
+      "pass": true
+    },
+    "longTasks": {
+      "budget": "none over 50 ms",
+      "count": 6,
+      "maxMs": 228,
+      "pass": false
+    },
+    "heap": {
+      "budgetMB": 600,
+      "maxMB": 98.2,
+      "pass": true
+    },
+    "chunkGen": {
+      "budgetMs": 8,
+      "p95": 12.200000017881393,
+      "max": 18.700000017881393,
+      "mean": 5.33,
+      "pass": false
+    },
+    "download": {
+      "budgetMB": 15,
+      "gzipMB": 9.22,
+      "pass": true
+    },
+    "frameTime": {
+      "budgetMs": 33,
+      "p99": 16.8,
+      "pass": true,
+      "note": "measured on ANGLE (NVIDIA, NVIDIA GeForce RTX 3070 (0x00002488) Direct3D11 vs_5_0 ps_5_0, D3D11)"
+    }
+  },
+  "shots": []
+}

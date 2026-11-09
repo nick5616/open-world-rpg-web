@@ -140,8 +140,9 @@ async function places(page) {
     const town = towns[0] ?? null;
     let fire = null;
     if (town) {
-      for (const kind of [22, 27, 30, 17]) {
-        const ps = T.props(town.index, kind);
+      // Campfire, torch, lantern, brazier: the first kind standing on the ground (not up on a wall).
+      for (const kind of [22, 30, 17, 27]) {
+        const ps = T.props(town.index, kind).filter((p) => Math.abs(p.y - (W.groundAt(p.x, p.z) ?? p.y)) < 1.5);
         if (ps.length) {
           fire = ps.sort((a, b) => Math.hypot(a.x - town.x, a.z - town.z) - Math.hypot(b.x - town.x, b.z - town.z))[0];
           break;
@@ -173,10 +174,10 @@ async function placeScene(page, scene, P) {
     await lookAt(page, t.x, t.y + 4, t.z);
   } else if (scene === 'dusk-meadow' || scene === 'rain') {
     await L(page, ([x, z]) => window.__lodestone.teleport({ x, z }), [P.meadow.x, P.meadow.z]);
-    await L(page, (s) => window.__lodestone.setTimeOfDay(s), hour(scene === 'rain' ? 14 : 19.25));
+    await L(page, (s) => window.__lodestone.setTimeOfDay(s), hour(scene === 'rain' ? 14 : 17.6));
     if (scene === 'rain') await L(page, () => window.__lodestone.setRain(true));
     await settle(page, scene === 'rain' ? 9000 : 2500); // the shower eases in over a few seconds
-    await look(page, scene === 'rain' ? 2.4 : -1.9, -0.04);
+    await look(page, scene === 'rain' ? 2.4 : 1.25, -0.04); // dusk: three-quarters toward the setting sun (west)
   } else if (scene === 'night-fire' && P.town) {
     const f = P.fire ?? { x: P.town.x, y: P.town.y, z: P.town.z };
     await L(page, ([x, z]) => window.__lodestone.teleport({ x, z }), [f.x + 6, f.z + 5]);
@@ -190,6 +191,7 @@ async function placeScene(page, scene, P) {
     await L(page, (s) => window.__lodestone.setTimeOfDay(s), hour(11));
     await sleep(3000);
     await lookAt(page, tx, ty, tz);
+    await sleep(5000); // let the area-name toast fade
   } else {
     return false;
   }

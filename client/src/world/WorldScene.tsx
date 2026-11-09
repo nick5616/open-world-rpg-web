@@ -316,7 +316,7 @@ export function WorldScene({ runtime }: Props) {
       // Styles: valley fog thickens toward dusk and stays through the night
       // (Valheim's moody hollows), moonlit faintly blue; the haze sets how
       // strongly distance dissolves into the sky (aerial perspective).
-      const dusk = Math.exp(-(((hour - 20) / 2.2) ** 2));
+      const dusk = Math.exp(-(((hour - 18.8) / 1.6) ** 2));
       const nightFog = st.nightFog * Math.max(dusk, 1 - L.day);
       fogU.u('uFogDensity').value = ((0.0004 + 0.0045 * morning + 0.0015 * evening) * st.fog + st.fogFloor + nightFog + 0.0035 * rain) * (1 - under);
       fogU.u('uFogFalloff').value = 1 / 38;
@@ -325,18 +325,21 @@ export function WorldScene({ runtime }: Props) {
       (fogU.u('uMoonColor').value as THREE.Color).setRGB(0.012, 0.018, 0.034).multiplyScalar((1 - L.day) * (1 - under) * (st.nightFog > 0 ? 1 : 0));
       (fogU.u('uSkyStyle').value as THREE.Vector4).copy(world.sky.uniforms.uSkyStyle.value);
       const fr = fogU.u('uFogRange').value as THREE.Vector4;
-      // Retro's short fog; underground the cave keeps its own darkness.
-      if (st.fogRange) fr.set(st.fogRange[0], st.fogRange[1] * (1 - 0.3 * rain), 1, 0).multiplyScalar(1 - under);
+      // Retro's short fog, pushed out as you go underground (a cave keeps its
+      // own darkness, never the sky's fog colour).
+      const above = 1 - under;
+      if (st.fogRange && above > 0.02) fr.set(st.fogRange[0] / above, (st.fogRange[1] * (1 - 0.3 * rain)) / above, above, 0);
       else fr.set(0, 0, 0, 0);
       fogU.u('uExposure').value = (1.0 + (1 - L.day) * 1.6 * st.nightExposure) * (1 - under) + 1.6 * under;
       // Bloom and god rays per style (built per quality; tuned per style without a rebuild).
       if (f.post.bloom) {
-        f.post.bloom.intensity = st.bloomIntensity;
-        f.post.bloom.luminanceMaterial.threshold = st.bloomThreshold;
+        // Underground the cave's own glow (mushrooms, gems, lantern) keeps the stock bloom.
+        f.post.bloom.intensity = THREE.MathUtils.lerp(st.bloomIntensity, 0.45, under);
+        f.post.bloom.luminanceMaterial.threshold = THREE.MathUtils.lerp(st.bloomThreshold, 1.25, under);
       }
       if (f.post.godRays) (f.post.godRays.godRaysMaterial.uniforms.weight as THREE.IUniform<number>).value = f.post.godRayWeight * st.rays * (1 - 0.7 * rain);
       // The style's screen pass: outlines (thickness in internal pixels), posterize, vignette, dithered quantize.
-      f.post.style.outline.set(st.outline, 1, 0.06, 260);
+      f.post.style.outline.set(st.outline, Math.max(1, gl.getPixelRatio() * 1.3), 0.04, 260);
       f.post.style.look.set(st.posterize, st.vignette, st.quantize, st.quantize > 0 ? 1 : 0);
       // Grade: time of day, then the biome under the player (eased, so crossing a border is a drift, not a cut).
       const gr = f.post.grade;

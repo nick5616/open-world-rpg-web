@@ -22,11 +22,14 @@ const pct = (a, p) => {
   return s[Math.min(s.length - 1, Math.floor((p / 100) * s.length))];
 };
 
-const browser = await chromium.launch({ headless: true, args: ['--use-angle=d3d11', '--enable-gpu', '--ignore-gpu-blocklist'] });
+// LODESTONE_BENCH_UNCAPPED=1: no vsync / frame-rate limit, to expose the true frame cost (as traversal.mjs).
+const uncapped = process.env.LODESTONE_BENCH_UNCAPPED === '1' ? ['--disable-gpu-vsync', '--disable-frame-rate-limit'] : [];
+const browser = await chromium.launch({ headless: true, args: ['--use-angle=d3d11', '--enable-gpu', '--ignore-gpu-blocklist', ...uncapped] });
 const context = await browser.newContext({ viewport: tier === 'low' ? { width: 1280, height: 720 } : { width: 1920, height: 1080 } });
-await context.addInitScript((t) => {
-  localStorage.setItem('lodestone_quality_settings', JSON.stringify({ state: { setting: t }, version: 0 }));
-}, tier);
+// LODESTONE_BENCH_STYLE: a visual style (playtest 2 graphics settings; default: the game's default, lodestone).
+await context.addInitScript(([t, style]) => {
+  localStorage.setItem('lodestone_quality_settings', JSON.stringify(style ? { state: { setting: t, style }, version: 1 } : { state: { setting: t }, version: 0 }));
+}, [tier, process.env.LODESTONE_BENCH_STYLE ?? '']);
 const page = await context.newPage();
 page.on('pageerror', (e) => console.log('pageerror', e.message));
 // LODESTONE_BENCH_QUERY: extra URL parameters (WP19b: `nowarmup` measures without the shader warm-up).
@@ -84,5 +87,5 @@ for (const phase of ['pan', 'flick']) {
 }
 summary.longTasks = result.longTasks.length;
 summary.worstLongTaskMs = result.longTasks.length ? Math.max(...result.longTasks.map((l) => l.ms)).toFixed(0) : 0;
-console.log(JSON.stringify({ tier, ...summary }, null, 2));
+console.log(JSON.stringify({ tier, style: process.env.LODESTONE_BENCH_STYLE ?? 'default', ...summary }, null, 2));
 await browser.close();
