@@ -2,7 +2,60 @@
 
 WP19 · 2026-11-08 · Spec 9 (budgets), 12 (render budgets), 13 (cost, "monthly cost / peak CCU"), 14 (soak scenarios, benchmarks)
 
-All numbers come from one Windows 11 desktop (i7-11700K, 8 cores / 16 threads, RTX 3070, 32 GB), shared during the runs with two other heavy agents, a running `npm run dev` stack and the owner's desktop apps. The bots ran on the same machine as the zones they loaded (300-1,000 bot connections decoding every snapshot), so every zone number here is pessimistic and noisy. Key runs were repeated; where windows differ, the spread is given. Evidence: `docs/evidence/wp19-*`.
+All numbers come from one Windows 11 desktop (i7-11700K, 8 cores / 16 threads, RTX 3070, 32 GB), shared during the runs with two other heavy agents, a running `npm run dev` stack and the owner's desktop apps. The bots ran on the same machine as the zones they loaded (300-1,000 bot connections decoding every snapshot), so every zone number here is pessimistic and noisy. Key runs were repeated; where windows differ, the spread is given. Evidence: `docs/evidence/wp19-*` (first pass), `docs/evidence/wp19b-*` (second pass).
+
+## Second pass (WP19b, 2026-11-09)
+
+The second pass fixed the four G5 failures the first pass left (serial tick, downlink headroom, uneven zones after failover, client long tasks) and re-ran everything. **The machine was much busier than on 2026-11-08**: other agents ran headless Chromium (G4 acceptance) and their own soaks during most runs, and the same main-branch zone binary measured 2-3x slower than the day before (scenario 1 baseline today p99 12.4-13.7 ms vs 11.3 yesterday; under thailand p50 24-27 ms vs 10 ms; scenario 2 baseline busiest zone p99 276 ms vs 13 ms). So every live comparison below is **A/B on the same day**, baseline = the main-branch zone binary at WP19b start (`--zone-bin`), and the in-process benchmark is the noise-free reference.
+
+### Verdict per scenario (second pass)
+
+| # | Scenario | Baseline today (main zone binary) | After WP19b | Verdict |
+| --- | --- | --- | --- | --- |
+| 1 | 300 bots + 2,000 awake enemies, 4 procs | tick p50 8.9-9.3 ms, 60 s p99 12.4-13.7 ms (every window over 12), downlink max 159.3 kbps | quiet runs: p50 6.8-8.2 ms, p99 9.6-10.4 ms in the windows after the join ramp, but 14.5-17.7 ms in some windows of the same runs; busy run (G4 browsers at 3.7 cores): p99 28-50 ms. Downlink max 148.2-150.6 kbps | **FAIL (strict)**: under budget only in quiet windows; downlink PASS with 9-12 kbps headroom (was 0.7) |
+| 2 | 1,000 bots, 4 zones, crossings | PASS: 1000/1000, 0 owned twice, 0 duplicated; zones 440/370/103/86 players, busiest p50 16 ms | PASS: 1000/1000, 3,782 handoffs, 0 owned twice, 0 duplicated, 0 sustained-unowned; 4 load moves, zones **263/254/251/231**; per-zone p50 12-14 ms | **PASS** |
+| 3 | 50 voice bots | (first pass PASS) | see below | see below |
+| 4 | thailand | S1: p50 24-27 ms, p99 78-233 ms (machine); S2+kill: see below | S1: p50 13-26 ms, p99 46-213 ms; S2+kill and voice: see below | S1 **FAIL** (and not measurable on this desktop today: the same baseline binary ran 3x slower than yesterday) |
+
+### What changed (all wire-identical; determinism tests in each package)
+
+| Fix | Where | Effect (scenario 1, mean ms per tick, same day) |
+| --- | --- | --- |
+| Inputs: plain-movement sessions apply their frames on the tick's workers; anything else (Interact, HitClaim, attack/cast/drink/dash frames, leaves) runs in session order on the tick goroutine after the run before it. Exact: plain sessions touch only themselves | `server/zone/internal/game/inputs.go` | inputs 1.85 -> 1.0-1.1 |
+| Combat AI partitioned by group: simple groups think on workers on private World copies, outputs merged in spawn order; bosses, demons, DOT-carrying enemies stay serial; the two-wind-ups cap counts other groups as of the tick start and admits requests in spawn order (exact cap) | `server/zone/internal/combat/par.go` | combat 2.49 -> 1.35-1.83 |
+| Combat glue on workers: enemy -> entity mirror, event delivery per session (same per-connection order) | `internal/game/combat.go` | (in combat above) |
+| Views: extrapolation + quantization per entity on workers | `internal/game/server.go` | grid 0.46 -> 0.2-0.33 |
+| Worker pool waits for items, not goroutines (a helper the OS has not scheduled yet no longer holds the tick) | `internal/game/par.go` | fewer straggler ticks |
+| Writers held during the tick: ~300 writer goroutines no longer compete with the tick's workers mid-tick; clock pongs bypass the hold | `server/pkg/transport` (`Holder`), `inputs.go` | snapshots 3.65 -> 3.45-3.6 |
+| Reliable bytes charged to the per-client budget | `snapshot.Encoder.Charge`, `transport.Stats.ReliableQueued`, decision 0005 | downlink max 159.3 -> 148-151 kbps |
+| `playerUpkeep` in id order (respawns and upkeep events were in map order) | `combat/ai.go` | determinism (needed for the equivalence test) |
+| Director load moves (`zoneregistry.Rebalance`, per-region load in the heartbeat, one move per 10 s, held after a Plan change) | `server/pkg/zoneregistry/rebalance.go`, `server/director` | S2 zones 440/370/103/86 -> 263/254/251/231 |
+| Shader warm-up at load (`renderer.compileAsync` on a render target + warm extras) | `client/src/world/warmup.ts`, `warmExtras.ts` | traversal long tasks 1 (357 ms) / 2 (175 ms) -> 0 / 0 |
+
+Tests: `TestPartitionedAIMatchesAcrossWorkers` (serial vs 4 goroutines vs reverse hand-out: identical enemies and events every tick for 900 ticks), `TestParallelTickMatchesSerial` (whole tick on 1 vs 4 workers: identical snapshot and reliable bytes per client and identical entity states), `TestHoldDefersWakeups`, `zoneregistry/rebalance_test.go`, `TestAssignerRebalancesByLoad`. All existing tests, golden movement trajectories and combat tests pass unchanged. No `-race` (no cgo toolchain): the design keeps every worker on its own items and shared state read-only during a phase.
+
+### In-process benchmark (no sockets, no other processes in the tick; `go test ./internal/game -bench Scale/p300_e2000 -cpu 4`)
+
+IN_PROCESS_TABLE
+
+### Scenario 1 in detail
+
+`wp19b-s1-before-main-clean` (baseline), `wp19b-s1-after{2,4}-clean` (quiet), `wp19b-s1-after3-clean` (my own Go tests ran during it: discard), `wp19b-s1-after5-clean` (G4's headless browsers at ~3.7 cores; slow-tick log shows a 555 ms tick of which 542 ms in the parallel snapshot phase and a 36 ms "towns" phase, which is otherwise 0.05 ms: the process was descheduled), `wp19b-s1-before-main-thailand`, `wp19b-s1-after-thailand{,2}`.
+
+- p50 drops by ~1.5-2 ms (8.9-9.3 -> 6.8-8.2) and the quiet-window p99 by ~3 ms (12.4-13.2 -> 9.6-10.4), as the in-process numbers predict.
+- The windows that still miss 12 ms are bursts of slow ticks in the parallel phases (the slowest tick of each minute is a 18-26 ms snapshot phase): a worker descheduled by the OS or a GC cycle holds the whole phase. The tick now has six parallel phases instead of one, so on an oversubscribed desktop (300 bots, the zone and other agents on 16 threads) it meets more of them; on a dedicated 4 vCPU VM they should not occur. That is the remaining gap, and why the strict verdict is FAIL here.
+- `--prefix`, the GC column and the post-ramp window are in `tools/bots/scale-soak.mjs`; the post-ramp window drops windows that still contain the 300 joins, 500 camps spawning and every first-sight record.
+
+### Client render and turn benchmarks (second pass)
+
+| Budget | Before (same build, `?nowarmup`) high / low | After high / low |
+| --- | --- | --- |
+| Long tasks > 50 ms during traversal | 1 (357 ms) / 2 (62, 175 ms), each one shader program linked (`physical ... lodestone-cave-rock-1` in the flight, `town-decal` in the walk) | **0 / 0**, 0 programs linked during walk and flight |
+| First playable | 7.2 s / 2.8 s | **4.7-5.0 s / 2.0-2.5 s** |
+| Draw calls, visible triangles, chunk gen, download, frame p99 | 294 / 136, 1.20 M / 0.74 M, p95 6.0 / 6.6 ms, 4.8 / 2.5 MB, 16.8 ms | 298 / 135, 1.22 M / 0.75 M, p95 6.5 / 7.5 ms, 4.8 / 2.5 MB, 16.8 ms |
+| Turn benchmark (`bench/turn.mjs`, 360 deg/s pan + 180 deg flicks): frames over 50 ms | main (orchestrator): pan max 533 ms, 4 long tasks; here 1 of 2 high runs 333 ms frame / 344 ms long task | **0 in 8/8 runs (5 high, 3 low)**, worst frame 33.4 ms (one missed vsync), 0 long tasks |
+
+Evidence: `wp19b-traversal-run.txt`, `wp19b-traversal-{high,low}.json`, `wp19b-nowarmup-traversal-*`, `wp19b-turn.txt`. Heap max on high read 125 MB in the after run (78 MB before); within the 600 MB budget, GC timing in the sampler, not investigated further.
 
 ## Verdict per scenario (spec 14)
 
