@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"math"
 	"slices"
 	"sort"
@@ -19,6 +20,14 @@ const (
 	// geoLookbackMs: how far before a zone decision we look for the
 	// distance crossing that explains it.
 	geoLookbackMs = 1000
+	// endTailMs: after the "end" phase the bots stand still this long
+	// before teardown, and listener events in it still count as reflecting
+	// decisions made before "end". Without it a decision in the last second
+	// could never be matched: an unsubscribe is observed when the track ends,
+	// ~1 s later (LiveKit's flushTimeout), so it was reported as missed (all
+	// 34 "missed" of the two G5 Linux thailand runs were zone decisions in
+	// the last second before "end").
+	endTailMs = 2500
 )
 
 type pairKey struct{ L, S string }
@@ -43,6 +52,7 @@ type Summary struct {
 	MaxChangesPerPair   int         `json:"maxChangesPerPair"`
 	Flaps               int         `json:"flaps"`     // observed reversals within 2 s
 	ZoneFlaps           int         `json:"zoneFlaps"` // zone decision reversals within 2 s
+	Teleports           int         `json:"teleports"` // the zone moved a bot itself (death respawn): the run is INVALID (see analyze)
 	LatencyMs           Quant       `json:"latencyMs"` // zone decision -> listener hears (TrackSubscribed) / stops hearing (last packet + 20 ms: forwarding stopped)
 	LatencySubMs        Quant       `json:"latencySubscribeMs"`
 	LatencyUnsubMs      Quant       `json:"latencyUnsubscribeTrackEndedMs"` // includes LiveKit's 1 s downtrack flush
@@ -102,12 +112,22 @@ func analyze(ev []event, pos map[string][]posSample, ready map[string]float64, b
 			end = e.T
 		}
 	}
+	teleports := 0
 	for _, e := range ev {
-		if e.T > end {
+		// Zone decisions count up to "end"; what the listeners observe
+		// counts for endTailMs more (the bots still stand, see endTailMs).
+		if e.T > end+endTailMs {
 			continue
 		}
 		switch e.Kind {
+		case "tp":
+			if e.T <= end {
+				teleports++
+			}
 		case "zin", "zout":
+			if e.T > end {
+				continue
+			}
 			zone[pairKey{e.L, e.S}] = append(zone[pairKey{e.L, e.S}], transition{e.T, e.Kind == "zin"})
 		case "sub", "unsub":
 			obs[pairKey{e.L, e.S}] = append(obs[pairKey{e.L, e.S}], transition{e.T, e.Kind == "sub"})
@@ -115,7 +135,7 @@ func analyze(ev []event, pos map[string][]posSample, ready map[string]float64, b
 			mstop[pairKey{e.L, e.S}] = append(mstop[pairKey{e.L, e.S}], e.T)
 		}
 	}
-	s := Summary{Bots: bots, Ready: len(ready), ZoneMessages: zoneMsgs, ChangesHistogram: map[int]int{}}
+	s := Summary{Bots: bots, Ready: len(ready), ZoneMessages: zoneMsgs, Teleports: teleports, ChangesHistogram: map[int]int{}}
 	// lat is the effective latency: subscribe = TrackSubscribed, unsubscribe
 	// = the last real audio packet (forwarding stopped). latUnsub keeps the
 	// track-ended time, which includes LiveKit's 1 s flush.
@@ -210,8 +230,8 @@ func analyze(ev []event, pos map[string][]posSample, ready map[string]float64, b
 		n := 0
 		everOn := false
 		for i, o := range os {
-			if o.T < readyT-1000 {
-				continue
+			if o.T < readyT-1000 || (o.T > end && !used[i]) {
+				continue // a tail event that reflects nothing before "end" is teardown, not an extra
 			}
 			n++
 			everOn = everOn || o.On
@@ -249,8 +269,15 @@ func analyze(ev []event, pos map[string][]posSample, ready map[string]float64, b
 	if len(lat) > 0 {
 		s.Within500 = math.Round(float64(within)/float64(len(lat))*10000) / 10000
 	}
-	s.Pass = s.Matched > 0 && s.Missed == 0 && s.Extra == 0 && s.Flaps == 0 && s.ZoneFlaps == 0 && s.LatencyMs.P99 <= 500
+	s.Pass = s.Matched > 0 && s.Missed == 0 && s.Extra == 0 && s.Flaps == 0 && s.ZoneFlaps == 0 && s.LatencyMs.P99 <= 500 && s.Teleports == 0
 	switch {
+	case s.Teleports > 0:
+		// The scenario has no teleports. With one, the zone's positions left
+		// the scenario (G5: night demons killed the standing bots and the
+		// zone respawned them at the world spawn while each bot kept
+		// simulating where it thought it was; voicebots now spawns the zone
+		// with LODESTONE_ZONE_NO_DEMONS=1 and bots follow teleports).
+		s.Verdict = fmt.Sprintf("INVALID: the zone teleported bots %d times (deaths?), so its positions left the scenario", s.Teleports)
 	case s.Pass:
 		s.Verdict = "PASS: every earshot change reached the listener, p99 within 500 ms, no flapping"
 	default:

@@ -15,7 +15,10 @@ import (
 //	sub / unsub  listener L's LiveKit client got / lost speaker S's track
 //	zin / zout   the zone decided L hears / stops hearing S (t = zone compute time)
 //	ready        L is in LiveKit with its track published
-//	phase        scenario phase S begins
+//	phase        scenario phase S begins ("end": the scenario is over; the
+//	             bots stand still for endTailMs more so changes the zone
+//	             decided just before it can still be observed)
+//	tp           the zone teleported bot L (death respawn, fast travel)
 type event struct {
 	T    float64 `json:"t"`
 	Kind string  `json:"k"`

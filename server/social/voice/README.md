@@ -43,6 +43,14 @@ cd server/social/voice/voicebots && GOWORK=off go run . -spawn   # the 50-voice 
 node client/src/voice/dev/walkapart.mjs        # two browsers walking apart (client/src/voice/README.md)
 ```
 
+`reconcile_order_test.go` (G5): bursts of earshot messages between two passes
+(the leader applies everything queued, then runs one pass; passes never
+overlap). An in+out (or out+in) before one pass makes no LiveKit call, a full
+message after a delta in the same burst wins, a decision that reverses while
+its change is still at LiveKit is undone by the next pass (and a failed one
+leaves nothing to undo), and for 50 random streams the final subscriptions
+are the zone's last sets whether passes run per message or per random burst.
+
 `TestVoiceAcrossProcesses` checks: `voice_token` URL, room and grants (publish
 for accounts, listen-only for local profiles); that each change reaches
 LiveKit exactly once with two processes running (one leader); that an

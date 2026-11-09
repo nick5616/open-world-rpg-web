@@ -307,6 +307,15 @@ no flapping in a jittery crowd, grid == brute force, runner messages),
 `zone_earshot_integration_test.go` (zone binary -> Redis: sets, 2 s fulls,
 a sprinting player leaves earshot after ~5 s). Decisions: 0011.
 
+G5 voice under thailand (`internal/voice/earshot_bursty_test.go`): the voice
+soak replayed through the netsim "thailand" model of the input stream (80 ms
++ N(0, 20 ms), 3 % of packets stall an RTO, in order) lags each position by
+at most ~2.1 m and never backwards, far inside the 8 m band: same number of
+decisions as the smooth feed, 0 flaps. The G5 failure was not the earshot
+rules: night demons killed the soak's bots and the respawn teleport moved
+them where the bots did not think they were (`server/social/voice/voicebots`
+README "G5"). `TestTeleportChangesSetsOnce`: a teleport changes sets once.
+
 ## Caves and mining (WP09)
 
 Code: `caves.go` (wiring, package main), `internal/game/caves.go` (cave
