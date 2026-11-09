@@ -109,6 +109,27 @@ func (d *Director) AssignOnce(ctx context.Context, worldID string, lease time.Du
 		return nil, err
 	}
 	next := zoneregistry.Plan(live, cur)
+	// WP19b: then at most one load move (rebalance.go), and only once the
+	// zones have had RebalanceCooldown to hand the last moved region's
+	// players over and report their new load.
+	if d.Rebalance != nil && sameAssignment(cur, next) {
+		d.rebalMu.Lock()
+		last := d.lastRebalance[worldID]
+		d.rebalMu.Unlock()
+		if d.now().Sub(last) >= d.RebalanceCooldown {
+			if moved, m := zoneregistry.Rebalance(live, next, *d.Rebalance); m != nil {
+				next = moved
+				d.rebalMu.Lock()
+				if d.lastRebalance == nil {
+					d.lastRebalance = map[string]time.Time{}
+				}
+				d.lastRebalance[worldID] = d.now()
+				d.rebalMu.Unlock()
+				d.Log.Info("region moved for load", "world", worldID, "move", m.String())
+				d.Metrics.Add("director_region_load_moves_total", 1)
+			}
+		}
+	}
 	if sameAssignment(cur, next) {
 		return nil, nil
 	}

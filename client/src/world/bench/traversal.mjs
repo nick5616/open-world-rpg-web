@@ -39,6 +39,8 @@ const software = process.env.LODESTONE_BENCH_GL === 'swiftshader';
 const uncapped = process.env.LODESTONE_BENCH_UNCAPPED === '1';
 // LODESTONE_BENCH_SHORT=1: 2 s walk, no flight, results not written (iterating on the beauty shots).
 const SHORT = process.env.LODESTONE_BENCH_SHORT === '1';
+// LODESTONE_BENCH_PREFIX names the results (default wp05-traversal-*; WP19's second pass: wp19b).
+const PREFIX = process.env.LODESTONE_BENCH_PREFIX ?? 'wp05';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const BUDGETS = { drawCalls: 400, triangles: 1.5e6, longTaskMs: 50, heapMB: 600, chunkGenMs: 8, downloadMB: 15, frameMs: { high: 16.6, medium: 16.6, low: 33 } };
@@ -75,6 +77,15 @@ async function runTier(tier) {
         for (const e of list.getEntries()) w.__bench.longTasks.push({ start: e.startTime, ms: e.duration, recording: w.__bench.recording });
       }).observe({ type: 'longtask', buffered: true });
     } catch {}
+    // WP19b: every shader program linked, with time and phase, so a long
+    // task can be matched to the programs compiled inside it (first-use
+    // shader compiles were the traversal long tasks, decision v1-capacity).
+    w.__bench.links = [];
+    const link = WebGL2RenderingContext.prototype.linkProgram;
+    WebGL2RenderingContext.prototype.linkProgram = function (p) {
+      w.__bench.links.push({ t: performance.now(), recording: w.__bench.recording, p });
+      return link.call(this, p);
+    };
   }, tier);
   const page = await context.newPage();
   const errors = [];
@@ -106,6 +117,8 @@ async function runTier(tier) {
     return e ? gl.getParameter(e.UNMASKED_RENDERER_WEBGL) : 'unknown';
   });
   const startStats = await page.evaluate(() => window.__lodestoneWorld.stats());
+  const programsAtPlayable = await page.evaluate(() => window.__bench.links.length); // WP19b
+  console.log(`[${tier}] programs linked before playable: ${programsAtPlayable}`);
   console.log(`[${tier}] playable in ${loadMs} ms on ${renderer}`);
 
   const begin = async () => {
@@ -121,7 +134,14 @@ async function runTier(tier) {
       window.__bench.recording = false;
       clearInterval(window.__bench.sampler);
       const b = window.__bench;
-      const res = { frames: b.frames, samples: b.samples, longTasks: b.longTasks.filter((l) => l.recording), stats: window.__lodestoneWorld.stats() };
+      // Programs linked during this phase, named from three's program list.
+      const progs = window.__r3f?.gl?.info?.programs ?? [];
+      const linked = b.links.filter((l) => l.recording).map((l) => {
+        const pr = progs.find((x) => x.program === l.p);
+        return { t: Math.round(l.t), name: pr ? pr.name : '?' };
+      });
+      b.links = b.links.filter((l) => !l.recording);
+      const res = { frames: b.frames, samples: b.samples, longTasks: b.longTasks.filter((l) => l.recording), stats: window.__lodestoneWorld.stats(), linked };
       b.samples = [];
       b.longTasks = b.longTasks.filter((l) => !l.recording);
       return res;
@@ -140,6 +160,8 @@ async function runTier(tier) {
       shadowTriangles: { max: Math.max(0, ...s.map((x) => x.frame.shadowTris)) },
       heapMB: { max: round(Math.max(0, ...s.map((x) => (x.heap?.used ?? 0) / 1048576)), 1) },
       longTasks: r.longTasks.map((l) => round(l.ms, 0)),
+      longTaskAt: r.longTasks.map((l) => ({ start: Math.round(l.start), ms: round(l.ms, 0) })),
+      programsLinked: r.linked,
       chunkGenMs: r.stats.terrain.genMs,
       chunkMeshMs: r.stats.terrain.meshMs,
       scatterGenMs: r.stats.scatter.genMs,
@@ -149,7 +171,7 @@ async function runTier(tier) {
       rebinMsMax: round(Math.max(0, ...s.map((x) => x.scatter.rebinMs))),
       terrainMsMax: { reselect: round(Math.max(0, ...s.map((x) => x.terrain.prof.reselect))), upload: round(Math.max(0, ...s.map((x) => x.terrain.prof.upload))), resolve: round(Math.max(0, ...s.map((x) => x.terrain.prof.resolve))) },
     };
-    console.log(`[${tier}] ${name}: rebin ${phase.rebinMsMax} terrain ${JSON.stringify(phase.terrainMsMax)} ${phase.seconds}s, frame p50 ${phase.frameMs.p50} p99 ${phase.frameMs.p99} max ${phase.frameMs.max} ms, calls max ${phase.drawCalls.max}, tris max ${phase.triangles.max}, long tasks ${phase.longTasks.length}, gen p95 ${round(phase.chunkGenMs.p95)} ms`);
+    console.log(`[${tier}] ${name}: rebin ${phase.rebinMsMax} terrain ${JSON.stringify(phase.terrainMsMax)} ${phase.seconds}s, frame p50 ${phase.frameMs.p50} p99 ${phase.frameMs.p99} max ${phase.frameMs.max} ms, calls max ${phase.drawCalls.max}, tris max ${phase.triangles.max}, long tasks ${phase.longTasks.length} ${JSON.stringify(phase.longTaskAt)}, programs linked ${phase.programsLinked.length} ${JSON.stringify(phase.programsLinked).slice(0, 600)}, gen p95 ${round(phase.chunkGenMs.p95)} ms`);
     return phase;
   };
 
@@ -278,6 +300,7 @@ async function runTier(tier) {
     vsync: !uncapped,
     loadMs,
     firstPlayableMs: final.firstPlayableMs,
+    programsAtPlayable,
     load: startStats.load,
     textures: startStats.textures,
     download: { files: responses.length, bytes: downloadBytes, gzipBytes: downloadGzip, byType: summarize(responses) },
@@ -296,7 +319,7 @@ async function runTier(tier) {
     },
     shots,
   };
-  if (!SHORT) writeFileSync(join(out, `wp05-traversal-${tier}.json`), JSON.stringify(result, null, 2) + '\n');
+  if (!SHORT) writeFileSync(join(out, `${PREFIX}-traversal-${tier}.json`), JSON.stringify(result, null, 2) + '\n');
   console.log(`[${tier}] budgets`, JSON.stringify(result.budgets));
   return result;
 }
@@ -327,5 +350,5 @@ const md = [
   ...results.map((r) => `- ${r.tier}: renderer ${r.renderer}; first playable ${Math.round(r.firstPlayableMs)} ms after navigation start; route ${r.route.map((l) => l.to).join(' -> ')}; regen hash ${r.regen?.match ? 'MATCH' : 'MISMATCH'}; page errors ${r.errors.length}`),
   '',
 ].join('\n');
-if (!SHORT) writeFileSync(join(out, 'wp05-traversal.md'), md);
+if (!SHORT) writeFileSync(join(out, `${PREFIX}-traversal.md`), md);
 console.log(md);

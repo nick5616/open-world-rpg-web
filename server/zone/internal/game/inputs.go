@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"lodestone/server/pkg/proto"
+	"lodestone/server/pkg/transport"
 )
 
 // complexFrameFlags: input bits whose frame can start something the combat
@@ -34,6 +35,28 @@ const complexFrameFlags = proto.InputFlagAttack | proto.InputFlagCast | proto.In
 
 func complexFrame(f proto.InputFrame) bool {
 	return f.Flags&complexFrameFlags != 0 || (f.Flags&proto.InputFlagDodge != 0 && f.CastSlot != 0)
+}
+
+// holdConns holds every session's writer wake-ups for this tick
+// (transport.Holder); releaseConns lets them go, waking each writer that
+// has something queued.
+func (s *Server) holdConns() {
+	held := s.held[:0]
+	for _, sess := range s.sessions {
+		if h, ok := sess.conn.(transport.Holder); ok {
+			h.Hold()
+			held = append(held, h)
+		}
+	}
+	s.held = held
+}
+
+func (s *Server) releaseConns() {
+	for _, h := range s.held {
+		h.Release()
+	}
+	clear(s.held)
+	s.held = s.held[:0]
 }
 
 // takeInputs moves every session's inbox into sess.taken and decides

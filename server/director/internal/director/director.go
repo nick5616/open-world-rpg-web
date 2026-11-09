@@ -13,6 +13,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -40,6 +41,13 @@ type Director struct {
 	Log            *slog.Logger
 	Metrics        *svc.Metrics
 	Now            func() time.Time
+	// WP19b: load-aware region moves after Plan (zoneregistry.Rebalance);
+	// nil = sticky only (pre-WP19b). At most one move per world per
+	// RebalanceCooldown.
+	Rebalance         *zoneregistry.RebalanceOptions
+	RebalanceCooldown time.Duration
+	rebalMu           sync.Mutex
+	lastRebalance     map[string]time.Time
 }
 
 func (d *Director) now() time.Time {

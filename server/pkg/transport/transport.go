@@ -69,6 +69,49 @@ type Stats struct {
 	ReliableQueued atomic.Int64
 }
 
+// Holder is implemented by the WebSocket and WebTransport conns (WP19b).
+// Between Hold and Release, sends queue as usual but do not wake the
+// connection's writer goroutine; Release wakes it once if anything was
+// queued. The zone holds every session while a tick runs, so ~300 writer
+// goroutines doing socket syscalls do not compete for the zone's cores with
+// the tick's own workers mid-tick: they write right after it, in the idle
+// part of the 33 ms interval. Closing always wakes the writer at once.
+type Holder interface {
+	Hold()
+	Release()
+	// SendUrgent is SendUnreliable that wakes the writer even while held
+	// (clock pongs: their timing is the measurement).
+	SendUrgent(b []byte) bool
+}
+
+// wake is a writer wake-up that can be held (see Holder).
+type wake struct {
+	held, pending atomic.Bool
+}
+
+// poke wakes via fn unless held; a poke while held is remembered.
+func (k *wake) poke(fn func()) {
+	if !k.held.Load() {
+		fn()
+		return
+	}
+	k.pending.Store(true)
+	// Release may have run between the two loads: then nobody would take
+	// the pending wake-up, so take it here.
+	if !k.held.Load() && k.pending.Swap(false) {
+		fn()
+	}
+}
+
+func (k *wake) hold() { k.held.Store(true) }
+
+func (k *wake) release(fn func()) {
+	k.held.Store(false)
+	if k.pending.Swap(false) {
+		fn()
+	}
+}
+
 // Close codes.
 const (
 	CloseNormal    = 1000

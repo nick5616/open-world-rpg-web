@@ -124,6 +124,7 @@ type Server struct {
 	sessions []*session
 	inBatch  []*session // WP19b: plain sessions waiting for a parallel run (inputs.go)
 	cbtEnc   [][]byte   // WP19b: this tick's encoded combat events (deliverCombatAll)
+	held     []transport.Holder // WP19b: connections held for this tick (inputs.go)
 	byChar   map[string]*session
 	parties  map[uint32][]*Entity
 	grid     *aoi.Grid // players (and anything with a party id): far ring reach
@@ -286,6 +287,12 @@ func (s *Server) onTick() {
 		}
 		break
 	}
+
+	// WP19b: hold every connection's writer wake-ups until the tick is done
+	// (transport.Holder): sends queue, the writers run after the tick
+	// instead of competing with its workers for the zone's cores.
+	s.holdConns()
+	defer s.releaseConns()
 
 	// Leaves and every session's messages, in session order; plain
 	// movement runs on the workers (WP19b, inputs.go).

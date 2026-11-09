@@ -106,7 +106,7 @@ func (c *zoneCluster) announce(ctx context.Context, e zoneregistry.Entry, port i
 	e.Regions = c.static
 	e.TTLMs = int64(env.Int("LODESTONE_ZONE_TTL_MS", 3000))
 	e.Debug = env.Str("LODESTONE_ZONE_DEBUG_URL", fmt.Sprintf("http://127.0.0.1:%d", port))
-	a := &cluster.Announcer{R: c.r, Entry: e, Static: len(c.static) > 0, Every: time.Duration(env.Int("LODESTONE_ZONE_HEARTBEAT_MS", 1000)) * time.Millisecond, Players: zone.Players}
+	a := &cluster.Announcer{R: c.r, Entry: e, Static: len(c.static) > 0, Every: time.Duration(env.Int("LODESTONE_ZONE_HEARTBEAT_MS", 1000)) * time.Millisecond, Players: zone.Players, Load: zone.RegionLoad}
 	a.Run(ctx)
 }
 

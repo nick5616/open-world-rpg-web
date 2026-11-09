@@ -288,6 +288,7 @@ type wtConn struct {
 	remote string
 	client bool
 	stats  Stats
+	k      wake // WP19b: holdable writer wake-ups (Holder)
 
 	in        chan []byte
 	readLimit atomic.Int64
@@ -431,11 +432,26 @@ func (c *wtConn) SendReliable(b []byte) error {
 	c.reliable = append(c.reliable, b)
 	c.mu.Unlock()
 	c.stats.ReliableQueued.Add(int64(len(b)) + wtStreamOverhead)
-	poke(c.streamPoke)
+	c.k.poke(c.pokeAll)
 	return nil
 }
 
-func (c *wtConn) SendUnreliable(b []byte) bool {
+// pokeAll wakes both writers (a held wake-up does not remember which).
+func (c *wtConn) pokeAll() {
+	poke(c.streamPoke)
+	poke(c.dgramPoke)
+}
+
+// Hold and Release implement Holder (WP19b).
+func (c *wtConn) Hold()    { c.k.hold() }
+func (c *wtConn) Release() { c.k.release(c.pokeAll) }
+
+func (c *wtConn) SendUnreliable(b []byte) bool { return c.sendUnreliable(b, false) }
+
+// SendUrgent implements Holder.
+func (c *wtConn) SendUrgent(b []byte) bool { return c.sendUnreliable(b, true) }
+
+func (c *wtConn) sendUnreliable(b []byte, urgent bool) bool {
 	if len(b) == 0 {
 		return false
 	}
@@ -461,7 +477,11 @@ func (c *wtConn) SendUnreliable(b []byte) bool {
 	}
 	*other = removeByID(*other, b[0])
 	c.mu.Unlock()
-	poke(wake)
+	if !urgent && c.k.held.Load() {
+		c.k.poke(c.pokeAll) // held: Release wakes both writers
+	} else {
+		poke(wake)
+	}
 	if replaced {
 		c.stats.Dropped.Add(1)
 	}

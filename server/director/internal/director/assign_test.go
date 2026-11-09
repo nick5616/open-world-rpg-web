@@ -57,3 +57,56 @@ func TestAssignerSplitsAndFailsOver(t *testing.T) {
 		t.Fatalf("dead zone kept regions: %v %v", plan, err)
 	}
 }
+
+// WP19b: after Plan settles, the assigner moves a region off an overloaded
+// zone (reported per-region load), at most one per cooldown.
+func TestAssignerRebalancesByLoad(t *testing.T) {
+	rdb := dbtest.Redis(t)
+	ctx := context.Background()
+	world := "wp19b-rebal-" + time.Now().Format("150405.000000")
+	t.Cleanup(func() {
+		rdb.Del(ctx, zoneregistry.Key(world), zoneregistry.AssignKey(world), "zoneassignlead:"+world)
+	})
+	now := time.Now()
+	opt := zoneregistry.DefaultRebalance
+	d := &Director{RDB: rdb, Log: slog.New(slog.NewTextHandler(io.Discard, nil)), Metrics: svc.NewMetrics(),
+		Rebalance: &opt, RebalanceCooldown: 10 * time.Second, Now: func() time.Time { return now }}
+	announce := func(e zoneregistry.Entry) {
+		e.TTLMs = 600000
+		if err := zoneregistry.Announce(ctx, rdb, world, e); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// The primary carries a crowd in its (high-x) regions; b is empty.
+	crowd := []zoneregistry.RegionLoad{{X: 2, Z: 0, Players: 150}, {X: 3, Z: 0, Players: 150}, {X: 3, Z: 3, Players: 150}}
+	announce(zoneregistry.Entry{ZoneID: "p", Endpoint: "ws://p", Role: zoneregistry.RolePrimary, Load: crowd})
+	announce(zoneregistry.Entry{ZoneID: "b", Endpoint: "ws://b", Role: zoneregistry.RolePool})
+	plan, err := d.AssignOnce(ctx, world, 5*time.Second) // Plan first: b takes x = 0..1
+	if err != nil || len(plan["b"]) != 8 {
+		t.Fatalf("plan %v err %v", plan, err)
+	}
+	plan, err = d.AssignOnce(ctx, world, 5*time.Second) // then one load move
+	if err != nil || len(plan["b"]) != 9 {
+		t.Fatalf("want one crowded region moved to b, got %v err %v", plan, err)
+	}
+	if again, _ := d.AssignOnce(ctx, world, 5*time.Second); again != nil {
+		t.Fatalf("moved again inside the cooldown: %v", again)
+	}
+	// After the cooldown, with reports showing p at 300 and b at 150, the
+	// split is within the ratio: nothing more moves.
+	now = now.Add(11 * time.Second)
+	moved := plan["b"][8]
+	var pLoad, bLoad []zoneregistry.RegionLoad
+	for _, l := range crowd {
+		if l.X == moved.X && l.Z == moved.Z {
+			bLoad = append(bLoad, l)
+		} else {
+			pLoad = append(pLoad, l)
+		}
+	}
+	announce(zoneregistry.Entry{ZoneID: "p", Endpoint: "ws://p", Role: zoneregistry.RolePrimary, Load: pLoad})
+	announce(zoneregistry.Entry{ZoneID: "b", Endpoint: "ws://b", Role: zoneregistry.RolePool, Load: bLoad, Regions: plan["b"]})
+	if again, err := d.AssignOnce(ctx, world, 5*time.Second); again != nil || err != nil {
+		t.Fatalf("balanced split moved again: %v %v", again, err)
+	}
+}

@@ -307,7 +307,11 @@ func (s *Server) readLoop(sess *session) {
 		switch msg := m.(type) {
 		case *proto.ClockPing:
 			pong := &proto.ClockPong{T1: msg.T1, T2: t2, T3: s.serverTimeMs()}
-			sess.conn.SendUnreliable(proto.Encode(pong))
+			if h, ok := sess.conn.(transport.Holder); ok {
+				h.SendUrgent(proto.Encode(pong)) // not delayed by the tick's hold (WP19b)
+			} else {
+				sess.conn.SendUnreliable(proto.Encode(pong))
+			}
 		case *proto.Bye:
 			sess.conn.Close(1000, "bye")
 			return
