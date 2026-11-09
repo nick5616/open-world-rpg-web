@@ -298,10 +298,9 @@ export const TRIGGERS = {
   loot: (p, a) => a.play(lootCue(p.rarity ?? 0)),
   // Not emitted by anything on main yet (README "not-yet-wired hooks"):
   level_up: (p, a) => a.play(levelUpCue(p.level ?? 2, p.gained ?? 1)),
-  tower_attuned: (_p, a) => {
-    a.play('tower_riser');
-    a.play('tower_attune');
-  },
+  tower_attuned: (_p, a) => a.play('tower_attune'),
+  /** The attunement build-up starts (a riser leading into tower_attuned). */
+  tower_attuning: (_p, a) => a.play('tower_riser'),
   quest_accept: (_p, a) => a.play('quest_accept'),
   quest_complete: (_p, a) => a.play('quest_complete'),
   door_open: (p, a) => a.play('door_open', at(p)),

@@ -167,7 +167,7 @@ take a world position.
 | `defense_held` | 1 | **Nicole: level up sound 3**; D1 FX: Cymbal Hit FX | Event 513 defense_ended, held |
 | `defense_broken` | 1 | D2 East Coast Hip Hop: One-Shot 2; D1 FX: Long Tail FX; D3 Horror Trap: Danger Harsh | Event 513 defense_ended, broken |
 | `discovery` | 1 | D1 FX: Textured Riser FX; D2 East Coast Hip Hop: One-Shot 6; D2 Japanese LoFi: FX 12 | Event 602 discovery; trigger `discovery_intro` |
-| `tower_riser` | 1 | D1 FX: Shade Riser FX | trigger-ready riser for the tower attunement build-up (pt/progression) |
+| `tower_riser` | 1 | D1 FX: Shade Riser FX | trigger `tower_attuning` (not wired yet: attunement build-up) |
 | `tower_attune` | 1 | D1 FX: Ripple Riser FX; D1 FX: Tower FX; **Nicole: level up sound 2** | Event 600 tower_unlocked; trigger `tower_attuned` |
 | `waypoint` | 1 | D2 World Flute Trap: Fx1 0020; D2 Japanese LoFi: FX 12 | Event 601 waypoint_activated |
 | `level_up_small` | 1 | **Nicole: level up sound 1** | Event 604 level_up (ordinary level) / trigger `level_up` |
@@ -189,19 +189,19 @@ Defined and tested in `triggers.ts`; each is one line at its call site:
 | Trigger | Call it from | Plays |
 | --- | --- | --- |
 | `emitSound('level_up', { level, gained })` | pt/progression level-up toast (Event 604 already plays it, so call only for client-side level-ups) | Nicole's level up sound 1/2/3 by size |
-| `emitSound('tower_attuned')` | pt/progression tower attunement event (Event 600 already plays it) | riser + "Tower" + level up sound 2 |
+| `emitSound('tower_attuned')` | pt/progression tower attunement event (Event 600 already plays it) | riser into "Tower" + level up sound 2 (`tower_attune`) |
 | `emitSound('quest_accept')` / `emitSound('quest_complete')` | pt/ux quests (Event 803 bounty_accepted already plays accept) | shimmer / level up sound 2 up a tone |
 | `emitSound('door_open', { at })` / `emitSound('door_close', { at })` | pt/ux doors (spatial) | synthesized wooden creak / thud |
 | `emitSound('discovery_intro')` | pt/ux discovery intros | riser + shimmer |
 | `emitSound('chest_open', { at })` | a client-side chest lid animation (Event 407 already plays it) | creak + lid + sparkle |
-| `tower_riser` cue | the start of an attunement build-up, if pt/progression adds one | riser |
+| `emitSound('tower_attuning')` | the start of an attunement build-up, if pt/progression adds one | riser (`tower_riser`) |
 | `step_snow` cue | footsteps: pass `surface: 'snow'` from `movement.ts` once a biome query is cheap there | crunchy steps |
 | `beast_growl` cue | an enemy aggro event, if the zone ever sends one | growl |
 
 Events that exist on main but are deliberately silent: 212 combat_sync,
 213 mana, 206 status, 400 inventory, 406 containers, 500 world_clock,
 514 defense_reward, 524/525 chemistry baselines, 603/605/607/608, 701
-vein_hit and 704 item_granted (the local swing/pickup already sounded).
+vein_hit (the local swing already sounded; 702 and 704 play through CaveManager's CaveAudio).
 
 ## Rebuilding the assets
 

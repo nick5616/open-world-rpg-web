@@ -188,9 +188,16 @@ try {
   const panelAfter = await page.getByTestId('sound-settings').count();
   check('K toggles the sound settings panel', panelAfter !== panelBefore, `focus ${focus}, panel ${panelBefore} -> ${panelAfter}`);
   if (!panelAfter) await page.keyboard.press('KeyK');
-  await page.getByTestId('sound-settings').waitFor({ timeout: 5000 });
-  await page.getByTestId('sound-music').fill('30');
-  await page.screenshot({ path: path.join(root, 'docs', 'evidence', 'audio-settings.png') });
+  // SwiftShader runs this page at well under 1 fps, so drive the controls
+  // through the DOM (Playwright's actionability checks wait on frames).
+  await page.getByTestId('sound-settings').waitFor({ state: 'attached', timeout: 60000 });
+  await page.evaluate(() => {
+    const el = document.querySelector('[data-testid=sound-music]');
+    Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set.call(el, '30');
+    el.dispatchEvent(new window.Event('input', { bubbles: true }));
+  });
+  await page.waitForTimeout(1500);
+  await page.screenshot({ path: path.join(root, 'docs', 'evidence', 'audio-settings.png'), timeout: 120000 });
   const stored = await page.evaluate(() => JSON.parse(window.localStorage.getItem('lodestone.audio.v1') ?? 'null'));
   check('music volume persisted', stored?.volumes?.music === 0.3, JSON.stringify(stored?.volumes));
   const loud = await page.evaluate(() => window.__lodestoneAudio.level());

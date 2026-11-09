@@ -146,7 +146,7 @@ describe('trigger map', () => {
       expect(played.length, name).toBeGreaterThan(0);
       for (const p of played) expect(CUES[p.cue], `${name} -> ${p.cue}`).toBeDefined();
     }
-    for (const hook of ['level_up', 'tower_attuned', 'quest_accept', 'quest_complete', 'door_open', 'door_close', 'discovery_intro']) expect(TRIGGERS).toHaveProperty(hook);
+    for (const hook of ['level_up', 'tower_attuned', 'tower_attuning', 'quest_accept', 'quest_complete', 'door_open', 'door_close', 'discovery_intro']) expect(TRIGGERS).toHaveProperty(hook);
   });
 
   it('local prediction triggers: attack, cast, impact', () => {
