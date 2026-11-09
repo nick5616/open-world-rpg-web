@@ -90,6 +90,25 @@ func (cl *client) take(kind uint16, timeout time.Duration) *proto.Event {
 	}
 }
 
+// takeFor is take for the Event of kind about targetID (other quests may
+// complete on the way: a clear bounty at an already quiet site).
+func (cl *client) takeFor(kind uint16, targetID uint32, timeout time.Duration) *proto.Event {
+	cl.t.Helper()
+	deadline := time.Now().Add(timeout)
+	for {
+		for i, e := range cl.evs {
+			if e.Kind == kind && e.TargetID == targetID {
+				cl.evs = append(cl.evs[:i:i], cl.evs[i+1:]...)
+				return e
+			}
+		}
+		if time.Now().After(deadline) {
+			cl.t.Fatalf("timeout waiting for event %d about %d", kind, targetID)
+		}
+		cl.pump(40 * time.Millisecond)
+	}
+}
+
 func (l wireLogT) find(id uint32) *quests.WireQuest {
 	for i := range l.Quests {
 		if l.Quests[i].ID == id {
@@ -396,7 +415,7 @@ func TestBountiesBecomePersistedQuests(t *testing.T) {
 			})
 			addItems(t, h, char, item, int(j.qty))
 			a.send(&proto.Interact{TargetKind: InteractBoard, TargetID: board.ID, Action: 1})
-			done := a.take(EventQuestCompleted, 3*time.Second)
+			done := a.takeFor(EventQuestCompleted, j.id, 3*time.Second)
 			if done.TargetID != j.id || int(done.Value) != bq.Gold {
 				t.Fatalf("delivery completed %+v", done)
 			}
@@ -409,7 +428,7 @@ func TestBountiesBecomePersistedQuests(t *testing.T) {
 			_ = h.srv.Do(context.Background(), func() {
 				h.srv.Teleport(h.srv.byChar[char].ent, movement.Vec3{X: m.X, Y: g.HeightAt(m.X, m.Z), Z: m.Z})
 			})
-			done := a.take(EventQuestCompleted, 5*time.Second)
+			done := a.takeFor(EventQuestCompleted, j.id, 5*time.Second)
 			if done.TargetID != j.id {
 				t.Fatalf("explore completed %+v", done)
 			}
