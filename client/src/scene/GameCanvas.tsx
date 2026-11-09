@@ -15,6 +15,7 @@ import type { PlayerDriver } from './PlayerController';
 import { DEFAULT_GROUND, GroundContext } from './groundContext';
 import { PlayerController } from './PlayerController';
 import { FirstPersonArms } from './FirstPersonArms';
+import { LocalAvatar } from './LocalAvatar';
 import { SkyAndSun } from './SkyAndSun';
 import { FlatTerrain } from './FlatTerrain';
 import { CellBorders } from './CellBorders';
@@ -80,6 +81,8 @@ export function GameCanvas({ ground = DEFAULT_GROUND, terrain, onStep, driver, c
         <PlayerController onStep={onStep} driver={driver} />
         {children}
         <FirstPersonArms />
+        {/* playtest 2: your own body in third person */}
+        <LocalAvatar />
       </GroundContext.Provider>
     </Canvas>
   );

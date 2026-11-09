@@ -1,6 +1,8 @@
 // First-person camera + local movement. Per rendered frame: apply mouse look,
 // sample held keys, let LocalSim run its fixed 60 Hz steps, then place the
 // camera at the interpolated eye position. Writes the live HUD values.
+// Playtest 2: or behind the shoulder (third person, scene/thirdPerson.ts),
+// with the same look (the raw mouse path is untouched) and a converged aim.
 //
 // adapted from wizard-wars client/src/components/core/CameraController.tsx
 // (look, fixed-step loop, jump-edge latch, reconciliation easing). Offline it
@@ -19,8 +21,12 @@ import { FINE, MoveFlag, type MoveState, type StepEnv, type Vec3 } from '../sim/
 import { offlineEnv } from '../sim/stepEnv';
 import { useAppStore } from '../stores/appStore';
 import { useDebugStore } from '../stores/debugStore';
-import { localPlayer, type MoveMode } from '../state/live';
+import { localPlayer, view, type MoveMode } from '../state/live';
 import { useGround } from './groundContext';
+import { useViewStore } from '../stores/viewStore';
+import { drawnRemotes } from '../net/netStore';
+import { enemyInfo } from '../combat/events';
+import { aimFromEye, Boom, CameraProbe, crosshairDistance, forwardOf, THIRD, type AimSphere, type Vec3 as V3 } from './thirdPerson';
 
 /** HUD names for the WP10 modes carried in MoveState.mode (ground/air are refined below). */
 const MODE_NAMES: Record<number, MoveMode | undefined> = { 2: 'climb', 3: 'glide', 4: 'swim' };
@@ -82,6 +88,20 @@ export function PlayerController({ onStep, driver }: Props) {
   const warned = useRef(false);
   const euler = useMemo(() => new THREE.Euler(0, 0, 0, 'YXZ'), []);
   const render = useMemo(() => ({ x: 0, y: 0, z: 0 }), []);
+  // Playtest 2 third person: the boom, its collision probe and the aim scratch (no per-frame allocations).
+  const { boom, probe, fwd, aimSpheres, aimPool, aimAt, aimEye, aim } = useMemo(
+    () => ({
+      boom: new Boom(),
+      probe: new CameraProbe(),
+      fwd: { x: 0, y: 0, z: -1 } as V3,
+      aimSpheres: [] as AimSphere[],
+      aimPool: [] as AimSphere[],
+      aimAt: { x: 0, y: 0, z: 0 } as V3,
+      aimEye: { x: 0, y: 0, z: 0 } as V3,
+      aim: { yaw: 0, pitch: 0 },
+    }),
+    [],
+  );
 
   useEffect(() => sim.setGround(ground), [sim, ground]);
   useEffect(() => {
@@ -118,6 +138,7 @@ export function PlayerController({ onStep, driver }: Props) {
       const o = offset.current;
       if (corr.magnitude > CORRECTION_SNAP_DIST) {
         o.x = o.y = o.z = 0;
+        boom.reset(); // a respawn or server teleport: the third-person camera snaps too
       } else {
         o.x += corr.error.x;
         o.y += corr.error.y;
@@ -149,7 +170,56 @@ export function PlayerController({ onStep, driver }: Props) {
     o.x *= decay;
     o.y *= decay;
     o.z *= decay;
-    camera.position.set(render.x + o.x, render.y + o.y + PLAYER_HEIGHT, render.z + o.z);
+    // Playtest 2: the drawn eye; first person the camera sits there, third
+    // person it hangs on a collision-checked boom behind the shoulder.
+    const vw = view;
+    vw.feet.x = render.x + o.x;
+    vw.feet.y = render.y + o.y;
+    vw.feet.z = render.z + o.z;
+    vw.eye.x = vw.feet.x;
+    vw.eye.y = vw.feet.y + PLAYER_HEIGHT;
+    vw.eye.z = vw.feet.z;
+    const vs = useViewStore.getState();
+    const third = vs.mode === 'third' && !fly;
+    if (third !== vw.third || tp) boom.reset();
+    vw.third = third;
+    if (third) {
+      probe.setLevel(ground, vw.feet.y);
+      const c = boom.update(vw.eye, lk.yaw, lk.pitch, vs.shoulder, vs.distance, probe.blocked, delta);
+      camera.position.set(c.x, c.y, c.z);
+      vw.boom = boom.dist;
+      // with a little hysteresis, so a boom hovering at the limit doesn't flicker
+      vw.hideBody = boom.dist < THIRD.hideAvatarBelow + (vw.hideBody && vw.third ? 0.15 : 0);
+      // Converge the combat aim on what the crosshair (the camera ray) is on.
+      forwardOf(lk.yaw, lk.pitch, fwd);
+      aimSpheres.length = 0;
+      for (const e of drawnRemotes.views) {
+        if (e.kind !== 2 || e.healthPct <= 0) continue;
+        const info = enemyInfo(e);
+        if (aimSpheres.length >= aimPool.length) aimPool.push({ x: 0, y: 0, z: 0, r: 0 });
+        const s = aimPool[aimSpheres.length];
+        s.x = e.x;
+        s.y = e.y + info.height;
+        s.z = e.z;
+        s.r = info.radius + info.height * 0.5;
+        aimSpheres.push(s);
+      }
+      const t = crosshairDistance(c, fwd, boom.dist + 0.6, THIRD.aimRange, probe.heightAt, aimSpheres);
+      aimAt.x = c.x + fwd.x * t;
+      aimAt.y = c.y + fwd.y * t;
+      aimAt.z = c.z + fwd.z * t;
+      // the combat code shoots from 1.6 m (combat/runtime.ts EYE)
+      aimEye.x = vw.feet.x;
+      aimEye.y = vw.feet.y + 1.6;
+      aimEye.z = vw.feet.z;
+      aimFromEye(aimEye, aimAt, lk.yaw, lk.pitch, aim);
+    } else {
+      camera.position.set(vw.eye.x, vw.eye.y, vw.eye.z);
+      vw.boom = 0;
+      vw.hideBody = true;
+      aim.yaw = lk.yaw;
+      aim.pitch = lk.pitch;
+    }
     euler.set(lk.pitch, lk.yaw, 0, 'YXZ');
     camera.quaternion.setFromEuler(euler);
 
@@ -178,6 +248,8 @@ export function PlayerController({ onStep, driver }: Props) {
     localPlayer.vel.z = s.vel.z;
     localPlayer.yaw = lk.yaw;
     localPlayer.pitch = lk.pitch;
+    localPlayer.aimYaw = aim.yaw;
+    localPlayer.aimPitch = aim.pitch;
     localPlayer.grounded = grounded;
     localPlayer.airJumps = s.airJumps;
     localPlayer.mode = mode;

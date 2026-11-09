@@ -279,6 +279,7 @@ type FrameResult struct {
 	Started *Action          // an attack/cast/form that started this frame (legal or not)
 	Spent   bool             // mana changed
 	Drink   bool             // a consumable use started
+	Guard   bool             // CR 018: the secondary button went down (sword parry, spear charge, bow draw)
 }
 
 // Frame processes one input frame BEFORE the movement step runs on it
@@ -321,6 +322,11 @@ func (p *Player) Frame(f proto.InputFrame, before movement.State, g movement.Gro
 	// Sword parry: the secondary button's rising step opens the window.
 	if alt && !p.altPrev && w.ParrySteps > 0 {
 		p.parryEnd = seq + uint32(w.ParrySteps)
+	}
+	// CR 018: others see the guard / charge / draw start (staff and wand use
+	// the secondary as a heavy attack, which is an EvCast of its own).
+	if alt && !p.altPrev && w.Key != "staff" && w.Key != "wand" {
+		r.Guard = true
 	}
 
 	if f.Flags&proto.InputFlagAttack != 0 {

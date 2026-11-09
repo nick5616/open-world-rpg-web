@@ -1,0 +1,169 @@
+{
+  "self": {
+    "third": true,
+    "feet": {
+      "x": 1440,
+      "y": 155.37240600585938,
+      "z": 2223
+    },
+    "eye": {
+      "x": 1440,
+      "y": 157.1724060058594,
+      "z": 2223
+    },
+    "boom": 3.4,
+    "hideBody": false,
+    "aimYaw": -1.690802836423671,
+    "aimPitch": -0.044807982905342714
+  },
+  "remote-attack": {
+    "saw": "slash",
+    "at": {
+      "id": 1,
+      "action": "slash",
+      "animLevel": 0,
+      "lod": 0,
+      "weapon": "sword",
+      "x": 1440,
+      "y": 155.37,
+      "z": 2223,
+      "glow": 0,
+      "bowDraw": 0
+    }
+  },
+  "remote-cast": {
+    "saw": "cast",
+    "at": {
+      "id": 1,
+      "action": "cast",
+      "animLevel": 0,
+      "lod": 0,
+      "weapon": "sword",
+      "x": 1440,
+      "y": 155.37,
+      "z": 2223,
+      "glow": 1,
+      "bowDraw": 0
+    }
+  },
+  "remote-cast-area": {
+    "saw": "castBig",
+    "at": {
+      "id": 1,
+      "action": "castBig",
+      "animLevel": 0,
+      "lod": 0,
+      "weapon": "sword",
+      "x": 1440,
+      "y": 155.37,
+      "z": 2223,
+      "glow": 0.9526044696514193,
+      "bowDraw": 0
+    }
+  },
+  "remote-dodge": {
+    "saw": "dodge",
+    "at": {
+      "id": 1,
+      "action": "dodge",
+      "animLevel": 0,
+      "lod": 0,
+      "weapon": "sword",
+      "x": 1439.8296064884626,
+      "y": 155.3605336938035,
+      "z": 2223.056797837179,
+      "glow": 0,
+      "bowDraw": 0
+    }
+  },
+  "remote-walk": {
+    "saw": null,
+    "at": {
+      "id": 1,
+      "action": null,
+      "animLevel": 0,
+      "lod": 0,
+      "weapon": "sword",
+      "x": 1437.5803059500533,
+      "y": 155.3534353166845,
+      "z": 2222.245034933048,
+      "glow": 0,
+      "bowDraw": 0
+    }
+  },
+  "remote-sprint": {
+    "saw": null,
+    "at": {
+      "id": 1,
+      "action": null,
+      "animLevel": 0,
+      "lod": 0,
+      "weapon": "sword",
+      "x": 1438.5079062342961,
+      "y": 154.81209376570396,
+      "z": 2216.41058603565,
+      "glow": 0,
+      "bowDraw": 0
+    }
+  },
+  "remote-bow-draw": {
+    "saw": "draw",
+    "at": {
+      "id": 1,
+      "action": "draw",
+      "animLevel": 0,
+      "lod": 0,
+      "weapon": "bow",
+      "x": 1438.94,
+      "y": 154.68,
+      "z": 2213.66,
+      "glow": 0,
+      "bowDraw": 0.9707728727730337
+    }
+  },
+  "remote-spear": {
+    "saw": "thrust",
+    "at": {
+      "id": 1,
+      "action": "thrust",
+      "animLevel": 0,
+      "lod": 0,
+      "weapon": "spear",
+      "x": 1438.94,
+      "y": 154.68,
+      "z": 2213.66,
+      "glow": 0,
+      "bowDraw": 0
+    }
+  },
+  "remote-parry": {
+    "saw": "parry",
+    "at": {
+      "id": 1,
+      "action": "parry",
+      "animLevel": 0,
+      "lod": 0,
+      "weapon": "sword",
+      "x": 1438.94,
+      "y": 154.68,
+      "z": 2213.66,
+      "glow": 0,
+      "bowDraw": 0
+    }
+  },
+  "both": {
+    "saw": "slash",
+    "at": {
+      "id": 1,
+      "action": "slash",
+      "animLevel": 0,
+      "lod": 0,
+      "weapon": "sword",
+      "x": 1438.94,
+      "y": 154.68,
+      "z": 2213.66,
+      "glow": 0,
+      "bowDraw": 0
+    }
+  }
+}

@@ -2,6 +2,7 @@
 import { useRef } from 'react';
 import { useAppStore } from '../stores/appStore';
 import { ABOVE_HOTBAR, ensureHudLayoutCss, useHudHeight } from './layout';
+import { CameraSettings } from './ViewHud';
 
 export function Crosshair() {
   ensureHudLayoutCss(); // playtest 1: the shared HUD layout variables (hud/layout.ts)
@@ -32,7 +33,11 @@ export function LockHint() {
       data-testid="lock-hint"
       style={{ position: 'fixed', left: '50%', bottom: ABOVE_HOTBAR, transform: 'translateX(-50%)', width: 'max-content', maxWidth: 'min(calc(2 * var(--ls-center-half, 260px)), calc(100vw - 32px))', boxSizing: 'border-box', padding: '6px 12px', borderRadius: 4, background: 'rgba(8,10,16,0.6)', color: '#e9ecef', font: '13px/1.35 system-ui, sans-serif', textAlign: 'center', pointerEvents: 'none', zIndex: 10 }}
     >
-      <b>Click to look around</b> · WASD move · Shift sprint · Space jump (again in the air: double jump, then glide) · G glider · hold W into a cliff to climb
+      <b>Click to look around</b> · WASD move · Shift sprint · Space jump (again in the air: double jump, then glide) · G glider · hold W into a cliff to climb · T third person
+      {/* playtest 2: the camera settings, clickable while the mouse is free */}
+      <div style={{ marginTop: 5 }}>
+        <CameraSettings />
+      </div>
     </div>
   );
 }
