@@ -52,7 +52,8 @@ leaves nothing to undo), and for 50 random streams the final subscriptions
 are the zone's last sets whether passes run per message or per random burst.
 
 `TestVoiceAcrossProcesses` checks: `voice_token` URL, room and grants (publish
-for accounts, listen-only for local profiles); that each change reaches
+for accounts and, since playtest 2, local profiles; listen-only for local
+profiles with `LODESTONE_VOICE_LOCAL_LISTEN_ONLY=1`); that each change reaches
 LiveKit exactly once with two processes running (one leader); that an
 earshot message becomes the right `UpdateSubscriptions` calls within 500 ms
 (measured: under 1 ms), that a delta unsubscribes, and that a block in

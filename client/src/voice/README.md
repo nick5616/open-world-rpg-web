@@ -42,8 +42,10 @@ G3 integration fix: underground, samples in open cave air (`GroundQuery.caveAir`
 - Voice activation (settings, opt-in): choosing it is the consent to open
   the mic; the gate follows the local level meter (the-circle thresholds,
   450 ms hangover).
-- Local profiles (and players muted by a moderator) get listen-only tokens:
-  the HUD says "Listen-only" and V does nothing.
+- Players muted by a moderator get listen-only tokens (the client reads the
+  token's `video.canPublish`): the HUD says "Listen-only" and V does
+  nothing. Local profiles talk like accounts since playtest 2, unless the
+  server sets `LODESTONE_VOICE_LOCAL_LISTEN_ONLY=1` (WP11's original rule).
 - Settings (Voice button): talk mode, master volume, per-player volume and
   mute (voice only, this device; `/mute Name` mutes everywhere, server-side).
   Saved in localStorage `lodestone.voice.v1`.
