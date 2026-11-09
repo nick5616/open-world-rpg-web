@@ -30,6 +30,12 @@ describe('movement sounds', () => {
     expect(walk(new MovementSounds(), 'walk', 4, { underground: 0.9 })[0]).toBe('step:hard');
   });
 
+  it('the sampled surface wins: planks in town, wading, snow', () => {
+    expect(walk(new MovementSounds(), 'walk', 4, { inTown: true, surface: 'wood' })[0]).toBe('step:wood');
+    expect(walk(new MovementSounds(), 'walk', 4, { surface: 'water' })[0]).toBe('step:water');
+    expect(walk(new MovementSounds(), 'walk', 4, { surface: 'snow' })[0]).toBe('step:snow');
+  });
+
   it('jump, double jump and a landing that scales with the fall', () => {
     const m = new MovementSounds();
     m.update(snap(), 1 / 60);
