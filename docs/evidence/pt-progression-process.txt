@@ -1,0 +1,22 @@
+Playtest 1 process-level acceptance: discovery-stamped difficulty (CR 012, decision 0021)
+Command: LODESTONE_EVIDENCE=1 go test ./server/zone -run TestZoneProcessDiscoveryDifficulty -v
+Setup: the real zone binary (two processes for part 3) on the official world (seed 20261108) with its
+atlas enemies, night and difficulty on; a scratch Postgres with migrations 0001..0021 and real
+character rows; WebSocket clients with dev tickets; world clock offset so it is 22:00.
+
+[02:38:37.693] zone A up on 55138 (world 1efb12a2-9baa-4825-8c2e-ba999a417106), world clock 22:00
+[02:38:37.713] Haven: 8 areas of 256 m around the spawn (1920, 2272)
+[02:38:38.720] Newbie (level 1) at the Haven guardian #42 (2048, 2112), 205 m from the spawn: area level 1 tier 0 flags 1
+[02:38:51.622]   12 s of night: group level 1, members [moss_slime moss_slime moss_slime] (beginner table only), 0 demons within 300 m: PASS
+[02:38:51.920] Veteran (level 15) discovers the area of pack #77 (3643, 627), 2382 m from the spawn: area 46 level 17 tier 4 flags 10 by "Veteran"
+[02:38:51.923]   Postgres area_difficulty (14, 2): level 17, stamped by the Veteran at level 15
+[02:39:04.619]   12 s of night: group level >= 15, members [boar boar wolf]; 4 demons hunting the Veteran
+[02:39:06.958] zone B: Visitor (level 1) walks into the Veteran's area: area 46 level 17 flags 0 by "Veteran"
+[02:39:07.676] race for the area of bandit #1 (576, 480): zone A Racer (level 9) sees area 18 level 3 by "Rookie" flags 0; zone B Rookie (level 1) sees area 18 level 3 by "Rookie" flags 10
+[02:39:09.211] zones agree on all 22 areas both know; Postgres holds 14 stamps; zone A won 8 claims, zone B won 6 (lost 0)
+[02:39:09.211] ALL PASS
+--- PASS: TestZoneProcessDiscoveryDifficulty (46.67s)
+
+Notes: flags are Event 901 bits (1 Haven, 2 stamped just now by you; printed in binary, so 10 = stamped
+by you). Level 17 = the Veteran's 15 + the generator's region danger bonus (up to 2) at the far edge.
+The guardian site in the Haven spawned slimes (the beginner table replaces every member there).
