@@ -347,10 +347,16 @@ func (s *Server) questsAdvance(sess *session, sig *quests.Signal) []quests.Happe
 	}
 	s.qst.hap = q.log.Advance(questFacts{s, sess}, sig, s.qst.hap[:0])
 	hs := s.qst.hap
+	// Read before applying: a reward's item commit issues a local
+	// profile's save blob, which copies the log in and marks it saved
+	// (questsIntoLocal). Playtest 2: checking Dirty after the rewards meant
+	// local profiles (everyone on the live deploy) never got the new log, so
+	// the tracker, journal and markers stayed on the step they had finished.
+	changed := q.log.Dirty() || len(hs) > 0
 	for _, h := range hs {
 		s.questHappened(sess, h)
 	}
-	if q.log.Dirty() {
+	if changed || q.log.Dirty() {
 		s.sendQuestLog(sess)
 		s.saveQuests(sess)
 	}

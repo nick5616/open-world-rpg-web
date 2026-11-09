@@ -29,8 +29,69 @@ import (
 	"lodestone/server/pkg/movement"
 	"lodestone/server/pkg/proto"
 	"lodestone/server/pkg/ticket"
+	"lodestone/server/pkg/towns"
 	"lodestone/server/pkg/writebehind"
+	"lodestone/server/zone/internal/quests"
 )
+
+// Playtest 2 ("Questing is bugged"): for a local profile the blacksmith's
+// talk step completed (the toast said "Next: Mine 4 sunsteel ore", the gold
+// arrived) but the tracker, journal and markers stayed on "Talk to ...":
+// the gold's item commit issued the save blob, which marked the quest log
+// saved before questsAdvance checked it for changes, so the new log
+// (Event 950) was never sent.
+func TestLocalProfileQuestLogFollowsSteps(t *testing.T) {
+	saves, rdb := localSavesForTest(t)
+	w, g := testTowns(t)
+	ex := realExplore(t, g)
+	q := writebehind.New(100)
+	q.Log = slog.New(slog.NewTextHandler(io.Discard, nil))
+	qctx, stopQ := context.WithCancel(context.Background())
+	defer stopQ()
+	go q.Run(qctx)
+	h := newHarness(t, func(c *Config) {
+		c.Ground, c.Towns, c.Explore, c.Saves, c.Queue = g, w, ex, saves, q
+		c.TimeOffsetS = offsetFor(12)
+	})
+	si := spawnSettlement(t, w)
+	smith := npcOf(w, si, towns.RoleBlacksmith)
+	sd := w.T.NPCs[smith]
+	sx, sz := sd.WorkX+1.5*math.Cos(sd.WorkYaw), sd.WorkZ+1.5*math.Sin(sd.WorkYaw)
+
+	profile, char := "pt2-quest-profile-"+time.Now().Format("150405.000"), "pt2-quest-char"
+	defer rdb.Del(context.Background(), localsave.Key(profile))
+	st := localsave.NewCharacterState(char, testWorld, "Local", localsave.Vec3{X: sx, Y: g.HeightAt(sx, sz) + 0.3, Z: sz}, nil)
+	b0, err := saves.Issue(context.Background(), profile, char, testWorld, st.Marshal())
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw, _ := json.Marshal(b0)
+	a := h.dial("")
+	a.send(&proto.Hello{ProtocolVersion: proto.ProtocolVersion, Transport: proto.TransportWebsocket, SaveBlob: raw,
+		Ticket: h.ticket(char, "Local", func(c *ticket.Claims) { c.AccountID = ""; c.ProfileID = profile; c.IsLocalProfile = true })})
+	a.next(proto.MsgWelcome, 3*time.Second)
+	a.take(EventQuestStarted, 3*time.Second)
+	if l := a.questLog(t).find(quests.WardID); l == nil || l.Step != 0 {
+		t.Fatalf("ward at login %+v", l)
+	}
+	sid := a.npcEntityID(h, smith)
+	// As in play: the last blob is older than localSaveEvery, so the
+	// smith's gold issues one at once.
+	_ = h.srv.Do(context.Background(), func() { h.srv.byChar[char].x.lastIssue = time.Time{} })
+	a.send(&proto.Interact{TargetKind: InteractNPC, TargetID: uint64(sid), Action: ActionTalk})
+	if s := a.take(EventQuestStep, 3*time.Second); s.Value != 1 {
+		t.Fatalf("talk step %+v", s)
+	}
+	deadline := time.Now().Add(2 * time.Second)
+	for {
+		if l := a.questLog(t).find(quests.WardID); l != nil && l.Step == 1 {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("the log the client holds is still on step %d after the talk step", a.questLog(t).find(quests.WardID).Step)
+		}
+	}
+}
 
 func localSavesForTest(t *testing.T) (*localsave.Store, *redis.Client) {
 	t.Helper()
