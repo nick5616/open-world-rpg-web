@@ -185,9 +185,11 @@ func (s *Server) difficultyTick(tick uint32) {
 			}
 		}
 	}
-	for sess := range d.seen {
-		if sess.left {
-			delete(d.seen, sess)
+	if tick%30 == 0 {
+		for sess := range d.seen {
+			if sess.left {
+				delete(d.seen, sess)
+			}
 		}
 	}
 	reach := combatdefs.D.Difficulty.StampReachM
@@ -241,8 +243,9 @@ func (s *Server) difficultyJoin(sess *session) {
 		return
 	}
 	c := s.diff.m.Cell(sess.ent.Move.Pos.X, sess.ent.Move.Pos.Z)
+	s.diff.seen[sess] = &areaSeen{cell: c}
 	if _, ok := s.diff.m.Level(c); ok {
-		s.sendArea(sess, c, false)
+		s.sendArea(sess, c, false) // marks it sent: the tick won't repeat it
 	}
 }
 
