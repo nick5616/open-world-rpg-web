@@ -38,7 +38,7 @@ function LevelUpFanfare() {
   }, [id]);
   if (!f || introUp) return null; // shown after the discovery card (the store holds it meanwhile)
   return (
-    <div key={f.id} data-testid="levelup-fanfare" className="pt-fanfare" style={{ position: 'fixed', top: '15%', left: '50%', transform: 'translateX(-50%)', zIndex: 40, pointerEvents: 'none', textAlign: 'center', ['--pt-ms' as string]: `${FANFARE_MS}ms` }}>
+    <div key={f.id} data-testid="levelup-fanfare" className="pt-fanfare" style={{ position: 'fixed', top: '15%', left: '50%', transform: 'translateX(-50%)', zIndex: 20, pointerEvents: 'none', textAlign: 'center', ['--pt-ms' as string]: `${FANFARE_MS}ms` }}>
       <div style={{ font: '600 15px Georgia, serif', letterSpacing: 6, color: GOLD, textShadow: '0 0 12px rgba(255,209,102,0.7)' }}>LEVEL UP</div>
       <div style={{ font: '700 64px Georgia, serif', color: '#fff8e1', lineHeight: 1.05, textShadow: '0 0 24px rgba(255,209,102,0.9), 0 2px 4px #000' }}>Level {f.level}</div>
       <div style={{ font: 'italic 16px Georgia, serif', color: '#f1f3f5', margin: '4px 0 10px', textShadow: '0 1px 3px #000' }}>You feel stronger.</div>
