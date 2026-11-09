@@ -35,8 +35,11 @@ func monoNow() int64 {
 	if qpfFreq == 0 {
 		return portableNow()
 	}
+	// SyscallN, not LazyProc.Call: Call's arguments escape, so &c was a
+	// heap allocation per call, ~9 MB/s of garbage from the spin tail alone
+	// (G5 4 vCPU, live zone allocation profile).
 	var c int64
-	_, _, _ = qpc.Call(uintptr(unsafe.Pointer(&c)))
+	_, _, _ = syscall.SyscallN(qpc.Addr(), uintptr(unsafe.Pointer(&c)))
 	d := c - qpcBase
 	// Split to avoid overflow: d*1e9 overflows int64 after ~15 min at 10 MHz.
 	return d/qpfFreq*1e9 + d%qpfFreq*1e9/qpfFreq

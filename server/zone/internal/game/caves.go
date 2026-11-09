@@ -57,9 +57,17 @@ func (s *Server) caveTick(tick uint32) {
 	if cw == nil {
 		return
 	}
-	for _, e := range s.ents {
+	// G5: every entity's cave system on the workers (a ground query each,
+	// ~0.3 ms serial for 2,300 entities on the soak's terrain); each item
+	// writes only its own entity, the cave world is only read (movement
+	// already queries it on the workers).
+	parallelFor(len(s.ents), s.phaseWorkers(len(s.ents)), viewChunk, func(_, i int) {
+		e := s.ents[i]
 		p := e.Move.Pos
 		e.caveSys = cw.SystemAt(p.X, p.Y, p.Z)
+	})
+	for _, e := range s.ents {
+		p := e.Move.Pos
 		if e.Kind != proto.EntityKindPlayer || (tick+e.ID)%wantEveryTicks != 0 {
 			continue
 		}

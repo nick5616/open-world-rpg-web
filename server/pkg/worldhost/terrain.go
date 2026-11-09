@@ -30,8 +30,15 @@ type Terrain struct {
 	w   *World
 	opt TerrainOptions
 
-	mu    sync.RWMutex
+	mu    sync.RWMutex // writers (insert, evict) and whole-map readers
 	tiles map[uint32]*tile
+	// index is tiles as a flat array over every chunk chunkOf accepts, read
+	// without the lock (G5): HeightAt runs ~10,000 times a tick on the
+	// tick's workers (movement, enemy steering, views), and the RWMutex's
+	// reader count plus a shared hit counter were three contended atomics
+	// per query, cache lines bouncing between the zone's cores. Written
+	// under mu together with tiles.
+	index []atomic.Pointer[tile]
 
 	qmu     sync.Mutex
 	pending map[uint32]bool
@@ -42,8 +49,36 @@ type Terrain struct {
 	stop chan struct{}
 	wg   sync.WaitGroup
 
-	hits, misses, generated, evicted, genErrors, dropped atomic.Int64
-	genNanos, genMaxNanos                                atomic.Int64
+	hits                                           hitCounter
+	misses, generated, evicted, genErrors, dropped atomic.Int64
+	genNanos, genMaxNanos                          atomic.Int64
+}
+
+// hitCounter is a counter sharded by chunk, so workers querying different
+// chunks do not write the same cache line (G5).
+type hitCounter [16]struct {
+	n atomic.Int64
+	_ [56]byte
+}
+
+func (h *hitCounter) add(cx, cz int32) { h[uint32(cx^cz*5)&15].n.Add(1) }
+
+func (h *hitCounter) load() int64 {
+	var n int64
+	for i := range h {
+		n += h[i].n.Load()
+	}
+	return n
+}
+
+const indexSpan = maxChunk - minChunk + 1
+
+// slot is the index entry of chunk (cx, cz), or nil outside chunkOf's range.
+func (t *Terrain) slot(cx, cz int32) *atomic.Pointer[tile] {
+	if cx < minChunk || cx > maxChunk || cz < minChunk || cz > maxChunk {
+		return nil
+	}
+	return &t.index[int(cx-minChunk)*indexSpan+int(cz-minChunk)]
 }
 
 type tile struct {
@@ -80,6 +115,7 @@ func NewTerrain(w *World, opt TerrainOptions) *Terrain {
 	t := &Terrain{
 		w: w, opt: opt,
 		tiles:   map[uint32]*tile{},
+		index:   make([]atomic.Pointer[tile], indexSpan*indexSpan),
 		pending: map[uint32]bool{},
 		queue:   make(chan uint32, opt.QueueLen),
 		stop:    make(chan struct{}),
@@ -113,18 +149,14 @@ func unkey(k uint32) (int32, int32) { return int32(int16(k >> 16)), int32(int16(
 func (t *Terrain) HeightAt(x, z float64) float64 {
 	cx, cz, ok := chunkOf(x, z)
 	if ok {
-		k := key(cx, cz)
-		t.mu.RLock()
-		tl := t.tiles[k]
-		t.mu.RUnlock()
-		if tl != nil {
-			t.hits.Add(1)
+		if tl := t.slot(cx, cz).Load(); tl != nil {
+			t.hits.add(cx, cz)
 			if e := t.epoch.Load(); tl.used.Load() != e {
 				tl.used.Store(e)
 			}
 			return tl.c.Height(x, z)
 		}
-		t.request(k)
+		t.request(key(cx, cz))
 	}
 	t.misses.Add(1)
 	return t.w.CollisionHeight(x, z)
@@ -135,15 +167,11 @@ func (t *Terrain) HeightAt(x, z float64) float64 {
 func (t *Terrain) WaterAt(x, z float64) float64 {
 	cx, cz, ok := chunkOf(x, z)
 	if ok {
-		k := key(cx, cz)
-		t.mu.RLock()
-		tl := t.tiles[k]
-		t.mu.RUnlock()
-		if tl != nil {
-			t.hits.Add(1)
+		if tl := t.slot(cx, cz).Load(); tl != nil {
+			t.hits.add(cx, cz)
 			return tl.c.WaterHeight(x, z)
 		}
-		t.request(k)
+		t.request(key(cx, cz))
 	}
 	t.misses.Add(1)
 	return t.w.WaterHeight(x, z)
@@ -151,9 +179,11 @@ func (t *Terrain) WaterAt(x, z float64) float64 {
 
 // Chunk returns the cached chunk, if present (never generates).
 func (t *Terrain) Chunk(cx, cz int32) (*Chunk, bool) {
-	t.mu.RLock()
-	tl := t.tiles[key(cx, cz)]
-	t.mu.RUnlock()
+	sl := t.slot(cx, cz)
+	if sl == nil {
+		return nil, false
+	}
+	tl := sl.Load()
 	if tl == nil {
 		return nil, false
 	}
@@ -312,6 +342,9 @@ func (t *Terrain) insert(k uint32, c *Chunk) {
 	tl.used.Store(t.epoch.Load())
 	t.mu.Lock()
 	t.tiles[k] = tl
+	if sl := t.slot(unkey(k)); sl != nil {
+		sl.Store(tl)
+	}
 	n := len(t.tiles)
 	t.mu.Unlock()
 	if n <= t.opt.Capacity {
@@ -337,6 +370,9 @@ func (t *Terrain) insert(k uint32, c *Chunk) {
 		}
 		if v := t.tiles[c.k]; v != nil && v.used.Load() == c.used {
 			delete(t.tiles, c.k)
+			if sl := t.slot(unkey(c.k)); sl != nil {
+				sl.Store(nil)
+			}
 			t.evicted.Add(1)
 			drop--
 		}
@@ -369,7 +405,7 @@ func (t *Terrain) Stats() TerrainStats {
 	t.qmu.Unlock()
 	s := TerrainStats{
 		Chunks: n, Pending: p,
-		Hits: t.hits.Load(), Misses: t.misses.Load(), Generated: t.generated.Load(),
+		Hits: t.hits.load(), Misses: t.misses.Load(), Generated: t.generated.Load(),
 		Evicted: t.evicted.Load(), Dropped: t.dropped.Load(), GenErrors: t.genErrors.Load(),
 		GenMaxMs: float64(t.genMaxNanos.Load()) / 1e6, WasmQueries: t.w.WasmQueries(),
 	}

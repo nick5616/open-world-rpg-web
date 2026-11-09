@@ -49,6 +49,11 @@ type Entity struct {
 	q         snapshot.EntState
 	nameID    uint32 // WP19: snapshot.NameID(nameOf), cached for the snapshot phase
 	nameOf    string
+	// G5 (snapshots.go buildViews): the state published to the snapshot
+	// History last, the tick it was, and since when it has been unchanged.
+	histQ     snapshot.EntState
+	histTick  uint32
+	histSince uint32
 
 	// View extrapolation (WP06): what OTHER clients see when this player's
 	// input is late. See updateView.

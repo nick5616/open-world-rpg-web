@@ -159,6 +159,7 @@ try {
       LODESTONE_ZONE_DEV_SPAWN: '1',
       LODESTONE_ZONE_MAX_PLAYERS: '1200',
       LODESTONE_ZONE_EARSHOT: '0',
+      LODESTONE_ZONE_NO_DEMONS: '1', // night demons would kill bots and teleport them to spawn (real clock)
       LODESTONE_ZONE_DEBUG_URL: z.debug,
       LODESTONE_ZONE_PPROF: CPU_PROFILE ? '1' : '0', // --cpu-profile: a mid-run profile of the busiest zone
     };

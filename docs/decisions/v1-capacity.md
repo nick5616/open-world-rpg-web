@@ -28,6 +28,8 @@ Remaining for G5: (1) decide the zone size (4 cores per zone, or accept scenario
 
 **Voice under thailand, resolved (branch `g5-voice-netsim`, local, no VMs).** Not capacity and not netsim: the voice soak's spawned zone ran the WP15 world clock, and at night (every real hour :46:15-:15:00) demons killed the standing bots; the zone's respawn teleports moved them up to 98 m from where the bots kept simulating themselves, which produced the extra decisions and the zone flaps. The Linux clean run was by day, thailand run 1 straddled dusk, run 2 was night; all 34 "missed" were decisions in the last second before the analysis cut-off. Same code locally: thailand by day 862/862 PASS, by night FAIL (35 missed, 4 flaps), clean by night FAIL too. Under thailand the zone's positions lag at most 2.2 m and never backwards, so the earshot rules (40/48 m, cap 12) need no change. The harness now spawns the zone without demons, follows (and flags) teleports, and gives listener events a 2.5 s tail after "end". After, at night, 3 runs each: thailand 874/866/874 and clean 868/876/868 decisions all reflected, 0 flaps, p99 275-319 ms on the desktop: **scenario 4 voice PASS**. Evidence `docs/evidence/g5-voice-netsim-summary.md`. So (2) is closed; (1) and (3) remain.
 
+**Scenario 1 at 4 vCPU, follow-up (branch `g5-tick-vcpu4`, desktop pinned to two cores + SMT):** a cheaper tick (in-process 2C/4T p50 6.55 -> 6.14 ms, p99 10.48 -> 9.38 ms, CPU per tick -8 %) and GC pacing (GOGC 300 + soft limit) took live scenario 1 on 2C/4T from FAIL 3/3 (worst p99 12.2-14.7 ms) to PASS 2/3 (11.0 / 11.4 ms; the third run hit outside bursts). Details in "4 vCPU follow-up" at the end of this doc; a Linux confirmation run is still needed before (1) is settled.
+
 ## Second pass (WP19b, 2026-11-09)
 
 The second pass fixed the four G5 failures the first pass left (serial tick, downlink headroom, uneven zones after failover, client long tasks) and re-ran everything. **The machine was much busier than on 2026-11-08**: other agents ran headless Chromium (G4 acceptance) and their own soaks during most runs, and the same main-branch zone binary measured 2-3x slower than the day before (scenario 1 baseline today p99 12.4-13.7 ms vs 11.3 yesterday; under thailand p50 24-27 ms vs 10 ms; scenario 2 baseline busiest zone p99 276 ms vs 13 ms). So every live comparison below is **A/B on the same day**, baseline = the main-branch zone binary at WP19b start (`--zone-bin`), and the in-process benchmark is the noise-free reference.
@@ -155,7 +157,7 @@ Towns (`wp19-town-drawcalls.txt`): 167-292 draw calls per view, frame 3.1-3.6 ms
 
 - **One zone process on 4 vCPU**: ~300-430 players spread over its regions with normal activity (scenario 2: 430 players, tick p99 13.4 ms, 343 players 10.5 ms, on the loaded desktop). Plan for **300 per zone** (2x spec 9's 150 soft cap per region) and alert at p99 > 10 ms.
 - **Worst-case density** (300 players and 2,000 awake enemies inside one 600 m disc): p50 ~9 ms, p99 at the budget in quiet windows. It fits a 4 vCPU zone only with nothing else on those cores.
-- **Memory**: a zone with 300 clients in one crowd holds ~660 MB of snapshot baselines (32 frames x ~1,300 entities x 40 B per client) plus the terrain cache: size zone VMs at >= 2 GB per zone process.
+- **Memory**: a zone with 300 clients in one crowd holds ~660 MB of snapshot baselines (32 frames x ~1,300 entities x 40 B per client) plus the terrain cache: size zone VMs at >= 2 GB per zone process (>= 3 GB since the G5 4 vCPU follow-up: GOGC 300 lets the heap reach ~4x live, baselines are ~40 % smaller).
 - **v1 world (1,000 CCU)**: 4 zone processes (one per 1024 m stripe, as the director plans today) = 16 vCPU for zones, plus Postgres, Redis, social and LiveKit (2-4 vCPU at 1,000 CCU; LiveKit to its own VM above ~100 concurrent speakers).
 
 ## Bandwidth per player (measured)
@@ -194,3 +196,43 @@ Egress dominates from ~100 CCU up, as spec 13 predicted; the static IP question 
 6. **Voice**: LiveKit on its own VM above ~100 concurrent speakers; region-sharded rooms beyond 1,000 CCU (decision 0011).
 7. **Egress**: standard-tier networking (~30 % cheaper) once latency is acceptable from the target regions; keep hashed assets on the CDN.
 8. ~~**Client shader warm-up.**~~ Done in WP19b (`client/src/world/warmup.ts`): 0 traversal long tasks, 0 turn hitches; keep `warmExtras.ts` in step with new materials (the traversal benchmark lists every program linked during play).
+
+## 4 vCPU follow-up (G5, 2026-11-09): scenario 1 on two cores + SMT
+
+Branch `g5-tick-vcpu4`. The G5 Linux measurement left scenario 1 failing on a real 4 vCPU slice (2 cores + their SMT siblings: worst p99 12.96-13.24 ms, in-process p99 11.47 ms) while passing on 4 whole cores. This pass makes the tick cheaper on exactly that shape, with no change to behavior or the wire, and measures it on the desktop pinned to two cores' hyperthread pairs (no cloud resources). Evidence: `docs/evidence/g5-tick-vcpu4-*`, overview `g5-tick-vcpu4-summary.md`.
+
+**Reproduction.** The i7-11700K's logical CPUs 2k and 2k+1 are one core (`GetLogicalProcessorInformation`); `start /affinity F000` (CPUs 12-15) is a 4 vCPU slice, `5500` four cores. The in-process benchmark on F000 reproduces the Linux 4 vCPU result within ~10 % (p50 6.4-6.6, p99 10.2-11.6 ms vs 7.27 / 11.47); the live soak runs with `--zone-affinity F000 --bots-affinity 0FFF`. Base and after alternate on the same machine; Go's clock on Windows steps ~0.5 ms, so the benchmark now also reports CPU cycles per tick.
+
+### What changed (all exact: `TestWireDigest` gives identical bytes on main and after)
+
+| Change | Where | Why |
+| --- | --- | --- |
+| Snapshot baselines refer to a shared per-tick state store (`History`): frames hold 24-byte references (id, tick, index, fingerprint) instead of 40-byte copies; references older than 16 ticks are carried into the encoder's own arena, so every state a usable baseline refers to is younger than the 64 kept ticks. "Changed since the baseline" comes from the fingerprint and the entity's unchanged-since tick, without reading the baseline state; baseline names compare by id | `server/pkg/snapshot` (`compact.go`, `codec.go`), `internal/game/snapshots.go` | the 40-byte copy per entity per client per tick, then the random baseline reads, were the encoder's memory traffic; baseline memory per crowded client -40 % (step 5 of "What to do when load grows") |
+| Due rings once per entity per tick (`aoi.DueAll`); bitset filled straight from the grid (`QueryMark`); the second grid skips the 200 m square's corner cells (`QueryMarkWithin`); the newest frame is binary-searched only for players at the far ring's edge (`aoi.UsesKnown`) | `internal/aoi`, `snapshots.go` | a modulo, a closure call and a frame walk per candidate per client |
+| Terrain cache read without a lock: flat atomic index over every chunk, hit counter sharded by chunk | `server/pkg/worldhost/terrain.go` | ~10,000 ground queries a tick on the workers each did three contended atomics (RWMutex reader count, shared counter) |
+| Every entity's cave system on the workers | `internal/game/caves.go` | a ground query per entity, serial |
+| `spawnTick` marks groups with a pass number and skips groups already marked | `internal/combat/world.go` | 300 players x 500 camps: ~150,000 `Hypot` and ~40,000 map writes once a second, +1.2 ms on every 30th tick (inside p99) |
+| No allocation per ground query (the chem overlay boxed its inner ground on every call) or per QPC clock read (Windows) | `server/zone/night.go`, `server/pkg/gameloop/clock_windows.go` | ~11 MB/s of garbage on the live zone |
+| Name lookups without a lock | `server/pkg/snapshot/compact.go` | an RWMutex reader count written by every snapshot worker |
+| **Zone GC pacing**: GOGC 300 and a 3 GiB soft memory limit by default (`LODESTONE_ZONE_GOGC`, `_MEMLIMIT_MB`; the standard `GOGC` / `GOMEMLIMIT` win when set) | `server/zone/gc.go` | at GOGC 100 the crowded zone (~40 MB/s allocated on ~450 MB live) collected every ~15 s; each mark phase takes one of the four Ps, on 2C/4T a hyperthread whose sibling runs a tick worker |
+| Soak drivers start zones with `LODESTONE_ZONE_NO_DEMONS=1` | `tools/bots/scale-soak.mjs`, `handoff-soak.mjs` | at night (real clock, :46:15-:15:00) demons kill standing bots and the zone teleports them; the G5 Linux S1 runs (15:50-16:30 UTC) ran at night with demons on |
+
+### Results (2C/4T unless noted)
+
+| | Base (main) | After |
+| --- | --- | --- |
+| In-process p50 / p99, 2C/4T (5 runs, medians) | 6.55 / 10.48 ms | **6.14 / 9.38 ms** (p99 8.46-9.54) |
+| In-process p50 / p99, 4 cores | 5.18 / 8.61 ms | **4.51 / 7.35 ms** |
+| In-process CPU per tick, 2C/4T / 4 cores | 86.4 / 66.1 Mcycles | 79.1 / 56.4 Mcycles (-8 % / -15 %) |
+| In-process phase means, 2C/4T: snapshots, combat, inputs | 5.12, 1.08, 0.34 ms | 4.93, 0.93, 0.21 ms |
+| In-process p99 of snapshots / combat, 2C/4T | 8.02 / 2.68 ms | 7.24 / 2.07 ms |
+| **Live scenario 1, worst 60 s p99** (3 runs each, interleaved) | 14.71 / 12.24 / 13.94 ms; 28 / 5 / 28 of 28 windows over 12: **FAIL 3/3** | **11.02** / 15.72 / **11.35** ms; 0 / 17 / 0 windows over 12: **PASS 2/3** (run 2: bursts from outside the zone from t = 85 s, 24-40 ms ticks with every phase inflated) |
+| Live p50 | 7.94-9.41 ms | 7.35-8.35 ms |
+| Live phase means: snapshots, combat, inputs, world | 4.36-4.70, 1.39-1.50, 1.09-1.21, 0.75-0.85 ms | 4.25-4.65, 1.22-1.39, 0.79-0.88, 0.72-0.76 ms |
+| GC cycles in the 135 s steady state | 8-9 | 3 |
+
+The GC A/B on one build: GOGC 100 failed with 22 of 28 windows over 12 ms (worst 14.33), GOGC 400 passed with 0 (worst 11.98). Every live run with ~9 collections in the window failed, every quiet run with 2-3 passed: on two cores with SMT the collector, not the tick's code, sat in the p99. The code changes take ~0.4-0.8 ms off the live p50 and the periodic spikes; the pacing takes out most of the rest. Downlink max 150.4-150.6 kbps in every run.
+
+**Behavior changes: none.** No AI level-of-detail was needed: in scenario 1 every enemy is within 96 m of a player (all 2,000 are awake by the spec's own wake rule), so a far-AI tier would not apply; combat tests, golden movement and the G4 loop are untouched (only `spawnTick`'s bookkeeping changed, with identical marks). The one operational change is memory: with GOGC 300 a zone's heap peaks at ~4x its live heap (this scenario: ~1.6-2 GB at ~450 MB live; the 3 GiB soft limit makes larger zones collect earlier). Size zone VMs at >= 3 GB per zone process (was 2).
+
+**Remaining risk.** (1) The desktop is not the Linux VM: on the EPYC the 4 vCPU in-process tick was ~10 % slower than here, so the expected Linux in-process p99 is ~10.3 ms (the target was ~9) and the live worst window ~11-11.5 ms: a pass, with ~0.5-1 ms of headroom rather than the ~1.6 ms the 4-core runs had. It needs the confirmation run (`tools/soak/linux/README.md`: `build.sh` now also stages `bin/game.test` and `bench-inprocess.sh` runs the in-process benchmark on both CPU sets; then `run-s1.sh vcpu4-run{1,2,3}-clean 0,1,8,9`; the drivers now disable demons). (2) A collection that lands in a window still costs ~2-4 ms on its slowest ticks; the next lever is allocation (~40 MB/s: coder/websocket's per-message contexts and timers, `io.ReadAll` per message, a fresh snapshot buffer per client per tick). (3) One more parallel phase (cave systems) is one more place for an OS-descheduled worker to hold a tick on a busy host. (4) The snapshot phase is still ~55 % of the tick; what remains is per-candidate work (classification, two merge passes, the priority heap for a budget that cannot keep up with a crowd, accumulator walks) that cannot shrink further without changing who gets which record when.

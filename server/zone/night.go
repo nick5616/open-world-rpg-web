@@ -35,13 +35,17 @@ import (
 // chemTownCaveTerrain keeps every method of the production ground (chunk
 // interest, spawns, caves) and puts the chemistry overlay (ice sheets,
 // pillars) on its surface and level views.
+// inner is the embedded ground as an interface value, made once (G5:
+// HeightAt used to convert the struct on every call, a heap allocation per
+// ground query, ~2 MB/s of garbage with 300 players and 2,000 enemies).
 type chemTownCaveTerrain struct {
 	townCaveTerrain
-	o *chem.Overlay
+	o     *chem.Overlay
+	inner movement.Ground
 }
 
 func (t chemTownCaveTerrain) HeightAt(x, z float64) float64 {
-	return chem.Ground{Inner: t.townCaveTerrain, O: t.o}.HeightAt(x, z)
+	return chem.Ground{Inner: t.inner, O: t.o}.HeightAt(x, z)
 }
 func (t chemTownCaveTerrain) AtLevel(y float64) movement.Ground {
 	return chem.Level(t.townCaveTerrain.AtLevel(y), t.o, y)
@@ -49,11 +53,12 @@ func (t chemTownCaveTerrain) AtLevel(y float64) movement.Ground {
 
 type chemTownTerrain struct {
 	townTerrain
-	o *chem.Overlay
+	o     *chem.Overlay
+	inner movement.Ground // see chemTownCaveTerrain
 }
 
 func (t chemTownTerrain) HeightAt(x, z float64) float64 {
-	return chem.Ground{Inner: t.townTerrain, O: t.o}.HeightAt(x, z)
+	return chem.Ground{Inner: t.inner, O: t.o}.HeightAt(x, z)
 }
 func (t chemTownTerrain) AtLevel(y float64) movement.Ground {
 	return chem.Level(t.townTerrain.AtLevel(y), t.o, y)
@@ -133,9 +138,9 @@ func withNight(cfg *game.Config, terrain *worldhost.Terrain, specJSON []byte, de
 		setup.Overlay.Sync(setup.Chem)
 		switch g := cfg.Ground.(type) {
 		case townCaveTerrain:
-			cfg.Ground = chemTownCaveTerrain{g, setup.Overlay}
+			cfg.Ground = chemTownCaveTerrain{g, setup.Overlay, g}
 		case townTerrain:
-			cfg.Ground = chemTownTerrain{g, setup.Overlay}
+			cfg.Ground = chemTownTerrain{g, setup.Overlay, g}
 		default:
 			cfg.Ground = chem.Ground{Inner: g, O: setup.Overlay}
 		}

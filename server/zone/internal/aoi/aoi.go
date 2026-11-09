@@ -90,6 +90,87 @@ func (g *Grid) Query(x, z, r float64, fn func(idx int32)) {
 	}
 }
 
+// QueryMark is Query setting bit idx of mark (a bitset over entity indices,
+// long enough for every index) for each entity found (G5: the snapshot
+// phase's interest gathering, without a function call per entity).
+func (g *Grid) QueryMark(x, z, r float64, mark []uint64) {
+	x0, x1 := g.cellOf(x-r), g.cellOf(x+r)
+	z0, z1 := g.cellOf(z-r), g.cellOf(z+r)
+	if (x1-x0+1)*(z1-z0+1) > len(g.used) {
+		for _, c := range g.used {
+			cx, cz := int(c)%g.n, int(c)/g.n
+			if cx < x0 || cx > x1 || cz < z0 || cz > z1 {
+				continue
+			}
+			for _, i := range g.cells[c] {
+				mark[i>>6] |= 1 << (uint32(i) & 63)
+			}
+		}
+		return
+	}
+	for cz := z0; cz <= z1; cz++ {
+		row := cz * g.n
+		for _, cell := range g.cells[row+x0 : row+x1+1] {
+			for _, i := range cell {
+				mark[i>>6] |= 1 << (uint32(i) & 63)
+			}
+		}
+	}
+}
+
+// QueryMarkWithin is QueryMark without the cells of the square that cannot
+// hold a point closer than r to (x, z) (its corners: ~20 % of a 200 m
+// query's cells). Every entity closer than r is still marked; callers that
+// drop entities at r or beyond anyway (Classify, for the second grid's kinds)
+// get the same result for less work (G5). Edge cells are never skipped:
+// they also hold positions clamped in from outside the world.
+func (g *Grid) QueryMarkWithin(x, z, r float64, mark []uint64) {
+	x0, x1 := g.cellOf(x-r), g.cellOf(x+r)
+	z0, z1 := g.cellOf(z-r), g.cellOf(z+r)
+	r2 := (r + 1e-6) * (r + 1e-6) // a hair beyond r: rounding can only make it skip less
+	// gap is the distance along one axis from v to cell c's closed span.
+	gap := func(v float64, c int) float64 {
+		lo := float64(c) * g.cellM
+		if hi := lo + g.cellM; v > hi {
+			return v - hi
+		} else if v < lo {
+			return lo - v
+		}
+		return 0
+	}
+	skip := func(cx, cz int) bool {
+		if cx == 0 || cz == 0 || cx == g.n-1 || cz == g.n-1 {
+			return false
+		}
+		dx, dz := gap(x, cx), gap(z, cz)
+		return dx*dx+dz*dz >= r2
+	}
+	if (x1-x0+1)*(z1-z0+1) > len(g.used) {
+		for _, c := range g.used {
+			cx, cz := int(c)%g.n, int(c)/g.n
+			if cx < x0 || cx > x1 || cz < z0 || cz > z1 || skip(cx, cz) {
+				continue
+			}
+			for _, i := range g.cells[c] {
+				mark[i>>6] |= 1 << (uint32(i) & 63)
+			}
+		}
+		return
+	}
+	for cz := z0; cz <= z1; cz++ {
+		row := cz * g.n
+		for cx := x0; cx <= x1; cx++ {
+			cell := g.cells[row+cx]
+			if len(cell) == 0 || skip(cx, cz) {
+				continue
+			}
+			for _, i := range cell {
+				mark[i>>6] |= 1 << (uint32(i) & 63)
+			}
+		}
+	}
+}
+
 // Ring is an interest ring (spec 9 table).
 type Ring uint8
 
@@ -146,6 +227,13 @@ func Classify(d float64, kind proto.EntityKind, known, sameParty bool) Ring {
 	return None
 }
 
+// UsesKnown reports whether Classify's result for an entity at distance d
+// depends on its known argument (the far ring's leave margin, players
+// only). Callers for whom "known" is a lookup skip it otherwise (G5).
+func UsesKnown(d float64, kind proto.EntityKind) bool {
+	return kind == proto.EntityKindPlayer && d >= constants.RingFarM && d < constants.RingFarM+LeaveMarginM
+}
+
 // divisors: ticks between updates for each ring at TICK_RATE_HZ.
 var divisors = [...]uint32{
 	None:  0,
@@ -165,3 +253,22 @@ func Due(r Ring, tick, id uint32) bool {
 	}
 	return (tick+id)%d == 0
 }
+
+// DueMask is Due for every ring at once: bit r is set iff Due(r, tick, id).
+// The zone computes it once per entity per tick instead of once per entity
+// per client (G5).
+type DueMask uint8
+
+// DueAll returns the DueMask of entity id at tick.
+func DueAll(tick, id uint32) DueMask {
+	var m DueMask
+	for r := Near; r <= Party; r++ {
+		if Due(r, tick, id) {
+			m |= 1 << r
+		}
+	}
+	return m
+}
+
+// Has reports whether ring r is due.
+func (m DueMask) Has(r Ring) bool { return m&(1<<r) != 0 }

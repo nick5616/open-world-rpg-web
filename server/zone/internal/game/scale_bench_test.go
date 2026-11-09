@@ -250,15 +250,27 @@ func BenchmarkScale(b *testing.B) {
 			durs := make([]time.Duration, 0, b.N)
 			bytes0 := w.bytesOut()
 			var phaseSum [phCount]time.Duration // WP19b: where the tick goes
+			phaseDurs := [phCount][]time.Duration{}
 			b.ReportAllocs()
 			b.ResetTimer()
+			cpu0 := processCPU()
 			for i := 0; i < b.N; i++ {
 				durs = append(durs, w.step())
 				for p, d := range w.srv.phases.cur {
 					phaseSum[p] += d
+					phaseDurs[p] = append(phaseDurs[p], d)
 				}
 			}
+			cpu := processCPU() - cpu0
 			b.StopTimer()
+			// G5: the process's CPU per tick (all workers: the tick's total
+			// work, what two SMT siblings have to share; ms on Linux, Mcycles
+			// on Windows) and the p99 of the two big phases.
+			b.ReportMetric(cpu/float64(b.N), cpuUnit)
+			for _, p := range []int{phSnapshots, phCombat} {
+				slices.Sort(phaseDurs[p])
+				b.ReportMetric(float64(phaseDurs[p][min(b.N-1, b.N*99/100)].Microseconds())/1000, phaseNames[p]+"-p99-ms")
+			}
 			for p, name := range phaseNames {
 				if p != phTowns && p != phNight {
 					b.ReportMetric(float64(phaseSum[p].Microseconds())/1000/float64(b.N), name+"-ms")

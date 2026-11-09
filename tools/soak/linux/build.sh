@@ -14,6 +14,8 @@ for spec in zone:./server/zone director:./server/director social:./server/social
   seedbots:./tools/bots/cmd/seedbots mintworld:./server/pkg/cmd/mintworld devdb:./server/account/cmd/devdb; do
   go build -o "$STAGE/bin/${spec%%:*}" "${spec#*:}"
 done
+# The in-process scenario 1 benchmark (bench-inprocess.sh).
+go test -c -o "$STAGE/bin/game.test" ./server/zone/internal/game
 # The voice soak is its own module (outside go.work).
 (cd server/social/voice/voicebots && GOWORK=off go build -o "$STAGE/bin/voicebots" .)
 test -f worldgen/pkg/worldgen.wasm || node worldgen/scripts/build-wasm.mjs

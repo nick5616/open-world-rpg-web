@@ -21,6 +21,10 @@ type Candidate struct {
 	// NameID is NameID(State.Name) when the caller caches it (WP19: the
 	// zone interns once per entity); 0 with a non-empty name = look it up.
 	NameID uint32
+	// Ref is 1 + the entity's index in the History store opened for this
+	// tick (G5: the encoder's frames then refer to the shared state instead
+	// of copying it); 0 = no shared copy, the encoder keeps its own.
+	Ref uint32
 }
 
 // nameID is c's interned name.
@@ -34,9 +38,14 @@ func (c *Candidate) nameID() uint32 {
 // Encoder is the zone's per-client snapshot state. Not goroutine-safe; the
 // tick owns it.
 type Encoder struct {
-	r    encRing // compact, pointer-free frames (compact.go)
+	r    encRing // compact, pointer-free frames of state references (compact.go)
 	last uint32
 	snap proto.Snapshot
+	// States the frames refer to (compact.go): the zone's shared History
+	// and this encoder's own per-tick arena.
+	hist    *History
+	useHist bool // hist holds this Build's tick
+	own     [histLen]histSlot
 
 	// Byte budget (decision 0005). Zero perTick = unlimited.
 	perTick  float64
@@ -50,37 +59,54 @@ type Encoder struct {
 	accIDs, accIDs2   []uint32
 	accVals, accVals2 []float64
 	work              []pendingRec
+	recs              []filledRec
 	order             []prioIdx
 	stats             BudgetStats
 }
 
+// SetHistory makes the encoder refer to h's states for candidates with a
+// Ref (G5, compact.go). Set it once; a reset encoder (zero value) has none.
+// Changing it to another History while frames refer to the old one would
+// break them, so a different h after the first is ignored.
+func (e *Encoder) SetHistory(h *History) {
+	if e.hist == nil {
+		e.hist = h
+	}
+}
+
 // pendingRec is one record the client could get this tick. WP19: the record
 // itself (Diff + RecordSize) is computed only when the selection reaches it
-// (fill), so the many records a dense crowd defers cost no diffing.
+// (fill), so the many records a dense crowd defers cost no diffing. G5: kept
+// small (the record lives in recs once made), since a dense crowd has
+// hundreds of these per client per tick and most are only ranked.
 type pendingRec struct {
-	id   uint32
-	base *encEnt // nil: first sight
-	cur  *EntState
-	name uint32 // cur's name id
-	rec  proto.EntityRecord
-	size int
 	prio float64
-	made bool
+	base int32  // index of the baseline entry in bents, -1 first sight
+	cur  int32  // index in interest
+	name uint32 // the candidate's name id
+	rec  int32  // 1 + index in Encoder.recs once filled
 	send bool
 }
 
-// fill computes the record and its size once.
-func (w *pendingRec) fill() {
-	if !w.made {
-		if w.base == nil {
-			w.rec = Diff(nil, w.cur)
+type filledRec struct {
+	rec  proto.EntityRecord
+	size int
+}
+
+// fill computes w's record and its size once.
+func (e *Encoder) fill(w *pendingRec, interest []Candidate, bents []entRef) *filledRec {
+	if w.rec == 0 {
+		cur := interest[w.cur].State
+		var r proto.EntityRecord
+		if w.base < 0 {
+			r = Diff(nil, cur)
 		} else {
-			b := w.base.state()
-			w.rec = Diff(&b, w.cur)
+			r = diffEnc(e.state(&bents[w.base]), cur, w.name)
 		}
-		w.size = RecordSize(&w.rec)
-		w.made = true
+		e.recs = append(e.recs, filledRec{rec: r, size: RecordSize(&r)})
+		w.rec = int32(len(e.recs))
 	}
+	return &e.recs[w.rec-1]
 }
 
 type prioIdx struct {
@@ -208,7 +234,7 @@ func (e *Encoder) Last() *Frame {
 	}
 	out := &Frame{Tick: f.Tick, Self: f.Self}
 	for i := range f.Ents {
-		out.Ents = append(out.Ents, f.Ents[i].state())
+		out.Ents = append(out.Ents, e.state(&f.Ents[i]).state())
 	}
 	return out
 }
@@ -229,12 +255,15 @@ func (e *Encoder) Build(tick, ackTick, ackSeq uint32, serverTime float64, self *
 	base := e.baseline(tick, ackTick)
 	out := e.r.slot(tick)
 	e.last = tick
+	e.useHist = e.hist != nil && e.hist.Tick() == tick
+	own := &e.own[tick%histLen] // held tick-64's states: no usable frame refers to them
+	own.tick, own.ents = tick, own.ents[:0]
 
 	s := &e.snap
 	s.Tick, s.AckInputSeq, s.ServerTime = tick, ackSeq, serverTime
 	s.Entities, s.Removed = s.Entities[:0], s.Removed[:0]
 
-	var bents []encEnt
+	var bents []entRef
 	if base != nil {
 		s.BaselineTick = base.Tick
 		s.Self = DiffSelf(&base.Self, self)
@@ -247,7 +276,7 @@ func (e *Encoder) Build(tick, ackTick, ackSeq uint32, serverTime float64, self *
 	out.Self.Mask = 0
 
 	if e.perTick > 0 {
-		e.buildBudgeted(s, out, bents, interest)
+		e.buildBudgeted(tick, s, out, bents, interest)
 		return s
 	}
 
@@ -257,7 +286,7 @@ func (e *Encoder) Build(tick, ackTick, ackSeq uint32, serverTime float64, self *
 		case j >= len(bents) || (i < len(interest) && interest[i].State.ID < bents[j].ID):
 			c := &interest[i]
 			s.Entities = append(s.Entities, Diff(nil, c.State))
-			out.Ents = append(out.Ents, toEnc(c.State, c.nameID()))
+			out.Ents = append(out.Ents, e.refCur(tick, c, c.nameID()))
 			i++
 		case i >= len(interest) || bents[j].ID < interest[i].State.ID:
 			s.Removed = append(s.Removed, bents[j].ID)
@@ -266,19 +295,30 @@ func (e *Encoder) Build(tick, ackTick, ackSeq uint32, serverTime float64, self *
 			c, b := &interest[i], &bents[j]
 			if c.Due {
 				n := c.nameID()
-				if !b.same(c.State, n) {
-					bs := b.state()
-					s.Entities = append(s.Entities, Diff(&bs, c.State))
+				if e.changed(c, n, b) {
+					s.Entities = append(s.Entities, diffEnc(e.state(b), c.State, n))
+					out.Ents = append(out.Ents, e.refCur(tick, c, n))
+				} else {
+					out.Ents = append(out.Ents, e.unchanged(tick, c, b))
 				}
-				out.Ents = append(out.Ents, toEnc(c.State, n))
 			} else {
-				out.Ents = append(out.Ents, *b)
+				out.Ents = append(out.Ents, e.carry(tick, b))
 			}
 			i++
 			j++
 		}
 	}
 	return s
+}
+
+// unchanged is the frame entry for a due candidate equal to its baseline
+// state b: the shared current state when there is one (a fresh reference
+// that never needs carrying), else b carried forward.
+func (e *Encoder) unchanged(tick uint32, c *Candidate, b *entRef) entRef {
+	if c.Ref != 0 && e.useHist {
+		return entRef{ID: b.ID, Tick: tick, idx: c.Ref - 1, fp: e.hist.cur.fp[c.Ref-1]}
+	}
+	return e.carry(tick, b)
 }
 
 // buildBudgeted is Build under a byte budget (decision 0005). Same merge as
@@ -292,8 +332,9 @@ func (e *Encoder) Build(tick, ackTick, ackSeq uint32, serverTime float64, self *
 // baseline state in the new frame, so its next record carries the whole
 // accumulated change: nothing is lost, only rate. A deferred NEW entity is
 // left out of the frame and tried again next tick.
-func (e *Encoder) buildBudgeted(s *proto.Snapshot, out *encFrame, bents []encEnt, interest []Candidate) {
+func (e *Encoder) buildBudgeted(tick uint32, s *proto.Snapshot, out *encFrame, bents []entRef, interest []Candidate) {
 	work := e.work[:0]
+	e.recs = e.recs[:0]
 	acc := accCursor{ids: e.accIDs, vals: e.accVals}
 
 	i, j := 0, 0
@@ -301,7 +342,7 @@ func (e *Encoder) buildBudgeted(s *proto.Snapshot, out *encFrame, bents []encEnt
 		switch {
 		case j >= len(bents) || (i < len(interest) && interest[i].State.ID < bents[j].ID):
 			c := &interest[i]
-			work = append(work, pendingRec{id: c.State.ID, cur: c.State, name: c.nameID(), prio: acc.get(c.State.ID) + weightOf(c)})
+			work = append(work, pendingRec{base: -1, cur: int32(i), name: c.nameID(), prio: acc.get(c.State.ID) + weightOf(c)})
 			i++
 		case i >= len(interest) || bents[j].ID < interest[i].State.ID:
 			s.Removed = append(s.Removed, bents[j].ID)
@@ -311,8 +352,8 @@ func (e *Encoder) buildBudgeted(s *proto.Snapshot, out *encFrame, bents []encEnt
 			// Changed iff Diff's mask would be non-zero (same compares every
 			// diffed field).
 			if c.Due {
-				if n := c.nameID(); !bents[j].same(c.State, n) {
-					work = append(work, pendingRec{id: c.State.ID, base: &bents[j], cur: c.State, name: n, prio: acc.get(c.State.ID) + weightOf(c)})
+				if n := c.nameID(); e.changed(c, n, &bents[j]) {
+					work = append(work, pendingRec{base: int32(j), cur: int32(i), name: n, prio: acc.get(c.State.ID) + weightOf(c)})
 				}
 			}
 			i++
@@ -341,12 +382,12 @@ func (e *Encoder) buildBudgeted(s *proto.Snapshot, out *encFrame, bents []encEnt
 	heapInit(h)
 	for len(h) > 0 {
 		w := &work[h[0].k]
-		w.fill()
-		if float64(spent+w.size) > avail {
+		size := e.fill(w, interest, bents).size
+		if float64(spent+size) > avail {
 			break
 		}
 		w.send = true
-		spent += w.size
+		spent += size
 		h = heapPop(h)
 	}
 	// A record bigger than any tick's allowance (a long name on first
@@ -354,7 +395,7 @@ func (e *Encoder) buildBudgeted(s *proto.Snapshot, out *encFrame, bents []encEnt
 	if spent == 0 && len(h) > 0 && e.tokens >= e.burst-1e-9 {
 		w := &work[h[0].k]
 		w.send = true
-		spent = w.size
+		spent = e.fill(w, interest, bents).size
 	}
 	e.order = h[:0]
 	e.tokens -= float64(fixed + spent)
@@ -378,11 +419,11 @@ func (e *Encoder) buildBudgeted(s *proto.Snapshot, out *encFrame, bents []encEnt
 		case j >= len(bents) || (i < len(interest) && interest[i].State.ID < bents[j].ID):
 			w := &work[k]
 			if w.send {
-				s.Entities = append(s.Entities, w.rec)
-				out.Ents = append(out.Ents, toEnc(interest[i].State, w.name))
+				s.Entities = append(s.Entities, e.recs[w.rec-1].rec)
+				out.Ents = append(out.Ents, e.refCur(tick, &interest[i], w.name))
 				e.stats.Sent++
 			} else {
-				keep(w.id, w.prio)
+				keep(interest[i].State.ID, w.prio)
 				e.stats.Deferred++
 			}
 			k++
@@ -392,23 +433,23 @@ func (e *Encoder) buildBudgeted(s *proto.Snapshot, out *encFrame, bents []encEnt
 		default:
 			c, b := &interest[i], &bents[j]
 			switch {
-			case k < len(work) && work[k].id == c.State.ID:
+			case k < len(work) && int(work[k].cur) == i:
 				w := &work[k]
 				if w.send {
-					s.Entities = append(s.Entities, w.rec)
-					out.Ents = append(out.Ents, toEnc(c.State, w.name))
+					s.Entities = append(s.Entities, e.recs[w.rec-1].rec)
+					out.Ents = append(out.Ents, e.refCur(tick, c, w.name))
 					e.stats.Sent++
 				} else {
-					out.Ents = append(out.Ents, *b)
-					keep(w.id, w.prio)
+					out.Ents = append(out.Ents, e.carry(tick, b))
+					keep(b.ID, w.prio)
 					e.stats.Deferred++
 				}
 				k++
 			case c.Due:
-				out.Ents = append(out.Ents, *b) // unchanged: equal to the current state, nothing pending
+				out.Ents = append(out.Ents, e.unchanged(tick, c, b)) // equal to the current state, nothing pending
 			default:
-				out.Ents = append(out.Ents, *b)
-				keep(c.State.ID, old.get(c.State.ID)) // not due this tick: priority waits
+				out.Ents = append(out.Ents, e.carry(tick, b))
+				keep(b.ID, old.get(b.ID)) // not due this tick: priority waits
 			}
 			i++
 			j++
