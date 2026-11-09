@@ -146,6 +146,8 @@ export class ParticlePool {
   readonly points: THREE.Points;
   readonly material: THREE.ShaderMaterial;
   private head = 0;
+  /** The latest moment any particle is alive (idle pools skip their draw: SpellFxEngine.update). */
+  aliveUntil = -1;
   private dirtyFrom = Infinity;
   private dirtyTo = -1;
   private wrapped = false;
@@ -219,8 +221,10 @@ export class ParticlePool {
     this.color[i3] = color.r;
     this.color[i3 + 1] = color.g;
     this.color[i3 + 2] = color.b;
-    this.time[i2] = fxTime() + delay;
+    const t0 = fxTime() + delay;
+    this.time[i2] = t0;
     this.time[i2 + 1] = Math.max(0.01, life);
+    if (t0 + life > this.aliveUntil) this.aliveUntil = t0 + life;
     this.params[i4] = size;
     this.params[i4 + 1] = gravity;
     this.params[i4 + 2] = drag;
@@ -250,6 +254,7 @@ export class ParticlePool {
   /** Kills every particle (scene changes, the gallery between shots). */
   clear(): void {
     for (let i = 0; i < this.capacity; i++) this.time[i * 2] = -1e6;
+    this.aliveUntil = -1;
     this.dirtyFrom = 0;
     this.dirtyTo = this.capacity - 1;
   }

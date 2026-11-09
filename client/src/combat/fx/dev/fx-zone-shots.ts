@@ -8,7 +8,7 @@
 //
 //   npx vite-node src/combat/fx/dev/fx-zone-shots.ts      (from client/; needs Go and the worldgen wasm)
 //
-// Writes docs/evidence/pt2-spell-vfx-zone.png.
+// Writes docs/evidence/pt2-spell-vfx-zone.jpg.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -71,7 +71,7 @@ async function sheet(browser: Browser, file: string, title: string, imgs: { labe
   const page = await browser.newPage({ viewport: { width: 1280, height: 400 } });
   const cells = imgs.map((i) => `<figure><img src="data:image/png;base64,${i.png.toString('base64')}" width="640" height="360"><figcaption>${i.label}</figcaption></figure>`).join('');
   await page.setContent(`<html><body style="margin:0;background:#111;color:#ddd;font:14px system-ui"><div style="padding:8px 10px;font-weight:600">${title}</div><div style="display:grid;grid-template-columns:repeat(2,640px)">${cells}</div><style>figure{margin:0}figcaption{height:22px;line-height:22px;padding:0 8px;background:#1c1c1c}img{display:block}</style></body></html>`);
-  await page.screenshot({ path: file, fullPage: true });
+  await page.screenshot({ path: file, fullPage: true, type: 'jpeg', quality: 88 });
   await page.close();
   console.log(file);
 }
@@ -96,7 +96,7 @@ async function main() {
     browser = await chromium.launch({ headless: true, args: ['--use-angle=d3d11', '--enable-gpu', '--ignore-gpu-blocklist', '--disable-background-timer-throttling', '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows'] });
     const caster = await join(browser, vitePort, zone, 'Caster', { x: anchor.x + 9, z: anchor.z });
     const watcher = await join(browser, vitePort, zone, 'Watcher', { x: anchor.x + 7, z: anchor.z + 6 });
-    await sleep(4000);
+    await sleep(2000); // (short: the camp's boars aggro on the caster)
     const cp = await caster.evaluate(() => (window as unknown as W).__lodestone.player().pos);
     // The watcher looks at the space between the caster and the camp.
     const aimWatcher = () => face(watcher, (cp.x + anchor!.x) / 2, (cp.z + anchor!.z) / 2, -0.15);
@@ -116,13 +116,13 @@ async function main() {
       }
       const after = await watcher.evaluate(() => (window as unknown as W).__lodestoneFx!.stats());
       console.log(`${label}: watcher remote casts ${before.remoteCasts} -> ${after.remoteCasts}, statuses ${after.statuses}`);
-      await sleep(1500);
+      await sleep(900);
     };
+    await cast(1, 'Frost Bite (cone, slow)', [120, 600]);
     await cast(0, 'Ember Flick (projectile)', [90, 260]);
-    await cast(1, 'Frost Bite (cone, slow)', [120, 700]);
     await cast(2, 'Magma Dash (mobility)', [140]);
     fs.mkdirSync(path.join(repoRoot, 'docs', 'evidence'), { recursive: true });
-    await sheet(browser, path.join(repoRoot, 'docs', 'evidence', 'pt2-spell-vfx-zone.png'), 'Spell VFX in the real client on a real zone: your casts and another player\'s (Event 214), graphics high', shots);
+    await sheet(browser, path.join(repoRoot, 'docs', 'evidence', 'pt2-spell-vfx-zone.jpg'), 'Spell VFX in the real client on a real zone: your casts and another player\'s (Event 214), graphics high', shots);
   } finally {
     await browser?.close();
     zone?.proc.kill();

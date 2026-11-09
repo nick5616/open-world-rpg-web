@@ -71,6 +71,8 @@ const result = await page.evaluate(async ([n, keys, pre]) => {
     return { frames, longTasks, peak, casts: 0, fx: null };
   }
   // Programs linked during the spam (each one is a compile hitch): should be none (warm-up).
+  // the engine's own worst frame so far (load + idle), to tell its cost from the world's
+  const idleEngine = { maxUpdateMs: F.stats().maxUpdateMs, idleSlow: frames.filter((f) => f.phase === 'idle' && f.dt > 50).map((f) => Math.round(f.dt)) };
   const progs = () => (window.__r3f?.gl?.info?.programs ?? []).map((p) => `${p.name} | ${String(p.cacheKey).replace(/,/g, ' ').slice(0, 90)}`);
   const before = { size: progs().length };
   // LODESTONE_FX_PRESPAM=1: an unmeasured spam first (isolates first-draw costs from steady state).
@@ -92,7 +94,7 @@ const result = await page.evaluate(async ([n, keys, pre]) => {
   for (const c of log) if (!firstAt.has(c.key)) firstAt.set(c.key, c.t);
   // the casts just before each slow frame (* = that spell's first cast this session)
   const slow = frames.filter((f) => f.phase === 'spam' && f.dt > 25).map((f) => ({ dt: Math.round(f.dt), casts: log.filter((c) => c.t <= f.t && c.t > f.t - f.dt - 20).map((c) => (firstAt.get(c.key) === c.t ? '*' : '') + c.key) }));
-  return { frames, longTasks, peak, casts, slow, newPrograms, fx: F.tier() };
+  return { frames, longTasks, peak, casts, slow, newPrograms, idleEngine, fx: F.tier() };
 }, [casters, keys, process.env.LODESTONE_FX_PRESPAM === '1']);
 
 const summary = { tier, casters, fx: result.fx, casts: result.casts };
@@ -114,5 +116,6 @@ for (const phase of result.fx ? ['idle', 'spam'] : ['idle']) {
 summary.peak = result.peak;
 summary.slowFrames = result.slow;
 summary.newPrograms = result.newPrograms;
+summary.idleEngine = result.idleEngine;
 console.log(JSON.stringify(summary, null, 2));
 await browser.close();

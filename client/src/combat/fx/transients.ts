@@ -302,7 +302,10 @@ export class FxPrims {
     const arr = pos.array as Float32Array;
     const c = Math.cos(yaw);
     const s = Math.sin(yaw);
-    const cy = this.ground ? this.heightAt(x, z, y) : y;
+    // one level view for the whole grid (caves: atLevel builds a view per call)
+    const g = this.ground;
+    const q = g ? (g.atLevel ? g.atLevel(y + 1) : g) : null;
+    const cy = q ? q.heightAt(x, z) : y;
     for (let i = 0; i < arr.length; i += 3) {
       const lx = tpl[i] * sx;
       const lz = tpl[i + 2] * sz;
@@ -310,7 +313,7 @@ export class FxPrims {
       const wz = -lx * s + lz * c;
       arr[i] = wx;
       arr[i + 2] = wz;
-      arr[i + 1] = (this.ground ? this.heightAt(x + wx, z + wz, y) : y) - cy + lift;
+      arr[i + 1] = (q ? q.heightAt(x + wx, z + wz) : y) - cy + lift;
     }
     pos.needsUpdate = true;
     geo.boundingSphere!.radius = Math.max(sx, sz) * 1.5 + 2;

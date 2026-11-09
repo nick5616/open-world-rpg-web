@@ -121,6 +121,7 @@ const boulderMat = () => (boulder ??= new THREE.MeshStandardMaterial({ color: '#
 const DOME_STYLE: Record<Family, number> = { fire: 0, ice: 1, void: 2, dark: 2, blood: 2, steel: 3, nature: 4, stone: 4, crystal: 5, lightning: 6, wind: 7, light: 8 };
 
 let handles = 1;
+const POOLS = [glowPool, smokePool];
 
 export class SpellFxEngine {
   readonly prims: FxPrims;
@@ -1297,7 +1298,9 @@ export class SpellFxEngine {
     const cam = camera as THREE.PerspectiveCamera;
     const h = viewport.height * viewport.dpr;
     const scale = h / (2 * Math.tan(THREE.MathUtils.degToRad(cam.fov ?? 75) / 2));
-    for (const pool of [glowPool, smokePool]) {
+    for (const pool of POOLS) {
+      // An idle pool skips its draw (15k early-out vertices a frame otherwise).
+      pool.points.visible = t < pool.aliveUntil || this.warmFrames > 0;
       const u = pool.material.uniforms;
       u.uTime.value = t;
       u.uScale.value = scale;

@@ -1,0 +1,28 @@
+Playtest 2 spell VFX benchmark (production build, solo, real generated world; headless Chromium, ANGLE D3D11, RTX-class desktop GPU shared with other agents' browsers: absolute numbers are noisy run to run)
+Cast spam: 10 virtual casters on a 12 m ring around you, each casting a random spell (all 92 castable spells: every type and element) about once a second for 12 s. client/src/combat/fx/dev/fx-bench.mjs
+
+== graphics high (FX tier ultra; 1920x1080) ==
+uncapped (no vsync), idle, FX layer mounted:   fps 132.5, p50 5.7 / p95 11.7 / p99 31.9 / max 395.2 ms, >33 ms 7, long tasks 1 (worst 205 ms)
+uncapped (no vsync), idle, no FX layer (?nofx): fps 215.3, p50 4.2 / p95 7.7 / p99 10.7 / max 14.9 ms, >33 ms 0, long tasks 0
+uncapped (no vsync), cast spam (133 casts):  fps 135.6, p50 6.9 / p95 11.2 / p99 14.8 / max 95.7 ms, >33 ms 3, long tasks 3 (worst 104 ms)
+  repeat run, idle:  fps 267.8, p50 3.5 / p95 5.2 / p99 6.3 / max 11.2 ms, >33 ms 0, long tasks 0  (engine update max over load + idle 1.3 ms)
+  repeat run, spam (142 casts): fps 227.8, p50 4.1 / p95 6.3 / p99 8.8 / max 12.1 ms, >33 ms 0, long tasks 0
+vsync, idle:      fps 60, p50 16.7 / p95 16.8 / p99 16.8 / max 16.8 ms, >33 ms 0, long tasks 0
+vsync, cast spam (133 casts): fps 60, p50 16.7 / p95 16.7 / p99 16.8 / max 16.8 ms, >33 ms 0, long tasks 0
+peak during spam: particles 3130, pooled lights 4, spikes 148, bolt segments 328, projectiles 4, ongoing effects 31, zones 7, domes 2; engine update max 5.1 ms, one cast max 12.8 ms
+programs linked during the spam: (programs: 66 before, 66 after)
+slow frames (>25 ms) in the spam and the casts just before them (* = first cast of that spell): [{"dt":28,"casts":["*inferno_domain"]},{"dt":64,"casts":["*heavens_exhale"]},{"dt":79,"casts":["*ice_wall"]},{"dt":96,"casts":["*frost_nova"]}]
+turn bench (client/src/world/bench/turn.mjs, vsync) with FX layer: pan {"frames":361,"p50":16.7,"p95":16.7,"p99":16.8,"max":16.8,"over33ms":0,"over50ms":0} flick {"frames":83,"p50":16.7,"p95":16.8,"p99":16.8,"max":16.8,"over33ms":0,"over50ms":0} long tasks 0
+turn bench without FX layer (?nofx):          pan {"frames":329,"p50":16.7,"p95":16.8,"p99":50,"max":133.4,"over33ms":9,"over50ms":3} flick {"frames":85,"p50":16.7,"p95":16.8,"p99":16.8,"max":16.8,"over33ms":0,"over50ms":0} long tasks 2
+
+== graphics low (FX tier low; 1280x720) ==
+uncapped (no vsync), idle, FX layer mounted:   fps 531.6, p50 1.8 / p95 2.6 / p99 3.3 / max 5.6 ms, >33 ms 0, long tasks 0
+uncapped (no vsync), idle, no FX layer (?nofx): fps 611.6, p50 1.6 / p95 2.3 / p99 2.9 / max 6.4 ms, >33 ms 0, long tasks 0
+uncapped (no vsync), cast spam (130 casts):  fps 452.5, p50 2.1 / p95 3 / p99 4.8 / max 10 ms, >33 ms 0, long tasks 0
+vsync, idle:      fps 60, p50 16.7 / p95 16.8 / p99 16.8 / max 16.8 ms, >33 ms 0, long tasks 0
+vsync, cast spam (128 casts): fps 60, p50 16.7 / p95 16.7 / p99 16.8 / max 16.8 ms, >33 ms 0, long tasks 0
+peak during spam: particles 2322, pooled lights 0, spikes 85, bolt segments 335, projectiles 7, ongoing effects 26, zones 9, domes 2; engine update max 3.2 ms, one cast max 5.2 ms
+programs linked during the spam: (programs: 52 before, 52 after)
+slow frames (>25 ms) in the spam and the casts just before them (* = first cast of that spell): []
+turn bench (client/src/world/bench/turn.mjs, vsync) with FX layer: pan {"frames":360,"p50":16.7,"p95":16.8,"p99":16.8,"max":16.8,"over33ms":0,"over50ms":0} flick {"frames":83,"p50":16.7,"p95":16.8,"p99":16.8,"max":16.8,"over33ms":0,"over50ms":0} long tasks 0
+turn bench without FX layer (?nofx):          pan {"frames":360,"p50":16.7,"p95":16.7,"p99":16.8,"max":16.8,"over33ms":0,"over50ms":0} flick {"frames":82,"p50":16.7,"p95":16.8,"p99":16.8,"max":16.8,"over33ms":0,"over50ms":0} long tasks 0

@@ -125,7 +125,7 @@ warm-up). `CombatLayer` mounts it online; debug solo builds mount it too
 | `fx/SpellFxLayer.tsx`, `fx/debug.ts` | The R3F mount (one useFrame), GPU sample, draw warm-up trigger; `window.__lodestoneFx` (debug builds: `cast(key)`, `spam(n, ms)`, `stats()`, `setFx(tier)`) |
 | `fx/dev/gallery.html` | The FX gallery: the real engine and post chain over test ground with dummies (`/src/combat/fx/dev/gallery.html?tier=high`, `__gallery.cast('fireball')`, `.local(key)` first person, `.status('burn')`) |
 | `fx/dev/fx-shots.ts` | `npx vite-node src/combat/fx/dev/fx-shots.ts [high low]`: the evidence sheets `docs/evidence/pt2-spell-vfx-*.png` |
-| `fx/dev/fx-zone-shots.ts` | Real client x2 on a real zone: your casts and what another player sees (`pt2-spell-vfx-zone.png`) |
+| `fx/dev/fx-zone-shots.ts` | Real client x2 on a real zone: your casts and what another player sees (`pt2-spell-vfx-zone.jpg`) |
 | `fx/dev/fx-bench.mjs` | Cast-spam bench in the real world (10 virtual casters, every spell); `LODESTONE_BENCH_UNCAPPED=1` (no vsync), `LODESTONE_BENCH_QUERY=solo&nofx` (A/B) |
 
 **Before / after, per spell type** (before = what `CombatLayer` drew until
