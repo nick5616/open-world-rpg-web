@@ -73,6 +73,10 @@ type World struct {
 	Seed   uint64
 	NPCs   []State
 	graphs []*graph
+	// footpaths: per building, the walk from the foot of its door steps
+	// along its footpath (and the footpaths it joins) to the street or the
+	// square (genVersion 2); nil for doors that open onto the street.
+	footpaths map[int][][2]float64
 	// SiteName returns an atlas site's display name (bounty texts); may be nil.
 	SiteName func(site int) string
 	// Sites lists atlas sites usable as bounty targets.
@@ -90,7 +94,7 @@ type Site struct {
 
 // New builds the NPC world from a parsed towns buffer.
 func New(t *towns.Towns, seed uint64, sites []Site) *World {
-	w := &World{T: t, Seed: seed, Sites: sites}
+	w := &World{T: t, Seed: seed, Sites: sites, footpaths: footpaths(t)}
 	for si := range t.Settlements {
 		w.graphs = append(w.graphs, buildGraph(t, si))
 	}
@@ -261,19 +265,62 @@ func (w *World) Route(si int, ax, az, bx, bz float64) [][2]float64 {
 }
 
 // doorPath: inside the door, outside it, the street point in front (or the
-// reverse when entering).
+// reverse when entering). A door with a footpath (genVersion 2: back lanes,
+// doors up steps on a slope) walks it: from inside straight down the steps
+// to the path's first point (the foot of the steps, on the door's axis) and
+// along it to the street.
 func (w *World) doorPath(b int, enter bool) [][2]float64 {
 	bd := &w.T.Buildings[b]
 	ix, iz := bd.Door(-0.9)
-	ox, oz := bd.Door(1.6)
-	if bd.Flags&1 != 0 { // porch: step off its far edge
-		ox, oz = bd.Door(3.4)
+	var p [][2]float64
+	if fp := w.footpaths[b]; fp != nil {
+		p = append([][2]float64{{ix, iz}}, fp...)
+	} else {
+		ox, oz := bd.Door(1.6)
+		if bd.Flags&towns.BuildingPorch != 0 { // porch: step off its far edge
+			ox, oz = bd.Door(3.4)
+		}
+		p = [][2]float64{{ix, iz}, {ox, oz}, {bd.FrontX, bd.FrontZ}}
 	}
-	p := [][2]float64{{ix, iz}, {ox, oz}, {bd.FrontX, bd.FrontZ}}
 	if enter {
-		p[0], p[2] = p[2], p[0]
+		for i, j := 0, len(p)-1; i < j; i, j = i+1, j-1 {
+			p[i], p[j] = p[j], p[i]
+		}
 	}
 	return p
+}
+
+// footpaths follows each building's footpath to the network: its points,
+// then those of the footpath it joins from the point nearest the join, and
+// so on (bounded: paths join earlier paths, so chains are short).
+func footpaths(t *towns.Towns) map[int][][2]float64 {
+	out := map[int][][2]float64{}
+	for i := range t.Roads {
+		r := &t.Roads[i]
+		if r.Class != towns.ClassPath || r.From < 0 {
+			continue
+		}
+		var pts [][2]float64
+		for _, q := range r.Points {
+			pts = append(pts, [2]float64{q[0], q[2]})
+		}
+		for hop, to := 0, r.To; to >= 0 && to < len(t.Roads) && hop < 16; hop++ {
+			n := &t.Roads[to]
+			last := pts[len(pts)-1]
+			best, bd := 0, math.Inf(1)
+			for k, q := range n.Points {
+				if d := math.Hypot(q[0]-last[0], q[2]-last[1]); d < bd {
+					best, bd = k, d
+				}
+			}
+			for _, q := range n.Points[best+1:] {
+				pts = append(pts, [2]float64{q[0], q[2]})
+			}
+			to = n.To
+		}
+		out[r.From] = pts
+	}
+	return out
 }
 
 // ---- street graph ------------------------------------------------------
