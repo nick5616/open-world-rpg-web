@@ -11,7 +11,7 @@ import fs from 'node:fs';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { BOX_FLAG, loadWorldgen, parseTowns, townsBytes, type Building, type Towns } from '@lodestone/worldgen';
 import { hasWasm, testWorld, wasmPath } from '../testing/wasm';
-import { BK, boxAt, buildSettlementMesh, drawBuildingShell, wallThickness, type Box } from './kit';
+import { BK, boxAt, buildSettlementMesh, drawBuildingShell, drawSteps, wallThickness, type Box } from './kit';
 import { MeshBuilder, type MeshData } from './meshBuilder';
 import { buildStructureMesh } from './structures';
 
@@ -172,5 +172,27 @@ describe.skipIf(!hasWasm)('building kit vs collision boxes', () => {
       expect(m.shell.indexCount, `structure ${st.index}`).toBeGreaterThan(0);
       expect(m.shell.position.every(Number.isFinite)).toBe(true);
     }
+  });
+});
+
+describe('genVersion 2 door steps (playtest 1)', () => {
+  it('steps on a door ramp: ~0.2 m risers whose treads sit within one riser of the walkable slope', () => {
+    // A ramp box rising 2.4 m over 3.72 m, u axis up the flight (worldgen kit.rs stair_len).
+    const bx = { cx: 0, cz: 0, c: 1, s: 0, hx: 1.86, hz: 0.9, y0: -0.6, y1: 0, y2: 2.4, kind: BK.ramp, flags: BOX_FLAG.walk, owner: 0 } as unknown as Box;
+    const mb = new MeshBuilder(256);
+    const n = drawSteps(mb, { cx: 0, cz: 0, c: 1, s: 0 }, bx, 'planks');
+    expect(n).toBe(12);
+    const m = mb.data();
+    let treads = 0;
+    for (let i = 0; i < m.vertexCount; i++) {
+      if (m.normal[i * 3 + 1] < 120) continue; // upward faces
+      const u = m.position[i * 3];
+      const y = m.position[i * 3 + 1];
+      if (Math.abs(m.position[i * 3 + 2]) > bx.hz - 0.08 + 1e-4) continue; // stringer tops
+      const ramp = bx.y1 + ((u + bx.hx) / (2 * bx.hx)) * (bx.y2 - bx.y1);
+      expect(Math.abs(y - ramp)).toBeLessThanOrEqual(2.4 / 12 + 1e-4);
+      treads++;
+    }
+    expect(treads).toBeGreaterThanOrEqual(12 * 4);
   });
 });

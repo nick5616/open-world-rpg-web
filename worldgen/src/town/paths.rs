@@ -433,3 +433,110 @@ fn smooth(p: &[[f64; 2]]) -> Vec<[f64; 2]> {
     }
     out
 }
+
+/// Footpaths out of town (genVersion 2): from the end of a settlement's
+/// nearest street to every landmark, shrine, ruin and watchtower within
+/// `SIGHT_REACH` of its edge, so the sights around a town are reached on
+/// foot. A straight line, gently bent by a seeded offset, sampled every
+/// 3 m; dropped where it would wade (water) or climb steeper than 1 in 2,
+/// or cross another settlement. Drawn like the other footpaths; first
+/// point at the sight, last at the street end (`from` and `to` none).
+pub fn to_sights(a: &Atlas, t: &mut Towns) {
+    use crate::atlas::format::site;
+    let mut out = Vec::new();
+    for (si, st) in t.settlements.iter().enumerate() {
+        // Street ends at the settlement edge (radial streets: not the ring).
+        let ends: Vec<[f64; 2]> = t.roads[st.road_first as usize..(st.road_first + st.road_count) as usize]
+            .iter()
+            .filter(|r| r.class == 1 && r.points.len() >= 2)
+            .filter(|r| {
+                let (p0, pn) = (r.points[0], r.points[r.points.len() - 1]);
+                dist(p0[0], p0[2], pn[0], pn[2]) > 1.0
+            })
+            .map(|r| {
+                let p = r.points[r.points.len() - 1];
+                [p[0], p[2]]
+            })
+            .collect();
+        if ends.is_empty() {
+            continue;
+        }
+        for i in 0..a.site_count() {
+            let s = a.site(i);
+            let sight = match (s.category, s.kind) {
+                (site::CAT_POI, site::POI_LANDMARK) => true,
+                (site::CAT_STRUCTURE, k) => matches!(k, site::ST_RUIN | site::ST_SHRINE | site::ST_WATCHTOWER),
+                _ => false,
+            };
+            if !sight {
+                continue;
+            }
+            let gap = dist(s.x, s.z, st.x, st.z) - st.radius - s.radius;
+            if !(0.0..=SIGHT_REACH).contains(&gap) {
+                continue;
+            }
+            let e = *ends
+                .iter()
+                .min_by(|p, q| dist(p[0], p[1], s.x, s.z).total_cmp(&dist(q[0], q[1], s.x, s.z)))
+                .unwrap();
+            // From the sight's edge (radius toward the town) to the street end.
+            let l = dist(s.x, s.z, e[0], e[1]);
+            if l < 8.0 {
+                continue;
+            }
+            let (dx, dz) = ((e[0] - s.x) / l, (e[1] - s.z) / l);
+            let start = [s.x + dx * s.radius, s.z + dz * s.radius];
+            let len = dist(start[0], start[1], e[0], e[1]);
+            let n = (libm::ceil(len / 3.0) as usize).max(2);
+            let bend = ((s.seed % 1000) as f64 / 1000.0 - 0.5) * 0.25 * len;
+            let g = Ground::new(
+                a,
+                start[0].min(e[0]) - 8.0 - bend.abs(),
+                start[1].min(e[1]) - 8.0 - bend.abs(),
+                start[0].max(e[0]) + 8.0 + bend.abs(),
+                start[1].max(e[1]) + 8.0 + bend.abs(),
+            );
+            let mut pts: Vec<[f64; 3]> = Vec::with_capacity(n + 1);
+            let mut ok = true;
+            for k in 0..=n {
+                let f = k as f64 / n as f64;
+                let off = bend * 4.0 * f * (1.0 - f);
+                let (x, z) = (start[0] + (e[0] - start[0]) * f - dz * off, start[1] + (e[1] - start[1]) * f + dx * off);
+                let (h, w) = g.sample(x, z);
+                if w > h + 0.05 {
+                    ok = false;
+                    break;
+                }
+                if let Some(p) = pts.last() {
+                    if (h - p[1]).abs() > 0.5 * dist(x, z, p[0], p[2]) {
+                        ok = false;
+                        break;
+                    }
+                }
+                let inside_other = t.settlements.iter().enumerate().any(|(oj, o)| oj != si && dist(x, z, o.x, o.z) < o.radius);
+                if inside_other || (k < n && dist(x, z, st.x, st.z) < st.radius - 2.0) {
+                    ok = false;
+                    break;
+                }
+                pts.push([x, h, z]);
+            }
+            if !ok {
+                continue;
+            }
+            out.push(Road {
+                points: pts,
+                from: NONE,
+                to: NONE,
+                width: PATH_W,
+                class: CLASS_PATH,
+                surface: 0,
+                settlement: si as u16,
+                length: len,
+            });
+        }
+    }
+    t.roads.extend(out);
+}
+
+/// How far beyond a settlement's edge a sight gets a footpath (m).
+pub const SIGHT_REACH: f64 = 320.0;

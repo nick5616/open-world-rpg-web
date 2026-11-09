@@ -1,0 +1,13 @@
+# Playtest 1 towns/terrain shots, tag after, seed 20261108, genVersion ? (vite dev), 2026-11-09T15:35:19.104Z
+town #12 "Dedrofell" (hamlet, timber, walled false), 7 buildings, radius 36 m at --at 736,3552
+buildings by foundation flag bits (4 stilts, 64 stepped, 128 posts): {"0":2,"64":3,"128":2}
+screenshot docs/evidence/pt-towns-after-town-above.png
+screenshot docs/evidence/pt-towns-after-paths-above.png
+screenshot docs/evidence/pt-towns-after-street.png
+steepest lot: building #219 (workshop), ground range 2.08 m under its corners, floor 29.30
+screenshot docs/evidence/pt-towns-after-foundation.png
+screenshot docs/evidence/pt-towns-after-door-steps.png
+spawn settlement #9 "Draedmore" (town) at 1920,2272
+landscape: looking 180 deg (x toward z), 13 settlements/structures within 1.2 km in that 50 deg sector
+screenshot docs/evidence/pt-towns-after-landscape.png
+no page errors

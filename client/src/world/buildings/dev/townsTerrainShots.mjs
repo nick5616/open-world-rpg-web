@@ -33,6 +33,7 @@ const arg = (name, def) => {
 const DEV = process.argv.includes('--dev');
 const TAG = arg('tag', 'after');
 const AT = arg('at', '');
+const LOOK = arg('look', ''); // landscape direction in degrees (x toward z); default: the busiest sector
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const log = [];
 const say = (s) => {
@@ -143,6 +144,11 @@ const walkAt = async (p, q, settle = 4000) => {
 };
 const shot = async (name) => {
   const f = `pt-towns-${TAG}-${name}.png`;
+  // Clean frames: no controls hint, discovery banner or sound button.
+  await T(() => {
+    for (const el of document.querySelectorAll('div')) if (el.childElementCount <= 4 && el.textContent?.startsWith('Click to look around')) el.setAttribute('data-pt-hidden', '');
+    for (const sel of ['[data-testid="discovery-intro"]', '[data-testid="sound-toggle"]']) document.querySelector(sel)?.setAttribute('data-pt-hidden', '');
+  });
   await page.screenshot({ path: path.join(evidence, f) });
   say(`screenshot docs/evidence/${f}`);
 };
@@ -245,6 +251,7 @@ for (let k = 0; k < 16; k++) {
     ang = a;
   }
 }
+if (LOOK) ang = (Number(LOOK) * Math.PI) / 180;
 say(`landscape: looking ${((ang * 180) / Math.PI).toFixed(0)} deg (x toward z), ${most} settlements/structures within 1.2 km in that 50 deg sector`);
 await camAt({ x: H.x, y: H.y + 120, z: H.z }, { x: H.x + Math.cos(ang) * 700, y: H.y - 30, z: H.z + Math.sin(ang) * 700 }, 8000);
 await shot('landscape');

@@ -101,11 +101,11 @@ func TestCreatorProcess(t *testing.T) {
 
 	// Flag on.
 	base, stop := start("1")
-	if _, cfg := call(t, "GET", base+"/v1/config", nil); cfg["llm"] != true || cfg["genVersion"] != "1" {
+	if _, cfg := call(t, "GET", base+"/v1/config", nil); cfg["llm"] != true || cfg["genVersion"] != "2" {
 		t.Fatalf("config %v", cfg)
 	}
 	code, seedMint := call(t, "POST", base+"/v1/mint", map[string]string{"seed": "1234"})
-	if code != 201 || seedMint["world"].(map[string]any)["atlasHash"] != "c689f2bc53166df2" {
+	if code != 201 || seedMint["world"].(map[string]any)["atlasHash"] != "f6f7189f8dba067e" {
 		t.Fatalf("seed mint %d %v", code, seedMint)
 	}
 	slider := seedMint["world"].(map[string]any)["spec"].(map[string]any)

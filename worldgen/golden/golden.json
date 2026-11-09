@@ -636,15 +636,15 @@
     ]
    },
    "towns": {
-    "hash": "a52ea1b90ab19e06",
-    "bytes": 528408,
+    "hash": "729eac1b50d0e9c7",
+    "bytes": 554808,
     "counts": {
      "settlements": 31,
      "buildings": 410,
      "boxes": 6516,
      "props": 3856,
      "npcs": 267,
-     "roads": 200,
+     "roads": 230,
      "bridges": 9,
      "signs": 24,
      "structures": 114,
@@ -1962,15 +1962,15 @@
     ]
    },
    "towns": {
-    "hash": "57024383ea4368bd",
-    "bytes": 651824,
+    "hash": "76e85150dc956800",
+    "bytes": 727800,
     "counts": {
      "settlements": 46,
      "buildings": 513,
      "boxes": 7960,
      "props": 4860,
      "npcs": 326,
-     "roads": 273,
+     "roads": 359,
      "bridges": 11,
      "signs": 33,
      "structures": 149,
@@ -3340,15 +3340,15 @@
     ]
    },
    "towns": {
-    "hash": "0f90d76dff1ff855",
-    "bytes": 644192,
+    "hash": "b95cd8f59fc7bcb4",
+    "bytes": 721680,
     "counts": {
      "settlements": 44,
      "buildings": 514,
      "boxes": 7887,
      "props": 4802,
      "npcs": 322,
-     "roads": 286,
+     "roads": 374,
      "bridges": 6,
      "signs": 40,
      "structures": 109,
@@ -4784,15 +4784,15 @@
     ]
    },
    "towns": {
-    "hash": "35b3685b2b8e57e7",
-    "bytes": 500400,
+    "hash": "f4fd7ef1a676a7bb",
+    "bytes": 507304,
     "counts": {
      "settlements": 24,
      "buildings": 327,
      "boxes": 5633,
      "props": 3430,
      "npcs": 205,
-     "roads": 159,
+     "roads": 169,
      "bridges": 32,
      "signs": 27,
      "structures": 174,
@@ -5949,15 +5949,15 @@
     ]
    },
    "towns": {
-    "hash": "a4d3a92403fa3be3",
-    "bytes": 306904,
+    "hash": "105be82b0abf6acf",
+    "bytes": 353224,
     "counts": {
      "settlements": 22,
      "buildings": 261,
      "boxes": 3951,
      "props": 2326,
      "npcs": 167,
-     "roads": 95,
+     "roads": 150,
      "bridges": 0,
      "signs": 5,
      "structures": 80,

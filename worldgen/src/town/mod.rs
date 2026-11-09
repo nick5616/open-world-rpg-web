@@ -381,6 +381,7 @@ pub fn build(a: &Atlas) -> Result<Towns, String> {
     layout::build_settlements(a, &net, &mut t);
     roads::finish(a, net, &mut t);
     jigsaw::build_structures(a, &mut t);
+    paths::to_sights(a, &mut t);
     Ok(t)
 }
 

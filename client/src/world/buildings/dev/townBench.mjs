@@ -30,6 +30,9 @@ const DEV = process.argv.includes('--dev');
 const onlyArg = process.argv.indexOf('--only');
 const ONLY = onlyArg >= 0 ? new Set(process.argv[onlyArg + 1].split(',')) : null;
 const want = (name) => !ONLY || ONLY.has(name);
+// Output prefix (default wp20; playtest 1 towns/density runs use --prefix pt-towns-bench).
+const prefixArg = process.argv.indexOf('--prefix');
+const PREFIX = prefixArg >= 0 ? process.argv[prefixArg + 1] : 'wp20';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const log = [];
 const say = (s) => {
@@ -182,8 +185,8 @@ const measure = async () => {
   });
 };
 const shot = async (name) => {
-  await page.screenshot({ path: path.join(evidence, `wp20-${name}.png`) });
-  say(`screenshot docs/evidence/wp20-${name}.png`);
+  await page.screenshot({ path: path.join(evidence, `${PREFIX}-${name}.png`) });
+  say(`screenshot docs/evidence/${PREFIX}-${name}.png`);
 };
 const views = [];
 const record = async (name, compare = false) => {
@@ -383,9 +386,9 @@ const stats = await T(() => window.__lodestoneTowns.stats());
 say(`towns layer: worker ready after ${Math.round(stats.readyMs)} ms (towns_build ${Math.round(stats.worker.towns)} ms incl. wasm, textures ${Math.round(stats.worker.textures)} ms, roads ${Math.round(stats.worker.roads)} ms, all in the worker); max settlement/structure build ${stats.maxBuildMs.toFixed(1)} ms (worker); max main-thread upload step ${stats.maxUploadMs.toFixed(2)} ms; ${stats.hiddenScatter} scatter objects hidden`);
 say(errors.length ? `errors (${errors.length}):\n  ${errors.slice(0, 20).join('\n  ')}` : 'no page errors');
 if (!ONLY) {
-  fs.writeFileSync(path.join(evidence, 'wp20-drawcalls.json'), JSON.stringify({ date: new Date().toISOString(), renderer, viewport, tier: 'high', build: DEV ? 'dev' : 'production', seed: '20261108', town: { index: largest, ...town }, budgetDrawCalls: 400, views, towns: stats, errors }, null, 2));
-  fs.writeFileSync(path.join(evidence, 'wp20-drawcalls.txt'), log.join('\n') + '\n');
-  say('wrote docs/evidence/wp20-drawcalls.json and .txt');
+  fs.writeFileSync(path.join(evidence, `${PREFIX}-drawcalls.json`), JSON.stringify({ date: new Date().toISOString(), renderer, viewport, tier: 'high', build: DEV ? 'dev' : 'production', seed: '20261108', town: { index: largest, ...town }, budgetDrawCalls: 400, views, towns: stats, errors }, null, 2));
+  fs.writeFileSync(path.join(evidence, `${PREFIX}-drawcalls.txt`), log.join('\n') + '\n');
+  say(`wrote docs/evidence/${PREFIX}-drawcalls.json and .txt`);
 }
 await browser.close();
 cleanup();
