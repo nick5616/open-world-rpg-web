@@ -118,6 +118,7 @@ func (w *wsConn) SendReliable(b []byte) error {
 	}
 	w.reliable = append(w.reliable, b)
 	w.mu.Unlock()
+	w.stats.ReliableQueued.Add(int64(len(b) + wsHeaderLen(len(b), w.client)))
 	w.poke()
 	return nil
 }

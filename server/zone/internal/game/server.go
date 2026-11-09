@@ -123,6 +123,7 @@ type Server struct {
 	ents     []*Entity // sorted by ID (IDs only grow, removal keeps order)
 	sessions []*session
 	inBatch  []*session // WP19b: plain sessions waiting for a parallel run (inputs.go)
+	cbtEnc   [][]byte   // WP19b: this tick's encoded combat events (deliverCombatAll)
 	byChar   map[string]*session
 	parties  map[uint32][]*Entity
 	grid     *aoi.Grid // players (and anything with a party id): far ring reach

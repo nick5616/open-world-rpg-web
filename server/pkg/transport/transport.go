@@ -63,6 +63,10 @@ type Stats struct {
 	BytesIn, BytesOut   atomic.Int64
 	FramesIn, FramesOut atomic.Int64
 	Dropped             atomic.Int64 // unreliable frames replaced before they were written
+	// ReliableQueued counts reliable bytes (with framing) when they are
+	// queued, not when written: the zone charges them to the client's
+	// downlink budget at the next snapshot (WP19b, decision 0005).
+	ReliableQueued atomic.Int64
 }
 
 // Close codes.

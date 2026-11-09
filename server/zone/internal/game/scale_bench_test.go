@@ -49,6 +49,7 @@ func (c *benchConn) Recv(ctx context.Context) ([]byte, error) {
 	return nil, ctx.Err()
 }
 func (c *benchConn) SendReliable(b []byte) error {
+	c.stats.ReliableQueued.Add(int64(len(b)))
 	c.stats.BytesOut.Add(int64(len(b)))
 	c.stats.FramesOut.Add(1)
 	return nil

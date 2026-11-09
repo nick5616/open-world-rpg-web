@@ -430,6 +430,7 @@ func (c *wtConn) SendReliable(b []byte) error {
 	}
 	c.reliable = append(c.reliable, b)
 	c.mu.Unlock()
+	c.stats.ReliableQueued.Add(int64(len(b)) + wtStreamOverhead)
 	poke(c.streamPoke)
 	return nil
 }

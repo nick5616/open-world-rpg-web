@@ -418,8 +418,8 @@ func (s *Server) combatTick(tick uint32) {
 			delete(s.cbt.byID, en.ID)
 		}
 	}
+	s.deliverCombatAll(events) // WP19b: per session on the workers, each session's events in order
 	for _, o := range events {
-		s.deliverCombat(o)
 		s.nightCombatEvent(o) // WP15: burning enemies set the grass alight (night.go)
 	}
 	for _, g := range xp {
@@ -485,6 +485,51 @@ func (s *Server) combatTick(tick uint32) {
 		s.m.reg.SetInt("zone_combat_evaded_total", st.Evaded)
 		s.m.reg.SetInt("zone_combat_downs_total", st.Downs)
 	}
+}
+
+// deliverCombatAll sends a tick's combat Events to their audiences (WP19b).
+// Same recipients and, per connection, the same order as calling
+// deliverCombat for each event in turn: each event is encoded once, then
+// every session walks the events in order on a worker. A session's
+// connection is written only by the worker holding that session; the
+// entity list and byChar are read-only here.
+func (s *Server) deliverCombatAll(events []combat.Out) {
+	if len(events) == 0 {
+		return
+	}
+	enc := s.cbtEnc[:0]
+	for i := range events {
+		enc = append(enc, proto.Encode(&events[i].Ev))
+	}
+	s.cbtEnc = enc
+	parallelFor(len(s.sessions), s.phaseWorkers(len(s.sessions)), inputChunk, func(_, i int) {
+		sess := s.sessions[i]
+		e := sess.ent
+		if e == nil {
+			return
+		}
+		for k := range events {
+			aud := &events[k].Aud
+			if aud.To != 0 {
+				// deliverCombat: the entity with that id, if it is a
+				// player whose session (byChar) is this one.
+				if e.ID == aud.To && s.byChar[e.CharacterID] == sess {
+					_ = sess.conn.SendReliable(enc[k])
+				}
+				continue
+			}
+			if e.ID == aud.Except {
+				continue
+			}
+			dx, dz := e.Move.Pos.X-aud.Near.X, e.Move.Pos.Z-aud.Near.Z
+			if dx*dx+dz*dz <= aud.Radius*aud.Radius {
+				if err := sess.conn.SendReliable(enc[k]); err != nil {
+					sess.closed.Store(true)
+				}
+			}
+		}
+	})
+	clear(enc)
 }
 
 // deliverCombat sends one combat Event to its audience.

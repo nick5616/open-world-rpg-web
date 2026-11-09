@@ -60,6 +60,7 @@ type session struct {
 	ackFloor    uint32 // WP16: acks at or below this tick predate the session's current activation
 	enc         snapshot.Encoder
 	budget      snapshot.BudgetStats // last published encoder counters
+	relCharged  int64                // WP19b: conn's ReliableQueued already charged to the budget
 	frameBudget ratelimit.Bucket
 	frames      []proto.InputFrame // received, not yet applied (sorted at apply)
 	gapSince    uint32             // tick a missing frame started holding the buffer, 0 = none

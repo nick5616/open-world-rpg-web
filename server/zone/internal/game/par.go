@@ -34,25 +34,30 @@ func parallelFor(n, workers, chunk int, fn func(worker, i int)) {
 		}
 		return
 	}
+	// The wait group counts ITEMS, not goroutines: the call returns as soon
+	// as every item is done, without waiting for a helper the OS has not
+	// scheduled yet (on a loaded machine that wake-up can take longer than
+	// the work; the tick goroutine then simply does the items itself). A
+	// helper that starts late finds nothing left and exits without calling
+	// fn, so it never touches the next call's per-worker scratch.
 	var next atomic.Int64
+	var wg sync.WaitGroup
+	wg.Add(n)
 	run := func(worker int) {
 		for {
 			i := int(next.Add(int64(chunk))) - chunk
 			if i >= n {
 				return
 			}
-			for j := i; j < min(n, i+chunk); j++ {
+			end := min(n, i+chunk)
+			for j := i; j < end; j++ {
 				fn(worker, j)
 			}
+			wg.Add(i - end)
 		}
 	}
-	var wg sync.WaitGroup
-	wg.Add(workers - 1)
 	for k := 1; k < workers; k++ {
-		go func() {
-			defer wg.Done()
-			run(k)
-		}()
+		go run(k)
 	}
 	run(0)
 	wg.Wait()

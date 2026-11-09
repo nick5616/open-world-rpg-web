@@ -33,7 +33,8 @@ type metrics struct {
 	snapshotsShed   atomic.Int64
 	// Byte budget (decision 0005): records sent vs deferred to a later tick.
 	recordsSent, recordsDeferred atomic.Int64
-	framesSkipped                atomic.Int64    // lost frames given up on (hole longer than maxSynthFrames)
+	budgetCharged                atomic.Int64 // WP19b: reliable bytes charged to the snapshot budget
+	framesSkipped               atomic.Int64    // lost frames given up on (hole longer than maxSynthFrames)
 	framesSynthesized            atomic.Int64    // lost frames filled by repeating the last input
 	transports                   [3]atomic.Int64 // live sessions by proto.Transport
 	// Mining (WP09).
@@ -154,6 +155,7 @@ func (s *Server) publish(hist map[*session][]bwSample, depth func() int, extra f
 	r.SetInt("zone_snapshots_shed_total", s.m.snapshotsShed.Load())
 	r.SetInt("zone_budget_records_sent_total", s.m.recordsSent.Load())
 	r.SetInt("zone_budget_records_deferred_total", s.m.recordsDeferred.Load())
+	r.SetInt("zone_budget_reliable_charged_bytes_total", s.m.budgetCharged.Load())
 	r.SetFloat("zone_downlink_budget_kbps", s.cfg.DownBudgetKbps)
 	r.SetInt(`zone_sessions{transport="websocket"}`, s.m.transports[proto.TransportWebsocket].Load())
 	r.SetInt(`zone_sessions{transport="webtransport"}`, s.m.transports[proto.TransportWebtransport].Load())

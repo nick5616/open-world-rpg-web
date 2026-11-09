@@ -39,6 +39,9 @@ const PORT = Number(arg('port', '18510'));
 const ZONE_BIN = arg('zone-bin', '');
 const PPROF = process.argv.includes('--pprof');
 const TAG = arg('tag', `${BOTS}b-${ENEMIES}e-${PROFILE}`);
+// --prefix names the evidence files (<prefix>-s1-<tag>.*); WP19's second
+// pass writes wp19b-*.
+const PREFIX = arg('prefix', 'wp19');
 const RUN = `${Date.now().toString(36)}${process.pid}`;
 const EXE = process.platform === 'win32' ? '.exe' : '';
 const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'lodestone-wp19-'));
@@ -145,7 +148,7 @@ try {
       const prof = path.join(TMP, 'cpu.pprof');
       fs.writeFileSync(prof, buf);
       const top = spawnSync('go', ['tool', 'pprof', '-top', '-cum', '-nodecount=60', zoneBin, prof], { cwd: root, env: env(), encoding: 'utf8' }).stdout;
-      fs.writeFileSync(path.join(EVIDENCE, `wp19-s1-${TAG}-cpu.txt`), `CPU profile, 10 s at t=90 s, zone with ${BOTS} bots + ${ENEMIES} enemies (GOMAXPROCS=${PROCS})\n\n${top}`);
+      fs.writeFileSync(path.join(EVIDENCE, `${PREFIX}-s1-${TAG}-cpu.txt`), `CPU profile, 10 s at t=90 s, zone with ${BOTS} bots + ${ENEMIES} enemies (GOMAXPROCS=${PROCS})\n\n${top}`);
       step(`cpu profile saved (${prof})`);
     })().catch((e) => step(`profile failed: ${e}`));
   }
@@ -183,8 +186,8 @@ try {
   }
   const result = { phases: lastPhases, tag: TAG, bots: BOTS, enemies: ENEMIES, profile: PROFILE, center: CENTER, radius: RADIUS, procs: PROCS, duration: DURATION, series, steadyWorstP99: worst?.p99 ?? null, minAwake, bots_summary: summary };
   fs.mkdirSync(EVIDENCE, { recursive: true });
-  fs.writeFileSync(path.join(EVIDENCE, `wp19-s1-${TAG}.json`), JSON.stringify(result, null, 1));
-  fs.copyFileSync(prom, path.join(EVIDENCE, `wp19-s1-${TAG}.prom`));
+  fs.writeFileSync(path.join(EVIDENCE, `${PREFIX}-s1-${TAG}.json`), JSON.stringify(result, null, 1));
+  fs.copyFileSync(prom, path.join(EVIDENCE, `${PREFIX}-s1-${TAG}.prom`));
   const tickOK = worst && worst.p99 <= 12;
   const downOK = summary.downKbps?.max <= 160;
   step(`verdict: tick p99 ${tickOK ? 'PASS' : 'FAIL'} (${worst?.p99?.toFixed(2)} ms), downlink max ${downOK ? 'PASS' : 'FAIL'} (${summary.downKbps?.max?.toFixed(1)} kbps, budget 160), awake >= 2000: ${minAwake >= ENEMIES * 0.95 ? 'yes' : 'no'} (${minAwake})`);
@@ -196,7 +199,7 @@ try {
 } finally {
   for (const c of children.reverse()) killTree(c);
   fs.mkdirSync(EVIDENCE, { recursive: true });
-  fs.writeFileSync(path.join(EVIDENCE, `wp19-s1-${TAG}.txt`), lines.join('\n') + '\n');
+  fs.writeFileSync(path.join(EVIDENCE, `${PREFIX}-s1-${TAG}.txt`), lines.join('\n') + '\n');
   console.log(`logs in ${TMP}`);
   process.exit(exitCode);
 }
