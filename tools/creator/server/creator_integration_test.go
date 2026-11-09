@@ -143,7 +143,7 @@ func TestCreatorProcess(t *testing.T) {
 		if err := rows.Scan(&name, &seed, &gv, &ah, &official, &specSeed); err != nil {
 			t.Fatal(err)
 		}
-		if official || gv != "1" || len(ah) != 16 || specSeed != seed {
+		if official || gv != "2" || len(ah) != 16 || specSeed != seed {
 			t.Fatalf("row %s %s %s %s %v %s", name, seed, gv, ah, official, specSeed)
 		}
 		got = append(got, name+"/"+seed)
