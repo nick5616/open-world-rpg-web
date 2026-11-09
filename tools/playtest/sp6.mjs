@@ -37,7 +37,7 @@ try {
     await look(page, yawTo((await pl(page)).pos, tw.x, tw.z), 0.45);
     await page.keyboard.down('KeyW');
     await until(() => window.__lodestone.player().mode === 'climb', null, 15000);
-    await until((top) => {
+    await until(() => {
       const p = window.__lodestone.player();
       return p.mode !== 'climb' && p.mode !== 'air';
     }, tw.topY, 240000);
