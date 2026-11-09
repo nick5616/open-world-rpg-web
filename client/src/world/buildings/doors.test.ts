@@ -12,6 +12,11 @@ import { loadWorldgenGround } from '../../sim/worldgenGround';
 import { repoRoot } from '../../sim/dev/traversalRun';
 import { stepClock } from '../../sim/stepClock';
 import { DoorGround } from './doorGround';
+import { TownGround } from './townGround';
+import { ClientPrediction } from '../../net/prediction';
+import { FlatGround } from '../../sim/ground';
+import { makeMoveInput, NO_BUTTONS } from '../../sim/inputFrame';
+import { newMoveState, stepMovement, STEP_DT, type MoveState } from '../../sim/movement';
 import { DoorSync, decodeDoorBaseline, decodeDoorState, DOOR_EV } from './doors';
 
 const wasm = path.join(repoRoot, 'worldgen', 'pkg', 'worldgen.wasm');
@@ -169,4 +174,35 @@ describe.skipIf(!hasWasm)('door ground and sync on the official world', () => {
     sync.toggle(5);
     expect([states.openAt(5, 100), states.openAt(5, 101)]).toEqual([true, false]);
   }, 60000);
+});
+
+describe.skipIf(!hasWasm)('late door changes re-predict from their step', () => {
+  it('ClientPrediction.replayFrom re-runs the pending steps with the door as it now is', async () => {
+    const t = await townsOf('20261108');
+    const doors = new TownDoors(t);
+    const states = new DoorStates(doors.count);
+    const d = doors.doors.find((x) => t.buildings[x.building].role === 1)!; // an inn door
+    const b = t.buildings[d.building];
+    const ground = new DoorGround(new TownGround(new FlatGround(d.y - 0.2), new TownCollision(t.boxes)), doors, states);
+    const vx = -b.s;
+    const vz = b.c;
+    const vOf = (s: MoveState) => (s.pos.x - d.x) * vx + (s.pos.z - d.z) * vz;
+    const pred = new ClientPrediction(ground);
+    let s = newMoveState({ x: d.x - 2.5 * vx, y: d.y, z: d.z - 2.5 * vz });
+    const input = makeMoveInput({ ...NO_BUTTONS, forward: true }, false, Math.atan2(-vx, -vz), 0);
+    for (let seq = 1; seq <= 90; seq++) {
+      stepClock.seq = seq;
+      s = stepMovement(s, input, ground, STEP_DT);
+      pred.store({ seq, input, state: s });
+      pred.notePredicted(s);
+    }
+    expect(vOf(s)).toBeGreaterThan(1); // walked in through the open door
+    expect(pred.replayFrom(500)).toBeNull(); // nothing predicted that late
+    states.set(d.index, false, 20, 0); // closed from step 20 on: we were still outside then
+    const c = pred.replayFrom(20);
+    expect(c).not.toBeNull();
+    expect(vOf(c!.state)).toBeLessThanOrEqual(-(d.thick / 2 + 0.4) + 1e-9);
+    expect(pred.localReplays).toBe(1);
+    expect(pred.reconciles).toBe(0);
+  });
 });
