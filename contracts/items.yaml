@@ -267,6 +267,7 @@ loot:
     elemental: {item: 0.2, gem: 0.18, blueprint: 0.03, consumable: 0.05}
     cave: {item: 0.2, gem: 0.15, ore: 0.4, blueprint: 0.04, consumable: 0.05}
     boss: {item: 1.0, gem: 1.0, blueprint: 1.0, consumable: 1.0}
+    slime: {item: 0.06, consumable: 0.12, food: 0.15}  # playtest 1 (CR 012): Haven beginners
   # Elites: one guaranteed equipment roll with this luck. Bosses: `items`
   # equipment rolls, a tome, and luck; weekly lockout per character (spec 8).
   elite: {items: 1, luck: 2.0}

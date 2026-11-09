@@ -343,7 +343,7 @@ func (s *Server) handleCombatInteract(sess *session, m *proto.Interact) {
 		ok = pr.EquipSpell(int(m.Arg&0xf), int(m.Arg>>4&0xf), key)
 	case combat.ActLearn:
 		if sp := combatdefs.D.SpellByID(int(m.Arg)); sp != nil {
-			ok = pr.Learn(sp.Key, p.Level) == combat.LearnOK
+			ok = pr.LearnWith(sp.Key, p.Level, p.Boons.SkillPoints) == combat.LearnOK
 		}
 	case combat.ActSetGem:
 		if s.cbt.setup.Dev {

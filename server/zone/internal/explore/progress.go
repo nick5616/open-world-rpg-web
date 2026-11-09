@@ -56,6 +56,9 @@ type Progress struct {
 	Towers       Bitset
 	Waypoints    Bitset
 	Discoveries  Bitset
+	// Attuned: tower crystals attuned (playtest 1, migration 0021
+	// character_progress.attuned): each first attunement is a permanent boon.
+	Attuned      Bitset
 	XP           int64
 	Level        int
 	LastWaypoint int // site index, -1 none
@@ -71,6 +74,7 @@ func (p *Progress) ensure(sites int) {
 	p.Towers = grow(p.Towers, sites)
 	p.Waypoints = grow(p.Waypoints, sites)
 	p.Discoveries = grow(p.Discoveries, sites)
+	p.Attuned = grow(p.Attuned, sites)
 }
 
 // Dirty reports unsaved changes; MarkSaved clears the flag once a save

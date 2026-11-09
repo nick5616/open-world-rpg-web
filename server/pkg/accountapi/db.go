@@ -410,10 +410,10 @@ func insertFromState(ctx context.Context, tx pgx.Tx, accountID, id, worldID, nam
 		return Character{}, err
 	}
 	p := st.Progress
-	if _, err := tx.Exec(ctx, `INSERT INTO character_progress (character_id, towers, waypoints, containers_opened, discoveries, skill_tree, spells_known, spells_equipped)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+	if _, err := tx.Exec(ctx, `INSERT INTO character_progress (character_id, towers, waypoints, containers_opened, discoveries, skill_tree, spells_known, spells_equipped, attuned)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
 		id, bytesOr(p.Towers), bytesOr(p.Waypoints), bytesOr(p.ContainersOpened), bytesOr(p.Discoveries),
-		jsonOr(p.SkillTree, `{}`), nonNil(p.SpellsKnown), nonNil(p.SpellsEquipped)); err != nil {
+		jsonOr(p.SkillTree, `{}`), nonNil(p.SpellsKnown), nonNil(p.SpellsEquipped), bytesOr(p.Attuned)); err != nil {
 		return Character{}, err
 	}
 	for _, it := range st.Items {

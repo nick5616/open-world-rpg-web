@@ -26,14 +26,14 @@ func (p *PGStore) LoadProgress(ctx context.Context, id string, sites []uint64) (
 		xp                            int64
 		lastWP                        *int64
 		towers, waypoints, discovered []byte
-		pins                          []byte
+		pins, attuned                 []byte
 	)
 	err := p.Pool.QueryRow(ctx, `
 		SELECT c.level, c.xp, c.last_waypoint,
 		       COALESCE(cp.towers, '\x'::bytea), COALESCE(cp.waypoints, '\x'::bytea), COALESCE(cp.discoveries, '\x'::bytea),
-		       COALESCE(cp.pins, '[]'::jsonb)
+		       COALESCE(cp.pins, '[]'::jsonb), COALESCE(cp.attuned, '\x'::bytea)
 		FROM characters c LEFT JOIN character_progress cp ON cp.character_id = c.id
-		WHERE c.id = $1::uuid`, id).Scan(&level, &xp, &lastWP, &towers, &waypoints, &discovered, &pins)
+		WHERE c.id = $1::uuid`, id).Scan(&level, &xp, &lastWP, &towers, &waypoints, &discovered, &pins, &attuned)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, false, nil
 	}
@@ -45,7 +45,7 @@ func (p *PGStore) LoadProgress(ctx context.Context, id string, sites []uint64) (
 	// The level column is derived data: recompute it from XP so a tuning
 	// change to the curve (WP13) can never leave the two inconsistent.
 	pr.Level = max(level, explore.LevelForXP(xp))
-	pr.Towers, pr.Waypoints, pr.Discoveries = towers, waypoints, discovered
+	pr.Towers, pr.Waypoints, pr.Discoveries, pr.Attuned = towers, waypoints, discovered, attuned
 	pr.LoadPinsJSON(pins)
 	if lastWP != nil {
 		for i, sid := range sites {
@@ -84,11 +84,19 @@ func (p *PGStore) SaveProgress(ctx context.Context, id string, s ProgressSnapsho
 			return p.missingOrFenced(ctx, id)
 		}
 		_, err = tx.Exec(ctx, `
-			INSERT INTO character_progress (character_id, towers, waypoints, discoveries, pins)
-			VALUES ($1::uuid, $2, $3, $4, $5::jsonb)
+			INSERT INTO character_progress (character_id, towers, waypoints, discoveries, pins, attuned)
+			VALUES ($1::uuid, $2, $3, $4, $5::jsonb, $6)
 			ON CONFLICT (character_id) DO UPDATE SET towers = EXCLUDED.towers, waypoints = EXCLUDED.waypoints,
-				discoveries = EXCLUDED.discoveries, pins = EXCLUDED.pins`,
-			id, s.Towers, s.Waypoints, s.Discoveries, string(s.Pins))
+				discoveries = EXCLUDED.discoveries, pins = EXCLUDED.pins, attuned = EXCLUDED.attuned`,
+			id, s.Towers, s.Waypoints, s.Discoveries, string(s.Pins), bytesOrEmpty(s.Attuned))
 		return err
 	})
+}
+
+// bytesOrEmpty keeps a NOT NULL bytea column non-null for an empty set.
+func bytesOrEmpty(b []byte) []byte {
+	if b == nil {
+		return []byte{}
+	}
+	return b
 }

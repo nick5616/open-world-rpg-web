@@ -385,6 +385,7 @@ func (w *World) damageOf(p *Player, a *Action, e *Enemy) (dmg float64, element i
 		dmg = f.Damage * (1 + 0.01*float64(pr.SkillLevel(a.Weapon.Skill)))
 		dmg *= orOne(p.Gear.WeaponMult) * (1 + p.Gear.DamagePct/100) * orOne(p.Gear.FormMult) // WP14: weapon + gem cut
 	}
+	dmg *= D.DamageMult(p.Level) // playtest 1: character level (combat.yaml leveling, CR 012)
 	em := D.ElementMult(element, e.Element)
 	if em > 1 {
 		flags |= FlagWeak
@@ -515,7 +516,7 @@ func (w *World) applyHit(p *Player, a *Action, e *Enemy, impact movement.Vec3) C
 		if st == "taunt" {
 			e.taunt = impact
 		}
-		if def := e.applyStatus(st, p.ID, from, w.tick, 1+0.01*float64(p.Profile.SkillLevel(a.SkillOf()))); def != nil {
+		if def := e.applyStatus(st, p.ID, from, w.tick, (1+0.01*float64(p.Profile.SkillLevel(a.SkillOf())))*D.DamageMult(p.Level)); def != nil {
 			if killing {
 				e.markKilling(def)
 			}

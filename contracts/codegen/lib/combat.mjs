@@ -258,6 +258,14 @@ export function parseCombat(doc, consts) {
   const t = doc.tables;
   for (const list of [...Object.values(t.biome), ...Object.values(t.site), ...Object.values(t.depth).map((d) => d.extra)]) for (const k of list) if (!enemyKeys.has(k)) fail(`tables: unknown enemy ${k}`);
   for (const k of Object.values(t.element)) if (!enemyKeys.has(k)) fail(`tables: unknown enemy ${k}`);
+  // Playtest 1 (CR 012): the beginner table (Haven, quiet lands) names non-demon, non-boss enemies.
+  const beginner = t.beginner ?? [];
+  if (!beginner.length) fail('tables.beginner: at least one enemy (CR 012)');
+  for (const k of beginner) {
+    const e = enemies.find((x) => x.key === k);
+    if (!e) fail(`tables.beginner: unknown enemy ${k}`);
+    if (e.family === 'demon' || e.family === 'boss') fail(`tables.beginner: ${k} is a ${e.family}`);
+  }
   const biomes = ['meadow', 'forest', 'highlands', 'snowpeak', 'badlands', 'wetland'];
   for (const b of biomes) if (!t.biome[b]) fail(`tables.biome: missing ${b} (worldgen biome ids 0..5)`);
   const tables = {
@@ -265,7 +273,49 @@ export function parseCombat(doc, consts) {
     element: elements.map((e) => t.element[e]),
     site: t.site,
     depth: t.depth,
+    beginner,
   };
+
+  // Playtest 1 (CR 012): leveling and discovery-stamped difficulty.
+  const lv = doc.leveling;
+  if (!lv) fail('leveling: missing (CR 012)');
+  const num = (v, what) => {
+    if (typeof v !== 'number' || !Number.isFinite(v) || v < 0) fail(`${what}: a non-negative number`);
+    return v;
+  };
+  const spellTierLevels = Object.entries(lv.spellTierLevels ?? {})
+    .map(([tier, level]) => ({ tier: Number(tier), level: num(level, `leveling.spellTierLevels.${tier}`) }))
+    .sort((a, b) => a.tier - b.tier);
+  for (let i = 1; i < spellTierLevels.length; i++) if (spellTierLevels[i].level < spellTierLevels[i - 1].level) fail('leveling.spellTierLevels: levels must not decrease with the tier');
+  const leveling = {
+    health: { base: num(lv.health.base, 'leveling.health.base'), perLevel: num(lv.health.perLevel, 'leveling.health.perLevel') },
+    damagePctPerLevel: num(lv.damagePctPerLevel, 'leveling.damagePctPerLevel'),
+    stamina: { perLevel: num(lv.stamina.perLevel, 'leveling.stamina.perLevel'), max: num(lv.stamina.max, 'leveling.stamina.max') },
+    skillPoints: { base: num(lv.skillPoints.base, 'leveling.skillPoints.base'), perLevel: num(lv.skillPoints.perLevel, 'leveling.skillPoints.perLevel') },
+    spellTierLevels,
+    attune: { stamina: num(lv.attune.stamina, 'leveling.attune.stamina'), health: num(lv.attune.health, 'leveling.attune.health'), skillPoints: num(lv.attune.skillPoints, 'leveling.attune.skillPoints'), xp: num(lv.attune.xp, 'leveling.attune.xp') },
+  };
+  const df = doc.difficulty;
+  if (!df) fail('difficulty: missing (CR 012)');
+  for (const k of ['cellM', 'havenRadiusM', 'maxStep', 'neighbourWeight', 'dangerBonus', 'maxLevel', 'stampReachM', 'demonSafeBelow', 'demonSafeMarginM']) num(df[k], `difficulty.${k}`);
+  if (df.neighbourWeight > 1) fail('difficulty.neighbourWeight: 0..1');
+  if (C.WORLD_SIZE_M % df.cellM !== 0) fail('difficulty.cellM must divide WORLD_SIZE_M');
+  if (df.stampReachM <= C.ENEMY_SPAWN_M) fail("difficulty.stampReachM must exceed ENEMY_SPAWN_M (a group's area is stamped before it spawns)");
+  const tierKeys = new Set();
+  let lastMin = -1;
+  const tiers = df.tiers.map((tr, i) => {
+    if (tierKeys.has(tr.key)) fail(`difficulty.tiers: duplicate ${tr.key}`);
+    tierKeys.add(tr.key);
+    if (i === 0 && tr.key !== 'haven') fail('difficulty.tiers: the first tier is the haven');
+    if (tr.minLevel <= lastMin) fail('difficulty.tiers: minLevel must increase');
+    lastMin = tr.minLevel;
+    for (const k of ['beginner', 'elite', 'demons', 'greater', 'demonSpeed']) num(tr[k], `difficulty.tiers.${tr.key}.${k}`);
+    if (tr.beginner > 1) fail(`difficulty.tiers.${tr.key}.beginner: 0..1`);
+    return { key: tr.key, name: tr.name, minLevel: tr.minLevel, beginner: tr.beginner, elite: tr.elite, demons: tr.demons, greater: tr.greater, demonSpeed: tr.demonSpeed, lords: !!tr.lords, bosses: !!tr.bosses, defense: !!tr.defense };
+  });
+  if (tiers.length < 2 || tiers[1].minLevel !== 1) fail('difficulty.tiers: the first non-haven tier starts at level 1');
+  if (tiers[0].demons !== 0) fail('difficulty.tiers.haven: no demons in the Haven');
+  const difficulty = { cellM: df.cellM, havenRadiusM: df.havenRadiusM, maxStep: df.maxStep, neighbourWeight: df.neighbourWeight, dangerBonus: df.dangerBonus, maxLevel: df.maxLevel, stampReachM: df.stampReachM, demonSafeBelow: df.demonSafeBelow, demonSafeMarginM: df.demonSafeMarginM, tiers };
 
   const pairs = {};
   for (const [a, list] of Object.entries(doc.effectiveness.pairs)) pairs[elIndex(a, 'effectiveness')] = list.map((d) => elIndex(d, 'effectiveness'));
@@ -296,6 +346,8 @@ export function parseCombat(doc, consts) {
     affixes,
     tables,
     demons,
+    leveling,
+    difficulty,
   };
 }
 
@@ -349,9 +401,23 @@ export interface CombatDefs {
   names: Record<string, string>; pending: string[];
   enemyAttacks: EnemyAttackDef[]; enemies: EnemyDef[]; bosses: BossDef[]; bossTitles: Record<string, string>; bossNames: Record<string, string>;
   affixes: AffixDef[];
-  tables: { biome: string[][]; element: string[]; site: Record<string, string[]>; depth: Record<string, { extra: string[]; levelBonus: number; eliteChance: number }> };
+  tables: { biome: string[][]; element: string[]; site: Record<string, string[]>; depth: Record<string, { extra: string[]; levelBonus: number; eliteChance: number }>; beginner: string[] };
   /** WP15: night spawn tables (greater: indexed by element). */
   demons: { regen: Record<string, number>; lesser: string[]; greater: string[]; lord: string };
+  /** Playtest 1 (CR 012): what a character level gives. */
+  leveling: LevelingDef;
+  /** Playtest 1 (CR 012): discovery-stamped area difficulty. */
+  difficulty: DifficultyDef;
+}
+export interface LevelingDef {
+  health: { base: number; perLevel: number }; damagePctPerLevel: number; stamina: { perLevel: number; max: number };
+  skillPoints: { base: number; perLevel: number }; spellTierLevels: { tier: number; level: number }[];
+  attune: { stamina: number; health: number; skillPoints: number; xp: number };
+}
+export interface DifficultyTierDef { key: string; name: string; minLevel: number; beginner: number; elite: number; demons: number; greater: number; demonSpeed: number; lords: boolean; bosses: boolean; defense: boolean }
+export interface DifficultyDef {
+  cellM: number; havenRadiusM: number; maxStep: number; neighbourWeight: number; dangerBonus: number; maxLevel: number; stampReachM: number;
+  demonSafeBelow: number; demonSafeMarginM: number; tiers: DifficultyTierDef[];
 }
 `;
 

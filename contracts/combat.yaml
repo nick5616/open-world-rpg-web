@@ -22,7 +22,8 @@
 # the elemental forms and the new passives are PROPOSALS pending Nicole's
 # approval (docs/proposals/spell-names.md); they are listed under `pending`.
 # Ported wizard-wars names are unchanged.
-version: 2   # v2: WP15 (docs/cr/011-wp15-night-chemistry.md): materials, killsDemons on the Light tree and form, demons
+version: 3   # v2: WP15 (docs/cr/011-wp15-night-chemistry.md): materials, killsDemons on the Light tree and form, demons
+             # v3: playtest 1 (docs/cr/012-progression-difficulty.md): slimes, the beginner table, leveling, discovery-stamped difficulty tiers
 
 elements: [fire, ice, lightning, earth, wind, light, dark, void] # index = worldgen element id; 8 = physical
 
@@ -539,6 +540,10 @@ enemyAttacks:
   golem_punch: {id: 23, shape: cone, reach: 2.8, arc: 80, windupMs: 500, activeMs: 117, recoveryMs: 700, cooldownMs: 2400, damage: 16}
   harpy_dive: {id: 24, shape: ground, radius: 2.0, windupMs: 450, activeMs: 100, recoveryMs: 600, cooldownMs: 4000, damage: 11, reach: 9, minRange: 3}
   crawler_bite: {id: 25, shape: cone, reach: 2.2, arc: 80, windupMs: 350, activeMs: 100, recoveryMs: 500, cooldownMs: 1700, damage: 10}
+  # slimes (playtest 1, CR 012): the beginner family of the Haven around the
+  # world spawn. Slow, readable, soft-hitting.
+  slime_bump: {id: 30, shape: cone, reach: 1.8, arc: 90, windupMs: 500, activeMs: 100, recoveryMs: 600, cooldownMs: 2000, damage: 5}
+  slime_hop: {id: 31, shape: ground, radius: 1.6, reach: 5, windupMs: 600, activeMs: 100, recoveryMs: 700, cooldownMs: 5000, damage: 7, minRange: 2}
   # demons (WP15, CR 011): lesser packs, one element ability per greater demon, the lords
   demon_claw: {id: 60, shape: cone, reach: 2.4, arc: 90, windupMs: 350, activeMs: 100, recoveryMs: 450, cooldownMs: 1500, damage: 10}
   demon_lunge: {id: 61, shape: line, charge: true, reach: 7, width: 1.4, windupMs: 450, activeMs: 300, recoveryMs: 600, cooldownMs: 4500, damage: 12, minRange: 3}
@@ -590,6 +595,12 @@ enemies:
   cave_crawler: {id: 40, family: cave, hp: 82, speed: 5.5, aggro: 16, attacks: [crawler_bite, pounce], behavior: melee, xp: 22, size: 0.9, color: '#5a4a5a'}
   gloom_bat: {id: 41, family: cave, hp: 80, speed: 7.0, aggro: 20, attacks: [bite, harpy_dive], behavior: flyer, keepAway: 4, xp: 20, size: 0.6, color: '#3a3a4a'}
   crystal_golem: {id: 42, family: cave, hp: 94, speed: 3.5, aggro: 14, attacks: [golem_punch, elemental_burst], behavior: melee, xp: 34, size: 1.4, color: '#8fd4ff'}
+  # slimes (playtest 1, CR 012): beginner creatures. The Haven around the
+  # world spawn holds nothing else; quiet lands (area level 1-3) mix them
+  # with the biome's beasts. 2-3 hits with the starting sword, slower than a
+  # walking player, short aggro.
+  slime: {id: 50, family: slime, hp: 52, speed: 3.6, aggro: 12, attacks: [slime_bump, slime_hop], behavior: melee, xp: 10, size: 0.8, color: '#7fd36b'}
+  moss_slime: {id: 51, family: slime, hp: 60, speed: 3.2, aggro: 12, attacks: [slime_bump, slime_hop], behavior: melee, xp: 12, size: 0.95, color: '#4f8f3a'}
   # demons (WP15, CR 011; spec 8 "Night and demons"). They regenerate from
   # ordinary damage (demon.regen = fraction of max health per second) and
   # die only to killsDemons hits (sunsteel, Light), or at sunrise. Ranks:
@@ -668,6 +679,8 @@ enemyNames:
   cave_crawler: Cave Crawler
   gloom_bat: Gloom Bat
   crystal_golem: Crystal Golem
+  slime: Dewdrop Slime
+  moss_slime: Mossback Slime
   warden: Warden
   archon: Archon
   gloamling: Gloamling
@@ -693,6 +706,9 @@ tables:
   # Spec 8: each biome, depth band and region element has its own enemy
   # table. A group draws from the biome (or site) table, mixes in the
   # region element's elemental, and deeper bands add the cave families.
+  # Playtest 1 (CR 012): the area's difficulty tier (below) can replace
+  # part or all of a group with the beginner table.
+  beginner: [slime, slime, moss_slime]
   biome:
     meadow: [boar, wolf, cutthroat]
     forest: [wolf, boar, lurker]
@@ -719,3 +735,65 @@ tables:
     mid: {extra: [cave_crawler, gloom_bat], levelBonus: 4, eliteChance: 0.2}
     deep: {extra: [gloom_bat, crystal_golem], levelBonus: 8, eliteChance: 0.35}
     surface: {extra: [], levelBonus: 0, eliteChance: 0.15}
+
+leveling:
+  # Playtest 1 (CR 012): what a character level gives, applied by the zone
+  # (combat.Player.SetLevel, the movement state's stamina wheel) and shown by
+  # the client's character panel (C). Mana keeps `mana.base/perLevel`.
+  # Curve vs enemies (decision 0021): enemies gain +10 % health and +6 %
+  # damage per level; players +8 % damage and +12 health (12 % of the base)
+  # per level, so an at-level common still dies in 2-5 hits (within ~17 %
+  # of the level-1 count at level 30, before weapon skill and gear) and an
+  # over-levelled player feels it: +8 levels kill commons in 1-3 hits.
+  health: {base: 100, perLevel: 12}
+  damagePctPerLevel: 8
+  # Stamina wheel: +2 per level above 1 (capped), on top of the 100 start.
+  stamina: {perLevel: 2, max: 60}
+  # Spell skill points (spec 8 "character level still exists for health and
+  # spell skill points"): base + one per level; tower attunements add more.
+  skillPoints: {base: 1, perLevel: 1}
+  # Tree tiers unlock with level (skill-point learning only; tomes still
+  # teach anything): tier >= key needs character level >= value.
+  spellTierLevels: {4: 3, 6: 6, 8: 10, 10: 14, 12: 18}
+  # First attunement of each tower crystal (Interact 10 action 2 on its top):
+  # a permanent boon (spec 8: stamina upgrades come from rare finds at towers).
+  attune: {stamina: 8, health: 5, skillPoints: 1, xp: 100}
+
+difficulty:
+  # Playtest 1 (CR 012, decision 0021): discovery-stamped area difficulty.
+  # The world is cut into square areas of cellM metres (4 x 4 chunks, the
+  # zone's 256 m combat grid). The first player to come near an area stamps
+  # its level persistently (Postgres area_difficulty, first writer wins, so
+  # every zone of a world agrees) from their character level, pulled toward
+  # the already-stamped neighbours (mean of the 8 around it, weight
+  # neighbourWeight) and clamped to within maxStep of them, plus up to
+  # dangerBonus from the generator's region danger. Areas whose centre lies
+  # within havenRadiusM of the world spawn are the Haven: fixed level 1,
+  # beginner creatures only, no demons, never stamped.
+  cellM: 256
+  havenRadiusM: 420
+  maxStep: 3
+  neighbourWeight: 0.5
+  dangerBonus: 2
+  maxLevel: 30
+  # A player stamps every unstamped area whose square is within stampReachM
+  # of them (more than ENEMY_SPAWN_M, so a group's area is known before it
+  # spawns).
+  stampReachM: 200
+  # Players below demonSafeBelow are not hunted within demonSafeMarginM of
+  # any ward (towns stay safe havens a little beyond their gardens).
+  demonSafeBelow: 6
+  demonSafeMarginM: 90
+  # Tiers by area level (the last whose minLevel <= level; the Haven is its
+  # own tier). beginner: share of camp/pack members drawn from the beginner
+  # table (1 = all); elite: multiplier on the elite chance; demons: on night
+  # hunters per player; greater: on the greater-demon chance; demonSpeed: on
+  # demon speed; lords, bosses, defense: whether lords rise, boss arenas
+  # spawn, town defense events run.
+  tiers:
+    - {key: haven, name: Haven, minLevel: 0, beginner: 1, elite: 0, demons: 0, greater: 0, demonSpeed: 1, lords: false, bosses: false, defense: false}
+    - {key: quiet, name: Quiet Lands, minLevel: 1, beginner: 0.5, elite: 0, demons: 0, greater: 0, demonSpeed: 1, lords: false, bosses: true, defense: false}
+    - {key: wilds, name: The Wilds, minLevel: 4, beginner: 0, elite: 0.5, demons: 0.35, greater: 0, demonSpeed: 0.85, lords: false, bosses: true, defense: false}
+    - {key: perilous, name: Perilous Lands, minLevel: 8, beginner: 0, elite: 1, demons: 0.7, greater: 0.6, demonSpeed: 1, lords: false, bosses: true, defense: true}
+    - {key: dread, name: Dreadlands, minLevel: 13, beginner: 0, elite: 1.3, demons: 1, greater: 1, demonSpeed: 1, lords: true, bosses: true, defense: true}
+    - {key: deadly, name: The Deadlands, minLevel: 20, beginner: 0, elite: 1.6, demons: 1.25, greater: 1.5, demonSpeed: 1.05, lords: true, bosses: true, defense: true}
