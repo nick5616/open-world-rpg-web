@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* global requestAnimationFrame, PerformanceObserver, localStorage, setInterval, clearInterval */
+/* global requestAnimationFrame, PerformanceObserver, localStorage, setInterval, clearInterval, WebGL2RenderingContext */
 // Traversal benchmark (spec 12 budgets, spec 14 "Traversal benchmark"):
 // a headless Chromium walks, then flies a fixed path across every biome of
 // the default world, recording frame times, main-thread long tasks (> 50 ms),
@@ -105,7 +105,8 @@ async function runTier(tier) {
   });
 
   const t0 = Date.now();
-  await page.goto(`${base}/?autoplay=1&nocache=1`);
+  // LODESTONE_BENCH_QUERY: extra URL parameters (WP19b: `nowarmup` measures without the shader warm-up).
+  await page.goto(`${base}/?autoplay=1&nocache=1${process.env.LODESTONE_BENCH_QUERY ? `&${process.env.LODESTONE_BENCH_QUERY}` : ''}`);
   await page.waitForSelector('[data-testid="world-loading"]', { timeout: 60000 });
   await page.waitForSelector('[data-testid="world-loading"]', { state: 'detached', timeout: 120000 });
   const loadMs = Date.now() - t0;
@@ -138,7 +139,7 @@ async function runTier(tier) {
       const progs = window.__r3f?.gl?.info?.programs ?? [];
       const linked = b.links.filter((l) => l.recording).map((l) => {
         const pr = progs.find((x) => x.program === l.p);
-        return { t: Math.round(l.t), name: pr ? pr.name : '?' };
+        return { t: Math.round(l.t), name: pr ? pr.name : '?', key: pr ? String(pr.cacheKey) : '', similar: pr ? progs.filter((x) => x !== pr && String(x.cacheKey).startsWith(String(pr.cacheKey).slice(0, 20))).map((x) => String(x.cacheKey)) : [] };
       });
       b.links = b.links.filter((l) => !l.recording);
       const res = { frames: b.frames, samples: b.samples, longTasks: b.longTasks.filter((l) => l.recording), stats: window.__lodestoneWorld.stats(), linked };

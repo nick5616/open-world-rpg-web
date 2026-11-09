@@ -40,6 +40,10 @@ class WorldDebug {
   textureMs = 0;
   /** ms from page start to the first frame with the ground under the player drawn. */
   firstPlayableMs: number | null = null;
+  /** WP19b: the shader warm-up for the current post chain is done (warmup.ts). */
+  shadersWarm = false;
+  /** WP19b: the last warm-up's result (ms, programs, done). */
+  warmup: { ms: number; programs: number; done: boolean } | null = null;
 
   attach(r: WorldRuntime, t: TerrainManager, s: ScatterManager) {
     this.runtime = r;
@@ -93,6 +97,7 @@ class WorldDebug {
       load: this.runtime?.timings,
       textures: { bytes: this.textureBytes, ms: this.textureMs },
       firstPlayableMs: this.firstPlayableMs,
+      warmup: this.warmup,
       heap: mem ? { used: mem.usedJSHeapSize, total: mem.totalJSHeapSize } : null,
       seed: this.runtime?.seed,
       atlasHash: this.runtime?.atlasHashHex,

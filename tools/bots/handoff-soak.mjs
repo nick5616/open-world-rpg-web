@@ -203,6 +203,17 @@ ${top}`);
     }
     lines.push(`zone log ${z.id}: ${JSON.stringify(counts)}`);
   }
+  // WP19b: the director's load moves (zoneregistry.Rebalance), in order.
+  const dlog = fs.readFileSync(path.join(TMP, 'director.log'), 'utf8').split('\n').filter((l) => l.includes('region moved for load'));
+  lines.push(`director load moves: ${dlog.length}`);
+  for (const l of dlog) {
+    try {
+      const j = JSON.parse(l);
+      lines.push(`  ${j.time} ${j.move}`);
+    } catch {
+      lines.push(`  ${l.slice(0, 200)}`);
+    }
+  }
   fs.mkdirSync(EVIDENCE, { recursive: true });
   fs.copyFileSync(out, path.join(EVIDENCE, `${PREFIX}-${TAG}.json`));
   exitCode = code === 0 ? 0 : 1;

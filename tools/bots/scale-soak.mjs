@@ -179,18 +179,26 @@ try {
   lines.push('---- zone tick, 60 s windows sampled every 5 s (steady state: all bots in, t >= 60 s) ----');
   for (const r of series) lines.push(`t=${String(r.s).padStart(4)}s players ${r.players} enemies ${r.enemies} awake ${r.awake} | tick p50 ${r.p50?.toFixed(2)} p99 ${r.p99?.toFixed(2)} max ${r.max?.toFixed(1)} ms`);
   if (worst) step(`steady state: worst 60 s window tick p99 ${worst.p99.toFixed(2)} ms (budget 12), min awake enemies ${minAwake}, samples ${steady.length}`);
+  // WP19b: windows that start after the join ramp and the bots' warmup (a
+  // window ending at t = 60 s still holds 300 joins, 500 camps spawning and
+  // every first-sight record). Reported next to the t >= 60 s number above.
+  const rampS = Math.max(10, Math.round(BOTS / 20)) + 30;
+  const post = steady.filter((r) => r.s >= rampS + 60);
+  const worstPost = post.reduce((m, r) => (r.p99 > (m?.p99 ?? -1) ? r : m), null);
+  if (worstPost) step(`after the join ramp (windows from t=${rampS} s): worst 60 s window tick p99 ${worstPost.p99.toFixed(2)} ms, p50 ${Math.min(...post.map((r) => r.p50)).toFixed(2)}-${Math.max(...post.map((r) => r.p50)).toFixed(2)} ms, samples ${post.length}`);
   const summary = JSON.parse(fs.readFileSync(out, 'utf8'));
   if (lastPhases) {
     lines.push('', '---- tick phases, last minute before the end (ms) ----', JSON.stringify(lastPhases));
     step(`tick phases mean ${JSON.stringify(lastPhases.meanMs)} slowest tick ${JSON.stringify(lastPhases.slowestTickMs)}`);
   }
-  const result = { phases: lastPhases, tag: TAG, bots: BOTS, enemies: ENEMIES, profile: PROFILE, center: CENTER, radius: RADIUS, procs: PROCS, duration: DURATION, series, steadyWorstP99: worst?.p99 ?? null, minAwake, bots_summary: summary };
+  const result = { phases: lastPhases, tag: TAG, bots: BOTS, enemies: ENEMIES, profile: PROFILE, center: CENTER, radius: RADIUS, procs: PROCS, duration: DURATION, series, steadyWorstP99: worst?.p99 ?? null, postRampWorstP99: worstPost?.p99 ?? null, minAwake, bots_summary: summary };
   fs.mkdirSync(EVIDENCE, { recursive: true });
   fs.writeFileSync(path.join(EVIDENCE, `${PREFIX}-s1-${TAG}.json`), JSON.stringify(result, null, 1));
   fs.copyFileSync(prom, path.join(EVIDENCE, `${PREFIX}-s1-${TAG}.prom`));
   const tickOK = worst && worst.p99 <= 12;
   const downOK = summary.downKbps?.max <= 160;
-  step(`verdict: tick p99 ${tickOK ? 'PASS' : 'FAIL'} (${worst?.p99?.toFixed(2)} ms), downlink max ${downOK ? 'PASS' : 'FAIL'} (${summary.downKbps?.max?.toFixed(1)} kbps, budget 160), awake >= 2000: ${minAwake >= ENEMIES * 0.95 ? 'yes' : 'no'} (${minAwake})`);
+  const postOK = worstPost && worstPost.p99 <= 12;
+  step(`verdict: tick p99 ${tickOK ? 'PASS' : 'FAIL'} (${worst?.p99?.toFixed(2)} ms, t >= 60 s), after the join ramp ${postOK ? 'PASS' : 'FAIL'} (${worstPost?.p99?.toFixed(2)} ms), downlink max ${downOK ? 'PASS' : 'FAIL'} (${summary.downKbps?.max?.toFixed(1)} kbps, budget 160), awake >= 2000: ${minAwake >= ENEMIES * 0.95 ? 'yes' : 'no'} (${minAwake})`);
   exitCode = tickOK && downOK ? 0 : 3;
   killTree(zone);
   await Promise.race([zoneExit, sleep(5000)]);
