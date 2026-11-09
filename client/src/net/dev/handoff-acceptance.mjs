@@ -36,7 +36,9 @@ const DB = 'lodestone_wp04_wp16e2e';
 const PORT = { account: 18391, director: 18390, zoneA: 18392, proxyA: 18393, zoneB: 18396, proxyB: 18397, vite: 5193 };
 const EXE = process.platform === 'win32' ? '.exe' : '';
 const BORDER_X = 2048;
-const OUT = FAILOVER ? 'wp16-failover-browsers' : 'wp16-border-browsers';
+// WP19: --prefix renames the evidence (default wp16) so re-runs keep WP16's files.
+const PREFIX = arg('prefix', 'wp16');
+const OUT = FAILOVER ? `${PREFIX}-failover-browsers` : `${PREFIX}-border-browsers`;
 
 fs.mkdirSync(EVIDENCE, { recursive: true });
 const lines = [];
@@ -205,7 +207,7 @@ try {
   const [da0, db0] = [await debug(a), await debug(b)];
   check(da0.zoneId === 'zone-west' && db0.zoneId === 'zone-west', 'both start on zone-west (the director routed them by region)', { A: da0.zoneId, B: db0.zoneId });
   check(da0.standby.includes('zone-east') && db0.standby.includes('zone-east'), 'both pre-connected to zone-east (within the 64 m ghost band)', { A: da0.standby, B: db0.standby });
-  await a.screenshot({ path: path.join(EVIDENCE, 'wp16-border-start-a.png') });
+  await a.screenshot({ path: path.join(EVIDENCE, `${PREFIX}-border-start-a.png`) });
 
   const pre = { A: counters(da0), B: counters(db0) };
   const samples = [];
@@ -220,7 +222,7 @@ try {
   // eased remote lurch that has nothing to do with zones: leave it out of
   // the measured window.
   const shotFrom = Date.now();
-  await a.screenshot({ path: path.join(EVIDENCE, 'wp16-border-east-a.png') });
+  await a.screenshot({ path: path.join(EVIDENCE, `${PREFIX}-border-east-a.png`) });
   await sleep(1500);
   const shotTo = Date.now();
   const resume = [await debug(a), await debug(b)];
@@ -230,7 +232,7 @@ try {
   samples.push(await sample(a, b));
   const walkS = (Date.now() - t0) / 1000;
   const [da, dbb] = [await debug(a), await debug(b)];
-  await b.screenshot({ path: path.join(EVIDENCE, 'wp16-border-back-b.png') });
+  await b.screenshot({ path: path.join(EVIDENCE, `${PREFIX}-border-back-b.png`) });
   // Measured = everything since pre, minus the screenshot interval.
   const raw = { A: counters(da), B: counters(dbb) };
   const post = { A: subC(raw.A, excluded.A), B: subC(raw.B, excluded.B) };
@@ -301,7 +303,7 @@ try {
     await sleep(1000);
     const [ga, gb] = [await debug(a), await debug(b)];
     check(ga.prediction.reconciles - preF[0].reconciles === 0 && gb.prediction.reconciles - preF[1].reconciles === 0, 'zero corrections walking on the survivor after the failover');
-    await a.screenshot({ path: path.join(EVIDENCE, 'wp16-failover-a.png') });
+    await a.screenshot({ path: path.join(EVIDENCE, `${PREFIX}-failover-a.png`) });
   }
   fs.writeFileSync(path.join(EVIDENCE, `${OUT}.json`), JSON.stringify(result, null, 2) + '\n');
   const errors = consoleLog.filter((l) => /pageerror/.test(l));
