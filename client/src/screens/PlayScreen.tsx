@@ -21,6 +21,8 @@ import { CombatHud } from '../combat/CombatHud';
 import { VoiceHud } from '../voice';
 // WP14: inventory (I), crafting panel (forge/cook stations), loot toasts, Bitchin' banner, [E] containers/pickups (client/src/ui/inventory/README.md).
 import { CraftPanel, InventoryScreen, LootHud } from '../ui/inventory';
+// Playtest 1: level-up fanfare, character panel (C), area notices, crystal tower prompt (client/src/ui/progression/README.md).
+import { ProgressionHud } from '../ui/progression';
 
 function DebugLayer() {
   useDebugHotkeys();
@@ -52,6 +54,7 @@ export default function PlayScreen() {
       <LootHud />
       <InventoryScreen />
       <CraftPanel />
+      <ProgressionHud />
     </>
   );
 }

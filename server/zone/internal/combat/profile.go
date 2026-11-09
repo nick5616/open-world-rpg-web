@@ -133,7 +133,7 @@ func (p *Profile) Knows(key string) bool { return slices.Contains(p.Known, key) 
 // SkillPoints is how many points a character of `level` has to spend:
 // two at level 1 plus one per level (spec 8: character level gives "spell
 // skill points"); the starting kit is free.
-func SkillPoints(level int) int { return 1 + max(1, level) }
+func SkillPoints(level int) int { return D.SkillPointsFor(level) }
 
 // Spent is the number of points spent on learned nodes.
 func (p *Profile) Spent() int {
@@ -153,11 +153,17 @@ const (
 	LearnKnown
 	LearnPrereq
 	LearnNoPoints
+	LearnLevel // playtest 1: the spell's tree tier needs a higher character level (CR 012)
 )
 
 // Learn unlocks a tree node with a skill point (prereqs OR'd, as in
 // wizard-wars canUnlockNode). Tomes (WP14) call Grant instead.
-func (p *Profile) Learn(key string, level int) int {
+func (p *Profile) Learn(key string, level int) int { return p.LearnWith(key, level, 0) }
+
+// LearnWith is Learn with extra skill points beyond the level's (playtest
+// 1: tower attunement boons) and the tier gate (combat.yaml
+// leveling.spellTierLevels).
+func (p *Profile) LearnWith(key string, level, bonusPoints int) int {
 	s := D.SpellByKey(key)
 	if s == nil {
 		return LearnUnknown
@@ -175,7 +181,10 @@ func (p *Profile) Learn(key string, level int) int {
 	if len(pre) > 0 && !slices.ContainsFunc(pre, p.Knows) {
 		return LearnPrereq
 	}
-	if p.Spent() >= SkillPoints(level) {
+	if level < D.TierLevel(int(s.Tier)) {
+		return LearnLevel
+	}
+	if p.Spent() >= SkillPoints(level)+bonusPoints {
 		return LearnNoPoints
 	}
 	p.Known = append(p.Known, key)

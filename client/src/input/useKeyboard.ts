@@ -20,7 +20,7 @@ export const KEY_MAP: Record<string, keyof HeldButtons> = {
   ShiftLeft: 'sprint',
   ShiftRight: 'sprint',
   ControlLeft: 'crouch',
-  KeyC: 'crouch',
+  // KeyC opens the character panel (playtest 1); crouch stays on Ctrl.
   KeyG: 'glide', // WP10: open/close the glider without spending the double jump
 };
 

@@ -83,7 +83,7 @@ func (p *progressStore) LoadProgress(_ context.Context, id string, sites []uint6
 	}
 	pr := explore.NewProgress()
 	pr.XP, pr.Level = s.XP, s.Level
-	pr.Towers, pr.Waypoints, pr.Discoveries = s.Towers, s.Waypoints, s.Discoveries
+	pr.Towers, pr.Waypoints, pr.Discoveries, pr.Attuned = s.Towers, s.Waypoints, s.Discoveries, s.Attuned
 	pr.LoadPinsJSON(s.Pins)
 	if s.LastWaypoint != nil {
 		for i, sid := range sites {

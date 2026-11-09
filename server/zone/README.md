@@ -595,3 +595,47 @@ per-client output are unchanged; equivalence tests prove it.
   (`scale_bench_test.go`: in-process tick at 150/300/460 players, 300 + 2,000
   enemies; flat ground, fake connections, no profiler hazards).
 
+
+## Progression and difficulty (playtest 1)
+
+Decision: `docs/decisions/0021-discovery-difficulty.md`. Contract: `docs/cr/012-progression-difficulty.md`.
+
+- **Discovery-stamped areas** (`internal/difficulty`, glue
+  `internal/game/difficulty.go`, wiring `difficulty.go`): 256 m areas are
+  stamped once, first writer wins in Postgres `area_difficulty` (migration
+  0021; `MemStore` without a database), from the level of the first player
+  to come within 200 m, smoothed against stamped neighbours. The Haven (420 m
+  around the world spawn) is level 1 forever. Lookups on the tick are O(1)
+  (a flat array); claims go to one worker goroutine over a channel and come
+  back over another, so no tick touches the database. Atlas groups spawn
+  only in known areas at the area's level and tier (slimes in the Haven,
+  half slimes in quiet lands, elites scaled); Event 901 tells the player
+  the area they stand in. `GET /debug/difficulty` lists known areas,
+  claim counters and players. `LODESTONE_ZONE_NO_DIFFICULTY=1` restores the
+  WP13 region danger curve.
+- **Demon pacing** (`night.go` hooks): hunters, greater demons, lords and
+  defense events scale by the area's tier (none in the Haven and quiet
+  lands; a slowed straggler in the wilds); players below level 6 are not
+  hunted within 90 m of a ward; demons never rise in an area whose tier has
+  none. Dev raises (Interact 52/3) ignore tiers. WP15's rules are unchanged.
+  Also fixed: zones without a cave world read every entity's `caveSys` as
+  0 ("underground"), so natural hunts never ran in flat test zones.
+- **Leveling** (`internal/game/progression.go`, `combat.yaml leveling`):
+  health +12, damage +10 % (every attack, spell and DOT), stamina +2 (the
+  movement state's `StaminaMax`, on `SelfState`) and a skill point per
+  level; spell tiers gated by level for skill-point learning (`LearnWith`).
+  Every level-up goes through `levelChanged`: 604, a full refill,
+  combat_sync, Event 900 `character_stats` (reason 1). 900 also goes out at
+  join and after attunements.
+- **Crystal attunement**: Interact 10 action 2 on a tower's top
+  (`explore.World.Attune`, server-validated like the unlock): the first
+  time per tower, a permanent boon (+8 stamina, +5 health, +1 skill point,
+  +100 XP; derived from `character_progress.attuned`), Event 902
+  `tower_attuned` (the hook for the client's discovery moment), else 903.
+- Tests: `internal/difficulty` (rule, Haven, first writer wins in memory
+  and on Postgres), `internal/game/progression_test.go` (Haven at night,
+  level-15 stamp, quiet lands, two in-process zones agree, wilds night
+  pacing, level-up stats, attunement once + saved, wire vectors),
+  `internal/combat/sim_test.go` (beginner time to kill, the level curve),
+  `zone_progression_integration_test.go` (zone processes + Postgres:
+  `docs/evidence/pt-progression-process.txt`).

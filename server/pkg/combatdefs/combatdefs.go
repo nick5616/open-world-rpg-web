@@ -376,6 +376,9 @@ type Defs struct {
 		Element []string             `json:"element"`
 		Site    map[string][]string  `json:"site"`
 		Depth   map[string]DepthBand `json:"depth"`
+		// Beginner is the playtest-1 beginner table (CR 012): the Haven's
+		// creatures, mixed into quiet lands.
+		Beginner []string `json:"beginner"`
 	} `json:"tables"`
 	// Demons are the WP15 night spawn tables (Greater indexed by element).
 	Demons struct {
@@ -384,6 +387,9 @@ type Defs struct {
 		Greater []string           `json:"greater"`
 		Lord    string             `json:"lord"`
 	} `json:"demons"`
+	// Leveling and Difficulty are playtest 1's (CR 012, decision 0021).
+	Leveling   Leveling   `json:"leveling"`
+	Difficulty Difficulty `json:"difficulty"`
 
 	// Indexes (built at load).
 	moveByID    map[int]*Move
@@ -591,6 +597,108 @@ func (d *Defs) MaxMana(level int) float64 {
 // ManaRegen per second for a character level.
 func (d *Defs) ManaRegen(level int) float64 {
 	return d.Mana.RegenPerS + d.Mana.RegenPerLevel*float64(max(0, level-1))
+}
+
+// Leveling is what a character level gives (combat.yaml leveling, CR 012).
+type Leveling struct {
+	Health struct {
+		Base     float64 `json:"base"`
+		PerLevel float64 `json:"perLevel"`
+	} `json:"health"`
+	DamagePctPerLevel float64 `json:"damagePctPerLevel"`
+	Stamina           struct {
+		PerLevel float64 `json:"perLevel"`
+		Max      float64 `json:"max"`
+	} `json:"stamina"`
+	SkillPoints struct {
+		Base     int `json:"base"`
+		PerLevel int `json:"perLevel"`
+	} `json:"skillPoints"`
+	SpellTierLevels []struct {
+		Tier  int `json:"tier"`
+		Level int `json:"level"`
+	} `json:"spellTierLevels"`
+	Attune struct {
+		Stamina     float64 `json:"stamina"`
+		Health      float64 `json:"health"`
+		SkillPoints int     `json:"skillPoints"`
+		XP          int64   `json:"xp"`
+	} `json:"attune"`
+}
+
+// DifficultyTier is one band of area levels (combat.yaml difficulty.tiers).
+type DifficultyTier struct {
+	Key        string  `json:"key"`
+	Name       string  `json:"name"`
+	MinLevel   int     `json:"minLevel"`
+	Beginner   float64 `json:"beginner"`
+	Elite      float64 `json:"elite"`
+	Demons     float64 `json:"demons"`
+	Greater    float64 `json:"greater"`
+	DemonSpeed float64 `json:"demonSpeed"`
+	Lords      bool    `json:"lords"`
+	Bosses     bool    `json:"bosses"`
+	Defense    bool    `json:"defense"`
+}
+
+// Difficulty is the discovery-stamped area difficulty (CR 012).
+type Difficulty struct {
+	CellM            float64          `json:"cellM"`
+	HavenRadiusM     float64          `json:"havenRadiusM"`
+	MaxStep          int              `json:"maxStep"`
+	NeighbourWeight  float64          `json:"neighbourWeight"`
+	DangerBonus      float64          `json:"dangerBonus"`
+	MaxLevel         int              `json:"maxLevel"`
+	StampReachM      float64          `json:"stampReachM"`
+	DemonSafeBelow   int              `json:"demonSafeBelow"`
+	DemonSafeMarginM float64          `json:"demonSafeMarginM"`
+	Tiers            []DifficultyTier `json:"tiers"`
+}
+
+// Haven is the Haven tier (index 0).
+func (f *Difficulty) Haven() *DifficultyTier { return &f.Tiers[0] }
+
+// TierFor is the tier of a stamped (non-Haven) area level, and its index.
+func (f *Difficulty) TierFor(level int) (*DifficultyTier, int) {
+	idx := 1
+	for i := 1; i < len(f.Tiers); i++ {
+		if level >= f.Tiers[i].MinLevel {
+			idx = i
+		}
+	}
+	return &f.Tiers[idx], idx
+}
+
+// MaxHealth is a character's health pool at level (before gear and boons).
+func (d *Defs) MaxHealth(level int) float64 {
+	return d.Leveling.Health.Base + d.Leveling.Health.PerLevel*float64(max(0, level-1))
+}
+
+// DamageMult is the character level's multiplier on all player damage.
+func (d *Defs) DamageMult(level int) float64 {
+	return 1 + d.Leveling.DamagePctPerLevel/100*float64(max(0, level-1))
+}
+
+// StaminaBonus is the level's extra stamina wheel (points, before boons).
+func (d *Defs) StaminaBonus(level int) float64 {
+	return math.Min(d.Leveling.Stamina.Max, d.Leveling.Stamina.PerLevel*float64(max(0, level-1)))
+}
+
+// SkillPointsFor is the spell skill points a character level grants.
+func (d *Defs) SkillPointsFor(level int) int {
+	return d.Leveling.SkillPoints.Base + d.Leveling.SkillPoints.PerLevel*max(1, level)
+}
+
+// TierLevel is the character level a spell tree tier needs for skill-point
+// learning (1 = always).
+func (d *Defs) TierLevel(tier int) int {
+	lvl := 1
+	for _, t := range d.Leveling.SpellTierLevels {
+		if tier >= t.Tier {
+			lvl = t.Level
+		}
+	}
+	return lvl
 }
 
 // TypeID packs an enemy's wire typeId (EntityRecord.typeId): bits 0-7 enemy

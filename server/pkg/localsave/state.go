@@ -24,6 +24,9 @@ type Progress struct {
 	// {slot, color, x, z} with x/z in cm. Optional so blobs issued before
 	// WP12 still parse.
 	Pins json.RawMessage `json:"pins,omitempty"`
+	// Attuned are the tower crystals attuned (playtest 1; mirrors
+	// character_progress.attuned from migration 0021). Optional.
+	Attuned []byte `json:"attuned,omitempty"`
 }
 
 // Item mirrors the items table so an upgrade can insert inventory rows as-is.

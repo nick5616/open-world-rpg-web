@@ -343,7 +343,7 @@ func (s *Server) handleCombatInteract(sess *session, m *proto.Interact) {
 		ok = pr.EquipSpell(int(m.Arg&0xf), int(m.Arg>>4&0xf), key)
 	case combat.ActLearn:
 		if sp := combatdefs.D.SpellByID(int(m.Arg)); sp != nil {
-			ok = pr.Learn(sp.Key, p.Level) == combat.LearnOK
+			ok = pr.LearnWith(sp.Key, p.Level, p.Boons.SkillPoints) == combat.LearnOK
 		}
 	case combat.ActSetGem:
 		if s.cbt.setup.Dev {
@@ -518,9 +518,9 @@ func (s *Server) grantCombatXP(g combat.XPGrant) {
 	if sess == nil {
 		return
 	}
+	before := ent.x.prog.Level
 	if ent.x.prog.AddXP(g.XP) {
-		ent.Level = uint8(min(255, ent.x.prog.Level))
-		s.sendEvent(sess, &proto.Event{Kind: EventLevelUp, EntityID: ent.ID, Value: int32(ent.x.prog.Level)})
+		s.levelChanged(sess, before) // playtest 1: 604 + stats, refill (progression.go)
 	}
 	if s.cfg.Explore != nil {
 		s.sendProgress(sess)

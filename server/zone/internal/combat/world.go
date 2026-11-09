@@ -53,6 +53,17 @@ type Group struct {
 	Arena    *Arena
 	Comp     []string // explicit composition (tests), else from tables
 	Elite    string   // forced elite affix (tests)
+	// AreaLevel: the group takes its level and tier from the area it stands
+	// in when it spawns (playtest 1, World.Areas); set for every atlas group.
+	AreaLevel bool
+	tier      *combatdefs.DifficultyTier // the area's tier at the last spawn (nil: none)
+}
+
+// Areas is the playtest-1 discovery-stamped difficulty (internal/difficulty
+// Map; CR 012): an area's level and tier, or known=false while nobody has
+// stamped it yet (groups there wait). nil = the WP13 region danger curve.
+type Areas interface {
+	AreaAt(x, z float64) (level int, tier *combatdefs.DifficultyTier, known bool)
 }
 
 // KillInfo is what the WP14 loot hook receives on every kill: who may roll
@@ -109,6 +120,8 @@ type World struct {
 	OnKill func(KillInfo)
 	// DemonHooks are WP15's wards and wet-lightning callbacks (demon.go).
 	DemonHooks DemonHooks
+	// Areas (playtest 1): stamped area levels and tiers; nil = region danger.
+	Areas Areas
 
 	// Stats for metrics and evidence.
 	Stats Stats
@@ -191,7 +204,7 @@ func (w *World) BuildFromAtlas(a *AtlasInfo) {
 		if s.Element < 8 {
 			el = s.Element
 		}
-		base := &Group{Anchor: at(s), Biome: s.Biome, Element: el, Level: level(s.X, s.Z), Site: i, Name: s.Name}
+		base := &Group{Anchor: at(s), Biome: s.Biome, Element: el, Level: level(s.X, s.Z), Site: i, Name: s.Name, AreaLevel: true}
 		switch {
 		case s.Category == structures.CategoryPOI && s.Kind == structures.POIEnemyCamp:
 			base.Kind, base.Radius = GroupCamp, 8+2*float64(s.Size)
@@ -239,9 +252,28 @@ func (w *World) BuildFromAtlas(a *AtlasInfo) {
 			if movement.WaterAt(w.ground, x, z) > y-0.2 || movement.SlopeAt(w.ground, x, z).T2 > constants.WalkableTanSq || !safe(x, z) || w.nearGroup(x, z, 80) {
 				continue
 			}
-			w.AddGroup(&Group{Kind: GroupPack, Anchor: movement.Vec3{X: x, Y: y, Z: z}, Radius: 10, Biome: a.BiomeAt(x, z), Element: a.Region(a.RegionAt(x, z)).Element, Level: level(x, z), Site: -1, Seed: h})
+			w.AddGroup(&Group{Kind: GroupPack, Anchor: movement.Vec3{X: x, Y: y, Z: z}, Radius: 10, Biome: a.BiomeAt(x, z), Element: a.Region(a.RegionAt(x, z)).Element, Level: level(x, z), Site: -1, Seed: h, AreaLevel: true})
 		}
 	}
+}
+
+// areaReady applies the playtest-1 area (CR 012) to an atlas group about to
+// spawn: its level and tier come from the stamped area under its anchor.
+// false = wait (the area is not stamped yet, or bosses don't spawn in its
+// tier, e.g. the Haven).
+func (w *World) areaReady(g *Group) bool {
+	if w.Areas == nil || !g.AreaLevel {
+		return true
+	}
+	lvl, t, ok := w.Areas.AreaAt(g.Anchor.X, g.Anchor.Z)
+	if !ok || t == nil {
+		return false
+	}
+	if g.Kind == GroupBoss && !t.Bosses {
+		return false
+	}
+	g.Level, g.tier = max(1, lvl), t
+	return true
 }
 
 func (w *World) nearGroup(x, z, r float64) bool {
@@ -297,6 +329,19 @@ func (w *World) composition(g *Group) (keys []string, elite int, affix *combatde
 	case GroupBoss:
 		keys = []string{g.Boss}
 		eliteChance = 0
+	}
+	if t := g.tier; t != nil && g.Kind != GroupBoss && g.Kind != GroupTest && g.Kind != GroupDemon {
+		// Playtest 1 (CR 012): the area's tier swaps a share of the members
+		// for beginner creatures (the Haven: all of them) and scales elites.
+		if t.Beginner > 0 && len(D.Tables.Beginner) > 0 {
+			bt := D.Tables.Beginner
+			for i := range keys {
+				if t.Beginner >= 1 || unit(mix(h+uint64(101+i)*31)) < t.Beginner {
+					keys[i] = bt[int(mix(h+uint64(i)*13+7)%uint64(len(bt)))]
+				}
+			}
+		}
+		eliteChance *= t.Elite
 	}
 	if g.Elite != "" {
 		affix = D.AffixByKey(g.Elite)
@@ -568,7 +613,7 @@ func (w *World) spawnTick() {
 		}
 	}
 	for _, g := range w.Groups {
-		if near[g] && !g.Spawned && w.tick >= g.respawn {
+		if near[g] && !g.Spawned && w.tick >= g.respawn && w.areaReady(g) {
 			w.spawnGroup(g)
 		}
 		if g.Spawned && w.tick-g.lastNear > secondsToTicks(constants.EnemyDespawnS) {
