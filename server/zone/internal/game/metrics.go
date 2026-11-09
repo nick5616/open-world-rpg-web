@@ -33,8 +33,8 @@ type metrics struct {
 	snapshotsShed   atomic.Int64
 	// Byte budget (decision 0005): records sent vs deferred to a later tick.
 	recordsSent, recordsDeferred atomic.Int64
-	budgetCharged                atomic.Int64 // WP19b: reliable bytes charged to the snapshot budget
-	framesSkipped               atomic.Int64    // lost frames given up on (hole longer than maxSynthFrames)
+	budgetCharged                atomic.Int64    // WP19b: reliable bytes charged to the snapshot budget
+	framesSkipped                atomic.Int64    // lost frames given up on (hole longer than maxSynthFrames)
 	framesSynthesized            atomic.Int64    // lost frames filled by repeating the last input
 	transports                   [3]atomic.Int64 // live sessions by proto.Transport
 	// Mining (WP09).

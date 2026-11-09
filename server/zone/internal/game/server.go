@@ -122,8 +122,8 @@ type Server struct {
 	nextID   uint32
 	ents     []*Entity // sorted by ID (IDs only grow, removal keeps order)
 	sessions []*session
-	inBatch  []*session // WP19b: plain sessions waiting for a parallel run (inputs.go)
-	cbtEnc   [][]byte   // WP19b: this tick's encoded combat events (deliverCombatAll)
+	inBatch  []*session         // WP19b: plain sessions waiting for a parallel run (inputs.go)
+	cbtEnc   [][]byte           // WP19b: this tick's encoded combat events (deliverCombatAll)
 	held     []transport.Holder // WP19b: connections held for this tick (inputs.go)
 	byChar   map[string]*session
 	parties  map[uint32][]*Entity

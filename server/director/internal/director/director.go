@@ -49,9 +49,9 @@ type Director struct {
 	// OnlyWorld, when set, makes the assigner handle just this world, from
 	// start-up on (LODESTONE_DIRECTOR_ONLY_WORLD; soaks on shared Redis,
 	// where a long-running dev director would otherwise win the lease).
-	OnlyWorld         string
-	rebalMu           sync.Mutex
-	lastRebalance     map[string]time.Time
+	OnlyWorld     string
+	rebalMu       sync.Mutex
+	lastRebalance map[string]time.Time
 }
 
 func (d *Director) now() time.Time {

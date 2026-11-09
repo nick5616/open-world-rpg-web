@@ -97,10 +97,10 @@ type World struct {
 	// playerList is players sorted by id (WP19b): playerUpkeep walks it so
 	// respawns and upkeep events come out in a fixed order, not map order.
 	playerList []*Player
-	strikes []*strike
-	shots   []*shot
-	winding []*Enemy   // WP19: enemies that entered Windup since the last prune (windupsOn)
-	pg      playerGrid // WP19: players by cell, valid during Step
+	strikes    []*strike
+	shots      []*shot
+	winding    []*Enemy   // WP19: enemies that entered Windup since the last prune (windupsOn)
+	pg         playerGrid // WP19: players by cell, valid during Step
 	// WP19b partitioned AI (par.go).
 	par        Parallel
 	parWorkers int
@@ -110,9 +110,9 @@ type World struct {
 	aiFlat     []*Enemy
 	aiList     []*Enemy
 	windAt     map[uint32]int
-	alloc   func() uint32
-	tick    uint32
-	rng     uint64
+	alloc      func() uint32
+	tick       uint32
+	rng        uint64
 
 	// Outputs, drained by the host each tick.
 	Events  []Out
