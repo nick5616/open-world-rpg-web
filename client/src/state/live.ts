@@ -51,4 +51,9 @@ export const netStats = {
 export const worldClock = {
   // Start mid-morning so a fresh solo session isn't dark.
   timeOfDayS: 0.4 * 3600,
+  /**
+   * WP15: online, the world clock (zone server time + the world's offset,
+   * client/src/systems/clock.ts) drives the sky; null = advance locally.
+   */
+  source: null as (() => number) | null,
 };

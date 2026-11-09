@@ -121,6 +121,7 @@ type Form struct {
 	Chain         int     `json:"chain"`
 	Lifesteal     float64 `json:"lifesteal"`
 	DemonMult     float64 `json:"demonMult"`
+	KillsDemons   bool    `json:"killsDemons"` // WP15: Light form
 	Dash          int     `json:"dash"`
 	SelfCast      bool    `json:"selfCast"`
 	Damage        float64 `json:"damage"`
@@ -178,6 +179,7 @@ type Spell struct {
 	SelfCast       bool           `json:"selfCast"`
 	NonBossOnly    bool           `json:"nonBossOnly"`
 	StripShield    bool           `json:"stripShield"`
+	KillsDemons    bool           `json:"killsDemons"` // WP15: every spell of the Light tree
 	Mana           float64        `json:"mana"`
 	Dash           int            `json:"dash"`
 	Status         string         `json:"status"`
@@ -199,9 +201,27 @@ type Node struct {
 
 // Tree is one spell tree.
 type Tree struct {
-	Key     string `json:"key"`
-	Element int    `json:"element"`
-	Nodes   []Node `json:"nodes"`
+	Key         string `json:"key"`
+	Element     int    `json:"element"`
+	KillsDemons bool   `json:"killsDemons"` // WP15
+	Nodes       []Node `json:"nodes"`
+}
+
+// Material is a main-hand weapon material (WP15, CR 011). A loadout names
+// its weapon's material by key; KillsDemons is the whole demon rule for
+// weapons (sunsteel).
+type Material struct {
+	Key          string  `json:"key"`
+	ID           int     `json:"id"`
+	Mult         float64 `json:"mult"`
+	DemonStagger bool    `json:"demonStagger"`
+	KillsDemons  bool    `json:"killsDemons"`
+}
+
+// DemonTraits is a demon-family enemy's rank and regeneration (WP15).
+type DemonTraits struct {
+	Rank  string  `json:"rank"`  // lesser | greater | lord
+	Regen float64 `json:"regen"` // fraction of max health per second from ordinary damage
 }
 
 // EnemyAttack is one enemy attack (always telegraphed 300-600 ms).
@@ -256,6 +276,8 @@ type Enemy struct {
 	XP       float64  `json:"xp"`
 	Size     float64  `json:"size"`
 	Color    string   `json:"color"`
+	// Demon is set for family "demon" (WP15): rank and regeneration.
+	Demon *DemonTraits `json:"demon"`
 }
 
 // BossPhase is one boss phase.
@@ -319,11 +341,12 @@ type Defs struct {
 		XPExp  float64 `json:"xpExp"`
 		List   []Skill `json:"list"`
 	} `json:"skills"`
-	Weapons []Weapon `json:"weapons"`
-	Moves   []Move   `json:"moves"`
-	Forms   []Form   `json:"forms"`
-	Dashes  []Dash   `json:"dashes"`
-	Mana    struct {
+	Weapons   []Weapon   `json:"weapons"`
+	Moves     []Move     `json:"moves"`
+	Forms     []Form     `json:"forms"`
+	Materials []Material `json:"materials"` // WP15
+	Dashes    []Dash     `json:"dashes"`
+	Mana      struct {
 		Base          float64   `json:"base"`
 		PerLevel      float64   `json:"perLevel"`
 		RegenPerS     float64   `json:"regenPerS"`
@@ -354,6 +377,13 @@ type Defs struct {
 		Site    map[string][]string  `json:"site"`
 		Depth   map[string]DepthBand `json:"depth"`
 	} `json:"tables"`
+	// Demons are the WP15 night spawn tables (Greater indexed by element).
+	Demons struct {
+		Regen   map[string]float64 `json:"regen"`
+		Lesser  []string           `json:"lesser"`
+		Greater []string           `json:"greater"`
+		Lord    string             `json:"lord"`
+	} `json:"demons"`
 
 	// Indexes (built at load).
 	moveByID    map[int]*Move
@@ -585,4 +615,24 @@ func UnpackTypeID(t uint16) (enemyID, element, affix int) {
 		element = Physical
 	}
 	return enemyID, element, int(t >> 12 & 0x7)
+}
+
+// MaterialByKey returns a weapon material or nil (WP15).
+func (d *Defs) MaterialByKey(k string) *Material {
+	for i := range d.Materials {
+		if d.Materials[i].Key == k {
+			return &d.Materials[i]
+		}
+	}
+	return nil
+}
+
+// MaterialByID returns a weapon material by wire id or nil (WP15).
+func (d *Defs) MaterialByID(id int) *Material {
+	for i := range d.Materials {
+		if d.Materials[i].ID == id {
+			return &d.Materials[i]
+		}
+	}
+	return nil
 }

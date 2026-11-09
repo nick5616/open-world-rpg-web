@@ -93,6 +93,13 @@ type Config struct {
 	Towns       *npc.World
 	Stations    Stations
 	TimeOffsetS float64
+	// WP14 items (items.go): persistence, world containers, loot themes,
+	// the drop despawn timer, the Bitchin' announcement; nil = memory-only
+	// items with the spec's timers.
+	Items *ItemsSetup
+	// WP15 night, demons and chemistry (night.go); nil = none. TimeOffsetS
+	// above is the world clock's offset (same env on every zone of a world).
+	Night *NightSetup
 	// Now is the wall clock (tickets, server time); tests override it.
 	Now func() time.Time
 }
@@ -133,6 +140,8 @@ type Server struct {
 	cl         clusterState // WP16 (handoff.go)
 	cbt        combatGlue   // WP13 (combat.go)
 	town       townsState   // WP20 (towns.go)
+	itm        itemsState   // WP14 (items.go)
+	night      nightState   // WP15 (night.go)
 	// WP11: next earshot hand-off (earshot.go).
 	earshotNext time.Time
 	phases      tickPhases // WP19: per-phase tick timing (phases.go)
@@ -193,6 +202,7 @@ func New(cfg Config) *Server {
 	}
 	s.m.init(cfg.Metrics)
 	s.initCombat() // WP13 (combat.go)
+	s.initItems()  // WP14 (items.go): after combat (loot hook)
 	s.loop = &gameloop.Loop{Interval: interval, Stats: s.stats, OnTick: s.onTick}
 	return s
 }
@@ -203,6 +213,7 @@ func (s *Server) Start() {
 	s.sched.Add(s.loop)
 	s.startParties()
 	s.startCluster() // WP16
+	s.startItems()   // WP14: the item journal (items.go)
 	s.log.Info("zone ticking", "hz", constants.TickRateHz, "spinTail", s.cfg.SpinTail.String(), "clock", gameloop.PreciseClock)
 }
 
@@ -244,6 +255,7 @@ func (s *Server) Stop(ctx context.Context) {
 				s.log.Info("write-behind flushed")
 			}
 		}
+		s.stopItems(ctx) // WP14: the item journal, in order (items.go)
 	})
 }
 
@@ -295,6 +307,7 @@ func (s *Server) onTick() {
 	s.terrainTick(tick)             // WP07: chunk cache interest (terrain.go)
 	s.exploreTick(tick)             // WP12: towers, waypoints, discoveries, party ring (explore.go)
 	s.caveTick(tick)                // WP09: cave cell interest + each entity's cave system (caves.go)
+	s.itemsTick(tick, s.cfg.Now())  // WP14: gear, dropped-item despawn, containers (items.go)
 	s.miningTick(tick, s.cfg.Now()) // WP09: pickups, respawns, WorldEdits interest (mining.go)
 	s.handoffTick(tick, now)        // WP16: handoffs, mirrored entities, presence (handoff.go, ghosts.go)
 	s.phases.mark(phWorld)
@@ -302,6 +315,8 @@ func (s *Server) onTick() {
 	s.phases.mark(phCombat)
 	s.townsTick(tick, s.cfg.Now()) // WP20: townsfolk near players (towns.go)
 	s.phases.mark(phTowns)
+	s.nightTick(tick) // WP15: clock, demons, defense events, chemistry (night.go)
+	s.phases.mark(phNight)
 
 	// Quantize once per entity and rebuild the grid; every client's snapshot
 	// reads these.
@@ -421,6 +436,8 @@ func (s *Server) join(sess *session) {
 	}
 	s.exploreJoin(sess)   // WP12: progress, pins (after Welcome, which the client needs first)
 	s.combatJoin(sess)    // WP13: loadouts, health, combat_sync (combat.go)
+	s.itemsJoin(sess)     // WP14: inventory, gear, consumables (items.go)
+	s.nightJoin(sess)     // WP15: world clock, pillars, defense state (night.go)
 	s.clusterJoined(sess) // WP16: owner record, arrival checkpoint
 	s.log.Info("join", "entity", e.ID, "character", e.CharacterID, "name", e.Name, "remote", sess.conn.RemoteAddr(),
 		"x", math.Round(e.Move.Pos.X*100)/100, "z", math.Round(e.Move.Pos.Z*100)/100)

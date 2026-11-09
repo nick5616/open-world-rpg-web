@@ -19,6 +19,7 @@ import (
 	"lodestone/server/pkg/movement"
 	"lodestone/server/pkg/proto"
 	"lodestone/server/pkg/towns"
+	"lodestone/server/pkg/weather"
 	"lodestone/server/zone/internal/npc"
 )
 
@@ -83,11 +84,13 @@ type townsState struct {
 }
 
 func (s *Server) timeOfDay(now time.Time) float64 {
-	return npc.TimeOfDay(float64(now.UnixMilli())/1000, s.cfg.TimeOffsetS)
+	_ = now
+	return weather.TimeOfDayS(s.worldTimeS()) // WP15: the world clock (night.go)
 }
 
 func (s *Server) gameDay(now time.Time) int {
-	return int(math.Floor((float64(now.UnixMilli())/1000 + s.cfg.TimeOffsetS) / npc.DayLengthS))
+	_ = now
+	return int(weather.Day(s.worldTimeS())) // WP15
 }
 
 func (s *Server) npcGround(x, y, z float64) float64 { return movement.GroundAt(s.cfg.Ground, x, y, z) }
@@ -254,7 +257,11 @@ func (s *Server) npcInteract(e *Entity, m *proto.Interact, now time.Time) {
 			s.refuseTown(e, m.TargetID, TownRefuseNoSuch)
 		default:
 			it := ws[m.Arg]
-			if s.cfg.Granter != nil {
+			if s.cfg.Granter == nil { // WP14: gold and the inventory (items.go Buy; it refuses with Event 403)
+				if err := s.Buy(e, it.Item, int(it.Price)); err != nil {
+					return
+				}
+			} else {
 				if err := s.cfg.Granter.Grant(e.CharacterID, it.Item, 1, uint64(now.UnixNano())); err != nil {
 					s.log.Warn("purchase grant failed", "character", e.CharacterID, "item", it.Item, "err", err)
 					return

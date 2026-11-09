@@ -112,11 +112,17 @@ func (w *World) think(e *Enemy) {
 	if e.Boss != nil {
 		w.bossTick(e)
 	}
+	if e.Demon != nil {
+		w.demonRegen(e) // WP15: wounds close
+	}
 	if e.Shield < e.ShieldMax && e.Affix != nil && e.Affix.ShieldRegenSteps > 0 && tick-e.shieldHit > ticksOf(e.Affix.ShieldRegenSteps) {
 		e.Shield = e.ShieldMax // a warded elite re-raises its ward if left alone
 	}
 	if w.forcedMove(e) || e.disabled(tick) {
 		return
+	}
+	if e.Demon != nil && w.demonGoal(e) {
+		return // WP15: a defense wave walks to the ward garden
 	}
 	switch e.State {
 	case Idle:
@@ -199,6 +205,9 @@ func (w *World) think(e *Enemy) {
 
 // leash is how far from home an enemy follows.
 func (e *Enemy) leash() float64 {
+	if e.Demon != nil {
+		return e.demonLeash() // WP15
+	}
 	if e.Boss != nil && e.Boss.Arena != nil {
 		return e.Boss.Arena.Radius + 4
 	}
@@ -217,6 +226,9 @@ func (w *World) acquire(e *Enemy, mult float64) *Player {
 		d := hdist(p.Pos, e.Pos)
 		if math.Abs(p.Pos.Y-e.Pos.Y) > 12 || hdist(p.Pos, e.Home) > e.leash()+e.Def.Aggro {
 			return
+		}
+		if e.Demon != nil && w.DemonHooks.Sheltered != nil && w.DemonHooks.Sheltered(e, p) {
+			return // WP15: inside an active ward
 		}
 		th := e.threat[p.ID]
 		if d > e.Def.Aggro*mult && th == 0 {
@@ -285,7 +297,8 @@ func (w *World) face(e *Enemy, p movement.Vec3) {
 func (w *World) chase(e *Enemy) {
 	tick := w.tick
 	p := w.players[e.Target]
-	if p == nil || p.Downed || hdist(p.Pos, e.Home) > e.leash()+e.Def.Aggro*0.5 || hdist(e.Pos, e.Home) > e.leash() {
+	sheltered := p != nil && e.Demon != nil && w.DemonHooks.Sheltered != nil && w.DemonHooks.Sheltered(e, p) // WP15
+	if p == nil || p.Downed || sheltered || hdist(p.Pos, e.Home) > e.leash()+e.Def.Aggro*0.5 || hdist(e.Pos, e.Home) > e.leash() {
 		if np := w.acquire(e, 1.5); np != nil && hdist(e.Pos, e.Home) <= e.leash() {
 			e.Target = np.ID
 			w.engage(e, np)
@@ -555,6 +568,9 @@ func (w *World) stepMove(e *Enemy, mx, mz float64, steer bool) {
 		if e.Boss != nil && e.Boss.Arena != nil && hdist(movement.Vec3{X: nx, Z: nz}, e.Boss.Arena.Center) > e.Boss.Arena.Radius {
 			return false
 		}
+		if e.Demon != nil && w.DemonHooks.Blocked != nil && w.DemonHooks.Blocked(e, nx, nz) {
+			return false // WP15: wards and lanterns
+		}
 		e.Pos.X, e.Pos.Z = nx, nz
 		return true
 	}
@@ -633,7 +649,7 @@ func (w *World) statusTick(e *Enemy) {
 			s.next = tick + ticksOf(s.def.TickSteps)
 			dmg := s.dmg * float64(s.stacks)
 			if dmg > 0 {
-				w.applyDamage(e, s.src, dmg, combatdefs.Fire, e.Pos, 0, false)
+				w.applyDamage(e, s.src, dmg, combatdefs.Fire, e.Pos, 0, false, s.killing)
 				if !e.Alive() {
 					return
 				}
@@ -735,6 +751,7 @@ func (w *World) hurtPlayer(p *Player, dmg float64, src *Enemy, att *combatdefs.E
 	if p.Profile.Knows("undergrowth") {
 		dmg *= 0.95
 	}
+	dmg *= 1 - p.Gear.ArmorPct/100 // WP14 armor
 	if p.shield > 0 && w.tick < p.shieldEnd {
 		a := math.Min(p.shield, dmg)
 		p.shield -= a
@@ -780,7 +797,9 @@ func (w *World) playerUpkeep() {
 				p.Downed = false
 				p.HP = p.HPMax
 				p.Mana = p.ManaMax
-				p.Charges = D.Start.Consumable.Charges
+				if p.OnDrink == nil { // WP14: inventory consumables never refill
+					p.Charges = D.Start.Consumable.Charges
+				}
 				w.Respawn = append(w.Respawn, p.ID)
 				w.toPlayer(p.ID, Out{Ev: ev(EvRespawned, p.ID, 0, int32(p.HPMax), p.Pos, nil)})
 			}
@@ -800,7 +819,7 @@ func (w *World) playerUpkeep() {
 		}
 		if p.drinkTick != 0 && tick >= p.drinkTick {
 			p.drinkTick = 0
-			heal := D.Start.Consumable.Heal
+			heal := p.drinkHeal // WP14: the consumable's heal (combat.yaml's stand-in without items)
 			p.HP = math.Min(p.HPMax, p.HP+heal)
 			w.toPlayer(p.ID, Out{Ev: ev(EvConsumable, p.ID, 0, int32(p.Charges), p.Pos, []byte{byte(heal)})})
 		}

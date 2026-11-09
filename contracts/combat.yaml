@@ -22,7 +22,7 @@
 # the elemental forms and the new passives are PROPOSALS pending Nicole's
 # approval (docs/proposals/spell-names.md); they are listed under `pending`.
 # Ported wizard-wars names are unchanged.
-version: 1
+version: 2   # v2: WP15 (docs/cr/011-wp15-night-chemistry.md): materials, killsDemons on the Light tree and form, demons
 
 elements: [fire, ice, lightning, earth, wind, light, dark, void] # index = worldgen element id; 8 = physical
 
@@ -141,6 +141,18 @@ weapons:
       wand_jab: {id: 501, kind: heavy, startupMs: 83, activeMs: 83, recoveryMs: 200, damage: 8, reach: 2.0, arc: 90}
       wand_bolt: {id: 502, kind: light, startupMs: 50, activeMs: 17, recoveryMs: 183, damage: 9, reach: 35, arc: 0, speed: 55, radius: 0.22}
 
+materials:
+  # WP15 (CR 011): what a main-hand weapon is made of. A loadout carries the
+  # material key of its weapon (Loadout.material in the zone's skill_tree
+  # JSON; WP14 sets it from the forged item, e.g. a blade forged from
+  # sunsteel ingots -> "sunsteel"). The demon rule reads ONLY killsDemons:
+  # a hit kills demons iff its weapon material (or arrowhead, weapons.bow.
+  # arrows) has killsDemons, or it is Light magic (trees.light.killsDemons,
+  # forms.light.killsDemons). Ids are wire ids (dev Interact 50 action 6).
+  iron: {id: 1, mult: 1.0}
+  silver: {id: 2, mult: 1.0, demonStagger: true}
+  sunsteel: {id: 3, mult: 1.0, killsDemons: true}
+
 forms:
   # Spec 8 elemental forms: weapon techniques powered by the socketed gem's
   # element (swordsmanship/spearmanship 30). Secondary + primary together.
@@ -150,7 +162,7 @@ forms:
   lightning: {id: 603, shape: line, reach: 10, width: 1.5, damage: 45, status: shock, chain: 2, cooldownMs: 6000, stamina: 20}
   earth: {id: 604, shape: line, reach: 8, width: 2, damage: 50, status: stun, cooldownMs: 6000, stamina: 20}
   wind: {id: 605, shape: line, reach: 8, width: 2, damage: 40, status: knockback, dash: 9, cooldownMs: 6000, stamina: 20}
-  light: {id: 606, shape: cone, reach: 4, arc: 140, damage: 40, demonMult: 2, cooldownMs: 6000, stamina: 20}
+  light: {id: 606, shape: cone, reach: 4, arc: 140, damage: 40, demonMult: 2, killsDemons: true, cooldownMs: 6000, stamina: 20}
   dark: {id: 607, shape: cone, reach: 3.5, arc: 90, damage: 40, lifesteal: 0.5, cooldownMs: 6000, stamina: 20}
   void: {id: 608, shape: aoe, selfCast: true, radius: 4, damage: 45, status: pull, cooldownMs: 6000, stamina: 20}
 
@@ -330,7 +342,7 @@ trees:
   earth: {element: earth, nodes: {thorn_dart: [], crystal_shard: [], root_launch: [], seed_burst: [thorn_dart], thick_bark: [thorn_dart], rune_root: [thorn_dart], spore_pod: [thorn_dart], bramble_burst: [seed_burst, thick_bark], deep_roots: [bramble_burst], root_snare: [deep_roots], undergrowth: [root_snare], feral_focus: [undergrowth], avalanche: [feral_focus], fissure: [avalanche], wildwood_domain: [fissure], verdant_lance: [wildwood_domain], shard_burst: [crystal_shard], geode_bomb: [crystal_shard], gem_plop: [crystal_shard], crystal_spire: [shard_burst], crystal_wall: [crystal_spire], resonance: [crystal_wall], petrify: [resonance], shard_fracture: [petrify], prism_field: [shard_fracture], the_monolith: [prism_field]}}
   lightning: {element: lightning, nodes: {spark_jab: [], static_step: [], lightning_strike: [spark_jab], static_charge: [lightning_strike], chain_lightning: [static_charge], ball_lightning: [chain_lightning], thunderclap: [chain_lightning], overcharge: [ball_lightning, thunderclap], eye_of_the_storm: [overcharge], act_of_god: [eye_of_the_storm]}}
   wind: {element: wind, nodes: {gust: [], updraft: [], razor_wind: [gust], cyclone: [razor_wind], downburst: [razor_wind], crosswind: [cyclone, downburst], howling_expanse: [crosswind], heavens_exhale: [howling_expanse]}}
-  light: {element: light, nodes: {glint: [], sunstep: [], radiant_lance: [glint], sunburst: [radiant_lance], halo: [radiant_lance], dawnbreak: [sunburst, halo], sunlit: [dawnbreak], high_noon: [sunlit], let_there_be_light: [high_noon]}}
+  light: {element: light, killsDemons: true, nodes: {glint: [], sunstep: [], radiant_lance: [glint], sunburst: [radiant_lance], halo: [radiant_lance], dawnbreak: [sunburst, halo], sunlit: [dawnbreak], high_noon: [sunlit], let_there_be_light: [high_noon]}}
   void: {element: void, nodes: {rift_shot: [], skip: [], collapse: [rift_shot], unmake: [collapse], null_field: [collapse], hollow_echo: [unmake, null_field], zero_point: [hollow_echo], unwritten: [zero_point]}}
 
 start:
@@ -493,56 +505,9 @@ names:
   form_dark: Hungering Cut
   form_void: Severance
 
-pending:
-  # Proposed names awaiting Nicole's sign-off (spec 8, spec 16). Code uses
-  # them like any other name; approval just deletes them from this list.
-  - static_step
-  - spark_jab
-  - ball_lightning
-  - thunderclap
-  - overcharge
-  - eye_of_the_storm
-  - act_of_god
-  - updraft
-  - gust
-  - razor_wind
-  - cyclone
-  - downburst
-  - crosswind
-  - howling_expanse
-  - heavens_exhale
-  - sunstep
-  - glint
-  - radiant_lance
-  - sunburst
-  - halo
-  - dawnbreak
-  - sunlit
-  - high_noon
-  - let_there_be_light
-  - skip
-  - rift_shot
-  - collapse
-  - unmake
-  - null_field
-  - hollow_echo
-  - zero_point
-  - unwritten
-  - whirlwind
-  - sweep
-  - impale
-  - mana_flow
-  - quick_cast
-  - overflow
-  - twin_cast
-  - form_fire
-  - form_ice
-  - form_lightning
-  - form_earth
-  - form_wind
-  - form_light
-  - form_dark
-  - form_void
+pending: []
+  # All proposed names approved by Nicole on 2026-11-08 (spec 16). New
+  # proposals go here as keys until approved.
 
 enemyAttacks:
   # shape: cone (reach, arc) | circle (radius, around the attacker) |
@@ -574,6 +539,19 @@ enemyAttacks:
   golem_punch: {id: 23, shape: cone, reach: 2.8, arc: 80, windupMs: 500, activeMs: 117, recoveryMs: 700, cooldownMs: 2400, damage: 16}
   harpy_dive: {id: 24, shape: ground, radius: 2.0, windupMs: 450, activeMs: 100, recoveryMs: 600, cooldownMs: 4000, damage: 11, reach: 9, minRange: 3}
   crawler_bite: {id: 25, shape: cone, reach: 2.2, arc: 80, windupMs: 350, activeMs: 100, recoveryMs: 500, cooldownMs: 1700, damage: 10}
+  # demons (WP15, CR 011): lesser packs, one element ability per greater demon, the lords
+  demon_claw: {id: 60, shape: cone, reach: 2.4, arc: 90, windupMs: 350, activeMs: 100, recoveryMs: 450, cooldownMs: 1500, damage: 10}
+  demon_lunge: {id: 61, shape: line, charge: true, reach: 7, width: 1.4, windupMs: 450, activeMs: 300, recoveryMs: 600, cooldownMs: 4500, damage: 12, minRange: 3}
+  cinder_burst: {id: 62, shape: circle, radius: 4, windupMs: 550, activeMs: 117, recoveryMs: 700, cooldownMs: 6000, damage: 18, element: fire}
+  rime_lance: {id: 63, shape: projectile, speed: 22, radius: 0.5, reach: 24, windupMs: 500, activeMs: 17, recoveryMs: 500, cooldownMs: 4000, damage: 15, element: ice, minRange: 4}
+  storm_rush: {id: 64, shape: line, charge: true, reach: 12, width: 1.8, windupMs: 500, activeMs: 400, recoveryMs: 800, cooldownMs: 6500, damage: 18, element: lightning, minRange: 4}
+  grave_slam: {id: 65, shape: ground, radius: 3, reach: 10, windupMs: 600, activeMs: 117, recoveryMs: 700, cooldownMs: 6000, damage: 20, element: earth, minRange: 2}
+  gale_rend: {id: 66, shape: cone, reach: 5, arc: 140, windupMs: 450, activeMs: 117, recoveryMs: 600, cooldownMs: 5000, damage: 16, element: wind}
+  umbral_leap: {id: 67, shape: ground, radius: 2.5, reach: 12, windupMs: 450, activeMs: 100, recoveryMs: 600, cooldownMs: 5500, damage: 17, element: dark, minRange: 3}
+  void_gnash: {id: 68, shape: circle, radius: 5, windupMs: 600, activeMs: 150, recoveryMs: 800, cooldownMs: 7000, damage: 19, element: void}
+  lord_cleave: {id: 69, shape: cone, reach: 4.5, arc: 140, windupMs: 500, activeMs: 150, recoveryMs: 700, cooldownMs: 3000, damage: 22}
+  lord_nova: {id: 70, shape: circle, radius: 7, windupMs: 600, activeMs: 150, recoveryMs: 900, cooldownMs: 8000, damage: 20}
+  lord_meteor: {id: 71, shape: ground, radius: 3, reach: 30, windupMs: 600, activeMs: 117, recoveryMs: 600, cooldownMs: 9000, damage: 18, everyone: true}
   # bosses
   boss_cleave: {id: 40, shape: cone, reach: 4.5, arc: 120, windupMs: 500, activeMs: 150, recoveryMs: 700, cooldownMs: 3000, damage: 18}
   boss_slam: {id: 41, shape: ground, radius: 4.0, windupMs: 600, activeMs: 117, recoveryMs: 800, cooldownMs: 5000, damage: 22, reach: 12}
@@ -612,6 +590,20 @@ enemies:
   cave_crawler: {id: 40, family: cave, hp: 82, speed: 5.5, aggro: 16, attacks: [crawler_bite, pounce], behavior: melee, xp: 22, size: 0.9, color: '#5a4a5a'}
   gloom_bat: {id: 41, family: cave, hp: 80, speed: 7.0, aggro: 20, attacks: [bite, harpy_dive], behavior: flyer, keepAway: 4, xp: 20, size: 0.6, color: '#3a3a4a'}
   crystal_golem: {id: 42, family: cave, hp: 94, speed: 3.5, aggro: 14, attacks: [golem_punch, elemental_burst], behavior: melee, xp: 34, size: 1.4, color: '#8fd4ff'}
+  # demons (WP15, CR 011; spec 8 "Night and demons"). They regenerate from
+  # ordinary damage (demon.regen = fraction of max health per second) and
+  # die only to killsDemons hits (sunsteel, Light), or at sunrise. Ranks:
+  # lesser (packs), greater (one element ability each), lord (night bosses
+  # that roam on new moons). Names are proposals (docs/cr/011).
+  gloamling: {id: 60, family: demon, hp: 82, speed: 6.6, aggro: 45, attacks: [demon_claw, demon_lunge], behavior: melee, xp: 30, size: 1.0, color: '#3a1626', demon: {rank: lesser}}
+  cinder_fiend: {id: 61, family: demon, hp: 380, speed: 5.6, aggro: 45, attacks: [demon_claw, cinder_burst], behavior: melee, element: fire, xp: 120, size: 1.35, color: '#5a1a10', demon: {rank: greater}}
+  rime_wraith: {id: 62, family: demon, hp: 360, speed: 5.8, aggro: 45, attacks: [demon_claw, rime_lance], behavior: ranged, keepAway: 9, element: ice, xp: 120, size: 1.3, color: '#26304a', demon: {rank: greater}}
+  storm_ghoul: {id: 63, family: demon, hp: 370, speed: 6.4, aggro: 45, attacks: [demon_claw, storm_rush], behavior: melee, element: lightning, xp: 120, size: 1.3, color: '#3a3418', demon: {rank: greater}}
+  grave_brute: {id: 64, family: demon, hp: 420, speed: 4.8, aggro: 45, attacks: [demon_claw, grave_slam], behavior: melee, element: earth, xp: 120, size: 1.5, color: '#2e2418', demon: {rank: greater}}
+  gale_reaver: {id: 65, family: demon, hp: 360, speed: 6.8, aggro: 45, attacks: [demon_claw, gale_rend], behavior: melee, element: wind, xp: 120, size: 1.3, color: '#1e3430', demon: {rank: greater}}
+  umbral_stalker: {id: 66, family: demon, hp: 370, speed: 6.6, aggro: 45, attacks: [demon_claw, umbral_leap], behavior: melee, element: dark, xp: 120, size: 1.3, color: '#1c1028', demon: {rank: greater}}
+  void_maw: {id: 67, family: demon, hp: 390, speed: 5.4, aggro: 45, attacks: [demon_claw, void_gnash], behavior: melee, element: void, xp: 120, size: 1.4, color: '#24123a', demon: {rank: greater}}
+  starless_sovereign: {id: 110, family: demon, hp: 2600, speed: 5.2, aggro: 50, attacks: [lord_cleave, lord_nova, lord_meteor], behavior: melee, xp: 900, size: 2.4, color: '#14080e', demon: {rank: lord}}
   # bosses: hp is the solo value at level 1 (party scaling multiplies it)
   warden: {id: 100, family: boss, hp: 8400, speed: 4.5, aggro: 30, attacks: [boss_cleave, boss_slam], behavior: melee, xp: 600, size: 3.0, color: '#7a6a5a'}
   archon: {id: 101, family: boss, hp: 6800, speed: 4.0, aggro: 32, attacks: [boss_orbs, boss_nova], behavior: ranged, keepAway: 10, xp: 600, size: 2.6, color: '#5a4a8a'}
@@ -678,6 +670,24 @@ enemyNames:
   crystal_golem: Crystal Golem
   warden: Warden
   archon: Archon
+  gloamling: Gloamling
+  cinder_fiend: Cinder Fiend
+  rime_wraith: Rime Wraith
+  storm_ghoul: Storm Ghoul
+  grave_brute: Grave Brute
+  gale_reaver: Gale Reaver
+  umbral_stalker: Umbral Stalker
+  void_maw: Void Maw
+  starless_sovereign: Starless Sovereign
+
+demons:
+  # WP15 night spawning (server/zone/internal/night): lesser packs around
+  # players in the open, a greater demon by the region's element now and
+  # then, a lord per region on new-moon nights.
+  regen: {lesser: 0.35, greater: 0.25, lord: 0.15}
+  lesser: [gloamling]
+  greater: {fire: cinder_fiend, ice: rime_wraith, lightning: storm_ghoul, earth: grave_brute, wind: gale_reaver, light: void_maw, dark: umbral_stalker, void: void_maw}
+  lord: starless_sovereign
 
 tables:
   # Spec 8: each biome, depth band and region element has its own enemy

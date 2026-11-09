@@ -256,6 +256,7 @@ func (s *Server) combatFrame(sess *session, f proto.InputFrame) proto.InputFrame
 		return f
 	}
 	r := s.cbt.w.Frame(e.cbt, f, e.Move)
+	s.nightAction(sess, r.Started) // WP15: Fire/Ice/Earth chemistry where it lands (night.go)
 	return r.Frame
 }
 
@@ -348,6 +349,15 @@ func (s *Server) handleCombatInteract(sess *session, m *proto.Interact) {
 		if s.cbt.setup.Dev {
 			ok = pr.SetGem(int(m.Arg&0xff), int(m.Arg>>8)-1)
 		}
+	case combat.ActSetMaterial: // WP15: dev sunsteel until WP14 equips forged items
+		if s.cbt.setup.Dev {
+			key := ""
+			if mat := combatdefs.D.MaterialByID(int(m.Arg >> 8)); mat != nil {
+				key = mat.Key
+			}
+			ok = (m.Arg>>8 == 0 || key != "") && pr.SetMaterial(int(m.Arg&0xff), key)
+			s.log.Info("dev weapon material", "entity", e.ID, "loadout", m.Arg&0xff, "active", pr.Active, "material", key, "ok", ok)
+		}
 	}
 	if !ok {
 		s.sendEvent(sess, &proto.Event{Kind: combat.EvRefused, EntityID: e.ID, TargetID: uint32(m.Action), Value: combat.RefuseIllegal})
@@ -409,6 +419,7 @@ func (s *Server) combatTick(tick uint32) {
 	}
 	for _, o := range events {
 		s.deliverCombat(o)
+		s.nightCombatEvent(o) // WP15: burning enemies set the grass alight (night.go)
 	}
 	for _, g := range xp {
 		s.grantCombatXP(g)

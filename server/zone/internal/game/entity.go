@@ -68,6 +68,7 @@ type Entity struct {
 	Qty       int
 	RollSeed  uint64
 	DespawnAt time.Time
+	drop      *itemDrop // WP14: the item behind a pickup (items.go), nil for WP09-only pickups
 }
 
 // stepsPerTick: 60 Hz input frames, 30 Hz ticks.

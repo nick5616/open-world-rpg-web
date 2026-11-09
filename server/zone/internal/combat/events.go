@@ -44,6 +44,7 @@ const (
 	ActEquipSpell  = 3 // arg = loadout | slot << 4 | spell id << 8 (spell id 0 clears)
 	ActLearn       = 4 // arg = spell id
 	ActSetGem      = 5 // arg = loadout | (element + 1) << 8 (0 = none); dev builds only (WP14 sockets)
+	ActSetMaterial = 6 // WP15: arg = loadout | material id << 8 (0 = ordinary); dev builds only (WP14 equips forged items)
 )
 
 // Audience of an output Event.

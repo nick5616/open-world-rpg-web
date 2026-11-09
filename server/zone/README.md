@@ -482,6 +482,80 @@ caves are unchanged) and fills `Config.Towns` (`internal/npc`). Game glue:
   (`client/src/world/buildings/walkIntoBuilding.integration.test.ts`,
   evidence `docs/evidence/wp20-walk-into-building.txt`: 0 corrections).
 
+
+## Items and loot (WP14)
+
+Decision 0014, CR 010, wire in `contracts/events.md` (Events 400-411,
+Interact 20-22 and 41), item table `contracts/items.yaml`. Code:
+`internal/items` (pure: rolls, loot tables, inventory, gear),
+`internal/game/items.go` (inventory per session, gear into combat,
+consumables, stations, purchases, Bitchin'), `loot.go` (kill/boss/
+container/vein loot, pickups, TransferItem), `items_journal.go` (the
+ordered item transaction queue), `items_store.go` (Postgres),
+`items_handoff.go` (WP16), `items.go` in this directory (wiring, debug).
+
+- **Inventory** in zone memory, loaded at connect (Postgres for accounts,
+  the signed blob for local profiles, memory only without a row); 40 slots,
+  gem pouch, ore pouch, purse (`currency:gold`), equipment (two loadout
+  weapons, head, body, legs). Sent whole as Event 400 (JSON) on every change.
+- **Persistence**: every change is one transaction on the item journal, in
+  order, retried until it commits; rolls and takes carry a `loot_grants`
+  marker (exactly once, spec 11); ops are fenced by the WP16 ownership epoch.
+  Shutdown flushes the journal after the write-behind queue.
+- **Loot**: combat's `OnKill` → personal owner-only pickups per eligible
+  player (logged seed), boss weekly lockout; containers (worldgen chunk
+  records, listed by Event 406 within 96 m) open once per character into the
+  bag; vein drops (WP09) are granted through the same path.
+- **Drops**: Interact 21/2 → TransferItem → a public pickup for 10 minutes
+  (`LODESTONE_ZONE_DROP_DESPAWN`), a world row in Postgres restored after a
+  restart; Interact 41 takes it; local-profile drops are unverified.
+- **Stations**: forge/anvil (WP20 `Config.Stations`; 805 still opens the
+  UI), hearth/campfire (Interact 22/2, Event 404); craft with Interact 22/1.
+  Unsocketing keeps the gem within 8 m of a town forge/anvil; gems combine
+  within 8 m of a waypoint.
+- **Env**: `LODESTONE_ZONE_DROP_DESPAWN` (default 10m),
+  `LODESTONE_ZONE_TEST_ITEM_TX_DELAY_MS` / `_COMMIT_DELAY_MS` (kill-mid-grant
+  test hooks only).
+- **Debug**: `GET /debug/items?char=<id>`, `GET /debug/containers?x=&z=&r=`.
+- **Tests**: `go test ./internal/items/`, `./internal/game/ -run "Item|Drop|Loot|Smelt|Buy"`
+  (in process, incl. the real 10-minute despawn on the zone clock and the
+  handoff), `TestItemOpExactlyOnceAndFence` (Postgres), and the process
+  tests here: `TestZoneProcessKillMidGrantNeverDuplicates`,
+  `TestZoneProcessDropPickupDespawn`, `TestG4LoopForgeSunsteelBlade`
+  (`bash testdata_evidence_wp14.sh` writes their logs to `docs/evidence/wp14-*`).
+
+## Night, demons and chemistry (WP15)
+
+Decision `docs/decisions/0015-night-chemistry.md`, contract
+`docs/cr/011-wp15-night-chemistry.md`, wire `contracts/events.md` 500-526 and
+Interact 50/6, 51, 52.
+
+- **World clock**: world time = wall clock + `LODESTONE_ZONE_TIME_OFFSET_S`
+  (set the same value on every zone of a world). Event 500 tells clients the
+  offset; NPC schedules (towns.go), rain (traversal.go) and demons use it.
+- **Demons** (`internal/game/night.go`, `internal/night`, `internal/combat/demon.go`):
+  lesser packs around players in the open at night, greater demons by region
+  element, lords at demon lairs on new moons; regenerate from ordinary damage,
+  die to sunsteel (loadout material `sunsteel`), Light, or sunrise (those near
+  a lair or cave mouth flee). Wards (settlement radius + 10 m) block them;
+  players inside are left alone. `LODESTONE_ZONE_NO_DEMONS=1` stops night spawns.
+- **Town defense**: seeded per town per night; `LODESTONE_ZONE_DEBUG_DEFENSE=spawn|<town>[,delay]`
+  forces one; dev Interact 52 action 1 starts one at the nearest town.
+- **Chemistry** (`internal/chem`): fire, ice, pillars, rain on a 2 m grid,
+  ops scheduled 3 steps ahead and broadcast within 256 m; chunk baselines for
+  newcomers; `LODESTONE_ZONE_CHEM_SYNC=bitmap` (or a client's Interact 51/10)
+  switches to 2 Hz bitmaps. Ice sheets and pillars are on the movement ground
+  (night.go wraps the production ground, keeping its methods). Fire feeds the
+  movement step's updrafts. `LODESTONE_ZONE_NO_CHEM=1` turns it off.
+- **Dev** (`LODESTONE_ZONE_DEV_NIGHT`, default on with the dev ticket key):
+  Interact 51 actions 1-4 (ignite, freeze, extinguish, pillar), 52 actions
+  1-3 (defense, set the clock offset, raise demons); with
+  `LODESTONE_ZONE_DEV_COMBAT`, Interact 50 action 6 sets the weapon material
+  (sunsteel = 3).
+- `GET /debug/night` (`?hashes=1` chemistry digests per step, `?towns=1` wards).
+- Acceptance: `node server/zone/cmd/nightbots/acceptance.mjs` (demon immunity
+  vs sunsteel vs sunrise; a two-bot town defense), `npm run fire:accept -w client`.
+
 ## Scale (WP19)
 
 Fixes from the spec 14 soaks (details and numbers:

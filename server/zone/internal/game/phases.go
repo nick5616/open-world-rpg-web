@@ -17,12 +17,13 @@ const (
 	phWorld            // terrain, exploration, caves, mining, handoff
 	phCombat           // combat AI, strikes, claims
 	phTowns            // townsfolk
+	phNight            // WP15: clock, demons, defense events, chemistry
 	phGrid             // view, quantize, AOI grid, mirrors, earshot, checkpoints
 	phSnapshots        // the parallel snapshot phase (snapshots.go)
 	phCount
 )
 
-var phaseNames = [phCount]string{"inputs", "world", "combat", "towns", "grid", "snapshots"}
+var phaseNames = [phCount]string{"inputs", "world", "combat", "towns", "night", "grid", "snapshots"}
 
 const tickPhaseWindow = 30 * 60 // one minute
 

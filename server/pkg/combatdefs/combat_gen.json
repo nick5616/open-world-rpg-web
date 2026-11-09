@@ -1,5 +1,5 @@
 {
- "version": 1,
+ "version": 2,
  "stepHz": 60,
  "elements": [
   "fire",
@@ -156,7 +156,7 @@
       "level": 40,
       "key": "whirlwind",
       "name": "Whirling Cut",
-      "pending": true
+      "pending": false
      }
     ]
    },
@@ -168,7 +168,7 @@
       "level": 10,
       "key": "sweep",
       "name": "Sweeping Strike",
-      "pending": true
+      "pending": false
      },
      {
       "level": 20,
@@ -186,7 +186,7 @@
       "level": 40,
       "key": "impale",
       "name": "Impale",
-      "pending": true
+      "pending": false
      }
     ]
    },
@@ -228,25 +228,25 @@
       "level": 10,
       "key": "mana_flow",
       "name": "Mana Flow",
-      "pending": true
+      "pending": false
      },
      {
       "level": 20,
       "key": "quick_cast",
       "name": "Quick Cast",
-      "pending": true
+      "pending": false
      },
      {
       "level": 30,
       "key": "overflow",
       "name": "Overflow",
-      "pending": true
+      "pending": false
      },
      {
       "level": 40,
       "key": "twin_cast",
       "name": "Twin Cast",
-      "pending": true
+      "pending": false
      }
     ]
    },
@@ -817,7 +817,7 @@
    "key": "form_fire",
    "element": 0,
    "name": "Wheel of Embers",
-   "pending": true,
+   "pending": false,
    "radius": 3.5,
    "reach": 0,
    "arc": 0,
@@ -825,6 +825,7 @@
    "chain": 0,
    "lifesteal": 0,
    "demonMult": 1,
+   "killsDemons": false,
    "dash": 0,
    "selfCast": true,
    "id": 601,
@@ -839,7 +840,7 @@
    "key": "form_ice",
    "element": 1,
    "name": "Rime Crescent",
-   "pending": true,
+   "pending": false,
    "radius": 0,
    "reach": 4,
    "arc": 120,
@@ -847,6 +848,7 @@
    "chain": 0,
    "lifesteal": 0,
    "demonMult": 1,
+   "killsDemons": false,
    "dash": 0,
    "selfCast": false,
    "id": 602,
@@ -861,7 +863,7 @@
    "key": "form_lightning",
    "element": 2,
    "name": "Thunder Thread",
-   "pending": true,
+   "pending": false,
    "radius": 0,
    "reach": 10,
    "arc": 0,
@@ -869,6 +871,7 @@
    "chain": 2,
    "lifesteal": 0,
    "demonMult": 1,
+   "killsDemons": false,
    "dash": 0,
    "selfCast": false,
    "id": 603,
@@ -883,7 +886,7 @@
    "key": "form_earth",
    "element": 3,
    "name": "Faultline",
-   "pending": true,
+   "pending": false,
    "radius": 0,
    "reach": 8,
    "arc": 0,
@@ -891,6 +894,7 @@
    "chain": 0,
    "lifesteal": 0,
    "demonMult": 1,
+   "killsDemons": false,
    "dash": 0,
    "selfCast": false,
    "id": 604,
@@ -905,7 +909,7 @@
    "key": "form_wind",
    "element": 4,
    "name": "Gale Step Cut",
-   "pending": true,
+   "pending": false,
    "radius": 0,
    "reach": 8,
    "arc": 0,
@@ -913,6 +917,7 @@
    "chain": 0,
    "lifesteal": 0,
    "demonMult": 1,
+   "killsDemons": false,
    "dash": 9,
    "selfCast": false,
    "id": 605,
@@ -927,7 +932,7 @@
    "key": "form_light",
    "element": 5,
    "name": "Dawn Arc",
-   "pending": true,
+   "pending": false,
    "radius": 0,
    "reach": 4,
    "arc": 140,
@@ -935,6 +940,7 @@
    "chain": 0,
    "lifesteal": 0,
    "demonMult": 2,
+   "killsDemons": true,
    "dash": 0,
    "selfCast": false,
    "id": 606,
@@ -948,7 +954,7 @@
    "key": "form_dark",
    "element": 6,
    "name": "Hungering Cut",
-   "pending": true,
+   "pending": false,
    "radius": 0,
    "reach": 3.5,
    "arc": 90,
@@ -956,6 +962,7 @@
    "chain": 0,
    "lifesteal": 0.5,
    "demonMult": 1,
+   "killsDemons": false,
    "dash": 0,
    "selfCast": false,
    "id": 607,
@@ -969,7 +976,7 @@
    "key": "form_void",
    "element": 7,
    "name": "Severance",
-   "pending": true,
+   "pending": false,
    "radius": 4,
    "reach": 0,
    "arc": 0,
@@ -977,6 +984,7 @@
    "chain": 0,
    "lifesteal": 0,
    "demonMult": 1,
+   "killsDemons": false,
    "dash": 0,
    "selfCast": true,
    "id": 608,
@@ -986,6 +994,29 @@
    "cooldownMs": 6000,
    "cooldownSteps": 360,
    "stamina": 20
+  }
+ ],
+ "materials": [
+  {
+   "key": "iron",
+   "mult": 1,
+   "demonStagger": false,
+   "killsDemons": false,
+   "id": 1
+  },
+  {
+   "key": "silver",
+   "mult": 1,
+   "demonStagger": true,
+   "killsDemons": false,
+   "id": 2
+  },
+  {
+   "key": "sunsteel",
+   "mult": 1,
+   "demonStagger": false,
+   "killsDemons": true,
+   "id": 3
   }
  ],
  "dashes": [
@@ -1118,6 +1149,7 @@
    "tier": 1,
    "type": "projectile",
    "color": "#ff6b2b",
+   "killsDemons": false,
    "mana": 10,
    "dash": 0
   },
@@ -1156,6 +1188,7 @@
    "tier": 2,
    "type": "projectile",
    "color": "#ffaa00",
+   "killsDemons": false,
    "mana": 16,
    "dash": 0
   },
@@ -1196,6 +1229,7 @@
    "effect": {
     "treeDamage": 1.1
    },
+   "killsDemons": false,
    "mana": 0,
    "dash": 0
   },
@@ -1237,6 +1271,7 @@
    "armSteps": 24,
    "status": "burn",
    "color": "#ff6b2b",
+   "killsDemons": false,
    "mana": 16,
    "dash": 0
   },
@@ -1276,6 +1311,7 @@
    "type": "arc",
    "status": "burn",
    "color": "#ff4500",
+   "killsDemons": false,
    "mana": 22,
    "dash": 0
   },
@@ -1316,6 +1352,7 @@
    "effect": {
     "treeStatus": "burn"
    },
+   "killsDemons": false,
    "mana": 0,
    "dash": 0
   },
@@ -1355,6 +1392,7 @@
    "type": "beam",
    "status": "slow",
    "color": "#ff6b2b",
+   "killsDemons": false,
    "mana": 34,
    "dash": 0
   },
@@ -1395,6 +1433,7 @@
    "status": "burn",
    "color": "#ff4500",
    "ported": "cooldown 1 s -> 6 s: the PvP 1 s re-cast made a permanent aura",
+   "killsDemons": false,
    "mana": 40,
    "dash": 0
   },
@@ -1435,6 +1474,7 @@
    "effect": {
     "lowHpDamage": 1.25
    },
+   "killsDemons": false,
    "mana": 0,
    "dash": 0
   },
@@ -1474,6 +1514,7 @@
    "type": "aoe",
    "status": "burn",
    "color": "#ff2200",
+   "killsDemons": false,
    "mana": 58,
    "dash": 0
   },
@@ -1513,6 +1554,7 @@
    "type": "direct",
    "status": "black_flame",
    "color": "#1a0000",
+   "killsDemons": false,
    "mana": 65,
    "dash": 0
   },
@@ -1554,6 +1596,7 @@
    "armSteps": 30,
    "status": "burn",
    "color": "#ff4500",
+   "killsDemons": false,
    "mana": 65,
    "dash": 0
   },
@@ -1594,6 +1637,7 @@
    "effect": {
     "critChance": 0.1
    },
+   "killsDemons": false,
    "mana": 0,
    "dash": 0
   },
@@ -1634,6 +1678,7 @@
    "status": "burn",
    "color": "#ff4500",
    "ported": "PvP projectile acceleration -> burning ground (no enemy projectiles to speed up)",
+   "killsDemons": false,
    "mana": 75,
    "dash": 0
   },
@@ -1674,6 +1719,7 @@
    "effect": {
     "cheatDeath": 0.2
    },
+   "killsDemons": false,
    "mana": 0,
    "dash": 0
   },
@@ -1712,6 +1758,7 @@
    "tier": 13,
    "type": "hitscan",
    "color": "#ffffa0",
+   "killsDemons": false,
    "mana": 75,
    "dash": 0
   },
@@ -1751,6 +1798,7 @@
    "type": "mobility",
    "dash": 1,
    "color": "#ff4500",
+   "killsDemons": false,
    "mana": 0
   },
   {
@@ -1789,6 +1837,7 @@
    "type": "aoe",
    "status": "slow",
    "color": "#a0d8ff",
+   "killsDemons": false,
    "mana": 10,
    "dash": 0
   },
@@ -1828,6 +1877,7 @@
    "type": "projectile",
    "status": "slow",
    "color": "#88ddff",
+   "killsDemons": false,
    "mana": 16,
    "dash": 0
   },
@@ -1871,6 +1921,7 @@
      "mult": 1.15
     }
    },
+   "killsDemons": false,
    "mana": 0,
    "dash": 0
   },
@@ -1912,6 +1963,7 @@
    "armSteps": 24,
    "status": "slow",
    "color": "#a0d8ff",
+   "killsDemons": false,
    "mana": 16,
    "dash": 0
   },
@@ -1951,6 +2003,7 @@
    "type": "arc",
    "status": "slow",
    "color": "#a0d8ff",
+   "killsDemons": false,
    "mana": 16,
    "dash": 0
   },
@@ -1990,6 +2043,7 @@
    "type": "projectile",
    "status": "slow",
    "color": "#a0d8ff",
+   "killsDemons": false,
    "mana": 22,
    "dash": 0
   },
@@ -2031,6 +2085,7 @@
     "treeStatus": "freeze",
     "chance": 0.2
    },
+   "killsDemons": false,
    "mana": 0,
    "dash": 0
   },
@@ -2070,6 +2125,7 @@
    "type": "defensive",
    "color": "#c8f0ff",
    "ported": "barrier -> a 120 point ice shield on the caster (no wall obstacles in v1)",
+   "killsDemons": false,
    "mana": 0,
    "dash": 0
   },
@@ -2109,6 +2165,7 @@
    "type": "aoe",
    "status": "freeze",
    "color": "#a0d8ff",
+   "killsDemons": false,
    "mana": 40,
    "dash": 0
   },
@@ -2149,6 +2206,7 @@
    "effect": {
     "treeStatus": "slow"
    },
+   "killsDemons": false,
    "mana": 0,
    "dash": 0
   },
@@ -2188,6 +2246,7 @@
    "type": "aoe",
    "status": "slow",
    "color": "#a0d8ff",
+   "killsDemons": false,
    "mana": 58,
    "dash": 0
   },
@@ -2227,6 +2286,7 @@
    "type": "direct",
    "requiresStatus": "freeze",
    "color": "#ffffff",
+   "killsDemons": false,
    "mana": 40,
    "dash": 0
   },
@@ -2270,6 +2330,7 @@
      "mult": 1.3
     }
    },
+   "killsDemons": false,
    "mana": 0,
    "dash": 0
   },
@@ -2309,6 +2370,7 @@
    "type": "projectile",
    "status": "freeze",
    "color": "#00c8ff",
+   "killsDemons": false,
    "mana": 58,
    "dash": 0
   },
@@ -2349,6 +2411,7 @@
    "effect": {
     "treeDamage": 1.1
    },
+   "killsDemons": false,
    "mana": 0,
    "dash": 0
   },
@@ -2390,6 +2453,7 @@
    "armSteps": 30,
    "status": "freeze",
    "color": "#00c8ff",
+   "killsDemons": false,
    "mana": 65,
    "dash": 0
   },
@@ -2429,6 +2493,7 @@
    "type": "domain",
    "status": "freeze",
    "color": "#a0d8ff",
+   "killsDemons": false,
    "mana": 70,
    "dash": 0
   },
@@ -2472,6 +2537,7 @@
      "mult": 1.1
     }
    },
+   "killsDemons": false,
    "mana": 0,
    "dash": 0
   },
@@ -2514,6 +2580,7 @@
     "mult": 2
    },
    "color": "#ffffff",
+   "killsDemons": false,
    "mana": 75,
    "dash": 0
   },
@@ -2553,6 +2620,7 @@
    "type": "mobility",
    "dash": 2,
    "color": "#a0d8ff",
+   "killsDemons": false,
    "mana": 0
   },
   {
@@ -2590,6 +2658,7 @@
    "tier": 1,
    "type": "aoe",
    "color": "#6600cc",
+   "killsDemons": false,
    "mana": 10,
    "dash": 0
   },
@@ -2629,6 +2698,7 @@
    "type": "aoe",
    "color": "#4400aa",
    "ported": "cooldown 0.1 s -> 0.25 s (no faster than a sword combo)",
+   "killsDemons": false,
    "mana": 16,
    "dash": 0
   },
@@ -2669,6 +2739,7 @@
    "effect": {
     "treeDamage": 1.05
    },
+   "killsDemons": false,
    "mana": 0,
    "dash": 0
   },
@@ -2709,6 +2780,7 @@
    "armMs": 400,
    "armSteps": 24,
    "color": "#6600cc",
+   "killsDemons": false,
    "mana": 16,
    "dash": 0
   },
@@ -2748,6 +2820,7 @@
    "type": "arc",
    "status": "pull",
    "color": "#4400aa",
+   "killsDemons": false,
    "mana": 16,
    "dash": 0
   },
@@ -2786,6 +2859,7 @@
    "tier": 3,
    "type": "beam",
    "color": "#6600cc",
+   "killsDemons": false,
    "mana": 22,
    "dash": 0
   },
@@ -2829,6 +2903,7 @@
      "mult": 1.2
     }
    },
+   "killsDemons": false,
    "mana": 0,
    "dash": 0
   },
@@ -2867,6 +2942,7 @@
    "tier": 5,
    "type": "projectile",
    "color": "#220044",
+   "killsDemons": false,
    "mana": 34,
    "dash": 0
   },
@@ -2905,6 +2981,7 @@
    "tier": 6,
    "type": "projectile",
    "color": "#cc0000",
+   "killsDemons": false,
    "mana": 40,
    "dash": 0
   },
@@ -2945,6 +3022,7 @@
    "effect": {
     "killHeal": 15
    },
+   "killsDemons": false,
    "mana": 0,
    "dash": 0
   },
@@ -2983,6 +3061,7 @@
    "tier": 8,
    "type": "aoe",
    "color": "#cc0000",
+   "killsDemons": false,
    "mana": 58,
    "dash": 0
   },
@@ -3023,6 +3102,7 @@
    "effect": {
     "killShield": 30
    },
+   "killsDemons": false,
    "mana": 0,
    "dash": 0
   },
@@ -3062,6 +3142,7 @@
    "type": "projectile",
    "status": "pull",
    "color": "#4400aa",
+   "killsDemons": false,
    "mana": 40,
    "dash": 0
   },
@@ -3102,6 +3183,7 @@
    "effect": {
     "treeDamage": 1.1
    },
+   "killsDemons": false,
    "mana": 0,
    "dash": 0
   },
@@ -3141,6 +3223,7 @@
    "type": "aoe",
    "status": "pull",
    "color": "#220044",
+   "killsDemons": false,
    "mana": 58,
    "dash": 0
   },
@@ -3181,6 +3264,7 @@
    "effect": {
     "treeStatus": "slow"
    },
+   "killsDemons": false,
    "mana": 0,
    "dash": 0
   },
@@ -3220,6 +3304,7 @@
    "type": "domain",
    "status": "pull",
    "color": "#220044",
+   "killsDemons": false,
    "mana": 70,
    "dash": 0
   },
@@ -3260,6 +3345,7 @@
    "armMs": 500,
    "armSteps": 30,
    "color": "#220044",
+   "killsDemons": false,
    "mana": 70,
    "dash": 0
   },
@@ -3300,6 +3386,7 @@
    "effect": {
     "cheatDeath": 0.01
    },
+   "killsDemons": false,
    "mana": 0,
    "dash": 0
   },
@@ -3338,6 +3425,7 @@
    "tier": 12,
    "type": "hitscan",
    "color": "#220044",
+   "killsDemons": false,
    "mana": 75,
    "dash": 0
   },
@@ -3378,6 +3466,7 @@
    "effect": {
     "treeDamage": 1.1
    },
+   "killsDemons": false,
    "mana": 0,
    "dash": 0
   },
@@ -3417,6 +3506,7 @@
    "type": "direct",
    "color": "#000000",
    "ported": "once per life -> 2 min cooldown; non-boss enemies only (spec 8)",
+   "killsDemons": false,
    "mana": 75,
    "dash": 0
   },
@@ -3456,6 +3546,7 @@
    "type": "mobility",
    "dash": 3,
    "color": "#6600cc",
+   "killsDemons": false,
    "mana": 0
   },
   {
@@ -3493,6 +3584,7 @@
    "tier": 1,
    "type": "projectile",
    "color": "#5a9e3d",
+   "killsDemons": false,
    "mana": 10,
    "dash": 0
   },
@@ -3531,6 +3623,7 @@
    "tier": 2,
    "type": "projectile",
    "color": "#7cb342",
+   "killsDemons": false,
    "mana": 16,
    "dash": 0
   },
@@ -3571,6 +3664,7 @@
    "effect": {
     "damageTaken": 0.95
    },
+   "killsDemons": false,
    "mana": 0,
    "dash": 0
   },
@@ -3612,6 +3706,7 @@
    "armSteps": 24,
    "status": "stun",
    "color": "#5a9e3d",
+   "killsDemons": false,
    "mana": 16,
    "dash": 0
   },
@@ -3651,6 +3746,7 @@
    "type": "arc",
    "status": "slow",
    "color": "#5a9e3d",
+   "killsDemons": false,
    "mana": 16,
    "dash": 0
   },
@@ -3689,6 +3785,7 @@
    "tier": 3,
    "type": "aoe",
    "color": "#3d6e2a",
+   "killsDemons": false,
    "mana": 22,
    "dash": 0
   },
@@ -3729,6 +3826,7 @@
    "effect": {
     "treeDamage": 1.05
    },
+   "killsDemons": false,
    "mana": 0,
    "dash": 0
   },
@@ -3768,6 +3866,7 @@
    "type": "direct",
    "status": "petrify",
    "color": "#3d6e2a",
+   "killsDemons": false,
    "mana": 34,
    "dash": 0
   },
@@ -3808,6 +3907,7 @@
    "effect": {
     "damageTaken": 0.95
    },
+   "killsDemons": false,
    "mana": 0,
    "dash": 0
   },
@@ -3848,6 +3948,7 @@
    "effect": {
     "treeDamage": 1.15
    },
+   "killsDemons": false,
    "mana": 0,
    "dash": 0
   },
@@ -3887,6 +3988,7 @@
    "type": "projectile",
    "status": "stun",
    "color": "#8B6914",
+   "killsDemons": false,
    "mana": 58,
    "dash": 0
   },
@@ -3926,6 +4028,7 @@
    "type": "aoe",
    "status": "airborne",
    "color": "#6B5010",
+   "killsDemons": false,
    "mana": 70,
    "dash": 0
   },
@@ -3964,6 +4067,7 @@
    "tier": 12,
    "type": "domain",
    "color": "#3d6e2a",
+   "killsDemons": false,
    "mana": 75,
    "dash": 0
   },
@@ -4003,6 +4107,7 @@
    "type": "hitscan",
    "status": "slow",
    "color": "#3d6e2a",
+   "killsDemons": false,
    "mana": 75,
    "dash": 0
   },
@@ -4042,6 +4147,7 @@
    "type": "mobility",
    "dash": 4,
    "color": "#5a9e3d",
+   "killsDemons": false,
    "mana": 0
   },
   {
@@ -4079,6 +4185,7 @@
    "tier": 1,
    "type": "projectile",
    "color": "#8fd4ff",
+   "killsDemons": false,
    "mana": 10,
    "dash": 0
   },
@@ -4117,6 +4224,7 @@
    "tier": 2,
    "type": "projectile",
    "color": "#a8dfff",
+   "killsDemons": false,
    "mana": 16,
    "dash": 0
   },
@@ -4155,6 +4263,7 @@
    "tier": 2,
    "type": "arc",
    "color": "#8fd4ff",
+   "killsDemons": false,
    "mana": 16,
    "dash": 0
   },
@@ -4195,6 +4304,7 @@
    "status": "taunt",
    "color": "#39ff6a",
    "ported": "decoy that steals PvP eyes -> pulls nearby enemies onto the gem for 4 s",
+   "killsDemons": false,
    "mana": 16,
    "dash": 0
   },
@@ -4233,6 +4343,7 @@
    "tier": 3,
    "type": "aoe",
    "color": "#6fb8e0",
+   "killsDemons": false,
    "mana": 22,
    "dash": 0
   },
@@ -4272,6 +4383,7 @@
    "type": "defensive",
    "color": "#6fb8e0",
    "ported": "barrier -> a 240 point crystal shield on the caster",
+   "killsDemons": false,
    "mana": 0,
    "dash": 0
   },
@@ -4311,6 +4423,7 @@
    "type": "direct",
    "status": "petrify",
    "color": "#8fd4ff",
+   "killsDemons": false,
    "mana": 58,
    "dash": 0
   },
@@ -4350,6 +4463,7 @@
    "type": "aoe",
    "status": "airborne",
    "color": "#6fb8e0",
+   "killsDemons": false,
    "mana": 70,
    "dash": 0
   },
@@ -4388,6 +4502,7 @@
    "tier": 11,
    "type": "domain",
    "color": "#8fd4ff",
+   "killsDemons": false,
    "mana": 75,
    "dash": 0
   },
@@ -4427,6 +4542,7 @@
    "type": "hitscan",
    "status": "slow",
    "color": "#8fd4ff",
+   "killsDemons": false,
    "mana": 75,
    "dash": 0
   },
@@ -4467,13 +4583,14 @@
    "effect": {
     "treeDamage": 1.1
    },
+   "killsDemons": false,
    "mana": 0,
    "dash": 0
   },
   {
    "key": "static_step",
    "name": "Static Step",
-   "pending": true,
+   "pending": false,
    "element": 2,
    "damage": 0,
    "cooldownMs": 1500,
@@ -4506,12 +4623,13 @@
    "type": "mobility",
    "dash": 5,
    "color": "#ffe066",
+   "killsDemons": false,
    "mana": 0
   },
   {
    "key": "spark_jab",
    "name": "Spark Jab",
-   "pending": true,
+   "pending": false,
    "element": 2,
    "damage": 20,
    "cooldownMs": 350,
@@ -4544,6 +4662,7 @@
    "type": "projectile",
    "status": "shock",
    "color": "#ffe066",
+   "killsDemons": false,
    "mana": 10,
    "dash": 0
   },
@@ -4583,6 +4702,7 @@
    "type": "aoe",
    "status": "stun",
    "color": "#ffe066",
+   "killsDemons": false,
    "mana": 22,
    "dash": 0
   },
@@ -4624,6 +4744,7 @@
     "treeStatus": "stun",
     "chance": 0.25
    },
+   "killsDemons": false,
    "mana": 0,
    "dash": 0
   },
@@ -4663,13 +4784,14 @@
    "type": "hitscan",
    "status": "shock",
    "color": "#ffe066",
+   "killsDemons": false,
    "mana": 34,
    "dash": 0
   },
   {
    "key": "ball_lightning",
    "name": "Ball Lightning",
-   "pending": true,
+   "pending": false,
    "element": 2,
    "damage": 18,
    "cooldownMs": 6000,
@@ -4702,13 +4824,14 @@
    "type": "projectile",
    "status": "shock",
    "color": "#fff3a0",
+   "killsDemons": false,
    "mana": 40,
    "dash": 0
   },
   {
    "key": "thunderclap",
    "name": "Thunderclap",
-   "pending": true,
+   "pending": false,
    "element": 2,
    "damage": 40,
    "cooldownMs": 6000,
@@ -4741,13 +4864,14 @@
    "type": "aoe",
    "status": "stun",
    "color": "#fff3a0",
+   "killsDemons": false,
    "mana": 50,
    "dash": 0
   },
   {
    "key": "overcharge",
    "name": "Overcharge",
-   "pending": true,
+   "pending": false,
    "element": 2,
    "damage": 0,
    "cooldownMs": 0,
@@ -4784,13 +4908,14 @@
      "mult": 1.2
     }
    },
+   "killsDemons": false,
    "mana": 0,
    "dash": 0
   },
   {
    "key": "eye_of_the_storm",
    "name": "Eye of the Storm",
-   "pending": true,
+   "pending": false,
    "element": 2,
    "damage": 25,
    "cooldownMs": 70000,
@@ -4823,13 +4948,14 @@
    "type": "domain",
    "status": "shock",
    "color": "#ffe066",
+   "killsDemons": false,
    "mana": 70,
    "dash": 0
   },
   {
    "key": "act_of_god",
    "name": "Act of God",
-   "pending": true,
+   "pending": false,
    "element": 2,
    "damage": 300,
    "cooldownMs": 18000,
@@ -4862,13 +4988,14 @@
    "type": "aoe",
    "status": "stun",
    "color": "#ffffff",
+   "killsDemons": false,
    "mana": 75,
    "dash": 0
   },
   {
    "key": "updraft",
    "name": "Updraft",
-   "pending": true,
+   "pending": false,
    "element": 4,
    "damage": 0,
    "cooldownMs": 3000,
@@ -4901,12 +5028,13 @@
    "type": "mobility",
    "dash": 6,
    "color": "#9fe8d8",
+   "killsDemons": false,
    "mana": 0
   },
   {
    "key": "gust",
    "name": "Gust",
-   "pending": true,
+   "pending": false,
    "element": 4,
    "damage": 15,
    "cooldownMs": 700,
@@ -4939,13 +5067,14 @@
    "type": "aoe",
    "status": "knockback",
    "color": "#9fe8d8",
+   "killsDemons": false,
    "mana": 10,
    "dash": 0
   },
   {
    "key": "razor_wind",
    "name": "Razor Wind",
-   "pending": true,
+   "pending": false,
    "element": 4,
    "damage": 45,
    "cooldownMs": 1400,
@@ -4977,13 +5106,14 @@
    "tier": 3,
    "type": "projectile",
    "color": "#c9fff1",
+   "killsDemons": false,
    "mana": 22,
    "dash": 0
   },
   {
    "key": "cyclone",
    "name": "Cyclone",
-   "pending": true,
+   "pending": false,
    "element": 4,
    "damage": 10,
    "cooldownMs": 9000,
@@ -5016,13 +5146,14 @@
    "type": "aoe",
    "status": "airborne",
    "color": "#9fe8d8",
+   "killsDemons": false,
    "mana": 34,
    "dash": 0
   },
   {
    "key": "downburst",
    "name": "Downburst",
-   "pending": true,
+   "pending": false,
    "element": 4,
    "damage": 90,
    "cooldownMs": 6000,
@@ -5055,13 +5186,14 @@
    "type": "aoe",
    "status": "stun",
    "color": "#c9fff1",
+   "killsDemons": false,
    "mana": 40,
    "dash": 0
   },
   {
    "key": "crosswind",
    "name": "Crosswind",
-   "pending": true,
+   "pending": false,
    "element": 4,
    "damage": 0,
    "cooldownMs": 0,
@@ -5098,13 +5230,14 @@
      "mult": 1.15
     }
    },
+   "killsDemons": false,
    "mana": 0,
    "dash": 0
   },
   {
    "key": "howling_expanse",
    "name": "Howling Expanse",
-   "pending": true,
+   "pending": false,
    "element": 4,
    "damage": 20,
    "cooldownMs": 70000,
@@ -5137,13 +5270,14 @@
    "type": "domain",
    "status": "knockback",
    "color": "#9fe8d8",
+   "killsDemons": false,
    "mana": 70,
    "dash": 0
   },
   {
    "key": "heavens_exhale",
    "name": "Heaven's Exhale",
-   "pending": true,
+   "pending": false,
    "element": 4,
    "damage": 260,
    "cooldownMs": 15000,
@@ -5176,13 +5310,14 @@
    "type": "hitscan",
    "status": "knockback",
    "color": "#ffffff",
+   "killsDemons": false,
    "mana": 75,
    "dash": 0
   },
   {
    "key": "sunstep",
    "name": "Sunstep",
-   "pending": true,
+   "pending": false,
    "element": 5,
    "damage": 0,
    "cooldownMs": 2000,
@@ -5215,12 +5350,13 @@
    "type": "mobility",
    "dash": 7,
    "color": "#ffd76a",
+   "killsDemons": true,
    "mana": 0
   },
   {
    "key": "glint",
    "name": "Glint",
-   "pending": true,
+   "pending": false,
    "element": 5,
    "damage": 18,
    "cooldownMs": 300,
@@ -5252,13 +5388,14 @@
    "tier": 1,
    "type": "projectile",
    "color": "#fff2b0",
+   "killsDemons": true,
    "mana": 10,
    "dash": 0
   },
   {
    "key": "radiant_lance",
    "name": "Radiant Lance",
-   "pending": true,
+   "pending": false,
    "element": 5,
    "damage": 80,
    "cooldownMs": 2500,
@@ -5290,13 +5427,14 @@
    "tier": 3,
    "type": "projectile",
    "color": "#ffd76a",
+   "killsDemons": true,
    "mana": 22,
    "dash": 0
   },
   {
    "key": "sunburst",
    "name": "Sunburst",
-   "pending": true,
+   "pending": false,
    "element": 5,
    "damage": 45,
    "cooldownMs": 7000,
@@ -5328,13 +5466,14 @@
    "tier": 4,
    "type": "aoe",
    "color": "#ffd76a",
+   "killsDemons": true,
    "mana": 28,
    "dash": 0
   },
   {
    "key": "halo",
    "name": "Halo",
-   "pending": true,
+   "pending": false,
    "element": 5,
    "damage": 0,
    "cooldownMs": 15000,
@@ -5366,13 +5505,14 @@
    "tier": 5,
    "type": "defensive",
    "color": "#fff2b0",
+   "killsDemons": true,
    "mana": 0,
    "dash": 0
   },
   {
    "key": "dawnbreak",
    "name": "Dawnbreak",
-   "pending": true,
+   "pending": false,
    "element": 5,
    "damage": 100,
    "cooldownMs": 6000,
@@ -5405,13 +5545,14 @@
    "type": "aoe",
    "status": "burn",
    "color": "#ffd76a",
+   "killsDemons": true,
    "mana": 40,
    "dash": 0
   },
   {
    "key": "sunlit",
    "name": "Sunlit",
-   "pending": true,
+   "pending": false,
    "element": 5,
    "damage": 0,
    "cooldownMs": 0,
@@ -5448,13 +5589,14 @@
      "mult": 1.2
     }
    },
+   "killsDemons": true,
    "mana": 0,
    "dash": 0
   },
   {
    "key": "high_noon",
    "name": "High Noon",
-   "pending": true,
+   "pending": false,
    "element": 5,
    "damage": 30,
    "cooldownMs": 75000,
@@ -5486,13 +5628,14 @@
    "tier": 10,
    "type": "domain",
    "color": "#fff2b0",
+   "killsDemons": true,
    "mana": 70,
    "dash": 0
   },
   {
    "key": "let_there_be_light",
    "name": "Let There Be Light",
-   "pending": true,
+   "pending": false,
    "element": 5,
    "damage": 250,
    "cooldownMs": 20000,
@@ -5524,13 +5667,14 @@
    "tier": 12,
    "type": "aoe",
    "color": "#ffffff",
+   "killsDemons": true,
    "mana": 75,
    "dash": 0
   },
   {
    "key": "skip",
    "name": "Skip",
-   "pending": true,
+   "pending": false,
    "element": 7,
    "damage": 0,
    "cooldownMs": 2000,
@@ -5563,12 +5707,13 @@
    "type": "mobility",
    "dash": 8,
    "color": "#b98cff",
+   "killsDemons": false,
    "mana": 0
   },
   {
    "key": "rift_shot",
    "name": "Rift Shot",
-   "pending": true,
+   "pending": false,
    "element": 7,
    "damage": 26,
    "cooldownMs": 450,
@@ -5600,13 +5745,14 @@
    "tier": 1,
    "type": "projectile",
    "color": "#b98cff",
+   "killsDemons": false,
    "mana": 10,
    "dash": 0
   },
   {
    "key": "collapse",
    "name": "Collapse",
-   "pending": true,
+   "pending": false,
    "element": 7,
    "damage": 60,
    "cooldownMs": 6000,
@@ -5639,13 +5785,14 @@
    "type": "aoe",
    "status": "pull",
    "color": "#7a4dff",
+   "killsDemons": false,
    "mana": 22,
    "dash": 0
   },
   {
    "key": "unmake",
    "name": "Unmake",
-   "pending": true,
+   "pending": false,
    "element": 7,
    "damage": 140,
    "cooldownMs": 8000,
@@ -5681,13 +5828,14 @@
     "mult": 3
    },
    "color": "#7a4dff",
+   "killsDemons": false,
    "mana": 34,
    "dash": 0
   },
   {
    "key": "null_field",
    "name": "Null Field",
-   "pending": true,
+   "pending": false,
    "element": 7,
    "damage": 30,
    "cooldownMs": 9000,
@@ -5719,13 +5867,14 @@
    "tier": 6,
    "type": "aoe",
    "color": "#b98cff",
+   "killsDemons": false,
    "mana": 40,
    "dash": 0
   },
   {
    "key": "hollow_echo",
    "name": "Hollow Echo",
-   "pending": true,
+   "pending": false,
    "element": 7,
    "damage": 0,
    "cooldownMs": 0,
@@ -5759,13 +5908,14 @@
    "effect": {
     "treeDamage": 1.1
    },
+   "killsDemons": false,
    "mana": 0,
    "dash": 0
   },
   {
    "key": "zero_point",
    "name": "Zero Point",
-   "pending": true,
+   "pending": false,
    "element": 7,
    "damage": 10,
    "cooldownMs": 70000,
@@ -5798,13 +5948,14 @@
    "type": "domain",
    "status": "pull",
    "color": "#7a4dff",
+   "killsDemons": false,
    "mana": 70,
    "dash": 0
   },
   {
    "key": "unwritten",
    "name": "Unwritten",
-   "pending": true,
+   "pending": false,
    "element": 7,
    "damage": 99999,
    "cooldownMs": 120000,
@@ -5837,6 +5988,7 @@
    "type": "direct",
    "bossDamage": 800,
    "color": "#000000",
+   "killsDemons": false,
    "mana": 75,
    "dash": 0
   }
@@ -5845,6 +5997,7 @@
   {
    "key": "fire",
    "element": 0,
+   "killsDemons": false,
    "nodes": [
     {
      "key": "ember_flick",
@@ -5950,6 +6103,7 @@
   {
    "key": "ice",
    "element": 1,
+   "killsDemons": false,
    "nodes": [
     {
      "key": "frost_bite",
@@ -6074,6 +6228,7 @@
   {
    "key": "dark",
    "element": 6,
+   "killsDemons": false,
    "nodes": [
     {
      "key": "void_touch",
@@ -6216,6 +6371,7 @@
   {
    "key": "earth",
    "element": 3,
+   "killsDemons": false,
    "nodes": [
     {
      "key": "thorn_dart",
@@ -6373,6 +6529,7 @@
   {
    "key": "lightning",
    "element": 2,
+   "killsDemons": false,
    "nodes": [
     {
      "key": "spark_jab",
@@ -6436,6 +6593,7 @@
   {
    "key": "wind",
    "element": 4,
+   "killsDemons": false,
    "nodes": [
     {
      "key": "gust",
@@ -6487,6 +6645,7 @@
   {
    "key": "light",
    "element": 5,
+   "killsDemons": true,
    "nodes": [
     {
      "key": "glint",
@@ -6544,6 +6703,7 @@
   {
    "key": "void",
    "element": 7,
+   "killsDemons": false,
    "nodes": [
     {
      "key": "rift_shot",
@@ -6771,55 +6931,7 @@
   "form_dark": "Hungering Cut",
   "form_void": "Severance"
  },
- "pending": [
-  "static_step",
-  "spark_jab",
-  "ball_lightning",
-  "thunderclap",
-  "overcharge",
-  "eye_of_the_storm",
-  "act_of_god",
-  "updraft",
-  "gust",
-  "razor_wind",
-  "cyclone",
-  "downburst",
-  "crosswind",
-  "howling_expanse",
-  "heavens_exhale",
-  "sunstep",
-  "glint",
-  "radiant_lance",
-  "sunburst",
-  "halo",
-  "dawnbreak",
-  "sunlit",
-  "high_noon",
-  "let_there_be_light",
-  "skip",
-  "rift_shot",
-  "collapse",
-  "unmake",
-  "null_field",
-  "hollow_echo",
-  "zero_point",
-  "unwritten",
-  "whirlwind",
-  "sweep",
-  "impale",
-  "mana_flow",
-  "quick_cast",
-  "overflow",
-  "twin_cast",
-  "form_fire",
-  "form_ice",
-  "form_lightning",
-  "form_earth",
-  "form_wind",
-  "form_light",
-  "form_dark",
-  "form_void"
- ],
+ "pending": [],
  "enemyAttacks": [
   {
    "key": "gore",
@@ -7447,6 +7559,306 @@
    "element": 8
   },
   {
+   "key": "demon_claw",
+   "radius": 0,
+   "reach": 2.4,
+   "arc": 90,
+   "width": 0,
+   "speed": 0,
+   "minRange": 0,
+   "volley": 1,
+   "spreadDeg": 0,
+   "charge": false,
+   "everyone": false,
+   "id": 60,
+   "shape": "cone",
+   "windupMs": 350,
+   "windupSteps": 21,
+   "activeMs": 100,
+   "activeSteps": 6,
+   "recoveryMs": 450,
+   "recoverySteps": 27,
+   "cooldownMs": 1500,
+   "cooldownSteps": 90,
+   "damage": 10,
+   "element": 8
+  },
+  {
+   "key": "demon_lunge",
+   "radius": 0,
+   "reach": 7,
+   "arc": 0,
+   "width": 1.4,
+   "speed": 0,
+   "minRange": 3,
+   "volley": 1,
+   "spreadDeg": 0,
+   "charge": true,
+   "everyone": false,
+   "id": 61,
+   "shape": "line",
+   "windupMs": 450,
+   "windupSteps": 27,
+   "activeMs": 300,
+   "activeSteps": 18,
+   "recoveryMs": 600,
+   "recoverySteps": 36,
+   "cooldownMs": 4500,
+   "cooldownSteps": 270,
+   "damage": 12,
+   "element": 8
+  },
+  {
+   "key": "cinder_burst",
+   "radius": 4,
+   "reach": 0,
+   "arc": 0,
+   "width": 0,
+   "speed": 0,
+   "minRange": 0,
+   "volley": 1,
+   "spreadDeg": 0,
+   "charge": false,
+   "everyone": false,
+   "id": 62,
+   "shape": "circle",
+   "windupMs": 550,
+   "windupSteps": 33,
+   "activeMs": 117,
+   "activeSteps": 7,
+   "recoveryMs": 700,
+   "recoverySteps": 42,
+   "cooldownMs": 6000,
+   "cooldownSteps": 360,
+   "damage": 18,
+   "element": 0
+  },
+  {
+   "key": "rime_lance",
+   "radius": 0.5,
+   "reach": 24,
+   "arc": 0,
+   "width": 0,
+   "speed": 22,
+   "minRange": 4,
+   "volley": 1,
+   "spreadDeg": 0,
+   "charge": false,
+   "everyone": false,
+   "id": 63,
+   "shape": "projectile",
+   "windupMs": 500,
+   "windupSteps": 30,
+   "activeMs": 17,
+   "activeSteps": 1,
+   "recoveryMs": 500,
+   "recoverySteps": 30,
+   "cooldownMs": 4000,
+   "cooldownSteps": 240,
+   "damage": 15,
+   "element": 1
+  },
+  {
+   "key": "storm_rush",
+   "radius": 0,
+   "reach": 12,
+   "arc": 0,
+   "width": 1.8,
+   "speed": 0,
+   "minRange": 4,
+   "volley": 1,
+   "spreadDeg": 0,
+   "charge": true,
+   "everyone": false,
+   "id": 64,
+   "shape": "line",
+   "windupMs": 500,
+   "windupSteps": 30,
+   "activeMs": 400,
+   "activeSteps": 24,
+   "recoveryMs": 800,
+   "recoverySteps": 48,
+   "cooldownMs": 6500,
+   "cooldownSteps": 390,
+   "damage": 18,
+   "element": 2
+  },
+  {
+   "key": "grave_slam",
+   "radius": 3,
+   "reach": 10,
+   "arc": 0,
+   "width": 0,
+   "speed": 0,
+   "minRange": 2,
+   "volley": 1,
+   "spreadDeg": 0,
+   "charge": false,
+   "everyone": false,
+   "id": 65,
+   "shape": "ground",
+   "windupMs": 600,
+   "windupSteps": 36,
+   "activeMs": 117,
+   "activeSteps": 7,
+   "recoveryMs": 700,
+   "recoverySteps": 42,
+   "cooldownMs": 6000,
+   "cooldownSteps": 360,
+   "damage": 20,
+   "element": 3
+  },
+  {
+   "key": "gale_rend",
+   "radius": 0,
+   "reach": 5,
+   "arc": 140,
+   "width": 0,
+   "speed": 0,
+   "minRange": 0,
+   "volley": 1,
+   "spreadDeg": 0,
+   "charge": false,
+   "everyone": false,
+   "id": 66,
+   "shape": "cone",
+   "windupMs": 450,
+   "windupSteps": 27,
+   "activeMs": 117,
+   "activeSteps": 7,
+   "recoveryMs": 600,
+   "recoverySteps": 36,
+   "cooldownMs": 5000,
+   "cooldownSteps": 300,
+   "damage": 16,
+   "element": 4
+  },
+  {
+   "key": "umbral_leap",
+   "radius": 2.5,
+   "reach": 12,
+   "arc": 0,
+   "width": 0,
+   "speed": 0,
+   "minRange": 3,
+   "volley": 1,
+   "spreadDeg": 0,
+   "charge": false,
+   "everyone": false,
+   "id": 67,
+   "shape": "ground",
+   "windupMs": 450,
+   "windupSteps": 27,
+   "activeMs": 100,
+   "activeSteps": 6,
+   "recoveryMs": 600,
+   "recoverySteps": 36,
+   "cooldownMs": 5500,
+   "cooldownSteps": 330,
+   "damage": 17,
+   "element": 6
+  },
+  {
+   "key": "void_gnash",
+   "radius": 5,
+   "reach": 0,
+   "arc": 0,
+   "width": 0,
+   "speed": 0,
+   "minRange": 0,
+   "volley": 1,
+   "spreadDeg": 0,
+   "charge": false,
+   "everyone": false,
+   "id": 68,
+   "shape": "circle",
+   "windupMs": 600,
+   "windupSteps": 36,
+   "activeMs": 150,
+   "activeSteps": 9,
+   "recoveryMs": 800,
+   "recoverySteps": 48,
+   "cooldownMs": 7000,
+   "cooldownSteps": 420,
+   "damage": 19,
+   "element": 7
+  },
+  {
+   "key": "lord_cleave",
+   "radius": 0,
+   "reach": 4.5,
+   "arc": 140,
+   "width": 0,
+   "speed": 0,
+   "minRange": 0,
+   "volley": 1,
+   "spreadDeg": 0,
+   "charge": false,
+   "everyone": false,
+   "id": 69,
+   "shape": "cone",
+   "windupMs": 500,
+   "windupSteps": 30,
+   "activeMs": 150,
+   "activeSteps": 9,
+   "recoveryMs": 700,
+   "recoverySteps": 42,
+   "cooldownMs": 3000,
+   "cooldownSteps": 180,
+   "damage": 22,
+   "element": 8
+  },
+  {
+   "key": "lord_nova",
+   "radius": 7,
+   "reach": 0,
+   "arc": 0,
+   "width": 0,
+   "speed": 0,
+   "minRange": 0,
+   "volley": 1,
+   "spreadDeg": 0,
+   "charge": false,
+   "everyone": false,
+   "id": 70,
+   "shape": "circle",
+   "windupMs": 600,
+   "windupSteps": 36,
+   "activeMs": 150,
+   "activeSteps": 9,
+   "recoveryMs": 900,
+   "recoverySteps": 54,
+   "cooldownMs": 8000,
+   "cooldownSteps": 480,
+   "damage": 20,
+   "element": 8
+  },
+  {
+   "key": "lord_meteor",
+   "radius": 3,
+   "reach": 30,
+   "arc": 0,
+   "width": 0,
+   "speed": 0,
+   "minRange": 0,
+   "volley": 1,
+   "spreadDeg": 0,
+   "charge": false,
+   "everyone": true,
+   "id": 71,
+   "shape": "ground",
+   "windupMs": 600,
+   "windupSteps": 36,
+   "activeMs": 117,
+   "activeSteps": 7,
+   "recoveryMs": 600,
+   "recoverySteps": 36,
+   "cooldownMs": 9000,
+   "cooldownSteps": 540,
+   "damage": 18,
+   "element": 8
+  },
+  {
    "key": "boss_cleave",
    "radius": 0,
    "reach": 4.5,
@@ -8065,6 +8477,214 @@
    "element": 8
   },
   {
+   "key": "gloamling",
+   "name": "Gloamling",
+   "keepAway": 0,
+   "id": 60,
+   "family": "demon",
+   "hp": 82,
+   "speed": 6.6,
+   "aggro": 45,
+   "attacks": [
+    "demon_claw",
+    "demon_lunge"
+   ],
+   "behavior": "melee",
+   "xp": 30,
+   "size": 1,
+   "color": "#3a1626",
+   "demon": {
+    "regen": 0.35,
+    "rank": "lesser"
+   },
+   "element": 8
+  },
+  {
+   "key": "cinder_fiend",
+   "name": "Cinder Fiend",
+   "keepAway": 0,
+   "id": 61,
+   "family": "demon",
+   "hp": 380,
+   "speed": 5.6,
+   "aggro": 45,
+   "attacks": [
+    "demon_claw",
+    "cinder_burst"
+   ],
+   "behavior": "melee",
+   "element": 0,
+   "xp": 120,
+   "size": 1.35,
+   "color": "#5a1a10",
+   "demon": {
+    "regen": 0.25,
+    "rank": "greater"
+   }
+  },
+  {
+   "key": "rime_wraith",
+   "name": "Rime Wraith",
+   "keepAway": 9,
+   "id": 62,
+   "family": "demon",
+   "hp": 360,
+   "speed": 5.8,
+   "aggro": 45,
+   "attacks": [
+    "demon_claw",
+    "rime_lance"
+   ],
+   "behavior": "ranged",
+   "element": 1,
+   "xp": 120,
+   "size": 1.3,
+   "color": "#26304a",
+   "demon": {
+    "regen": 0.25,
+    "rank": "greater"
+   }
+  },
+  {
+   "key": "storm_ghoul",
+   "name": "Storm Ghoul",
+   "keepAway": 0,
+   "id": 63,
+   "family": "demon",
+   "hp": 370,
+   "speed": 6.4,
+   "aggro": 45,
+   "attacks": [
+    "demon_claw",
+    "storm_rush"
+   ],
+   "behavior": "melee",
+   "element": 2,
+   "xp": 120,
+   "size": 1.3,
+   "color": "#3a3418",
+   "demon": {
+    "regen": 0.25,
+    "rank": "greater"
+   }
+  },
+  {
+   "key": "grave_brute",
+   "name": "Grave Brute",
+   "keepAway": 0,
+   "id": 64,
+   "family": "demon",
+   "hp": 420,
+   "speed": 4.8,
+   "aggro": 45,
+   "attacks": [
+    "demon_claw",
+    "grave_slam"
+   ],
+   "behavior": "melee",
+   "element": 3,
+   "xp": 120,
+   "size": 1.5,
+   "color": "#2e2418",
+   "demon": {
+    "regen": 0.25,
+    "rank": "greater"
+   }
+  },
+  {
+   "key": "gale_reaver",
+   "name": "Gale Reaver",
+   "keepAway": 0,
+   "id": 65,
+   "family": "demon",
+   "hp": 360,
+   "speed": 6.8,
+   "aggro": 45,
+   "attacks": [
+    "demon_claw",
+    "gale_rend"
+   ],
+   "behavior": "melee",
+   "element": 4,
+   "xp": 120,
+   "size": 1.3,
+   "color": "#1e3430",
+   "demon": {
+    "regen": 0.25,
+    "rank": "greater"
+   }
+  },
+  {
+   "key": "umbral_stalker",
+   "name": "Umbral Stalker",
+   "keepAway": 0,
+   "id": 66,
+   "family": "demon",
+   "hp": 370,
+   "speed": 6.6,
+   "aggro": 45,
+   "attacks": [
+    "demon_claw",
+    "umbral_leap"
+   ],
+   "behavior": "melee",
+   "element": 6,
+   "xp": 120,
+   "size": 1.3,
+   "color": "#1c1028",
+   "demon": {
+    "regen": 0.25,
+    "rank": "greater"
+   }
+  },
+  {
+   "key": "void_maw",
+   "name": "Void Maw",
+   "keepAway": 0,
+   "id": 67,
+   "family": "demon",
+   "hp": 390,
+   "speed": 5.4,
+   "aggro": 45,
+   "attacks": [
+    "demon_claw",
+    "void_gnash"
+   ],
+   "behavior": "melee",
+   "element": 7,
+   "xp": 120,
+   "size": 1.4,
+   "color": "#24123a",
+   "demon": {
+    "regen": 0.25,
+    "rank": "greater"
+   }
+  },
+  {
+   "key": "starless_sovereign",
+   "name": "Starless Sovereign",
+   "keepAway": 0,
+   "id": 110,
+   "family": "demon",
+   "hp": 2600,
+   "speed": 5.2,
+   "aggro": 50,
+   "attacks": [
+    "lord_cleave",
+    "lord_nova",
+    "lord_meteor"
+   ],
+   "behavior": "melee",
+   "xp": 900,
+   "size": 2.4,
+   "color": "#14080e",
+   "demon": {
+    "regen": 0.15,
+    "rank": "lord"
+   },
+   "element": 8
+  },
+  {
    "key": "warden",
    "name": "Warden",
    "keepAway": 0,
@@ -8334,5 +8954,26 @@
     "eliteChance": 0.15
    }
   }
+ },
+ "demons": {
+  "regen": {
+   "lesser": 0.35,
+   "greater": 0.25,
+   "lord": 0.15
+  },
+  "lesser": [
+   "gloamling"
+  ],
+  "greater": [
+   "cinder_fiend",
+   "rime_wraith",
+   "storm_ghoul",
+   "grave_brute",
+   "gale_reaver",
+   "void_maw",
+   "umbral_stalker",
+   "void_maw"
+  ],
+  "lord": "starless_sovereign"
  }
 }

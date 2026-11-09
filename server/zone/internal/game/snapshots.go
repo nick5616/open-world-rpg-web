@@ -271,7 +271,7 @@ func (s *Server) sendSnapshot(sc *snapScratch, sess *session, tick uint32, serve
 	for _, i := range sc.idxs {
 		o := &s.views[i]
 		// Personal pickups: only their owner sees them (WP09).
-		if o.kind == proto.EntityKindPickup && o.owner != e.ID {
+		if o.kind == proto.EntityKindPickup && o.owner != 0 && o.owner != e.ID { // WP14: owner 0 = a dropped item, public
 			continue
 		}
 		// Underground interest clipping (spec 9, WP09 caves.go).
