@@ -135,6 +135,11 @@ async function signInAndPlay(page, user, charName) {
 async function waitPlaying(page) {
   await page.waitForFunction(() => window.__lodestone?.netDebug?.()?.phase === 'playing', null, { timeout: 120000 });
   await page.waitForFunction(() => !!window.__lodestoneCombat?.hud().active && !!window.__lodestonePvp && !!window.__lodestoneMap?.state().online, null, { timeout: 240000 });
+  // The world is loaded and the player stands on it (the position is set).
+  await page.waitForFunction(() => {
+    const p = window.__lodestone.player().pos;
+    return Math.abs(p.x) + Math.abs(p.z) > 1 && window.__lodestone.netDebug()?.prediction?.agreements > 30;
+  }, null, { timeout: 240000 });
   await page.evaluate(() => {
     window.__lodestone.tap();
     window.__lodestone.setQuality('medium');
@@ -172,14 +177,13 @@ async function walkTo(page, x, z, { stopAt = 1, timeoutMs = 60000 } = {}) {
   }
 }
 
-/** Stand `dist` m in front of the other player and face them; the attacker faces back. */
-async function faceOff(attacker, victim, dist = 1.6) {
+/** The victim stands `dist` m in front of the attacker (along the attacker's yaw); both face each other. */
+async function faceOff(attacker, victim, dist = 2) {
   const a = (await pl(attacker)).pos;
-  const b = (await pl(victim)).pos;
-  const yaw = yawTo(a, b.x, b.z);
+  const yaw = (await pl(attacker)).yaw;
   const tx = a.x - Math.sin(yaw) * dist;
   const tz = a.z - Math.cos(yaw) * dist;
-  await walkTo(victim, tx, tz, { stopAt: 0.35, timeoutMs: 40000 });
+  await walkTo(victim, tx, tz, { stopAt: 0.3, timeoutMs: 40000 });
   await sleep(600);
   const a2 = (await pl(attacker)).pos;
   const b2 = (await pl(victim)).pos;
@@ -275,6 +279,7 @@ try {
   // ======================================================== 1. party
   item = '1 sign-in, party';
   await Promise.all([signInAndPlay(a, USERS.A, NAMES.A), signInAndPlay(b, USERS.B, NAMES.B)]);
+  for (const p of [a, b]) await p.keyboard.press('F3'); // debug HUD off (top left is the PvP indicator's)
   const charA = (await a.evaluate(() => window.__lodestone.session())).characterId;
   const charB = (await b.evaluate(() => window.__lodestone.session())).characterId;
   const [pa0, pb0] = [(await pl(a)).pos, (await pl(b)).pos];
@@ -288,6 +293,8 @@ try {
 
   // ======================================================== 2. duel
   item = '2 duel';
+  await look(a, 0, 0);
+  await sleep(300);
   const dist = await faceOff(a, b);
   step(`  ${NAMES.B} stands ${dist.toFixed(2)} m in front of ${NAMES.A}`);
   await a.getByTestId('party-duel').waitFor({ timeout: 10000 });
@@ -340,7 +347,7 @@ try {
   const partyChat = await a.evaluate(() => JSON.stringify(window.__lodestoneSocial?.messages?.('party') ?? null)).catch(() => 'null');
   step(`  party chat (if the dev handle exposes it): ${partyChat.slice(0, 300)}`);
   const zoneLog = fs.readFileSync(path.join(TMP, 'zone.log'), 'utf8');
-  check(/duel ended.*reason=1/.test(zoneLog), 'zone log: duel ended, reason 1');
+  check(/duel ended.*reason"?[=:]1/.test(zoneLog), 'zone log: duel ended, reason 1');
 
   // ======================================================== 3. open PvP
   item = '3 pvp';
@@ -351,8 +358,13 @@ try {
   await a.keyboard.press('KeyC');
   await a.getByTestId('pvp-toggle').waitFor({ timeout: 5000 });
   await a.getByTestId('pvp-panel').scrollIntoViewIfNeeded();
-  await a.getByTestId('pvp-toggle').dispatchEvent('click');
-  await until(a, () => window.__lodestonePvp.state().flagged, 0, 8000);
+  // Just out of a duel: the combat lock (6 s) may still refuse it; click again until it takes.
+  for (let i = 0; i < 8 && !(await pvp(a)).flagged; i++) {
+    await a.getByTestId('pvp-toggle').dispatchEvent('click');
+    await a.waitForFunction(() => window.__lodestonePvp.state().flagged, null, { timeout: 2000 }).catch(() => {});
+    if (!(await pvp(a)).flagged) step(`  panel toggle refused: ${(await pvp(a)).notice?.text}`);
+  }
+  check((await pvp(a)).flagged, `${NAMES.A} flagged from the character panel`);
   await sleep(300);
   await shot(a, 'character-panel-pvp-on-A');
   await a.keyboard.press('KeyC');
@@ -361,6 +373,8 @@ try {
   check(sa.flagged && sa.safe, `both flagged (panel toggle, /pvp on); the Haven is a safe zone: "${sa.safeName}"`, { safe: sa.safe, name: sa.safeName });
   await until(a, (n) => (window.__lodestoneDrawn?.() ?? []).some((v) => v.name === n && (v.typeId & 0x1000) !== 0), NAMES.B, 8000);
   check(true, `${NAMES.B}'s snapshot typeId carries the PvP bit (red crossed swords on the nameplate)`);
+  await look(a, 0, 0);
+  await sleep(300);
   await faceOff(a, b);
   const tSafe = Date.now();
   const hpSafe = await health(b);
@@ -393,6 +407,8 @@ try {
   await rejoinAt(b, charB, { x: spot.x, z: spot.z - 2 });
   await flagOn(b);
   await sleep(1000);
+  await look(a, 0, 0);
+  await sleep(300);
   await faceOff(a, b);
   const sb = await pvp(b);
   check(sb.flagged && !sb.safe, `${NAMES.B} flagged on open ground (no safe zone)`);

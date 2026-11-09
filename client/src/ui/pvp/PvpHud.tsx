@@ -25,7 +25,9 @@ function useTicker(on: boolean, ms = 200): number {
     const id = setInterval(() => setNow(performance.now()), ms);
     return () => clearInterval(id);
   }, [on, ms]);
-  return now;
+  // The state can be stale on the first render after `on` flips (it was last
+  // set whenever the previous countdown stopped): never count from the past.
+  return on ? Math.max(now, performance.now()) : now;
 }
 
 const secs = (ms: number) => Math.max(0, Math.ceil(ms / 1000));
