@@ -14,6 +14,9 @@ import * as THREE from 'three';
 import { Activity } from '@lodestone/contracts';
 import type { RemoteView } from './interpolation';
 import { isSpeaking } from '../voice/levels';
+import { unpackLook, type WeaponKind } from '../combat/weapons/look';
+import { weaponGeometry } from '../combat/weapons/models';
+import { weaponMaterial } from '../combat/weapons/material';
 
 const LOD_MID_M = 25;
 const LOD_LOW_M = 90;
@@ -83,8 +86,34 @@ function bodyMat(id: number): THREE.MeshStandardMaterial {
   return m;
 }
 
+/**
+ * pt/ux: how a remote player holds each weapon, in the hanging arm's frame
+ * (shoulder pivot, hand 0.66 m down; the character faces -Z): where the
+ * weapon's +Y points and where its +Z faces. The bow goes in the left hand.
+ */
+const HOLD: Record<WeaponKind, { up: [number, number, number]; face: [number, number, number]; left?: boolean }> = {
+  sword: { up: [0, 0.85, -0.75], face: [1, 0, 0] },
+  spear: { up: [0, 1, -0.35], face: [1, 0, 0] },
+  bow: { up: [0, 1, -0.15], face: [0, 0, 1], left: true },
+  staff: { up: [0, 1, -0.12], face: [1, 0, 0] },
+  wand: { up: [0, 0.35, -1], face: [1, 0, 0] },
+};
+const HAND_Y = -0.66;
+
+function holdQuat(kind: WeaponKind): THREE.Quaternion {
+  const h = HOLD[kind];
+  const y = new THREE.Vector3(...h.up).normalize();
+  const z = new THREE.Vector3(...h.face);
+  z.addScaledVector(y, -z.dot(y)).normalize();
+  return new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(new THREE.Vector3().crossVectors(y, z), y, z));
+}
+
 export class Avatar {
   readonly root = new THREE.Group();
+  /** pt/ux: the equipped weapon (snapshot typeId, weapons/look.ts): in the hand (high LOD) and at the side (mid LOD). */
+  private weaponHi: THREE.Mesh;
+  private weaponMid: THREE.Mesh;
+  private weaponType = -1;
   private lod = new THREE.LOD();
   private limbs: THREE.Mesh[] = [];
   private plate: THREE.Sprite;
@@ -135,6 +164,13 @@ export class Avatar {
     visorMid.position.set(0, 1.65, -0.18);
     mid.add(bodyMid, headMid, visorMid);
 
+    this.weaponHi = new THREE.Mesh(undefined, weaponMaterial());
+    this.weaponHi.castShadow = true;
+    this.weaponHi.visible = false;
+    this.weaponMid = new THREE.Mesh(undefined, weaponMaterial());
+    this.weaponMid.visible = false;
+    mid.add(this.weaponMid);
+
     const low = new THREE.Mesh(r.low, mat);
 
     this.lod.addLevel(high, 0);
@@ -158,9 +194,36 @@ export class Avatar {
     return this.lod.getCurrentLevel();
   }
 
+  /** pt/ux: show the weapon a player entity's typeId names (only rebuilt when it changes). */
+  private setWeapon(typeId: number): void {
+    this.weaponType = typeId;
+    const look = unpackLook(typeId);
+    this.weaponHi.removeFromParent();
+    if (!look.weapon) {
+      this.weaponHi.visible = this.weaponMid.visible = false;
+      return;
+    }
+    const h = HOLD[look.weapon];
+    const q = holdQuat(look.weapon);
+    this.weaponHi.geometry = weaponGeometry(look, 1);
+    this.weaponHi.quaternion.copy(q);
+    this.weaponHi.position.set(0, HAND_Y, 0);
+    this.limbs[h.left ? 0 : 1].add(this.weaponHi);
+    this.weaponMid.geometry = weaponGeometry(look, 0);
+    this.weaponMid.quaternion.copy(q);
+    this.weaponMid.position.set(h.left ? -0.38 : 0.38, 1.38 + HAND_Y, 0);
+    this.weaponHi.visible = this.weaponMid.visible = true;
+  }
+
+  /** The weapon in the hand, for tests and captures (null when none). */
+  get weaponMesh(): THREE.Mesh | null {
+    return this.weaponHi.visible ? this.weaponHi : null;
+  }
+
   update(v: RemoteView, camera: THREE.Camera, dt: number): void {
     this.root.position.set(v.x, v.y, v.z);
     this.root.rotation.y = v.yaw;
+    if ((v.typeId ?? 0) !== this.weaponType) this.setWeapon(v.typeId ?? 0);
 
     // Walk cycle on the high LOD: limbs swing with speed; airborne tucks legs.
     // WP10 poses from the activity bits (cheap: limb angles, a body tilt, a

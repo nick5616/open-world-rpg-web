@@ -93,7 +93,10 @@ type Player struct {
 	// WP14: what the equipped items add (internal/items Gear; the zero
 	// value is the WP13 training kit) and the inventory-backed consumable
 	// (nil: WP13's stand-in draught with refilling charges).
-	Gear      Gear
+	Gear Gear
+	// Boons are permanent rewards outside the level curve (playtest 1:
+	// tower attunements add health and skill points; CR 012).
+	Boons     Boons
 	OnDrink   func() (heal float64, ok bool)
 	drinkHeal float64
 
@@ -159,6 +162,26 @@ func orOne(v float64) float64 {
 	return v
 }
 
+// Boons are permanent character rewards (playtest 1, CR 012): each first
+// tower attunement adds combat.yaml leveling.attune health and skill points.
+type Boons struct {
+	Health      float64
+	SkillPoints int
+}
+
+// SetBoons applies new boons (health max follows, keeping the fraction).
+func (p *Player) SetBoons(b Boons) {
+	if p.Boons == b {
+		return
+	}
+	p.Boons = b
+	p.SetLevel(p.Level)
+}
+
+// SkillPointsTotal is every spell skill point the character has: the
+// level's plus boons.
+func (p *Player) SkillPointsTotal() int { return SkillPoints(p.Level) + p.Boons.SkillPoints }
+
 // SetGear applies new gear (health max follows, keeping the health fraction).
 func (p *Player) SetGear(g Gear) {
 	if p.Gear == g {
@@ -183,14 +206,15 @@ func (p *Player) spendDrink() bool {
 }
 
 // SetLevel applies a character level (health and mana pools grow with it;
-// spec 8: "character level still exists for health and spell skill points").
+// spec 8: "character level still exists for health and spell skill points";
+// playtest 1: combat.yaml leveling, CR 012).
 func (p *Player) SetLevel(level int) {
 	p.Level = max(1, level)
 	frac := 1.0
 	if p.HPMax > 0 {
 		frac = p.HP / p.HPMax
 	}
-	p.HPMax = 100 + 10*float64(p.Level-1) + p.Gear.Health
+	p.HPMax = D.MaxHealth(p.Level) + p.Gear.Health + p.Boons.Health
 	p.HP = math.Min(p.HPMax, p.HPMax*frac)
 	p.ManaMax = D.MaxMana(p.Level)
 	p.Mana = math.Min(p.Mana, p.ManaMax)

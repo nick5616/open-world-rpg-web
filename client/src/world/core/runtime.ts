@@ -24,6 +24,9 @@ import { CaveGround } from '../caves/caveGround';
 // WP20: buildings, bridges and structures as town collision boxes (client/src/world/buildings/README.md).
 import { parseTowns, TownCollision, type Towns } from '@lodestone/worldgen';
 import { TownGround } from '../buildings/townGround';
+// Playtest: building doors that open and close (client/src/world/buildings/README.md "Doors").
+import { DoorStates, TownDoors } from '@lodestone/worldgen';
+import { DoorGround } from '../buildings/doorGround';
 import type { TownsResult } from '../buildings/towns.worker';
 import { CaveCellStore } from '../caves/caveStore';
 import type { GroundQuery } from '../../sim/ground';
@@ -58,6 +61,9 @@ export class WorldRuntime {
   /** WP20: the world's towns layer (settlements, buildings, roads, structures, NPCs) and its collision. */
   readonly towns: Towns | null = null;
   readonly townCollision: TownCollision | null = null;
+  /** Building doors (closable doorways) and their states; null without towns. */
+  readonly doors: TownDoors | null = null;
+  readonly doorStates: DoorStates | null = null;
   readonly data: AtlasData;
   readonly atlasHashHex: string;
 
@@ -91,6 +97,9 @@ export class WorldRuntime {
         this.towns = parseTowns(townsBytes);
         this.townCollision = new TownCollision(this.towns.boxes);
         ground = new TownGround(ground, this.townCollision);
+        this.doors = new TownDoors(this.towns);
+        this.doorStates = new DoorStates(this.doors.count);
+        ground = new DoorGround(ground, this.doors, this.doorStates);
       } catch (err) {
         console.warn('[world] towns unavailable', err);
       }

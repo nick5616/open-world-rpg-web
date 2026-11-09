@@ -2677,6 +2677,11 @@
     "gem": 1,
     "blueprint": 1,
     "consumable": 1
+   },
+   "slime": {
+    "item": 0.06,
+    "consumable": 0.12,
+    "food": 0.15
    }
   },
   "elite": {

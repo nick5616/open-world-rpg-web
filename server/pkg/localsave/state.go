@@ -24,6 +24,9 @@ type Progress struct {
 	// {slot, color, x, z} with x/z in cm. Optional so blobs issued before
 	// WP12 still parse.
 	Pins json.RawMessage `json:"pins,omitempty"`
+	// Attuned are the tower crystals attuned (playtest 1; mirrors
+	// character_progress.attuned from migration 0021). Optional.
+	Attuned []byte `json:"attuned,omitempty"`
 }
 
 // Item mirrors the items table so an upgrade can insert inventory rows as-is.
@@ -71,6 +74,9 @@ type State struct {
 	Progress     Progress        `json:"progress"`
 	Items        []Item          `json:"items"`
 	Loot         *Loot           `json:"loot,omitempty"` // WP14
+	// Quests is the quest log (playtest 1, CR 013; mirrors
+	// character_quests.log from migration 0023). Optional.
+	Quests json.RawMessage `json:"quests,omitempty"`
 }
 
 // NewCharacterState is a level-1 character standing at spawn, matching the

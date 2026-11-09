@@ -1,0 +1,7 @@
+# Playtest doors screenshots (real client + zone binary, official world, noon)
+date 2026-11-09T10:38:23.709Z
+door 114 (prop 1210) of the spawn settlement's inn at (1935.51, 82.17, 2284.07); standing at (1933.35, 2281.63)
+target {"kind":"door","name":"","role":1,"entityId":null,"stableId":"18061010514481234971"}, prompt "[E] Close door"
+closed: prompt "[E] Open door", door stats {"states":1,"baselines":0,"refused":0,"late":0,"active":1,"leaves":36,"online":true}
+open: prompt "[E] Close door", door stats {"states":2,"baselines":0,"refused":0,"late":0,"active":0,"leaves":36,"online":true}
+PASS

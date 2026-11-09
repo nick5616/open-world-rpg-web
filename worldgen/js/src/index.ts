@@ -12,6 +12,7 @@ import { parseAtlas, parseChunk, type AtlasData, type ChunkData } from './format
 export * from './format';
 export * from './cave';
 export * from './town';
+export * from './doors';
 
 /** Raw exports of worldgen.wasm (README "Exports"). Pointers are i32 offsets. */
 export interface WorldgenExports {

@@ -12,6 +12,9 @@ import { MapScreen, mapView } from './MapScreen';
 import { pruneToasts, setMapOpen, useExploration, type Toast } from './store';
 import { useMapWorld } from './world';
 import { hasBit } from './events';
+// Grand discovery intros (replace the discovery/tower/waypoint toasts): client/src/ui/intro/README.md.
+import { DiscoveryIntro } from '../intro/DiscoveryIntro';
+import { INTRO_TOAST_KINDS } from '../intro/intros';
 
 const TOAST_STYLE: Record<Toast['kind'], { accent: string; icon: string }> = {
   discovery: { accent: '#ffd166', icon: '✦' },
@@ -30,7 +33,7 @@ function Toasts() {
   }, []);
   return (
     <div style={{ position: 'fixed', top: 64, left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center', pointerEvents: 'none', zIndex: 13 }}>
-      {toasts.map((t) => {
+      {toasts.filter((t) => !INTRO_TOAST_KINDS.has(t.kind)).map((t) => {
         const s = TOAST_STYLE[t.kind];
         return (
           <div key={t.id} data-testid={`toast-${t.kind}`} style={{ minWidth: 260, padding: '8px 16px', background: 'rgba(12,14,20,0.78)', borderTop: `2px solid ${s.accent}`, borderRadius: 3, color: '#f1f3f5', textAlign: 'center', font: '15px Georgia, serif', boxShadow: '0 4px 14px rgba(0,0,0,0.35)', animation: 'wp12toast 0.35s ease-out' }}>
@@ -116,6 +119,7 @@ export function ExplorationHud() {
     <>
       <Compass />
       <Toasts />
+      <DiscoveryIntro />
       <MapScreen />
     </>
   );

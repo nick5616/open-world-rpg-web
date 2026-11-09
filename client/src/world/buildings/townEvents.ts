@@ -39,6 +39,8 @@ export interface Bounty {
   qty: number;
   reward: number;
   accepted: boolean;
+  /** You completed it (CR 013: the accepted byte is 2). */
+  done?: boolean;
   text: string;
 }
 
@@ -102,8 +104,9 @@ export function decodeBounties(data: Uint8Array): Bounty[] {
     const site = r.u16();
     const qty = r.u16();
     const reward = r.u32();
-    const accepted = r.u8() === 1;
-    out.push({ id, kind, site: site === 0xffff ? -1 : site, qty, reward, accepted, text: r.str() });
+    const acc = r.u8();
+    const accepted = acc === 1;
+    out.push({ id, kind, site: site === 0xffff ? -1 : site, qty, reward, accepted, ...(acc === 2 ? { done: true } : {}), text: r.str() });
   }
   return out;
 }

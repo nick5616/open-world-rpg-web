@@ -129,6 +129,11 @@ export class CombatTimeline {
     return weaponByKey.get(this.loadout.weapon) ?? weaponByKey.get('sword')!;
   }
 
+  /** Steps the secondary button has been held (bow draw, spear charge): the view model reads it. */
+  get heldSteps(): number {
+    return this.altHeld;
+  }
+
   /** Steps until a spell id is ready (0 = ready), for the HUD. */
   cooldownLeft(id: number): number {
     return Math.max(0, (this.readyAt.get(id) ?? 0) - this.seq);

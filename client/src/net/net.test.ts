@@ -168,6 +168,26 @@ describe('ClientPrediction', () => {
     expect(p.reconciles).toBe(1);
   });
 
+  it('adopts a grown stamina wheel (level-up, tower boon) without counting a correction (playtest 1)', () => {
+    const p = new ClientPrediction(ground);
+    let s: MoveState = newMoveState({ x: 2048, y: 0, z: 2048 });
+    const states: MoveState[] = [];
+    for (let seq = 1; seq <= 10; seq++) {
+      s = stepMovement(s, walkInput(), ground, STEP_DT);
+      states.push(s);
+      p.store({ seq, input: walkInput(), state: s });
+      p.notePredicted(s);
+    }
+    // The zone grew the wheel by 2 points and refilled it at frame 5.
+    const grown = { ...states[4], staminaMax: states[4].staminaMax + 120, stamina: states[4].staminaMax + 120 };
+    const c = p.reconcile(quant(grown), 5);
+    expect(c).not.toBeNull();
+    expect(c!.magnitude).toBeLessThan(0.02); // cm quantization only
+    expect(c!.state.staminaMax).toBe(grown.staminaMax);
+    expect(p.reconciles).toBe(0);
+    expect(p.wheelResyncs).toBe(1);
+  });
+
   it('ignores older acks and the spawn snapshot before any input is applied', () => {
     const p = new ClientPrediction(ground);
     expect(p.reconcile(quant(newMoveState({ x: 1, y: 0, z: 1 })), 0)).toBeNull();

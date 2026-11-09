@@ -319,8 +319,14 @@ func (w *World) wetChain(src uint32, from *Enemy, dmg float64, killing bool) {
 	}
 }
 
-// LevelAt is the enemy level of a position (region danger, like camps).
+// LevelAt is the enemy level of a position: the stamped area level
+// (playtest 1, World.Areas) when known, else the region danger, like camps.
 func (w *World) LevelAt(x, z float64) int {
+	if w.Areas != nil {
+		if lvl, _, ok := w.Areas.AreaAt(x, z); ok {
+			return max(1, lvl)
+		}
+	}
 	if w.Atlas == nil {
 		return 1
 	}

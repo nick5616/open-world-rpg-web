@@ -43,3 +43,14 @@ party frame, waypoint touch, a ~500 m sprint to the nearest tower and the
 climb, region reveal, discovery XP, a party pin through the map UI, compass
 and map screenshots from both players, two fast travels through the map UI,
 no second XP grant, and a reload that brings the progress back from Postgres.
+
+## Quest markers (playtest 1)
+
+The map and the compass also draw quests (`client/src/ui/quests`, CR 013):
+every active quest's current markers on the map (tracked in gold, others
+dimmer; areas as circles, points as "!" diamonds, labels stacked when they
+would overlap), a cyan dashed preview of where an offer or a bounty notice
+would take you (`setQuestPreview` then `setMapOpen(true)`: the map frames
+the places and you; closing the map drops the preview), and the tracked
+quest's markers on the compass (the nearest labelled with its distance).
+The side panel lists the tracked quest or the preview with distances.

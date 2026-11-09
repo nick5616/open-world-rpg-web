@@ -243,6 +243,40 @@ func (w *World) Check(p *Progress, pos movement.Vec3, out []Happening) []Happeni
 	return out
 }
 
+// Attune errors (Event 903 attune_refused value; playtest 1, CR 012).
+type AttuneError int32
+
+const (
+	AttuneOK       AttuneError = 0
+	AttuneNotThere AttuneError = 1 // not standing on that tower's top
+	AttuneAlready  AttuneError = 2 // this character already attuned it
+	AttuneUnknown  AttuneError = 3 // not a tower
+)
+
+// Attune attunes the player at pos to the crystal of tower site (playtest
+// 1): they must stand on its top (server-validated, like the unlock). The
+// first attunement of each tower sets the Attuned bit and returns ok; the
+// caller grants the boon. Standing on the top also unlocks the tower if the
+// 10 Hz check has not yet (the returned happenings, possibly empty).
+func (w *World) Attune(p *Progress, pos movement.Vec3, site int, out []Happening) ([]Happening, AttuneError) {
+	t, ok := w.TowerOfSite(site)
+	if !ok {
+		return out, AttuneUnknown
+	}
+	p.ensure(w.siteCount)
+	ti := w.OnTowerTop(pos)
+	if ti < 0 || w.Towers[ti].Site != t.Site {
+		return out, AttuneNotThere
+	}
+	out = w.Check(p, pos, out)
+	if p.Attuned.Has(site) {
+		return out, AttuneAlready
+	}
+	p.Attuned.Set(site)
+	p.dirty = true
+	return out, AttuneOK
+}
+
 // RevealedRegions returns a bitmask of regions whose map the player has
 // revealed: a region is revealed by climbing any tower in it.
 func (w *World) RevealedRegions(p *Progress) uint32 {

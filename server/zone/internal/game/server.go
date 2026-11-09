@@ -100,6 +100,9 @@ type Config struct {
 	// WP15 night, demons and chemistry (night.go); nil = none. TimeOffsetS
 	// above is the world clock's offset (same env on every zone of a world).
 	Night *NightSetup
+	// Playtest 1 discovery-stamped difficulty (difficulty.go); nil = the
+	// WP13 region danger curve.
+	Difficulty *DifficultySetup
 	// Now is the wall clock (tickets, server time); tests override it.
 	Now func() time.Time
 }
@@ -145,6 +148,8 @@ type Server struct {
 	town       townsState   // WP20 (towns.go)
 	itm        itemsState   // WP14 (items.go)
 	night      nightState   // WP15 (night.go)
+	diff       diffState    // playtest 1 (difficulty.go)
+	qst        questsGlue   // playtest 1: quest logs (quests.go)
 	// WP11: next earshot hand-off (earshot.go).
 	earshotNext time.Time
 	phases      tickPhases // WP19: per-phase tick timing (phases.go)
@@ -204,8 +209,10 @@ func New(cfg Config) *Server {
 		s.nextID = cfg.IDBase
 	}
 	s.m.init(cfg.Metrics)
-	s.initCombat() // WP13 (combat.go)
-	s.initItems()  // WP14 (items.go): after combat (loot hook)
+	s.initCombat()     // WP13 (combat.go)
+	s.initItems()      // WP14 (items.go): after combat (loot hook)
+	s.initDifficulty() // playtest 1 (difficulty.go): after combat (World.Areas)
+	s.initQuests()     // quests.go: after combat (kill hook)
 	s.loop = &gameloop.Loop{Interval: interval, Stats: s.stats, OnTick: s.onTick}
 	return s
 }
@@ -215,8 +222,9 @@ func (s *Server) Start() {
 	s.sched = gameloop.New(s.cfg.SpinTail)
 	s.sched.Add(s.loop)
 	s.startParties()
-	s.startCluster() // WP16
-	s.startItems()   // WP14: the item journal (items.go)
+	s.startCluster()    // WP16
+	s.startItems()      // WP14: the item journal (items.go)
+	s.startDifficulty() // playtest 1: area stamps (difficulty.go)
 	s.log.Info("zone ticking", "hz", constants.TickRateHz, "spinTail", s.cfg.SpinTail.String(), "clock", gameloop.PreciseClock)
 }
 
@@ -310,6 +318,7 @@ func (s *Server) onTick() {
 	}
 	s.terrainTick(tick)             // WP07: chunk cache interest (terrain.go)
 	s.exploreTick(tick)             // WP12: towers, waypoints, discoveries, party ring (explore.go)
+	s.difficultyTick(tick)          // playtest 1: area stamps (difficulty.go)
 	s.caveTick(tick)                // WP09: cave cell interest + each entity's cave system (caves.go)
 	s.itemsTick(tick, s.cfg.Now())  // WP14: gear, dropped-item despawn, containers (items.go)
 	s.miningTick(tick, s.cfg.Now()) // WP09: pickups, respawns, WorldEdits interest (mining.go)
@@ -319,7 +328,8 @@ func (s *Server) onTick() {
 	s.phases.mark(phCombat)
 	s.townsTick(tick, s.cfg.Now()) // WP20: townsfolk near players (towns.go)
 	s.phases.mark(phTowns)
-	s.nightTick(tick) // WP15: clock, demons, defense events, chemistry (night.go)
+	s.nightTick(tick)  // WP15: clock, demons, defense events, chemistry (night.go)
+	s.questsTick(tick) // quests: flagged rechecks, 2 Hz reach/clear checks (quests.go)
 	s.phases.mark(phNight)
 
 	// Quantize once per entity and rebuild the grid; every client's snapshot
@@ -443,11 +453,14 @@ func (s *Server) join(sess *session) {
 	if err := sess.conn.SendReliable(proto.Encode(welcome)); err != nil {
 		sess.closed.Store(true)
 	}
-	s.exploreJoin(sess)   // WP12: progress, pins (after Welcome, which the client needs first)
-	s.combatJoin(sess)    // WP13: loadouts, health, combat_sync (combat.go)
-	s.itemsJoin(sess)     // WP14: inventory, gear, consumables (items.go)
-	s.nightJoin(sess)     // WP15: world clock, pillars, defense state (night.go)
-	s.clusterJoined(sess) // WP16: owner record, arrival checkpoint
+	s.exploreJoin(sess)     // WP12: progress, pins (after Welcome, which the client needs first)
+	s.combatJoin(sess)      // WP13: loadouts, health, combat_sync (combat.go)
+	s.progressionJoin(sess) // playtest 1: level stats, tower boons, Event 900 (progression.go)
+	s.difficultyJoin(sess)  // playtest 1: the area you stand in (difficulty.go)
+	s.itemsJoin(sess)       // WP14: inventory, gear, consumables (items.go)
+	s.nightJoin(sess)       // WP15: world clock, pillars, defense state (night.go)
+	s.questsJoin(sess)      // quests: the log, the starter quest (quests.go)
+	s.clusterJoined(sess)   // WP16: owner record, arrival checkpoint
 	s.log.Info("join", "entity", e.ID, "character", e.CharacterID, "name", e.Name, "remote", sess.conn.RemoteAddr(),
 		"x", math.Round(e.Move.Pos.X*100)/100, "z", math.Round(e.Move.Pos.Z*100)/100)
 }
@@ -492,6 +505,7 @@ func (s *Server) leave(sess *session) {
 	}
 	s.combatLeave(sess)  // WP13: combat profile save (combat.go)
 	s.exploreLeave(sess) // WP12: progress save
+	s.questsLeave(sess)  // quests: log save (quests.go)
 	if s.cfg.Queue != nil {
 		s.checkpoint(e)
 	}

@@ -237,7 +237,12 @@ func (s *Server) combatLeave(sess *session) {
 
 func (s *Server) sendCombatSync(sess *session) {
 	e := sess.ent
-	s.sendEvent(sess, &proto.Event{Kind: combat.EvCombatSync, EntityID: e.ID, Value: int32(e.cbt.Profile.Active), Data: combat.EncodeSync(e.cbt)})
+	// pt/ux: the weapon look rides in the player's typeId for others
+	// (weaponlook.go) and, per loadout, at the end of combat_sync for you.
+	mats, look := weaponLooks(sess)
+	e.TypeID = look
+	s.sendEvent(sess, &proto.Event{Kind: combat.EvCombatSync, EntityID: e.ID, Value: int32(e.cbt.Profile.Active), Data: append(combat.EncodeSync(e.cbt), mats[0], mats[1])})
+	s.questsChanged(sess) // quests.go: "know a spell" objectives
 }
 
 func syncPlayerHealth(e *Entity) {
@@ -344,7 +349,7 @@ func (s *Server) handleCombatInteract(sess *session, m *proto.Interact) {
 		ok = pr.EquipSpell(int(m.Arg&0xf), int(m.Arg>>4&0xf), key)
 	case combat.ActLearn:
 		if sp := combatdefs.D.SpellByID(int(m.Arg)); sp != nil {
-			ok = pr.Learn(sp.Key, p.Level) == combat.LearnOK
+			ok = pr.LearnWith(sp.Key, p.Level, p.Boons.SkillPoints) == combat.LearnOK
 		}
 	case combat.ActSetGem:
 		if s.cbt.setup.Dev {
@@ -568,9 +573,9 @@ func (s *Server) grantCombatXP(g combat.XPGrant) {
 	if sess == nil {
 		return
 	}
+	before := ent.x.prog.Level
 	if ent.x.prog.AddXP(g.XP) {
-		ent.Level = uint8(min(255, ent.x.prog.Level))
-		s.sendEvent(sess, &proto.Event{Kind: EventLevelUp, EntityID: ent.ID, Value: int32(ent.x.prog.Level)})
+		s.levelChanged(sess, before) // playtest 1: 604 + stats, refill (progression.go)
 	}
 	if s.cfg.Explore != nil {
 		s.sendProgress(sess)

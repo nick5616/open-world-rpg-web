@@ -21,6 +21,9 @@
 //    and roads are hidden by stable id (the worker finds them).
 //  - NPCs and the interaction HUD live in npcs.ts / townHud.ts; this picks
 //    the target each frame.
+//  - Doors (doors.ts, doorsMesh.ts): Events 970-972 into the door states the
+//    movement ground reads, the swinging leaves (one instanced draw) and the
+//    "[E] Open door" / "[E] Close door" targets.
 
 import * as THREE from 'three';
 import type { Towns } from '@lodestone/worldgen';
@@ -36,6 +39,10 @@ import { pickTarget, type Candidate } from './interact';
 import { PK } from './props';
 import { SK } from './structures';
 import type { BuildingsIn, BuildingsOut } from './protocol';
+import { netRuntime } from '../../net/netStore';
+import { localPlayer } from '../../state/live';
+import { DoorSync } from './doors';
+import { DoorRenderer } from './doorsMesh';
 
 export const SETTLEMENT_LOAD_M = 1500;
 export const SETTLEMENT_DROP_M = 1800;
@@ -57,6 +64,10 @@ export class TownsManager {
   readonly towns: Towns;
   readonly npcs: NpcRenderer;
   readonly hud: TownHud;
+  /** Building doors: wire sync and leaves (null without doors). */
+  readonly doorSync: DoorSync | null = null;
+  doorLeaves: DoorRenderer | null = null;
+  private lastSettle = 0;
   readonly stats = { ready: false, readyMs: 0, worker: { towns: 0, textures: 0, roads: 0 }, settlements: 0, structures: 0, cells: 0, uploads: 0, maxUploadMs: 0, maxBuildMs: 0, hiddenScatter: 0, lights: 0, tris: 0, inFlight: 0 };
   private readonly worker: Worker;
   private mats: TownMaterials | null = null;
@@ -92,6 +103,13 @@ export class TownsManager {
     this.npcs = new NpcRenderer(this.towns, runtime.ground as never);
     this.group.add(this.npcs.group);
     this.hud = new TownHud();
+    if (runtime.doors && runtime.doorStates) {
+      const sync = new DoorSync(runtime.doors, runtime.doorStates);
+      sync.localSeq = () => localPlayer.seq;
+      sync.onRefused = (text) => this.hud.toast(text);
+      this.hud.doorAct = (d) => sync.toggle(d);
+      this.doorSync = sync;
+    }
     for (let i = 0; i < lightCount; i++) {
       const l = new THREE.PointLight(0xffb070, 0, 14, 2);
       l.castShadow = false;
@@ -155,6 +173,10 @@ export class TownsManager {
     switch (m.type) {
       case 'ready': {
         this.mats = makeTownMaterials(townTexture(m.textures, m.size, m.layers));
+        if (this.runtime.doors) {
+          this.doorLeaves = new DoorRenderer(this.runtime.doors, this.mats.solid);
+          this.group.add(this.doorLeaves.mesh);
+        }
         this.stats.ready = true;
         this.stats.readyMs = performance.now() - this.t0;
         this.stats.worker = m.ms;
@@ -347,6 +369,21 @@ export class TownsManager {
       if (Math.abs(v.x - cam.x) > 6 || Math.abs(v.z - cam.z) > 6) continue;
       cands.push({ kind: 'npc', x: v.x, y: v.y + 1.25, z: v.z, entityId: v.entityId, stableId: v.index >= 0 ? this.towns.npcs[v.index].id : 0n, index: v.index, name: v.name, role: v.role, merchant: v.merchant, settlement: v.settlement });
     }
+    const ds = this.doorSync;
+    if (ds) {
+      ds.follow(netRuntime.session);
+      if (now - this.lastSettle > 500) {
+        this.lastSettle = now;
+        if (ds.states.active) ds.states.settle(localPlayer.seq);
+      }
+      if (this.doorLeaves) {
+        this.doorLeaves.update(cam, dt, (d) => ds.isOpen(d), 6);
+        for (const d of this.doorLeaves.near) {
+          const door = ds.doors.doors[d];
+          cands.push({ kind: 'door', x: door.x, y: door.y + 1.2, z: door.z, entityId: null, stableId: door.id, index: d, name: '', role: ds.isOpen(d) ? 1 : 0, merchant: 255, settlement: door.settlement });
+        }
+      }
+    }
     this.hud.update(pickTarget(cam, fwd, cands));
     this.stats.settlements = this.settlements.size;
     this.stats.structures = this.structures.size;
@@ -417,6 +454,8 @@ export class TownsManager {
     this.cells.clear();
     this.npcs.dispose();
     this.hud.dispose();
+    this.doorSync?.follow(null);
+    this.doorLeaves?.dispose();
     this.mats?.dispose();
     if (this.debugLines) this.debugLines.geometry.dispose();
   }

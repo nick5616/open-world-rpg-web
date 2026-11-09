@@ -470,9 +470,35 @@ caves are unchanged) and fills `Config.Towns` (`internal/npc`). Game glue:
   803), `32 station` (forge/anvil prop id; 1 use -> `Config.Stations`
   (WP14) or 805), `33 shaft` (mineshaft structure id; 1 descend: teleport
   into a chamber of the linked cave system below the shaft). Refusals: 806.
-- **Bounties**: seeded per settlement per in-game day; accepted ones live in
-  zone memory per character (max 5); `Server.AcceptedBounties` /
-  `Server.CompleteBounty` are the completion hooks for WP13/WP14/WP15.
+- **Bounties**: seeded per settlement per in-game day; since playtest 1 an
+  accepted one is a quest in the character's persisted quest log (max 5
+  bounties; see "Quests" below); `Server.AcceptedBounties` /
+  `Server.CompleteBounty` read and drop them.
+- **Doors** (`internal/game/doors.go`, playtest follow-up; contracts/events.md
+  Interact 34, Events 970-972): every building door with a closed front
+  opens and closes with Interact 34 (open 1, close 2, toggle 3; 4.5 m from
+  the eye). Doors start open. A change is never "now": each player within
+  260 m of the settlement gets Event 970 stamped with the input seq it
+  applies from (newest applied frame + round trip in frames from the ack
+  lag, capped at 60, + 12), and `applyFrames` steps that player's frames on
+  `frameGround(sess, seq)` (the zone ground with the doors closed for that
+  frame, `towns.WithDoors`): old state before the stamp, new from it on,
+  exactly what the client predicts. The change settles once every stamped
+  player passed its seq (or after 3 s). Refused (972): a body in the
+  doorway when closing (players and active NPCs, radius + 0.1 m + 0.25 s
+  of their speed), a change still pending, already in that state, too far,
+  unknown. Players coming within 200 m of a settlement whose doors changed
+  since they last heard get a baseline (971). NPCs (`npc.DoorGate`) open
+  a closed door on their route, wait, walk through and close it behind
+  them once the doorway is clear. Cost: the ground is only wrapped while
+  some door is not open; the tick touches doors only while a change is
+  pending, and checks baselines twice a second only for settlements whose
+  doors ever changed. Tests: `internal/game/doors_test.go` (close, walk
+  into it, open, walk in, close from inside, push, refused on a body,
+  second player gets every change, late joiner's baseline, prediction ==
+  server; NPCs open and close behind them), cross-process
+  `client/src/world/buildings/doorWalk.integration.test.ts` (evidence
+  `docs/evidence/pt-ux-door-walkthrough.txt`).
 - `LODESTONE_ZONE_NO_TOWNS=1` turns the layer off; a pre-WP20 wasm logs
   NO TOWNS and keeps the old ground.
 - Tests: `internal/npc` (schedules, street walking, bounties),
@@ -482,6 +508,55 @@ caves are unchanged) and fills `Config.Towns` (`internal/npc`). Game glue:
   (`client/src/world/buildings/walkIntoBuilding.integration.test.ts`,
   evidence `docs/evidence/wp20-walk-into-building.txt`: 0 corrections).
 
+
+## Quests (playtest 1, CR 013)
+
+Rules: `internal/quests` (pure: the log, steps, objectives, markers, the
+starter line, bounties as quests, the wire JSON). Glue:
+`internal/game/quests.go`.
+
+- **The log** is server-authoritative: a list of quests, each a list of
+  steps with one objective and the map markers of that step (`x`, `z`, an
+  area radius `r` or a point, a label). Objectives: talk to an NPC role in
+  a settlement, hold items (alternatives), reach a place, know a spell,
+  clear a site's enemies (a group of that site wiped with you eligible, or
+  arriving while it is quiet), kill a demon near a site, hand items in at a
+  settlement's board/bounty keeper. A step whose objective already holds
+  completes when it becomes current. Steps can hand over items (gold, a
+  tome) exactly once (`loot_grants` marker `quest:<key>:<step>`); a
+  finished quest pays its gold and XP. Event 950 (whole log, JSON) after
+  join and on every change; 951 offer, 952 step, 953 completed, 954
+  refused, 955 started; Interact 60 (accept, abandon, hand in, track).
+- **Ward against the night** (starter, `quests.Ward`): starts on a
+  character's first login (never again once started or done) at the
+  settlement nearest them: talk to its blacksmith (25 gold and the line
+  that explains sunsteel), mine 4 sunsteel ore (marked: the nearest cave
+  whose sunlit/entrance chambers hold sunsteel veins, as an area around the
+  veins plus its mouth), buy the Sunsteel Blade blueprint, forge the blade
+  (marker: the forge), seek Light magic at the nearest shrine (else wizard
+  tower, else structure; arriving hands over `tome:glint`) and read the
+  tome (Glint goes into the first empty spell slot: there is no spellbook
+  screen yet). 30 gold + 200 XP. A blacksmith re-offers it (951, with every
+  step's markers) to a character who abandoned it. Places resolve once per
+  settlement per process (log line `ward places`).
+- **Bounties**: accept -> `quests.FromBounty` (clear: the site's area;
+  slay: a demon kill within 250 m of the site; explore: reach the site's
+  discovery radius; deliver: hand in at the board/keeper, which reading the
+  board or talking to the keeper does automatically). 802's accepted byte
+  is 2 for a job you completed (the log remembers the last 64 bounty keys).
+- **Cost per tick**: nothing for players without a reach/clear objective;
+  those are checked at 2 Hz (staggered). Inventory and spell changes set a
+  recheck flag; kill hooks queue the group to look at on the next ticks.
+- **Persistence**: accounts in `character_quests` (migration 0023, `log`
+  jsonb, fenced by the WP16 epoch), through the write-behind queue on every
+  change and at logout; local profiles in their save blob
+  (`localsave.State.Quests`); across a handoff as the `quests` HandoffField.
+- Tests: `internal/quests` (every objective kind, limits, round trip, wire),
+  `internal/game/quests_test.go` (official world in process: the Ward from
+  login to the Light tome incl. the blacksmith's line, the purchase and the
+  slotted spell, saved and not restarted; every bounty kind on today's
+  board accepted, persisted over a reconnect, deliveries handed in at the
+  board, explores completed on arrival, abandon; the handoff field).
 
 ## Items and loot (WP14)
 
@@ -640,3 +715,47 @@ result does not depend on the number of workers.
   `-cpuprofile` with it on Windows). It reports per-phase means
   (`inputs-ms`, `combat-ms`, ...).
 
+
+## Progression and difficulty (playtest 1)
+
+Decision: `docs/decisions/0021-discovery-difficulty.md`. Contract: `docs/cr/012-progression-difficulty.md`.
+
+- **Discovery-stamped areas** (`internal/difficulty`, glue
+  `internal/game/difficulty.go`, wiring `difficulty.go`): 256 m areas are
+  stamped once, first writer wins in Postgres `area_difficulty` (migration
+  0021; `MemStore` without a database), from the level of the first player
+  to come within 200 m, smoothed against stamped neighbours. The Haven (420 m
+  around the world spawn) is level 1 forever. Lookups on the tick are O(1)
+  (a flat array); claims go to one worker goroutine over a channel and come
+  back over another, so no tick touches the database. Atlas groups spawn
+  only in known areas at the area's level and tier (slimes in the Haven,
+  half slimes in quiet lands, elites scaled); Event 901 tells the player
+  the area they stand in. `GET /debug/difficulty` lists known areas,
+  claim counters and players. `LODESTONE_ZONE_NO_DIFFICULTY=1` restores the
+  WP13 region danger curve.
+- **Demon pacing** (`night.go` hooks): hunters, greater demons, lords and
+  defense events scale by the area's tier (none in the Haven and quiet
+  lands; a slowed straggler in the wilds); players below level 6 are not
+  hunted within 90 m of a ward; demons never rise in an area whose tier has
+  none. Dev raises (Interact 52/3) ignore tiers. WP15's rules are unchanged.
+  Also fixed: zones without a cave world read every entity's `caveSys` as
+  0 ("underground"), so natural hunts never ran in flat test zones.
+- **Leveling** (`internal/game/progression.go`, `combat.yaml leveling`):
+  health +12, damage +10 % (every attack, spell and DOT), stamina +2 (the
+  movement state's `StaminaMax`, on `SelfState`) and a skill point per
+  level; spell tiers gated by level for skill-point learning (`LearnWith`).
+  Every level-up goes through `levelChanged`: 604, a full refill,
+  combat_sync, Event 900 `character_stats` (reason 1). 900 also goes out at
+  join and after attunements.
+- **Crystal attunement**: Interact 10 action 2 on a tower's top
+  (`explore.World.Attune`, server-validated like the unlock): the first
+  time per tower, a permanent boon (+8 stamina, +5 health, +1 skill point,
+  +100 XP; derived from `character_progress.attuned`), Event 902
+  `tower_attuned` (the hook for the client's discovery moment), else 903.
+- Tests: `internal/difficulty` (rule, Haven, first writer wins in memory
+  and on Postgres), `internal/game/progression_test.go` (Haven at night,
+  level-15 stamp, quiet lands, two in-process zones agree, wilds night
+  pacing, level-up stats, attunement once + saved, wire vectors),
+  `internal/combat/sim_test.go` (beginner time to kill, the level curve),
+  `zone_progression_integration_test.go` (zone processes + Postgres:
+  `docs/evidence/pt-progression-process.txt`).

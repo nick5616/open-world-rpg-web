@@ -1,5 +1,5 @@
 {
- "version": 2,
+ "version": 3,
  "stepHz": 60,
  "elements": [
   "fire",
@@ -7559,6 +7559,56 @@
    "element": 8
   },
   {
+   "key": "slime_bump",
+   "radius": 0,
+   "reach": 1.8,
+   "arc": 90,
+   "width": 0,
+   "speed": 0,
+   "minRange": 0,
+   "volley": 1,
+   "spreadDeg": 0,
+   "charge": false,
+   "everyone": false,
+   "id": 30,
+   "shape": "cone",
+   "windupMs": 500,
+   "windupSteps": 30,
+   "activeMs": 100,
+   "activeSteps": 6,
+   "recoveryMs": 600,
+   "recoverySteps": 36,
+   "cooldownMs": 2000,
+   "cooldownSteps": 120,
+   "damage": 5,
+   "element": 8
+  },
+  {
+   "key": "slime_hop",
+   "radius": 1.6,
+   "reach": 5,
+   "arc": 0,
+   "width": 0,
+   "speed": 0,
+   "minRange": 2,
+   "volley": 1,
+   "spreadDeg": 0,
+   "charge": false,
+   "everyone": false,
+   "id": 31,
+   "shape": "ground",
+   "windupMs": 600,
+   "windupSteps": 36,
+   "activeMs": 100,
+   "activeSteps": 6,
+   "recoveryMs": 700,
+   "recoverySteps": 42,
+   "cooldownMs": 5000,
+   "cooldownSteps": 300,
+   "damage": 7,
+   "element": 8
+  },
+  {
    "key": "demon_claw",
    "radius": 0,
    "reach": 2.4,
@@ -8477,6 +8527,44 @@
    "element": 8
   },
   {
+   "key": "slime",
+   "name": "Dewdrop Slime",
+   "keepAway": 0,
+   "id": 50,
+   "family": "slime",
+   "hp": 74,
+   "speed": 3.6,
+   "aggro": 12,
+   "attacks": [
+    "slime_bump",
+    "slime_hop"
+   ],
+   "behavior": "melee",
+   "xp": 10,
+   "size": 0.8,
+   "color": "#7fd36b",
+   "element": 8
+  },
+  {
+   "key": "moss_slime",
+   "name": "Mossback Slime",
+   "keepAway": 0,
+   "id": 51,
+   "family": "slime",
+   "hp": 80,
+   "speed": 3.2,
+   "aggro": 12,
+   "attacks": [
+    "slime_bump",
+    "slime_hop"
+   ],
+   "behavior": "melee",
+   "xp": 12,
+   "size": 0.95,
+   "color": "#4f8f3a",
+   "element": 8
+  },
+  {
    "key": "gloamling",
    "name": "Gloamling",
    "keepAway": 0,
@@ -8953,7 +9041,12 @@
     "levelBonus": 0,
     "eliteChance": 0.15
    }
-  }
+  },
+  "beginner": [
+   "slime",
+   "slime",
+   "moss_slime"
+  ]
  },
  "demons": {
   "regen": {
@@ -8975,5 +9068,139 @@
    "void_maw"
   ],
   "lord": "starless_sovereign"
+ },
+ "leveling": {
+  "health": {
+   "base": 100,
+   "perLevel": 12
+  },
+  "damagePctPerLevel": 10,
+  "stamina": {
+   "perLevel": 2,
+   "max": 60
+  },
+  "skillPoints": {
+   "base": 1,
+   "perLevel": 1
+  },
+  "spellTierLevels": [
+   {
+    "tier": 4,
+    "level": 3
+   },
+   {
+    "tier": 6,
+    "level": 6
+   },
+   {
+    "tier": 8,
+    "level": 10
+   },
+   {
+    "tier": 10,
+    "level": 14
+   },
+   {
+    "tier": 12,
+    "level": 18
+   }
+  ],
+  "attune": {
+   "stamina": 8,
+   "health": 5,
+   "skillPoints": 1,
+   "xp": 100
+  }
+ },
+ "difficulty": {
+  "cellM": 256,
+  "havenRadiusM": 420,
+  "maxStep": 3,
+  "neighbourWeight": 0.5,
+  "dangerBonus": 2,
+  "maxLevel": 30,
+  "stampReachM": 200,
+  "demonSafeBelow": 6,
+  "demonSafeMarginM": 90,
+  "tiers": [
+   {
+    "key": "haven",
+    "name": "Haven",
+    "minLevel": 0,
+    "beginner": 1,
+    "elite": 0,
+    "demons": 0,
+    "greater": 0,
+    "demonSpeed": 1,
+    "lords": false,
+    "bosses": false,
+    "defense": false
+   },
+   {
+    "key": "quiet",
+    "name": "Quiet Lands",
+    "minLevel": 1,
+    "beginner": 0.5,
+    "elite": 0,
+    "demons": 0,
+    "greater": 0,
+    "demonSpeed": 1,
+    "lords": false,
+    "bosses": true,
+    "defense": false
+   },
+   {
+    "key": "wilds",
+    "name": "The Wilds",
+    "minLevel": 4,
+    "beginner": 0,
+    "elite": 0.5,
+    "demons": 0.35,
+    "greater": 0,
+    "demonSpeed": 0.85,
+    "lords": false,
+    "bosses": true,
+    "defense": false
+   },
+   {
+    "key": "perilous",
+    "name": "Perilous Lands",
+    "minLevel": 8,
+    "beginner": 0,
+    "elite": 1,
+    "demons": 0.7,
+    "greater": 0.6,
+    "demonSpeed": 1,
+    "lords": false,
+    "bosses": true,
+    "defense": true
+   },
+   {
+    "key": "dread",
+    "name": "Dreadlands",
+    "minLevel": 13,
+    "beginner": 0,
+    "elite": 1.3,
+    "demons": 1,
+    "greater": 1,
+    "demonSpeed": 1,
+    "lords": true,
+    "bosses": true,
+    "defense": true
+   },
+   {
+    "key": "deadly",
+    "name": "The Deadlands",
+    "minLevel": 20,
+    "beginner": 0,
+    "elite": 1.6,
+    "demons": 1.25,
+    "greater": 1.5,
+    "demonSpeed": 1.05,
+    "lords": true,
+    "bosses": true,
+    "defense": true
+   }
+  ]
  }
 }

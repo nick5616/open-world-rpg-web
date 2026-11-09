@@ -126,6 +126,8 @@ export interface Beat {
   note?: string;
   /** End the beat early once the predicted state satisfies this (dur is then the timeout). */
   until?: (s: MoveState) => boolean;
+  /** Run at the start of the beat (doors: send an Interact). */
+  act?: () => void;
 }
 
 export interface ModeStat {
@@ -145,6 +147,8 @@ export interface RunResult {
   perMode: Record<string, ModeStat>;
   maxDivM: number;
   corrections: number;
+  /** Re-predictions after a late stamped world change (doors); not corrections. */
+  localReplays: number;
   agreements: number;
   maxCorrectionM: number;
   transitions: string[];
@@ -159,7 +163,7 @@ const wsFactory = (url: string) => new NodeWebSocket(url) as unknown as WebSocke
  * Connect to the zone at a dev spawn, play the timeline in real time and
  * measure prediction vs server per mode.
  */
-export async function runTimeline(zone: ZoneProc, ground: GroundQuery, name: string, at: { x: number; z: number; yawDeg: number }, beats: Beat[], env: StepEnv): Promise<RunResult> {
+export async function runTimeline(zone: ZoneProc, ground: GroundQuery, name: string, at: { x: number; z: number; yawDeg: number }, beats: Beat[], env: StepEnv, hooks: { session?: (s: ZoneSession, sim: LocalSim) => void } = {}): Promise<RunResult> {
   const session = new ZoneSession({
     wsUrl: `ws://127.0.0.1:${zone.port}/ws?spawn=${at.x.toFixed(2)},${at.z.toFixed(2)}`,
     ticket: devTicket({ characterId: `wp10-${name}-${Date.now()}`, characterName: `Wp10${name.replace(/[^a-z]/gi, '').slice(0, 10)}`, worldId: zone.worldId, zoneId: zone.zoneId }),
@@ -173,6 +177,7 @@ export async function runTimeline(zone: ZoneProc, ground: GroundQuery, name: str
   spawnAt.y = ground.heightAt(spawnAt.x, spawnAt.z);
   const sim = new LocalSim(ground, spawnAt);
   sim.envSource = () => env;
+  hooks.session?.(session, sim);
   const predicted = new Map<number, MoveState>();
   sim.onStep = (r) => {
     predicted.set(r.seq, cloneMoveState(r.state));
@@ -187,6 +192,7 @@ export async function runTimeline(zone: ZoneProc, ground: GroundQuery, name: str
     perMode: {},
     maxDivM: 0,
     corrections: 0,
+    localReplays: 0,
     agreements: 0,
     maxCorrectionM: 0,
     transitions: [],
@@ -244,6 +250,7 @@ export async function runTimeline(zone: ZoneProc, ground: GroundQuery, name: str
   for (const b of beats) {
     if (b.yawDeg !== undefined) yaw = (b.yawDeg * Math.PI) / 180;
     held = { ...NO_BUTTONS, ...b.held };
+    b.act?.();
     if (b.press) {
       const key = b.press === 'jump' ? 'jump' : 'glide';
       held = { ...held, [key]: true };
@@ -263,6 +270,7 @@ export async function runTimeline(zone: ZoneProc, ground: GroundQuery, name: str
   res.seconds = (performance.now() - t0) / 1000;
   res.steps = sim.seq;
   res.corrections = session.prediction.reconciles;
+  res.localReplays = session.prediction.localReplays;
   res.agreements = session.prediction.agreements;
   res.maxCorrectionM = session.prediction.maxError;
   const s = sim.state;

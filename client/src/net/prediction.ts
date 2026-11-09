@@ -24,8 +24,9 @@ import { metersToCm, velToCms } from '@lodestone/contracts';
 import type { GroundQuery } from '../sim/ground';
 import { MoveMode } from '@lodestone/contracts';
 import { groundAt } from '../sim/caves';
-import { NO_ENV, stepMovement, STEP_DT, type MoveInput, type MoveState, type StepEnv } from '../sim/movement';
-import { fromSelf, packFlags, packMoveExt } from '../sim/moveWire';
+import { MoveFlag, NO_ENV, stepMovement, STEP_DT, type MoveInput, type MoveState, type StepEnv } from '../sim/movement';
+import { fromSelf, packFlags, packMoveExt, staminaX10 } from '../sim/moveWire';
+import { stepClock } from '../sim/stepClock';
 import type { FullSelf } from './snapshotDecoder';
 
 export interface PredictedStep {
@@ -68,7 +69,17 @@ export class ClientPrediction {
   /** Every reconciliation (for the acceptance log and the HUD). */
   readonly log: { t: number; magnitude: number; unacked: number; ackSeq: number; knownAck: boolean }[] = [];
   reconciles = 0;
+  /** Doors: re-predictions after a stamped world change arrived late (replayFrom); not server corrections. */
+  localReplays = 0;
+  /** State after the newest acked step (the base replayFrom starts from when every pending step is newer). */
+  private ackedState: MoveState | undefined;
   agreements = 0;
+  /**
+   * Playtest 1: replays that only adopted the server's stamina wheel (a
+   * level-up or tower boon grew it, or refilled it) with motion already in
+   * agreement and no position change. Not corrections: nothing moved.
+   */
+  wheelResyncs = 0;
   maxError = 0;
 
   constructor(private ground: GroundQuery) {}
@@ -139,6 +150,7 @@ export class ClientPrediction {
 
     if (acked && agrees(acked.state, server)) {
       this.agreements++;
+      this.ackedState = acked.state;
       return null;
     }
     // Before any input is acked (ack 0) the server state is the spawn; with
@@ -158,7 +170,9 @@ export class ClientPrediction {
       const gy = groundAt(this.ground, state.pos.x, state.pos.y, state.pos.z);
       if (Math.abs(gy - state.pos.y) <= 0.0051) state.pos.y = gy;
     }
+    this.ackedState = state;
     for (const p of this.pending) {
+      stepClock.seq = p.seq; // doors: the state the zone used for this frame
       state = stepMovement(state, p.input, this.ground, STEP_DT, p.env ?? NO_ENV);
       p.state = state; // keep history consistent with the new timeline
     }
@@ -166,11 +180,45 @@ export class ClientPrediction {
     const ref = predicted ?? state;
     const error = { x: ref.pos.x - state.pos.x, y: ref.pos.y - state.pos.y, z: ref.pos.z - state.pos.z };
     const magnitude = Math.hypot(error.x, error.y, error.z);
+    this.correction = { state, error, magnitude, ackSeq, unacked: this.pending.length };
+    if (acked && magnitude <= POS_TOL_CM / 100 && wheelOnly(acked.state, server)) {
+      this.wheelResyncs++;
+      return this.correction;
+    }
     this.reconciles++;
     if (magnitude > this.maxError) this.maxError = magnitude;
     this.log.push({ t: nowMs, magnitude, unacked: this.pending.length, ackSeq, knownAck: !!acked });
     if (this.log.length > 5000) this.log.shift();
-    this.correction = { state, error, magnitude, ackSeq, unacked: this.pending.length };
+    return this.correction;
+  }
+
+  /**
+   * Doors (client/src/world/buildings/doors.ts): a world change the zone
+   * applies from input seq `seq` on arrived after we had predicted past
+   * it. Re-run the pending steps from seq on the ground as it is now (the
+   * zone uses the new state from that frame, so this is what it computes)
+   * and hand the present to the renderer like a correction. Counted in
+   * localReplays, not reconciles: the server never disagreed. Null when
+   * nothing was predicted at or after seq, or nothing changed.
+   */
+  replayFrom(seq: number): Correction | null {
+    const i = this.pending.findIndex((p) => p.seq >= seq);
+    if (i < 0) return null;
+    let state = i > 0 ? this.pending[i - 1].state : this.ackedState;
+    if (!state) return null;
+    for (let k = i; k < this.pending.length; k++) {
+      const p = this.pending[k];
+      stepClock.seq = p.seq;
+      state = stepMovement(state, p.input, this.ground, STEP_DT, p.env ?? NO_ENV);
+      p.state = state;
+    }
+    this.localReplays++;
+    const ref = this.lastPredicted ?? state;
+    if (ref.pos.x === state.pos.x && ref.pos.y === state.pos.y && ref.pos.z === state.pos.z && ref.vel.x === state.vel.x && ref.vel.y === state.vel.y && ref.vel.z === state.vel.z && ref.mode === state.mode) return null;
+    const error = { x: ref.pos.x - state.pos.x, y: ref.pos.y - state.pos.y, z: ref.pos.z - state.pos.z };
+    const magnitude = Math.hypot(error.x, error.y, error.z);
+    this.lastPredicted = state;
+    this.correction = { state, error, magnitude, ackSeq: this.lastAckSeq, unacked: this.pending.length };
     return this.correction;
   }
 
@@ -186,6 +234,26 @@ export class ClientPrediction {
   }
 }
 
+/**
+ * Playtest 1: the prediction and the server differ only in the stamina wheel
+ * (stamina, its size, the exhausted bit): motion, mode, timers and the other
+ * flags agree.
+ */
+function wheelOnly(p: MoveState, s: FullSelf): boolean {
+  return (
+    Math.abs(metersToCm(p.pos.x) - s.x) <= POS_TOL_CM &&
+    Math.abs(metersToCm(p.pos.y) - s.y) <= POS_TOL_CM &&
+    Math.abs(metersToCm(p.pos.z) - s.z) <= POS_TOL_CM &&
+    Math.abs(velToCms(p.vel.x) - s.vx) <= VEL_TOL_CMS &&
+    Math.abs(velToCms(p.vel.y) - s.vy) <= VEL_TOL_CMS &&
+    Math.abs(velToCms(p.vel.z) - s.vz) <= VEL_TOL_CMS &&
+    p.airJumps === s.airJumps &&
+    p.mode === s.mode &&
+    ((packFlags(p) ^ s.flags) & ~MoveFlag.exhausted) === 0 &&
+    packMoveExt(p) >>> 16 === s.moveExt >>> 16
+  );
+}
+
 function agrees(p: MoveState, s: FullSelf): boolean {
   return (
     Math.abs(metersToCm(p.pos.x) - s.x) <= POS_TOL_CM &&
@@ -198,6 +266,9 @@ function agrees(p: MoveState, s: FullSelf): boolean {
     // WP10: discrete movement state must match exactly (integers on both sides).
     p.mode === s.mode &&
     packFlags(p) === s.flags &&
-    packMoveExt(p) === s.moveExt
+    packMoveExt(p) === s.moveExt &&
+    // Playtest 1: the stamina wheel grows with level and tower boons; a
+    // changed wheel restarts the replay from the server's (a 0 m correction).
+    (s.staminaMax === 0 || staminaX10(p.staminaMax) === s.staminaMax)
   );
 }

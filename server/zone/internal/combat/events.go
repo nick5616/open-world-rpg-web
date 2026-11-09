@@ -125,7 +125,7 @@ func EncodeSync(p *Player) []byte {
 	}
 	b = binary.LittleEndian.AppendUint16(b, uint16(p.ManaMax*10))
 	b = append(b, uint8(p.Charges))
-	b = binary.LittleEndian.AppendUint16(b, uint16(max(0, SkillPoints(p.Level)-pr.Spent())))
+	b = binary.LittleEndian.AppendUint16(b, uint16(max(0, p.SkillPointsTotal()-pr.Spent())))
 	b = append(b, uint8(min(255, p.Level)))
 	return b
 }

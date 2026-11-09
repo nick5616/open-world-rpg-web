@@ -151,9 +151,14 @@ func (g *Group) cleared() bool {
 // fightOne measures one enemy of `key` (optionally elite) against one bot
 // with `weapon`: hits to kill and seconds from the first attack to death.
 func fightOne(t *testing.T, key, weapon, elite string) (hits int, secs float64, ok bool) {
+	return fightAt(t, key, weapon, elite, 1, 1)
+}
+
+// fightAt is fightOne with a level-`player` character against a level-`enemy` enemy.
+func fightAt(t *testing.T, key, weapon, elite string, player, enemy int) (hits int, secs float64, ok bool) {
 	s := newSim(t)
-	g := s.w.TestGroup(movement.Vec3{X: 500, Z: 520}, []string{key}, 1, elite)
-	sp := s.addPlayer("bot", weapon, movement.Vec3{X: 500, Z: 500}, 1)
+	g := s.w.TestGroup(movement.Vec3{X: 500, Z: 520}, []string{key}, enemy, elite)
+	sp := s.addPlayer("bot", weapon, movement.Vec3{X: 500, Z: 500}, player)
 	sp.brain.Spell = nil // weapon time-to-kill: no spells
 	var target *Enemy
 	var start, end uint32
@@ -226,6 +231,62 @@ func TestEliteTimeToKill(t *testing.T) {
 			if secs < 10 || secs > 30 {
 				t.Errorf("elite %s %s: %.1f s, spec 8 wants 10-30", af, k, secs)
 			}
+		}
+	}
+}
+
+// Playtest 1 (CR 012): the beginner family (the Haven's slimes) dies in 2-5
+// hits like every common, but quicker than the 3 s floor with an optimal
+// bot (they are the tutorial: slow, short aggro, soft hits).
+func TestBeginnerTimeToKill(t *testing.T) {
+	for _, weapon := range []string{"sword", "spear", "bow"} {
+		for _, k := range D.Tables.Beginner {
+			hits, secs, ok := fightOne(t, k, weapon, "")
+			if !ok {
+				t.Fatalf("%s vs %s: never died", weapon, k)
+			}
+			t.Logf("%-6s vs %-11s %d hits  %.1f s", weapon, k, hits, secs)
+			if hits < 2 || hits > 5 || secs > 10 {
+				t.Errorf("%s vs %s: %d hits in %.1f s", weapon, k, hits, secs)
+			}
+		}
+	}
+	for _, k := range D.Tables.Beginner {
+		e := D.EnemyByKey(k)
+		for _, a := range e.Attacks {
+			if at := D.AttackByKey(a); at.Damage > 8 {
+				t.Errorf("%s hits for %v: beginners hit softly", k, at.Damage)
+			}
+		}
+		if e.Speed >= 5 {
+			t.Errorf("%s speed %v: beginners are slow", k, e.Speed)
+		}
+	}
+}
+
+// Playtest 1 (CR 012, decision 0021): the leveling curve keeps at-level
+// fights snappy. Enemies gain +10 % health per level and players +10 %
+// damage, so with the training sword (no gear, no weapon skill) an at-level
+// common takes the level-1 number of hits (2-5) at any level; and a player
+// 8 levels above an area kills its commons in fewer hits (levels feel
+// real).
+func TestLevelCurveKeepsFightsSnappy(t *testing.T) {
+	for _, k := range []string{"boar", "wolf", "cutthroat", "brute", "sentinel", "ember_imp"} {
+		h1, _, ok := fightAt(t, k, "sword", "", 1, 1)
+		if !ok {
+			t.Fatalf("%s never died at level 1", k)
+		}
+		for _, l := range []int{10, 20, 30} {
+			h, secs, ok := fightAt(t, k, "sword", "", l, l)
+			t.Logf("sword level %2d vs %-9s level %2d: %d hits %.1f s (level 1: %d)", l, k, l, h, secs, h1)
+			if !ok || h > h1 || h > 5 {
+				t.Errorf("%s at level %d: %d hits (level 1: %d)", k, l, h, h1)
+			}
+		}
+		h, _, _ := fightAt(t, k, "sword", "", 12, 4)
+		t.Logf("sword level 12 vs %-9s level 4: %d hits", k, h)
+		if h >= h1 || h > 4 {
+			t.Errorf("level 12 vs a level-4 %s: %d hits (at level: %d), over-levelled players should feel it", k, h, h1)
 		}
 	}
 }

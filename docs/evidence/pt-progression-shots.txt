@@ -1,0 +1,10 @@
+client: http://127.0.0.1:22186
+fanfare: LEVEL UPLevel 4You feel stronger.+12 health+2 stamina+10% damage+7 mana+1 skill pointHealth and stamina restored · press C for your character
+screenshot docs/evidence/pt-progression-levelup.png
+panel: AdventurerLevel 437 / 220 XP to level 5 · discoveries, towers and fights all give XPStatsHealth141+12 per levelStamina114+2 per levelDamage+30%+10% per level, all attacks and spellsMana121Skill points6 unspentof 6Crystals attuned1each: a permanent boonWhere you standThe Wildsarea level 6shaped by BrunoNew lands take the measure of the first explorer to reach them: the stronger you are, the harder 
+screenshot docs/evidence/pt-progression-character-panel.png
+tower: The Forgotten Spire site 35 at (1888, 1760) top 188.9 m, footprint 11.1 m
+screenshot docs/evidence/pt-progression-tower-prompt.png
+screenshot docs/evidence/pt-progression-tower-attune.png
+screenshot docs/evidence/pt-progression-tower-attuned.png
+no page errors; all checks PASS

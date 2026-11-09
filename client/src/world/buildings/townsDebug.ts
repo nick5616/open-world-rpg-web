@@ -71,6 +71,15 @@ export function installTownsDebug(m: TownsManager): () => void {
       });
       return out;
     },
+    /** Building doors: a settlement's doors (index, building, role, position, yaw, open now). */
+    doors: (si: number) => {
+      const ds = m.doorSync;
+      if (!ds) return [];
+      return ds.doors.doors.filter((d) => d.settlement === si).map((d) => ({ index: d.index, id: d.id.toString(), building: d.building, role: BUILDING_ROLES[t.buildings[d.building].role], x: d.x, y: d.y, z: d.z, yaw: d.yaw, width: d.width, thick: d.thick, open: ds.isOpen(d.index), visual: m.doorLeaves?.open[d.index] ?? 1 }));
+    },
+    /** E on door d (Interact 34 online, local offline). */
+    toggleDoor: (d: number) => m.doorSync?.toggle(d),
+    doorStats: () => (m.doorSync ? { ...m.doorSync.stats, active: m.doorSync.states.active, leaves: m.doorLeaves?.mesh.count ?? 0, online: m.doorSync.online } : null),
     visibleNpcs: () => m.npcs.views.map((v) => ({ name: v.name, role: v.role, x: v.x, y: v.y, z: v.z, entityId: v.entityId })),
   };
   (window as unknown as { __lodestoneTowns: typeof handle }).__lodestoneTowns = handle;

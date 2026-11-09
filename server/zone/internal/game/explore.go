@@ -105,13 +105,14 @@ type ProgressSnapshot struct {
 	Towers       []byte
 	Waypoints    []byte
 	Discoveries  []byte
+	Attuned      []byte // playtest 1 (migration 0021)
 	Pins         []byte // JSON
 	Epoch        int64  // WP16: owner epoch; > 0 fences the write (persist.go)
 }
 
 func (s *Server) snapshotProgress(p *explore.Progress) ProgressSnapshot {
 	snap := ProgressSnapshot{Level: p.Level, XP: p.XP, Pins: p.PinsJSON(),
-		Towers: append([]byte(nil), p.Towers...), Waypoints: append([]byte(nil), p.Waypoints...), Discoveries: append([]byte(nil), p.Discoveries...)}
+		Towers: append([]byte(nil), p.Towers...), Waypoints: append([]byte(nil), p.Waypoints...), Discoveries: append([]byte(nil), p.Discoveries...), Attuned: append([]byte(nil), p.Attuned...)}
 	if w := s.cfg.Explore; w != nil && p.LastWaypoint >= 0 && p.LastWaypoint < len(w.Atlas.Sites) {
 		id := int64(w.Atlas.Sites[p.LastWaypoint].ID)
 		snap.LastWaypoint = &id
@@ -187,6 +188,7 @@ func (s *Server) loadLocalSave(ctx context.Context, c ticket.Claims, raw []byte,
 	p := explore.NewProgress()
 	p.Level, p.XP = max(1, st.Level), st.XP
 	p.Towers, p.Waypoints, p.Discoveries = st.Progress.Towers, st.Progress.Waypoints, st.Progress.Discoveries
+	p.Attuned = st.Progress.Attuned // playtest 1
 	p.LoadPinsJSON(st.Progress.Pins)
 	if st.LastWaypoint != nil {
 		p.LastWaypoint = s.siteIndexOf(uint64(*st.LastWaypoint))
@@ -266,8 +268,7 @@ func (s *Server) exploreTick(tick uint32) {
 			s.announce(sess, h)
 		}
 		if x.prog.Level != levelBefore {
-			e.Level = uint8(min(255, x.prog.Level))
-			s.sendEvent(sess, &proto.Event{Kind: EventLevelUp, EntityID: e.ID, Value: int32(x.prog.Level)})
+			s.levelChanged(sess, levelBefore) // playtest 1: 604 + stats, refill (progression.go)
 		}
 		s.sendProgress(sess)
 		s.saveProgressSoon(sess, false)
@@ -311,8 +312,11 @@ func (s *Server) handleInteract(sess *session, m *proto.Interact, now time.Time)
 	}
 	switch m.TargetKind {
 	case InteractSite:
-		if m.Action == ActionFastTravel {
+		switch m.Action {
+		case ActionFastTravel:
 			s.fastTravel(sess, int(m.TargetID), now)
+		case ActionAttune: // playtest 1: a tower's crystal (progression.go)
+			s.attune(sess, int(m.TargetID))
 		}
 	case InteractPin:
 		s.pinAction(sess, m)
@@ -470,9 +474,11 @@ func (s *Server) localState(sess *session) localsave.State {
 	st.Progress.Towers = append([]byte(nil), p.Towers...)
 	st.Progress.Waypoints = append([]byte(nil), p.Waypoints...)
 	st.Progress.Discoveries = append([]byte(nil), p.Discoveries...)
+	st.Progress.Attuned = append([]byte(nil), p.Attuned...) // playtest 1
 	st.Progress.Pins = p.PinsJSON()
 	combatIntoLocal(e, (*[]byte)(&st.Progress.SkillTree), &st.Progress.SpellsKnown, &st.Progress.SpellsEquipped) // WP13
 	itemsIntoLocal(sess, &st)                                                                                    // WP14
+	questsIntoLocal(sess, &st.Quests)                                                                            // quests.go
 	st.LastWaypoint = nil
 	if p.LastWaypoint >= 0 {
 		id := int64(s.cfg.Explore.Atlas.Sites[p.LastWaypoint].ID)
