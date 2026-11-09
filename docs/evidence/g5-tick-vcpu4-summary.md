@@ -1,6 +1,6 @@
 # G5 4 vCPU follow-up: scenario 1 on two cores + SMT (2026-11-09, desktop, no cloud)
 
-Branch `g5-tick-vcpu4` (from main `0ef4626`, main `ee7902a` merged). Goal: scenario 1 (300 bots + 2,000 awake enemies, tick
+Branch `g5-tick-vcpu4` (on main `ee7902a`). Goal: scenario 1 (300 bots + 2,000 awake enemies, tick
 p99 <= 12 ms per 60 s window) on a real 4 vCPU slice (2 physical cores + their SMT siblings), which failed 3/3 on the G5
 Linux VM (worst p99 12.96-13.24 ms; in-process p99 11.47 ms). No behavior or wire change (see "Exactness").
 
