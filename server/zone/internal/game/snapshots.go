@@ -60,8 +60,11 @@ const (
 	// goroutine (goroutine hand-off costs more than it saves for a few
 	// clients, and small zones and most tests stay single-threaded).
 	snapParallelMin = 32
-	// snapChunk: sessions a worker claims at a time.
-	snapChunk = 8
+	// snapChunk: sessions a worker claims at a time. Small, because the
+	// phase waits for its slowest worker: one the OS deschedules while it
+	// holds a chunk holds back only that much (live soak: a 49 ms phase with
+	// chunks of 8 on the loaded desktop).
+	snapChunk = 2
 )
 
 // snapshotWorkers is how many goroutines build snapshots (Config, else
