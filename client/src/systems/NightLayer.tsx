@@ -16,7 +16,7 @@ import { windState } from '../world/wind';
 import { liveStyle } from '../world/style/styles';
 import { localPlayer } from '../state/live';
 import { cellCenter, cellX, cellZ } from './chem/sim';
-import { nightFrame, nightFx, nightRuntime, useNightHud } from './night';
+import { nightFrame, nightFx, nightRuntime } from './night';
 
 const MAX_FLAMES = 4000;
 const MAX_SCORCH = 8000;

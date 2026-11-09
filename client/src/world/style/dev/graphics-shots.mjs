@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* global localStorage, document, window */
+/* global localStorage, requestAnimationFrame */
 // Playtest 2 graphics evidence: every visual style in five situations, from
 // the real client (solo, headless Chromium on the GPU via ANGLE/D3D11):
 //
