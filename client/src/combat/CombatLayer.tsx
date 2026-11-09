@@ -8,7 +8,7 @@
 // of meshes, a boss fight a few dozen, far inside the draw-call budget.
 
 import { useEffect, useMemo } from 'react';
-import { createPortal, useFrame, useThree } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { HITSTOP_MS } from '@lodestone/contracts';
 import { drawnRemotes } from '../net/netStore';
@@ -16,6 +16,8 @@ import type { RemoteView } from '../net/interpolation';
 import { combatRuntime } from './link';
 import { ELEMENT_COLORS, enemyInfo } from './events';
 import { fxQueue, type Fx } from './store';
+// The newest melee swing (set from the FX queue below, read by the weapon).
+import { FirstPersonWeapon, swing } from './weapons/FirstPersonWeapon';
 
 const geo = {
   body: new THREE.CapsuleGeometry(0.45, 0.7, 4, 10),
@@ -74,8 +76,6 @@ function makeEnemy(v: RemoteView): EnemyMesh {
   return { root, body, mat, bar, barBack, aura, flash: 0, phase: Math.random() * 10 };
 }
 
-/** The newest melee swing (set from the FX queue, read by the weapon). */
-const swing = { at: 0, dur: 0 };
 
 interface Live {
   fx: Fx;
@@ -133,62 +133,8 @@ function telegraphMesh(f: Extract<Fx, { t: 'telegraph' }>): THREE.Object3D {
   return m;
 }
 
-/** The first-person weapon and its swing (parented to the camera). */
-function Weapon() {
-  const group = useMemo(() => new THREE.Group(), []);
-  const parts = useMemo(() => {
-    const blade = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.02, 0.9), new THREE.MeshStandardMaterial({ color: '#d8dde4', metalness: 0.8, roughness: 0.25 }));
-    const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 1.8, 6), new THREE.MeshStandardMaterial({ color: '#6b4a2a', roughness: 0.8 }));
-    const bow = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.02, 6, 24, Math.PI * 0.9), new THREE.MeshStandardMaterial({ color: '#7a5230', roughness: 0.7 }));
-    const gem = new THREE.Mesh(new THREE.OctahedronGeometry(0.05, 0), new THREE.MeshStandardMaterial({ color: '#8fd4ff', emissive: '#4fb4ff', emissiveIntensity: 0.8 }));
-    const hand = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 6), new THREE.MeshStandardMaterial({ color: '#c9a27e' }));
-    return { blade, shaft, bow, gem, hand };
-  }, []);
-  const camera = useThree((s) => s.camera);
-  const state = useMemo(() => ({ swingT: 0, swingDur: 0, swinging: false, lastSeq: -1, freezeAt: 0, measured: false }), []);
-  useEffect(() => {
-    group.position.set(0.3, -0.32, -0.45);
-    group.add(parts.hand);
-    return () => void group.clear();
-  }, [group, parts]);
-  useFrame((_, delta) => {
-    const rt = combatRuntime.current;
-    if (!rt) return;
-    const now = performance.now();
-    const w = rt.weaponName();
-    parts.blade.visible = w === 'sword';
-    parts.shaft.visible = w === 'spear' || w === 'staff';
-    parts.bow.visible = w === 'bow';
-    parts.gem.visible = w === 'staff' || w === 'wand';
-    for (const p of [parts.blade, parts.shaft, parts.bow, parts.gem]) if (!p.parent) group.add(p);
-    parts.blade.position.set(0, 0.02, -0.45);
-    parts.shaft.rotation.x = Math.PI / 2;
-    parts.shaft.position.set(0, 0, w === 'spear' ? -0.6 : -0.3);
-    parts.shaft.scale.set(1, w === 'staff' ? 0.7 : 1, 1);
-    parts.gem.position.set(0, 0, w === 'staff' ? -0.95 : -0.4);
-    parts.bow.rotation.set(0, Math.PI / 2, Math.PI / 2);
-    parts.bow.position.set(-0.05, 0.05, -0.3);
-    // Swing: driven by the newest started melee move; hitstop freezes it.
-    const frozen = now < rt.hitstopUntil;
-    if (frozen && !state.freezeAt) state.freezeAt = now;
-    if (!frozen && state.freezeAt) {
-      rt.probe.hitstopMeasured(now - state.freezeAt);
-      state.freezeAt = 0;
-    }
-    if (swing.at > state.lastSeq) {
-      state.lastSeq = swing.at;
-      state.swingT = 0;
-      state.swingDur = swing.dur;
-      state.swinging = true;
-    }
-    if (!frozen) state.swingT += delta * 1000;
-    const a = Math.min(1, state.swingT / Math.max(1, state.swingDur));
-    const sw = state.swinging ? Math.sin(a * Math.PI) : 0;
-    group.rotation.set(-0.35 + sw * 0.9, sw * 0.8, -sw * 0.5);
-    if (a >= 1) state.swinging = false;
-  });
-  return createPortal(<primitive object={group} />, camera);
-}
+/** The first-person weapon and its swing: weapons/FirstPersonWeapon.tsx (pt/ux). */
+const Weapon = FirstPersonWeapon;
 
 export function CombatLayer() {
   const scene = useThree((s) => s.scene);

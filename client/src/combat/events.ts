@@ -39,7 +39,8 @@ const enemyById = new Map(COMBAT.enemies.map((e) => [e.id, e]));
 
 export interface SyncState {
   active: number;
-  loadouts: { weapon: string; spells: (string | null)[]; gem: number }[];
+  /** material: the weapon's look material code (weapons/look.ts), from combat_sync. */
+  loadouts: { weapon: string; spells: (string | null)[]; gem: number; material?: number }[];
   known: string[];
   skillXp: Record<string, number>;
   manaMax: number;
@@ -87,6 +88,8 @@ export function decodeSync(d: Uint8Array): SyncState | null {
   const skillPoints = v.getUint16(o, true);
   o += 2;
   const level = d[o++] ?? 1;
+  // pt/ux: 2 x u8 weapon look material code (weapons/look.ts), absent from older zones.
+  for (let l = 0; l < 2 && o < d.length; l++) loadouts[l].material = d[o++];
   return { active, loadouts, known, skillXp, manaMax, charges, skillPoints, level };
 }
 
