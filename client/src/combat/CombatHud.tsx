@@ -15,6 +15,19 @@ import { netRuntime } from '../net/netStore';
 const spellByKey = new Map(COMBAT.spells.map((s) => [s.key, s]));
 const KEYS = ['1', '2', '3', '4'];
 
+/** Playtest 1 controls (client/src/combat/README.md "Controls"). */
+export const COMBAT_HINT = 'LMB attack · Wheel select · RMB use selected · Z parry/draw/charge · 1-4 cast · F dodge · Q form';
+const SECONDARY: Record<string, string> = { sword: 'parry', spear: 'charge', bow: 'draw', staff: 'heavy', wand: 'heavy' };
+const SELECTED_STYLE: React.CSSProperties = { border: '1px solid #ffd166', boxShadow: '0 0 0 2px rgba(255,209,102,0.55), 0 0 12px rgba(255,209,102,0.45)', transform: 'translateY(-3px)', transition: 'transform 90ms ease-out, box-shadow 90ms' };
+
+function RmbBadge() {
+  return (
+    <div data-testid="rmb-badge" style={{ position: 'absolute', top: -9, right: -6, padding: '0 4px', borderRadius: 3, background: '#ffd166', color: '#1a1408', font: '700 9px/13px system-ui, sans-serif', letterSpacing: 0.3, pointerEvents: 'none' }}>
+      RMB
+    </div>
+  );
+}
+
 function Bar({ id, color, width }: { id: string; color: string; width: number }) {
   return (
     <div style={{ width, height: 10, background: 'rgba(0,0,0,0.55)', borderRadius: 3, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.25)' }}>
@@ -31,6 +44,7 @@ export function CombatHud() {
   const toastMsg = useCombatHud((s) => s.toast);
   const charges = useCombatHud((s) => s.charges);
   const downedUntil = useCombatHud((s) => s.downedUntil);
+  const selected = useCombatHud((s) => s.selected);
   const root = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -85,15 +99,20 @@ export function CombatHud() {
       )}
       <div style={{ position: 'absolute', bottom: 22, left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
         <div style={{ display: 'flex', gap: 6 }}>
-          <div style={{ padding: '6px 10px', background: 'rgba(8,10,16,0.6)', borderRadius: 4, minWidth: 74, textAlign: 'center' }} title="X swaps loadouts">
+          <div data-testid="slot-weapon" data-selected={selected < 0 ? 'true' : 'false'} style={{ position: 'relative', padding: '6px 10px', background: 'rgba(8,10,16,0.6)', borderRadius: 4, minWidth: 74, textAlign: 'center', boxSizing: 'border-box', ...(selected < 0 ? SELECTED_STYLE : { border: '1px solid transparent' }) }} title="X swaps loadouts · Z (or right mouse while selected): parry / draw / charge / heavy">
+            {selected < 0 && <RmbBadge />}
             <div style={{ fontWeight: 600, textTransform: 'capitalize' }}>{lo?.weapon ?? '-'}</div>
-            <div style={{ opacity: 0.6, fontSize: 11 }}>loadout {activeLoadout + 1} · X</div>
+            <div style={{ opacity: 0.6, fontSize: 11 }}>{SECONDARY[lo?.weapon ?? ''] ?? 'secondary'} · Z</div>
           </div>
           {(lo?.spells ?? []).map((k, i) => {
             const sp = k ? spellByKey.get(k) : undefined;
+            const sel = selected === i && !!sp;
             return (
-              <div key={i} style={{ position: 'relative', width: 66, height: 46, background: 'rgba(8,10,16,0.6)', border: `1px solid ${sp?.color ?? 'rgba(255,255,255,0.15)'}`, borderRadius: 4, overflow: 'hidden', padding: 3, boxSizing: 'border-box' }}>
-                <div data-cd={i} style={{ position: 'absolute', left: 0, bottom: 0, width: '100%', height: 0, background: 'rgba(0,0,0,0.6)' }} />
+              <div key={i} data-testid={`slot-spell-${i}`} data-selected={sel ? 'true' : 'false'} style={{ position: 'relative', width: 66, height: 46, background: 'rgba(8,10,16,0.6)', border: `1px solid ${sp?.color ?? 'rgba(255,255,255,0.15)'}`, borderRadius: 4, padding: 3, boxSizing: 'border-box', ...(sel ? SELECTED_STYLE : {}) }}>
+                <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', borderRadius: 4 }}>
+                  <div data-cd={i} style={{ position: 'absolute', left: 0, bottom: 0, width: '100%', height: 0, background: 'rgba(0,0,0,0.6)' }} />
+                </div>
+                {sel && <RmbBadge />}
                 <div style={{ position: 'relative', fontSize: 10, opacity: 0.6 }}>{KEYS[i]}</div>
                 <div style={{ position: 'relative', fontSize: 11, lineHeight: '12px' }}>{sp?.name ?? ''}</div>
               </div>
@@ -109,7 +128,7 @@ export function CombatHud() {
           <span data-hp style={{ fontSize: 11, minWidth: 64 }} />
           <Bar id="mana" color="linear-gradient(#5aa0ff, #2050c0)" width={180} />
         </div>
-        <div style={{ opacity: 0.55, fontSize: 11 }}>LMB attack · RMB parry/draw/charge · F dodge · 1-4 spells · Q form</div>
+        <div data-testid="combat-hint" style={{ opacity: 0.55, fontSize: 11 }}>{COMBAT_HINT}</div>
       </div>
       {toastMsg && now - toastMsg.at < 1500 && (
         <div key={toastMsg.at} style={{ position: 'absolute', top: '38%', left: '50%', transform: 'translateX(-50%)', fontSize: 20, fontWeight: 700, textShadow: '0 0 6px #000' }}>

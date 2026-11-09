@@ -39,6 +39,9 @@ export interface CombatHudState {
   downedUntil: number;
   toast: { text: string; at: number } | null;
   refused: { id: number; at: number } | null;
+  /** Playtest 1: what the right mouse button uses: -1 the weapon secondary, 0-3 a spell slot (wheel cycles; spellSelect.ts). */
+  selected: number;
+  selectedAt: number;
   set: (p: Partial<CombatHudState>) => void;
 }
 
@@ -61,6 +64,8 @@ export const useCombatHud = create<CombatHudState>()((set) => ({
   downedUntil: 0,
   toast: null,
   refused: null,
+  selected: -1,
+  selectedAt: 0,
   set: (p) => set(p),
 }));
 

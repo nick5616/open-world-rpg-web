@@ -33,6 +33,8 @@ interface EnemyMesh {
   mat: THREE.MeshStandardMaterial;
   bar: THREE.Mesh;
   barBack: THREE.Mesh;
+  plate: THREE.Group;
+  label: THREE.Sprite | null;
   aura: THREE.Mesh | null;
   flash: number;
   phase: number;
@@ -65,13 +67,64 @@ function makeEnemy(v: RemoteView): EnemyMesh {
     aura.scale.setScalar(s * (info.affix === 7 ? 1.6 : 1.1));
     root.add(aura);
   }
-  const barBack = new THREE.Mesh(geo.bar, new THREE.MeshBasicMaterial({ color: '#222222', depthTest: false }));
-  const bar = new THREE.Mesh(geo.bar, new THREE.MeshBasicMaterial({ color: info.affix === 7 ? '#ff4040' : info.affix ? '#ffb020' : '#d04040', depthTest: false }));
+  // Playtest 1: the bar (and a named enemy's label) sit in a plate that is
+  // turned to face the camera every frame (billboard), double-sided, so it
+  // reads from any angle (it used to be turned with the body and vanished
+  // from behind).
+  const plate = new THREE.Group();
+  plate.position.y = 2.1 * s + 0.2;
+  const barBack = new THREE.Mesh(geo.bar, new THREE.MeshBasicMaterial({ color: '#222222', depthTest: false, side: THREE.DoubleSide }));
+  const bar = new THREE.Mesh(geo.bar, new THREE.MeshBasicMaterial({ color: info.affix === 7 ? '#ff4040' : info.affix ? '#ffb020' : '#d04040', depthTest: false, side: THREE.DoubleSide }));
   barBack.renderOrder = bar.renderOrder = 10;
-  barBack.position.y = bar.position.y = 2.1 * s + 0.2;
+  bar.position.z = 0.001;
   barBack.scale.x = Math.max(1, s * 0.6);
-  root.add(barBack, bar);
-  return { root, body, mat, bar, barBack, aura, flash: 0, phase: Math.random() * 10 };
+  plate.add(barBack, bar);
+  let label: THREE.Sprite | null = null;
+  if (v.name) {
+    label = labelSprite(v.name, info.affix === 7 ? '#ff8080' : info.affix ? '#ffd27a' : '#f1f3f5');
+    label.position.y = 0.26;
+    plate.add(label);
+  }
+  root.add(plate);
+  return { root, body, mat, bar, barBack, plate, label, aura, flash: 0, phase: Math.random() * 10 };
+}
+
+/** A name label (sprites always face the camera). */
+function labelSprite(text: string, color: string): THREE.Sprite {
+  const c = document.createElement('canvas');
+  c.width = 256;
+  c.height = 48;
+  const g = c.getContext('2d')!;
+  g.font = '600 26px system-ui, sans-serif';
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.lineWidth = 5;
+  g.strokeStyle = 'rgba(0,0,0,0.85)';
+  g.strokeText(text, 128, 24, 250);
+  g.fillStyle = color;
+  g.fillText(text, 128, 24, 250);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true }));
+  sp.scale.set(1.6, 0.3, 1);
+  sp.renderOrder = 11;
+  return sp;
+}
+
+const _q = new THREE.Quaternion();
+
+/**
+ * Turns `plate` (a child of a rotated parent) to face the camera: its world
+ * rotation becomes the camera's, whatever the parent's yaw (billboard).
+ * Exported for tests.
+ */
+export function faceCamera(plate: THREE.Object3D, camera: THREE.Camera): void {
+  const parent = plate.parent;
+  if (parent) {
+    parent.updateWorldMatrix(true, false);
+    parent.getWorldQuaternion(_q).invert();
+    plate.quaternion.copy(_q).multiply(camera.getWorldQuaternion(new THREE.Quaternion()));
+  } else plate.quaternion.copy(camera.quaternion);
 }
 
 /** The newest melee swing (set from the FX queue, read by the weapon). */
@@ -239,13 +292,19 @@ export function CombatLayer() {
       m.root.scale.setScalar(dead ? Math.max(0.01, m.root.scale.x - delta * 2) : 1);
       m.bar.scale.x = Math.max(0.001, (v.healthPct / 100) * m.barBack.scale.x);
       m.bar.position.x = -(m.barBack.scale.x - m.bar.scale.x) / 2;
-      m.bar.quaternion.copy(camera.quaternion);
-      m.barBack.quaternion.copy(camera.quaternion);
+      m.plate.visible = !dead;
+      faceCamera(m.plate, camera);
     }
     for (const [id, m] of enemies) {
       if (!seen.has(id)) {
         root.remove(m.root);
         m.mat.dispose();
+        (m.bar.material as THREE.Material).dispose();
+        (m.barBack.material as THREE.Material).dispose();
+        if (m.label) {
+          (m.label.material as THREE.SpriteMaterial).map?.dispose();
+          (m.label.material as THREE.SpriteMaterial).dispose();
+        }
         enemies.delete(id);
       }
     }
