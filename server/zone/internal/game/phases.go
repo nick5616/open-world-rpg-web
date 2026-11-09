@@ -28,11 +28,12 @@ var phaseNames = [phCount]string{"inputs", "world", "combat", "towns", "night", 
 const tickPhaseWindow = 30 * 60 // one minute
 
 type tickPhases struct {
-	mu   sync.Mutex
-	ring [tickPhaseWindow][phCount]time.Duration
-	n    int
-	cur  [phCount]time.Duration
-	last time.Time
+	mu       sync.Mutex
+	ring     [tickPhaseWindow][phCount]time.Duration
+	n        int
+	cur      [phCount]time.Duration
+	last     time.Time
+	loggedAt time.Time // last slow-tick log
 }
 
 // mark ends phase p at now.
@@ -52,6 +53,32 @@ func (t *tickPhases) end() {
 	t.ring[t.n%tickPhaseWindow] = t.cur
 	t.n++
 	t.mu.Unlock()
+}
+
+// slowTickLog: a tick longer than this logs its phase split (at most once a
+// second). Stalls this long show as a remote "lurch" in every client: the
+// stalled tick's snapshot carries normal motion, the next (catch-up) tick
+// applies all the input that queued meanwhile within a millisecond of
+// server time (WP19 lurch investigation, docs/decisions/v1-capacity.md).
+const slowTickLog = 100 * time.Millisecond
+
+// endTick records the tick's phases and logs a slow one.
+func (s *Server) endTick(tick uint32) {
+	t := &s.phases
+	t.end()
+	var total time.Duration
+	for _, d := range t.cur {
+		total += d
+	}
+	if total < slowTickLog || time.Since(t.loggedAt) < time.Second {
+		return
+	}
+	t.loggedAt = time.Now()
+	args := []any{"tick", tick, "ms", total.Milliseconds(), "players", len(s.sessions), "entities", len(s.ents)}
+	for p, name := range phaseNames {
+		args = append(args, name, float64(t.cur[p].Microseconds())/1000)
+	}
+	s.log.Warn("slow tick", args...)
 }
 
 // PhaseStats is the /debug/tickstats phase report (ms).

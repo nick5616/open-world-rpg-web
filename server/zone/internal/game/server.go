@@ -272,7 +272,7 @@ func (s *Server) onTick() {
 	tick := s.tick
 	now := time.Now()
 	s.phases.start() // WP19 (phases.go)
-	defer s.phases.end()
+	defer s.endTick(tick)
 	s.env = s.stepEnv() // WP10: rain + updrafts for every step this tick
 
 	for {

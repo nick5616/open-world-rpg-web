@@ -227,10 +227,40 @@ try {
   const shotTo = Date.now();
   const resume = [await debug(a), await debug(b)];
   const excluded = { A: diffC(counters(resume[0]), counters(mid[0])), B: diffC(counters(resume[1]), counters(mid[1])) };
+  // WP19 diagnostic (--cpu-profile): a CDP CPU profile of browser A's main
+  // thread during the walk back, summarized by self time.
+  const cdp = process.argv.includes('--cpu-profile') ? await a.context().newCDPSession(a) : null;
+  const programs = () => a.evaluate(() => (window.__r3f?.gl?.info?.programs ?? []).map((p) => `${p.name}#${p.id}`));
+  const progBefore = cdp ? await programs() : [];
+  if (cdp) {
+    await cdp.send('Profiler.enable');
+    await cdp.send('Profiler.setSamplingInterval', { interval: 1000 });
+    await cdp.send('Profiler.start');
+  }
   await walkTogether(a, b, Math.PI / 2, 45000, samples, (s) => s.A.x < BORDER_X - 15 && s.B.x < BORDER_X - 15);
+  if (cdp) {
+    const { profile } = await cdp.send('Profiler.stop');
+    fs.writeFileSync(path.join(TMP, 'a-walkback.cpuprofile'), JSON.stringify(profile));
+    const byId = new Map(profile.nodes.map((n) => [n.id, n]));
+    const self = new Map();
+    const dts = profile.timeDeltas;
+    profile.samples.forEach((id, i) => {
+      const n = byId.get(id);
+      const k = `${n.callFrame.functionName || '(anon)'} ${n.callFrame.url.split('/').pop()}:${n.callFrame.lineNumber}`;
+      self.set(k, (self.get(k) ?? 0) + (dts[i] ?? 0) / 1000);
+    });
+    const top = [...self.entries()].sort((x, y) => y[1] - x[1]).slice(0, 25);
+    step(`browser A main thread, walk back, self ms: ${top.map(([k, v]) => `${k}=${v.toFixed(0)}`).join(' | ')}`);
+    const progAfter = await programs();
+    step(`shader programs compiled during the walk back: ${JSON.stringify(progAfter.filter((p) => !progBefore.includes(p)))} (of ${progAfter.length})`);
+  }
   await sleep(1500);
   samples.push(await sample(a, b));
   const walkS = (Date.now() - t0) / 1000;
+  // WP19: auto quality tier changes (each recompiles every shader).
+  const qa = await a.evaluate(() => window.__lodestone?.quality?.() ?? null);
+  const qb = await b.evaluate(() => window.__lodestone?.quality?.() ?? null);
+  step(`quality tier changes: A ${JSON.stringify(qa)} B ${JSON.stringify(qb)}`);
   const [da, dbb] = [await debug(a), await debug(b)];
   await b.screenshot({ path: path.join(EVIDENCE, `${PREFIX}-border-back-b.png`) });
   // Measured = everything since pre, minus the screenshot interval.

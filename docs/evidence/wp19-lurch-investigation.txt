@@ -1,0 +1,65 @@
+WP19: the remote "lurch" in two-browser runs after the WP13/WP20 merge
+=======================================================================
+
+Harness: node client/src/net/dev/handoff-acceptance.mjs --profile thailand --prefix <p> [--cpu-profile]
+(real account, director, two cluster zones behind netsim "thailand", two headless Chromium
+processes on the RTX 3070 via ANGLE/D3D11, both players walk east across x = 2048, stand,
+screenshot, walk back west). Machine shared with other agents.
+
+1. Reproduced on the merged tree (WP14 + WP15 included), 5 of 5 runs before the fix:
+   wp19-lurch-before-border-browsers.txt|json and three diagnostic runs (not kept):
+   one eased remote jump per run in EACH browser at the same instant, 90-211 cm, mode
+   "interp", along the direction of motion (+144..+181 cm), render clock steady
+   (lagStepMs 0), normal sample spacing (gapMs 33), delay at its 400 ms ceiling.
+
+2. Server side (a temporary per-tick log of applied input frames on zone-east): both
+   players' input stopped for 4.2 s at the same moment while walking (applied 0, view
+   guess capped at 16 steps), then resumed with bursts of 8 and 11 frames (the client's
+   8-substep cap after a stall). No zone tick was slow (the new slow-tick log stayed
+   silent; tick phases normal). The harness's own samples (page.evaluate) also stopped
+   for 4.7 s: both renderer main threads were blocked.
+
+3. Browser side (CDP CPU profile of browser A's main thread during the walk back):
+     getProgramInfoLog 4645 ms self (synchronous shader link wait), 26 new programs:
+     town-decal, 16 unnamed scene materials, LuminanceMaterial, DownsamplingMaterial,
+     UpsamplingMaterial, EffectMaterial (the post chain), 5 more.
+   window.__lodestone.quality(): both browsers' auto quality stepped high -> medium
+   (A at 883654 ms, B at 883746 ms), 4.77 s before the jump.
+
+   Cause: drei's PerformanceMonitor sees ~25-38 fps (two headless pages share the GPU and
+   CPU; the screenshot stall too) and auto mode steps the tier down. high -> medium
+   changes shadow cascades 3 -> 2, god rays off, post MSAA 4 -> 2: every lit material and
+   the whole post chain recompile, synchronously, ~4.7 s on ANGLE/D3D11. During that
+   freeze the page sends no input and draws nothing; afterwards the observer catches up
+   at once (the remote player "lurches"), and its own player stops for 4 s on the server.
+   It "appeared after WP13/WP20" because those added materials (town decals, buildings,
+   combat FX), turning a sub-second recompile that the 400 ms interpolation buffer hid
+   into a multi-second freeze. Both browsers step down together because they share the
+   machine and the screenshot stall, hence the same instant in both.
+
+4. Fix (client/src/stores/qualityStore.ts, WorldScene.tsx, GameCanvas.tsx, SkyAndSun.tsx,
+   TownsLayer.tsx): a separate shaderTier for everything that shapes shaders (shadow
+   cascades and map, post chain + MSAA, normal maps, light pools, shadows on/off). Auto
+   steps move only `tier` (resolution, view distance, scatter, grass, terrain detail,
+   water detail); an explicit setting moves both. Tried first and dropped: compiling the
+   new tier with renderer.compileAsync before drawing (three r170 compiled other variants
+   than the draw used: 127 programs instead of 68, the freeze stayed) and a "hitch guard"
+   ignoring declines near long frames (the fps really is below the 40 fps bound here).
+
+5. After the fix (wp19-lurch-after-border-browsers.txt|json, two runs): both browsers still
+   step high -> medium, 0 programs compiled during the walk back, no getProgramInfoLog in
+   the profile, eased remote discontinuities 0 cm / 0 cm, 0 corrections, 0 teleports,
+   95/95 visibility, ALL PASS.
+
+Profile lines (before, run "lurch6"; after, run "lurch10"):
+  before: browser A main thread, walk back, self ms: getProgramInfoLog=4645 | (idle)=4460 | (program)=398 | updateMatrixWorld=119 | setProgram=105 | ...
+  before: shader programs compiled during the walk back: 26 (town-decal, 16 unnamed, LuminanceMaterial, DownsamplingMaterial, UpsamplingMaterial, EffectMaterial, 5 unnamed)
+  before: quality tier changes: A high->medium at 1794184883654, B high->medium at 1794184883746
+  after:  browser A main thread, walk back, self ms: (idle)=4879 | (program)=377 | renderBufferDirect=110 | ...
+  after:  shader programs compiled during the walk back: [] (of 51)
+  after:  quality tier changes: A high->medium at 1794185392450, B high->medium at 1794185392434
+
+Remaining: an explicit quality change in the settings still recompiles synchronously (a
+few seconds' freeze on ANGLE/D3D11, acceptable for a menu action); a shader warmup per tier
+at load (spec 12 "shader warmup") would remove it. Auto mode on a weak GPU now adapts only
+with the cheap knobs: if those are not enough the player should pick a lower setting.

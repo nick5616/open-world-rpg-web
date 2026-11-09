@@ -13,7 +13,14 @@ import type { ReadySession } from './account/types';
 import { voiceDebugHook } from './voice/debugHook';
 
 export function installDevHandle(): void {
+  // WP19: auto quality tier changes with their time (each one recompiles
+  // shaders; see qualityGuard.ts).
+  const tierLog: { atMs: number; from: string; to: string }[] = [];
+  useQualityStore.subscribe((s, p) => {
+    if (s.tier !== p.tier) tierLog.push({ atMs: Date.now(), from: p.tier, to: s.tier });
+  });
   const handle = {
+    quality: () => ({ setting: useQualityStore.getState().setting, tier: useQualityStore.getState().tier, changes: tierLog.slice() }),
     player: () => JSON.parse(JSON.stringify(localPlayer)) as typeof localPlayer,
     net: netStats,
     /** WP06: zone connection state (transport, corrections, interpolation, drawn remotes). */

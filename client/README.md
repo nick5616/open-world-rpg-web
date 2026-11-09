@@ -44,7 +44,7 @@ npm run golden -w client      # regenerate src/sim/golden/*.json after an intend
 | `src/scene/` | R3F: `GameCanvas` (Canvas, quality, monitor), `PlayerController` (look + fixed-step loop + camera), `FirstPersonArms`, `SkyAndSun`, `FlatTerrain`, `CellBorders`, `groundContext`. |
 | `src/input/` | Ref-based keyboard and pointer-lock mouse hooks. |
 | `src/hud/` | `DebugHud` (FrameStats extended), `DebugPanel`, crosshair/lock hint, debug hotkeys. |
-| `src/stores/` | zustand: `appStore` (screens), `qualityStore` (tiers), `debugStore` (dev tools). |
+| `src/stores/` | zustand: `appStore` (screens), `qualityStore` (tiers; WP19: `shaderTier` for shader-shaping knobs, which auto steps never change: a step used to recompile every shader and froze the page ~4.7 s, `docs/evidence/wp19-lurch-investigation.txt`), `debugStore` (dev tools). |
 | `src/state/live.ts` | Per-frame values written imperatively (player pose, net/chunk HUD slots, world clock). |
 | `src/screens/` | `TitleScreen`, `AccountSlot` (WP04 mount point), `PlayScreen` (lazy, pulls in three.js). |
 | `src/devHandle.ts` | `window.__lodestone` for headless scripts and the console (debug builds only). |
