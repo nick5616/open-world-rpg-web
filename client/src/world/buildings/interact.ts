@@ -7,7 +7,7 @@
 // nearer. Signposts are read-only (no Interact) and use a slightly longer
 // reach so the HUD can show the destinations as you walk up.
 
-export type TargetKind = 'npc' | 'board' | 'forge' | 'anvil' | 'shaft' | 'sign';
+export type TargetKind = 'npc' | 'board' | 'forge' | 'anvil' | 'shaft' | 'sign' | 'door';
 
 export interface Candidate {
   kind: TargetKind;
@@ -19,9 +19,10 @@ export interface Candidate {
   entityId: number | null;
   /** Stable id: board/station prop id, shaft structure id, sign id. */
   stableId: bigint;
-  /** NPC record index in the towns buffer (-1 unknown), structure index, sign index... */
+  /** NPC record index in the towns buffer (-1 unknown), structure index, sign index, door index... */
   index: number;
   name: string;
+  /** NPC role; doors: 1 open, 0 closed (at the local player's current step). */
   role: number;
   /** Merchant kind (255 none) for NPCs. */
   merchant: number;
@@ -71,5 +72,7 @@ export function promptFor(c: Candidate, roleLabel: (role: number) => string): st
       return '[E] Descend the shaft';
     case 'sign':
       return c.name;
+    case 'door':
+      return c.role === 1 ? '[E] Close door' : '[E] Open door';
   }
 }
