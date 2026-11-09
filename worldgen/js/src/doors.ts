@@ -281,10 +281,17 @@ export class DoorStates {
     return (at !== 0 && step >= at ? this.to[d] : this.was[d]) === 1;
   }
 
-  /** Change door d to `open` from step `step` on (0: now, settled). Steps already passed settle first. */
+  /**
+   * Change door d to `open` from step `step` on (0: now, settled). An
+   * earlier change counts as done: the zone settles a change (for everyone)
+   * before it schedules the next one on the same door, so the next one's
+   * "before" is the previous one's state even for a client still short of
+   * its step (`now` is kept for callers' bookkeeping).
+   */
   set(d: number, open: boolean, step: number, now: number): void {
+    void now;
     const before = this.was[d] === 1 && this.to[d] === 1 && this.at[d] === 0;
-    if (this.at[d] !== 0 && now >= this.at[d]) this.was[d] = this.to[d];
+    if (this.at[d] !== 0) this.was[d] = this.to[d];
     if (step === 0) {
       this.was[d] = this.to[d] = open ? 1 : 0;
       this.at[d] = 0;
