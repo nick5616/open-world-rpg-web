@@ -405,9 +405,8 @@ async function main(): Promise<void> {
       await page.screenshot({ path: shot('bounty-preview-map') });
       note('shot pt-ux-bounty-preview-map.png (the job\'s area on the map before accepting)');
       await page.keyboard.press('KeyM');
-      const acc = await page.$$('[data-testid="town-panel"] button[data-act="accept"]');
-      for (const a of acc.slice(0, 2)) {
-        await a.click();
+      for (let k = 0; k < 2; k++) {
+        await page.click(`[data-testid="town-panel"] button[data-act="accept"]`); // re-queried: the panel re-renders after each accept
         await sleep(400);
       }
       await page.evaluate(() => (window as unknown as W).__lodestoneTowns!.closePanel());
