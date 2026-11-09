@@ -1,105 +1,101 @@
-[   1.34s] world world-wp15-defense seed 20261108: world time 1794182104, 22:01, night true, night 498383, moon 4, 30 towns
-[   1.38s] Ana joined as entity 1 at (1929.3, 82.0, 2296.3) with a sword
-[   1.38s] Ana: world clock offset 643 s: 22:02, night true, moon 4
-[   1.38s] Bo joined as entity 2 at (1923.3, 82.1, 2296.3) with a spear
-[   1.38s] Bo: world clock offset 643 s: 22:02, night true, moon 4
-[   1.39s] Ana (sword) and Bo (spear), both with sunsteel, stand at the ward garden of Draedmore (1926, 2296); ward radius 140 m
-[   2.41s] Ana: DEFENSE: the ward of Draedmore falters; first wave in 15 s
-[   2.41s] Bo: DEFENSE: the ward of Draedmore falters; first wave in 15 s
-[  12.44s]   zone: ward 1000; demons (distance to the garden, state): 
-[  16.38s] Bo at (1925, 82, 2296) hp 100%  attacks 0 dodges 0  accepted 0 refused 0  corrections 0
-[  16.38s] Ana at (1927, 82, 2296) hp 100%  attacks 0 dodges 0  accepted 0 refused 0  corrections 0
-[  17.44s] Ana: 3 demons rose (rank 0) at (1775, 2253)
-[  17.44s] Bo: 3 demons rose (rank 0) at (1775, 2253)
-[  17.44s] Bo: 1 demons rose (rank 0) at (1976, 2407)
-[  17.44s] Ana: 1 demons rose (rank 0) at (1976, 2407)
-[  17.44s] Ana: DEFENSE: wave 1 of 3 (7 demons)
-[  17.44s] Bo: DEFENSE: wave 1 of 3 (7 demons)
-[  17.48s] Ana: ward garden health 1000
-[  22.48s]   zone: ward 1000; demons (distance to the garden, state): gloamling 122m idle, gloamling 127m idle, gloamling 127m idle, gloamling 130m idle, gloamling 126m idle, gloamling 133m idle, gloamling 89m idle
-[  31.38s] Bo at (1929, 82, 2300) hp 100%  attacks 0 dodges 0  accepted 0 refused 0  corrections 0
-[  31.38s] Ana at (1929, 82, 2300) hp 100%  attacks 0 dodges 0  accepted 0 refused 0  corrections 0
-[  32.51s]   zone: ward 1000; demons (distance to the garden, state): gloamling 55m idle, gloamling 61m idle, gloamling 60m idle, gloamling 88m idle, gloamling 88m idle, gloamling 89m idle, gloamling 37m chase
-[  42.54s]   zone: ward 1000; demons (distance to the garden, state): gloamling 5m chase, gloamling 5m reposition, gloamling 5m reposition, gloamling 14m chase, gloamling 16m chase, gloamling 17m chase, gloamling 7m evade
-[  43.01s] Bo killed a demon (31, +30 xp)
-[  44.54s] Ana killed a demon (25, +30 xp)
-[  46.38s] Ana at (1927, 82, 2300) hp 100%  attacks 9 dodges 8  accepted 7 refused 1  corrections 0
-[  46.38s] Bo at (1928, 82, 2300) hp 100%  attacks 10 dodges 8  accepted 10 refused 0  corrections 0
-[  48.04s] Ana killed a demon (26, +30 xp)
-[  50.54s] Bo killed a demon (30, +30 xp)
-[  52.58s]   zone: ward 1000; demons (distance to the garden, state): gloamling 2m recover, gloamling 6m chase, gloamling 4m recover
-[  52.68s] Ana killed a demon (29, +30 xp)
-[  55.54s] Ana killed a demon (27, +30 xp)
-[  57.38s] Bo killed a demon (28, +30 xp)
-[  61.38s] Bo at (1927, 82, 2297) hp 68%  attacks 31 dodges 17  accepted 28 refused 2  corrections 0
-[  61.38s] Ana at (1927, 82, 2296) hp 60%  attacks 26 dodges 17  accepted 20 refused 4  corrections 0
-[  62.61s]   zone: ward 1000; demons (distance to the garden, state): 
-[  69.41s] Ana: 3 demons rose (rank 0) at (2022, 2167)
-[  69.41s] Bo: 3 demons rose (rank 0) at (1960, 2413)
-[  69.41s] Bo: DEFENSE: wave 2 of 3 (9 demons)
-[  69.41s] Ana: 3 demons rose (rank 0) at (1960, 2413)
-[  69.41s] Ana: DEFENSE: wave 2 of 3 (9 demons)
-[  72.64s]   zone: ward 1000; demons (distance to the garden, state): gloamling 140m idle, gloamling 137m idle, gloamling 141m idle, gloamling 102m idle, gloamling 102m idle, gloamling 97m idle, gloamling 136m idle, gloamling 139m idle, gloamling 140m idle
-[  76.38s] Bo at (1930, 82, 2300) hp 100%  attacks 31 dodges 17  accepted 28 refused 2  corrections 0
-[  76.38s] Ana at (1930, 82, 2300) hp 100%  attacks 26 dodges 17  accepted 20 refused 4  corrections 0
-[  82.68s]   zone: ward 1000; demons (distance to the garden, state): gloamling 87m idle, gloamling 87m idle, gloamling 87m idle, gloamling 44m chase, gloamling 42m chase, gloamling 40m chase, gloamling 70m idle, gloamling 73m idle, gloamling 74m idle
-[  91.38s] Bo at (1927, 82, 2300) hp 100%  attacks 31 dodges 17  accepted 28 refused 2  corrections 0
-[  91.38s] Ana at (1927, 82, 2300) hp 100%  attacks 26 dodges 17  accepted 20 refused 4  corrections 0
-[  92.71s]   zone: ward 1000; demons (distance to the garden, state): gloamling 25m chase, gloamling 26m chase, gloamling 27m chase, gloamling 11m chase, gloamling 10m windup, gloamling 6m striking, gloamling 5m chase, gloamling 8m chase, gloamling 9m chase
-[  94.84s] Bo killed a demon (37, +30 xp)
-[  98.68s] Ana killed a demon (40, +30 xp)
-[ 102.74s]   zone: ward 1000; demons (distance to the garden, state): gloamling 3m reposition, gloamling 8m evade, gloamling 6m windup, gloamling 4m windup, gloamling 4m reposition, gloamling 5m recover, gloamling 6m chase
-[ 103.81s] Ana killed a demon (33, +30 xp)
-[ 105.91s] Bo killed a demon (32, +30 xp)
-[ 106.38s] Ana at (1925, 82, 2294) hp 39%  attacks 50 dodges 32  accepted 32 refused 15  corrections 0
-[ 106.38s] Bo at (1925, 82, 2294) hp 49%  attacks 58 dodges 32  accepted 43 refused 13  corrections 0
-[ 108.98s] Ana killed a demon (34, +30 xp)
-[ 112.68s] Bo killed a demon (38, +30 xp)
-[ 112.78s]   zone: ward 1000; demons (distance to the garden, state): gloamling 1m reposition, gloamling 5m recover, gloamling 4m reposition
-[ 116.01s] Ana killed a demon (36, +30 xp)
-[ 118.44s] Ana killed a demon (35, +30 xp)
-[ 120.01s] Bo killed a demon (39, +30 xp)
-[ 121.38s] Ana at (1922, 82, 2294) hp 51%  attacks 70 dodges 43  accepted 48 refused 17  corrections 0
-[ 121.38s] Bo at (1922, 82, 2298) hp 76%  attacks 79 dodges 42  accepted 56 refused 19  corrections 0
-[ 122.81s]   zone: ward 1000; demons (distance to the garden, state): 
-[ 132.04s] Bo: 4 demons rose (rank 0) at (2048, 2342)
-[ 132.04s] Bo: 4 demons rose (rank 0) at (1795, 2348)
-[ 132.04s] Bo: DEFENSE: wave 3 of 3 (12 demons)
-[ 132.04s] Ana: 4 demons rose (rank 0) at (2048, 2342)
-[ 132.04s] Ana: 4 demons rose (rank 0) at (1795, 2348)
-[ 132.04s] Ana: DEFENSE: wave 3 of 3 (12 demons)
-[ 132.84s]   zone: ward 1000; demons (distance to the garden, state): gloamling 128m idle, gloamling 124m idle, gloamling 122m idle, gloamling 125m idle, gloamling 134m idle, gloamling 137m idle, gloamling 138m idle, gloamling 133m idle, gloamling 164m idle, gloamling 162m idle, gloamling 167m idle, grave_brute 170m idle
-[ 136.38s] Ana at (1930, 82, 2300) hp 96%  attacks 70 dodges 43  accepted 48 refused 17  corrections 0
-[ 136.38s] Bo at (1930, 82, 2300) hp 100%  attacks 79 dodges 42  accepted 56 refused 19  corrections 0
-[ 142.88s]   zone: ward 1000; demons (distance to the garden, state): gloamling 61m idle, gloamling 57m idle, gloamling 55m idle, gloamling 58m idle, gloamling 68m idle, gloamling 71m idle, gloamling 71m idle, gloamling 67m idle, gloamling 109m idle, gloamling 108m idle, gloamling 112m idle, grave_brute 125m idle
-[ 151.38s] Ana at (1928, 82, 2300) hp 100%  attacks 72 dodges 45  accepted 50 refused 17  corrections 0
-[ 151.38s] Bo at (1929, 82, 2300) hp 100%  attacks 82 dodges 43  accepted 59 refused 19  corrections 0
-[ 151.58s] Bo killed a demon (43, +30 xp)
-[ 152.91s]   zone: ward 1000; demons (distance to the garden, state): gloamling 5m reposition, gloamling 1m windup, gloamling 3m windup, gloamling 34m chase, gloamling 34m chase, gloamling 34m chase, gloamling 33m chase, gloamling 76m idle, gloamling 74m idle, gloamling 76m idle, grave_brute 96m idle
-[ 153.21s] Bo killed a demon (42, +30 xp)
-[ 155.71s] Bo killed a demon (41, +30 xp)
-[ 160.01s] Bo killed a demon (44, +30 xp)
-[ 162.64s] Bo killed a demon (45, +30 xp)
-[ 162.94s]   zone: ward 1000; demons (distance to the garden, state): gloamling 3m reposition, gloamling 5m windup, gloamling 2m recover, gloamling 10m chase, gloamling 8m chase, gloamling 12m chase, grave_brute 58m idle
-[ 165.98s] Ana killed a demon (47, +30 xp)
-[ 165.98s] Bo killed a demon (48, +30 xp)
-[ 166.38s] Bo at (1923, 82, 2299) hp 100%  attacks 109 dodges 62  accepted 84 refused 19  corrections 0
-[ 166.38s] Ana at (1928, 82, 2300) hp 93%  attacks 94 dodges 62  accepted 65 refused 22  corrections 0
-[ 168.04s] Bo killed a demon (49, +30 xp)
-[ 168.81s] Ana killed a demon (51, +30 xp)
-[ 171.01s] Bo killed a demon (50, +30 xp)
-[ 172.98s]   zone: ward 1000; demons (distance to the garden, state): gloamling 4m evade, grave_brute 11m chase
-[ 173.64s] Bo killed a demon (46, +30 xp)
-[ 181.38s] Bo at (1927, 82, 2293) hp 100%  attacks 124 dodges 67  accepted 99 refused 20  corrections 0
-[ 181.38s] Ana at (1926, 82, 2279) hp 100%  attacks 115 dodges 71  accepted 85 refused 22  corrections 0
-[ 183.01s]   zone: ward 1000; demons (distance to the garden, state): grave_brute 11m evade
-[ 187.84s] Bo killed a demon (52, +120 xp)
-[ 187.84s] Bo: DEFENSE ENDED (1): The last wave falls. The ward blooms again.
-[ 187.84s] Ana: DEFENSE ENDED (1): The last wave falls. The ward blooms again.
-[ 187.84s] Ana: defense reward +300 XP
-[ 187.84s] Bo: defense reward +300 XP
-[ 189.01s] defense ended after 187 s: HELD
-[ 189.01s] Ana: 11 demon kills, 98 claims accepted, 0 downs, 234 damage taken, reward 300 XP
-[ 189.01s] Bo: 17 demon kills, 107 claims accepted, 0 downs, 213 damage taken, reward 300 XP
-[ 189.01s] CHECK a town defense event runs start to finish with two players: true (result HELD, both rewarded true)
-[ 189.01s] PASS
+[   1.67s] world world-wp15-defense seed 20261108: world time 1794185705, 22:01, night true, night 498384, moon 5, 30 towns
+[   1.70s] Bo joined as entity 1 at (1923.3, 82.1, 2296.3) with a spear
+[   1.70s] Bo: world clock offset 2593 s: 22:02, night true, moon 5
+[   1.70s] Ana joined as entity 2 at (1929.3, 82.0, 2296.3) with a sword
+[   1.70s] Ana: world clock offset 2593 s: 22:02, night true, moon 5
+[   1.71s] Ana (sword) and Bo (spear), both with sunsteel, stand at the ward garden of Draedmore (1926, 2296); ward radius 140 m
+[   2.74s] Bo: DEFENSE: the ward of Draedmore falters; first wave in 15 s
+[   2.74s] Ana: DEFENSE: the ward of Draedmore falters; first wave in 15 s
+[  12.74s]   zone: ward 1000; demons (distance to the garden, state): 
+[  16.71s] Ana at (1927, 82, 2296) hp 100%  attacks 0 dodges 0  accepted 0 refused 0  corrections 0
+[  16.71s] Bo at (1925, 82, 2296) hp 100%  attacks 0 dodges 0  accepted 0 refused 0  corrections 0
+[  17.74s] Bo: 3 demons rose (rank 0) at (2035, 2362)
+[  17.74s] Ana: 3 demons rose (rank 0) at (2035, 2362)
+[  17.74s] Bo: 1 demons rose (rank 0) at (1785, 2326)
+[  17.74s] Bo: DEFENSE: wave 1 of 3 (7 demons)
+[  17.74s] Ana: 1 demons rose (rank 0) at (1785, 2326)
+[  17.74s] Ana: DEFENSE: wave 1 of 3 (7 demons)
+[  17.77s] Ana: ward garden health 1000
+[  22.77s]   zone: ward 1000; demons (distance to the garden, state): gloamling 135m idle, gloamling 135m idle, gloamling 139m idle, gloamling 96m idle, gloamling 94m idle, gloamling 93m idle, gloamling 112m idle
+[  31.71s] Ana at (1930, 82, 2300) hp 100%  attacks 0 dodges 0  accepted 0 refused 0  corrections 0
+[  31.71s] Bo at (1930, 82, 2300) hp 100%  attacks 0 dodges 0  accepted 0 refused 0  corrections 0
+[  32.80s]   zone: ward 1000; demons (distance to the garden, state): gloamling 91m idle, gloamling 91m idle, gloamling 92m idle, gloamling 30m chase, gloamling 28m chase, gloamling 27m chase, gloamling 46m idle
+[  37.94s] Bo killed a demon (30, +30 xp)
+[  40.34s] Bo killed a demon (28, +30 xp)
+[  42.84s]   zone: ward 1000; demons (distance to the garden, state): gloamling 45m idle, gloamling 46m idle, gloamling 47m idle, gloamling 8m chase, gloamling 12m chase
+[  43.27s] Bo killed a demon (29, +30 xp)
+[  46.04s] Bo killed a demon (31, +30 xp)
+[  46.71s] Ana at (1930, 82, 2293) hp 100%  attacks 13 dodges 10  accepted 11 refused 1  corrections 0
+[  46.71s] Bo at (1930, 82, 2293) hp 100%  attacks 18 dodges 10  accepted 16 refused 1  corrections 0
+[  50.80s] Bo killed a demon (25, +30 xp)
+[  52.87s]   zone: ward 1000; demons (distance to the garden, state): gloamling 10m evade, gloamling 7m chase
+[  53.87s] Bo killed a demon (26, +30 xp)
+[  56.40s] Ana killed a demon (27, +30 xp)
+[  61.71s] Ana at (1927, 82, 2296) hp 100%  attacks 24 dodges 19  accepted 19 refused 3  corrections 0
+[  61.71s] Bo at (1927, 82, 2296) hp 100%  attacks 32 dodges 19  accepted 29 refused 1  corrections 0
+[  62.90s]   zone: ward 1000; demons (distance to the garden, state): 
+[  68.40s] Ana: 4 demons rose (rank 0) at (1843, 2396)
+[  68.40s] Ana: DEFENSE: wave 2 of 3 (9 demons)
+[  68.40s] Bo: 4 demons rose (rank 0) at (1843, 2396)
+[  68.40s] Bo: DEFENSE: wave 2 of 3 (9 demons)
+[  72.94s]   zone: ward 1000; demons (distance to the garden, state): gloamling 135m idle, gloamling 131m idle, gloamling 132m idle, gloamling 136m idle, gloamling 138m idle, gloamling 100m idle, gloamling 103m idle, gloamling 101m idle, gloamling 97m idle
+[  76.71s] Bo at (1923, 82, 2300) hp 100%  attacks 32 dodges 19  accepted 29 refused 1  corrections 0
+[  76.71s] Ana at (1923, 82, 2300) hp 100%  attacks 24 dodges 19  accepted 19 refused 3  corrections 0
+[  82.97s]   zone: ward 1000; demons (distance to the garden, state): gloamling 90m idle, gloamling 91m idle, gloamling 91m idle, gloamling 92m idle, gloamling 92m idle, gloamling 34m chase, gloamling 37m chase, gloamling 35m chase, gloamling 33m chase
+[  91.71s] Ana at (1923, 82, 2300) hp 100%  attacks 28 dodges 23  accepted 22 refused 3  corrections 0
+[  91.71s] Bo at (1923, 82, 2299) hp 100%  attacks 36 dodges 23  accepted 32 refused 1  corrections 0
+[  91.74s] Bo killed a demon (54, +30 xp)
+[  93.00s]   zone: ward 1000; demons (distance to the garden, state): gloamling 20m chase, gloamling 22m chase, gloamling 24m chase, gloamling 25m chase, gloamling 15m chase, gloamling 4m recover, gloamling 6m evade, gloamling 7m reposition
+[  94.14s] Ana killed a demon (52, +30 xp)
+[  97.24s] Ana killed a demon (53, +30 xp)
+[  97.97s] Bo killed a demon (51, +30 xp)
+[ 100.54s] Ana killed a demon (46, +30 xp)
+[ 102.47s] Bo killed a demon (47, +30 xp)
+[ 103.04s]   zone: ward 1000; demons (distance to the garden, state): gloamling 2m recover, gloamling 8m chase, gloamling 7m reposition
+[ 104.40s] Bo killed a demon (48, +30 xp)
+[ 104.80s] Ana killed a demon (49, +30 xp)
+[ 106.50s] Ana killed a demon (50, +30 xp)
+[ 106.71s] Bo at (1927, 82, 2299) hp 48%  attacks 62 dodges 34  accepted 51 refused 7  corrections 0
+[ 106.71s] Ana at (1928, 82, 2300) hp 100%  attacks 56 dodges 26  accepted 50 refused 3  corrections 0
+[ 113.07s]   zone: ward 1000; demons (distance to the garden, state): 
+[ 118.50s] Bo: 4 demons rose (rank 0) at (2047, 2344)
+[ 118.50s] Ana: 4 demons rose (rank 0) at (2047, 2344)
+[ 118.50s] Bo: 4 demons rose (rank 0) at (1794, 2346)
+[ 118.50s] Bo: DEFENSE: wave 3 of 3 (12 demons)
+[ 118.50s] Ana: 4 demons rose (rank 0) at (1794, 2346)
+[ 118.50s] Ana: DEFENSE: wave 3 of 3 (12 demons)
+[ 121.71s] Ana at (1930, 82, 2300) hp 100%  attacks 56 dodges 26  accepted 50 refused 3  corrections 0
+[ 121.71s] Bo at (1930, 82, 2300) hp 93%  attacks 62 dodges 34  accepted 51 refused 7  corrections 0
+[ 123.10s]   zone: ward 1000; demons (distance to the garden, state): gloamling 139m idle, gloamling 138m idle, gloamling 141m idle, gloamling 144m idle, gloamling 102m idle, gloamling 101m idle, gloamling 96m idle, gloamling 100m idle, gloamling 110m idle, gloamling 113m idle, gloamling 116m idle, grave_brute 117m idle
+[ 133.14s]   zone: ward 1000; demons (distance to the garden, state): gloamling 94m idle, gloamling 95m idle, gloamling 96m idle, gloamling 97m idle, gloamling 36m chase, gloamling 35m chase, gloamling 30m chase, gloamling 34m chase, gloamling 43m idle, gloamling 47m idle, gloamling 50m idle, grave_brute 69m idle
+[ 136.71s] Bo at (1929, 82, 2300) hp 100%  attacks 63 dodges 35  accepted 51 refused 7  corrections 0
+[ 136.71s] Ana at (1929, 82, 2300) hp 100%  attacks 57 dodges 27  accepted 50 refused 3  corrections 0
+[ 139.27s] Bo killed a demon (73, +30 xp)
+[ 142.24s] Bo killed a demon (72, +30 xp)
+[ 143.17s]   zone: ward 1000; demons (distance to the garden, state): gloamling 75m idle, gloamling 76m idle, gloamling 90m idle, gloamling 68m idle, gloamling 8m chase, gloamling 7m windup, gloamling 14m chase, gloamling 15m chase, gloamling 16m chase, grave_brute 34m chase
+[ 144.77s] Bo killed a demon (71, +30 xp)
+[ 149.14s] Bo killed a demon (74, +30 xp)
+[ 151.71s] Ana at (1928, 82, 2299) hp 92%  attacks 79 dodges 41  accepted 64 refused 10  corrections 0
+[ 151.71s] Bo at (1928, 82, 2293) hp 68%  attacks 87 dodges 51  accepted 71 refused 11  corrections 0
+[ 152.47s] Bo killed a demon (76, +30 xp)
+[ 153.20s]   zone: ward 1000; demons (distance to the garden, state): gloamling 10m windup, gloamling 11m chase, gloamling 33m chase, gloamling 3m recover, gloamling 5m reposition, gloamling 9m chase, grave_brute 2m chase
+[ 153.60s] Ana killed a demon (77, +30 xp)
+[ 154.07s] Bo killed a demon (75, +30 xp)
+[ 156.14s] Ana killed a demon (70, +30 xp)
+[ 163.24s]   zone: ward 1000; demons (distance to the garden, state): gloamling 2m reposition, gloamling 1m reposition, gloamling 8m reposition, grave_brute 9m reposition
+[ 166.71s] Bo at (1927, 82, 2295) hp 53%  attacks 106 dodges 63  accepted 85 refused 16  corrections 0
+[ 166.71s] Ana at (1927, 82, 2293) hp 100%  attacks 98 dodges 48  accepted 83 refused 10  corrections 0
+[ 171.87s] Bo killed a demon (78, +120 xp)
+[ 173.27s]   zone: ward 1000; demons (distance to the garden, state): gloamling 4m striking, gloamling 4m evade, gloamling 5m striking
+[ 174.60s] Bo killed a demon (69, +30 xp)
+[ 174.84s] Ana killed a demon (68, +30 xp)
+[ 176.57s] Ana killed a demon (67, +30 xp)
+[ 176.57s] Ana: DEFENSE ENDED (1): The last wave falls. The ward blooms again.
+[ 176.57s] Ana: defense reward +300 XP
+[ 176.57s] Bo: DEFENSE ENDED (1): The last wave falls. The ward blooms again.
+[ 176.57s] Bo: defense reward +300 XP
+[ 177.77s] defense ended after 175 s: HELD
+[ 177.77s] Ana: 10 demon kills, 96 claims accepted, 0 downs, 20 damage taken, reward 300 XP
+[ 177.77s] Bo: 18 demon kills, 100 claims accepted, 0 downs, 146 damage taken, reward 300 XP
+[ 177.77s] CHECK a town defense event runs start to finish with two players: true (result HELD, both rewarded true)
+[ 177.77s] PASS
