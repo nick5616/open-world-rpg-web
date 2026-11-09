@@ -30,6 +30,10 @@ type townCaveTerrain struct {
 // AtLevel implements movement.LevelGround: caves under, buildings on top.
 func (t townCaveTerrain) AtLevel(y float64) movement.Ground { return t.tg.AtLevel(y) }
 
+// TownCollision hands the box index to the game (enemies respect buildings:
+// internal/game/obstacles.go), so it is not built twice.
+func (t townCaveTerrain) TownCollision() *towns.Collision { return t.tg.C }
+
 // townTerrain is the same over the surface ground when there are no caves
 // (a pre-WP09 wasm): terrain + towers, promoted through overlaidTerrain.
 type townTerrain struct {
@@ -38,6 +42,8 @@ type townTerrain struct {
 }
 
 func (t townTerrain) AtLevel(y float64) movement.Ground { return t.tg.AtLevel(y) }
+
+func (t townTerrain) TownCollision() *towns.Collision { return t.tg.C }
 
 // withTowns wraps the ground with the towns' collision and fills the towns
 // part of cfg. LODESTONE_ZONE_NO_TOWNS=1 turns it off (A/B checks);

@@ -40,7 +40,7 @@ type goldenFile struct {
 
 func bits(v float64) string { return fmt.Sprintf("%016x", math.Float64bits(v)) }
 
-func loadModule(t *testing.T) *worldhost.Module {
+func loadModule(t testing.TB) *worldhost.Module {
 	t.Helper()
 	mod, err := worldhost.LoadFromEnv(context.Background())
 	if err != nil {

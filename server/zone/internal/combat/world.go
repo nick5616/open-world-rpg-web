@@ -144,6 +144,12 @@ type World struct {
 	DemonHooks DemonHooks
 	// Areas (playtest 1): stamped area levels and tiers; nil = region danger.
 	Areas Areas
+	// Obstacles reports a body (radius r, feet at x, y, z, head h above)
+	// overlapping static collision enemies may not walk into: town
+	// buildings and closed doors (the zone glue, internal/game
+	// obstacles.go). nil = none. Called from pass-2 AI workers (par.go):
+	// it must only read.
+	Obstacles func(x, y, z, r, h float64) bool
 
 	// Stats for metrics and evidence.
 	Stats Stats

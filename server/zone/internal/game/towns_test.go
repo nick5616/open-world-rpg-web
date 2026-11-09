@@ -31,6 +31,8 @@ type townGround struct {
 
 func (t townGround) AtLevel(y float64) movement.Ground { return t.tg.AtLevel(y) }
 
+func (t townGround) TownCollision() *towns.Collision { return t.tg.C }
+
 func testTowns(t *testing.T) (*npc.World, movement.Ground) {
 	t.Helper()
 	ct := testCaveTerrain(t)
