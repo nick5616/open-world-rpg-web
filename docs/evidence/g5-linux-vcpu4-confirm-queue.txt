@@ -1,0 +1,58 @@
+=== 18:57:09 start vcpu4-run1-clean cpus=0,1,8,9 profile=clean load=0.07 0.23 0.12
+=== 19:01:34 end vcpu4-run1-clean exit=0
+[2026-11-09T19:01:33.054Z] steady state: worst 60 s window tick p99 11.30 ms (budget 12), min awake enemies 2006, samples 40
+[2026-11-09T19:01:33.054Z] after the join ramp (windows from t=45 s): worst 60 s window tick p99 10.56 ms, p50 7.93-8.91 ms, samples 31
+[2026-11-09T19:01:33.055Z] tick phases mean {"combat":1.356,"grid":0.234,"inputs":0.66,"night":0.026,"snapshots":5.116,"towns":0.075,"world":0.461} slowest tick {"combat":4.207,"grid":0.463,"inputs":0.649,"night":0.044,"snapshots":9.802,"towns":0.1,"world":0.481}
+[2026-11-09T19:01:33.057Z] verdict: tick p99 PASS (11.30 ms, t >= 60 s), after the join ramp PASS (10.56 ms), downlink max PASS (150.4 kbps, budget 160), awake >= 2000: yes (2006)
+logs in /tmp/lodestone-wp19-4jY4vi
+=== 19:01:34 start cores4-run1-clean cpus=0-3 profile=clean load=0.23 0.29 0.17
+=== 19:06:00 end cores4-run1-clean exit=0
+[2026-11-09T19:05:58.351Z] steady state: worst 60 s window tick p99 8.94 ms (budget 12), min awake enemies 2006, samples 40
+[2026-11-09T19:05:58.351Z] after the join ramp (windows from t=45 s): worst 60 s window tick p99 8.93 ms, p50 6.05-6.64 ms, samples 31
+[2026-11-09T19:05:58.352Z] tick phases mean {"combat":1.006,"grid":0.239,"inputs":0.46,"night":0.024,"snapshots":4.047,"towns":0.064,"world":0.299} slowest tick {"combat":2.99,"grid":0.299,"inputs":0.433,"night":0.027,"snapshots":8.725,"towns":0.072,"world":0.275}
+[2026-11-09T19:05:58.353Z] verdict: tick p99 PASS (8.94 ms, t >= 60 s), after the join ramp PASS (8.93 ms), downlink max PASS (150.4 kbps, budget 160), awake >= 2000: yes (2006)
+logs in /tmp/lodestone-wp19-Mgi4sE
+=== 19:06:00 start vcpu4-run2-clean cpus=0,1,8,9 profile=clean load=0.30 0.46 0.28
+=== 19:10:25 end vcpu4-run2-clean exit=0
+[2026-11-09T19:10:23.669Z] steady state: worst 60 s window tick p99 11.40 ms (budget 12), min awake enemies 2006, samples 40
+[2026-11-09T19:10:23.669Z] after the join ramp (windows from t=45 s): worst 60 s window tick p99 10.72 ms, p50 7.89-9.00 ms, samples 31
+[2026-11-09T19:10:23.670Z] tick phases mean {"combat":1.333,"grid":0.228,"inputs":0.646,"night":0.025,"snapshots":5.136,"towns":0.071,"world":0.457} slowest tick {"combat":1.563,"grid":0.24,"inputs":0.627,"night":0.015,"snapshots":7.646,"towns":0.045,"world":0.449}
+[2026-11-09T19:10:23.671Z] verdict: tick p99 PASS (11.40 ms, t >= 60 s), after the join ramp PASS (10.72 ms), downlink max PASS (150.4 kbps, budget 160), awake >= 2000: yes (2006)
+logs in /tmp/lodestone-wp19-l6O1ge
+=== 19:10:25 start vcpu4-run3-clean cpus=0,1,8,9 profile=clean load=0.34 0.46 0.32
+=== 19:14:50 end vcpu4-run3-clean exit=0
+[2026-11-09T19:14:48.973Z] steady state: worst 60 s window tick p99 11.06 ms (budget 12), min awake enemies 2006, samples 40
+[2026-11-09T19:14:48.973Z] after the join ramp (windows from t=45 s): worst 60 s window tick p99 10.74 ms, p50 7.84-8.89 ms, samples 31
+[2026-11-09T19:14:48.974Z] tick phases mean {"combat":1.337,"grid":0.232,"inputs":0.643,"night":0.026,"snapshots":5.086,"towns":0.071,"world":0.435} slowest tick {"combat":1.849,"grid":0.214,"inputs":0.845,"night":0.014,"snapshots":8.914,"towns":0.059,"world":0.394}
+[2026-11-09T19:14:48.975Z] verdict: tick p99 PASS (11.06 ms, t >= 60 s), after the join ramp PASS (10.74 ms), downlink max PASS (150.4 kbps, budget 160), awake >= 2000: yes (2006)
+logs in /tmp/lodestone-wp19-rckhIz
+=== 19:14:50 start cores4-run2-clean cpus=0-3 profile=clean load=0.19 0.39 0.32
+=== 19:19:16 end cores4-run2-clean exit=0
+[2026-11-09T19:19:14.271Z] steady state: worst 60 s window tick p99 8.99 ms (budget 12), min awake enemies 2006, samples 40
+[2026-11-09T19:19:14.271Z] after the join ramp (windows from t=45 s): worst 60 s window tick p99 8.75 ms, p50 5.79-6.57 ms, samples 31
+[2026-11-09T19:19:14.272Z] tick phases mean {"combat":1.061,"grid":0.238,"inputs":0.465,"night":0.024,"snapshots":3.889,"towns":0.062,"world":0.302} slowest tick {"combat":2.262,"grid":0.305,"inputs":0.753,"night":0.023,"snapshots":8.188,"towns":0.057,"world":0.575}
+[2026-11-09T19:19:14.273Z] verdict: tick p99 PASS (8.99 ms, t >= 60 s), after the join ramp PASS (8.75 ms), downlink max PASS (150.4 kbps, budget 160), awake >= 2000: yes (2006)
+logs in /tmp/lodestone-wp19-ABnghw
+=== 19:19:16 start vcpu4-thailand cpus=0,1,8,9 profile=thailand load=0.94 0.69 0.46
+=== 19:23:41 end vcpu4-thailand exit=0
+[2026-11-09T19:23:40.066Z] steady state: worst 60 s window tick p99 11.89 ms (budget 12), min awake enemies 2006, samples 40
+[2026-11-09T19:23:40.067Z] after the join ramp (windows from t=45 s): worst 60 s window tick p99 11.31 ms, p50 8.00-9.16 ms, samples 31
+[2026-11-09T19:23:40.067Z] tick phases mean {"combat":0.99,"grid":0.768,"inputs":0.659,"night":0.025,"snapshots":5.298,"towns":0.06,"world":0.339} slowest tick {"combat":2.253,"grid":2.274,"inputs":0.811,"night":0.044,"snapshots":14.456,"towns":0.08,"world":0.408}
+[2026-11-09T19:23:40.069Z] verdict: tick p99 PASS (11.89 ms, t >= 60 s), after the join ramp PASS (11.31 ms), downlink max PASS (151.9 kbps, budget 160), awake >= 2000: yes (2006)
+logs in /tmp/lodestone-wp19-41VWpf
+=== 19:23:41 QUEUE DONE
+=== 19:23:43 start vcpu4-run4-clean cpus=0,1,8,9 profile=clean load=0.98 0.93 0.61
+=== 19:28:09 end vcpu4-run4-clean exit=0
+[2026-11-09T19:28:07.344Z] steady state: worst 60 s window tick p99 11.56 ms (budget 12), min awake enemies 2006, samples 40
+[2026-11-09T19:28:07.344Z] after the join ramp (windows from t=45 s): worst 60 s window tick p99 10.83 ms, p50 7.93-9.01 ms, samples 31
+[2026-11-09T19:28:07.345Z] tick phases mean {"combat":1.392,"grid":0.216,"inputs":0.649,"night":0.026,"snapshots":5.098,"towns":0.068,"world":0.466} slowest tick {"combat":7.297,"grid":0.412,"inputs":0.677,"night":0.042,"snapshots":6.177,"towns":0.098,"world":0.961}
+[2026-11-09T19:28:07.346Z] verdict: tick p99 PASS (11.56 ms, t >= 60 s), after the join ramp PASS (10.83 ms), downlink max PASS (150.4 kbps, budget 160), awake >= 2000: yes (2006)
+logs in /tmp/lodestone-wp19-lF4oNb
+=== 19:28:09 start vcpu4-run5-clean cpus=0,1,8,9 profile=clean load=0.74 0.87 0.67
+=== 19:32:34 end vcpu4-run5-clean exit=0
+[2026-11-09T19:32:33.166Z] steady state: worst 60 s window tick p99 11.04 ms (budget 12), min awake enemies 2006, samples 40
+[2026-11-09T19:32:33.166Z] after the join ramp (windows from t=45 s): worst 60 s window tick p99 10.61 ms, p50 7.72-8.98 ms, samples 31
+[2026-11-09T19:32:33.167Z] tick phases mean {"combat":1.327,"grid":0.246,"inputs":0.645,"night":0.028,"snapshots":5.021,"towns":0.07,"world":0.392} slowest tick {"combat":1.356,"grid":0.15,"inputs":0.814,"night":0.059,"snapshots":9.511,"towns":0.221,"world":1.091}
+[2026-11-09T19:32:33.168Z] verdict: tick p99 PASS (11.04 ms, t >= 60 s), after the join ramp PASS (10.61 ms), downlink max PASS (150.4 kbps, budget 160), awake >= 2000: yes (2006)
+logs in /tmp/lodestone-wp19-Pan1Al
+=== 19:32:34 QUEUE2 DONE

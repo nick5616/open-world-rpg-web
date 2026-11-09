@@ -1,0 +1,28 @@
+G5 Linux vcpu4 confirmation: in-process scenario 1 benchmark on the zone VM (2026-11-09 18:55-18:56 UTC)
+Code: main @ 7ac9da4 (g5-tick-vcpu4 merged), bin/game.test from tools/soak/linux/build.sh.
+VM: lodestone-soak-zone, c2d-standard-16 (AMD EPYC 7B13, 8 cores / 16 threads, siblings n and n+8: cpu0 = 0,8, cpu1 = 1,9),
+Ubuntu 24.04, idle apart from this (load avg 0.16 before).
+Command: cd /opt/lodestone && ./bench-inprocess.sh 3   (LODESTONE_BENCH_TERRAIN=1, GOMAXPROCS=4, -test.cpu 4, 900 ticks,
+taskset -c 0,1,8,9 (4 vCPU = 2 cores + SMT) and 0-3 (4 cores), alternating)
+Reference: docs/evidence/g5-linux-inprocess-bench.txt (main @ 1d1f626: 0,1,8,9 p50 7.27 / p99 11.47 / snapshots 6.05 ms;
+0-3 p50 5.43 / p99 8.27 / snapshots 4.20 ms).
+
+run=1 cpus=0,1,8,9 BenchmarkScale/p300_e2000-4         	     900	   7228344 ns/op	      2000 awake	         0.8268 combat-ms	         1.236 combat-p99-ms	        26.10 cpu-ms	      2300 ents	         0.1617 grid-ms	         0.2073 inputs-ms	       135.0 kbps/client	        12.46 max-ms	         6.822 p50-ms	         9.253 p99-ms	         5.889 snapshots-ms	         7.888 snapshots-p99-ms	         0.08062 world-ms	  796716 B/op	    1953 allocs/op
+run=1 cpus=0-3 BenchmarkScale/p300_e2000-4         	     900	   5286947 ns/op	      2000 awake	         0.6582 combat-ms	         1.028 combat-p99-ms	        18.56 cpu-ms	      2300 ents	         0.1453 grid-ms	         0.1594 inputs-ms	       135.0 kbps/client	         9.143 max-ms	         4.997 p50-ms	         7.035 p99-ms	         4.194 snapshots-ms	         5.829 snapshots-p99-ms	         0.07304 world-ms	  796711 B/op	    1953 allocs/op
+run=2 cpus=0,1,8,9 BenchmarkScale/p300_e2000-4         	     900	   7144330 ns/op	      2000 awake	         0.7987 combat-ms	         1.157 combat-p99-ms	        25.88 cpu-ms	      2300 ents	         0.1555 grid-ms	         0.1993 inputs-ms	       135.0 kbps/client	        14.79 max-ms	         6.797 p50-ms	         9.371 p99-ms	         5.853 snapshots-ms	         7.942 snapshots-p99-ms	         0.07762 world-ms	  796710 B/op	    1953 allocs/op
+run=2 cpus=0-3 BenchmarkScale/p300_e2000-4         	     900	   5283094 ns/op	      2000 awake	         0.6554 combat-ms	         1.008 combat-p99-ms	        18.56 cpu-ms	      2300 ents	         0.1487 grid-ms	         0.1589 inputs-ms	       135.0 kbps/client	        10.24 max-ms	         4.996 p50-ms	         7.043 p99-ms	         4.190 snapshots-ms	         5.810 snapshots-p99-ms	         0.07366 world-ms	  796718 B/op	    1953 allocs/op
+run=3 cpus=0,1,8,9 BenchmarkScale/p300_e2000-4         	     900	   7128568 ns/op	      2000 awake	         0.7887 combat-ms	         1.146 combat-p99-ms	        25.84 cpu-ms	      2300 ents	         0.1558 grid-ms	         0.1992 inputs-ms	       135.0 kbps/client	        14.89 max-ms	         6.792 p50-ms	         9.378 p99-ms	         5.851 snapshots-ms	         7.956 snapshots-p99-ms	         0.07585 world-ms	  796710 B/op	    1953 allocs/op
+run=3 cpus=0-3 BenchmarkScale/p300_e2000-4         	     900	   5277698 ns/op	      2000 awake	         0.6671 combat-ms	         1.033 combat-p99-ms	        18.53 cpu-ms	      2300 ents	         0.1423 grid-ms	         0.1595 inputs-ms	       135.0 kbps/client	        10.01 max-ms	         4.988 p50-ms	         6.923 p99-ms	         4.175 snapshots-ms	         5.785 snapshots-p99-ms	         0.07475 world-ms	  796707 B/op	    1953 allocs/op
+
+Zone VM topology (read after the soaks, same VM):
+7.0.0-1017-gcp
+Model name:                              AMD EPYC 7B13
+Thread(s) per core:                      2
+Core(s) per socket:                      8
+cpu0 siblings 0,8
+cpu1 siblings 1,9
+cpu2 siblings 2,10
+cpu3 siblings 3,11
+cpu8 siblings 0,8
+cpu9 siblings 1,9
+Mem: 62 GB total

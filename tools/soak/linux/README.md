@@ -110,7 +110,11 @@ cd /opt/lodestone && ./bench-inprocess.sh        # 3 runs each on 0,1,8,9 and 0-
 
 prints one `BenchmarkScale` line per run (tick p50/p99/max, phase means,
 `snapshots-p99-ms`, `combat-p99-ms`, `cpu-ms` = process CPU per tick).
-Compare with `docs/evidence/g5-linux-inprocess-bench.txt` (main @ 1d1f626).
+Compare with `docs/evidence/g5-linux-inprocess-bench.txt` (main @ 1d1f626) and
+`docs/evidence/g5-linux-vcpu4-confirm-inprocess.txt` (main @ 7ac9da4, after the 4 vCPU follow-up).
+`PREFIX=<name> ./run-s1.sh ...` names the evidence files `<name>-s1-<tag>.*` (default `g5-linux`); the
+4 vCPU confirmation (`docs/evidence/g5-linux-vcpu4-confirm-summary.md`: 5 vcpu4 runs, 2 cores4, 1 vcpu4
+thailand, 42 min, ~$0.80) used `g5-linux-vcpu4-confirm`.
 The scale and handoff drivers now start their zones with
 `LODESTONE_ZONE_NO_DEMONS=1` (night demons killed and teleported bots), and
 zones default to GOGC 300 with a 3 GiB soft limit (`server/zone/gc.go`).
