@@ -3,7 +3,7 @@ import type { Event as ZoneEvent } from '@lodestone/contracts';
 import { CUES, type CueId } from './cues';
 import { CUE_FILES } from './cueFiles.gen';
 import { assetNames } from './assets';
-import { ELEMENTS, TRIGGERS, ZONE_EVENTS, castCue, impactCue, levelUpCue, lootCue, runTrigger, runZoneEvent, swingCue, type TriggerApi, type TriggerName } from './triggers';
+import { ELEMENTS, TRIGGERS, ZONE_EVENTS, castCue, impactCue, levelUpCue, lootCue, runTrigger, runZoneEvent, stepCue, swingCue, type TriggerApi, type TriggerName } from './triggers';
 import { loadAudioPrefs, DEFAULT_AUDIO_PREFS } from './settings';
 import { sliderToGain } from './context';
 
@@ -47,6 +47,16 @@ describe('trigger map', () => {
     const impacts = new Set(ELEMENTS.map(impactCue));
     expect(casts.size).toBe(8);
     expect(impacts.size).toBe(8);
+  });
+
+  it('footsteps by surface', () => {
+    expect(['soft', 'hard', 'wood', 'snow', 'water', undefined].map(stepCue)).toEqual(['step_soft', 'step_hard', 'step_wood', 'step_snow', 'step_water', 'step_soft']);
+    const { a, played } = api();
+    runTrigger('step', { surface: 'wood' }, a);
+    expect(played[0].cue).toBe('step_wood');
+    // wooden steps reuse the stone knocks, lower
+    expect(CUES.step_wood.files).toEqual(CUES.step_hard.files);
+    expect(CUES.step_wood.rate).toBeLessThan(1);
   });
 
   it('weapons swing differently', () => {

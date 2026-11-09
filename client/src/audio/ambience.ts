@@ -1,84 +1,82 @@
-// Synthesized ambience beds (no assets): wind, rain, fire crackle, night
-// insects, underwater hush. They are continuous textures where a sample
-// loop would either repeat audibly or cost megabytes, so they are built
-// from noise in the graph and steered by a handful of gains:
+// Synthesized ambience beds (no assets): wind, rain, rain on the roof,
+// thunder, night insects, underwater hush, cave drips. They are continuous
+// textures where a sample loop would either repeat audibly or cost
+// megabytes, so they are built from noise in the graph and steered by a
+// handful of gains:
 //
 //   wind     brown-ish noise -> wandering band-pass; louder up high, in
 //            storms, and with your speed while gliding or falling
-//   rain     white noise through a high/low-pass pair plus random droplets
-//   fire     band-passed rumble + random crackle pops, by burning cells near
+//   rain     white noise through a high/low-pass pair plus random droplets,
+//            at the rain intensity (acoustics.ts RainIntensity)
+//   roof     rain drumming on the roof over your head (synth.ts roofRain),
+//            rising as the open-air rain is shut out
+//   thunder  rare distant rumbles while it pours (acoustics.ts thunderFor)
 //   insects  4.6 kHz chirps in pulse trains, at night on the surface
 //   water    low-passed rumble while swimming / submerged
+//   drips    falling sine blips in caves, mostly reverb
 //
+// Wind, open-air rain, thunder and insects share one "weather" submix that
+// the shelter (porch, walls, cave depth) fades and low-passes as a whole:
+//
+//   wind ───┐
+//   rain ───┼─> weather low-pass ─> weather gain ─┐
+//   thunder ┤                                     ├─> out (ambience bus)
+//   insects ┘          roof rain ─> roof gain ────┤
+//                      water, drips ──────────────┘
+//
+// Fires and rivers are positional now (loops.ts), not beds.
 // 3d-portfolio-website's roomSoundscape.ts crossfades per room; here the
 // "room" is a continuous mix of these targets (setTargets), smoothed with
 // setTargetAtTime so nothing clicks.
+
+import { thunderFor } from './acoustics';
+import { noiseBuffer, renderLoop } from './synth';
 
 export interface AmbienceTargets {
   /** 0..1 */
   wind: number;
   /** Wind band centre brightness 0..1 (speed). */
   windSpeed: number;
+  /** Open-air rain 0..1 (intensity). */
   rain: number;
-  fire: number;
+  /** Rain on the roof over you 0..1. */
+  roofRain: number;
   insects: number;
   water: number;
   /** Cave water drips (deep underground), through the cave reverb. */
   drips: number;
+  /** The weather submix (wind, rain, thunder, insects) through the shelter. */
+  weatherGain: number;
+  weatherLowpassHz: number;
 }
 
-/**
- * Yields to the event loop (WP19b: buffers of ~1 M samples synthesized in one
- * go were a 70-90 ms main-thread long task on the first key press, when the
- * engine unlocks; in slices of SYNTH_SLICE samples each piece is ~1 ms).
- */
-export const SYNTH_SLICE = 32768;
-export const yieldToLoop = () => new Promise<void>((r) => setTimeout(r, 0));
-
-async function noiseBuffer(ctx: AudioContext, seconds: number, brown: boolean): Promise<AudioBuffer> {
-  const len = Math.floor(ctx.sampleRate * seconds);
-  const b = ctx.createBuffer(2, len, ctx.sampleRate);
-  for (let ch = 0; ch < 2; ch++) {
-    const d = b.getChannelData(ch);
-    let last = 0;
-    for (let i = 0; i < len; i++) {
-      if (i % SYNTH_SLICE === SYNTH_SLICE - 1) await yieldToLoop();
-      const w = Math.random() * 2 - 1;
-      if (brown) {
-        last = (last + 0.02 * w) / 1.02;
-        d[i] = last * 3.5;
-      } else d[i] = w;
-    }
-    // Seamless loop: crossfade the tail into the head.
-    const fade = Math.min(len >> 3, ctx.sampleRate >> 2);
-    for (let i = 0; i < fade; i++) {
-      const a = i / fade;
-      d[i] = d[i] * a + d[len - fade + i] * (1 - a);
-    }
-  }
-  return b;
-}
+const ZERO: AmbienceTargets = { wind: 0, windSpeed: 0, rain: 0, roofRain: 0, insects: 0, water: 0, drips: 0, weatherGain: 1, weatherLowpassHz: 16000 };
 
 export class Ambience {
   private wind: GainNode;
   private windBand: BiquadFilterNode;
   private rain: GainNode;
-  private fire: GainNode;
+  private roof: GainNode;
   private insects: GainNode;
   private water: GainNode;
+  private weatherLp: BiquadFilterNode;
+  private weather: GainNode;
   private sources: AudioScheduledSourceNode[] = [];
-  private crackleAt = 0;
   private dropAt = 0;
   private chirpAt = 0;
-  private targets: AmbienceTargets = { wind: 0, windSpeed: 0, rain: 0, fire: 0, insects: 0, water: 0, drips: 0 };
+  private thunderAt = 0;
+  private targets: AmbienceTargets = { ...ZERO };
   private white: AudioBuffer | null = null; // WP19b: null until synthesized (noiseBuffer)
+  private brown: AudioBuffer | null = null;
   private disposed = false;
   private dripAt = 0;
+  /** Thunder rumbles started (debug). */
+  thunders = 0;
 
   constructor(
     private readonly ctx: AudioContext,
     private readonly out: AudioNode,
-    /** The cave reverb send (drips only make sense wet). */
+    /** The reverb send (drips only make sense wet). */
     private readonly wet: AudioNode | null = null,
   ) {
     // WP19b: the noise is synthesized in slices (noiseBuffer); each bed's
@@ -87,10 +85,11 @@ export class Ambience {
     const brown = noiseBuffer(ctx, 6, true);
     const white = noiseBuffer(ctx, 4, false);
     void white.then((b) => (this.white = b));
-    const loop = (buf: Promise<AudioBuffer>) => {
+    void brown.then((b) => (this.brown = b));
+    const loop = (buf: Promise<AudioBuffer | null>) => {
       const head = ctx.createGain();
       void buf.then((b) => {
-        if (this.disposed) return;
+        if (this.disposed || !b) return;
         const s = ctx.createBufferSource();
         s.buffer = b;
         s.loop = true;
@@ -100,6 +99,13 @@ export class Ambience {
       });
       return head;
     };
+    // The weather submix.
+    this.weatherLp = ctx.createBiquadFilter();
+    this.weatherLp.type = 'lowpass';
+    this.weatherLp.frequency.value = 16000;
+    this.weatherLp.Q.value = 0.5;
+    this.weather = ctx.createGain();
+    this.weatherLp.connect(this.weather).connect(out);
     // wind
     this.windBand = ctx.createBiquadFilter();
     this.windBand.type = 'bandpass';
@@ -107,7 +113,7 @@ export class Ambience {
     this.windBand.Q.value = 0.9;
     this.wind = ctx.createGain();
     this.wind.gain.value = 0;
-    loop(brown).connect(this.windBand).connect(this.wind).connect(out);
+    loop(brown).connect(this.windBand).connect(this.wind).connect(this.weatherLp);
     // A slow LFO wanders the band so the wind gusts.
     const lfo = ctx.createOscillator();
     lfo.frequency.value = 0.09;
@@ -116,7 +122,7 @@ export class Ambience {
     lfo.connect(lfoGain).connect(this.windBand.frequency);
     lfo.start();
     this.sources.push(lfo);
-    // rain
+    // rain (open air)
     const hp = ctx.createBiquadFilter();
     hp.type = 'highpass';
     hp.frequency.value = 900;
@@ -125,21 +131,16 @@ export class Ambience {
     lp.frequency.value = 7000;
     this.rain = ctx.createGain();
     this.rain.gain.value = 0;
-    loop(white).connect(hp).connect(lp).connect(this.rain).connect(out);
-    // fire: rumble bed + pops (in tick)
-    const fb = ctx.createBiquadFilter();
-    fb.type = 'bandpass';
-    fb.frequency.value = 260;
-    fb.Q.value = 0.7;
-    this.fire = ctx.createGain();
-    this.fire.gain.value = 0;
-    const fireBed = ctx.createGain();
-    fireBed.gain.value = 0.6;
-    loop(brown).connect(fb).connect(fireBed).connect(this.fire).connect(out);
+    loop(white).connect(hp).connect(lp).connect(this.rain).connect(this.weatherLp);
+    // rain on the roof (rendered texture), outside the weather submix: it is
+    // the sound of the shelter itself.
+    this.roof = ctx.createGain();
+    this.roof.gain.value = 0;
+    loop(renderLoop(ctx, 'roofRain')).connect(this.roof).connect(out);
     // insects + water
     this.insects = ctx.createGain();
     this.insects.gain.value = 0;
-    this.insects.connect(out);
+    this.insects.connect(this.weatherLp);
     const wl = ctx.createBiquadFilter();
     wl.type = 'lowpass';
     wl.frequency.value = 380;
@@ -149,26 +150,24 @@ export class Ambience {
   }
 
   setTargets(t: AmbienceTargets): void {
-    const ctx = this.ctx;
-    const now = ctx.currentTime;
+    const now = this.ctx.currentTime;
     const tc = 0.6;
     this.targets = t;
     this.wind.gain.setTargetAtTime(t.wind * 0.55, now, tc);
     this.windBand.Q.setTargetAtTime(0.9 + t.windSpeed * 1.5, now, tc);
     this.windBand.frequency.setTargetAtTime(380 + t.windSpeed * 900, now, 0.3);
-    this.rain.gain.setTargetAtTime(t.rain * 0.22, now, 1.2);
-    this.fire.gain.setTargetAtTime(t.fire * 0.5, now, 0.8);
+    this.rain.gain.setTargetAtTime(t.rain * 0.22, now, 0.8);
+    this.roof.gain.setTargetAtTime(t.roofRain * 0.5, now, 0.35);
     this.insects.gain.setTargetAtTime(t.insects * 0.05, now, 2);
     this.water.gain.setTargetAtTime(t.water * 0.7, now, 0.2);
+    // Shelter: quick enough to follow a doorway (~0.3 s), slow enough not to zipper.
+    this.weather.gain.setTargetAtTime(t.weatherGain, now, 0.25);
+    this.weatherLp.frequency.setTargetAtTime(Math.max(120, t.weatherLowpassHz), now, 0.25);
   }
 
   /** Random events of the beds (call every frame or so). */
   tick(nowMs: number): void {
     const t = this.targets;
-    if (t.fire > 0.05 && nowMs > this.crackleAt) {
-      this.crackle(t.fire);
-      this.crackleAt = nowMs + 40 + Math.random() * (260 / t.fire);
-    }
     if (t.rain > 0.1 && nowMs > this.dropAt) {
       this.drop(t.rain);
       this.dropAt = nowMs + 30 + Math.random() * (120 / t.rain);
@@ -181,6 +180,44 @@ export class Ambience {
       this.drip();
       this.dripAt = nowMs + 1500 + Math.random() * 5000;
     }
+    // Thunder while it pours: a strike somewhere 0.6-5 km away every
+    // 25-80 s; its rumble arrives (and is as loud and dark) as far as it is.
+    if (t.rain > 0.6) {
+      if (!this.thunderAt) this.thunderAt = nowMs + 8000 + Math.random() * 30000;
+      else if (nowMs > this.thunderAt) {
+        this.thunder(600 + Math.random() * 4400);
+        this.thunderAt = nowMs + 25000 + Math.random() * 55000;
+      }
+    } else this.thunderAt = 0;
+  }
+
+  /** A thunder rumble from a strike `distanceM` away (into the weather submix: muffled indoors, faded in caves). */
+  thunder(distanceM: number): void {
+    const ctx = this.ctx;
+    if (!this.brown) return;
+    const th = thunderFor(distanceM);
+    const t = ctx.currentTime + th.delayS;
+    const s = ctx.createBufferSource();
+    s.buffer = this.brown;
+    s.playbackRate.value = 0.6 + Math.random() * 0.25;
+    const f = ctx.createBiquadFilter();
+    f.type = 'lowpass';
+    f.frequency.value = th.lowpassHz;
+    f.Q.value = 0.6;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(th.gain, t + th.attackS);
+    // A second roll a moment later, then the long decay.
+    g.gain.linearRampToValueAtTime(th.gain * 0.55, t + th.attackS + 0.6);
+    g.gain.linearRampToValueAtTime(th.gain * 0.8, t + th.attackS + 1.1);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + th.attackS + 1.1 + th.decayS);
+    const p = ctx.createStereoPanner();
+    p.pan.value = Math.random() * 1.2 - 0.6;
+    s.connect(f).connect(g).connect(p).connect(this.weatherLp);
+    const dur = th.attackS + 1.2 + th.decayS;
+    s.start(t, Math.random() * Math.max(0, this.brown.duration - dur * s.playbackRate.value - 0.1));
+    s.stop(t + dur);
+    this.thunders++;
   }
 
   /** A water drop in a cave (from WP09's caveAudio.ts): a falling sine blip, mostly reverb. */
@@ -222,10 +259,6 @@ export class Ambience {
     s.start(t, Math.random() * 3, seconds + 0.02);
   }
 
-  private crackle(level: number): void {
-    this.burst(0.012 + Math.random() * 0.03, 'bandpass', 1500 + Math.random() * 3500, 1.5, 0.3 + Math.random() * 0.5 * level, this.fire, Math.random() * 1.6 - 0.8);
-  }
-
   private drop(level: number): void {
     this.burst(0.01 + Math.random() * 0.02, 'bandpass', 2500 + Math.random() * 5000, 4, 0.05 + 0.1 * level * Math.random(), this.rain, Math.random() * 2 - 1);
   }
@@ -248,6 +281,11 @@ export class Ambience {
     o.connect(g).connect(p).connect(this.insects);
     o.start(t);
     o.stop(t + pulses * 0.055 + 0.05);
+  }
+
+  /** Current targets (debug). */
+  get current(): Readonly<AmbienceTargets> {
+    return this.targets;
   }
 
   dispose(): void {

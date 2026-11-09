@@ -8,6 +8,7 @@
 
 import type { MoveMode } from '../state/live';
 import type { TriggerName, TriggerPayload } from './triggers';
+import type { StepSurface } from './surface';
 
 export interface MoveSnapshot {
   mode: MoveMode;
@@ -18,6 +19,8 @@ export interface MoveSnapshot {
   /** 0..1 */
   underground: number;
   inTown: boolean;
+  /** What is underfoot (surface.ts classifySurface, sampled by the engine); else stone in towns and caves, soft ground elsewhere. */
+  surface?: StepSurface;
 }
 
 export type Fired = [TriggerName, TriggerPayload];
@@ -50,7 +53,7 @@ export class MovementSounds {
       this.stepAcc = this.climbAcc = 0;
       return out;
     }
-    const surface = s.underground > 0.5 || s.inTown ? 'hard' : 'soft';
+    const surface: StepSurface = s.surface ?? (s.underground > 0.5 || s.inTown ? 'hard' : 'soft');
     if (!s.grounded && s.mode !== 'swim' && s.mode !== 'climb') this.fallSpeed = Math.max(this.fallSpeed, -s.vel.y);
 
     // Footsteps

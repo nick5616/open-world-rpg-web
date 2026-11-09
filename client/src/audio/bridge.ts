@@ -25,6 +25,8 @@ export const audioWorld = {
   underground: 0,
   /** Current cave chamber radius (m), for the reverb tail. */
   chamberRadius: 8,
+  /** Horizontal distance to the nearest cave opening (m; CaveManager), for how much surface weather leaks in. */
+  caveMouthM: Infinity,
   /** Inside a settlement's radius (set by the engine's town probe). */
   inTown: false,
   /** Enemies engaged with the player recently (engine-computed). */
