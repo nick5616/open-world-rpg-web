@@ -20,7 +20,7 @@ import { FANFARE_MS, isAttuned, pruneProgression, setPanelOpen, useProgression, 
 import { towerPrompt, type TowerPrompt, type TowerLike } from './towerPrompt';
 
 const GOLD = '#ffd166';
-const PANEL: CSSProperties = { background: 'rgba(12,14,20,0.9)', border: '1px solid rgba(255,209,102,0.35)', borderRadius: 6, color: '#f1f3f5', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' };
+const PANEL: CSSProperties = { background: 'rgba(12,14,20,0.94)', border: '1px solid rgba(255,209,102,0.35)', borderRadius: 6, color: '#f1f3f5', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' };
 
 // ---- the level-up fanfare ----
 
@@ -79,6 +79,8 @@ const NOTICE_ACCENT: Record<Notice['kind'], string> = { area: GOLD, danger: '#ff
 
 function AreaNotices() {
   const notices = useProgression((s) => s.notices);
+  const panelOpen = useProgression((s) => s.panelOpen);
+  if (panelOpen) return null; // the panel sits where the notices do
   return (
     <div style={{ position: 'fixed', left: 18, top: '28%', display: 'flex', flexDirection: 'column', gap: 8, zIndex: 13, pointerEvents: 'none', maxWidth: 380 }}>
       {notices.map((n) => (
@@ -214,6 +216,7 @@ function CharacterPanel() {
                 {s.tree} · tier {s.tier}
                 {s.passive ? ' · passive' : ''}
               </span>
+              {s.killsDemons && <span style={{ color: GOLD, marginLeft: 6, fontSize: 11 }}>kills demons</span>}
             </span>
             <button data-testid={`learn-${s.key}`} disabled={free <= 0 || !actions} onClick={() => actions?.learn(s.id)} style={{ font: '12px system-ui, sans-serif', padding: '2px 10px', cursor: free > 0 ? 'pointer' : 'default' }}>
               Learn

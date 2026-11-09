@@ -107,6 +107,8 @@ export interface LearnableSpell {
   /** Prereqs met and the tier is open: a skill point learns it. */
   ready: boolean;
   passive: boolean;
+  /** Light: the anti-demon school (spec 8). */
+  killsDemons: boolean;
 }
 
 /** Tree nodes you could learn next (prereqs met), ready or level-locked. */
@@ -120,10 +122,11 @@ export function learnable(known: readonly string[], level: number): LearnableSpe
       const sp = COMBAT.spells.find((s) => s.key === node.key);
       if (!sp) continue;
       const needsLevel = tierLevel(sp.tier);
-      out.push({ key: sp.key, id: sp.id, name: sp.name, tree: tree.key, tier: sp.tier, needsLevel, ready: level >= needsLevel, passive: sp.type === 'passive' });
+      out.push({ key: sp.key, id: sp.id, name: sp.name, tree: tree.key, tier: sp.tier, needsLevel, ready: level >= needsLevel, passive: sp.type === 'passive', killsDemons: tree.killsDemons });
     }
   }
-  return out.sort((a, b) => Number(b.ready) - Number(a.ready) || a.tier - b.tier || a.tree.localeCompare(b.tree));
+  // Ready first; Light (the answer to demons) leads, then by tier.
+  return out.sort((a, b) => Number(b.ready) - Number(a.ready) || Number(b.killsDemons) - Number(a.killsDemons) || a.tier - b.tier || a.tree.localeCompare(b.tree));
 }
 
 /** Total XP that reaches `level` (WP12 curve 60 + 40 x level). */
