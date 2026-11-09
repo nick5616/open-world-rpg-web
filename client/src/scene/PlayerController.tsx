@@ -188,7 +188,8 @@ export function PlayerController({ onStep, driver }: Props) {
       const c = boom.update(vw.eye, lk.yaw, lk.pitch, vs.shoulder, vs.distance, probe.blocked, delta);
       camera.position.set(c.x, c.y, c.z);
       vw.boom = boom.dist;
-      vw.hideBody = boom.dist < THIRD.hideAvatarBelow;
+      // with a little hysteresis, so a boom hovering at the limit doesn't flicker
+      vw.hideBody = boom.dist < THIRD.hideAvatarBelow + (vw.hideBody && vw.third ? 0.15 : 0);
       // Converge the combat aim on what the crosshair (the camera ray) is on.
       forwardOf(lk.yaw, lk.pitch, fwd);
       aimSpheres.length = 0;

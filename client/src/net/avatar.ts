@@ -30,6 +30,22 @@ import { AvatarAnimator, type AnimInput, type LimbPose, type Pose } from './avat
 
 export const LOD_MID_M = 25;
 export const LOD_LOW_M = 80;
+
+/**
+ * A crowd cap on full rigs: when more than `max` players were inside the
+ * full-rig radius last frame, the radius shrinks (to at least 8 m) until
+ * about that many are; it grows back to LOD_MID_M as the crowd thins. One
+ * per renderer, stepped once a frame with last frame's count.
+ */
+export class FullRigBudget {
+  radius = LOD_MID_M;
+  constructor(readonly max = 32) {}
+  step(fullLastFrame: number): number {
+    if (fullLastFrame > this.max) this.radius = Math.max(8, this.radius * 0.92);
+    else if (fullLastFrame < this.max * 0.75) this.radius = Math.min(LOD_MID_M, this.radius * 1.03 + 0.05);
+    return this.radius;
+  }
+}
 const NAMEPLATE_Y = 2.25;
 
 // Rig dimensions (m, rest pose). Feet at y = 0, facing -Z.
@@ -72,6 +88,8 @@ let shared: {
   headMid: THREE.BufferGeometry;
   low: THREE.BufferGeometry;
   visorMat: THREE.Material;
+  legMat: THREE.Material;
+  skinMat: THREE.Material;
   /** WP10: the glider wing shown while the activity bit says gliding. */
   glider: THREE.BufferGeometry;
   gliderMat: THREE.Material;
@@ -117,6 +135,9 @@ function res() {
       headMid: new THREE.SphereGeometry(0.2, 6, 4),
       low: new THREE.BoxGeometry(0.6, 1.8, 0.4),
       visorMat: new THREE.MeshStandardMaterial({ color: 0x1b1f2a, roughness: 0.3, metalness: 0.4 }),
+      // playtest 2: legs and head read apart from the coloured tunic (same draw calls)
+      legMat: new THREE.MeshStandardMaterial({ color: 0x3a4152, roughness: 0.85 }),
+      skinMat: new THREE.MeshStandardMaterial({ color: 0xd2a77f, roughness: 0.75 }),
       glider: new THREE.BoxGeometry(2.2, 0.04, 0.9),
       gliderMat: new THREE.MeshStandardMaterial({ color: 0xc98a3a, roughness: 0.8, side: THREE.DoubleSide }),
       glowTex: glowTexture(),
@@ -153,11 +174,13 @@ function glowMat(color: string): THREE.SpriteMaterial {
  * +Y points and where its +Z faces. The bow goes in the left hand.
  */
 const HOLD: Record<WeaponKind, { up: [number, number, number]; face: [number, number, number]; left?: boolean }> = {
-  sword: { up: [0, 0.85, -0.75], face: [1, 0, 0] },
-  spear: { up: [0, 1, -0.35], face: [1, 0, 0] },
+  // playtest 2: angled out ahead of the (bent) forearm, so a third-person
+  // camera behind the player sees the blade instead of it hiding along the arm
+  sword: { up: [0.3, 0.3, -1], face: [1, 0, 0] },
+  spear: { up: [0.08, 0.5, -1], face: [1, 0, 0] },
   bow: { up: [0, 1, -0.15], face: [0, 0, 1], left: true },
-  staff: { up: [0, 1, -0.12], face: [1, 0, 0] },
-  wand: { up: [0, 0.35, -1], face: [1, 0, 0] },
+  staff: { up: [0.05, 1, -0.3], face: [1, 0, 0] },
+  wand: { up: [0.25, 0.3, -1], face: [1, 0, 0] },
 };
 /** Mid LOD: the weapon hangs this far below its shoulder pivot (the old one-piece arm's hand). */
 const MID_HAND_Y = -0.66;
@@ -195,7 +218,9 @@ export class Avatar {
   private weaponType = -1;
   /** The weapon kind in hand (classifies Event 214 actions). */
   weaponKind: WeaponKind | null = null;
-  private lod = new THREE.LOD();
+  /** The three figures (high, mid, low); only the one in use is in the scene graph. */
+  private levels: THREE.Object3D[] = [];
+  private shown = -1;
   private plate: THREE.Sprite | null = null;
   private plateCanvas: HTMLCanvasElement | null = null;
   private plateTex: THREE.CanvasTexture | null = null;
@@ -245,7 +270,7 @@ export class Avatar {
     this.torso.add(chest);
     this.neck.position.y = NECK_Y;
     this.torso.add(this.neck);
-    const head = mesh(r.head);
+    const head = mesh(r.head, r.skinMat);
     head.position.y = 0.12;
     const visor = mesh(r.visor, r.visorMat);
     visor.position.set(0, 0.15, -0.18); // yaw 0 faces -Z (camera convention)
@@ -273,10 +298,10 @@ export class Avatar {
     const leg = (side: number): Leg => {
       const hip = new THREE.Group();
       hip.position.set(side * HIP_X, 0, 0);
-      const thigh = mesh(r.thigh);
+      const thigh = mesh(r.thigh, r.legMat);
       const knee = new THREE.Group();
       knee.position.y = -THIGH;
-      knee.add(mesh(r.shin));
+      knee.add(mesh(r.shin, r.legMat));
       hip.add(thigh, knee);
       this.body.add(hip);
       return { hip, knee };
@@ -314,10 +339,9 @@ export class Avatar {
 
     const low = new THREE.Mesh(r.low, mat);
 
-    this.lod.addLevel(high, 0);
-    this.lod.addLevel(mid, LOD_MID_M);
-    this.lod.addLevel(low, LOD_LOW_M);
-    this.root.add(this.lod);
+    // Manual LOD (not THREE.LOD): the figures not in use stay out of the
+    // graph, so neither the world-matrix pass nor the renderer walks them.
+    this.levels = [high, mid, low];
 
     if (opts.nameplate !== false) {
       this.plateCanvas = document.createElement('canvas');
@@ -334,7 +358,7 @@ export class Avatar {
 
   /** Which LOD level is showing (0 high, 1 mid, 2 low): for tests and captures. */
   get lodLevel(): number {
-    return this.lod.getCurrentLevel();
+    return Math.max(0, this.shown);
   }
 
   /** pt/ux: show the weapon a player entity's typeId names (only rebuilt when it changes). */
@@ -375,13 +399,22 @@ export class Avatar {
    * Per frame: place, pick the animation band from the camera distance,
    * step the animator and pose the rig. `typeId` is the weapon look.
    */
-  update(v: RemoteView, camera: THREE.Camera, dt: number): void {
+  update(v: RemoteView, camera: THREE.Camera, dt: number, fullM: number = LOD_MID_M): void {
     this.root.position.set(v.x, v.y, v.z);
     this.root.rotation.y = v.yaw;
     if ((v.typeId ?? 0) !== this.weaponType) this.setWeapon(v.typeId ?? 0);
 
     const d = camera.position.distanceTo(this.root.position);
-    this.animLevel = d < LOD_MID_M ? 0 : d < LOD_LOW_M ? 1 : 2;
+    // 1 m of hysteresis at each band edge: no flicker for someone standing on it
+    const s = this.shown;
+    const mid = fullM + (s === 0 ? 1 : s === 1 ? -1 : 0);
+    const low = LOD_LOW_M + (s === 1 ? 1 : s === 2 ? -1 : 0);
+    this.animLevel = d < mid ? 0 : d < low ? 1 : 2;
+    if (this.animLevel !== this.shown) {
+      if (this.shown >= 0) this.root.remove(this.levels[this.shown]);
+      this.root.add(this.levels[this.animLevel]);
+      this.shown = this.animLevel;
+    }
     const glider = (v.activity & Activity.gliding) !== 0;
     this.glider.visible = glider;
     if (this.animLevel < 2) {

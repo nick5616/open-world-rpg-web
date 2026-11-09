@@ -150,7 +150,8 @@ export function FirstPersonWeapon() {
     if (!rt) return;
     // Playtest 2: third person draws the weapon in the avatar's hand; the
     // view model keeps running hidden (the probe's hitstop measurement).
-    rig.root.visible = !view.third;
+    // (Backed against a wall the boom collapses into the head: the view model returns.)
+    rig.root.visible = !view.third || view.hideBody;
     const now = performance.now();
     tickWeaponMaterial(scene, now);
 

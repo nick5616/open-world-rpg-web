@@ -84,5 +84,16 @@ describe('remote avatar animation (playtest 2)', () => {
     a.update(v, cam, 1 / 60);
     expect(a.animLevel).toBe(2);
     expect(a.anim.time).toBe(t); // the animator isn't even stepped
+    // only the figure in use is in the scene graph (the matrix pass skips the others)
+    expect(a.root.children.filter((c) => c.type === 'Group' || c.type === 'Mesh').length).toBeLessThanOrEqual(2);
+  });
+
+  it('a dense crowd shrinks the full-rig radius to its budget, and it recovers', async () => {
+    const { FullRigBudget, LOD_MID_M } = await import('./avatar');
+    const b = new FullRigBudget(32);
+    for (let i = 0; i < 60; i++) b.step(120);
+    expect(b.radius).toBe(8);
+    for (let i = 0; i < 200; i++) b.step(5);
+    expect(b.radius).toBe(LOD_MID_M);
   });
 });

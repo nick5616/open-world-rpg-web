@@ -601,7 +601,10 @@ export class AvatarAnimator {
         const tuck = Math.sin(Math.PI * clamp(u, 0, 1));
         if (this.rollSide !== 0) p.bodyRoll -= TAU * k * this.rollSide;
         else p.bodyPitch -= TAU * k * this.rollFwd;
-        p.bodyY -= 0.45 * tuck;
+        // curled up (torso and head forward) so the roll stays above the ground
+        p.bodyY -= 0.3 * tuck;
+        p.torsoPitch -= 0.85 * tuck;
+        p.headPitch -= 0.5 * tuck;
         set(R, 1.0, 0.2, 1.4);
         set(L, 1.0, 0.2, 1.4);
         set(this.t.r, 1.2, 0.05, 1.8);

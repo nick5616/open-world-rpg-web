@@ -13,12 +13,13 @@ import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { EntityKind, type Event as ZoneEvent } from '@lodestone/contracts';
 import { netStats } from '../state/live';
-import { Avatar } from './avatar';
+import { Avatar, FullRigBudget } from './avatar';
 import { classifyAction, EV_MINE_SWING, MINE_SPEC } from './avatarAnim';
 import { drawnRemotes } from './netStore';
 import type { RemoteView } from './interpolation';
 import type { ZoneSession } from './zoneSession';
 import { EV } from '../combat/events';
+import { DEBUG } from '../config';
 
 /** Route one zone Event to the avatar it animates (exported for tests). */
 export function animateFromEvent(e: ZoneEvent, avatars: ReadonlyMap<number, Avatar>): boolean {
@@ -52,6 +53,7 @@ export function RemotePlayers({ session }: { session: ZoneSession }) {
   const views = useMemo<RemoteView[]>(() => [], []);
   const seen = useMemo(() => new Set<number>(), []);
   const hud = useMemo(() => ({ last: 0 }), []);
+  const budget = useMemo(() => ({ rigs: new FullRigBudget(), full: 0 }), []);
 
   useEffect(
     () => () => {
@@ -60,6 +62,13 @@ export function RemotePlayers({ session }: { session: ZoneSession }) {
     },
     [avatars],
   );
+
+  useEffect(() => {
+    if (!DEBUG || typeof window === 'undefined') return;
+    // Headless captures: what each remote avatar is doing.
+    (window as unknown as { __lodestoneAvatars?: unknown }).__lodestoneAvatars = () =>
+      [...avatars.values()].map((a) => ({ id: a.id, action: a.anim.current, animLevel: a.animLevel, lod: a.lodLevel, weapon: a.weaponKind, x: a.root.position.x, y: a.root.position.y, z: a.root.position.z, glow: a.pose.glow, bowDraw: a.pose.bowDraw }));
+  }, [avatars]);
 
   useEffect(() => {
     const l = (e: ZoneEvent) => {
@@ -74,6 +83,9 @@ export function RemotePlayers({ session }: { session: ZoneSession }) {
   useFrame((_, delta) => {
     session.views(delta * 1000, views);
     seen.clear();
+    // Playtest 2: at most ~32 full animated rigs; a dense crowd shrinks their radius.
+    const fullM = budget.rigs.step(budget.full);
+    budget.full = 0;
     for (const v of views) {
       if (v.kind !== EntityKind.player) continue; // enemies etc. get their own renderers (WP10+)
       seen.add(v.id);
@@ -83,7 +95,8 @@ export function RemotePlayers({ session }: { session: ZoneSession }) {
         avatars.set(v.id, a);
         group.add(a.root);
       }
-      a.update(v, camera, delta);
+      a.update(v, camera, delta, fullM);
+      if (a.animLevel === 0) budget.full++;
     }
     for (const [id, a] of avatars) {
       if (!seen.has(id)) {
