@@ -9,9 +9,9 @@
 //    horizontal speed, the Activity bits (climbing, gliding, swimming,
 //    airborne), health % (0 = downed);
 //  - action events: Event 214 (another player's attack, cast, form or dash
-//    started; CR 016 adds 0x4001 "secondary pressed": sword parry, spear
+//    started; CR 017 adds 0x4001 "secondary pressed": sword parry, spear
 //    charge, bow draw), 222 (an enemy strike landed on them: flinch), 203
-//    (downed), 707 (CR 016: a pickaxe swing at a vein);
+//    (downed), 707 (CR 017: a pickaxe swing at a vein);
 //  - a plain dodge is not an event: a sudden jump in ground speed past
 //    anything walking or sprinting reaches (DODGE_SPEED 12 m/s) is one.
 //
@@ -34,9 +34,9 @@ import { Activity, COMBAT, DODGE_SPEED, MOVE_STEP_HZ, SPRINT_MULTIPLIER } from '
 import type { WeaponKind } from '../combat/weapons/look';
 import { ELEMENT_COLORS } from '../combat/events';
 
-/** CR 016: Event 214 targetId for "the secondary button went down" (sword parry, spear charge, bow draw). Go: combat.CastFXGuard. */
+/** CR 017: Event 214 targetId for "the secondary button went down" (sword parry, spear charge, bow draw). Go: combat.CastFXGuard. */
 export const CAST_FX_GUARD = 0x4001;
-/** CR 016: Event 707 mine_swing (another player swung a pickaxe at a vein). Go: game.EventMineSwing. */
+/** CR 017: Event 707 mine_swing (another player swung a pickaxe at a vein). Go: game.EventMineSwing. */
 export const EV_MINE_SWING = 707;
 /** Event 214 targetId flag for a mobility dash variant (contracts/events.md). */
 export const CAST_FX_DASH = 0x8000;

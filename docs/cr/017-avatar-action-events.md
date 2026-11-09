@@ -1,4 +1,4 @@
-# CR 016: two action events for avatar animation (playtest 2)
+# CR 017: two action events for avatar animation (playtest 2)
 
 Author: pt2/third-person agent · Date: 2026-11-09 · Status: applied on `pt2/third-person`
 

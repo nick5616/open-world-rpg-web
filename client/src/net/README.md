@@ -13,13 +13,16 @@ remote players. Decisions and measurements are in
 | `prediction.ts` | Port of wizard-wars `ClientPrediction`. It runs on WP02's `stepMovement` and checks the server's SelfState against the predicted step at `ackInputSeq`, replaying only when they disagree. Since WP10 the check also covers mode, flags and `moveExt` (exact stamina and timers), replays start from `fromSelf` (the whole movement state) and reuse each step's stored env (rain, updrafts). |
 | `interpolation.ts` | Port of wizard-wars `EntityInterpolation`. Render clock from arrivals, delay adapted to jitter with per-ring floors (`INTERP_DELAY_*`) and per-entity spacing floors, dead reckoning from the velocity on the wire, teleport cuts, eased discontinuities, counters. |
 | `clockSync.ts` | Port of wizard-wars `ClockSync` (lowest-RTT sample, slewed offset). |
-| `avatar.ts` | Remote player model with 3 LODs (`THREE.LOD`: limbs to 25 m, capsule to 90 m, box beyond) and a canvas nameplate (name, level, activity chips), built imperatively. |
-| `RemotePlayers.tsx` | Draws every remote from the interpolation each frame and fills the HUD net slots (transport, RTT, ↓/↑ kbps, a sync line). |
+| `avatar.ts` | Player model (remote players, and your own body in third person via `scene/LocalAvatar.tsx`) with 3 LODs switched by hand (only the figure in use is in the scene graph): a jointed rig to 25 m (fewer when a crowd exceeds `FullRigBudget`'s 32 full rigs), capsule + weapon pivot to 80 m, a box beyond (no animation); a canvas nameplate (name, level, activity chips), built imperatively. Playtest 2. |
+| `avatarAnim.ts` | Playtest 2: the procedural animation state machine (pure, allocation-free): locomotion locked to ground speed (idle breathing, walk/run, sprint, jump/fall, landing, glide, climb, swim), head/torso follow the look pitch, actions over the upper body classified from Event 214 ids (sword slash/spin/plunge, spear thrust, bow draw/release, staff/wand bolts, casts with an element-coloured hand glow, shields, beams, forms, dashes, CR 017 parry/charge/draw and mining), a dodge roll derived from a ground-speed burst, hurt flinch (222), downed (health 0 / 203). |
+| `RemotePlayers.tsx` | Draws every remote from the interpolation each frame, routes 214/222/203/707/2 Events to their avatars' animators, and fills the HUD net slots (transport, RTT, ↓/↑ kbps, a sync line). |
 | `NetPlay.tsx` | The online play screen: connect, "Connecting…", the world with a `PlayerDriver`, and on a kick or drop "Reconnect" (fresh director ticket) or "Characters". |
 | `netStore.ts` | The `ReadySession` hand-off from the account screen, the live session for `window.__lodestone.netDebug()`. |
 | `dev/devTicket.ts` | Node-only: signs dev tickets for tests. |
 | `dev/acceptance.mjs` | The two-browser G2 acceptance run (below). |
 | `dev/solo-smoke.mjs` | Checks that `dev:solo` still works with no servers. |
+| `dev/third-person-shots.ts` | Playtest 2 evidence: two browsers on a private zone, one in third person acting, the other photographing its avatar mid-action (`docs/evidence/pt2-third-person-*`). |
+| `dev/avatar-bench.ts` | Playtest 2: main-thread cost of N animated avatars per frame (`npx vite-node client/src/net/dev/avatar-bench.ts 300`, `NEAR=1` for everyone within 25 m). |
 
 ## Screen flow
 

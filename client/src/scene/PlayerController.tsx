@@ -204,7 +204,7 @@ export function PlayerController({ onStep, driver }: Props) {
         s.r = info.radius + info.height * 0.5;
         aimSpheres.push(s);
       }
-      const t = crosshairDistance(c, fwd, boom.dist + 0.6, THIRD.aimRange, (x, z) => ground.heightAt(x, z), aimSpheres);
+      const t = crosshairDistance(c, fwd, boom.dist + 0.6, THIRD.aimRange, probe.heightAt, aimSpheres);
       aimAt.x = c.x + fwd.x * t;
       aimAt.y = c.y + fwd.y * t;
       aimAt.z = c.z + fwd.z * t;

@@ -435,7 +435,7 @@ func TestCaveInterestClipping(t *testing.T) {
 	t.Logf("inside sees %v; above sees %v; mouth sees %v", names(in), names(above), names(mouth))
 }
 
-// CR 016: a pickaxe swing shows on the miner's avatar for players nearby
+// CR 017: a pickaxe swing shows on the miner's avatar for players nearby
 // (Event 707), not for the miner (who animated it locally).
 func TestMineSwingSeenByOthers(t *testing.T) {
 	ct := testCaveTerrain(t)

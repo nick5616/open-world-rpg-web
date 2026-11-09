@@ -1,0 +1,297 @@
+{
+  "tier": "high",
+  "when": "2026-11-09T20:57:51.795Z",
+  "url": "http://127.0.0.1:5191",
+  "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 3070 (0x00002488) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  },
+  "vsync": true,
+  "loadMs": 5817,
+  "firstPlayableMs": 5294.699999988079,
+  "programsAtPlayable": 55,
+  "load": {
+    "wasmMs": 21.099999994039536,
+    "atlasMs": 906,
+    "atlasSource": "built",
+    "poolMs": 132.59999999403954,
+    "totalMs": 1558.699999988079,
+    "townsMs": 484.59999999403954
+  },
+  "textures": {
+    "bytes": 3728957,
+    "ms": 1168.0999999940395
+  },
+  "download": {
+    "files": 557,
+    "bytes": 36630669,
+    "gzipBytes": 11851606,
+    "byType": {
+      "other": {
+        "files": 6,
+        "bytes": 395619,
+        "gzip": 89158
+      },
+      "tsx": {
+        "files": 51,
+        "bytes": 1572418,
+        "gzip": 544696
+      },
+      "js": {
+        "files": 25,
+        "bytes": 9991171,
+        "gzip": 1988217
+      },
+      "ts": {
+        "files": 446,
+        "bytes": 18434851,
+        "gzip": 4496787
+      },
+      "mjs": {
+        "files": 14,
+        "bytes": 56294,
+        "gzip": 18382
+      },
+      "json": {
+        "files": 2,
+        "bytes": 1705,
+        "gzip": 844
+      },
+      "wasm": {
+        "files": 6,
+        "bytes": 2381038,
+        "gzip": 916162
+      },
+      "ktx2": {
+        "files": 3,
+        "bytes": 3728957,
+        "gzip": 3720839
+      },
+      "woff2": {
+        "files": 1,
+        "bytes": 67304,
+        "gzip": 67347
+      },
+      "ogg": {
+        "files": 3,
+        "bytes": 1312,
+        "gzip": 1056
+      }
+    }
+  },
+  "route": [
+    {
+      "to": "forest",
+      "kind": "settlement",
+      "x": 1376,
+      "z": 1824
+    },
+    {
+      "to": "highlands",
+      "kind": "ruin",
+      "x": 1184,
+      "z": 1664
+    },
+    {
+      "to": "snowpeak",
+      "kind": "shrine",
+      "x": 864,
+      "z": 1824
+    },
+    {
+      "to": "badlands",
+      "kind": "ruin",
+      "x": 1248,
+      "z": 2656
+    },
+    {
+      "to": "wetland",
+      "kind": "sunken_temple",
+      "x": 832,
+      "z": 3104
+    },
+    {
+      "to": "meadow",
+      "kind": "landmark",
+      "x": 1280,
+      "z": 2912
+    }
+  ],
+  "phases": [
+    {
+      "name": "walk",
+      "seconds": 20,
+      "frames": 1199,
+      "frameMs": {
+        "mean": 16.72,
+        "p50": 16.7,
+        "p95": 16.8,
+        "p99": 16.8,
+        "max": 50
+      },
+      "framesOverBudget": 3,
+      "drawCalls": {
+        "mean": 322,
+        "max": 328
+      },
+      "triangles": {
+        "mean": 1775496,
+        "max": 1812461
+      },
+      "visibleTriangles": {
+        "max": 1226361
+      },
+      "shadowTriangles": {
+        "max": 595581
+      },
+      "heapMB": {
+        "max": 132.6
+      },
+      "longTasks": [],
+      "longTaskAt": [],
+      "programsLinked": [],
+      "chunkGenMs": {
+        "mean": 4.429069768088732,
+        "p95": 7.200000017881393,
+        "max": 9.199999988079071
+      },
+      "chunkMeshMs": {
+        "mean": 3.4267441857923835,
+        "p95": 5.0999999940395355,
+        "max": 8.200000017881393
+      },
+      "scatterGenMs": {
+        "mean": 4.008695650359859,
+        "p95": 5.200000017881393,
+        "max": 5.5
+      },
+      "tilesBuilt": 258,
+      "queueMax": 91,
+      "uploadMsMax": 0.07,
+      "rebinMsMax": 7.4,
+      "terrainMsMax": {
+        "reselect": 2.45,
+        "upload": 0.37,
+        "resolve": 1.19
+      }
+    },
+    {
+      "name": "fly",
+      "seconds": 39,
+      "frames": 2340,
+      "frameMs": {
+        "mean": 16.67,
+        "p50": 16.7,
+        "p95": 16.8,
+        "p99": 16.8,
+        "max": 33.3
+      },
+      "framesOverBudget": 1,
+      "drawCalls": {
+        "mean": 262,
+        "max": 300
+      },
+      "triangles": {
+        "mean": 1590970,
+        "max": 2129542
+      },
+      "visibleTriangles": {
+        "max": 1349292
+      },
+      "shadowTriangles": {
+        "max": 838812
+      },
+      "heapMB": {
+        "max": 132.6
+      },
+      "longTasks": [],
+      "longTaskAt": [],
+      "programsLinked": [],
+      "chunkGenMs": {
+        "mean": 3.7601257866283633,
+        "p95": 5.5999999940395355,
+        "max": 13.300000011920929
+      },
+      "chunkMeshMs": {
+        "mean": 3.055597484824043,
+        "p95": 4.5999999940395355,
+        "max": 11.400000005960464
+      },
+      "scatterGenMs": {
+        "mean": 3.614649190545174,
+        "p95": 6.399999976158142,
+        "max": 14.800000011920929
+      },
+      "tilesBuilt": 795,
+      "queueMax": 8,
+      "uploadMsMax": 0.19,
+      "rebinMsMax": 11.4,
+      "terrainMsMax": {
+        "reselect": 3.54,
+        "upload": 0.5,
+        "resolve": 2.08
+      }
+    }
+  ],
+  "regen": {
+    "chunk": "(30, 35) lod 0",
+    "stored": "09fbb80d2a45ed93",
+    "worker": "09fbb80d2a45ed93",
+    "main": "09fbb80d2a45ed93",
+    "match": true,
+    "workerMs": 6
+  },
+  "errors": [],
+  "budgets": {
+    "drawCalls": {
+      "budget": 400,
+      "max": 328,
+      "pass": true
+    },
+    "triangles": {
+      "budget": 1500000,
+      "maxAllPasses": 2129542,
+      "maxVisible": 1349292,
+      "pass": false
+    },
+    "longTasks": {
+      "budget": "none over 50 ms",
+      "count": 0,
+      "maxMs": 0,
+      "pass": true
+    },
+    "heap": {
+      "budgetMB": 600,
+      "maxMB": 132.6,
+      "pass": true
+    },
+    "chunkGen": {
+      "budgetMs": 8,
+      "p95": 7.200000017881393,
+      "max": 13.300000011920929,
+      "mean": 4.09,
+      "pass": true
+    },
+    "download": {
+      "budgetMB": 15,
+      "gzipMB": 11.3,
+      "pass": true
+    },
+    "frameTime": {
+      "budgetMs": 16.6,
+      "p99": 16.8,
+      "pass": true,
+      "note": "measured on ANGLE (NVIDIA, NVIDIA GeForce RTX 3070 (0x00002488) Direct3D11 vs_5_0 ps_5_0, D3D11)"
+    }
+  },
+  "shots": [
+    "wp05-meadow.png",
+    "wp05-forest.png",
+    "wp05-snowpeak.png",
+    "wp05-valley-sunset.png",
+    "wp05-dawn-fog.png",
+    "wp05-lod-tiles.png",
+    "wp05-debug-panel.png"
+  ]
+}

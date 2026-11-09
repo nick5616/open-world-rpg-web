@@ -7,7 +7,7 @@ import (
 	"lodestone/server/pkg/proto"
 )
 
-// CR 016: pressing the secondary button on a sword, spear or bow tells the
+// CR 017: pressing the secondary button on a sword, spear or bow tells the
 // players nearby (EvCast, targetId CastFXGuard) once per press, so their
 // view of you raises the parry, the spear charge or the bow draw. Staff and
 // wand use the press as a heavy attack (an EvCast of its own), so no guard.

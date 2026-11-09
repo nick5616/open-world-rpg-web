@@ -51,7 +51,7 @@ const (
 	EventDropSpawned = 703
 	EventItemGranted = 704
 	EventMineRefused = 706
-	EventMineSwing   = 707 // CR 016: another player swung a pickaxe (observers within mineSwingM)
+	EventMineSwing   = 707 // CR 017: another player swung a pickaxe (observers within mineSwingM)
 )
 
 // mineSwingM: how far other players see a pickaxe swing (the combat FX radius, Event 214).
@@ -245,7 +245,7 @@ func (s *Server) interact(e *Entity, in *proto.Interact, now time.Time) {
 }
 
 // mineSwingFX tells the players near a miner (not the miner, who swung
-// locally) about a pickaxe swing, so their avatar animates it (CR 016):
+// locally) about a pickaxe swing, so their avatar animates it (CR 017):
 // entityId = miner, x/y/z = the vein (cm).
 func (s *Server) mineSwingFX(miner *Entity, x, y, z float64) {
 	var ev *proto.Event

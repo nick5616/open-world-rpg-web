@@ -193,6 +193,9 @@ export class CameraProbe {
     this.lv = atLevel(g, feetY);
   }
 
+  /** Ground height in this frame's level view (cave floors underground): the crosshair's terrain. */
+  readonly heightAt = (x: number, z: number): number => (this.lv ? this.lv.heightAt(x, z) : -Infinity);
+
   readonly blocked: Blocked = (x, y, z) => {
     const lv = this.lv;
     if (!lv) return false;

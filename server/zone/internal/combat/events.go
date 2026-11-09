@@ -35,7 +35,7 @@ const (
 	EvStrikeHit    = 222 // an enemy strike landed on a player (observers: the hit flash)
 )
 
-// EvCast targetIds that are not attack/spell/form ids (CR 016).
+// EvCast targetIds that are not attack/spell/form ids (CR 017).
 const (
 	// CastFXDash flags a mobility dash variant (targetId = variant | CastFXDash).
 	CastFXDash = 0x8000

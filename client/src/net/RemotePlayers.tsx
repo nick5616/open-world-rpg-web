@@ -4,8 +4,8 @@
 //
 // Playtest 2: other players' actions drive their avatars' animation
 // (avatarAnim.ts) from the zone Events that already reach us: 214 (an
-// attack, cast, form, dash or CR 016's "secondary pressed" started), 222 (an
-// enemy hit them), 203 (downed), 707 (CR 016: a pickaxe swing), 2 (a
+// attack, cast, form, dash or CR 017's "secondary pressed" started), 222 (an
+// enemy hit them), 203 (downed), 707 (CR 017: a pickaxe swing), 2 (a
 // teleport: forget their motion history).
 
 import { useEffect, useMemo } from 'react';
