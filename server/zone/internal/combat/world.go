@@ -283,6 +283,38 @@ func (w *World) BuildFromAtlas(a *AtlasInfo) {
 			w.AddGroup(&Group{Kind: GroupPack, Anchor: movement.Vec3{X: x, Y: y, Z: z}, Radius: 10, Biome: a.BiomeAt(x, z), Element: a.Region(a.RegionAt(x, z)).Element, Level: level(x, z), Site: -1, Seed: h, AreaLevel: true})
 		}
 	}
+	w.havenMeadows(a, level, safe)
+}
+
+// havenMeadows (playtest 2: "no creatures within ~300 m of spawn") seeds
+// extra packs on a 64 m grid across the Haven around the world spawn, so a
+// new player meets something to fight within a minute's walk of the first
+// town. They are ordinary area-levelled packs: the Haven tier turns every
+// member into a beginner creature (CR 012), so nothing dangerous spawns.
+func (w *World) havenMeadows(a *AtlasInfo, level func(x, z float64) int, safe func(x, z float64) bool) {
+	hr := D.Difficulty.HavenRadiusM
+	if hr <= 0 || (a.SpawnX == 0 && a.SpawnZ == 0) {
+		return
+	}
+	const grid = 64.0
+	for gz := -hr; gz <= hr; gz += grid {
+		for gx := -hr; gx <= hr; gx += grid {
+			h := mix(w.cfg.Seed ^ 0x6861766e ^ uint64(int64(gx+hr))*0x2545f491 ^ uint64(int64(gz+hr))*0x9e3779b9)
+			if unit(h) > 0.6 {
+				continue
+			}
+			x := a.SpawnX + gx + (unit(mix(h+1))-0.5)*grid*0.7
+			z := a.SpawnZ + gz + (unit(mix(h+2))-0.5)*grid*0.7
+			if math.Hypot(x-a.SpawnX, z-a.SpawnZ) > hr-24 || x < 0 || z < 0 || x >= a.WorldSize || z >= a.WorldSize {
+				continue
+			}
+			y := w.ground.HeightAt(x, z)
+			if movement.WaterAt(w.ground, x, z) > y-0.2 || movement.SlopeAt(w.ground, x, z).T2 > constants.WalkableTanSq || !safe(x, z) || w.nearGroup(x, z, 44) {
+				continue
+			}
+			w.AddGroup(&Group{Kind: GroupPack, Anchor: movement.Vec3{X: x, Y: y, Z: z}, Radius: 8, Biome: a.BiomeAt(x, z), Element: a.Region(a.RegionAt(x, z)).Element, Level: level(x, z), Site: -1, Seed: h, AreaLevel: true})
+		}
+	}
 }
 
 // areaReady applies the playtest-1 area (CR 012) to an atlas group about to
