@@ -482,3 +482,41 @@ caves are unchanged) and fills `Config.Towns` (`internal/npc`). Game glue:
   (`client/src/world/buildings/walkIntoBuilding.integration.test.ts`,
   evidence `docs/evidence/wp20-walk-into-building.txt`: 0 corrections).
 
+## Scale (WP19)
+
+Fixes from the spec 14 soaks (details and numbers:
+`docs/decisions/v1-capacity.md`, `docs/evidence/wp19-*`). Wire format and
+per-client output are unchanged; equivalence tests prove it.
+
+- **Parallel snapshot phase** (`internal/game/snapshots.go`): each client's
+  interest + delta snapshot is built on `GOMAXPROCS` workers
+  (`Config.SnapshotWorkers`; serial below 32 sessions), claiming 2 sessions
+  at a time. It must stay the tick's last phase: workers only read the
+  world. `TestParallelSnapshotsMatchSerial` checks every client gets the
+  same bytes as the serial build.
+- **Interest without sorting**: grid hits go into a bitset read back in
+  index (= id) order; WP16 mirrors are sorted by id once per tick
+  (`gridRemotes`) and merged. "Known" hysteresis walks the encoder's last
+  frame with a cursor (`snapshot.KnownCursor`). Distances use
+  `Sqrt(dx²+dz²)`. `TestGatherInterestMatchesReference` compares with the
+  old gathering.
+- **Two AOI grids**: players (and anything with a party id) in the 616 m
+  grid, everything else (enemies, townsfolk, pickups) in a second grid
+  queried 200 m out (`aoi.QueryRadiusOthers`): Classify never sends those
+  beyond the mid ring, so interest sets are the same; clients just stop
+  walking 2,000 distant enemies.
+- **Compact per-tick views** (`buildViews`): the interest loop reads a
+  contiguous array (position, id, kind, party, owner, cave system, name id)
+  and the quantized states instead of chasing `*Entity`.
+- **Combat debug on demand**: `/debug/combat` is built only while it is read
+  (10 s after the last read; a read waits up to ~1 s for a fresh one). New
+  metric `zone_combat_awake`.
+- **Tick phase timing**: `/debug/tickstats` adds `phases` (mean, max and the
+  slowest tick's split of inputs / world / combat / towns / grid /
+  snapshots over the last minute), `internal/game/phases.go`.
+- Dev knob `LODESTONE_ZONE_DEBUG_HORDE="cx,cz,radius,enemies[,level]"`:
+  camps of four over a disc (scenario 1's 2,000 awake enemies).
+- Benchmark: `go test ./internal/game -run '^$' -bench Scale -cpu 4`
+  (`scale_bench_test.go`: in-process tick at 150/300/460 players, 300 + 2,000
+  enemies; flat ground, fake connections, no profiler hazards).
+

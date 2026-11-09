@@ -17,7 +17,7 @@ Shared Go packages for every service (module `lodestone/server/pkg`).
 | `movement` | Authoritative movement step (wizard-wars port); the contract WP02's TS prediction mirrors, with trajectory vectors (see its README) |
 | `gameloop` | Shared fixed-rate scheduler: one grid, coarse sleep + spin tail (`LODESTONE_SPIN_MS`), bounded catch-up, debt forgiveness, tick/jitter stats; QPC clock on Windows |
 | `transport` | `Conn` interface with reliable vs unreliable (latest-wins) sends; WebSocket server/dialer; WebTransport server/dialer (quic-go/webtransport-go: datagrams + one length-prefixed stream), `NewDevCert` (ECDSA, <14 days, hash for `serverCertificateHashes`), `CloseCode` |
-| `snapshot` | Delta snapshots: per-client baseline ring encoder (with the optional per-client byte budget and priority accumulator, decision 0005) and the reference client decoder |
+| `snapshot` | Delta snapshots: per-client baseline ring encoder (with the optional per-client byte budget and priority accumulator, decision 0005) and the reference client decoder. WP19: the encoder keeps compact pointer-free frames (names interned, `compact.go`), diffs lazily and picks budgeted records with a heap; `equiv_test.go` proves byte-identical output against the pre-WP19 encoder. Use `Known`/`Knows` instead of `Last` (which now allocates a copy) |
 | `ratelimit` | Token bucket (the-circle pattern) |
 | `writebehind` | Bounded, coalescing, retrying write-behind queue with flush on shutdown |
 | `accountapi` | (WP04) Session tokens + shared Postgres queries for accounts, local profiles, worlds, characters; `dbtest` scratch-DB helper |

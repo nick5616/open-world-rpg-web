@@ -88,3 +88,24 @@ node tools/bots/handoff-soak.mjs --bots 1000 --zones 3 --duration 6m --profile t
 ```
 
 Evidence goes to `docs/evidence/wp16-soak-<tag>.txt|json`.
+
+## Scale soaks (WP19)
+
+`scale-soak.mjs` runs spec 14 soak scenario 1 (300 bots in one region plus
+2,000 awake enemies): one zone on the official world's terrain with
+`LODESTONE_ZONE_DEBUG_HORDE`, no Postgres/Redis, a fresh world id, the zone
+at `GOMAXPROCS=4`, bots clustered in a 300 m disc inside region (1,1).
+Every 5 s it samples `/debug/tickstats` (60 s window quantiles + phases) and
+`zone_combat_awake`; evidence `docs/evidence/wp19-s1-<tag>.txt|json|prom`.
+
+```
+node tools/bots/scale-soak.mjs --bots 300 --enemies 2000 --duration 3m
+node tools/bots/scale-soak.mjs ... --profile thailand      # scenario 4 variant
+node tools/bots/scale-soak.mjs ... --zone-bin base.exe     # a prebuilt (baseline) zone
+node tools/bots/scale-soak.mjs ... --zone-affinity F000 --bots-affinity 0FFF   # pin (Windows)
+node tools/bots/scale-soak.mjs ... --pprof                 # 10 s CPU profile at t=90 s (diagnostic)
+```
+
+`handoff-soak.mjs` (scenario 2) gained `--zone-bin`, `--evidence-prefix` and
+`--base-port`/`--db` are used to keep runs apart; binaries get unique names
+per run (`soak-<name>-<run>.exe`).
