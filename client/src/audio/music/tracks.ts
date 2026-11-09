@@ -27,7 +27,7 @@ export const STATE_MUSIC: Record<Exclude<MusicState, 'silence' | 'timed'>, State
   town: { tracks: ['music/future_land_2', 'music/future_land_1'], gain: 0.6, lowpassHz: 3200, fadeIn: 3 },
   // "void realm": caves and underground, a little filtered...
   cave: { tracks: ['music/void_realm'], gain: 0.75, lowpassHz: 6000, fadeIn: 3 },
-  // ...and wide open for Void magic moments (domains, the void lord).
+  // ...and wide open for Void magic moments (a Void domain, 6 s).
   void: { tracks: ['music/void_realm'], gain: 1, lowpassHz: 20000, fadeIn: 1.5 },
   // Fights: a synthwave combat loop cut from the Novation Analog Synthwave
   // pack (134 bpm, Bb minor), same tempo family as "time crunch".

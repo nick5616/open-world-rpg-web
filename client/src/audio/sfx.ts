@@ -42,6 +42,8 @@ export interface Listener {
 export class SfxEngine {
   private buffers = new Map<string, AudioBuffer | null>();
   private pending = new Map<string, Promise<AudioBuffer | null>>();
+  /** Fetched, not yet decoded (prefetch). */
+  private raw = new Map<string, ArrayBuffer>();
   private voices: Voice[] = [];
   private lastPlay = new Map<CueId, number>();
   private reverbIn: GainNode;
@@ -116,8 +118,9 @@ export class SfxEngine {
       this.buffers.set(name, null);
       return Promise.resolve(null);
     }
-    const q = fetch(url)
-      .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(`HTTP ${r.status}`))))
+    const raw = this.raw.get(name);
+    this.raw.delete(name);
+    const q = (raw ? Promise.resolve(raw) : this.fetchBytes(url))
       .then((ab) => this.ctx.decodeAudioData(ab))
       .then((b) => {
         this.buffers.set(name, b);
@@ -132,9 +135,33 @@ export class SfxEngine {
     return q;
   }
 
+  private fetchBytes(url: string): Promise<ArrayBuffer> {
+    return fetch(url).then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(`HTTP ${r.status}`))));
+  }
+
   /** Decode a cue's files ahead of first use. */
   preload(cue: CueId): Promise<unknown> {
     return Promise.all(CUES[cue].files.map((f) => this.load(f)));
+  }
+
+  /**
+   * Download a cue's files but keep them compressed (a few KB each instead of
+   * ~200 KB of PCM per second); the first play decodes them, which takes
+   * milliseconds instead of a network round trip.
+   */
+  prefetch(cue: CueId): Promise<unknown> {
+    return Promise.all(
+      CUES[cue].files.map(async (f) => {
+        if (this.buffers.has(f) || this.pending.has(f) || this.raw.has(f)) return;
+        const url = assetUrl(f);
+        if (!url) return;
+        try {
+          this.raw.set(f, await this.fetchBytes(url));
+        } catch {
+          /* the first play fetches it again */
+        }
+      }),
+    );
   }
 
   isLoaded(cue: CueId): boolean {

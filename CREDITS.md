@@ -37,7 +37,7 @@ Music: Nicole's original tracks for Lodestone (`Documents/ableton/rpg`): future 
 
 Sound effects are cut, layered and processed from the **Novation Anniversary** sample packs (1st Drop Soundpack, 2nd Drop Pack, 3rd Drop), which Novation released as royalty-free sample packs for use in productions. The packs ship no license text of their own (only a pack description document); the samples are used here as processed parts of new sounds, never redistributed as a sample library. "The Gentleman Library" (a Native Instruments Kontakt piano in encrypted .nkx/.nkc containers, under the NI EULA) is not usable as raw audio and was not used.
 
-Continuous ambience (wind, rain, fire crackle, night insects, underwater) is synthesized at runtime in `client/src/audio/ambience.ts`; the town-defense horn and the wooden creaks (doors, chests, stations, bow) are synthesized in the build.
+Continuous ambience (wind, rain, fire crackle, night insects, underwater, cave drips) is synthesized at runtime in `client/src/audio/ambience.ts`; the town-defense horn and the wooden creaks (doors, chests, stations, bow) are synthesized in the build.
 
 Pipeline: `tools/audio/build-audio.mjs` (ffmpeg). 119 cues, 161 files, each as Ogg Opus + AAC: 17.62 MB committed. Cue sheet: `client/src/audio/README.md`.
 

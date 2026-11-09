@@ -30,6 +30,9 @@ export function SoundButton() {
     <button
       data-testid="sound-toggle"
       title="Sound settings (K)"
+      // Never keep focus: Space (jump) would click it again.
+      tabIndex={-1}
+      onMouseDown={(e) => e.preventDefault()}
       onClick={() => setOpen(!open)}
       style={{ ...glass, position: 'fixed', right: 12, top: 12, zIndex: 31, padding: '5px 9px', cursor: 'pointer', opacity: 0.8 }}
     >

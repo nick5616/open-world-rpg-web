@@ -65,7 +65,7 @@ try {
     window.AudioContext = class extends Orig {
       constructor(...a) {
         super(...a);
-        window.__ctxLog.push({ t: performance.now(), activation: navigator.userActivation?.isActive ?? null });
+        window.__ctxLog.push({ t: performance.now(), activation: window.navigator.userActivation?.isActive ?? null });
       }
     };
   });
@@ -132,11 +132,23 @@ try {
   // The stings decode in the background after the instant set; headless
   // SwiftShader starves the main thread, so make sure the ones under test are in.
   await page.evaluate(() => window.__lodestoneAudio.preload(['level_up_small', 'loot_bitchin', 'dusk', 'loot_rare', 'step_soft', 'step_hard']));
-  const p0 = await page.evaluate(() => window.__lodestone.player().pos);
+  // Walk with W (the solo spawn is in a town: turn whenever a wall stops us)
+  // until 6 m are covered or 40 s pass; count the path actually walked.
   await page.keyboard.down('KeyW');
-  await page.waitForTimeout(6000);
-  const p1 = await page.evaluate(() => window.__lodestone.player().pos);
-  const walked = Math.hypot(p1.x - p0.x, p1.z - p0.z);
+  let walked = 0;
+  let yaw = 0;
+  let last = await page.evaluate(() => window.__lodestone.player().pos);
+  for (let t0 = Date.now(); walked < 6 && Date.now() - t0 < 40000; ) {
+    await page.waitForTimeout(2000);
+    const p = await page.evaluate(() => window.__lodestone.player().pos);
+    const d = Math.hypot(p.x - last.x, p.z - last.z);
+    walked += d;
+    last = p;
+    if (d < 0.4) {
+      yaw += Math.PI / 2;
+      await page.evaluate((y) => window.__lodestone.setLook(y, 0), yaw);
+    }
+  }
   const stepsWalking = await page.evaluate(() => {
     const p = window.__lodestoneAudio.state().played;
     return (p.step_soft ?? 0) + (p.step_hard ?? 0);
@@ -164,11 +176,22 @@ try {
   log(`played: ${JSON.stringify(played)}; decoded SFX ${s2.decodedMB} MB; voices stolen ${s2.stolen}, culled ${s2.culled}`);
 
   // Settings panel (K): sliders persist; mute silences the master.
+  const focus = await page.evaluate(() => {
+    const el = document.activeElement;
+    const what = el ? `${el.tagName}${el.getAttribute('data-testid') ? `[${el.getAttribute('data-testid')}]` : ''}` : 'none';
+    if (el && el !== document.body) el.blur();
+    return what;
+  });
+  const panelBefore = await page.getByTestId('sound-settings').count();
   await page.keyboard.press('KeyK');
+  await page.waitForTimeout(1000);
+  const panelAfter = await page.getByTestId('sound-settings').count();
+  check('K toggles the sound settings panel', panelAfter !== panelBefore, `focus ${focus}, panel ${panelBefore} -> ${panelAfter}`);
+  if (!panelAfter) await page.keyboard.press('KeyK');
   await page.getByTestId('sound-settings').waitFor({ timeout: 5000 });
   await page.getByTestId('sound-music').fill('30');
   await page.screenshot({ path: path.join(root, 'docs', 'evidence', 'audio-settings.png') });
-  const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('lodestone.audio.v1') ?? 'null'));
+  const stored = await page.evaluate(() => JSON.parse(window.localStorage.getItem('lodestone.audio.v1') ?? 'null'));
   check('music volume persisted', stored?.volumes?.music === 0.3, JSON.stringify(stored?.volumes));
   const loud = await page.evaluate(() => window.__lodestoneAudio.level());
   await page.evaluate(() => document.querySelector('[data-testid=sound-mute]').click());
@@ -177,7 +200,7 @@ try {
   check('mute silences everything', quiet < -90 && loud > -60, `before ${loud.toFixed(1)} dBFS, muted ${quiet.toFixed(1)} dBFS`);
   await page.evaluate(() => document.querySelector('[data-testid=sound-mute]').click());
   await page.reload();
-  const kept = await page.evaluate(() => JSON.parse(localStorage.getItem('lodestone.audio.v1') ?? 'null'));
+  const kept = await page.evaluate(() => JSON.parse(window.localStorage.getItem('lodestone.audio.v1') ?? 'null'));
   check('settings survive a reload', kept?.volumes?.music === 0.3 && kept.muted === false);
   check('no page errors', errors.length === 0, errors.slice(0, 3).join('; '));
 } catch (e) {

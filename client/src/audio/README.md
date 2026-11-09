@@ -27,9 +27,13 @@ included.
 Budgets (spec 12): nothing audio is in the first-frame download. The
 main bundle gains the context and settings (+1.3 KB gzip of JS in all);
 the engine and every asset load after the first playable frame. One
-codec per browser is fetched: about 8 MB of Opus music (streamed, only
-the track playing) and 1.2 MB of SFX. Decoded SFX hold about the size
-the headless check prints ("decoded SFX ... MB"). 40 voices at most at
+codec per browser is fetched: 6.8 MB of Opus music for all 8 tracks
+(streamed, only the tracks heard) and 1.0 MB of SFX: the instant set
+(UI, steps, swings, hits, first spells) is decoded at once (about 12 MB
+of PCM); everything else downloads in the background but stays
+compressed and decodes on first play (all 161 files decoded would be
+46 MB). Committed:
+17.6 MB (both codecs). 40 voices at most at
 once; per-cue caps and cooldowns collapse crowds; 3D sounds past their
 range never start; panning is equal-power (HRTF stays for voices).
 

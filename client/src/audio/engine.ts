@@ -45,7 +45,7 @@ export class AudioEngine {
   private unsubs: (() => void)[] = [];
   /** The instant cues are decoded. */
   preloaded = false;
-  /** Every cue is decoded. */
+  /** Every cue is downloaded (the instant set decoded, the rest compressed). */
   allLoaded = false;
   private raf = 0;
   private lastFrame = 0;
@@ -122,12 +122,13 @@ export class AudioEngine {
     );
     this.preloaded = true;
     void this.music.prefetchTimed();
-    // Then everything else, two at a time in the background (~1.2 MB of
-    // Opus in all), so stings and rarer cues are warm when they happen.
+    // Then download everything else, two at a time in the background (~1 MB
+    // of Opus in all), kept compressed: decoded it would be ~35 MB of PCM.
+    // A sting's first play then costs a decode (milliseconds), not a fetch.
     const rest = (Object.keys(CUES) as CueId[]).filter((c) => !PRELOAD.includes(c));
     await Promise.all(
       Array.from({ length: 2 }, async () => {
-        for (let c = rest.shift(); c; c = rest.shift()) await this.sfx.preload(c);
+        for (let c = rest.shift(); c; c = rest.shift()) await this.sfx.prefetch(c);
       }),
     );
     this.allLoaded = true;
@@ -135,7 +136,6 @@ export class AudioEngine {
 
   play(cue: CueId, opts?: PlayOpts): void {
     if (this.sfx.play(cue, opts) && CUES[cue].duckMusic) this.stingDuckUntil = performance.now() + 2600;
-    if (cue === 'domain' || cue === 'cast_void' || cue === 'impact_void') this.voidUntil = performance.now() + (cue === 'domain' ? 6000 : 0);
   }
 
   trigger(name: TriggerName, payload: TriggerPayload): void {
