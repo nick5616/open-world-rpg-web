@@ -1,0 +1,27 @@
+PASS no AudioContext before the Play gesture (0 created)
+PASS one AudioContext, created inside the Play click, running (created 1, activation true, state running)
+PASS no audio requested before the first playable frame (first audio request 7.31 s after the first playable frame, 65 files so far)
+PASS music: day plays future land (director day, track music/future_land_2, master -44.1 dBFS)
+PASS music: night (world clock 22:00) plays the night theme (director night, track music/night, master -46.8 dBFS)
+PASS music: night in town is still the night theme (director night, track music/night, master -50.3 dBFS)
+PASS music: cave (underground) plays void realm (director cave, track music/void_realm, master -51.5 dBFS)
+PASS music: a fight plays the combat loop (director combat, track music/combat, master -51.5 dBFS)
+PASS music: a timed event plays time crunch (director timed, track music/time_crunch_loop, master -46.9 dBFS)
+PASS timed event starts with the intro (phase intro)
+PASS 5 seconds left switches to the final layer (phase final)
+PASS footsteps from walking, one per stride (walked 6.4 m, 4 steps)
+PASS jump from Space (jump 1, land 0)
+PASS sfx swing_sword
+PASS sfx cast_fire
+PASS sfx impact_ice
+PASS sfx level_up_small
+PASS sfx loot_bitchin
+PASS sfx dusk
+PASS sfx loot_rare
+played: {"step_hard":4,"jump":1,"swing_sword":1,"cast_fire":1,"impact_ice":1,"level_up_small":1,"loot_bitchin":1,"dusk":1,"loot_rare":1}; decoded SFX 8.5 MB; voices stolen 0, culled 0
+PASS K toggles the sound settings panel (focus BODY, panel 0 -> 1)
+PASS music volume persisted ({"master":0.8,"music":0.3,"sfx":0.8,"ambience":0.7,"ui":0.6,"voice":1})
+PASS mute silences everything (before -51.8 dBFS, muted -180.0 dBFS)
+PASS settings survive a reload
+PASS no page errors
+PASS: 25/25 checks
