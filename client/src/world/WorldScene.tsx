@@ -210,6 +210,10 @@ export function WorldScene({ runtime }: Props) {
     () => () => {
       world.terrain.dispose();
       world.scatter.dispose();
+      // G4: the cave manager's DOM HUD/toasts and window E/mouse listeners
+      // outlived a remount (leave the play screen and come back): a frozen
+      // "Vein broken" toast stayed on screen and E still swung at the old vein.
+      world.caves?.dispose();
     },
     [world],
   );

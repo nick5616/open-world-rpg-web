@@ -179,6 +179,13 @@ func (b *Brain) pickTarget(es []EnemyView) *EnemyView {
 		if b.PreferIDs != nil && !b.PreferIDs(e) {
 			continue
 		}
+		// G4: a leashed bot never reaches an enemy beyond its leash; picking
+		// (and sticking to) one froze it at the leash edge while a fight
+		// went on at its goal (the night bots at a defense with an older pack
+		// asleep 160 m away).
+		if b.Goal != nil && hdist(e.Pos, *b.Goal) > b.Leash+b.reachOf()+2 {
+			continue
+		}
 		cands = append(cands, e)
 	}
 	sort.Slice(cands, func(i, j int) bool {

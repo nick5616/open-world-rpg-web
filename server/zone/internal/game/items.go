@@ -188,6 +188,7 @@ type charItems struct {
 	station    *openStation
 	contChunk  [2]int32
 	contSent   bool
+	contSig    uint64 // which containers the last 406 listed (resend when it changes)
 	contVer    int
 	refuseAt   time.Time
 	takes      int

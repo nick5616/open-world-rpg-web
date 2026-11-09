@@ -58,3 +58,5 @@ The step (WP10) is a heightfield state machine; caves plug in through two option
 Grounds without caves implement neither and step exactly as before (every WP02/WP10 golden unchanged). `server/pkg/caves.Ground`, `worldhost.CaveTerrain` and the client's `CaveGround` (over `StructureGround`) implement both. Golden cave walk: `client/src/world/caves/cavePath.test.ts` (TS) replayed by `server/pkg/caves/path_test.go` (Go).
 
 G3: `CaveGround.caveAir(x, y, z)` (open cave air from loaded cells only, no sync builds) feeds WP11's voice occlusion through `GroundQuery.caveAir`; movement doesn't use it.
+
+G4: `WorldScene` now calls `CaveManager.dispose()` when the world unmounts (leaving the play screen and coming back used to leave the old manager's HUD, a frozen toast and its window E/mouse listeners behind; checked by `tools/acceptance/g4.mjs`, one `cave-hud` after each rejoin).

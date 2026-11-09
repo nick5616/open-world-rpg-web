@@ -48,3 +48,5 @@ go -C server/zone test ./internal/combat/...
   move there), answers `acquire`, `playersNear` and the wake rule; outside
   `Step` (claims with input frames) they fall back to the full scan.
 - `scale_test.go` proves both against the old full scans.
+
+G4: a leashed `combatbot` (a `Goal` + `Leash`, e.g. the night bots at a ward garden) no longer picks enemies beyond leash + reach; it used to lock onto an older pack it could never reach and stand at the leash edge with 0 attacks through a whole defense (`combatbot/brain_test.go`).
