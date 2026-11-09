@@ -74,9 +74,11 @@ on it:
   (`weapons.bow.arrows.sunsteel`, WP13 data);
 - a spell iff its tree has `killsDemons` (Light); the Light form likewise.
 
-WP14 equips a forged sunsteel blade by calling
-`Profile.SetMaterial(loadout, "sunsteel")` (or whatever material its item
-record names; an unknown key is refused). Until then dev builds set it with
+WP14 (merged before this branch finished) equips a forged sunsteel blade
+through its item gear: `Player.Gear.KillsDemons` comes from the item's
+material (`killsDemons` in its item tables), and the rule honors it next to
+the loadout's material key; `Profile.SetMaterial(loadout, "sunsteel")` stays
+available (an unknown key is refused). Until then dev builds set it with
 `Interact{targetKind 50, action 6, arg = loadout | materialId << 8}`
 (`LODESTONE_ZONE_DEV_COMBAT`, on with the dev ticket key); the acceptance
 uses exactly this.

@@ -124,6 +124,16 @@ func TestDemonDiesToLightMagicAndTheRuleIsTheKey(t *testing.T) {
 	if pr.SetMaterial(0, "cardboard") {
 		t.Fatal("unknown material accepted")
 	}
+	// WP14: an equipped forged sunsteel item reaches combat as gear.
+	pr.SetMaterial(0, "")
+	if KillsDemons(h.p, &Action{Move: mv, Weapon: sword}) {
+		t.Fatal("plain steel")
+	}
+	h.p.Gear.KillsDemons = true
+	if !KillsDemons(h.p, &Action{Move: mv, Weapon: sword}) {
+		t.Fatal("WP14 sunsteel gear kills demons")
+	}
+	h.p.Gear.KillsDemons = false
 
 	// Light magic for real: Glint bolts until it dies.
 	pr.SetMaterial(0, "")
