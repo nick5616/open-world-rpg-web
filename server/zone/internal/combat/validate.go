@@ -472,6 +472,10 @@ func (w *World) statusOf(p *Player, a *Action) []string {
 // applyHit applies an accepted claim.
 func (w *World) applyHit(p *Player, a *Action, e *Enemy, impact movement.Vec3) ClaimResult {
 	dmg, element, flags := w.damageOf(p, a, e)
+	killing := KillsDemons(p, a) // WP15 (demon.go)
+	if e.Demon != nil && a.Form != nil && a.Form.DemonMult > 0 {
+		dmg *= a.Form.DemonMult
+	}
 	if a.Spell != nil && a.Spell.StripShield {
 		e.Shield = 0
 	}
@@ -487,7 +491,10 @@ func (w *World) applyHit(p *Player, a *Action, e *Enemy, impact movement.Vec3) C
 		dmg = 1
 	}
 	at := movement.Vec3{X: e.Pos.X, Y: e.Pos.Y + e.Height(), Z: e.Pos.Z}
-	dealt, shielded := w.applyDamage(e, p.ID, dmg, element, at, flags, true)
+	dealt, shielded := w.applyDamage(e, p.ID, dmg, element, at, flags, true, killing)
+	if element == combatdefs.Lightning {
+		w.wetChain(p.ID, e, dmg, killing) // WP15: rain chains lightning across water
+	}
 	if shielded {
 		flags |= FlagShielded
 	}
@@ -509,6 +516,9 @@ func (w *World) applyHit(p *Player, a *Action, e *Enemy, impact movement.Vec3) C
 			e.taunt = impact
 		}
 		if def := e.applyStatus(st, p.ID, from, w.tick, 1+0.01*float64(p.Profile.SkillLevel(a.SkillOf()))); def != nil {
+			if killing {
+				e.markKilling(def)
+			}
 			w.near(e.Pos, 64, 0, Out{Ev: ev(EvStatus, p.ID, e.ID, int32(def.ID), e.Pos, []byte{byte(min(255, ticksOf(def.DurationSteps)))})})
 		}
 	}
@@ -548,14 +558,20 @@ func (w *World) applyHit(p *Player, a *Action, e *Enemy, impact movement.Vec3) C
 
 // applyDamage lowers an enemy's health (shield first), keeps threat and
 // party scaling, tells observers, and handles death.
-func (w *World) applyDamage(e *Enemy, src uint32, dmg float64, element int, at movement.Vec3, flags uint8, direct bool) (float64, bool) {
+func (w *World) applyDamage(e *Enemy, src uint32, dmg float64, element int, at movement.Vec3, flags uint8, direct, killing bool) (float64, bool) {
 	if !e.Alive() || (e.Boss != nil && e.Boss.transitionUntil > w.tick) {
 		return 0, false
 	}
 	if p := w.players[src]; p != nil && !e.engaged[src] {
 		w.engage(e, p)
 	}
-	dealt, shielded := e.takeDamage(dmg, w.tick)
+	var dealt float64
+	var shielded bool
+	if e.Demon != nil {
+		dealt = w.demonDamage(e, src, dmg, killing) // WP15: wounds regenerate, only killing hits sear
+	} else {
+		dealt, shielded = e.takeDamage(dmg, w.tick)
+	}
 	e.threat[src] += dmg
 	e.DamageBy[src] += dealt
 	e.lastHitBy = src

@@ -1,0 +1,39 @@
+{
+  "Ana": {
+    "attacks": 111,
+    "claimsAccepted": 96,
+    "claimsRefused": 10,
+    "corrections": 0,
+    "damageTaken": 20,
+    "defenseXP": 300,
+    "demonKills": 10,
+    "dodges": 56,
+    "downs": 0,
+    "weapon": "sword"
+  },
+  "Bo": {
+    "attacks": 121,
+    "claimsAccepted": 100,
+    "claimsRefused": 16,
+    "corrections": 0,
+    "damageTaken": 146,
+    "defenseXP": 300,
+    "demonKills": 18,
+    "dodges": 73,
+    "downs": 0,
+    "weapon": "spear"
+  },
+  "pass": true,
+  "result": "HELD",
+  "scenario": "defense",
+  "seconds": 175.0586256,
+  "town": {
+    "index": 9,
+    "name": "Draedmore",
+    "x": 1920,
+    "z": 2272,
+    "wardR": 140,
+    "gardenX": 1926.297607421875,
+    "gardenZ": 2296.262451171875
+  }
+}

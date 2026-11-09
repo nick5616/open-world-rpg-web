@@ -19,6 +19,7 @@ import (
 	"lodestone/server/pkg/movement"
 	"lodestone/server/pkg/proto"
 	"lodestone/server/pkg/towns"
+	"lodestone/server/pkg/weather"
 	"lodestone/server/zone/internal/npc"
 )
 
@@ -83,11 +84,13 @@ type townsState struct {
 }
 
 func (s *Server) timeOfDay(now time.Time) float64 {
-	return npc.TimeOfDay(float64(now.UnixMilli())/1000, s.cfg.TimeOffsetS)
+	_ = now
+	return weather.TimeOfDayS(s.worldTimeS()) // WP15: the world clock (night.go)
 }
 
 func (s *Server) gameDay(now time.Time) int {
-	return int(math.Floor((float64(now.UnixMilli())/1000 + s.cfg.TimeOffsetS) / npc.DayLengthS))
+	_ = now
+	return int(weather.Day(s.worldTimeS())) // WP15
 }
 
 func (s *Server) npcGround(x, y, z float64) float64 { return movement.GroundAt(s.cfg.Ground, x, y, z) }

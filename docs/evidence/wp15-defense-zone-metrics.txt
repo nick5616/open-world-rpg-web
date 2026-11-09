@@ -1,0 +1,21 @@
+# HELP zone_bytes_in_total Bytes received from clients (incl. framing), monotonic; rate() / zone_players = per-client uplink.
+# HELP zone_bytes_out_total Bytes sent to clients (incl. framing), monotonic; rate() / zone_players = per-client downlink.
+# HELP zone_players Connected players.
+# HELP zone_tick_ms Tick duration quantiles over the last 60 s (ms).
+# HELP zone_tick_ms_lifetime Tick duration quantiles since start (ms, 10 us buckets).
+zone_combat_claims_accepted_total 196
+zone_combat_claims_refused_total{reason="3"} 1
+zone_combat_claims_refused_total{reason="4"} 21
+zone_combat_claims_refused_total{reason="5"} 4
+zone_combat_downs_total 0
+zone_combat_enemies 4
+zone_combat_evaded_total 93
+zone_combat_kills_total 24
+zone_combat_player_hits_total 15
+zone_players 2
+zone_tick_ms_lifetime{q="max"} 7.312
+zone_tick_ms_lifetime{q="p50"} 0.12
+zone_tick_ms_lifetime{q="p99"} 0.35
+zone_tick_ms{q="max"} 7.312
+zone_tick_ms{q="p50"} 0.139
+zone_tick_ms{q="p99"} 0.401

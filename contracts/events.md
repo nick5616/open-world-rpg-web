@@ -60,6 +60,25 @@ for your package; document each kind's use of `entityId`, `targetId`, `value`,
 | 410 | `gem_combined` | WP14. To you: three gems combined at a waypoint: `value` = 1, `data` = the new gem key |
 | 411 | `item_taken` | WP14. To you: you took a dropped item: `targetId` = the pickup entity, `value` = quantity, `data` = item key |
 
+| 500 | `world_clock` | WP15. To you after join and whenever it changes: `entityId` = you, `targetId` = tonight's night index (u32), `value` = its moon phase (0 new .. 4 full .. 7), `data` = `u8 version(1) \| f64 clock offset s \| u8 moon offset \| u16 WorldSpec windDirection \| u8 chemistry sync path (1 events, 2 bitmap) \| f32 demonIntensity \| u8 rain override (0 seeded, 1 rain, 2 dry)`. World time = server time (s) + offset; the client derives day, night, moon, rain and the chemistry wind from it and the seed (client/src/systems/clock.ts = server/pkg/weather) |
+| 501 | `dusk` | WP15. To everyone: night fell. `targetId` = night index, `value` = moon phase, `data` = notice text |
+| 502 | `dawn` | WP15. To everyone: sunrise. `value` = demons burned, `targetId` = demons that fled, `data` = notice text |
+| 503 | `demon_burned` | WP15. Within 96 m, at dawn: `entityId` = demon, `value` = 1 burned in the open / 0 fled to a lair or cave mouth, `x/y/z` = where |
+| 504 | `demon_shrugged` | WP15. To the attacker: an ordinary hit on a demon (it regenerates; only sunsteel, Light or sunrise kill demons). `entityId` = you, `targetId` = demon, `value` = the damage that will close again |
+| 505 | `demons_rose` | WP15. Within 160 m: demons rose from shadowed ground. `targetId` = rank (0 lesser, 1 greater, 2 lord), `value` = how many, `x/y/z` = where |
+| 506 | `lord_risen` | WP15. To everyone: a demon lord walks tonight (new moon). `entityId` = the lord, `x/y/z` = where, `data` = name |
+| 510 | `defense_warning` | WP15. Within 400 m of a town: its ward falters. `targetId` = town (settlement index), `value` = seconds to the first wave, `x/z` = ward garden, `data` = town name |
+| 511 | `defense_wave` | WP15. Within 400 m: a wave comes (also to joiners mid-event). `targetId` = town, `value` = wave number (1..), `x/z` = garden, `data` = `u8 waves \| u8 phase \| u16 demons` |
+| 512 | `ward_health` | WP15. Within 400 m, at most 2 Hz: `targetId` = town, `value` = ward garden health (WARD_HEALTH max), `x/z` = garden, `data` = u16 demons alive |
+| 513 | `defense_ended` | WP15. Within 400 m: `targetId` = town, `value` = 1 held, 2 broken (demons roam the town until dawn), 3 abandoned (nobody near for 30 s), `data` = notice text |
+| 514 | `defense_reward` | WP15. To each participant when the ward held: `targetId` = town, `value` = XP granted |
+| 520 | `chem_ignite` | WP15. Within CHEM_INTEREST_M: a chemistry op, scheduled CHEM_OP_LEAD_STEPS ahead. `targetId` = centre cell (iz * 2048 + ix, 2 m cells), `value` = radius in cells, `x/z` = cell centre (cm), `data` = i64 step LE. Ignites dry fuel within the radius, melts ice |
+| 521 | `chem_extinguish` | WP15. Same layout: puts out burning cells within the radius |
+| 522 | `chem_freeze` | WP15. Same layout: freezes water cells (a walkable sheet for FREEZE_STEPS) and puts out burning ones |
+| 523 | `chem_pillar` | WP15. `targetId` = pillar id, `x/y/z` = centre and base height (cm), `value` = height cm, `data` = `i64 step \| u16 half edge cm \| u16 wall run cm`; stands PILLAR_STEPS (2 minutes) on the movement ground of both sides |
+| 524 | `chem_baseline` | WP15. A chunk's full state for a client coming in range: `targetId` = chunk (cz * 64 + cx, 64 m chunks), `data` = `i64 step \| u16 n \| n x (u16 local cell \| u8 state (1 burning, 2 burnt, 3 frozen) \| i32 until - step)` |
+| 525 | `chem_bitmap` | WP15, the fallback path (Interact 51 action 10 = 2, or LODESTONE_ZONE_CHEM_SYNC=bitmap): 2 Hz per active chunk in range, `targetId` = chunk, `data` = `i64 step \| 256 bytes` (2 bits per cell, LSB first: 0 none, 1 burning, 2 burnt, 3 frozen); an all-zero bitmap clears a chunk |
+| 526 | `chem_refused` | WP15. To you: a chemistry/night Interact was refused. `targetId` = targetKind << 8 \| action, `value` = 1 dev only, 2 bad action/arg, 3 no such town / already running, 4 no ground to raise demons on |
 | 600 | `tower_unlocked` | WP12. You stood on a tower's top (zone-validated): `entityId` = you, `targetId` = atlas site index of the tower, `value` = region index now revealed, `x/y/z` = top centre (cm), `data` = UTF-8 region name. Granted once per character. |
 | 601 | `waypoint_activated` | WP12. You touched a waypoint stone for the first time: `targetId` = site index, `x/y/z` = stone (cm), `data` = name (a settlement waypoint carries its settlement's name). |
 | 602 | `discovery` | WP12. You entered a POI's discovery radius for the first time: `targetId` = site index, `value` = XP granted, `x/y/z` = site (cm), `data` = name (may be empty). |
@@ -115,7 +134,9 @@ to a thing" verb. `targetKind` is a registry like Event kinds; `action` and
 | 34-39 | reserved WP20 (doors, chests are WP14's 20-29) | | | |
 | 40 `vein` | WP09 | vein stable id | 1 = pickaxe swing (25 damage, >= 250 ms apart, within 4.5 m of the eye) | tool tier (0 for now) |
 | 41 `pickup` | WP09, WP14 | pickup entity id | 1 = take: personal pickups owner only (auto-taken on touch), public pickups (dropped items, snapshot `owner` none) anyone within 4.5 m | 0 |
-| 50 `combat` | WP13 | 0 | 1 = swap loadout, 2 = equip weapon, 3 = equip spell, 4 = learn a tree node, 5 = set the socketed gem (dev builds only; WP14 sockets) | 1: loadout (0/1); 2: loadout \| weapon id << 8; 3: loadout \| slot << 4 \| spell id << 8 (0 clears); 4: spell id; 5: loadout \| (element + 1) << 8 |
+| 50 `combat` | WP13 | 0 | 1 = swap loadout, 2 = equip weapon, 3 = equip spell, 4 = learn a tree node, 5 = set the socketed gem (dev builds only; WP14 sockets), 6 = set the weapon material (WP15; dev builds only; WP14's equipped item gear also carries it) | 1: loadout (0/1); 2: loadout \| weapon id << 8; 3: loadout \| slot << 4 \| spell id << 8 (0 clears); 4: spell id; 5: loadout \| (element + 1) << 8; 6: loadout \| material id << 8 (combat.yaml materials; 3 = sunsteel, 0 = ordinary) |
+| 51 `chem` | WP15 | dev actions: `x cm \| z cm << 32` (u32 each) | 1 = ignite, 2 = freeze, 3 = extinguish, 4 = raise a pillar (dev only); 10 = choose my chemistry sync path (anyone) | 1-3: radius in cells; 10: 1 events, 2 bitmap |
+| 52 `night` | WP15 (dev only) | 0 | 1 = the nearest town's ward falters (a defense event now), 2 = set the world clock offset, 3 = raise demons near me | 2: offset seconds (i32 bits); 3: 0 lesser pack, 1 greater, 2 lord |
 
 WorldEdits for `vein_mined` (WP09) carry 16 bytes of `params` (f32 x, y, z,
 carve radius 1.5) and `expiresAt` = respawn time; a delta whose `expiresAt`
@@ -135,3 +156,8 @@ key, `level` = quantity (capped 255), `typeId` = rarity (0-7). Personal
 loot (kills, veins, container overflow) is sent only to its owner; dropped
 items are public and despawn 10 minutes after the drop. See
 server/zone/README.md "Items and loot (WP14)".
+
+Demons (WP15) are ordinary enemies (`EntityKind` enemy, `typeId` from
+combat.yaml where `family` is `demon`); the reserved `EntityKind` demon (6)
+stays unused so every client and bot keeps drawing and targeting them on
+the WP13 path. See docs/cr/011-wp15-night-chemistry.md.

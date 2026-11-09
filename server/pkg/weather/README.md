@@ -19,3 +19,15 @@ window boundary costs at most one correction while climbing.
 `LODESTONE_ZONE_DEBUG_RAIN=1|0` overrides it on the zone (client: `?rain=1|0`).
 
 Test: `cd server/pkg && go test ./weather`.
+
+## The world clock (WP15)
+
+`clock.go` owns world time now: `Clock{Seed, OffsetS}.WorldTime(serverMs)`
+(the offset is the world's `LODESTONE_ZONE_TIME_OFFSET_S`, announced to
+clients in Event 500), `Hour`, `IsNight` (18:30-06:00), `NightIndex`,
+`MoonPhase` (seeded 8-night cycle), `MoonDemonFactor`, the chemistry step
+(`Step`, `RainingAtStep` on whole steps) and the chemistry wind (`WindAt`).
+`IsRaining` keeps WP10's vectors; the zone now evaluates it at world time.
+TS twin: `client/src/systems/clock.ts`; both replay
+`testdata/clock_vectors.json` (`go test ./weather -run ClockVectors -update`
+rewrites it).

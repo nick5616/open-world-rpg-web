@@ -1,0 +1,18 @@
+WP15 fire sync: zone zone-wp10-51730 (world seed 20261108, real terrain), clients A + B on the event path, C on the bitmap fallback
+world clock offset 1292 s, prevailing wind 179 deg; meadow (1843, 2457) with 73% dry fuel in a 28 m disc
+ignite op: cell 2515865 at zone step 8970921026; comparing steps 8970921026..8970921336 (62 s at 5 Hz)
+  t= -1 s  step 8970921022: burning A 0 / cells 0
+  t=  9 s  step 8970921073: burning A 59 / cells 59
+  t= 19 s  step 8970921123: burning A 264 / cells 269
+  t= 29 s  step 8970921173: burning A 464 / cells 539
+  t= 39 s  step 8970921223: burning A 600 / cells 874
+  t= 49 s  step 8970921273: burning A 845 / cells 1384
+  t= 59 s  step 8970921323: burning A 1121 / cells 2009
+
+A vs B, state digest per step: 311/311 identical
+zone vs A, state digest per step: 311/311 identical (0 steps not in the zone's ring)
+final cells at step 8970921342: A 2257, B 2257, differing entries 0
+peak burning cells 1182; late ops A 0 B 0; baselines A 8 B 8; zone late ops 0
+bitmap fallback (C): 127/127 bitmap bursts identical to A's state at the same step
+burning cells over time (zone): 0s:9 5s:28 10s:66 15s:170 20s:276 25s:379 30s:468 35s:564 40s:604 45s:734 50s:855 55s:978 60s:1138
+PASS: two clients saw the same fire spread cell for cell for 62 s (and so did the zone and the bitmap fallback)

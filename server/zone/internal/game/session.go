@@ -332,6 +332,10 @@ func (s *Server) drain(sess *session, now time.Time) {
 			continue
 		}
 		if it, ok := m.(*proto.Interact); ok {
+			if it.TargetKind == InteractChem || it.TargetKind == InteractNight {
+				s.nightInteract(sess, it) // WP15: chemistry sync mode, dev night tools (night.go)
+				continue
+			}
 			if it.TargetKind == combat.InteractCombat {
 				s.handleCombatInteract(sess, it) // WP13: loadouts, equip, learn (combat.go)
 				continue

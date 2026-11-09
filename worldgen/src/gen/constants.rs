@@ -288,6 +288,87 @@ pub const MAX_PERSONAL_PINS: i32 = 10;
 pub const WEATHER_STUB_WINDOW_S: i32 = 600;
 /// WP10 weather stub: percent of windows that rain.
 pub const WEATHER_STUB_RAIN_PCT: i32 = 25;
+// ---- night
+/// Hour of the in-game day demons rise (the sun is just below the horizon; the sky's sun crosses it at 18:00).
+pub const DUSK_HOUR: f64 = 18.5;
+/// Sunrise: demons caught in the open burn, the rest flee to caves and lairs. Night n runs from DUSK_HOUR of day n to DAWN_HOUR of day n + 1.
+pub const DAWN_HOUR: f64 = 6.0;
+/// An ordinary hit staggers a demon (interrupts its wind-up, short knockback) at most this often.
+pub const DEMON_STAGGER_COOLDOWN_S: f64 = 1.2;
+/// How often the zone tops up the demons around players at night.
+pub const DEMON_SPAWN_EVERY_S: i32 = 5;
+/// Lesser demons hunting each player in the open on a new-moon night at demonIntensity 0.5 (scaled by the moon and demonIntensity / 0.5).
+pub const DEMON_PER_PLAYER: f64 = 4.0;
+/// Demons rise at least this far from the player they hunt (spec 8: from shadowed ground) ...
+pub const DEMON_SPAWN_MIN_M: f64 = 34.0;
+/// ... and at most this far.
+pub const DEMON_SPAWN_MAX_M: f64 = 58.0;
+/// Demons chase this far from where they rose (camps use ENEMY_LEASH_M).
+pub const DEMON_HUNT_LEASH_M: f64 = 160.0;
+/// A settlement's ward covers its radius plus this margin: demons cannot enter it and ignore players inside it (spec 8: towns are warded by gardens of a flowering plant demons cannot pass).
+pub const WARD_MARGIN_M: f64 = 10.0;
+/// Lesser demons will not step within this distance of a road lantern.
+pub const LANTERN_WARD_M: f64 = 5.0;
+/// Chance that a settlement's ward weakens on a new-moon night at demonIntensity 0.5 (scaled by the moon and the intensity): a town defense event.
+pub const DEFENSE_CHANCE: f64 = 0.18;
+/// A defense event runs only while a player is this close to the settlement (anyone nearby can join; participants are players inside it).
+pub const DEFENSE_JOIN_M: f64 = 160.0;
+/// Waves of demons in a town defense event.
+pub const DEFENSE_WAVES: i32 = 3;
+/// Warning before the first wave (the ward falters).
+pub const DEFENSE_WARNING_S: f64 = 15.0;
+/// Lull between waves.
+pub const DEFENSE_BREAK_S: f64 = 12.0;
+/// Ward garden health in a defense event; at 0 the ward breaks and demons roam the town until dawn.
+pub const WARD_HEALTH: i32 = 1000;
+/// Ward damage per second from each demon at the garden.
+pub const WARD_DAMAGE_PER_S: f64 = 12.0;
+/// Chemistry simulation rate: step k is world time k / CHEM_STEP_HZ seconds; every client runs the same steps from the same events (spec 8: sync events, not results).
+pub const CHEM_STEP_HZ: i32 = 5;
+/// The zone schedules an ignite/freeze/extinguish this many steps ahead of its own step, so the event reaches clients before it takes effect.
+pub const CHEM_OP_LEAD_STEPS: i32 = 3;
+/// Clients simulate this many steps behind their estimate of the zone's step (more latency headroom; a late op is applied at once and counted).
+pub const CHEM_CLIENT_DELAY_STEPS: i32 = 2;
+/// Chemistry chunk edge in cells (32 x MATERIAL_GRID_M = 64 m = CHUNK_SIZE_M): the unit of baselines and bitmaps.
+pub const CHEM_CHUNK_CELLS: i32 = 32;
+/// Clients receive chemistry events and baselines for chunks within this distance.
+pub const CHEM_INTEREST_M: f64 = 256.0;
+/// Bitmap fallback rate per active chunk (spec 8: server-sent burned-cell bitmaps per chunk at 2 Hz).
+pub const CHEM_BITMAP_HZ: i32 = 2;
+/// The chemistry wind (direction sector and strength) changes every this many seconds of world time, seeded.
+pub const CHEM_WIND_WINDOW_S: i32 = 120;
+/// Per step, per burning orthogonal neighbor, chance in 1000 that dry grass catches (before wind and rain).
+pub const FIRE_GRASS_SPREAD_PERMILLE: i32 = 45;
+/// Same for woody brush (forest undergrowth): slower to catch, burns longer.
+pub const FIRE_BRUSH_SPREAD_PERMILLE: i32 = 30;
+/// Same for damp wetland grass.
+pub const FIRE_DAMP_SPREAD_PERMILLE: i32 = 12;
+/// A grass cell burns this many steps plus a seeded 0..FIRE_BURN_JITTER_STEPS (spec 8: burns out in about 20 s).
+pub const FIRE_GRASS_BURN_STEPS: i32 = 80;
+/// Brush burn time in steps (plus jitter).
+pub const FIRE_BRUSH_BURN_STEPS: i32 = 110;
+/// Seeded extra burn steps per cell.
+pub const FIRE_BURN_JITTER_STEPS: i32 = 40;
+/// Burnt cells regrow after one in-game day (3600 s at 5 Hz).
+pub const FIRE_REGROW_STEPS: i32 = 18000;
+/// While it rains, each burning cell goes out with this chance in 1000 per step, and spread chances are divided by 5.
+pub const FIRE_RAIN_OUT_PERMILLE: i32 = 40;
+/// No new spread while this many cells burn (bounds the zone's and clients' work).
+pub const FIRE_MAX_BURNING: i32 = 6000;
+/// Lift (m/s) over burning cells (any burning cell in the 3 x 3 block under a point), fed to the movement step's UpdraftField hook.
+pub const FIRE_UPDRAFT_LIFT: f64 = 7.0;
+/// The fire's updraft column reaches this far above the burning cell's ground.
+pub const FIRE_UPDRAFT_TOP_M: f64 = 40.0;
+/// Ice on water freezes a walkable sheet for 60 s (spec 8).
+pub const FREEZE_STEPS: i32 = 300;
+/// An Earth spell raises a climbable pillar for 2 minutes (spec 8).
+pub const PILLAR_STEPS: i32 = 600;
+/// Pillar height above the ground at its centre.
+pub const PILLAR_HEIGHT_M: f64 = 6.0;
+/// Half the pillar's top edge (a 3 m square top).
+pub const PILLAR_HALF_M: f64 = 1.5;
+/// Horizontal run of the pillar's walls (6 m over 1.06 m = 80 degrees: climbable by WP10's rules, like tower walls).
+pub const PILLAR_WALL_RUN_M: f64 = 1.06;
 // ---- security
 /// Connect ticket lifetime.
 pub const TICKET_TTL_S: i32 = 60;

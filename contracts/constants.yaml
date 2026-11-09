@@ -9,7 +9,7 @@
 # therefore needs a new genVersion (spec section 5). Changing a movement value
 # changes client prediction AND server simulation together, which is the point
 # of keeping them here.
-version: 3
+version: 4   # v4: WP15 night, demons and chemistry (docs/cr/011-wp15-night-chemistry.md)
 
 groups:
   world:
@@ -179,6 +179,53 @@ groups:
     MAX_PERSONAL_PINS: {type: i32, value: 10, doc: "Map pins per player."}
     WEATHER_STUB_WINDOW_S: {type: i32, value: 600, doc: "WP10 weather stub (until WP15): world time is cut into windows this long; each is rainy or dry from a hash of (seed, window)."}
     WEATHER_STUB_RAIN_PCT: {type: i32, value: 25, doc: "WP10 weather stub: percent of windows that rain."}
+
+  night:
+    # ---- WP15 (CR 011): the world clock, demons, ward gardens, town defense
+    # and the chemistry engine (spec 8). The clock, weather, wind and the fire
+    # simulation are evaluated identically by the zone (server/pkg/weather,
+    # server/zone/internal/chem) and the client (client/src/systems), so every
+    # number that feeds them lives here.
+    DUSK_HOUR: {type: f64, value: 18.5, doc: "Hour of the in-game day demons rise (the sun is just below the horizon; the sky's sun crosses it at 18:00)."}
+    DAWN_HOUR: {type: f64, value: 6, doc: "Sunrise: demons caught in the open burn, the rest flee to caves and lairs. Night n runs from DUSK_HOUR of day n to DAWN_HOUR of day n + 1."}
+    DEMON_STAGGER_COOLDOWN_S: {type: f64, value: 1.2, doc: "An ordinary hit staggers a demon (interrupts its wind-up, short knockback) at most this often."}
+    DEMON_SPAWN_EVERY_S: {type: i32, value: 5, doc: "How often the zone tops up the demons around players at night."}
+    DEMON_PER_PLAYER: {type: f64, value: 4, doc: "Lesser demons hunting each player in the open on a new-moon night at demonIntensity 0.5 (scaled by the moon and demonIntensity / 0.5)."}
+    DEMON_SPAWN_MIN_M: {type: f64, value: 34, doc: "Demons rise at least this far from the player they hunt (spec 8: from shadowed ground) ..."}
+    DEMON_SPAWN_MAX_M: {type: f64, value: 58, doc: "... and at most this far."}
+    DEMON_HUNT_LEASH_M: {type: f64, value: 160, doc: "Demons chase this far from where they rose (camps use ENEMY_LEASH_M)."}
+    WARD_MARGIN_M: {type: f64, value: 10, doc: "A settlement's ward covers its radius plus this margin: demons cannot enter it and ignore players inside it (spec 8: towns are warded by gardens of a flowering plant demons cannot pass)."}
+    LANTERN_WARD_M: {type: f64, value: 5, doc: "Lesser demons will not step within this distance of a road lantern."}
+    DEFENSE_CHANCE: {type: f64, value: 0.18, doc: "Chance that a settlement's ward weakens on a new-moon night at demonIntensity 0.5 (scaled by the moon and the intensity): a town defense event."}
+    DEFENSE_JOIN_M: {type: f64, value: 160, doc: "A defense event runs only while a player is this close to the settlement (anyone nearby can join; participants are players inside it)."}
+    DEFENSE_WAVES: {type: i32, value: 3, doc: "Waves of demons in a town defense event."}
+    DEFENSE_WARNING_S: {type: f64, value: 15, doc: "Warning before the first wave (the ward falters)."}
+    DEFENSE_BREAK_S: {type: f64, value: 12, doc: "Lull between waves."}
+    WARD_HEALTH: {type: i32, value: 1000, doc: "Ward garden health in a defense event; at 0 the ward breaks and demons roam the town until dawn."}
+    WARD_DAMAGE_PER_S: {type: f64, value: 12, doc: "Ward damage per second from each demon at the garden."}
+    CHEM_STEP_HZ: {type: i32, value: 5, doc: "Chemistry simulation rate: step k is world time k / CHEM_STEP_HZ seconds; every client runs the same steps from the same events (spec 8: sync events, not results)."}
+    CHEM_OP_LEAD_STEPS: {type: i32, value: 3, doc: "The zone schedules an ignite/freeze/extinguish this many steps ahead of its own step, so the event reaches clients before it takes effect."}
+    CHEM_CLIENT_DELAY_STEPS: {type: i32, value: 2, doc: "Clients simulate this many steps behind their estimate of the zone's step (more latency headroom; a late op is applied at once and counted)."}
+    CHEM_CHUNK_CELLS: {type: i32, value: 32, doc: "Chemistry chunk edge in cells (32 x MATERIAL_GRID_M = 64 m = CHUNK_SIZE_M): the unit of baselines and bitmaps."}
+    CHEM_INTEREST_M: {type: f64, value: 256, doc: "Clients receive chemistry events and baselines for chunks within this distance."}
+    CHEM_BITMAP_HZ: {type: i32, value: 2, doc: "Bitmap fallback rate per active chunk (spec 8: server-sent burned-cell bitmaps per chunk at 2 Hz)."}
+    CHEM_WIND_WINDOW_S: {type: i32, value: 120, doc: "The chemistry wind (direction sector and strength) changes every this many seconds of world time, seeded."}
+    FIRE_GRASS_SPREAD_PERMILLE: {type: i32, value: 45, doc: "Per step, per burning orthogonal neighbor, chance in 1000 that dry grass catches (before wind and rain)."}
+    FIRE_BRUSH_SPREAD_PERMILLE: {type: i32, value: 30, doc: "Same for woody brush (forest undergrowth): slower to catch, burns longer."}
+    FIRE_DAMP_SPREAD_PERMILLE: {type: i32, value: 12, doc: "Same for damp wetland grass."}
+    FIRE_GRASS_BURN_STEPS: {type: i32, value: 80, doc: "A grass cell burns this many steps plus a seeded 0..FIRE_BURN_JITTER_STEPS (spec 8: burns out in about 20 s)."}
+    FIRE_BRUSH_BURN_STEPS: {type: i32, value: 110, doc: "Brush burn time in steps (plus jitter)."}
+    FIRE_BURN_JITTER_STEPS: {type: i32, value: 40, doc: "Seeded extra burn steps per cell."}
+    FIRE_REGROW_STEPS: {type: i32, value: 18000, doc: "Burnt cells regrow after one in-game day (3600 s at 5 Hz)."}
+    FIRE_RAIN_OUT_PERMILLE: {type: i32, value: 40, doc: "While it rains, each burning cell goes out with this chance in 1000 per step, and spread chances are divided by 5."}
+    FIRE_MAX_BURNING: {type: i32, value: 6000, doc: "No new spread while this many cells burn (bounds the zone's and clients' work)."}
+    FIRE_UPDRAFT_LIFT: {type: f64, value: 7, doc: "Lift (m/s) over burning cells (any burning cell in the 3 x 3 block under a point), fed to the movement step's UpdraftField hook."}
+    FIRE_UPDRAFT_TOP_M: {type: f64, value: 40, doc: "The fire's updraft column reaches this far above the burning cell's ground."}
+    FREEZE_STEPS: {type: i32, value: 300, doc: "Ice on water freezes a walkable sheet for 60 s (spec 8)."}
+    PILLAR_STEPS: {type: i32, value: 600, doc: "An Earth spell raises a climbable pillar for 2 minutes (spec 8)."}
+    PILLAR_HEIGHT_M: {type: f64, value: 6, doc: "Pillar height above the ground at its centre."}
+    PILLAR_HALF_M: {type: f64, value: 1.5, doc: "Half the pillar's top edge (a 3 m square top)."}
+    PILLAR_WALL_RUN_M: {type: f64, value: 1.06, doc: "Horizontal run of the pillar's walls (6 m over 1.06 m = 80 degrees: climbable by WP10's rules, like tower walls)."}
 
   security:
     TICKET_TTL_S: {type: i32, value: 60, doc: "Connect ticket lifetime."}

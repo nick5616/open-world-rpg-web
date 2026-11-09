@@ -523,3 +523,35 @@ ordered item transaction queue), `items_store.go` (Postgres),
   tests here: `TestZoneProcessKillMidGrantNeverDuplicates`,
   `TestZoneProcessDropPickupDespawn`, `TestG4LoopForgeSunsteelBlade`
   (`bash testdata_evidence_wp14.sh` writes their logs to `docs/evidence/wp14-*`).
+
+## Night, demons and chemistry (WP15)
+
+Decision `docs/decisions/0015-night-chemistry.md`, contract
+`docs/cr/011-wp15-night-chemistry.md`, wire `contracts/events.md` 500-526 and
+Interact 50/6, 51, 52.
+
+- **World clock**: world time = wall clock + `LODESTONE_ZONE_TIME_OFFSET_S`
+  (set the same value on every zone of a world). Event 500 tells clients the
+  offset; NPC schedules (towns.go), rain (traversal.go) and demons use it.
+- **Demons** (`internal/game/night.go`, `internal/night`, `internal/combat/demon.go`):
+  lesser packs around players in the open at night, greater demons by region
+  element, lords at demon lairs on new moons; regenerate from ordinary damage,
+  die to sunsteel (loadout material `sunsteel`), Light, or sunrise (those near
+  a lair or cave mouth flee). Wards (settlement radius + 10 m) block them;
+  players inside are left alone. `LODESTONE_ZONE_NO_DEMONS=1` stops night spawns.
+- **Town defense**: seeded per town per night; `LODESTONE_ZONE_DEBUG_DEFENSE=spawn|<town>[,delay]`
+  forces one; dev Interact 52 action 1 starts one at the nearest town.
+- **Chemistry** (`internal/chem`): fire, ice, pillars, rain on a 2 m grid,
+  ops scheduled 3 steps ahead and broadcast within 256 m; chunk baselines for
+  newcomers; `LODESTONE_ZONE_CHEM_SYNC=bitmap` (or a client's Interact 51/10)
+  switches to 2 Hz bitmaps. Ice sheets and pillars are on the movement ground
+  (night.go wraps the production ground, keeping its methods). Fire feeds the
+  movement step's updrafts. `LODESTONE_ZONE_NO_CHEM=1` turns it off.
+- **Dev** (`LODESTONE_ZONE_DEV_NIGHT`, default on with the dev ticket key):
+  Interact 51 actions 1-4 (ignite, freeze, extinguish, pillar), 52 actions
+  1-3 (defense, set the clock offset, raise demons); with
+  `LODESTONE_ZONE_DEV_COMBAT`, Interact 50 action 6 sets the weapon material
+  (sunsteel = 3).
+- `GET /debug/night` (`?hashes=1` chemistry digests per step, `?towns=1` wards).
+- Acceptance: `node server/zone/cmd/nightbots/acceptance.mjs` (demon immunity
+  vs sunsteel vs sunrise; a two-bot town defense), `npm run fire:accept -w client`.

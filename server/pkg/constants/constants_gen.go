@@ -437,6 +437,128 @@ const WeatherStubWindowS = 600
 // WeatherStubRainPct: WP10 weather stub: percent of windows that rain.
 const WeatherStubRainPct = 25
 
+// ---- night
+
+// DuskHour: Hour of the in-game day demons rise (the sun is just below the horizon; the sky's sun crosses it at 18:00).
+const DuskHour float64 = 18.5
+
+// DawnHour: Sunrise: demons caught in the open burn, the rest flee to caves and lairs. Night n runs from DUSK_HOUR of day n to DAWN_HOUR of day n + 1.
+const DawnHour float64 = 6
+
+// DemonStaggerCooldownS: An ordinary hit staggers a demon (interrupts its wind-up, short knockback) at most this often.
+const DemonStaggerCooldownS float64 = 1.2
+
+// DemonSpawnEveryS: How often the zone tops up the demons around players at night.
+const DemonSpawnEveryS = 5
+
+// DemonPerPlayer: Lesser demons hunting each player in the open on a new-moon night at demonIntensity 0.5 (scaled by the moon and demonIntensity / 0.5).
+const DemonPerPlayer float64 = 4
+
+// DemonSpawnMinM: Demons rise at least this far from the player they hunt (spec 8: from shadowed ground) ...
+const DemonSpawnMinM float64 = 34
+
+// DemonSpawnMaxM: ... and at most this far.
+const DemonSpawnMaxM float64 = 58
+
+// DemonHuntLeashM: Demons chase this far from where they rose (camps use ENEMY_LEASH_M).
+const DemonHuntLeashM float64 = 160
+
+// WardMarginM: A settlement's ward covers its radius plus this margin: demons cannot enter it and ignore players inside it (spec 8: towns are warded by gardens of a flowering plant demons cannot pass).
+const WardMarginM float64 = 10
+
+// LanternWardM: Lesser demons will not step within this distance of a road lantern.
+const LanternWardM float64 = 5
+
+// DefenseChance: Chance that a settlement's ward weakens on a new-moon night at demonIntensity 0.5 (scaled by the moon and the intensity): a town defense event.
+const DefenseChance float64 = 0.18
+
+// DefenseJoinM: A defense event runs only while a player is this close to the settlement (anyone nearby can join; participants are players inside it).
+const DefenseJoinM float64 = 160
+
+// DefenseWaves: Waves of demons in a town defense event.
+const DefenseWaves = 3
+
+// DefenseWarningS: Warning before the first wave (the ward falters).
+const DefenseWarningS float64 = 15
+
+// DefenseBreakS: Lull between waves.
+const DefenseBreakS float64 = 12
+
+// WardHealth: Ward garden health in a defense event; at 0 the ward breaks and demons roam the town until dawn.
+const WardHealth = 1000
+
+// WardDamagePerS: Ward damage per second from each demon at the garden.
+const WardDamagePerS float64 = 12
+
+// ChemStepHz: Chemistry simulation rate: step k is world time k / CHEM_STEP_HZ seconds; every client runs the same steps from the same events (spec 8: sync events, not results).
+const ChemStepHz = 5
+
+// ChemOpLeadSteps: The zone schedules an ignite/freeze/extinguish this many steps ahead of its own step, so the event reaches clients before it takes effect.
+const ChemOpLeadSteps = 3
+
+// ChemClientDelaySteps: Clients simulate this many steps behind their estimate of the zone's step (more latency headroom; a late op is applied at once and counted).
+const ChemClientDelaySteps = 2
+
+// ChemChunkCells: Chemistry chunk edge in cells (32 x MATERIAL_GRID_M = 64 m = CHUNK_SIZE_M): the unit of baselines and bitmaps.
+const ChemChunkCells = 32
+
+// ChemInterestM: Clients receive chemistry events and baselines for chunks within this distance.
+const ChemInterestM float64 = 256
+
+// ChemBitmapHz: Bitmap fallback rate per active chunk (spec 8: server-sent burned-cell bitmaps per chunk at 2 Hz).
+const ChemBitmapHz = 2
+
+// ChemWindWindowS: The chemistry wind (direction sector and strength) changes every this many seconds of world time, seeded.
+const ChemWindWindowS = 120
+
+// FireGrassSpreadPermille: Per step, per burning orthogonal neighbor, chance in 1000 that dry grass catches (before wind and rain).
+const FireGrassSpreadPermille = 45
+
+// FireBrushSpreadPermille: Same for woody brush (forest undergrowth): slower to catch, burns longer.
+const FireBrushSpreadPermille = 30
+
+// FireDampSpreadPermille: Same for damp wetland grass.
+const FireDampSpreadPermille = 12
+
+// FireGrassBurnSteps: A grass cell burns this many steps plus a seeded 0..FIRE_BURN_JITTER_STEPS (spec 8: burns out in about 20 s).
+const FireGrassBurnSteps = 80
+
+// FireBrushBurnSteps: Brush burn time in steps (plus jitter).
+const FireBrushBurnSteps = 110
+
+// FireBurnJitterSteps: Seeded extra burn steps per cell.
+const FireBurnJitterSteps = 40
+
+// FireRegrowSteps: Burnt cells regrow after one in-game day (3600 s at 5 Hz).
+const FireRegrowSteps = 18000
+
+// FireRainOutPermille: While it rains, each burning cell goes out with this chance in 1000 per step, and spread chances are divided by 5.
+const FireRainOutPermille = 40
+
+// FireMaxBurning: No new spread while this many cells burn (bounds the zone's and clients' work).
+const FireMaxBurning = 6000
+
+// FireUpdraftLift: Lift (m/s) over burning cells (any burning cell in the 3 x 3 block under a point), fed to the movement step's UpdraftField hook.
+const FireUpdraftLift float64 = 7
+
+// FireUpdraftTopM: The fire's updraft column reaches this far above the burning cell's ground.
+const FireUpdraftTopM float64 = 40
+
+// FreezeSteps: Ice on water freezes a walkable sheet for 60 s (spec 8).
+const FreezeSteps = 300
+
+// PillarSteps: An Earth spell raises a climbable pillar for 2 minutes (spec 8).
+const PillarSteps = 600
+
+// PillarHeightM: Pillar height above the ground at its centre.
+const PillarHeightM float64 = 6
+
+// PillarHalfM: Half the pillar's top edge (a 3 m square top).
+const PillarHalfM float64 = 1.5
+
+// PillarWallRunM: Horizontal run of the pillar's walls (6 m over 1.06 m = 80 degrees: climbable by WP10's rules, like tower walls).
+const PillarWallRunM float64 = 1.06
+
 // ---- security
 
 // TicketTtlS: Connect ticket lifetime.
