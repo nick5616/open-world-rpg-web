@@ -74,15 +74,16 @@ export function toast(text: string): void {
   useCombatHud.getState().set({ toast: { text, at: performance.now() } });
 }
 
-/** FX the 3D layer consumes (sparks, projectiles, telegraphs, numbers). */
+/**
+ * FX the 3D layer consumes: hit sparks (the enemy hit flash), damage numbers,
+ * enemy telegraphs and melee swings. Spell visuals (projectiles, beams,
+ * areas, runes...) go through the spell FX engine instead (fx/api.ts).
+ */
 export type Fx =
   | { t: 'spark'; x: number; y: number; z: number; color: string; at: number }
   | { t: 'number'; n: DamageNumber }
   | { t: 'telegraph'; enemy: number; shape: number; x: number; y: number; z: number; yaw: number; radius: number; reach: number; arc: number; width: number; windupMs: number; at: number }
-  | { t: 'projectile'; id: number; x: number; y: number; z: number; vx: number; vy: number; vz: number; gravity: number; radius: number; color: string; life: number; at: number; enemy: boolean }
-  | { t: 'area'; x: number; y: number; z: number; radius: number; color: string; durationMs: number; at: number }
-  | { t: 'swing'; arc: number; reach: number; color: string; durationMs: number; at: number }
-  | { t: 'beam'; x: number; y: number; z: number; x2: number; y2: number; z2: number; color: string; durationMs: number; at: number };
+  | { t: 'swing'; arc: number; reach: number; color: string; durationMs: number; at: number };
 
 export const fxQueue: Fx[] = [];
 

@@ -18,6 +18,8 @@
 import * as THREE from 'three';
 import { BlendFunction, BloomEffect, Effect, EffectAttribute, EffectComposer, EffectPass, GodRaysEffect, RenderPass, ToneMappingEffect, ToneMappingMode } from 'postprocessing';
 import { SKY_GLSL } from '../sky/atmosphere';
+// Playtest 2: spell shockwave distortion, shake and flashes (combat/fx/screen.ts).
+import { SpellScreenEffect } from '../../combat/fx/screen';
 
 const FOG_FRAG = /* glsl */ `
 uniform mat4 uInvProj;
@@ -132,6 +134,8 @@ export interface PostConfig {
   multisampling: number;
   bloom: boolean;
   godRays: boolean;
+  /** Playtest 2: the spell screen effect (medium and high; combat/fx/screen.ts). */
+  spellScreen?: boolean;
 }
 
 export class PostFX {
@@ -155,7 +159,8 @@ export class PostFX {
     // against the scene depth, so terrain and trees mask the rays.
     this.sunSource = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 8), new THREE.MeshBasicMaterial({ color: 0xfff1d6, transparent: true, depthWrite: false, fog: false }));
     this.sunSource.frustumCulled = false;
-    const effects: Effect[] = [this.fog];
+    // The spell effect transforms UVs (shockwaves, shake), so it goes first.
+    const effects: Effect[] = cfg.spellScreen ? [new SpellScreenEffect(camera), this.fog] : [this.fog];
     if (cfg.godRays) {
       this.godRays = new GodRaysEffect(camera, this.sunSource, { resolutionScale: 0.5, density: 0.9, decay: 0.93, weight: 0.22, exposure: 0.32, samples: 48, clampMax: 0.8, blur: true });
       effects.push(this.godRays);

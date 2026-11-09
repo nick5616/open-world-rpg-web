@@ -31,6 +31,10 @@ import { SkillScreen } from '../ui/skills';
 import { QuestHud } from '../ui/quests/QuestHud';
 // Sound and music: boots the audio engine after the first playable frame; K = sound settings (client/src/audio/README.md).
 import { AudioRoot } from '../audio/ui/AudioRoot';
+// Playtest 2: spell FX (online it is CombatLayer's; debug solo mounts it for the FX gallery and cast-spam bench).
+import { SpellFxLayer } from '../combat/fx/SpellFxLayer';
+// `?nofx`: solo without the FX layer (the A/B of the spell FX benchmark, combat/fx/dev/fx-bench.mjs).
+const NO_FX = typeof location !== 'undefined' && new URLSearchParams(location.search).has('nofx');
 
 function DebugLayer() {
   useDebugHotkeys();
@@ -49,7 +53,7 @@ export default function PlayScreen() {
   const online = !SOLO && ready !== null;
   return (
     <>
-      {online ? <NetPlay ready={ready} /> : <WorldCanvas />}
+      {online ? <NetPlay ready={ready} /> : <WorldCanvas>{DEBUG && !NO_FX && <SpellFxLayer />}</WorldCanvas>}
       <Crosshair />
       <StaminaWheel />
       <LockHint />
