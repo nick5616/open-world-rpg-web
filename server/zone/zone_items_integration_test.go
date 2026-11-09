@@ -484,7 +484,7 @@ func TestZoneProcessKillMidGrantNeverDuplicates(t *testing.T) {
 	if f.markers(char, "container:") != 1 {
 		t.Fatalf("committed grant not marked")
 	}
-	want := map[string]int{"potion:health": 3, "currency:gold": 20}
+	want := map[string]int{"potion:health": 3, "currency:gold": 20, "tool:pickaxe": 1} // items.yaml starter (the pickaxe since playtest 2)
 	for k, v := range firstRoll {
 		want[k] += v
 	}

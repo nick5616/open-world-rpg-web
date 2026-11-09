@@ -429,17 +429,21 @@ func (s *Server) topUpStarter(sess *session) {
 }
 
 // grantStarterPickaxe gives an older character the kit's pickaxe once,
-// unless they already carry one (bought, looted). The marker is recorded
-// either way, so a pickaxe sold or dropped later is not replaced for free.
+// unless they already carry one (the kit's, bought, looted). Carrying one
+// only sets the marker in memory: no journal op on every join for the
+// characters the new kit already equipped (their "starter" marker is the
+// only one stored). The stored marker comes with an actual grant, so a
+// pickaxe sold or dropped after that is not replaced for free.
 func (s *Server) grantStarterPickaxe(sess *session) {
 	ci := sess.items
-	var d items.Delta
-	if ci.inv.Count("tool:pickaxe") == 0 && ci.inv.CanFit("tool:pickaxe", 1) {
-		it := items.Stack("tool:pickaxe", 1)
-		it.Prov = []items.Prov{{Ev: "starter", Char: sess.ent.CharacterID, At: s.cfg.Now().UnixMilli()}}
-		ci.inv.Add(it, &d)
-	}
 	ci.markers[starterPickaxeMarker] = true
+	if ci.inv.Count("tool:pickaxe") > 0 || !ci.inv.CanFit("tool:pickaxe", 1) {
+		return
+	}
+	var d items.Delta
+	it := items.Stack("tool:pickaxe", 1)
+	it.Prov = []items.Prov{{Ev: "starter", Char: sess.ent.CharacterID, At: s.cfg.Now().UnixMilli()}}
+	ci.inv.Add(it, &d)
 	if ci.persist == persistLocal {
 		ci.version++ // rides the next save point, like the starter kit
 		if sess.x != nil && sess.x.prog != nil {
