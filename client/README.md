@@ -43,7 +43,8 @@ npm run golden -w client      # regenerate src/sim/golden/*.json after an intend
 | `src/sim/` | Pure movement contract shared with the Go zone server. See `src/sim/README.md`. |
 | `src/scene/` | R3F: `GameCanvas` (Canvas, quality, monitor), `PlayerController` (look + fixed-step loop + camera), `FirstPersonArms`, `SkyAndSun`, `FlatTerrain`, `CellBorders`, `groundContext`. |
 | `src/input/` | Ref-based keyboard and pointer-lock mouse hooks. |
-| `src/hud/` | `DebugHud` (FrameStats extended), `DebugPanel`, crosshair/lock hint, debug hotkeys. |
+| `src/hud/` | `DebugHud` (FrameStats extended), `DebugPanel`, crosshair/lock hint, debug hotkeys. `layout.ts` (playtest 1): the bottom HUD's shared CSS variables: the combat stack measures itself into `--ls-hotbar-h`, the lock hint sits above it (`--ls-hint-h`), chat and voice keep to the corners beside the centre column (`--ls-chat-w`) and lift above the stack below 1080 px wide (`--ls-corner-bottom`); before/after at 1280x720, 1920x1080, 800x700 in `docs/evidence/pt-ux-hud-*.png`. |
+| `src/ui/quests/` | Playtest 1: quest tracker, offers with location previews, journal (J), quest markers on map/compass/world. See its README. |
 | `src/stores/` | zustand: `appStore` (screens), `qualityStore` (tiers; WP19: `shaderTier` for shader-shaping knobs, which auto steps never change: a step used to recompile every shader and froze the page ~4.7 s, `docs/evidence/wp19-lurch-investigation.txt`), `debugStore` (dev tools). |
 | `src/state/live.ts` | Per-frame values written imperatively (player pose, net/chunk HUD slots, world clock). |
 | `src/screens/` | `TitleScreen`, `AccountSlot` (WP04 mount point), `PlayScreen` (lazy, pulls in three.js). |

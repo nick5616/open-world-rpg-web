@@ -470,9 +470,10 @@ caves are unchanged) and fills `Config.Towns` (`internal/npc`). Game glue:
   803), `32 station` (forge/anvil prop id; 1 use -> `Config.Stations`
   (WP14) or 805), `33 shaft` (mineshaft structure id; 1 descend: teleport
   into a chamber of the linked cave system below the shaft). Refusals: 806.
-- **Bounties**: seeded per settlement per in-game day; accepted ones live in
-  zone memory per character (max 5); `Server.AcceptedBounties` /
-  `Server.CompleteBounty` are the completion hooks for WP13/WP14/WP15.
+- **Bounties**: seeded per settlement per in-game day; since playtest 1 an
+  accepted one is a quest in the character's persisted quest log (max 5
+  bounties; see "Quests" below); `Server.AcceptedBounties` /
+  `Server.CompleteBounty` read and drop them.
 - `LODESTONE_ZONE_NO_TOWNS=1` turns the layer off; a pre-WP20 wasm logs
   NO TOWNS and keeps the old ground.
 - Tests: `internal/npc` (schedules, street walking, bounties),
@@ -482,6 +483,55 @@ caves are unchanged) and fills `Config.Towns` (`internal/npc`). Game glue:
   (`client/src/world/buildings/walkIntoBuilding.integration.test.ts`,
   evidence `docs/evidence/wp20-walk-into-building.txt`: 0 corrections).
 
+
+## Quests (playtest 1, CR 013)
+
+Rules: `internal/quests` (pure: the log, steps, objectives, markers, the
+starter line, bounties as quests, the wire JSON). Glue:
+`internal/game/quests.go`.
+
+- **The log** is server-authoritative: a list of quests, each a list of
+  steps with one objective and the map markers of that step (`x`, `z`, an
+  area radius `r` or a point, a label). Objectives: talk to an NPC role in
+  a settlement, hold items (alternatives), reach a place, know a spell,
+  clear a site's enemies (a group of that site wiped with you eligible, or
+  arriving while it is quiet), kill a demon near a site, hand items in at a
+  settlement's board/bounty keeper. A step whose objective already holds
+  completes when it becomes current. Steps can hand over items (gold, a
+  tome) exactly once (`loot_grants` marker `quest:<key>:<step>`); a
+  finished quest pays its gold and XP. Event 950 (whole log, JSON) after
+  join and on every change; 951 offer, 952 step, 953 completed, 954
+  refused, 955 started; Interact 60 (accept, abandon, hand in, track).
+- **Ward against the night** (starter, `quests.Ward`): starts on a
+  character's first login (never again once started or done) at the
+  settlement nearest them: talk to its blacksmith (25 gold and the line
+  that explains sunsteel), mine 4 sunsteel ore (marked: the nearest cave
+  whose sunlit/entrance chambers hold sunsteel veins, as an area around the
+  veins plus its mouth), buy the Sunsteel Blade blueprint, forge the blade
+  (marker: the forge), seek Light magic at the nearest shrine (else wizard
+  tower, else structure; arriving hands over `tome:glint`) and read the
+  tome (Glint goes into the first empty spell slot: there is no spellbook
+  screen yet). 30 gold + 200 XP. A blacksmith re-offers it (951, with every
+  step's markers) to a character who abandoned it. Places resolve once per
+  settlement per process (log line `ward places`).
+- **Bounties**: accept -> `quests.FromBounty` (clear: the site's area;
+  slay: a demon kill within 250 m of the site; explore: reach the site's
+  discovery radius; deliver: hand in at the board/keeper, which reading the
+  board or talking to the keeper does automatically). 802's accepted byte
+  is 2 for a job you completed (the log remembers the last 64 bounty keys).
+- **Cost per tick**: nothing for players without a reach/clear objective;
+  those are checked at 2 Hz (staggered). Inventory and spell changes set a
+  recheck flag; kill hooks queue the group to look at on the next ticks.
+- **Persistence**: accounts in `character_quests` (migration 0023, `log`
+  jsonb, fenced by the WP16 epoch), through the write-behind queue on every
+  change and at logout; local profiles in their save blob
+  (`localsave.State.Quests`); across a handoff as the `quests` HandoffField.
+- Tests: `internal/quests` (every objective kind, limits, round trip, wire),
+  `internal/game/quests_test.go` (official world in process: the Ward from
+  login to the Light tome incl. the blacksmith's line, the purchase and the
+  slotted spell, saved and not restarted; every bounty kind on today's
+  board accepted, persisted over a reconnect, deliveries handed in at the
+  board, explores completed on arrival, abandon; the handoff field).
 
 ## Items and loot (WP14)
 

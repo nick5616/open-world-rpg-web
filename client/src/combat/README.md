@@ -16,9 +16,28 @@ zone session (`link.ts`), offline play has no enemies.
 | `link.ts` | Session attach, PlayerDriver hooks, `window.__lodestoneCombat` (probe, HUD) |
 | `dev/feel-browser.ts` | Headless Chromium feel run against the real zone (`npm run combat:browser -w client`) |
 
-Controls: LMB attack, RMB parry (sword) / draw (bow) / charge (spear) / bonk
-(staff, wand), F or Left Alt dodge, 1-4 spells, Q elemental form, V or
-middle mouse weapon technique, R draught, X swap loadout.
+Controls (playtest 1, `spellSelect.ts`): LMB attack; **mouse wheel** selects
+what the right button uses: the weapon's secondary (parry for the sword,
+draw for the bow, charge for the spear, heavy/bonk for the staff and wand;
+the default, so RMB behaves as in WP13 until you scroll) or one of the four
+spell slots (empty slots are skipped; the selected box is raised with a
+gold "RMB" badge); **RMB** uses the selection (casts the spell); **hold Z**
+for the weapon's secondary at any time (parry or draw with a spell
+selected); **1-4** still cast directly (and select their slot); F or Left
+Alt dodge, Q elemental form, V or middle mouse weapon technique, R draught,
+X swap loadout (a slot that is empty in the new loadout falls back to the
+weapon). The hint line under the bars says the same (`COMBAT_HINT`).
+Selection is client-side only: the zone sees the same cast / alt_attack
+input bits as before, so WP13's feel numbers and the timeline tests are
+unchanged (`spellSelect.test.ts` drives the runtime through the wheel).
+
+Overhead health bars (playtest 1): each enemy's bar (and an elite's or
+boss's name label) sits in a plate that `faceCamera` turns to the camera
+every frame, double-sided, so it reads from any side (it used to turn with
+the body and vanished from behind; `billboard.test.ts`, screenshots
+`docs/evidence/pt-ux-healthbars-{before,after}-{north,south,east,west}.png`).
+Player nameplates (`net/avatar.ts`) and NPC labels were already sprites /
+screen-space labels.
 
 Tests: `npx vitest run src/combat` (feel limits in the tables, timeline
 rules, wire decoders). The real-time numbers come from the probe run
