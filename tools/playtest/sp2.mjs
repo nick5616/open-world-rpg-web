@@ -1,3 +1,4 @@
+/* global document, window */
 // Playtest pass 2: follow the starter quest like a new player (talk, walk to
 // the marker, mine), fighting what attacks on the way. Logs every snag.
 import { launch, newCharacter, sleep, pl, walkTo, look, yawTo } from './lib.mjs';

@@ -1,3 +1,4 @@
+/* global getComputedStyle, innerWidth, innerHeight, document, window */
 // Single-player playtest helpers: drive the real client like a new player
 // against a running stack (npm run dev). No dev shortcuts unless a step says so.
 //
