@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { sendSocial } from '../session';
 import { useSocialStore } from '../store';
+import { travelToFriend } from '../travel';
 import { button, glass, nameColor } from './style';
 
 export function FriendsPanel({ onClose }: { onClose: () => void }) {
@@ -70,7 +71,15 @@ export function FriendsPanel({ onClose }: { onClose: () => void }) {
             <button style={small} disabled={!f.online} onClick={() => sendSocial({ type: 'party_invite', name: f.name })}>
               Invite
             </button>
-            {/* Travel to a friend needs waypoints (spec 10, gameplay packages). */}
+            <button
+              style={small}
+              data-testid="friend-travel"
+              disabled={!f.online}
+              title="Travel to them: 3 s standing still, not in combat; 30 s cooldown"
+              onClick={() => travelToFriend(f.characterId, f.name)}
+            >
+              Travel
+            </button>
             <button style={{ ...small, marginLeft: 'auto' }} onClick={() => sendSocial({ type: 'friend_remove', name: f.name })}>
               Remove
             </button>

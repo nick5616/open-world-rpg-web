@@ -62,9 +62,11 @@ func TestEarshotHandoffCadence(t *testing.T) {
 }
 
 // InputFlag.speaking from a player shows as Activity.speaking to others;
-// a local profile's bit is never shown (listen-only, spec 11).
+// a local profile's bit is never shown when local profiles are listen-only
+// (WP11's rule, now behind Config.VoiceLocalListenOnly), and is shown like
+// anyone's by default since playtest 2.
 func TestSpeakingFlagMirroredIntoActivity(t *testing.T) {
-	h := newHarness(t, nil)
+	h := newHarness(t, func(c *Config) { c.VoiceLocalListenOnly = true })
 	obs := h.dial("?spawn=100,100")
 	obs.join(h, "obs", "Observer")
 	talker := h.dial("?spawn=105,100")
@@ -101,7 +103,7 @@ func TestSpeakingFlagMirroredIntoActivity(t *testing.T) {
 		return ok && a&proto.ActivitySpeaking != 0
 	})
 	if a, ok := activity(lw.EntityID); !ok || a&proto.ActivitySpeaking != 0 {
-		t.Fatalf("local profile must never show speaking (activity %08b, seen %v)", a, ok)
+		t.Fatalf("listen-only local profile must never show speaking (activity %08b, seen %v)", a, ok)
 	}
 	// Releasing push-to-talk clears the bit.
 	deadline := time.Now().Add(3 * time.Second)
@@ -113,6 +115,33 @@ func TestSpeakingFlagMirroredIntoActivity(t *testing.T) {
 		}
 		if time.Now().After(deadline) {
 			t.Fatal("speaking bit never cleared")
+		}
+	}
+}
+
+// Playtest 2 ("VC doesn't seem to work": every live player is a local
+// profile, and local profiles could not talk): by default a local profile's
+// speaking bit shows like anyone's.
+func TestLocalProfileSpeakingShownByDefault(t *testing.T) {
+	h := newHarness(t, nil)
+	obs := h.dial("?spawn=100,100")
+	obs.join(h, "obs", "Observer")
+	local := h.dial("?spawn=95,100")
+	local.hello(h.ticket("loc", "Local", func(c *ticket.Claims) { c.AccountID = ""; c.ProfileID = "p1"; c.IsLocalProfile = true }), proto.ProtocolVersion)
+	lw := local.next(proto.MsgWelcome, 3*time.Second).(*proto.Welcome)
+	deadline := time.Now().Add(3 * time.Second)
+	for {
+		local.walk(2, proto.InputFlagSpeaking, 0, nil)
+		obs.drainFor(30 * time.Millisecond)
+		if obs.frame != nil {
+			for _, e := range obs.frame.Ents {
+				if e.ID == lw.EntityID && e.Activity&proto.ActivitySpeaking != 0 {
+					return
+				}
+			}
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("a local profile's speaking bit is not shown")
 		}
 	}
 }

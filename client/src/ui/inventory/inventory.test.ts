@@ -1,8 +1,8 @@
 // WP14 client: Event decoders, item helpers and the store reducer.
 import { describe, expect, it } from 'vitest';
-import { ITEMS, type Event as ZoneEvent } from '@lodestone/contracts';
+import { COMBAT, ITEMS, type Event as ZoneEvent } from '@lodestone/contracts';
 import { decodeBitchin, decodeContainers, decodeCrafted, decodeInventory, decodeLootGranted, decodeRefusedTarget, decodeStationOpened, encodeContainers, EV, LOOT_SOURCE, stationKind805, u64 } from './events';
-import { affixLine, baseName, countOf, displayName, formatStat, isHolo, itemDef, kindLabel, loadoutWeaponLabel, parseSlot, rarityColor, rarityDef, recipeGroup, recipesFor, recipeStatus, smithingView, socketTarget, uniqueInfo, type WireItem } from './items';
+import { affixLine, baseName, countOf, defaultWeapon, displayName, formatStat, isHolo, itemDef, kindLabel, loadoutWeaponLabel, parseSlot, rarityColor, rarityDef, recipeGroup, recipesFor, recipeStatus, smithingView, socketTarget, trainingEquipArg, trainingWeaponName, uniqueInfo, type WireItem } from './items';
 import { initialInventoryState, reduceItemEvent, type InventoryState } from './store';
 import { mockItems } from './dev';
 
@@ -227,6 +227,20 @@ describe('combat HUD weapon label', () => {
     // A training weapon picked while the item is still equipped: the types disagree.
     expect(loadoutWeaponLabel('staff', 0, [blade])).toBe('Staff');
     expect(loadoutWeaponLabel('', 0, [])).toBe('-');
+  });
+});
+
+describe('default training weapon (playtest 2: switch back to the starter sword)', () => {
+  it('names each loadout default from combat.yaml start', () => {
+    expect(defaultWeapon(0)).toBe('sword');
+    expect(defaultWeapon(1)).toBe('staff');
+    expect(trainingWeaponName('sword')).toBe('Training Sword');
+  });
+  it('encodes Interact 50/2 like the zone (loadout | weapon id << 8)', () => {
+    const sword = COMBAT.weapons.find((w) => w.key === 'sword')!;
+    expect(trainingEquipArg(0, 'sword')).toBe(sword.id << 8);
+    expect(trainingEquipArg(1, 'sword')).toBe(1 | (sword.id << 8));
+    expect(trainingEquipArg(0, 'nope')).toBe(0);
   });
 });
 

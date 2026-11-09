@@ -7,6 +7,7 @@ package main
 //	LODESTONE_LIVEKIT_KEY        devkey   (LiveKit --dev)
 //	LODESTONE_LIVEKIT_SECRET     secret   (LiveKit --dev; refused in production)
 //	LODESTONE_VOICE              0 disables voice (voice_token answers "not available")
+//	LODESTONE_VOICE_LOCAL_LISTEN_ONLY  1 = local profiles hear but cannot talk (WP11's rule; default 0 since playtest 2)
 
 import (
 	"fmt"

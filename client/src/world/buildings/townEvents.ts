@@ -3,6 +3,8 @@
 // 806, and the Interact codes the HUD sends (targetKind 30-33). All
 // little-endian, as the zone writes them (server/zone/internal/npc/talk.go).
 
+import { ITEMS } from '@lodestone/contracts';
+
 export const EV = { npcSay: 800, shop: 801, bounties: 802, bountyAccepted: 803, rested: 804, stationOpened: 805, refused: 806, purchase: 807 } as const;
 export const INTERACT = { npc: 30, board: 31, station: 32, shaft: 33 } as const;
 /** Interact actions per target kind. */
@@ -118,8 +120,18 @@ export function decodeStation(data: Uint8Array): { propId: bigint; settlement: n
   return { propId: dv.getBigUint64(0, true), settlement: dv.getUint16(8, true) };
 }
 
-/** "food:bread" -> "bread", "tool:pickaxe" -> "pickaxe" (placeholder ids until WP14 defines items). */
+const itemNames = new Map(ITEMS.items.map((d) => [d.key, d.name]));
+
+/**
+ * An item's name from contracts/items.yaml ("blueprint:sunsteel_blade" ->
+ * "Blueprint: Sunsteel Blade", "weapon:iron_sword" -> "Iron Sword");
+ * unknown ids fall back to "food:smoked_fish" -> "smoked fish". Playtest 2:
+ * shops showed the blueprint and the finished blade under the same name
+ * ("sunsteel blade 40 g" looked like the blade itself, "iron sword" twice).
+ */
 export function itemName(id: string): string {
+  const known = itemNames.get(id);
+  if (known) return known;
   const i = id.indexOf(':');
   return (i >= 0 ? id.slice(i + 1) : id).replace(/_/g, ' ');
 }

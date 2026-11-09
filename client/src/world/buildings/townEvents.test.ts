@@ -71,6 +71,10 @@ describe('805 station and helpers', () => {
   });
   it('names placeholder items and every refusal reason', () => {
     expect(itemName('food:smoked_fish')).toBe('smoked fish');
+    // Playtest 2: real names, so a blueprint never reads as the finished item.
+    expect(itemName('blueprint:sunsteel_blade')).toBe('Blueprint: Sunsteel Blade');
+    expect(itemName('weapon:iron_sword')).toBe('Iron Sword');
+    expect(itemName('blueprint:iron_sword')).not.toBe(itemName('weapon:iron_sword'));
     expect(itemName('rope')).toBe('rope');
     for (let r = 1; r <= 8; r++) expect(REFUSAL[r]).toBeTruthy();
   });

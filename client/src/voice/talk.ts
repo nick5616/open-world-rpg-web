@@ -7,7 +7,7 @@
 //    consent). Never at connect.
 //  - Push-to-talk (default): transmit while the key is held.
 //  - Voice activation (opt-in): transmit while the local level gate is open.
-//  - Listen-only players (local profiles, moderator-muted) never transmit.
+//  - Listen-only players (moderator-muted: the token has no publish grant) never transmit.
 //  - Mic enable/disable calls are serialized: a quick tap while the
 //    permission prompt is open must not leave the mic live afterwards.
 
