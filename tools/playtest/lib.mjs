@@ -71,6 +71,7 @@ export async function hudBoxes(page) {
       if (r.width < 4 || r.height < 4 || r.width > innerWidth * 0.9 || r.height > innerHeight * 0.9) continue;
       const text = (el.innerText || '').trim().replace(/\s+/g, ' ').slice(0, 40);
       if (!text && !el.dataset.testid) continue;
+      if (el.closest('[data-testid="debug-hud"]')) continue; // dev overlay (F3)
       out.push({ id: el.dataset.testid || '', text, x: r.left, y: r.top, w: r.width, h: r.height, z: cs.zIndex });
     }
     return out;
