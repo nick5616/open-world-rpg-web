@@ -131,12 +131,15 @@ func TestNoAttackOrSpellCanDamageAPlayer(t *testing.T) {
 	t.Logf("%d attack/spell claims against a player: all refused, health %v -> %v", tried, hp, b.p.HP)
 }
 
-// The structural half: the only function that lowers a player's health is
-// hurtPlayer, and every call site passes an enemy as the source.
+// The structural half: only two functions lower a player's health:
+// hurtPlayer, whose call sites all pass an enemy as the source, and
+// hurtByPlayer (playtest 2, CR 017), called only from applyPlayerHit, which
+// only ClaimPlayer reaches (the game layer calls it after its PvP rules).
 func TestOnlyEnemiesCallHurtPlayer(t *testing.T) {
 	files, _ := filepath.Glob("*.go")
 	re := regexp.MustCompile(`hurtPlayer\(([^)]*)\)`)
-	writes := regexp.MustCompile(`\.HP\s*(-=|=\s*0\b)`)
+	byPlayer := regexp.MustCompile(`hurtByPlayer\(`)
+	writes := regexp.MustCompile(`\b(p|q)\.HP\s*(-=|=\s*0\b)`)
 	calls := 0
 	for _, f := range files {
 		if strings.HasSuffix(f, "_test.go") {
@@ -154,12 +157,24 @@ func TestOnlyEnemiesCallHurtPlayer(t *testing.T) {
 			}
 			calls++
 		}
+		if n := len(byPlayer.FindAllString(src, -1)); n > 0 && (f != "pvp.go" || n != 2) {
+			t.Errorf("%s: hurtByPlayer appears %d times (only its definition and applyPlayerHit, in pvp.go)", f, n)
+		}
+		fn := ""
 		for _, line := range strings.Split(src, "\n") {
-			if writes.MatchString(line) && strings.Contains(line, "p.HP") && !strings.Contains(line, "hurtPlayer") {
-				if f != "ai.go" {
-					t.Errorf("%s: player health lowered outside hurtPlayer: %s", f, strings.TrimSpace(line))
+			if strings.HasPrefix(line, "func ") {
+				fn = line
+			}
+			if writes.MatchString(line) {
+				ok := (f == "ai.go" && (strings.Contains(fn, "hurtPlayer(") || strings.Contains(fn, "downPlayer("))) ||
+					(f == "pvp.go" && strings.Contains(fn, "hurtByPlayer("))
+				if !ok {
+					t.Errorf("%s: player health lowered outside hurtPlayer/hurtByPlayer: %s (in %s)", f, strings.TrimSpace(line), fn)
 				}
 			}
+		}
+		if f == "pvp.go" && !strings.Contains(src, "func (w *World) ClaimPlayer(") {
+			t.Error("pvp.go: ClaimPlayer is gone")
 		}
 	}
 	if calls == 0 {

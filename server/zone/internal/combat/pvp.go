@@ -178,6 +178,13 @@ func (w *World) applyPlayerHit(p *Player, a *Action, q *Player, how PvPHit) PvPR
 	return res
 }
 
+// TestHurtPlayer lands an enemy strike's damage on p (tests and dev tools:
+// the PvE path, from a stand-in enemy).
+func (w *World) TestHurtPlayer(p *Player, dmg float64) {
+	enemy := &Enemy{ID: 0, Def: D.EnemyByKey("boar"), Element: combatdefs.Physical}
+	w.hurtPlayer(p, dmg, enemy, nil)
+}
+
 // HealthPct is a player's 0..100 health for HitResult (1 while alive).
 func (p *Player) HealthPct() uint8 {
 	if p.HPMax <= 0 || p.HP <= 0 {
