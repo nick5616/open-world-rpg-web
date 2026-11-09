@@ -26,13 +26,15 @@ import { TalkController } from './talk';
 export interface VoiceToken {
   url: string;
   token: string;
+  /** The token's grant (token.ts tokenCanPublish); undefined = may publish. */
+  canPublish?: boolean;
 }
 
 export interface StartVoiceOptions {
   /** Ask the social service for a LiveKit token (voice_token). */
   requestToken: () => Promise<VoiceToken>;
-  /** Local profiles (and moderator-muted players) hear but never transmit. */
-  listenOnly: () => boolean;
+  /** Extra client-side listen-only rule (default none); the token's grant decides otherwise. */
+  listenOnly?: () => boolean;
   /** Character ids of my party members (radio when beyond earshot). */
   partyIds: () => string[];
   ground: GroundQuery;
@@ -60,6 +62,11 @@ class VoiceRuntime {
   private keyDown = (e: KeyboardEvent) => this.onKey(e, true);
   private keyUp = (e: KeyboardEvent) => this.onKey(e, false);
   private blur = () => this.talk.release();
+  /** The current token's grant: a moderator mute makes it listen-only. */
+  private tokenPublish = true;
+  private listenOnly(): boolean {
+    return !this.tokenPublish || this.opts.listenOnly?.() === true;
+  }
 
   constructor(private readonly opts: StartVoiceOptions) {
     this.talk = this.makeTalk();
@@ -69,7 +76,7 @@ class VoiceRuntime {
     return new TalkController(
       { acquire: () => this.acquireMic(), setLive: (live) => this.setMicLive(live) },
       (s) => useVoiceStore.getState().set({ mic: s.mic, transmitting: s.transmitting }),
-      () => !this.opts.listenOnly() && this.room !== null,
+      () => !this.listenOnly() && this.room !== null,
       useVoiceStore.getState().talkMode,
     );
   }
@@ -78,7 +85,7 @@ class VoiceRuntime {
     window.addEventListener('keydown', this.keyDown);
     window.addEventListener('keyup', this.keyUp);
     window.addEventListener('blur', this.blur);
-    useVoiceStore.getState().set({ status: 'connecting', statusText: 'Connecting voice…', listenOnly: this.opts.listenOnly() });
+    useVoiceStore.getState().set({ status: 'connecting', statusText: 'Connecting voice…', listenOnly: this.listenOnly() });
     void this.connect();
     this.raf = requestAnimationFrame(this.frame);
   }
@@ -114,6 +121,7 @@ class VoiceRuntime {
       return;
     }
     if (this.stopped) return;
+    this.tokenPublish = tok.canPublish !== false;
     // One AudioContext for the whole game (client/src/audio/context.ts) when a gesture already made it.
     if (!this.mixer) this.mixer = new VoiceMixer(getAudioContext() ?? undefined);
     this.applyPrefs();
@@ -156,7 +164,7 @@ class VoiceRuntime {
     }
     this.room = room;
     this.retryMs = RETRY_MIN_MS;
-    useVoiceStore.getState().set({ status: 'connected', statusText: '', listenOnly: this.opts.listenOnly() });
+    useVoiceStore.getState().set({ status: 'connected', statusText: '', listenOnly: this.listenOnly() });
     if (useVoiceStore.getState().talkMode === 'vad') this.talk.setMode('vad');
   }
 
@@ -227,8 +235,8 @@ class VoiceRuntime {
       if (e.repeat) return;
       this.mixer?.resume(); // a key press is the user gesture browsers want
       if (useVoiceStore.getState().talkMode !== 'ptt') return;
-      if (!this.talk.press() && this.opts.listenOnly()) {
-        useVoiceStore.getState().set({ statusText: 'Listen-only: local profiles can hear voice but not talk.' });
+      if (!this.talk.press() && this.listenOnly()) {
+        useVoiceStore.getState().set({ statusText: 'Listen-only: a moderator muted you, so you can hear voice but not talk.' });
       }
     } else if (useVoiceStore.getState().talkMode === 'ptt') {
       this.talk.release();

@@ -69,9 +69,14 @@ type Config struct {
 	EditStore                      EditStore // nil: edits live in memory only
 	Granter                        Granter   // nil: grants are logged and evented only
 	Earshot                        Earshot   // WP11 proximity voice (earshot.go); nil: none
-	Queue                          *writebehind.Queue
-	Metrics                        *svc.Metrics
-	Log                            *slog.Logger
+	// VoiceLocalListenOnly: local profiles' speaking bit is never shown
+	// (WP11's listen-only rule, LODESTONE_VOICE_LOCAL_LISTEN_ONLY=1, as on
+	// the social service). Off by default since playtest 2: local profiles
+	// may talk.
+	VoiceLocalListenOnly bool
+	Queue                *writebehind.Queue
+	Metrics              *svc.Metrics
+	Log                  *slog.Logger
 	// WP12 exploration (explore.go, party.go): the world's sites and towers
 	// (nil: no exploration, e.g. flat ground), the social service's parties
 	// (nil: no party ring) and the local-profile save store (nil: blobs in
@@ -410,7 +415,7 @@ func (s *Server) join(sess *session) {
 		Level:       1,
 		Health:      100,
 		HealthMax:   100,
-		ListenOnly:  sess.claims.IsLocalProfile, // WP11: local profiles hear voice but never transmit (spec 11)
+		ListenOnly:  sess.claims.IsLocalProfile && s.cfg.VoiceLocalListenOnly, // WP11 rule, off since playtest 2 (Config)
 	}
 	e.Move = movement.NewState(spawn) // WP10: full stamina wheel, ground mode
 	if g := movement.GroundAt(s.cfg.Ground, spawn.X, spawn.Y, spawn.Z); e.Move.Pos.Y < g {

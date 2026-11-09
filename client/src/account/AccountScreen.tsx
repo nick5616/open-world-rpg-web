@@ -315,7 +315,7 @@ export function AccountScreen({ onReady, urls }: AccountScreenProps) {
             <p style={muted}>Plays on any device. Full social features.</p>
             {signInOptions}
             <h3 style={h3}>…or with a local profile</h3>
-            <p style={muted}>Saved in this browser only. Export it to keep it safe. Listen-only voice, no global chat.</p>
+            <p style={muted}>Saved in this browser only. Export it to keep it safe. Proximity voice, no global chat.</p>
             <div style={row}>
               <button style={btn} data-testid="auth-local" onClick={onLocal}>
                 {existingProfile && !existingProfile.upgradedTo ? 'Continue local profile' : 'Play with a local profile'}

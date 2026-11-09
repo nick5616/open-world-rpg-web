@@ -18,20 +18,27 @@ import (
 // serving.
 func (h *Hub) SetVoice(v *voice.Service) { h.voice = v }
 
+// SetVoiceLocalListenOnly makes local profiles listen-only again (WP11's
+// original rule). Call before serving.
+func (h *Hub) SetVoiceLocalListenOnly(on bool) { h.voiceLocalListenOnly = on }
+
 // VoiceHost is the voice package's view of this hub.
 func (h *Hub) VoiceHost() voice.Host { return voiceHost{h} }
 
-// voiceToken answers `voice_token` with a LiveKit join token. Local
-// profiles and moderator-muted players get listen-only tokens (spec 10/11:
-// "can hear voice but not transmit"; a moderator mute is "can read, can't
-// send" for chat, so the same for voice).
+// voiceToken answers `voice_token` with a LiveKit join token.
+// Moderator-muted players get listen-only tokens (a moderator mute is "can
+// read, can't send" for chat, so the same for voice). Local profiles may
+// talk since playtest 2 (proximity voice only: earshot, /mute and /block
+// apply to them like to anyone, and a moderator mute by profile id makes
+// them listen-only); LODESTONE_VOICE_LOCAL_LISTEN_ONLY=1 restores spec
+// 10/11's "can hear voice but not transmit".
 func (s *Session) voiceToken(ctx context.Context) {
 	if s.hub.voice == nil {
 		s.sendErr(sp.ErrorCodeNotAllowed, "Voice is not available on this server.")
 		return
 	}
 	s.mu.Lock()
-	canPublish := !s.local && !s.modMuted
+	canPublish := !s.modMuted && !(s.local && s.hub.voiceLocalListenOnly)
 	s.mu.Unlock()
 	url, tok, room, err := s.hub.voice.Token(s.worldID, s.charID, s.name, canPublish)
 	if err != nil {
