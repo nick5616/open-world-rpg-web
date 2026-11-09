@@ -24,6 +24,7 @@ import { budget, col, fxTime, GEO, glowTexture, hot, rand, setFxTier } from './c
 import { glowPool, smokePool, SHAPE_GLOW, SHAPE_PUFF, SHAPE_SPARK } from './particles';
 import { FxPrims, alive, type Held, type DecalSlot, type BeamSlot, type ShellSlot, type DomeSlot } from './transients';
 import { currentFxTier, FX_PROFILES } from './quality';
+import { castHooks, castOrigin } from './castOrigin';
 import { ELEMENT_FAMILY, PALETTES, spellVisual, statusById, statusByKey, ZONE_STYLE, enemyAttackById, formById, spellById, mobilitySpellForDash, type SpellVisual, type Family } from './spellVisual';
 import * as R from './recipes';
 import { screenKick, screenTick, screenTint } from './screen';
@@ -199,23 +200,19 @@ export class SpellFxEngine {
   private selfHand(out: THREE.Vector3): THREE.Vector3 {
     if (this.handAnchor?.(out)) return out;
     if (view.third) {
-      // Third person (T): your avatar's casting hand, not the lens.
+      // Third person (T): your avatar's staff/wand tip or raised off hand, not the lens.
       const f = view.feet;
-      this.remoteHand(f.x, f.y, f.z, localPlayer.yaw, tmpHand);
+      castOrigin(f.x, f.y, f.z, localPlayer.yaw, localPlayer.pitch, castHooks.selfWeapon, tmpHand);
       return out.set(tmpHand.x, tmpHand.y, tmpHand.z);
     }
+    if (castHooks.fpOrigin?.(tmpHand)) return out.set(tmpHand.x, tmpHand.y, tmpHand.z);
     if (!this.camera) return out.set(localPlayer.pos.x, localPlayer.pos.y + EYE - 0.3, localPlayer.pos.z);
     return out.copy(HAND).applyMatrix4(this.camera.matrixWorld);
   }
 
-  /** A remote caster's hand: right of the chest, a little forward. */
-  private remoteHand(x: number, y: number, z: number, yaw: number, out: V3): V3 {
-    const fx = -Math.sin(yaw);
-    const fz = -Math.cos(yaw);
-    out.x = x + fx * 0.45 - fz * 0.3;
-    out.y = y + 1.35;
-    out.z = z + fz * 0.45 + fx * 0.3;
-    return out;
+  /** A remote caster's cast point: their staff/wand tip or raised off hand (castOrigin.ts). */
+  private remoteHand(x: number, y: number, z: number, yaw: number, out: V3, id = 0, pitch = 0): V3 {
+    return castOrigin(x, y, z, yaw, pitch, id ? (castHooks.weaponOf?.(id) ?? null) : null, out);
   }
 
   /** Distance scale for emission (1 near, 0.35 at 60 m) and the cull. */
@@ -258,6 +255,10 @@ export class SpellFxEngine {
     const v = spellVisual(sp);
     const c = R.cols(v.palette);
     const self = caster === 'self';
+    if (self) {
+      castHooks.selfCastAt = performance.now();
+      castHooks.selfCastColor = sp.color ?? '#ffffff';
+    }
     const windup = sp.windupMs;
     if (self) {
       this.hand.color.copy(c.mainH);
@@ -706,7 +707,7 @@ export class SpellFxEngine {
         const p = { x: 0, y: 0, z: 0 };
         if (!this.anchorPos(from, p)) return false;
         const vv = this.viewById.get(from);
-        this.remoteHand(p.x, p.y, p.z, vv?.yaw ?? 0, a);
+        this.remoteHand(p.x, p.y, p.z, vv?.yaw ?? 0, a, from, vv?.pitch ?? 0);
         return true;
       }
       a.x = from.x;
@@ -1146,7 +1147,7 @@ export class SpellFxEngine {
     if (!this.anchorPos(caster, pos)) return;
     const casterId = typeof caster === 'number' ? caster : 0;
     const eye = { x: pos.x, y: pos.y + EYE, z: pos.z };
-    const hand = this.remoteHand(pos.x, pos.y, pos.z, yaw, { x: 0, y: 0, z: 0 });
+    const hand = this.remoteHand(pos.x, pos.y, pos.z, yaw, { x: 0, y: 0, z: 0 }, casterId, pitch);
     switch (sp.type) {
       case 'projectile':
       case 'arc': {

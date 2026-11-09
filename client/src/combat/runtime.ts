@@ -121,7 +121,9 @@ export class CombatRuntime {
           rmbCast = true;
           this.buttons.castPress[sel] = now();
         } else altDown();
-      } else if (e.button === 1) this.buttons.techniquePress++;
+      }
+      // Middle button: the camera view toggle (hud/ViewHud.tsx), not combat (playtest 2: it did nothing
+      // for anyone without a weapon technique; techniques stay on V).
     };
     const onUp = (e: MouseEvent) => {
       if (e.button === 0) this.buttons.attackDown = false;

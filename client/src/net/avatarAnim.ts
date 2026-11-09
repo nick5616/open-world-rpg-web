@@ -41,7 +41,7 @@ export const EV_MINE_SWING = 707;
 /** Event 214 targetId flag for a mobility dash variant (contracts/events.md). */
 export const CAST_FX_DASH = 0x8000;
 
-export type ActionKind = 'slash' | 'thrust' | 'spin' | 'plunge' | 'bow' | 'bolt' | 'bonk' | 'cast' | 'castBig' | 'castBeam' | 'shield' | 'form' | 'dash' | 'dodge' | 'parry' | 'charge' | 'draw' | 'mine';
+export type ActionKind = 'slash' | 'thrust' | 'spin' | 'plunge' | 'bow' | 'bolt' | 'bonk' | 'cast' | 'castStaff' | 'castBig' | 'castBeam' | 'shield' | 'form' | 'dash' | 'dodge' | 'parry' | 'charge' | 'draw' | 'mine';
 
 export interface ActionSpec {
   kind: ActionKind;
@@ -128,7 +128,8 @@ export function classifyAction(id: number, weapon: WeaponKind | null): ActionSpe
       case 'rune':
         return spec(key, 'castBig', 720 + s.windupMs, color);
       default:
-        return spec(key, 'cast', 460 + s.windupMs, color);
+        // Playtest 2: a staff or wand casts out of its tip (castOrigin.ts); other weapons from the open off hand.
+        return weapon === 'staff' || weapon === 'wand' ? spec(`${key}:tip`, 'castStaff', 460 + s.windupMs, color) : spec(key, 'cast', 460 + s.windupMs, color);
     }
   }
   return spec('unknown', 'cast', 400, null);
@@ -559,6 +560,17 @@ export class AvatarAnimator {
         p.torsoYaw -= 0.2 * raise * w;
         glow = raise * (1 - smooth(0.6, 1, u));
         gl = true;
+        break;
+      }
+      case 'castStaff': {
+        // The weapon hand raises the staff/wand toward the aim and thrusts its tip forward.
+        const raise = smooth(0, 0.28, u);
+        const push = smooth(0.22, 0.42, u);
+        set(R, 0.4 + (1.2 + aim) * raise, 0.05, 0.1 + 1.1 * raise * (1 - push));
+        set(L, 0.35, 0.25, 0.55);
+        p.torsoYaw += 0.15 * raise * w;
+        glow = raise * (1 - smooth(0.6, 1, u));
+        gr = true;
         break;
       }
       case 'castBig': {

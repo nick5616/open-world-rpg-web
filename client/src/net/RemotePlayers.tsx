@@ -20,6 +20,7 @@ import type { RemoteView } from './interpolation';
 import type { ZoneSession } from './zoneSession';
 import { EV } from '../combat/events';
 import { DEBUG } from '../config';
+import { castHooks } from '../combat/fx/castOrigin';
 
 /** Route one zone Event to the avatar it animates (exported for tests). */
 export function animateFromEvent(e: ZoneEvent, avatars: ReadonlyMap<number, Avatar>): boolean {
@@ -55,13 +56,15 @@ export function RemotePlayers({ session }: { session: ZoneSession }) {
   const hud = useMemo(() => ({ last: 0 }), []);
   const budget = useMemo(() => ({ rigs: new FullRigBudget(), full: 0 }), []);
 
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    // Playtest 2: spells leave another player's staff/wand tip or off hand (combat/fx/castOrigin.ts).
+    castHooks.weaponOf = (id) => avatars.get(id)?.weaponKind ?? null;
+    return () => {
+      castHooks.weaponOf = null;
       for (const a of avatars.values()) a.dispose();
       avatars.clear();
-    },
-    [avatars],
-  );
+    };
+  }, [avatars]);
 
   useEffect(() => {
     if (!DEBUG || typeof window === 'undefined') return;

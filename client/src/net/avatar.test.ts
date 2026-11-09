@@ -25,7 +25,7 @@ describe('remote avatar weapon (pt/ux)', () => {
     a.update(view(packLook({ weapon: 'sword', material: 'sunsteel', gem: 5 })), cam, 0.016);
     const m = a.weaponMesh!;
     expect(m).not.toBeNull();
-    expect(m.geometry.name).toBe('weapon:sword|sunsteel|5:1');
+    expect(m.geometry.name).toBe('weapon:sword|sunsteel|5:2'); // playtest 2: the first-person detail level
     a.root.updateMatrixWorld(true);
     const box = new THREE.Box3().setFromObject(m);
     // in the right hand (+X of a yaw-0 avatar at x = 10), around hand height, reaching forward (-Z)
@@ -36,7 +36,7 @@ describe('remote avatar weapon (pt/ux)', () => {
     expect(box.min.z).toBeLessThan(19.7);
 
     a.update(view(packLook({ weapon: 'bow', material: '', gem: -1 })), cam, 0.016);
-    expect(a.weaponMesh!.geometry.name).toBe('weapon:bow||-1:1');
+    expect(a.weaponMesh!.geometry.name).toBe('weapon:bow||-1:2');
     a.root.updateMatrixWorld(true);
     expect(new THREE.Box3().setFromObject(a.weaponMesh!).getCenter(new THREE.Vector3()).x).toBeLessThan(10); // the bow is in the left hand
   });

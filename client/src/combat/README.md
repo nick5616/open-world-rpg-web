@@ -5,7 +5,7 @@ zone session (`link.ts`), offline play has no enemies.
 
 | File | What |
 | --- | --- |
-| `timeline.ts` | The step-synchronous timeline (runs inside LocalSim's 60 Hz steps): input buffer (150 ms), attack starts and combos, dodge-cancel, bow draw / spear charge, sword parry, spell slots with cooldown + mana prediction, mobility spells as dash variants, elemental form (Q), technique (V/middle mouse), drink (R). Mirrors `server/zone/internal/combat/player.go` |
+| `timeline.ts` | The step-synchronous timeline (runs inside LocalSim's 60 Hz steps): input buffer (150 ms), attack starts and combos, dodge-cancel, bow draw / spear charge, sword parry, spell slots with cooldown + mana prediction, mobility spells as dash variants, elemental form (Q), technique (V; the middle mouse button toggles the camera view), drink (R). Mirrors `server/zone/internal/combat/player.go` |
 | `runtime.ts` | Input listeners, predicted hits (melee arcs on the active frames, local projectiles, beams, chains, area and lingering spells, runes), spark + hitstop at once, HitClaims, numbers on HitResult, combat Events -> HUD/FX; every spell visual (yours, other players' via Event 214, statuses 206, shields 219, enemy projectiles 205) goes to the spell FX engine (`fx/`, below) |
 | `probe.ts` | The input-to-hit timing probe (press -> first hit frame, feedback, recovery, dodge-cancel, i-frames, buffer, hitstop, drink, wind-ups, confirmation) |
 | `events.ts` | Event kinds 200-222, Interact 50, `combat_sync` / telegraph decoders, typeId unpacking |
@@ -24,7 +24,7 @@ spell slots (empty slots are skipped; the selected box is raised with a
 gold "RMB" badge); **RMB** uses the selection (casts the spell); **hold Z**
 for the weapon's secondary at any time (parry or draw with a spell
 selected); **1-4** still cast directly (and select their slot); F or Left
-Alt dodge, Q elemental form, V or middle mouse weapon technique, R draught,
+Alt dodge, Q elemental form, V weapon technique (middle mouse: first / third person), R draught,
 X swap loadout (a slot that is empty in the new loadout falls back to the
 weapon). The hint line under the bars says the same (`COMBAT_HINT`).
 Selection is client-side only: the zone sees the same cast / alt_attack
