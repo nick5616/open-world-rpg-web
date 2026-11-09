@@ -302,6 +302,12 @@ const DashExitSpeed float64 = 6
 // HitRangeSlackM: Lenient PvE validation (spec 9): a claimed hit may be this much beyond the move's reach at the best sample of the target's last HIT_HISTORY_MS.
 const HitRangeSlackM float64 = 1
 
+// SummonsPerPlayer: CR 020: allies (summon spells) one player may have at once; a new one past the cap sends the oldest away.
+const SummonsPerPlayer = 3
+
+// AutoMaxRateHz: CR 020: the fastest hold-to-fire stream (shots per second); combat.yaml auto.rateHz may not exceed it and the zone never fires faster.
+const AutoMaxRateHz = 15
+
 // HitGraceMs: Favor the player: an enemy strike on a player settles only after the player's input frames up to this long after the strike; a dodge (i-frames) or being outside the area in any of them evades it.
 const HitGraceMs = 200
 

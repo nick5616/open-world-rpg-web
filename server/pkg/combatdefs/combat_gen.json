@@ -1,5 +1,5 @@
 {
- "version": 4,
+ "version": 5,
  "stepHz": 60,
  "elements": [
   "fire",
@@ -124,6 +124,12 @@
    "tickSteps": 60,
    "tickDamage": 8,
    "maxStacks": 1
+  },
+  {
+   "key": "brand",
+   "id": 13,
+   "durationMs": 8000,
+   "durationSteps": 480
   }
  ],
  "skills": {
@@ -5991,6 +5997,655 @@
    "killsDemons": false,
    "mana": 75,
    "dash": 0
+  },
+  {
+   "key": "cinder_spray",
+   "name": "Cinder Spray",
+   "pending": true,
+   "element": 0,
+   "damage": 4,
+   "cooldownMs": 250,
+   "cooldownSteps": 15,
+   "windupMs": 0,
+   "windupSteps": 0,
+   "durationMs": 0,
+   "durationSteps": 0,
+   "radius": 0.15,
+   "range": 18,
+   "speed": 34,
+   "gravity": 0,
+   "hits": 1,
+   "spread": 1,
+   "spreadDeg": 0,
+   "cone": 0,
+   "line": 0,
+   "chain": 0,
+   "lifesteal": 0,
+   "heal": 0,
+   "healRadius": 0,
+   "absorb": 0,
+   "pierce": false,
+   "selfCast": false,
+   "nonBossOnly": false,
+   "stripShield": false,
+   "id": 1018,
+   "tree": "fire",
+   "tier": 1,
+   "type": "projectile",
+   "auto": {
+    "rateHz": 12,
+    "intervalSteps": 5,
+    "manaPerShot": 2,
+    "jitterDeg": 7
+   },
+   "color": "#ffb347",
+   "killsDemons": false,
+   "mana": 2,
+   "dash": 0
+  },
+  {
+   "key": "pyre_brand",
+   "name": "Pyre Brand",
+   "pending": true,
+   "element": 0,
+   "damage": 14,
+   "cooldownMs": 1500,
+   "cooldownSteps": 90,
+   "windupMs": 0,
+   "windupSteps": 0,
+   "durationMs": 0,
+   "durationSteps": 0,
+   "radius": 0.3,
+   "range": 57,
+   "speed": 38,
+   "gravity": 0,
+   "hits": 1,
+   "spread": 3,
+   "spreadDeg": 12,
+   "cone": 0,
+   "line": 0,
+   "chain": 0,
+   "lifesteal": 0,
+   "heal": 0,
+   "healRadius": 0,
+   "absorb": 0,
+   "pierce": false,
+   "selfCast": false,
+   "nonBossOnly": false,
+   "stripShield": false,
+   "id": 1019,
+   "tree": "fire",
+   "tier": 4,
+   "type": "projectile",
+   "detonate": {
+    "onDeath": true,
+    "delayMs": 0,
+    "delaySteps": 0,
+    "radius": 4,
+    "damage": 50,
+    "status": "burn",
+    "mark": "brand"
+   },
+   "color": "#ff5a1f",
+   "killsDemons": false,
+   "mana": 28,
+   "dash": 0
+  },
+  {
+   "key": "frost_bubbles",
+   "name": "Frost Bubbles",
+   "pending": true,
+   "element": 1,
+   "damage": 5,
+   "cooldownMs": 300,
+   "cooldownSteps": 18,
+   "windupMs": 0,
+   "windupSteps": 0,
+   "durationMs": 0,
+   "durationSteps": 0,
+   "radius": 1.3,
+   "range": 16,
+   "speed": 13,
+   "gravity": -1.5,
+   "hits": 1,
+   "spread": 1,
+   "spreadDeg": 0,
+   "cone": 0,
+   "line": 0,
+   "chain": 0,
+   "lifesteal": 0,
+   "heal": 0,
+   "healRadius": 0,
+   "absorb": 0,
+   "pierce": false,
+   "selfCast": false,
+   "nonBossOnly": false,
+   "stripShield": false,
+   "id": 1121,
+   "tree": "ice",
+   "tier": 2,
+   "type": "projectile",
+   "status": "slow",
+   "auto": {
+    "rateHz": 8,
+    "intervalSteps": 8,
+    "manaPerShot": 2.5,
+    "jitterDeg": 10
+   },
+   "color": "#9fe6ff",
+   "killsDemons": false,
+   "mana": 2.5,
+   "dash": 0
+  },
+  {
+   "key": "hungering_souls",
+   "name": "Hungering Souls",
+   "pending": true,
+   "element": 6,
+   "damage": 15,
+   "cooldownMs": 3000,
+   "cooldownSteps": 180,
+   "windupMs": 0,
+   "windupSteps": 0,
+   "durationMs": 0,
+   "durationSteps": 0,
+   "radius": 0.3,
+   "range": 40,
+   "speed": 17,
+   "gravity": 0,
+   "hits": 1,
+   "spread": 4,
+   "spreadDeg": 40,
+   "cone": 0,
+   "line": 0,
+   "chain": 0,
+   "lifesteal": 0.3,
+   "heal": 0,
+   "healRadius": 0,
+   "absorb": 0,
+   "pierce": false,
+   "selfCast": false,
+   "nonBossOnly": false,
+   "stripShield": false,
+   "id": 1224,
+   "tree": "dark",
+   "tier": 3,
+   "type": "projectile",
+   "homing": {
+    "turnDegS": 220,
+    "acquireM": 26,
+    "coneDeg": 160,
+    "delayMs": 200,
+    "delaySteps": 12,
+    "loseDeg": 150
+   },
+   "color": "#9a3cff",
+   "killsDemons": false,
+   "mana": 22,
+   "dash": 0
+  },
+  {
+   "key": "wraith_hound",
+   "name": "Wraith Hound",
+   "pending": true,
+   "element": 6,
+   "damage": 0,
+   "cooldownMs": 8000,
+   "cooldownSteps": 480,
+   "windupMs": 0,
+   "windupSteps": 0,
+   "durationMs": 15000,
+   "durationSteps": 900,
+   "radius": 0,
+   "range": 6,
+   "speed": 0,
+   "gravity": 0,
+   "hits": 1,
+   "spread": 1,
+   "spreadDeg": 0,
+   "cone": 0,
+   "line": 0,
+   "chain": 0,
+   "lifesteal": 0,
+   "heal": 0,
+   "healRadius": 0,
+   "absorb": 0,
+   "pierce": false,
+   "selfCast": false,
+   "nonBossOnly": false,
+   "stripShield": false,
+   "id": 1225,
+   "tree": "dark",
+   "tier": 4,
+   "type": "summon",
+   "summon": {
+    "key": "wraith_hound",
+    "count": 1,
+    "max": 2
+   },
+   "color": "#8a5cff",
+   "killsDemons": false,
+   "mana": 28,
+   "dash": 0
+  },
+  {
+   "key": "boulder_heave",
+   "name": "Boulder Heave",
+   "pending": true,
+   "element": 3,
+   "damage": 40,
+   "cooldownMs": 2500,
+   "cooldownSteps": 150,
+   "windupMs": 0,
+   "windupSteps": 0,
+   "durationMs": 0,
+   "durationSteps": 0,
+   "radius": 1.6,
+   "range": 36,
+   "speed": 24,
+   "gravity": 18,
+   "hits": 1,
+   "spread": 1,
+   "spreadDeg": 0,
+   "cone": 0,
+   "line": 0,
+   "chain": 0,
+   "lifesteal": 0,
+   "heal": 0,
+   "healRadius": 0,
+   "absorb": 0,
+   "pierce": false,
+   "selfCast": false,
+   "nonBossOnly": false,
+   "stripShield": false,
+   "id": 1327,
+   "tree": "earth",
+   "tier": 3,
+   "type": "arc",
+   "charge": {
+    "maxMs": 1200,
+    "maxSteps": 72,
+    "damageMult": 2.75,
+    "radiusMult": 1.75,
+    "speedMult": 1.35
+   },
+   "color": "#8B6914",
+   "killsDemons": false,
+   "mana": 22,
+   "dash": 0
+  },
+  {
+   "key": "burrowing_seed",
+   "name": "Burrowing Seed",
+   "pending": true,
+   "element": 3,
+   "damage": 10,
+   "cooldownMs": 1800,
+   "cooldownSteps": 108,
+   "windupMs": 0,
+   "windupSteps": 0,
+   "durationMs": 0,
+   "durationSteps": 0,
+   "radius": 0.3,
+   "range": 45,
+   "speed": 30,
+   "gravity": 0,
+   "hits": 1,
+   "spread": 1,
+   "spreadDeg": 0,
+   "cone": 0,
+   "line": 0,
+   "chain": 0,
+   "lifesteal": 0,
+   "heal": 0,
+   "healRadius": 0,
+   "absorb": 0,
+   "pierce": false,
+   "selfCast": false,
+   "nonBossOnly": false,
+   "stripShield": false,
+   "id": 1328,
+   "tree": "earth",
+   "tier": 4,
+   "type": "projectile",
+   "detonate": {
+    "onDeath": false,
+    "delayMs": 1500,
+    "delaySteps": 90,
+    "radius": 3,
+    "damage": 60,
+    "status": "stun"
+   },
+   "color": "#7cb342",
+   "killsDemons": false,
+   "mana": 28,
+   "dash": 0
+  },
+  {
+   "key": "arc_sparks",
+   "name": "Arc Sparks",
+   "pending": true,
+   "element": 2,
+   "damage": 4,
+   "cooldownMs": 250,
+   "cooldownSteps": 15,
+   "windupMs": 0,
+   "windupSteps": 0,
+   "durationMs": 0,
+   "durationSteps": 0,
+   "radius": 0.12,
+   "range": 22,
+   "speed": 60,
+   "gravity": 0,
+   "hits": 1,
+   "spread": 1,
+   "spreadDeg": 0,
+   "cone": 0,
+   "line": 0,
+   "chain": 0,
+   "lifesteal": 0,
+   "heal": 0,
+   "healRadius": 0,
+   "absorb": 0,
+   "pierce": false,
+   "selfCast": false,
+   "nonBossOnly": false,
+   "stripShield": false,
+   "id": 1411,
+   "tree": "lightning",
+   "tier": 2,
+   "type": "projectile",
+   "status": "shock",
+   "auto": {
+    "rateHz": 15,
+    "intervalSteps": 4,
+    "manaPerShot": 1.6,
+    "jitterDeg": 4
+   },
+   "color": "#ffe066",
+   "killsDemons": false,
+   "mana": 1.6,
+   "dash": 0
+  },
+  {
+   "key": "storm_seekers",
+   "name": "Storm Seekers",
+   "pending": true,
+   "element": 2,
+   "damage": 22,
+   "cooldownMs": 2600,
+   "cooldownSteps": 156,
+   "windupMs": 0,
+   "windupSteps": 0,
+   "durationMs": 0,
+   "durationSteps": 0,
+   "radius": 0.35,
+   "range": 44,
+   "speed": 22,
+   "gravity": 0,
+   "hits": 1,
+   "spread": 3,
+   "spreadDeg": 50,
+   "cone": 0,
+   "line": 0,
+   "chain": 0,
+   "lifesteal": 0,
+   "heal": 0,
+   "healRadius": 0,
+   "absorb": 0,
+   "pierce": false,
+   "selfCast": false,
+   "nonBossOnly": false,
+   "stripShield": false,
+   "id": 1412,
+   "tree": "lightning",
+   "tier": 3,
+   "type": "projectile",
+   "status": "shock",
+   "homing": {
+    "turnDegS": 260,
+    "acquireM": 30,
+    "coneDeg": 140,
+    "delayMs": 300,
+    "delaySteps": 18,
+    "loseDeg": 130
+   },
+   "color": "#fff3a0",
+   "killsDemons": false,
+   "mana": 22,
+   "dash": 0
+  },
+  {
+   "key": "whirling_blades",
+   "name": "Whirling Blades",
+   "pending": true,
+   "element": 4,
+   "damage": 9,
+   "cooldownMs": 10000,
+   "cooldownSteps": 600,
+   "windupMs": 0,
+   "windupSteps": 0,
+   "durationMs": 8000,
+   "durationSteps": 480,
+   "radius": 0,
+   "range": 0,
+   "speed": 0,
+   "gravity": 0,
+   "hits": 16,
+   "spread": 1,
+   "spreadDeg": 0,
+   "cone": 0,
+   "line": 0,
+   "chain": 0,
+   "lifesteal": 0,
+   "heal": 0,
+   "healRadius": 0,
+   "absorb": 0,
+   "pierce": false,
+   "selfCast": true,
+   "nonBossOnly": false,
+   "stripShield": false,
+   "id": 1510,
+   "tree": "wind",
+   "tier": 3,
+   "type": "orbit",
+   "orbit": {
+    "count": 3,
+    "radius": 2.2,
+    "periodMs": 1100,
+    "periodSteps": 66,
+    "hitEveryMs": 400,
+    "hitEverySteps": 24,
+    "orbRadius": 0.55
+   },
+   "color": "#c9fff1",
+   "killsDemons": false,
+   "mana": 22,
+   "dash": 0
+  },
+  {
+   "key": "gale_phantom",
+   "name": "Gale Phantom",
+   "pending": true,
+   "element": 4,
+   "damage": 0,
+   "cooldownMs": 10000,
+   "cooldownSteps": 600,
+   "windupMs": 0,
+   "windupSteps": 0,
+   "durationMs": 12000,
+   "durationSteps": 720,
+   "radius": 0,
+   "range": 6,
+   "speed": 0,
+   "gravity": 0,
+   "hits": 1,
+   "spread": 1,
+   "spreadDeg": 0,
+   "cone": 0,
+   "line": 0,
+   "chain": 0,
+   "lifesteal": 0,
+   "heal": 0,
+   "healRadius": 0,
+   "absorb": 0,
+   "pierce": false,
+   "selfCast": false,
+   "nonBossOnly": false,
+   "stripShield": false,
+   "id": 1509,
+   "tree": "wind",
+   "tier": 4,
+   "type": "summon",
+   "summon": {
+    "key": "gale_phantom",
+    "count": 1,
+    "max": 1
+   },
+   "color": "#9fe8d8",
+   "killsDemons": false,
+   "mana": 28,
+   "dash": 0
+  },
+  {
+   "key": "guiding_motes",
+   "name": "Guiding Motes",
+   "pending": true,
+   "element": 5,
+   "damage": 12,
+   "cooldownMs": 700,
+   "cooldownSteps": 42,
+   "windupMs": 0,
+   "windupSteps": 0,
+   "durationMs": 0,
+   "durationSteps": 0,
+   "radius": 0.25,
+   "range": 36,
+   "speed": 24,
+   "gravity": 0,
+   "hits": 1,
+   "spread": 2,
+   "spreadDeg": 24,
+   "cone": 0,
+   "line": 0,
+   "chain": 0,
+   "lifesteal": 0,
+   "heal": 0,
+   "healRadius": 0,
+   "absorb": 0,
+   "pierce": false,
+   "selfCast": false,
+   "nonBossOnly": false,
+   "stripShield": false,
+   "id": 1610,
+   "tree": "light",
+   "tier": 1,
+   "type": "projectile",
+   "homing": {
+    "turnDegS": 320,
+    "acquireM": 24,
+    "coneDeg": 90,
+    "delayMs": 80,
+    "delaySteps": 5,
+    "loseDeg": 120
+   },
+   "color": "#fff2b0",
+   "killsDemons": true,
+   "mana": 10,
+   "dash": 0
+  },
+  {
+   "key": "sunlit_sentinel",
+   "name": "Sunlit Sentinel",
+   "pending": true,
+   "element": 5,
+   "damage": 0,
+   "cooldownMs": 12000,
+   "cooldownSteps": 720,
+   "windupMs": 0,
+   "windupSteps": 0,
+   "durationMs": 10000,
+   "durationSteps": 600,
+   "radius": 0,
+   "range": 20,
+   "speed": 0,
+   "gravity": 0,
+   "hits": 1,
+   "spread": 1,
+   "spreadDeg": 0,
+   "cone": 0,
+   "line": 0,
+   "chain": 0,
+   "lifesteal": 0,
+   "heal": 0,
+   "healRadius": 0,
+   "absorb": 0,
+   "pierce": false,
+   "selfCast": false,
+   "nonBossOnly": false,
+   "stripShield": false,
+   "id": 1611,
+   "tree": "light",
+   "tier": 5,
+   "type": "summon",
+   "summon": {
+    "key": "sunlit_sentinel",
+    "count": 1,
+    "max": 1
+   },
+   "color": "#ffd76a",
+   "killsDemons": true,
+   "mana": 34,
+   "dash": 0
+  },
+  {
+   "key": "starfall_hail",
+   "name": "Starfall Hail",
+   "pending": true,
+   "element": 7,
+   "damage": 9,
+   "cooldownMs": 400,
+   "cooldownSteps": 24,
+   "windupMs": 0,
+   "windupSteps": 0,
+   "durationMs": 0,
+   "durationSteps": 0,
+   "radius": 1.2,
+   "range": 30,
+   "speed": 30,
+   "gravity": 0,
+   "hits": 1,
+   "spread": 1,
+   "spreadDeg": 0,
+   "cone": 0,
+   "line": 0,
+   "chain": 0,
+   "lifesteal": 0,
+   "heal": 0,
+   "healRadius": 0,
+   "absorb": 0,
+   "pierce": false,
+   "selfCast": false,
+   "nonBossOnly": false,
+   "stripShield": false,
+   "id": 1709,
+   "tree": "void",
+   "tier": 3,
+   "type": "projectile",
+   "rain": {
+    "radius": 4.5,
+    "height": 14
+   },
+   "auto": {
+    "rateHz": 10,
+    "intervalSteps": 6,
+    "manaPerShot": 3,
+    "jitterDeg": 0
+   },
+   "color": "#c9a6ff",
+   "killsDemons": false,
+   "mana": 3,
+   "dash": 0
   }
  ],
  "trees": [
@@ -6026,6 +6681,12 @@
      ]
     },
     {
+     "key": "cinder_spray",
+     "prereqs": [
+      "ember_flick"
+     ]
+    },
+    {
      "key": "fireball",
      "prereqs": [
       "spark_shot",
@@ -6034,6 +6695,12 @@
     },
     {
      "key": "combustion",
+     "prereqs": [
+      "fireball"
+     ]
+    },
+    {
+     "key": "pyre_brand",
      "prereqs": [
       "fireball"
      ]
@@ -6133,6 +6800,12 @@
     },
     {
      "key": "glacial_lob",
+     "prereqs": [
+      "frost_bite"
+     ]
+    },
+    {
+     "key": "frost_bubbles",
      "prereqs": [
       "frost_bite"
      ]
@@ -6267,6 +6940,19 @@
      "prereqs": [
       "void_tap",
       "unnerving"
+     ]
+    },
+    {
+     "key": "hungering_souls",
+     "prereqs": [
+      "void_tap",
+      "hex_bomb"
+     ]
+    },
+    {
+     "key": "wraith_hound",
+     "prereqs": [
+      "hungering_souls"
      ]
     },
     {
@@ -6417,6 +7103,20 @@
      ]
     },
     {
+     "key": "boulder_heave",
+     "prereqs": [
+      "spore_pod",
+      "geode_bomb"
+     ]
+    },
+    {
+     "key": "burrowing_seed",
+     "prereqs": [
+      "boulder_heave",
+      "bramble_burst"
+     ]
+    },
+    {
      "key": "deep_roots",
      "prereqs": [
       "bramble_burst"
@@ -6546,6 +7246,19 @@
      ]
     },
     {
+     "key": "arc_sparks",
+     "prereqs": [
+      "spark_jab"
+     ]
+    },
+    {
+     "key": "storm_seekers",
+     "prereqs": [
+      "lightning_strike",
+      "arc_sparks"
+     ]
+    },
+    {
      "key": "static_charge",
      "prereqs": [
       "lightning_strike"
@@ -6610,6 +7323,19 @@
      ]
     },
     {
+     "key": "whirling_blades",
+     "prereqs": [
+      "gust"
+     ]
+    },
+    {
+     "key": "gale_phantom",
+     "prereqs": [
+      "whirling_blades",
+      "razor_wind"
+     ]
+    },
+    {
      "key": "cyclone",
      "prereqs": [
       "razor_wind"
@@ -6656,6 +7382,10 @@
      "prereqs": []
     },
     {
+     "key": "guiding_motes",
+     "prereqs": []
+    },
+    {
      "key": "radiant_lance",
      "prereqs": [
       "glint"
@@ -6665,6 +7395,13 @@
      "key": "sunburst",
      "prereqs": [
       "radiant_lance"
+     ]
+    },
+    {
+     "key": "sunlit_sentinel",
+     "prereqs": [
+      "sunburst",
+      "guiding_motes"
      ]
     },
     {
@@ -6720,6 +7457,12 @@
      ]
     },
     {
+     "key": "starfall_hail",
+     "prereqs": [
+      "rift_shot"
+     ]
+    },
+    {
      "key": "unmake",
      "prereqs": [
       "collapse"
@@ -6751,6 +7494,86 @@
      ]
     }
    ]
+  }
+ ],
+ "summons": [
+  {
+   "key": "wraith_hound",
+   "id": 1,
+   "name": "Wraith Hound",
+   "pending": true,
+   "family": "beast",
+   "behavior": "melee",
+   "element": 6,
+   "speed": 9,
+   "size": 0.9,
+   "color": "#8a5cff",
+   "aggro": 18,
+   "keepAway": 0,
+   "leashM": 30,
+   "attack": {
+    "shape": "melee",
+    "reach": 2.3,
+    "damage": 13,
+    "everyMs": 1000,
+    "everySteps": 60,
+    "windupMs": 250,
+    "windupSteps": 15,
+    "speed": 0,
+    "radius": 0.3
+   }
+  },
+  {
+   "key": "gale_phantom",
+   "id": 2,
+   "name": "Gale Phantom",
+   "pending": true,
+   "family": "humanoid",
+   "behavior": "ranged",
+   "element": 4,
+   "speed": 7.5,
+   "size": 1,
+   "color": "#9fe8d8",
+   "aggro": 24,
+   "keepAway": 9,
+   "leashM": 30,
+   "attack": {
+    "shape": "bolt",
+    "reach": 24,
+    "damage": 11,
+    "everyMs": 900,
+    "everySteps": 54,
+    "windupMs": 200,
+    "windupSteps": 12,
+    "speed": 36,
+    "radius": 0.3
+   }
+  },
+  {
+   "key": "sunlit_sentinel",
+   "id": 3,
+   "name": "Sunlit Sentinel",
+   "pending": true,
+   "family": "turret",
+   "behavior": "turret",
+   "element": 5,
+   "speed": 0,
+   "size": 0.8,
+   "color": "#ffd76a",
+   "aggro": 22,
+   "keepAway": 0,
+   "leashM": 40,
+   "attack": {
+    "shape": "bolt",
+    "reach": 22,
+    "damage": 9,
+    "everyMs": 600,
+    "everySteps": 36,
+    "windupMs": 150,
+    "windupSteps": 9,
+    "speed": 42,
+    "radius": 0.3
+   }
   }
  ],
  "start": {
@@ -6906,6 +7729,20 @@
   "hollow_echo": "Hollow Echo",
   "zero_point": "Zero Point",
   "unwritten": "Unwritten",
+  "cinder_spray": "Cinder Spray",
+  "pyre_brand": "Pyre Brand",
+  "frost_bubbles": "Frost Bubbles",
+  "hungering_souls": "Hungering Souls",
+  "wraith_hound": "Wraith Hound",
+  "boulder_heave": "Boulder Heave",
+  "burrowing_seed": "Burrowing Seed",
+  "arc_sparks": "Arc Sparks",
+  "storm_seekers": "Storm Seekers",
+  "whirling_blades": "Whirling Blades",
+  "gale_phantom": "Gale Phantom",
+  "guiding_motes": "Guiding Motes",
+  "sunlit_sentinel": "Sunlit Sentinel",
+  "starfall_hail": "Starfall Hail",
   "parry_riposte": "Parry Riposte",
   "dash_cut": "Dash Cut",
   "sword_form": "Elemental Form",
@@ -6931,7 +7768,22 @@
   "form_dark": "Hungering Cut",
   "form_void": "Severance"
  },
- "pending": [],
+ "pending": [
+  "cinder_spray",
+  "pyre_brand",
+  "frost_bubbles",
+  "hungering_souls",
+  "wraith_hound",
+  "boulder_heave",
+  "burrowing_seed",
+  "arc_sparks",
+  "storm_seekers",
+  "whirling_blades",
+  "gale_phantom",
+  "guiding_motes",
+  "sunlit_sentinel",
+  "starfall_hail"
+ ],
  "enemyAttacks": [
   {
    "key": "gore",

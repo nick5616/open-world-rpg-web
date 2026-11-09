@@ -128,12 +128,35 @@ export function parseCombat(doc, consts) {
   const materials = Object.entries(doc.materials ?? {}).map(([key, m]) => ({ key, mult: 1, demonStagger: false, killsDemons: false, ...m }));
   uniqueIds(materials, 'material');
 
+  // CR 020: allies summon spells call (server-side bodies owned by the caster).
+  const pos = (v, what) => {
+    if (typeof v !== 'number' || !Number.isFinite(v) || v <= 0) fail(`${what}: a positive number`);
+    return v;
+  };
+  const summons = Object.entries(doc.summons ?? {}).map(([key, m]) => {
+    if (!['melee', 'ranged', 'turret'].includes(m.behavior)) fail(`summon ${key}: behavior melee | ranged | turret`);
+    const a = m.attack ?? fail(`summon ${key}: needs an attack`);
+    if (!['melee', 'bolt'].includes(a.shape)) fail(`summon ${key}: attack.shape melee | bolt`);
+    pos(a.reach, `summon ${key} attack.reach`);
+    pos(a.everyMs, `summon ${key} attack.everyMs`);
+    if (a.shape === 'bolt') pos(a.speed, `summon ${key} attack.speed`);
+    if (m.id > 255) fail(`summon ${key}: ids 1..255 (8 bits of typeId)`);
+    if (m.behavior !== 'turret') pos(m.speed, `summon ${key} speed`);
+    const attack = withSteps({ shape: a.shape, reach: a.reach, damage: a.damage ?? 0, everyMs: a.everyMs, windupMs: a.windupMs ?? 0, speed: a.speed ?? 0, radius: a.radius ?? 0.3 });
+    return { key, id: m.id, name: nameOf(key, 'summon'), pending: pending.has(key), family: m.family ?? 'humanoid', behavior: m.behavior, element: elIndex(m.element, `summon ${key}`), speed: m.speed ?? 0, size: m.size ?? 1, color: m.color ?? '#ffffff', aggro: pos(m.aggro, `summon ${key} aggro`), keepAway: m.keepAway ?? 0, leashM: pos(m.leashM, `summon ${key} leashM`), attack };
+  });
+  uniqueIds(summons, 'summon');
+  const summonKeys = new Set(summons.map((m) => m.key));
+
+  const SPELL_TYPES = ['projectile', 'arc', 'hitscan', 'beam', 'aoe', 'domain', 'direct', 'rune', 'mobility', 'defensive', 'passive', 'summon', 'orbit'];
   const treeKeys = new Set(Object.keys(doc.trees));
   const spells = Object.entries(doc.spells).map(([key, s]) => {
     if (!treeKeys.has(s.tree)) fail(`spell ${key}: unknown tree ${s.tree}`);
+    if (!SPELL_TYPES.includes(s.type)) fail(`spell ${key}: unknown type ${s.type}`);
     checkStatus(s.status, `spell ${key}`);
     const free = s.type === 'mobility' || s.type === 'defensive' || s.type === 'passive';
-    const mana = s.mana ?? (free ? 0 : doc.mana.byTier[Math.min(Math.floor(s.tier), doc.mana.byTier.length - 1)]);
+    // CR 020: a hold-to-fire spell's mana is the cost of one shot.
+    const mana = s.mana ?? (s.auto ? s.auto.manaPerShot : free ? 0 : doc.mana.byTier[Math.min(Math.floor(s.tier), doc.mana.byTier.length - 1)]);
     const sp = withSteps({
       key,
       name: nameOf(key, 'spell'),
@@ -173,8 +196,63 @@ export function parseCombat(doc, consts) {
       else if (sp.type === 'hitscan' || sp.type === 'direct') sp.range = 60;
       else if (sp.type === 'aoe' && !sp.selfCast && !sp.cone && !sp.line) sp.range = 20;
       else if (sp.type === 'rune') sp.range = 12;
+      else if (sp.type === 'summon') sp.range = 6;
     }
     if (sp.type === 'mobility' && !sp.dash) fail(`spell ${key}: mobility needs a dash`);
+    // CR 020 mechanics blocks (nested ms -> steps as everywhere else).
+    const shot = sp.type === 'projectile' || sp.type === 'arc';
+    if (s.homing) {
+      const h = s.homing;
+      if (!shot) fail(`spell ${key}: homing needs a projectile or arc`);
+      for (const k of ['turnDegS', 'acquireM', 'coneDeg', 'loseDeg']) pos(h[k], `spell ${key} homing.${k}`);
+      sp.homing = withSteps({ turnDegS: h.turnDegS, acquireM: h.acquireM, coneDeg: h.coneDeg, delayMs: h.delayMs ?? 0, loseDeg: h.loseDeg });
+    }
+    if (s.auto) {
+      const a = s.auto;
+      if (!shot) fail(`spell ${key}: auto needs a projectile or arc`);
+      pos(a.rateHz, `spell ${key} auto.rateHz`);
+      pos(a.manaPerShot, `spell ${key} auto.manaPerShot`);
+      if (a.rateHz > C.AUTO_MAX_RATE_HZ) fail(`spell ${key}: auto.rateHz above AUTO_MAX_RATE_HZ`);
+      const intervalSteps = Math.round(STEP_HZ / a.rateHz);
+      if (intervalSteps < Math.ceil(STEP_HZ / C.AUTO_MAX_RATE_HZ)) fail(`spell ${key}: auto interval faster than AUTO_MAX_RATE_HZ`);
+      if (s.homing || s.charge || sp.spread > 1) fail(`spell ${key}: auto does not combine with homing, charge or spread`);
+      sp.auto = { rateHz: a.rateHz, intervalSteps, manaPerShot: a.manaPerShot, jitterDeg: a.jitterDeg ?? 0 };
+    }
+    if (s.rain) {
+      if (!s.auto) fail(`spell ${key}: rain needs auto`);
+      sp.rain = { radius: pos(s.rain.radius, `spell ${key} rain.radius`), height: pos(s.rain.height, `spell ${key} rain.height`) };
+    }
+    if (s.charge) {
+      const c = s.charge;
+      if (!shot) fail(`spell ${key}: charge needs a projectile or arc`);
+      pos(c.maxMs, `spell ${key} charge.maxMs`);
+      for (const k of ['damageMult', 'radiusMult', 'speedMult']) if (c[k] !== undefined && !(c[k] >= 1)) fail(`spell ${key}: charge.${k} >= 1`);
+      sp.charge = withSteps({ maxMs: c.maxMs, damageMult: c.damageMult ?? 1, radiusMult: c.radiusMult ?? 1, speedMult: c.speedMult ?? 1 });
+    }
+    if ((sp.type === 'orbit') !== !!s.orbit) fail(`spell ${key}: type orbit and an orbit block go together`);
+    if (s.orbit) {
+      const o = s.orbit;
+      for (const k of ['count', 'radius', 'periodMs', 'hitEveryMs', 'orbRadius']) pos(o[k], `spell ${key} orbit.${k}`);
+      if (!sp.durationMs) fail(`spell ${key}: an orbit needs durationMs`);
+      sp.orbit = withSteps({ count: o.count, radius: o.radius, periodMs: o.periodMs, hitEveryMs: o.hitEveryMs, orbRadius: o.orbRadius });
+    }
+    if ((sp.type === 'summon') !== !!s.summon) fail(`spell ${key}: type summon and a summon block go together`);
+    if (s.summon) {
+      if (!summonKeys.has(s.summon.key)) fail(`spell ${key}: unknown summon ${s.summon.key}`);
+      if (!sp.durationMs) fail(`spell ${key}: a summon needs durationMs`);
+      sp.summon = { key: s.summon.key, count: s.summon.count ?? 1, max: s.summon.max ?? 1 };
+      if (sp.summon.max > C.SUMMONS_PER_PLAYER) fail(`spell ${key}: summon.max above SUMMONS_PER_PLAYER`);
+    }
+    if (s.detonate) {
+      const d = s.detonate;
+      checkStatus(d.status, `spell ${key} detonate`);
+      pos(d.radius, `spell ${key} detonate.radius`);
+      if (d.onDeath) {
+        if (!d.mark) fail(`spell ${key}: detonate.onDeath needs a mark status`);
+        checkStatus(d.mark, `spell ${key} detonate.mark`);
+      } else pos(d.delayMs, `spell ${key} detonate.delayMs`);
+      sp.detonate = withSteps({ onDeath: !!d.onDeath, delayMs: d.delayMs ?? 0, radius: d.radius, damage: d.damage ?? 0, ...(d.status ? { status: d.status } : {}), ...(d.mark ? { mark: d.mark } : {}) });
+    }
     return sp;
   });
   uniqueIds(spells, 'spell');
@@ -347,6 +425,7 @@ export function parseCombat(doc, consts) {
     mana: doc.mana,
     spells,
     trees,
+    summons,
     start: doc.start,
     names,
     pending: [...pending],
@@ -392,6 +471,19 @@ export interface SpellDef {
   cone: number; line: number; chain: number; lifesteal: number; heal: number; healRadius: number; absorb: number; pierce: boolean; selfCast: boolean;
   nonBossOnly: boolean; stripShield: boolean; killsDemons: boolean; mana: number; dash: number; status?: string; requiresStatus?: string; color?: string; bossDamage?: number;
   effect?: Record<string, unknown>; vsStatus?: { status: string; mult: number }; lowTargetHp?: { below: number; mult: number }; ported?: string;
+  /** CR 020 mechanics (contracts/combat.yaml spells header). */
+  homing?: HomingDef; auto?: AutoDef; rain?: { radius: number; height: number }; charge?: ChargeDef; orbit?: OrbitDef; detonate?: DetonateDef;
+  summon?: { key: string; count: number; max: number };
+}
+export interface HomingDef { turnDegS: number; acquireM: number; coneDeg: number; delayMs: number; delaySteps: number; loseDeg: number }
+export interface AutoDef { rateHz: number; intervalSteps: number; manaPerShot: number; jitterDeg: number }
+export interface ChargeDef { maxMs: number; maxSteps: number; damageMult: number; radiusMult: number; speedMult: number }
+export interface OrbitDef { count: number; radius: number; periodMs: number; periodSteps: number; hitEveryMs: number; hitEverySteps: number; orbRadius: number }
+export interface DetonateDef { onDeath: boolean; delayMs: number; delaySteps: number; radius: number; damage: number; status?: string; mark?: string }
+export interface SummonDef {
+  key: string; id: number; name: string; pending: boolean; family: string; behavior: 'melee' | 'ranged' | 'turret'; element: ElementIndex;
+  speed: number; size: number; color: string; aggro: number; keepAway: number; leashM: number;
+  attack: { shape: 'melee' | 'bolt'; reach: number; damage: number; everyMs: number; everySteps: number; windupMs: number; windupSteps: number; speed: number; radius: number };
 }
 export interface TreeDef { key: string; element: ElementIndex; killsDemons: boolean; nodes: { key: string; prereqs: string[] }[] }
 export interface EnemyAttackDef {
@@ -410,6 +502,8 @@ export interface CombatDefs {
   weapons: WeaponDef[]; moves: MoveDef[]; forms: FormDef[]; materials: WeaponMaterialDef[]; dashes: DashDef[];
   mana: { base: number; perLevel: number; regenPerS: number; regenPerLevel: number; byTier: number[] };
   spells: SpellDef[]; trees: TreeDef[];
+  /** CR 020: allies of summon spells. */
+  summons: SummonDef[];
   start: { spells: string[]; loadouts: { weapon: string; spells: (string | null)[] }[]; consumable: { charges: number; heal: number } };
   names: Record<string, string>; pending: string[];
   enemyAttacks: EnemyAttackDef[]; enemies: EnemyDef[]; bosses: BossDef[]; bossTitles: Record<string, string>; bossNames: Record<string, string>;
