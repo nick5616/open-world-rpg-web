@@ -8,6 +8,8 @@ import { worldDebug } from '../../world/debug/worldDebug';
 import { emitSound } from '../bridge';
 import { useAudioSettings } from '../settings';
 import { AudioSettingsPanel, SoundButton } from './AudioSettingsPanel';
+// Playtest 2: the Graphics button sits beside Sound (ui/graphics/GraphicsPanel.tsx).
+import { GraphicsButton, GraphicsPanel, useGraphicsUi } from '../../ui/graphics/GraphicsPanel';
 
 export function AudioRoot() {
   useEffect(() => {
@@ -39,6 +41,7 @@ export function AudioRoot() {
       if (e.code !== 'KeyK' || e.repeat) return;
       const s = useAudioSettings.getState();
       s.setPanelOpen(!s.panelOpen);
+      if (!s.panelOpen) useGraphicsUi.getState().setOpen(false); // they share the corner
       if (!s.panelOpen && document.pointerLockElement) document.exitPointerLock();
     };
     // Every HUD button clicks (one listener, no per-component wiring).
@@ -58,6 +61,8 @@ export function AudioRoot() {
     <>
       <SoundButton />
       <AudioSettingsPanel />
+      <GraphicsButton />
+      <GraphicsPanel />
     </>
   );
 }

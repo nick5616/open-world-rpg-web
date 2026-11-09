@@ -5,7 +5,9 @@
 
 import { useAppStore, type Screen } from './stores/appStore';
 import { useDebugStore, type TeleportTarget } from './stores/debugStore';
-import { useQualityStore, type QualitySetting } from './stores/qualityStore';
+import { useQualityStore, type GraphicsControls, type QualitySetting, type VisualStyle } from './stores/qualityStore';
+import { getGraphics } from './stores/graphics';
+import { worldClockState } from './systems/clock';
 import { localPlayer, netStats, view, worldClock } from './state/live';
 import { useViewStore } from './stores/viewStore';
 import { netDebug, netRuntime, useNetStore } from './net/netStore';
@@ -56,6 +58,18 @@ export function installDevHandle(): void {
       worldClock.timeOfDayS = s;
     },
     setQuality: (q: QualitySetting) => useQualityStore.getState().setSetting(q),
+    /** Playtest 2 graphics: visual style, individual controls (null clears them), the resolved numbers. */
+    setStyle: (s: VisualStyle) => useQualityStore.getState().setStyle(s),
+    setGraphics: (o: Partial<GraphicsControls> | null) => {
+      const q = useQualityStore.getState();
+      if (o === null) q.resetControls();
+      else for (const [k, v] of Object.entries(o)) q.setControl(k as keyof GraphicsControls, v as never);
+    },
+    graphics: () => JSON.parse(JSON.stringify({ ...getGraphics(), setting: useQualityStore.getState().setting, detected: useQualityStore.getState().detected })) as unknown,
+    /** Force rain on/off (null: the weather decides). Online, the zone's next clock event overrides it. */
+    setRain: (v: boolean | null) => {
+      worldClockState.rain = v;
+    },
     /** Playtest 2: 'first' | 'third' person camera (optional shoulder 1 right / -1 left, boom distance m). */
     setView: (mode: 'first' | 'third', shoulder?: 1 | -1, distance?: number) => {
       const v = useViewStore.getState();

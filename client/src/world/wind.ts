@@ -54,6 +54,8 @@ export const windUniforms = {
   uWindDir: { value: new THREE.Vector2(0, 1) },
   uWindSpeed: { value: 4 },
   uWindTime: { value: 0 },
+  /** Visual style (world/style/styles.ts): x = sway multiplier, y = gust sheen on grass. */
+  uWindSweep: { value: new THREE.Vector2(1, 0) },
 };
 
 export function advanceWind(dt: number): void {
@@ -68,6 +70,7 @@ export const WIND_GLSL = /* glsl */ `
 uniform vec2 uWindDir;
 uniform float uWindSpeed;
 uniform float uWindTime;
+uniform vec2 uWindSweep;
 float windGust(vec2 p) {
   float along = dot(p, uWindDir);
   float across = -p.x * uWindDir.y + p.y * uWindDir.x;

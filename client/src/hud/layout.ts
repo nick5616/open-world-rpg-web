@@ -37,8 +37,8 @@ export const HUD_CSS = `
 /* A panel that freed the mouse on purpose (shop, inventory, map, journal...)
    makes "Click to look around" noise: hide it while one is open. */
 body:has([data-ui-panel]:not([style*="display: none"])) [data-testid="lock-hint"] { display: none !important; }
-/* The sound and friends panels open under the top-right buttons, over the quest tracker. */
-body:has([data-testid="sound-settings"], [data-testid="friends-panel"]) [data-testid="quest-tracker"] { visibility: hidden; }
+/* The sound, graphics and friends panels open under the top-right buttons, over the quest tracker. */
+body:has([data-testid="sound-settings"], [data-testid="graphics-settings"], [data-testid="friends-panel"]) [data-testid="quest-tracker"] { visibility: hidden; }
 /* A shop / NPC dialogue sits on the right: loot toasts (a purchase, a quest reward) move to its left. */
 body:has([data-testid="town-panel"]:not([style*="display: none"])) [data-testid="loot-toasts"] { right: calc(4% + min(380px, 86vw) + 14px) !important; }
 @media (max-width: ${NARROW_PX}px) {
@@ -52,10 +52,12 @@ body:has([data-testid="town-panel"]:not([style*="display: none"])) [data-testid=
 export const CORNER_BOTTOM = 'var(--ls-corner-bottom, 12px)';
 /** Bottom offset for the right corner (voice): also clears the hosting badge. */
 export const CORNER_BOTTOM_RIGHT = 'calc(var(--ls-corner-bottom, 12px) + var(--ls-badge-h, 0px))';
-/** Top-right button row: Sound at the corner, Friends to its left. */
+/** Top-right button row: Sound at the corner, Graphics (playtest 2) to its left, then Friends. */
 export const TOP_BUTTON_TOP = 12;
 export const SOUND_BUTTON_W = 78;
-export const FRIENDS_BUTTON_RIGHT = 12 + SOUND_BUTTON_W + 8;
+export const GRAPHICS_BUTTON_W = 82;
+export const GRAPHICS_BUTTON_RIGHT = 12 + SOUND_BUTTON_W + 8;
+export const FRIENDS_BUTTON_RIGHT = GRAPHICS_BUTTON_RIGHT + GRAPHICS_BUTTON_W + 8;
 /** Chat column width. */
 export const CHAT_WIDTH = 'var(--ls-chat-w, 400px)';
 /** Bottom offset right above the centre stack (hotbar + hint). */

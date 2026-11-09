@@ -60,6 +60,7 @@ export function createHorizonMesh(d: AtlasData, shared: TerrainShared, coverage:
   g.setAttribute('color', new THREE.BufferAttribute(colors, 3));
   g.computeVertexNormals();
   const m = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, metalness: 0 });
+  m.defines = { LS_NO_RIM: '' }; // style rim light: never on the ground (style/styleShader.ts)
   m.onBeforeCompile = (shader) => {
     shader.uniforms.uCoverage = { value: coverage };
     shader.vertexShader = shader.vertexShader

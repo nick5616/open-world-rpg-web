@@ -12,9 +12,11 @@ import { DAY_LENGTH_S } from '@lodestone/contracts';
 import { PARAM } from '@lodestone/worldgen';
 import { localPlayer, netStats, worldClock } from '../state/live';
 import { useDebugStore } from '../stores/debugStore';
-import { QUALITY_PRESETS, useQualityStore } from '../stores/qualityStore';
+import { useQualityStore } from '../stores/qualityStore';
+import { getGraphics, useGraphics } from '../stores/graphics';
+import { useNightHud } from '../systems/night';
 import type { WorldRuntime } from './core/runtime';
-import { CAMERA_FAR, WORLD_TIERS } from './config';
+import { CAMERA_FAR } from './config';
 import { TerrainManager } from './terrain/terrainManager';
 import { applyManifestMeans, makeTerrainShared } from './terrain/terrainMaterial';
 import { loadTerrainTextures, terrainManifest } from './terrain/terrainTextures';
@@ -24,8 +26,12 @@ import { ScatterManager } from './scatter/scatterManager';
 import { createSkyDome } from './sky/skyDome';
 import { makeSkyLighting, skyLighting, sunVisibility } from './sky/atmosphere';
 import { SunShadows } from './sky/sunShadows';
+import { RainStreaks } from './sky/rainStreaks';
 import { PostFX } from './post/postfx';
-import { advanceWind, setPrevailingWind } from './wind';
+import { advanceWind, setPrevailingWind, windUniforms } from './wind';
+// Playtest 2 graphics styles: per-frame uniforms, no recompiles (style/styles.ts).
+import { liveStyle, STYLES } from './style/styles';
+import { lsRetro, lsStyle } from './style/styleShader';
 import { worldDebug, frameInfo } from './debug/worldDebug';
 import { LodOverlay } from './debug/lodOverlay';
 import { CaveManager } from './caves/caveManager';
@@ -60,28 +66,27 @@ export function WorldScene({ runtime }: Props) {
   const scene = useThree((s) => s.scene);
   const camera = useThree((s) => s.camera) as THREE.PerspectiveCamera;
   const size = useThree((s) => s.size);
-  const tierName = useQualityStore((s) => s.tier);
-  const preset = QUALITY_PRESETS[tierName];
-  const tier = WORLD_TIERS[tierName];
-  // WP19: shader-shaping knobs follow shaderTier (auto steps leave it alone,
-  // see qualityStore): shadow cascades, post chain, normal maps, MSAA.
-  const shaderName = useQualityStore((s) => s.shaderTier);
-  const shaderPreset = QUALITY_PRESETS[shaderName];
-  const shaderTier = WORLD_TIERS[shaderName];
+  // Playtest 2 graphics settings: preset + tier + the player's overrides +
+  // style, resolved in one place (stores/graphics.ts). WP19: shader-shaping
+  // knobs (shadows, post chain, normal maps, MSAA) follow shaderTier, which
+  // auto steps leave alone; the cheap ones follow the stepped tier.
+  const g = useGraphics();
+  const dpr = useThree((s) => s.viewport.dpr);
   const showTiles = useDebugStore((s) => s.showCells);
 
   // Long-lived world objects (independent of tier).
   const world = useMemo(() => {
+    const g0 = getGraphics();
     const shared = makeTerrainShared();
     const waterU = makeWaterUniforms();
     waterU.uSeaY.value = runtime.seaY;
     const waterMat = createWaterMaterial(waterU, false);
     const terrain = new TerrainManager(runtime.pool, runtime.data, shared, waterMat, {
-      lodSplit: tier.lodSplit,
-      viewDistance: preset.viewDistance,
-      uploadsPerFrame: tier.uploadsPerFrame,
-      uploadBudgetMs: tier.uploadBudgetMs,
-      normalMaps: shaderPreset.normalMaps,
+      lodSplit: g0.world.lodSplit,
+      viewDistance: g0.controls.viewDistance,
+      uploadsPerFrame: g0.world.uploadsPerFrame,
+      uploadBudgetMs: g0.world.uploadBudgetMs,
+      normalMaps: g0.normalMaps,
     });
     waterU.uCoverage.value = terrain.coverage;
     waterU.uAtlasHeight.value = atlasHeightTexture(runtime.data.height, runtime.data.gridN);
@@ -96,15 +101,16 @@ export function WorldScene({ runtime }: Props) {
     };
     const hemi = new THREE.HemisphereLight(0xcfe3ff, 0x4a5a3a, 1);
     const lightU = { uSunDir: waterU.uSunDir, uLightColor: waterU.uLightColor, uAmbient: waterU.uAmbient };
-    const scatter = new ScatterManager(runtime.pool, gl, tier, lightU);
+    const scatter = new ScatterManager(runtime.pool, gl, g0.world, lightU);
     const root = new THREE.Group();
     root.name = 'world';
-    root.add(terrain.group, scatter.group, sea, sky.mesh, hemi);
+    const rainStreaks = new RainStreaks();
+    root.add(terrain.group, scatter.group, sea, sky.mesh, hemi, rainStreaks.object);
     // WP09: caves (streamed near mouths and underground; the light pool lives in it).
-    const caves = runtime.caveGraph ? new CaveManager(runtime, QUALITY_PRESETS[useQualityStore.getState().shaderTier].maxLights) : null;
+    const caves = runtime.caveGraph ? new CaveManager(runtime, g0.maxLights) : null;
     if (caves) root.add(caves.group);
     setPrevailingWind(runtime.data.params[PARAM.windDirDeg] ?? 0, 3 + (runtime.data.params[PARAM.stormFrequency] ?? 0.3) * 4);
-    return { shared, waterU, terrain, sea, sky, hemi, scatter, caves, root, lighting: makeSkyLighting(), horizon: null as THREE.Mesh | null };
+    return { shared, waterU, terrain, sea, sky, hemi, scatter, caves, root, lighting: makeSkyLighting(), horizon: null as THREE.Mesh | null, rain: 0, capAcc: 0, rainStreaks };
     // Built once per runtime; tier changes go through setParams/applyTier below.
   }, [runtime, gl]);
 
@@ -140,7 +146,7 @@ export function WorldScene({ runtime }: Props) {
   useEffect(() => {
     let alive = true;
     const t0 = performance.now();
-    loadTerrainTextures(gl, shaderPreset.normalMaps, shaderName === 'high' ? 8 : 4)
+    loadTerrainTextures(gl, g.normalMaps, g.anisotropy)
       .then((tx) => {
         if (!alive) return;
         world.shared.tColor.value = tx.color;
@@ -154,20 +160,23 @@ export function WorldScene({ runtime }: Props) {
     return () => {
       alive = false;
     };
-  }, [gl, world, shaderPreset.normalMaps, shaderName]);
+  }, [gl, world, g.normalMaps, g.anisotropy]);
 
   // Tier-dependent pieces: shadows, post chain, manager knobs.
   const fx = useRef<{ sun: SunShadows; post: PostFX } | null>(null);
   // WP19b: the post chain the last shader warm-up ran for (useFrame).
   const warm = useRef<{ post: PostFX | null; pending: boolean }>({ post: null, pending: false });
   // Cheap knobs (no recompile): auto quality steps move these.
+  const wt = g.world;
+  const viewDistance = g.controls.viewDistance;
   useEffect(() => {
-    world.terrain.setParams({ lodSplit: tier.lodSplit, viewDistance: preset.viewDistance, uploadsPerFrame: tier.uploadsPerFrame, uploadBudgetMs: tier.uploadBudgetMs, normalMaps: shaderPreset.normalMaps });
-    world.scatter.applyTier(tier);
-    world.waterU.uDetail.value = tier.waterDetail ? 1 : 0;
-  }, [world, tier, preset, shaderPreset.normalMaps]);
+    world.terrain.setParams({ lodSplit: wt.lodSplit, viewDistance, uploadsPerFrame: wt.uploadsPerFrame, uploadBudgetMs: wt.uploadBudgetMs, normalMaps: g.normalMaps });
+    world.scatter.applyTier(wt);
+    world.waterU.uDetail.value = wt.waterDetail ? 1 : 0;
+  }, [world, wt, viewDistance, g.normalMaps]);
+  const { shadowCascades, shadowDistance, shadowMapSize, bloom, godRays, msaa, fxaa } = g;
   useEffect(() => {
-    const sun = new SunShadows(world.root, camera, { cascades: shaderPreset.shadows ? shaderPreset.shadowCascades : 0, distance: shaderTier.shadowDistance, mapSize: shaderTier.shadowMapSize });
+    const sun = new SunShadows(world.root, camera, { cascades: shadowCascades, distance: shadowDistance, mapSize: shadowMapSize });
     world.terrain.onMaterial = (m) => sun.setupMaterial(m);
     world.terrain.onMaterialDisposed = (m) => sun.forget(m);
     world.scatter.onMaterial = (m) => sun.setupMaterial(m);
@@ -179,8 +188,8 @@ export function WorldScene({ runtime }: Props) {
         o.material.needsUpdate = true;
       }
     });
-    gl.shadowMap.enabled = shaderPreset.shadows;
-    const post = new PostFX(gl, scene, camera, { multisampling: shaderName === 'high' ? 4 : shaderName === 'medium' ? 2 : 0, bloom: shaderTier.bloom, godRays: shaderTier.godRays });
+    gl.shadowMap.enabled = shadowCascades > 0;
+    const post = new PostFX(gl, scene, camera, { multisampling: msaa, bloom, godRays, fxaa });
     const s = gl.getSize(new THREE.Vector2());
     post.setSize(s.x, s.y);
     fx.current = { sun, post };
@@ -191,12 +200,14 @@ export function WorldScene({ runtime }: Props) {
       sun.dispose();
       post.dispose();
     };
-  }, [world, camera, gl, scene, shaderName, shaderTier, shaderPreset]);
+  }, [world, camera, gl, scene, shadowCascades, shadowDistance, shadowMapSize, bloom, godRays, msaa, fxaa]);
 
+  // Resize, and a pixel-ratio change (render scale, DPR cap, Retro's low
+  // internal resolution) resizes the post chain's buffers too.
   useEffect(() => {
     fx.current?.post.setSize(size.width, size.height);
     fx.current?.sun.updateFrustums();
-  }, [size.width, size.height]);
+  }, [size.width, size.height, dpr]);
 
   // Debug: LOD tile overlay (on with the WP02 cell-border toggle, F4).
   const overlay = useMemo(() => new LodOverlay(runtime.ground), [runtime]);
@@ -222,6 +233,7 @@ export function WorldScene({ runtime }: Props) {
       // outlived a remount (leave the play screen and come back): a frozen
       // "Vein broken" toast stayed on screen and E still swung at the old vein.
       world.caves?.dispose();
+      world.rainStreaks.dispose();
     },
     [world],
   );
@@ -229,17 +241,54 @@ export function WorldScene({ runtime }: Props) {
   const vel = useMemo(() => new THREE.Vector3(), []);
   const biomeGrade = useMemo(() => ({ gain: new THREE.Vector3(1, 1, 1), sat: 0 }), []);
 
-  useFrame((_, delta) => {
+  useFrame((_, frameDelta) => {
+    // Playtest 2 frame-rate cap (Graphics screen): skip whole frames (no
+    // streaming, no render; the canvas keeps the last image) until the
+    // interval is up, then run once with the accumulated time.
+    const q = useQualityStore.getState();
+    const cap = q.overrides.maxFps ?? 0;
+    let delta = frameDelta;
+    if (cap > 0) {
+      world.capAcc += frameDelta;
+      if (world.capAcc < 1 / cap - 0.0015) return;
+      delta = Math.min(world.capAcc, 0.25);
+      world.capAcc = 0;
+    }
     const dt = Math.min(delta, 0.1);
     const now = performance.now();
+    const st = STYLES[q.style] ?? STYLES.lodestone;
     if (!useDebugStore.getState().freezeTime) worldClock.timeOfDayS = worldClock.source ? worldClock.source() : (worldClock.timeOfDayS + Math.min(delta, 0.25)) % DAY_LENGTH_S; // WP15: the world clock online
     advanceWind(dt);
 
     // WP09: caves first, so this frame's light knows how far underground we are.
     world.caves?.update(camera, dt, now);
     const under = world.caves?.underground ?? 0;
+    // Rain (online: the zone's weather; solo: the local sim's), eased so a
+    // shower rolls in: wet ground, overcast sky, dimmer sun, thicker air.
+    const night = useNightHud.getState();
+    const raining = night.online ? night.raining : localPlayer.raining;
+    world.rain += ((raining ? 1 : 0) - world.rain) * Math.min(1, dt * 0.25);
+    const rain = world.rain;
+    world.shared.uWet.value = rain * (1 - under);
+    world.rainStreaks.update(camera, dt, rain * (1 - under));
+    world.sky.uniforms.uCloudCover.value = 0.42 + 0.46 * rain;
+    // Style uniforms shared by every lit material (styleShader.ts) and the wind field.
+    lsStyle[0] = st.toon;
+    lsStyle[1] = st.rim;
+    lsStyle[2] = st.toonBands;
+    lsStyle[3] = st.toonSoft;
+    lsRetro[0] = st.retro ? st.retro.snap[0] : 0;
+    lsRetro[1] = st.retro ? st.retro.snap[1] : 0;
+    lsRetro[2] = st.retro ? st.retro.affine : 0;
+    lsRetro[3] = st.retro ? 1 : 0;
+    windUniforms.uWindSweep.value.set(st.windSweep, st.windSheen);
+    liveStyle.torch = st.torch;
+    world.sky.uniforms.uSkyStyle.value.set(st.skySat * (1 - 0.35 * rain), st.skyBright * (1 - 0.25 * rain), st.skyBands, st.retro ? 0 : 0.6 * (1 - rain));
+    world.waterU.uWaterStyle.value.set(st.waterTurquoise * (1 - 0.6 * rain), st.waterFoam, st === STYLES.lodestone ? 0.25 : 0, 0);
     // Light and sky for this time of day.
     const L = skyLighting(worldClock.timeOfDayS, world.lighting);
+    L.lightIntensity *= 1 - 0.55 * rain;
+    L.hemiIntensity *= 1 - 0.2 * rain;
     world.sky.uniforms.uSunDir.value.copy(L.sunDir);
     world.sky.mesh.position.copy(camera.position);
     world.hemi.color.copy(L.skyColor);
@@ -264,21 +313,42 @@ export function WorldScene({ runtime }: Props) {
       const fogU = f.post.fog;
       fogU.u('uSunDir').value.copy(L.sunDir);
       (fogU.u('uSunColor').value as THREE.Color).copy(L.lightColor).multiplyScalar(L.lightIntensity * 0.6 * sunVisibility(L.sunDir.y));
-      fogU.u('uFogDensity').value = (0.0004 + 0.0045 * morning + 0.0015 * evening) * (1 - under);
+      // Styles: valley fog thickens toward dusk and stays through the night
+      // (Valheim's moody hollows), moonlit faintly blue; the haze sets how
+      // strongly distance dissolves into the sky (aerial perspective).
+      const dusk = Math.exp(-(((hour - 20) / 2.2) ** 2));
+      const nightFog = st.nightFog * Math.max(dusk, 1 - L.day);
+      fogU.u('uFogDensity').value = ((0.0004 + 0.0045 * morning + 0.0015 * evening) * st.fog + st.fogFloor + nightFog + 0.0035 * rain) * (1 - under);
       fogU.u('uFogFalloff').value = 1 / 38;
       fogU.u('uFogBase').value = runtime.seaY + 18;
-      fogU.u('uHaze').value = (1 / 14000) * (1 - under);
-      fogU.u('uExposure').value = (1.0 + (1 - L.day) * 1.6) * (1 - under) + 1.6 * under;
+      fogU.u('uHaze').value = (st.haze / 14000) * (1 + 1.5 * rain) * (1 - under);
+      (fogU.u('uMoonColor').value as THREE.Color).setRGB(0.012, 0.018, 0.034).multiplyScalar((1 - L.day) * (1 - under) * (st.nightFog > 0 ? 1 : 0));
+      (fogU.u('uSkyStyle').value as THREE.Vector4).copy(world.sky.uniforms.uSkyStyle.value);
+      const fr = fogU.u('uFogRange').value as THREE.Vector4;
+      // Retro's short fog; underground the cave keeps its own darkness.
+      if (st.fogRange) fr.set(st.fogRange[0], st.fogRange[1] * (1 - 0.3 * rain), 1, 0).multiplyScalar(1 - under);
+      else fr.set(0, 0, 0, 0);
+      fogU.u('uExposure').value = (1.0 + (1 - L.day) * 1.6 * st.nightExposure) * (1 - under) + 1.6 * under;
+      // Bloom and god rays per style (built per quality; tuned per style without a rebuild).
+      if (f.post.bloom) {
+        f.post.bloom.intensity = st.bloomIntensity;
+        f.post.bloom.luminanceMaterial.threshold = st.bloomThreshold;
+      }
+      if (f.post.godRays) (f.post.godRays.godRaysMaterial.uniforms.weight as THREE.IUniform<number>).value = f.post.godRayWeight * st.rays * (1 - 0.7 * rain);
+      // The style's screen pass: outlines (thickness in internal pixels), posterize, vignette, dithered quantize.
+      f.post.style.outline.set(st.outline, 1, 0.06, 260);
+      f.post.style.look.set(st.posterize, st.vignette, st.quantize, st.quantize > 0 ? 1 : 0);
       // Grade: time of day, then the biome under the player (eased, so crossing a border is a drift, not a cut).
-      const g = f.post.grade;
+      const gr = f.post.grade;
       const day = L.day;
       const gold = L.golden;
-      const gain = g.u('uGain').value as THREE.Vector3;
-      const lift = g.u('uLift').value as THREE.Vector3;
+      const gain = gr.u('uGain').value as THREE.Vector3;
+      const lift = gr.u('uLift').value as THREE.Vector3;
       gain.copy(GRADE.night.gain).lerp(GRADE.day.gain, day).lerp(GRADE.golden.gain, gold);
       lift.copy(GRADE.night.lift).lerp(GRADE.day.lift, day).lerp(GRADE.golden.lift, gold);
       let sat = THREE.MathUtils.lerp(GRADE.night.sat, GRADE.day.sat, day);
       sat = THREE.MathUtils.lerp(sat, GRADE.golden.sat, gold);
+      sat += st.saturation - 0.15 * rain;
       const d = runtime.data;
       const gi = Math.max(0, Math.min(d.gridN - 1, Math.round(camera.position.x / d.macroRes)));
       const gj = Math.max(0, Math.min(d.gridN - 1, Math.round(camera.position.z / d.macroRes)));
@@ -286,8 +356,11 @@ export function WorldScene({ runtime }: Props) {
       biomeGrade.gain.lerp(bg, Math.min(1, dt * 0.5));
       biomeGrade.sat += (bs - biomeGrade.sat) * Math.min(1, dt * 0.5);
       gain.multiply(biomeGrade.gain);
-      g.u('uSaturation').value = sat + biomeGrade.sat;
-      g.u('uContrast').value = THREE.MathUtils.lerp(GRADE.night.contrast, GRADE.day.contrast, day);
+      gain.x *= st.tint[0];
+      gain.y *= st.tint[1];
+      gain.z *= st.tint[2];
+      gr.u('uSaturation').value = Math.max(0, sat + biomeGrade.sat);
+      gr.u('uContrast').value = THREE.MathUtils.lerp(GRADE.night.contrast, GRADE.day.contrast, day) * st.contrast;
       f.post.update(L.sunDir, L.lightColor, sunVisibility(L.sunDir.y) * (1 - under));
     }
 
@@ -309,7 +382,8 @@ export function WorldScene({ runtime }: Props) {
       const w = { post: f.post, pending: true };
       warm.current = w;
       worldDebug.shadersWarm = false;
-      warmShaders(gl, scene, camera, warmExtras())
+      // Playtest 2: the post chain's full-screen programs too (style pass, FXAA).
+      warmShaders(gl, scene, camera, warmExtras(), undefined, f.post.warmObjects())
         .then((r) => {
           worldDebug.warmup = r;
           if (!r.done) console.warn('[world] shader warm-up hit its time limit', r);

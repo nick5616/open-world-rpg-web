@@ -1,8 +1,8 @@
 // The 3D half of night and chemistry (WP15): fire (instanced flame cards
 // that lean with the shared wind, a small pool of flickering lights),
-// scorched ground, ice sheets, earth pillars, rain streaks around the
-// camera, and the demons' look on top of WP13's enemy bodies (horns,
-// burning eyes) plus rise/burn flashes. Mounted inside the world canvas by
+// scorched ground, ice sheets, earth pillars, and the demons' look on top
+// of WP13's enemy bodies (horns, burning eyes) plus rise/burn flashes. (Rain
+// streaks moved to world/sky/rainStreaks.ts in playtest 2.) Mounted inside the world canvas by
 // NetPlay. Imperative three.js in one useFrame: a big fire is 3 instanced
 // draws and 4 lights, far inside the budget.
 
@@ -13,6 +13,7 @@ import { FIRE_UPDRAFT_TOP_M } from '@lodestone/contracts';
 import { drawnRemotes } from '../net/netStore';
 import { enemyInfo } from '../combat/events';
 import { windState } from '../world/wind';
+import { liveStyle } from '../world/style/styles';
 import { localPlayer } from '../state/live';
 import { cellCenter, cellX, cellZ } from './chem/sim';
 import { nightFrame, nightFx, nightRuntime, useNightHud } from './night';
@@ -47,7 +48,6 @@ function scorchAlpha(): THREE.Texture | null {
   return t;
 }
 const MAX_ICE = 4000;
-const RAIN = 1800;
 
 const flameMat = new THREE.ShaderMaterial({
   transparent: true,
@@ -159,26 +159,13 @@ export function NightLayer() {
       root.add(l);
       return l;
     });
-    const rainPos = new Float32Array(RAIN * 6);
-    const rainGeo = new THREE.BufferGeometry();
-    rainGeo.setAttribute('position', new THREE.BufferAttribute(rainPos, 3));
-    const rain = new THREE.LineSegments(rainGeo, new THREE.LineBasicMaterial({ color: '#9fb4c8', transparent: true, opacity: 0.45 }));
-    rain.frustumCulled = false;
-    rain.visible = false;
     const pillarMat = new THREE.MeshStandardMaterial({ color: '#7a6a55', roughness: 0.95, flatShading: true });
-    root.add(flames, scorch, ice, rain);
-    return { root, flames, scorch, ice, lights, rain, rainPos, pillarMat, pillars: new Map<number, THREE.Mesh>(), decor: new Map<number, DemonDecor>(), fx: [] as { obj: THREE.Mesh; at: number; dur: number; grow: number }[], version: -1, drops: new Float32Array(RAIN * 4) };
+    root.add(flames, scorch, ice);
+    return { root, flames, scorch, ice, lights, pillarMat, pillars: new Map<number, THREE.Mesh>(), decor: new Map<number, DemonDecor>(), fx: [] as { obj: THREE.Mesh; at: number; dur: number; grow: number }[], version: -1 };
   }, []);
 
   useEffect(() => {
     scene.add(parts.root);
-    // Rain drops: random offsets around the camera, each with its own phase.
-    for (let i = 0; i < RAIN; i++) {
-      parts.drops[i * 4] = (Math.random() - 0.5) * 60;
-      parts.drops[i * 4 + 1] = (Math.random() - 0.5) * 60;
-      parts.drops[i * 4 + 2] = Math.random() * 30;
-      parts.drops[i * 4 + 3] = 0;
-    }
     return () => {
       scene.remove(parts.root);
     };
@@ -271,29 +258,9 @@ export function NightLayer() {
         }
       }
     }
-    for (const l of parts.lights) l.intensity = l.userData.on ? 30 + 12 * Math.sin(now / 70 + l.id) + 8 * Math.sin(now / 23 + l.id * 3) : 0;
+    for (const l of parts.lights) l.intensity = l.userData.on ? (30 + 12 * Math.sin(now / 70 + l.id) + 8 * Math.sin(now / 23 + l.id * 3)) * liveStyle.torch : 0;
     // Pillars rise out of the ground over 0.4 s.
     for (const mesh of parts.pillars.values()) mesh.scale.y = Math.min(1, (now - (mesh.userData.at as number)) / 400);
-
-    // Rain around the camera.
-    const raining = useNightHud.getState().raining;
-    parts.rain.visible = raining;
-    if (raining) {
-      const p = parts.rainPos;
-      const cx = camera.position.x;
-      const cy = camera.position.y;
-      const cz = camera.position.z;
-      for (let i = 0; i < RAIN; i++) {
-        const d = parts.drops;
-        d[i * 4 + 2] -= delta * 18;
-        if (d[i * 4 + 2] < -6) d[i * 4 + 2] += 30;
-        const x = cx + d[i * 4] + windState.dirX * 0.4 * d[i * 4 + 2];
-        const z = cz + d[i * 4 + 1] + windState.dirZ * 0.4 * d[i * 4 + 2];
-        const y = cy + d[i * 4 + 2] - 6;
-        p.set([x, y, z, x - windState.dirX * 0.2, y - 0.7, z - windState.dirZ * 0.2], i * 6);
-      }
-      (parts.rain.geometry.attributes.position as THREE.BufferAttribute).needsUpdate = true;
-    }
 
     // Demons: horns and burning eyes on WP13's enemy bodies.
     const seen = new Set<number>();

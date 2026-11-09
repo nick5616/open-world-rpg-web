@@ -16,8 +16,9 @@
 // into exactly the sky behind it.
 
 import * as THREE from 'three';
-import { BlendFunction, BloomEffect, Effect, EffectAttribute, EffectComposer, EffectPass, GodRaysEffect, RenderPass, ToneMappingEffect, ToneMappingMode } from 'postprocessing';
-import { SKY_GLSL } from '../sky/atmosphere';
+import { BlendFunction, BloomEffect, Effect, EffectAttribute, EffectComposer, EffectPass, FXAAEffect, GodRaysEffect, RenderPass, ToneMappingEffect, ToneMappingMode, type Pass } from 'postprocessing';
+import { SKY_GLSL, SKY_STYLE_GLSL } from '../sky/atmosphere';
+import { StyleEffect } from './styleEffect';
 
 const FOG_FRAG = /* glsl */ `
 uniform mat4 uInvProj;
@@ -30,7 +31,15 @@ uniform float uFogDensity;
 uniform float uFogFalloff;
 uniform float uFogBase;
 uniform float uHaze;
+// Playtest 2 styles: linear distance fog (start, end m; 0 = off), how far the
+// fog colour climbs the sky at the horizon, and moonlit in-scatter at night.
+uniform vec4 uFogRange;
+uniform vec3 uMoonColor;
 ${SKY_GLSL}
+${SKY_STYLE_GLSL}
+vec3 fogColour(vec3 d) {
+  return lsSkyStyle(skyAmbient(normalize(vec3(d.x, max(d.y, 0.03), d.z)), uSunDir), d.y);
+}
 void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth, out vec4 outputColor) {
   vec3 col = inputColor.rgb;
   if (depth < 0.999999) {
@@ -48,17 +57,26 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
     float k = clamp(b * d.y * L, -60.0, 60.0);
     float fh = abs(k) > 1e-4 ? base * L * (1.0 - exp(-k)) / k : base * L;
     float T = exp(-(max(fh, 0.0) + uHaze * L));
+    if (uFogRange.y > 0.0) T = min(T, 1.0 - smoothstep(uFogRange.x, uFogRange.y, L));
     // Fog colour: the sky's Rayleigh + ambient light at the horizon in this
     // direction (no Mie aureole: that is concentrated near the sun disc and
     // turned the whole fog bank into a white-gold wall at dawn).
-    vec3 sky = skyAmbient(normalize(vec3(d.x, max(d.y, 0.03), d.z)), uSunDir);
+    vec3 sky = fogColour(d);
     // Sun in-scattering with a broad forward lobe: haze brightens toward the
     // sun, which is what makes god rays and valley fog read as lit air.
     float mu = dot(d, uSunDir);
     float g = 0.55;
     float pm = (1.0 - g * g) / (4.0 * PI_ * pow(1.0 + g * g - 2.0 * g * mu, 1.5));
     vec3 inscatter = uSunColor * pm * 0.5;
+    // Moonlight in the night fog (opposite the sun), so valley fog glows faintly blue.
+    float mm = dot(d, -uSunDir);
+    inscatter += uMoonColor * (0.25 + (1.0 - g * g) / (4.0 * PI_ * pow(1.0 + g * g - 2.0 * g * mm, 1.5)));
     col = col * T + (sky + inscatter) * (1.0 - T);
+  } else if (uFogRange.z > 0.0) {
+    // Retro: the fog colour climbs the sky at the horizon (the far plane is a wall of fog).
+    vec4 vp = uInvProj * vec4(uv * 2.0 - 1.0, 1.0, 1.0);
+    vec3 d = normalize((uCamWorld * vec4(vp.xyz / vp.w, 0.0)).xyz);
+    col = mix(col, fogColour(d), uFogRange.z * (1.0 - smoothstep(0.0, 0.3, d.y)));
   }
   outputColor = vec4(col * uExposure, inputColor.a);
 }
@@ -79,6 +97,9 @@ export class AtmosphereFogEffect extends Effect {
         ['uFogFalloff', new THREE.Uniform(1 / 45)],
         ['uFogBase', new THREE.Uniform(0)],
         ['uHaze', new THREE.Uniform(1 / 9000)],
+        ['uFogRange', new THREE.Uniform(new THREE.Vector4(0, 0, 0, 0))],
+        ['uMoonColor', new THREE.Uniform(new THREE.Color(0, 0, 0))],
+        ['uSkyStyle', new THREE.Uniform(new THREE.Vector4(1, 1, 0, 0))],
       ]),
     });
   }
@@ -132,15 +153,23 @@ export interface PostConfig {
   multisampling: number;
   bloom: boolean;
   godRays: boolean;
+  /** Playtest 2 graphics settings: an FXAA pass after the main one. */
+  fxaa?: boolean;
 }
 
 export class PostFX {
   readonly composer: EffectComposer;
   readonly fog = new AtmosphereFogEffect();
   readonly grade = new GradeEffect();
+  /** Playtest 2 visual styles: outlines, posterize, vignette, dithered quantize (styleEffect.ts). */
+  readonly style = new StyleEffect();
   readonly sunSource: THREE.Mesh;
-  private godRays: GodRaysEffect | null = null;
-  private bloom: BloomEffect | null = null;
+  readonly godRays: GodRaysEffect | null = null;
+  readonly bloom: BloomEffect | null = null;
+  /** Full-screen passes (the shader warm-up compiles their materials too). */
+  readonly passes: Pass[] = [];
+  /** The god-ray weight the chain was built with (styles scale it). */
+  readonly godRayWeight = 0.22;
 
   constructor(
     readonly renderer: THREE.WebGLRenderer,
@@ -157,7 +186,7 @@ export class PostFX {
     this.sunSource.frustumCulled = false;
     const effects: Effect[] = [this.fog];
     if (cfg.godRays) {
-      this.godRays = new GodRaysEffect(camera, this.sunSource, { resolutionScale: 0.5, density: 0.9, decay: 0.93, weight: 0.22, exposure: 0.32, samples: 48, clampMax: 0.8, blur: true });
+      this.godRays = new GodRaysEffect(camera, this.sunSource, { resolutionScale: 0.5, density: 0.9, decay: 0.93, weight: this.godRayWeight, exposure: 0.32, samples: 48, clampMax: 0.8, blur: true });
       effects.push(this.godRays);
     }
     if (cfg.bloom) {
@@ -166,7 +195,15 @@ export class PostFX {
     }
     effects.push(new ToneMappingEffect({ mode: ToneMappingMode.ACES_FILMIC }));
     effects.push(this.grade);
-    this.composer.addPass(new EffectPass(camera, ...effects));
+    effects.push(this.style);
+    const main = new EffectPass(camera, ...effects);
+    this.composer.addPass(main);
+    this.passes.push(main);
+    if (cfg.fxaa) {
+      const aa = new EffectPass(camera, new FXAAEffect());
+      this.composer.addPass(aa);
+      this.passes.push(aa);
+    }
   }
 
   /** Per frame: sun disc placement (inside the far plane) and fog camera matrices. */
@@ -179,6 +216,27 @@ export class PostFX {
     this.sunSource.updateMatrixWorld();
     (this.sunSource.material as THREE.MeshBasicMaterial).color.copy(sunColor).multiplyScalar(sunVisible);
     this.fog.setCamera(this.camera);
+  }
+
+  /**
+   * Shader warm-up (WP19b, warmup.ts): one full-screen triangle per pass
+   * material, so renderer.compileAsync links the post programs in parallel
+   * with the scene's instead of the first composer.render linking them
+   * synchronously. Call after setSize.
+   */
+  warmObjects(): THREE.Object3D[] {
+    const out: THREE.Object3D[] = [];
+    const tri = new THREE.BufferGeometry();
+    tri.setAttribute('position', new THREE.BufferAttribute(new Float32Array([-1, -1, 0, 3, -1, 0, -1, 3, 0]), 3));
+    for (const p of this.passes) {
+      const m = p.fullscreenMaterial;
+      if (m) {
+        const mesh = new THREE.Mesh(tri, m);
+        mesh.frustumCulled = false;
+        out.push(mesh);
+      }
+    }
+    return out;
   }
 
   setSize(w: number, h: number): void {
