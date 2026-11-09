@@ -46,7 +46,7 @@ const METALS: Record<string, Metal> = {
   copper: metal('#c4774a', '#f0b086', '#9a5a36', 0.9, 0.38),
   iron: metal('#8c9198', '#c9cdd2', '#5f6369', 0.85, 0.5),
   silver: metal('#dde3ea', '#ffffff', '#b3bac3', 0.95, 0.2),
-  sunsteel: metal('#f2cd78', '#fff4cf', '#d9a03c', 0.95, 0.2, 0.22, 0.75, 0.12),
+  sunsteel: metal('#f2cd78', '#fff4cf', '#d9a03c', 0.95, 0.2, 0.28, 0.9, 0.12),
   starmetal: metal('#a7b6e6', '#e6ecff', '#6f7fb8', 0.95, 0.24, 0.1, 0.35, 0.05),
   voidglass: metal('#3d2660', '#b38ff0', '#2a1a44', 0.35, 0.08, 0.18, 0.6, 0.08),
 };
@@ -163,7 +163,7 @@ function sword(b: MeshBuilder, l: WeaponLook, d: Detail): void {
       b.with(M.t(sx * 0.104, 0.065, 0), () => lathe(b, [[-0.012, 0.0005], [-0.006, 0.009], [0.003, 0.01], [0.01, 0.0005]], segsOf(d, 8, 5, 4), mt.fit, { smooth: true }));
     // langet block over the blade's root
     sweep(b, [[0, 0.028, 0], [0, 0.05, 0], [0, 0.075, 0]], polygon(8, 0.03, 0.0125), mt.fit, { side: [1, 0, 0], smooth: false, capEnd: true, scale: (i) => [i === 2 ? 0.55 : 1, i === 2 ? 0.7 : 1] });
-    for (const sz of [-1, 1]) b.with(M.of(M.t(0, 0.052, sz * 0.0125), M.rx((sz * Math.PI) / 2)), () => setGem(b, 0.0085, l.gem, mt.fit, d));
+    for (const sz of [-1, 1]) b.with(M.of(M.t(0, 0.052, sz * 0.0125), M.rx((sz * Math.PI) / 2)), () => setGem(b, 0.0095, l.gem, mt.fit, d));
   }
 
   // Grip: a swelled core wound with a leather strap, metal collars.

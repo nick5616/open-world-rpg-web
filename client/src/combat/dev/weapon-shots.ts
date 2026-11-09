@@ -153,18 +153,24 @@ async function main() {
     }
 
     // First-person shots (gem element: 0 fire, 1 ice, 2 lightning, 3 earth, 4 wind, 5 light, 6 dark, 7 void).
-    const shots: { name: string; weapon: string; gem: number; material: number; draw?: boolean }[] = [
+    const shots: { name: string; weapon: string; gem: number; material: number; draw?: boolean; night?: boolean }[] = [
       { name: 'sword', weapon: 'sword', gem: -1, material: 0 },
       { name: 'spear', weapon: 'spear', gem: 1, material: 0 },
       { name: 'bow', weapon: 'bow', gem: 2, material: 0, draw: true },
       { name: 'staff', weapon: 'staff', gem: 0, material: 0 },
       { name: 'wand', weapon: 'wand', gem: 7, material: 0 },
-      { name: 'sunsteel', weapon: 'sword', gem: 5, material: 3 },
+      { name: 'sunsteel', weapon: 'sword', gem: 1, material: 3 },
+      { name: 'sunsteel-night', weapon: 'sword', gem: 1, material: 3, night: true },
     ];
     const only = process.env.WEAPON_SHOTS_ONLY?.split(',');
     for (const s of shots) {
       if (only && !only.includes(s.name)) continue;
+      if (before && s.night) continue;
       await equip(a, s.weapon, s.gem, s.material);
+      if (s.night) {
+        await a.evaluate(() => (window as unknown as W).__lodestone.setTimeOfDay(0.93 * 3600));
+        await sleep(1500);
+      }
       if (s.draw) {
         await a.mouse.down({ button: 'right' });
         await sleep(1300);
@@ -174,6 +180,7 @@ async function main() {
         await a.mouse.up({ button: 'right' });
         await sleep(600);
       }
+      if (s.night) await a.evaluate(() => (window as unknown as W).__lodestone.setTimeOfDay(0.45 * 3600));
       console.log(`shot ${prefix}${s.name}.png`);
     }
 

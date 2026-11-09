@@ -44,7 +44,7 @@ const POSES: Record<WeaponKind, Pose> = {
   sword: { pos: [0.24, -0.22, -0.44], up: [-0.32, 0.64, -0.7], face: [-0.3, 0.45, 1] },
   spear: { pos: [0.22, -0.28, -0.22], up: [-0.13, 0.12, -1], face: [0, 1, 0.1], offhand: 0.46 },
   bow: { pos: [-0.14, -0.1, -0.58], up: [0.35, 0.95, 0.3], face: [0.1, -0.3, 0.95], scale: 0.85 },
-  staff: { pos: [0.28, -0.32, -0.5], up: [-0.12, 1, -0.42], face: [0.3, 0, 1] },
+  staff: { pos: [0.27, -0.28, -0.46], up: [-0.15, 1, -0.65], face: [0.3, 0, 1] },
   wand: { pos: [0.22, -0.2, -0.38], up: [-0.3, 0.62, -1], face: [0.3, 1, 0.3] },
 };
 /** The swing pivots about the right shoulder region, so a cut sweeps across the view. */
