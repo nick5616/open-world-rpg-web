@@ -161,7 +161,7 @@ try {
     const metric = (name) => Number((new RegExp(`^${name} (\\S+)`, 'm').exec(prom) ?? [])[1] ?? 0);
     const awake = metric('zone_combat_awake');
     const w = ts.tick.windowTickMs;
-    const row = { s: Math.round((Date.now() - t0) / 1000), players: ts.players, enemies: metric('zone_combat_enemies'), awake, p50: w.p50, p99: w.p99, max: w.max, overruns: ts.tick.overruns };
+    const row = { s: Math.round((Date.now() - t0) / 1000), players: ts.players, enemies: metric('zone_combat_enemies'), awake, p50: w.p50, p99: w.p99, max: w.max, overruns: ts.tick.overruns, gc: metric('go_gc_cycles_total') };
     series.push(row);
     if (ts.phases && ts.players >= BOTS * 0.98) lastPhases = ts.phases;
     console.log(`  t=${row.s}s players ${row.players} enemies ${row.enemies} awake ${awake} tick p50 ${w.p50?.toFixed(2)} p99 ${w.p99?.toFixed(2)} max ${w.max?.toFixed(1)}`);
@@ -177,7 +177,7 @@ try {
   const worst = steady.reduce((m, r) => (r.p99 > (m?.p99 ?? -1) ? r : m), null);
   const minAwake = steady.reduce((m, r) => Math.min(m, r.awake), Infinity);
   lines.push('---- zone tick, 60 s windows sampled every 5 s (steady state: all bots in, t >= 60 s) ----');
-  for (const r of series) lines.push(`t=${String(r.s).padStart(4)}s players ${r.players} enemies ${r.enemies} awake ${r.awake} | tick p50 ${r.p50?.toFixed(2)} p99 ${r.p99?.toFixed(2)} max ${r.max?.toFixed(1)} ms`);
+  for (const r of series) lines.push(`t=${String(r.s).padStart(4)}s players ${r.players} enemies ${r.enemies} awake ${r.awake} | tick p50 ${r.p50?.toFixed(2)} p99 ${r.p99?.toFixed(2)} max ${r.max?.toFixed(1)} ms | gc cycles ${r.gc}`);
   if (worst) step(`steady state: worst 60 s window tick p99 ${worst.p99.toFixed(2)} ms (budget 12), min awake enemies ${minAwake}, samples ${steady.length}`);
   // WP19b: windows that start after the join ramp and the bots' warmup (a
   // window ending at t = 60 s still holds 300 joins, 500 camps spawning and
