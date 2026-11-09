@@ -1,0 +1,45 @@
+WP19b turn benchmark (client/src/world/bench/turn.mjs, from main b93b59b)
+2026-11-09, branch wp/19b-scale merged with main (mouse-look fix kept), solo build.
+Headless Chromium, ANGLE D3D11 on the RTX 3070 (shared desktop), vsync on (16.7 ms frames).
+Pan = 6 s at 360 deg/s via setLook; flick = 8 x 180 deg in 150 ms. A frame > 50 ms while
+turning is a visible gaze "teleport".
+
+Orchestrator's measurement on main (before WP19b), solo, high:
+  pan p99 66.7 ms, max frame 533 ms, 4 long tasks (worst 487 ms); flicks clean.
+
+Same build, `?nowarmup` (debug switch: no shader warm-up = main's behaviour), solo dev server :5392
+  high #1  pan p99 16.8 max 33.3   frames>50ms 0  long tasks 0
+  high #2  pan p99 33.3 max 333.3  frames>50ms 2  long tasks 1 (344 ms)   <- first-view shader compile
+  low  #1  pan p99 33.3 max 50.0   frames>50ms 0  long tasks 0
+  low  #2  pan p99 16.8 max 16.8   frames>50ms 0  long tasks 0
+
+With the WP19b shader warm-up (default), solo dev server :5392
+  high #1  pan p99 16.8 max 16.8   flick max 16.8  frames>50ms 0  long tasks 0
+  high #2  pan p99 16.8 max 16.8   flick max 16.8  frames>50ms 0  long tasks 0
+  high #3  pan p99 16.8 max 16.8   flick max 33.3  frames>50ms 0  long tasks 0
+  high #4  pan p99 16.8 max 16.8   flick max 16.8  frames>50ms 0  long tasks 0
+  high #5  pan p99 16.8 max 33.4   flick max 16.8  frames>50ms 0  long tasks 0
+  low  #1  pan p99 16.8 max 16.8   flick max 16.8  frames>50ms 0  long tasks 0
+  low  #2  pan p99 16.8 max 16.8   flick max 16.8  frames>50ms 0  long tasks 0
+  low  #3  pan p99 16.8 max 33.4   flick max 16.8  frames>50ms 0  long tasks 0
+Production preview (vite build, VITE_SOLO=1), high: nowarmup pan max 16.8, warm-up pan max 16.8, 0 long tasks.
+
+After merging main again (playtest progression, quests, doors, weapon models, audio system;
+weapon material, enemy bars and glow decals added to warmExtras.ts), production preview
+(VITE_SOLO=1 vite build + vite preview :5393):
+  high #1-#3  pan p99 16.8 max 16.8   flick max 16.8   frames>50ms 0  long tasks 0
+  low  #1-#3  pan p99 16.8 max 16.8   flick max 16.8   frames>50ms 0  long tasks 0
+Traversal on the merged build (wp19b-merged-traversal-run.txt): 0 programs linked in walk and
+flight; high 0 long tasks; low 1 x 52 ms at the first key press of the walk = creating the
+AudioContext (native, Windows audio device open) because `?autoplay=1` skips the title screen
+whose Play click normally creates it. Before the audio fix below, main's new audio engine also
+synthesized ~1 M samples of noise and a reverb IR synchronously on that key press: 67-86 ms long
+task (wp19b-merged-traversal-run-before-audio-fix.txt); now synthesized in 32 k-sample slices
+(client/src/audio/ambience.ts, sfx.ts).
+
+Result: 8/8 warm-up runs with 0 frames over 50 ms and 0 long tasks while panning and flicking
+(worst frame 33.4 ms = one missed vsync). Without the warm-up the same build still shows the
+first-view compile hitch (1 of 2 high runs: 333 ms frame, 344 ms long task). Nothing else
+(chunk uploads, instanced foliage growth, shadow maps, texture uploads) produced a frame over
+50 ms in these runs; the traversal benchmark agrees (wp19b-traversal-run.txt: 0 programs
+linked and 0 long tasks during the walk and the 80 m/s flight).

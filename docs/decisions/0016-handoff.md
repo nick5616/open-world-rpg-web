@@ -73,6 +73,6 @@ When the active connection drops without a terminal kick, the client (`ZoneSessi
 
 - Earshot (WP11) is still per zone: players on two sides of a border are in each other's ghost band but not each other's earshot. Fix: the earshot runner can take mirrored entities as speakers-only (not listeners) once the voice package agrees on the semantics.
 - WebTransport per-chunk streams don't exist yet (WP06 gap), so WorldEdits ride the reliable stream on whichever connection is active; a client re-receives a chunk's edits from the new zone on first interest.
-- The director's assigner never rebalances live pool zones by load (sticky by design); WP19 decides rebalancing from soak numbers.
+- ~~The director's assigner never rebalances live pool zones by load (sticky by design); WP19 decides rebalancing from soak numbers.~~ WP19b: zones report players per region (`Entry.Load`) and the assigner moves at most one region per 10 s off a zone above 200 players and 1.2x the mean (`zoneregistry.Rebalance`, `server/director/README.md` "Load moves"); the region's players are handed over like a border crossing. Plan stays sticky otherwise.
 - Failover rewinds a player to the last checkpoint (up to 30 s), as the spec says.
 - WP13 combat crosses a handoff as the profile plus runtime state (HP, mana, seq-based cooldowns as they are, tick timers as time remaining; `internal/combat/handoff.go`); the strike action log and frame ring do not (a claim racing the switch is refused as stale). WP13's combat profile saves are not epoch-fenced yet.

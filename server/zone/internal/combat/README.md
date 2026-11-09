@@ -49,4 +49,29 @@ go -C server/zone test ./internal/combat/...
   `Step` (claims with input frames) they fall back to the full scan.
 - `scale_test.go` proves both against the old full scans.
 
+### Second pass (WP19b): partitioned enemy AI (`par.go`)
+
+"No goroutines" above now has one exception, owned by the host: with
+`World.SetParallel` (the zone passes its tick pool) the enemy loop in `Step`
+runs simple groups on workers. Each group's awake members think in spawn
+order on one worker's private copy of the World (maps and pointers shared,
+only read during the pass); events, strikes and enemy shots land in the
+worker's slices and are merged back in spawn order, exactly where the old
+single loop appended them. Bosses, demons, enemies with a damage-over-time
+status and enemies without a group keep the old path (their think can kill,
+spawn or touch other groups), run in place during the merge.
+
+The only rule that couples groups, at most `maxWindupsOnOne` wind-ups on one
+player, is kept exact: during the parallel pass an enemy counts other
+groups' wind-ups as they were at the start of the tick (plus its own
+group's, live) and records a request; the merge admits requests in spawn
+order against the live count, and a refused enemy stands still that tick.
+That rule (other groups seen as of the tick's start) is the one behavioural
+difference from the old loop, and it is fixed: the outcome does not depend
+on the number of workers or how groups are handed out
+(`TestPartitionedAIMatchesAcrossWorkers`; without a pool everything runs
+the same passes on the caller). `playerUpkeep` now walks players in id
+order (`playerList`), so respawns and upkeep events no longer come out in
+map order.
+
 G4: a leashed `combatbot` (a `Goal` + `Leash`, e.g. the night bots at a ward garden) no longer picks enemies beyond leash + reach; it used to lock onto an older pack it could never reach and stand at the leash edge with 0 attacks through a whole defense (`combatbot/brain_test.go`).

@@ -29,7 +29,8 @@ await context.addInitScript((t) => {
 }, tier);
 const page = await context.newPage();
 page.on('pageerror', (e) => console.log('pageerror', e.message));
-await page.goto(`${base}/?autoplay=1&nocache=1`);
+// LODESTONE_BENCH_QUERY: extra URL parameters (WP19b: `nowarmup` measures without the shader warm-up).
+await page.goto(`${base}/?autoplay=1&nocache=1${process.env.LODESTONE_BENCH_QUERY ? `&${process.env.LODESTONE_BENCH_QUERY}` : ''}`);
 await page.waitForFunction(() => window.__lodestoneWorld?.stats && window.__lodestone?.player?.(), null, { timeout: 120000 });
 await sleep(8000); // let the first ring of chunks settle
 

@@ -60,6 +60,16 @@ func (d *Director) RunAssigner(ctx context.Context, every time.Duration) {
 }
 
 func (d *Director) assignAll(ctx context.Context, every time.Duration) {
+	if d.OnlyWorld != "" {
+		// WP19b: a director dedicated to one world (soaks on shared infra).
+		// Called from start-up on, before the world's zones register, so it
+		// holds the world's lease before any other director scanning the
+		// same Redis can take it.
+		if _, err := d.AssignOnce(ctx, d.OnlyWorld, every*3); err != nil {
+			d.Log.Warn("region assignment failed", "world", d.OnlyWorld, "err", err)
+		}
+		return
+	}
 	var cursor uint64
 	for {
 		keys, next, err := d.RDB.Scan(ctx, cursor, "zones:*", 100).Result()
@@ -109,8 +119,41 @@ func (d *Director) AssignOnce(ctx context.Context, worldID string, lease time.Du
 		return nil, err
 	}
 	next := zoneregistry.Plan(live, cur)
+	planChanged := !sameAssignment(cur, next)
+	// WP19b: then at most one load move (rebalance.go), and only once the
+	// zones have had RebalanceCooldown to hand the last moved region's
+	// players over and report their new load.
+	if d.Rebalance != nil && !planChanged {
+		d.rebalMu.Lock()
+		last := d.lastRebalance[worldID]
+		d.rebalMu.Unlock()
+		if d.now().Sub(last) >= d.RebalanceCooldown {
+			if moved, m := zoneregistry.Rebalance(live, next, *d.Rebalance); m != nil {
+				next = moved
+				d.rebalMu.Lock()
+				if d.lastRebalance == nil {
+					d.lastRebalance = map[string]time.Time{}
+				}
+				d.lastRebalance[worldID] = d.now()
+				d.rebalMu.Unlock()
+				d.Log.Info("region moved for load", "world", worldID, "move", m.String())
+				d.Metrics.Add("director_region_load_moves_total", 1)
+			}
+		}
+	}
 	if sameAssignment(cur, next) {
 		return nil, nil
+	}
+	if d.Rebalance != nil && planChanged {
+		// Plan itself changed the map (a pool zone died or joined): its
+		// players are failing over or being handed off right now and the
+		// reported loads are stale. Hold load moves for two cooldowns.
+		d.rebalMu.Lock()
+		if d.lastRebalance == nil {
+			d.lastRebalance = map[string]time.Time{}
+		}
+		d.lastRebalance[worldID] = d.now().Add(d.RebalanceCooldown)
+		d.rebalMu.Unlock()
 	}
 	if err := zoneregistry.WriteAssignment(ctx, d.RDB, worldID, next); err != nil {
 		return nil, err

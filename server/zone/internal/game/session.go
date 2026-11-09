@@ -45,6 +45,10 @@ type session struct {
 	mu    sync.Mutex
 	inbox []proto.Message
 	spare []proto.Message
+	// WP19b (inputs.go): this tick's messages, taken from inbox, and
+	// whether they must be applied on the tick goroutine.
+	taken    []proto.Message
+	inSerial bool
 
 	// Tick-owned.
 	ent         *Entity
@@ -57,6 +61,7 @@ type session struct {
 	ackFloor    uint32 // WP16: acks at or below this tick predate the session's current activation
 	enc         snapshot.Encoder
 	budget      snapshot.BudgetStats // last published encoder counters
+	relCharged  int64                // WP19b: conn's ReliableQueued already charged to the budget
 	frameBudget ratelimit.Bucket
 	frames      []proto.InputFrame // received, not yet applied (sorted at apply)
 	gapSince    uint32             // tick a missing frame started holding the buffer, 0 = none
@@ -305,7 +310,11 @@ func (s *Server) readLoop(sess *session) {
 		switch msg := m.(type) {
 		case *proto.ClockPing:
 			pong := &proto.ClockPong{T1: msg.T1, T2: t2, T3: s.serverTimeMs()}
-			sess.conn.SendUnreliable(proto.Encode(pong))
+			if h, ok := sess.conn.(transport.Holder); ok {
+				h.SendUrgent(proto.Encode(pong)) // not delayed by the tick's hold (WP19b)
+			} else {
+				sess.conn.SendUnreliable(proto.Encode(pong))
+			}
 		case *proto.Bye:
 			sess.conn.Close(1000, "bye")
 			return
@@ -321,12 +330,11 @@ func (s *Server) readLoop(sess *session) {
 	}
 }
 
-// drain applies a session's queued messages (tick goroutine).
-func (s *Server) drain(sess *session, now time.Time) {
-	sess.mu.Lock()
-	msgs := sess.inbox
-	sess.inbox = sess.spare[:0]
-	sess.mu.Unlock()
+// drainTaken applies the messages takeInputs took from a session's inbox
+// (tick goroutine, or a worker for a plain session: inputs.go).
+func (s *Server) drainTaken(sess *session, now time.Time) {
+	msgs := sess.taken
+	sess.taken = nil
 	var claims []*proto.HitClaim
 	for _, m := range msgs {
 		if hc, ok := m.(*proto.HitClaim); ok {
@@ -370,7 +378,7 @@ func (s *Server) drain(sess *session, now time.Time) {
 		}
 	}
 	clear(msgs)
-	sess.spare = msgs
+	sess.spare = msgs // tick-owned (takeInputs swaps it in under mu)
 	s.applyFrames(sess, now)
 	for _, c := range claims {
 		s.handleHitClaim(sess, c) // WP13 (combat.go)
@@ -432,7 +440,8 @@ func (s *Server) applyFrames(sess *session, now time.Time) {
 	fr := sess.frames
 	slices.SortFunc(fr, func(a, b proto.InputFrame) int { return cmpU32(a.Seq, b.Seq) })
 	fr = slices.CompactFunc(fr, func(a, b proto.InputFrame) bool { return a.Seq == b.Seq })
-	i := 0
+	i, applied := 0, int64(0)
+	defer func() { s.m.frames.Add(applied) }() // one atomic per session, not per frame (WP19b)
 	for ; i < len(fr); i++ {
 		f := fr[i]
 		if f.Seq <= sess.consumed {
@@ -461,7 +470,7 @@ func (s *Server) applyFrames(sess *session, now time.Time) {
 			s.m.speedViolations.Add(1)
 		}
 		s.combatAfterFrame(sess, f)
-		s.m.frames.Add(1)
+		applied++
 	}
 	if e.drownedEvent {
 		e.drownedEvent = false

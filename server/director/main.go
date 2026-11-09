@@ -22,6 +22,7 @@ import (
 	"lodestone/server/pkg/localsave"
 	"lodestone/server/pkg/svc"
 	"lodestone/server/pkg/ticket"
+	"lodestone/server/pkg/zoneregistry"
 )
 
 func main() {
@@ -86,6 +87,15 @@ func run(s *svc.Server) error {
 		SocialEndpoint: social,
 		Log:            s.Log, Metrics: s.Metrics,
 	}
+	// WP19b: load-aware region moves (zoneregistry.Rebalance), on unless
+	// LODESTONE_DIRECTOR_REBALANCE=0.
+	if env.Bool("LODESTONE_DIRECTOR_REBALANCE", true) {
+		opt := zoneregistry.DefaultRebalance
+		opt.Floor = env.Int("LODESTONE_DIRECTOR_REBALANCE_FLOOR", opt.Floor)
+		d.Rebalance = &opt
+		d.RebalanceCooldown = env.Duration("LODESTONE_DIRECTOR_REBALANCE_COOLDOWN", 10*time.Second)
+	}
+	d.OnlyWorld = env.Str("LODESTONE_DIRECTOR_ONLY_WORLD", "")
 	d.Register(s.Mux)
 	// WP16: region assignment for cluster worlds (internal/director/assign.go).
 	if every := env.Duration("LODESTONE_DIRECTOR_ASSIGN_EVERY", 2*time.Second); every > 0 {

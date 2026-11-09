@@ -39,6 +39,9 @@ const PORT = Number(arg('port', '18510'));
 const ZONE_BIN = arg('zone-bin', '');
 const PPROF = process.argv.includes('--pprof');
 const TAG = arg('tag', `${BOTS}b-${ENEMIES}e-${PROFILE}`);
+// --prefix names the evidence files (<prefix>-s1-<tag>.*); WP19's second
+// pass writes wp19b-*.
+const PREFIX = arg('prefix', 'wp19');
 const RUN = `${Date.now().toString(36)}${process.pid}`;
 const EXE = process.platform === 'win32' ? '.exe' : '';
 const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'lodestone-wp19-'));
@@ -145,7 +148,7 @@ try {
       const prof = path.join(TMP, 'cpu.pprof');
       fs.writeFileSync(prof, buf);
       const top = spawnSync('go', ['tool', 'pprof', '-top', '-cum', '-nodecount=60', zoneBin, prof], { cwd: root, env: env(), encoding: 'utf8' }).stdout;
-      fs.writeFileSync(path.join(EVIDENCE, `wp19-s1-${TAG}-cpu.txt`), `CPU profile, 10 s at t=90 s, zone with ${BOTS} bots + ${ENEMIES} enemies (GOMAXPROCS=${PROCS})\n\n${top}`);
+      fs.writeFileSync(path.join(EVIDENCE, `${PREFIX}-s1-${TAG}-cpu.txt`), `CPU profile, 10 s at t=90 s, zone with ${BOTS} bots + ${ENEMIES} enemies (GOMAXPROCS=${PROCS})\n\n${top}`);
       step(`cpu profile saved (${prof})`);
     })().catch((e) => step(`profile failed: ${e}`));
   }
@@ -158,7 +161,7 @@ try {
     const metric = (name) => Number((new RegExp(`^${name} (\\S+)`, 'm').exec(prom) ?? [])[1] ?? 0);
     const awake = metric('zone_combat_awake');
     const w = ts.tick.windowTickMs;
-    const row = { s: Math.round((Date.now() - t0) / 1000), players: ts.players, enemies: metric('zone_combat_enemies'), awake, p50: w.p50, p99: w.p99, max: w.max, overruns: ts.tick.overruns };
+    const row = { s: Math.round((Date.now() - t0) / 1000), players: ts.players, enemies: metric('zone_combat_enemies'), awake, p50: w.p50, p99: w.p99, max: w.max, overruns: ts.tick.overruns, gc: metric('go_gc_cycles_total') };
     series.push(row);
     if (ts.phases && ts.players >= BOTS * 0.98) lastPhases = ts.phases;
     console.log(`  t=${row.s}s players ${row.players} enemies ${row.enemies} awake ${awake} tick p50 ${w.p50?.toFixed(2)} p99 ${w.p99?.toFixed(2)} max ${w.max?.toFixed(1)}`);
@@ -174,20 +177,28 @@ try {
   const worst = steady.reduce((m, r) => (r.p99 > (m?.p99 ?? -1) ? r : m), null);
   const minAwake = steady.reduce((m, r) => Math.min(m, r.awake), Infinity);
   lines.push('---- zone tick, 60 s windows sampled every 5 s (steady state: all bots in, t >= 60 s) ----');
-  for (const r of series) lines.push(`t=${String(r.s).padStart(4)}s players ${r.players} enemies ${r.enemies} awake ${r.awake} | tick p50 ${r.p50?.toFixed(2)} p99 ${r.p99?.toFixed(2)} max ${r.max?.toFixed(1)} ms`);
+  for (const r of series) lines.push(`t=${String(r.s).padStart(4)}s players ${r.players} enemies ${r.enemies} awake ${r.awake} | tick p50 ${r.p50?.toFixed(2)} p99 ${r.p99?.toFixed(2)} max ${r.max?.toFixed(1)} ms | gc cycles ${r.gc}`);
   if (worst) step(`steady state: worst 60 s window tick p99 ${worst.p99.toFixed(2)} ms (budget 12), min awake enemies ${minAwake}, samples ${steady.length}`);
+  // WP19b: windows that start after the join ramp and the bots' warmup (a
+  // window ending at t = 60 s still holds 300 joins, 500 camps spawning and
+  // every first-sight record). Reported next to the t >= 60 s number above.
+  const rampS = Math.max(10, Math.round(BOTS / 20)) + 30;
+  const post = steady.filter((r) => r.s >= rampS + 60);
+  const worstPost = post.reduce((m, r) => (r.p99 > (m?.p99 ?? -1) ? r : m), null);
+  if (worstPost) step(`after the join ramp (windows from t=${rampS} s): worst 60 s window tick p99 ${worstPost.p99.toFixed(2)} ms, p50 ${Math.min(...post.map((r) => r.p50)).toFixed(2)}-${Math.max(...post.map((r) => r.p50)).toFixed(2)} ms, samples ${post.length}`);
   const summary = JSON.parse(fs.readFileSync(out, 'utf8'));
   if (lastPhases) {
     lines.push('', '---- tick phases, last minute before the end (ms) ----', JSON.stringify(lastPhases));
     step(`tick phases mean ${JSON.stringify(lastPhases.meanMs)} slowest tick ${JSON.stringify(lastPhases.slowestTickMs)}`);
   }
-  const result = { phases: lastPhases, tag: TAG, bots: BOTS, enemies: ENEMIES, profile: PROFILE, center: CENTER, radius: RADIUS, procs: PROCS, duration: DURATION, series, steadyWorstP99: worst?.p99 ?? null, minAwake, bots_summary: summary };
+  const result = { phases: lastPhases, tag: TAG, bots: BOTS, enemies: ENEMIES, profile: PROFILE, center: CENTER, radius: RADIUS, procs: PROCS, duration: DURATION, series, steadyWorstP99: worst?.p99 ?? null, postRampWorstP99: worstPost?.p99 ?? null, minAwake, bots_summary: summary };
   fs.mkdirSync(EVIDENCE, { recursive: true });
-  fs.writeFileSync(path.join(EVIDENCE, `wp19-s1-${TAG}.json`), JSON.stringify(result, null, 1));
-  fs.copyFileSync(prom, path.join(EVIDENCE, `wp19-s1-${TAG}.prom`));
+  fs.writeFileSync(path.join(EVIDENCE, `${PREFIX}-s1-${TAG}.json`), JSON.stringify(result, null, 1));
+  fs.copyFileSync(prom, path.join(EVIDENCE, `${PREFIX}-s1-${TAG}.prom`));
   const tickOK = worst && worst.p99 <= 12;
   const downOK = summary.downKbps?.max <= 160;
-  step(`verdict: tick p99 ${tickOK ? 'PASS' : 'FAIL'} (${worst?.p99?.toFixed(2)} ms), downlink max ${downOK ? 'PASS' : 'FAIL'} (${summary.downKbps?.max?.toFixed(1)} kbps, budget 160), awake >= 2000: ${minAwake >= ENEMIES * 0.95 ? 'yes' : 'no'} (${minAwake})`);
+  const postOK = worstPost && worstPost.p99 <= 12;
+  step(`verdict: tick p99 ${tickOK ? 'PASS' : 'FAIL'} (${worst?.p99?.toFixed(2)} ms, t >= 60 s), after the join ramp ${postOK ? 'PASS' : 'FAIL'} (${worstPost?.p99?.toFixed(2)} ms), downlink max ${downOK ? 'PASS' : 'FAIL'} (${summary.downKbps?.max?.toFixed(1)} kbps, budget 160), awake >= 2000: ${minAwake >= ENEMIES * 0.95 ? 'yes' : 'no'} (${minAwake})`);
   exitCode = tickOK && downOK ? 0 : 3;
   killTree(zone);
   await Promise.race([zoneExit, sleep(5000)]);
@@ -196,7 +207,7 @@ try {
 } finally {
   for (const c of children.reverse()) killTree(c);
   fs.mkdirSync(EVIDENCE, { recursive: true });
-  fs.writeFileSync(path.join(EVIDENCE, `wp19-s1-${TAG}.txt`), lines.join('\n') + '\n');
+  fs.writeFileSync(path.join(EVIDENCE, `${PREFIX}-s1-${TAG}.txt`), lines.join('\n') + '\n');
   console.log(`logs in ${TMP}`);
   process.exit(exitCode);
 }

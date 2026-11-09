@@ -11,6 +11,7 @@
 
 import type { Vec3 } from './bridge';
 import { assetUrl } from './assets';
+import { SYNTH_SLICE, yieldToLoop } from './ambience';
 import { CUES, type CueDef, type CueId } from './cues';
 
 export interface PlayOpts {
@@ -81,6 +82,17 @@ export class SfxEngine {
     const rr = Math.max(2, Math.min(16, r));
     if (Math.abs(rr - this.irRadius) < 1.5) return;
     this.irRadius = rr;
+    void this.buildIR(rr, ++this.irGen);
+  }
+
+  /**
+   * WP19b: the IR (up to ~110 k samples per channel) is synthesized in
+   * slices (ambience.ts SYNTH_SLICE), so neither the engine start (first key
+   * press) nor walking into a cave is a main-thread long task; a newer
+   * radius supersedes one still being built.
+   */
+  private irGen = 0;
+  private async buildIR(rr: number, gen: number): Promise<void> {
     const ctx = this.ctx;
     const seconds = 0.35 + rr * 0.12;
     const len = Math.floor(ctx.sampleRate * seconds);
@@ -89,12 +101,16 @@ export class SfxEngine {
       const d = ir.getChannelData(ch);
       let lp = 0;
       for (let i = 0; i < len; i++) {
+        if (i % SYNTH_SLICE === SYNTH_SLICE - 1) {
+          await yieldToLoop();
+          if (gen !== this.irGen) return;
+        }
         const t = i / len;
         lp += (Math.random() * 2 - 1 - lp) * (0.55 - 0.45 * t);
         d[i] = lp * Math.pow(1 - t, 2.2 + 6 / rr);
       }
     }
-    this.convolver.buffer = ir;
+    if (gen === this.irGen) this.convolver.buffer = ir;
   }
 
   /** 0 = dry (surface) .. 1 = full cave reverb. */

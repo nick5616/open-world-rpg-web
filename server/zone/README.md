@@ -670,6 +670,51 @@ per-client output are unchanged; equivalence tests prove it.
   (`scale_bench_test.go`: in-process tick at 150/300/460 players, 300 + 2,000
   enemies; flat ground, fake connections, no profiler hazards).
 
+### Second pass (WP19b)
+
+The serial part of the scenario 1 tick (input + movement ~1.8 ms, combat AI
+~2.5 ms) now fans out over the same workers. The rule everywhere
+(`internal/game/par.go`): a worker writes only the items it was handed;
+shared state is read-only during the phase; anything order-dependent is
+put together on the tick goroutine afterwards in a fixed order, so the
+result does not depend on the number of workers.
+
+- **Worker pool** (`parallelFor`): the wait counts items, not goroutines, so
+  a phase never waits for a helper the OS has not scheduled yet (it would
+  find nothing left and exit). Snapshots use it too.
+- **Inputs** (`internal/game/inputs.go`): inboxes are taken first; a session
+  whose input this tick is plain movement (no attack, cast, drink, mobility
+  dash, Interact or HitClaim) applies its frames on a worker; everything
+  else (and leaves) runs on the tick goroutine at its place in session
+  order after the plain run before it. Exact: plain sessions touch only
+  themselves. One atomic per session for the frame counter.
+- **Combat AI** (`internal/combat/par.go`): simple enemy groups think on
+  workers, each group on one worker, outputs (events, strikes, enemy
+  shots) merged back in spawn order; bosses, demons and enemies with a
+  damage-over-time status stay on the old path. The one cross-group rule,
+  "at most two wind-ups on one player", counts other groups' wind-ups as
+  they were at the start of the tick, and requests are admitted in spawn
+  order against the live count, so the cap holds exactly (a refused enemy
+  stands still that tick). `TestPartitionedAIMatchesAcrossWorkers`.
+- **Combat glue**: the enemy -> entity mirror and the delivery of combat
+  Events run per entity / per session on workers (`deliverCombatAll`: each
+  connection gets its events in the same order).
+- **Views**: view extrapolation + quantization per entity on workers; the
+  AOI grids still fill in id order on the tick goroutine.
+- **Downlink budget includes reliable traffic** (decision 0005): the
+  transport counts reliable bytes when queued (`Stats.ReliableQueued`), and
+  each snapshot first charges what was queued since the last one to the
+  client's budget (`snapshot.Encoder.Charge`, debt capped at one burst).
+  Snapshot + events stay within 150 kbps. Metric
+  `zone_budget_reliable_charged_bytes_total`.
+- **Per-region load** in the registry heartbeat (`Entry.Load`, counted once a
+  second): the director moves regions off an overloaded zone
+  (`server/director/README.md`, `zoneregistry.Rebalance`).
+- Benchmark on real terrain: `LODESTONE_BENCH_TERRAIN=1 go test ./internal/game
+  -run '^$' -bench Scale/p300_e2000 -cpu 4` (needs `npm run build:wasm`; no
+  `-cpuprofile` with it on Windows). It reports per-phase means
+  (`inputs-ms`, `combat-ms`, ...).
+
 
 ## Progression and difficulty (playtest 1)
 
