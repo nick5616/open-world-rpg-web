@@ -14,6 +14,11 @@ import { createPortal, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { localPlayer } from '../state/live';
 import { useCombatHud } from '../combat/store';
+import { weaponGeometry } from '../combat/weapons/models';
+import { tickWeaponMaterial, weaponMaterial } from '../combat/weapons/material';
+
+/** The pre-combat wand: an ice gem at the tip (cached, shared with combat). */
+const wandGeo = weaponGeometry({ weapon: 'wand', material: '', gem: 1 }, 2);
 
 const REST_PITCH = 0.35; // wizard-wars rest pose: wand tipped up toward the crosshair
 const SKIN = '#c9a27e';
@@ -23,7 +28,6 @@ const STRIDE_M = 2.4;
 
 function Arms() {
   const rig = useRef<THREE.Group>(null);
-  const gem = useRef<THREE.Mesh>(null);
   const phase = useRef(0);
   const wasGrounded = useRef(true);
   const lastAirVy = useRef(0);
@@ -53,10 +57,7 @@ function Arms() {
     g.position.set(Math.cos(phase.current) * amp, Math.abs(Math.sin(phase.current)) * -amp * 1.4 - dip.current + lift.current, 0);
     g.rotation.z = Math.cos(phase.current) * amp * 0.6;
 
-    if (gem.current) {
-      const m = gem.current.material as THREE.MeshStandardMaterial;
-      m.emissiveIntensity = 0.6 + Math.sin(state.clock.elapsedTime * 2.2) * 0.15;
-    }
+    tickWeaponMaterial(state.scene, performance.now()); // the wand's gem shimmer
   });
 
   return (
@@ -71,14 +72,8 @@ function Arms() {
           <sphereGeometry args={[0.05, 10, 8]} />
           <meshStandardMaterial color={SKIN} roughness={0.7} />
         </mesh>
-        <mesh position={[0, 0.0, -0.45]} rotation={[-Math.PI / 2, 0, 0]}>
-          <cylinderGeometry args={[0.012, 0.022, 0.5, 6]} />
-          <meshStandardMaterial color="#2a1a10" roughness={0.5} />
-        </mesh>
-        <mesh ref={gem} position={[0, 0, -0.72]}>
-          <octahedronGeometry args={[0.03, 0]} />
-          <meshStandardMaterial color="#8fd4ff" emissive="#4fb4ff" emissiveIntensity={0.6} roughness={0.2} />
-        </mesh>
+        {/* pt/ux: the procedural wand (combat/weapons), grip in the hand, tip forward */}
+        <mesh position={[0, 0, -0.21]} rotation={[-Math.PI / 2, 0, 0]} geometry={wandGeo} material={weaponMaterial()} />
       </group>
       {/* left forearm, open hand for casting */}
       <group position={[-0.3, -0.36, -0.36]} rotation={[REST_PITCH * 0.7, 0.12, 0.25]}>

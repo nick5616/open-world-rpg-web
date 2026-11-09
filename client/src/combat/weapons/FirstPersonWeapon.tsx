@@ -41,11 +41,11 @@ interface Pose {
 }
 
 const POSES: Record<WeaponKind, Pose> = {
-  sword: { pos: [0.27, -0.34, -0.46], up: [-0.25, 0.82, -0.5], face: [0.35, 0.2, 1] },
-  spear: { pos: [0.23, -0.36, -0.3], up: [-0.1, 0.1, -1], face: [0, 1, 0.1], offhand: 0.46 },
-  bow: { pos: [-0.16, -0.17, -0.6], up: [0.12, 1, 0.05], face: [0.12, 0, 1], scale: 0.85 },
-  staff: { pos: [0.3, -0.4, -0.5], up: [-0.12, 1, -0.42], face: [0.3, 0, 1] },
-  wand: { pos: [0.25, -0.28, -0.4], up: [-0.25, 0.42, -1], face: [0.3, 1, 0.3] },
+  sword: { pos: [0.24, -0.22, -0.44], up: [-0.32, 0.64, -0.7], face: [-0.3, 0.45, 1] },
+  spear: { pos: [0.22, -0.28, -0.22], up: [-0.13, 0.12, -1], face: [0, 1, 0.1], offhand: 0.46 },
+  bow: { pos: [-0.14, -0.1, -0.58], up: [0.35, 0.95, 0.3], face: [0.1, -0.3, 0.95], scale: 0.85 },
+  staff: { pos: [0.28, -0.32, -0.5], up: [-0.12, 1, -0.42], face: [0.3, 0, 1] },
+  wand: { pos: [0.22, -0.2, -0.38], up: [-0.3, 0.62, -1], face: [0.3, 1, 0.3] },
 };
 /** The swing pivots about the right shoulder region, so a cut sweeps across the view. */
 const PIVOT = new THREE.Vector3(0.22, -0.45, -0.1);

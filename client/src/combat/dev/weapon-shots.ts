@@ -103,6 +103,7 @@ async function join(browser: Browser, vitePort: number, zone: Zone, name: string
     l.setTimeOfDay(0.45 * 3600);
   });
   await page.mouse.move(640, 360);
+  await page.keyboard.press('F3'); // hide the debug HUD
   return page;
 }
 
@@ -134,11 +135,22 @@ async function main() {
   try {
     await waitHttp(`http://127.0.0.1:${vitePort}/`, 90000);
     zone = await startZone(bin);
-    browser = await chromium.launch({ headless: true, args: gpuArgs });
-    const a = await join(browser, vitePort, zone, 'Wielder', HINT);
-    const yaw = 2.2;
+    // two pages render at once: no background throttling (A must keep sending input)
+    browser = await chromium.launch({ headless: true, args: [...gpuArgs, '--disable-background-timer-throttling', '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows'] });
+    let a = await join(browser, vitePort, zone, 'Wielder', HINT);
+    const yaw = Number(process.env.WEAPON_SHOTS_YAW ?? 5.5);
     await a.evaluate((y) => (window as unknown as W).__lodestone.setLook(y, -0.06), yaw);
     await sleep(2500);
+    if (process.argv.includes('survey')) {
+      // Pick a backdrop: the sword at eight headings.
+      await equip(a, 'sword', 0, 0);
+      for (let k = 0; k < 8; k++) {
+        await a.evaluate((y) => (window as unknown as W).__lodestone.setLook(y, -0.06), (k * Math.PI) / 4);
+        await sleep(1500);
+        await a.screenshot({ path: path.join(process.env.WEAPON_SHOTS_SURVEY_DIR ?? out, `survey-${k}.png`) });
+      }
+      return;
+    }
 
     // First-person shots (gem element: 0 fire, 1 ice, 2 lightning, 3 earth, 4 wind, 5 light, 6 dark, 7 void).
     const shots: { name: string; weapon: string; gem: number; material: number; draw?: boolean }[] = [
@@ -149,7 +161,9 @@ async function main() {
       { name: 'wand', weapon: 'wand', gem: 7, material: 0 },
       { name: 'sunsteel', weapon: 'sword', gem: 5, material: 3 },
     ];
+    const only = process.env.WEAPON_SHOTS_ONLY?.split(',');
     for (const s of shots) {
+      if (only && !only.includes(s.name)) continue;
       await equip(a, s.weapon, s.gem, s.material);
       if (s.draw) {
         await a.mouse.down({ button: 'right' });
@@ -163,16 +177,55 @@ async function main() {
       console.log(`shot ${prefix}${s.name}.png`);
     }
 
-    // Another player holding a weapon, seen from a second browser.
-    await equip(a, 'sword', 5, 3);
+    // Another player holding a weapon, seen from a second browser, on the
+    // flatter meadow below (the first-person spot is a steep hillside).
+    const [rx, rz] = (process.env.WEAPON_SHOTS_REMOTE_AT ?? '1440,2223').split(',').map(Number);
+    await a.close();
+    a = await join(browser, vitePort, zone, 'Wielder', { x: rx, z: rz });
+    await equip(a, process.env.WEAPON_SHOTS_REMOTE ?? 'sword', 5, 3);
     const posA = await a.evaluate(() => (window as unknown as W).__lodestone.player().pos);
-    const b = await join(browser, vitePort, zone, 'Watcher', { x: posA.x + 2.6, z: posA.z + 1.2 });
-    // A faces -X (yaw +pi/2): its right side (+Z... local +X) turns toward +Z; B looks back at A.
-    await a.evaluate(() => (window as unknown as W).__lodestone.setLook(Math.PI * 0.62, -0.05));
-    await sleep(800);
+    // B spawns a few metres away, then walks up and looks at A as drawn.
+    const b = await join(browser, vitePort, zone, 'Watcher', { x: posA.x + 3, z: posA.z + 1 });
+    await equip(b, 'wand', 4, 0); // a small weapon of B's own, out of the way
+    // B walks up to A (dev spawns snap to walkable ground, maybe a few metres off).
+    const faceA = () =>
+      b.evaluate(() => {
+        const views = (window as unknown as { __lodestoneDrawn?: () => { kind: number; x: number; y: number; z: number; typeId?: number; yaw: number }[] }).__lodestoneDrawn?.() ?? [];
+        const other = views.find((v) => v.kind === 1);
+        if (!other) return null;
+        const l = (window as unknown as W).__lodestone;
+        const p = l.player().pos;
+        const d = Math.hypot(other.x - p.x, other.z - p.z);
+        l.setLook(Math.atan2(-(other.x - p.x), -(other.z - p.z)), Math.atan2(other.y + 1.0 - (p.y + 1.6), d));
+        return { d, typeId: other.typeId ?? 0, yaw: other.yaw };
+      });
+    let r: { d: number; typeId: number; yaw: number } | null = null;
+    for (let i = 0; i < 60; i++) {
+      r = await faceA();
+      if (r && r.d <= 3.0) break;
+      if (r) {
+        await b.keyboard.down('KeyW');
+        await sleep(Math.min(400, (r.d - 2.7) * 150));
+        await b.keyboard.up('KeyW');
+      }
+      await sleep(250);
+    }
+    console.log(`remote: ${r ? `${r.d.toFixed(1)} m away, typeId ${r.typeId}` : 'not seen'}`);
+    // A turns its right side (where the sword is) mostly toward B: the
+    // avatar's right is (cos yaw, -sin yaw) for a character facing -Z at yaw 0.
     const posB = await b.evaluate(() => (window as unknown as W).__lodestone.player().pos);
-    await b.evaluate(([dx, dz]) => (window as unknown as W).__lodestone.setLook(Math.atan2(-dx, -dz), -0.12), [posA.x - posB.x, posA.z - posB.z] as const);
-    await sleep(2500);
+    const posA2 = await a.evaluate(() => (window as unknown as W).__lodestone.player().pos);
+    const yawA = Math.atan2(-(posB.z - posA2.z), posB.x - posA2.x) + Number(process.env.WEAPON_SHOTS_TURN ?? -0.5);
+    await a.bringToFront();
+    await a.evaluate((y) => (window as unknown as W).__lodestone.setLook(y, -0.05), yawA);
+    console.log(`A turns to yaw ${yawA.toFixed(2)} (B at ${(posB.x - posA2.x).toFixed(1)}, ${(posB.z - posA2.z).toFixed(1)})`);
+    await sleep(1200);
+    await b.bringToFront();
+    console.log(`watcher sees A at yaw ${(await faceA())?.yaw.toFixed(2)}`);
+    await sleep(1500);
+    // (a string: vite-node would rewrite a dynamic import inside a function)
+    const built = (await b.evaluate("import('/src/combat/weapons/models.ts').then((m) => m.cachedWeaponKeys())")) as string[];
+    console.log(`watcher built weapon looks: ${built.join(', ')}`);
     await b.screenshot({ path: path.join(out, `${prefix}remote.png`) });
     console.log(`shot ${prefix}remote.png`);
   } finally {

@@ -77,6 +77,6 @@ export function tickWeaponMaterial(scene: THREE.Scene, nowMs: number): void {
   if (h) {
     weaponUniforms.uSky.value.copy(h.color);
     weaponUniforms.uGround.value.copy(h.groundColor);
-    weaponUniforms.uEnv.value = 0.85 * Math.min(1.5, h.intensity);
+    weaponUniforms.uEnv.value = 0.7 * Math.min(1.5, h.intensity);
   }
 }

@@ -58,7 +58,7 @@ export function metalOf(key: string): Metal {
 const WOOD = {
   ash: surf('#b88d58', 0, 0.72),
   oak: surf('#7a5332', 0, 0.75),
-  dark: surf('#4e321e', 0, 0.78),
+  dark: surf('#6a4529', 0, 0.75),
   ebony: surf('#2f1d12', 0, 0.55),
   limbBack: surf('#5e3b1f', 0, 0.6),
   limbBelly: surf('#d8bf8e', 0, 0.55),
@@ -252,7 +252,7 @@ const BOW = {
   arrowLen: 0.74,
 };
 /** Full draw (m) of the first-person bow's string. */
-export const BOW_MAX_DRAW = 0.34;
+export const BOW_MAX_DRAW = 0.24;
 
 function bow(b: MeshBuilder, l: WeaponLook, d: Detail): void {
   const mt = metalOf(l.material);
@@ -430,7 +430,7 @@ function wand(b: MeshBuilder, l: WeaponLook, d: Detail): void {
       const path = curve([[c * 0.005, 0.274, sn * 0.005], [c * 0.0105, 0.285, sn * 0.0105], [c * 0.0095, 0.296, sn * 0.0095], [c * 0.004, 0.303, sn * 0.004]], d === 2 ? 5 : 3);
       sweep(b, path, polygon(3, 0.0016, 0.0013), mt.fit, { side: [Math.sin(a), 0, Math.cos(a)], smooth: true });
     }
-  b.with(M.t(0, 0.29, 0), () => gem(b, 0.0105, l.gem, d));
+  b.with(M.t(0, 0.292, 0), () => gem(b, 0.0125, l.gem, d));
 }
 
 const BUILDERS: Record<WeaponKind, (b: MeshBuilder, l: WeaponLook, d: Detail) => void> = { sword, spear, bow, staff, wand };
@@ -503,6 +503,11 @@ export function weaponGeometry(look: WeaponLook, d: Detail): THREE.BufferGeometr
     cache.set(key, g);
   }
   return g;
+}
+
+/** The looks built so far ("sword|sunsteel|5#1", ...): tests and headless captures. */
+export function cachedWeaponKeys(): string[] {
+  return [...cache.keys()];
 }
 
 let fistGeo: THREE.BufferGeometry | null = null;

@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { ITEMS } from '@lodestone/contracts';
 import { buildWeapon, fistGeometry, forearmGeometry, setBowDraw, weaponGeometry, weaponTriangles, BOW_MAX_DRAW, type Detail } from './models';
 import { WEAPON_KINDS, lookKey, materialCode, materialKey, packLook, unpackLook, type WeaponLook } from './look';
+import { decodeSync } from '../events';
 
 const BUDGET: Record<Detail, number> = { 2: 3000, 1: 600, 0: 200 };
 
@@ -114,6 +115,22 @@ describe('weapon look (player typeId)', () => {
         }
     expect(unpackLook(0)).toEqual({ weapon: null, material: '', gem: -1 });
     expect(unpackLook(undefined).weapon).toBeNull();
+  });
+
+  it('reads the per-loadout material codes at the end of combat_sync (and tolerates their absence)', () => {
+    const b: number[] = [1, 0];
+    for (let l = 0; l < 2; l++) {
+      b.push(1);
+      for (let k = 0; k < 8; k++) b.push(0);
+      b.push(l === 0 ? 5 : 0xff);
+    }
+    b.push(0, 0, 0, 1000 & 0xff, 1000 >> 8, 3, 2, 0, 4);
+    const old = decodeSync(new Uint8Array(b))!;
+    expect(old.level).toBe(4);
+    expect(old.loadouts[0].material).toBeUndefined();
+    const s = decodeSync(new Uint8Array([...b, materialCode('sunsteel'), 0]))!;
+    expect(s.loadouts[0]).toMatchObject({ weapon: 'sword', gem: 5, material: 6 });
+    expect(s.loadouts[1].material).toBe(0);
   });
 
   it('matches the documented layout (contracts/events.md, Go weaponlook.go)', () => {

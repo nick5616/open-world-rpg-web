@@ -92,7 +92,7 @@ function bodyMat(id: number): THREE.MeshStandardMaterial {
  * weapon's +Y points and where its +Z faces. The bow goes in the left hand.
  */
 const HOLD: Record<WeaponKind, { up: [number, number, number]; face: [number, number, number]; left?: boolean }> = {
-  sword: { up: [0, 0.45, -1], face: [1, 0, 0] },
+  sword: { up: [0, 0.85, -0.75], face: [1, 0, 0] },
   spear: { up: [0, 1, -0.35], face: [1, 0, 0] },
   bow: { up: [0, 1, -0.15], face: [0, 0, 1], left: true },
   staff: { up: [0, 1, -0.12], face: [1, 0, 0] },
