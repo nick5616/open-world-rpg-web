@@ -22,6 +22,15 @@ wrapped in `float64()` so arm64/ppc64 never fuse them into FMAs, no host
 math beyond sqrt (boxes carry their cos/sin). Algorithm:
 `worldgen/README.md` "Town collision".
 
+- `Blocker` (`block.go`, playtest polish; Go only, not part of the TS
+  twin): "does a body of radius r and height h overlap a solid box rising
+  more than a step above its feet", the overlap test of `Collision.collide`
+  without the push-out, for walkers that never run the movement step (zone
+  enemies). A bitmask of 8 m squares near a solid box is the broadphase.
+  `TestBlockerAgreesWithPlayerCollision`: for a player-sized body it says
+  "blocked" exactly where `Collide` pushes (~1.1 M samples around every
+  building of the official world); `BenchmarkBlocker`: ~4 ns away from
+  towns, ~100 ns hugging a building.
 - `Doors` (`doors.go`, playtest follow-up): every closable door (buildings
   with floors and a closed front) with its box copied from the buffer (the
   lintel box lowered to the bottom of the other walls: no arithmetic, the

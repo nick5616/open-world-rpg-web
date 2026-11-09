@@ -14,6 +14,7 @@ package game
 //   - combat.World reads the Map (World.Areas): atlas groups spawn only in
 //     known areas, at the area's level, with its tier's beginner share and
 //     elite chance; boss arenas stay empty in the Haven.
+//   - World loot (loot.go openContainer) takes its item level from it.
 //   - Night (night.go) reads it for demon pacing: hunters, greater demons,
 //     lords, defense events and demon speed by the area's tier.
 //   - Event 901 `area` tells a player the area they stand in (on entering a
@@ -160,6 +161,18 @@ func (s *Server) AreaTier(x, z float64) (*combatdefs.DifficultyTier, int, bool) 
 	}
 	t, _, _ := m.Tier(c)
 	return t, l, true
+}
+
+// lootLevelAt is the item level of world loot (containers) at (x, z): the
+// area's level, the same one its enemies spawn at (the Haven's 1 at the
+// spawn), so chests and kills agree. fallback (the worldgen record's
+// region-danger curve) applies without difficulty or while the area is
+// still unknown (its claim in flight).
+func (s *Server) lootLevelAt(x, z float64, fallback int) int {
+	if _, l, ok := s.AreaTier(x, z); ok {
+		return max(1, l)
+	}
+	return max(1, fallback)
 }
 
 // difficultyTick drains stamps and sends claims (tick goroutine).

@@ -248,7 +248,8 @@ func (w *World) shadowStep(e *Enemy) {
 		for _, da := range []float64{0, 0.5, -0.5, 1, -1} {
 			nx, nz := e.Pos.X+step*math.Cos(base+da), e.Pos.Z+step*math.Sin(base+da)
 			y := w.ground.HeightAt(nx, nz)
-			if movement.WaterAt(w.ground, nx, nz) > y-0.3 || (w.DemonHooks.Blocked != nil && w.DemonHooks.Blocked(e, nx, nz)) {
+			if movement.WaterAt(w.ground, nx, nz) > y-0.3 || (w.DemonHooks.Blocked != nil && w.DemonHooks.Blocked(e, nx, nz)) ||
+				(w.Obstacles != nil && w.Obstacles(nx, y, nz, e.Radius(), e.Height()*2)) { // never into a building
 				continue
 			}
 			e.Pos = w.place(nx, nz, e.Def)

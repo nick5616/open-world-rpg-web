@@ -36,6 +36,13 @@ type harness struct {
 
 func newHarness(t *testing.T, mod func(*Config)) *harness {
 	t.Helper()
+	return newHarnessPre(t, mod, nil)
+}
+
+// newHarnessPre is newHarness with a hook between New and Start (what
+// main.go does there: restores).
+func newHarnessPre(t *testing.T, mod func(*Config), pre func(*Server)) *harness {
+	t.Helper()
 	priv, _, _ := ticket.PrivateKeyFromEnv()
 	pub, _, _ := ticket.PublicKeyFromEnv()
 	cfg := Config{ZoneID: testZone, WorldID: testWorld, Seed: 42, GenVersion: "g1", TicketKey: pub, DevSpawn: true,
@@ -46,6 +53,9 @@ func newHarness(t *testing.T, mod func(*Config)) *harness {
 		mod(&cfg)
 	}
 	srv := New(cfg)
+	if pre != nil {
+		pre(srv)
+	}
 	srv.Start()
 	hs := httptest.NewServer(srv.Handler(&transport.WebSocket{}))
 	t.Cleanup(func() {

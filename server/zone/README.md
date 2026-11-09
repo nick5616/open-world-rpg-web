@@ -440,6 +440,13 @@ CR 009.
 - Groups come from the atlas (camps, bandit camps, guardians, boss arenas at
   wizard towers / sunken temples / demon lairs / large ruins) plus seeded
   wild packs (enemyDensity from the WorldSpec); towns are safe.
+- Enemies (and demons) respect buildings (`internal/game/obstacles.go`):
+  `combat.World.Obstacles` refuses an enemy step (and a demon's shadow
+  step) into a solid town box, the same boxes the players' push-out uses
+  (`towns.Blocker` over the zone ground's `towns.Collision`), or a closed
+  door; an enemy already overlapping one may move anywhere. Broadphase: a
+  bitmask of 8 m squares near a solid box (~3 % of the official world), one
+  array read per query outside towns (~4 ns), ~100 ns hugging a building.
 - Persistence: `character_progress.skill_tree / spells_known /
   spells_equipped` (accounts, write-behind), the same fields of the local
   save blob (local profiles). No migration.
@@ -502,7 +509,19 @@ caves are unchanged) and fills `Config.Towns` (`internal/npc`). Game glue:
   them once the doorway is clear. Cost: the ground is only wrapped while
   some door is not open; the tick touches doors only while a change is
   pending, and checks baselines twice a second only for settlements whose
-  doors ever changed. Tests: `internal/game/doors_test.go` (close, walk
+  doors ever changed. **Persistence and zones** (`doors_sync.go`,
+  `doors_store.go`, migration 0024 `door_state`): the zone owning a door's
+  region decides it; other zones forward their players' (and NPCs')
+  requests to it (control message `door`, refusals come back as `doorno`
+  -> 972) and mirror its decisions (`doorset`, applied with their own
+  stamps; the owner's doorway check also sees ghost-band players). Only the
+  owner writes: the doors changed in the last second as one multi-row
+  upsert through the write-behind queue (a stale row never overwrites a
+  newer one), flushed again on shutdown; every zone reads the table before
+  ticking (`RestoreDoors`), so a restart or a region takeover keeps closed
+  doors closed and newcomers get them in the baseline. Tests:
+  `doors_persist_test.go` (restart, batching, shutdown flush, two zones),
+  `doors_store_test.go` (Postgres); `internal/game/doors_test.go` (close, walk
   into it, open, walk in, close from inside, push, refused on a body,
   second player gets every change, late joiner's baseline, prediction ==
   server; NPCs open and close behind them), cross-process
@@ -589,7 +608,10 @@ ordered item transaction queue), `items_store.go` (Postgres),
 - **Loot**: combat's `OnKill` → personal owner-only pickups per eligible
   player (logged seed), boss weekly lockout; containers (worldgen chunk
   records, listed by Event 406 within 96 m) open once per character into the
-  bag; vein drops (WP09) are granted through the same path.
+  bag, rolled at the area's discovery-stamped level (the level its enemies
+  have: the Haven's chests give starter gear; worldgen's region-danger
+  curve only while the area is unknown or difficulty is off,
+  `lootLevelAt`); vein drops (WP09) are granted through the same path.
 - **Drops**: Interact 21/2 → TransferItem → a public pickup for 10 minutes
   (`LODESTONE_ZONE_DROP_DESPAWN`), a world row in Postgres restored after a
   restart; Interact 41 takes it; local-profile drops are unverified.

@@ -236,6 +236,9 @@ func NewGround(base movement.Ground, t *Towns) *Ground {
 	return &Ground{Base: base, C: NewCollision(&t.Boxes)}
 }
 
+// TownCollision is the collision index (the zone's enemy blocker reuses it).
+func (g *Ground) TownCollision() *Collision { return g.C }
+
 // HeightAt is the base surface.
 func (g *Ground) HeightAt(x, z float64) float64 { return g.Base.HeightAt(x, z) }
 

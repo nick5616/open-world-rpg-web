@@ -553,9 +553,14 @@ func (w *World) moveToward(e *Enemy, t movement.Vec3, speedFrac float64) {
 	w.stepMove(e, dx/d*step, dz/d*step, true)
 }
 
-// stepMove moves by (mx, mz) over the terrain, steering around water and
-// cliffs, separated from group mates, inside the arena for bosses.
+// stepMove moves by (mx, mz) over the terrain, steering around water,
+// cliffs and buildings, separated from group mates, inside the arena for
+// bosses.
 func (w *World) stepMove(e *Enemy, mx, mz float64, steer bool) {
+	lift := 0.0
+	if e.Def.Behavior == "flyer" {
+		lift = 1.5
+	}
 	try := func(ax, az float64) bool {
 		nx, nz := e.Pos.X+ax, e.Pos.Z+az
 		if nx < 1 || nz < 1 || nx > float64(constants.WorldSizeM)-1 || nz > float64(constants.WorldSizeM)-1 {
@@ -574,6 +579,12 @@ func (w *World) stepMove(e *Enemy, mx, mz float64, steer bool) {
 		}
 		if e.Demon != nil && w.DemonHooks.Blocked != nil && w.DemonHooks.Blocked(e, nx, nz) {
 			return false // WP15: wards and lanterns
+		}
+		// Building walls and closed doors (the players' collision boxes).
+		// An enemy already inside one (spawned or knocked there) may move
+		// anywhere, so it is never frozen in place.
+		if w.Obstacles != nil && w.Obstacles(nx, gy+lift, nz, e.Radius(), e.Height()*2) && !w.Obstacles(e.Pos.X, cur+lift, e.Pos.Z, e.Radius(), e.Height()*2) {
+			return false
 		}
 		e.Pos.X, e.Pos.Z = nx, nz
 		return true
@@ -604,8 +615,8 @@ func (w *World) stepMove(e *Enemy, mx, mz float64, steer bool) {
 		}
 	}
 	y := w.ground.HeightAt(e.Pos.X, e.Pos.Z)
-	if e.Def.Behavior == "flyer" {
-		y += 1.5
+	if lift != 0 {
+		y += lift
 	}
 	e.Pos.Y = y
 	if ok {

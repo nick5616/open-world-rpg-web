@@ -71,7 +71,7 @@ func resString(r movement.CollideResult) string {
 // q: quarter-millimetre grid so coordinates survive JSON exactly (townGolden.ts).
 func q(v float64) float64 { return math.Round(v*4096) / 4096 }
 
-func doorTowns(t *testing.T, mod *worldhost.Module, seed uint64) *towns.Towns {
+func doorTowns(t testing.TB, mod *worldhost.Module, seed uint64) *towns.Towns {
 	t.Helper()
 	spec, err := mod.SpecFromSeed(seed)
 	if err != nil {

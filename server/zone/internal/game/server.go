@@ -93,6 +93,9 @@ type Config struct {
 	Towns       *npc.World
 	Stations    Stations
 	TimeOffsetS float64
+	// Building door states (doors_sync.go): persisted by the zone owning
+	// each door's region; nil = zone memory only.
+	DoorStore DoorStore
 	// WP14 items (items.go): persistence, world containers, loot themes,
 	// the drop despawn timer, the Bitchin' announcement; nil = memory-only
 	// items with the spec's timers.
@@ -144,13 +147,14 @@ type Server struct {
 	env        movement.Env        // WP10: this tick's movement env (stepEnv)
 	hap        []explore.Happening // scratch for exploreTick
 	party      partyState
-	cl         clusterState // WP16 (handoff.go)
-	cbt        combatGlue   // WP13 (combat.go)
-	town       townsState   // WP20 (towns.go)
-	itm        itemsState   // WP14 (items.go)
-	night      nightState   // WP15 (night.go)
-	diff       diffState    // playtest 1 (difficulty.go)
-	qst        questsGlue   // playtest 1: quest logs (quests.go)
+	cl         clusterState  // WP16 (handoff.go)
+	cbt        combatGlue    // WP13 (combat.go)
+	town       townsState    // WP20 (towns.go)
+	itm        itemsState    // WP14 (items.go)
+	night      nightState    // WP15 (night.go)
+	diff       diffState     // playtest 1 (difficulty.go)
+	qst        questsGlue    // playtest 1: quest logs (quests.go)
+	obst       obstacleState // enemies respect buildings (obstacles.go)
 	// WP11: next earshot hand-off (earshot.go).
 	earshotNext time.Time
 	phases      tickPhases // WP19: per-phase tick timing (phases.go)
@@ -211,6 +215,7 @@ func New(cfg Config) *Server {
 	}
 	s.m.init(cfg.Metrics)
 	s.initCombat()     // WP13 (combat.go)
+	s.initObstacles()  // enemies respect buildings (obstacles.go): after combat
 	s.initItems()      // WP14 (items.go): after combat (loot hook)
 	s.initDifficulty() // playtest 1 (difficulty.go): after combat (World.Areas)
 	s.initQuests()     // quests.go: after combat (kill hook)
@@ -260,6 +265,7 @@ func (s *Server) Stop(ctx context.Context) {
 			s.kick(sess, proto.KickCodeShutdown, "zone shutting down")
 			s.leave(sess)
 		}
+		s.flushDoors() // doors changed in the last second (doors_sync.go)
 		if s.cfg.Queue != nil {
 			if err := s.cfg.Queue.Flush(ctx); err != nil {
 				s.log.Error("write-behind flush", "err", err, "left", s.cfg.Queue.Depth())
