@@ -778,7 +778,7 @@ Known gaps:
 - Lords exist only where the atlas has demon lairs (the official world has none, so no lord walks there; dev Interact 52/3 arg 2 raises one). Demon horn/eye decoration is a client overlay on WP13's capsule bodies, not a model.
 - Two zones of a WP16 cluster each run night spawning for their own players and defense events for towns near their players; a town on a region border with players on both sides could run the event on both zones (not handled). The dev "set time" Interact is per zone.
 - Rain visuals are streaks only (no wet materials: WP05's `uWet` not driven); no thunder/lightning flashes; the sky's moon disc does not show the phase (the HUD does).
-- `TestPlayerWithoutPreconnectStaysWithOldOwner` (WP16, `internal/game/cluster_test.go`) fails on pristine main too (checked on an archive of main); not touched here.
+- `TestPlayerWithoutPreconnectStaysWithOldOwner` (WP16, `internal/game/cluster_test.go`) is flaky: it failed on this branch and on an archive of pristine main (same machine, same hour), and passed in the final full `go test` run. Not touched here.
 - Spell/enemy names in combat.yaml are proposals (CR 011) pending Nicole.
 
 Assumptions:
