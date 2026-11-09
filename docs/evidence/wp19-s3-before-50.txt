@@ -1,0 +1,42 @@
+WP11 voice soak (spec 14 scenario 3) — 2026-11-08T16:14:49-08:00
+machine: windows/amd64, 16 CPUs; LiveKit 1.8 (docker, --dev); bots: Go + pion (server-sdk-go v2.19.0), synthetic Opus speech 32 kbps
+bots 50, voice-ready 50; phases: settle 6 s, clustered 10s, disperse 20s (walk 4.9 m/s outward), apart 6 s, regroup 22s, regrouped 10s
+zone earshot messages 151 (39 full)
+earshot pair changes after voice-ready: 864; reflected at the listener: 864; missed: 0
+latency zone decision -> listener hears (TrackSubscribed) / stops hearing (last audio packet + 20 ms = forwarding stopped) (ms): n=864 p50 28 / p95 109 / p99 271 / max 314 (mean 38)
+  subscribe: n=432 p50 42 / p95 241 / p99 285 / max 314 (mean 62)
+  unsubscribe, media stopped: n=432 p50 13 / p95 30 / p99 46 / max 109 (mean 13)
+  unsubscribe, track ended (includes LiveKit's 1 s downtrack flush, sfu/downtrack.go flushTimeout): n=432 p50 1015 / p95 1019 / p99 1021 / max 1156 (mean 1016)
+  within 500 ms: 100.00%
+latency distance crossing (40 m in / 48 m out) -> listener event (ms, 596 pairs not driven by the 12-cap): n=596 p50 162 / p95 295 / p99 323 / max 359 (mean 172)
+initial subscriptions (pair already in earshot when voice-ready): 600, latency n=600 p50 1084 / p95 1556 / p99 1674 / max 1678 (mean 1051)
+observed subscription changes 864 over 338 pairs ever subscribed; max changes per pair 3; histogram map[0:307 1:232 2:175 3:94]
+flaps (reversal within 2 s): listener 0, zone 0; extra observed changes without a zone decision: 0
+audio: 1736654 RTP packets received by bots on subscribed tracks
+bot errors: 0 []
+social metrics:
+  voice_apply_latency_ms{q="0.5"} 4.427001953125
+  voice_apply_latency_ms{q="0.95"} 8.619140625
+  voice_apply_latency_ms{q="0.99"} 8.758056640625
+  voice_apply_latency_ms{q="1"} 9.303955078125
+  voice_earshot_msgs_total 149
+  voice_leader_worlds 1
+  voice_participants 50
+  voice_pass_ms 0
+  voice_sub_changes_total{op="subscribe"} 1043
+  voice_sub_changes_total{op="unsubscribe"} 443
+  voice_subscriptions 600
+  voice_tokens_total{mode="publish"} 50
+social /debug/voice: {"applyLatencyMs":{"0.5":4.427001953125,"0.95":8.619140625,"0.99":8.758056640625,"1":9.303955078125},"node":"social-b173c7b2","worlds":[{"world":"132e7788-e711-47cb-8939-8a7aa928d03b","leader":false},{"world":"36b6018e-aa4b-49c1-9987-ea3223d5f94e","leader":false},{"world":"45de3575-e2ab-4d8f-a387-13be3a9af96e","leader":false},{"world":"7a1f19aa-0000-4000-8000-000000190001","leader":true,"stats":{"participants":50,"appliedSubscriptions":600,"listenersWithEarshot":50,"lastPassMs":0}},{"world":"7c3c6c75-e40b-4f72-ab79-1ef36a45d35e","leader":false},{"world":"7fe3e5a9-ad54-4d90-82ec-52af4bb4c35e","leader":false},{"world":"95887d81-d6eb-4f82-ae1c-f6ec0a5ce477","leader":false},{"world":"b96e5c0c-de14-4f1a-8257-0db7ebfaf22f","leader":false},{"world":"d9424992-b7d9-4b41-8623-44f23bf08b93","leader":false}]}
+zone metrics:
+  zone_earshot_changes_total 682
+  zone_earshot_compute_us 524
+  zone_earshot_failed_total 0
+  zone_earshot_pairs 600
+  zone_earshot_published_total 150
+  zone_earshot_skipped_total 0
+  zone_players 50
+  zone_tick_ms{q="max"} 2.804
+  zone_tick_ms{q="p50"} 0.45
+  zone_tick_ms{q="p99"} 1.426
+VERDICT: PASS: every earshot change reached the listener, p99 within 500 ms, no flapping
