@@ -98,7 +98,9 @@ to shape into harder challenges"), while keeping it shared and consistent.
   region danger curve exactly.
 - The client's prediction now also compares the stamina wheel
   (`SelfState.staminaMax`); a level-up or attunement changes it once,
-  causing one zero-distance replay.
+  causing one replay that adopts the server's wheel. With motion in
+  agreement it is counted as `ClientPrediction.wheelResyncs`, not as a
+  correction (`reconciles`).
 - Generated: `contracts/ts/src/gen/{combat,items}.ts`,
   `server/pkg/combatdefs/combat_gen.json`, `server/pkg/itemdefs/items_gen.json`.
   No golden vector changes (no protocol or constants change).

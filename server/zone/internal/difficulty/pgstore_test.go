@@ -30,8 +30,14 @@ func TestPGStoreFirstWriterWinsAcrossPools(t *testing.T) {
 		var sa, sb Stamp
 		var ea, eb error
 		wg.Add(2)
-		go func() { defer wg.Done(); sa, ea = a.Claim(ctx, g, Claim{Cell: c, PlayerLevel: 3, CharID: "zone-a-char", Name: "Ana"}) }()
-		go func() { defer wg.Done(); sb, eb = b.Claim(ctx, g, Claim{Cell: c, PlayerLevel: 18, CharID: "zone-b-char", Name: "Bo"}) }()
+		go func() {
+			defer wg.Done()
+			sa, ea = a.Claim(ctx, g, Claim{Cell: c, PlayerLevel: 3, CharID: "zone-a-char", Name: "Ana"})
+		}()
+		go func() {
+			defer wg.Done()
+			sb, eb = b.Claim(ctx, g, Claim{Cell: c, PlayerLevel: 18, CharID: "zone-b-char", Name: "Bo"})
+		}()
 		wg.Wait()
 		if ea != nil || eb != nil {
 			t.Fatal(ea, eb)

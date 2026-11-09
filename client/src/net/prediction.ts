@@ -24,7 +24,7 @@ import { metersToCm, velToCms } from '@lodestone/contracts';
 import type { GroundQuery } from '../sim/ground';
 import { MoveMode } from '@lodestone/contracts';
 import { groundAt } from '../sim/caves';
-import { NO_ENV, stepMovement, STEP_DT, type MoveInput, type MoveState, type StepEnv } from '../sim/movement';
+import { MoveFlag, NO_ENV, stepMovement, STEP_DT, type MoveInput, type MoveState, type StepEnv } from '../sim/movement';
 import { fromSelf, packFlags, packMoveExt, staminaX10 } from '../sim/moveWire';
 import type { FullSelf } from './snapshotDecoder';
 
@@ -69,6 +69,12 @@ export class ClientPrediction {
   readonly log: { t: number; magnitude: number; unacked: number; ackSeq: number; knownAck: boolean }[] = [];
   reconciles = 0;
   agreements = 0;
+  /**
+   * Playtest 1: replays that only adopted the server's stamina wheel (a
+   * level-up or tower boon grew it, or refilled it) with motion already in
+   * agreement and no position change. Not corrections: nothing moved.
+   */
+  wheelResyncs = 0;
   maxError = 0;
 
   constructor(private ground: GroundQuery) {}
@@ -166,11 +172,15 @@ export class ClientPrediction {
     const ref = predicted ?? state;
     const error = { x: ref.pos.x - state.pos.x, y: ref.pos.y - state.pos.y, z: ref.pos.z - state.pos.z };
     const magnitude = Math.hypot(error.x, error.y, error.z);
+    this.correction = { state, error, magnitude, ackSeq, unacked: this.pending.length };
+    if (acked && magnitude <= POS_TOL_CM / 100 && wheelOnly(acked.state, server)) {
+      this.wheelResyncs++;
+      return this.correction;
+    }
     this.reconciles++;
     if (magnitude > this.maxError) this.maxError = magnitude;
     this.log.push({ t: nowMs, magnitude, unacked: this.pending.length, ackSeq, knownAck: !!acked });
     if (this.log.length > 5000) this.log.shift();
-    this.correction = { state, error, magnitude, ackSeq, unacked: this.pending.length };
     return this.correction;
   }
 
@@ -184,6 +194,26 @@ export class ClientPrediction {
   notePredicted(s: MoveState): void {
     this.lastPredicted = s;
   }
+}
+
+/**
+ * Playtest 1: the prediction and the server differ only in the stamina wheel
+ * (stamina, its size, the exhausted bit): motion, mode, timers and the other
+ * flags agree.
+ */
+function wheelOnly(p: MoveState, s: FullSelf): boolean {
+  return (
+    Math.abs(metersToCm(p.pos.x) - s.x) <= POS_TOL_CM &&
+    Math.abs(metersToCm(p.pos.y) - s.y) <= POS_TOL_CM &&
+    Math.abs(metersToCm(p.pos.z) - s.z) <= POS_TOL_CM &&
+    Math.abs(velToCms(p.vel.x) - s.vx) <= VEL_TOL_CMS &&
+    Math.abs(velToCms(p.vel.y) - s.vy) <= VEL_TOL_CMS &&
+    Math.abs(velToCms(p.vel.z) - s.vz) <= VEL_TOL_CMS &&
+    p.airJumps === s.airJumps &&
+    p.mode === s.mode &&
+    ((packFlags(p) ^ s.flags) & ~MoveFlag.exhausted) === 0 &&
+    packMoveExt(p) >>> 16 === s.moveExt >>> 16
+  );
 }
 
 function agrees(p: MoveState, s: FullSelf): boolean {
