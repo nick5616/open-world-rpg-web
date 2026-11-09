@@ -17,7 +17,7 @@ import {
   type IntroQueueState,
   type IntroSpec,
 } from './queue';
-import { discoveryIntro, INTRO_FOR_EVENT, INTRO_TOAST_KINDS, introForEvent, regionIndexAt, regionIntro, siteKindLabel, towerAttunedIntro, townCard, type IntroWorld } from './intros';
+import { discoveryIntro, INTRO_FOR_EVENT, INTRO_TOAST_KINDS, introForEvent, regionIndexAt, regionIntro, siteKindLabel, TOWER_ATTUNED, towerAttunedIntro, townCard, type IntroWorld } from './intros';
 
 const spec = (key: string, variant: IntroSpec['variant'] = 'major'): IntroSpec => ({ key, variant, title: key });
 const run = (specs: IntroSpec[], now = 0) => specs.reduce<IntroQueueState>((s, x) => enqueueIntro(s, x, now), emptyIntroState());
@@ -159,17 +159,12 @@ describe('zone Event -> intro', () => {
     expect(introForEvent(ev(EV.waypoint, 0, 0, 'Draedmore'), world)).toMatchObject({ key: 'waypoint:0', variant: 'minor', title: 'Draedmore', subtitle: 'Waypoint' });
   });
 
-  it('tower_attuned has a builder; wiring it is one INTRO_FOR_EVENT line', () => {
-    const KIND = 609; // whatever number the progression work picks
-    expect(introForEvent(ev(KIND, 1, 0), world)).toBeNull();
-    INTRO_FOR_EVENT[KIND] = towerAttunedIntro;
-    try {
-      expect(introForEvent(ev(KIND, 1, 25), world)).toMatchObject({ key: 'attuned:1', variant: 'major', eyebrow: 'Tower attuned', title: 'The Forgotten Spire', subtitle: 'Tower of The Forgotten Heights', detail: '+25 XP' });
-    } finally {
-      delete INTRO_FOR_EVENT[KIND];
-    }
+  it('902 tower_attuned (CR 012): the tower by name, its region, the boon', () => {
+    expect(INTRO_FOR_EVENT[TOWER_ATTUNED]).toBe(towerAttunedIntro);
+    // 902 carries the region index in value and the region name in data (600's layout).
+    expect(introForEvent(ev(TOWER_ATTUNED, 1, 1, 'The Forgotten Heights'), world)).toMatchObject({ key: 'attuned:1', variant: 'major', eyebrow: 'Tower attuned', title: 'The Forgotten Spire', subtitle: 'Tower of The Forgotten Heights', detail: 'Its crystal answers you · a permanent boon' });
     // Different keys from the unlock: attuning a tower is announced even after its region reveal.
-    const s = run([introForEvent(ev(EV.towerUnlocked, 1, 1), world)!, towerAttunedIntro(ev(KIND, 1, 0), world)]);
+    const s = run([introForEvent(ev(EV.towerUnlocked, 1, 1), world)!, towerAttunedIntro(ev(TOWER_ATTUNED, 1, 1), world)]);
     expect([s.current!.key, ...s.queue.map((q) => q.key)]).toEqual(['reveal:1', 'attuned:1']);
   });
 

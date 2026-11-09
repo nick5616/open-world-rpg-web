@@ -389,7 +389,12 @@ async function main(): Promise<void> {
       const page = await join(spot, 'Hunter');
       await skipIntros(page);
       await page.evaluate((y) => (window as unknown as W).__lodestone.setLook(y, -0.1), lookAt(spot, board));
-      await send(page, 31, board.id, 1);
+      // E on the board, as a player would (the panel remembers which board accepts go to).
+      await sleep(600);
+      const tgt = await page.evaluate(() => (window as unknown as { __lodestoneTowns: { target(): { kind: string } | null } }).__lodestoneTowns.target());
+      note(`board target: ${JSON.stringify(tgt)}`);
+      if (tgt?.kind === 'board') await page.keyboard.press('KeyE');
+      else await send(page, 31, board.id, 1);
       await page.waitForSelector('[data-testid="bounty-where"]', { timeout: 8000 });
       await sleep(400);
       await page.screenshot({ path: shot('bounty-offer') });

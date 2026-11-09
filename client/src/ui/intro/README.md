@@ -54,15 +54,13 @@ clear of the crosshair, `pointer-events: none`, z-index 14 (under the map).
 
 ## tower_attuned
 
-Not in `contracts/events.md` yet (the progression work may add it). The
-builder is ready (`intros.ts` `towerAttunedIntro`: "Tower attuned" eyebrow,
-tower name, "Tower of <Region>", +XP from `value`; assumes `targetId` = tower
-site like 600). When the Event lands, add its number to `EV` in
-`ui/map/events.ts` and one line to `INTRO_FOR_EVENT`:
-
-```ts
-  [EV.towerAttuned]: towerAttunedIntro,
-```
+Event 902 `tower_attuned` is defined by CR 012 (the progression branch:
+attuning to a tower crystal, Interact 10 action 2). It is wired in
+`INTRO_FOR_EVENT` (`TOWER_ATTUNED = 902`): "Tower attuned" eyebrow, the tower's
+name, "Tower of <Region>", "Its crystal answers you · a permanent boon"
+(902 carries the region index in `value` and the region name in `data`, like
+600). A zone without CR 012 never sends 902, so nothing shows until both
+branches are merged.
 
 ## Sound
 

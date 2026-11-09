@@ -7,9 +7,9 @@
 //   601 waypoint_activated -> "minor" variant: the waypoint's name
 //   602 discovery          -> "major" variant: town / tower / cave / structure /
 //                             landmark name, kind + region under it, +XP
-//   tower_attuned          -> towerAttunedIntro below; not on the wire yet. When
-//                             the Event lands, add ONE line to INTRO_FOR_EVENT:
-//                               [EV.towerAttuned]: towerAttunedIntro,
+//   902 tower_attuned      -> towerAttunedIntro (CR 012, pt/progression). Wired
+//                             in INTRO_FOR_EVENT:
+//                               [TOWER_ATTUNED]: towerAttunedIntro,
 // First entry into a region this session and name cards for known towns are
 // position-driven (DiscoveryIntro.tsx), built by regionIntro / townCard.
 
@@ -170,13 +170,14 @@ export function waypointIntro(ev: ZoneEvent, w: IntroWorld | null): IntroSpec {
 }
 
 /**
- * tower_attuned (expected from the progression work; not in
- * contracts/events.md yet). Assumed shape like 600: targetId = tower site,
- * value = XP (0 = none), data = optional name.
+ * Event 902 `tower_attuned` (CR 012, the progression branch): targetId =
+ * the tower's atlas site index, value = region index, data = region name
+ * (600's layout). The tower's own name is the title; the boon is the line.
  */
+export const TOWER_ATTUNED = 902;
 export function towerAttunedIntro(ev: ZoneEvent, w: IntroWorld | null): IntroSpec {
   const site = w?.sites[ev.targetId];
-  const spec = siteIntro(site, nameOf(ev), w, { key: `attuned:${ev.targetId}`, variant: 'major', eyebrow: 'Tower attuned', detail: xpLine(ev.value) });
+  const spec = siteIntro(site, site?.name ?? nameOf(ev), w, { key: `attuned:${ev.targetId}`, variant: 'major', eyebrow: 'Tower attuned', detail: 'Its crystal answers you · a permanent boon' });
   return { ...spec, accent: ACCENT.tower };
 }
 
@@ -187,6 +188,7 @@ export const INTRO_FOR_EVENT: Partial<Record<number, IntroBuilder>> = {
   [EV.towerUnlocked]: towerUnlockedIntro,
   [EV.waypoint]: waypointIntro,
   [EV.discovery]: discoveryIntro,
+  [TOWER_ATTUNED]: towerAttunedIntro, // CR 012 (a zone without it never sends 902)
 };
 
 export function introForEvent(ev: ZoneEvent, w: IntroWorld | null): IntroSpec | null {
