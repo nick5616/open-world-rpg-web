@@ -129,3 +129,87 @@ export async function walkTo(page, x, z, { stopAt = 1.5, timeoutMs = 90000, spri
     if (sprint) await page.keyboard.up('ShiftLeft');
   }
 }
+
+// ---- street routing (from tools/acceptance/g4.mjs): players walk the streets ----
+let GRAPH = null;
+export async function townGraphNear(page) {
+  const town = await page.evaluate(() => {
+    const T = window.__lodestoneTowns;
+    const me = window.__lodestone.player().pos;
+    const s = T.settlements().map((x) => ({ ...x, d: Math.hypot(x.x - me.x, x.z - me.z) })).sort((a, b) => a.d - b.d)[0];
+    return { index: s.index, name: s.name, x: s.x, z: s.z, radius: s.radius, square: s.square };
+  });
+  const streets = await page.evaluate((i) => window.__lodestoneTowns.streets(i), town.index);
+  const nodes = [{ x: town.x, z: town.z, s: -1 }];
+  const adj = [[]];
+  const link = (a, b) => {
+    if (a === b || adj[a].includes(b)) return;
+    adj[a].push(b);
+    adj[b].push(a);
+  };
+  for (const [si, st] of streets.entries()) {
+    const p = st.points;
+    let prev = -1;
+    for (let i = 0; i + 5 < p.length; i += 3) {
+      const ax = p[i];
+      const az = p[i + 2];
+      const bx = p[i + 3];
+      const bz = p[i + 5];
+      const n = Math.max(1, Math.ceil(Math.hypot(bx - ax, bz - az) / 3));
+      for (let k = i === 0 ? 0 : 1; k <= n; k++) {
+        nodes.push({ x: ax + ((bx - ax) * k) / n, z: az + ((bz - az) * k) / n, s: si });
+        adj.push([]);
+        const id = nodes.length - 1;
+        if (prev >= 0) link(prev, id);
+        prev = id;
+      }
+    }
+  }
+  for (let a = 1; a < nodes.length; a++) {
+    if (Math.hypot(nodes[a].x - town.x, nodes[a].z - town.z) < town.square + 4) link(0, a);
+    for (let b = a + 1; b < nodes.length; b++) if (nodes[a].s !== nodes[b].s && Math.hypot(nodes[a].x - nodes[b].x, nodes[a].z - nodes[b].z) < 3.5) link(a, b);
+  }
+  GRAPH = { nodes, adj, town };
+  return GRAPH;
+}
+function routeOn(g, from, to) {
+  const near = (p) => g.nodes.reduce((best, n, i) => (Math.hypot(n.x - p.x, n.z - p.z) < Math.hypot(g.nodes[best].x - p.x, g.nodes[best].z - p.z) ? i : best), 0);
+  const s = near(from);
+  const t = near(to);
+  const dist = new Array(g.nodes.length).fill(Infinity);
+  const prev = new Array(g.nodes.length).fill(-1);
+  dist[s] = 0;
+  const done = new Set();
+  for (;;) {
+    let u = -1;
+    for (let i = 0; i < dist.length; i++) if (!done.has(i) && dist[i] < Infinity && (u < 0 || dist[i] < dist[u])) u = i;
+    if (u < 0 || u === t) break;
+    done.add(u);
+    for (const v of g.adj[u]) {
+      const d = dist[u] + Math.hypot(g.nodes[u].x - g.nodes[v].x, g.nodes[u].z - g.nodes[v].z);
+      if (d < dist[v]) {
+        dist[v] = d;
+        prev[v] = u;
+      }
+    }
+  }
+  const path = [];
+  for (let v = t; v >= 0; v = prev[v]) path.unshift(g.nodes[v]);
+  return path;
+}
+/** Walk to (x, z) along the nearest town's streets when either end is in town, else straight. */
+export async function go(page, x, z, opts = {}) {
+  const g = GRAPH ?? (await townGraphNear(page));
+  const p = (await pl(page)).pos;
+  const inTown = (q) => Math.hypot(q.x - g.town.x, q.z - g.town.z) < g.town.radius + 12;
+  if (!inTown(p) && !inTown({ x, z })) return walkTo(page, x, z, opts);
+  let path = routeOn(g, p, { x, z });
+  if (!inTown({ x, z })) {
+    // leave town along the street that ends nearest the goal
+    const exits = g.nodes.filter((n) => Math.hypot(n.x - g.town.x, n.z - g.town.z) > g.town.radius - 6);
+    const ex = exits.sort((a, b) => Math.hypot(a.x - x, a.z - z) - Math.hypot(b.x - x, b.z - z))[0];
+    if (ex) path = routeOn(g, p, ex);
+  }
+  for (const n of path) await walkTo(page, n.x, n.z, { stopAt: 1.8, sprint: opts.sprint, timeoutMs: 20000 });
+  return walkTo(page, x, z, opts);
+}
