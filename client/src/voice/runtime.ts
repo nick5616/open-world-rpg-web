@@ -18,6 +18,7 @@ import { drawnRemotes } from '../net/netStore';
 import { voiceDebugHook } from './debugHook';
 import { SELF, voiceLevels } from './levels';
 import { VoiceMixer } from './mixer';
+import { getAudioContext } from '../audio/context';
 import { chooseMode, headOf, terrainBetween, type Vec3 } from './spatial';
 import { useVoiceStore, type SpeakerInfo, type TalkMode } from './store';
 import { TalkController } from './talk';
@@ -113,7 +114,8 @@ class VoiceRuntime {
       return;
     }
     if (this.stopped) return;
-    if (!this.mixer) this.mixer = new VoiceMixer();
+    // One AudioContext for the whole game (client/src/audio/context.ts) when a gesture already made it.
+    if (!this.mixer) this.mixer = new VoiceMixer(getAudioContext() ?? undefined);
     this.applyPrefs();
     const room = new Room({
       // Audio only: no simulcast/dynacast decisions to make, and the server

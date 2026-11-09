@@ -98,6 +98,11 @@ export function busInput(bus: Exclude<BusName, 'master'>): GainNode | null {
   return graph?.input[bus] ?? null;
 }
 
+/** Where WP11's voice mixer plays: the voice bus of this context, or straight out for a context of its own. */
+export function voiceDestination(ctx: AudioContext): AudioNode {
+  return graph && graph.ctx === ctx ? graph.input.voice : ctx.destination;
+}
+
 /** The master gain (analysers and tests tap here). */
 export function masterNode(): GainNode | null {
   return graph?.master ?? null;

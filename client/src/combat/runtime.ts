@@ -19,6 +19,7 @@ import { CombatTimeline, spellById, weaponById, type CombatButtons, type Started
 import { EV, INTERACT_COMBAT, ACT, decodeSync, decodeTelegraph, enemyInfo } from './events';
 import { fxQueue, pushNumber, toast, useCombatHud } from './store';
 import { CombatProbe } from './probe';
+import { emitSound } from '../audio/bridge';
 
 const STEP_MS = 1000 / MOVE_STEP_HZ;
 const EYE = 1.6;
@@ -90,6 +91,7 @@ export class CombatRuntime {
       } else if (e.button === 2) {
         this.buttons.altDown = true;
         this.buttons.altPress++;
+        if (this.timeline.weapon().key === 'bow') emitSound('bow_draw');
       } else if (e.button === 1) this.buttons.techniquePress++;
     };
     const onUp = (e: MouseEvent) => {
@@ -228,6 +230,9 @@ export class CombatRuntime {
     this.actives.push({ s, yaw, pitch, hit: new Set(), impact: null, ticks: 0, until: s.seq + total + 1 });
     const color = s.spell?.color ?? (s.form ? '#ffd76a' : '#e8e8e8');
     if (s.move && s.move.speed === 0) fxQueue.push({ t: 'swing', arc: s.move.arc, reach: s.move.reach, color, durationMs: (s.startup + s.active) * STEP_MS, at: performance.now() });
+    // Sound from the prediction, instantly (spec 8); client/src/audio/triggers.ts.
+    if (s.spell) emitSound('cast', { element: s.spell.tree, kind: s.spell.type });
+    else emitSound('attack', { weapon: this.timeline.weapon().key, kind: s.move?.kind ?? 'heavy' });
     void before;
   }
 
@@ -455,6 +460,7 @@ export class CombatRuntime {
 
   private explode(sh: LocalShot): void {
     fxQueue.push({ t: 'area', x: sh.x, y: sh.y, z: sh.z, radius: sh.aoe, color: sh.started.spell?.color ?? '#ffaa44', durationMs: 350, at: performance.now() });
+    emitSound('impact', { at: { x: sh.x, y: sh.y, z: sh.z }, element: sh.started.spell?.tree ?? 'earth' });
     for (const e of this.enemies()) {
       if (Math.hypot(e.x - sh.x, e.z - sh.z) <= sh.aoe + enemyInfo(e).radius) this.predictHit(sh.started, e, { x: sh.x, y: sh.y, z: sh.z }, sh.started.kind, true);
     }
@@ -474,6 +480,7 @@ export class CombatRuntime {
     const now = performance.now();
     const at = { x: e.x, y: e.y + enemyInfo(e).height, z: e.z };
     fxQueue.push({ t: 'spark', x: at.x, y: at.y, z: at.z, color: s.spell?.color ?? '#fff3c0', at: now });
+    if (!impactIsOrigin) emitSound('impact', { at, element: s.spell?.tree, weapon: this.timeline.weapon().key });
     if (kind === 'move' || kind === 'form') this.hitstopUntil = Math.max(this.hitstopUntil, now + HITSTOP_MS);
     this.probe.localHit(s, now, kind === 'move' || kind === 'form' ? HITSTOP_MS : 0);
     const claimAt = impactIsOrigin ? origin : localPlayer.pos;

@@ -21,6 +21,8 @@ import { CombatHud } from '../combat/CombatHud';
 import { VoiceHud } from '../voice';
 // WP14: inventory (I), crafting panel (forge/cook stations), loot toasts, Bitchin' banner, [E] containers/pickups (client/src/ui/inventory/README.md).
 import { CraftPanel, InventoryScreen, LootHud } from '../ui/inventory';
+// Sound and music: boots the audio engine after the first playable frame; K = sound settings (client/src/audio/README.md).
+import { AudioRoot } from '../audio/ui/AudioRoot';
 
 function DebugLayer() {
   useDebugHotkeys();
@@ -52,6 +54,7 @@ export default function PlayScreen() {
       <LootHud />
       <InventoryScreen />
       <CraftPanel />
+      <AudioRoot />
     </>
   );
 }
