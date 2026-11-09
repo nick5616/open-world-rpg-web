@@ -14,8 +14,8 @@ The second pass fixed the four G5 failures the first pass left (serial tick, dow
 | --- | --- | --- | --- | --- |
 | 1 | 300 bots + 2,000 awake enemies, 4 procs | tick p50 8.9-9.3 ms, 60 s p99 12.4-13.7 ms (every window over 12), downlink max 159.3 kbps | quiet runs: p50 6.8-8.2 ms, p99 9.6-10.4 ms in the windows after the join ramp, but 14.5-17.7 ms in some windows of the same runs; busy run (G4 browsers at 3.7 cores): p99 28-50 ms. Downlink max 148.2-150.6 kbps | **FAIL (strict)**: under budget only in quiet windows; downlink PASS with 9-12 kbps headroom (was 0.7) |
 | 2 | 1,000 bots, 4 zones, crossings | PASS: 1000/1000, 0 owned twice, 0 duplicated; zones 440/370/103/86 players, busiest p50 16 ms | PASS: 1000/1000, 3,782 handoffs, 0 owned twice, 0 duplicated, 0 sustained-unowned; 4 load moves, zones **263/254/251/231**; per-zone p50 12-14 ms | **PASS** |
-| 3 | 50 voice bots | (first pass PASS) | see below | see below |
-| 4 | thailand | S1: p50 24-27 ms, p99 78-233 ms (machine); S2+kill: see below | S1: p50 13-26 ms, p99 46-213 ms; S2+kill and voice: see below | S1 **FAIL** (and not measurable on this desktop today: the same baseline binary ran 3x slower than yesterday) |
+| 3 | 50 voice bots | first pass 868/868, p99 277 ms | quiet: 872/872 reflected, p99 268 ms, 100 % within 500 ms, 0 flaps. Under 14 cores of another agent's Chromium: 796/796, p99 557 ms (social apply p99 401 ms, zone p99 29 ms at 50 players) | **PASS** (quiet run; the busy run failed on latency, attributable to the machine) |
+| 4 | thailand | S1: p50 24-27 ms, p99 78-233 ms; S2 + kill (main zone binary): 84/84 failovers, 0 owned twice, 0 duplicated, zones 586/317/92 (p99 266-290 ms), **6 bots unowned two samples running: FAIL** | S1: p50 13-26 ms, p99 46-213 ms. S2 + kill: 216/216 failovers (p50 6.0 s), 0 owned twice, 0 duplicated, zones **370/305/305** after 5 load moves (p99 270-390 ms), 4 bots unowned two samples running (run 1: 11): **FAIL**. Voice: 870/870, p99 270 ms, 0 flaps: **PASS** | voice PASS; S1 and S2+kill **FAIL** on this desktop today, the main-branch binary failing the same checks in the same conditions |
 
 ### What changed (all wire-identical; determinism tests in each package)
 
@@ -36,7 +36,19 @@ Tests: `TestPartitionedAIMatchesAcrossWorkers` (serial vs 4 goroutines vs revers
 
 ### In-process benchmark (no sockets, no other processes in the tick; `go test ./internal/game -bench Scale/p300_e2000 -cpu 4`)
 
-IN_PROCESS_TABLE
+On the official world's terrain (`LODESTONE_BENCH_TERRAIN=1`), 900 ticks, alternated 3x with the main-branch code on a quiet machine (`wp19b-inprocess-bench.txt`):
+
+| | Before (main) | After (WP19b) |
+| --- | --- | --- |
+| tick p50 | 6.19-6.31 ms | **5.08-5.35 ms** |
+| tick p99 | 9.29-9.91 ms | **8.20-8.92 ms** |
+| combat phase (mean) | 1.75-1.78 ms | 1.03-1.06 ms |
+| inputs + movement | 0.50 ms | 0.37-0.39 ms |
+| views + grid | 0.19-0.22 ms | 0.11-0.13 ms |
+| snapshots (parallel already) | 3.83-3.84 ms | 3.64-3.95 ms |
+| downlink per client (snapshots + reliable) | 141.2 kbps | 135.1 kbps (reliable bytes now inside the 150 budget) |
+
+The in-process movement is cheaper than live (bots send bunched frames, the live terrain cache misses more), which is why the live input phase gains more (1.85 -> 1.0 ms). What is left is mostly the snapshot phase (~3.7 ms, already parallel) and ~1 ms of serial combat glue; a 4 vCPU zone at this density has ~4 ms of slack against 12 ms.
 
 ### Scenario 1 in detail
 
@@ -45,6 +57,13 @@ IN_PROCESS_TABLE
 - p50 drops by ~1.5-2 ms (8.9-9.3 -> 6.8-8.2) and the quiet-window p99 by ~3 ms (12.4-13.2 -> 9.6-10.4), as the in-process numbers predict.
 - The windows that still miss 12 ms are bursts of slow ticks in the parallel phases (the slowest tick of each minute is a 18-26 ms snapshot phase): a worker descheduled by the OS or a GC cycle holds the whole phase. The tick now has six parallel phases instead of one, so on an oversubscribed desktop (300 bots, the zone and other agents on 16 threads) it meets more of them; on a dedicated 4 vCPU VM they should not occur. That is the remaining gap, and why the strict verdict is FAIL here.
 - `--prefix`, the GC column and the post-ramp window are in `tools/bots/scale-soak.mjs`; the post-ramp window drops windows that still contain the 300 joins, 500 camps spawning and every first-sight record.
+
+### Scenarios 2 and 4 (handoff, failover) in detail
+
+- **Found on the way**: the soaks' own director never assigned anything. The user's long-running dev director (`npm run dev`, main code) scans the same Redis and took every soak world's assignment lease (`zoneassignlead:{world}`; the shared Redis holds leases for dozens of test worlds), so the first-pass S2/S4 splits came from it, and so did the first two WP19b runs (`wp19b-s{2,4}-*-devdirector`: 0 load moves). `handoff-soak.mjs` now starts its director before the zones with `LODESTONE_DIRECTOR_ONLY_WORLD`, so it holds the lease from the start.
+- With load moves the director needs 3-5 moves (one per 10 s) from the region-count split to an even one; after a pool zone dies it waits two cooldowns (players are failing over, reported loads are stale), then spreads the dead zone's regions (`wp19b-s4-after-1000-4z-thailand-failover`: moves of 92 and 63 players after the kill, final 370/305/305).
+- More balance also means the killed zone held more players (215-219 instead of 79-84), hence 216 failovers and 8-9 discoveries re-granted after the failover (lost with the dead zone's unsaved write-behind queue, by design: rewind to the last checkpoint).
+- The "playing but unowned for two samples" failures appeared only today, with zone ticks of p99 270-390 ms on all three surviving zones, and the main-branch zone binary fails the same check in the same conditions (6 bots, `wp19b-s4-before-main-zone-*`); the clean S2 run with load moves had 0. Not reproducible as a code defect here; to be re-checked on a quiet machine.
 
 ### Client render and turn benchmarks (second pass)
 
@@ -57,7 +76,7 @@ IN_PROCESS_TABLE
 
 Evidence: `wp19b-traversal-run.txt`, `wp19b-traversal-{high,low}.json`, `wp19b-nowarmup-traversal-*`, `wp19b-turn.txt`. Heap max on high read 125 MB in the after run (78 MB before); within the 600 MB budget, GC timing in the sampler, not investigated further.
 
-## Verdict per scenario (spec 14)
+## Verdict per scenario (spec 14), first pass (2026-11-08)
 
 | # | Scenario | Before (main at WP19 start) | After (WP19, main incl. WP14 + WP15 merged) | Verdict |
 | --- | --- | --- | --- | --- |
@@ -121,7 +140,7 @@ Towns (`wp19-town-drawcalls.txt`): 167-292 draw calls per view, frame 3.1-3.6 ms
 | Dense crowd + combat (scenario 1) | avg 154, max 158 kbps (thailand 159) | 11 kbps |
 | Proximity voice (Opus, up to 12 heard) | +~24-32 kbps per audible speaker | +~32 kbps while talking |
 
-The snapshot byte budget is 150 kbps but reliable traffic (combat telegraphs, events) rides on top: scenario 1 reached 158-159 kbps against the 160 budget. Next step (WP06's path): charge last tick's reliable bytes against the snapshot budget, or lower the default to 140 kbps.
+The snapshot byte budget is 150 kbps; until WP19b reliable traffic (combat telegraphs, events) rode on top and scenario 1 reached 158-159 kbps against the 160 budget. WP19b charges reliable bytes to the same budget (decision 0005 amendment): scenario 1 max 148-151 kbps.
 
 For cost: an average session of ~40 kbps game traffic + ~20 kbps voice is ~27 MB per player-hour.
 
@@ -141,10 +160,10 @@ Egress dominates from ~100 CCU up, as spec 13 predicted; the static IP question 
 ## What to do when load grows (in order)
 
 1. **Run the zones on Linux VMs and re-measure on dedicated cores.** Every number above shares one Windows desktop with the bots that load it; socket writes alone cost ~0.3 cores of WSASend at 300 clients. Expect scenario 1 to pass on a quiet 4-vCPU Linux zone; prove it there (`tools/bots/scale-soak.mjs` from a second machine).
-2. **Rebalance regions by load.** In the thailand failover run the director's sticky plan left one pool zone with 612 players (p99 49 ms) while others had 100-280. The assigner should move regions off a zone above ~300 players (decision 0016 "never rebalances" gap).
-3. **Shrink the serial tick (~5 ms at scenario 1).** Combat AI (2-3 ms) and input/movement (1.5-2 ms) run on the tick goroutine; movement steps are per-player independent apart from the combat hooks (`World.Frame` emits shared events), so splitting those hooks from the step would let movement run on the snapshot workers. Combat AI can be partitioned by group cell.
-4. **Budget reliable bytes** against the 160 kbps downlink (above).
+2. ~~**Rebalance regions by load.**~~ Done in WP19b (`zoneregistry.Rebalance`): scenario 2 zones 440/370/103/86 -> 263/254/251/231; after a thailand failover 370/305/305 (was 612/284/99).
+3. ~~**Shrink the serial tick.**~~ Done in WP19b: inputs, combat AI, combat glue and views run on the workers (in-process p50 6.2 -> 5.2 ms). Next, if a dedicated VM still misses: the snapshot phase (~3.7 ms, parallel; per-client candidate walks and the encoder) and fewer parallel phases per tick (each one is a chance for an OS-descheduled worker to hold the tick on a busy host).
+4. ~~**Budget reliable bytes.**~~ Done in WP19b (decision 0005 amendment): downlink max 148-151 kbps.
 5. **Reduce per-client baseline memory** further (shared per-tick entity history with per-client references) before raising players per zone past ~400.
 6. **Voice**: LiveKit on its own VM above ~100 concurrent speakers; region-sharded rooms beyond 1,000 CCU (decision 0011).
 7. **Egress**: standard-tier networking (~30 % cheaper) once latency is acceptable from the target regions; keep hashed assets on the CDN.
-8. **Client**: shader warmup per tier at load (spec 12) to remove the remaining traversal long tasks and the freeze of an explicit quality change.
+8. ~~**Client shader warm-up.**~~ Done in WP19b (`client/src/world/warmup.ts`): 0 traversal long tasks, 0 turn hitches; keep `warmExtras.ts` in step with new materials (the traversal benchmark lists every program linked during play).
