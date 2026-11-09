@@ -21,7 +21,7 @@ import type { SpikeStyle } from './spellVisual';
 export const SPIKE_STYLES: SpikeStyle[] = ['ice', 'crystal', 'bramble', 'stone', 'void', 'light'];
 
 /** Pool sizes (caps on concurrent effects; the oldest is recycled past them). */
-export const POOL = { rings: 32, flashes: 32, scorches: 16, sigils: 16, zones: 12, domes: 2, beams: 12, shells: 10, bolts: 24 };
+export const POOL = { rings: 32, flashes: 32, scorches: 16, sigils: 16, zones: 12, domes: 2, beams: 12, shells: 24, bolts: 24 };
 
 interface Slot {
   on: boolean;
@@ -353,7 +353,8 @@ export class FxPrims {
     s.s1 = s.s0 * (o.grow ?? 1.6);
     s.op = o.opacity ?? 1;
     s.sprite.position.set(x, y, z);
-    s.mat.color.copy(color);
+    // Big flashes are dimmer per pixel (a wash of light, not a white wall).
+    s.mat.color.copy(color).multiplyScalar(Math.min(1, 2.2 / Math.max(2.2, s.s0)));
     s.sprite.visible = true;
   }
 
@@ -418,6 +419,8 @@ export class FxPrims {
   spike(style: SpikeStyle, x: number, z: number, gy: number, o: SpikeOpts): void {
     const set = this.spikes[style];
     if (set.spikes.length === 0) return;
+    // Readability: never grow a spike in your face (self-centred rings in first person).
+    if (Math.hypot(x - this.cam.x, z - this.cam.z) < 1.5 && this.cam.y - gy < 2.6) return;
     // Full: recycle the oldest (index 0 after compaction is not guaranteed oldest; good enough).
     const idx = set.n < set.spikes.length ? set.n++ : Math.floor(Math.random() * set.spikes.length);
     const s = set.spikes[idx];
@@ -546,8 +549,12 @@ export class FxPrims {
   }
 
   // ── Per frame ───────────────────────────────────────────────────────────
+  /** Camera position as of the last frame (spawn-time readability checks). */
+  readonly cam = new THREE.Vector3(0, -1e6, 0);
+
   update(t: number, camera: THREE.Camera): void {
     camera.getWorldPosition(tmpCam);
+    this.cam.copy(tmpCam);
     for (const s of this.rings) {
       if (!s.on) continue;
       const k = (t - s.start) / s.dur;

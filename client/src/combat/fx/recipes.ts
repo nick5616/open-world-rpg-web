@@ -294,9 +294,9 @@ export function trail(v: SpellVisual, a: V3, b: V3, size: number, light = 1): vo
     const z = a.z + dz * t;
     switch (v.family) {
       case 'fire':
-        glowPool.emit(x, y, z, bx * 0.6 + rand(-0.4, 0.4), rand(0.2, 1.2), bz * 0.6 + rand(-0.4, 0.4), Math.random() < 0.5 ? c.main : c.deep, rand(0.18, 0.38), size * rand(1.6, 2.6), 1.5, 2.2, SHAPE_GLOW);
+        glowPool.emit(x, y, z, bx * 0.6 + rand(-0.4, 0.4), rand(0.2, 1.2), bz * 0.6 + rand(-0.4, 0.4), Math.random() < 0.5 ? c.main : c.deep, rand(0.18, 0.38), size * rand(1.0, 1.7), 1.5, 2.2, SHAPE_GLOW);
         if (Math.random() < 0.35) glowPool.emit(x, y, z, rand(-1.5, 1.5), rand(0.5, 2.5), rand(-1.5, 1.5), c.accent, rand(0.4, 0.9), rand(0.04, 0.08), 2.5, 1.2, SHAPE_SPARK);
-        if (big && Math.random() < 0.3 * budget.profile.smoke) smokePool.emit(x, y, z, rand(-0.3, 0.3), rand(0.6, 1.4), rand(-0.3, 0.3), c.smoke, rand(0.7, 1.3), size * rand(1.8, 2.8), 0.4, 1.2, SHAPE_PUFF);
+        if (big && Math.random() < 0.12 * budget.profile.smoke) smokePool.emit(x, y, z, rand(-0.3, 0.3), rand(0.6, 1.4), rand(-0.3, 0.3), c.smoke, rand(0.6, 1.0), size * rand(1.4, 2.2), 0.4, 1.2, SHAPE_PUFF);
         break;
       case 'ice':
         glowPool.emit(x, y, z, bx * 0.4, by * 0.4, bz * 0.4, c.main, rand(0.15, 0.3), size * rand(1.1, 1.8), 0, 2, SHAPE_GLOW);
@@ -312,7 +312,7 @@ export function trail(v: SpellVisual, a: V3, b: V3, size: number, light = 1): vo
         const sx = rand(-1, 1);
         const sz = rand(-1, 1);
         glowPool.emit(x, y, z, sx * 1.2, rand(-0.3, 0.6), sz * 1.2, Math.random() < 0.6 ? c.main : c.accent, rand(0.25, 0.5), size * rand(1.2, 2.0), 0, 3, SHAPE_GLOW);
-        if (Math.random() < 0.4 * budget.profile.smoke) smokePool.emit(x, y, z, sx * 0.4, rand(0, 0.4), sz * 0.4, c.smoke, rand(0.5, 0.9), size * rand(1.6, 2.6), 0, 2, SHAPE_PUFF);
+        if (Math.random() < 0.12 * budget.profile.smoke) smokePool.emit(x, y, z, sx * 0.4, rand(0, 0.4), sz * 0.4, c.smoke, rand(0.5, 0.9), size * rand(1.6, 2.6), 0, 2, SHAPE_PUFF);
         break;
       }
       case 'blood':
@@ -423,6 +423,15 @@ export function impact(fx: FxPrims, v: SpellVisual, x: number, y: number, z: num
   }
 }
 
+/** A channelled beam biting into something (per frame): sparks and glow, no smoke. */
+export function beamBite(v: SpellVisual, x: number, y: number, z: number): void {
+  const c = cols(v.palette);
+  burst(x, y, z, c.k('hma'), 3, BITE_SPARK);
+  burst(x, y, z, c.k('md'), 1, BITE_GLOW);
+}
+const BITE_SPARK: BurstOpts = { speed: [2, 6], life: [0.12, 0.3], size: [0.03, 0.06], gravity: -8, drag: 1, shape: SHAPE_SPARK, up: 0.3 };
+const BITE_GLOW: BurstOpts = { speed: [0.3, 1], life: [0.15, 0.3], size: [0.2, 0.35], drag: 3 };
+
 /** Melee / weapon hit: steel sparks (with the gem's element tint when it has one). */
 export function meleeHit(fx: FxPrims, x: number, y: number, z: number, tint: THREE.Color | null, heavy: boolean): void {
   const s = cols(PALETTES.steel);
@@ -442,7 +451,7 @@ export function explosion(fx: FxPrims, v: SpellVisual, x: number, y: number, z: 
   screenKick(x, y, z, 0.35 + r * 0.12, cam, 0.25 + r * 0.03);
   switch (v.family) {
     case 'fire':
-      burst(x, y, z, c.k('hmd'), 46, { speed: [1.5, r * 2.6], life: [0.3, 0.6], size: [r * 0.22, r * 0.42], drag: 3.2, up: 0.2, jitter: r * 0.15 });
+      burst(x, y, z, c.k('md'), 46, { speed: [1.5, r * 2.6], life: [0.3, 0.6], size: [r * 0.18, r * 0.34], drag: 3.2, up: 0.2, jitter: r * 0.15 });
       burst(x, y, z, c.k('ha'), 36, { speed: [6, 16], life: [0.3, 0.8], size: [0.05, 0.1], gravity: -12, drag: 1, shape: SHAPE_SPARK, up: 0.3 });
       burst(x, y, z, c.k('ma'), 18, { speed: [0.5, 2.5], life: [1.0, 2.0], size: [0.05, 0.09], gravity: 1.8, drag: 1, up: 0.6, jitter: r * 0.5 });
       burst(x, y + 0.3, z, c.k('s'), 14, { speed: [0.5, 2.2], life: [1.4, 2.4], size: [r * 0.35, r * 0.6], gravity: 0.9, drag: 1.4, shape: SHAPE_PUFF, up: 0.6, jitter: r * 0.3, delay: [0.05, 0.2] });
@@ -588,7 +597,8 @@ export function areaBurst(fx: FxPrims, v: SpellVisual, x: number, y: number, z: 
       fx.flash(x, y + 1, z, c.mainH, { size: r * 1.4, duration: 0.3 });
       fx.light(x, y + 1.5, z, c.main, 50, r * 3, 0.5);
       fx.spikeRing('ice', x, z, y, r * 0.82, 20, 1.7, { hold: 0.9, sink: 0.5 });
-      fx.spikeRing('ice', x, z, y, r * 0.45, 11, 1.2, { delay: 0.06, hold: 0.8 });
+      // (the inner crown only when you are not standing in it: first-person readability)
+      if (!cam || Math.hypot(cam.x - x, cam.z - z) > r * 0.6) fx.spikeRing('ice', x, z, y, r * 0.45, 11, 1.2, { delay: 0.06, hold: 0.8 });
       ringBurst(x, y + 0.3, z, 0.4, c.k('hm'), 70, r * 2.2, { life: [0.35, 0.6], size: [0.05, 0.1], drag: 2, shape: SHAPE_SPARK, up: 1.5 });
       discEmit(x, z, r, y + 0.4, c.k('ha'), 50, [0.2, 1.5], { life: [0.8, 1.6], size: [0.1, 0.2], shape: SHAPE_STAR, drag: 1, gravity: -0.6 });
       ringBurst(x, y + 0.2, z, r * 0.5, c.k('s'), 16, r * 0.8, { life: [0.9, 1.5], size: [1, 1.6], shape: SHAPE_PUFF, drag: 1.5 });
@@ -600,7 +610,7 @@ export function areaBurst(fx: FxPrims, v: SpellVisual, x: number, y: number, z: 
       fx.light(x, y + 2, z, c.main, 80, r * 4, 0.7);
       fx.ring(x, y, z, c.main, { radius: r * 1.3, duration: 0.6 });
       fx.scorch(x, y, z, r * 0.9, 7);
-      discEmit(x, z, r * 0.45, y + 0.2, c.k('hmd'), 120, [8, 18], { life: [0.4, 0.9], size: [0.35, 0.8], gravity: -10, drag: 1.2 });
+      discEmit(x, z, r * 0.45, y + 0.2, c.k('md'), 120, [8, 18], { life: [0.4, 0.9], size: [0.3, 0.65], gravity: -10, drag: 1.2 });
       discEmit(x, z, r * 0.6, y + 0.2, c.k('ha'), 60, [6, 15], { life: [0.6, 1.4], size: [0.05, 0.1], gravity: -12, shape: SHAPE_SPARK, speed: [0, 3] });
       discEmit(x, z, r * 0.6, y + 1.5, c.k('s'), 20, [2, 5], { life: [1.6, 2.6], size: [1, 1.8], gravity: 0.5, drag: 1, shape: SHAPE_PUFF, speed: [0, 1] });
       if (v.setPiece === 'eruption') fx.spikeRing('stone', x, z, y, r * 0.6, 8, 1.2, { hold: 0.6 });
@@ -1048,6 +1058,9 @@ export function dashBurst(fx: FxPrims, v: SpellVisual, x: number, y: number, z: 
 }
 
 /** Dash trail segment a -> b (feet), emitted per frame while dashing. */
+const SHOCK_BOLT = { width: 0.045, duration: 0.14, forks: 1, segs: 5, jitter: 0.35 };
+const R_SHOCK: [number, number] = [-1, 1.5];
+const O_SHOCK: BurstOpts = { life: [0.1, 0.25], size: [0.03, 0.05], shape: SHAPE_SPARK, speed: [0, 3] };
 const sA = { x: 0, y: 0, z: 0 };
 const sB = { x: 0, y: 0, z: 0 };
 const sC = { x: 0, y: 0, z: 0 };
@@ -1126,6 +1139,15 @@ const STATUS_PAL: Record<string, Palette> = {
   black_flame: PALETTES.blackflame,
 };
 
+/** The status order for the one shell an enemy wears (the most telling first). */
+export const STATUS_PRIORITY = ['freeze', 'petrify', 'black_flame', 'burn', 'shock', 'stun', 'curse', 'slow', 'pull', 'airborne', 'knockback', 'taunt'];
+
+/** A status's shell colour (HDR main of its palette). */
+export function statusColor(status: string): THREE.Color | null {
+  const p = STATUS_PAL[status];
+  return p ? (status === 'petrify' ? col('#9a9a9a') : cols(p).mainH) : null;
+}
+
 /** Per-frame emission for one status on a target (feet x, y, z; height h; size s). */
 export function statusEmit(fx: FxPrims, status: string, x: number, y: number, z: number, h: number, s: number, dt: number, t: number): void {
   const p = STATUS_PAL[status];
@@ -1135,7 +1157,7 @@ export function statusEmit(fx: FxPrims, status: string, x: number, y: number, z:
   const r = 0.45 * s;
   switch (status) {
     case 'burn':
-      discEmit(x, z, r, y + h * 0.3, c.k('hmd'), rate(40), R141, O142);
+      discEmit(x, z, r, y + h * 0.3, c.k('hmd'), rate(75), R141, O142);
       discEmit(x, z, r, y + h * 0.6, c.k('s'), rate(3), R143, O144);
       return;
     case 'black_flame':
@@ -1153,15 +1175,16 @@ export function statusEmit(fx: FxPrims, status: string, x: number, y: number, z:
       // stars circling the head
       for (let i = 0; i < 3; i++) {
         const a = t * 5 + (i * TAU) / 3;
-        if (Math.random() < rate(18)) glowPool.emit(x + Math.cos(a) * r, y + h + 0.25, z + Math.sin(a) * r, -Math.sin(a) * 1.5, 0, Math.cos(a) * 1.5, c.hot, 0.25, 0.1, 0, 0, SHAPE_STAR);
+        if (Math.random() < rate(30)) glowPool.emit(x + Math.cos(a) * r, y + h + 0.25, z + Math.sin(a) * r, -Math.sin(a) * 1.5, 0, Math.cos(a) * 1.5, c.hot, 0.3, 0.16, 0, 0, SHAPE_STAR);
       }
       return;
     }
     case 'shock':
-      if (Math.random() < rate(8)) {
+      if (Math.random() < rate(16)) {
         const a = Math.random() * TAU;
-        fx.bolt(x + Math.cos(a) * r, y + rand(0.2, h), z + Math.sin(a) * r, x - Math.cos(a) * r, y + rand(0.2, h), z - Math.sin(a) * r, c.main, { width: 0.025, duration: 0.12, forks: 0, segs: 5, jitter: 0.3 });
+        fx.bolt(x + Math.cos(a) * r * 1.2, y + rand(0.2, h), z + Math.sin(a) * r * 1.2, x - Math.cos(a) * r * 1.2, y + rand(0.2, h), z - Math.sin(a) * r * 1.2, c.main, SHOCK_BOLT);
       }
+      discEmit(x, z, r, y + h * 0.5, c.k('hm'), rate(25), R_SHOCK, O_SHOCK);
       return;
     case 'petrify':
       discEmit(x, z, r, y + 0.1, K9, rate(10), R151, O152);
@@ -1171,10 +1194,10 @@ export function statusEmit(fx: FxPrims, status: string, x: number, y: number, z:
       ringBurst(x, y + 0.2, z, r * 1.5, c.k('hm'), rate(30), 0, O153);
       return;
     case 'curse':
-      discEmit(x, z, r, y + h + 0.1, c.k('md'), rate(10), R154, O155);
+      discEmit(x, z, r, y + h + 0.1, c.k('md'), rate(30), R154, O155);
       return;
     case 'pull':
-      ringBurst(x, y + h * 0.5, z, r * 2.5, c.k('ma'), rate(40), -1, O156);
+      ringBurst(x, y + h * 0.5, z, r * 2.5, c.k('ma'), rate(90), -1, O156);
       return;
     case 'taunt':
       if (Math.random() < rate(4)) glowPool.emit(x, y + h + 0.5, z, 0, 0.6, 0, c.main, 0.5, 0.25, 0, 1, SHAPE_STAR);

@@ -57,20 +57,22 @@ export function createBeamMaterial(): BeamMat {
       uLength: { value: 10 },
     },
     vertexShader: /* glsl */ `
-      varying vec3 vN; varying vec3 vV; varying vec3 vAxis; varying vec2 vUv;
+      varying vec3 vN; varying vec3 vV; varying vec3 vAxis; varying vec2 vUv; varying float vNear;
       void main() {
         vUv = uv;
         vec4 wp = modelMatrix * vec4(position, 1.0);
         vN = normalize(mat3(modelMatrix) * normal);
         vAxis = normalize(mat3(modelMatrix) * vec3(0.0, 1.0, 0.0));
         vV = normalize(cameraPosition - wp.xyz);
+        // Readability: your own beam leaving your hand fades out at the lens.
+        vNear = smoothstep(0.6, 3.5, distance(cameraPosition, wp.xyz));
         gl_Position = projectionMatrix * viewMatrix * wp;
       }
     `,
     fragmentShader: /* glsl */ `
       uniform vec3 uColor; uniform vec3 uCore; uniform float uOpacity; uniform float uTime;
       uniform float uScroll; uniform float uNoise; uniform float uLength;
-      varying vec3 vN; varying vec3 vV; varying vec3 vAxis; varying vec2 vUv;
+      varying vec3 vN; varying vec3 vV; varying vec3 vAxis; varying vec2 vUv; varying float vNear;
       ${NOISE}
       void main() {
         vec3 axis = normalize(vAxis);
@@ -85,8 +87,8 @@ export function createBeamMaterial(): BeamMat {
         float energy = mix(1.0, 0.55 + n * 0.9, uNoise);
         float ends = smoothstep(0.0, 0.02, vUv.y) * (1.0 - smoothstep(0.96, 1.0, vUv.y));
         vec3 col = uColor * body * energy + uCore * core * 1.6;
-        float a = clamp((body * 0.85 * energy + core) * uOpacity * ends, 0.0, 1.0);
-        gl_FragColor = vec4(col, a);
+        float a = clamp((body * 0.85 * energy + core) * uOpacity * ends * vNear, 0.0, 1.0);
+        gl_FragColor = vec4(col * vNear, a);
         ${OUT}
       }
     `,

@@ -24,7 +24,7 @@ import { budget, col, fxTime, GEO, glowTexture, hot, rand, setFxTier } from './c
 import { glowPool, smokePool, SHAPE_GLOW, SHAPE_PUFF, SHAPE_SPARK } from './particles';
 import { FxPrims, alive, type Held, type DecalSlot, type BeamSlot, type ShellSlot, type DomeSlot } from './transients';
 import { currentFxTier, FX_PROFILES } from './quality';
-import { ELEMENT_FAMILY, PALETTES, spellVisual, statusById, ZONE_STYLE, enemyAttackById, formById, spellById, mobilitySpellForDash, type SpellVisual, type Family } from './spellVisual';
+import { ELEMENT_FAMILY, PALETTES, spellVisual, statusById, statusByKey, ZONE_STYLE, enemyAttackById, formById, spellById, mobilitySpellForDash, type SpellVisual, type Family } from './spellVisual';
 import * as R from './recipes';
 import { screenKick, screenTick, screenTint } from './screen';
 import type { CircleMat, ZoneMat } from './materials';
@@ -84,6 +84,8 @@ interface Ongoing {
 interface StatusEntry {
   id: number;
   until: Float64Array; // per status id (1..12)
+  /** The tinted shell it wears (medium and up), the strongest status first. */
+  shell: Held<ShellSlot> | null;
 }
 
 const tmpV = new THREE.Vector3();
@@ -299,7 +301,8 @@ export class SpellFxEngine {
         const k = Math.min(1, (t - t0) / dur);
         m.uniforms.uTime.value = t;
         m.uniforms.uProgress.value = k;
-        m.uniforms.uOpacity.value = (0.55 + 0.35 * Math.abs(Math.sin(t * (6 + k * 20)))) * Math.min(1, (t - t0) * 6) * (t - t0 > dur ? Math.max(0, 1 - (t - t0 - dur) / 0.15) : 1);
+        // (a sigil under your own feet stays faint: you are looking through it)
+        m.uniforms.uOpacity.value = (follow === 'self' ? 0.45 : 1) * (0.55 + 0.35 * Math.abs(Math.sin(t * (6 + k * 20)))) * Math.min(1, (t - t0) * 6) * (t - t0 > dur ? Math.max(0, 1 - (t - t0 - dur) / 0.15) : 1);
         if (follow !== null && this.anchorPos(follow, p)) h.s.mesh.position.set(p.x, h.s.mesh.position.y, p.z);
         const l = this.lod(p.x, p.y, p.z);
         if (l > 0 && v.weight !== 'minor') {
@@ -426,7 +429,7 @@ export class SpellFxEngine {
     s.g = gravity;
     s.t0 = fxTime();
     s.life = life;
-    s.core = Math.max(0.1, Math.min(radius * 0.45, 0.6)) * (sp?.key === 'ball_lightning' ? 1.6 : 1);
+    s.core = Math.max(0.1, Math.min(radius * 0.4, 0.42));
     s.local = !!o.local;
     s.collide = o.collide ?? 'none';
     s.explode = o.explode ?? 0;
@@ -591,7 +594,7 @@ export class SpellFxEngine {
       const d = Math.hypot(x - camPos.x, y - camPos.y, z - camPos.z);
       const nearK = Math.min(1, Math.max(0.15, (d - 0.5) / 2.5));
       const flicker = s.v.family === 'fire' ? 1 + Math.sin(age * 31) * 0.12 + Math.sin(age * 13) * 0.08 : 1 + Math.sin(age * 9) * 0.06;
-      const hs = s.core * (s.v.look === 'void' ? 7 : s.v.look === 'needle' ? 4.5 : 6) * flicker * nearK;
+      const hs = s.core * (s.v.look === 'void' ? 4.5 : s.v.look === 'needle' || s.v.look === 'lance' ? 2.8 : 3.4) * flicker * nearK;
       s.halo.position.set(x, y, z);
       s.halo.scale.set(hs, hs, 1);
       if (s.light && alive(s.light)) s.light.s.light.position.set(x, y, z);
@@ -736,9 +739,9 @@ export class SpellFxEngine {
           bolt.s.bz = st.to.z;
         }
         // Channelled beams: sparks and smoke where they bite.
-        if (sp.type === 'beam' && Math.random() < 0.6) {
+        if (sp.type === 'beam') {
           budget.scale = this.lod(st.to.x, st.to.y, st.to.z);
-          if (budget.scale > 0) R.impact(this.prims, v, st.to.x, st.to.y, st.to.z, null, 0.5, 'hit', null);
+          if (budget.scale > 0) R.beamBite(v, st.to.x, st.to.y, st.to.z);
           budget.scale = 1;
         }
         void dt;
@@ -834,8 +837,9 @@ export class SpellFxEngine {
     const h = this.prims.holdZone();
     const c = R.cols(v.palette);
     const m = h.s.mat as ZoneMat;
-    (m.uniforms.uColor.value as THREE.Color).copy(v.family === 'void' || v.family === 'dark' ? c.deep : c.main);
-    (m.uniforms.uColor2.value as THREE.Color).copy(c.hotH);
+    // Rich floors (deep -> main), never white: they lie under enemies and telegraphs.
+    (m.uniforms.uColor.value as THREE.Color).copy(c.deep);
+    (m.uniforms.uColor2.value as THREE.Color).copy(v.family === 'void' || v.family === 'dark' ? c.accent : c.main);
     m.uniforms.uStyle.value = ZONE_STYLE[v.family];
     m.uniforms.uScale.value = Math.max(2, r * 0.8);
     m.uniforms.uSector.value = 0;
@@ -859,7 +863,7 @@ export class SpellFxEngine {
         }
         const age = t - t0;
         m.uniforms.uTime.value = t;
-        m.uniforms.uOpacity.value = 0.75 * Math.min(1, age * 4) * Math.min(1, (t0 + dur - t) * 2);
+        m.uniforms.uOpacity.value = (r > 6 ? 0.35 : 0.55) * Math.min(1, age * 4) * Math.min(1, (t0 + dur - t) * 2);
         const l = this.lod(p.x, p.y, p.z);
         if (l > 0) {
           budget.scale = l;
@@ -880,7 +884,7 @@ export class SpellFxEngine {
     const h = this.prims.holdDome();
     const m = h.s.mat;
     (m.uniforms.uColor.value as THREE.Color).copy(v.family === 'void' || v.family === 'dark' ? c.deep : c.main);
-    (m.uniforms.uColor2.value as THREE.Color).copy(c.hotH);
+    (m.uniforms.uColor2.value as THREE.Color).copy(v.family === 'void' || v.family === 'dark' ? c.main : c.accent);
     m.uniforms.uStyle.value = DOME_STYLE[v.family];
     const p = { x, y, z };
     const t0 = fxTime();
@@ -897,7 +901,7 @@ export class SpellFxEngine {
         m.uniforms.uReveal.value = Math.min(1, age / 0.6);
         // Readability: from inside the dome it is a faint tint, never a wall.
         const inside = Math.hypot(camPos.x - p.x, camPos.z - p.z) < r;
-        m.uniforms.uOpacity.value = (inside ? 0.4 : 0.75) * Math.min(1, age * 3) * Math.min(1, (t0 + dur - t) * 1.5);
+        m.uniforms.uOpacity.value = (inside ? 0.18 : 0.6) * Math.min(1, age * 3) * Math.min(1, (t0 + dur - t) * 1.5);
         const l = this.lod(p.x, p.y, p.z);
         if (l > 0) {
           budget.scale = l;
@@ -1022,7 +1026,7 @@ export class SpellFxEngine {
     if (!def) return;
     let e = this.statuses.get(targetId);
     if (!e) {
-      e = { id: targetId, until: new Float64Array(16) };
+      e = { id: targetId, until: new Float64Array(16), shell: null };
       this.statuses.set(targetId, e);
     }
     const t = fxTime();
@@ -1038,10 +1042,35 @@ export class SpellFxEngine {
 
   private updateStatuses(t: number, dt: number): void {
     const max = budget.profile.statusTargets;
+    const shells = budget.tier !== 'low';
     let drawn = 0;
     for (const [id, e] of this.statuses) {
       const v = this.viewById.get(id);
       let any = false;
+      // The shell: the most telling status, a soft tinted rim around the body.
+      let top: string | null = null;
+      for (const k of R.STATUS_PRIORITY) {
+        const sid = statusByKey.get(k);
+        if (sid !== undefined && e.until[sid] > t) {
+          top = k;
+          break;
+        }
+      }
+      if (shells && top && v && v.healthPct > 0 && drawn < max) {
+        if (!alive(e.shell)) e.shell = this.prims.holdShell();
+        const info = enemyInfo(v);
+        const sh = e.shell.s;
+        const col = R.statusColor(top);
+        if (col) (sh.mat.uniforms.uColor.value as THREE.Color).copy(col);
+        sh.mat.uniforms.uHex.value = top === 'freeze' || top === 'petrify' ? 1 : 0;
+        sh.mat.uniforms.uTime.value = t;
+        sh.mat.uniforms.uOpacity.value = (top === 'freeze' || top === 'petrify' ? 0.85 : 0.55) * (0.8 + 0.2 * Math.sin(t * 6 + id));
+        sh.mesh.position.set(v.x, v.y + info.height, v.z);
+        sh.mesh.scale.set(info.radius * 1.5 + 0.1, info.height * 1.15 + 0.1, info.radius * 1.5 + 0.1);
+      } else if (e.shell) {
+        this.prims.release(e.shell);
+        e.shell = null;
+      }
       for (let s = 1; s < e.until.length; s++) {
         if (e.until[s] <= t) continue;
         any = true;
@@ -1056,7 +1085,10 @@ export class SpellFxEngine {
         budget.scale = 1;
       }
       if (v) drawn++;
-      if (!any) this.statuses.delete(id);
+      if (!any) {
+        this.prims.release(e.shell);
+        this.statuses.delete(id);
+      }
     }
   }
 
@@ -1255,7 +1287,7 @@ export class SpellFxEngine {
       (u.uResolution.value as THREE.Vector2).set(viewport.width * viewport.dpr, h);
       pool.flush();
     }
-    glowPool.material.uniforms.uHdr.value = 1 + (budget.profile.hdr - 1) * 0.35;
+    glowPool.material.uniforms.uHdr.value = 1 + (budget.profile.hdr - 1) * 0.2;
     this.prims.ribbons.material.uniforms.uHdr.value = budget.profile.hdr;
     screenTick(t, dt);
   }
@@ -1291,6 +1323,8 @@ export class SpellFxEngine {
     this.statuses.clear();
     this.beams.clear();
     this.prims.clear();
+    glowPool.clear();
+    smokePool.clear();
     screenTint(null);
   }
 }

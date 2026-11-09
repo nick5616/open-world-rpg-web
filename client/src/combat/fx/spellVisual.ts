@@ -23,7 +23,7 @@ export interface Palette {
 export type Family = 'fire' | 'ice' | 'lightning' | 'nature' | 'stone' | 'crystal' | 'wind' | 'light' | 'dark' | 'blood' | 'void' | 'steel';
 
 export const PALETTES: Record<Family | 'blackflame', Palette> = {
-  fire: { hot: '#fff1c4', main: '#ff8a2a', deep: '#ff3a0a', accent: '#ffd36b', smoke: '#2b1d16' },
+  fire: { hot: '#fff1c4', main: '#ff8a2a', deep: '#ff3a0a', accent: '#ffd36b', smoke: '#4a3c34' },
   ice: { hot: '#ffffff', main: '#a8e4ff', deep: '#3fa8ff', accent: '#e9fbff', smoke: '#cfeeff' },
   lightning: { hot: '#ffffff', main: '#fff3a0', deep: '#ffd23a', accent: '#cfe8ff', smoke: '#2a2a3a' },
   nature: { hot: '#f2ffc8', main: '#9be35f', deep: '#3f8f26', accent: '#ffe27a', smoke: '#2c2414' },
@@ -151,6 +151,7 @@ export const spellByKey = new Map(COMBAT.spells.map((s) => [s.key, s]));
 export const spellById = new Map(COMBAT.spells.map((s) => [s.id, s]));
 export const formById = new Map(COMBAT.forms.map((f) => [f.id, f]));
 export const statusById = new Map(COMBAT.statuses.map((s) => [s.id, s]));
+export const statusByKey = new Map(COMBAT.statuses.map((s) => [s.key, s.id]));
 export const enemyAttackById = new Map(COMBAT.enemyAttacks.map((a) => [a.id, a]));
 
 /** A mobility spell from its dash id (Event 214 sends dash variants as id | 0x8000). */

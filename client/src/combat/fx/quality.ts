@@ -55,9 +55,9 @@ export interface FxProfile {
 
 export const FX_PROFILES: Record<FxTier, FxProfile> = {
   low: { density: 0.35, frameBudget: 600, hdr: 1, shake: 0, flash: 0, distortion: 0, spikes: 60, boltSegments: 400, smoke: 0.4, statusTargets: 6, decalGrid: 8 },
-  medium: { density: 0.65, frameBudget: 1400, hdr: 1.6, shake: 0.5, flash: 0.5, distortion: 0.5, spikes: 140, boltSegments: 900, smoke: 0.7, statusTargets: 12, decalGrid: 14 },
-  high: { density: 1, frameBudget: 2600, hdr: 2.2, shake: 1, flash: 0.8, distortion: 1, spikes: 220, boltSegments: 1600, smoke: 1, statusTargets: 20, decalGrid: 20 },
-  ultra: { density: 1.5, frameBudget: 4000, hdr: 2.8, shake: 1, flash: 1, distortion: 1.3, spikes: 220, boltSegments: 2000, smoke: 1, statusTargets: 32, decalGrid: 24 },
+  medium: { density: 0.65, frameBudget: 1400, hdr: 1.4, shake: 0.5, flash: 0.5, distortion: 0.5, spikes: 140, boltSegments: 900, smoke: 0.7, statusTargets: 12, decalGrid: 14 },
+  high: { density: 1, frameBudget: 2600, hdr: 1.8, shake: 1, flash: 0.8, distortion: 1, spikes: 220, boltSegments: 1600, smoke: 1, statusTargets: 20, decalGrid: 20 },
+  ultra: { density: 1.5, frameBudget: 4000, hdr: 2.2, shake: 1, flash: 1, distortion: 1.3, spikes: 220, boltSegments: 2000, smoke: 1, statusTargets: 32, decalGrid: 24 },
 };
 
 /** Pooled point lights per shader tier (fixed for the session, see header). */

@@ -132,7 +132,7 @@ void main() {
   a *= vAlpha;
   if (a < 0.003) discard;
   vec3 col = vColor;
-  if (uAdditive > 0.5) col = mix(col, vec3(1.0), vHot * 0.5) * (1.0 + vHot * 1.4) * uHdr;
+  if (uAdditive > 0.5) col = mix(col, vec3(1.0), vHot * 0.35) * (1.0 + vHot * 0.8) * uHdr;
   gl_FragColor = vec4(col, a);
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
@@ -245,6 +245,13 @@ export class ParticlePool {
     this.dirtyFrom = Infinity;
     this.dirtyTo = -1;
     this.wrapped = false;
+  }
+
+  /** Kills every particle (scene changes, the gallery between shots). */
+  clear(): void {
+    for (let i = 0; i < this.capacity; i++) this.time[i * 2] = -1e6;
+    this.dirtyFrom = 0;
+    this.dirtyTo = this.capacity - 1;
   }
 
   /** Live particles (tests, debug): slots whose spawn + life is after `t`. */
