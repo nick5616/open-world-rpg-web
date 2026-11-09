@@ -153,7 +153,6 @@ export function NetPlay({ ready }: { ready: ReadySession }) {
     // WP11 proximity voice rides on the social session (voice_token).
     startVoice({
       requestToken: () => requestVoiceToken(),
-      listenOnly: () => useSocialStore.getState().me?.isLocalProfile ?? ready.isLocalProfile,
       partyIds: () => (useSocialStore.getState().party?.members ?? []).map((m) => m.characterId),
       ground, // occlusion samples the same terrain the player walks on
       rawMic: new URLSearchParams(location.search).has('voiceRawMic'),

@@ -133,7 +133,7 @@ func freePort(t *testing.T) int {
 	return l.Addr().(*net.TCPAddr).Port
 }
 
-func startSocial(t *testing.T, bin, pgURL, apiURL string) string {
+func startSocial(t *testing.T, bin, pgURL, apiURL string, extraEnv ...string) string {
 	t.Helper()
 	port := freePort(t)
 	logf, err := os.Create(filepath.Join(t.TempDir(), fmt.Sprintf("social-%d.log", port)))
@@ -149,6 +149,7 @@ func startSocial(t *testing.T, bin, pgURL, apiURL string) string {
 		"LODESTONE_LIVEKIT_KEY=devkey",
 		"LODESTONE_LIVEKIT_SECRET=secret",
 	)
+	cmd.Env = append(cmd.Env, extraEnv...)
 	cmd.Stdout, cmd.Stderr = logf, logf
 	if err := cmd.Start(); err != nil {
 		t.Fatal(err)
@@ -189,7 +190,9 @@ func TestVoiceAcrossProcesses(t *testing.T) {
 	lk := &fakeLiveKit{}
 	api := httptest.NewServer(lk)
 	defer api.Close()
-	urls := []string{startSocial(t, bin, pgURL, api.URL), startSocial(t, bin, pgURL, api.URL)}
+	// The second process keeps WP11's listen-only rule for local profiles
+	// (the kill switch); the first runs the playtest 2 default (they talk).
+	urls := []string{startSocial(t, bin, pgURL, api.URL), startSocial(t, bin, pgURL, api.URL, "LODESTONE_VOICE_LOCAL_LISTEN_ONLY=1")}
 
 	world := accountapi.NewUUID()
 	alice, bob, lina := accountapi.NewUUID(), accountapi.NewUUID(), accountapi.NewUUID()
@@ -238,7 +241,14 @@ func TestVoiceAcrossProcesses(t *testing.T) {
 		t.Fatalf("account token claims %+v", ca)
 	}
 	if cl["sub"] != lina || vl["canPublish"] != false || vl["canSubscribe"] != true {
-		t.Fatalf("local profile must get a listen-only token: %+v", cl)
+		t.Fatalf("with LODESTONE_VOICE_LOCAL_LISTEN_ONLY=1 a local profile must get a listen-only token: %+v", cl)
+	}
+	// Playtest 2 default: a local profile may talk (microphone only).
+	lp := accountapi.NewUUID()
+	t.Cleanup(func() { rdb.Del(context.Background(), "presence:"+lp, "charname:"+lp) })
+	cp := tokenFor(urls[0], ticket.Claims{ProfileID: accountapi.NewUUID(), CharacterID: lp, CharacterName: "Pia", WorldID: world, Audience: ticket.AudienceSocial, IsLocalProfile: true})
+	if vp := cp["video"].(map[string]any); cp["sub"] != lp || vp["canPublish"] != true || fmt.Sprint(vp["canPublishSources"]) != "[microphone]" {
+		t.Fatalf("a local profile must be able to talk by default: %+v", cp)
 	}
 
 	lk.setParticipants([3]string{alice, "PA_a", "TR_a"}, [3]string{bob, "PA_b", "TR_b"}, [3]string{lina, "PA_l", ""})

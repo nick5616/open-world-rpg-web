@@ -11,7 +11,8 @@ import type { Event as ZoneEvent } from '@lodestone/contracts';
 import { netRuntime } from '../../net/netStore';
 import type { ZoneSession } from '../../net/zoneSession';
 import { CRAFT_ACT, INTERACT, ITEM_ACT } from './events';
-import { socketTarget } from './items';
+import { socketTarget, trainingEquipArg } from './items';
+import { ACT, INTERACT_COMBAT } from '../../combat/events';
 import { applyItemEvent, resetInventory, setInventoryActions, type InventoryActions } from './store';
 
 const listener = (e: ZoneEvent) => applyItemEvent(e);
@@ -25,6 +26,10 @@ export function inventoryActionsFor(session: ZoneSession): InventoryActions {
     openContainer: (id) => session.sendInteract(INTERACT.container, id, 1, 0),
     takePickup: (id) => session.sendInteract(INTERACT.pickup, BigInt(id >>> 0), 1, 0),
     openCook: (prop) => session.sendInteract(INTERACT.craft, prop, CRAFT_ACT.openCook, 0),
+    trainingWeapon: (loadout, weapon) => {
+      const arg = trainingEquipArg(loadout, weapon);
+      if (arg) session.sendInteract(INTERACT_COMBAT, 0n, ACT.equipWeapon, arg);
+    },
   };
 }
 

@@ -72,6 +72,7 @@ func run(s *svc.Server) error {
 	}
 	if vs != nil {
 		hub.SetVoice(vs)
+		hub.SetVoiceLocalListenOnly(env.Bool("LODESTONE_VOICE_LOCAL_LISTEN_ONLY", false)) // playtest 2 (voicecfg.go)
 		vs.Start()
 		s.Mux.Handle("GET /debug/voice", vs.DebugHandler())
 	}

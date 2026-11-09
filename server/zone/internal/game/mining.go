@@ -271,8 +271,26 @@ func (s *Server) DamageVein(player *Entity, veinID uint64, amount float64, src D
 	}
 }
 
-func (s *Server) respawnDelay(veinID uint64, editID int64) time.Duration {
+// Sunsteel (playtest 2): the official world has six sunsteel veins, one per
+// cave, each at the bottom of a sunlit shaft, and the starter quest sends
+// every new character to the nearest one for a blade's worth of ore (2
+// ingots = 4 ore). So a sunsteel vein always yields at least that, and
+// grows back within the hour instead of 6-24 h: whoever mined it first must
+// not lock everyone else out of the starter quest for a day.
+const (
+	sunsteelMinOre     = 4
+	sunsteelRespawnMin = 20 * time.Minute
+	sunsteelRespawnMax = 40 * time.Minute
+)
+
+func isSunsteel(v caves.Vein) bool { return v.Kind == caves.KindOre && v.MaterialName() == "sunsteel" }
+
+func (s *Server) respawnDelay(v caves.Vein, editID int64) time.Duration {
+	veinID := v.ID
 	lo, hi := s.cfg.VeinRespawnMin, s.cfg.VeinRespawnMax
+	if isSunsteel(v) {
+		lo, hi = min(lo, sunsteelRespawnMin), min(hi, sunsteelRespawnMax)
+	}
 	if hi < lo {
 		hi = lo
 	}
@@ -284,7 +302,7 @@ func (s *Server) breakVein(cw caveWorld, v caves.Vein, st *veinState, breaker *E
 	st.mined = true
 	st.minedAt = now
 	st.editID = int64(mix64(v.ID^uint64(now.UnixNano())) >> 1)
-	st.respawnAt = now.Add(s.respawnDelay(v.ID, st.editID))
+	st.respawnAt = now.Add(s.respawnDelay(v, st.editID))
 	s.mine.mined++
 	s.m.veinsMined.Add(1)
 
@@ -379,6 +397,9 @@ func rollDrop(v caves.Vein, seed uint64) (string, int) {
 	qty := 1 + int(v.Size)/3
 	if u2 < 0.35 {
 		qty++
+	}
+	if isSunsteel(v) {
+		qty = max(qty, sunsteelMinOre) // a blade's worth (see sunsteelMinOre)
 	}
 	return "ore:" + v.MaterialName(), qty
 }

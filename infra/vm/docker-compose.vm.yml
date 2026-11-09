@@ -116,6 +116,9 @@ services:
       LODESTONE_PG_URL: postgres://lodestone:${POSTGRES_PASSWORD}@postgres:5432/lodestone?sslmode=disable
       LODESTONE_REDIS_ADDR: redis:6379
       LODESTONE_LIVEKIT_URL: ${LODESTONE_PUBLIC_WS_SCHEME:-wss}://${LODESTONE_GAME_HOST}${LODESTONE_PUBLIC_HTTP_PORT_SUFFIX:-}/livekit
+      # Server API inside the compose network (not via the public IP and
+      # Caddy, which fails while Caddy is still starting).
+      LODESTONE_LIVEKIT_API_URL: http://livekit:7880
     ports:
       - "${LODESTONE_SOCIAL_HTTP_PUBLISH:-8093}:8093/tcp"
     depends_on:

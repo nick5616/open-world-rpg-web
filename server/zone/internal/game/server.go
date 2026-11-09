@@ -69,9 +69,14 @@ type Config struct {
 	EditStore                      EditStore // nil: edits live in memory only
 	Granter                        Granter   // nil: grants are logged and evented only
 	Earshot                        Earshot   // WP11 proximity voice (earshot.go); nil: none
-	Queue                          *writebehind.Queue
-	Metrics                        *svc.Metrics
-	Log                            *slog.Logger
+	// VoiceLocalListenOnly: local profiles' speaking bit is never shown
+	// (WP11's listen-only rule, LODESTONE_VOICE_LOCAL_LISTEN_ONLY=1, as on
+	// the social service). Off by default since playtest 2: local profiles
+	// may talk.
+	VoiceLocalListenOnly bool
+	Queue                *writebehind.Queue
+	Metrics              *svc.Metrics
+	Log                  *slog.Logger
 	// WP12 exploration (explore.go, party.go): the world's sites and towers
 	// (nil: no exploration, e.g. flat ground), the social service's parties
 	// (nil: no party ring) and the local-profile save store (nil: blobs in
@@ -265,6 +270,7 @@ func (s *Server) Stop(ctx context.Context) {
 			}
 			break
 		}
+		s.finalLocalSaves(ctx) // playtest 2: local profiles keep where they stood (explore.go)
 		for _, sess := range slices.Clone(s.sessions) {
 			s.kick(sess, proto.KickCodeShutdown, "zone shutting down")
 			s.leave(sess)
@@ -340,8 +346,9 @@ func (s *Server) onTick() {
 	s.phases.mark(phCombat)
 	s.townsTick(tick, s.cfg.Now()) // WP20: townsfolk near players (towns.go)
 	s.phases.mark(phTowns)
-	s.nightTick(tick)  // WP15: clock, demons, defense events, chemistry (night.go)
-	s.questsTick(tick) // quests: flagged rechecks, 2 Hz reach/clear checks (quests.go)
+	s.nightTick(tick)       // WP15: clock, demons, defense events, chemistry (night.go)
+	s.questsTick(tick)      // quests: flagged rechecks, 2 Hz reach/clear checks (quests.go)
+	s.friendTravelTick(now) // playtest 2: travel-to-friend channels (friendtravel.go)
 	s.phases.mark(phNight)
 
 	// Quantize once per entity and rebuild the grid; every client's snapshot
@@ -414,7 +421,7 @@ func (s *Server) join(sess *session) {
 		Level:       1,
 		Health:      100,
 		HealthMax:   100,
-		ListenOnly:  sess.claims.IsLocalProfile, // WP11: local profiles hear voice but never transmit (spec 11)
+		ListenOnly:  sess.claims.IsLocalProfile && s.cfg.VoiceLocalListenOnly, // WP11 rule, off since playtest 2 (Config)
 	}
 	e.Move = movement.NewState(spawn) // WP10: full stamina wheel, ground mode
 	if g := movement.GroundAt(s.cfg.Ground, spawn.X, spawn.Y, spawn.Z); e.Move.Pos.Y < g {

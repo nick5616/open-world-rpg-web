@@ -36,12 +36,14 @@ type Place struct {
 type WardPlaces struct {
 	Settlement int
 	Town       string
-	Smith      string // the blacksmith's name
-	SmithAt    Place  // the blacksmith's work spot (the forge)
-	Forge      Place  // the forge prop
-	Ore        Place  // sunlit sunsteel veins (area)
-	Mouth      Place  // the cave mouth that leads to them
-	Shrine     Place  // where the Light tome rests
+	Smith      string  // the blacksmith's name
+	SmithAt    Place   // the blacksmith's work spot (the forge)
+	Forge      Place   // the forge prop
+	Ore        Place   // sunlit sunsteel veins (area)
+	Mouth      Place   // the cave mouth that leads to them
+	Shaft      Place   // the sunlit shaft above them (glide down it), if any
+	OreDepth   float64 // how far below the surface the veins are (m), 0 unknown
+	Shrine     Place   // where the Light tome rests
 }
 
 // Ward builds the starter quest line: learn from the blacksmith where
@@ -60,18 +62,35 @@ func Ward(p WardPlaces, nowMs int64) *Quest {
 	if p.Forge.OK {
 		forgeMarker = []Marker{{X: p.Forge.X, Z: p.Forge.Z, Label: "Forge, " + p.Town}}
 	}
-	oreNote := "Sunsteel only forms where daylight reaches into a cave. Look near cave mouths and sunlit chambers."
+	// Playtest 2: say where the pickaxe is (every character carries one,
+	// items.yaml starter) and that the seam is deep, at the bottom of the
+	// sunlit shaft, not on the surface under the marker.
+	const pick = "Take the pickaxe from your pack: aim at the bright vein and press E until it breaks, then pick up the ore."
+	oreNote := "Sunsteel only forms where daylight reaches into a cave: look at the bottom of sunlit shafts. " + pick
 	var oreMarkers []Marker
 	if p.Ore.OK {
-		oreNote = fmt.Sprintf("Sunsteel glints where daylight reaches into %s, %s. Mine the bright veins with your pickaxe (E).", nameOr(p.Ore.Name, "the cave"), p.Ore.Where)
-		oreMarkers = append(oreMarkers, Marker{X: p.Ore.X, Z: p.Ore.Z, R: math.Max(p.Ore.R, 20), Label: "Sunsteel ore"})
+		deep := "where daylight reaches into it"
+		if p.OreDepth >= 20 {
+			deep = fmt.Sprintf("about %.0f m down, at the bottom of a sunlit shaft", math.Round(p.OreDepth/10)*10)
+		}
+		route := "Walk in from the cave mouth and follow the tunnels down."
+		if p.Shaft.OK {
+			route = "Walk in from the cave mouth and follow the tunnels down, or jump down the shaft (G opens your glider)."
+		}
+		oreNote = fmt.Sprintf("Sunsteel glints in %s (%s), %s. %s %s One vein gives enough ore for a blade.", nameOr(p.Ore.Name, "the cave"), p.Ore.Where, deep, route, pick)
+		oreMarkers = append(oreMarkers, Marker{X: p.Ore.X, Z: p.Ore.Z, R: math.Max(p.Ore.R, 20), Label: "Sunsteel ore (deep below)"})
 	}
 	if p.Mouth.OK {
 		oreMarkers = append(oreMarkers, Marker{X: p.Mouth.X, Z: p.Mouth.Z, Label: nameOr(p.Mouth.Name, "Cave mouth")})
 	}
-	oreSay := "Steel won't kill what walks at night: demons close their wounds and laugh. Only sunsteel bites them, or Light magic, or the sunrise. Sunsteel ore grows where daylight reaches into the caves. Bring back four ore, buy my blueprint, and we'll forge you a blade. Here, take a little coin for it."
+	if p.Shaft.OK {
+		oreMarkers = append(oreMarkers, Marker{X: p.Shaft.X, Z: p.Shaft.Z, Label: nameOr(p.Shaft.Name, "Sunlit shaft")})
+	}
+	const sayHead = "Steel won't kill what walks at night: demons close their wounds and laugh. Only sunsteel bites them, or Light magic, or the sunrise. "
+	const sayTail = " Bring back four ore, buy my blueprint, and we'll forge you a blade. You've a pickaxe in your pack; here, take a little coin too."
+	oreSay := sayHead + "Sunsteel ore grows where daylight reaches into the caves." + sayTail
 	if p.Ore.OK {
-		oreSay = fmt.Sprintf("Steel won't kill what walks at night: demons close their wounds and laugh. Only sunsteel bites them, or Light magic, or the sunrise. There's a sunlit seam in %s, %s. Bring back four ore, buy my blueprint, and we'll forge you a blade. Here, take a little coin for it.", nameOr(p.Ore.Name, "the cave"), p.Ore.Where)
+		oreSay = sayHead + fmt.Sprintf("There's a sunlit seam deep in %s, %s, at the bottom of the shaft the daylight falls through.", nameOr(p.Ore.Name, "the cave"), p.Ore.Where) + sayTail
 	}
 
 	steps := []Step{
@@ -84,7 +103,7 @@ func Ward(p WardPlaces, nowMs int64) *Quest {
 			Grant:   []ItemQty{{Item: "currency:gold", Qty: WardSmithCoin}},
 		},
 		{
-			Text:    "Mine 4 sunsteel ore",
+			Text:    "Mine 4 sunsteel ore with your pickaxe",
 			Note:    oreNote,
 			Obj:     Objective{Kind: ObjHave, Items: []ItemQty{{"ore:sunsteel", 4}, {"ingot:sunsteel", 2}, {"weapon:sunsteel_blade", 1}}, Settlement: -1, Site: -1},
 			Markers: oreMarkers,

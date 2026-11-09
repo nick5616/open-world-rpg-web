@@ -24,7 +24,7 @@ type Entity struct {
 	PartyID     uint32        // 0 = none; WP12 sets it from the social service's party (party.go)
 	TypeID      uint16        // enemy type, npc role | variant << 8 (WP20), ...: EntityRecord.typeId
 	x           *exploreState // WP12 exploration progress (explore.go), shared with the session
-	ListenOnly  bool          // WP11: local profile, its speaking bit is never shown
+	ListenOnly  bool          // WP11: listen-only (Config.VoiceLocalListenOnly), its speaking bit is never shown
 	remote      *remoteInfo   // WP16: mirrored from another zone (ghosts.go); never in Server.ents
 	epoch       int64         // WP16: checkpoint fence (persist.go), 0 = unfenced
 

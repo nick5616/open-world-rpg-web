@@ -135,6 +135,12 @@ type Player struct {
 	inCombatTick uint32
 }
 
+// InCombatWithin reports whether the player hurt something or was hurt in
+// the last seconds (at combat tick now). Playtest 2's friend travel uses it.
+func (p *Player) InCombatWithin(now uint32, seconds float64) bool {
+	return p.inCombatTick != 0 && now-p.inCombatTick < secondsToTicks(seconds)
+}
+
 // NewPlayer builds the runtime state for a joining character.
 func NewPlayer(id uint32, name string, prof *Profile, level int) *Player {
 	p := &Player{ID: id, Name: name, Profile: prof, readyAt: map[int]uint32{}, Charges: D.Start.Consumable.Charges}
