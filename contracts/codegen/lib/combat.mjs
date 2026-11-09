@@ -318,7 +318,7 @@ export interface MoveDef {
 export interface ArrowDef { key: string; mult: number; demonStagger: boolean; killsDemons: boolean }
 export interface WeaponDef { key: string; id: number; skill: string; spellPower: number; manaRegen: number; cooldownMult: number; moves: string[]; parryMs?: number; parrySteps?: number; arrows?: ArrowDef[] }
 export interface FormDef { key: string; id: number; element: ElementIndex; name: string; pending: boolean; shape: string; radius: number; reach: number; arc: number; width: number; chain: number; lifesteal: number; demonMult: number; killsDemons: boolean; dash: number; selfCast: boolean; damage: number; status?: string; cooldownMs: number; cooldownSteps: number; stamina: number }
-export interface MaterialDef { key: string; id: number; mult: number; demonStagger: boolean; killsDemons: boolean }
+export interface WeaponMaterialDef { key: string; id: number; mult: number; demonStagger: boolean; killsDemons: boolean }
 export interface DashDef { key: string; id: number; speed: number; steps: number; iframes: number; lift: number }
 export interface SpellDef {
   key: string; id: number; name: string; pending: boolean; tree: string; tier: number; type: string; element: ElementIndex;
@@ -342,7 +342,7 @@ export interface CombatDefs {
   version: number; stepHz: number; elements: string[];
   effectiveness: { strong: number; resist: number; voidAll: number; pairs: Record<string, number[]> };
   statuses: StatusDef[]; skills: { xpBase: number; xpExp: number; list: SkillDef[] };
-  weapons: WeaponDef[]; moves: MoveDef[]; forms: FormDef[]; materials: MaterialDef[]; dashes: DashDef[];
+  weapons: WeaponDef[]; moves: MoveDef[]; forms: FormDef[]; materials: WeaponMaterialDef[]; dashes: DashDef[];
   mana: { base: number; perLevel: number; regenPerS: number; regenPerLevel: number; byTier: number[] };
   spells: SpellDef[]; trees: TreeDef[];
   start: { spells: string[]; loadouts: { weapon: string; spells: (string | null)[] }[]; consumable: { charges: number; heal: number } };

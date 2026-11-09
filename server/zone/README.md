@@ -483,6 +483,47 @@ caves are unchanged) and fills `Config.Towns` (`internal/npc`). Game glue:
   evidence `docs/evidence/wp20-walk-into-building.txt`: 0 corrections).
 
 
+## Items and loot (WP14)
+
+Decision 0014, CR 010, wire in `contracts/events.md` (Events 400-411,
+Interact 20-22 and 41), item table `contracts/items.yaml`. Code:
+`internal/items` (pure: rolls, loot tables, inventory, gear),
+`internal/game/items.go` (inventory per session, gear into combat,
+consumables, stations, purchases, Bitchin'), `loot.go` (kill/boss/
+container/vein loot, pickups, TransferItem), `items_journal.go` (the
+ordered item transaction queue), `items_store.go` (Postgres),
+`items_handoff.go` (WP16), `items.go` in this directory (wiring, debug).
+
+- **Inventory** in zone memory, loaded at connect (Postgres for accounts,
+  the signed blob for local profiles, memory only without a row); 40 slots,
+  gem pouch, ore pouch, purse (`currency:gold`), equipment (two loadout
+  weapons, head, body, legs). Sent whole as Event 400 (JSON) on every change.
+- **Persistence**: every change is one transaction on the item journal, in
+  order, retried until it commits; rolls and takes carry a `loot_grants`
+  marker (exactly once, spec 11); ops are fenced by the WP16 ownership epoch.
+  Shutdown flushes the journal after the write-behind queue.
+- **Loot**: combat's `OnKill` → personal owner-only pickups per eligible
+  player (logged seed), boss weekly lockout; containers (worldgen chunk
+  records, listed by Event 406 within 96 m) open once per character into the
+  bag; vein drops (WP09) are granted through the same path.
+- **Drops**: Interact 21/2 → TransferItem → a public pickup for 10 minutes
+  (`LODESTONE_ZONE_DROP_DESPAWN`), a world row in Postgres restored after a
+  restart; Interact 41 takes it; local-profile drops are unverified.
+- **Stations**: forge/anvil (WP20 `Config.Stations`; 805 still opens the
+  UI), hearth/campfire (Interact 22/2, Event 404); craft with Interact 22/1.
+  Unsocketing keeps the gem within 8 m of a town forge/anvil; gems combine
+  within 8 m of a waypoint.
+- **Env**: `LODESTONE_ZONE_DROP_DESPAWN` (default 10m),
+  `LODESTONE_ZONE_TEST_ITEM_TX_DELAY_MS` / `_COMMIT_DELAY_MS` (kill-mid-grant
+  test hooks only).
+- **Debug**: `GET /debug/items?char=<id>`, `GET /debug/containers?x=&z=&r=`.
+- **Tests**: `go test ./internal/items/`, `./internal/game/ -run "Item|Drop|Loot|Smelt|Buy"`
+  (in process, incl. the real 10-minute despawn on the zone clock and the
+  handoff), `TestItemOpExactlyOnceAndFence` (Postgres), and the process
+  tests here: `TestZoneProcessKillMidGrantNeverDuplicates`,
+  `TestZoneProcessDropPickupDespawn`, `TestG4LoopForgeSunsteelBlade`
+  (`bash testdata_evidence_wp14.sh` writes their logs to `docs/evidence/wp14-*`).
+
 ## Night, demons and chemistry (WP15)
 
 Decision `docs/decisions/0015-night-chemistry.md`, contract

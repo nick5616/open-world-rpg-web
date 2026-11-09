@@ -47,6 +47,19 @@ for your package; document each kind's use of `entityId`, `targetId`, `value`,
 | 221 | `respawned` | WP13. To you: back on your feet at full health (`value` = health max) |
 | 222 | `strike_hit` | WP13. Within 64 m except the victim: an enemy strike landed on a player (hit flash): `entityId` = player, `targetId` = enemy, `value` = damage |
 
+| 400 | `inventory` | WP14. To you, after join and after every change: your whole inventory. `entityId` = you, `value` = gold, `data` = UTF-8 JSON `{"v":1,"gold":n,"quick":"<consumable key the drink key uses>","persist":"db"\|"local"\|"memory","items":[{h, b, q, l, r, s, n?, a?, u?, k?, t, v, p}]}`: `h` wire handle (u32, the Interact 21 targetId), `b` item key (contracts/items.yaml), `q` quantity, `l` item level, `r` rarity 0-7, `s` slot (`inv:0-39`, `gem:N`, `ore:N`, `purse`, `eq:main0` / `eq:main1` (loadout weapons), `eq:head` / `eq:body` / `eq:legs`), `n` generated name (mythic+), `a` affixes `[{k, s, v}]` (key, stat, value), `u` unique keys, `k` sockets (gem key or "" per socket), `t` tradeable, `v` verified, `p` provenance entries (hands it passed through) |
+| 401 | `loot_granted` | WP14. To you: items just added to your inventory. `targetId` = source (1 kill, 2 container, 3 vein, 4 craft, 5 purchase, 6 starter, 7 a dropped item you took, 8 gem), `value` = entries, `data` = JSON `[{b, q, r, n?}]` |
+| 402 | `bitchin` | WP14. To everyone in the zone (and the world's global chat through the social bus): a Bitchin' item was found (spec 8). `entityId` = finder, `data` = JSON `{name, item, displayName, text}` |
+| 403 | `item_refused` | WP14. To you: `targetId` = Interact kind << 8 \| action, `value` = reason: 1 inventory full, 2 no such item, 3 not allowed, 4 missing ingredients, 5 blueprint required, 6 not enough gold, 7 too far, 8 already opened (this character), 9 no such socket, 10 not at a waypoint, 11 busy, 12 no station open here |
+| 404 | `station` | WP14. To you: a cooking station is open (inn hearth or campfire; forges and anvils open with WP20's 805): `targetId` = 3, `value` = your Smithing level, `data` = u64 prop stable id LE |
+| 405 | `crafted` | WP14. To you: `targetId` = recipe id (items.yaml order, 1-based), `value` = quantity, `data` = JSON of the new item (Event 400 item shape) |
+| 406 | `containers` | WP14. To you, when you enter a new chunk and after opening one: loot containers within 96 m. `value` = count, `data` = `u8 version(1) \| u16 n \| n x (u64 container id LE, i32 x, i32 y, i32 z (cm), u8 kind (0 chest, 1 buried cache, 2 urn, 3 crate), u8 opened (1 = this character already opened it))` |
+| 407 | `container_opened` | WP14. To you: `value` = items rolled, `data` = u64 container id LE (contents arrive as 401 + 400) |
+| 408 | `dropped` | WP14. To you: you dropped an item: `entityId` = the public pickup entity (0 while a local profile's drop waits for its save), `targetId` = you, `value` = quantity, `data` = item key |
+| 409 | `boss_lockout` | WP14. To you: this boss already gave you loot this week (spec 8 weekly lockout): `value` = ISO week, `data` = boss name |
+| 410 | `gem_combined` | WP14. To you: three gems combined at a waypoint: `value` = 1, `data` = the new gem key |
+| 411 | `item_taken` | WP14. To you: you took a dropped item: `targetId` = the pickup entity, `value` = quantity, `data` = item key |
+
 | 500 | `world_clock` | WP15. To you after join and whenever it changes: `entityId` = you, `targetId` = tonight's night index (u32), `value` = its moon phase (0 new .. 4 full .. 7), `data` = `u8 version(1) \| f64 clock offset s \| u8 moon offset \| u16 WorldSpec windDirection \| u8 chemistry sync path (1 events, 2 bitmap) \| f32 demonIntensity \| u8 rain override (0 seeded, 1 rain, 2 dry)`. World time = server time (s) + offset; the client derives day, night, moon, rain and the chemistry wind from it and the seed (client/src/systems/clock.ts = server/pkg/weather) |
 | 501 | `dusk` | WP15. To everyone: night fell. `targetId` = night index, `value` = moon phase, `data` = notice text |
 | 502 | `dawn` | WP15. To everyone: sunrise. `value` = demons burned, `targetId` = demons that fled, `data` = notice text |
@@ -80,9 +93,9 @@ for your package; document each kind's use of `entityId`, `targetId`, `value`,
 | 802 | `bounties` | WP20. A settlement's bounty board (read the board, or talk to the bounty keeper): `entityId` = keeper entity (0 when read from the board), `targetId` = settlement index (towns buffer), `data` = `u8 version(1) \| u8 count \| count x (u32 bounty id, u8 kind (0 clear a camp/structure, 1 deliver items, 2 slay a demon, 3 explore a structure), u16 target atlas site index (0xFFFF none), u16 quantity, u32 reward, u8 accepted (1 = you have it), u16 len + UTF-8 text)`. Bounties are seeded per settlement per in-game day |
 | 803 | `bounty_accepted` | WP20. `targetId` = bounty id, `value` = reward, `data` = UTF-8 text. Completion is WP13/WP14/WP15's (kills, items, demons) through the zone `Bounties` hook |
 | 804 | `rested` | WP20. You rested at an inn: `entityId` = you, `value` = health restored |
-| 805 | `station_opened` | WP20 (forge interaction point for WP14). You used a forge or anvil: `entityId` = you, `targetId` = station kind (1 forge, 2 anvil), `data` = u64 prop stable id LE + u16 settlement index. WP14 replaces the default handler (`game.Config.Stations`) with smelting/forging/socketing |
+| 805 | `station_opened` | WP20 (forge interaction point for WP14). You used a forge or anvil: `entityId` = you, `targetId` = station kind (1 forge, 2 anvil), `data` = u64 prop stable id LE + u16 settlement index. WP14's `Config.Stations` records the open station and lets this event through: the client opens the smithing panel (smelting, forging; Interact 22) on it |
 | 806 | `town_refused` | WP20. `value` = reason: 1 too far, 2 unknown target, 3 closed for the night, 4 no such item or bounty, 5 already accepted, 6 too many bounties (max 5), 7 nothing to rest for, 8 no cave below; `data` = u64 target id LE |
-| 807 | `purchase` | WP20. `value` = price, `targetId` = quantity, `data` = item id (granted through `Config.Granter`; no currency until WP14, so the price is informational) |
+| 807 | `purchase` | WP20. `value` = price, `targetId` = quantity, `data` = item id. Since WP14 the price is paid in gold (`currency:gold`, CR 010) and the item lands in the inventory (401 + 400); not enough gold or no room refuses with 403 instead (zones configured with an external `Config.Granter` keep the WP20 behaviour) |
 | 701 | `vein_hit` | WP09. To the miner: `entityId` = miner, `value` = vein hit points left, `x/y/z` = vein (cm), `data` = u64 vein id LE + u16 max hit points |
 | 702 | `vein_break` | WP09. To each player who helped break it: `entityId` = player, `targetId` = their pickup's entity id, `value` = seconds until respawn, `data` = u64 vein id |
 | 703 | `drop_spawned` | WP09. To the owner: `entityId` = pickup entity, `targetId` = owner, `value` = quantity, `data` = item id (UTF-8, `ore:<name>` / `gem:<name>:<cut>` until WP14 defines items) |
@@ -110,15 +123,18 @@ to a thing" verb. `targetKind` is a registry like Event kinds; `action` and
 | 1-9 | reserved (core) | | | |
 | 10 `site` | WP12 | atlas site index | 1 = fast travel (to an unlocked tower or activated waypoint) | 0 |
 | 11 `pin` | WP12 | `x cm \| z cm << 32` (both u32, inside the world) | 1 = set personal pin, 2 = clear personal pin, 3 = set your party pin, 4 = clear your party pin | set: `slot (0-9) \| colour << 8`; clear: slot; party set: colour |
-| 20-29 | suggested: WP14 loot (chests, pickups) | | | |
+| 20 `container` | WP14 | container stable id (worldgen chunk container record; listed by Event 406) | 1 = open (once per character, within 4.5 m of the eye) | 0 |
+| 21 `item` | WP14 | item wire handle (Event 400 `h`); socket: weapon handle \| gem handle << 32 | 1 = use (consumable: becomes the drink key's choice; tome: learn; arrows: set the active loadout's arrowheads; gear: equip), 2 = drop (public pickup for 10 min, TransferItem), 3 = equip, 4 = unequip, 5 = move within its pouch, 6 = socket a gem, 7 = unsocket (gem kept at a town forge/anvil, destroyed elsewhere), 8 = combine 3 gems into the next cut (at a waypoint), 9 = set as the drink key's consumable | 2: quantity (0 = all); 3: loadout (weapons); 4: slot 0 main0, 1 main1, 2 head, 3 body, 4 legs (targetId ignored); 5: slot index; 6/7: socket index |
+| 22 `craft` | WP14 | 2: the hearth/campfire prop stable id; 1: 0 | 1 = craft at the open station (forge/anvil from 805, cooking from 404; within 7 m of it), 2 = open a cooking station (404) | 1: recipe id |
+| 23-29 | reserved WP14 | | | |
 | 30 `npc` | WP20 | the NPC's entity id (snapshot `EntityRecord.id`, kind npc) | 1 = talk (the NPC answers with 800, then its service: 801 shop, 802 bounties), 2 = buy, 3 = rest (innkeeper), 4 = accept bounty | buy: item index in the last 801 list; accept: bounty id; else 0 |
 | 31 `board` | WP20 | bounty board prop stable id (towns buffer) | 1 = read (802), 2 = accept | accept: bounty id |
 | 32 `station` | WP20 (WP14 hooks in) | forge or anvil prop stable id | 1 = use (805) | 0 |
 | 33 `shaft` | WP20 | mineshaft structure stable id (= its atlas site id) | 1 = descend (teleport into the linked cave system's entrance chamber; core `teleport` event) | 0 |
 | 34-39 | reserved WP20 (doors, chests are WP14's 20-29) | | | |
 | 40 `vein` | WP09 | vein stable id | 1 = pickaxe swing (25 damage, >= 250 ms apart, within 4.5 m of the eye) | tool tier (0 for now) |
-| 41 `pickup` | WP09 (WP14 may move pickups to 20-29) | pickup entity id | 1 = take (owner only, within reach) | 0 |
-| 50 `combat` | WP13 | 0 | 1 = swap loadout, 2 = equip weapon, 3 = equip spell, 4 = learn a tree node, 5 = set the socketed gem (dev builds only; WP14 sockets), 6 = set the weapon material (WP15; dev builds only until WP14 equips forged items) | 1: loadout (0/1); 2: loadout \| weapon id << 8; 3: loadout \| slot << 4 \| spell id << 8 (0 clears); 4: spell id; 5: loadout \| (element + 1) << 8; 6: loadout \| material id << 8 (combat.yaml materials; 3 = sunsteel, 0 = ordinary) |
+| 41 `pickup` | WP09, WP14 | pickup entity id | 1 = take: personal pickups owner only (auto-taken on touch), public pickups (dropped items, snapshot `owner` none) anyone within 4.5 m | 0 |
+| 50 `combat` | WP13 | 0 | 1 = swap loadout, 2 = equip weapon, 3 = equip spell, 4 = learn a tree node, 5 = set the socketed gem (dev builds only; WP14 sockets), 6 = set the weapon material (WP15; dev builds only; WP14's equipped item gear also carries it) | 1: loadout (0/1); 2: loadout \| weapon id << 8; 3: loadout \| slot << 4 \| spell id << 8 (0 clears); 4: spell id; 5: loadout \| (element + 1) << 8; 6: loadout \| material id << 8 (combat.yaml materials; 3 = sunsteel, 0 = ordinary) |
 | 51 `chem` | WP15 | dev actions: `x cm \| z cm << 32` (u32 each) | 1 = ignite, 2 = freeze, 3 = extinguish, 4 = raise a pillar (dev only); 10 = choose my chemistry sync path (anyone) | 1-3: radius in cells; 10: 1 events, 2 bitmap |
 | 52 `night` | WP15 (dev only) | 0 | 1 = the nearest town's ward falters (a defense event now), 2 = set the world clock offset, 3 = raise demons near me | 2: offset seconds (i32 bits); 3: 0 lesser pack, 1 greater, 2 lord |
 
@@ -134,6 +150,12 @@ indoors at night) run in the zone (`server/zone/internal/npc`); a client
 matches an entity to its towns-buffer record by name and position when it
 needs more (home, work spot). Reach for every WP20 Interact: 4 m from the
 eye. See server/zone/README.md "Towns and NPCs".
+
+Pickups (WP09, WP14) are snapshot entities of kind pickup (4): `name` = item
+key, `level` = quantity (capped 255), `typeId` = rarity (0-7). Personal
+loot (kills, veins, container overflow) is sent only to its owner; dropped
+items are public and despawn 10 minutes after the drop. See
+server/zone/README.md "Items and loot (WP14)".
 
 Demons (WP15) are ordinary enemies (`EntityKind` enemy, `typeId` from
 combat.yaml where `family` is `demon`); the reserved `EntityKind` demon (6)

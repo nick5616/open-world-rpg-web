@@ -391,7 +391,8 @@ func (s *Server) spawnPickup(owner *Entity, v caves.Vein, item string, qty int, 
 	p.Move.Pos = movement.Vec3{X: v.X + v.NX*0.7, Y: v.Y + v.NY*0.7 + 0.2, Z: v.Z + v.NZ*0.7}
 	p.prevValid = p.Move
 	p.view = p.Move
-	s.insertEntity(p) // WP16: player ids are not in join order any more
+	p.drop = s.veinDrop(item, qty, seed, owner) // WP14: granted through the item system (loot.go)
+	s.insertEntity(p)                           // WP16: player ids are not in join order any more
 	return p
 }
 
@@ -402,6 +403,10 @@ func (s *Server) removeEntity(e *Entity) {
 }
 
 func (s *Server) takePickup(owner, p *Entity) {
+	if p.drop != nil { // WP14: rolled loot and dropped items (loot.go)
+		s.takeDrop(owner, p)
+		return
+	}
 	if s.cfg.Granter != nil {
 		if err := s.cfg.Granter.Grant(owner.CharacterID, p.Item, p.Qty, p.RollSeed); err != nil {
 			s.log.Warn("grant failed", "character", owner.CharacterID, "item", p.Item, "err", err)

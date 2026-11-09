@@ -238,6 +238,8 @@ type hoClient struct {
 	maxErrCm   int32
 	switchLog  []string
 	kicks      []string
+
+	noTransfers bool // ignoreTransfers: this client never pre-connects
 }
 
 func (c *hoClient) dialZone(zone, url, query string) transport.Conn {
@@ -340,6 +342,9 @@ func (c *hoClient) handle(hm hoMsg) {
 			}
 		}
 	case *proto.ZoneTransfer:
+		if c.noTransfers {
+			return
+		}
 		if m.Kind == 1 {
 			c.mu.Lock()
 			if conn := c.conns[m.ZoneID]; conn != nil && m.ZoneID != c.active {
@@ -526,17 +531,10 @@ func TestPlayerWithoutPreconnectStaysWithOldOwner(t *testing.T) {
 // ignoreTransfers drops ZoneTransfer messages (a client that cannot reach
 // the neighbor zone).
 func (c *hoClient) ignoreTransfers() {
-	inner := c.msgs
-	out := make(chan hoMsg, 8192)
-	go func() {
-		for hm := range inner {
-			if _, ok := hm.m.(*proto.ZoneTransfer); ok {
-				continue
-			}
-			out <- hm
-		}
-	}()
-	c.msgs = out
+	// A flag checked in handle (WP14 fix): swapping c.msgs for a filtered
+	// channel raced the dialZone readers, which read the field on every send
+	// and so could deliver a ZoneTransfer around the filter.
+	c.noTransfers = true
 }
 
 func TestDuplicateLoginAcrossZonesTakesLiveState(t *testing.T) {

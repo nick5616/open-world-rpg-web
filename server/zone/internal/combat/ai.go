@@ -713,6 +713,7 @@ func (w *World) hurtPlayer(p *Player, dmg float64, src *Enemy, att *combatdefs.E
 	if p.Profile.Knows("undergrowth") {
 		dmg *= 0.95
 	}
+	dmg *= 1 - p.Gear.ArmorPct/100 // WP14 armor
 	if p.shield > 0 && w.tick < p.shieldEnd {
 		a := math.Min(p.shield, dmg)
 		p.shield -= a
@@ -758,7 +759,9 @@ func (w *World) playerUpkeep() {
 				p.Downed = false
 				p.HP = p.HPMax
 				p.Mana = p.ManaMax
-				p.Charges = D.Start.Consumable.Charges
+				if p.OnDrink == nil { // WP14: inventory consumables never refill
+					p.Charges = D.Start.Consumable.Charges
+				}
 				w.Respawn = append(w.Respawn, p.ID)
 				w.toPlayer(p.ID, Out{Ev: ev(EvRespawned, p.ID, 0, int32(p.HPMax), p.Pos, nil)})
 			}
@@ -778,7 +781,7 @@ func (w *World) playerUpkeep() {
 		}
 		if p.drinkTick != 0 && tick >= p.drinkTick {
 			p.drinkTick = 0
-			heal := D.Start.Consumable.Heal
+			heal := p.drinkHeal // WP14: the consumable's heal (combat.yaml's stand-in without items)
 			p.HP = math.Min(p.HPMax, p.HP+heal)
 			w.toPlayer(p.ID, Out{Ev: ev(EvConsumable, p.ID, 0, int32(p.Charges), p.Pos, []byte{byte(heal)})})
 		}

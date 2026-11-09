@@ -151,12 +151,15 @@ func main() {
 	ground = withTowns(ground, terrain, &cfg, log)         // WP20: buildings on the ground, townsfolk (towns.go)
 	cfg.Ground = ground
 	miningConfig(&cfg, pool)
-	cfg.Combat = combatSetup(terrain, world.Seed, world.Spec, devKey, log) // WP13 (combat.go)
-	withNight(&cfg, terrain, world.Spec, devKey, log)                      // WP15: wards, demons, chemistry, ice/pillar ground (night.go)
+	cfg.Combat = combatSetup(terrain, world.Seed, world.Spec, devKey, log)       // WP13 (combat.go)
+	cfg.Items = itemsSetup(pool, terrain, cfg.Combat, world.Spec, world.ID, log) // WP14 (items.go)
+	withNight(&cfg, terrain, world.Spec, devKey, log)                            // WP15: wards, demons, chemistry, ice/pillar ground (night.go)
 	zone := game.New(cfg)
-	serveCombatDebug(s.Mux, zone) // WP13
-	serveNightDebug(s.Mux, zone)  // WP15
+	serveCombatDebug(s.Mux, zone)                  // WP13
+	serveItemsDebug(s, zone, cfg.Items.Containers) // WP14
+	serveNightDebug(s.Mux, zone)                   // WP15
 	restoreEdits(ctx, zone, log)
+	restoreWorldItems(ctx, zone, log) // WP14: dropped items survive a restart (until they despawn)
 
 	origins := strings.Split(env.Str("LODESTONE_CORS_ORIGIN", "*"), ",")
 	ws := &transport.WebSocket{OriginPatterns: origins}

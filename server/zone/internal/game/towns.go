@@ -257,7 +257,11 @@ func (s *Server) npcInteract(e *Entity, m *proto.Interact, now time.Time) {
 			s.refuseTown(e, m.TargetID, TownRefuseNoSuch)
 		default:
 			it := ws[m.Arg]
-			if s.cfg.Granter != nil {
+			if s.cfg.Granter == nil { // WP14: gold and the inventory (items.go Buy; it refuses with Event 403)
+				if err := s.Buy(e, it.Item, int(it.Price)); err != nil {
+					return
+				}
+			} else {
 				if err := s.cfg.Granter.Grant(e.CharacterID, it.Item, 1, uint64(now.UnixNano())); err != nil {
 					s.log.Warn("purchase grant failed", "character", e.CharacterID, "item", it.Item, "err", err)
 					return

@@ -10,8 +10,8 @@ package combat
 //     (which never heals). A demon dies only when Seared reaches HPMax, so
 //     softening one up with an ordinary blade does not help the sunsteel.
 //   - "Kills demons" is one rule (KillsDemons): a weapon whose material has
-//     killsDemons (sunsteel; WP14 sets Loadout.Material from the forged
-//     item), a sunsteel arrowhead, any spell of a killsDemons tree (Light)
+//     killsDemons (sunsteel: WP14's equipped item gear, Player.Gear.KillsDemons,
+//     or the loadout's material key, Loadout.Material, set by dev builds), a sunsteel arrowhead, any spell of a killsDemons tree (Light)
 //     or the Light elemental form (which also deals demonMult x2).
 //   - Ordinary hits stagger them (interrupt a wind-up, push back) at most
 //     every DEMON_STAGGER_COOLDOWN_S: other weapons only stagger and push
@@ -78,13 +78,16 @@ func KillsDemons(p *Player, a *Action) bool {
 		return a.Form.KillsDemons
 	case a.Move != nil && a.Weapon != nil:
 		lo := p.Loadout()
-		if a.Weapon.Key == "bow" {
+		if a.Weapon.Key == "bow" && !p.Gear.KillsDemons {
 			for _, ar := range a.Weapon.Arrows {
 				if ar.Key == lo.ArrowOre {
 					return ar.KillsDemons
 				}
 			}
 			return false
+		}
+		if p.Gear.KillsDemons {
+			return true // WP14: the equipped item's material (a forged sunsteel blade)
 		}
 		m := D.MaterialByKey(lo.Material)
 		return m != nil && m.KillsDemons

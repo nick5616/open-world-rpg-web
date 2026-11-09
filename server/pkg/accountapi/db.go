@@ -424,10 +424,29 @@ func insertFromState(ctx context.Context, tx pgx.Tx, accountID, id, worldID, nam
 		// Item ids are regenerated: a local blob's ids were never inserted
 		// anywhere, and trusting client-visible ids as primary keys invites
 		// collisions. Provenance records where the item came from.
-		if _, err := tx.Exec(ctx, `INSERT INTO items (owner_character_id, kind, base_id, item_level, rarity, affixes, sockets, slot, roll_seed, provenance)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+		// WP14 (migration 0014): stacks keep their size, trading flags and
+		// provenance carry over, with the upgrade appended.
+		prov := []json.RawMessage{}
+		if len(it.Provenance) > 0 {
+			_ = json.Unmarshal(it.Provenance, &prov)
+		}
+		prov = append(prov, json.RawMessage(fmt.Sprintf(`{"ev":"local_upgrade","event":"local_upgrade","localItemId":%q}`, it.ID)))
+		provJSON, _ := json.Marshal(prov)
+		tradeable, verified := true, true
+		if it.Tradeable != nil {
+			tradeable = *it.Tradeable
+		}
+		if it.Verified != nil {
+			verified = *it.Verified
+		}
+		var name *string
+		if it.Name != "" {
+			name = &it.Name
+		}
+		if _, err := tx.Exec(ctx, `INSERT INTO items (owner_character_id, kind, base_id, item_level, rarity, affixes, sockets, slot, roll_seed, provenance, qty, tradeable, verified, display_name)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
 			id, it.Kind, it.BaseID, max(it.ItemLevel, 1), it.Rarity, jsonOr(it.Affixes, `[]`), jsonOr(it.Sockets, `[]`), slot, it.RollSeed,
-			json.RawMessage(fmt.Sprintf(`[{"event":"local_upgrade","localItemId":%q}]`, it.ID))); err != nil {
+			json.RawMessage(provJSON), max(it.Qty, 1), tradeable, verified, name); err != nil {
 			return Character{}, err
 		}
 	}
