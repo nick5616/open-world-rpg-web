@@ -526,10 +526,19 @@ func (s *Server) sendContainers(sess *session, force bool) {
 	ci, e := sess.items, sess.ent
 	cx, cz := chunkOf(e.Move.Pos.X, e.Move.Pos.Z)
 	k := [2]int32{cx, cz}
-	if !force && ci.contSent && ci.contChunk == k {
+	list := s.itm.setup.Containers.ContainersNear(e.Move.Pos.X, e.Move.Pos.Z, containerListM)
+	// G4: the list only holds chunks the terrain cache already generated; a
+	// chunk finishing after we entered used to stay missing until the next
+	// chunk border (a chest you walked up to never got its [E] prompt).
+	// Resend whenever the set changes, not only on a new chunk.
+	var sig uint64
+	for _, c := range list {
+		sig += c.ID*0x9e3779b97f4a7c15 + 1
+	}
+	if !force && ci.contSent && ci.contChunk == k && ci.contSig == sig {
 		return
 	}
-	list := s.itm.setup.Containers.ContainersNear(e.Move.Pos.X, e.Move.Pos.Z, containerListM)
+	ci.contSig = sig
 	b := []byte{1}
 	b = binary.LittleEndian.AppendUint16(b, uint16(min(len(list), 65535)))
 	for _, c := range list {

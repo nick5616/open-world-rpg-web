@@ -1,0 +1,1029 @@
+{
+ "run": "mw8ls0e6",
+ "zoneEnv": {
+  "LODESTONE_ZONE_PORT": "38227",
+  "LODESTONE_ZONE_ID": "zone-g4-mw8ls0e6",
+  "LODESTONE_ZONE_WT_ADDR": "off",
+  "LODESTONE_ZONE_PUBLIC_URL": "ws://127.0.0.1:38227/ws",
+  "LODESTONE_ZONE_DEBUG_RAIN": "0",
+  "LODESTONE_ZONE_DEV_SPAWN": "1",
+  "LODESTONE_ZONE_DEV_COMBAT": "1",
+  "LODESTONE_ZONE_DEV_NIGHT": "1",
+  "LODESTONE_ZONE_DEBUG_CAMP": "2085,2385,1,boar boar",
+  "LODESTONE_ZONE_TIME_OFFSET_S": "1822"
+ },
+ "world": {
+  "worldId": "4f916ffb-daed-43cd-84f4-e7ef782e0b94",
+  "seed": 20261108,
+  "genVersion": "1"
+ },
+ "character": {
+  "characterId": "2fd9f1e7-0a95-4138-b837-915ee1f1770e",
+  "name": "Brannoc",
+  "worldId": "4f916ffb-daed-43cd-84f4-e7ef782e0b94",
+  "zoneId": "zone-g4-mw8ls0e6",
+  "zoneEndpoint": "ws://127.0.0.1:38227/ws"
+ },
+ "fpsAtStart": 27,
+ "town": {
+  "index": 9,
+  "name": "Draedmore",
+  "size": "town",
+  "x": 1920,
+  "y": 82.3236083984375,
+  "z": 2272,
+  "radius": 130,
+  "square": 18,
+  "buildings": 40,
+  "forge": {
+   "index": 1225,
+   "id": "33461356418492015",
+   "x": 1903.458251953125,
+   "y": 82.3341064453125,
+   "z": 2292.083251953125,
+   "yaw": 3.720286905819651,
+   "building": 149
+  },
+  "anvil": {
+   "index": 1226,
+   "id": "2216266378891788059",
+   "x": 1907.2740478515625,
+   "y": 82.3341064453125,
+   "z": 2291.84423828125,
+   "yaw": 0.5786942522298582,
+   "building": 149
+  },
+  "smithy": {
+   "index": 149,
+   "role": "forge",
+   "style": "cottage",
+   "x": 1907.294189453125,
+   "z": 2291.447509765625,
+   "floorY": 82.3341064453125,
+   "hx": 4.063664436340332,
+   "hz": 3.7303032875061035,
+   "c": 0.8371664881706238,
+   "s": 0.5469481348991394,
+   "floors": 1,
+   "doorU": 0,
+   "doorW": 6.727328777313232,
+   "frontX": 1910.1549072265625,
+   "frontZ": 2287.069091796875,
+   "flags": 10
+  },
+  "smith": {
+   "index": 97,
+   "name": "Selina",
+   "role": "blacksmith",
+   "x": 1907.7498779296875,
+   "z": 2291.115966796875,
+   "yaw": 2.1494905790247545,
+   "workProp": 1226
+  },
+  "ward": {
+   "index": 9,
+   "name": "Draedmore",
+   "x": 1920,
+   "z": 2272,
+   "wardR": 140,
+   "gardenX": 1926.297607421875,
+   "gardenZ": 2296.262451171875,
+   "d": 0
+  }
+ },
+ "fight1": {
+  "swings": 13,
+  "drinks": 0,
+  "ms": 18944,
+  "accepted": 9,
+  "refused": 0,
+  "damage": [
+   18,
+   18,
+   20,
+   20,
+   20,
+   18,
+   31,
+   18,
+   18
+  ],
+  "kills": 2,
+  "xp": [
+   20,
+   20
+  ],
+  "cleared": true,
+  "hurt": [
+   10,
+   10,
+   14,
+   14
+  ],
+  "downs": 0
+ },
+ "loot": {
+  "units": {
+   "potion:health": 3,
+   "currency:gold": 67,
+   "hide:wolf": 1,
+   "meat:raw": 1,
+   "armor:leather_jerkin": 1,
+   "weapon:iron_spear": 1,
+   "gem:topaz:brilliant": 1,
+   "food:apple": 2,
+   "armor:leather_cap": 1,
+   "gem:emerald:rough": 1,
+   "blueprint:iron_cuirass": 1
+  },
+  "gold": 67,
+  "chestsTried": 2
+ },
+ "mining": {
+  "log": [
+   {
+    "id": "8835879023699622851",
+    "material": "sunsteel",
+    "ok": true,
+    "swings": 8,
+    "grants": 1,
+    "toasts": [
+     "Sunsteel Ore x3"
+    ],
+    "at": {
+     "x": 1818,
+     "y": -56.5,
+     "z": 316
+    }
+   },
+   {
+    "id": "14318032726258039959",
+    "material": "sunsteel",
+    "ok": true,
+    "swings": 8,
+    "grants": 1,
+    "toasts": [
+     "Sunsteel Ore x3"
+    ],
+    "at": {
+     "x": 3732.4,
+     "y": -111.1,
+     "z": 511.1
+    }
+   },
+   {
+    "id": "7840581575915726357",
+    "material": "topaz",
+    "ok": true,
+    "swings": 7,
+    "grants": 1,
+    "toasts": [
+     "Rough Topaz"
+    ],
+    "at": {
+     "x": 590.6,
+     "y": 51.1,
+     "z": 813.7
+    }
+   }
+  ],
+  "units": {
+   "currency:gold": 67,
+   "potion:health": 3,
+   "hide:wolf": 1,
+   "meat:raw": 1,
+   "armor:leather_jerkin": 1,
+   "food:apple": 2,
+   "gem:topaz:brilliant": 1,
+   "weapon:iron_spear": 1,
+   "blueprint:iron_cuirass": 1,
+   "gem:emerald:rough": 1,
+   "armor:leather_cap": 1,
+   "ore:sunsteel": 6,
+   "gem:topaz:rough": 1
+  },
+  "gemKey": "gem:topaz:rough"
+ },
+ "travel": {
+  "toSquare": true,
+  "toDoor": true,
+  "inside": true,
+  "s": 46,
+  "from": {
+   "x": 2091,
+   "z": 2385
+  },
+  "at": {
+   "x": 1908.7,
+   "y": 82.3,
+   "z": 2289.2
+  }
+ },
+ "purchase": {
+  "gold0": 67,
+  "gold1": 27,
+  "events": [
+   {
+    "t": 1794189187666,
+    "kind": 807,
+    "entityId": 64,
+    "targetId": 1,
+    "value": 40
+   }
+  ]
+ },
+ "forge": {
+  "smelt": [
+   {
+    "enabled": true,
+    "events": [
+     {
+      "t": 1794189190074,
+      "kind": 405,
+      "entityId": 64,
+      "targetId": 4,
+      "value": 1
+     }
+    ]
+   },
+   {
+    "enabled": true,
+    "events": [
+     {
+      "t": 1794189190673,
+      "kind": 405,
+      "entityId": 64,
+      "targetId": 4,
+      "value": 1
+     }
+    ]
+   }
+  ],
+  "forge": {
+   "enabled": true,
+   "events": [
+    {
+     "t": 1794189191241,
+     "kind": 405,
+     "entityId": 64,
+     "targetId": 16,
+     "value": 1
+    }
+   ]
+  },
+  "blade": {
+   "h": 64,
+   "b": "weapon:sunsteel_blade",
+   "q": 1,
+   "l": 10,
+   "r": 0,
+   "s": "inv:9",
+   "k": [
+    ""
+   ],
+   "t": true,
+   "v": true,
+   "p": 1
+  }
+ },
+ "equip": {
+  "slot": "eq:main1",
+  "sockets": [
+   "gem:topaz:rough"
+  ],
+  "loadouts": [
+   {
+    "weapon": "sword",
+    "spells": [
+     "ember_flick",
+     "frost_bite",
+     "magma_dash",
+     null
+    ],
+    "gem": -1
+   },
+   {
+    "weapon": "sword",
+    "spells": [
+     "ember_flick",
+     "frost_bite",
+     "magma_dash",
+     null
+    ],
+    "gem": 2
+   }
+  ],
+  "activeLoadout": 0
+ },
+ "armor": [
+  "armor:leather_jerkin -> eq:body",
+  "armor:leather_cap -> eq:head"
+ ],
+ "zoneInventoryAfterForge": {
+  "character": "2fd9f1e7-0a95-4138-b837-915ee1f1770e",
+  "online": true,
+  "persist": "db",
+  "gold": 27,
+  "items": [
+   {
+    "h": 49,
+    "b": "currency:gold",
+    "q": 27,
+    "l": 1,
+    "r": 0,
+    "s": "purse",
+    "t": true,
+    "v": true,
+    "p": 1
+   },
+   {
+    "h": 50,
+    "b": "potion:health",
+    "q": 3,
+    "l": 1,
+    "r": 0,
+    "s": "inv:0",
+    "t": true,
+    "v": true,
+    "p": 1
+   },
+   {
+    "h": 51,
+    "b": "hide:wolf",
+    "q": 1,
+    "l": 1,
+    "r": 0,
+    "s": "inv:1",
+    "t": true,
+    "v": true,
+    "p": 1
+   },
+   {
+    "h": 52,
+    "b": "meat:raw",
+    "q": 1,
+    "l": 1,
+    "r": 0,
+    "s": "inv:2",
+    "t": true,
+    "v": true,
+    "p": 1
+   },
+   {
+    "h": 53,
+    "b": "armor:leather_jerkin",
+    "q": 1,
+    "l": 3,
+    "r": 0,
+    "s": "eq:body",
+    "t": true,
+    "v": true,
+    "p": 1
+   },
+   {
+    "h": 54,
+    "b": "food:apple",
+    "q": 2,
+    "l": 1,
+    "r": 0,
+    "s": "inv:5",
+    "t": true,
+    "v": true,
+    "p": 1
+   },
+   {
+    "h": 55,
+    "b": "gem:topaz:brilliant",
+    "q": 1,
+    "l": 1,
+    "r": 0,
+    "s": "gem:0",
+    "t": true,
+    "v": true,
+    "p": 1
+   },
+   {
+    "h": 56,
+    "b": "weapon:iron_spear",
+    "q": 1,
+    "l": 3,
+    "r": 1,
+    "s": "inv:4",
+    "a": [
+     {
+      "k": "of_storms",
+      "s": "critPct",
+      "v": 3.3
+     }
+    ],
+    "k": [
+     ""
+    ],
+    "t": true,
+    "v": true,
+    "p": 1
+   },
+   {
+    "h": 57,
+    "b": "blueprint:iron_cuirass",
+    "q": 1,
+    "l": 1,
+    "r": 0,
+    "s": "inv:7",
+    "t": true,
+    "v": true,
+    "p": 1
+   },
+   {
+    "h": 58,
+    "b": "gem:emerald:rough",
+    "q": 1,
+    "l": 1,
+    "r": 0,
+    "s": "gem:1",
+    "t": true,
+    "v": true,
+    "p": 1
+   },
+   {
+    "h": 59,
+    "b": "armor:leather_cap",
+    "q": 1,
+    "l": 3,
+    "r": 2,
+    "s": "eq:head",
+    "a": [
+     {
+      "k": "warding",
+      "s": "armorPct",
+      "v": 3.2
+     },
+     {
+      "k": "sturdy",
+      "s": "health",
+      "v": 8.6
+     }
+    ],
+    "t": true,
+    "v": true,
+    "p": 1
+   },
+   {
+    "h": 60,
+    "b": "ore:sunsteel",
+    "q": 2,
+    "l": 1,
+    "r": 0,
+    "s": "ore:0",
+    "t": true,
+    "v": true,
+    "p": 2
+   },
+   {
+    "h": 62,
+    "b": "blueprint:sunsteel_blade",
+    "q": 1,
+    "l": 1,
+    "r": 0,
+    "s": "inv:8",
+    "t": true,
+    "v": true,
+    "p": 1
+   },
+   {
+    "h": 64,
+    "b": "weapon:sunsteel_blade",
+    "q": 1,
+    "l": 10,
+    "r": 0,
+    "s": "eq:main1",
+    "k": [
+     "gem:topaz:rough"
+    ],
+    "t": true,
+    "v": true,
+    "p": 1
+   }
+  ],
+  "markers": [
+   "container:14374458667132807130",
+   "container:17712850599143377915",
+   "starter"
+  ],
+  "journalDepth": 0,
+  "pending": 0,
+  "applied": 18,
+  "pickups": 0,
+  "droppedInWorld": 0,
+  "killRolls": 2
+ },
+ "dusk": {
+  "event": {
+   "t": 1794189234033,
+   "kind": 501,
+   "entityId": 0,
+   "targetId": 498386,
+   "value": 7
+  },
+  "hour": 18.50044201374054,
+  "moon": 7,
+  "nightIndex": 498386,
+  "planned": {
+   "19": 1794192654,
+   "24": 1794192834
+  }
+ },
+ "demonsRose": {
+  "natural": true,
+  "event": {
+   "kind": "seen"
+  },
+  "waitS": 2,
+  "demons": [
+   {
+    "id": 94,
+    "key": "gloamling",
+    "rank": "lesser",
+    "level": 5,
+    "hp": 114.8,
+    "hpMax": 114.8,
+    "seared": 0,
+    "wounds": 0,
+    "state": "chase",
+    "x": 2061.423376209638,
+    "z": 2361.516959546935,
+    "atGoal": false
+   },
+   {
+    "id": 95,
+    "key": "gloamling",
+    "rank": "lesser",
+    "level": 5,
+    "hp": 114.8,
+    "hpMax": 114.8,
+    "seared": 0,
+    "wounds": 0,
+    "state": "chase",
+    "x": 2060.720936989842,
+    "z": 2363.332530253858,
+    "atGoal": false
+   },
+   {
+    "id": 96,
+    "key": "gloamling",
+    "rank": "lesser",
+    "level": 5,
+    "hp": 114.8,
+    "hpMax": 114.8,
+    "seared": 0,
+    "wounds": 0,
+    "state": "chase",
+    "x": 2061.5263318765988,
+    "z": 2359.5547498855212,
+    "atGoal": false
+   },
+   {
+    "id": 97,
+    "key": "gloamling",
+    "rank": "lesser",
+    "level": 5,
+    "hp": 114.8,
+    "hpMax": 114.8,
+    "seared": 0,
+    "wounds": 0,
+    "state": "chase",
+    "x": 2058.6048293452864,
+    "z": 2328.9546196213337,
+    "atGoal": false
+   }
+  ]
+ },
+ "ordinary": {
+  "loadout": {
+   "weapon": "sword",
+   "spells": [
+    "ember_flick",
+    "frost_bite",
+    "magma_dash",
+    null
+   ],
+   "gem": -1
+  },
+  "swings": 28,
+  "accepted": 17,
+  "damage": 384,
+  "shrugged": 17,
+  "kills": 0,
+  "minHealthPct": {
+   "94": 0.9,
+   "95": 0.83,
+   "96": 0.71,
+   "97": 0.76
+  },
+  "alive": 4,
+  "of": 4,
+  "seared": [
+   0,
+   0,
+   0,
+   0
+  ],
+  "downs": 0,
+  "hurt": 42
+ },
+ "sunsteel": {
+  "loadout": {
+   "weapon": "sword",
+   "spells": [
+    "ember_flick",
+    "frost_bite",
+    "magma_dash",
+    null
+   ],
+   "gem": 2
+  },
+  "activeLoadout": 1,
+  "swings": 14,
+  "accepted": 17,
+  "damage": [
+   22,
+   25,
+   37,
+   37,
+   22,
+   25,
+   25,
+   25,
+   37,
+   37,
+   22,
+   22,
+   34,
+   22,
+   22,
+   25,
+   38
+  ],
+  "kills": 4,
+  "xp": [
+   42,
+   42,
+   42,
+   42
+  ],
+  "alive": 0,
+  "shruggedWithBlade": 0,
+  "s": 25,
+  "downs": 0
+ },
+ "defense": {
+  "waves": [
+   1,
+   2,
+   3
+  ],
+  "result": 1,
+  "wardMinFromHud": 1000,
+  "kills": 34,
+  "killsByBrowser": 12,
+  "reward": [
+   300
+  ],
+  "swings": 85,
+  "drinks": 1,
+  "s": 182,
+  "downs": 0,
+  "botsExit": 0,
+  "botsLogTail": [
+   "[ 181.27s] Ana at (1931, 82, 2300) hp 87%  attacks 110 dodges 65  accepted 105 refused 5  corrections 0",
+   "[ 181.28s] Bo at (1931, 82, 2301) hp 70%  attacks 132 dodges 65  accepted 112 refused 16  corrections 0",
+   "[ 182.87s]   zone: ward 1000; demons (distance to the garden, state): gloamling 130m asleep, gloamling 127m asleep, gloamling 121m asleep, gloamling 124m asleep, grave_brute 6m evade",
+   "[ 186.21s] Bo killed a demon (191, +156 xp)",
+   "[ 186.21s] Bo: DEFENSE ENDED (1): The last wave falls. The ward blooms again.",
+   "[ 186.21s] Bo: defense reward +300 XP",
+   "[ 186.21s] Ana: DEFENSE ENDED (1): The last wave falls. The ward blooms again.",
+   "[ 186.21s] Ana: defense reward +300 XP",
+   "[ 187.38s] defense ended after 185 s: HELD",
+   "[ 187.38s] Ana: 8 demon kills, 117 claims accepted, 0 downs, 89 damage taken, reward 300 XP",
+   "[ 187.38s] Bo: 14 demon kills, 124 claims accepted, 0 downs, 87 damage taken, reward 300 XP",
+   "[ 187.38s] CHECK a town defense event runs start to finish with two players: true (result HELD, both rewarded true)",
+   "[ 187.38s] PASS",
+   ""
+  ]
+ },
+ "dawn": {
+  "event": {
+   "t": 1794189596001,
+   "kind": 502,
+   "entityId": 0,
+   "targetId": 0,
+   "value": 4
+  },
+  "burned": 0,
+  "hour": 6.016896087328593,
+  "night": false,
+  "demonsLeft": 0,
+  "health": 199,
+  "healthMax": 199,
+  "downsAllSession": 0,
+  "lowestNightHealth": 90,
+  "lowestNightHealthMax": 189
+ },
+ "zoneInventoryAtDawn": {
+  "character": "2fd9f1e7-0a95-4138-b837-915ee1f1770e",
+  "online": true,
+  "persist": "db",
+  "gold": 196,
+  "items": [
+   {
+    "h": 49,
+    "b": "currency:gold",
+    "q": 196,
+    "l": 1,
+    "r": 0,
+    "s": "purse",
+    "t": true,
+    "v": true,
+    "p": 1
+   },
+   {
+    "h": 50,
+    "b": "potion:health",
+    "q": 2,
+    "l": 1,
+    "r": 0,
+    "s": "inv:0",
+    "t": true,
+    "v": true,
+    "p": 1
+   },
+   {
+    "h": 51,
+    "b": "hide:wolf",
+    "q": 1,
+    "l": 1,
+    "r": 0,
+    "s": "inv:1",
+    "t": true,
+    "v": true,
+    "p": 1
+   },
+   {
+    "h": 52,
+    "b": "meat:raw",
+    "q": 1,
+    "l": 1,
+    "r": 0,
+    "s": "inv:2",
+    "t": true,
+    "v": true,
+    "p": 1
+   },
+   {
+    "h": 53,
+    "b": "armor:leather_jerkin",
+    "q": 1,
+    "l": 3,
+    "r": 0,
+    "s": "eq:body",
+    "t": true,
+    "v": true,
+    "p": 1
+   },
+   {
+    "h": 54,
+    "b": "food:apple",
+    "q": 2,
+    "l": 1,
+    "r": 0,
+    "s": "inv:5",
+    "t": true,
+    "v": true,
+    "p": 1
+   },
+   {
+    "h": 55,
+    "b": "gem:topaz:brilliant",
+    "q": 1,
+    "l": 1,
+    "r": 0,
+    "s": "gem:0",
+    "t": true,
+    "v": true,
+    "p": 1
+   },
+   {
+    "h": 56,
+    "b": "weapon:iron_spear",
+    "q": 1,
+    "l": 3,
+    "r": 1,
+    "s": "inv:4",
+    "a": [
+     {
+      "k": "of_storms",
+      "s": "critPct",
+      "v": 3.3
+     }
+    ],
+    "k": [
+     ""
+    ],
+    "t": true,
+    "v": true,
+    "p": 1
+   },
+   {
+    "h": 57,
+    "b": "blueprint:iron_cuirass",
+    "q": 1,
+    "l": 1,
+    "r": 0,
+    "s": "inv:7",
+    "t": true,
+    "v": true,
+    "p": 1
+   },
+   {
+    "h": 58,
+    "b": "gem:emerald:rough",
+    "q": 1,
+    "l": 1,
+    "r": 0,
+    "s": "gem:1",
+    "t": true,
+    "v": true,
+    "p": 1
+   },
+   {
+    "h": 59,
+    "b": "armor:leather_cap",
+    "q": 1,
+    "l": 3,
+    "r": 2,
+    "s": "eq:head",
+    "a": [
+     {
+      "k": "warding",
+      "s": "armorPct",
+      "v": 3.2
+     },
+     {
+      "k": "sturdy",
+      "s": "health",
+      "v": 8.6
+     }
+    ],
+    "t": true,
+    "v": true,
+    "p": 1
+   },
+   {
+    "h": 60,
+    "b": "ore:sunsteel",
+    "q": 2,
+    "l": 1,
+    "r": 0,
+    "s": "ore:0",
+    "t": true,
+    "v": true,
+    "p": 2
+   },
+   {
+    "h": 62,
+    "b": "blueprint:sunsteel_blade",
+    "q": 1,
+    "l": 1,
+    "r": 0,
+    "s": "inv:8",
+    "t": true,
+    "v": true,
+    "p": 1
+   },
+   {
+    "h": 64,
+    "b": "weapon:sunsteel_blade",
+    "q": 1,
+    "l": 10,
+    "r": 0,
+    "s": "eq:main1",
+    "k": [
+     "gem:topaz:rough"
+    ],
+    "t": true,
+    "v": true,
+    "p": 1
+   }
+  ],
+  "markers": [
+   "container:14374458667132807130",
+   "container:17712850599143377915",
+   "starter"
+  ],
+  "journalDepth": 0,
+  "pending": 0,
+  "applied": 46,
+  "pickups": 8,
+  "droppedInWorld": 0,
+  "killRolls": 73
+ },
+ "prediction": {
+  "phase": "playing",
+  "reconciles": 0,
+  "agreements": 12379,
+  "maxError": 0
+ },
+ "zoneLogTail": [
+  "{\"time\":\"2026-11-08T17:49:38.9799052-08:00\",\"level\":\"WARN\",\"msg\":\"LODESTONE_TICKET_PUBLIC_KEY unset: accepting tickets signed with the INSECURE development key\",\"svc\":\"zone\"}",
+  "{\"time\":\"2026-11-08T17:49:39.9905617-08:00\",\"level\":\"WARN\",\"msg\":\"LODESTONE_SAVE_PRIVATE_KEY unset: signing local saves with the INSECURE development key\",\"svc\":\"zone\"}",
+  "{\"time\":\"2026-11-08T17:49:39.9905617-08:00\",\"level\":\"WARN\",\"msg\":\"debug movement env active\",\"svc\":\"zone\",\"updrafts\":\"\",\"rain\":\"0\"}"
+ ],
+ "verdicts": {
+  "setup": [
+   true,
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "1 fight + loot": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "2 mine ore + gem": [
+   true,
+   true
+  ],
+  "3 travel to town": [
+   true,
+   true
+  ],
+  "4 blueprint + smelt + forge": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "5 socket + equip": [
+   true,
+   true
+  ],
+  "6 night: demons": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "7 night: town defense": [
+   true,
+   true,
+   true
+  ],
+  "8 dawn: survived": [
+   true,
+   true,
+   true
+  ],
+  "general": [
+   true
+  ]
+ },
+ "screenshots": [
+  "g4-01-camp-approach.png",
+  "g4-02-camp-fight.png",
+  "g4-03-camp-loot.png",
+  "g4-04-chest-opened.png",
+  "g4-05-chest-opened.png",
+  "g4-06-vein-sunsteel-before.png",
+  "g4-07-vein-sunsteel-mined.png",
+  "g4-08-vein-sunsteel-before.png",
+  "g4-09-vein-sunsteel-mined.png",
+  "g4-10-vein-topaz-before.png",
+  "g4-11-vein-topaz-mined.png",
+  "g4-12-town-square.png",
+  "g4-13-smithy-inside.png",
+  "g4-14-blacksmith-shop.png",
+  "g4-15-blueprint-bought.png",
+  "g4-16-forge-panel.png",
+  "g4-17-blade-forged.png",
+  "g4-18-inventory-blade.png",
+  "g4-19-inventory-equipped.png",
+  "g4-20-inventory-armor.png",
+  "g4-21-town-dusk.png",
+  "g4-22-demons-rise.png",
+  "g4-23-demon-shrugs-steel.png",
+  "g4-24-demon-sunsteel.png",
+  "g4-25-demons-slain.png",
+  "g4-26-defense-warning.png",
+  "g4-27-defense-wave-1.png",
+  "g4-28-defense-wave-2.png",
+  "g4-29-defense-wave-3.png",
+  "g4-30-defense-ended.png",
+  "g4-31-dawn.png"
+ ],
+ "logs": "C:\\Users\\nickb\\AppData\\Local\\Temp\\lodestone-g4-bIMJ2G"
+}

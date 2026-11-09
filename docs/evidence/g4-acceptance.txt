@@ -1,0 +1,362 @@
+[2026-11-09T01:49:13.089Z] G4 acceptance (spec 15): fight, loot, mine ore and a gem, forge a sunsteel blade, socket the gem, survive a night in a generated town. Run mw8ls0e6
+[2026-11-09T01:49:13.095Z] private ports {"account":34106,"director":36274,"zone":38227,"social":23888,"vite":25237}; logs in C:\Users\nickb\AppData\Local\Temp\lodestone-g4-bIMJ2G
+[2026-11-09T01:49:20.291Z] scratch database lodestone_wp04_g4_mw8ls0e6 (all migrations)
+[2026-11-09T01:49:34.091Z] built account, director, zone, social and the WP15 night bots from this checkout
+[2026-11-09T01:49:35.780Z] PASS account healthy on :34106 (mints the official world into the scratch DB)
+[2026-11-09T01:49:36.942Z] PASS social healthy on :23888
+[2026-11-09T01:49:38.061Z] PASS director healthy on :36274
+[2026-11-09T01:49:40.499Z] PASS zone healthy on :38227
+[2026-11-09T01:49:40.502Z] zone serves world 4f916ffb-daed-43cd-84f4-e7ef782e0b94 (fresh for this run) seed 20261108 genVersion 1; dev knobs {"LODESTONE_ZONE_PORT":"38227","LODESTONE_ZONE_ID":"zone-g4-mw8ls0e6","LODESTONE_ZONE_WT_ADDR":"off","LODESTONE_ZONE_PUBLIC_URL":"ws://127.0.0.1:38227/ws","LODESTONE_ZONE_DEBUG_RAIN":"0","LODESTONE_ZONE_DEV_SPAWN":"1","LODESTONE_ZONE_DEV_COMBAT":"1","LODESTONE_ZONE_DEV_NIGHT":"1","LODESTONE_ZONE_DEBUG_CAMP":"2085,2385,1,boar boar","LODESTONE_ZONE_TIME_OFFSET_S":"1822"}
+[2026-11-09T01:49:42.624Z] PASS vite on :25237
+[2026-11-09T01:50:02.133Z] PASS Brannoc playing (dev auth -> director ticket -> zone), character 2fd9f1e7-0a95-4138-b837-915ee1f1770e, at (1919.5, 82.4, 2270.5)
+[2026-11-09T01:50:04.235Z] render rate 27.0 fps (headless Chromium, ANGLE/D3D11; WP19 may be loading the machine)
+[2026-11-09T01:50:04.238Z] starter inventory (Event 400): currency:gold=20 potion:health=3
+[2026-11-09T01:50:04.252Z] street graph of Draedmore: 5 streets, 382 nodes (players walk the streets; a straight line across a town meets walls)
+[2026-11-09T01:50:04.266Z] spawn town #9 "Draedmore" (town, 40 buildings) at (1920, 2272) r 130; ward r 140 garden (1926, 2296); forge prop 33461356418492015 at (1903.5, 82.3, 2292.1); blacksmith "Selina"
+[2026-11-09T01:50:04.268Z] PASS dev camp placed outside the town: 0 x level 1 at (2085.0, 2385.0), 200 m from the town centre
+[2026-11-09T01:50:04.300Z]   Brannoc to the camp: 22 m to go, at (1920, 82.4, 2271)
+[2026-11-09T01:50:07.104Z]   Brannoc to the camp: 3 m to go, at (1941, 81.1, 2273)
+[2026-11-09T01:50:07.364Z]   Brannoc to the camp: 3 m to go, at (1943, 80.9, 2273)
+[2026-11-09T01:50:07.626Z]   Brannoc to the camp: 3 m to go, at (1945, 80.8, 2273)
+[2026-11-09T01:50:07.891Z]   Brannoc to the camp: 3 m to go, at (1947, 80.7, 2273)
+[2026-11-09T01:50:08.028Z]   Brannoc to the camp: 4 m to go, at (1948, 80.6, 2273)
+[2026-11-09T01:50:08.288Z]   Brannoc to the camp: 4 m to go, at (1950, 80.5, 2273)
+[2026-11-09T01:50:08.562Z]   Brannoc to the camp: 3 m to go, at (1952, 80.4, 2273)
+[2026-11-09T01:50:08.836Z]   Brannoc to the camp: 3 m to go, at (1954, 80.4, 2273)
+[2026-11-09T01:50:09.101Z]   Brannoc to the camp: 3 m to go, at (1956, 80.3, 2273)
+[2026-11-09T01:50:09.377Z]   Brannoc to the camp: 3 m to go, at (1958, 80.3, 2273)
+[2026-11-09T01:50:09.633Z]   Brannoc to the camp: 3 m to go, at (1960, 80.3, 2274)
+[2026-11-09T01:50:09.886Z]   Brannoc to the camp: 3 m to go, at (1962, 80.3, 2274)
+[2026-11-09T01:50:10.027Z]   Brannoc to the camp: 4 m to go, at (1963, 80.3, 2274)
+[2026-11-09T01:50:10.302Z]   Brannoc to the camp: 3 m to go, at (1966, 80.3, 2274)
+[2026-11-09T01:50:10.569Z]   Brannoc to the camp: 3 m to go, at (1967, 80.3, 2274)
+[2026-11-09T01:50:10.843Z]   Brannoc to the camp: 3 m to go, at (1970, 80.3, 2274)
+[2026-11-09T01:50:11.102Z]   Brannoc to the camp: 3 m to go, at (1972, 80.3, 2274)
+[2026-11-09T01:50:11.375Z]   Brannoc to the camp: 3 m to go, at (1974, 80.4, 2274)
+[2026-11-09T01:50:11.506Z]   Brannoc to the camp: 4 m to go, at (1975, 80.4, 2274)
+[2026-11-09T01:50:11.774Z]   Brannoc to the camp: 4 m to go, at (1977, 80.3, 2274)
+[2026-11-09T01:50:12.040Z]   Brannoc to the camp: 4 m to go, at (1979, 80.3, 2274)
+[2026-11-09T01:50:12.313Z]   Brannoc to the camp: 3 m to go, at (1981, 80.3, 2274)
+[2026-11-09T01:50:12.576Z]   Brannoc to the camp: 3 m to go, at (1983, 80.3, 2274)
+[2026-11-09T01:50:12.834Z]   Brannoc to the camp: 4 m to go, at (1985, 80.3, 2275)
+[2026-11-09T01:50:13.234Z]   Brannoc to the camp: 3 m to go, at (1987, 80.2, 2275)
+[2026-11-09T01:50:13.638Z]   Brannoc to the camp: 3 m to go, at (1989, 80.2, 2275)
+[2026-11-09T01:50:14.033Z]   Brannoc to the camp: 3 m to go, at (1991, 80.1, 2275)
+[2026-11-09T01:50:14.426Z]   Brannoc to the camp: 3 m to go, at (1993, 80.0, 2275)
+[2026-11-09T01:50:14.841Z]   Brannoc to the camp: 3 m to go, at (1995, 80.0, 2275)
+[2026-11-09T01:50:15.227Z]   Brannoc to the camp: 3 m to go, at (1996, 80.0, 2275)
+[2026-11-09T01:50:24.312Z]   Brannoc to the camp: 2 m to go, at (2000, 79.8, 2274)
+[2026-11-09T01:50:24.449Z]   Brannoc to the camp: 3 m to go, at (2001, 79.8, 2275)
+[2026-11-09T01:50:24.831Z]   Brannoc to the camp: 3 m to go, at (2002, 79.7, 2275)
+[2026-11-09T01:50:25.228Z]   Brannoc to the camp: 3 m to go, at (2004, 79.7, 2275)
+[2026-11-09T01:50:25.511Z]   Brannoc to the camp: 4 m to go, at (2006, 79.6, 2275)
+[2026-11-09T01:50:25.896Z]   Brannoc to the camp: 4 m to go, at (2008, 79.5, 2275)
+[2026-11-09T01:50:26.416Z]   Brannoc to the camp: 3 m to go, at (2010, 79.4, 2275)
+[2026-11-09T01:50:26.809Z]   Brannoc to the camp: 3 m to go, at (2012, 79.3, 2276)
+[2026-11-09T01:50:27.191Z]   Brannoc to the camp: 3 m to go, at (2014, 79.3, 2276)
+[2026-11-09T01:50:27.600Z]   Brannoc to the camp: 3 m to go, at (2016, 79.2, 2276)
+[2026-11-09T01:50:27.988Z]   Brannoc to the camp: 3 m to go, at (2018, 79.1, 2276)
+[2026-11-09T01:50:28.267Z]   Brannoc to the camp: 3 m to go, at (2020, 79.0, 2276)
+[2026-11-09T01:50:28.540Z]   Brannoc to the camp: 3 m to go, at (2022, 78.9, 2276)
+[2026-11-09T01:50:28.802Z]   Brannoc to the camp: 3 m to go, at (2024, 78.8, 2276)
+[2026-11-09T01:50:29.075Z]   Brannoc to the camp: 3 m to go, at (2026, 78.6, 2276)
+[2026-11-09T01:50:29.205Z]   Brannoc to the camp: 4 m to go, at (2027, 78.6, 2276)
+[2026-11-09T01:50:29.466Z]   Brannoc to the camp: 4 m to go, at (2029, 78.4, 2276)
+[2026-11-09T01:50:29.742Z]   Brannoc to the camp: 3 m to go, at (2031, 78.3, 2276)
+[2026-11-09T01:50:30.000Z]   Brannoc to the camp: 3 m to go, at (2033, 78.2, 2276)
+[2026-11-09T01:50:30.252Z]   Brannoc to the camp: 3 m to go, at (2035, 78.0, 2276)
+[2026-11-09T01:50:30.527Z]   Brannoc to the camp: 3 m to go, at (2037, 77.9, 2277)
+[2026-11-09T01:50:30.791Z]   Brannoc to the camp: 3 m to go, at (2039, 77.7, 2277)
+[2026-11-09T01:50:30.928Z]   Brannoc to the camp: 4 m to go, at (2040, 77.7, 2277)
+[2026-11-09T01:50:31.199Z]   Brannoc to the camp: 4 m to go, at (2043, 77.6, 2277)
+[2026-11-09T01:50:31.465Z]   Brannoc to the camp: 3 m to go, at (2045, 77.4, 2277)
+[2026-11-09T01:50:31.725Z]   Brannoc to the camp: 3 m to go, at (2047, 77.3, 2277)
+[2026-11-09T01:50:31.985Z]   Brannoc to the camp: 118 m to go, at (2049, 77.2, 2277)
+[2026-11-09T01:50:47.001Z]   Brannoc to the camp: 13 m to go, at (2092, 75.6, 2373)
+[2026-11-09T01:50:48.459Z]   walked from the town to the camp: arrived in 44 s
+[2026-11-09T01:50:48.641Z]   screenshot g4-01-camp-approach.png
+[2026-11-09T01:50:52.119Z]   screenshot g4-02-camp-fight.png
+[2026-11-09T01:51:07.587Z] fight: {"swings":13,"drinks":0,"ms":18944,"accepted":9,"refused":0,"damage":[18,18,20,20,20,18,31,18,18],"kills":2,"xp":[20,20],"cleared":true,"hurt":[10,10,14,14],"downs":0}
+[2026-11-09T01:51:07.587Z] PASS the camp died to the starting sword (left click, client-predicted hits): 2 kills, 9 accepted hits (damage 18 18 20 20 20 18 31 18 18), camp cleared Event 211, 13 swings in 19 s, 0 downs
+[2026-11-09T01:51:12.723Z]   walked over 2 pickups; inventory now currency:gold=29 hide:wolf=1 meat:raw=1 potion:health=3
+[2026-11-09T01:51:12.723Z] PASS personal kill loot picked up by walking over it: 4 grant Events (401, source kill); gold 29  {"toasts":["Wolf Pelt","Raw Meat"]}
+[2026-11-09T01:51:12.880Z]   screenshot g4-03-camp-loot.png
+[2026-11-09T01:51:12.885Z]   no container in view; walking 155 m to the chest at (2087, 2225)
+[2026-11-09T01:51:12.894Z]   to the chest: 155 m to go, at (2095, 75.9, 2380)
+[2026-11-09T01:51:28.021Z]   to the chest: 51 m to go, at (2090, 73.4, 2276)
+[2026-11-09T01:51:39.106Z]   container 14374458667132807130 (chest) reached: opened (407/5 401/5); gold 42
+[2026-11-09T01:51:39.265Z]   screenshot g4-04-chest-opened.png
+[2026-11-09T01:51:39.277Z]   to the 0: 57 m to go, at (2087, 74.3, 2226)
+[2026-11-09T01:51:46.431Z]   to the 0: 23 m to go, at (2035, 79.4, 2208)
+[2026-11-09T01:51:51.670Z]   container 17712850599143377915 (0) reached: opened (407/4 401/4); gold 67
+[2026-11-09T01:51:51.940Z]   screenshot g4-05-chest-opened.png
+[2026-11-09T01:51:51.942Z] PASS loot: enough gold for the blueprint (40): 67 gold; bag armor:leather_cap=1 armor:leather_jerkin=1 blueprint:iron_cuirass=1 currency:gold=67 food:apple=2 gem:emerald:rough=1 gem:topaz:brilliant=1 hide:wolf=1 meat:raw=1 potion:health=3 weapon:iron_spear=1
+[2026-11-09T01:51:52.013Z] caves: 685 veins in 32 systems; 6 sunsteel and 139 gem veins facing sideways
+[2026-11-09T01:51:56.358Z]   rejoined at sunsteel vein 8835879023699622851 (system 3) (1818.0, -54.7, 316.0): standing at (1818.0, -56.5, 316.0) after 4 s
+[2026-11-09T01:51:59.342Z]   screenshot g4-06-vein-sunsteel-before.png
+[2026-11-09T01:52:02.879Z]   screenshot g4-07-vein-sunsteel-mined.png
+[2026-11-09T01:52:02.879Z]   mined sunsteel vein 8835879023699622851: 8 swings (E), 1 vein grants; toasts ["Sunsteel Ore x3"]
+[2026-11-09T01:52:03.822Z]   rejoined at sunsteel vein 14318032726258039959 (system 6) (3732.4, -109.9, 511.1): standing at (3732.4, -111.1, 511.1) after 1 s
+[2026-11-09T01:52:06.822Z]   screenshot g4-08-vein-sunsteel-before.png
+[2026-11-09T01:52:10.663Z]   screenshot g4-09-vein-sunsteel-mined.png
+[2026-11-09T01:52:10.663Z]   mined sunsteel vein 14318032726258039959: 8 swings (E), 1 vein grants; toasts ["Sunsteel Ore x3"]
+[2026-11-09T01:52:12.190Z]   rejoined at topaz vein 7840581575915726357 (system 0) (590.6, 53.0, 813.7): standing at (590.6, 51.1, 813.7) after 2 s
+[2026-11-09T01:52:15.237Z]   screenshot g4-10-vein-topaz-before.png
+[2026-11-09T01:52:18.445Z]   screenshot g4-11-vein-topaz-mined.png
+[2026-11-09T01:52:18.445Z]   mined topaz vein 7840581575915726357: 7 swings (E), 1 vein grants; toasts ["Rough Topaz"]
+[2026-11-09T01:52:18.449Z] PASS sunsteel ore for two ingots (smelt_sunsteel = 2 ore): 6 ore:sunsteel from 2 veins
+[2026-11-09T01:52:18.450Z] PASS a gem mined: gem:topaz:rough  {"zone":["{\"time\":\"2026-11-08T17:52:09.5018903-08:00\",\"level\":\"INFO\",\"msg\":\"vein drop\",\"svc\":\"zone\",\"vein\":14318032726258039959,\"material\":\"sunsteel\",\"character\":\"2fd9f1e7-0a95-4138-b837-915ee1f1770e\",\"item\":\"o","{\"time\":\"2026-11-08T17:52:09.5018903-08:00\",\"level\":\"INFO\",\"msg\":\"vein mined\",\"svc\":\"zone\",\"vein\":14318032726258039959,\"material\":\"sunsteel\",\"edit\":688619368056246278,\"respawnAt\":\"2026-11-09T10:09:27Z","{\"time\":\"2026-11-08T17:52:09.5018903-08:00\",\"level\":\"INFO\",\"msg\":\"loot granted\",\"svc\":\"zone\",\"character\":\"2fd9f1e7-0a95-4138-b837-915ee1f1770e\",\"item\":\"ore:sunsteel\",\"qty\":3,\"rarity\":0,\"key\":\"vein:aca","{\"time\":\"2026-11-08T17:52:17.3370587-08:00\",\"level\":\"INFO\",\"msg\":\"vein drop\",\"svc\":\"zone\",\"vein\":7840581575915726357,\"material\":\"topaz\",\"character\":\"2fd9f1e7-0a95-4138-b837-915ee1f1770e\",\"item\":\"gem:t","{\"time\":\"2026-11-08T17:52:17.3370587-08:00\",\"level\":\"INFO\",\"msg\":\"vein mined\",\"svc\":\"zone\",\"vein\":7840581575915726357,\"material\":\"topaz\",\"edit\":1918877196768871932,\"respawnAt\":\"2026-11-09T13:36:18Z\",\"","{\"time\":\"2026-11-08T17:52:17.3370587-08:00\",\"level\":\"INFO\",\"msg\":\"loot granted\",\"svc\":\"zone\",\"character\":\"2fd9f1e7-0a95-4138-b837-915ee1f1770e\",\"item\":\"gem:topaz:rough\",\"qty\":1,\"rarity\":0,\"key\":\"vein:"]}
+[2026-11-09T01:52:19.239Z]   rejoined at the camp outside the town (back from the caves) (2091.0, ~, 2385.0): standing at (2091.0, 76.1, 2385.0) after 1 s
+[2026-11-09T01:52:20.751Z] PASS after 4 rejoins one cave HUD is on the page (1): the previous worlds' cave managers were disposed (their E/mouse listeners too)
+[2026-11-09T01:52:20.757Z]   Brannoc into the town: 116 m to go, at (2091, 76.1, 2385)
+[2026-11-09T01:52:35.855Z]   Brannoc into the town: 10 m to go, at (2054, 77.4, 2287)
+[2026-11-09T01:52:37.044Z]   Brannoc into the town: 2 m to go, at (2050, 77.2, 2278)
+[2026-11-09T01:52:37.175Z]   Brannoc into the town: 4 m to go, at (2050, 77.2, 2277)
+[2026-11-09T01:52:37.427Z]   Brannoc into the town: 4 m to go, at (2048, 77.3, 2277)
+[2026-11-09T01:52:37.687Z]   Brannoc into the town: 4 m to go, at (2046, 77.4, 2277)
+[2026-11-09T01:52:37.961Z]   Brannoc into the town: 3 m to go, at (2044, 77.5, 2277)
+[2026-11-09T01:52:38.224Z]   Brannoc into the town: 3 m to go, at (2042, 77.6, 2277)
+[2026-11-09T01:52:38.486Z]   Brannoc into the town: 3 m to go, at (2039, 77.7, 2277)
+[2026-11-09T01:52:38.745Z]   Brannoc into the town: 3 m to go, at (2038, 77.9, 2277)
+[2026-11-09T01:52:39.008Z]   Brannoc into the town: 3 m to go, at (2035, 78.0, 2276)
+[2026-11-09T01:52:39.270Z]   Brannoc into the town: 3 m to go, at (2033, 78.1, 2276)
+[2026-11-09T01:52:39.410Z]   Brannoc into the town: 4 m to go, at (2032, 78.2, 2276)
+[2026-11-09T01:52:39.670Z]   Brannoc into the town: 3 m to go, at (2030, 78.4, 2276)
+[2026-11-09T01:52:39.932Z]   Brannoc into the town: 3 m to go, at (2028, 78.5, 2276)
+[2026-11-09T01:52:40.208Z]   Brannoc into the town: 3 m to go, at (2026, 78.6, 2276)
+[2026-11-09T01:52:40.458Z]   Brannoc into the town: 3 m to go, at (2024, 78.7, 2276)
+[2026-11-09T01:52:40.718Z]   Brannoc into the town: 3 m to go, at (2022, 78.9, 2276)
+[2026-11-09T01:52:40.991Z]   Brannoc into the town: 3 m to go, at (2020, 79.0, 2276)
+[2026-11-09T01:52:41.253Z]   Brannoc into the town: 3 m to go, at (2018, 79.1, 2276)
+[2026-11-09T01:52:41.526Z]   Brannoc into the town: 3 m to go, at (2017, 79.2, 2276)
+[2026-11-09T01:52:41.929Z]   Brannoc into the town: 3 m to go, at (2015, 79.2, 2276)
+[2026-11-09T01:52:42.330Z]   Brannoc into the town: 3 m to go, at (2013, 79.3, 2276)
+[2026-11-09T01:52:42.725Z]   Brannoc into the town: 3 m to go, at (2011, 79.4, 2276)
+[2026-11-09T01:52:43.127Z]   Brannoc into the town: 3 m to go, at (2009, 79.5, 2275)
+[2026-11-09T01:52:43.542Z]   Brannoc into the town: 3 m to go, at (2007, 79.6, 2275)
+[2026-11-09T01:52:43.940Z]   Brannoc into the town: 3 m to go, at (2005, 79.6, 2275)
+[2026-11-09T01:52:44.326Z]   Brannoc into the town: 3 m to go, at (2003, 79.7, 2275)
+[2026-11-09T01:52:44.709Z]   Brannoc into the town: 3 m to go, at (2001, 79.8, 2275)
+[2026-11-09T01:52:49.074Z]   Brannoc into the town: 2 m to go, at (1998, 79.8, 2274)
+[2026-11-09T01:52:49.258Z]   Brannoc into the town: 3 m to go, at (1997, 79.9, 2275)
+[2026-11-09T01:52:49.516Z]   Brannoc into the town: 3 m to go, at (1995, 80.0, 2275)
+[2026-11-09T01:52:49.775Z]   Brannoc into the town: 3 m to go, at (1993, 80.0, 2275)
+[2026-11-09T01:52:50.035Z]   Brannoc into the town: 3 m to go, at (1991, 80.1, 2275)
+[2026-11-09T01:52:50.295Z]   Brannoc into the town: 3 m to go, at (1989, 80.1, 2275)
+[2026-11-09T01:52:50.577Z]   Brannoc into the town: 3 m to go, at (1987, 80.2, 2275)
+[2026-11-09T01:52:50.843Z]   Brannoc into the town: 3 m to go, at (1985, 80.2, 2275)
+[2026-11-09T01:52:51.175Z]   Brannoc into the town: 2 m to go, at (1983, 80.3, 2274)
+[2026-11-09T01:52:51.335Z]   Brannoc into the town: 3 m to go, at (1982, 80.3, 2274)
+[2026-11-09T01:52:51.606Z]   Brannoc into the town: 3 m to go, at (1980, 80.3, 2274)
+[2026-11-09T01:52:51.876Z]   Brannoc into the town: 3 m to go, at (1978, 80.3, 2274)
+[2026-11-09T01:52:52.138Z]   Brannoc into the town: 3 m to go, at (1976, 80.3, 2274)
+[2026-11-09T01:52:52.276Z]   Brannoc into the town: 4 m to go, at (1974, 80.4, 2274)
+[2026-11-09T01:52:52.546Z]   Brannoc into the town: 3 m to go, at (1972, 80.3, 2274)
+[2026-11-09T01:52:52.809Z]   Brannoc into the town: 3 m to go, at (1970, 80.3, 2274)
+[2026-11-09T01:52:53.068Z]   Brannoc into the town: 3 m to go, at (1968, 80.3, 2274)
+[2026-11-09T01:52:53.347Z]   Brannoc into the town: 4 m to go, at (1967, 80.3, 2274)
+[2026-11-09T01:52:53.746Z]   Brannoc into the town: 4 m to go, at (1965, 80.3, 2274)
+[2026-11-09T01:52:54.127Z]   Brannoc into the town: 4 m to go, at (1963, 80.3, 2274)
+[2026-11-09T01:52:54.528Z]   Brannoc into the town: 4 m to go, at (1961, 80.3, 2274)
+[2026-11-09T01:52:54.942Z]   Brannoc into the town: 4 m to go, at (1959, 80.3, 2274)
+[2026-11-09T01:52:55.333Z]   Brannoc into the town: 4 m to go, at (1957, 80.3, 2273)
+[2026-11-09T01:52:55.730Z]   Brannoc into the town: 4 m to go, at (1955, 80.4, 2273)
+[2026-11-09T01:52:56.124Z]   Brannoc into the town: 4 m to go, at (1953, 80.4, 2273)
+[2026-11-09T01:52:56.542Z]   Brannoc into the town: 3 m to go, at (1951, 80.5, 2273)
+[2026-11-09T01:52:56.823Z]   Brannoc into the town: 4 m to go, at (1949, 80.6, 2273)
+[2026-11-09T01:52:57.104Z]   Brannoc into the town: 3 m to go, at (1947, 80.7, 2273)
+[2026-11-09T01:52:57.373Z]   Brannoc into the town: 3 m to go, at (1945, 80.8, 2273)
+[2026-11-09T01:52:57.643Z]   Brannoc into the town: 23 m to go, at (1943, 80.9, 2273)
+[2026-11-09T01:53:00.623Z]   screenshot g4-12-town-square.png
+[2026-11-09T01:53:00.640Z]   to the smithy door: 18 m to go, at (1920, 82.3, 2272)
+[2026-11-09T01:53:04.069Z]   to the smithy door: 9 m to go, at (1919, 82.2, 2288)
+[2026-11-09T01:53:06.659Z] PASS walked from the camp (205 m from the centre) through the town square into the smithy in 46 s  {"toSquare":true,"toDoor":true,"inside":true,"s":46,"from":{"x":2091,"z":2385},"at":{"x":1908.7,"y":82.3,"z":2289.2}}
+[2026-11-09T01:53:06.867Z]   screenshot g4-13-smithy-inside.png
+[2026-11-09T01:53:07.380Z] PASS talked to the blacksmith "Selina" (E on the "[E] Talk to" prompt): the shop panel lists 8 wares  {"title":"Selina","line":"Sunsteel's the only thing that bites a demon. Remember that.","shop":8,"bounties":0}
+[2026-11-09T01:53:07.603Z]   screenshot g4-14-blacksmith-shop.png
+[2026-11-09T01:53:07.675Z] PASS bought the Sunsteel Blade blueprint with the Buy button: gold 67 -> 27 (Event 807 price 40)
+[2026-11-09T01:53:07.912Z]   screenshot g4-15-blueprint-bought.png
+[2026-11-09T01:53:09.765Z] PASS E at the town forge: the zone opened it (Event 805) and the crafting panel shows the smithing recipes  {"kind":"forge","prop":"33461356418492015","settlement":9,"level":null,"offline":false}
+[2026-11-09T01:53:09.990Z]   screenshot g4-16-forge-panel.png
+[2026-11-09T01:53:11.191Z] PASS smelted twice with the Craft button: 2 ingot:sunsteel, 2 ore left  {"s1":[{"t":1794189190074,"kind":405,"entityId":64,"targetId":4,"value":1}],"s2":[{"t":1794189190673,"kind":405,"entityId":64,"targetId":4,"value":1}]}
+[2026-11-09T01:53:12.069Z] PASS forged the Sunsteel Blade at the town forge: rarity 0, item level 10, 1 socket(s)  {"h":64,"b":"weapon:sunsteel_blade","q":1,"l":10,"r":0,"s":"inv:9","k":[""],"t":true,"v":true,"p":1}
+[2026-11-09T01:53:12.239Z]   screenshot g4-17-blade-forged.png
+[2026-11-09T01:53:12.780Z]   screenshot g4-18-inventory-blade.png
+[2026-11-09T01:53:12.918Z] PASS socketed gem:topaz:rough into the blade in the inventory ("Socket a gem", click the gem)  {"sockets":["gem:topaz:rough"]}
+[2026-11-09T01:53:14.395Z]   screenshot g4-19-inventory-equipped.png
+[2026-11-09T01:53:14.398Z] PASS equipped in loadout 2 with "Equip · Loadout 2": slot eq:main1; combat_sync (Event 212 x1) loadout 2 = sword with gem element 2; loadout 1 keeps the ordinary sword  {"slot":"eq:main1","sockets":["gem:topaz:rough"],"loadouts":[{"weapon":"sword","spells":["ember_flick","frost_bite","magma_dash",null],"gem":-1},{"weapon":"sword","spells":["ember_flick","frost_bite","magma_dash",null],"gem":2}],"activeLoadout":0}
+[2026-11-09T01:53:14.651Z]   armor from the loot put on with "Equip": armor:leather_jerkin -> eq:body, armor:leather_cap -> eq:head; health max 139
+[2026-11-09T01:53:14.778Z]   screenshot g4-20-inventory-armor.png
+[2026-11-09T01:53:16.699Z]   world time 9.46 h; fast-forwarding to 18:15 (dev Interact 52/2) so dusk (18:30) comes in ~40 s
+[2026-11-09T01:53:16.706Z]   to the ward garden: 10 m to go, at (1910, 82.1, 2287)
+[2026-11-09T01:53:18.391Z]   to the ward garden: 3 m to go, at (1918, 82.2, 2289)
+[2026-11-09T01:53:18.653Z]   to the ward garden: 4 m to go, at (1919, 82.2, 2290)
+[2026-11-09T01:53:19.040Z]   to the ward garden: 4 m to go, at (1919, 82.2, 2292)
+[2026-11-09T01:53:19.436Z]   to the ward garden: 8 m to go, at (1919, 82.1, 2294)
+[2026-11-09T01:53:54.066Z] PASS dusk fell (Event 501) at 18.50 h, moon 7, night 498386; defense planned tonight: {"19":1794192654,"24":1794192834}
+[2026-11-09T01:53:54.341Z]   screenshot g4-21-town-dusk.png
+[2026-11-09T01:53:54.402Z]   out past the ward: 4 m to go, at (1923, 82.1, 2296)
+[2026-11-09T01:53:55.041Z]   out past the ward: 22 m to go, at (1920, 82.1, 2294)
+[2026-11-09T01:53:57.753Z]   out past the ward: 22 m to go, at (1920, 82.3, 2274)
+[2026-11-09T01:54:00.504Z]   out past the ward: 3 m to go, at (1941, 81.1, 2273)
+[2026-11-09T01:54:00.768Z]   out past the ward: 3 m to go, at (1943, 80.9, 2273)
+[2026-11-09T01:54:01.040Z]   out past the ward: 3 m to go, at (1945, 80.8, 2273)
+[2026-11-09T01:54:01.314Z]   out past the ward: 3 m to go, at (1947, 80.7, 2273)
+[2026-11-09T01:54:01.445Z]   out past the ward: 3 m to go, at (1948, 80.6, 2273)
+[2026-11-09T01:54:01.701Z]   out past the ward: 3 m to go, at (1950, 80.5, 2273)
+[2026-11-09T01:54:01.973Z]   out past the ward: 3 m to go, at (1952, 80.4, 2273)
+[2026-11-09T01:54:02.237Z]   out past the ward: 3 m to go, at (1954, 80.4, 2273)
+[2026-11-09T01:54:02.513Z]   out past the ward: 3 m to go, at (1956, 80.3, 2273)
+[2026-11-09T01:54:02.780Z]   out past the ward: 3 m to go, at (1958, 80.3, 2273)
+[2026-11-09T01:54:03.050Z]   out past the ward: 3 m to go, at (1960, 80.3, 2274)
+[2026-11-09T01:54:03.451Z]   out past the ward: 3 m to go, at (1962, 80.3, 2274)
+[2026-11-09T01:54:03.720Z]   out past the ward: 4 m to go, at (1963, 80.3, 2274)
+[2026-11-09T01:54:04.129Z]   out past the ward: 4 m to go, at (1965, 80.3, 2274)
+[2026-11-09T01:54:04.544Z]   out past the ward: 4 m to go, at (1967, 80.3, 2274)
+[2026-11-09T01:54:04.941Z]   out past the ward: 4 m to go, at (1969, 80.3, 2274)
+[2026-11-09T01:54:05.330Z]   out past the ward: 4 m to go, at (1971, 80.3, 2274)
+[2026-11-09T01:54:05.711Z]   out past the ward: 4 m to go, at (1973, 80.3, 2274)
+[2026-11-09T01:54:06.096Z]   out past the ward: 4 m to go, at (1975, 80.4, 2274)
+[2026-11-09T01:54:06.508Z]   out past the ward: 3 m to go, at (1977, 80.3, 2274)
+[2026-11-09T01:54:06.774Z]   out past the ward: 3 m to go, at (1979, 80.3, 2274)
+[2026-11-09T01:54:07.044Z]   out past the ward: 3 m to go, at (1982, 80.3, 2274)
+[2026-11-09T01:54:07.170Z]   out past the ward: 4 m to go, at (1983, 80.3, 2274)
+[2026-11-09T01:54:07.443Z]   out past the ward: 3 m to go, at (1985, 80.3, 2275)
+[2026-11-09T01:54:07.707Z]   out past the ward: 3 m to go, at (1987, 80.2, 2275)
+[2026-11-09T01:54:07.968Z]   out past the ward: 3 m to go, at (1989, 80.1, 2275)
+[2026-11-09T01:54:08.234Z]   out past the ward: 3 m to go, at (1991, 80.1, 2275)
+[2026-11-09T01:54:08.511Z]   out past the ward: 3 m to go, at (1993, 80.0, 2275)
+[2026-11-09T01:54:08.768Z]   out past the ward: 3 m to go, at (1995, 80.0, 2275)
+[2026-11-09T01:54:08.905Z]   out past the ward: 4 m to go, at (1996, 80.0, 2275)
+[2026-11-09T01:54:23.920Z]   out past the ward: 2 m to go, at (1998, 79.9, 2275)
+[2026-11-09T01:54:27.024Z]   out past the ward: 2 m to go, at (2000, 79.8, 2274)
+[2026-11-09T01:54:27.167Z]   out past the ward: 3 m to go, at (2000, 79.8, 2274)
+[2026-11-09T01:54:27.566Z]   out past the ward: 3 m to go, at (2002, 79.8, 2275)
+[2026-11-09T01:54:27.958Z]   out past the ward: 3 m to go, at (2004, 79.7, 2275)
+[2026-11-09T01:54:28.364Z]   out past the ward: 3 m to go, at (2006, 79.6, 2275)
+[2026-11-09T01:54:28.766Z]   out past the ward: 3 m to go, at (2008, 79.5, 2275)
+[2026-11-09T01:54:29.170Z]   out past the ward: 3 m to go, at (2010, 79.4, 2275)
+[2026-11-09T01:54:29.567Z]   out past the ward: 3 m to go, at (2012, 79.4, 2276)
+[2026-11-09T01:54:29.968Z]   out past the ward: 3 m to go, at (2014, 79.3, 2276)
+[2026-11-09T01:54:30.250Z]   out past the ward: 3 m to go, at (2016, 79.2, 2276)
+[2026-11-09T01:54:30.507Z]   out past the ward: 3 m to go, at (2018, 79.1, 2276)
+[2026-11-09T01:54:30.645Z]   out past the ward: 4 m to go, at (2019, 79.0, 2276)
+[2026-11-09T01:54:30.904Z]   out past the ward: 4 m to go, at (2021, 78.9, 2276)
+[2026-11-09T01:54:31.176Z]   out past the ward: 3 m to go, at (2023, 78.8, 2276)
+[2026-11-09T01:54:31.443Z]   out past the ward: 3 m to go, at (2025, 78.7, 2276)
+[2026-11-09T01:54:31.703Z]   out past the ward: 3 m to go, at (2027, 78.6, 2276)
+[2026-11-09T01:54:31.968Z]   out past the ward: 3 m to go, at (2029, 78.4, 2276)
+[2026-11-09T01:54:32.243Z]   out past the ward: 3 m to go, at (2032, 78.3, 2276)
+[2026-11-09T01:54:32.500Z]   out past the ward: 3 m to go, at (2034, 78.1, 2276)
+[2026-11-09T01:54:32.642Z]   out past the ward: 4 m to go, at (2035, 78.1, 2276)
+[2026-11-09T01:54:32.900Z]   out past the ward: 3 m to go, at (2037, 77.9, 2277)
+[2026-11-09T01:54:33.167Z]   out past the ward: 3 m to go, at (2039, 77.8, 2277)
+[2026-11-09T01:54:33.424Z]   out past the ward: 3 m to go, at (2041, 77.7, 2277)
+[2026-11-09T01:54:33.697Z]   out past the ward: 3 m to go, at (2043, 77.5, 2277)
+[2026-11-09T01:54:33.962Z]   out past the ward: 3 m to go, at (2045, 77.4, 2277)
+[2026-11-09T01:54:34.239Z]   out past the ward: 3 m to go, at (2047, 77.3, 2277)
+[2026-11-09T01:54:34.376Z]   out past the ward: 95 m to go, at (2048, 77.3, 2277)
+[2026-11-09T01:54:47.728Z]   outside the ward (154 m from the garden, ward r 140): arrived
+[2026-11-09T01:54:49.233Z] PASS demons rose near Brannoc naturally after 2 s: 4 demons (lesser gloamling)
+[2026-11-09T01:54:49.962Z]   screenshot g4-22-demons-rise.png
+[2026-11-09T01:54:58.332Z]   screenshot g4-23-demon-shrugs-steel.png
+[2026-11-09T01:55:15.034Z] ordinary sword vs demons: {"loadout":{"weapon":"sword","spells":["ember_flick","frost_bite","magma_dash",null],"gem":-1},"swings":28,"accepted":17,"damage":384,"shrugged":17,"kills":0,"minHealthPct":{"94":0.9,"95":0.83,"96":0.71,"97":0.76},"alive":4,"of":4,"seared":[0,0,0,0],"downs":0,"hurt":42}
+[2026-11-09T01:55:15.034Z] PASS a demon survives ordinary damage: 25 s of the starting sword, 17 accepted hits, 384 damage, 17 "shrugged" Events (504), 0 deaths, 4/4 alive, lowest health 71 %
+[2026-11-09T01:55:17.938Z]   screenshot g4-24-demon-sunsteel.png
+[2026-11-09T01:55:41.333Z] sunsteel blade vs demons: {"loadout":{"weapon":"sword","spells":["ember_flick","frost_bite","magma_dash",null],"gem":2},"activeLoadout":1,"swings":14,"accepted":17,"damage":[22,25,37,37,22,25,25,25,37,37,22,22,34,22,22,25,38],"kills":4,"xp":[42,42,42,42],"alive":0,"shruggedWithBlade":0,"s":25,"downs":0}
+[2026-11-09T01:55:41.333Z] PASS the forged Sunsteel Blade (X -> loadout 2) kills them: 4/4 demons dead in 25 s, 17 accepted hits (damage 22 25 37 37 22 25 25 25 37 37 22 22 34 22 22 25 38), 0 shrugs, 0 left
+[2026-11-09T01:55:41.582Z]   screenshot g4-25-demons-slain.png
+[2026-11-09T01:55:41.588Z]   back to the ward garden: 112 m to go, at (2052, 74.0, 2389)
+[2026-11-09T01:55:56.700Z]   back to the ward garden: 4 m to go, at (2050, 77.4, 2281)
+[2026-11-09T01:55:57.100Z]   back to the ward garden: 2 m to go, at (2050, 77.3, 2278)
+[2026-11-09T01:55:57.241Z]   back to the ward garden: 4 m to go, at (2050, 77.2, 2277)
+[2026-11-09T01:55:57.511Z]   back to the ward garden: 4 m to go, at (2048, 77.3, 2277)
+[2026-11-09T01:55:57.777Z]   back to the ward garden: 3 m to go, at (2046, 77.4, 2277)
+[2026-11-09T01:55:58.039Z]   back to the ward garden: 3 m to go, at (2044, 77.5, 2277)
+[2026-11-09T01:55:58.311Z]   back to the ward garden: 3 m to go, at (2041, 77.6, 2277)
+[2026-11-09T01:55:58.572Z]   back to the ward garden: 3 m to go, at (2039, 77.7, 2277)
+[2026-11-09T01:55:58.833Z]   back to the ward garden: 3 m to go, at (2037, 77.9, 2277)
+[2026-11-09T01:55:58.973Z]   back to the ward garden: 4 m to go, at (2036, 78.0, 2277)
+[2026-11-09T01:55:59.236Z]   back to the ward garden: 4 m to go, at (2034, 78.1, 2276)
+[2026-11-09T01:55:59.499Z]   back to the ward garden: 3 m to go, at (2032, 78.2, 2276)
+[2026-11-09T01:55:59.761Z]   back to the ward garden: 3 m to go, at (2030, 78.4, 2276)
+[2026-11-09T01:56:00.031Z]   back to the ward garden: 3 m to go, at (2028, 78.5, 2276)
+[2026-11-09T01:56:00.301Z]   back to the ward garden: 3 m to go, at (2026, 78.6, 2276)
+[2026-11-09T01:56:00.570Z]   back to the ward garden: 3 m to go, at (2024, 78.8, 2276)
+[2026-11-09T01:56:00.709Z]   back to the ward garden: 4 m to go, at (2023, 78.8, 2276)
+[2026-11-09T01:56:00.977Z]   back to the ward garden: 4 m to go, at (2021, 79.0, 2276)
+[2026-11-09T01:56:01.231Z]   back to the ward garden: 3 m to go, at (2019, 79.1, 2276)
+[2026-11-09T01:56:01.488Z]   back to the ward garden: 3 m to go, at (2017, 79.2, 2276)
+[2026-11-09T01:56:01.746Z]   back to the ward garden: 3 m to go, at (2015, 79.2, 2276)
+[2026-11-09T01:56:02.143Z]   back to the ward garden: 3 m to go, at (2012, 79.3, 2276)
+[2026-11-09T01:56:02.406Z]   back to the ward garden: 4 m to go, at (2011, 79.4, 2276)
+[2026-11-09T01:56:02.806Z]   back to the ward garden: 4 m to go, at (2009, 79.5, 2275)
+[2026-11-09T01:56:03.215Z]   back to the ward garden: 4 m to go, at (2007, 79.6, 2275)
+[2026-11-09T01:56:03.618Z]   back to the ward garden: 4 m to go, at (2005, 79.6, 2275)
+[2026-11-09T01:56:04.018Z]   back to the ward garden: 4 m to go, at (2003, 79.7, 2275)
+[2026-11-09T01:56:04.406Z]   back to the ward garden: 4 m to go, at (2001, 79.8, 2275)
+[2026-11-09T01:56:08.950Z]   back to the ward garden: 2 m to go, at (1998, 79.8, 2273)
+[2026-11-09T01:56:09.090Z]   back to the ward garden: 3 m to go, at (1997, 79.9, 2274)
+[2026-11-09T01:56:09.360Z]   back to the ward garden: 3 m to go, at (1995, 80.0, 2275)
+[2026-11-09T01:56:09.622Z]   back to the ward garden: 3 m to go, at (1993, 80.0, 2275)
+[2026-11-09T01:56:09.899Z]   back to the ward garden: 3 m to go, at (1991, 80.1, 2275)
+[2026-11-09T01:56:10.180Z]   back to the ward garden: 3 m to go, at (1989, 80.1, 2275)
+[2026-11-09T01:56:10.439Z]   back to the ward garden: 3 m to go, at (1987, 80.2, 2275)
+[2026-11-09T01:56:10.574Z]   back to the ward garden: 4 m to go, at (1986, 80.2, 2275)
+[2026-11-09T01:56:10.839Z]   back to the ward garden: 3 m to go, at (1984, 80.3, 2274)
+[2026-11-09T01:56:11.104Z]   back to the ward garden: 3 m to go, at (1982, 80.3, 2274)
+[2026-11-09T01:56:11.360Z]   back to the ward garden: 3 m to go, at (1980, 80.3, 2274)
+[2026-11-09T01:56:11.637Z]   back to the ward garden: 3 m to go, at (1978, 80.3, 2274)
+[2026-11-09T01:56:11.906Z]   back to the ward garden: 3 m to go, at (1976, 80.3, 2274)
+[2026-11-09T01:56:12.163Z]   back to the ward garden: 3 m to go, at (1974, 80.4, 2274)
+[2026-11-09T01:56:12.298Z]   back to the ward garden: 4 m to go, at (1972, 80.3, 2274)
+[2026-11-09T01:56:12.570Z]   back to the ward garden: 4 m to go, at (1971, 80.3, 2274)
+[2026-11-09T01:56:12.832Z]   back to the ward garden: 3 m to go, at (1968, 80.3, 2274)
+[2026-11-09T01:56:13.109Z]   back to the ward garden: 3 m to go, at (1966, 80.3, 2274)
+[2026-11-09T01:56:13.375Z]   back to the ward garden: 3 m to go, at (1964, 80.3, 2274)
+[2026-11-09T01:56:13.634Z]   back to the ward garden: 3 m to go, at (1962, 80.3, 2274)
+[2026-11-09T01:56:13.898Z]   back to the ward garden: 4 m to go, at (1961, 80.3, 2274)
+[2026-11-09T01:56:14.309Z]   back to the ward garden: 4 m to go, at (1959, 80.3, 2274)
+[2026-11-09T01:56:14.709Z]   back to the ward garden: 4 m to go, at (1957, 80.3, 2273)
+[2026-11-09T01:56:15.096Z]   back to the ward garden: 4 m to go, at (1955, 80.4, 2273)
+[2026-11-09T01:56:15.498Z]   back to the ward garden: 4 m to go, at (1953, 80.4, 2273)
+[2026-11-09T01:56:15.883Z]   back to the ward garden: 4 m to go, at (1951, 80.5, 2273)
+[2026-11-09T01:56:16.294Z]   back to the ward garden: 3 m to go, at (1949, 80.6, 2273)
+[2026-11-09T01:56:16.695Z]   back to the ward garden: 3 m to go, at (1947, 80.7, 2273)
+[2026-11-09T01:56:17.109Z]   back to the ward garden: 3 m to go, at (1945, 80.8, 2273)
+[2026-11-09T01:56:17.376Z]   back to the ward garden: 23 m to go, at (1943, 80.9, 2273)
+[2026-11-09T01:56:20.128Z]   back to the ward garden: 22 m to go, at (1922, 82.3, 2272)
+[2026-11-09T01:56:22.901Z]   back to the ward garden: 3 m to go, at (1919, 82.2, 2293)
+[2026-11-09T01:56:23.161Z]   back to the ward garden: 7 m to go, at (1919, 82.1, 2295)
+[2026-11-09T01:56:24.251Z]   two WP15 night bots (Ana: sword, Bo: spear; dev sunsteel) join at the ward garden; they make the ward falter (dev Interact 52/1)
+[2026-11-09T01:56:26.583Z] PASS the ward falters: defense warning/wave Events reach the browser (510/15)
+[2026-11-09T01:56:28.818Z]   screenshot g4-26-defense-warning.png
+[2026-11-09T01:57:02.633Z]   screenshot g4-27-defense-wave-1.png
+[2026-11-09T01:57:54.483Z]   screenshot g4-28-defense-wave-2.png
+[2026-11-09T01:58:50.840Z]   screenshot g4-29-defense-wave-3.png
+[2026-11-09T01:59:32.021Z] defense: {"waves":[1,2,3],"result":1,"wardMinFromHud":1000,"kills":34,"killsByBrowser":12,"reward":[300],"swings":85,"drinks":1,"s":182,"downs":0,"botsExit":0}
+[2026-11-09T01:59:32.021Z]   bots: [ 181.27s] Ana at (1931, 82, 2300) hp 87%  attacks 110 dodges 65  accepted 105 refused 5  corrections 0
+[2026-11-09T01:59:32.021Z]   bots: [ 181.28s] Bo at (1931, 82, 2301) hp 70%  attacks 132 dodges 65  accepted 112 refused 16  corrections 0
+[2026-11-09T01:59:32.021Z]   bots: [ 182.87s]   zone: ward 1000; demons (distance to the garden, state): gloamling 130m asleep, gloamling 127m asleep, gloamling 121m asleep, gloamling 124m asleep, grave_brute 6m evade
+[2026-11-09T01:59:32.021Z]   bots: [ 186.21s] Bo killed a demon (191, +156 xp)
+[2026-11-09T01:59:32.021Z]   bots: [ 186.21s] Bo: DEFENSE ENDED (1): The last wave falls. The ward blooms again.
+[2026-11-09T01:59:32.021Z]   bots: [ 186.21s] Bo: defense reward +300 XP
+[2026-11-09T01:59:32.021Z]   bots: [ 186.21s] Ana: DEFENSE ENDED (1): The last wave falls. The ward blooms again.
+[2026-11-09T01:59:32.021Z]   bots: [ 186.21s] Ana: defense reward +300 XP
+[2026-11-09T01:59:32.021Z]   bots: [ 187.38s] defense ended after 185 s: HELD
+[2026-11-09T01:59:32.021Z]   bots: [ 187.38s] Ana: 8 demon kills, 117 claims accepted, 0 downs, 89 damage taken, reward 300 XP
+[2026-11-09T01:59:32.021Z]   bots: [ 187.38s] Bo: 14 demon kills, 124 claims accepted, 0 downs, 87 damage taken, reward 300 XP
+[2026-11-09T01:59:32.021Z]   bots: [ 187.38s] CHECK a town defense event runs start to finish with two players: true (result HELD, both rewarded true)
+[2026-11-09T01:59:32.021Z]   bots: [ 187.38s] PASS
+[2026-11-09T01:59:32.021Z] PASS the town defense ended HELD (Event 513 value 1) after 182 s: waves 1, 2, 3, 34 demon deaths seen by Brannoc (12 by Brannoc), ward garden lowest 1000/1000 on the HUD
+[2026-11-09T01:59:32.021Z] PASS Brannoc took part and was rewarded (Event 514): +300 XP
+[2026-11-09T01:59:32.246Z]   screenshot g4-30-defense-ended.png
+[2026-11-09T01:59:32.268Z]   world time 20.76 h, 4 demons alive in the zone; fast-forwarding to 05:50 (dev Interact 52/2) so sunrise (06:00) comes in ~25 s
+[2026-11-09T01:59:58.545Z] PASS dawn (Event 502) at 6.02 h: 4 demons burned, 0 fled; 0 demons left
+[2026-11-09T01:59:58.545Z] PASS Brannoc survived the night in Draedmore: health 199/199 at dawn (lowest while fighting at night 90/189), downed 0 times all session (Event 221 respawns)
+[2026-11-09T01:59:59.958Z]   screenshot g4-31-dawn.png
+[2026-11-09T01:59:59.968Z] PASS the zone's live inventory still holds the socketed Sunsteel Blade at dawn  {"items":["currency:gold","potion:health","hide:wolf","meat:raw","armor:leather_jerkin","food:apple","gem:topaz:brilliant","weapon:iron_spear","blueprint:iron_cuirass","gem:emerald:rough","armor:leather_cap","ore:sunsteel","blueprint:sunsteel_blade","weapon:sunsteel_blade"]}
+[2026-11-09T01:59:59.969Z] PASS no page errors in the browser  []
+[2026-11-09T02:00:04.597Z] dropped lodestone_wp04_g4_mw8ls0e6
+[2026-11-09T02:00:04.598Z] summary: setup: PASS (6/6) | 1 fight + loot: PASS (4/4) | 2 mine ore + gem: PASS (2/2) | 3 travel to town: PASS (2/2) | 4 blueprint + smelt + forge: PASS (5/5) | 5 socket + equip: PASS (2/2) | 6 night: demons: PASS (4/4) | 7 night: town defense: PASS (3/3) | 8 dawn: survived: PASS (3/3) | general: PASS (1/1)
+[2026-11-09T02:00:04.598Z] ALL PASS

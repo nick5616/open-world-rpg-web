@@ -1,0 +1,56 @@
+debug: [vite] connecting...
+debug: [vite] connected.
+info: %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+info: disconnect from room {room: world-4f916ffb-daed-43cd-84f4-e7ef782e0b94, roomID: RM_VpNTvJJ5o9nu, participant: 2fd9f1e7-0a95-4138-b837-915ee1f1770e, pID: PA_wLZydBJiU4H3}
+log: THREE.WebGLRenderer: Context Lost.
+warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+info: disconnect from room {room: world-4f916ffb-daed-43cd-84f4-e7ef782e0b94, roomID: RM_VpNTvJJ5o9nu, participant: 2fd9f1e7-0a95-4138-b837-915ee1f1770e, pID: PA_6nb8ELyav5pn}
+log: THREE.WebGLRenderer: Context Lost.
+warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+info: disconnect from room {room: world-4f916ffb-daed-43cd-84f4-e7ef782e0b94, roomID: RM_VpNTvJJ5o9nu, participant: 2fd9f1e7-0a95-4138-b837-915ee1f1770e, pID: PA_AQavKsuBspLR}
+log: THREE.WebGLRenderer: Context Lost.
+warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+info: disconnect from room {room: world-4f916ffb-daed-43cd-84f4-e7ef782e0b94, roomID: RM_VpNTvJJ5o9nu, participant: 2fd9f1e7-0a95-4138-b837-915ee1f1770e, pID: PA_NcFGa64tGJng}
+warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+log: THREE.WebGLRenderer: Context Lost.
