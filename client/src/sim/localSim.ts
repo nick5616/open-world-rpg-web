@@ -15,6 +15,7 @@ import { advanceFixedStep, lerp } from './fixedStep';
 import { stepFly } from './fly';
 import { JumpEdgeLatch, makeMoveInput, type HeldButtons } from './inputFrame';
 import { MoveMode } from '@lodestone/contracts';
+import { stepClock } from './stepClock';
 import { cloneMoveState, MoveFlag, newMoveState, NO_ENV, stepMovement, STEP_DT, type MoveInput, type MoveState, type StepEnv, type Vec3 } from './movement';
 
 export interface FrameInput {
@@ -118,6 +119,7 @@ export class LocalSim {
       const env = this.envSource ? this.envSource() : NO_ENV;
       this.lastEnv = env;
       this.prev = this.cur;
+      stepClock.seq = this.seq + 1; // doors (stepClock.ts): the world as the zone sees it for this input seq
       this.cur = inp.fly ? stepFly(this.cur, input, STEP_DT) : stepMovement(this.cur, input, this.ground, STEP_DT, env);
       this.seq++;
       this.onStep?.({ seq: this.seq, input, state: this.cur, fly: inp.fly, env });

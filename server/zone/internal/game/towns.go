@@ -81,6 +81,7 @@ type townsState struct {
 	accepted map[string][]npc.Bounty
 	props    map[uint64]int // interactable prop id -> towns prop index
 	structs  map[uint64]int // structure id -> structure index
+	doors    *doorWorld     // building doors (doors.go)
 }
 
 func (s *Server) timeOfDay(now time.Time) float64 {
@@ -114,6 +115,7 @@ func (s *Server) townsInit() {
 	for i := range tw.Structures {
 		t.structs[tw.Structures[i].ID] = i
 	}
+	s.doorsInit() // building doors (doors.go)
 }
 
 // townsTick activates settlements near players, steps active NPCs and
@@ -157,6 +159,7 @@ func (s *Server) townsTick(tick uint32, now time.Time) {
 		e.Yaw = wireYaw(st.Yaw)
 		e.prevValid = e.Move
 	}
+	s.doorsTick(tick) // building doors: settle changes, baselines, NPCs closing behind them (doors.go)
 }
 
 // wireYaw turns a worldgen heading (radians from +x toward +z: forward =
@@ -199,11 +202,13 @@ func eyeDist(e *Entity, x, y, z float64) float64 {
 func (s *Server) townInteract(sess *session, m *proto.Interact, now time.Time) {
 	w := s.cfg.Towns
 	e := sess.ent
-	if w == nil || e == nil || m.TargetKind < InteractNPC || m.TargetKind > InteractShaft {
+	if w == nil || e == nil || m.TargetKind < InteractNPC || m.TargetKind > InteractShaft && m.TargetKind != InteractDoor {
 		return
 	}
 	s.townsInit()
 	switch m.TargetKind {
+	case InteractDoor:
+		s.doorInteract(sess, m) // building doors (doors.go)
 	case InteractNPC:
 		s.npcInteract(e, m, now)
 	case InteractBoard:
