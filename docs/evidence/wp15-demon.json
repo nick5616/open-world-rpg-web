@@ -1,21 +1,21 @@
 {
   "bot": {
     "attacks": 46,
-    "claimsAccepted": 42,
-    "claimsRefused": 4,
+    "claimsAccepted": 45,
+    "claimsRefused": 1,
     "corrections": 0,
-    "damageTaken": 32,
+    "damageTaken": 74,
     "defenseXP": 0,
     "demonKills": 3,
-    "dodges": 50,
+    "dodges": 54,
     "downs": 0,
     "weapon": "sword"
   },
   "ordinary": {
-    "hits": 21,
-    "damage": 411,
-    "shrugged": 21,
-    "minHealthPct": 46,
+    "hits": 25,
+    "damage": 497,
+    "shrugged": 25,
+    "minHealthPct": 55,
     "killedByBot": 0,
     "alive": 3
   },
@@ -28,10 +28,10 @@
     "fresh": 3
   },
   "sunsteel": {
-    "hits": 12,
-    "damage": 280,
+    "hits": 13,
+    "damage": 289,
     "shrugged": 0,
-    "minHealthPct": 13,
+    "minHealthPct": 5,
     "killedByBot": 3,
     "alive": 0
   },
