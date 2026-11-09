@@ -236,7 +236,11 @@ func (s *Server) combatLeave(sess *session) {
 
 func (s *Server) sendCombatSync(sess *session) {
 	e := sess.ent
-	s.sendEvent(sess, &proto.Event{Kind: combat.EvCombatSync, EntityID: e.ID, Value: int32(e.cbt.Profile.Active), Data: combat.EncodeSync(e.cbt)})
+	// pt/ux: the weapon look rides in the player's typeId for others
+	// (weaponlook.go) and, per loadout, at the end of combat_sync for you.
+	mats, look := weaponLooks(sess)
+	e.TypeID = look
+	s.sendEvent(sess, &proto.Event{Kind: combat.EvCombatSync, EntityID: e.ID, Value: int32(e.cbt.Profile.Active), Data: append(combat.EncodeSync(e.cbt), mats[0], mats[1])})
 	s.questsChanged(sess) // quests.go: "know a spell" objectives
 }
 

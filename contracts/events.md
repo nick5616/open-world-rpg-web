@@ -37,7 +37,7 @@ for your package; document each kind's use of `entityId`, `targetId`, `value`,
 | 209 | `boss_engaged` | WP13. Within 70 m, once per fight: `entityId` = boss, `targetId` = enemy type id, `value` = health after party scaling, `data` = boss name |
 | 210 | `boss_defeated` | WP13. Within 160 m: `entityId` = boss, `targetId` = enemy type id, `value` = fight length in seconds (engage to kill), `data` = boss name. WP14's loot hook and weekly lockout key off the same kill (combat.KillInfo) |
 | 211 | `camp_cleared` | WP13. Within 120 m: `targetId` = group id, `value` = group kind (1 camp, 2 bandit, 3 guardian, 4 pack, 6 test), `x/y/z` = anchor, `data` = site name |
-| 212 | `combat_sync` | WP13. To you after join and after every change: `value` = active loadout, `data` = u8 version(1) \| u8 active \| 2 x (u8 weapon id \| 4 x u16 spell id, 0 empty \| i8 gem element, -1 none) \| u16 n + n x u16 known spell ids \| u8 n + n x (u8 skill id \| u32 xp) \| u16 mana max x10 \| u8 drink charges \| u16 skill points left \| u8 character level |
+| 212 | `combat_sync` | WP13. To you after join and after every change: `value` = active loadout, `data` = u8 version(1) \| u8 active \| 2 x (u8 weapon id \| 4 x u16 spell id, 0 empty \| i8 gem element, -1 none) \| u16 n + n x u16 known spell ids \| u8 n + n x (u8 skill id \| u32 xp) \| u16 mana max x10 \| u8 drink charges \| u16 skill points left \| u8 character level \| 2 x u8 weapon look material code per loadout (pt/ux; see "Players" below; absent from older zones) |
 | 213 | `mana` | WP13. To you, on change at most 5 Hz: `value` = mana x10, `targetId` = mana max x10 |
 | 214 | `cast` | WP13. Another player's attack or cast started (within 64 m, not to the caster): `entityId` = caster, `targetId` = attack/spell/form id (\| 0x8000 = a dash variant), `x/y/z` = origin, `data` = u16 yaw \| i16 pitch |
 | 215 | `refused` | WP13. To you: an attack, cast or combat Interact was refused. `targetId` = attack/spell id (or the Interact action), `value` = reason (HitResult refusal codes below), `data` = u32 start seq |
@@ -151,6 +151,18 @@ WorldEdits for `vein_mined` (WP09) carry 16 bytes of `params` (f32 x, y, z,
 carve radius 1.5) and `expiresAt` = respawn time; a delta whose `expiresAt`
 is at or before the server time means the edit expired (the vein respawned
 and the carve is restored). See server/zone/README.md "Caves and mining".
+
+Players (pt/ux weapons) carry their active loadout's weapon look in
+`EntityRecord.typeId`, so other clients draw it in the avatar's hand:
+bits 0-3 = combat.yaml weapon id (0 none), bits 4-7 = material code (0
+ordinary, else 1 + the index in items.yaml `materials`: 4 iron, 5 silver,
+6 sunsteel...; the equipped item's material, else the loadout's dev
+material), bits 8-11 = socketed gem element + 1 (0 none). The zone sets it
+only when the loadout or gear changes (with every `combat_sync`), never per
+tick; it rides the usual delta coding, ghosts and handoffs. The same
+per-loadout material codes end `combat_sync` (212) for the owner's own
+first-person view. See server/zone/internal/game/weaponlook.go and
+client/src/combat/weapons/look.ts.
 
 NPCs (WP20) are ordinary snapshot entities: `EntityRecord.kind` = npc (5),
 `typeId` = role | appearance variant << 8, `level` = merchant kind (255

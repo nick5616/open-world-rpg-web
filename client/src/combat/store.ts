@@ -30,7 +30,8 @@ export interface CombatHudState {
   manaMax: number;
   charges: number;
   activeLoadout: number;
-  loadouts: { weapon: string; spells: (string | null)[]; gem: number }[];
+  /** material: the weapon's look material code (weapons/look.ts), from combat_sync. */
+  loadouts: { weapon: string; spells: (string | null)[]; gem: number; material?: number }[];
   known: string[];
   skillXp: Record<string, number>;
   level: number;
