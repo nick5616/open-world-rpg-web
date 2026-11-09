@@ -237,6 +237,7 @@ func (s *Server) combatLeave(sess *session) {
 func (s *Server) sendCombatSync(sess *session) {
 	e := sess.ent
 	s.sendEvent(sess, &proto.Event{Kind: combat.EvCombatSync, EntityID: e.ID, Value: int32(e.cbt.Profile.Active), Data: combat.EncodeSync(e.cbt)})
+	s.questsChanged(sess) // quests.go: "know a spell" objectives
 }
 
 func syncPlayerHealth(e *Entity) {

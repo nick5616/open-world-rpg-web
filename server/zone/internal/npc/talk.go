@@ -99,6 +99,7 @@ type Bounty struct {
 	Reward     uint32
 	Text       string
 	Settlement int
+	Item       string // deliveries: the item key (quests: the turn-in)
 }
 
 var deliverItems = []struct{ id, name string }{{"ingot:iron", "iron ingots"}, {"ingot:copper", "copper ingots"}, {"herb:heartleaf", "heartleaf"}, {"hide:wolf", "wolf pelts"}, {"ore:silver", "silver ore"}}
@@ -148,6 +149,7 @@ func (w *World) Bounties(si, day int) []Bounty {
 		switch kind {
 		case BountyDeliver:
 			it := deliverItems[(r>>8)%uint64(len(deliverItems))]
+			b.Item = it.id
 			b.Qty = uint16(3 + (r>>16)%6)
 			b.Reward = uint32(b.Qty) * (8 + uint32((r>>24)%8))
 			b.Text = fmt.Sprintf("Bring %d %s.", b.Qty, it.name)
@@ -194,6 +196,17 @@ func siteNoun(s Site) string {
 
 // EncodeBounties is Event 802's data; accepted marks the jobs you hold.
 func EncodeBounties(bs []Bounty, accepted func(id uint32) bool) []byte {
+	return EncodeBountiesState(bs, func(id uint32) byte {
+		if accepted != nil && accepted(id) {
+			return 1
+		}
+		return 0
+	})
+}
+
+// EncodeBountiesState is EncodeBounties with the accepted byte per job
+// (1 = you hold it, 2 = you completed it today; CR 013).
+func EncodeBountiesState(bs []Bounty, state func(id uint32) byte) []byte {
 	b := []byte{1, byte(len(bs))}
 	for _, x := range bs {
 		b = binary.LittleEndian.AppendUint32(b, x.ID)
@@ -205,11 +218,7 @@ func EncodeBounties(bs []Bounty, accepted func(id uint32) bool) []byte {
 		b = binary.LittleEndian.AppendUint16(b, site)
 		b = binary.LittleEndian.AppendUint16(b, x.Qty)
 		b = binary.LittleEndian.AppendUint32(b, x.Reward)
-		acc := byte(0)
-		if accepted != nil && accepted(x.ID) {
-			acc = 1
-		}
-		b = append(b, acc)
+		b = append(b, state(x.ID))
 		b = binary.LittleEndian.AppendUint16(b, uint16(len(x.Text)))
 		b = append(b, x.Text...)
 	}

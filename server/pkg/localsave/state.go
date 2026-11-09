@@ -71,6 +71,9 @@ type State struct {
 	Progress     Progress        `json:"progress"`
 	Items        []Item          `json:"items"`
 	Loot         *Loot           `json:"loot,omitempty"` // WP14
+	// Quests is the quest log (playtest 1, CR 013; mirrors
+	// character_quests.log from migration 0023). Optional.
+	Quests json.RawMessage `json:"quests,omitempty"`
 }
 
 // NewCharacterState is a level-1 character standing at spawn, matching the

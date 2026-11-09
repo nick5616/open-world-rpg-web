@@ -51,6 +51,7 @@ type session struct {
 	x           *exploreState   // WP12 exploration (explore.go)
 	cprof       *combat.Profile // WP13: loaded before join (combat.go)
 	items       *charItems      // WP14: loaded before join (items.go)
+	quests      *questState     // quest log: loaded before join (quests.go)
 	left        bool
 	ackTick     uint32
 	ackFloor    uint32 // WP16: acks at or below this tick predate the session's current activation
@@ -211,6 +212,7 @@ func (s *Server) accept(c transport.Conn, spawnHint *movement.Vec3) {
 		sess.x = s.loadExplore(claims, hello.SaveBlob, &sess.spawn, spawnHint != nil) // WP12
 		sess.cprof = s.loadCombat(claims.CharacterID, sess.x)                         // WP13
 		sess.items = s.loadItems(claims.CharacterID, sess.x)                          // WP14
+		sess.quests = s.loadQuests(claims.CharacterID, sess.x)                        // quests.go
 	}
 
 	select {
@@ -333,6 +335,10 @@ func (s *Server) drain(sess *session, now time.Time) {
 		if it, ok := m.(*proto.Interact); ok {
 			if it.TargetKind == InteractChem || it.TargetKind == InteractNight {
 				s.nightInteract(sess, it) // WP15: chemistry sync mode, dev night tools (night.go)
+				continue
+			}
+			if it.TargetKind == InteractQuest {
+				s.questInteract(sess, it) // quests: accept, abandon, turn in, track (quests.go)
 				continue
 			}
 			if it.TargetKind == combat.InteractCombat {
