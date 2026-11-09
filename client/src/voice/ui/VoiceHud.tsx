@@ -7,7 +7,7 @@ import { useEffect, useRef, type CSSProperties } from 'react';
 import { SELF, voiceLevels } from '../levels';
 import { applyVoicePrefs, setTalkMode } from '../runtime';
 import { useVoiceStore, type SpeakerInfo } from '../store';
-import { CORNER_BOTTOM } from '../../hud/layout'; // playtest 1: shared bottom layout
+import { CORNER_BOTTOM_RIGHT } from '../../hud/layout'; // playtest 1: shared bottom layout (right corner clears the hosting badge)
 
 const glass: CSSProperties = {
   background: 'rgba(10,13,20,0.72)',
@@ -110,7 +110,7 @@ export function VoiceHud() {
   if (s.status === 'off') return null;
   const label = micLabel(s);
   return (
-    <div style={{ position: 'fixed', right: 12, bottom: CORNER_BOTTOM, zIndex: 30, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+    <div style={{ position: 'fixed', right: 12, bottom: CORNER_BOTTOM_RIGHT, zIndex: 30, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
       <style>{'.lodestone-voice-level[data-speaking="1"]{--lvl-color:#51cf66}'}</style>
       {s.settingsOpen && <Settings />}
       {s.speakers.length > 0 && (

@@ -22,7 +22,7 @@ import { isTextTarget } from '../../input/useKeyboard';
 import { baseName, CONTAINER_LABEL, isHolo, rarityColor } from './items';
 import { ensureInventoryHook } from './link';
 import { BITCHIN_MS, openStationOffline, pushToast, TOAST_MS, useInventory, type LootToast } from './store';
-import { CORNER_BOTTOM } from '../../hud/layout'; // playtest 1: clear of the lifted voice corner
+import { CORNER_BOTTOM_RIGHT } from '../../hud/layout'; // playtest 1: clear of the lifted voice corner
 import { worldDebug } from '../../world/debug/worldDebug';
 import { ensureInventoryStyles } from './styles';
 
@@ -151,7 +151,7 @@ export function LootHud() {
         </div>
       )}
       {toasts.length > 0 && (
-        <div data-testid="loot-toasts" style={{ position: 'fixed', right: stationOpen ? 'calc(3% + min(420px, 92vw) + 14px)' : 18, bottom: `max(24%, calc(${CORNER_BOTTOM} + 96px))`, display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-end', pointerEvents: 'none', zIndex: 22 }}>
+        <div data-testid="loot-toasts" style={{ position: 'fixed', right: stationOpen ? 'calc(3% + min(420px, 92vw) + 14px)' : 18, bottom: `max(24%, calc(${CORNER_BOTTOM_RIGHT} + 96px))`, display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-end', pointerEvents: 'none', zIndex: 22 }}>
           {toasts.map((t) => (
             <Toast key={t.id} t={t} />
           ))}

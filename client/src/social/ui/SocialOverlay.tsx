@@ -7,6 +7,7 @@ import { ChatPanel, type ChatPanelProps } from './ChatPanel';
 import { FriendsPanel } from './FriendsPanel';
 import { PartyFrame, type PartyFrameProps } from './PartyFrame';
 import { button, glass } from './style';
+import { FRIENDS_BUTTON_RIGHT, TOP_BUTTON_TOP } from '../../hud/layout';
 
 export type SocialOverlayProps = ChatPanelProps & PartyFrameProps;
 
@@ -32,7 +33,7 @@ export function SocialOverlay(props: SocialOverlayProps) {
       <button
         data-testid="friends-toggle"
         onClick={() => setFriendsOpen((v) => !v)}
-        style={{ ...glass, ...button, position: 'fixed', right: 12, top: 20, zIndex: 30, padding: '5px 10px' }}
+        style={{ ...glass, ...button, position: 'fixed', right: FRIENDS_BUTTON_RIGHT, top: TOP_BUTTON_TOP, zIndex: 30, padding: '5px 10px' }}
       >
         Friends (O){incoming > 0 ? ` · ${incoming} request${incoming > 1 ? 's' : ''}` : ''}
       </button>

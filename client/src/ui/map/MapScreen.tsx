@@ -332,7 +332,7 @@ function MapView() {
   const travel = selected && canFastTravel(selected, progress.towers, progress.waypoints);
 
   return (
-    <div data-testid="map-screen" style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(10,8,6,0.82)', display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 260px', font: '14px system-ui, sans-serif', color: '#2b2116' }}>
+    <div data-testid="map-screen" data-ui-panel style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(10,8,6,0.82)', display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 260px', font: '14px system-ui, sans-serif', color: '#2b2116' }}>
       {/* The canvas sits absolutely in its cell: its pixel size must never feed back into the grid's column width. */}
       <div style={{ position: 'relative', minWidth: 0, overflow: 'hidden' }}>
       <canvas

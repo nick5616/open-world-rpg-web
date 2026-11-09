@@ -29,7 +29,14 @@ export const HUD_CSS = `
   --ls-hint-h: 0px;
   --ls-corner-bottom: 12px;
   --ls-chat-w: min(400px, calc(50vw - var(--ls-center-half) - 24px));
+  --ls-badge-h: 0px;
 }
+/* Netlify's free tier injects a "Powered by Netlify" badge in the bottom-right
+   corner of the live site; keep the right corner's overlays above it. */
+:root:has([data-nf-variant]) { --ls-badge-h: 56px; }
+/* A panel that freed the mouse on purpose (shop, inventory, map, journal...)
+   makes "Click to look around" noise: hide it while one is open. */
+body:has([data-ui-panel]:not([style*="display: none"])) [data-testid="lock-hint"] { display: none !important; }
 @media (max-width: ${NARROW_PX}px) {
   :root {
     --ls-corner-bottom: calc(var(--ls-hotbar-h) + var(--ls-hint-h) + 20px);
@@ -39,6 +46,12 @@ export const HUD_CSS = `
 
 /** Bottom offset for corner overlays (chat, voice). */
 export const CORNER_BOTTOM = 'var(--ls-corner-bottom, 12px)';
+/** Bottom offset for the right corner (voice): also clears the hosting badge. */
+export const CORNER_BOTTOM_RIGHT = 'calc(var(--ls-corner-bottom, 12px) + var(--ls-badge-h, 0px))';
+/** Top-right button row: Sound at the corner, Friends to its left. */
+export const TOP_BUTTON_TOP = 12;
+export const SOUND_BUTTON_W = 78;
+export const FRIENDS_BUTTON_RIGHT = 12 + SOUND_BUTTON_W + 8;
 /** Chat column width. */
 export const CHAT_WIDTH = 'var(--ls-chat-w, 400px)';
 /** Bottom offset right above the centre stack (hotbar + hint). */
