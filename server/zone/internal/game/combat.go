@@ -100,6 +100,7 @@ func (s *Server) initCombat() {
 		w.AddArena(a.Arena, a.Boss, a.Level, a.Element)
 	}
 	w.OnKill = setup.OnKill
+	w.SetParallel(combatParallel, s.snapshotWorkers()) // WP19b: simple groups think on the tick's workers
 	if setup.Dev {
 		devPlacement(w, s.log.Info)
 	}
@@ -438,10 +439,14 @@ func (s *Server) combatTick(tick uint32) {
 		}
 	}
 	// Mirror enemies and player health into the entities snapshots read.
-	for id, ent := range s.cbt.byID {
+	// WP19b: over s.ents on the workers (each entity is written only by its
+	// own item; the maps are read-only here). s.ents holds every byID entity
+	// (insertEntity above), so this is the same set the old map walk saw.
+	parallelFor(len(s.ents), s.phaseWorkers(len(s.ents)), viewChunk, func(_, i int) {
+		ent := s.ents[i]
 		en := ent.npc
-		if en == nil || w.Enemy(id) == nil {
-			continue
+		if en == nil || s.cbt.byID[ent.ID] != ent || w.Enemy(ent.ID) == nil {
+			return
 		}
 		ent.Move.Pos, ent.Move.Vel = en.Pos, en.Vel
 		ent.Move.Mode = movement.ModeGround
@@ -453,7 +458,7 @@ func (s *Server) combatTick(tick uint32) {
 		if en.Winding() {
 			ent.npcActivity = proto.ActivityCasting
 		}
-	}
+	})
 	for _, sess := range s.sessions {
 		if e := sess.ent; e != nil && e.cbt != nil {
 			syncPlayerHealth(e)

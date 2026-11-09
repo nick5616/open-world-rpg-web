@@ -20,6 +20,7 @@ import (
 	"log/slog"
 	"math"
 	"math/rand"
+	"os"
 	"slices"
 	"sync/atomic"
 	"testing"
@@ -30,6 +31,7 @@ import (
 	"lodestone/server/pkg/ratelimit"
 	"lodestone/server/pkg/ticket"
 	"lodestone/server/pkg/transport"
+	"lodestone/server/pkg/worldhost"
 )
 
 // benchConn is a transport.Conn that counts what the zone sends.
@@ -102,8 +104,15 @@ func newScaleWorldConn(tb testing.TB, players, enemies int, radius float64, mk f
 		MaxPlayers: players + 10, DownBudgetKbps: 150, Rain: &dry,
 		Log: slog.New(slog.NewTextHandler(io.Discard, nil)),
 		Now: func() time.Time { return clock.Add(time.Duration(srv.tick) * time.Second / 30) }}
+	w := &scaleWorld{rng: rand.New(rand.NewSource(7)), cx: 1536, cz: 1536, radius: radius, ackLag: 3}
+	if ground := benchTerrain(tb, radius); ground != nil {
+		// WP19b: the official world's terrain around scale-soak.mjs's disc,
+		// so movement and enemy steering pay real ground queries.
+		cfg.Ground = ground
+		w.cx, w.cz = 1700, 1700
+	}
 	srv = New(cfg)
-	w := &scaleWorld{srv: srv, rng: rand.New(rand.NewSource(7)), cx: 1536, cz: 1536, radius: radius, ackLag: 3}
+	w.srv = srv
 	keys := [][]string{{"boar", "boar", "wolf", "wolf"}, {"cutthroat", "archer", "cutthroat", "brute"}, {"ember_imp", "mud_golem", "shade", "void_mite"}, {"ram", "stalker", "scuttler", "lurker"}}
 	groups := enemies / 4
 	for g := 0; g < groups; g++ {
@@ -111,6 +120,9 @@ func newScaleWorldConn(tb testing.TB, players, enemies int, radius float64, mk f
 		r := radius * math.Sqrt((float64(g)+0.5)/float64(groups))
 		a := float64(g) * 2.399963229728653
 		at := movement.Vec3{X: w.cx + r*math.Cos(a), Z: w.cz + r*math.Sin(a)}
+		if cfg.Ground != nil {
+			at.X, at.Z = srv.CombatWorld().WalkableNear(at.X, at.Z, 24, 4) // as devHorde does
+		}
 		srv.CombatWorld().TestGroup(at, keys[g%len(keys)], 3, "")
 	}
 	for i := 0; i < players; i++ {
@@ -125,6 +137,31 @@ func newScaleWorldConn(tb testing.TB, players, enemies int, radius float64, mk f
 		w.bots = append(w.bots, b)
 	}
 	return w
+}
+
+// benchTerrain returns the official world's (seed 20261108) cached terrain
+// around the soak disc when LODESTONE_BENCH_TERRAIN=1 and worldgen.wasm is
+// built, else nil (flat ground). Not for -cpuprofile on Windows (wazero JIT
+// frames, see the file comment); the terrain cache serves every query once
+// warmed, as in the live zone.
+func benchTerrain(tb testing.TB, radius float64) movement.Ground {
+	if os.Getenv("LODESTONE_BENCH_TERRAIN") != "1" {
+		return nil
+	}
+	mod, err := worldhost.LoadFromEnv(context.Background())
+	if err != nil {
+		tb.Skipf("LODESTONE_BENCH_TERRAIN=1 but no worldgen.wasm: %v", err)
+	}
+	mt, err := mod.Mint(20261108, nil, worldhost.WorldOptions{})
+	if err != nil {
+		tb.Fatal(err)
+	}
+	t := worldhost.NewTerrain(mt.World, worldhost.TerrainOptions{})
+	if err := t.Ensure(1700, 1700, radius+300); err != nil {
+		tb.Fatal(err)
+	}
+	tb.Cleanup(t.Close)
+	return t
 }
 
 // feed queues one Input (two new 60 Hz frames plus one repeat, like the
@@ -211,12 +248,21 @@ func BenchmarkScale(b *testing.B) {
 			}
 			durs := make([]time.Duration, 0, b.N)
 			bytes0 := w.bytesOut()
+			var phaseSum [phCount]time.Duration // WP19b: where the tick goes
 			b.ReportAllocs()
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
 				durs = append(durs, w.step())
+				for p, d := range w.srv.phases.cur {
+					phaseSum[p] += d
+				}
 			}
 			b.StopTimer()
+			for p, name := range phaseNames {
+				if p != phTowns && p != phNight {
+					b.ReportMetric(float64(phaseSum[p].Microseconds())/1000/float64(b.N), name+"-ms")
+				}
+			}
 			slices.Sort(durs)
 			q := func(p float64) float64 {
 				return float64(durs[min(len(durs)-1, int(p*float64(len(durs))))].Microseconds()) / 1000

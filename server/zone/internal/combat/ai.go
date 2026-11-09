@@ -330,6 +330,10 @@ func (w *World) chase(e *Enemy) {
 		}
 	}
 	if a := w.pickAttack(e, d); a != nil {
+		if w.aiPar { // WP19b: the merge pass admits it (par.go)
+			e.wantAttack, e.aiOut.wantAttackTarget = a, p
+			return
+		}
 		w.windup(e, a, p)
 		return
 	}
@@ -372,7 +376,7 @@ func (w *World) closestAttack(e *Enemy) *combatdefs.EnemyAttack {
 // pickAttack chooses a ready attack whose range fits d (the strongest one).
 func (w *World) pickAttack(e *Enemy, d float64) *combatdefs.EnemyAttack {
 	tick := w.tick
-	if tick < e.nextAttack || w.windupsOn(e.Target) >= maxWindupsOnOne {
+	if tick < e.nextAttack || w.windupsSeen(e, e.Target) >= maxWindupsOnOne { // WP19b: par.go
 		return nil
 	}
 	var best *combatdefs.EnemyAttack

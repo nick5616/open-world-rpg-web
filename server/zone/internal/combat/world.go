@@ -53,6 +53,10 @@ type Group struct {
 	Arena    *Arena
 	Comp     []string // explicit composition (tests), else from tables
 	Elite    string   // forced elite affix (tests)
+	// WP19b partitioned AI (par.go), valid for the tick aiTick.
+	aiTick   uint32
+	aiSerial bool
+	aiPart   int32
 }
 
 // KillInfo is what the WP14 loot hook receives on every kill: who may roll
@@ -94,6 +98,15 @@ type World struct {
 	shots   []*shot
 	winding []*Enemy   // WP19: enemies that entered Windup since the last prune (windupsOn)
 	pg      playerGrid // WP19: players by cell, valid during Step
+	// WP19b partitioned AI (par.go).
+	par        Parallel
+	parWorkers int
+	aiPar      bool // this World is a pass-2 worker copy
+	aiw        []*aiWorker
+	aiParts    []aiPart
+	aiFlat     []*Enemy
+	aiList     []*Enemy
+	windAt     map[uint32]int
 	alloc   func() uint32
 	tick    uint32
 	rng     uint64
@@ -384,6 +397,7 @@ func (w *World) removeEnemy(e *Enemy) {
 		return
 	}
 	delete(w.enemies, e.ID)
+	e.gone = true // WP19b: thinkAll's merge pass skips it without a map lookup
 	if i := slices.Index(w.order, e.ID); i >= 0 {
 		w.order = slices.Delete(w.order, i, i+1)
 	}
@@ -523,22 +537,7 @@ func (w *World) Step(tick uint32) {
 		w.wakeTick()
 	}
 	w.pruneWinding() // WP19
-	for _, id := range slices.Clone(w.order) {
-		e := w.enemies[id]
-		if e == nil {
-			continue
-		}
-		if e.State == Dead {
-			if tick-e.diedTick > secondsToTicks(1.5) {
-				w.removeEnemy(e)
-			}
-			continue
-		}
-		if e.State != Asleep {
-			w.think(e)
-		}
-		e.record(tick)
-	}
+	w.thinkAll(tick) // WP19b: partitioned across workers (par.go)
 	w.stepShots()
 	w.settleStrikes()
 	w.playerUpkeep()

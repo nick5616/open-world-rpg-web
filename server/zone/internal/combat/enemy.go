@@ -103,6 +103,14 @@ type Enemy struct {
 	recentHits []uint32
 	lastEvade  uint32
 	inWinding  bool // WP19: listed in World.winding
+	// WP19b partitioned AI (par.go): the tick this enemy thought on a
+	// worker, where its outputs sit, its wind-up request, and the target it
+	// was winding up on when the tick started.
+	aiTick     uint32
+	gone       bool // removed from the World (removeEnemy)
+	aiOut      aiRange
+	wantAttack *combatdefs.EnemyAttack
+	windStart  uint32
 }
 
 // Typeid is the wire typeId (combatdefs.TypeID).
