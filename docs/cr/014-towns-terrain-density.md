@@ -42,7 +42,10 @@ migrations are unchanged.
    joined into earlier paths. Stored as ROADS records **class 2**,
    `from` = the building served, `to` = the path joined (none = it ends on
    the street/square), drawn on the terrain like streets (no levelling, no
-   chunk change, no collision).
+   chunk change, no collision). Footpaths also leave town: from the
+   nearest street end to every landmark, shrine, ruin and watchtower within
+   320 m of a settlement's edge (dropped where they would wade or climb
+   steeper than 1 in 2; `from`/`to` none, first point at the sight).
 4. **Tighter layouts:** layout radius 0.8 / 0.7 / 0.85 of the atlas
    footprint (hamlet / village / town), squares 7 / 9 / 12 m (was 9 / 13 /
    18), streets 3.0 / 3.4 / 4.6 m (was 4 / 4 / 5), lots 0.5 m off the

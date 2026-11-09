@@ -1,0 +1,160 @@
+[2026-11-09T15:44:28.348Z] G4 acceptance (spec 15): fight, loot, mine ore and a gem, forge a sunsteel blade, socket the gem, survive a night in a generated town. Run mw9fm5kj
+[2026-11-09T15:44:28.354Z] private ports {"account":23097,"director":26790,"zone":34297,"social":23410,"vite":32604}; logs in C:\Users\nickb\AppData\Local\Temp\lodestone-g4-7ROLvL
+[2026-11-09T15:44:34.807Z] scratch database lodestone_wp04_g4_mw9fm5kj (all migrations)
+[2026-11-09T15:44:48.137Z] built account, director, zone, social and the WP15 night bots from this checkout
+[2026-11-09T15:44:49.822Z] PASS account healthy on :23097 (mints the official world into the scratch DB)
+[2026-11-09T15:44:50.969Z] PASS social healthy on :23410
+[2026-11-09T15:44:52.034Z] PASS director healthy on :26790
+[2026-11-09T15:44:54.853Z] PASS zone healthy on :34297
+[2026-11-09T15:44:54.855Z] zone serves world 3982db40-31a8-46a4-80f7-e9cbb2e68608 (fresh for this run) seed 20261108 genVersion 2; dev knobs {"LODESTONE_ZONE_PORT":"34297","LODESTONE_ZONE_ID":"zone-g4-mw9fm5kj","LODESTONE_ZONE_WT_ADDR":"off","LODESTONE_ZONE_PUBLIC_URL":"ws://127.0.0.1:34297/ws","LODESTONE_ZONE_DEBUG_RAIN":"0","LODESTONE_ZONE_DEV_SPAWN":"1","LODESTONE_ZONE_DEV_COMBAT":"1","LODESTONE_ZONE_DEV_NIGHT":"1","LODESTONE_ZONE_DEBUG_CAMP":"2085,2385,1,boar boar","LODESTONE_ZONE_TIME_OFFSET_S":"2108"}
+[2026-11-09T15:44:56.221Z] PASS vite on :32604
+[2026-11-09T15:45:15.616Z] PASS Brannoc playing (dev auth -> director ticket -> zone), character 78ccd5cd-1ad9-4735-9564-fd050f801f40, at (1917.5, 82.5, 2265.5)
+[2026-11-09T15:45:17.983Z] render rate 26.0 fps (headless Chromium, ANGLE/D3D11; WP19 may be loading the machine)
+[2026-11-09T15:45:17.985Z] starter inventory (Event 400): currency:gold=20 potion:health=3
+[2026-11-09T15:45:17.997Z] street graph of Draedmore: 12 streets, 323 nodes (players walk the streets; a straight line across a town meets walls)
+[2026-11-09T15:45:18.028Z] spawn town #9 "Draedmore" (town, 40 buildings) at (1920, 2272) r 111; ward r 121 garden (1937, 2264); forge prop 33461356418492015 at (1928.9, 82.4, 2290.0); blacksmith "Selina"
+[2026-11-09T15:45:18.682Z] PASS dev camp placed outside the town: 0 x level 1 at (2085.0, 2385.0), 200 m from the town centre
+[2026-11-09T15:45:18.729Z]   Brannoc to the camp: 7 m to go, at (1918, 82.5, 2265)
+[2026-11-09T15:45:19.525Z]   Brannoc to the camp: 17 m to go, at (1919, 82.4, 2271)
+[2026-11-09T15:45:21.604Z]   Brannoc to the camp: 3 m to go, at (1934, 81.6, 2277)
+[2026-11-09T15:45:21.873Z]   Brannoc to the camp: 3 m to go, at (1936, 81.5, 2278)
+[2026-11-09T15:45:22.137Z]   Brannoc to the camp: 3 m to go, at (1938, 81.3, 2279)
+[2026-11-09T15:45:22.394Z]   Brannoc to the camp: 3 m to go, at (1940, 81.3, 2280)
+[2026-11-09T15:45:22.523Z]   Brannoc to the camp: 4 m to go, at (1941, 81.2, 2280)
+[2026-11-09T15:45:22.784Z]   Brannoc to the camp: 4 m to go, at (1942, 81.1, 2281)
+[2026-11-09T15:45:23.057Z]   Brannoc to the camp: 4 m to go, at (1944, 81.0, 2282)
+[2026-11-09T15:45:23.325Z]   Brannoc to the camp: 3 m to go, at (1946, 80.9, 2282)
+[2026-11-09T15:45:23.582Z]   Brannoc to the camp: 3 m to go, at (1948, 80.8, 2283)
+[2026-11-09T15:45:23.858Z]   Brannoc to the camp: 3 m to go, at (1950, 80.8, 2284)
+[2026-11-09T15:45:24.122Z]   Brannoc to the camp: 3 m to go, at (1952, 80.7, 2285)
+[2026-11-09T15:45:24.385Z]   Brannoc to the camp: 3 m to go, at (1954, 80.7, 2285)
+[2026-11-09T15:45:24.657Z]   Brannoc to the camp: 3 m to go, at (1956, 80.7, 2286)
+[2026-11-09T15:45:24.920Z]   Brannoc to the camp: 3 m to go, at (1958, 80.7, 2287)
+[2026-11-09T15:45:25.191Z]   Brannoc to the camp: 3 m to go, at (1960, 80.7, 2288)
+[2026-11-09T15:45:25.323Z]   Brannoc to the camp: 4 m to go, at (1961, 80.7, 2288)
+[2026-11-09T15:45:25.578Z]   Brannoc to the camp: 4 m to go, at (1963, 80.7, 2289)
+[2026-11-09T15:45:26.090Z]   Brannoc to the camp: 3 m to go, at (1966, 80.7, 2290)
+[2026-11-09T15:45:26.222Z]   Brannoc to the camp: 3 m to go, at (1966, 80.7, 2290)
+[2026-11-09T15:45:26.473Z]   Brannoc to the camp: 3 m to go, at (1968, 80.6, 2291)
+[2026-11-09T15:45:26.743Z]   Brannoc to the camp: 3 m to go, at (1970, 80.6, 2292)
+[2026-11-09T15:45:26.995Z]   Brannoc to the camp: 3 m to go, at (1972, 80.6, 2292)
+[2026-11-09T15:45:27.257Z]   Brannoc to the camp: 3 m to go, at (1974, 80.6, 2293)
+[2026-11-09T15:45:27.519Z]   Brannoc to the camp: 3 m to go, at (1976, 80.5, 2294)
+[2026-11-09T15:45:27.921Z]   Brannoc to the camp: 3 m to go, at (1978, 80.5, 2294)
+[2026-11-09T15:45:28.324Z]   Brannoc to the camp: 3 m to go, at (1979, 80.4, 2295)
+[2026-11-09T15:45:28.706Z]   Brannoc to the camp: 4 m to go, at (1981, 80.4, 2296)
+[2026-11-09T15:45:29.105Z]   Brannoc to the camp: 4 m to go, at (1983, 80.3, 2297)
+[2026-11-09T15:45:29.490Z]   Brannoc to the camp: 4 m to go, at (1985, 80.2, 2297)
+[2026-11-09T15:45:29.891Z]   Brannoc to the camp: 4 m to go, at (1986, 80.2, 2298)
+[2026-11-09T15:45:30.402Z]   Brannoc to the camp: 3 m to go, at (1989, 80.1, 2299)
+[2026-11-09T15:45:30.789Z]   Brannoc to the camp: 3 m to go, at (1991, 80.0, 2299)
+[2026-11-09T15:45:31.191Z]   Brannoc to the camp: 3 m to go, at (1993, 80.0, 2300)
+[2026-11-09T15:45:31.456Z]   Brannoc to the camp: 3 m to go, at (1995, 79.9, 2301)
+[2026-11-09T15:45:31.588Z]   Brannoc to the camp: 4 m to go, at (1996, 79.9, 2301)
+[2026-11-09T15:45:31.857Z]   Brannoc to the camp: 4 m to go, at (1998, 79.8, 2302)
+[2026-11-09T15:45:32.122Z]   Brannoc to the camp: 4 m to go, at (1999, 79.8, 2303)
+[2026-11-09T15:45:32.384Z]   Brannoc to the camp: 4 m to go, at (2001, 79.7, 2304)
+[2026-11-09T15:45:32.641Z]   Brannoc to the camp: 3 m to go, at (2003, 79.7, 2304)
+[2026-11-09T15:45:32.907Z]   Brannoc to the camp: 3 m to go, at (2005, 79.6, 2305)
+[2026-11-09T15:45:33.162Z]   Brannoc to the camp: 3 m to go, at (2007, 79.6, 2306)
+[2026-11-09T15:45:34.323Z]   Brannoc to the camp: 3 m to go, at (2009, 79.6, 2307)
+[2026-11-09T15:45:34.578Z]   Brannoc to the camp: 3 m to go, at (2011, 79.5, 2308)
+[2026-11-09T15:45:34.837Z]   Brannoc to the camp: 3 m to go, at (2013, 79.5, 2308)
+[2026-11-09T15:45:34.973Z]   Brannoc to the camp: 4 m to go, at (2014, 79.4, 2309)
+[2026-11-09T15:45:35.238Z]   Brannoc to the camp: 4 m to go, at (2016, 79.4, 2309)
+[2026-11-09T15:45:35.500Z]   Brannoc to the camp: 4 m to go, at (2018, 79.4, 2310)
+[2026-11-09T15:45:35.771Z]   Brannoc to the camp: 3 m to go, at (2020, 79.3, 2311)
+[2026-11-09T15:45:36.022Z]   Brannoc to the camp: 105 m to go, at (2022, 79.2, 2312)
+[2026-11-09T15:45:50.790Z]   walked from the town to the camp: arrived in 32 s
+[2026-11-09T15:45:50.944Z]   screenshot g4-01-camp-approach.png
+[2026-11-09T15:45:54.340Z]   screenshot g4-02-camp-fight.png
+[2026-11-09T15:46:15.071Z] fight: {"swings":17,"drinks":0,"ms":24126,"accepted":10,"refused":0,"damage":[20,20,20,22,20,20,20,22,20,20],"kills":2,"xp":[20,20],"cleared":true,"hurt":[],"downs":0}
+[2026-11-09T15:46:15.072Z] PASS the camp died to the starting sword (left click, client-predicted hits): 2 kills, 10 accepted hits (damage 20 20 20 22 20 20 20 22 20 20), camp cleared Event 211, 17 swings in 24 s, 0 downs
+[2026-11-09T15:46:17.957Z]   walked over 1 pickups; inventory now blueprint:silver_arrow=1 currency:gold=28 hide:wolf=2 meat:raw=1 potion:health=3
+[2026-11-09T15:46:17.957Z] PASS personal kill loot picked up by walking over it: 6 grant Events (401, source kill); gold 28  {"toasts":["Blueprint: Silver Arrows","Gold x6"]}
+[2026-11-09T15:46:18.124Z]   screenshot g4-03-camp-loot.png
+[2026-11-09T15:46:18.131Z]   no container in view; walking 155 m to the chest at (2087, 2225)
+[2026-11-09T15:46:18.138Z]   to the chest: 155 m to go, at (2093, 75.9, 2380)
+[2026-11-09T15:46:33.243Z]   to the chest: 51 m to go, at (2089, 73.6, 2276)
+[2026-11-09T15:46:44.073Z]   container 14374458667132807130 (chest) reached: opened (407/2 401/2); gold 44
+[2026-11-09T15:46:44.228Z]   screenshot g4-04-chest-opened.png
+[2026-11-09T15:46:44.240Z]   to the 0: 70 m to go, at (2087, 74.4, 2226)
+[2026-11-09T15:46:54.607Z]   container 17712850599143377915 (0) reached: opened (407/4 401/4); gold 65
+[2026-11-09T15:46:54.872Z]   screenshot g4-05-chest-opened.png
+[2026-11-09T15:46:54.875Z] PASS loot: enough gold for the blueprint (40): 65 gold; bag armor:leather_jerkin=1 blueprint:silver_arrow=2 currency:gold=65 hide:wolf=2 meat:raw=1 potion:health=3 weapon:birch_wand=1 weapon:oak_staff=1
+[2026-11-09T15:46:54.984Z] caves: 685 veins in 32 systems; 6 sunsteel and 139 gem veins facing sideways
+[2026-11-09T15:47:01.559Z]   rejoined at sunsteel vein 8835879023699622851 (system 3) (1818.0, -54.7, 316.0): standing at (1818.0, -56.5, 316.0) after 7 s
+[2026-11-09T15:47:04.566Z]   screenshot g4-06-vein-sunsteel-before.png
+[2026-11-09T15:47:08.106Z]   screenshot g4-07-vein-sunsteel-mined.png
+[2026-11-09T15:47:08.106Z]   mined sunsteel vein 8835879023699622851: 8 swings (E), 1 vein grants; toasts ["Sunsteel Ore x2"]
+[2026-11-09T15:47:09.434Z]   rejoined at sunsteel vein 14318032726258039959 (system 6) (3732.4, -109.9, 511.1): standing at (3732.4, -111.1, 511.1) after 1 s
+[2026-11-09T15:47:12.439Z]   screenshot g4-08-vein-sunsteel-before.png
+[2026-11-09T15:47:15.998Z]   screenshot g4-09-vein-sunsteel-mined.png
+[2026-11-09T15:47:15.998Z]   mined sunsteel vein 14318032726258039959: 8 swings (E), 1 vein grants; toasts ["Sunsteel Ore x2"]
+[2026-11-09T15:47:17.246Z]   rejoined at topaz vein 7840581575915726357 (system 0) (590.6, 53.0, 813.7): standing at (590.6, 51.1, 813.7) after 1 s
+[2026-11-09T15:47:20.248Z]   screenshot g4-10-vein-topaz-before.png
+[2026-11-09T15:47:23.555Z]   screenshot g4-11-vein-topaz-mined.png
+[2026-11-09T15:47:23.555Z]   mined topaz vein 7840581575915726357: 7 swings (E), 1 vein grants; toasts ["Rough Topaz"]
+[2026-11-09T15:47:23.562Z] PASS sunsteel ore for two ingots (smelt_sunsteel = 2 ore): 4 ore:sunsteel from 2 veins
+[2026-11-09T15:47:23.564Z] PASS a gem mined: gem:topaz:rough  {"zone":["{\"time\":\"2026-11-09T07:47:14.8726008-08:00\",\"level\":\"INFO\",\"msg\":\"vein drop\",\"svc\":\"zone\",\"vein\":14318032726258039959,\"material\":\"sunsteel\",\"character\":\"78ccd5cd-1ad9-4735-9564-fd050f801f40\",\"item\":\"o","{\"time\":\"2026-11-09T07:47:14.8726008-08:00\",\"level\":\"INFO\",\"msg\":\"vein mined\",\"svc\":\"zone\",\"vein\":14318032726258039959,\"material\":\"sunsteel\",\"edit\":4694042753861553567,\"respawnAt\":\"2026-11-10T07:17:35","{\"time\":\"2026-11-09T07:47:14.8726008-08:00\",\"level\":\"INFO\",\"msg\":\"loot granted\",\"svc\":\"zone\",\"character\":\"78ccd5cd-1ad9-4735-9564-fd050f801f40\",\"item\":\"ore:sunsteel\",\"qty\":2,\"rarity\":0,\"key\":\"vein:918","{\"time\":\"2026-11-09T07:47:22.3689484-08:00\",\"level\":\"INFO\",\"msg\":\"vein drop\",\"svc\":\"zone\",\"vein\":7840581575915726357,\"material\":\"topaz\",\"character\":\"78ccd5cd-1ad9-4735-9564-fd050f801f40\",\"item\":\"gem:t","{\"time\":\"2026-11-09T07:47:22.3689484-08:00\",\"level\":\"INFO\",\"msg\":\"vein mined\",\"svc\":\"zone\",\"vein\":7840581575915726357,\"material\":\"topaz\",\"edit\":2736489768865272798,\"respawnAt\":\"2026-11-10T03:45:48Z\",\"","{\"time\":\"2026-11-09T07:47:22.3689484-08:00\",\"level\":\"INFO\",\"msg\":\"loot granted\",\"svc\":\"zone\",\"character\":\"78ccd5cd-1ad9-4735-9564-fd050f801f40\",\"item\":\"gem:topaz:rough\",\"qty\":1,\"rarity\":0,\"key\":\"vein:"]}
+[2026-11-09T15:47:25.282Z]   rejoined at the camp outside the town (back from the caves) (2091.0, ~, 2385.0): standing at (2091.0, 76.1, 2385.0) after 2 s
+[2026-11-09T15:47:26.804Z] PASS after 4 rejoins one cave HUD is on the page (1): the previous worlds' cave managers were disposed (their E/mouse listeners too)
+[2026-11-09T15:47:26.832Z]   Brannoc into the town: 100 m to go, at (2091, 76.1, 2385)
+[2026-11-09T15:47:41.034Z]   Brannoc into the town: 3 m to go, at (2024, 79.2, 2313)
+[2026-11-09T15:47:41.301Z]   Brannoc into the town: 3 m to go, at (2022, 79.2, 2312)
+[2026-11-09T15:47:41.568Z]   Brannoc into the town: 3 m to go, at (2020, 79.3, 2311)
+[2026-11-09T15:47:41.705Z]   Brannoc into the town: 4 m to go, at (2019, 79.3, 2311)
+[2026-11-09T15:47:41.970Z]   Brannoc into the town: 4 m to go, at (2017, 79.4, 2310)
+[2026-11-09T15:47:42.240Z]   Brannoc into the town: 4 m to go, at (2015, 79.4, 2309)
+[2026-11-09T15:47:42.499Z]   Brannoc into the town: 3 m to go, at (2013, 79.5, 2308)
+[2026-11-09T15:47:42.756Z]   Brannoc into the town: 4 m to go, at (2012, 79.5, 2308)
+[2026-11-09T15:47:43.017Z]   Brannoc into the town: 3 m to go, at (2010, 79.5, 2307)
+[2026-11-09T15:47:43.405Z]   Brannoc into the town: 3 m to go, at (2007, 79.6, 2306)
+[2026-11-09T15:47:43.668Z]   Brannoc into the town: 3 m to go, at (2006, 79.6, 2306)
+[2026-11-09T15:47:43.937Z]   Brannoc into the town: 3 m to go, at (2004, 79.6, 2305)
+[2026-11-09T15:47:44.202Z]   Brannoc into the town: 3 m to go, at (2002, 79.7, 2304)
+[2026-11-09T15:47:44.467Z]   Brannoc into the town: 3 m to go, at (2000, 79.8, 2303)
+[2026-11-09T15:47:44.725Z]   Brannoc into the town: 3 m to go, at (1998, 79.8, 2303)
+[2026-11-09T15:47:44.984Z]   Brannoc into the town: 3 m to go, at (1996, 79.9, 2302)
+[2026-11-09T15:47:45.248Z]   Brannoc into the town: 3 m to go, at (1994, 79.9, 2301)
+[2026-11-09T15:47:45.519Z]   Brannoc into the town: 3 m to go, at (1993, 80.0, 2300)
+[2026-11-09T15:47:45.655Z]   Brannoc into the town: 4 m to go, at (1992, 80.0, 2300)
+[2026-11-09T15:47:45.907Z]   Brannoc into the town: 4 m to go, at (1990, 80.1, 2299)
+[2026-11-09T15:47:46.167Z]   Brannoc into the town: 4 m to go, at (1988, 80.1, 2298)
+[2026-11-09T15:47:46.432Z]   Brannoc into the town: 4 m to go, at (1986, 80.2, 2298)
+[2026-11-09T15:47:46.702Z]   Brannoc into the town: 3 m to go, at (1984, 80.3, 2297)
+[2026-11-09T15:47:46.970Z]   Brannoc into the town: 3 m to go, at (1982, 80.3, 2296)
+[2026-11-09T15:47:47.231Z]   Brannoc into the town: 3 m to go, at (1980, 80.4, 2295)
+[2026-11-09T15:47:47.503Z]   Brannoc into the town: 3 m to go, at (1978, 80.4, 2295)
+[2026-11-09T15:47:47.767Z]   Brannoc into the town: 3 m to go, at (1976, 80.5, 2294)
+[2026-11-09T15:47:48.150Z]   Brannoc into the town: 3 m to go, at (1975, 80.5, 2293)
+[2026-11-09T15:47:48.551Z]   Brannoc into the town: 3 m to go, at (1973, 80.6, 2293)
+[2026-11-09T15:47:48.935Z]   Brannoc into the town: 3 m to go, at (1971, 80.6, 2292)
+[2026-11-09T15:47:49.336Z]   Brannoc into the town: 3 m to go, at (1969, 80.6, 2291)
+[2026-11-09T15:47:49.719Z]   Brannoc into the town: 4 m to go, at (1968, 80.6, 2291)
+[2026-11-09T15:47:50.118Z]   Brannoc into the town: 4 m to go, at (1966, 80.7, 2290)
+[2026-11-09T15:47:50.517Z]   Brannoc into the town: 4 m to go, at (1964, 80.7, 2289)
+[2026-11-09T15:47:50.919Z]   Brannoc into the town: 4 m to go, at (1962, 80.7, 2288)
+[2026-11-09T15:47:51.322Z]   Brannoc into the town: 3 m to go, at (1960, 80.7, 2288)
+[2026-11-09T15:47:51.589Z]   Brannoc into the town: 3 m to go, at (1958, 80.7, 2287)
+[2026-11-09T15:47:51.850Z]   Brannoc into the town: 3 m to go, at (1956, 80.7, 2286)
+[2026-11-09T15:47:52.115Z]   Brannoc into the town: 3 m to go, at (1955, 80.7, 2285)
+[2026-11-09T15:47:52.386Z]   Brannoc into the town: 3 m to go, at (1953, 80.7, 2285)
+[2026-11-09T15:47:52.646Z]   Brannoc into the town: 3 m to go, at (1951, 80.7, 2284)
+[2026-11-09T15:47:52.920Z]   Brannoc into the town: 3 m to go, at (1949, 80.8, 2283)
+[2026-11-09T15:47:53.186Z]   Brannoc into the town: 3 m to go, at (1947, 80.9, 2282)
+[2026-11-09T15:47:53.451Z]   Brannoc into the town: 3 m to go, at (1945, 80.9, 2282)
+[2026-11-09T15:47:53.707Z]   Brannoc into the town: 3 m to go, at (1943, 81.0, 2281)
+[2026-11-09T15:47:53.969Z]   Brannoc into the town: 3 m to go, at (1941, 81.1, 2280)
+[2026-11-09T15:47:54.233Z]   Brannoc into the town: 3 m to go, at (1939, 81.3, 2280)
+[2026-11-09T15:47:54.369Z]   Brannoc into the town: 4 m to go, at (1938, 81.3, 2279)
+[2026-11-09T15:47:54.752Z]   Brannoc into the town: 17 m to go, at (1936, 81.5, 2278)
+[2026-11-09T15:47:56.916Z]   screenshot g4-12-town-square.png
+[2026-11-09T15:47:56.931Z]   to the smithy door: 12 m to go, at (1921, 82.3, 2272)
+[2026-11-09T15:47:59.123Z]   to the smithy door: 7 m to go, at (1920, 82.3, 2282)
+[2026-11-09T15:48:01.174Z] PASS walked from the camp (205 m from the centre) through the town square into the smithy in 34 s  {"toSquare":true,"toDoor":true,"inside":true,"s":34,"from":{"x":2091,"z":2385},"at":{"x":1928.4,"y":82.4,"z":2284}}
+[2026-11-09T15:48:01.442Z]   screenshot g4-13-smithy-inside.png
+[2026-11-09T15:48:01.442Z] stopped after phase 3 (--stop-after)
+[2026-11-09T15:48:04.410Z] dropped lodestone_wp04_g4_mw9fm5kj
+[2026-11-09T15:48:04.410Z] summary: setup: PASS (6/6) | 1 fight + loot: PASS (4/4) | 2 mine ore + gem: PASS (2/2) | 3 travel to town: PASS (2/2)
+[2026-11-09T15:48:04.410Z] ALL PASS

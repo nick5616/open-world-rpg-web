@@ -72,6 +72,12 @@ per settlement on a 1 m grid with integer costs and index tie-breaks
 (deterministic, golden-hashed with the towns buffer); traces join earlier
 paths so paths branch rather than run side by side. NPCs (zone) walk the
 footpath of a back-lane building instead of cutting through its neighbour.
+Most front-row doors open straight onto their street (a short flight of
+steps), so in-town paths are few and short (official world: 76 doors, gates
+and stalls); "paths to get everywhere" is also read outward: a footpath
+runs from the nearest street end to every landmark, shrine, ruin and
+watchtower within 320 m of a settlement (75 paths, ~16 km on the official
+world), dropped where it would wade or climb steeper than 1 in 2.
 
 ## Denser: build what the map already listed, then fill gaps
 
