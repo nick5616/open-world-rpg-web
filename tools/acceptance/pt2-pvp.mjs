@@ -4,15 +4,21 @@
 // ports, a scratch database: a fresh world), the client from Vite, and two
 // headless Chromium players signed in with dev auth, driving the real UI:
 //
-//   1. Both sign in; A invites B with /invite, B accepts in the party frame.
-//   2. Duel: A presses Duel in the party frame, B gets the prompt and
-//      accepts, both see the 3-2-1 countdown and the ring, A fights B to 1
-//      health (real attack input, real hit claims), both get the result, the
-//      loser's health comes back, party chat has the line.
-//   3. PvP: B leaves the party; A flags from the character panel (C), B with
-//      /pvp; in the Haven A's swings are refused ("safe zone"); both rejoin
-//      outside the Haven (dev spawn) and A's swings land at half damage
-//      until B goes down: kill feed on both, B respawns with nothing lost.
+//   1. Both sign in (not in a party).
+//   2. PvP: A flags from the character panel (C), B with /pvp; at spawn
+//      (a town / the Haven) A's swings are refused ("safe zone"); both
+//      rejoin outside the Haven (dev spawn) and A's swings land at half
+//      damage until B goes down: kill feed on both, B respawns.
+//   3. Duel: A invites B with /invite, B accepts in the party frame; A
+//      presses Duel in the party frame, B gets the prompt and accepts, both
+//      see the 3-2-1 countdown and the ring, A fights B to 1 health (real
+//      attack input, real hit claims), both get the result, the loser's
+//      health comes back, party chat has the line.
+//
+// The town scenes of the first session are often drawn black after the
+// discovery intro (seen after merging third person; the canvas and its
+// context stay alive, labels draw): the shots that need the 3D view are taken
+// after the rejoin on open ground.
 //
 //   node tools/acceptance/pt2-pvp.mjs [--livekit ws://127.0.0.1:7880] [--keep-db]
 //
@@ -234,6 +240,19 @@ async function flagOn(page) {
 // ================================================================ main
 let browsers = [];
 const errors = [];
+const consoleLog = [];
+/** Is the 3D view drawing? (WebGL context state and the frame's mean brightness from a screenshot.) */
+async function viewState(page) {
+  const lost = await page.evaluate(() => {
+    const c = document.querySelector('canvas');
+    const gl = c && (c.getContext('webgl2') || c.getContext('webgl'));
+    return { canvas: !!c, w: c?.width ?? 0, h: c?.height ?? 0, lost: gl ? gl.isContextLost() : null, cam: window.__lodestone.player().pos };
+  });
+  const png = await page.screenshot({ clip: { x: 300, y: 120, width: 680, height: 200 } });
+  let sum = 0;
+  for (let i = 0; i < png.length; i++) sum += png[i];
+  return { ...lost, pngBytes: png.length, byteMean: Math.round(sum / png.length) };
+}
 try {
   step(`Playtest 2 PvP + duels (CR 019), run ${RUN}`);
   const taken = new Set();
@@ -271,19 +290,112 @@ try {
     const label = i === 0 ? 'A' : 'B';
     const page = await (await br.newContext({ viewport: { width: 1280, height: 720 } })).newPage();
     page.on('pageerror', (e) => errors.push(`[${label}] ${e.message}`));
+    page.on('console', (m) => {
+      if (m.type() === 'error' || m.type() === 'warning') consoleLog.push(`[${label}] ${m.type()}: ${m.text()}`.slice(0, 300));
+    });
     await page.goto(`http://${H}:${PORT.vite}/?debug=1&autoplay=1&transport=ws&rain=0`);
     pages.push(page);
   }
   const [a, b] = pages;
 
-  // ======================================================== 1. party
-  item = '1 sign-in, party';
+  // ======================================================== 1. sign in
+  item = '1 sign-in';
   await Promise.all([signInAndPlay(a, USERS.A, NAMES.A), signInAndPlay(b, USERS.B, NAMES.B)]);
   for (const p of [a, b]) await p.keyboard.press('F3'); // debug HUD off (top left is the PvP indicator's)
   const charA = (await a.evaluate(() => window.__lodestone.session())).characterId;
   const charB = (await b.evaluate(() => window.__lodestone.session())).characterId;
   const [pa0, pb0] = [(await pl(a)).pos, (await pl(b)).pos];
   step(`  both playing: ${NAMES.A} at (${pa0.x.toFixed(1)}, ${pa0.z.toFixed(1)}), ${NAMES.B} at (${pb0.x.toFixed(1)}, ${pb0.z.toFixed(1)})`);
+  // ======================================================== 2. open PvP
+  item = '2 pvp';
+  await a.keyboard.press('KeyC');
+  await a.getByTestId('pvp-toggle').waitFor({ timeout: 5000 });
+  await a.getByTestId('pvp-panel').scrollIntoViewIfNeeded();
+  // The combat lock (6 s after any fight) may refuse it: click again until it takes.
+  for (let i = 0; i < 8 && !(await pvp(a)).flagged; i++) {
+    await a.getByTestId('pvp-toggle').dispatchEvent('click');
+    await a.waitForFunction(() => window.__lodestonePvp.state().flagged, null, { timeout: 2000 }).catch(() => {});
+    if (!(await pvp(a)).flagged) step(`  panel toggle refused: ${(await pvp(a)).notice?.text}`);
+  }
+  check((await pvp(a)).flagged, `${NAMES.A} flagged from the character panel`);
+  await sleep(300);
+  await shot(a, 'character-panel-pvp-on-A');
+  await a.keyboard.press('KeyC');
+  await flagOn(b);
+  const sa = await pvp(a);
+  check(sa.flagged && sa.safe, `both flagged (panel toggle, /pvp on); spawn is a safe zone: "${sa.safeName}"`, { safe: sa.safe, name: sa.safeName });
+  await until(a, (n) => (window.__lodestoneDrawn?.() ?? []).some((v) => v.name === n && (v.typeId & 0x1000) !== 0), NAMES.B, 8000);
+  check(true, `${NAMES.B}'s snapshot typeId carries the PvP bit (red crossed swords on the nameplate)`);
+  await look(a, 0, 0);
+  await sleep(300);
+  await faceOff(a, b);
+  const tSafe = Date.now();
+  const hpSafe = await health(b);
+  await swingUntil(a, b, async () => false, 3);
+  const refusedSafe = (await tapped(a, null, tSafe)).hits.filter((h) => !h.accepted && h.flags === 16);
+  const hpSafe2 = await health(b);
+  check(refusedSafe.length > 0 && hpSafe2.health === hpSafe.health, `in the safe zone ${refusedSafe.length} claims refused with 16 (safe zone), ${NAMES.B}'s health unchanged`);
+  await shot(a, 'safe-zone-refused-A');
+
+  // Out of the Haven: candidates 900 m from spawn, on dry land, not in a town.
+  const spawn = pa0;
+  const settlements = await a.evaluate(() => window.__lodestoneMap.sites().filter((s) => s.kind === 'settlement' || s.kind === 'town' || s.kind === 'village' || s.kind === 'hamlet'));
+  let spot = null;
+  for (let k = 0; k < 16 && !spot; k++) {
+    const ang = (k / 16) * Math.PI * 2;
+    const c = { x: spawn.x + Math.cos(ang) * 900, z: spawn.z + Math.sin(ang) * 900 };
+    if (c.x < 100 || c.z < 100 || c.x > 3996 || c.z > 3996) continue;
+    if (settlements.some((s) => Math.hypot(s.x - c.x, s.z - c.z) < 250)) continue;
+    await rejoinAt(a, charA, c);
+    await sleep(1000);
+    await flagOn(a); // a fresh session starts unflagged (CR 019)
+    await sleep(700); // 990 carries the safe-zone bit
+    const p = await pl(a);
+    const st = await pvp(a);
+    step(`  candidate (${c.x.toFixed(0)}, ${c.z.toFixed(0)}): mode ${p.mode}, flagged ${st.flagged}, safe ${st.safe} ${st.safeName}`);
+    if (p.mode !== 'swim' && st.flagged && !st.safe) spot = p.pos;
+  }
+  check(!!spot, 'found open ground outside the Haven and towns (rejoined at a dev spawn point; a fresh session is unflagged, so flagged again)', spot);
+  if (!spot) throw new Error('no PvP spot');
+  await rejoinAt(b, charB, { x: spot.x, z: spot.z - 2 });
+  await flagOn(b);
+  await sleep(1000);
+  await look(a, 0, 0);
+  await sleep(300);
+  await faceOff(a, b);
+  const sb = await pvp(b);
+  check(sb.flagged && !sb.safe, `${NAMES.B} flagged on open ground (no safe zone)`);
+  const tOpen = Date.now();
+  const hpOpen = await health(b);
+  let hitShot = false;
+  const swings2 = await swingUntil(a, b, async () => {
+    const h = await health(b);
+    if (!hitShot && h && h.health < hpOpen.health) {
+      hitShot = true;
+      await sleep(150);
+      await shot(a, 'pvp-hit-A');
+    }
+    return (await pvp(b)).feed.length > 0;
+  }, 60);
+  const acc = (await tapped(a, null, tOpen)).hits.filter((h) => h.accepted);
+  const dmg = acc.map((h) => h.damage);
+  check(acc.length > 0, `open PvP: ${acc.length} hits accepted in ${swings2} swings, damage ${JSON.stringify(dmg.slice(0, 6))}... (sword light 18 PvE x the level's damage x 0.5)`);
+  const feedA = (await pvp(a)).feed.map((f) => f.text);
+  const feedB = (await pvp(b)).feed.map((f) => f.text);
+  check(feedA.some((t) => t.includes(`You defeated ${NAMES.B}`)) && feedB.some((t) => t.includes(`${NAMES.A} defeated you`)), 'kill feed on both (Event 993)', { a: feedA, b: feedB });
+  await shot(a, 'kill-feed-A');
+  await shot(b, 'kill-feed-downed-B');
+  await until(b, () => {
+    const h = window.__lodestone.selfHealth();
+    return h && h.health === h.healthMax;
+  }, 0, 20000).catch(() => {});
+  const hpRes = await health(b);
+  check(hpRes.health === hpRes.healthMax, `${NAMES.B} respawned at full health (${hpRes.health})`);
+  // B respawned at its waypoint in town: back next to A on open ground for the duel.
+  await rejoinAt(b, charB, { x: spot.x, z: spot.z - 2 });
+
+  // ======================================================== 3. duel (party)
+  item = '3 duel';
   await say(a, `/invite ${NAMES.B}`);
   await b.getByTestId('party-accept').waitFor({ timeout: 20000 });
   await b.getByTestId('party-accept').dispatchEvent('click');
@@ -291,8 +403,7 @@ try {
   await Promise.all([a, b].map((p) => p.waitForFunction(() => window.__lodestoneMap.state().partyId !== 0, null, { timeout: 20000 })));
   check(true, 'party formed (/invite + the party frame); the zone sees both in one party');
 
-  // ======================================================== 2. duel
-  item = '2 duel';
+  step(`  view A ${JSON.stringify(await viewState(a))}; view B ${JSON.stringify(await viewState(b))}`);
   await look(a, 0, 0);
   await sleep(300);
   const dist = await faceOff(a, b);
@@ -349,96 +460,9 @@ try {
   const zoneLog = fs.readFileSync(path.join(TMP, 'zone.log'), 'utf8');
   check(/duel ended.*reason"?[=:]1/.test(zoneLog), 'zone log: duel ended, reason 1');
 
-  // ======================================================== 3. open PvP
-  item = '3 pvp';
-  await say(b, '/leave');
-  await a.waitForFunction(() => !document.querySelector('[data-testid="party-frame"]'), null, { timeout: 15000 }).catch(() => {});
-  await Promise.all([a, b].map((p) => p.waitForFunction(() => window.__lodestoneMap.state().partyId === 0, null, { timeout: 20000 })));
-  check(true, `${NAMES.B} left the party`);
-  await a.keyboard.press('KeyC');
-  await a.getByTestId('pvp-toggle').waitFor({ timeout: 5000 });
-  await a.getByTestId('pvp-panel').scrollIntoViewIfNeeded();
-  // Just out of a duel: the combat lock (6 s) may still refuse it; click again until it takes.
-  for (let i = 0; i < 8 && !(await pvp(a)).flagged; i++) {
-    await a.getByTestId('pvp-toggle').dispatchEvent('click');
-    await a.waitForFunction(() => window.__lodestonePvp.state().flagged, null, { timeout: 2000 }).catch(() => {});
-    if (!(await pvp(a)).flagged) step(`  panel toggle refused: ${(await pvp(a)).notice?.text}`);
-  }
-  check((await pvp(a)).flagged, `${NAMES.A} flagged from the character panel`);
-  await sleep(300);
-  await shot(a, 'character-panel-pvp-on-A');
-  await a.keyboard.press('KeyC');
-  await flagOn(b);
-  const sa = await pvp(a);
-  check(sa.flagged && sa.safe, `both flagged (panel toggle, /pvp on); the Haven is a safe zone: "${sa.safeName}"`, { safe: sa.safe, name: sa.safeName });
-  await until(a, (n) => (window.__lodestoneDrawn?.() ?? []).some((v) => v.name === n && (v.typeId & 0x1000) !== 0), NAMES.B, 8000);
-  check(true, `${NAMES.B}'s snapshot typeId carries the PvP bit (red crossed swords on the nameplate)`);
-  await look(a, 0, 0);
-  await sleep(300);
-  await faceOff(a, b);
-  const tSafe = Date.now();
-  const hpSafe = await health(b);
-  await swingUntil(a, b, async () => false, 3);
-  const refusedSafe = (await tapped(a, null, tSafe)).hits.filter((h) => !h.accepted && h.flags === 16);
-  const hpSafe2 = await health(b);
-  check(refusedSafe.length > 0 && hpSafe2.health === hpSafe.health, `in the Haven ${refusedSafe.length} claims refused with 16 (safe zone), ${NAMES.B}'s health unchanged`);
-  await shot(a, 'safe-zone-refused-A');
-
-  // Out of the Haven: candidates 900 m from spawn, on dry land, not in a town.
-  const spawn = pa0;
-  const settlements = await a.evaluate(() => window.__lodestoneMap.sites().filter((s) => s.kind === 'settlement' || s.kind === 'town' || s.kind === 'village' || s.kind === 'hamlet'));
-  let spot = null;
-  for (let k = 0; k < 16 && !spot; k++) {
-    const ang = (k / 16) * Math.PI * 2;
-    const c = { x: spawn.x + Math.cos(ang) * 900, z: spawn.z + Math.sin(ang) * 900 };
-    if (c.x < 100 || c.z < 100 || c.x > 3996 || c.z > 3996) continue;
-    if (settlements.some((s) => Math.hypot(s.x - c.x, s.z - c.z) < 250)) continue;
-    await rejoinAt(a, charA, c);
-    await sleep(1000);
-    await flagOn(a); // a fresh session starts unflagged (CR 019)
-    await sleep(700); // 990 carries the safe-zone bit
-    const p = await pl(a);
-    const st = await pvp(a);
-    step(`  candidate (${c.x.toFixed(0)}, ${c.z.toFixed(0)}): mode ${p.mode}, flagged ${st.flagged}, safe ${st.safe} ${st.safeName}`);
-    if (p.mode !== 'swim' && st.flagged && !st.safe) spot = p.pos;
-  }
-  check(!!spot, 'found open ground outside the Haven and towns (rejoined at a dev spawn point; a fresh session is unflagged, so flagged again)', spot);
-  if (!spot) throw new Error('no PvP spot');
-  await rejoinAt(b, charB, { x: spot.x, z: spot.z - 2 });
-  await flagOn(b);
-  await sleep(1000);
-  await look(a, 0, 0);
-  await sleep(300);
-  await faceOff(a, b);
-  const sb = await pvp(b);
-  check(sb.flagged && !sb.safe, `${NAMES.B} flagged on open ground (no safe zone)`);
-  const tOpen = Date.now();
-  const hpOpen = await health(b);
-  let hitShot = false;
-  const swings2 = await swingUntil(a, b, async () => {
-    const h = await health(b);
-    if (!hitShot && h && h.health < hpOpen.health) {
-      hitShot = true;
-      await sleep(150);
-      await shot(a, 'pvp-hit-A');
-    }
-    return (await pvp(b)).feed.length > 0;
-  }, 60);
-  const acc = (await tapped(a, null, tOpen)).hits.filter((h) => h.accepted);
-  const dmg = acc.map((h) => h.damage);
-  check(acc.length > 0, `open PvP: ${acc.length} hits accepted in ${swings2} swings, damage ${JSON.stringify(dmg.slice(0, 6))}... (sword light at level 1 is 18 PvE, 9 PvP)`);
-  const feedA = (await pvp(a)).feed.map((f) => f.text);
-  const feedB = (await pvp(b)).feed.map((f) => f.text);
-  check(feedA.some((t) => t.includes(`You defeated ${NAMES.B}`)) && feedB.some((t) => t.includes(`${NAMES.A} defeated you`)), 'kill feed on both (Event 993)', { a: feedA, b: feedB });
-  await shot(a, 'kill-feed-A');
-  await shot(b, 'kill-feed-downed-B');
-  await until(b, () => {
-    const h = window.__lodestone.selfHealth();
-    return h && h.health === h.healthMax;
-  }, 0, 20000).catch(() => {});
-  const hpRes = await health(b);
-  check(hpRes.health === hpRes.healthMax, `${NAMES.B} respawned at full health (${hpRes.health})`);
   check(errors.length === 0, 'no page errors in either browser', errors.slice(0, 5));
+  step(`  console errors/warnings: ${consoleLog.length}`);
+  for (const l of consoleLog.slice(0, 25)) step(`    ${l}`);
 } catch (e) {
   failures.push(String(e));
   step(`ERROR ${e.stack ?? e}`);
