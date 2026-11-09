@@ -5,6 +5,7 @@
 // inventory.test.ts.
 
 import { COMBAT, ITEMS, type ItemDef, type ItemStat, type RarityDef, type RecipeDef } from '@lodestone/contracts';
+import { skillProgress, type SkillProgress } from '../progression/gains';
 
 /** One affix on an item (Event 400 `a`). */
 export interface WireAffix {
@@ -267,3 +268,38 @@ export const SOURCE_LABEL: Record<number, string> = { 1: 'loot', 2: 'container',
 
 /** Container kinds (Event 406). */
 export const CONTAINER_LABEL = ['chest', 'buried cache', 'urn', 'crate'] as const;
+
+/**
+ * The combat HUD's weapon label for loadout `loadout` (0 or 1): the name of
+ * the item equipped in that main hand ("Sunsteel Blade", or a mythic's
+ * generated name) when it is a `weapon` of that type, else the weapon type
+ * ("Sword") - no inventory yet, nothing equipped, or the two momentarily
+ * disagree between Event 400 and combat_sync.
+ */
+export function loadoutWeaponLabel(weapon: string, loadout: number, items: readonly WireItem[] | null | undefined): string {
+  const it = items?.find((x) => x.s === `eq:main${loadout}`);
+  if (it && itemDef(it.b)?.weapon === weapon) return displayName(it);
+  return weapon ? weapon[0].toUpperCase() + weapon.slice(1) : '-';
+}
+
+/** What the crafting panel shows about Smithing (null: nothing known yet). */
+export interface SmithingView {
+  level: number;
+  /** Progress toward the next level: forge/anvil with the zone's skill XP (combat_sync) only. */
+  progress: SkillProgress | null;
+}
+
+/**
+ * The crafting panel's Smithing line. The zone's combat_sync carries every
+ * skill's cumulative XP (smithing included, re-sent after each forge craft),
+ * so with it the forge and anvil show the level and the progress bar; the
+ * cooking fire (which trains no Smithing) shows the level only. Without a
+ * sync (offline, or before the first one) Event 404's level is used if any.
+ */
+export function smithingView(kind: 'forge' | 'anvil' | 'cook', stationLevel: number | null, synced: boolean, xp: number | undefined): SmithingView | null {
+  if (synced) {
+    const p = skillProgress(xp ?? 0);
+    return { level: p.level, progress: kind === 'cook' ? null : p };
+  }
+  return stationLevel !== null ? { level: stationLevel, progress: null } : null;
+}

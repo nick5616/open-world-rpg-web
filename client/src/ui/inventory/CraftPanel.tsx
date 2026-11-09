@@ -5,15 +5,17 @@
 // inventory and the blueprint requirement; Craft sends Interact 22/1 with
 // the recipe id and the result arrives as 405 (shown at the bottom) + 400.
 // Esc or Close hides it (the zone keeps the station open while you stay
-// within 7 m).
+// within 7 m). The forge and anvil show your Smithing level and progress
+// from combat_sync's skill XP (the zone re-sends it after each forge craft).
 
 import { useEffect } from 'react';
 import type { RecipeDef } from '@lodestone/contracts';
 import { ItemIcon } from './ItemIcon';
-import { baseName, displayName, isHolo, rarityColor, recipeGroup, recipesFor, recipeStatus, type WireItem } from './items';
+import { baseName, displayName, isHolo, rarityColor, recipeGroup, recipesFor, recipeStatus, smithingView, type SmithingView, type WireItem } from './items';
 import { closeStation, pushToast, useInventory } from './store';
 import { ensureInventoryStyles, GOLD, PANEL_BG, PANEL_BORDER, TEXT } from './styles';
 import { isTextTarget } from '../../input/useKeyboard';
+import { useCombatHud } from '../../combat/store';
 
 const TITLE = { forge: 'The forge', anvil: 'The anvil', cook: 'Cooking fire' } as const;
 const SUB = { forge: 'Smelting and forging', anvil: 'Smelting and forging', cook: 'Cooking and brewing' } as const;
@@ -37,6 +39,9 @@ function Panel() {
   const items = useInventory((s) => s.inv?.items ?? EMPTY);
   const actions = useInventory((s) => s.actions);
   const last = useInventory((s) => s.lastCrafted);
+  const synced = useCombatHud((s) => s.active);
+  const smithXp = useCombatHud((s) => s.skillXp.smithing);
+  const smithing = smithingView(station.kind, station.level, synced, smithXp);
   const recipes = recipesFor(station.kind);
   const groups = new Map<string, RecipeDef[]>();
   for (const r of recipes) groups.set(recipeGroup(r), [...(groups.get(recipeGroup(r)) ?? []), r]);
@@ -58,12 +63,13 @@ function Panel() {
           <div style={{ font: '700 18px system-ui', color: GOLD }}>{TITLE[station.kind]}</div>
           <div style={{ opacity: 0.7, fontSize: 12 }}>
             {SUB[station.kind]}
-            {station.level !== null ? ` · Smithing ${station.level}` : ''}
+            {smithing && !smithing.progress ? ` · Smithing ${smithing.level}` : ''}
             {station.offline ? ' · offline' : ''}
           </div>
         </div>
         <button onClick={closeStation}>Close (Esc)</button>
       </div>
+      {smithing?.progress && <SmithingMeter view={smithing} />}
       {last && <LastCrafted item={last.item} qty={last.qty} />}
       {[...groups].map(([group, list]) => (
         <div key={group} style={{ marginTop: 12 }}>
@@ -103,6 +109,24 @@ function Panel() {
 }
 
 const EMPTY: WireItem[] = [];
+
+function SmithingMeter({ view }: { view: SmithingView }) {
+  const p = view.progress!;
+  return (
+    <div data-testid="craft-smithing" style={{ marginTop: 10 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', fontSize: 12 }}>
+        <span>
+          <span style={{ color: GOLD, fontWeight: 700 }}>Smithing {view.level}</span>
+          <span style={{ opacity: 0.6 }}> · +{view.level}% forge luck</span>
+        </span>
+        <span data-testid="craft-smithing-xp" style={{ opacity: 0.75 }}>{p.max ? 'Mastered' : `${p.into} / ${p.span} XP to ${view.level + 1}`}</span>
+      </div>
+      <div style={{ height: 6, marginTop: 3, background: 'rgba(255,255,255,0.1)', borderRadius: 3, overflow: 'hidden' }}>
+        <div style={{ width: `${Math.round(p.frac * 100)}%`, height: '100%', background: `linear-gradient(90deg, #c8763a, ${GOLD})` }} />
+      </div>
+    </div>
+  );
+}
 
 function LastCrafted({ item, qty }: { item: WireItem | null; qty: number }) {
   if (!item) return null;
