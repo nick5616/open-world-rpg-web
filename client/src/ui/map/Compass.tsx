@@ -58,11 +58,10 @@ export function compassMarks(): CompassMark[] {
     out.push({ rel: wrapAngle(bearing(px, pz, p.x, p.z) - head), dist: Math.hypot(p.x - px, p.z - pz), color: PIN_COLORS[p.color % PIN_COLORS.length], label: p.party ? p.owner : '', kind: 'pin' });
   }
   // Playtest 1: the tracked quest's current markers (an area counts from its edge).
+  // Only the nearest one is labelled (markers of one step are often close together).
   const q = trackedQuest();
-  for (const m of q?.markers ?? []) {
-    const d = Math.hypot(m.x - px, m.z - pz);
-    out.push({ rel: wrapAngle(bearing(px, pz, m.x, m.z) - head), dist: Math.max(0, d - (m.r ?? 0)), color: '#ffd166', label: m.label, kind: 'quest' });
-  }
+  const qm = (q?.markers ?? []).map((m) => ({ m, d: Math.max(0, Math.hypot(m.x - px, m.z - pz) - (m.r ?? 0)) })).sort((a, b) => a.d - b.d);
+  qm.forEach(({ m, d }, i) => out.push({ rel: wrapAngle(bearing(px, pz, m.x, m.z) - head), dist: d, color: '#ffd166', label: i === 0 ? m.label : '', kind: 'quest' }));
   return out;
 }
 
@@ -131,6 +130,7 @@ export function Compass() {
         }
         ctx.fill();
         ctx.stroke();
+        if (m.kind === 'quest' && !m.label) continue; // the step's other markers: the diamond only
         ctx.font = '600 10px system-ui, sans-serif';
         ctx.fillStyle = '#f1f3f5';
         const dist = m.dist >= 1000 ? `${(m.dist / 1000).toFixed(1)} km` : `${Math.round(m.dist)} m`;

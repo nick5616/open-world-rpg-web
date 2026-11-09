@@ -122,7 +122,7 @@ async function main(): Promise<void> {
       LODESTONE_ZONE_NO_DEMONS: '1',
       LODESTONE_ZONE_NO_ATLAS_ENEMIES: '1',
       LODESTONE_ZONE_TIME_OFFSET_S: String(noonOffset()),
-      LODESTONE_ZONE_DEBUG_CAMP: `${camp.x.toFixed(1)},${camp.z.toFixed(1)},1,boar wolf,fast`,
+      LODESTONE_ZONE_DEBUG_CAMP: `${camp.x.toFixed(1)},${camp.z.toFixed(1)},1,lurker lurker,shielded`,
     },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
@@ -144,7 +144,7 @@ async function main(): Promise<void> {
     browser = await chromium.launch({ headless: true, args: gpuArgs });
 
     async function join(at: { x: number; z: number }, label: string, viewport: { width: number; height: number } = { width: 1280, height: 720 }): Promise<Page> {
-      const page = await browser!.newPage({ viewport });
+      const page = await browser!.newPage({ viewport, deviceScaleFactor: label.startsWith('View') ? 2 : 1 });
       page.on('pageerror', (e) => note(`  [${label}] pageerror: ${e.message}`));
       await page.goto(`http://127.0.0.1:${vitePort}/?debug=1`, { waitUntil: 'networkidle' });
       await page.waitForFunction(() => !!(window as unknown as W).__lodestone, null, { polling: 200, timeout: 60000 });
@@ -175,6 +175,33 @@ async function main(): Promise<void> {
     };
     const quests = (p: Page) => p.evaluate(() => (window as unknown as W).__lodestoneQuests!.state());
     const send = (p: Page, kind: number, id: string | number, action: number, arg = 0) => p.evaluate(([k, i, a, g]) => (window as unknown as W).__lodestoneQuests!.send(k as number, i as string, a as number, g as number), [kind, String(id), action, arg] as const);
+    /** Walk (W held, steering every 100 ms) to `to`; true when within 1.5 m. */
+    const walkTo = async (p: Page, to: { x: number; z: number }, ms: number) => {
+      const t0 = Date.now();
+      await p.keyboard.down('KeyW');
+      try {
+        while (Date.now() - t0 < ms) {
+          const at = await p.evaluate(() => (window as unknown as W).__lodestone.player().pos);
+          if (Math.hypot(to.x - at.x, to.z - at.z) < 1.5) return true;
+          await p.evaluate((y) => (window as unknown as W).__lodestone.setLook(y, 0), lookAt(at, to));
+          await sleep(100);
+        }
+        return false;
+      } finally {
+        await p.keyboard.up('KeyW');
+      }
+    };
+    /** Zoom the open map n wheel notches around a world point. */
+    const zoomMapAt = async (p: Page, x: number, z: number, notches: number) => {
+      for (let k = 0; k < notches; k++) {
+        const s = await p.evaluate(([wx, wz]) => (window as unknown as { __lodestoneMap: { mapScreenPos(x: number, z: number): { x: number; y: number } | null } }).__lodestoneMap.mapScreenPos(wx, wz), [x, z] as const);
+        if (!s) return;
+        await p.mouse.move(s.x, s.y);
+        await p.mouse.wheel(0, -120);
+        await sleep(120);
+      }
+      await sleep(500);
+    };
     const skipIntros = async (p: Page) => {
       for (let k = 0; k < 6; k++) {
         await p.evaluate(() => (window as unknown as W).__lodestoneIntro?.skip());
@@ -187,6 +214,7 @@ async function main(): Promise<void> {
     const probe = await join({ x: town.x, z: town.z }, 'Probe');
     const smith = (await npcsOf(probe)).find((x) => x.role === 'blacksmith')!;
     const board = (await probe.evaluate((i) => (window as unknown as W).__lodestoneTowns!.props(i, 15), await si(probe)))[0];
+    const blds = await probe.evaluate((i) => (window as unknown as { __lodestoneTowns: { buildings(si: number): { x: number; z: number; frontX: number; frontZ: number }[] } }).__lodestoneTowns.buildings(i), await si(probe));
     await probe.close();
     const smithSpot = { x: smith.x - 2.0 * Math.cos(smith.yaw), z: smith.z - 2.0 * Math.sin(smith.yaw) };
     const boardSpot = { x: board.x + 3.5 * Math.cos(board.yaw), z: board.z + 3.5 * Math.sin(board.yaw) };
@@ -208,9 +236,45 @@ async function main(): Promise<void> {
     if (want('bars')) {
       // Two players at the camp: Front draws the enemies onto itself (closest),
       // Behind stands on the far side, so it sees their backs.
+      // Calm version: one idle camp (lurkers: 14 m aggro) seen from four sides
+      // at 17 m, so nothing moves and the enemies keep one yaw; at least one
+      // view is from behind. Crisp crops (2x device pixels).
+      const scout = await join({ x: camp.x - 40, z: camp.z }, 'Scout');
+      await sleep(1500);
+      const found = await scout.evaluate(() => (window as unknown as W).__lodestoneDrawn!().filter((v) => v.kind === 2));
+      await scout.close();
+      const target = found.find((e) => e.name) ?? found[0];
+      note(`calm camp: ${found.map((e) => `${e.name || '#' + e.id} (${e.x.toFixed(1)}, ${e.z.toFixed(1)}) yaw ${e.yaw.toFixed(2)}`).join(', ')}`);
+      if (target) {
+        for (const [side, dx, dz] of [['west', -1, 0], ['east', 1, 0], ['north', 0, -1], ['south', 0, 1]] as const) {
+          const at = { x: target.x + dx * 17, z: target.z + dz * 17 };
+          const page = await join(at, `View${side}`, { width: 1280, height: 720 });
+          await skipIntros(page);
+          const me = await page.evaluate(() => (window as unknown as W).__lodestone.player().pos);
+          await page.evaluate((y) => (window as unknown as W).__lodestone.setLook(y, -0.06), lookAt(me, target));
+          await sleep(700);
+          const now = await page.evaluate((id) => (window as unknown as W).__lodestoneDrawn!().find((v) => v.id === id) ?? null, target.id);
+          const fx = now ? -Math.sin(now.yaw) : 0;
+          const fz = now ? -Math.cos(now.yaw) : 0;
+          const facing = now ? (fx * (me.x - now.x) + fz * (me.z - now.z)) / Math.hypot(me.x - now.x, me.z - now.z) : NaN;
+          await page.screenshot({ path: shot(`healthbars-${pre}-${side}`), clip: { x: 400, y: 160, width: 480, height: 270 } });
+          note(`shot pt-ux-healthbars-${pre}-${side}.png: ${target.name || '#' + target.id} from the ${side} at ${Math.hypot(me.x - target.x, me.z - target.z).toFixed(1)} m, facing the viewer ${facing.toFixed(2)} (negative = its back)`);
+          await page.close();
+        }
+      }
+    }
+
+    if (want('bars-live')) {
+      // The zone places the camp on walkable ground near the requested spot:
+      // the first player finds it, the second is dropped 5 m past it.
       const front = await join({ x: camp.x - 6, z: camp.z }, 'Front');
-      const behind = await join({ x: camp.x + 9, z: camp.z }, 'Behind');
-      await sleep(1000);
+      await skipIntros(front);
+      const seen = await front.evaluate(() => (window as unknown as W).__lodestoneDrawn!().filter((v) => v.kind === 2));
+      const c0 = seen.length ? { x: seen.reduce((a, e) => a + e.x, 0) / seen.length, z: seen.reduce((a, e) => a + e.z, 0) / seen.length } : camp;
+      const behind = await join({ x: c0.x + 5, z: c0.z }, 'Behind');
+      await skipIntros(front);
+      await skipIntros(behind);
+      await sleep(500);
       const enemies = await behind.evaluate(() => (window as unknown as W).__lodestoneDrawn!().filter((v) => v.kind === 2));
       note(`camp: ${enemies.length} enemies drawn: ${enemies.map((e) => `${e.name || '#' + e.id} (${e.x.toFixed(0)}, ${e.z.toFixed(0)}) yaw ${e.yaw.toFixed(2)}`).join(', ')}`);
       if (enemies.length) {
@@ -229,10 +293,13 @@ async function main(): Promise<void> {
           note(`  ${e.name || '#' + e.id}: facing the Behind player ${dot.toFixed(2)} (negative = its back is to them)`);
         }
         // The same enemies from opposite sides (180 degrees apart).
+        const clip = { x: 320, y: 140, width: 640, height: 360 };
         await behind.screenshot({ path: shot(`healthbars-${pre}-east`) });
-        note(`shot pt-ux-healthbars-${pre}-east.png (looking west at the camp)`);
+        await behind.screenshot({ path: shot(`healthbars-${pre}-east-crop`), clip });
+        note(`shot pt-ux-healthbars-${pre}-east.png (+ -crop; looking west at the camp)`);
         await front.screenshot({ path: shot(`healthbars-${pre}-west`) });
-        note(`shot pt-ux-healthbars-${pre}-west.png (looking east at the camp)`);
+        await front.screenshot({ path: shot(`healthbars-${pre}-west-crop`), clip });
+        note(`shot pt-ux-healthbars-${pre}-west.png (+ -crop; looking east at the camp)`);
       }
       await front.close();
       await behind.close();
@@ -280,11 +347,17 @@ async function main(): Promise<void> {
       await page.screenshot({ path: shot('quest-step') });
       note('shot pt-ux-quest-step.png (the smith\'s line, step note, tracker)');
       await page.evaluate(() => (window as unknown as W).__lodestoneMap!.open(true));
-      await sleep(1200);
+      await sleep(800);
+      await zoomMapAt(page, (ward.markers[0].x + smith.x) / 2, (ward.markers[0].z + smith.z) / 2, 6);
       await page.screenshot({ path: shot('quest-map') });
-      note('shot pt-ux-quest-map.png (quest markers on the map)');
+      note('shot pt-ux-quest-map.png (quest markers on the map, zoomed in)');
       await page.evaluate(() => (window as unknown as W).__lodestoneMap!.open(false));
-      // Face the seam: compass marker + in-world beam.
+      // Out of the forge into the street, then face the seam: compass marker + in-world beam.
+      const forge = blds.slice().sort((a, b) => Math.hypot(a.x - smith.x, a.z - smith.z) - Math.hypot(b.x - smith.x, b.z - smith.z))[0];
+      const fl = Math.hypot(forge.frontX - forge.x, forge.frontZ - forge.z) || 1;
+      const door = { x: forge.frontX, z: forge.frontZ };
+      const street = { x: forge.frontX + ((forge.frontX - forge.x) / fl) * 5, z: forge.frontZ + ((forge.frontZ - forge.z) / fl) * 5 };
+      note(`walk out: door (${door.x.toFixed(1)}, ${door.z.toFixed(1)}) -> ${await walkTo(page, door, 8000)}, street -> ${await walkTo(page, street, 6000)}, square -> ${await walkTo(page, { x: town.x, z: town.z }, 12000)}`);
       const me = await page.evaluate(() => (window as unknown as W).__lodestone.player().pos);
       await page.evaluate((y) => (window as unknown as W).__lodestone.setLook(y, 0.12), lookAt(me, ward.markers[0]) + 0.25);
       await sleep(1500);
@@ -339,7 +412,8 @@ async function main(): Promise<void> {
       note('shot pt-ux-quest-journal.png (J)');
       await page.evaluate(() => (window as unknown as W).__lodestoneQuests!.journal(false));
       await page.evaluate(() => (window as unknown as W).__lodestoneMap!.open(true));
-      await sleep(1200);
+      await sleep(800);
+      await zoomMapAt(page, town.x, town.z, 4);
       await page.screenshot({ path: shot('quest-map-bounties') });
       note('shot pt-ux-quest-map-bounties.png (accepted bounties and the tracked quest on the map)');
       await page.close();

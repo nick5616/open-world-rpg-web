@@ -19,7 +19,7 @@ import { setMapOpen, useExploration } from './store';
 import { mapTerrain, useMapWorld } from './world';
 import { PAPER, siteGlyph } from './mapRender';
 // Playtest 1: quest markers and offer previews.
-import { setQuestPreview, trackedQuest, useQuests } from '../quests/store';
+import { trackedQuest, useQuests } from '../quests/store';
 import { whereText } from '../quests/events';
 
 interface Hit {
@@ -73,7 +73,7 @@ function MapView() {
   }, []);
 
   // Playtest 1: a quest preview opens the map framed on where it takes you
-  // (and you); closing the map drops the preview.
+  // (and you). Closing the map drops the preview (QuestHud subscribes).
   useEffect(() => {
     const p = useQuests.getState().preview;
     if (p && p.markers.length && data) {
@@ -85,7 +85,6 @@ function MapView() {
       view.current.cz = (Math.max(...zs) + Math.min(...zs)) / 2;
       view.current.zoom = Math.min(8, Math.max(1, data.worldSize / span));
     }
-    return () => setQuestPreview(null);
   }, [data]);
 
   useEffect(() => {
@@ -203,11 +202,12 @@ function MapView() {
       // Playtest 1: quest markers (every active quest's current step; the
       // tracked one in gold) and a preview of where an offer would take you.
       const qs = useQuests.getState();
+      const placed: { x: number; y: number }[] = [];
       for (const q of qs.log.quests) {
         const tracked = q.id === (trackedQuest(qs)?.id ?? -1);
-        for (const m of q.markers) drawQuestMarker(ctx, sx(m.x), sy(m.z), (m.r ?? 0) * k, tracked ? '#ffd166' : '#e8a33d', tracked ? m.label : '', tracked ? 1 : 0.6, false);
+        for (const m of q.markers) drawQuestMarker(ctx, sx(m.x), sy(m.z), (m.r ?? 0) * k, tracked ? '#ffd166' : '#e8a33d', tracked ? m.label : '', tracked ? 1 : 0.6, false, placed);
       }
-      if (qs.preview) for (const m of qs.preview.markers) drawQuestMarker(ctx, sx(m.x), sy(m.z), (m.r ?? 0) * k, '#7fe3ff', m.label, 1, true);
+      if (qs.preview) for (const m of qs.preview.markers) drawQuestMarker(ctx, sx(m.x), sy(m.z), (m.r ?? 0) * k, '#7fe3ff', m.label, 1, true, placed);
 
       // Party members (drawn remotes in my party: the party ring keeps them at any distance).
       if (st.partyId) {
@@ -492,7 +492,7 @@ function drawSite(ctx: CanvasRenderingContext2D, s: Site, x: number, y: number, 
 }
 
 /** A quest marker: an area circle (rPx > 0) with a centre diamond, or a point diamond. */
-export function drawQuestMarker(ctx: CanvasRenderingContext2D, x: number, y: number, rPx: number, color: string, label: string, alpha: number, dashed: boolean) {
+export function drawQuestMarker(ctx: CanvasRenderingContext2D, x: number, y: number, rPx: number, color: string, label: string, alpha: number, dashed: boolean, placed: { x: number; y: number }[] = []) {
   ctx.save();
   ctx.globalAlpha = alpha;
   if (rPx > 4) {
@@ -525,9 +525,13 @@ export function drawQuestMarker(ctx: CanvasRenderingContext2D, x: number, y: num
     ctx.font = '600 12px system-ui, sans-serif';
     ctx.lineWidth = 3;
     ctx.strokeStyle = 'rgba(255,248,230,0.85)';
-    ctx.strokeText(label, x, y - 14);
+    // Stack labels that would overlap one already drawn this frame.
+    let ly = y - 14;
+    while (placed.some((p) => Math.abs(p.x - x) < 90 && Math.abs(p.y - ly) < 13)) ly -= 14;
+    placed.push({ x, y: ly });
+    ctx.strokeText(label, x, ly);
     ctx.fillStyle = '#2b1d08';
-    ctx.fillText(label, x, y - 14);
+    ctx.fillText(label, x, ly);
   }
   ctx.restore();
 }

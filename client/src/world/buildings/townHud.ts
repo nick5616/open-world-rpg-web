@@ -62,9 +62,10 @@ function bountyPlace(b: Bounty, board: Candidate | null): { text: string; marker
     const marker: QuestMarker = { x: site.x, z: site.z, r: Math.max(30, site.radius + 10), label: site.name ?? 'Bounty target' };
     return { text: `${site.name ?? 'Target'}: ${whereText(px, pz, marker)}`, marker };
   }
-  if (b.kind === 1 && board) {
-    const marker: QuestMarker = { x: board.x, z: board.z, label: 'Hand in at this board' };
-    return { text: 'Hand in here, at this board', marker };
+  if (b.kind === 1) {
+    // A delivery is handed in where you read it (this board, or the keeper beside it).
+    const marker: QuestMarker = { x: board?.x ?? px, z: board?.z ?? pz, label: 'Hand in at this board' };
+    return { text: 'Hand in here, at this town\'s bounty board', marker };
   }
   return null;
 }

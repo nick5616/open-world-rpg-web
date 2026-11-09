@@ -11,7 +11,7 @@ import { nightRuntime } from '../../systems/night';
 import { trackedQuest } from './store';
 
 const MAX_BEAMS = 4;
-const BEAM_H = 140;
+const BEAM_H = 320;
 
 let shared: { geo: THREE.CylinderGeometry; mat: THREE.MeshBasicMaterial } | null = null;
 
@@ -78,11 +78,11 @@ export function QuestLayer() {
       const near = Math.min(1, Math.max(0, (d - Math.max(6, r * 0.5)) / 25));
       const far = 1 - Math.min(0.6, d / 4000);
       const mat = b.material as THREE.MeshBasicMaterial;
-      mat.opacity = 0.45 * near * far * (0.85 + 0.15 * Math.sin(t * 2 + i));
+      mat.opacity = 0.6 * near * far * (0.85 + 0.15 * Math.sin(t * 2 + i));
       b.visible = mat.opacity > 0.01;
       b.position.set(m.x, rt.terrainGround.heightAt(m.x, m.z) - 1, m.z);
       // Wider for areas, and with distance so it stays visible.
-      const w = Math.max(1, Math.min(6, d / 250)) * (r > 0 ? 1.6 : 1);
+      const w = Math.max(1, Math.min(9, d / 110)) * (r > 0 ? 1.6 : 1);
       b.scale.set(w, 1, w);
     });
   });

@@ -8,7 +8,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { DEBUG } from '../../config';
 import { localPlayer } from '../../state/live';
-import { setMapOpen } from '../map/store';
+import { setMapOpen, useExploration } from '../map/store';
 import { headingOf } from '../map/Compass';
 import { ensureQuestHook } from './link';
 import { netRuntime } from '../../net/netStore';
@@ -329,8 +329,13 @@ export function QuestHud() {
       }
     };
     window.addEventListener('keydown', onKey);
+    // A map preview lasts while the map is open.
+    const unsub = useExploration.subscribe((s, prev) => {
+      if (prev.mapOpen && !s.mapOpen && useQuests.getState().preview) setQuestPreview(null);
+    });
     return () => {
       clearInterval(id);
+      unsub();
       window.removeEventListener('keydown', onKey);
     };
   }, []);

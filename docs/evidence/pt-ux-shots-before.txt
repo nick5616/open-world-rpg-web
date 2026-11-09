@@ -1,14 +1,17 @@
 BEFORE (main client): town "Draedmore" (1920, 2272) r 130; camp (2113, 2324)
-zone :26609, vite :27288 (.before\client)
+zone :42846, vite :30226 (.before\client)
 blacksmith Selina at (1907.7, 2291.1); board 17272084059553085431 at (1907.2, 2263.4)
-camp: 2 enemies drawn: Swift Thornback Boar (2105, 2322) yaw 1.44, #55 (2109, 2322) yaw 5.09
-  Swift Thornback Boar: facing the Behind player -0.97 (negative = its back is to them)
-  #55: facing the Behind player 0.94 (negative = its back is to them)
-shot pt-ux-healthbars-before-east.png (looking west at the camp)
-shot pt-ux-healthbars-before-west.png (looking east at the camp)
+calm camp: Warded Bog Lurker (2108.5, 2320.9) yaw 0.47, #48 (2103.8, 2317.4) yaw 3.90
+shot pt-ux-healthbars-before-west.png: Warded Bog Lurker from the west at 17.0 m, facing the viewer 0.45 (negative = its back)
+shot pt-ux-healthbars-before-east.png: Warded Bog Lurker from the east at 17.0 m, facing the viewer -0.45 (negative = its back)
+shot pt-ux-healthbars-before-north.png: Warded Bog Lurker from the north at 17.0 m, facing the viewer 0.89 (negative = its back)
+shot pt-ux-healthbars-before-south.png: Warded Bog Lurker from the south at 17.0 m, facing the viewer -0.89 (negative = its back)
 
 zone log (quests):
-{"time":"2026-11-09T02:49:44.0834702-08:00","level":"INFO","msg":"ward places","svc":"zone","settlement":9,"town":"Draedmore","smith":"Selina","ore":true,"oreName":"Faeldstoich Deep","oreWhere":"490 m south-west of Draedmore","shrine":"The Forgotten Shrine"}
-{"time":"2026-11-09T02:49:44.0834702-08:00","level":"INFO","msg":"quest started","svc":"zone","character":"pt-ux-before-1794221381152-1","quest":"story:ward","settlement":9}
-{"time":"2026-11-09T02:50:02.4571055-08:00","level":"INFO","msg":"quest started","svc":"zone","character":"pt-ux-before-1794221401699-2","quest":"story:ward","settlement":9}
-{"time":"2026-11-09T02:50:08.5909986-08:00","level":"INFO","msg":"quest started","svc":"zone","character":"pt-ux-before-1794221407725-3","quest":"story:ward","settlement":9}
+{"time":"2026-11-09T03:03:03.3145327-08:00","level":"INFO","msg":"ward places","svc":"zone","settlement":9,"town":"Draedmore","smith":"Selina","ore":true,"oreName":"Faeldstoich Deep","oreWhere":"490 m south-west of Draedmore","shrine":"The Forgotten Shrine"}
+{"time":"2026-11-09T03:03:03.3145327-08:00","level":"INFO","msg":"quest started","svc":"zone","character":"pt-ux-before-1794222181334-1","quest":"story:ward","settlement":9}
+{"time":"2026-11-09T03:03:15.1148495-08:00","level":"INFO","msg":"quest started","svc":"zone","character":"pt-ux-before-1794222194767-2","quest":"story:ward","settlement":9}
+{"time":"2026-11-09T03:03:21.2145658-08:00","level":"INFO","msg":"quest started","svc":"zone","character":"pt-ux-before-1794222200802-3","quest":"story:ward","settlement":9}
+{"time":"2026-11-09T03:03:27.8150312-08:00","level":"INFO","msg":"quest started","svc":"zone","character":"pt-ux-before-1794222207475-4","quest":"story:ward","settlement":9}
+{"time":"2026-11-09T03:03:34.0145987-08:00","level":"INFO","msg":"quest started","svc":"zone","character":"pt-ux-before-1794222213665-5","quest":"story:ward","settlement":9}
+{"time":"2026-11-09T03:03:40.081494-08:00","level":"INFO","msg":"quest started","svc":"zone","character":"pt-ux-before-1794222219737-6","quest":"story:ward","settlement":9}

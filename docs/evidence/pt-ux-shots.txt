@@ -1,0 +1,17 @@
+AFTER (pt/ux): town "Draedmore" (1920, 2272) r 130; camp (2113, 2324)
+zone :31770, vite :42576 (client)
+blacksmith Selina at (1907.7, 2291.1); board 17272084059553085431 at (1907.2, 2263.4)
+calm camp: Warded Bog Lurker (2108.5, 2320.9) yaw 0.47, #48 (2103.8, 2317.4) yaw 3.90
+shot pt-ux-healthbars-after-west.png: Warded Bog Lurker from the west at 17.0 m, facing the viewer 0.45 (negative = its back)
+shot pt-ux-healthbars-after-east.png: Warded Bog Lurker from the east at 17.0 m, facing the viewer -0.45 (negative = its back)
+shot pt-ux-healthbars-after-north.png: Warded Bog Lurker from the north at 17.0 m, facing the viewer 0.89 (negative = its back)
+shot pt-ux-healthbars-after-south.png: Warded Bog Lurker from the south at 17.0 m, facing the viewer -0.89 (negative = its back)
+
+zone log (quests):
+{"time":"2026-11-09T03:01:51.0089901-08:00","level":"INFO","msg":"ward places","svc":"zone","settlement":9,"town":"Draedmore","smith":"Selina","ore":true,"oreName":"Faeldstoich Deep","oreWhere":"490 m south-west of Draedmore","shrine":"The Forgotten Shrine"}
+{"time":"2026-11-09T03:01:51.0089901-08:00","level":"INFO","msg":"quest started","svc":"zone","character":"pt-ux-after-1794222109196-1","quest":"story:ward","settlement":9}
+{"time":"2026-11-09T03:02:07.2753945-08:00","level":"INFO","msg":"quest started","svc":"zone","character":"pt-ux-after-1794222126689-2","quest":"story:ward","settlement":9}
+{"time":"2026-11-09T03:02:17.8110716-08:00","level":"INFO","msg":"quest started","svc":"zone","character":"pt-ux-after-1794222136952-3","quest":"story:ward","settlement":9}
+{"time":"2026-11-09T03:02:25.742448-08:00","level":"INFO","msg":"quest started","svc":"zone","character":"pt-ux-after-1794222145177-4","quest":"story:ward","settlement":9}
+{"time":"2026-11-09T03:02:32.8757475-08:00","level":"INFO","msg":"quest started","svc":"zone","character":"pt-ux-after-1794222152332-5","quest":"story:ward","settlement":9}
+{"time":"2026-11-09T03:02:40.3426954-08:00","level":"INFO","msg":"quest started","svc":"zone","character":"pt-ux-after-1794222159797-6","quest":"story:ward","settlement":9}
