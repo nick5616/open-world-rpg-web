@@ -87,7 +87,7 @@ ores:
   voidglass: {name: Voidglass, smelt: 3}
 
 # Stacks: how many fit in one stack per category (1 = never stacks).
-stacks: {ore: 99, ingot: 99, gem: 99, food: 20, potion: 20, meat: 20, herb: 40, hide: 20, ammo: 99, tool: 1, seed: 20, blueprint: 1, tome: 1, currency: 1000000, weapon: 1, armor: 1, key: 1, quest: 10, wood: 50, camp: 5}
+stacks: {ore: 99, ingot: 99, gem: 99, food: 20, potion: 20, meat: 20, herb: 40, hide: 20, ammo: 99, tool: 1, seed: 20, blueprint: 1, tome: 1, currency: 1000000, weapon: 1, armor: 1, key: 1, quest: 10, wood: 50, camp: 5, fish: 20}
 
 # Where a category lives (spec 8: 40 slots plus a gem pouch and an ore pouch;
 # coins in a purse that takes no slot).
@@ -161,6 +161,20 @@ items:
   potion:glowmoss_tonic: {name: Glowmoss Tonic, heal: 65, value: 34}
   potion:duskpetal_draught: {name: Duskpetal Draught, heal: 75, value: 45}
   potion:dawnroot_elixir: {name: Dawnroot Elixir, heal: 120, value: 110}
+  # playtest 2 fishing (contracts/content.yaml fishing; CR 026): cooked from caught fish
+  food:fish_skewer: {name: Silverfin Skewer, heal: 28, value: 8}
+  food:fried_perch: {name: Pan-Fried Perch, heal: 34, value: 9}
+  food:grilled_trout: {name: Herb-Grilled Trout, heal: 50, value: 12}
+  food:fish_stew: {name: "Fisherman's Stew", heal: 60, value: 16}
+  food:seafarer_pie: {name: "Seafarer's Pie", heal: 70, value: 20}
+  food:pike_steak: {name: Bog Pike Steak, heal: 68, value: 22}
+  food:frostgill_chowder: {name: Frostgill Chowder, heal: 70, value: 22}
+  food:ember_curry: {name: Ember Loach Curry, heal: 62, value: 20}
+  food:smoked_eel: {name: Smoked Gloam Eel, heal: 65, value: 22}
+  potion:moonlit_tonic: {name: Moonlit Koi Tonic, heal: 110, value: 90}
+  food:storm_fillet: {name: Stormray Fillet, heal: 95, value: 70}
+  food:sturgeon_feast: {name: Feast of the Humming Sturgeon, heal: 200, value: 300}
+  food:deepmaw_banquet: {name: Deepmaw Banquet, heal: 240, value: 400}
   # ---- ingredients and trade goods ----
   meat:raw: {name: Raw Meat, value: 2}
   herb:heartleaf: {name: Heartleaf, value: 5}
@@ -169,6 +183,21 @@ items:
   herb:glowmoss: {name: Glowmoss, value: 8}
   herb:duskpetal: {name: Duskpetal, value: 8}
   hide:wolf: {name: Wolf Pelt, value: 6}
+  # playtest 2 fishing (contracts/content.yaml fishing): caught with a rod, cooked at a hearth or campfire
+  fish:silverfin: {name: Silverfin Minnow, value: 3}
+  fish:reed_perch: {name: Reed Perch, value: 4}
+  fish:speckled_trout: {name: Speckled Trout, value: 6}
+  fish:mudback_carp: {name: Mudback Carp, value: 5}
+  fish:tidewing_mackerel: {name: Tidewing Mackerel, value: 5}
+  fish:sandflat_flounder: {name: Sandflat Flounder, value: 6}
+  fish:bog_pike: {name: Bog Pike, value: 14}
+  fish:frostgill_char: {name: Frostgill Char, value: 14}
+  fish:emberscale_loach: {name: Emberscale Loach, value: 12}
+  fish:gloam_eel: {name: Gloam Eel, value: 13}
+  fish:stormray: {name: Stormray, value: 40}
+  fish:moonlit_koi: {name: Moonlit Koi, value: 45}
+  fish:humming_sturgeon: {name: Humming Sturgeon, value: 180}
+  fish:deepmaw: {name: Deepmaw, value: 240}
   seed:wardbloom: {name: Wardbloom Seed, value: 30}
   # ---- quest items (playtest 2 content: carried for a quest, worthless to merchants) ----
   quest:parcel: {name: Sealed Parcel, value: 0}
@@ -185,7 +214,8 @@ items:
   tool:torch: {name: Torch, value: 6}
   tool:rope: {name: Rope, value: 10}
   tool:whetstone: {name: Whetstone, value: 8}
-  # playtest 2 mounts (CR 027): blow it (H) to bond with and summon your spirit steed; general stores sell it
+  tool:fishing_rod: {name: Fishing Rod, value: 25}  # playtest 2 fishing: needed to cast (bought from general and tools merchants, or forged)
+  # playtest 2 mounts (CR 027): blow it (key 5) to bond with and call your spirit steed; general stores sell it
   tool:spirit_whistle: {name: Spirit Whistle, value: 40}
   # ---- currency (not in the spec: WP20's shops and bounties price things, see CR 010) ----
   currency:gold: {name: Gold, value: 1}
@@ -290,6 +320,22 @@ recipes:
   bench_whetstone: {station: workbench, inputs: {ore:copper: 1}, output: tool:whetstone, xp: 3}
   bench_copper_arrows: {station: workbench, inputs: {wood:firewood: 1, ore:copper: 1}, output: ammo:copper_arrow, qty: 10, xp: 4}
   bench_iron_arrows: {station: workbench, inputs: {wood:firewood: 1, ore:iron: 1}, output: ammo:iron_arrow, qty: 10, xp: 5}
+  # playtest 2 fishing (CR 026): a rod at the forge, fish at the hearth
+  forge_fishing_rod: {station: forge, inputs: {ingot:copper: 1}, output: tool:fishing_rod, xp: 5}
+  bench_fishing_rod: {station: workbench, inputs: {wood:firewood: 2, tool:rope: 1}, output: tool:fishing_rod, xp: 4}
+  cook_fish_skewer: {station: cook, inputs: {fish:silverfin: 2}, output: food:fish_skewer, xp: 4}
+  cook_fried_perch: {station: cook, inputs: {fish:reed_perch: 1}, output: food:fried_perch, xp: 4}
+  cook_grilled_trout: {station: cook, inputs: {fish:speckled_trout: 1, herb:heartleaf: 1}, output: food:grilled_trout, xp: 6}
+  cook_fish_stew: {station: cook, inputs: {fish:mudback_carp: 1, fish:reed_perch: 1, herb:heartleaf: 1}, output: food:fish_stew, xp: 8}
+  cook_seafarer_pie: {station: cook, inputs: {fish:tidewing_mackerel: 1, fish:sandflat_flounder: 1, food:bread: 1}, output: food:seafarer_pie, xp: 8}
+  cook_pike_steak: {station: cook, inputs: {fish:bog_pike: 1, herb:glowmoss: 1}, output: food:pike_steak, xp: 10}
+  cook_frostgill_chowder: {station: cook, inputs: {fish:frostgill_char: 1, herb:frostcap: 1}, output: food:frostgill_chowder, xp: 10}
+  cook_ember_curry: {station: cook, inputs: {fish:emberscale_loach: 1, herb:emberroot: 1}, output: food:ember_curry, xp: 10}
+  cook_smoked_eel: {station: cook, inputs: {fish:gloam_eel: 1, herb:emberroot: 1}, output: food:smoked_eel, xp: 10}
+  brew_moonlit_tonic: {station: cook, inputs: {fish:moonlit_koi: 1, herb:duskpetal: 1}, output: potion:moonlit_tonic, xp: 16}
+  cook_storm_fillet: {station: cook, inputs: {fish:stormray: 1}, output: food:storm_fillet, xp: 16}
+  cook_sturgeon_feast: {station: cook, inputs: {fish:humming_sturgeon: 1, herb:heartleaf: 2}, output: food:sturgeon_feast, xp: 30}
+  cook_deepmaw_banquet: {station: cook, inputs: {fish:deepmaw: 1, food:bread: 2}, output: food:deepmaw_banquet, xp: 30}
 
 # What a new character carries (spec 8's consumables replace WP13's
 # stand-in draught; granted once per character, exactly once). Playtest 2:

@@ -3,6 +3,12 @@
 // screen handed over a ReadySession, else the generated world offline
 // (solo builds, "continue offline"); both render through WP05's WorldCanvas.
 import { WorldCanvas } from '../world/WorldCanvas';
+// Playtest 2: photo mode (L) and fishing take their keys in the capture phase from module load,
+// before any panel's own listener (ui/photo/PhotoMode.tsx, ui/fishing/FishingHud.tsx).
+import { PhotoMode } from '../ui/photo/PhotoMode';
+import { FishingHud } from '../ui/fishing/FishingHud';
+// Playtest 2: hold H for the emote wheel (ui/emotes).
+import { EmoteWheel } from '../ui/emotes/EmoteWheel';
 import { DebugHud } from '../hud/DebugHud';
 import { DebugPanel } from '../hud/DebugPanel';
 import { Crosshair, LockHint } from '../hud/Overlays';
@@ -86,6 +92,10 @@ export default function PlayScreen() {
       <ContentHud />
       <CampHud />
       <MountHud />
+      {/* Playtest 2: fishing (E at deep water with a rod), emotes (H), photo mode (L) */}
+      <FishingHud />
+      <EmoteWheel />
+      <PhotoMode />
       <AudioRoot />
       <TipsHud />
       <EscMenu />

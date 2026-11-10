@@ -11,10 +11,11 @@ import { codexEntries, useContent } from './store';
 const GOLD = '#ffd166';
 const ELEMENTS = ['fire', 'ice', 'lightning', 'earth', 'wind', 'light', 'dark', 'void'];
 
-export type JournalTab = 'quests' | 'bestiary' | 'lore' | 'feats' | 'renown';
+export type JournalTab = 'quests' | 'bestiary' | 'fish' | 'lore' | 'feats' | 'renown';
 export const JOURNAL_TABS: { key: JournalTab; label: string }[] = [
   { key: 'quests', label: 'Quests' },
   { key: 'bestiary', label: 'Bestiary' },
+  { key: 'fish', label: 'Fish' },
   { key: 'lore', label: 'Lore' },
   { key: 'feats', label: 'Feats' },
   { key: 'renown', label: 'Renown' },
@@ -74,6 +75,59 @@ function Bestiary() {
                 <tr><td style={{ opacity: 0.7 }}>Attacks</td><td>{def.attacks.length}</td></tr>
               </tbody>
             </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+const WATER_NAMES = ['lakes', 'rivers', 'the sea'];
+const RARITY_COLOR = (r: number) => CONTENT.fishing.rarities[r]?.color ?? '#c9d1d9';
+const kg = (g: number) => (g < 1000 ? `${g} g` : `${(g / 1000).toFixed(2)} kg`);
+
+/** Playtest 2 fishing (CR 026): every species, caught or not (uncaught ones show where to look). */
+function FishJournal() {
+  const fish = useContent((s) => s.sync.fish);
+  const sp = CONTENT.fishing.species;
+  const caught = sp.filter((f) => fish[f.key]);
+  const [sel, setSel] = useState<string | null>(null);
+  const cur = sp.find((f) => f.key === sel) ?? caught[0] ?? sp[0];
+  const rec = cur ? fish[cur.key] : undefined;
+  return (
+    <div data-testid="journal-fish" style={{ display: 'grid', gridTemplateColumns: 'minmax(150px, 210px) 1fr', gap: 12, height: '100%' }}>
+      <div style={{ overflowY: 'auto', borderRight: '1px solid rgba(255,209,102,0.2)', paddingRight: 6 }}>
+        <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 6 }}>{caught.length} of {sp.length} fish</div>
+        {sp.map((f) => (
+          <div key={f.key} data-testid={`fish-${f.key}`} onClick={() => setSel(f.key)} style={{ padding: '3px 6px', borderRadius: 3, fontSize: 13, cursor: 'pointer', opacity: fish[f.key] ? 1 : 0.45, color: fish[f.key] ? RARITY_COLOR(f.rarity) : undefined, background: cur?.key === f.key ? 'rgba(255,209,102,0.15)' : 'transparent' }}>
+            {fish[f.key] ? f.name : '???'}
+          </div>
+        ))}
+      </div>
+      <div style={{ overflowY: 'auto' }}>
+        {cur && (
+          <div data-testid="fish-entry">
+            <div style={{ font: '600 20px Georgia, serif', color: '#f6e7c0' }}>{rec ? cur.name : 'Not caught yet'}</div>
+            <div style={{ fontSize: 12, color: RARITY_COLOR(cur.rarity), textTransform: 'capitalize' }}>{CONTENT.fishing.rarities[cur.rarity]?.key}</div>
+            <div style={{ fontSize: 12, opacity: 0.8, margin: '4px 0' }}>
+              Where: {cur.habitat} ({cur.water.map((w) => WATER_NAMES[w]).join(', ')}
+              {cur.time !== 'any' ? `; ${cur.time === 'day' ? 'by day' : cur.time === 'night' ? 'at night' : `at ${cur.time}`}` : ''}
+              {cur.weather !== 'any' ? `; ${cur.weather === 'rain' ? 'in the rain' : 'under a clear sky'}` : ''})
+            </div>
+            {rec ? (
+              <>
+                <p style={{ fontSize: 13, fontStyle: 'italic', color: '#e6d6ae' }}>{cur.lore}</p>
+                <table style={{ fontSize: 13, borderSpacing: '10px 2px' }}>
+                  <tbody>
+                    <tr><td style={{ opacity: 0.7 }}>Landed</td><td style={{ color: GOLD }}>{rec[0]}</td></tr>
+                    <tr><td style={{ opacity: 0.7 }}>Biggest</td><td>{kg(rec[1])}</td></tr>
+                    <tr><td style={{ opacity: 0.7 }}>Size</td><td>{cur.weight[0]} to {cur.weight[1]} kg</td></tr>
+                  </tbody>
+                </table>
+              </>
+            ) : (
+              <p style={{ fontSize: 13, opacity: 0.7 }}>Buy a fishing rod from a general store or a tool merchant (or forge one from a copper ingot), face deep water and press E.</p>
+            )}
           </div>
         )}
       </div>
@@ -187,6 +241,8 @@ export function JournalContentTab({ tab }: { tab: Exclude<JournalTab, 'quests'> 
   switch (tab) {
     case 'bestiary':
       return <Bestiary />;
+    case 'fish':
+      return <FishJournal />;
     case 'lore':
       return <Lore />;
     case 'feats':

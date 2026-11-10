@@ -18,3 +18,4 @@ client/public/wasm/
 evidence/tmp/
 .claude/
 *.exe
+tmp/

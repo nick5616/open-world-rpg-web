@@ -24,6 +24,7 @@ import { useDebugStore } from '../stores/debugStore';
 import { localPlayer, view, type MoveMode } from '../state/live';
 import { useGround } from './groundContext';
 import { useViewStore } from '../stores/viewStore';
+import { lookRouter } from '../input/lookRouter';
 import { drawnRemotes } from '../net/netStore';
 import { enemyInfo } from '../combat/events';
 import { aimFromEye, Boom, CameraProbe, crosshairDistance, forwardOf, THIRD, type AimSphere, type Vec3 as V3 } from './thirdPerson';
@@ -157,6 +158,11 @@ export function PlayerController({ onStep, driver }: Props) {
       lk.pitch = dbg.lookOverride.pitch;
     } else {
       const d = consumeLook();
+      // Playtest 2: the emote wheel or photo mode may borrow the mouse (input/lookRouter.ts).
+      if (lookRouter.sink) {
+        lookRouter.sink(d.x, d.y);
+        d.x = d.y = 0;
+      }
       lk.yaw -= d.x * MOUSE_SENSITIVITY;
       lk.pitch = Math.max(-PITCH_LIMIT, Math.min(PITCH_LIMIT, lk.pitch - d.y * MOUSE_SENSITIVITY));
     }
@@ -164,7 +170,7 @@ export function PlayerController({ onStep, driver }: Props) {
     lk.yaw = Math.atan2(Math.sin(lk.yaw), Math.cos(lk.yaw));
 
     // The debug panel takes the keyboard; the player stands still meanwhile.
-    const buttons = app.debugPanelOpen || driver?.blockInput?.() ? NO_BUTTONS : held.current; // WP13: no moving while downed
+    const buttons = app.debugPanelOpen || driver?.blockInput?.() || lookRouter.blockMove ? NO_BUTTONS : held.current; // WP13: no moving while downed; playtest 2: photo mode
     sim.frame(delta, { held: buttons, yaw: lk.yaw, pitch: lk.pitch, fly }, render);
     driver?.afterFrame();
 

@@ -241,6 +241,75 @@ type Forage struct {
 	Herbs   []Herb  `json:"herbs"`
 }
 
+// Fish is one fish species (playtest 2 fishing, CR 026).
+type Fish struct {
+	Key     string     `json:"key"`
+	ID      int        `json:"id"`
+	Name    string     `json:"name"`
+	Item    string     `json:"item"`
+	Rarity  int        `json:"rarity"` // 0 common .. 3 legendary
+	Water   []int      `json:"water"`  // Fishing.Waters indices
+	Biomes  []int      `json:"biomes"` // empty: any
+	Time    string     `json:"time"`
+	Weather string     `json:"weather"`
+	Weight  [2]float64 `json:"weight"`
+	Fight   FishFight  `json:"fight"`
+	Habitat string     `json:"habitat"`
+	Lore    string     `json:"lore"`
+}
+
+// FishFight tunes the reel minigame for a species.
+type FishFight struct {
+	Strength float64 `json:"strength"`
+	Erratic  float64 `json:"erratic"`
+	Stamina  float64 `json:"stamina"`
+}
+
+// FishRarity is a rarity's roll weight.
+type FishRarity struct {
+	Key    string  `json:"key"`
+	ID     int     `json:"id"`
+	Weight float64 `json:"weight"`
+	Color  string  `json:"color"`
+}
+
+// Fishing tunes casting, bites, rate limits and the species.
+type Fishing struct {
+	Rod           string       `json:"rod"`
+	CastM         [2]float64   `json:"castM"`
+	MinDepthM     float64      `json:"minDepthM"`
+	BiteS         [2]float64   `json:"biteS"`
+	HookWindowMs  int          `json:"hookWindowMs"`
+	MaxFightS     float64      `json:"maxFightS"`
+	CastCooldownS float64      `json:"castCooldownS"`
+	CastBurst     float64      `json:"castBurst"`
+	CastEveryS    float64      `json:"castEveryS"`
+	WalkAwayM     float64      `json:"walkAwayM"`
+	SeeM          float64      `json:"seeM"`
+	Waters        []string     `json:"waters"`
+	Times         []string     `json:"times"`
+	Rarities      []FishRarity `json:"rarities"`
+	Species       []Fish       `json:"species"`
+}
+
+// Emote is one emote (playtest 2, CR 026).
+type Emote struct {
+	Key    string  `json:"key"`
+	ID     int     `json:"id"`
+	Name   string  `json:"name"`
+	DurS   float64 `json:"durS"`
+	Loop   bool    `json:"loop"`
+	System bool    `json:"system"`
+}
+
+// Emotes tunes emote replication.
+type Emotes struct {
+	SeeM   float64 `json:"seeM"`
+	Burst  float64 `json:"burst"`
+	EveryS float64 `json:"everyS"`
+	List   []Emote `json:"list"`
+}
+
 // Defs is the whole table.
 type Defs struct {
 	Version    int        `json:"version"`
@@ -253,6 +322,8 @@ type Defs struct {
 	Codex      []Codex    `json:"codex"`
 	Feats      []Feat     `json:"feats"`
 	Forage     Forage     `json:"forage"`
+	Fishing    Fishing    `json:"fishing"`
+	Emotes     Emotes     `json:"emotes"`
 	Roles      []string   `json:"roles"`
 }
 
@@ -323,6 +394,24 @@ func (d *Defs) Puzzle(key string) *Puzzle {
 	for i := range d.Dungeons.Puzzles {
 		if d.Dungeons.Puzzles[i].Key == key {
 			return &d.Dungeons.Puzzles[i]
+		}
+	}
+	return nil
+}
+
+// FishByID is fish species id's definition (nil if none).
+func (d *Defs) FishByID(id int) *Fish {
+	if id < 1 || id > len(d.Fishing.Species) {
+		return nil
+	}
+	return &d.Fishing.Species[id-1]
+}
+
+// Emote is the emote with this id (nil if none).
+func (d *Defs) Emote(id int) *Emote {
+	for i := range d.Emotes.List {
+		if d.Emotes.List[i].ID == id {
+			return &d.Emotes.List[i]
 		}
 	}
 	return nil

@@ -12,7 +12,9 @@ import { useEffect, useMemo } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Activity } from '@lodestone/contracts';
 import { Avatar } from '../net/avatar';
-import { followCaster } from '../net/avatarAnim';
+import { followCaster, followEmote } from '../net/avatarAnim';
+import { liveAvatars, SELF_AVATAR } from '../net/avatar';
+import { emoteOf, SELF } from '../ui/emotes/store';
 import { castState, CAST_FX_MINE } from '../combat/castState';
 import type { RemoteView } from '../net/interpolation';
 import { localActions, localPlayer, view, type MoveMode } from '../state/live';
@@ -49,6 +51,7 @@ export function LocalAvatar() {
       if (st.avatar) {
         st.avatar.root.removeFromParent();
         st.avatar.dispose();
+        if (liveAvatars.get(SELF_AVATAR) === st.avatar) liveAvatars.delete(SELF_AVATAR);
         st.avatar = null;
       }
     },
@@ -66,10 +69,13 @@ export function LocalAvatar() {
       }
       a = st.avatar = new Avatar(id, { nameplate: false });
       scene.add(a.root);
+      liveAvatars.set(SELF_AVATAR, a); // playtest 2: the fishing line leaves your rod's tip
     }
+    // Playtest 2: photo mode shows your body from its free camera, in first person too.
+    const third = view.third || view.photo;
     // CR 027: first person in the saddle you still see your steed (its neck and head below the view).
-    const steedOnly = !view.third && localPlayer.mounted;
-    const show = (view.third && !view.hideBody) || steedOnly;
+    const steedOnly = !third && localPlayer.mounted;
+    const show = (view.third && !view.hideBody) || view.photo || steedOnly;
     a.root.visible = show;
     a.setRiderVisible(!steedOnly);
     const me = castState.get('self');
@@ -77,9 +83,11 @@ export function LocalAvatar() {
       st.mines = localActions.mineSwings;
       castState.action('self', CAST_FX_MINE, performance.now()); // CR 022: a swing on your caster record
     }
-    if (!view.third && !steedOnly) {
+    followEmote(a.anim, emoteOf(SELF)); // playtest 2: your emotes and fishing pose (ui/emotes)
+    if (!third && !steedOnly) {
       a.anim.seenActions = me.actions; // first person: nothing to animate (no replay on switching)
-      return;
+      if (!a.anim.currentEmote) return;
+      // playtest 2: an emote keeps its clock in first person (switching view mid-emote shows it at the right moment)
     }
 
     const v = st.v;
@@ -101,11 +109,11 @@ export function LocalAvatar() {
       if (st.health >= 0 && hud.health < st.health && hud.health > 0) a.anim.hurt();
       st.health = hud.health;
       // CR 022: what you started and hold (the runtime keeps your caster record), posed like everyone's.
-      followCaster(a.anim, me, kind);
+      if (third) followCaster(a.anim, me, kind);
     } else {
       v.healthPct = 100;
       v.typeId = OFFLINE_LOOK;
-      followCaster(a.anim, me, 'wand');
+      if (third) followCaster(a.anim, me, 'wand');
     }
     if (localPlayer.mounted) v.typeId = (v.typeId ?? 0) | TYPE_RIDING; // CR 027: you ride (the zone's bit for everyone else)
     a.update(v, camera, delta);

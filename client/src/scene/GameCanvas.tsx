@@ -21,6 +21,10 @@ import { DEFAULT_GROUND, GroundContext } from './groundContext';
 import { PlayerController } from './PlayerController';
 import { FirstPersonArms } from './FirstPersonArms';
 import { LocalAvatar } from './LocalAvatar';
+// Playtest 2: photo mode's free camera, first-person emote feedback, fishing lines (after PlayerController: they adjust its camera).
+import { PhotoRig } from '../ui/photo/PhotoRig';
+import { FirstPersonEmote } from '../ui/emotes/FirstPersonEmote';
+import { FishingLayer } from '../ui/fishing/FishingLayer';
 import { SkyAndSun } from './SkyAndSun';
 import { FlatTerrain } from './FlatTerrain';
 import { CellBorders } from './CellBorders';
@@ -104,6 +108,9 @@ export function GameCanvas({ ground = DEFAULT_GROUND, terrain, onStep, driver, c
         <FirstPersonArms />
         {/* playtest 2: your own body in third person */}
         <LocalAvatar />
+        <FirstPersonEmote />
+        <FishingLayer />
+        <PhotoRig />
       </GroundContext.Provider>
     </Canvas>
   );

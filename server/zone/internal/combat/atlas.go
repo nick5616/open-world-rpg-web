@@ -19,7 +19,18 @@ type AtlasInfo struct {
 	biomeN    int
 	SpawnX    float64
 	SpawnZ    float64
+	// Playtest 2 fishing (CR 026): the NODEP section's flags byte per node
+	// (1 sea, 2 lake, 4 river) and the sea level, for the water kind.
+	nodep    []uint8
+	SeaLevel float64
 }
+
+// Atlas node flags (worldgen/README.md NODEP).
+const (
+	NodeSea   = 1
+	NodeLake  = 2
+	NodeRiver = 4
+)
 
 // SiteInfo is one atlas site.
 type SiteInfo struct {
@@ -91,6 +102,12 @@ func ParseAtlas(raw []byte, a *structures.Atlas) *AtlasInfo {
 		}
 		info.Regions = append(info.Regions, ri)
 	}
+	if len(raw) >= 36 {
+		info.SeaLevel = float64(math.Float32frombits(le.Uint32(raw[32:])))
+	}
+	if np := atlasSection(raw, 9); len(np) > 0 && len(np)%4 == 0 {
+		info.nodep = np
+	}
 	if bs := atlasSection(raw, 6); len(bs) > 0 {
 		n := int(math.Round(math.Sqrt(float64(len(bs)))))
 		if n*n == len(bs) {
@@ -126,4 +143,24 @@ func (a *AtlasInfo) Region(i int) RegionInfo {
 		return RegionInfo{Element: 8, Element2: 8}
 	}
 	return a.Regions[i]
+}
+
+// NodeFlagsNear ORs the NODEP flags of the four grid nodes around a
+// position (a river channel runs between nodes; playtest 2 fishing). 0 when
+// the atlas has no NODEP section.
+func (a *AtlasInfo) NodeFlagsNear(x, z float64) uint8 {
+	n := a.biomeN
+	if n < 2 || len(a.nodep) != 4*n*n || a.WorldSize <= 0 {
+		return 0
+	}
+	res := a.WorldSize / float64(n-1)
+	i0 := min(n-2, max(0, int(math.Floor(x/res))))
+	j0 := min(n-2, max(0, int(math.Floor(z/res))))
+	var f uint8
+	for dj := 0; dj < 2; dj++ {
+		for di := 0; di < 2; di++ {
+			f |= a.nodep[4*((j0+dj)*n+i0+di)+3]
+		}
+	}
+	return f
 }
