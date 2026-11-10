@@ -70,7 +70,11 @@ export async function warmShaders(gl: THREE.WebGLRenderer, scene: THREE.Scene, c
     gl.setRenderTarget(prev);
   }
   let timer = 0;
-  const done = await Promise.race([Promise.all(jobs).then(() => true), new Promise<boolean>((r) => (timer = window.setTimeout(() => r(false), limitMs)))]);
+  // Leaving the world while programs still compile disposes them under
+  // three.js's compileAsync poll ("reading 'isReady'"): a warm-up must never
+  // throw, the rest just compiles on first use.
+  const safe = jobs.map((j) => j.catch(() => undefined));
+  const done = await Promise.race([Promise.all(safe).then(() => true), new Promise<boolean>((r) => (timer = window.setTimeout(() => r(false), limitMs)))]);
   window.clearTimeout(timer);
   return { ms: performance.now() - t0, programs: gl.info.programs?.length ?? 0, done };
 }
