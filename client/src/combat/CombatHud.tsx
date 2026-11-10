@@ -9,6 +9,7 @@ import { COMBAT } from '@lodestone/contracts';
 import { localPlayer } from '../state/live';
 import { combatRuntime } from './link';
 import { useCombatHud } from './store';
+import { DownedOverlay } from './DownedOverlay';
 import { spellById } from './timeline';
 import { netRuntime } from '../net/netStore';
 import { useHudHeight } from '../hud/layout';
@@ -47,7 +48,6 @@ export function CombatHud() {
   const boss = useCombatHud((s) => s.boss);
   const toastMsg = useCombatHud((s) => s.toast);
   const charges = useCombatHud((s) => s.charges);
-  const downedUntil = useCombatHud((s) => s.downedUntil);
   const selected = useCombatHud((s) => s.selected);
   const invItems = useInventory((s) => s.inv?.items);
   const root = useRef<HTMLDivElement>(null);
@@ -142,11 +142,7 @@ export function CombatHud() {
           {toastMsg.text}
         </div>
       )}
-      {downedUntil > 0 && (
-        <div data-testid="downed" style={{ position: 'absolute', inset: 0, background: 'rgba(80,0,0,0.35)', display: 'grid', placeItems: 'center', fontSize: 28, fontWeight: 700 }}>
-          Downed: back at your waypoint in a moment
-        </div>
-      )}
+      <DownedOverlay />
     </div>
   );
 }

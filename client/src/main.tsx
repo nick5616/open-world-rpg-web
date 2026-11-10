@@ -1,3 +1,5 @@
+// First: notes whether this browser played before, before anything writes settings (ui/whatsnew).
+import './ui/whatsnew/news';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';

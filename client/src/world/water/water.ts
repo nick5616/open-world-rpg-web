@@ -13,6 +13,7 @@
 
 import * as THREE from 'three';
 import { SKY_GLSL } from '../sky/atmosphere';
+import { STYLE_UNIFORMS } from '../style/styleShader';
 import { DOMAIN_CHUNKS, DOMAIN_MIN } from '../terrain/quadtree';
 
 export interface WaterUniforms {
@@ -24,6 +25,10 @@ export interface WaterUniforms {
   uCoverage: { value: THREE.Texture | null };
   uAtlasHeight: { value: THREE.Texture | null };
   uSeaY: { value: number };
+  /** Playtest 2 styles: x = shallow turquoise, y = shore foam, z = fresnel boost. */
+  uWaterStyle: { value: THREE.Vector4 };
+  lsStyle: { value: Float32Array };
+  lsRetro: { value: Float32Array };
 }
 
 export function makeWaterUniforms(): WaterUniforms {
@@ -36,6 +41,10 @@ export function makeWaterUniforms(): WaterUniforms {
     uCoverage: { value: null },
     uAtlasHeight: { value: null },
     uSeaY: { value: 0 },
+    uWaterStyle: { value: new THREE.Vector4(0, 1, 0, 0) },
+    // Retro vertex snap (style/styleShader.ts; the vertex shader includes logdepthbuf_vertex).
+    lsStyle: STYLE_UNIFORMS.lsStyle,
+    lsRetro: STYLE_UNIFORMS.lsRetro,
   };
 }
 
@@ -63,6 +72,7 @@ uniform float uDetail;
 uniform sampler2D uCoverage;
 uniform sampler2D uAtlasHeight;
 uniform float uSeaY;
+uniform vec4 uWaterStyle;
 varying vec3 vWPos;
 varying float vDepth;
 ${SKY_GLSL}
@@ -102,11 +112,13 @@ void main() {
   vec3 n = normalize(vec3(-g.x, 1.0, -g.y));
   float ndv = max(dot(n, V), 0.0);
   float fres = 0.02 + 0.98 * pow(1.0 - ndv, 5.0);
+  fres = min(1.0, fres * (1.0 + uWaterStyle.z));
   vec3 R = reflect(-V, n);
   R.y = abs(R.y);
   vec3 sky = skyRadiance(normalize(R), uSunDir);
   // Body colour: turquoise shallows to deep green-blue, lit by sky ambient and sun.
-  vec3 shallow = vec3(0.06, 0.20, 0.18);
+  // Styles push the shallows toward a clear, sunlit turquoise (bright lakes read from far off).
+  vec3 shallow = mix(vec3(0.06, 0.20, 0.18), vec3(0.05, 0.34, 0.33), uWaterStyle.x);
   vec3 deep = vec3(0.010, 0.045, 0.060);
   float sunDot = max(uSunDir.y, 0.0);
   vec3 lightIn = uAmbient * 0.6 + uLightColor * sunDot * 0.5;
@@ -119,6 +131,11 @@ void main() {
   float alpha = clamp(1.0 - exp(-max(depth, 0.0) * 0.55), 0.0, 1.0);
   alpha = max(alpha, fres * smoothstep(0.0, 0.3, depth));
   float foam = (1.0 - smoothstep(0.0, 0.35, depth)) * (0.6 + 0.4 * sin(uTime * 1.5 + vWPos.x * 0.8 + vWPos.z * 0.6)) * uDetail;
+  // Styles: a broken second foam band a little further out, lapping in with the waves.
+  float lap = sin(depth * 9.0 - uTime * 1.8 + sin(vWPos.x * 0.37 + vWPos.z * 0.29) * 2.0);
+  float speck = fract(sin(dot(floor(vWPos.xz * 3.0), vec2(12.9898, 78.233))) * 43758.5453);
+  float band = smoothstep(0.55, 0.95, lap) * (1.0 - smoothstep(0.2, 1.1, depth)) * step(0.35, speck);
+  foam = clamp((foam + band * 0.7) * uWaterStyle.y, 0.0, 1.0) * uDetail;
   col = mix(col, lightIn * 1.4, foam * 0.5);
   alpha = max(alpha, foam * 0.6);
   gl_FragColor = vec4(col, alpha);

@@ -205,7 +205,7 @@ func (w *World) allyTarget(st *summonState) (movement.Vec3, float64, bool) {
 	}
 	if st.tPlayer {
 		q := w.players[st.target]
-		if q == nil || q.Downed || w.SummonPvP == nil {
+		if q == nil || q.Downed || q.Graced(w.tick) || w.SummonPvP == nil {
 			return movement.Vec3{}, 0, false
 		}
 		if _, ok := w.SummonPvP(st.owner, q.ID); !ok {
@@ -243,7 +243,7 @@ func (w *World) acquireFor(e *Enemy, owner *Player) {
 		return
 	}
 	for _, q := range w.playersNear(e.Pos, st.def.Aggro) {
-		if q.ID == st.owner || q.Downed {
+		if q.ID == st.owner || q.Downed || q.Graced(w.tick) { // CR 024: not a just-respawned player
 			continue
 		}
 		if _, ok := w.SummonPvP(st.owner, q.ID); !ok {

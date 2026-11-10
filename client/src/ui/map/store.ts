@@ -32,6 +32,8 @@ export interface ExplorationState {
   partyId: number;
   toasts: Toast[];
   mapOpen: boolean;
+  /** Playtest 2: the name of the last respawn point set (Event 608), for the downed screen. */
+  respawnName: string;
   /** Counters for tests and the acceptance log. */
   stats: { events: number; discoveries: number; towers: number; xpGained: number; teleports: number };
   actions: ExplorationActions | null;
@@ -65,7 +67,7 @@ export function reduceEvent(s: ExplorationState, ev: ZoneEvent, now: number): Pa
     case EV.waypoint:
       return { stats, toasts: push(toast('waypoint', `Waypoint activated${name ? `: ${name}` : ''}`, 'Unlocked for fast travel', now)) };
     case EV.respawnPoint:
-      return { stats, toasts: push(toast('info', 'Respawn point set', name || undefined, now)) };
+      return { stats, respawnName: name, toasts: push(toast('info', 'Respawn point set', name || undefined, now)) };
     case EV.levelUp:
       return { stats, toasts: push(toast('level', `Level ${ev.value}`, undefined, now)) };
     case EV.fastTravelDenied:
@@ -85,6 +87,7 @@ const initial = (): Omit<ExplorationState, 'actions'> => ({
   partyId: 0,
   toasts: [],
   mapOpen: false,
+  respawnName: '',
   stats: { events: 0, discoveries: 0, towers: 0, xpGained: 0, teleports: 0 },
 });
 

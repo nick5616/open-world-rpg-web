@@ -15,6 +15,7 @@ import { netRuntime } from '../../net/netStore';
 import { distanceText, whereText, QUEST_KIND_LABEL, type QuestMarker, type QuestView } from './events';
 import { ITEMS } from '@lodestone/contracts';
 import { JournalContentTab, JournalTabBar, type JournalTab } from '../content/JournalTabs';
+import { liveMarkers } from './live';
 import { dismissOffer, offerMarkers, pruneNotes, setJournalOpen, setQuestPreview, trackedQuest, useQuests } from './store';
 
 const GOLD = '#ffd166';
@@ -29,7 +30,7 @@ function isTextTarget(t: EventTarget | null): boolean {
 function nearest(q: QuestView): QuestMarker | null {
   let best: QuestMarker | null = null;
   let bd = Infinity;
-  for (const m of q.markers) {
+  for (const m of liveMarkers(q)) {
     const d = Math.hypot(m.x - localPlayer.pos.x, m.z - localPlayer.pos.z) - (m.r ?? 0);
     if (d < bd) {
       best = m;

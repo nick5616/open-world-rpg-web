@@ -745,6 +745,7 @@ func (w *World) applyHit(p *Player, a *Action, e *Enemy, impact movement.Vec3, s
 	}
 	p.inCombatTick = w.tick
 	w.Stats.ClaimsAccepted++
+	p.graceTick = 0 // landing a hit ends the respawn grace (CR 024)
 	return ClaimResult{Accepted: true, Damage: uint16(min(65535, dmg)), Flags: flags, HPPct: e.HealthPct(), Enemy: e}
 }
 

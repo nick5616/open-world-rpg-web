@@ -1,0 +1,103 @@
+[
+  {
+    "id": "pt2-onboarding",
+    "date": "2026-11-10",
+    "title": "A friendlier first hour",
+    "items": [
+      "Press Esc for the new menu: every control in one place, sound, camera, tips and Leave.",
+      "Short tips show up when they matter instead of a wall of keys.",
+      "New characters start with \"Slimes in the meadows\": meet a townsperson, clear five slimes, collect your reward.",
+      "Quest markers now follow the person you are looking for, even when they leave work for the evening.",
+      "Getting downed tells you what got you, where you will wake up and that you keep everything.",
+      "After a respawn, enemies leave you alone for 5 seconds (or until you strike first).",
+      "This \"What's new\" panel: it shows what changed since you last played (Esc, What's new)."
+    ]
+  },
+  {
+    "id": "pt2-graphics",
+    "date": "2026-11-10",
+    "title": "Graphics settings and art styles",
+    "items": [
+      "New Graphics screen: the Graphics button at the top right, F10, or Esc > Graphics.",
+      "Pick a look: Lodestone (the new default), Painterly, Grim or Retro 32-bit.",
+      "Quality presets from Low to Ultra, chosen for your graphics card on first run, and you can change any single setting.",
+      "Rain now soaks the world: wet ground, grey skies, thicker fog."
+    ]
+  },
+  {
+    "id": "pt2-content",
+    "date": "2026-11-10",
+    "title": "More to do out there",
+    "items": [
+      "Townsfolk have side quests (rescues, deliveries, hunts and more); helping a town earns renown.",
+      "Three story quests: The Lodestone's Hum, Embers of the Old Watch and The Bell Beneath.",
+      "World events pop up near you: a starfall, a caravan ambush and others. Watch for the red star on your compass.",
+      "Sealed vaults hide under ruins: solve the seal's puzzle, beat the keeper, open the chest.",
+      "Read 16 lore tablets, fill the bestiary, earn feats and wear titles (journal, J).",
+      "Gather herbs (E) and cook five new hearth recipes."
+    ]
+  },
+  {
+    "id": "pt2-spells",
+    "date": "2026-11-10",
+    "title": "Spells, rebuilt",
+    "items": [
+      "Every spell got new visual effects; high graphics goes all out.",
+      "14 new spells: hold-to-fire streams, homing souls, charged throws, orbiting blades, brands that chain, summoned allies.",
+      "Dashes are fast and last as long as you hold the key. Magma Dash flies like a jet; Glacier Step skates across water.",
+      "Other players now see your spells exactly as you do: same aim, same timing, same held poses."
+    ]
+  },
+  {
+    "id": "pt2-pvp",
+    "date": "2026-11-09",
+    "title": "PvP and duels",
+    "items": [
+      "Opt in to PvP from the character panel (C) or with /pvp. Towns and the Haven stay safe.",
+      "Challenge a party member to a duel from the party frame or with /duel. Duels stop at 1 health."
+    ]
+  },
+  {
+    "id": "pt2-third-person",
+    "date": "2026-11-09",
+    "title": "Third person and livelier players",
+    "items": [
+      "Press T or the middle mouse button to switch between first and third person.",
+      "Other players walk, run, swing, cast, dodge and flinch instead of sliding around."
+    ]
+  },
+  {
+    "id": "pt2-skills",
+    "date": "2026-11-09",
+    "title": "Skill tree and build overview",
+    "items": [
+      "N opens the skill tree: every spell tree, what you can learn next and what it needs.",
+      "B opens your build: where your health, damage and armor come from, both loadouts side by side."
+    ]
+  },
+  {
+    "id": "pt2-world",
+    "date": "2026-11-09",
+    "title": "Around the world",
+    "items": [
+      "Slime meadows around the Haven give new players something to fight close to home.",
+      "The map sketches the land you have walked, even before you climb a tower.",
+      "Fires stay small patches instead of eating whole hillsides.",
+      "Sound pass: rain sounds right under a roof, and loops and busy fights are calmer.",
+      "HUD tidy-up: level-ups, discovery cards and toasts no longer pile on top of each other."
+    ]
+  },
+  {
+    "id": "pt2-fixes",
+    "date": "2026-11-09",
+    "title": "Fixes from the first playtest",
+    "items": [
+      "Voice chat works for everyone now, including local profiles.",
+      "Quest trackers and markers move on to the next step again.",
+      "You start with a pickaxe (older characters get one once).",
+      "Taking off a weapon gives you your training weapon back.",
+      "Travel to a friend from the Friends panel (O).",
+      "Reconnecting keeps your position instead of sending you back to spawn."
+    ]
+  }
+]

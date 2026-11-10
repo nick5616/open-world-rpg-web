@@ -213,6 +213,8 @@ pub const PARTY_HP_PER_PLAYER: f64 = 0.75;
 pub const PARTY_DMG_PER_PLAYER: f64 = 0.1;
 /// Downed players respawn at their last waypoint (RespawnPoint) after this long, keeping everything (spec 8).
 pub const PLAYER_RESPAWN_S: f64 = 3.0;
+/// Playtest 2 (CR 024): after a respawn enemies ignore you and cannot hurt you, nor can PvP hits, for this long or until you land a hit.
+pub const PLAYER_RESPAWN_GRACE_S: f64 = 5.0;
 /// Health regenerates only after this long without taking damage.
 pub const PLAYER_REGEN_DELAY_S: f64 = 6.0;
 /// Out-of-combat health regeneration, points per second.

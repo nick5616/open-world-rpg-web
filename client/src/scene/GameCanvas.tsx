@@ -3,10 +3,15 @@
 // controller and the first-person arms. The ground (collision) and its visual
 // are props so WP05 can swap in streamed terrain without editing this file.
 
-import { Suspense, type ReactNode } from 'react';
+import { Suspense, useEffect, useState, type ReactNode } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { PerformanceMonitor } from '@react-three/drei';
 import { useQualityStore, QUALITY_PRESETS } from '../stores/qualityStore';
+// Playtest 2 graphics settings: resolved knobs and the style hooks in every
+// lit material (the chunk patch must run before the first program compiles).
+import { pixelRatioFor, useGraphics } from '../stores/graphics';
+import '../world/style/styleShader';
+import { GraphicsApplier } from './GraphicsApplier';
 import { useDebugStore } from '../stores/debugStore';
 import { DEBUG } from '../config';
 import type { GroundQuery } from '../sim/ground';
@@ -41,11 +46,24 @@ function CameraInScene() {
   return <primitive object={camera} />;
 }
 
+/** Window height in CSS pixels, live (Retro's internal resolution is a fixed number of rows). */
+function useWindowHeight(): number {
+  const [h, setH] = useState(() => (typeof window === 'undefined' ? 1080 : window.innerHeight));
+  useEffect(() => {
+    const on = () => setH(window.innerHeight);
+    window.addEventListener('resize', on);
+    return () => window.removeEventListener('resize', on);
+  }, []);
+  return h;
+}
+
 export function GameCanvas({ ground = DEFAULT_GROUND, terrain, onStep, driver, children, environment, ownComposer }: Props) {
   const tier = useQualityStore((s) => s.tier);
   const preset = QUALITY_PRESETS[tier];
-  const shaderTier = useQualityStore((s) => s.shaderTier); // WP19: shadows never flip on an auto step
+  const g = useGraphics(); // WP19: shadows follow the shader tier, never an auto step
   const showCells = useDebugStore((s) => s.showCells);
+  const height = useWindowHeight();
+  const dpr = pixelRatioFor(g, typeof window === 'undefined' ? 1 : window.devicePixelRatio, height);
 
   return (
     <Canvas
@@ -56,9 +74,11 @@ export function GameCanvas({ ground = DEFAULT_GROUND, terrain, onStep, driver, c
       // 'high-performance' asks hybrid-GPU laptops for the discrete GPU.
       gl={{ antialias: ownComposer ? false : preset.antialias, powerPreference: 'high-performance' }}
       // Cap the backing-store scale: a 2-3x hi-dpi display otherwise renders
-      // 4-9x the pixels. The monitor lowers it further (via the tier) when frames run long.
-      dpr={[1, preset.dpr]}
-      shadows={QUALITY_PRESETS[shaderTier].shadows}
+      // 4-9x the pixels. The monitor lowers it further (via the tier) when
+      // frames run long; the Graphics screen's render scale and DPR cap, and
+      // Retro's fixed row count, set it too (stores/graphics.ts).
+      dpr={dpr}
+      shadows={g.shadowCascades > 0}
       onCreated={(state) => {
         // Dev-only handle for perf tooling (renderer.info, draw calls).
         if (DEBUG) (window as unknown as { __r3f?: unknown }).__r3f = state;
@@ -71,6 +91,7 @@ export function GameCanvas({ ground = DEFAULT_GROUND, terrain, onStep, driver, c
         // Sustained misses only: a lone hitch must not drop the whole tier.
         onFallback={() => useQualityStore.getState().stepDown()}
       />
+      <GraphicsApplier />
       <GroundContext.Provider value={ground}>
         <CameraInScene />
         <Suspense fallback={null}>

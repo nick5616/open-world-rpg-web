@@ -9,6 +9,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { nightRuntime } from '../../systems/night';
 import { trackedQuest } from './store';
+import { liveMarkers } from './live';
 
 const MAX_BEAMS = 4;
 const BEAM_H = 320;
@@ -64,7 +65,7 @@ export function QuestLayer() {
   useFrame((state) => {
     const q = trackedQuest();
     const rt = nightRuntime.runtime;
-    const ms = q?.markers ?? [];
+    const ms = liveMarkers(q); // playtest 2: a person's beam follows them
     const t = state.clock.elapsedTime;
     beams.forEach((b, i) => {
       const m = ms[i];

@@ -249,17 +249,21 @@ export class ScatterManager {
           p.y *= h * 0.55;
           float hk = transformed.y;
           vec2 w = windAt(iPos.xz);
-          p.xz += w * 0.035 * hk * hk * h * (0.7 + 0.3 * sin(uWindTime * 3.3 + iPos.x * 0.7 + iPos.z * 0.9));
-          p.y -= dot(w, w) * 0.0006 * hk * h;
+          // Playtest 2 styles: uWindSweep.x leans the meadow further, .y adds a
+          // bright sheen where a gust front rolls through (the wind made visible).
+          float gust = windGust(iPos.xz);
+          p.xz += w * 0.035 * uWindSweep.x * hk * hk * h * (0.7 + 0.3 * sin(uWindTime * 3.3 + iPos.x * 0.7 + iPos.z * 0.9));
+          p.y -= dot(w, w) * 0.0006 * uWindSweep.x * hk * h;
           vFade = 1.0;
           // Dry (low moisture) grass is straw, wet grass deep green.
           vColor.rgb *= mix(vec3(1.25, 1.05, 0.55), vec3(0.85, 1.1, 0.7), smoothstep(0.15, 0.6, tint));
+          vColor.rgb *= 1.0 + uWindSweep.y * max(gust - 0.75, 0.0) * hk;
           transformed = iPos + p; // worldpos_vertex (shadow lookups) reads this
           vec4 mvPosition = modelViewMatrix * vec4(transformed, 1.0);
           gl_Position = projectionMatrix * mvPosition;`,
         );
     };
-    m.customProgramCacheKey = () => 'lodestone-grass-1';
+    m.customProgramCacheKey = () => 'lodestone-grass-2';
     return m;
   }
 

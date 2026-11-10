@@ -137,6 +137,7 @@ groups:
     PARTY_HP_PER_PLAYER: {type: f64, value: 0.75, doc: "Enemy health multiplier per extra engaged player: 1 + 0.75 (n - 1); 4 players = 3.25x."}
     PARTY_DMG_PER_PLAYER: {type: f64, value: 0.1, doc: "Enemy damage multiplier per extra engaged player: 1 + 0.10 (n - 1)."}
     PLAYER_RESPAWN_S: {type: f64, value: 3, doc: "Downed players respawn at their last waypoint (RespawnPoint) after this long, keeping everything (spec 8)."}
+    PLAYER_RESPAWN_GRACE_S: {type: f64, value: 5, doc: "Playtest 2 (CR 024): after a respawn enemies ignore you and cannot hurt you, nor can PvP hits, for this long or until you land a hit."}
     PLAYER_REGEN_DELAY_S: {type: f64, value: 6, doc: "Health regenerates only after this long without taking damage."}
     PLAYER_REGEN_PER_S: {type: f64, value: 4, doc: "Out-of-combat health regeneration, points per second."}
     ENEMY_LEASH_M: {type: f64, value: 40, doc: "Enemies give up a chase this far from home and return (camps, packs); bosses stay in their arena."}

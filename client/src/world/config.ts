@@ -91,6 +91,22 @@ export const WORLD_TIERS: Record<QualityTier, WorldTier> = {
     godRays: true,
     waterDetail: true,
   },
+  // Playtest 2 graphics settings: opt-in, never picked by auto.
+  ultra: {
+    lodSplit: 1.4,
+    uploadsPerFrame: 4,
+    uploadBudgetMs: 5,
+    scatterDistance: 1200,
+    treeMeshDistance: 240,
+    smallScatterDistance: 150,
+    grassDistance: 40,
+    grassDensity: 3.1,
+    shadowDistance: 450,
+    shadowMapSize: 2048,
+    bloom: true,
+    godRays: true,
+    waterDetail: true,
+  },
 };
 
 /** Far plane: the horizon mesh shows the whole 4 km world from anywhere in it. */

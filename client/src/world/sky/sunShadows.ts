@@ -37,6 +37,12 @@ export function patchCsmShader(): void {
   patched = true;
 }
 
+type Hook = THREE.Material['onBeforeCompile'];
+/** Each material's own onBeforeCompile, before any shadow rig wrapped it. */
+const ORIGINAL_HOOK = new WeakMap<THREE.Material, Hook>();
+/** The shader object of each material's current program (its live uniforms). */
+const LAST_SHADER = new WeakMap<THREE.Material, { uniforms: Record<string, THREE.IUniform> }>();
+
 export interface ShadowConfig {
   cascades: number;
   distance: number;
@@ -93,13 +99,23 @@ export class SunShadows {
   setupMaterial(m: THREE.Material): void {
     if (!this.csm || this.materials.has(m)) return;
     this.materials.add(m);
-    const own = m.onBeforeCompile;
+    // The material's own hook, from before any rig wrapped it (a rebuilt rig
+    // must not wrap the previous rig's wrapper).
+    if (!ORIGINAL_HOOK.has(m)) ORIGINAL_HOOK.set(m, m.onBeforeCompile);
+    const own = ORIGINAL_HOOK.get(m)!;
     this.csm.setupMaterial(m);
     const csmHook = m.onBeforeCompile;
     m.onBeforeCompile = (shader, renderer) => {
       csmHook.call(m, shader, renderer);
       if (own !== THREE.Material.prototype.onBeforeCompile) own.call(m, shader, renderer);
+      LAST_SHADER.set(m, shader);
     };
+    // Playtest 2 graphics settings: a rebuilt rig with the same cascade count
+    // gives the material the same program key, so three.js reuses its program
+    // without calling onBeforeCompile again. Hand this rig the live shader
+    // object so it keeps updating the cascade uniforms.
+    const prev = LAST_SHADER.get(m);
+    if (prev?.uniforms.CSM_cascades) (this.csm.shaders as unknown as Map<THREE.Material, unknown>).set(m, prev); // @types says string; it holds shader objects
   }
 
   forget(m: THREE.Material): void {
@@ -132,7 +148,22 @@ export class SunShadows {
   dispose(): void {
     if (this.csm) {
       this.csm.remove();
-      this.csm.dispose();
+      // Not csm.dispose(): it deletes the cascade uniforms from the live
+      // shader objects, and a material whose program key does not change
+      // (the next rig has the same cascade count) keeps that program and its
+      // uniforms, so the next draw threw in WebGLUniforms.upload. Restore the
+      // materials' own hooks and defines instead; the next rig re-adds them.
+      for (const m of this.materials) {
+        m.onBeforeCompile = ORIGINAL_HOOK.get(m) ?? THREE.Material.prototype.onBeforeCompile;
+        if (m.defines) {
+          delete m.defines.USE_CSM;
+          delete m.defines.CSM_CASCADES;
+          delete m.defines.CSM_FADE;
+        }
+        m.needsUpdate = true;
+      }
+      this.csm.shaders.clear();
+      this.materials.clear();
       for (const l of this.lights) l.dispose();
     } else if (this.light) {
       this.parent.remove(this.light, this.light.target);

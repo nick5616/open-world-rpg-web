@@ -191,3 +191,25 @@ vec3 skyAmbient(vec3 v, vec3 s) {
   return L;
 }
 `;
+
+/**
+ * Playtest 2 visual styles (world/style/styles.ts): the sky's look on top of
+ * the physics, shared by the sky dome and the fog colour so the horizon still
+ * matches. Needs uniform `uSkyStyle` = (saturation, brightness, painterly
+ * bands, zenith-to-horizon gradient); (1, 1, 0, 0) is the plain sky.
+ */
+export const SKY_STYLE_GLSL = /* glsl */ `
+uniform vec4 uSkyStyle;
+vec3 lsSkyStyle(vec3 col, float vy) {
+  float l = dot(col, vec3(0.2126, 0.7152, 0.0722));
+  col = max(mix(vec3(l), col, uSkyStyle.x), 0.0) * uSkyStyle.y;
+  col *= mix(vec3(1.0), mix(vec3(1.07, 1.02, 0.94), vec3(0.88, 0.96, 1.1), smoothstep(0.02, 0.55, vy)), uSkyStyle.w);
+  if (uSkyStyle.z > 0.0) {
+    float l2 = max(dot(col, vec3(0.2126, 0.7152, 0.0722)), 1e-5);
+    float x = sqrt(l2) * 9.0;
+    float q = (floor(x) + smoothstep(0.3, 0.7, fract(x))) / 9.0;
+    col *= mix(1.0, q * q / l2, uSkyStyle.z);
+  }
+  return col;
+}
+`;
