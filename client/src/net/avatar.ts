@@ -379,7 +379,7 @@ export class Avatar {
     this.weaponMid.visible = false;
     // playtest 2 fishing: the rod rises from the right hand, forward and up; the catch hangs across both hands
     this.rod = new THREE.Mesh(r.rod, r.rodMat);
-    this.rod.rotation.x = -1.25;
+    this.rod.rotation.x = -2.3; // forward and up from the fist (the forearm points ahead)
     this.rod.visible = false;
     this.armR.hand.add(this.rod);
     this.fishMesh = new THREE.Mesh(r.fishGeo, r.fishMat);

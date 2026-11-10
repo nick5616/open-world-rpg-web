@@ -18,7 +18,9 @@ import { useInventory } from '../inventory/store';
 import { countOf } from '../inventory/items';
 import { photoActive } from '../photo/store';
 import { fishById, rarityColor, rarityName, ROD, weightText } from './fish';
-import { ensureFishingHook } from './link';
+import { devRod, ensureFishingHook } from './link';
+import { DEBUG } from '../../config';
+import { findFishingSpot } from './FishingLayer';
 import { cast, fishLive, floatState, press, release, useFishing } from './store';
 
 function othersBusy(): boolean {
@@ -187,7 +189,7 @@ export function FishingHud() {
 
   return (
     <>
-      {body && <div style={{ position: 'fixed', left: '50%', top: s.phase === 'result' || s.phase === 'fight' || s.phase === 'landing' ? '66%' : '62%', transform: 'translateX(-50%)', pointerEvents: 'none', zIndex: 20 }}>{body}</div>}
+      {body && <div style={{ position: 'fixed', left: '50%', top: s.phase === 'result' || s.phase === 'fight' || s.phase === 'landing' ? '54%' : '62%', transform: 'translateX(-50%)', pointerEvents: 'none', zIndex: 20 }}>{body}</div>}
       {showNotice && (
         <div data-testid="fish-notice" style={{ ...text, position: 'fixed', left: '50%', top: '57%', transform: 'translateX(-50%)', color: '#ffd8a8', pointerEvents: 'none', zIndex: 20 }}>
           {s.notice}
@@ -199,3 +201,15 @@ export function FishingHud() {
 
 /** Journal counts (the Fish tab): species caught of all. */
 export const FISH_TOTAL = CONTENT.fishing.species.length;
+
+if (DEBUG && typeof window !== 'undefined') {
+  (window as unknown as { __lodestoneFishing?: unknown }).__lodestoneFishing = {
+    state: () => {
+      const s = useFishing.getState();
+      const f = fishLive.fight;
+      return { phase: s.phase, seq: s.seq, water: s.water, bobber: s.bobber, caught: s.caught, lost: s.lostText, notice: s.notice, target: fishLive.target, canCast: fishLive.canCast, rod: hasRod(), fight: f ? { tension: f.tension, progress: f.progress, pull: f.pull, surging: f.surging, t: f.t } : null };
+    },
+    devRod,
+    findSpot: (x: number, z: number, r?: number) => findFishingSpot(x, z, r),
+  };
+}

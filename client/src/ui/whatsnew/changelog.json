@@ -1,5 +1,35 @@
 [
   {
+    "id": "pt2-fishing",
+    "date": "2026-11-10",
+    "title": "Gone fishing",
+    "items": [
+      "Buy a fishing rod from a general store or a tool merchant (or forge one), face a lake, river or the sea and press E.",
+      "Wait for the float to go under (a nibble is not a bite), strike, then reel: hold to pull in, let go when the line strains.",
+      "Fourteen kinds of fish live in different waters, biomes, hours and weather. A few are rare, and two are the stuff of legend.",
+      "Cook your catch at a hearth or campfire (thirteen new recipes), fill the new Fish tab in your journal (J) and earn four new feats."
+    ]
+  },
+  {
+    "id": "pt2-emotes",
+    "date": "2026-11-10",
+    "title": "Emotes",
+    "items": [
+      "Hold H for the emote wheel: wave, bow, cheer, point, sit, dance, laugh, shrug, salute and rest by the fire.",
+      "Everyone nearby sees them. Tap H to repeat your last one, or type /emote wave in chat."
+    ]
+  },
+  {
+    "id": "pt2-photo-mode",
+    "date": "2026-11-10",
+    "title": "Photo mode",
+    "items": [
+      "Press P for photo mode: the camera leaves your character and the HUD disappears.",
+      "Fly with WASD (Space and Ctrl for up and down), pick a visual style, preview any hour of the day, and add depth of field, vignette and film grain.",
+      "Press Enter to save a PNG. Esc frees the mouse, Esc again takes you back."
+    ]
+  },
+  {
     "id": "pt2-onboarding",
     "date": "2026-11-10",
     "title": "A friendlier first hour",

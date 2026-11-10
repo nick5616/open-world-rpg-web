@@ -196,7 +196,11 @@ func (s *Server) emotesTick(tick uint32) {
 				continue
 			}
 		}
-		if math.Hypot(e.Move.Pos.X-l.x, e.Move.Pos.Z-l.z) > emoteMoveM {
+		lim := emoteMoveM
+		if l.fishing {
+			lim = contentdefs.D.Fishing.WalkAwayM
+		}
+		if math.Hypot(e.Move.Pos.X-l.x, e.Move.Pos.Z-l.z) > lim {
 			if l.fishing {
 				s.fishStop(sess, FishLostWalkedAway) // fishing.go (ends the loop, tells the angler)
 			} else {

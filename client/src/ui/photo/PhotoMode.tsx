@@ -18,6 +18,8 @@ import { isTextTarget, KEY_MAP } from '../../input/useKeyboard';
 import { useQualityStore } from '../../stores/qualityStore';
 import { STYLE_ORDER, STYLES } from '../../world/style/styles';
 import { PHOTO_DEFAULTS, PHOTO_KEYS, photoKeys, photoLive, usePhoto } from './store';
+import { DEBUG } from '../../config';
+import { photoDebug } from './PhotoRig';
 
 export const PHOTO_KEY = 'KeyP';
 const SHOT_KEY = 'Enter';
@@ -262,4 +264,24 @@ export function PhotoMode() {
       )}
     </>
   );
+}
+
+if (DEBUG && typeof window !== 'undefined') {
+  (window as unknown as { __lodestonePhoto?: unknown }).__lodestonePhoto = {
+    enter: enterPhoto,
+    exit: exitPhoto,
+    shot: takeShot,
+    set: (p: Partial<{ hour: number | null; dof: number; focusM: number; vignette: number; grain: number; fov: number; hidePlates: boolean; panelHidden: boolean }>) => usePhoto.setState(p),
+    state: () => ({ ...usePhoto.getState(), autoFocusM: photoLive.autoFocusM, cam: photoDebug.cam ? { ...photoDebug.cam.pos, yaw: photoDebug.cam.yaw, pitch: photoDebug.cam.pitch } : null }),
+    /** Place the free camera (evidence: no pointer lock headless). */
+    pose: (x: number, y: number, z: number, yaw: number, pitch: number) => {
+      const c = photoDebug.cam;
+      if (!c) return;
+      c.pos.x = x;
+      c.pos.y = y;
+      c.pos.z = z;
+      c.yaw = yaw;
+      c.pitch = pitch;
+    },
+  };
 }

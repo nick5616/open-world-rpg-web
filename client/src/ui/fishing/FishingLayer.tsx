@@ -18,6 +18,45 @@ import { castPoint } from './fish';
 import { fishingTick, fishLive, floatState, useFishing } from './store';
 
 const MAX_LINES = 8;
+
+/** Debug builds: the ground the fishing layer sees (the water search below). */
+export const fishDebug = { ground: null as null | { heightAt(x: number, z: number): number; waterAt?(x: number, z: number): number } };
+
+/**
+ * Debug/evidence: a dry spot within r m of (cx, cz) with deep water 9-15 m
+ * away in some direction (the stand point, the yaw to face it, the water).
+ */
+export function findFishingSpot(cx: number, cz: number, r = 600): { x: number; z: number; yaw: number; wx: number; wz: number } | null {
+  const g = fishDebug.ground;
+  if (!g?.waterAt) return null;
+  for (let rad = 0; rad <= r; rad += 8) {
+    const n = Math.max(1, Math.round((rad * Math.PI * 2) / 8));
+    for (let k = 0; k < n; k++) {
+      const a = (k / n) * Math.PI * 2;
+      const x = cx + Math.cos(a) * rad;
+      const z = cz + Math.sin(a) * rad;
+      const h = g.heightAt(x, z);
+      const w = g.waterAt(x, z);
+      if (Number.isFinite(w) && w > h - 0.1) continue; // wet
+      // flat enough to stand
+      if (Math.abs(g.heightAt(x + 1, z) - h) > 0.5 || Math.abs(g.heightAt(x, z + 1) - h) > 0.5) continue;
+      for (let d = 0; d < 16; d++) {
+        const yaw = (d / 16) * Math.PI * 2;
+        const fx = -Math.sin(yaw);
+        const fz = -Math.cos(yaw);
+        let ok = true;
+        for (const m of [9, 12, 15]) {
+          const wx = x + fx * m;
+          const wz = z + fz * m;
+          const ww = g.waterAt(wx, wz);
+          if (!Number.isFinite(ww) || ww - g.heightAt(wx, wz) < 0.8 || ww > h + 1 || ww < h - 6) ok = false;
+        }
+        if (ok) return { x, z, yaw, wx: x + fx * 12, wz: z + fz * 12 };
+      }
+    }
+  }
+  return null;
+}
 const SEGS = 14;
 
 interface LineObj {
@@ -31,11 +70,11 @@ function makeLine(): LineObj {
   const pos = new Float32Array((SEGS + 1) * 3);
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  const line = new THREE.Line(g, new THREE.LineBasicMaterial({ color: 0xe8e4da, transparent: true, opacity: 0.75 }));
+  const line = new THREE.Line(g, new THREE.LineBasicMaterial({ color: 0x2b2a26, transparent: true, opacity: 0.85 }));
   line.frustumCulled = false;
   const float = new THREE.Group();
-  const top = new THREE.Mesh(new THREE.SphereGeometry(0.06, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0xe03131, roughness: 0.5 }));
-  const bottom = new THREE.Mesh(new THREE.SphereGeometry(0.06, 10, 6, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0xf8f9fa, roughness: 0.5 }));
+  const top = new THREE.Mesh(new THREE.SphereGeometry(0.09, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0xe03131, roughness: 0.5 }));
+  const bottom = new THREE.Mesh(new THREE.SphereGeometry(0.09, 10, 6, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0xf8f9fa, roughness: 0.5 }));
   const stick = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.12, 4), new THREE.MeshStandardMaterial({ color: 0x343a40 }));
   stick.position.y = 0.08;
   float.add(top, bottom, stick);
@@ -103,6 +142,7 @@ export function FishingLayer() {
     [st],
   );
 
+  fishDebug.ground = ground;
   useFrame((state, delta) => {
     const now = performance.now();
     if (st.group.parent !== state.scene) state.scene.add(st.group);

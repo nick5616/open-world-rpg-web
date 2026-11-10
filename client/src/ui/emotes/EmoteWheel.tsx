@@ -12,6 +12,9 @@ import { clampCursor, pickSector, sectorCenter, WHEEL } from './emotes';
 import { emoteById } from './emotes';
 import { ensureEmoteHook, lastEmoteId, playEmote, useEmoteToast } from './link';
 import { photoActive } from '../photo/store';
+import { DEBUG } from '../../config';
+import { emoteByKey } from './emotes';
+import { emoteOf, SELF } from './store';
 
 export const EMOTE_KEY = 'KeyH';
 const R = 150;
@@ -174,4 +177,14 @@ export function EmoteWheel() {
       )}
     </>
   );
+}
+
+if (DEBUG && typeof window !== 'undefined') {
+  (window as unknown as { __lodestoneEmotes?: unknown }).__lodestoneEmotes = {
+    play: (key: string) => {
+      const e = emoteByKey(key);
+      return e ? playEmote(e) : false;
+    },
+    mine: () => emoteOf(SELF) ?? null,
+  };
 }
