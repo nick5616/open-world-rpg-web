@@ -318,7 +318,8 @@
   "quest": 10,
   "wood": 50,
   "camp": 5,
-  "fish": 20
+  "fish": 20,
+  "instrument": 1
  },
  "pouches": {
   "gem": "gem",
@@ -1588,6 +1589,50 @@
    "pouch": "inv",
    "level": 1,
    "value": 8,
+   "sockets": 0
+  },
+  {
+   "key": "instrument:lute",
+   "name": "Lute",
+   "category": "instrument",
+   "kind": "tool",
+   "stack": 1,
+   "pouch": "inv",
+   "level": 1,
+   "value": 60,
+   "sockets": 0
+  },
+  {
+   "key": "instrument:wooden_flute",
+   "name": "Wooden Flute",
+   "category": "instrument",
+   "kind": "tool",
+   "stack": 1,
+   "pouch": "inv",
+   "level": 1,
+   "value": 24,
+   "sockets": 0
+  },
+  {
+   "key": "instrument:hand_drum",
+   "name": "Hand Drum",
+   "category": "instrument",
+   "kind": "tool",
+   "stack": 1,
+   "pouch": "inv",
+   "level": 1,
+   "value": 36,
+   "sockets": 0
+  },
+  {
+   "key": "instrument:handbells",
+   "name": "Handbells",
+   "category": "instrument",
+   "kind": "tool",
+   "stack": 1,
+   "pouch": "inv",
+   "level": 1,
+   "value": 80,
    "sockets": 0
   },
   {
@@ -3717,6 +3762,86 @@
    "sockets": 0,
    "blueprint": null,
    "xp": 30
+  },
+  {
+   "key": "bench_wooden_flute",
+   "id": 56,
+   "station": "workbench",
+   "inputs": [
+    {
+     "item": "wood:firewood",
+     "qty": 2
+    }
+   ],
+   "output": "instrument:wooden_flute",
+   "qty": 1,
+   "sockets": 0,
+   "blueprint": null,
+   "xp": 4
+  },
+  {
+   "key": "bench_hand_drum",
+   "id": 57,
+   "station": "workbench",
+   "inputs": [
+    {
+     "item": "wood:firewood",
+     "qty": 3
+    },
+    {
+     "item": "hide:wolf",
+     "qty": 1
+    }
+   ],
+   "output": "instrument:hand_drum",
+   "qty": 1,
+   "sockets": 0,
+   "blueprint": null,
+   "xp": 6
+  },
+  {
+   "key": "bench_lute",
+   "id": 58,
+   "station": "workbench",
+   "inputs": [
+    {
+     "item": "wood:firewood",
+     "qty": 5
+    },
+    {
+     "item": "hide:wolf",
+     "qty": 1
+    },
+    {
+     "item": "tool:rope",
+     "qty": 1
+    }
+   ],
+   "output": "instrument:lute",
+   "qty": 1,
+   "sockets": 0,
+   "blueprint": null,
+   "xp": 10
+  },
+  {
+   "key": "forge_handbells",
+   "id": 59,
+   "station": "forge",
+   "inputs": [
+    {
+     "item": "ingot:copper",
+     "qty": 2
+    },
+    {
+     "item": "ingot:iron",
+     "qty": 1
+    }
+   ],
+   "output": "instrument:handbells",
+   "qty": 1,
+   "sockets": 0,
+   "blueprint": null,
+   "xp": 12
   }
  ],
  "starter": [

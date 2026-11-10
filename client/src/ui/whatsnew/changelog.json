@@ -1,5 +1,16 @@
 [
   {
+    "id": "pt2-instruments",
+    "date": "2026-11-10",
+    "title": "Play music",
+    "items": [
+      "Carry a lute, a wooden flute, a hand drum or handbells (general stores and tool merchants, or make one at a camp workbench or a forge) and press U to play.",
+      "Your keyboard becomes the instrument: Q W E R… play a scale from its root, the number row an octave up, A S D… and Z X C… lower. Shift raises a note, Space accents it, the mouse wheel changes octave, the arrows change key and scale.",
+      "Players within 40 m hear you from where you stand, echoing in caves and halls. Press Enter for a metronome everyone near you shares.",
+      "Play for the townsfolk and they'll applaud. Play by a campfire at night and everyone by the fire rises Rested. Play 100 notes to become a Bard."
+    ]
+  },
+  {
     "id": "pt2-mounts",
     "date": "2026-11-10",
     "title": "Spirit steeds",

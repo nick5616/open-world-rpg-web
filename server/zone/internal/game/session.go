@@ -76,9 +76,12 @@ type session struct {
 	doors            *sessDoors         // building doors: settlements known, frame ground (doors.go)
 	fish             *fishState         // playtest 2 fishing (fishing.go); nil until the first cast
 	emotes           *emoteState        // playtest 2 emotes (emotes.go); nil until the first emote
+	music            *musicState        // playtest 2 instruments (music.go); nil until the first Interact 120
 
 	// Reader-owned.
 	buckets    [256]*ratelimit.Bucket
+	musicBkt   ratelimit.Bucket // CR 028: Interact 120 has its own bucket (music.go musicMsgBucket)
+	musicBktOn bool
 	violations ratelimit.Bucket
 }
 
@@ -303,7 +306,11 @@ func (s *Server) readLoop(sess *session) {
 		if len(b) == 0 {
 			continue
 		}
-		if bk := sess.buckets[b[0]]; bk != nil && !bk.Take(now) {
+		bk := sess.buckets[b[0]]
+		if b[0] == proto.MsgInteract && len(b) > 1 && b[1] == InteractMusic {
+			bk = sess.musicMsgBucket() // CR 028: notes arrive every batchMs while playing (music.go)
+		}
+		if bk != nil && !bk.Take(now) {
 			s.m.rateLimited.Add(1)
 			if !sess.violations.Take(now) {
 				s.kick(sess, proto.KickCodeRateLimited, "too many messages")
@@ -384,6 +391,10 @@ func (s *Server) drainTaken(sess *session, now time.Time) {
 			}
 			if it.TargetKind == InteractEmote {
 				s.emoteInteract(sess, it, now) // playtest 2: emotes (emotes.go)
+				continue
+			}
+			if it.TargetKind == InteractMusic {
+				s.musicInteract(sess, it, now) // playtest 2: instruments (music.go)
 				continue
 			}
 			if it.TargetKind == InteractPvP {

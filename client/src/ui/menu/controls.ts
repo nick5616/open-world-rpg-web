@@ -101,6 +101,19 @@ export function controlGroups(debug: boolean): ControlGroup[] {
       ],
     },
     {
+      title: 'Playing music',
+      rows: [
+        { keys: ['U'], action: 'Play the instrument you carry', note: 'lute, flute, hand drum, handbells: merchants, a camp workbench, a forge', src: [['ui/music/InstrumentHud.tsx', "'KeyU'"]] },
+        { keys: ['Q', 'W', 'E', '…'], action: 'Play notes of the scale', note: 'numbers an octave up, A S D… an octave down, Z X C… two down', src: [['ui/music/theory.ts', "'KeyQ'"], ['ui/music/theory.ts', "'Digit1'"]] },
+        { keys: ['Shift'], action: 'A note an octave up (hold)', note: 'Space accents it', src: [['ui/music/InstrumentHud.tsx', "'Space'"]] },
+        { keys: ['Mouse wheel'], action: 'Move the keyboard by octaves', src: [['ui/music/InstrumentHud.tsx', 'onWheel']] },
+        { keys: ['←', '→', '↑', '↓'], action: 'Key (left / right), scale (up / down)', src: [['ui/music/InstrumentHud.tsx', "'ArrowLeft'"], ['ui/music/InstrumentHud.tsx', "'ArrowUp'"]] },
+        { keys: ['Enter'], action: 'Metronome click', note: 'shared with players playing near you', src: [['ui/music/InstrumentHud.tsx', "'Enter'"]] },
+        { keys: ['Tab'], action: 'Next instrument you carry', src: [['ui/music/InstrumentHud.tsx', "'Tab'"]] },
+        { keys: ['Esc'], action: 'Put the instrument away', src: [['ui/music/InstrumentHud.tsx', "'Escape'"]] },
+      ],
+    },
+    {
       title: 'Camping',
       rows: [
         { keys: ['P'], action: 'Camp menu: craft kits, place pieces', note: 'campfire, bedroll, chest, workbench, signpost', src: [['ui/camps/CampHud.tsx', "'KeyP'"]] },

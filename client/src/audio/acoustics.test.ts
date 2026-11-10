@@ -145,6 +145,8 @@ describe('smoothing and ducking', () => {
 
   it('voice chat keeps priority, stings duck music most, a hidden tab is silent (voice stays)', () => {
     expect(duckLevels({ speaking: false, sting: false, hidden: false })).toEqual({ music: 1, ambience: 1, sfx: 1 });
+    // CR 028: instruments near you push the score back, nothing else.
+    expect(duckLevels({ speaking: false, sting: false, hidden: false, instrument: true })).toEqual({ music: 0.3, ambience: 1, sfx: 1 });
     const sting = duckLevels({ speaking: false, sting: true, hidden: false });
     expect(sting.music).toBeLessThan(sting.ambience);
     expect(sting.ambience).toBeLessThan(1);

@@ -148,6 +148,10 @@ export function ItemIcon({ itemKey, size = 34 }: { itemKey: string; size?: numbe
       );
       break;
     case 'tool':
+      if (d?.category === 'instrument') {
+        body = instrumentIcon(itemKey);
+        break;
+      }
       body = (
         <g strokeLinecap="round">
           <path d="M10 27 L21 9" stroke="#8a6a44" strokeWidth="2.4" />
@@ -162,5 +166,48 @@ export function ItemIcon({ itemKey, size = 34 }: { itemKey: string; size?: numbe
     <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true" style={{ display: 'block', pointerEvents: 'none' }}>
       {body}
     </svg>
+  );
+}
+
+/** Playtest 2 instruments (CR 028): a lute, a flute, a hand drum, handbells. */
+function instrumentIcon(key: string): JSX.Element {
+  if (key.endsWith('flute'))
+    return (
+      <g strokeLinecap="round">
+        <path d="M5 26 L27 6" stroke="#8a5a2e" strokeWidth="3.2" />
+        {[0, 1, 2, 3, 4].map((i) => (
+          <circle key={i} cx={11 + i * 3.4} cy={20.6 - i * 3.1} r="0.9" fill="#2a1a10" />
+        ))}
+      </g>
+    );
+  if (key.endsWith('drum'))
+    return (
+      <g>
+        <path d="M7 12 L9 25 Q16 29 23 25 L25 12 Z" fill="#7a4a24" />
+        <ellipse cx="16" cy="12" rx="9" ry="3.6" fill="#e9dcbc" stroke="#2a1a10" strokeWidth="1" />
+        <path d="M10 15 L13 24 M16 16 L16 26 M22 15 L19 24" stroke="#c9a77a" strokeWidth="0.8" />
+      </g>
+    );
+  if (key.endsWith('bells'))
+    return (
+      <g>
+        {[
+          [11, 12],
+          [21, 15],
+        ].map(([x, y]) => (
+          <g key={x}>
+            <path d={`M${x} ${y - 7} L${x} ${y - 3}`} stroke="#2a1a10" strokeWidth="2" strokeLinecap="round" />
+            <path d={`M${x - 3} ${y - 3} Q${x - 4} ${y + 5} ${x - 6} ${y + 7} L${x + 6} ${y + 7} Q${x + 4} ${y + 5} ${x + 3} ${y - 3} Z`} fill="#c99a4c" />
+          </g>
+        ))}
+      </g>
+    );
+  return (
+    <g>
+      <ellipse cx="12" cy="21" rx="7.5" ry="6.5" fill="#d2a868" stroke="#7a4a24" strokeWidth="1.2" />
+      <circle cx="13" cy="19.5" r="1.8" fill="#2a1a10" />
+      <path d="M16 16 L26 5" stroke="#2a1a10" strokeWidth="2.6" strokeLinecap="round" />
+      <path d="M25 4 L29 6" stroke="#7a4a24" strokeWidth="2.4" strokeLinecap="round" />
+    </g>
   );
 }

@@ -32,6 +32,8 @@ export const audioWorld = {
   inTown: false,
   /** Enemies engaged with the player recently (engine-computed). */
   combatUntil: 0,
+  /** CR 028: an instrument sounded near the listener until then (performance ms; ui/music/audio.ts): the music ducks. */
+  instrumentUntil: 0,
 };
 
 /**

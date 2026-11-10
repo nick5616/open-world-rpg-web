@@ -145,6 +145,7 @@ type Server struct {
 	byChar   map[string]*session
 	parties  map[uint32][]*Entity
 	emoters  map[*session]struct{} // playtest 2: sessions holding a looping emote or a line (emotes.go)
+	bards    map[*session]struct{} // playtest 2: sessions playing an instrument (music.go)
 	grid     *aoi.Grid             // players (and anything with a party id): far ring reach
 	// gridOthers holds every other entity (WP19, snapshots.go gridFor):
 	// they are never sent beyond the mid ring, so clients query it 200 m out.
@@ -361,6 +362,7 @@ func (s *Server) onTick() {
 	s.mountsTick(tick)      // CR 027 mounts: arrivals, riders thrown by hits, demons, the step (mounts.go)
 	s.friendTravelTick(now) // playtest 2: travel-to-friend channels (friendtravel.go)
 	s.emotesTick(tick)      // playtest 2: looping emotes and lines in the water (emotes.go, fishing.go)
+	s.musicTick(tick)       // playtest 2: songs, the fireside, playing poses that ended (music.go)
 	s.phases.mark(phNight)
 
 	// Quantize once per entity and rebuild the grid; every client's snapshot
@@ -544,6 +546,7 @@ func (s *Server) leave(sess *session) {
 	s.campLeave(sess)    // CR 025 (camps.go)
 	s.steedLeave(sess)   // CR 027 (mounts.go)
 	s.emotesLeave(sess)  // playtest 2: emotes, fishing (emotes.go)
+	s.musicLeave(sess)   // playtest 2: instruments (music.go)
 	if s.cfg.Queue != nil {
 		s.checkpoint(e)
 	}
