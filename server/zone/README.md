@@ -823,3 +823,21 @@ Decision: `docs/decisions/0021-discovery-difficulty.md`. Contract: `docs/cr/012-
   `internal/combat/sim_test.go` (beginner time to kill, the level curve),
   `zone_progression_integration_test.go` (zone processes + Postgres:
   `docs/evidence/pt-progression-process.txt`).
+
+## World content (playtest 2, CR 023)
+
+`contracts/content.yaml` (generated `server/pkg/contentdefs`) is the data;
+`internal/content` the pure logic (side quest generator, story builder,
+per-character state, herb patches, vault plans and seals, event picks; all
+seeded, no I/O); the glue is `internal/game/content.go` (state, persistence
+in `character_content` / the local blob / the `content` handoff field,
+Interact 80, regions, feats, titles, places near you, renown and shop
+stock), `content_quests.go` (offers on talk, accept, rewards, rescued
+villagers), `worldevents.go` (scheduler, the five events, personal rewards)
+and `dungeons.go` (sealed vaults: discovery, packs, seals, the Vault Keeper,
+the chest). Everything is off in worlds without an atlas or towns
+(`contentOn`), which keeps the scale scenario's wire digest unchanged.
+Events 1000-1022 and Interact 80: `contracts/events.md`. Env:
+`LODESTONE_ZONE_NO_WORLD_EVENTS=1` (kill switch), `LODESTONE_ZONE_VAULT_PACKS=0`
+(evidence runs). `GET /debug/content`: vault plans, live events, tablets,
+quest givers.

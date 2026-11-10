@@ -1,0 +1,27 @@
+CR 023 world content: G5 tick budget and wire, same machine, same session (other agents' work running).
+
+go test ./internal/game -run XXX -bench 'BenchmarkScale/p300_e2000' -benchtime 300x -count 1   (server/zone), alternating base/head x3
+
+base = main a0f071e (an exported copy), head = pt2/content 92aef0c+ (main merged in)
+
+          p50-ms  p99-ms  max-ms  combat-ms  cpu-Mcycles  kbps/client  B/op     allocs/op
+base      3.474   5.255   7.551   0.768      90.10        137.2        1381603  1983
+head      3.018   5.094   6.029   0.733      89.67        137.2        1381583  1983
+base      3.715   6.525   7.779   0.943      90.58        137.2        1381515  1983
+head      2.998   4.512   5.185   0.654      87.84        137.2        1381535  1983
+base      2.997   4.039   5.281   0.646      89.49        137.2        1381527  1983
+head      2.761   4.524   7.008   0.596      89.18        137.2        1381592  1983
+
+No cost: the scale scenario's flat world has no atlas or towns, so the
+content layer is off there (Server.contentOn): no sync on join, no codex
+or feat events on kills, no places, no world events, no vaults; the tick
+pays one nil check. Allocations per op are unchanged.
+
+LODESTONE_WIRE_DIGEST=1 go test ./internal/game -run WireDigest -v
+
+DIGEST p90_e600 400 ticks: 21071668 bytes 831bb7f4b4b9511ac1a06c34cdafcda36e147b8f3b9d9bb6798b04b15af6bbde
+DIGEST p300_e2000 300 ticks: 55563662 bytes 8c29d4086261064f4f15f3445e5a349a40d72d966f9a5a4d6898a27a4b397cfc
+
+Identical to main (and to every playtest 2 branch before it). Note: before
+the gate, a first version of this branch changed both digests (the bots'
+kills sent codex/feat Events and the First Blood gold); the gate is the fix.
