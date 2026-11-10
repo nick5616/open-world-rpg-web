@@ -407,6 +407,7 @@ const (
 	RefuseElsewhere   = 20 // another zone owns that ground (WP16 border): step closer
 	RefuseCombat      = 21 // just fought
 	RefuseOff         = 22 // no camps in this world
+	RefuseLocal       = 23 // a local profile cannot store items (they live in the browser's save)
 )
 
 // Env is what the placement rules ask of the world.

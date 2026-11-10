@@ -109,6 +109,7 @@ func rowArgs(r ItemRow) []any {
 	var world *string
 	var pos []byte
 	var despawn *time.Time
+	var chest *int64
 	if r.Owner != "" {
 		owner, slot = &r.Owner, nullStr(it.Slot)
 	}
@@ -116,11 +117,16 @@ func rowArgs(r ItemRow) []any {
 		w := r.World.WorldID
 		world = &w
 		pos, _ = json.Marshal(worldPosJSON{r.World.X, r.World.Y, r.World.Z})
-		t := r.World.DespawnAt
-		despawn = &t
+		if r.World.Chest != 0 {
+			c := int64(r.World.Chest)
+			chest = &c
+		} else {
+			t := r.World.DespawnAt
+			despawn = &t
+		}
 	}
 	return []any{it.ID, owner, kind, it.Base, max(1, it.Level), it.Rarity, string(it.AffixesJSON()), string(it.SocketsJSON()), slot, it.Seed,
-		it.Tradeable, string(it.ProvJSON()), max(1, it.Qty), it.Verified, nullStr(it.Name), world, nullBytes(pos), despawn}
+		it.Tradeable, string(it.ProvJSON()), max(1, it.Qty), it.Verified, nullStr(it.Name), world, nullBytes(pos), despawn, chest}
 }
 
 func nullBytes(b []byte) *string {
@@ -131,16 +137,16 @@ func nullBytes(b []byte) *string {
 	return &s
 }
 
-const upsertSQL = `INSERT INTO items (id, owner_character_id, kind, base_id, item_level, rarity, affixes, sockets, slot, roll_seed, tradeable, provenance, qty, verified, display_name, world_id, world_pos, despawn_at, updated_at)
-	VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6, $7::jsonb, $8::jsonb, $9, $10, $11, $12::jsonb, $13, $14, $15, $16::uuid, $17::jsonb, $18, now())
+const upsertSQL = `INSERT INTO items (id, owner_character_id, kind, base_id, item_level, rarity, affixes, sockets, slot, roll_seed, tradeable, provenance, qty, verified, display_name, world_id, world_pos, despawn_at, camp_piece_id, updated_at)
+	VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6, $7::jsonb, $8::jsonb, $9, $10, $11, $12::jsonb, $13, $14, $15, $16::uuid, $17::jsonb, $18, $19, now())
 	ON CONFLICT (id) DO UPDATE SET owner_character_id = EXCLUDED.owner_character_id, kind = EXCLUDED.kind, base_id = EXCLUDED.base_id,
 		item_level = EXCLUDED.item_level, rarity = EXCLUDED.rarity, affixes = EXCLUDED.affixes, sockets = EXCLUDED.sockets, slot = EXCLUDED.slot,
 		roll_seed = EXCLUDED.roll_seed, tradeable = EXCLUDED.tradeable, provenance = EXCLUDED.provenance, qty = EXCLUDED.qty, verified = EXCLUDED.verified,
-		display_name = EXCLUDED.display_name, world_id = EXCLUDED.world_id, world_pos = EXCLUDED.world_pos, despawn_at = EXCLUDED.despawn_at, updated_at = now()`
+		display_name = EXCLUDED.display_name, world_id = EXCLUDED.world_id, world_pos = EXCLUDED.world_pos, despawn_at = EXCLUDED.despawn_at, camp_piece_id = EXCLUDED.camp_piece_id, updated_at = now()`
 
 const updateSQL = `UPDATE items SET owner_character_id = $2::uuid, kind = $3, base_id = $4, item_level = $5, rarity = $6, affixes = $7::jsonb, sockets = $8::jsonb,
 		slot = $9, roll_seed = $10, tradeable = $11, provenance = $12::jsonb, qty = $13, verified = $14, display_name = $15, world_id = $16::uuid,
-		world_pos = $17::jsonb, despawn_at = $18, updated_at = now()
+		world_pos = $17::jsonb, despawn_at = $18, camp_piece_id = $19, updated_at = now()
 	WHERE id = $1::uuid`
 
 // itemTxDelay / itemCommitDelay: test hooks for the kill-mid-grant test

@@ -1090,8 +1090,10 @@ func (s *Server) craft(sess *session, recipeID int, now time.Time) {
 		return
 	}
 	st := ci.station
-	if st == nil || math.Hypot(st.x-e.Move.Pos.X, st.z-e.Move.Pos.Z) > stationStayM ||
-		(rc.Station == "forge" && st.kind == StationCook) || (rc.Station == "cook" && st.kind != StationCook) {
+	// CR 025 camps: camp kits need no station; the workbench is a camp piece.
+	if rc.Station != "camp" && (st == nil || math.Hypot(st.x-e.Move.Pos.X, st.z-e.Move.Pos.Z) > stationStayM ||
+		(rc.Station == "forge" && st.kind != StationForge && st.kind != StationAnvil) || (rc.Station == "cook" && st.kind != StationCook) ||
+		(rc.Station == "workbench" && st.kind != StationWorkbench)) {
 		s.refuseItem(sess, InteractCraft, CraftActCraft, ItemRefuseStation)
 		return
 	}

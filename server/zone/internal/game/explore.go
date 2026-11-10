@@ -394,6 +394,9 @@ func (s *Server) Teleport(e *Entity, pos movement.Vec3) {
 // beside their last waypoint, else the world spawn. The hook for WP13:
 // `s.Teleport(e, s.RespawnPoint(e))`.
 func (s *Server) RespawnPoint(e *Entity) movement.Vec3 {
+	if p, ok := s.campSpawn(e); ok {
+		return p // CR 025: your bedroll (camps.go)
+	}
 	if w := s.cfg.Explore; w != nil && e.x != nil {
 		if p, ok := w.RespawnPoint(e.x.prog); ok {
 			return p

@@ -155,6 +155,7 @@ func main() {
 	cfg.Ground = ground
 	miningConfig(&cfg, pool)
 	doorsConfig(&cfg, pool)                                                      // building doors persist (towns.go)
+	campsConfig(&cfg, pool)                                                      // CR 025: camp pieces persist (towns.go)
 	cfg.Combat = combatSetup(terrain, world.Seed, world.Spec, devKey, log)       // WP13 (combat.go)
 	cfg.Items = itemsSetup(pool, terrain, cfg.Combat, world.Spec, world.ID, log) // WP14 (items.go)
 	withNight(&cfg, terrain, world.Spec, devKey, log)                            // WP15: wards, demons, chemistry, ice/pillar ground (night.go)
@@ -170,6 +171,7 @@ func main() {
 	restoreEdits(ctx, zone, log)
 	restoreWorldItems(ctx, zone, log) // WP14: dropped items survive a restart (until they despawn)
 	restoreDoors(ctx, zone, log)      // building doors stay as they were left (towns.go)
+	restoreCamps(ctx, zone, log)      // CR 025: placed camp pieces (towns.go)
 
 	origins := strings.Split(env.Str("LODESTONE_CORS_ORIGIN", "*"), ",")
 	ws := &transport.WebSocket{OriginPatterns: origins}
@@ -188,6 +190,18 @@ func main() {
 		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
 		defer cancel()
 		if err := zone.Do(ctx, func() { out = zone.ContentDebug() }); err != nil {
+			http.Error(w, err.Error(), http.StatusServiceUnavailable)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(out)
+	})
+	// CR 025 camps: placed pieces (tools and the evidence harness, client/src/ui/camps/dev).
+	s.Mux.HandleFunc("GET /debug/camps", func(w http.ResponseWriter, r *http.Request) {
+		var out map[string]any
+		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+		defer cancel()
+		if err := zone.Do(ctx, func() { out = zone.CampDebug() }); err != nil {
 			http.Error(w, err.Error(), http.StatusServiceUnavailable)
 			return
 		}

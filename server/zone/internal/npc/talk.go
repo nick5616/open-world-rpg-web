@@ -47,10 +47,10 @@ type Ware struct {
 // Item ids are contracts/items.yaml keys (WP14; itemdefs tests check every
 // one exists). Prices are in gold (currency:gold, CR 010).
 var wares = [5][]Ware{
-	{{"food:bread", 4, 20}, {"tool:torch", 6, 12}, {"tool:rope", 10, 6}, {"tool:pickaxe", 40, 3}},                // general
-	{{"food:bread", 3, 30}, {"food:cheese", 6, 12}, {"food:apple", 2, 40}, {"food:stew", 9, 8}},                  // provisions
-	{{"herb:heartleaf", 5, 15}, {"potion:health", 25, 6}, {"potion:antidote", 18, 6}, {"seed:wardbloom", 30, 4}}, // herbalist
-	{{"tool:pickaxe", 35, 4}, {"ingot:copper", 12, 10}, {"ingot:iron", 20, 8}, {"tool:whetstone", 8, 10}},        // tools
+	{{"food:bread", 4, 20}, {"tool:torch", 6, 12}, {"tool:rope", 10, 6}, {"tool:pickaxe", 40, 3}, {"wood:firewood", 2, 40}}, // general (CR 025: firewood for camps)
+	{{"food:bread", 3, 30}, {"food:cheese", 6, 12}, {"food:apple", 2, 40}, {"food:stew", 9, 8}},                             // provisions
+	{{"herb:heartleaf", 5, 15}, {"potion:health", 25, 6}, {"potion:antidote", 18, 6}, {"seed:wardbloom", 30, 4}},            // herbalist
+	{{"tool:pickaxe", 35, 4}, {"ingot:copper", 12, 10}, {"ingot:iron", 20, 8}, {"tool:whetstone", 8, 10}},                   // tools
 	{{"ingot:iron", 22, 10}, {"weapon:iron_sword", 90, 2}, {"weapon:iron_spear", 85, 2}, {"ammo:iron_arrow", 1, 99}, // blacksmith
 		{"blueprint:iron_sword", 30, 1}, {"blueprint:silver_sword", 80, 1}, {"blueprint:sunsteel_blade", 40, 1}, {"blueprint:sunsteel_arrow", 30, 1}}, // WP14: spec 7 blueprints "bought from blacksmiths"
 }

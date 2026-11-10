@@ -191,12 +191,12 @@ func (s *Server) sessDoors(sess *session) *sessDoors {
 func (s *Server) frameGround(sess *session, seq uint32) movement.Ground {
 	w := s.town.doors
 	if w == nil || w.active == 0 {
-		return s.cfg.Ground
+		return s.campWrap(sess, s.cfg.Ground) // CR 025: solid camp pieces near the player (camps.go)
 	}
 	sd := s.sessDoors(sess)
 	sd.view = doorView{w: w, sess: sess, seq: seq}
 	sd.g = doorFrameGround{inner: s.cfg.Ground, s: w.s, v: &sd.view}
-	return &sd.g
+	return s.campWrap(sess, &sd.g)
 }
 
 // doorStep: the first input seq of this session a change may apply from

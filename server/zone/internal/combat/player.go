@@ -108,6 +108,9 @@ type Player struct {
 	Boons     Boons
 	OnDrink   func() (heal float64, ok bool)
 	drinkHeal float64
+	// Playtest 2 camps (CR 025): the Rested buff multiplies health and mana
+	// regeneration (0 = 1; the zone sets and clears them, camps.go).
+	RegenMult, ManaRegenMult float64
 
 	readyAt   map[int]uint32 // spell/form/technique id -> seq it is ready
 	actions   [actionRing]Action

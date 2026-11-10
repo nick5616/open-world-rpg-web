@@ -47,6 +47,9 @@ type WorldSpot struct {
 	WorldID   string
 	X, Y, Z   float64
 	DespawnAt time.Time
+	// Chest (CR 025 camps): the item is in this camp storage chest (never
+	// despawns, never restored as a pickup; items.camp_piece_id, 0026).
+	Chest uint64
 }
 
 // GrantMark is the exactly-once marker of a roll or a take.

@@ -53,6 +53,9 @@ func (s *Server) initObstacles() {
 
 // enemyBlocked is combat World.Obstacles: a town box or a closed door.
 func (s *Server) enemyBlocked(x, y, z, r, h float64) bool {
+	if s.camp.set.Blocked(x, y, z, r, h) {
+		return true // CR 025: solid camp pieces (camps.go; the set is replaced, never mutated, on the tick)
+	}
 	b := s.obst.b
 	if r <= towns.MaskCell && !b.Near(x, z) {
 		return false
