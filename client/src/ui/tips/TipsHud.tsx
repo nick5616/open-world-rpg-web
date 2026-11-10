@@ -92,6 +92,11 @@ export function TipsHud() {
       const cur = useTips.getState().current;
       if (cur) {
         if (ctx.busy || settled(cur.id, ctx, (now - cur.at) / 1000)) {
+          // A panel that opened over a tip that had barely shown (the What's new welcome) doesn't use it up.
+          if (ctx.busy && now - cur.at < 4000) {
+            seen.delete(cur.id);
+            saveSeen(kv, character, seen);
+          }
           useTips.setState({ current: null });
           showing = false;
           lastClosed = now;

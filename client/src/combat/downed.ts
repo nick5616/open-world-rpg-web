@@ -67,7 +67,8 @@ export function siteName(index: number, sites: readonly { name: string | null; c
   return town ? `the ${town.name!.trim()} waypoint` : 'your last waypoint';
 }
 
-/** Where the zone will put you (RespawnPoint: the last waypoint touched). */
+/** Where the zone will put you (RespawnPoint: the last waypoint touched; else the name Event 608 gave it). */
 export function respawnSiteName(): string {
-  return siteName(useExploration.getState().progress.lastWaypoint, useMapWorld.getState().data?.sites);
+  const ex = useExploration.getState();
+  return siteName(ex.progress.lastWaypoint, useMapWorld.getState().data?.sites) || ex.respawnName;
 }
