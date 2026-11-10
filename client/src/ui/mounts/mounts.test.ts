@@ -126,8 +126,10 @@ describe('combat in the saddle', () => {
 
     const bow = new CombatTimeline();
     bow.loadout = { ...bow.loadout, weapon: 'bow' };
-    const out = bow.step(1, { ...idle(), attackPress: 1 }, st, 0, 16);
-    expect(out.flags & InputFlag.attack).toBeTruthy();
+    // CR 033: the left button draws from the saddle too (the alt bit), and a tap looses after the minimum draw
+    const outs = Array.from({ length: 12 }, (_, i) => bow.step(1 + i, { ...idle(), attackPress: i === 0 ? 1 : 0 }, st, 0, 16 * (i + 1)));
+    expect(outs[0].flags & InputFlag.alt_attack).toBeTruthy();
+    expect(outs.some((o) => (o.flags & InputFlag.attack) !== 0 && o.started?.move?.key === 'bow_charged')).toBe(true);
   });
 
   it('the gallop widens the view a little; a trot not at all', () => {

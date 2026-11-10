@@ -138,7 +138,7 @@ items:
   armor:voidglass_helm: {name: Voidglass Helm, armor: head, material: voidglass, level: 18, health: 26, armorPct: 6, value: 1100}
   armor:voidglass_cuirass: {name: Voidglass Cuirass, armor: body, material: voidglass, level: 18, health: 52, armorPct: 10, value: 1800}
   armor:voidglass_greaves: {name: Voidglass Greaves, armor: legs, material: voidglass, level: 18, health: 36, armorPct: 7, value: 1300}
-  # ---- arrows (combat.yaml bow.arrows: using a stack sets the bow's arrowheads) ----
+  # ---- arrows (combat.yaml bow.arrows: using a stack sets the bow's arrowheads; CR 033: bows have infinite ammo, arrows are never spent) ----
   ammo:copper_arrow: {name: Copper Arrows, arrow: copper, value: 1}
   ammo:iron_arrow: {name: Iron Arrows, arrow: iron, value: 1}
   ammo:silver_arrow: {name: Silver Arrows, arrow: silver, value: 3}

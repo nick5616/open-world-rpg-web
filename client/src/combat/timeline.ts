@@ -57,6 +57,31 @@ export function comboLength(w: WeaponDef): number {
   return Math.max(1, w.moves.filter((k) => moveByKey.get(k)!.kind === 'light').length);
 }
 
+/**
+ * CR 033: a weapon that looses only drawn shots (the bow): its charged move
+ * has a minimum draw, and the PRIMARY button draws it (player.go refuses
+ * its light move and a shorter draw).
+ */
+export function drawWeapon(w: WeaponDef): MoveDef | undefined {
+  const m = moveOf(w, 'charged');
+  return m && (m.minChargeSteps ?? 0) > 0 ? m : undefined;
+}
+
+/** The draw fraction (0..1) after `held` steps of a charged move (timeline, view model, avatars). */
+export function drawFraction(m: MoveDef | undefined, held: number): number {
+  return Math.min(1, Math.max(0, held / Math.max(1, m?.chargeSteps ?? 60)));
+}
+
+/** A projectile move's launch speed at draw fraction c (server: combat.ShotSpeed). */
+export function shotSpeed(m: MoveDef, c: number): number {
+  return m.chargeSpeed && c > 0 ? m.speed + (m.chargeSpeed - m.speed) * c : m.speed;
+}
+
+/** CR 033: how far it reaches at draw fraction c: full reach at full draw, less the slower it flies (server: combat.ShotRange). */
+export function shotRange(m: MoveDef, c: number): number {
+  return m.chargeSpeed && m.chargeSpeed > m.speed && m.speed > 0 ? (m.reach * shotSpeed(m, c)) / m.chargeSpeed : m.reach;
+}
+
 /** Presses latched by the input layer since the last step (edges), plus held state. */
 export interface CombatButtons {
   attackDown: boolean;
@@ -125,6 +150,8 @@ export interface StepOut {
   channelEnd: Channel | null;
   /** The press was refused locally (cooldown, mana): HUD flash. */
   refused: { id: number; reason: 'cooldown' | 'mana' | 'locked' } | null;
+  /** CR 033: the secondary lowered a bow's draw this step (nothing was shot). */
+  drawCancelled?: boolean;
 }
 
 interface Buffered {
@@ -157,6 +184,10 @@ export class CombatTimeline {
   private dodgeSeq = 0;
   private altHeld = 0;
   private altPrev = false;
+  /** CR 033: a bow draw is under way (the primary went down; a tap keeps it until the minimum draw). */
+  private bowArmed = false;
+  /** CR 033: the secondary lowered the draw; the primary must come up before the next one. */
+  private bowBlocked = false;
   private airTop = 0;
   private wasAir = false;
   private readyAt = new Map<number, number>();
@@ -173,9 +204,21 @@ export class CombatTimeline {
     return weaponByKey.get(this.loadout.weapon) ?? weaponByKey.get('sword')!;
   }
 
-  /** Steps the secondary button has been held (bow draw, spear charge): the view model reads it. */
+  /** Steps the draw / charge has been held (the alt_attack bit: bow draw, spear charge): the view model reads it. */
   get heldSteps(): number {
     return this.altHeld;
+  }
+
+  /** CR 033: the bow's draw 0..1 (0 when not drawing): the view model and the crosshair read it. */
+  get drawFrac(): number {
+    const m = drawWeapon(this.weapon());
+    return m && this.altHeld > 0 ? drawFraction(m, this.altHeld) : 0;
+  }
+
+  /** Whether an attack may start at seq (after the last move, or after its hit frames when a dodge cancelled the recovery). */
+  private canStart(seq: number): boolean {
+    const cancel = this.dodgeSeq >= this.activeEnd && this.activeEnd > 0 && this.dodgeSeq <= seq;
+    return seq >= this.nextSeq || (cancel && seq >= this.activeEnd);
   }
 
   /** Steps until a spell id is ready (0 = ready), for the HUD. */
@@ -239,6 +282,7 @@ export class CombatTimeline {
     const w = this.weapon();
     if (this.downed) {
       this.buf = [];
+      this.bowArmed = false;
       if (this.channel) this.endChannel(seq, out);
       return out;
     }
@@ -263,20 +307,41 @@ export class CombatTimeline {
     }
     // Latch presses into the buffer (they fire now or within BUFFER_STEPS).
     const staffy = w.key === 'staff' || w.key === 'wand';
-    for (let i = 0; i < b.attackPress; i++) this.queue({ kind: 'attack', slot: 0, pressedAt: now });
+    const bowMove = drawWeapon(w); // CR 033: the primary draws instead of attacking
+    if (!bowMove) for (let i = 0; i < b.attackPress; i++) this.queue({ kind: 'attack', slot: 0, pressedAt: now });
     for (let i = 0; i < b.dodgePress; i++) this.queue({ kind: 'dodge', slot: 0, pressedAt: now });
     b.castPress.forEach((p, slot) => p !== null && this.queue({ kind: 'cast', slot, pressedAt: p }));
     for (let i = 0; i < b.formPress; i++) this.queue({ kind: 'form', slot: FORM_SLOT, pressedAt: now });
     for (let i = 0; i < b.techniquePress; i++) this.queue({ kind: 'technique', slot: TECHNIQUE_SLOT, pressedAt: now });
     if (b.altPress > 0 && staffy) this.queue({ kind: 'heavy', slot: 0, pressedAt: now });
     const charged = moveOf(w, 'charged');
-    if (b.altRelease > 0 && charged && this.altHeld > 0) this.queue({ kind: 'charged', slot: 0, pressedAt: now });
+    if (b.altRelease > 0 && charged && !bowMove && this.altHeld > 0) this.queue({ kind: 'charged', slot: 0, pressedAt: now });
     if (b.drinkPress > 0) out.flags |= InputFlag.interact;
 
-    // alt_attack is held while the secondary button is held (bow draw, spear
-    // charge, sword parry). Staff/wand use the press as a heavy attack instead.
+    // alt_attack is held while the secondary button is held (spear charge,
+    // sword parry). Staff/wand use the press as a heavy attack instead.
     // CR 027: in the saddle a sword or spear neither parries nor charges (the zone strips it too).
-    const alt = b.altDown && !staffy && !(riding(before) && meleeKey(w.key));
+    let alt = b.altDown && !staffy && !bowMove && !(riding(before) && meleeKey(w.key));
+    // CR 033: a bow draws while the PRIMARY is held (the same alt_attack bit
+    // on the wire, so the zone counts the same draw) and looses when it comes
+    // up. A tap keeps drawing to the minimum draw first; the draw starts only
+    // once the last shot has recovered (no shot is ever lost to the recovery);
+    // the secondary (Z, or the right button with the weapon picked) lowers it.
+    let loose = false;
+    if (bowMove) {
+      if (b.altPress > 0 && this.bowArmed) {
+        this.bowArmed = false;
+        this.bowBlocked = true;
+        out.drawCancelled = this.altHeld > 0;
+      }
+      if (!b.attackDown && b.attackPress === 0) this.bowBlocked = false;
+      if ((b.attackDown || b.attackPress > 0) && !this.bowBlocked) this.bowArmed = true;
+      if (this.bowArmed && this.canStart(seq)) {
+        // out.started: a spell charge released on this step (that step carries nothing else): one more step of draw
+        if (!b.attackDown && this.altHeld >= (bowMove.minChargeSteps ?? 1) && out.started === null) loose = true;
+        else alt = true;
+      }
+    }
     const air = before.mode === 1 || before.mode === 3; // air, glide
     if (air) {
       if (!this.wasAir) this.airTop = before.pos.y;
@@ -289,6 +354,11 @@ export class CombatTimeline {
       out.flags |= InputFlag.dodge;
       out.castSlot = this.pendingDash;
       this.pendingDash = 0;
+    }
+    if (loose) {
+      // CR 033: the release, before anything buffered (the draw it carries is this.altHeld).
+      this.bowArmed = false;
+      this.tryMove({ kind: 'charged', slot: 0, until: seq, pressedAt: now }, out, w, before, groundY, air, false, seq);
     }
     // One action per step: dodge first (the escape), then casts, then attacks.
     for (let i = 0; i < this.buf.length && out.started === null && (out.flags & (InputFlag.dodge | InputFlag.cast | InputFlag.attack)) === 0; i++) {

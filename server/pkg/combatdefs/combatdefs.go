@@ -75,12 +75,14 @@ type Move struct {
 	Gravity       float64 `json:"gravity"`
 	Radius        float64 `json:"radius"`
 	ChargeSteps   int     `json:"chargeSteps"`
-	ChargeMult    float64 `json:"chargeMult"`
-	ChargeSpeed   float64 `json:"chargeSpeed"`
-	PerMeter      float64 `json:"perMeter"`
-	MaxBonus      float64 `json:"maxBonus"`
-	Technique     string  `json:"technique"`
-	CooldownSteps int     `json:"cooldownSteps"`
+	// MinChargeSteps (CR 033): a charged move released sooner is refused (the bow: a tap still draws this long).
+	MinChargeSteps int     `json:"minChargeSteps"`
+	ChargeMult     float64 `json:"chargeMult"`
+	ChargeSpeed    float64 `json:"chargeSpeed"`
+	PerMeter       float64 `json:"perMeter"`
+	MaxBonus       float64 `json:"maxBonus"`
+	Technique      string  `json:"technique"`
+	CooldownSteps  int     `json:"cooldownSteps"`
 }
 
 // Ranged reports a projectile move (bow, bolts).

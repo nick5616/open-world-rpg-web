@@ -116,16 +116,22 @@ weapons:
     spellPower: 1.0
     manaRegen: 1.0
     moves:
-      # light: tap to loose a quick arrow (draw = startup); charged: hold the
-      # secondary to draw up to chargeMs, release to loose (damage and speed
-      # scale linearly with the draw).
+      # CR 033 (playtest 2 bow rework): the PRIMARY button draws while held
+      # (on the wire the alt_attack bit, counted per step exactly like a
+      # spear charge) and letting go looses bow_charged; damage and speed
+      # (so range) scale linearly with the draw up to chargeMs. A tap still
+      # draws for minChargeMs before it looses (a weak shot, never an
+      # instant one). The zone refuses a bow shot drawn for less, and the
+      # bow_quick light move (kept only so its id still classifies).
       bow_quick: {id: 301, kind: light, startupMs: 67, activeMs: 17, recoveryMs: 200, damage: 14, reach: 45, arc: 0, speed: 45, gravity: 9, radius: 0.25}
-      bow_charged: {id: 302, kind: charged, startupMs: 17, activeMs: 17, recoveryMs: 233, damage: 14, reach: 90, arc: 0, speed: 45, gravity: 9, radius: 0.25, chargeMs: 1000, chargeMult: 2.4, chargeSpeed: 75}
+      bow_charged: {id: 302, kind: charged, startupMs: 17, activeMs: 17, recoveryMs: 233, damage: 14, reach: 90, arc: 0, speed: 45, gravity: 9, radius: 0.25, chargeMs: 1000, minChargeMs: 150, chargeMult: 2.4, chargeSpeed: 75}
       bow_rain: {id: 303, kind: heavy, startupMs: 100, activeMs: 17, recoveryMs: 250, damage: 12, reach: 30, arc: 0, radius: 4, technique: arrow_rain, hits: 4, cooldownMs: 8000}
     arrows:
       # Data hooks for WP14 (ore arrows, gem tips): damage multiplier by the
-      # arrowhead ore; a gem tip gives the arrow its element. v1 fires
-      # copper arrows without consuming them.
+      # arrowhead ore; a gem tip gives the arrow its element. Bows have
+      # infinite ammo (CR 033): a shot never spends an arrow. Using a stack
+      # of arrows (items.yaml ammo) only picks the arrowheads every shot
+      # carries from then on (copper by default); the stack is kept.
       copper: {mult: 1.0}
       iron: {mult: 1.15}
       silver: {mult: 1.25, demonStagger: true}

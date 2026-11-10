@@ -488,7 +488,7 @@ export interface MoveDef {
   key: string; id: number; weapon: string; kind: string; combo: number;
   startupMs: number; startupSteps: number; activeMs: number; activeSteps: number; recoveryMs: number; recoverySteps: number;
   damage: number; reach: number; arc: number; hits: number; speed: number; gravity: number; radius: number;
-  chargeMs?: number; chargeSteps?: number; chargeMult?: number; chargeSpeed?: number; perMeter?: number; maxBonus?: number; technique?: string; cooldownMs?: number; cooldownSteps?: number;
+  chargeMs?: number; chargeSteps?: number; minChargeMs?: number; minChargeSteps?: number; chargeMult?: number; chargeSpeed?: number; perMeter?: number; maxBonus?: number; technique?: string; cooldownMs?: number; cooldownSteps?: number;
 }
 export interface ArrowDef { key: string; mult: number; demonStagger: boolean; killsDemons: boolean }
 export interface WeaponDef { key: string; id: number; skill: string; spellPower: number; manaRegen: number; cooldownMult: number; moves: string[]; parryMs?: number; parrySteps?: number; arrows?: ArrowDef[] }

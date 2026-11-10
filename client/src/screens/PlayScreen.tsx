@@ -16,6 +16,7 @@ import { DebugHud } from '../hud/DebugHud';
 import { DebugPanel } from '../hud/DebugPanel';
 import { Crosshair, LockHint } from '../hud/Overlays';
 import { StaminaWheel } from '../hud/StaminaWheel';
+import { DrawMeter } from '../hud/DrawMeter';
 // Playtest 2: T toggles the third-person camera (hud/ViewHud.tsx, scene/thirdPerson.ts).
 import { ViewHud } from '../hud/ViewHud';
 import { useDebugHotkeys } from '../hud/useDebugHotkeys';
@@ -81,6 +82,7 @@ export default function PlayScreen() {
       {online ? <NetPlay ready={ready} /> : <WorldCanvas>{DEBUG && !NO_FX && <SpellFxLayer />}</WorldCanvas>}
       <Crosshair />
       <StaminaWheel />
+      <DrawMeter />
       <LockHint />
       <ViewHud />
       {DEBUG && <DebugLayer />}

@@ -58,7 +58,7 @@ export const BINDINGS: Binding[] = [
   W('Digit2', COMBAT, 'cast slot 2'),
   W('Digit3', COMBAT, 'cast slot 3'),
   W('Digit4', COMBAT, 'cast slot 4'),
-  W('KeyZ', COMBAT, "the weapon's secondary (hold)"),
+  W('KeyZ', COMBAT, "the weapon's secondary (hold); a bow: lower the draw"), // CR 033: the bow draws on the left button
   W('KeyQ', COMBAT, 'elemental form'),
   W('Tab', COMBAT, 'weapon technique'),
   W('KeyR', COMBAT, 'drink a draught'),

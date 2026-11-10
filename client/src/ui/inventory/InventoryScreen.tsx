@@ -453,7 +453,7 @@ function ItemActions({ item, quick }: { item: WireItem; quick: string }) {
     b('use', 'Use', () => send(ITEM_ACT.use));
     b('quick', quick === item.b ? 'Drink key ✓' : 'Set as drink', () => send(ITEM_ACT.quick), { disabled: quick === item.b, title: 'The drink key (R) uses this' });
   } else if (def?.kind === 'tome') b('use', 'Learn', () => send(ITEM_ACT.use));
-  else if (def?.kind === 'ammo') b('use', 'Use arrows', () => send(ITEM_ACT.use));
+  else if (def?.kind === 'ammo') b('use', 'Fit arrowheads', () => send(ITEM_ACT.use)); // CR 033: never spent
   const ins = instrumentItem(item.b);
   if (ins)
     b('play', 'Play (U)', () => {
