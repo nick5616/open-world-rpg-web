@@ -68,7 +68,22 @@ export async function hudBoxes(page) {
       const cs = getComputedStyle(el);
       if (cs.position !== 'fixed' || cs.display === 'none' || cs.visibility === 'hidden' || +cs.opacity === 0) continue;
       const r = el.getBoundingClientRect();
-      if (r.width < 4 || r.height < 4 || r.width > innerWidth * 0.9 || r.height > innerHeight * 0.9) continue;
+      if (r.width < 4 || r.height < 4) continue;
+      if (el.closest('[data-testid="debug-hud"]')) continue; // dev overlay (F3)
+      if (r.width > innerWidth * 0.9 || r.height > innerHeight * 0.9) {
+        // A full-width bar (the hotbar stack, a backdrop): measure what it holds, one level down
+        // (playtest 2 integration QA: the character panel covered the hotbar unnoticed).
+        if (r.height > innerHeight * 0.9) continue;
+        for (const c of el.children) {
+          const ccs = getComputedStyle(c);
+          if (ccs.display === 'none' || ccs.visibility === 'hidden' || +ccs.opacity === 0) continue;
+          const cr = c.getBoundingClientRect();
+          const ct = (c.innerText || '').trim().replace(/\s+/g, ' ').slice(0, 40);
+          if (cr.width < 4 || cr.height < 4 || cr.width > innerWidth * 0.9 || (!ct && !c.dataset?.testid)) continue;
+          out.push({ id: c.dataset?.testid || el.dataset.testid || '', text: ct, x: cr.left, y: cr.top, w: cr.width, h: cr.height, z: cs.zIndex });
+        }
+        continue;
+      }
       const text = (el.innerText || '').trim().replace(/\s+/g, ' ').slice(0, 40);
       if (!text && !el.dataset.testid) continue;
       if (el.closest('[data-testid="debug-hud"]')) continue; // dev overlay (F3)
