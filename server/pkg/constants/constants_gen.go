@@ -701,8 +701,8 @@ const WindArrowAccel float64 = 0.6
 // LightningSlotS: Thunderstorm cells roll for a seeded strike every this many seconds.
 const LightningSlotS = 3
 
-// LightningSlotPct: Chance (percent) that a thunderstorm cell is struck in a slot.
-const LightningSlotPct = 35
+// LightningSlotPct: Chance (percent) that a thunderstorm cell is struck in a slot (prod feedback: 35 felt like constant flashing; 8 is a strike per cell about every 40 s).
+const LightningSlotPct = 8
 
 // LightningTallProbeM: A seeded strike lands on the highest of nine points on a grid this far apart around its seeded spot (tall things draw lightning).
 const LightningTallProbeM float64 = 12
@@ -730,6 +730,9 @@ const LightningEventM float64 = 260
 
 // LightningLocalM: Clients draw seeded strikes farther than this from them on their own; nearer ones wait for the zone's event.
 const LightningLocalM float64 = 200
+
+// LightningVisibleM: Clients draw (bolt + thunder) only strikes within this distance; farther storms are just rain and a dark sky.
+const LightningVisibleM float64 = 1400
 
 // ColdOnsetS: Seconds out in the cold (a cold-climate cell at night, or a snowstorm) before you are Chilled.
 const ColdOnsetS float64 = 20

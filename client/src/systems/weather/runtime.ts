@@ -14,7 +14,7 @@
 //     lightning: seeded strikes far from you are drawn here from the seed;
 //     near ones (which may strike a player) come from the zone (Event 1220).
 
-import { CHEM_STEP_HZ, LIGHTNING_LOCAL_M, WORLD_SIZE_M } from '@lodestone/contracts';
+import { CHEM_STEP_HZ, LIGHTNING_LOCAL_M, LIGHTNING_VISIBLE_M, WORLD_SIZE_M } from '@lodestone/contracts';
 import { create } from 'zustand';
 import { chemStep, worldClockState, worldTime } from '../clock';
 import { isRaining } from '../../sim/weather';
@@ -233,7 +233,7 @@ export function weatherFrame(cam: { x: number; y: number; z: number }, player: {
     if (lastK >= 0 && k > lastK && k - lastK < 50) {
       strikesBetween(seed, c, lastK + 1, k + 1, o, (st) => {
         const d0 = Math.hypot(st.x - cam.x, st.z - cam.z);
-        if (d0 > 6000) return;
+        if (d0 > LIGHTNING_VISIBLE_M) return; // prod: strikes all over the world were drawn and felt constant
         const [x, z] = heightAt ? tallSpot(heightAt, st.x, st.z) : [st.x, st.z];
         const y = heightAt ? heightAt(x, z) : 0;
         const d = Math.hypot(x - cam.x, y - cam.y, z - cam.z);
