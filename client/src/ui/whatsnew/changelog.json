@@ -1,5 +1,16 @@
 [
   {
+    "id": "pt2-armor",
+    "date": "2026-11-10",
+    "title": "Armor you can see",
+    "items": [
+      "Your helm, body armor and leg armor now show on your character, and everyone around you sees exactly what you wear.",
+      "Iron, silver, sunsteel (it glows), starmetal and voidglass each have their own look; rarer pieces get a coloured trim, a soft glow from relic up, and Bitchin' pieces shimmer.",
+      "In first person your bracers and vambraces show on your arms.",
+      "New armor to find: hoods, robes, travel boots, a mail hauberk, a silver circlet, and a sunsteel set to forge."
+    ]
+  },
+  {
     "id": "pt2-achievements",
     "date": "2026-11-10",
     "title": "Achievements",
