@@ -25,7 +25,7 @@ func TestReplaysDashGoldens(t *testing.T) {
 		var g struct {
 			Dt     float64 `json:"dt"`
 			Ground struct {
-				Kind                                     string
+				Kind                                           string
 				Height, Base, Sx, Sz, Bottom, Water, Cx, Cz, R float64
 			} `json:"ground"`
 			Initial [11]float64   `json:"initial"`
