@@ -298,7 +298,13 @@ export function WorldScene({ runtime }: Props) {
     const above = 1 - under;
     const rain = Math.min(1, wm.rain);
     const storm = Math.min(1, wm.storm * look.stormDark);
-    const flash = Math.min(2, liveWeather.flash) * look.flash * above;
+    // Lightning no longer flashes the whole world (Nicole, prod: "the screen
+    // flashes to the beat of the music... make it not do that": distant
+    // seeded strikes pulsed the sky, the hemisphere light and the post pass
+    // every second or two in a storm). The bolts themselves still glow.
+    void liveWeather.flash;
+    void look.flash;
+    const flash = 0;
     const overcast = Math.min(1, Math.max(rain, storm, wm.cloud * 0.5, wm.snow * 0.7, wm.dust * 0.8, wm.fog * 0.6));
     world.rain = rain;
     world.shared.uWet.value = liveWeather.wet * above;
