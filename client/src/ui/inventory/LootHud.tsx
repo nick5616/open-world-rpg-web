@@ -4,13 +4,13 @@
 // "[E] Open chest" / "[E] Take Iron Sword" prompt for loot containers (406)
 // and dropped items (public pickups) right next to you.
 //
-// E arbitration: E is shared with WP20's townHud (talk, boards, forges) and
-// WP09's caveManager (mining). This HUD only claims E when a container or
+// E arbitration: E is shared with WP20's townHud (talk, boards, forges),
+// WP09's caveManager (mining) and the playtest 2 features; the order is
+// input/interact.ts E_ORDER. This HUD only claims E when a container or
 // pickup is within CLAIM_M (2.5 m, closer than the 4 m the others reach for)
-// AND neither of the others shows a prompt (their DOM prompts
-// `[data-testid=town-prompt]` and `[data-testid=cave-hud]` are empty) and no
-// town panel, inventory or crafting panel is open. Its own prompt hides
-// whenever another prompt is up, so the screen never offers two E actions.
+// AND nothing above it in that order shows a prompt, no panel is open and
+// you are not riding. Its own prompt hides whenever another prompt is up, so
+// the screen never offers two E actions.
 //
 // Renders nothing harmful offline: the prompt still appears for mock
 // containers and E answers with an "(offline)" toast.
@@ -19,6 +19,7 @@ import { useEffect, useState } from 'react';
 import { netRuntime } from '../../net/netStore';
 import { localPlayer } from '../../state/live';
 import { isTextTarget } from '../../input/useKeyboard';
+import { eFree } from '../../input/interact';
 import { baseName, CONTAINER_LABEL, isHolo, rarityColor } from './items';
 import { ensureInventoryHook } from './link';
 import { BITCHIN_MS, openStationOffline, pushToast, TOAST_MS, useInventory, type LootToast } from './store';
@@ -75,13 +76,10 @@ export function findLootTarget(): LootTarget | null {
   return best;
 }
 
+// Playtest 2 integration QA: who else wants E (town, cave, a tower crystal),
+// an open panel and the saddle are input/interact.ts's call now.
 function othersBusy(): boolean {
-  const q = (sel: string) => document.querySelector<HTMLElement>(sel);
-  const town = q('[data-testid="town-prompt"]');
-  const cave = q('[data-testid="cave-hud"]');
-  const townPanel = q('[data-testid="town-panel"]');
-  const content = q('[data-testid="content-prompt"]'); // CR 023: a lore tablet, herb or vault part right here
-  return !!town?.textContent || !!cave?.textContent || !!content?.textContent?.startsWith('[E]') || (!!townPanel && townPanel.style.display !== 'none');
+  return !eFree('loot');
 }
 
 function promptText(t: LootTarget): string {
@@ -117,6 +115,7 @@ export function LootHud() {
       if (s.invOpen || s.station || othersBusy()) return;
       const t = findLootTarget();
       if (!t) return;
+      e.stopImmediatePropagation(); // one press, one thing (input/interact.ts)
       if (t.kind === 'cook') {
         // Online the zone answers with Event 404 (the panel opens then); offline the panel opens with crafting disabled.
         if (s.actions) s.actions.openCook(t.id);

@@ -18,6 +18,8 @@ import { escapeHtml } from './npcs';
 import { openStationOffline } from '../../ui/inventory/store'; // WP14
 // Playtest 1: bounty locations and map previews.
 import { localPlayer } from '../../state/live';
+import { isTextTarget } from '../../input/useKeyboard';
+import { eFree } from '../../input/interact';
 import { useMapWorld } from '../../ui/map/world';
 import { setMapOpen } from '../../ui/map/store';
 import { setQuestPreview } from '../../ui/quests/store';
@@ -92,7 +94,7 @@ export class TownHud {
   doorAct: ((door: number) => void) | null = null;
 
   private readonly onKey = (e: KeyboardEvent) => {
-    if (e.repeat) return;
+    if (e.repeat || isTextTarget(e.target)) return; // typing in chat: Esc and E are the text box's
     if (e.code === 'Escape' && this.panel) {
       this.close();
       return;
@@ -101,7 +103,7 @@ export class TownHud {
     const el = document.activeElement;
     if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) return;
     if (this.panel) this.close();
-    else if (this.target) this.act(this.target);
+    else if (this.target && eFree('town')) this.act(this.target); // not in the saddle or under a panel (input/interact.ts)
   };
 
   private readonly onClick = (e: MouseEvent) => {
@@ -186,7 +188,7 @@ export class TownHud {
       s.eventListeners.add(this.listener);
       this.hooked = s;
     }
-    const text = !this.panel && target ? promptFor(target, (r) => NPC_ROLE_LABEL[r] ?? 'villager') : '';
+    const text = !this.panel && target && eFree('town') ? promptFor(target, (r) => NPC_ROLE_LABEL[r] ?? 'villager') : '';
     if (this.prompt.textContent !== text) this.prompt.textContent = text;
     const now = performance.now();
     if (this.toasts.length) {

@@ -20,6 +20,7 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { CAMPS, DAY_LENGTH_S, ITEMS } from '@lodestone/contracts';
 import { DEBUG } from '../../config';
 import { isTextTarget } from '../../input/useKeyboard';
+import { eFree } from '../../input/interact';
 import { localPlayer, worldClock } from '../../state/live';
 import { emitSound } from '../../audio/bridge';
 import { ItemIcon } from '../inventory/ItemIcon';
@@ -101,10 +102,10 @@ function hoursLeft(ms: number): string {
   return h >= 1.5 ? `${Math.round(h)} h` : h >= 0.75 ? '1 h' : `${Math.max(1, Math.round(h * 60))} min`;
 }
 
+// Playtest 2 integration QA: town, cave, tower, loot and content prompts, an
+// open panel and the saddle take E first (input/interact.ts E_ORDER).
 function othersBusy(): boolean {
-  const q = (sel: string) => document.querySelector<HTMLElement>(sel);
-  const e = (sel: string) => !!q(sel)?.textContent?.startsWith('[E]');
-  return e('[data-testid="town-prompt"]') || e('[data-testid="loot-prompt"]') || e('[data-testid="content-prompt"]') || !!q('[data-testid="cave-hud"]')?.textContent || [...document.querySelectorAll<HTMLElement>('[data-ui-panel]')].some((el) => el.getClientRects().length > 0);
+  return !eFree('camp');
 }
 
 function useTicker(ms: number) {
@@ -383,8 +384,9 @@ function Prompt() {
     const onDown = (e: KeyboardEvent) => {
       if (e.code !== 'KeyE' || e.repeat || isTextTarget(e.target)) return;
       const target = current();
-      if (!target) return;
-      e.stopPropagation();
+      // A piece you can't use (someone else's bedroll, a locked chest) shows a line, not an "[E]": E stays free.
+      if (!target || !target.label.startsWith('[E]')) return;
+      e.stopImmediatePropagation(); // one press, one thing (input/interact.ts)
       holdStart = performance.now();
       holdFor = target.hold ? target.piece : null;
       fired = false;
@@ -501,7 +503,7 @@ function useCampKeys(): void {
       }
     };
     const onWheel = (e: WheelEvent) => {
-      if (!useCamps.getState().placing) return;
+      if (!useCamps.getState().placing || (e.target as HTMLElement | null)?.tagName !== 'CANVAS') return; // a panel or the map scrolls as usual
       e.stopImmediatePropagation(); // not the spell selection while placing
       const now = performance.now();
       if (now - lastWheel < 90 || Math.abs(e.deltaY) < 1) return;

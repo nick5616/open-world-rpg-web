@@ -8,6 +8,7 @@ import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 import { COMBAT } from '@lodestone/contracts';
 import { DEBUG } from '../../config';
 import { isTextTarget } from '../../input/useKeyboard';
+import { eFree } from '../../input/interact';
 import { localPlayer } from '../../state/live';
 import { useCombatHud } from '../../combat/store';
 import { useExploration } from '../map/store';
@@ -293,12 +294,12 @@ function useProgressionKeys(prompt: TowerPrompt | null) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (isTextTarget(e.target) || e.repeat) return;
-      if (e.code === 'KeyC') {
+      if (e.code === 'KeyC' && !e.ctrlKey && !e.metaKey) {
         setPanelOpen(!useProgression.getState().panelOpen);
         if (useProgression.getState().panelOpen && document.pointerLockElement) document.exitPointerLock();
       } else if (e.code === 'Escape' && useProgression.getState().panelOpen) {
         setPanelOpen(false);
-      } else if (e.code === 'KeyE' && prompt?.kind === 'attune') {
+      } else if (e.code === 'KeyE' && prompt?.kind === 'attune' && eFree('tower')) {
         useProgression.getState().actions?.attune(prompt.site);
       }
     };

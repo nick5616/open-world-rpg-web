@@ -14,6 +14,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { isTextTarget } from '../../input/useKeyboard';
+import { eFree } from '../../input/interact';
 import { lookRouter } from '../../input/lookRouter';
 import { localPlayer, view } from '../../state/live';
 import { drawnRemotes } from '../../net/netStore';
@@ -216,14 +217,16 @@ export function PetHud() {
         return;
       }
       if (e.code !== 'KeyE' || localPlayer.mounted) return;
+      // Feeding and petting come after the town, loot, content, camp and fishing prompts and before
+      // the steed (input/interact.ts E_ORDER). One press, one thing.
       const f = feedable();
-      if (f && f.food) {
-        e.stopPropagation();
+      if (f && f.food && eFree('tame')) {
+        e.stopImmediatePropagation();
         ps.actions?.feed(f.id);
         return;
       }
-      if (!ps.meter && petNear()) {
-        e.stopPropagation();
+      if (!ps.meter && petNear() && eFree('pet')) {
+        e.stopImmediatePropagation();
         petIt();
       }
     };
@@ -262,8 +265,8 @@ export function PetHud() {
 
   const now = performance.now();
   const notes = s.notes.filter((n) => now - n.at < 5000);
-  const f = !s.meter && !localPlayer.mounted ? feedable() : null;
-  const near = !f && !s.meter ? petNear() : null;
+  const f = !s.meter && eFree('tame') ? feedable() : null;
+  const near = !f && !s.meter && eFree('pet') ? petNear() : null;
   const out = petOut(s);
   const outView = out ? drawnRemotes.views.find((v) => v.id === out.out) : undefined;
   const fill = s.meter ? meterFill(s.meter, now) : 0;

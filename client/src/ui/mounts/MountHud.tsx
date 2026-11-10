@@ -9,6 +9,7 @@
 import { useEffect, useState } from 'react';
 import { RIDE_SPUR_STAMINA, STEED_MOUNT_REACH_M } from '@lodestone/contracts';
 import { isTextTarget } from '../../input/useKeyboard';
+import { eFree } from '../../input/interact';
 import { localPlayer } from '../../state/live';
 import { PHASE, STEED_COLOURS, steedPose } from './events';
 import { ensureMountHook } from './link';
@@ -61,6 +62,7 @@ export function MountHud() {
     const onDown = (e: KeyboardEvent) => {
       if (e.repeat || isTextTarget(e.target)) return;
       const st = useMounts.getState();
+      if (e.ctrlKey || e.metaKey) return;
       if (e.code === WHISTLE_KEY) {
         if (!localPlayer.mounted) st.actions?.summon();
         return;
@@ -71,11 +73,13 @@ export function MountHud() {
         return;
       }
       if (e.code !== 'KeyE' || panelOpen()) return;
+      // In the saddle E only gets off; on foot the steed is last in input/interact.ts E_ORDER
+      // (a townsperson, loot, a camp piece or your pet beside it come first). One press, one thing.
       if (localPlayer.mounted) {
-        e.stopPropagation();
+        e.stopImmediatePropagation();
         st.actions?.dismount();
-      } else if (steedInReach()) {
-        e.stopPropagation();
+      } else if (steedInReach() && eFree('steed')) {
+        e.stopImmediatePropagation();
         st.actions?.mount();
       }
     };
@@ -101,7 +105,7 @@ export function MountHud() {
   const mine = s.mine;
   const spurs = Math.floor(localPlayer.stamina / RIDE_SPUR_STAMINA + 1e-6);
   const maxSpurs = Math.floor(localPlayer.staminaMax / RIDE_SPUR_STAMINA + 1e-6);
-  const near = !mounted && steedInReach();
+  const near = !mounted && steedInReach() && eFree('steed');
   return (
     <>
       {mounted && (
