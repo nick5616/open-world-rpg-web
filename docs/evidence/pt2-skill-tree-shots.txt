@@ -1,13 +1,13 @@
-client: http://127.0.0.1:31559
+client: http://127.0.0.1:38949
 mock: {"known":14,"spent":11,"spells":["Ember Flick","Frost Bite","Magma Dash","Spark Shot","Kindling","Fireball","Combustion","Glint","Sunstep","Radiant Lance","Spark Jab","Lightning Strike","Frost Needle","Brittle"]}
 ok   look hint hidden while the screen is open
-fire states: {"ember_flick":"learned","magma_dash":"learned","spark_shot":"learned","kindling":"learned","rune_ember":"learnable","fireball":"learned","combustion":"learned","cauterize":"learnable","immolate":"needsPrereq","backdraft":"needsPrereq","eruption":"needsPrereq","amaterasu":"needsPrereq","rune_magma":"needsPrereq","solar_flare":"needsPrereq","inferno_domain":"needsPrereq","phoenix":"needsPrereq","god_ray":"needsPrereq"}
+fire states: {"ember_flick":"learned","magma_dash":"learned","spark_shot":"learned","kindling":"learned","rune_ember":"learnable","cinder_spray":"learnable","fireball":"learned","combustion":"learned","pyre_brand":"learnable","cauterize":"learnable","immolate":"needsPrereq","backdraft":"needsPrereq","eruption":"needsPrereq","amaterasu":"needsPrereq","rune_magma":"needsPrereq","solar_flare":"needsPrereq","inferno_domain":"needsPrereq","phoenix":"needsPrereq","god_ray":"needsPrereq"}
 ok   fire node states (fireball learned, cauterize learnable, immolate needs a prerequisite)
 ok   Learn spends a point (4 -> 3) and Cauterize is learned
 ok   Immolate became learnable
 ok   drag to slot 4: loadout 1 = ["fireball","radiant_lance","lightning_strike","cauterize"]
 ok   pick + click a slot: loadout 2 = ["ember_flick","frost_needle","glint","fireball"]
-ok   tooltip: FireballFire · tier 3 · learnedTypeLobbedDamage85Cooldown2.2 sMana22Range54 mRadius2.5 mStatusBurnYour hitabout 240 (loadout 1, before the enemy's element)In lo
+ok   tooltip: FireballFire· T3LobbedlearnedTypeLobbedDamage85Cooldown2.2 sMana22Range54 mRadius2.5 mStatusBurnYour hitabout 240 (loadout 1, before the enemy's element)In load
 ok   screen fits the 1920x1080 viewport
 screenshot docs/evidence/pt2-skill-tree-fire-1920x1080.png
 ok   Light tooltip says it kills demons

@@ -14,7 +14,7 @@ export const treeByKey = new Map<string, TreeDef>(COMBAT.trees.map((t) => [t.key
 /** Tree tab order: the elements' order in combat.yaml. */
 export const TREE_ORDER: readonly string[] = COMBAT.elements.filter((e) => treeByKey.has(e));
 
-/** Element display colours (tabs, node rims, edges). Readable on the dark panel. */
+/** Element display colours (tabs, node rims, edges, spell cards). WCAG AA as text on every panel surface (ui/spellcards/theme.test.ts). */
 export const ELEMENT_COLOR: Record<string, string> = {
   fire: '#ff7a3d',
   ice: '#7cc8ff',
@@ -22,7 +22,7 @@ export const ELEMENT_COLOR: Record<string, string> = {
   earth: '#7cc35a',
   wind: '#8fe8d2',
   light: '#fff0b3',
-  dark: '#e0607e',
+  dark: '#ee7390',
   void: '#a98bff',
 };
 

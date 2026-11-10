@@ -12,7 +12,10 @@ your spec'd items have accumulated". One screen, three kinds of tab:
   shields, kills demons) and "your hit" with the active loadout's build.
   Click: its card in the sidebar with **Learn** (1 skill point; or
   double-click the node) or **Put in slot 1-4**. Drag a learned castable
-  spell onto a slot of either loadout, or pick it and click a slot; x clears.
+  spell onto a slot (the sidebar shows one loadout at a time; a toggle
+  switches), or pick it and click a slot; x clears. The slots and the hover
+  tooltip are the spell cards of `client/src/ui/spellcards` (as in the
+  character panel).
 - **Weapon skills**: the six use-based skills (level, progress, what the
   level gives), their techniques (have / level N; the ones the zone does
   not apply yet say so) and the eight elemental forms (yours highlighted).
@@ -43,6 +46,7 @@ loadouts, skill XP, free points), Event 400 (inventory) and the generated
 | `tree.ts` | Pure: tree layout (tier columns, barycentre lanes), node state (mirrors the zone's `Profile.LearnWith`), tooltip facts, passive effect lines (which ones the zone applies), technique descriptions, element colours |
 | `build.ts` | Pure: `gearFor` (twin of `server/zone/internal/items/gear.go` `Inventory.Gear`), `buildOverview` (every number with its parts; damage factors as in `combat/validate.go` `damageOf`), `spellHitWith`, `treeDamageMults` |
 | `store.ts` | zustand: open, tab, last tree, picked node |
+| `char.ts` | `useChar` (level, points, known spells, loadouts, build view; shared with the character panel), `learnSpell`, `equipSpell` |
 | `SkillScreen.tsx` | The screen (mounted by `PlayScreen`) and its keys |
 | `dev.ts` | `window.__lodestoneSkills` (debug builds): `state()`, `open(tab)`, `close()`, `pick(key)`, `mock(level, attuned)` (a level-12 character with the inventory mock's gear; offline it also stands in for learn/equip) |
 | `dev/shots.mjs` | Solo headless run: the clicks (learn, drag to a slot, pick + click a slot), checks, `docs/evidence/pt2-skill-tree-*.png` at 1920x1080 and 1280x720 |
