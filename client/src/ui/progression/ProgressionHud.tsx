@@ -213,11 +213,11 @@ function CharacterPanel() {
         </button>
         {/* CR 027: name, colour and call your spirit steed (ui/mounts). */}
         <button data-testid="open-steed" onClick={() => openSteedPanel()} style={PANEL_BTN}>
-          Your steed <span style={{ opacity: 0.6 }}>5</span>
+          Your steed
         </button>
         {/* CR 029: your tamed pets: stats, ability, name, stable (ui/pets). */}
         <button data-testid="open-pets" onClick={() => openPetPanel()} style={PANEL_BTN}>
-          Your pets <span style={{ opacity: 0.6 }}>6</span>
+          Your pets
         </button>
       </div>
       <div style={{ marginTop: 6 }}>
