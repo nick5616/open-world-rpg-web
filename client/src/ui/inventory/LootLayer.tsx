@@ -58,6 +58,65 @@ interface PickupView {
   t: number;
 }
 
+// ---- sparkles (Nicole: "dropped loot should sparkle") ----
+// A few tiny four-point glints around each dropped item, twinkling one at a
+// time (each its own phase and rate, short and soft: a glitter, never a
+// flash), more and brighter with rarity, in the rarity's colour.
+const SPARKLE_N = [3, 4, 5, 6, 7, 8, 8, 9];
+const sparkleGeos = new Map<number, THREE.BufferGeometry>();
+function sparkleGeometry(n: number): THREE.BufferGeometry {
+  let g = sparkleGeos.get(n);
+  if (g) return g;
+  const pos = new Float32Array(n * 3);
+  const ph = new Float32Array(n * 2);
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2 + i * 1.7;
+    const r = 0.18 + ((i * 0.618) % 1) * 0.22;
+    pos[i * 3] = Math.cos(a) * r;
+    pos[i * 3 + 1] = 0.3 + ((i * 0.381) % 1) * 0.45;
+    pos[i * 3 + 2] = Math.sin(a) * r;
+    ph[i * 2] = i * 2.399; // phase
+    ph[i * 2 + 1] = 0.7 + ((i * 0.737) % 1) * 0.9; // rate
+  }
+  g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  g.setAttribute('aPhase', new THREE.BufferAttribute(ph, 2));
+  sparkleGeos.set(n, g);
+  return g;
+}
+function sparkleMaterial(color: THREE.Color, size: number): THREE.ShaderMaterial {
+  return new THREE.ShaderMaterial({
+    uniforms: { uTime: { value: 0 }, uColor: { value: color }, uSize: { value: size } },
+    vertexShader: `
+      attribute vec2 aPhase;
+      uniform float uTime;
+      uniform float uSize;
+      varying float vA;
+      void main() {
+        vec4 mv = modelViewMatrix * vec4(position, 1.0);
+        float s = sin(uTime * aPhase.y * 3.0 + aPhase.x);
+        float tw = pow(max(0.0, s), 4.0); // a short glint, then a soft rest
+        vA = tw;
+        gl_PointSize = uSize * (0.45 + 1.2 * tw) * (420.0 / max(1.0, -mv.z));
+        gl_Position = projectionMatrix * mv;
+      }`,
+    fragmentShader: `
+      uniform vec3 uColor;
+      varying float vA;
+      void main() {
+        vec2 p = gl_PointCoord * 2.0 - 1.0;
+        float cross = max(1.0 - abs(p.x) * 7.0, 0.0) * (1.0 - abs(p.y)) + max(1.0 - abs(p.y) * 7.0, 0.0) * (1.0 - abs(p.x));
+        float core = max(0.0, 1.0 - length(p) * 2.2);
+        float a = clamp(cross + core, 0.0, 1.0) * (0.45 + 0.55 * vA);
+        if (a < 0.02) discard;
+        gl_FragColor = vec4(mix(uColor, vec3(1.0), 0.55 * core) * a, a);
+      }`,
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+  });
+}
+
 const HOLO_HUES = 0.18; // hue turns per second
 const tmpHolo = new THREE.Color();
 
@@ -66,6 +125,7 @@ function makeMaterials() {
     const c = new THREE.Color(rarityColor(r));
     return new THREE.MeshStandardMaterial({ color: c, emissive: c, emissiveIntensity: r >= 2 ? 0.55 : 0.25, roughness: 0.4, metalness: 0.3 });
   });
+  const sparkle = Array.from({ length: 8 }, (_, r) => sparkleMaterial(new THREE.Color(rarityColor(r)), r >= 2 ? 0.2 : 0.16));
   const beam = Array.from({ length: 8 }, (_, r) => new THREE.MeshBasicMaterial({ color: new THREE.Color(rarityColor(r)), transparent: true, opacity: 0.32, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
   const box = (color: string) => new THREE.MeshStandardMaterial({ color, roughness: 0.85 });
   const wood = box('#7a5230');
@@ -78,7 +138,7 @@ function makeMaterials() {
     c.color.multiplyScalar(0.45);
     return c;
   };
-  return { item, beam, wood, lid, clay, crate, dirt, woodDim: dim(wood), lidDim: dim(lid), clayDim: dim(clay), crateDim: dim(crate), dirtDim: dim(dirt), trim: box('#c9a650') };
+  return { item, sparkle, beam, wood, lid, clay, crate, dirt, woodDim: dim(wood), lidDim: dim(lid), clayDim: dim(clay), crateDim: dim(crate), dirtDim: dim(dirt), trim: box('#c9a650') };
 }
 
 type Mats = ReturnType<typeof makeMaterials>;
@@ -152,7 +212,9 @@ export function LootLayer() {
         mats.item[r].color.copy(holo);
         mats.item[r].emissive.copy(holo);
         mats.beam[r].color.copy(holo);
+        mats.sparkle[r].uniforms.uColor.value.copy(holo);
       }
+    for (const m of mats.sparkle) m.uniforms.uTime.value = now;
 
     // Pickups from the latest snapshot.
     const s = netRuntime.session;
@@ -171,6 +233,10 @@ export function LootLayer() {
           mesh.rotation.order = 'YXZ';
           if (itemDef(e.name)?.kind === 'weapon') mesh.rotation.z = 0.5; // a tilted blade reads better than an upright stick
           group.add(mesh);
+          const glints = new THREE.Points(sparkleGeometry(SPARKLE_N[r]), mats.sparkle[r]);
+          glints.frustumCulled = false;
+          glints.renderOrder = 3;
+          group.add(glints);
           if (r >= 2) {
             const beam = new THREE.Mesh(geo.beam, mats.beam[r]);
             beam.renderOrder = 2;

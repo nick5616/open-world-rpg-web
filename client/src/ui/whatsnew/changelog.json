@@ -1,5 +1,13 @@
 [
   {
+    "id": "pt2-loot-sparkle",
+    "date": "2026-11-10",
+    "title": "Loot that sparkles",
+    "items": [
+      "Dropped items now glitter with little four-point glints in their rarity's colour, more and brighter the rarer they are."
+    ]
+  },
+  {
     "id": "pt2-content",
     "date": "2026-11-10",
     "title": "More to do out there",
