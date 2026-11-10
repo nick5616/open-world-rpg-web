@@ -78,7 +78,7 @@ export function dashFxStep(fx: FxPrims, v: SpellVisual, a: V3, b: V3, speed: num
       R.lineEmit({ x: a.x, y: a.y + 0.05, z: a.z }, { x: b.x, y: b.y + 0.05, z: b.z }, c.k('ha') as THREE.Color[], 6, FROST);
       if (t - st.lastSpike > 0.22) {
         st.lastSpike = t;
-        fx.spikeRing(v.spike, b.x, b.z, fx.heightAt(b.x, b.z, b.y), 0.9, 3, 0.6, { hold: 0.9 });
+        fx.spikeRing(v.spike, b.x, b.z, b.y, 0.9, 3, 0.6, { hold: 0.9 }); // at the feet: on the water while skating
         fx.ring(b.x, b.y + 0.05, b.z, c.main, { radius: 1.4, duration: 0.6, width: 0.06 });
       }
       break;
