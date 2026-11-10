@@ -164,7 +164,7 @@ type petSess struct {
 	label    []byte
 	labelFor int
 	tame     *tameRun
-	stable   bool // at a stable at the last check (1200 says so)
+	stable   bool      // at a stable at the last check (1200 says so)
 	petted   time.Time // the last petting (one per 1.5 s reaches others)
 }
 

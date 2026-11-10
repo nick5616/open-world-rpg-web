@@ -174,6 +174,7 @@ type World struct {
 	Tameable      map[int]bool
 	TameWeakenPct float64
 	petOut        PetOutputs
+	quietClear    bool // Tame: the group is cleared without the "camp cleared" Event
 
 	// Stats for metrics and evidence.
 	Stats Stats
@@ -799,7 +800,7 @@ func (w *World) groupCleared(g *Group) {
 	}
 	g.Spawned = false
 	g.Members = nil
-	if g.Kind != GroupBoss {
+	if g.Kind != GroupBoss && !w.quietClear { // CR 029: a tamed last member clears it quietly
 		w.near(g.Anchor, 120, 0, Out{Ev: ev(EvCampCleared, 0, uint32(g.ID), int32(g.Kind), g.Anchor, []byte(g.Name))})
 	}
 }

@@ -1,5 +1,17 @@
 [
   {
+    "id": "pt2-pets",
+    "date": "2026-11-10",
+    "title": "Taming and pet companions",
+    "items": [
+      "Tame wolves, boars, slimes, rams, the Glintfox and more: carry a food it likes, weaken it, and when it stops to sniff the air, feed it (E). Stay close while the meter fills.",
+      "Your pet follows you, joins your fights, levels up and has an ability of its own: a healing slime, a howling wolf, a charging boar.",
+      "Press 6 to send it at what you aim at (hold 6 for the pet wheel), 7 to make it stay or follow, E beside it to pet it.",
+      "Pets are knocked out, never killed: they limp home to recover and come back. The rest wait in your stable at your camp or in any town (C, Your pets).",
+      "Some tamed creatures turn out shiny or elemental. The bestiary says which creatures can be tamed and what they like to eat."
+    ]
+  },
+  {
     "id": "pt2-instruments",
     "date": "2026-11-10",
     "title": "Play music",

@@ -227,7 +227,7 @@ func (w *World) SpawnPet(sp PetSpec) *Enemy {
 		Key: "pet_" + def.Key, ID: def.ID, Name: def.Name, Family: def.Family, Behavior: "melee", Element: el,
 		Speed: sp.Speed, Size: def.Size, Color: def.Color, Aggro: sp.AggroM, LeashM: sp.LeashM,
 		Attack: combatdefs.SummonAttack{Shape: "melee", Reach: sp.Reach, Damage: sp.Damage, EverySteps: msSteps(sp.EveryMs), WindupSteps: msSteps(sp.WindupMs)},
-		Body: &body,
+		Body:   &body,
 	}
 	pos := w.place(sp.Pos.X, sp.Pos.Z, &body)
 	e := newEnemy(&body, max(1, sp.Level), el, nil, pos)
@@ -864,7 +864,9 @@ func (w *World) Tame(e *Enemy) bool {
 	e.diedTick = w.tick
 	w.removeEnemy(e)
 	if g := e.Group; g != nil {
+		w.quietClear = true
 		w.groupCleared(g)
+		w.quietClear = false
 	}
 	return true
 }

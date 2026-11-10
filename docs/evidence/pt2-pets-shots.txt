@@ -1,0 +1,26 @@
+taming ground at 2075.6, 2427.6, outside "Draedmore"
+calm wolf 37 at (2068.6, 2427.6)
+shot pt2-pets-calm.png: the weakened wolf calmed (it sniffs: the "?" over it), the prompt "[E] Feed Raw Meat"; feedable {"id":37,"sp":{"key":"wolf","id":4,"enemy":"wolf","enemyId":2,"foods":["meat:raw","food:grilled_meat"],"tameS":6,"chance":0.75,"hp":130,"damage":11,"speed":9.4,"attack":{"reach":2.2,"everyMs":1100,"windupMs":250},"ability":3,"blurb":"A wolf that chose you. It hunts at your side and its howl steels your arm."},"food":{"item":"meat:raw","fav":true}}
+meter: {"creature":37,"sp":"wolf","start":17482.09999999404,"ms":3600,"food":"meat:raw","fav":true}
+shot pt2-pets-taming.png: the taming meter under the crosshair, hearts rising from the wolf
+taming ended: ["Tamed! A shiny mossjaw wolf joins you."] tamed {"creature":37,"name":"Shiny Mossjaw Wolf","sp":"wolf","variant":1,"el":-1,"at":21048.29999998212,"x":2068.56,"y":77.91,"z":2427.56}
+shot pt2-pets-tamed.png: tamed! [{"id":1,"sp":"wolf","name":"Shiny Mossjaw Wolf","variant":1,"el":-1,"lv":1,"xp":0,"next":40,"hp":0.5,"hpMax":143,"dmg":12.1,"koMs":0,"active":true,"out":38,"kills":0,"tamedAt":1794322880438}]
+shot pt2-pets-follow.png: Fang following (3.6 m behind, nameplate "Ash's Fang", typeId 0x9002)
+6 tapped at  (11.9 m); aimed 36
+shot pt2-pets-fight.png: Fang biting  beside you (pet health 92%,  100%,  100%)
+after the fight: [{"name":"Fang","lv":5,"hp":0.836,"out":38}] notes ["Tamed! A shiny mossjaw wolf joins you.","Your pet is now called Fang","Fang reached level 5"]
+shot pt2-pets-wheel.png: the pet wheel (hold 6)
+shot pt2-pets-panel.png: the pet panel: {"pets":[{"id":1,"sp":"wolf","name":"Fang","variant":1,"el":-1,"lv":5,"xp":34,"next":114,"hp":0.836,"hpMax":212,"dmg":16,"koMs":0,"active":true,"out":38,"kills":2,"tamedAt":1794322880438}],"active":1,"mode":0,"stable":false,"max":6,"at":39883.19999998808}
+
+zone log (pets):
+{"time":"2026-11-10T07:00:57.7772304-08:00","level":"WARN","msg":"world row is not minted (placeholder gen_version); serving spec_from_seed(seed). The account service mints it on start, or run `go run ./server/pkg/cmd/mintworld -official`.","svc":"zone","world":"pets-1794322855413","seed":20261108,"rowGenVersion":"dev"}
+{"time":"2026-11-10T07:00:58.6381945-08:00","level":"INFO","msg":"zone config","svc":"zone","zone":"zone-pets-42913","world":"pets-1794322855413","seed":20261108,"genVersion":"2","devSpawn":true}
+{"time":"2026-11-10T07:01:01.9384874-08:00","level":"INFO","msg":"quest started","svc":"zone","character":"pt2-pets-a-1794322859198","quest":"story:ward","settlement":37}
+{"time":"2026-11-10T07:01:01.9385539-08:00","level":"INFO","msg":"join","svc":"zone","entity":1,"character":"pt2-pets-a-1794322859198","name":"Ash","remote":"127.0.0.1:53645","x":2075.56,"z":2427.56}
+{"time":"2026-11-10T07:01:20.4384311-08:00","level":"INFO","msg":"feat earned","svc":"zone","character":"pt2-pets-a-1794322859198","feat":"first_pet"}
+{"time":"2026-11-10T07:01:20.4384311-08:00","level":"INFO","msg":"level up","svc":"zone","character":"pt2-pets-a-1794322859198","from":1,"to":3}
+{"time":"2026-11-10T07:01:20.4384311-08:00","level":"INFO","msg":"feat earned","svc":"zone","character":"pt2-pets-a-1794322859198","feat":"shiny_pet"}
+{"time":"2026-11-10T07:01:20.4384311-08:00","level":"INFO","msg":"tamed","svc":"zone","character":"pt2-pets-a-1794322859198","species":"wolf","variant":1,"pet":1}
+{"time":"2026-11-10T07:01:39.2716635-08:00","level":"INFO","msg":"kill loot","svc":"zone","character":"pt2-pets-a-1794322859198","enemy":"archer","level":1,"elite":false,"boss":false,"rollSeed":11909951493307560598,"luck":1,"items":["currency:gold x5 (common)","food:apple x1 (common)"]}
+{"time":"2026-11-10T07:01:40.0053371-08:00","level":"INFO","msg":"feat earned","svc":"zone","character":"pt2-pets-a-1794322859198","feat":"first_steps"}
+{"time":"2026-11-10T07:01:46.0053127-08:00","level":"INFO","msg":"leave","svc":"zone","entity":1,"character":"pt2-pets-a-1794322859198"}

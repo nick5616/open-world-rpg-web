@@ -41,7 +41,7 @@ type PetRec struct {
 	Element int     `json:"el"` // elemental variant: its element; else -1
 	Level   int     `json:"lv"`
 	XP      int     `json:"xp,omitempty"`
-	HP      float64 `json:"hp"` // share of its health, 0..1
+	HP      float64 `json:"hp"`           // share of its health, 0..1
 	KOUntil int64   `json:"ko,omitempty"` // unix ms: knocked out, recovering at home
 	TamedAt int64   `json:"at"`
 	Kills   int     `json:"k,omitempty"`

@@ -35,6 +35,7 @@ const R = 140;
 const GOLD = '#ffd166';
 const TEXT = '#f4efe2';
 const panelCss: React.CSSProperties = { position: 'fixed', padding: '14px 18px', borderRadius: 10, background: 'rgba(14,16,24,0.92)', border: '1px solid rgba(255,214,120,0.35)', color: TEXT, font: '13px system-ui, sans-serif', zIndex: 36, pointerEvents: 'auto' };
+const btnD = (off: boolean): React.CSSProperties => ({ ...btn, opacity: off ? 0.4 : 1, cursor: off ? 'default' : 'pointer' });
 const btn: React.CSSProperties = { padding: '5px 10px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.25)', background: 'rgba(255,255,255,0.08)', color: TEXT, cursor: 'pointer', font: '13px system-ui, sans-serif' };
 
 /** Open or close the pet panel (the character panel's "Your pets" button). */
@@ -458,25 +459,25 @@ function PetDetail({ pet, sync, name, setName, actions: a }: { pet: PetInfo; syn
       {ko > 0 && <div style={{ marginTop: 8, color: '#ffb3a8' }}>Knocked out: recovering at home for {clock(ko)}, then it comes back to you.</div>}
       <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
         <input data-testid="pet-name" value={name} maxLength={16} onChange={(e) => setName(e.target.value.replace(/[^A-Za-z0-9 '-]/g, ''))} style={{ flex: 1, padding: '5px 8px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.3)', background: 'rgba(0,0,0,0.35)', color: TEXT, font: '14px system-ui, sans-serif' }} />
-        <button style={btn} disabled={!name.trim() || name === pet.name} onClick={() => a?.name(pet.id, name.trim())}>
+        <button style={btnD(!name.trim() || name === pet.name)} disabled={!name.trim() || name === pet.name} onClick={() => a?.name(pet.id, name.trim())}>
           Rename
         </button>
       </div>
       <div style={{ display: 'flex', gap: 6, marginTop: 10, flexWrap: 'wrap' }}>
         {pet.active ? (
           <>
-            <button style={btn} disabled={!sync.stable} title={sync.stable ? '' : 'Only at a stable'} onClick={() => a?.stable()}>
+            <button style={btnD(!sync.stable)} disabled={!sync.stable} title={sync.stable ? '' : 'Only at a stable'} onClick={() => a?.stable()}>
               Send to the stable
             </button>
-            <button style={btn} disabled={!pet.out} onClick={() => a?.feedPet()}>
+            <button style={btnD(!pet.out)} disabled={!pet.out} onClick={() => a?.feedPet()}>
               Feed (heals)
             </button>
-            <button style={btn} disabled={!pet.out} onClick={() => a?.command(sync.mode === MODE.stay ? PET_CMD.follow : PET_CMD.stay)}>
+            <button style={btnD(!pet.out)} disabled={!pet.out} onClick={() => a?.command(sync.mode === MODE.stay ? PET_CMD.follow : PET_CMD.stay)}>
               {sync.mode === MODE.stay ? 'Follow me' : 'Stay'} <span style={{ opacity: 0.6 }}>7</span>
             </button>
           </>
         ) : (
-          <button data-testid="pet-takeout" style={btn} disabled={!sync.stable} title={sync.stable ? '' : 'Only at a stable'} onClick={() => a?.takeOut(pet.id)}>
+          <button data-testid="pet-takeout" style={btnD(!sync.stable)} disabled={!sync.stable} title={sync.stable ? '' : 'Only at a stable'} onClick={() => a?.takeOut(pet.id)}>
             Take out
           </button>
         )}
