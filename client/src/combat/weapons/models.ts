@@ -252,8 +252,8 @@ const BOW = {
   arrowX: -0.017,
   arrowLen: 0.74,
 };
-/** Full draw (m) of the first-person bow's string. */
-export const BOW_MAX_DRAW = 0.24;
+/** Full draw (m) of the first-person bow's string (CR 033: from the brace back to the cheek anchor; the arrow head stays past the riser). */
+export const BOW_MAX_DRAW = 0.45;
 
 function bow(b: MeshBuilder, l: WeaponLook, d: Detail): void {
   const mt = metalOf(l.material);

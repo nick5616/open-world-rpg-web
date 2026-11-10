@@ -81,10 +81,10 @@ export function controlGroups(debug: boolean, dev = false): ControlGroup[] {
     {
       title: 'Fighting',
       rows: [
-        { keys: ['Left mouse'], action: 'Attack with your weapon', src: [[C, 'e.button === 0']] },
+        { keys: ['Left mouse'], action: 'Attack with your weapon', note: 'a bow: hold to draw, let go to shoot (a full draw takes 1 s and hits hardest, fastest and farthest; a tap is a weak shot). Bows never run out of arrows', src: [[C, 'e.button === 0']] },
         { keys: ['Mouse wheel'], action: 'Pick what the right button uses', note: 'your weapon or a spell slot', src: [[C, 'onWheel']] },
         { keys: ['Right mouse'], action: 'Use the picked spell or weapon move', src: [[C, 'e.button === 2']] },
-        { keys: ['Z'], action: 'Parry / draw / charge / heavy (hold)', note: "always your weapon's move, whatever the wheel picked", src: [[C, "'KeyZ'"]] },
+        { keys: ['Z'], action: 'Parry / charge / heavy (hold); a bow: lower the draw', note: "always your weapon's move, whatever the wheel picked; with a bow it lets the string down without shooting", src: [[C, "'KeyZ'"]] },
         { keys: ['1', '2', '3', '4'], action: 'Cast the spell in that slot', note: 'also picks it for the right button; hold for streams and charges', src: [[C, "'Digit1'"], [C, "'Digit4'"]] },
         { keys: ['F', 'Alt'], action: 'Dodge', note: 'a short moment nothing can hit you', src: [[C, "'KeyF'"], [C, "'AltLeft'"]] },
         { keys: ['Q'], action: 'Elemental form', note: 'with a gem socketed in your weapon', src: [[C, "'KeyQ'"]] },

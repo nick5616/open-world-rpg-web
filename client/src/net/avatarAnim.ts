@@ -72,6 +72,8 @@ export interface ActionSpec {
 }
 
 const STEP_MS = 1000 / MOVE_STEP_HZ;
+/** CR 033: a bow's full draw (ms): the same time the archer's own draw takes (bow_charged chargeMs). */
+export const BOW_DRAW_MS = (COMBAT.moves.find((m) => m.key === 'bow_charged')?.chargeSteps ?? 60) * STEP_MS;
 const moveById = new Map(COMBAT.moves.map((m) => [m.id, m]));
 const spellById = new Map(COMBAT.spells.map((s) => [s.id, s]));
 const formById = new Map(COMBAT.forms.map((f) => [f.id, f]));
@@ -113,7 +115,7 @@ export function classifyAction(id: number, weapon: WeaponKind | null): ActionSpe
   if (id === CAST_FX_MINE) return MINE_SPEC;
   if (id === CAST_FX_GUARD) {
     if (weapon === 'spear') return spec('guard:spear', 'charge', 2500, null, 1, true);
-    if (weapon === 'bow') return spec('guard:bow', 'draw', 3000, null, 1, true);
+    if (weapon === 'bow') return spec('guard:bow', 'draw', 60000, null, 1, true); // CR 033: held as long as the archer holds it
     return spec('guard', 'parry', 450);
   }
   if (id & CAST_FX_DASH) {
@@ -273,6 +275,8 @@ export class AvatarAnimator {
   time = 0;
   private action: ActionSpec | null = null;
   private fromDraw = false;
+  /** CR 033: the draw (0..1) the release looses from. */
+  private looseFrom = 1;
   private actionAt = 0;
   private hurtAt = -1e9;
   private lastDodge = -1e9;
@@ -349,13 +353,14 @@ export class AvatarAnimator {
     this.emoteDur = def.loop ? 0 : def.durS;
   }
 
-  /** Start an action now (replaces the one playing; a release ends a held draw/charge). */
-  trigger(s: ActionSpec): void {
+  /** Start an action now, or ageMs into it (a held pose joined late); replaces the one playing; a release ends a held draw/charge. */
+  trigger(s: ActionSpec, ageMs = 0): void {
     if (this.emoteId !== EMOTE_FISHING) this.emoteId = 0; // fighting ends an emote (the zone ends a line itself)
-    // A shot released from a held draw looses at once instead of drawing again.
-    this.fromDraw = s.kind === 'bow' && this.action?.kind === 'draw' && this.time - this.actionAt > 0.25;
+    // CR 033: a shot released from a held draw looses at once from the draw it reached instead of drawing again.
+    this.fromDraw = s.kind === 'bow' && this.action?.kind === 'draw';
+    if (this.fromDraw) this.looseFrom = Math.min(1, ((this.time - this.actionAt) * 1000) / BOW_DRAW_MS);
     this.action = s;
-    this.actionAt = this.time;
+    this.actionAt = this.time - ageMs / 1000;
     if (s.kind === 'dodge' || s.kind === 'dash') {
       this.lastDodge = this.time;
       this.setRollAxis();
@@ -833,7 +838,7 @@ export class AvatarAnimator {
   private applyAction(a: ActionSpec, e: number, aim: number, p: Pose): void {
     const u = e / a.durMs;
     // Envelope: in over 70 ms, out over the last quarter (held poses stay in).
-    const w = Math.min(1, e / 70) * (a.hold ? 1 - smooth(a.durMs - 200, a.durMs, e) : 1 - smooth(0.75, 1, u));
+    const w = (a.kind === 'bow' && this.fromDraw ? 1 : Math.min(1, e / 70)) * (a.hold ? 1 - smooth(a.durMs - 200, a.durMs, e) : 1 - smooth(0.75, 1, u));
     const R = this.t.r;
     const L = this.t.l;
     let glow = 0;
@@ -886,9 +891,13 @@ export class AvatarAnimator {
       case 'bow':
       case 'draw': {
         // Left arm holds the bow out at the aim; the right draws the string to the chin.
-        const draw = a.kind === 'draw' ? smooth(0, 800, e) : this.fromDraw ? 1 - smooth(0, 40, e) : smooth(0, 0.45, u) * (1 - smooth(0.5, 0.56, u));
-        set(L, 1.5 + aim, -0.15, 0.05);
-        set(R, 1.42 + aim, -0.38, 0.55 + 1.65 * draw);
+        // CR 033: the draw grows with the hold exactly as the archer's own (linear to BOW_DRAW_MS), the
+        // release snaps from where it got to, and a held full draw trembles a little.
+        const draw = a.kind === 'draw' ? Math.min(1, e / BOW_DRAW_MS) : this.fromDraw ? this.looseFrom * (1 - smooth(0, 40, e)) : smooth(0, 0.45, u) * (1 - smooth(0.5, 0.56, u));
+        const shake = a.kind === 'draw' && e > BOW_DRAW_MS ? Math.min(1, (e - BOW_DRAW_MS) / 3000) * 0.5 + 0.5 : 0;
+        const tr = shake * 0.012 * (Math.sin(e * 0.053) + 0.6 * Math.sin(e * 0.131 + 1.3));
+        set(L, 1.5 + aim + tr, -0.15, 0.05);
+        set(R, 1.42 + aim + tr, -0.38, 0.55 + 1.65 * draw);
         p.torsoYaw -= 0.45 * w;
         p.bowDraw = draw * w;
         break;
@@ -1126,7 +1135,8 @@ export function followCaster(anim: AvatarAnimator, st: CasterView | undefined, w
     anim.heldSpec = want;
     if (want) {
       anim.heldId = st.held?.id ?? 0;
-      anim.trigger(want);
+      // CR 033: a draw seen late (Event 226's progress back-dates held.at) starts where it is
+      anim.trigger(want, want.kind === 'draw' && st.held ? Math.max(0, now - st.held.at) : 0);
     } else if (prev) {
       anim.release();
       if (prev.kind === 'cast' || prev.kind === 'castStaff') anim.trigger(classifyChannel(anim.heldId, 0, weapon)); // the stream's release flick

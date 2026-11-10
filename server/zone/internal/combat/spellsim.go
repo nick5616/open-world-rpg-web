@@ -160,3 +160,22 @@ func chargeFrac(held, maxSteps int) float64 {
 
 // chargeMult is a charge multiplier at fraction f.
 func chargeMult(mult, f float64) float64 { return 1 + (mult-1)*f }
+
+// ShotSpeed is a projectile move's launch speed at draw fraction c (a
+// charged bow shot speeds up to chargeSpeed). Client: timeline.ts shotSpeed.
+func ShotSpeed(m *combatdefs.Move, c float64) float64 {
+	if m.ChargeSpeed > 0 && c > 0 {
+		return m.Speed + (m.ChargeSpeed-m.Speed)*c
+	}
+	return m.Speed
+}
+
+// ShotRange (CR 033) is how far a projectile move reaches at draw fraction
+// c: a charged shot has its full reach at full draw and proportionally less
+// the slower it flies (the same flight time). Client: timeline.ts shotRange.
+func ShotRange(m *combatdefs.Move, c float64) float64 {
+	if m.ChargeSpeed > m.Speed && m.Speed > 0 {
+		return m.Reach * ShotSpeed(m, c) / m.ChargeSpeed
+	}
+	return m.Reach
+}

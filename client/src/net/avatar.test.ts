@@ -42,6 +42,42 @@ describe('remote avatar weapon (pt/ux)', () => {
   });
 });
 
+describe('remote archers (CR 033)', () => {
+  it("each archer's own bow string comes back with the draw, an arrow on it, and snaps on release", async () => {
+    const { Avatar } = await import('./avatar');
+    const { classifyAction, CAST_FX_GUARD } = await import('./avatarAnim');
+    const { BOW_MAX_DRAW } = await import('../combat/weapons/models');
+    const cam = new THREE.PerspectiveCamera();
+    cam.position.set(10, 1.6, 24);
+    const bow = packLook({ weapon: 'bow', material: '', gem: -1 });
+    const a = new Avatar(7);
+    const b = new Avatar(8);
+    a.update(view(bow), cam, 0.016);
+    b.update(view(bow), cam, 0.016);
+    const ga = a.weaponMesh!.geometry;
+    expect(ga).not.toBe(b.weaponMesh!.geometry); // their own copies: one archer's draw is not everyone's
+    const info = ga.userData.weapon as { nock: number[]; arrow: number[]; base: Float32Array };
+    const nockZ = (g: THREE.BufferGeometry) => g.getAttribute('position').getZ(info.nock[0]);
+    const arrowLen = (g: THREE.BufferGeometry) => {
+      const p = g.getAttribute('position');
+      const zs = info.arrow.map((i) => p.getZ(i));
+      return Math.max(...zs) - Math.min(...zs);
+    };
+    const rest = info.base[info.nock[0] * 3 + 2];
+    expect(nockZ(ga)).toBeCloseTo(rest, 5);
+    expect(arrowLen(ga)).toBe(0); // no arrow on the string at rest
+    a.anim.trigger(classifyAction(CAST_FX_GUARD, 'bow'));
+    for (let i = 0; i < 70; i++) a.update(view(bow), cam, 1 / 60);
+    expect(nockZ(ga) - rest).toBeGreaterThan(0.9 * BOW_MAX_DRAW); // drawn all the way back
+    expect(arrowLen(ga)).toBeGreaterThan(0.3); // nocked
+    expect(nockZ(b.weaponMesh!.geometry)).toBeCloseTo(rest, 5); // the other archer is not drawing
+    a.anim.trigger(classifyAction(COMBAT.moves.find((m) => m.key === 'bow_charged')!.id, 'bow'));
+    for (let i = 0; i < 6; i++) a.update(view(bow), cam, 1 / 60);
+    expect(nockZ(ga) - rest).toBeLessThan(0.02); // loosed
+    expect(arrowLen(ga)).toBe(0);
+  });
+});
+
 describe('remote avatar animation (playtest 2)', () => {
   it('Event 214 swings the sword arm (through their caster record, CR 022); the weapon in the hand moves with it', async () => {
     const { Avatar } = await import('./avatar');

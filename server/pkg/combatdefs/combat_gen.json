@@ -711,6 +711,8 @@
    "arc": 0,
    "chargeMs": 1000,
    "chargeSteps": 60,
+   "minChargeMs": 150,
+   "minChargeSteps": 9,
    "chargeMult": 2.4,
    "chargeSpeed": 75
   },

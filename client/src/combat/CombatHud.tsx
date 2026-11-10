@@ -12,7 +12,7 @@ import { useCombatHud } from './store';
 import { DownedOverlay } from './DownedOverlay';
 import { spellById } from './timeline';
 import { netRuntime } from '../net/netStore';
-import { useHudHeight } from '../hud/layout';
+import { BELOW_CLOCK, useHudHeight } from '../hud/layout';
 import { useInventory } from '../ui/inventory/store';
 import { loadoutWeaponLabel } from '../ui/inventory/items';
 
@@ -20,8 +20,8 @@ const spellByKey = new Map(COMBAT.spells.map((s) => [s.key, s]));
 const KEYS = ['1', '2', '3', '4'];
 
 /** Playtest 1 controls (client/src/combat/README.md "Controls"). */
-export const COMBAT_HINT = 'LMB attack · Wheel select · RMB use selected · Z parry/draw/charge · 1-4 cast · F dodge · Q form · N skills · B build';
-const SECONDARY: Record<string, string> = { sword: 'parry', spear: 'charge', bow: 'draw', staff: 'heavy', wand: 'heavy' };
+export const COMBAT_HINT = 'LMB attack (bow: hold to draw) · Wheel select · RMB use selected · Z parry/charge/lower the bow · 1-4 cast · F dodge · Q form · N skills · B build';
+const SECONDARY: Record<string, string> = { sword: 'parry', spear: 'charge', bow: 'lower', staff: 'heavy', wand: 'heavy' };
 const SELECTED_STYLE: React.CSSProperties = { border: '1px solid #ffd166', boxShadow: '0 0 0 2px rgba(255,209,102,0.55), 0 0 12px rgba(255,209,102,0.45)', transform: 'translateY(-3px)', transition: 'transform 90ms ease-out, box-shadow 90ms' };
 
 function RmbBadge() {
@@ -95,7 +95,7 @@ export function CombatHud() {
   return (
     <div ref={root} data-testid="combat-hud" style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 12, font: '13px system-ui, sans-serif', color: '#e9ecef' }}>
       {boss && (
-        <div data-testid="boss-bar" style={{ position: 'absolute', top: 54, left: '50%', transform: 'translateX(-50%)', width: 520, textAlign: 'center' }}>
+        <div data-testid="boss-bar" style={{ position: 'absolute', top: BELOW_CLOCK, left: '50%', transform: 'translateX(-50%)', width: 520, textAlign: 'center' }}>
           <div style={{ fontSize: 15, fontWeight: 600, textShadow: '0 0 4px #000' }}>
             {boss.name} <span style={{ opacity: 0.7, fontWeight: 400 }}>· phase {boss.phase}/{boss.phases}</span>
           </div>

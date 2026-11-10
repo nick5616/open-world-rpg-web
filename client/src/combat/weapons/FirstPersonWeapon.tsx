@@ -62,6 +62,23 @@ export const POSES: Record<WeaponKind, Pose> = {
   staff: { pos: [0.42, -0.3, -0.52], up: [0.15, 0.88, -0.36], face: [0.3, 0, 1], elbow: [0.5, -0.55, 0.05] },
   wand: { pos: [0.34, -0.27, -0.44], up: [-0.1, 0.95, -0.2], face: [0.3, 1, 0.3], elbow: [0.4, -0.55, 0] },
 };
+/**
+ * CR 033 (playtest 2 bow rework): the bow raised to shoot. Drawing lifts it
+ * from POSES.bow to this hold: canted a little left, below the crosshair,
+ * the arrow running from the lower right toward it (a few degrees off the
+ * view line so you can see it), and a full draw (BOW_MAX_DRAW) brings the
+ * string hand back to the anchor under the right cheek (BOW_ANCHOR), where
+ * only its top shows at the bottom edge (as your own draw hand would).
+ */
+export const BOW_AIM: Pose = { pos: [0, -0.13, -0.6], up: [-0.3, 0.95, 0], face: [0.0748, 0.008, 0.5], scale: 0.85 };
+/** Where the string hand ends at full draw (camera space): under the right cheek, its top just in view. */
+export const BOW_ANCHOR = new THREE.Vector3(0.06, -0.075, -0.1);
+/** The drawing arm's elbow while drawing: up and out to the right, level with the hand. */
+const BOW_ELBOW = new THREE.Vector3(0.42, -0.14, 0.12);
+/** ms the bow stays raised after a shot (a follow-up draw starts from the aim). */
+const BOW_LOWER_MS = 420;
+const bowElbow = new THREE.Vector3();
+
 /** The swing pivots about the right shoulder region, so a cut sweeps across the view. */
 export const PIVOT = new THREE.Vector3(0.22, -0.45, -0.1);
 export const R_SHOULDER = new THREE.Vector3(0.3, -0.6, 0.12);
@@ -87,6 +104,36 @@ export function poseQuat(p: Pose): THREE.Quaternion {
   return new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(x, y, z));
 }
 export const QUATS = Object.fromEntries(Object.entries(POSES).map(([k, p]) => [k, poseQuat(p)])) as Record<WeaponKind, THREE.Quaternion>;
+const AIM_QUAT = poseQuat(BOW_AIM);
+
+/**
+ * CR 033: the bow's grip in camera space at `raise` (0 rest, 1 aimed):
+ * position (relative to PIVOT, like rig.grip) and orientation.
+ */
+export function bowGrip(raise: number, pos: THREE.Vector3, quat: THREE.Quaternion): void {
+  const a = POSES.bow.pos;
+  const b = BOW_AIM.pos;
+  pos.set(a[0] + (b[0] - a[0]) * raise - PIVOT.x, a[1] + (b[1] - a[1]) * raise - PIVOT.y, a[2] + (b[2] - a[2]) * raise - PIVOT.z);
+  quat.copy(QUATS.bow).slerp(AIM_QUAT, raise);
+}
+
+/** CR 033: the string hand's position at a draw fraction (camera space, the bow raised): tests and the view model. */
+export function bowStringHand(drawFrac: number, out = new THREE.Vector3()): THREE.Vector3 {
+  const q = new THREE.Quaternion();
+  bowGrip(1, out, q);
+  return bowNock(drawFrac * BOW_MAX_DRAW)
+    .multiplyScalar(BOW_AIM.scale ?? 1)
+    .applyQuaternion(q)
+    .add(out)
+    .add(PIVOT);
+}
+
+/** CR 033: the string after a release (m of draw): it snaps forward past the brace and rings down. */
+export function stringAfterRelease(from: number, ms: number): number {
+  if (ms < 18) return from * (1 - ms / 18);
+  const t = ms - 18;
+  return -0.018 * Math.exp(-t / 70) * Math.cos(t / 9);
+}
 
 /**
  * A melee swing as three held poses between rest and rest (camera space,
@@ -285,12 +332,12 @@ function placeForearm(rig: Rig, hand: THREE.Mesh, arm: THREE.Mesh, shoulder: THR
 }
 
 /** Both hands on the weapon (right on the grip or the string, left on the shaft or the bow) for this frame's grip pose. */
-export function poseHands(rig: Rig, kind: WeaponKind): void {
+export function poseHands(rig: Rig, kind: WeaponKind, rElbow: THREE.Vector3 = ELBOWS[kind]): void {
   const pose = POSES[kind];
   if (kind !== 'bow') rig.rFist.position.set(0, 0, 0);
   rig.lFist.position.set(0, pose.offhand ?? 0, 0);
   if (kind === 'bow') aimArm(rig, rig.lFist, rig.lArm, L_SHOULDER);
-  aimArm(rig, rig.rFist, rig.rArm, ELBOWS[kind]);
+  aimArm(rig, rig.rFist, rig.rArm, rElbow);
   if (kind !== 'bow' && rig.lFist.visible) aimArm(rig, rig.lFist, rig.lArm, L_SHOULDER);
 }
 const ELBOWS = Object.fromEntries(Object.entries(POSES).map(([k, p]) => [k, p.elbow ? new THREE.Vector3(...p.elbow) : R_SHOULDER])) as Record<WeaponKind, THREE.Vector3>;
@@ -311,10 +358,14 @@ export function FirstPersonWeapon() {
       dir: -1, // flips per swing: the first is a forehand
       started: -1,
       flickAt: -1e9,
-      quickAt: -1e9,
-      heldAt: -1e9,
       draw: 0,
       phase: 0,
+      // CR 033 bow: raised 0..1, drawing now, the release (time and draw it snapped from), full draw since
+      raise: 0,
+      drawing: false,
+      looseAt: -1e9,
+      looseFrom: 0,
+      fullAt: 0,
     }),
     [],
   );
@@ -367,10 +418,7 @@ export function FirstPersonWeapon() {
     if (st.started < 0) st.started = started;
     if (started !== st.started) {
       st.started = started;
-      if (!st.swinging) {
-        if (st.kind === 'bow' && now - st.heldAt > 160) st.quickAt = now;
-        st.flickAt = now;
-      }
+      if (!st.swinging) st.flickAt = now;
     }
 
     // Walk bob (FirstPersonArms' motion, smaller).
@@ -388,7 +436,7 @@ export function FirstPersonWeapon() {
     const fwd = v1.set(0, 1, 0).applyQuaternion(rig.grip.quaternion);
     const flick = now - st.flickAt < 260 ? Math.sin(Math.PI * Math.min(1, (now - st.flickAt) / 260)) : 0;
     const held = rt.timeline.heldSteps;
-    if (held > 0) st.heldAt = now;
+    let rElbow: THREE.Vector3 | undefined;
     if (st.kind === 'sword' || st.kind === 'staff' || st.kind === 'wand') {
       if (st.swinging) {
         swingPose(st.kind, sw, st.dir, rig.grip.position, rig.grip.quaternion);
@@ -404,25 +452,49 @@ export function FirstPersonWeapon() {
       rig.grip.position.addScaledVector(fwd, 0.4 * thrust - 0.14 * charge);
       rig.pivot.rotation.y = st.swinging ? 0.12 * st.dir * thrust : 0;
     } else if (st.kind === 'bow') {
-      const m = moveOf(rt.timeline.weapon(), 'charged');
-      const target = Math.min(1, held / Math.max(1, m?.chargeSteps ?? 60));
-      // ease toward the held draw; a release snaps the string forward
-      st.draw = target > st.draw ? st.draw + (target - st.draw) * Math.min(1, delta * 14) : target;
-      let draw = st.draw;
-      let nocked = held > 0;
-      const q = now - st.quickAt;
-      if (q < 140) {
-        draw = 0.55 * Math.sin((Math.PI / 2) * (q / 140));
-        nocked = true;
+      // CR 033: the draw follows the held primary step by step (timeline.drawFrac: 1 at chargeSteps),
+      // all the way to BOW_MAX_DRAW with the hand at the cheek; the bow rises to the aim as it starts.
+      const target = rt.timeline.drawFrac;
+      if (held > 0) {
+        if (!st.drawing) st.draw = 0;
+        st.drawing = true;
+        st.draw += (target - st.draw) * Math.min(1, delta * 30);
+        if (target < 1) st.fullAt = 0;
+        else if (!st.fullAt) st.fullAt = now;
+      } else if (st.drawing) {
+        // let go: the string snaps from wherever it was
+        st.drawing = false;
+        st.looseAt = now;
+        st.looseFrom = st.draw;
+        st.draw = 0;
+        st.fullAt = 0;
       }
-      setBowDraw(rig.weapon.geometry, draw * BOW_MAX_DRAW, nocked);
-      rig.grip.position.addScaledVector(fwd.set(0, 0, -1), 0.03 * flick);
-      rig.pivot.rotation.z = -0.04 * flick;
-      // right hand on the string at the nock point
-      rig.rFist.position.copy(bowNock(draw * BOW_MAX_DRAW)).multiplyScalar(pose.scale ?? 1);
+      const sinceLoose = now - st.looseAt;
+      const up = held > 0 || sinceLoose < BOW_LOWER_MS ? 1 : 0;
+      st.raise += (up - st.raise) * Math.min(1, delta * (up ? 16 : 7));
+      bowGrip(st.raise, rig.grip.position, rig.grip.quaternion);
+      let drawM = st.draw * BOW_MAX_DRAW;
+      if (held === 0) drawM = sinceLoose < 400 ? stringAfterRelease(st.looseFrom * BOW_MAX_DRAW, sinceLoose) : 0;
+      // the arrow is on the string while drawing (a new one is nocked as the next draw starts)
+      setBowDraw(rig.weapon.geometry, drawM, held > 0);
+      // full draw: the arms start to tremble, more the longer it is held
+      if (st.fullAt) {
+        const amp = 0.0012 + Math.min(0.0022, ((now - st.fullAt) / 3000) * 0.0022);
+        rig.grip.position.x += amp * (Math.sin(now * 0.053) + 0.6 * Math.sin(now * 0.131 + 1.3));
+        rig.grip.position.y += amp * (Math.sin(now * 0.047 + 2.1) + 0.6 * Math.sin(now * 0.117));
+      }
+      // the release: the bow kicks forward and rolls a little
+      const kick = sinceLoose < 220 ? Math.sin(Math.PI * Math.min(1, sinceLoose / 220)) * (0.4 + 0.6 * st.looseFrom) : 0;
+      rig.grip.position.z -= 0.025 * kick;
+      rig.pivot.rotation.z = -0.05 * kick;
+      // right hand on the string at the nock; after the release it follows through toward the ear
+      rig.rFist.position.copy(bowNock(held > 0 ? drawM : Math.max(0, drawM) + st.looseFrom * BOW_MAX_DRAW * Math.max(0, 1 - sinceLoose / 260)))
+        .multiplyScalar(pose.scale ?? 1);
+      if (held === 0 && sinceLoose < 260) rig.rFist.position.x += 0.03 * Math.sin(Math.PI * (sinceLoose / 260));
+      rElbow = bowElbow.copy(R_SHOULDER).lerp(BOW_ELBOW, st.raise);
     }
     // Hands: right fist on the grip (or the string), left on the shaft/bow.
-    poseHands(rig, st.kind);
+    poseHands(rig, st.kind, rElbow);
 
     // Playtest 2 ("it is confusing where the spells are coming from"): a
     // sword's free off hand rises into view and pushes when you cast; a

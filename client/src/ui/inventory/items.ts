@@ -218,7 +218,7 @@ export function baseLine(key: string): string {
     case 'consumable':
       return d.heal ? `Restores ${d.heal} health` : '';
     case 'ammo':
-      return `Use: ${prettify(d.arrow ?? '')} arrowheads for your bow`;
+      return `Use: fit ${prettify(d.arrow ?? '')} arrowheads to your bow (bows never run out of arrows; the stack is kept)`; // CR 033
     case 'gem':
       return gemEffect(key);
     case 'ore': {

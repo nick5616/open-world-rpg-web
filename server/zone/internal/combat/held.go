@@ -30,7 +30,8 @@ import (
 //     exactly where the caster's did (the carry that follows is coasting).
 //   - Event 226 `held` (heldTick): the precise aim (u16 yaw, i16 pitch, the
 //     caster's own input frame values; snapshots carry 8 bits each, ~1.4
-//     degrees) while an aimed action (stream, charge, beam) is held, at most
+//     degrees) while an aimed action (stream, charge, beam, a bow's draw:
+//     CR 033) is held, at most
 //     every heldMinTicks and only when it moved at least heldAimStep, plus a
 //     keepalive every heldKeepTicks for every held action so a player who
 //     comes into range mid-hold learns what it is. Only to players within
@@ -133,7 +134,9 @@ func (w *World) heldTick() {
 			continue
 		}
 		since := w.tick - h.last
-		aimed := id&CastFXDash == 0 && id != CastFXGuard
+		// CR 033: a bow's draw is aimed (observers point the drawn arrow
+		// where the archer looks); a parry or spear charge only keeps alive.
+		aimed := id&CastFXDash == 0 && (id != CastFXGuard || p.Weapon().Key == "bow")
 		dy := int(p.aimYaw - h.yaw) // wraps: a u16 difference
 		if dy > 32768 {
 			dy = 65536 - dy
