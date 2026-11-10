@@ -139,8 +139,8 @@ type steedSave struct {
 
 // steedSess is one session's steed: what it owns and the steed it has out.
 type steedSess struct {
-	owned []SteedRec
-	phase int
+	owned    []SteedRec
+	phase    int
 	x, y, z  float64 // where it stands (or will, arriving)
 	fx, fz   float64 // arriving: where it came from
 	arriveAt time.Time
@@ -444,8 +444,6 @@ func (s *Server) sendSteedSync(sess *session) {
 	b, _ := json.Marshal(j)
 	s.sendEvent(sess, &proto.Event{Kind: EventSteedSync, EntityID: sess.ent.ID, Value: int32(st.phase), Data: b})
 }
-
-
 
 type steedStateJSON struct {
 	Phase  int     `json:"p"`
@@ -881,6 +879,9 @@ func (s *Server) riderTick(sess *session, tick uint32, now time.Time, night bool
 		st.rx, st.rz = p.X, p.Z
 		s.steedDismounted(sess, ThrownTravel)
 		return
+	}
+	if sess.cnt != nil { // CR 031: metres ridden (achievements.go)
+		sess.cnt.ach.gallopM += math.Hypot(p.X-st.rx, p.Z-st.rz)
 	}
 	st.rx, st.rz = p.X, p.Z
 	st.x, st.y, st.z = p.X, p.Y, p.Z

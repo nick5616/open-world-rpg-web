@@ -1,5 +1,17 @@
 [
   {
+    "id": "pt2-achievements",
+    "date": "2026-11-10",
+    "title": "Achievements",
+    "items": [
+      "119 achievements across exploring, fighting, magic, crafting, music, pets, steeds, world events and a few secrets. Press Y (or find them in the Esc menu and the character panel).",
+      "Progress bars, points, chains to climb (I, II, III), search and filters; hidden ones stay ??? until you earn them.",
+      "Many come with gold, XP, items or a new title for your nameplate: pick it in the character panel.",
+      "Your old feats and titles carried over, and what you had already done counts.",
+      "Rumour has it a certain fire dash can do more than burn."
+    ]
+  },
+  {
     "id": "pt2-loot-sparkle",
     "date": "2026-11-10",
     "title": "Loot that sparkles",

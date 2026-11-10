@@ -170,7 +170,7 @@ func TestStateFeatsCodexRepRoundTrip(t *testing.T) {
 	for i := 0; i < 98; i++ {
 		s.Kill("slime", "slime", false)
 	}
-	fs := s.NewFeats(func(stat string) int { return 0 })
+	fs := earn(s, func(stat string) int { return 0 })
 	got := map[string]bool{}
 	for _, f := range fs {
 		got[f.Key] = true
@@ -178,7 +178,7 @@ func TestStateFeatsCodexRepRoundTrip(t *testing.T) {
 	if !got["first_steps"] || !got["slimebane"] || s.TitleText() != "Slimebane" {
 		t.Fatalf("feats %v title %q", got, s.TitleText())
 	}
-	if len(s.NewFeats(nil)) != 0 {
+	if len(earn(s, nil)) != 0 {
 		t.Fatal("feats earned twice")
 	}
 	if !s.SetTitle("") || s.TitleText() != "" || s.SetTitle("skyreader") {
@@ -201,7 +201,7 @@ func TestStateFeatsCodexRepRoundTrip(t *testing.T) {
 	if !reflect.DeepEqual(r.JSON(), s.JSON()) || r.GiverSeq(3, 7) != 1 || !r.Picked(99, 2000) || r.Picked(99, 6000) || !r.VaultKnown(12) || r.RegionsWalked() != 1 {
 		t.Fatalf("round trip %s", r.JSON())
 	}
-	if LoadState([]byte("garbage")).V != 1 {
+	if LoadState([]byte("garbage")).V != StateVersion {
 		t.Fatal("bad json")
 	}
 }
@@ -210,7 +210,7 @@ func TestCodexCoversEveryEnemy(t *testing.T) {
 	if len(contentdefs.D.Codex) != len(combatdefs.D.Enemies) {
 		t.Fatalf("codex %d enemies %d", len(contentdefs.D.Codex), len(combatdefs.D.Enemies))
 	}
-	for _, f := range contentdefs.D.Feats {
+	for _, f := range contentdefs.D.Achievements {
 		if f.N <= 0 || f.Name == "" {
 			t.Fatalf("feat %+v", f)
 		}

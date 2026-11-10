@@ -317,9 +317,9 @@ func (s *Server) musicNotes(sess *session, m *proto.Interact, now time.Time, ref
 	if cs := sess.cnt; cs != nil {
 		before := cs.st.Stat("notes")
 		after := cs.st.Add("notes", ons)
-		for _, f := range contentdefs.D.Feats {
+		for _, f := range contentdefs.D.Achievements {
 			if f.Stat == "notes" && before < f.N && after >= f.N {
-				s.contentFeats(sess)
+				s.contentAchievements(sess)
 				s.saveContent(sess)
 				ms.added = 0
 				break
@@ -367,7 +367,7 @@ func (s *Server) musicFireside(sess *session, now time.Time) {
 	}
 	if cs := sess.cnt; cs != nil {
 		cs.st.Add("firesongs", 1)
-		s.contentFeats(sess)
+		s.contentAchievements(sess)
 		s.saveContent(sess)
 	}
 	s.log.Info("fireside song", "character", e.CharacterID, "rested", rested)
@@ -454,7 +454,7 @@ func (s *Server) musicSongEnd(sess *session, now time.Time) {
 			ms.ovationAt = now
 			if cs := sess.cnt; cs != nil {
 				cs.st.Add("ovations", 1)
-				s.contentFeats(sess)
+				s.contentAchievements(sess)
 				s.saveContent(sess)
 			}
 		}
@@ -470,6 +470,7 @@ func (s *Server) musicSongEnd(sess *session, now time.Time) {
 		Line     string  `json:"line"`
 	}{n, math.Round(secs*10) / 10, applause, line})
 	s.sendEvent(sess, &proto.Event{Kind: EventMusicSong, EntityID: e.ID, TargetID: uint32(applause), Value: int32(n), Data: b})
+	s.achAdd(sess, "songs", 1) // CR 031
 }
 
 // musicApplause: the townsfolk within applause.npcM of e cheer or clap (emote 3 to the players near each); how many.

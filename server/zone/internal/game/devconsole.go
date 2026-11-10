@@ -63,6 +63,7 @@ const (
 	DevActReveal      = 24 // every tower and waypoint
 	DevActAttune      = 25 // every tower crystal (boons, XP)
 	DevActPlaces      = 26 // send 1402: towers, towns, vaults (teleport targets)
+	DevActAchieve     = 27 // targetId: achievement id (0 = every one): unlocked, rewards paid
 )
 
 // Event kinds 1400-1419 (contracts/events.md, playtest 2 dev console).
@@ -138,7 +139,7 @@ func devName(a uint8) string {
 	names := map[uint8]string{DevActStatus: "status", DevActGive: "give", DevActLearn: "learn", DevActUnlearn: "unlearn", DevActLevel: "level", DevActXP: "xp",
 		DevActGold: "gold", DevActSkillPoints: "skillpoints", DevActWeaponSkill: "weaponskill", DevActRefill: "refill", DevActFlags: "flags", DevActSpeed: "speed",
 		DevActReset: "reset", DevActTeleport: "teleport", DevActTime: "time", DevActWeather: "weather", DevActSpawn: "spawn", DevActDespawn: "despawn",
-		DevActEvent: "event", DevActTameable: "tameable", DevActPet: "pet", DevActSteed: "steed", DevActQuest: "quest", DevActReveal: "reveal", DevActAttune: "attune", DevActPlaces: "places"}
+		DevActEvent: "event", DevActTameable: "tameable", DevActPet: "pet", DevActSteed: "steed", DevActQuest: "quest", DevActReveal: "reveal", DevActAttune: "attune", DevActPlaces: "places", DevActAchieve: "achieve"}
 	if n, ok := names[a]; ok {
 		return n
 	}
@@ -335,6 +336,8 @@ func (s *Server) devApply(sess *session, m *proto.Interact) (int32, string) {
 		return s.devSteed(sess, int(m.Arg))
 	case DevActQuest:
 		return s.devQuest(sess, uint32(m.TargetID), int(m.Arg))
+	case DevActAchieve:
+		return s.devAchieve(sess, int(m.TargetID))
 	case DevActReveal, DevActAttune:
 		return s.devMap(sess, m.Action == DevActAttune)
 	}
@@ -1005,6 +1008,54 @@ func (s *Server) sendDevPlaces(sess *session) {
 	}
 	b, _ := json.Marshal(out)
 	s.sendEvent(sess, &proto.Event{Kind: EventDevPlaces, EntityID: sess.ent.ID, Data: b})
+}
+
+// devAchieve unlocks achievement id (0 = every one) the way an unlock pays:
+// gold, item and XP (achReward), Event 1002 for one, 1241 (the catch-up
+// summary) for many, the title, a save.
+func (s *Server) devAchieve(sess *session, id int) (int32, string) {
+	cs := sess.cnt
+	if cs == nil {
+		return devFailed("no achievements state")
+	}
+	var keys []string
+	if id != 0 {
+		a := contentdefs.D.AchievementByID(id)
+		if a == nil {
+			return devBad("unknown achievement %d", id)
+		}
+		keys = []string{a.Key}
+	}
+	titled := cs.st.TitleText()
+	now := s.cfg.Now().UnixMilli()
+	got := cs.st.DevEarn(keys, now)
+	if len(got) == 0 {
+		return devOK("nothing new (already unlocked)")
+	}
+	var names []string
+	gold, pts, xp := 0, 0, int64(0)
+	for _, a := range got {
+		s.achReward(sess, a)
+		names = append(names, a.Key)
+		gold, pts, xp = gold+a.Gold, pts+a.Pts, xp+a.XP
+	}
+	if len(got) == 1 {
+		a := got[0]
+		b, _ := json.Marshal(map[string]any{"key": a.Key, "name": a.Name, "desc": a.Desc, "title": a.Title, "gold": a.Gold, "xp": a.XP, "tier": a.Tier, "cat": a.Cat, "pts": a.Pts, "item": a.Item, "qty": a.Qty, "at": now})
+		s.sendEvent(sess, &proto.Event{Kind: EventFeatEarned, EntityID: sess.ent.ID, TargetID: uint32(a.ID), Value: int32(cs.st.Points()), Data: b})
+	} else {
+		b, _ := json.Marshal(map[string]any{"keys": names, "gold": gold, "xp": xp, "pts": pts})
+		s.sendEvent(sess, &proto.Event{Kind: EventAchievementsCaught, EntityID: sess.ent.ID, Value: int32(len(got)), Data: b})
+	}
+	if cs.st.TitleText() != titled {
+		s.contentTitleChanged(sess)
+	}
+	s.saveContent(sess)
+	s.sendContentSync(sess)
+	if len(got) == 1 {
+		return devOK("unlocked %s (+%d points)", got[0].Name, got[0].Pts)
+	}
+	return devOK("unlocked %d achievements (+%d points, %d gold, %d XP)", len(got), pts, gold, xp)
 }
 
 // ---- reset ----

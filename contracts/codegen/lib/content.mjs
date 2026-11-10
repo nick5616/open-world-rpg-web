@@ -18,7 +18,96 @@ const SIDE_KINDS = ['hunt', 'gather', 'deliver', 'explore', 'rescue'];
 const STEP_KINDS = ['talk', 'reach', 'read', 'attune', 'kill', 'clear', 'give', 'dungeon'];
 const SITE_KINDS = ['shrine', 'ruin', 'watchtower', 'tower', 'banditcamp', 'landmark', 'dungeon'];
 const TOWNS = ['home', 'next', 'far'];
-const FEAT_STATS = ['towers', 'kills', 'demons', 'regions', 'duels', 'quests', 'side', 'stories', 'events', 'dungeons', 'tablets', 'codex', 'forage', 'honored', 'level', 'bounties', 'fish', 'fishspecies', 'fishlegend', 'notes', 'ovations', 'firesongs', 'tamed', 'tamedspecies', 'shinytamed', 'petlevel'];
+// Achievement stats (CR 031, contracts/achievements.yaml); <prefix>:<arg> ones in ACH_PREFIXED.
+const ACH_STATS = ['towers', 'kills', 'demons', 'regions', 'duels', 'quests', 'side', 'stories', 'events', 'dungeons', 'tablets', 'codex', 'forage', 'honored', 'level', 'bounties', 'fish', 'fishspecies', 'fishlegend', 'notes', 'ovations', 'firesongs', 'tamed', 'tamedspecies', 'shinytamed', 'petlevel',
+  'vaultsfound', 'nights', 'lightning', 'lightningmetal', 'deaths', 'pvpkills', 'casts', 'schools', 'dashes', 'flight', 'flighthigh', 'magmaflight', 'slams', 'mined', 'crafted', 'gold', 'emotes', 'petted', 'gallop', 'songs', 'eventkinds'];
+const ACH_PREFIXED = ['family', 'killel', 'cast', 'dashm', 'craft', 'fish', 'loot', 'event'];
+const CRAFT_STATIONS = ['forge', 'cook', 'workbench', 'camp'];
+export const ACH_CATS = [
+  { key: 'exploration', name: 'Exploration' }, { key: 'combat', name: 'Combat' }, { key: 'magic', name: 'Magic' }, { key: 'crafting', name: 'Crafting & Gathering' },
+  { key: 'social', name: 'Social' }, { key: 'companions', name: 'Companions' }, { key: 'music', name: 'Music' }, { key: 'events', name: 'World Events & Dungeons' }, { key: 'secrets', name: 'Secrets' },
+];
+export const ACH_TIERS = [
+  { key: 'bronze', name: 'Bronze', pts: 10, gold: 10, xp: 50, color: '#c8875a', announce: false },
+  { key: 'silver', name: 'Silver', pts: 25, gold: 40, xp: 200, color: '#c9d3dc', announce: false },
+  { key: 'gold', name: 'Gold', pts: 50, gold: 120, xp: 600, color: '#ffd166', announce: true },
+  { key: 'platinum', name: 'Platinum', pts: 100, gold: 300, xp: 1500, color: '#b8f0ff', announce: true },
+];
+const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI'];
+
+/** contracts/achievements.yaml -> the achievements table (CR 031). */
+function parseAchievements(table, ctx) {
+  const ach = (key, msg) => {
+    throw new Error(`achievements.yaml ${key}: ${msg}`);
+  };
+  const families = new Set(ctx.combat.enemies.map((e) => e.family));
+  const elements = ctx.combat.elements;
+  const dashKeys = new Set(ctx.combat.dashes.map((d) => d.key));
+  const fishKeys = new Set(ctx.species.map((f) => f.key));
+  const rarities = ctx.rarities;
+  const eventKeys = new Set(ctx.eventKinds.map((k) => k.key));
+  const enemiesOf = (pred) => ctx.combat.enemies.filter(pred).length;
+  const list = Object.entries(table).map(([key, a], i) => {
+    if (!/^[a-z0-9_]+$/.test(key)) ach(key, 'keys are lower_snake_case');
+    if (!a.name || !a.desc) ach(key, 'name and desc');
+    const cat = ACH_CATS.findIndex((c) => c.key === a.cat);
+    if (cat < 0) ach(key, `cat must be one of ${ACH_CATS.map((c) => c.key).join(', ')}`);
+    const tier = ACH_TIERS.findIndex((t) => t.key === a.tier);
+    if (tier < 0) ach(key, `tier must be one of ${ACH_TIERS.map((t) => t.key).join(', ')}`);
+    const T = ACH_TIERS[tier];
+    const [stat, arg] = String(a.stat).split(':');
+    let reach = Infinity; // the most the stat can reach (Infinity: counters)
+    if (arg !== undefined) {
+      if (!ACH_PREFIXED.includes(stat)) ach(key, `unknown stat ${a.stat}`);
+      const ok = {
+        family: () => families.has(arg),
+        killel: () => elements.includes(arg) && enemiesOf((e) => elements[e.element] === arg) > 0,
+        cast: () => elements.includes(arg),
+        dashm: () => dashKeys.has(arg),
+        craft: () => CRAFT_STATIONS.includes(arg),
+        fish: () => fishKeys.has(arg),
+        loot: () => rarities.includes(arg),
+        event: () => eventKeys.has(arg),
+      }[stat];
+      if (!ok()) ach(key, `unknown ${stat} ${arg}`);
+    } else if (!ACH_STATS.includes(stat)) ach(key, `unknown stat ${a.stat}`);
+    else {
+      reach = { fishspecies: ctx.species.length, tamedspecies: ctx.petSpecies.length, petlevel: ctx.levelMax, codex: ctx.codex.length, tablets: ctx.tablets.length, schools: elements.length, eventkinds: eventKeys.size, level: ctx.maxLevel, regions: 32 }[stat] ?? Infinity;
+    }
+    if (!(Number.isInteger(a.n) && a.n > 0)) ach(key, 'n: a whole number > 0');
+    if (a.n > reach) ach(key, `n ${a.n} is out of reach (${stat} tops out at ${reach})`);
+    if (a.item !== undefined && !ctx.itemKeys.has(a.item)) ach(key, `unknown item ${a.item}`);
+    if (a.qty !== undefined && !(a.item && a.qty >= 1)) ach(key, 'qty needs an item');
+    if (a.hint && !a.hidden) ach(key, 'a hint is for hidden achievements');
+    if (a.title !== undefined && (typeof a.title !== 'string' || !a.title || a.title.length > 32)) ach(key, 'title: 1-32 characters');
+    return {
+      key, id: i + 1, name: String(a.name), desc: a.desc, cat, tier, pts: a.pts ?? T.pts, stat: a.stat, n: a.n,
+      gold: a.gold ?? T.gold, xp: a.xp ?? T.xp, title: a.title ?? '', item: a.item ?? '', qty: a.item ? (a.qty ?? 1) : 0,
+      hidden: !!a.hidden, hint: a.hint ?? '', chain: a.chain ?? '', step: 0, steps: 0,
+    };
+  });
+  if (list.length > 255) throw new Error('achievements.yaml: at most 255 (ids ride in a u8 on the announce event)');
+  // Chains: steps share a stat; I, II, III in count order.
+  const chains = new Map();
+  for (const a of list) if (a.chain) chains.set(a.chain, [...(chains.get(a.chain) ?? []), a]);
+  for (const [c, steps] of chains) {
+    if (steps.length < 2) ach(steps[0].key, `chain ${c} has one step`);
+    if (steps.some((s) => s.stat !== steps[0].stat)) ach(steps[0].key, `chain ${c}: every step counts the same stat`);
+    steps.sort((x, y) => x.n - y.n);
+    steps.forEach((s, j) => {
+      if (j > 0 && s.n === steps[j - 1].n) ach(s.key, `chain ${c}: two steps at ${s.n}`);
+      s.step = j + 1;
+      s.steps = steps.length;
+    });
+    if (steps.length > ROMAN.length) ach(steps[0].key, `chain ${c}: at most ${ROMAN.length} steps`);
+  }
+  const names = new Set();
+  for (const a of list) {
+    if (names.has(a.name)) ach(a.key, `duplicate name ${a.name}`);
+    names.add(a.name);
+  }
+  return list;
+}
 const PET_ABILITY_KINDS = ['heal', 'buff', 'charge', 'strike'];
 const EVENT_KINDS = ['starfall', 'caravan', 'behemoth', 'wildhunt', 'glintfox'];
 const PUZZLES = ['levers', 'plates', 'braziers', 'font'];
@@ -39,8 +128,10 @@ const texts = (v, what) => {
 };
 
 /** Parse and validate; `combat`/`items` are the normalized combat and item tables. */
-export function parseContent(doc, combat, items) {
+export function parseContent(doc, combat, items, achDoc) {
   if (doc.version !== 1) fail('version must be 1');
+  if (doc.feats) fail('feats moved to contracts/achievements.yaml (CR 031)');
+  if (!achDoc || achDoc.version !== 1 || !achDoc.achievements) throw new Error('achievements.yaml: version 1 and an achievements table');
   const itemKeys = new Set(items.items.map((i) => i.key));
   const item = (k, what) => {
     if (!itemKeys.has(k)) fail(`${what}: unknown item ${k}`);
@@ -94,7 +185,7 @@ export function parseContent(doc, combat, items) {
   });
 
   // ---- stories ----
-  const featKeys = new Set(Object.keys(doc.feats));
+  const featKeys = new Set(Object.keys(achDoc.achievements));
   const stories = Object.entries(doc.stories).map(([key, s], i) => {
     const steps = s.steps.map((st, j) => {
       const what = `story ${key} step ${j + 1}`;
@@ -176,18 +267,6 @@ export function parseContent(doc, combat, items) {
     return { key: e.key, enemyId: e.id, habitat: c.habitat, lore: c.lore };
   });
 
-  // ---- feats ----
-  const familyKeys = new Set(combat.enemies.map((e) => e.family));
-  const feats = Object.entries(doc.feats).map(([key, f], i) => {
-    const [stat, arg] = String(f.stat).split(':');
-    if (stat === 'family') {
-      if (!familyKeys.has(arg)) fail(`feat ${key}: unknown family ${arg}`);
-    } else if (!FEAT_STATS.includes(stat)) fail(`feat ${key}: unknown stat ${f.stat}`);
-    if (!(f.n > 0)) fail(`feat ${key}: n > 0`);
-    return { key, id: i + 1, name: f.name, desc: f.desc, stat: f.stat, n: f.n, gold: f.gold ?? 0, xp: f.xp ?? 0, title: f.title ?? '' };
-  });
-  if (feats.length > 63) fail('feats: at most 63 (title ids ride in 6 bits)');
-
   // ---- foraging ----
   const fg = doc.forage;
   const herbs = Object.entries(fg.herbs).map(([key, h], i) => {
@@ -237,7 +316,6 @@ export function parseContent(doc, combat, items) {
     return { key, id: i + 1, name: f.name, item: f.item, rarity, water, biomes, time: f.time, weather: f.weather, weight: f.weight, fight: { strength: fight.strength, erratic: fight.erratic, stamina: fight.stamina }, habitat: f.habitat, lore: f.lore };
   });
   if (!species.length || species.length > 63) fail('fishing: 1..63 species');
-  for (const f of feats) if (f.stat === 'fishspecies' && f.n > species.length) fail(`feat ${f.key}: more species than exist`);
   const fishing = {
     rod: fi.rod, castM: range(fi.castM, 'fishing.castM'), minDepthM: fi.minDepthM, biteS: range(fi.biteS, 'fishing.biteS'), hookWindowMs: fi.hookWindowMs,
     maxFightS: fi.maxFightS, castCooldownS: fi.castCooldownS, castBurst: fi.castBurst, castEveryS: fi.castEveryS, walkAwayM: fi.walkAwayM, seeM: fi.seeM,
@@ -313,8 +391,6 @@ export function parseContent(doc, combat, items) {
   });
   if (!petSpecies.length) fail('taming: no species');
   if (new Set(petSpecies.map((p) => p.enemy)).size !== petSpecies.length) fail('taming: one species per creature');
-  for (const f of feats) if (f.stat === 'tamedspecies' && f.n > petSpecies.length) fail(`feat ${f.key}: more species than can be tamed`);
-  for (const f of feats) if (f.stat === 'petlevel' && f.n > tm.levelMax) fail(`feat ${f.key}: above taming.levelMax`);
   const taming = {
     weakenPct: tm.weakenPct, calmS: tm.calmS, smellM: tm.smellM, feedReachM: tm.feedReachM, stayM: tm.stayM, favouriteMult: tm.favouriteMult, favouriteBonus: tm.favouriteBonus,
     shinyChance: tm.shinyChance, elementalChance: tm.elementalChance, maxPets: tm.maxPets, koRecoverS: tm.koRecoverS, stableM: tm.stableM, levelMax: tm.levelMax,
@@ -364,6 +440,11 @@ export function parseContent(doc, combat, items) {
     wares: instrumentWares,
   };
 
+  const achievements = parseAchievements(achDoc.achievements, {
+    combat, itemKeys, species, petSpecies, levelMax: tm.levelMax, eventKinds, codex, tablets,
+    rarities: items.rarities.map((r) => r.key), maxLevel: 255, // explore.LevelForXP stops at 255
+  });
+
   return {
     version: doc.version,
     reputation: { tiers, shops: SHOPS, wares },
@@ -373,7 +454,9 @@ export function parseContent(doc, combat, items) {
     dungeons,
     tablets,
     codex,
-    feats,
+    achievements,
+    achievementCats: ACH_CATS,
+    achievementTiers: ACH_TIERS,
     forage,
     fishing,
     emotes: emoteDefs,
@@ -394,7 +477,10 @@ export interface EventKindDef { key: string; id: number; name: string; night: bo
 export interface PuzzleDef { key: string; id: number; name: string; hint: string; wrong: string; parts: number; holdS: number; element: string }
 export interface TabletDef { key: string; id: number; title: string; text: string }
 export interface CodexDef { key: string; enemyId: number; habitat: string; lore: string }
-export interface FeatDef { key: string; id: number; name: string; desc: string; stat: string; n: number; gold: number; xp: number; title: string }
+/** CR 031 (contracts/achievements.yaml): cat / tier index into achievementCats / achievementTiers; step / steps: place in its chain (0 none). */
+export interface AchievementDef { key: string; id: number; name: string; desc: string; cat: number; tier: number; pts: number; stat: string; n: number; gold: number; xp: number; title: string; item: string; qty: number; hidden: boolean; hint: string; chain: string; step: number; steps: number }
+export interface AchievementCatDef { key: string; name: string }
+export interface AchievementTierDef { key: string; name: string; pts: number; gold: number; xp: number; color: string; announce: boolean }
 export interface HerbDef { key: string; id: number; item: string; name: string; biomes: number[]; color: string; weight: number }
 export interface FishDef { key: string; id: number; name: string; item: string; rarity: number; water: number[]; biomes: number[]; time: 'any' | 'day' | 'night' | 'dawn' | 'dusk'; weather: 'any' | 'rain' | 'clear'; weight: [number, number]; fight: { strength: number; erratic: number; stamina: number }; habitat: string; lore: string }
 export interface FishingDefs { rod: string; castM: [number, number]; minDepthM: number; biteS: [number, number]; hookWindowMs: number; maxFightS: number; castCooldownS: number; castBurst: number; castEveryS: number; walkAwayM: number; seeM: number; waters: string[]; times: string[]; rarities: { key: string; id: number; weight: number; color: string }[]; species: FishDef[] }
@@ -413,7 +499,9 @@ export interface ContentDefs {
   dungeons: { discoverM: number; activeM: number; resetS: number; names: string[]; door: string; puzzles: PuzzleDef[]; boss: string; [k: string]: unknown };
   tablets: TabletDef[];
   codex: CodexDef[];
-  feats: FeatDef[];
+  achievements: AchievementDef[];
+  achievementCats: AchievementCatDef[];
+  achievementTiers: AchievementTierDef[];
   forage: { cellM: number; chance: number; regrowS: number; reachM: number; herbs: HerbDef[] };
   fishing: FishingDefs;
   emotes: { seeM: number; burst: number; everyS: number; list: EmoteDef[] };
@@ -424,5 +512,5 @@ export interface ContentDefs {
 `;
 
 export function genContentTs(d) {
-  return `// ${HEADER_NOTE}\n// Source: contracts/content.yaml (normalized by contracts/codegen/lib/content.mjs)\n/* eslint-disable */\n${TS_TYPES}\nexport const CONTENT: ContentDefs = ${JSON.stringify(d)};\n`;
+  return `// ${HEADER_NOTE}\n// Source: contracts/content.yaml + contracts/achievements.yaml (normalized by contracts/codegen/lib/content.mjs)\n/* eslint-disable */\n${TS_TYPES}\nexport const CONTENT: ContentDefs = ${JSON.stringify(d)};\n`;
 }

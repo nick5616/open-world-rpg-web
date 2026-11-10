@@ -214,7 +214,7 @@ func TestMusicBatchesBypassInteractLimiter(t *testing.T) {
 func TestMusicBardFeat(t *testing.T) {
 	_, a, _, _, _ := musicHarness(t)
 	startPlaying(t, a, 1)
-	bard := contentdefs.D.Feat("bard")
+	bard := contentdefs.D.Achievement("bard")
 	if bard == nil || bard.Stat != "notes" {
 		t.Fatalf("feat bard: %+v", bard)
 	}

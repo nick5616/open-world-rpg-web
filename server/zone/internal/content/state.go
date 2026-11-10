@@ -5,7 +5,6 @@ import (
 	"slices"
 	"sort"
 	"strconv"
-	"strings"
 
 	"lodestone/server/pkg/contentdefs"
 )
@@ -13,38 +12,51 @@ import (
 // State is one character's content progress (CR 022; persisted as JSON in
 // character_content, in a local profile's save blob, and across a WP16
 // handoff): reputation per town, each side quest giver's next request, the
-// codex (kills per creature), lore tablets read, feats and the chosen
-// title, counters for feats, vaults discovered and their chest timers, and
-// herb patches picked (with their regrow time).
+// codex (kills per creature), lore tablets read, achievements (CR 031;
+// the CR 023 feats under their old keys) with when each was earned and the
+// chosen title, the counters achievements count, vaults discovered and
+// their chest timers, and herb patches picked (with their regrow time).
+//
+// V 2 (CR 031): a state saved before achievements (V 0 or 1) loads as it
+// was; its first achievement check earns what its old counters already
+// reach in one quiet catch-up (NewAchievements: caughtUp) and makes it V 2.
 type State struct {
-	V        int               `json:"v"`
-	Rep      map[string]int    `json:"rep,omitempty"`      // settlement index -> reputation
-	Givers   map[string]int    `json:"givers,omitempty"`   // "settlement:npc" -> next request seq
-	Kills    map[string]int    `json:"kills,omitempty"`    // enemy key -> kills (codex: > 0 unlocked)
-	Families map[string]int    `json:"families,omitempty"` // combat family -> kills
-	Tablets  []int             `json:"tablets,omitempty"`  // tablet ids read
-	Feats    []string          `json:"feats,omitempty"`    // feat keys earned
-	Title    string            `json:"title,omitempty"`    // feat key whose title shows on the nameplate
-	Stats    map[string]int    `json:"stats,omitempty"`    // counters: duels, events, dungeons, forage, side, stories, bounties, demons, kills
-	Regions  uint32            `json:"regions,omitempty"`  // bit r = walked in atlas region r
-	Vaults   map[string]int64  `json:"vaults,omitempty"`   // atlas site -> last chest (unix ms; 0 = discovered)
-	Forage   map[string]int64  `json:"forage,omitempty"`   // herb patch id -> regrows at (unix ms)
-	Fish     map[string][2]int `json:"fish,omitempty"`     // playtest 2 fishing: species key -> [landed, best weight g]
+	V        int            `json:"v"`
+	Rep      map[string]int `json:"rep,omitempty"`      // settlement index -> reputation
+	Givers   map[string]int `json:"givers,omitempty"`   // "settlement:npc" -> next request seq
+	Kills    map[string]int `json:"kills,omitempty"`    // enemy key -> kills (codex: > 0 unlocked)
+	Families map[string]int `json:"families,omitempty"` // combat family -> kills
+	Tablets  []int          `json:"tablets,omitempty"`  // tablet ids read
+	Feats    []string       `json:"feats,omitempty"`    // achievement keys earned, oldest first (the CR 023 feats kept their keys)
+	Title    string         `json:"title,omitempty"`    // achievement key whose title shows on the nameplate
+	Stats    map[string]int `json:"stats,omitempty"`    // counters (contracts/achievements.yaml lists them): duels, events, kills, casts, cast:fire, gallop...
+	// At (CR 031): achievement key -> earned at (unix ms; none for feats earned before CR 031).
+	At      map[string]int64  `json:"at,omitempty"`
+	Regions uint32            `json:"regions,omitempty"` // bit r = walked in atlas region r
+	Vaults  map[string]int64  `json:"vaults,omitempty"`  // atlas site -> last chest (unix ms; 0 = discovered)
+	Forage  map[string]int64  `json:"forage,omitempty"`  // herb patch id -> regrows at (unix ms)
+	Fish    map[string][2]int `json:"fish,omitempty"`    // playtest 2 fishing: species key -> [landed, best weight g]
 	// TamedKinds: playtest 2 pets (CR 029): pet species key -> creatures tamed.
 	TamedKinds map[string]int `json:"tamed,omitempty"`
 	dirty      bool
 }
 
-// NewState is an empty state.
-func NewState() *State { return &State{V: 1} }
+// StateVersion is the current saved form (2: CR 031 achievements).
+const StateVersion = 2
 
-// LoadState parses a saved state (empty or bad JSON gives a new one).
+// NewState is an empty state.
+func NewState() *State { return &State{V: StateVersion} }
+
+// LoadState parses a saved state (empty or bad JSON gives a new one). An
+// older state keeps its version until its catch-up (see State).
 func LoadState(b []byte) *State {
-	s := NewState()
+	s := &State{}
 	if len(b) == 0 || json.Unmarshal(b, s) != nil {
 		return NewState()
 	}
-	s.V = 1
+	if s.V > StateVersion {
+		s.V = StateVersion
+	}
 	return s
 }
 
@@ -246,90 +258,4 @@ func (s *State) Pick(id uint32, untilMs, nowMs int64) {
 	}
 	s.Forage[strconv.FormatUint(uint64(id), 10)] = untilMs
 	s.dirty = true
-}
-
-// HasFeat reports an earned feat.
-func (s *State) HasFeat(key string) bool { return slices.Contains(s.Feats, key) }
-
-// TitleText is the shown title ("" none).
-func (s *State) TitleText() string {
-	if s.Title == "" || !s.HasFeat(s.Title) {
-		return ""
-	}
-	if f := contentdefs.D.Feat(s.Title); f != nil {
-		return f.Title
-	}
-	return ""
-}
-
-// SetTitle shows feat key's title ("" none); false if not earned or untitled.
-func (s *State) SetTitle(key string) bool {
-	if key != "" {
-		f := contentdefs.D.Feat(key)
-		if f == nil || f.Title == "" || !s.HasFeat(key) {
-			return false
-		}
-	}
-	if s.Title != key {
-		s.Title = key
-		s.dirty = true
-	}
-	return true
-}
-
-// StatFunc answers a feat stat (the glue adds what lives elsewhere:
-// towers, level).
-type StatFunc func(stat string) int
-
-// Stat2 is the state's own answer for a feat stat (-1: not the state's).
-func (s *State) Stat2(stat string) int {
-	switch {
-	case strings.HasPrefix(stat, "family:"):
-		return s.Families[stat[7:]]
-	case stat == "regions":
-		return s.RegionsWalked()
-	case stat == "tablets":
-		return len(s.Tablets)
-	case stat == "codex":
-		return s.Codex()
-	case stat == "fishspecies":
-		return len(s.Fish)
-	case stat == "tamedspecies":
-		return len(s.TamedKinds)
-	case stat == "petlevel":
-		return -1 // the glue: the pets' best level (pets.go)
-	case stat == "honored":
-		return s.Honored()
-	case stat == "quests":
-		return s.Stats["side"] + s.Stats["stories"]
-	case stat == "towers" || stat == "level":
-		return -1
-	}
-	return s.Stats[stat]
-}
-
-// NewFeats earns every feat whose stat now reaches its count and returns
-// them (the glue pays the rewards). The first titled feat becomes the
-// title when none is chosen.
-func (s *State) NewFeats(stat StatFunc) []*contentdefs.Feat {
-	var out []*contentdefs.Feat
-	for i := range contentdefs.D.Feats {
-		f := &contentdefs.D.Feats[i]
-		if s.HasFeat(f.Key) {
-			continue
-		}
-		v := s.Stat2(f.Stat)
-		if v < 0 && stat != nil {
-			v = stat(f.Stat)
-		}
-		if v >= f.N {
-			s.Feats = append(s.Feats, f.Key)
-			s.dirty = true
-			out = append(out, f)
-			if s.Title == "" && f.Title != "" {
-				s.Title = f.Key
-			}
-		}
-	}
-	return out
 }

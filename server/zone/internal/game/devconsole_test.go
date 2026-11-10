@@ -366,6 +366,20 @@ func TestDevConsoleCommands(t *testing.T) {
 		t.Errorf("quest gold %d -> %d", gold, g)
 	}
 
+	// Achievements: one, then every one.
+	first := &contentdefs.D.Achievements[0]
+	a.devOK(t, DevActAchieve, uint64(first.ID), 0)
+	a.take(EventFeatEarned, 2*time.Second)
+	a.devOK(t, DevActAchieve, 0, 0)
+	h.do(func() {
+		st := sess().cnt.st
+		for i := range contentdefs.D.Achievements {
+			if !st.Has(contentdefs.D.Achievements[i].Key) {
+				t.Fatalf("%s not unlocked", contentdefs.D.Achievements[i].Key)
+			}
+		}
+	})
+
 	// A shiny pet and a steed.
 	sp := &contentdefs.D.Taming.Species[0]
 	a.devOK(t, DevActPet, uint64(sp.ID), uint32(content.VariantShiny)|7<<8)
