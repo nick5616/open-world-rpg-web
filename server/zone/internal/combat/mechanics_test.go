@@ -424,3 +424,15 @@ func TestSummonFightsEnemiesNotPlayers(t *testing.T) {
 		t.Fatal("a flagged hostile player was never attacked")
 	}
 }
+
+// CR 020 x CR 021: a stream or charge cannot start while a dash runs (its
+// channel bit would hold the dash); the client waits for the dash to end.
+func TestStreamWaitsForADash(t *testing.T) {
+	w, _ := newWorld()
+	h := caster(w, "cinder_spray", movement.Vec3{X: 100, Z: 100})
+	h.state.Dash = 5
+	seq := h.frame(castF, 0, eastYaw)
+	if a, _ := h.p.lookup(seq, D.SpellByKey("cinder_spray").ID); a == nil || a.Legal || h.p.Streaming() {
+		t.Fatal("a stream started during a dash")
+	}
+}

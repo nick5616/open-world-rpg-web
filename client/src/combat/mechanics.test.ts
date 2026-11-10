@@ -77,6 +77,14 @@ describe('hold-to-fire streams (CR 020)', () => {
     }
   });
 
+  it('waits for a running dash to end before starting (the zone refuses it during a dash)', () => {
+    const t = timeline('cinder_spray');
+    const st = { ...newMoveState({ x: 0, y: 0, z: 0 }), dash: 6 };
+    const b = { ...idle(), castHeld: [true, false, false, false], castPress: [1, null, null, null] };
+    const out = t.step(1, b, st, 0, 16);
+    expect(out.flags & InputFlag.cast).toBe(0);
+    expect(t.channel).toBeNull();
+  });
   it('a held key restarts the stream once mana allows', () => {
     const s = sp('cinder_spray');
     const t = timeline('cinder_spray');
