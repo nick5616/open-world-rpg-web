@@ -81,7 +81,7 @@ export function RemotePlayers({ session }: { session: ZoneSession }) {
     if (!DEBUG || typeof window === 'undefined') return;
     // Headless captures: what each remote avatar is doing.
     (window as unknown as { __lodestoneAvatars?: unknown }).__lodestoneAvatars = () =>
-      [...avatars.values()].map((a) => ({ id: a.id, action: a.anim.current, held: a.anim.heldSpec?.kind ?? null, bodyPitch: a.pose.bodyPitch, animLevel: a.animLevel, lod: a.lodLevel, weapon: a.weaponKind, x: a.root.position.x, y: a.root.position.y, z: a.root.position.z, glow: a.pose.glow, bowDraw: a.pose.bowDraw, emote: a.anim.currentEmote, rod: a.pose.rod, fish: a.pose.fish, steed: a.steedGait, heading: a.heading, instrument: a.pose.instrument }));
+      [...avatars.values()].map((a) => ({ id: a.id, action: a.anim.current, held: a.anim.heldSpec?.kind ?? null, bodyPitch: a.pose.bodyPitch, animLevel: a.animLevel, lod: a.lodLevel, weapon: a.weaponKind, x: a.root.position.x, y: a.root.position.y, z: a.root.position.z, glow: a.pose.glow, bowDraw: a.pose.bowDraw, emote: a.anim.currentEmote, rod: a.pose.rod, fish: a.pose.fish, steed: a.steedGait, heading: a.heading, instrument: a.pose.instrument, appearance: a.appearance, armor: a.armorSpec?.parts.length ?? 0 }));
   }, [avatars]);
 
   useEffect(() => {

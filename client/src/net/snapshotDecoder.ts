@@ -37,6 +37,8 @@ export interface EntState {
   name: string;
   level: number;
   partyId: number;
+  /** Protocol v6 (CR 034): what a player wears (combat/armor/appearance.ts); below 2^53, so a number. */
+  appearance: number;
 }
 
 /** SelfState with every field present (wire units). */
@@ -60,7 +62,7 @@ export const ZERO_SELF: Readonly<FullSelf> = Object.freeze({
 });
 
 function zeroEnt(id: number): EntState {
-  return { id, kind: 0, x: 0, y: 0, z: 0, yaw: 0, pitch: 0, vx: 0, vy: 0, vz: 0, healthPct: 0, activity: 0, typeId: 0, name: '', level: 0, partyId: 0 };
+  return { id, kind: 0, x: 0, y: 0, z: 0, yaw: 0, pitch: 0, vx: 0, vy: 0, vz: 0, healthPct: 0, activity: 0, typeId: 0, name: '', level: 0, partyId: 0, appearance: 0 };
 }
 
 /** base with r's present fields applied (base undefined = zero state). */
@@ -82,6 +84,7 @@ export function applyRecord(base: EntState | undefined, r: EntityRecord): EntSta
   if (r.name !== undefined) s.name = r.name;
   if (r.level !== undefined) s.level = r.level;
   if (r.partyId !== undefined) s.partyId = r.partyId;
+  if (r.appearance !== undefined) s.appearance = Number(r.appearance);
   return s;
 }
 

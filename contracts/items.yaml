@@ -50,6 +50,9 @@ materials:
   sunsteel: {name: Sunsteel, mult: 1.2, tier: 4, killsDemons: true}
   starmetal: {name: Starmetal, mult: 1.35, tier: 5}
   voidglass: {name: Voidglass, mult: 1.5, tier: 6}
+  # playtest 2 visible armor (CR 034): woven armor (hoods, robes). Appended, so material
+  # codes (1 + index: the weapon look, the avatar appearance) never move.
+  cloth: {name: Cloth, mult: 0.8, tier: 1}
 
 # The eight elements' gems plus the two utility gems (spec 7). `element`
 # is the worldgen/combat element index (0 fire .. 7 void), -1 utility.
@@ -123,21 +126,35 @@ items:
   weapon:starmetal_wand: {name: Starmetal Wand, weapon: wand, material: starmetal, level: 14, value: 880}
   weapon:voidglass_wand: {name: Voidglass Wand, weapon: wand, material: voidglass, level: 18, value: 1550}
   # ---- armor (head, body, legs) ----
-  armor:leather_cap: {name: Leather Cap, armor: head, material: leather, level: 1, health: 6, armorPct: 2, value: 20}
-  armor:leather_jerkin: {name: Leather Jerkin, armor: body, material: leather, level: 1, health: 12, armorPct: 4, value: 35}
-  armor:leather_leggings: {name: Leather Leggings, armor: legs, material: leather, level: 1, health: 8, armorPct: 3, value: 25}
-  armor:iron_helm: {name: Iron Helm, armor: head, material: iron, level: 4, health: 10, armorPct: 3, value: 60}
-  armor:iron_cuirass: {name: Iron Cuirass, armor: body, material: iron, level: 4, health: 20, armorPct: 6, value: 110}
-  armor:iron_greaves: {name: Iron Greaves, armor: legs, material: iron, level: 4, health: 14, armorPct: 4, value: 80}
-  armor:silver_helm: {name: Silver Helm, armor: head, material: silver, level: 8, health: 14, armorPct: 4, value: 150}
-  armor:silver_cuirass: {name: Silver Cuirass, armor: body, material: silver, level: 8, health: 28, armorPct: 7, value: 260}
-  armor:silver_greaves: {name: Silver Greaves, armor: legs, material: silver, level: 8, health: 20, armorPct: 5, value: 190}
-  armor:starmetal_helm: {name: Starmetal Helm, armor: head, material: starmetal, level: 14, health: 20, armorPct: 5, value: 600}
-  armor:starmetal_cuirass: {name: Starmetal Cuirass, armor: body, material: starmetal, level: 14, health: 40, armorPct: 9, value: 1000}
-  armor:starmetal_greaves: {name: Starmetal Greaves, armor: legs, material: starmetal, level: 14, health: 28, armorPct: 6, value: 750}
-  armor:voidglass_helm: {name: Voidglass Helm, armor: head, material: voidglass, level: 18, health: 26, armorPct: 6, value: 1100}
-  armor:voidglass_cuirass: {name: Voidglass Cuirass, armor: body, material: voidglass, level: 18, health: 52, armorPct: 10, value: 1800}
-  armor:voidglass_greaves: {name: Voidglass Greaves, armor: legs, material: voidglass, level: 18, health: 36, armorPct: 7, value: 1300}
+  # Playtest 2 visible armor (CR 034): `style` is the shape the avatar wears
+  # (client/src/combat/armor): head cap, helm, hood or circlet; body jerkin,
+  # cuirass, mail or robe; legs leggings, greaves or boots. The material
+  # colours it (sunsteel glows), the rarity trims it. The armor pieces' order
+  # is their appearance visual id: append new pieces after the last one.
+  armor:leather_cap: {name: Leather Cap, armor: head, material: leather, level: 1, health: 6, armorPct: 2, value: 20, style: cap}
+  armor:leather_jerkin: {name: Leather Jerkin, armor: body, material: leather, level: 1, health: 12, armorPct: 4, value: 35, style: jerkin}
+  armor:leather_leggings: {name: Leather Leggings, armor: legs, material: leather, level: 1, health: 8, armorPct: 3, value: 25, style: leggings}
+  armor:iron_helm: {name: Iron Helm, armor: head, material: iron, level: 4, health: 10, armorPct: 3, value: 60, style: helm}
+  armor:iron_cuirass: {name: Iron Cuirass, armor: body, material: iron, level: 4, health: 20, armorPct: 6, value: 110, style: cuirass}
+  armor:iron_greaves: {name: Iron Greaves, armor: legs, material: iron, level: 4, health: 14, armorPct: 4, value: 80, style: greaves}
+  armor:silver_helm: {name: Silver Helm, armor: head, material: silver, level: 8, health: 14, armorPct: 4, value: 150, style: helm}
+  armor:silver_cuirass: {name: Silver Cuirass, armor: body, material: silver, level: 8, health: 28, armorPct: 7, value: 260, style: cuirass}
+  armor:silver_greaves: {name: Silver Greaves, armor: legs, material: silver, level: 8, health: 20, armorPct: 5, value: 190, style: greaves}
+  armor:starmetal_helm: {name: Starmetal Helm, armor: head, material: starmetal, level: 14, health: 20, armorPct: 5, value: 600, style: helm}
+  armor:starmetal_cuirass: {name: Starmetal Cuirass, armor: body, material: starmetal, level: 14, health: 40, armorPct: 9, value: 1000, style: cuirass}
+  armor:starmetal_greaves: {name: Starmetal Greaves, armor: legs, material: starmetal, level: 14, health: 28, armorPct: 6, value: 750, style: greaves}
+  armor:voidglass_helm: {name: Voidglass Helm, armor: head, material: voidglass, level: 18, health: 26, armorPct: 6, value: 1100, style: helm}
+  armor:voidglass_cuirass: {name: Voidglass Cuirass, armor: body, material: voidglass, level: 18, health: 52, armorPct: 10, value: 1800, style: cuirass}
+  armor:voidglass_greaves: {name: Voidglass Greaves, armor: legs, material: voidglass, level: 18, health: 36, armorPct: 7, value: 1300, style: greaves}
+  armor:cloth_hood: {name: "Traveller's Hood", armor: head, material: cloth, level: 1, health: 4, armorPct: 1, value: 15, style: hood}
+  armor:cloth_robe: {name: Woven Robe, armor: body, material: cloth, level: 1, health: 9, armorPct: 2, value: 30, style: robe}
+  armor:leather_boots: {name: Travel Boots, armor: legs, material: leather, level: 2, health: 7, armorPct: 3, value: 28, style: boots}
+  armor:iron_mail: {name: Iron Mail Hauberk, armor: body, material: iron, level: 5, health: 22, armorPct: 5, value: 120, style: mail}
+  armor:silver_circlet: {name: Silver Circlet, armor: head, material: silver, level: 8, health: 9, armorPct: 3, value: 170, style: circlet}
+  # sunsteel armor is forged only (like sunsteel weapons: random loot never rolls sunsteel)
+  armor:sunsteel_helm: {name: Sunsteel Helm, armor: head, material: sunsteel, level: 10, health: 16, armorPct: 4, value: 420, style: helm}
+  armor:sunsteel_mail: {name: Sunsteel Mail, armor: body, material: sunsteel, level: 10, health: 32, armorPct: 8, value: 700, style: mail}
+  armor:sunsteel_greaves: {name: Sunsteel Greaves, armor: legs, material: sunsteel, level: 10, health: 22, armorPct: 5, value: 520, style: greaves}
   # ---- arrows (combat.yaml bow.arrows: using a stack sets the bow's arrowheads) ----
   ammo:copper_arrow: {name: Copper Arrows, arrow: copper, value: 1}
   ammo:iron_arrow: {name: Iron Arrows, arrow: iron, value: 1}
@@ -346,6 +363,10 @@ recipes:
   bench_hand_drum: {station: workbench, inputs: {wood:firewood: 3, hide:wolf: 1}, output: instrument:hand_drum, xp: 6}
   bench_lute: {station: workbench, inputs: {wood:firewood: 5, hide:wolf: 1, tool:rope: 1}, output: instrument:lute, xp: 10}
   forge_handbells: {station: forge, inputs: {ingot:copper: 2, ingot:iron: 1}, output: instrument:handbells, xp: 12}
+  # playtest 2 visible armor (CR 034): the sunsteel set (appended: recipe ids are on the wire)
+  forge_sunsteel_helm: {station: forge, blueprint: true, inputs: {ingot:sunsteel: 2, ingot:iron: 1}, output: armor:sunsteel_helm, xp: 50}
+  forge_sunsteel_mail: {station: forge, blueprint: true, inputs: {ingot:sunsteel: 4, ingot:iron: 2}, output: armor:sunsteel_mail, xp: 70}
+  forge_sunsteel_greaves: {station: forge, blueprint: true, inputs: {ingot:sunsteel: 3, ingot:iron: 1}, output: armor:sunsteel_greaves, xp: 60}
 
 # What a new character carries (spec 8's consumables replace WP13's
 # stand-in draught; granted once per character, exactly once). Playtest 2:

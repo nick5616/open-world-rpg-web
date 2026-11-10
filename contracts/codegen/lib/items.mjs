@@ -23,6 +23,8 @@ const CATEGORY_KIND = {
   currency: 'currency', gem: 'gem', ore: 'ore', ingot: 'ingot', blueprint: 'blueprint', tome: 'tome', key: 'key',
 };
 
+/** CR 034: the armor styles per slot (client/src/combat/armor/spec.ts draws each). */
+const ARMOR_STYLES = { head: ['cap', 'helm', 'hood', 'circlet'], body: ['jerkin', 'cuirass', 'mail', 'robe'], legs: ['leggings', 'greaves', 'boots'] };
 const STATS = ['damagePct', 'critPct', 'spellPowerPct', 'health', 'armorPct', 'lootFindPct', 'staminaPct'];
 
 /** Parse and validate; `combat` is the normalized combat tables (weapon types, arrows). */
@@ -81,7 +83,10 @@ export function parseItems(doc, combat) {
     if (o.armor) {
       if (!['head', 'body', 'legs'].includes(o.armor)) fail(`item ${key}: armor slot must be head, body or legs`);
       if (!matKeys.has(o.material)) fail(`item ${key}: unknown material ${o.material}`);
+      // CR 034 (visible armor): the shape the avatar wears, per slot
+      if (!ARMOR_STYLES[o.armor].includes(o.style)) fail(`item ${key}: armor style must be one of ${ARMOR_STYLES[o.armor].join(', ')}`);
     }
+    if (o.style && !o.armor) fail(`item ${key}: only armor has a style`);
     if (o.arrow && !arrowOres.has(o.arrow)) fail(`item ${key}: combat.yaml bow has no ${o.arrow} arrows`);
     add(o);
   }
@@ -154,7 +159,7 @@ export interface ItemDef {
   key: string; name: string; category: string;
   kind: 'weapon' | 'armor' | 'ammo' | 'consumable' | 'material' | 'tool' | 'currency' | 'gem' | 'ore' | 'ingot' | 'blueprint' | 'tome' | 'key';
   stack: number; pouch: 'inv' | 'gem' | 'ore' | 'purse'; level: number; value: number; sockets: number;
-  weapon?: string; armor?: 'head' | 'body' | 'legs'; material?: string; health?: number; armorPct?: number; heal?: number; arrow?: string;
+  weapon?: string; armor?: 'head' | 'body' | 'legs'; style?: 'cap' | 'helm' | 'hood' | 'circlet' | 'jerkin' | 'cuirass' | 'mail' | 'robe' | 'leggings' | 'greaves' | 'boots'; material?: string; health?: number; armorPct?: number; heal?: number; arrow?: string;
   gem?: string; cut?: string; element?: number; metal?: string; recipe?: string;
 }
 export interface ItemAffixDef { key: string; name: string; stat: ItemStat; min: number; max: number; slots: string[]; weight: number; elements: number[]; themes: string[] }

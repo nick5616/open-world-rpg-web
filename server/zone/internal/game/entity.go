@@ -23,6 +23,7 @@ type Entity struct {
 	Level       uint8
 	PartyID     uint32        // 0 = none; WP12 sets it from the social service's party (party.go)
 	TypeID      uint16        // enemy type, npc role | variant << 8 (WP20), ...: EntityRecord.typeId
+	Appearance  uint64        // CR 034: a player's worn armor (appearance.go): EntityRecord.appearance
 	x           *exploreState // WP12 exploration progress (explore.go), shared with the session
 	ListenOnly  bool          // WP11: listen-only (Config.VoiceLocalListenOnly), its speaking bit is never shown
 	remote      *remoteInfo   // WP16: mirrored from another zone (ghosts.go); never in Server.ents
@@ -185,6 +186,8 @@ func (e *Entity) quantize(_ movement.Ground) {
 		Level:     e.Level,
 		PartyID:   e.PartyID,
 		TypeID:    e.TypeID,
+		// CR 034: changes only on equip/unequip; the delta coding sends it then and on first sight
+		Appearance: e.Appearance,
 	}
 }
 

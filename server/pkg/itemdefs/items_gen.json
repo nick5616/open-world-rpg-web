@@ -174,6 +174,14 @@
    "tier": 6,
    "killsDemons": false,
    "demonStagger": false
+  },
+  {
+   "key": "cloth",
+   "name": "Cloth",
+   "mult": 0.8,
+   "tier": 1,
+   "killsDemons": false,
+   "demonStagger": false
   }
  ],
  "gems": [
@@ -653,7 +661,8 @@
    "armor": "head",
    "material": "leather",
    "health": 6,
-   "armorPct": 2
+   "armorPct": 2,
+   "style": "cap"
   },
   {
    "key": "armor:leather_jerkin",
@@ -668,7 +677,8 @@
    "armor": "body",
    "material": "leather",
    "health": 12,
-   "armorPct": 4
+   "armorPct": 4,
+   "style": "jerkin"
   },
   {
    "key": "armor:leather_leggings",
@@ -683,7 +693,8 @@
    "armor": "legs",
    "material": "leather",
    "health": 8,
-   "armorPct": 3
+   "armorPct": 3,
+   "style": "leggings"
   },
   {
    "key": "armor:iron_helm",
@@ -698,7 +709,8 @@
    "armor": "head",
    "material": "iron",
    "health": 10,
-   "armorPct": 3
+   "armorPct": 3,
+   "style": "helm"
   },
   {
    "key": "armor:iron_cuirass",
@@ -713,7 +725,8 @@
    "armor": "body",
    "material": "iron",
    "health": 20,
-   "armorPct": 6
+   "armorPct": 6,
+   "style": "cuirass"
   },
   {
    "key": "armor:iron_greaves",
@@ -728,7 +741,8 @@
    "armor": "legs",
    "material": "iron",
    "health": 14,
-   "armorPct": 4
+   "armorPct": 4,
+   "style": "greaves"
   },
   {
    "key": "armor:silver_helm",
@@ -743,7 +757,8 @@
    "armor": "head",
    "material": "silver",
    "health": 14,
-   "armorPct": 4
+   "armorPct": 4,
+   "style": "helm"
   },
   {
    "key": "armor:silver_cuirass",
@@ -758,7 +773,8 @@
    "armor": "body",
    "material": "silver",
    "health": 28,
-   "armorPct": 7
+   "armorPct": 7,
+   "style": "cuirass"
   },
   {
    "key": "armor:silver_greaves",
@@ -773,7 +789,8 @@
    "armor": "legs",
    "material": "silver",
    "health": 20,
-   "armorPct": 5
+   "armorPct": 5,
+   "style": "greaves"
   },
   {
    "key": "armor:starmetal_helm",
@@ -788,7 +805,8 @@
    "armor": "head",
    "material": "starmetal",
    "health": 20,
-   "armorPct": 5
+   "armorPct": 5,
+   "style": "helm"
   },
   {
    "key": "armor:starmetal_cuirass",
@@ -803,7 +821,8 @@
    "armor": "body",
    "material": "starmetal",
    "health": 40,
-   "armorPct": 9
+   "armorPct": 9,
+   "style": "cuirass"
   },
   {
    "key": "armor:starmetal_greaves",
@@ -818,7 +837,8 @@
    "armor": "legs",
    "material": "starmetal",
    "health": 28,
-   "armorPct": 6
+   "armorPct": 6,
+   "style": "greaves"
   },
   {
    "key": "armor:voidglass_helm",
@@ -833,7 +853,8 @@
    "armor": "head",
    "material": "voidglass",
    "health": 26,
-   "armorPct": 6
+   "armorPct": 6,
+   "style": "helm"
   },
   {
    "key": "armor:voidglass_cuirass",
@@ -848,7 +869,8 @@
    "armor": "body",
    "material": "voidglass",
    "health": 52,
-   "armorPct": 10
+   "armorPct": 10,
+   "style": "cuirass"
   },
   {
    "key": "armor:voidglass_greaves",
@@ -863,7 +885,136 @@
    "armor": "legs",
    "material": "voidglass",
    "health": 36,
-   "armorPct": 7
+   "armorPct": 7,
+   "style": "greaves"
+  },
+  {
+   "key": "armor:cloth_hood",
+   "name": "Traveller's Hood",
+   "category": "armor",
+   "kind": "armor",
+   "stack": 1,
+   "pouch": "inv",
+   "level": 1,
+   "value": 15,
+   "sockets": 0,
+   "armor": "head",
+   "material": "cloth",
+   "health": 4,
+   "armorPct": 1,
+   "style": "hood"
+  },
+  {
+   "key": "armor:cloth_robe",
+   "name": "Woven Robe",
+   "category": "armor",
+   "kind": "armor",
+   "stack": 1,
+   "pouch": "inv",
+   "level": 1,
+   "value": 30,
+   "sockets": 0,
+   "armor": "body",
+   "material": "cloth",
+   "health": 9,
+   "armorPct": 2,
+   "style": "robe"
+  },
+  {
+   "key": "armor:leather_boots",
+   "name": "Travel Boots",
+   "category": "armor",
+   "kind": "armor",
+   "stack": 1,
+   "pouch": "inv",
+   "level": 2,
+   "value": 28,
+   "sockets": 0,
+   "armor": "legs",
+   "material": "leather",
+   "health": 7,
+   "armorPct": 3,
+   "style": "boots"
+  },
+  {
+   "key": "armor:iron_mail",
+   "name": "Iron Mail Hauberk",
+   "category": "armor",
+   "kind": "armor",
+   "stack": 1,
+   "pouch": "inv",
+   "level": 5,
+   "value": 120,
+   "sockets": 0,
+   "armor": "body",
+   "material": "iron",
+   "health": 22,
+   "armorPct": 5,
+   "style": "mail"
+  },
+  {
+   "key": "armor:silver_circlet",
+   "name": "Silver Circlet",
+   "category": "armor",
+   "kind": "armor",
+   "stack": 1,
+   "pouch": "inv",
+   "level": 8,
+   "value": 170,
+   "sockets": 0,
+   "armor": "head",
+   "material": "silver",
+   "health": 9,
+   "armorPct": 3,
+   "style": "circlet"
+  },
+  {
+   "key": "armor:sunsteel_helm",
+   "name": "Sunsteel Helm",
+   "category": "armor",
+   "kind": "armor",
+   "stack": 1,
+   "pouch": "inv",
+   "level": 10,
+   "value": 420,
+   "sockets": 0,
+   "armor": "head",
+   "material": "sunsteel",
+   "health": 16,
+   "armorPct": 4,
+   "style": "helm"
+  },
+  {
+   "key": "armor:sunsteel_mail",
+   "name": "Sunsteel Mail",
+   "category": "armor",
+   "kind": "armor",
+   "stack": 1,
+   "pouch": "inv",
+   "level": 10,
+   "value": 700,
+   "sockets": 0,
+   "armor": "body",
+   "material": "sunsteel",
+   "health": 32,
+   "armorPct": 8,
+   "style": "mail"
+  },
+  {
+   "key": "armor:sunsteel_greaves",
+   "name": "Sunsteel Greaves",
+   "category": "armor",
+   "kind": "armor",
+   "stack": 1,
+   "pouch": "inv",
+   "level": 10,
+   "value": 520,
+   "sockets": 0,
+   "armor": "legs",
+   "material": "sunsteel",
+   "health": 22,
+   "armorPct": 5,
+   "style": "greaves"
   },
   {
    "key": "ammo:copper_arrow",
@@ -2395,6 +2546,42 @@
    "value": 800,
    "sockets": 0,
    "recipe": "forge_voidglass_sword"
+  },
+  {
+   "key": "blueprint:sunsteel_helm",
+   "name": "Blueprint: Sunsteel Helm",
+   "category": "blueprint",
+   "kind": "blueprint",
+   "stack": 1,
+   "pouch": "inv",
+   "level": 1,
+   "value": 210,
+   "sockets": 0,
+   "recipe": "forge_sunsteel_helm"
+  },
+  {
+   "key": "blueprint:sunsteel_mail",
+   "name": "Blueprint: Sunsteel Mail",
+   "category": "blueprint",
+   "kind": "blueprint",
+   "stack": 1,
+   "pouch": "inv",
+   "level": 1,
+   "value": 350,
+   "sockets": 0,
+   "recipe": "forge_sunsteel_mail"
+  },
+  {
+   "key": "blueprint:sunsteel_greaves",
+   "name": "Blueprint: Sunsteel Greaves",
+   "category": "blueprint",
+   "kind": "blueprint",
+   "stack": 1,
+   "pouch": "inv",
+   "level": 1,
+   "value": 260,
+   "sockets": 0,
+   "recipe": "forge_sunsteel_greaves"
   }
  ],
  "tome": {
@@ -3842,6 +4029,66 @@
    "sockets": 0,
    "blueprint": null,
    "xp": 12
+  },
+  {
+   "key": "forge_sunsteel_helm",
+   "id": 60,
+   "station": "forge",
+   "inputs": [
+    {
+     "item": "ingot:sunsteel",
+     "qty": 2
+    },
+    {
+     "item": "ingot:iron",
+     "qty": 1
+    }
+   ],
+   "output": "armor:sunsteel_helm",
+   "qty": 1,
+   "sockets": 0,
+   "blueprint": "blueprint:sunsteel_helm",
+   "xp": 50
+  },
+  {
+   "key": "forge_sunsteel_mail",
+   "id": 61,
+   "station": "forge",
+   "inputs": [
+    {
+     "item": "ingot:sunsteel",
+     "qty": 4
+    },
+    {
+     "item": "ingot:iron",
+     "qty": 2
+    }
+   ],
+   "output": "armor:sunsteel_mail",
+   "qty": 1,
+   "sockets": 0,
+   "blueprint": "blueprint:sunsteel_mail",
+   "xp": 70
+  },
+  {
+   "key": "forge_sunsteel_greaves",
+   "id": 62,
+   "station": "forge",
+   "inputs": [
+    {
+     "item": "ingot:sunsteel",
+     "qty": 3
+    },
+    {
+     "item": "ingot:iron",
+     "qty": 1
+    }
+   ],
+   "output": "armor:sunsteel_greaves",
+   "qty": 1,
+   "sockets": 0,
+   "blueprint": "blueprint:sunsteel_greaves",
+   "xp": 60
   }
  ],
  "starter": [

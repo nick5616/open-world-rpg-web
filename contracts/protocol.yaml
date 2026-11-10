@@ -24,7 +24,7 @@
 # Versioning: adding a message or appending a field to a masked struct is a
 # compatible change (bump `version`, note it in docs/cr/). Changing the meaning
 # or order of an existing field is not; that needs a new message id.
-version: 5   # v2: WP10 movement (docs/cr/004-wp10-movement.md); v3 (docs/cr/005-voice-speaking-and-earshot.md): InputFlag.speaking; v4 (docs/cr/009-wp13-combat.md): combat flag semantics, moveExt dash bits; v5 (docs/cr/008-zone-handoff.md): ZoneTransfer kind + wtEndpoint
+version: 6   # v6 (docs/cr/034-visible-armor.md): EntityRecord.appearance; v2: WP10 movement (docs/cr/004-wp10-movement.md); v3 (docs/cr/005-voice-speaking-and-earshot.md): InputFlag.speaking; v4 (docs/cr/009-wp13-combat.md): combat flag semantics, moveExt dash bits; v5 (docs/cr/008-zone-handoff.md): ZoneTransfer kind + wtEndpoint
 
 enums:
   EntityKind:
@@ -105,6 +105,14 @@ structs:
       name: string      # sent on first sight only
       level: u8
       partyId: u32      # 0 = none; members get the party ring at any distance
+      # v6 (docs/cr/034-visible-armor.md): what a player wears, per armor slot
+      # (head, body, legs at bits 0, 17, 34): 6 bits visual id (1 + index of the
+      # piece among items.yaml armor, 0 none) | 4 bits material code | 3 bits
+      # rarity | 4 bits gem (1 + index in items.yaml gems, 0 none); bits 51-63
+      # zero. Changes only on equip/unequip (sent then and on first sight, like
+      # every field); 0 (nothing worn) costs nothing. Below 2^53: the inventory
+      # event's JSON carries the same number for your own body.
+      appearance: u64
 
   SelfState:
     doc: Your own authoritative state, for reconciliation. Exact health.

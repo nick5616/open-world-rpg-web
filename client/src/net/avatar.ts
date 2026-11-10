@@ -33,6 +33,9 @@ import { SteedRig } from '../ui/mounts/model';
 import { steedLookOf } from '../ui/mounts/store';
 import { MARK_COLOR, drawSwords, pvpMark } from '../ui/pvp/plate';
 import { titleOf } from '../ui/content/titles'; // CR 023: feat titles under the name
+import { acquireArmor, releaseArmor, type ArmorMeshes } from '../combat/armor/model';
+import { ARMOR_BONES, type ArmorBone } from '../combat/armor/spec';
+import { armorMaterial } from '../combat/armor/material';
 
 export const LOD_MID_M = 25;
 export const LOD_LOW_M = 80;
@@ -342,11 +345,27 @@ interface Arm {
   /** The fist mesh (turned to close on whatever the hand holds). */
   fist: THREE.Mesh;
   glow: THREE.Sprite;
+  /** The bare upper arm and forearm (hidden under sleeves: CR 034). */
+  upper: THREE.Mesh;
+  fore: THREE.Mesh;
 }
 interface Leg {
   hip: THREE.Group;
   knee: THREE.Group;
+  thigh: THREE.Mesh;
+  shin: THREE.Mesh;
 }
+
+/** CR 034: one tint material per far-LOD armor colour, shared by every avatar. */
+const tintMats = new Map<number, THREE.MeshStandardMaterial>();
+function tintMat(c: THREE.Color): THREE.MeshStandardMaterial {
+  const hex = c.getHex();
+  let m = tintMats.get(hex);
+  if (!m) tintMats.set(hex, (m = new THREE.MeshStandardMaterial({ color: hex, roughness: 0.6, metalness: 0.2 })));
+  return m;
+}
+/** The skinned armor's cull sphere (rig frame): the whole figure, arms up included. */
+const ARMOR_BOUNDS = new THREE.Sphere(new THREE.Vector3(0, 1.0, 0), 1.5);
 
 export interface AvatarOptions {
   /** Draw the floating name/level plate (off for your own body). */
@@ -392,6 +411,13 @@ export class Avatar {
   private midBody = new THREE.Group();
   private midArmR = new THREE.Group();
   private midArmL = new THREE.Group();
+  // CR 034: worn armor (combat/armor): the appearance shown, its shared meshes,
+  // the skinned full-rig outfit, the mid silhouette, and the bare parts it covers
+  appearance = 0;
+  private armor: ArmorMeshes | null = null;
+  private armorRig: THREE.SkinnedMesh | null = null;
+  private armorMid: THREE.Mesh | null = null;
+  private bare!: { head: THREE.Mesh; visor: THREE.Mesh; torso: THREE.Mesh; visorMid: THREE.Mesh; low: THREE.Mesh; lowMat: THREE.Material };
   /** Distance band chosen this frame: 0 full, 1 simplified, 2 none. */
   animLevel = 0;
   private readonly input: AnimInput = { x: 0, y: 0, z: 0, yaw: 0, pitch: 0, speed: 0, activity: 0, healthPct: 100 };
@@ -479,6 +505,7 @@ export class Avatar {
     this.torso.rotation.order = 'YXZ';
     this.body.add(this.torso);
     const chest = mesh(r.chest);
+    chest.name = 'avatar-chest';
     this.torso.add(chest);
     this.neck.position.y = NECK_Y;
     this.torso.add(this.neck);
@@ -508,7 +535,7 @@ export class Avatar {
       elbow.add(fore, hand);
       shoulder.add(upper, elbow);
       this.torso.add(shoulder);
-      return { shoulder, elbow, hand, fist: palm, glow };
+      return { shoulder, elbow, hand, fist: palm, glow, upper, fore };
     };
     this.armL = arm(-1);
     this.armR = arm(1);
@@ -518,10 +545,11 @@ export class Avatar {
       const thigh = mesh(r.thigh, r.legMat);
       const knee = new THREE.Group();
       knee.position.y = -THIGH;
-      knee.add(mesh(r.shin, r.legMat));
+      const shin = mesh(r.shin, r.legMat);
+      knee.add(shin);
       hip.add(thigh, knee);
       this.body.add(hip);
-      return { hip, knee };
+      return { hip, knee, thigh, shin };
     };
     this.legL = leg(-1);
     this.legR = leg(1);
@@ -566,6 +594,7 @@ export class Avatar {
     this.buildInstruments(r.inst);
 
     const low = new THREE.Mesh(r.low, mat);
+    this.bare = { head, visor, torso: chest, visorMid, low, lowMat: mat };
 
     // Manual LOD (not THREE.LOD): the figures not in use stay out of the
     // graph, so neither the world-matrix pass nor the renderer walks them.
@@ -625,6 +654,88 @@ export class Avatar {
     this.weaponHi.visible = this.weaponMid.visible = true;
   }
 
+  /**
+   * CR 034: dress the rig in an appearance (combat/armor): the outfit's
+   * shared geometry (built once per appearance, whoever wears it) on one
+   * skinned mesh bound to the rig's joints, its silhouette on the mid
+   * figure, its colour on the far box; the bare parts it covers hidden.
+   * Called only when the appearance changes.
+   */
+  setAppearance(ap: number): void {
+    if (ap === this.appearance && (this.armor !== null) === (ap !== 0)) return;
+    const prev = this.appearance;
+    this.appearance = ap;
+    const meshes = ap ? acquireArmor(ap) : null;
+    if (this.armor) releaseArmor(prev);
+    this.armor = meshes;
+    const spec = meshes?.spec;
+    const hide = spec?.hides;
+    const b = this.bare;
+    b.head.visible = !hide?.head;
+    b.visor.visible = !hide?.visor;
+    b.torso.visible = !hide?.torso;
+    b.visorMid.visible = !hide?.visor;
+    for (const a of [this.armL, this.armR]) {
+      a.upper.visible = !hide?.upperArms;
+      a.fore.visible = !hide?.forearms;
+    }
+    for (const l of [this.legL, this.legR]) {
+      l.thigh.visible = !hide?.thighs;
+      l.shin.visible = !hide?.shins;
+    }
+    b.low.material = spec?.tint ? tintMat(spec.tint) : b.lowMat;
+    if (!meshes) {
+      if (this.armorRig) this.armorRig.visible = false;
+      if (this.armorMid) this.armorMid.visible = false;
+      return;
+    }
+    if (!this.armorRig) {
+      const groups: Record<ArmorBone, THREE.Object3D> = {
+        body: this.body,
+        torso: this.torso,
+        neck: this.neck,
+        shoulderL: this.armL.shoulder,
+        elbowL: this.armL.elbow,
+        handL: this.armL.hand,
+        shoulderR: this.armR.shoulder,
+        elbowR: this.armR.elbow,
+        handR: this.armR.hand,
+        hipL: this.legL.hip,
+        kneeL: this.legL.knee,
+        hipR: this.legR.hip,
+        kneeR: this.legR.knee,
+      };
+      // A bone at each joint (identity in its group): the pieces were built in those frames.
+      const bones = ARMOR_BONES.map((name) => {
+        const bone = new THREE.Bone();
+        bone.name = `armor-${name}`;
+        groups[name].add(bone);
+        return bone;
+      });
+      const rig = new THREE.SkinnedMesh(meshes.rig, armorMaterial());
+      rig.name = 'avatar-armor';
+      rig.bind(new THREE.Skeleton(bones, bones.map(() => new THREE.Matrix4())), new THREE.Matrix4());
+      rig.boundingSphere = ARMOR_BOUNDS.clone();
+      rig.castShadow = true;
+      this.high.add(rig);
+      this.armorRig = rig;
+      const mid = new THREE.Mesh(meshes.mid, armorMaterial());
+      mid.name = 'avatar-armor-mid';
+      mid.castShadow = true;
+      this.midBody.add(mid);
+      this.armorMid = mid;
+    }
+    this.armorRig.geometry = meshes.rig;
+    this.armorRig.visible = true;
+    this.armorMid!.geometry = meshes.mid;
+    this.armorMid!.visible = true;
+  }
+
+  /** CR 034: the worn outfit's spec (tests, captures; null when nothing is worn). */
+  get armorSpec() {
+    return this.armor?.spec ?? null;
+  }
+
   /** The weapon in the hand, for tests and captures (null when none). */
   get weaponMesh(): THREE.Mesh | null {
     return this.weaponHi.visible ? this.weaponHi : null;
@@ -646,6 +757,7 @@ export class Avatar {
     const riding = ridingOf(v.typeId ?? 0);
     this.root.rotation.y = riding ? this.steedHeading(v, dt) : v.yaw;
     if (((v.typeId ?? 0) & ~TYPE_RIDING) !== (this.weaponType & ~TYPE_RIDING) || this.weaponType < 0) this.setWeapon((v.typeId ?? 0) & ~TYPE_RIDING);
+    if ((v.appearance ?? 0) !== this.appearance) this.setAppearance(v.appearance ?? 0); // CR 034: only when it changes
 
     const d = camera.position.distanceTo(this.root.position);
     // 1 m of hysteresis at each band edge: no flicker for someone standing on it
@@ -829,6 +941,8 @@ export class Avatar {
   }
 
   dispose(): void {
+    if (this.armor) releaseArmor(this.appearance); // CR 034: the shared outfit outlives its last wearer only in the cache
+    this.armor = null;
     this.steed?.dispose();
     this.plateTex?.dispose();
     (this.plate?.material as THREE.SpriteMaterial | undefined)?.dispose();

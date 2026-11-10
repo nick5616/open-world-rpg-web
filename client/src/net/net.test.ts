@@ -37,14 +37,14 @@ describe('ClockSync', () => {
 
 // ---------------------------------------------------------------- decoder
 function ent(id: number, x: number): EntState {
-  return { id, kind: 1, x, y: 0, z: 500, yaw: 0, pitch: 0, vx: 0, vy: 0, vz: 0, healthPct: 100, activity: 0, typeId: 0, name: 'p', level: 1, partyId: 0 };
+  return { id, kind: 1, x, y: 0, z: 500, yaw: 0, pitch: 0, vx: 0, vy: 0, vz: 0, healthPct: 100, activity: 0, typeId: 0, name: 'p', level: 1, partyId: 0, appearance: 0 };
 }
 
 /** Reference delta encoder mirroring server/pkg/snapshot Diff (presence = mask bit). */
 function diff(base: EntState | undefined, cur: EntState): EntityRecord {
   const r: EntityRecord = { id: cur.id };
   const z = base ?? { ...ent(cur.id, 0), kind: 0, z: 0, healthPct: 0, name: '', level: 0 };
-  const keys = ['kind', 'x', 'y', 'z', 'yaw', 'pitch', 'vx', 'vy', 'vz', 'healthPct', 'activity', 'typeId', 'name', 'level', 'partyId'] as const;
+  const keys = ['kind', 'x', 'y', 'z', 'yaw', 'pitch', 'vx', 'vy', 'vz', 'healthPct', 'activity', 'typeId', 'name', 'level', 'partyId', 'appearance'] as const;
   for (const k of keys) {
     if (cur[k] !== z[k] || (!base && (k === 'kind' || k === 'name'))) (r as unknown as Record<string, unknown>)[k] = cur[k];
   }

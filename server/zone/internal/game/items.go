@@ -182,6 +182,7 @@ type charItems struct {
 	quick      string
 	version    int
 	gearVer    int
+	apVer      int // CR 034: the inventory version the entity's Appearance was computed at
 	gearActive int
 	synced     [2]string // weapon type WP14 last put in each loadout
 	charges    int
@@ -384,7 +385,7 @@ func (s *Server) itemsJoin(sess *session) {
 	if p := sess.ent.cbt; p != nil {
 		p.OnDrink = func() (float64, bool) { return s.drink(sess) }
 	}
-	ci.gearVer = -1
+	ci.gearVer, ci.apVer = -1, -1
 	s.applyGear(sess)
 	s.sendInventory(sess)
 }
@@ -551,6 +552,9 @@ type inventoryJSON struct {
 	Quick   string           `json:"quick"`
 	Persist string           `json:"persist"`
 	Items   []items.WireItem `json:"items"`
+	// Ap (CR 034): your worn armor's appearance, the number other players'
+	// snapshots carry for you (appearance.go), so your own body matches it.
+	Ap uint64 `json:"ap,omitempty"`
 }
 
 var persistNames = [...]string{"memory", "db", "local"}
@@ -560,7 +564,7 @@ func (s *Server) sendInventory(sess *session) {
 	if ci == nil || sess.ent == nil {
 		return
 	}
-	inv := inventoryJSON{V: 1, Gold: ci.inv.Gold(), Quick: ci.quick, Persist: persistNames[ci.persist], Items: make([]items.WireItem, 0, len(ci.inv.Items))}
+	inv := inventoryJSON{V: 1, Gold: ci.inv.Gold(), Quick: ci.quick, Persist: persistNames[ci.persist], Items: make([]items.WireItem, 0, len(ci.inv.Items)), Ap: AppearanceOf(&ci.inv)}
 	for _, it := range ci.inv.Items {
 		inv.Items = append(inv.Items, it.Wire())
 	}
@@ -617,7 +621,15 @@ func (s *Server) sendGranted(sess *session, source int, got []*items.Item) {
 // active loadout changed (itemsTick).
 func (s *Server) applyGear(sess *session) {
 	ci, e := sess.items, sess.ent
-	if ci == nil || e == nil || e.cbt == nil {
+	if ci == nil || e == nil {
+		return
+	}
+	if ci.apVer != ci.version {
+		// CR 034: the armor everyone sees (appearance.go); snapshots carry it on change only
+		ci.apVer = ci.version
+		e.Appearance = AppearanceOf(&ci.inv)
+	}
+	if e.cbt == nil {
 		return
 	}
 	p := e.cbt

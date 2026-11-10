@@ -24,6 +24,8 @@ import { lookKey, materialKey, type WeaponKind, type WeaponLook } from './look';
 import { weaponMaterial, tickWeaponMaterial } from './material';
 import { BOW_MAX_DRAW, bowNock, FIST_WRIST, fistGeometry, forearmGeometry, GRIP_R, OPEN_WRIST, openHandGeometry, setBowDraw, weaponGeometry } from './models';
 import { castHooks, castsFromWeapon } from '../fx/castOrigin';
+import { dressForearms } from '../armor/fp';
+import { ownAppearance } from '../armor/own';
 
 /** The newest melee swing (CombatLayer writes it from the FX queue; the weapon reads it). */
 export const swing = { at: 0, dur: 0 };
@@ -240,6 +242,7 @@ export function FirstPersonWeapon() {
     rig.root.visible = (!view.third || view.hideBody) && !view.photo && !view.fpProp && !view.fpGesture && !view.fpInstrument; // playtest 2: photo mode shows the body; a fishing rod in hand
     const now = performance.now();
     tickWeaponMaterial(scene, now);
+    dressForearms(rig, ownAppearance()); // CR 034: your body armor's sleeves (swapped only when it changes)
 
     // The look: weapon from the timeline (as before), material and gem from combat_sync.
     const hud = useCombatHud.getState();

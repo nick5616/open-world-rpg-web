@@ -320,6 +320,49 @@ func writeEnt(w *proto.Writer, r *ghostRec) {
 	w.U32(q.PartyID)
 }
 
+// CR 034: worn armor (EntState.Appearance) rides after the frame as an
+// optional section, u16 n + n x (u32 entity id, u64 appearance), listing
+// only the records that wear something (none for the G5 scale bots). A zone
+// built before it stops reading at the end of the gone list, so the frame
+// version is unchanged and mixed builds keep mirroring each other.
+func writeLooks(w *proto.Writer, recs []ghostRec) {
+	n := 0
+	for i := range recs {
+		if recs[i].Appearance != 0 {
+			n++
+		}
+	}
+	if n == 0 {
+		return
+	}
+	w.U16(uint16(n))
+	for i := range recs {
+		if recs[i].Appearance != 0 {
+			w.U32(recs[i].ID)
+			w.U64(recs[i].Appearance)
+		}
+	}
+}
+
+// readLooks reads writeLooks' section when present (records are in the
+// writer's order, so a forward scan matches them).
+func readLooks(r *proto.Reader, recs []ghostRec) {
+	if r.Err != nil || r.Off >= len(r.B) {
+		return
+	}
+	n, j := r.Count(), 0
+	for i := 0; i < n && r.Err == nil; i++ {
+		id, ap := r.U32(), r.U64()
+		for j < len(recs) && recs[j].ID != id {
+			j++
+		}
+		if j < len(recs) {
+			recs[j].Appearance = ap
+			j++
+		}
+	}
+}
+
 func readEnt(r *proto.Reader) ghostRec {
 	var g ghostRec
 	q := &g.EntState
@@ -348,6 +391,7 @@ func encodeGhosts(w *proto.Writer, f *ghostFrame) []byte {
 	for _, id := range f.Gone {
 		w.U32(id)
 	}
+	writeLooks(w, f.Recs)
 	return append([]byte(nil), w.B...)
 }
 
@@ -366,6 +410,7 @@ func decodeGhosts(b []byte) (ghostFrame, error) {
 	for i := 0; i < n && r.Err == nil; i++ {
 		f.Gone = append(f.Gone, r.U32())
 	}
+	readLooks(&r, f.Recs)
 	return f, r.Err
 }
 
@@ -377,6 +422,7 @@ func encodePresence(zone string, r *ghostRec) []byte {
 	w.U8(ghostVersion)
 	w.Str(zone)
 	writeEnt(&w, r)
+	writeLooks(&w, []ghostRec{*r})
 	return w.B
 }
 
@@ -387,5 +433,8 @@ func decodePresence(b []byte) (zone string, g ghostRec, err error) {
 	r := proto.Reader{B: b, Off: 1}
 	zone = r.Str()
 	g = readEnt(&r)
+	one := []ghostRec{g}
+	readLooks(&r, one)
+	g = one[0]
 	return zone, g, r.Err
 }

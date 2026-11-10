@@ -64,6 +64,10 @@ func DevRoll(r *RNG, g DevGear) *Item {
 		if gd := D.Item(g.Gem); gd != nil && gd.Kind == "gem" && base.Kind == "weapon" {
 			it.Sockets[0] = g.Gem
 		}
+	} else if gd := D.Item(g.Gem); gd != nil && gd.Kind == "gem" && base.Kind == "armor" {
+		// CR 034: armor bases have no sockets; a dev gem sets one anyway, so the
+		// avatar's gem inlay can be seen (cosmetic: gear stats read weapon gems only)
+		it.Sockets = []string{g.Gem}
 	}
 	return it
 }
