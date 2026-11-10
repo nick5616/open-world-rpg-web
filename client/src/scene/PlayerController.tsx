@@ -58,7 +58,7 @@ export interface PlayerDriver {
   /** WP10: world inputs per step (rain at the synced world time, updrafts). Offline uses offlineEnv. */
   env?(): Readonly<StepEnv>;
   /** WP13 combat: per-step combat bits (client/src/combat/link.ts), after-step hook, and input block while downed. */
-  combatHook?(seq: number, before: Readonly<MoveState>, sprinting: boolean): { flags: number; castSlot: number };
+  combatHook?(seq: number, before: Readonly<MoveState>, sprinting: boolean): { flags: number; castSlot: number; aim?: { yaw: number; pitch: number } | null };
   afterStep?(seq: number, state: Readonly<MoveState>): void;
   blockInput?(): boolean;
 }

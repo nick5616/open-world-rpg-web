@@ -805,6 +805,10 @@ func (w *World) mitigate(p *Player, dmg float64) (float64, bool) {
 		dmg -= a
 		shielded = a > 0
 		w.toPlayer(p.ID, Out{Ev: ev(EvShield, p.ID, 0, int32(math.Round(p.shield)), p.Pos, nil)})
+		if p.shield <= 0 && a > 0 {
+			// CR 022: the shell others see bursts when it breaks, as the caster's does.
+			w.near(p.Pos, 64, p.ID, Out{Ev: ev(EvShield, p.ID, 0, 0, p.Pos, nil)})
+		}
 	}
 	return dmg, shielded
 }

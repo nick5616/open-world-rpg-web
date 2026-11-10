@@ -1,0 +1,2371 @@
+{
+ "tag": "after",
+ "rows": [
+  {
+   "key": "ember_flick",
+   "label": "cast: Ember Flick from the open off hand (sword)",
+   "caster": {
+    "actions": [
+     "cast"
+    ],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "watcher": {
+    "actions": [
+     "cast"
+    ],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 1,
+   "dashVariants": [],
+   "raw": [],
+   "poseMatch": true,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "ember_flick",
+   "label": "castStaff: Ember Flick from the staff tip",
+   "caster": {
+    "actions": [
+     "castStaff"
+    ],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "watcher": {
+    "actions": [
+     "castStaff"
+    ],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 1,
+   "dashVariants": [],
+   "raw": [],
+   "poseMatch": true,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "eruption",
+   "label": "castBig: Eruption (windup sigil at the aim point)",
+   "caster": {
+    "actions": [
+     "castBig"
+    ],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": -0.2
+   },
+   "watcher": {
+    "actions": [
+     "castBig"
+    ],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 1,
+   "dashVariants": [],
+   "raw": [],
+   "poseMatch": true,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "ice_wall",
+   "label": "shield: Ice Wall (the shell others see)",
+   "caster": {
+    "actions": [
+     "shield"
+    ],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "watcher": {
+    "actions": [
+     "shield"
+    ],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 1,
+   "dashVariants": [],
+   "raw": [],
+   "poseMatch": true,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "wraith_hound",
+   "label": "summon: Wraith Hound (flourish at the hand, the ally)",
+   "caster": {
+    "actions": [
+     "castStaff"
+    ],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "watcher": {
+    "actions": [
+     "castStaff"
+    ],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 1,
+   "dashVariants": [],
+   "raw": [],
+   "poseMatch": true,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "guiding_motes",
+   "label": "homing: Guiding Motes aimed 35 deg off, curving in",
+   "caster": {
+    "actions": [
+     "castStaff"
+    ],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "watcher": {
+    "actions": [
+     "castStaff"
+    ],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 1,
+   "dashVariants": [],
+   "raw": [],
+   "poseMatch": true,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "pyre_brand",
+   "label": "brand: Pyre Brand fan",
+   "caster": {
+    "actions": [
+     "castStaff"
+    ],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "watcher": {
+    "actions": [
+     "castStaff"
+    ],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 1,
+   "dashVariants": [],
+   "raw": [],
+   "poseMatch": true,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "cauterize",
+   "label": "castBeam: Cauterize, turning while it burns",
+   "caster": {
+    "actions": [
+     "castBeam"
+    ],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "watcher": {
+    "actions": [
+     "castBeam"
+    ],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "aimErrDegMedian": 7.860916214712354,
+   "drawnLookErrDegMedian": 4.33941926182268,
+   "aimErrDegFinal": 0.001,
+   "drawnLookErrDegFinal": 0.324,
+   "thirdPersonConvergenceDeg": 0.4702087184020186,
+   "heldStateAgreement": 1,
+   "dashVariants": [],
+   "raw": [
+    {
+     "casterAim": {
+      "yaw": 1.44378681043826,
+      "pitch": -0.01480394255140142
+     },
+     "casterLook": {
+      "yaw": 1.4501390346784242,
+      "pitch": -0.02
+     },
+     "watcherRec": {
+      "held": {
+       "kind": "beam",
+       "id": 1007,
+       "startSeq": 0,
+       "at": 25537.40000000596,
+       "until": 27537.40000000596,
+       "bitSeen": true
+      },
+      "dash": null,
+      "action": {
+       "id": 1007,
+       "at": 25537.40000000596,
+       "charge": 0
+      },
+      "actions": 8,
+      "aimYaw": 1.0837574266412056,
+      "aimPitch": -0.014812954038502855,
+      "aimPrecise": true,
+      "lookYaw": 1.1585073024767008,
+      "lookYaw0": 1.1535535524900022,
+      "lookPitch": -0.018479956785822246,
+      "lookPitch0": -0.018479956785822246,
+      "aimAt": 25972,
+      "aim": {
+       "yaw": 1.088711176627904,
+       "pitch": -0.014812954038502855
+      }
+     },
+     "watcherView": {
+      "yaw": 1.1585073024767008,
+      "pitch": -0.018479956785822246
+     }
+    },
+    {
+     "casterAim": {
+      "yaw": 1.44378681043826,
+      "pitch": -0.01480394255140142
+     },
+     "casterLook": {
+      "yaw": 1.4501390346784242,
+      "pitch": -0.02
+     },
+     "watcherRec": {
+      "held": {
+       "kind": "beam",
+       "id": 1007,
+       "startSeq": 0,
+       "at": 25537.40000000596,
+       "until": 27537.40000000596,
+       "bitSeen": true
+      },
+      "dash": null,
+      "action": {
+       "id": 1007,
+       "at": 25537.40000000596,
+       "charge": 0
+      },
+      "actions": 8,
+      "aimYaw": 1.0837574266412056,
+      "aimPitch": -0.014812954038502855,
+      "aimPrecise": true,
+      "lookYaw": 1.2215967649810648,
+      "lookYaw0": 1.1535535524900022,
+      "lookPitch": -0.018479956785822246,
+      "lookPitch0": -0.018479956785822246,
+      "aimAt": 25972,
+      "aim": {
+       "yaw": 1.1518006391322682,
+       "pitch": -0.014812954038502855
+      }
+     },
+     "watcherView": {
+      "yaw": 1.2215967649810648,
+      "pitch": -0.018479956785822246
+     }
+    },
+    {
+     "casterAim": {
+      "yaw": 1.44378681043826,
+      "pitch": -0.01480394255140142
+     },
+     "casterLook": {
+      "yaw": 1.4501390346784242,
+      "pitch": -0.02
+     },
+     "watcherRec": {
+      "held": {
+       "kind": "beam",
+       "id": 1007,
+       "startSeq": 0,
+       "at": 25537.40000000596,
+       "until": 27537.40000000596,
+       "bitSeen": true
+      },
+      "dash": null,
+      "action": {
+       "id": 1007,
+       "at": 25537.40000000596,
+       "charge": 0
+      },
+      "actions": 8,
+      "aimYaw": 1.203791423293257,
+      "aimPitch": -0.014812954038502855,
+      "aimPrecise": true,
+      "lookYaw": 1.2796725272022695,
+      "lookYaw0": 1.2363867660351529,
+      "lookPitch": -0.018479956785822246,
+      "lookPitch0": -0.018479956785822246,
+      "aimAt": 26078.90000000596,
+      "aim": {
+       "yaw": 1.2470771844603736,
+       "pitch": -0.014812954038502855
+      }
+     },
+     "watcherView": {
+      "yaw": 1.2796725272022695,
+      "pitch": -0.018479956785822246
+     }
+    },
+    {
+     "casterAim": {
+      "yaw": 1.44378681043826,
+      "pitch": -0.01480394255140142
+     },
+     "casterLook": {
+      "yaw": 1.4501390346784242,
+      "pitch": -0.02
+     },
+     "watcherRec": {
+      "held": {
+       "kind": "beam",
+       "id": 1007,
+       "startSeq": 0,
+       "at": 25537.40000000596,
+       "until": 27537.40000000596,
+       "bitSeen": true
+      },
+      "dash": null,
+      "action": {
+       "id": 1007,
+       "at": 25537.40000000596,
+       "charge": 0
+      },
+      "actions": 8,
+      "aimYaw": 1.203791423293257,
+      "aimPitch": -0.014812954038502855,
+      "aimPrecise": true,
+      "lookYaw": 1.325359400733194,
+      "lookYaw0": 1.2363867660351529,
+      "lookPitch": -0.018479956785822246,
+      "lookPitch0": -0.018479956785822246,
+      "aimAt": 26078.90000000596,
+      "aim": {
+       "yaw": 1.292764057991298,
+       "pitch": -0.014812954038502855
+      }
+     },
+     "watcherView": {
+      "yaw": 1.325359400733194,
+      "pitch": -0.018479956785822246
+     }
+    },
+    {
+     "casterAim": {
+      "yaw": 1.44378681043826,
+      "pitch": -0.01480394255140142
+     },
+     "casterLook": {
+      "yaw": 1.4501390346784242,
+      "pitch": -0.02
+     },
+     "watcherRec": {
+      "held": {
+       "kind": "beam",
+       "id": 1007,
+       "startSeq": 0,
+       "at": 25537.40000000596,
+       "until": 27537.40000000596,
+       "bitSeen": true
+      },
+      "dash": null,
+      "action": {
+       "id": 1007,
+       "at": 25537.40000000596,
+       "charge": 0
+      },
+      "actions": 8,
+      "aimYaw": 1.2638084216192826,
+      "aimPitch": -0.014812954038502855,
+      "aimPrecise": true,
+      "lookYaw": 1.3387786694144372,
+      "lookYaw0": 1.325359400733194,
+      "lookPitch": -0.018479956785822246,
+      "lookPitch0": -0.018479956785822246,
+      "aimAt": 26172,
+      "aim": {
+       "yaw": 1.277227690300526,
+       "pitch": -0.014812954038502855
+      }
+     },
+     "watcherView": {
+      "yaw": 1.3387786694144372,
+      "pitch": -0.018479956785822246
+     }
+    },
+    {
+     "casterAim": {
+      "yaw": 1.44378681043826,
+      "pitch": -0.01480394255140142
+     },
+     "casterLook": {
+      "yaw": 1.4501390346784242,
+      "pitch": -0.02
+     },
+     "watcherRec": {
+      "held": {
+       "kind": "beam",
+       "id": 1007,
+       "startSeq": 0,
+       "at": 25537.40000000596,
+       "until": 27537.40000000596,
+       "bitSeen": true
+      },
+      "dash": null,
+      "action": {
+       "id": 1007,
+       "at": 25537.40000000596,
+       "charge": 0
+      },
+      "actions": 8,
+      "aimYaw": 1.2638084216192826,
+      "aimPitch": -0.014812954038502855,
+      "aimPrecise": true,
+      "lookYaw": 1.3681389196779772,
+      "lookYaw0": 1.325359400733194,
+      "lookPitch": -0.018479956785822246,
+      "lookPitch0": -0.018479956785822246,
+      "aimAt": 26172,
+      "aim": {
+       "yaw": 1.306587940564066,
+       "pitch": -0.014812954038502855
+      }
+     },
+     "watcherView": {
+      "yaw": 1.3681389196779772,
+      "pitch": -0.018479956785822246
+     }
+    }
+   ],
+   "poseMatch": true,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "cinder_spray",
+   "label": "stream: Cinder Spray held, sweeping",
+   "caster": {
+    "actions": [
+     "castStaff"
+    ],
+    "held": [
+     "castStaff"
+    ],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "watcher": {
+    "actions": [
+     "castStaff"
+    ],
+    "held": [
+     "castStaff"
+    ],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "aimErrDegMedian": 0.0014901305240171072,
+   "drawnLookErrDegMedian": 0.32805188105901506,
+   "aimErrDegFinal": 0.001,
+   "drawnLookErrDegFinal": 0.328,
+   "thirdPersonConvergenceDeg": 0.470140290527019,
+   "heldStateAgreement": 1,
+   "dashVariants": [],
+   "raw": [
+    {
+     "casterAim": {
+      "yaw": 1.4737868104382597,
+      "pitch": 0.025194170970512617
+     },
+     "casterLook": {
+      "yaw": 1.4801390346784242,
+      "pitch": 0.02
+     },
+     "watcherRec": {
+      "held": {
+       "kind": "stream",
+       "id": 1018,
+       "startSeq": 1712,
+       "at": 28896.59999999404,
+       "until": null,
+       "bitSeen": true
+      },
+      "dash": null,
+      "action": {
+       "id": 1007,
+       "at": 25537.40000000596,
+       "charge": 0
+      },
+      "actions": 8,
+      "aimYaw": 1.0737865515199487,
+      "aimPitch": 0.025215578719263762,
+      "aimPrecise": true,
+      "lookYaw": 1.1548934330967044,
+      "lookYaw0": 1.1252307002393387,
+      "lookPitch": 0.030799927976370413,
+      "lookPitch0": 0.030799927976370413,
+      "aimAt": 29437.90000000596,
+      "aim": {
+       "yaw": 1.1034492843773145,
+       "pitch": 0.025215578719263762
+      }
+     },
+     "watcherView": {
+      "yaw": 1.1548934330967044,
+      "pitch": 0.030799927976370413
+     }
+    },
+    {
+     "casterAim": {
+      "yaw": 1.4737868104382597,
+      "pitch": 0.025194170970512617
+     },
+     "casterLook": {
+      "yaw": 1.4801390346784242,
+      "pitch": 0.02
+     },
+     "watcherRec": {
+      "held": {
+       "kind": "stream",
+       "id": 1018,
+       "startSeq": 1712,
+       "at": 28896.59999999404,
+       "until": null,
+       "bitSeen": true
+      },
+      "dash": null,
+      "action": {
+       "id": 1007,
+       "at": 25537.40000000596,
+       "charge": 0
+      },
+      "actions": 8,
+      "aimYaw": 1.0737865515199487,
+      "aimPitch": 0.025215578719263762,
+      "aimPrecise": true,
+      "lookYaw": 1.2083067630910158,
+      "lookYaw0": 1.1252307002393387,
+      "lookPitch": 0.030799927976370413,
+      "lookPitch0": 0.030799927976370413,
+      "aimAt": 29437.90000000596,
+      "aim": {
+       "yaw": 1.1568626143716259,
+       "pitch": 0.025215578719263762
+      }
+     },
+     "watcherView": {
+      "yaw": 1.2083067630910158,
+      "pitch": 0.030799927976370413
+     }
+    },
+    {
+     "casterAim": {
+      "yaw": 1.4737868104382597,
+      "pitch": 0.025194170970512617
+     },
+     "casterLook": {
+      "yaw": 1.4801390346784242,
+      "pitch": 0.02
+     },
+     "watcherRec": {
+      "held": {
+       "kind": "stream",
+       "id": 1018,
+       "startSeq": 1712,
+       "at": 28896.59999999404,
+       "until": null,
+       "bitSeen": true
+      },
+      "dash": null,
+      "action": {
+       "id": 1007,
+       "at": 25537.40000000596,
+       "charge": 0
+      },
+      "actions": 8,
+      "aimYaw": 1.173782924130244,
+      "aimPitch": 0.025215578719263762,
+      "aimPrecise": true,
+      "lookYaw": 1.2670784075440995,
+      "lookYaw0": 1.2083067630910158,
+      "lookPitch": 0.030799927976370413,
+      "lookPitch0": 0.030799927976370413,
+      "aimAt": 29532.29999998212,
+      "aim": {
+       "yaw": 1.2325545685833277,
+       "pitch": 0.025215578719263762
+      }
+     },
+     "watcherView": {
+      "yaw": 1.2670784075440995,
+      "pitch": 0.030799927976370413
+     }
+    },
+    {
+     "casterAim": {
+      "yaw": 1.4737868104382597,
+      "pitch": 0.025194170970512617
+     },
+     "casterLook": {
+      "yaw": 1.4801390346784242,
+      "pitch": 0.02
+     },
+     "watcherRec": {
+      "held": {
+       "kind": "stream",
+       "id": 1018,
+       "startSeq": 1712,
+       "at": 28896.59999999404,
+       "until": null,
+       "bitSeen": true
+      },
+      "dash": null,
+      "action": {
+       "id": 1007,
+       "at": 25537.40000000596,
+       "charge": 0
+      },
+      "actions": 8,
+      "aimYaw": 1.173782924130244,
+      "aimPitch": 0.025215578719263762,
+      "aimPrecise": true,
+      "lookYaw": 1.3384776785205652,
+      "lookYaw0": 1.2083067630910158,
+      "lookPitch": 0.030799927976370413,
+      "lookPitch0": 0.030799927976370413,
+      "aimAt": 29532.29999998212,
+      "aim": {
+       "yaw": 1.3039538395597934,
+       "pitch": 0.025215578719263762
+      }
+     },
+     "watcherView": {
+      "yaw": 1.3384776785205652,
+      "pitch": 0.030799927976370413
+     }
+    },
+    {
+     "casterAim": {
+      "yaw": 1.4737868104382597,
+      "pitch": 0.025194170970512617
+     },
+     "casterLook": {
+      "yaw": 1.4801390346784242,
+      "pitch": 0.02
+     },
+     "watcherRec": {
+      "held": {
+       "kind": "stream",
+       "id": 1018,
+       "startSeq": 1712,
+       "at": 28896.59999999404,
+       "until": null,
+       "bitSeen": true
+      },
+      "dash": null,
+      "action": {
+       "id": 1007,
+       "at": 25537.40000000596,
+       "charge": 0
+      },
+      "actions": 8,
+      "aimYaw": 1.2737792967405392,
+      "aimPitch": 0.025215578719263762,
+      "aimPrecise": true,
+      "lookYaw": 1.3883258557357179,
+      "lookYaw0": 1.3532255694513091,
+      "lookPitch": 0.030799927976370413,
+      "lookPitch0": 0.030799927976370413,
+      "aimAt": 29639.5,
+      "aim": {
+       "yaw": 1.308879583024948,
+       "pitch": 0.025215578719263762
+      }
+     },
+     "watcherView": {
+      "yaw": 1.3883258557357179,
+      "pitch": 0.030799927976370413
+     }
+    },
+    {
+     "casterAim": {
+      "yaw": 1.4737868104382597,
+      "pitch": 0.025194170970512617
+     },
+     "casterLook": {
+      "yaw": 1.4801390346784242,
+      "pitch": 0.02
+     },
+     "watcherRec": {
+      "held": {
+       "kind": "stream",
+       "id": 1018,
+       "startSeq": 1712,
+       "at": 28896.59999999404,
+       "until": null,
+       "bitSeen": true
+      },
+      "dash": null,
+      "action": {
+       "id": 1007,
+       "at": 25537.40000000596,
+       "charge": 0
+      },
+      "actions": 8,
+      "aimYaw": 1.2737792967405392,
+      "aimPitch": 0.025215578719263762,
+      "aimPrecise": true,
+      "lookYaw": 1.457603170697546,
+      "lookYaw0": 1.3532255694513091,
+      "lookPitch": 0.030799927976370413,
+      "lookPitch0": 0.030799927976370413,
+      "aimAt": 29639.5,
+      "aim": {
+       "yaw": 1.3781568979867762,
+       "pitch": 0.025215578719263762
+      }
+     },
+     "watcherView": {
+      "yaw": 1.457603170697546,
+      "pitch": 0.030799927976370413
+     }
+    }
+   ],
+   "poseMatch": true,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "arc_sparks",
+   "label": "stream: Arc Sparks held",
+   "caster": {
+    "actions": [
+     "castStaff"
+    ],
+    "held": [
+     "castStaff"
+    ],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "watcher": {
+    "actions": [
+     "castStaff"
+    ],
+    "held": [
+     "castStaff"
+    ],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "aimErrDegMedian": 0.0022689979275497263,
+   "drawnLookErrDegMedian": 0.23316783169694216,
+   "aimErrDegFinal": 0.002,
+   "drawnLookErrDegFinal": 0.233,
+   "thirdPersonConvergenceDeg": 3.8424348565797435,
+   "heldStateAgreement": 0.93,
+   "dashVariants": [],
+   "raw": [
+    {
+     "casterAim": {
+      "yaw": 1.2231962567245076,
+      "pitch": 0.5120875589039763
+     },
+     "casterLook": {
+      "yaw": 1.2801390346784243,
+      "pitch": 0.4766617953420143
+     },
+     "watcherRec": {
+      "held": null,
+      "dash": null,
+      "action": {
+       "id": 1007,
+       "at": 25537.40000000596,
+       "charge": 0
+      },
+      "actions": 8,
+      "aimYaw": 1.4737720419611298,
+      "aimPitch": 0.025215578719263762,
+      "aimPrecise": true,
+      "lookYaw": 1.4726215563702154,
+      "lookYaw0": 1.4726215563702154,
+      "lookPitch": 0.030579365627183844,
+      "lookPitch0": 0.030799927976370413,
+      "aimAt": 30757.19999998808,
+      "aim": {
+       "yaw": 1.4737720419611298,
+       "pitch": 0.024995016370077193
+      }
+     },
+     "watcherView": {
+      "yaw": 1.4726215563702154,
+      "pitch": 0.030579365627183844
+     }
+    },
+    {
+     "casterAim": {
+      "yaw": 1.2231962567245076,
+      "pitch": 0.5120875589039763
+     },
+     "casterLook": {
+      "yaw": 1.2801390346784243,
+      "pitch": 0.4766617953420143
+     },
+     "watcherRec": {
+      "held": {
+       "kind": "stream",
+       "id": 1411,
+       "startSeq": 1906,
+       "at": 32136.29999998212,
+       "until": null,
+       "bitSeen": true
+      },
+      "dash": null,
+      "action": {
+       "id": 1007,
+       "at": 25537.40000000596,
+       "charge": 0
+      },
+      "actions": 8,
+      "aimYaw": 1.4737720419611298,
+      "aimPitch": 0.025215578719263762,
+      "aimPrecise": true,
+      "lookYaw": 1.402067108028152,
+      "lookYaw0": 1.4726215563702154,
+      "lookPitch": 0.1689206362601279,
+      "lookPitch0": 0.03073334600072257,
+      "aimAt": 32136.29999998212,
+      "aim": {
+       "yaw": 1.4032175936190663,
+       "pitch": 0.16340286897866912
+      }
+     },
+     "watcherView": {
+      "yaw": 1.402067108028152,
+      "pitch": 0.1689206362601279
+     }
+    },
+    {
+     "casterAim": {
+      "yaw": 1.2231962567245076,
+      "pitch": 0.5120875589039763
+     },
+     "casterLook": {
+      "yaw": 1.2801390346784243,
+      "pitch": 0.4766617953420143
+     },
+     "watcherRec": {
+      "held": {
+       "kind": "stream",
+       "id": 1411,
+       "startSeq": 1906,
+       "at": 32136.29999998212,
+       "until": null,
+       "bitSeen": true
+      },
+      "dash": null,
+      "action": {
+       "id": 1007,
+       "at": 25537.40000000596,
+       "charge": 0
+      },
+      "actions": 8,
+      "aimYaw": 1.4737720419611298,
+      "aimPitch": 0.025215578719263762,
+      "aimPrecise": true,
+      "lookYaw": 1.227184630308513,
+      "lookYaw0": 1.4726215563702154,
+      "lookPitch": 0.5112788044077505,
+      "lookPitch0": 0.03073334600072257,
+      "aimAt": 32136.29999998212,
+      "aim": {
+       "yaw": 1.2283351158994273,
+       "pitch": 0.5057610371262917
+      }
+     },
+     "watcherView": {
+      "yaw": 1.227184630308513,
+      "pitch": 0.5112788044077505
+     }
+    },
+    {
+     "casterAim": {
+      "yaw": 1.2231962567245076,
+      "pitch": 0.5120875589039763
+     },
+     "casterLook": {
+      "yaw": 1.2801390346784243,
+      "pitch": 0.4766617953420143
+     },
+     "watcherRec": {
+      "held": {
+       "kind": "stream",
+       "id": 1411,
+       "startSeq": 1906,
+       "at": 32136.29999998212,
+       "until": null,
+       "bitSeen": true
+      },
+      "dash": null,
+      "action": {
+       "id": 1007,
+       "at": 25537.40000000596,
+       "charge": 0
+      },
+      "actions": 8,
+      "aimYaw": 1.223157930740313,
+      "aimPitch": 0.5120775891239078,
+      "aimPrecise": true,
+      "lookYaw": 1.227184630308513,
+      "lookYaw0": 1.227184630308513,
+      "lookPitch": 0.5112788044077505,
+      "lookPitch0": 0.5112788044077505,
+      "aimAt": 32242.69999998808,
+      "aim": {
+       "yaw": 1.223157930740313,
+       "pitch": 0.5120775891239078
+      }
+     },
+     "watcherView": {
+      "yaw": 1.227184630308513,
+      "pitch": 0.5112788044077505
+     }
+    },
+    {
+     "casterAim": {
+      "yaw": 1.2231962567245076,
+      "pitch": 0.5120875589039763
+     },
+     "casterLook": {
+      "yaw": 1.2801390346784243,
+      "pitch": 0.4766617953420143
+     },
+     "watcherRec": {
+      "held": {
+       "kind": "stream",
+       "id": 1411,
+       "startSeq": 1906,
+       "at": 32136.29999998212,
+       "until": null,
+       "bitSeen": true
+      },
+      "dash": null,
+      "action": {
+       "id": 1007,
+       "at": 25537.40000000596,
+       "charge": 0
+      },
+      "actions": 8,
+      "aimYaw": 1.223157930740313,
+      "aimPitch": 0.5120775891239078,
+      "aimPrecise": true,
+      "lookYaw": 1.227184630308513,
+      "lookYaw0": 1.227184630308513,
+      "lookPitch": 0.5112788044077505,
+      "lookPitch0": 0.5112788044077505,
+      "aimAt": 32242.69999998808,
+      "aim": {
+       "yaw": 1.223157930740313,
+       "pitch": 0.5120775891239078
+      }
+     },
+     "watcherView": {
+      "yaw": 1.227184630308513,
+      "pitch": 0.5112788044077505
+     }
+    },
+    {
+     "casterAim": {
+      "yaw": 1.2231962567245076,
+      "pitch": 0.5120875589039763
+     },
+     "casterLook": {
+      "yaw": 1.2801390346784243,
+      "pitch": 0.4766617953420143
+     },
+     "watcherRec": {
+      "held": {
+       "kind": "stream",
+       "id": 1411,
+       "startSeq": 1906,
+       "at": 32136.29999998212,
+       "until": null,
+       "bitSeen": true
+      },
+      "dash": null,
+      "action": {
+       "id": 1007,
+       "at": 25537.40000000596,
+       "charge": 0
+      },
+      "actions": 8,
+      "aimYaw": 1.223157930740313,
+      "aimPitch": 0.5120775891239078,
+      "aimPrecise": true,
+      "lookYaw": 1.227184630308513,
+      "lookYaw0": 1.227184630308513,
+      "lookPitch": 0.5112788044077505,
+      "lookPitch0": 0.5112788044077505,
+      "aimAt": 32242.69999998808,
+      "aim": {
+       "yaw": 1.223157930740313,
+       "pitch": 0.5120775891239078
+      }
+     },
+     "watcherView": {
+      "yaw": 1.227184630308513,
+      "pitch": 0.5112788044077505
+     }
+    }
+   ],
+   "poseMatch": true,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "starfall_hail",
+   "label": "rain: Starfall Hail held (seeded points around the aim)",
+   "caster": {
+    "actions": [
+     "castStaff"
+    ],
+    "held": [
+     "castStaff"
+    ],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "watcher": {
+    "actions": [
+     "castStaff"
+    ],
+    "held": [
+     "castStaff"
+    ],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "aimErrDegMedian": 0.0012532245793660931,
+   "drawnLookErrDegMedian": 0.3228452446330891,
+   "aimErrDegFinal": 0.001,
+   "drawnLookErrDegFinal": 0.323,
+   "thirdPersonConvergenceDeg": 3.730800163951107,
+   "heldStateAgreement": 0.93,
+   "dashVariants": [],
+   "raw": [
+    {
+     "casterAim": {
+      "yaw": 1.2260212903612515,
+      "pitch": 0.44287229070092915
+     },
+     "casterLook": {
+      "yaw": 1.2801390346784243,
+      "pitch": 0.4066617953420143
+     },
+     "watcherRec": {
+      "held": null,
+      "dash": null,
+      "action": {
+       "id": 1007,
+       "at": 25537.40000000596,
+       "charge": 0
+      },
+      "actions": 8,
+      "aimYaw": 1.223157930740313,
+      "aimPitch": 0.5120775891239078,
+      "aimPrecise": true,
+      "lookYaw": 1.2288146042362555,
+      "lookYaw0": 1.2647387444385367,
+      "lookPitch": 0.5100515299209797,
+      "lookPitch0": 0.48300276553337984,
+      "aimAt": 33246.69999998808,
+      "aim": {
+       "yaw": 1.187233790538032,
+       "pitch": 0.5391263535115076
+      }
+     },
+     "watcherView": {
+      "yaw": 1.2288146042362555,
+      "pitch": 0.5100515299209797
+     }
+    },
+    {
+     "casterAim": {
+      "yaw": 1.2260212903612515,
+      "pitch": 0.44287229070092915
+     },
+     "casterLook": {
+      "yaw": 1.2801390346784243,
+      "pitch": 0.4066617953420143
+     },
+     "watcherRec": {
+      "held": {
+       "kind": "stream",
+       "id": 1709,
+       "startSeq": 2065,
+       "at": 34814.40000000596,
+       "until": null,
+       "bitSeen": true
+      },
+      "dash": null,
+      "action": {
+       "id": 1007,
+       "at": 25537.40000000596,
+       "charge": 0
+      },
+      "actions": 8,
+      "aimYaw": 1.223157930740313,
+      "aimPitch": 0.5120775891239078,
+      "aimPrecise": true,
+      "lookYaw": 1.227184630308513,
+      "lookYaw0": 1.227184630308513,
+      "lookPitch": 0.46464489206000553,
+      "lookPitch0": 0.5111436587178271,
+      "aimAt": 34814.40000000596,
+      "aim": {
+       "yaw": 1.223157930740313,
+       "pitch": 0.46557882246608623
+      }
+     },
+     "watcherView": {
+      "yaw": 1.227184630308513,
+      "pitch": 0.46464489206000553
+     }
+    },
+    {
+     "casterAim": {
+      "yaw": 1.2260212903612515,
+      "pitch": 0.44287229070092915
+     },
+     "casterLook": {
+      "yaw": 1.2801390346784243,
+      "pitch": 0.4066617953420143
+     },
+     "watcherRec": {
+      "held": {
+       "kind": "stream",
+       "id": 1709,
+       "startSeq": 2065,
+       "at": 34814.40000000596,
+       "until": null,
+       "bitSeen": true
+      },
+      "dash": null,
+      "action": {
+       "id": 1007,
+       "at": 25537.40000000596,
+       "charge": 0
+      },
+      "actions": 8,
+      "aimYaw": 1.223157930740313,
+      "aimPitch": 0.5120775891239078,
+      "aimPrecise": true,
+      "lookYaw": 1.227184630308513,
+      "lookYaw0": 1.227184630308513,
+      "lookPitch": 0.4373589772644612,
+      "lookPitch0": 0.5111436587178271,
+      "aimAt": 34814.40000000596,
+      "aim": {
+       "yaw": 1.223157930740313,
+       "pitch": 0.4382929076705419
+      }
+     },
+     "watcherView": {
+      "yaw": 1.227184630308513,
+      "pitch": 0.4373589772644612
+     }
+    },
+    {
+     "casterAim": {
+      "yaw": 1.2260212903612515,
+      "pitch": 0.44287229070092915
+     },
+     "casterLook": {
+      "yaw": 1.2801390346784243,
+      "pitch": 0.4066617953420143
+     },
+     "watcherRec": {
+      "held": {
+       "kind": "stream",
+       "id": 1709,
+       "startSeq": 2065,
+       "at": 34814.40000000596,
+       "until": null,
+       "bitSeen": true
+      },
+      "dash": null,
+      "action": {
+       "id": 1007,
+       "at": 25537.40000000596,
+       "charge": 0
+      },
+      "actions": 8,
+      "aimYaw": 1.2260341447175986,
+      "aimPitch": 0.44285459355239276,
+      "aimPrecise": true,
+      "lookYaw": 1.227184630308513,
+      "lookYaw0": 1.227184630308513,
+      "lookPitch": 0.4373589772644612,
+      "lookPitch0": 0.4373589772644612,
+      "aimAt": 34905.90000000596,
+      "aim": {
+       "yaw": 1.2260341447175986,
+       "pitch": 0.44285459355239276
+      }
+     },
+     "watcherView": {
+      "yaw": 1.227184630308513,
+      "pitch": 0.4373589772644612
+     }
+    },
+    {
+     "casterAim": {
+      "yaw": 1.2260212903612515,
+      "pitch": 0.44287229070092915
+     },
+     "casterLook": {
+      "yaw": 1.2801390346784243,
+      "pitch": 0.4066617953420143
+     },
+     "watcherRec": {
+      "held": {
+       "kind": "stream",
+       "id": 1709,
+       "startSeq": 2065,
+       "at": 34814.40000000596,
+       "until": null,
+       "bitSeen": true
+      },
+      "dash": null,
+      "action": {
+       "id": 1007,
+       "at": 25537.40000000596,
+       "charge": 0
+      },
+      "actions": 8,
+      "aimYaw": 1.2260341447175986,
+      "aimPitch": 0.44285459355239276,
+      "aimPrecise": true,
+      "lookYaw": 1.227184630308513,
+      "lookYaw0": 1.227184630308513,
+      "lookPitch": 0.4373589772644612,
+      "lookPitch0": 0.4373589772644612,
+      "aimAt": 34905.90000000596,
+      "aim": {
+       "yaw": 1.2260341447175986,
+       "pitch": 0.44285459355239276
+      }
+     },
+     "watcherView": {
+      "yaw": 1.227184630308513,
+      "pitch": 0.4373589772644612
+     }
+    },
+    {
+     "casterAim": {
+      "yaw": 1.2260212903612515,
+      "pitch": 0.44287229070092915
+     },
+     "casterLook": {
+      "yaw": 1.2801390346784243,
+      "pitch": 0.4066617953420143
+     },
+     "watcherRec": {
+      "held": {
+       "kind": "stream",
+       "id": 1709,
+       "startSeq": 2065,
+       "at": 34814.40000000596,
+       "until": null,
+       "bitSeen": true
+      },
+      "dash": null,
+      "action": {
+       "id": 1007,
+       "at": 25537.40000000596,
+       "charge": 0
+      },
+      "actions": 8,
+      "aimYaw": 1.2260341447175986,
+      "aimPitch": 0.44285459355239276,
+      "aimPrecise": true,
+      "lookYaw": 1.227184630308513,
+      "lookYaw0": 1.227184630308513,
+      "lookPitch": 0.4373589772644612,
+      "lookPitch0": 0.4373589772644612,
+      "aimAt": 34905.90000000596,
+      "aim": {
+       "yaw": 1.2260341447175986,
+       "pitch": 0.44285459355239276
+      }
+     },
+     "watcherView": {
+      "yaw": 1.227184630308513,
+      "pitch": 0.4373589772644612
+     }
+    }
+   ],
+   "poseMatch": true,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "boulder_heave",
+   "label": "charge: Boulder Heave gathering (held)",
+   "caster": {
+    "actions": [
+     "castBig"
+    ],
+    "held": [
+     "castBig"
+    ],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "watcher": {
+    "actions": [
+     "castBig"
+    ],
+    "held": [
+     "castBig"
+    ],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "aimErrDegMedian": 0.0020887817279723895,
+   "drawnLookErrDegMedian": 0.3213179732952805,
+   "aimErrDegFinal": 0.002,
+   "drawnLookErrDegFinal": 0.321,
+   "thirdPersonConvergenceDeg": 0.4999854425164268,
+   "heldStateAgreement": 1,
+   "dashVariants": [],
+   "raw": [
+    {
+     "casterAim": {
+      "yaw": 1.272562972177736,
+      "pitch": 0.5809922915645982
+     },
+     "casterLook": {
+      "yaw": 1.2801390346784243,
+      "pitch": 0.5766617953420143
+     },
+     "watcherRec": {
+      "held": {
+       "kind": "charge",
+       "id": 1327,
+       "startSeq": 2230,
+       "at": 37536.90000000596,
+       "until": null,
+       "bitSeen": true
+      },
+      "dash": null,
+      "action": {
+       "id": 1007,
+       "at": 25537.40000000596,
+       "charge": 0
+      },
+      "actions": 8,
+      "aimYaw": 1.2725329373503822,
+      "aimPitch": 0.5810129545199177,
+      "aimPrecise": true,
+      "lookYaw": 1.2762720155208536,
+      "lookYaw0": 1.2762720155208536,
+      "lookPitch": 0.5851986315510399,
+      "lookPitch0": 0.5831914770798663,
+      "aimAt": 37536.90000000596,
+      "aim": {
+       "yaw": 1.2725329373503822,
+       "pitch": 0.5810129545199177
+      }
+     },
+     "watcherView": {
+      "yaw": 1.2762720155208536,
+      "pitch": 0.5851986315510399
+     }
+    },
+    {
+     "casterAim": {
+      "yaw": 1.272562972177736,
+      "pitch": 0.5809922915645982
+     },
+     "casterLook": {
+      "yaw": 1.2801390346784243,
+      "pitch": 0.5766617953420143
+     },
+     "watcherRec": {
+      "held": {
+       "kind": "charge",
+       "id": 1327,
+       "startSeq": 2230,
+       "at": 37536.90000000596,
+       "until": null,
+       "bitSeen": true
+      },
+      "dash": null,
+      "action": {
+       "id": 1007,
+       "at": 25537.40000000596,
+       "charge": 0
+      },
+      "actions": 8,
+      "aimYaw": 1.2725329373503822,
+      "aimPitch": 0.5810129545199177,
+      "aimPrecise": true,
+      "lookYaw": 1.2762720155208536,
+      "lookYaw0": 1.2762720155208536,
+      "lookPitch": 0.5851986315510399,
+      "lookPitch0": 0.5831914770798663,
+      "aimAt": 37536.90000000596,
+      "aim": {
+       "yaw": 1.2725329373503822,
+       "pitch": 0.5810129545199177
+      }
+     },
+     "watcherView": {
+      "yaw": 1.2762720155208536,
+      "pitch": 0.5851986315510399
+     }
+    },
+    {
+     "casterAim": {
+      "yaw": 1.272562972177736,
+      "pitch": 0.5809922915645982
+     },
+     "casterLook": {
+      "yaw": 1.2801390346784243,
+      "pitch": 0.5766617953420143
+     },
+     "watcherRec": {
+      "held": {
+       "kind": "charge",
+       "id": 1327,
+       "startSeq": 2230,
+       "at": 37536.90000000596,
+       "until": null,
+       "bitSeen": true
+      },
+      "dash": null,
+      "action": {
+       "id": 1007,
+       "at": 25537.40000000596,
+       "charge": 0
+      },
+      "actions": 8,
+      "aimYaw": 1.2725329373503822,
+      "aimPitch": 0.5810129545199177,
+      "aimPrecise": true,
+      "lookYaw": 1.2762720155208536,
+      "lookYaw0": 1.2762720155208536,
+      "lookPitch": 0.5851986315510399,
+      "lookPitch0": 0.5831914770798663,
+      "aimAt": 37536.90000000596,
+      "aim": {
+       "yaw": 1.2725329373503822,
+       "pitch": 0.5810129545199177
+      }
+     },
+     "watcherView": {
+      "yaw": 1.2762720155208536,
+      "pitch": 0.5851986315510399
+     }
+    },
+    {
+     "casterAim": {
+      "yaw": 1.272562972177736,
+      "pitch": 0.5809922915645982
+     },
+     "casterLook": {
+      "yaw": 1.2801390346784243,
+      "pitch": 0.5766617953420143
+     },
+     "watcherRec": {
+      "held": {
+       "kind": "charge",
+       "id": 1327,
+       "startSeq": 2230,
+       "at": 37536.90000000596,
+       "until": null,
+       "bitSeen": true
+      },
+      "dash": null,
+      "action": {
+       "id": 1007,
+       "at": 25537.40000000596,
+       "charge": 0
+      },
+      "actions": 8,
+      "aimYaw": 1.2725329373503822,
+      "aimPitch": 0.5810129545199177,
+      "aimPrecise": true,
+      "lookYaw": 1.2762720155208536,
+      "lookYaw0": 1.2762720155208536,
+      "lookPitch": 0.5851986315510399,
+      "lookPitch0": 0.5831914770798663,
+      "aimAt": 37536.90000000596,
+      "aim": {
+       "yaw": 1.2725329373503822,
+       "pitch": 0.5810129545199177
+      }
+     },
+     "watcherView": {
+      "yaw": 1.2762720155208536,
+      "pitch": 0.5851986315510399
+     }
+    },
+    {
+     "casterAim": {
+      "yaw": 1.272562972177736,
+      "pitch": 0.5809922915645982
+     },
+     "casterLook": {
+      "yaw": 1.2801390346784243,
+      "pitch": 0.5766617953420143
+     },
+     "watcherRec": {
+      "held": {
+       "kind": "charge",
+       "id": 1327,
+       "startSeq": 2230,
+       "at": 37536.90000000596,
+       "until": null,
+       "bitSeen": true
+      },
+      "dash": null,
+      "action": {
+       "id": 1007,
+       "at": 25537.40000000596,
+       "charge": 0
+      },
+      "actions": 8,
+      "aimYaw": 1.2725329373503822,
+      "aimPitch": 0.5810129545199177,
+      "aimPrecise": true,
+      "lookYaw": 1.2762720155208536,
+      "lookYaw0": 1.2762720155208536,
+      "lookPitch": 0.5851986315510399,
+      "lookPitch0": 0.5831914770798663,
+      "aimAt": 37536.90000000596,
+      "aim": {
+       "yaw": 1.2725329373503822,
+       "pitch": 0.5810129545199177
+      }
+     },
+     "watcherView": {
+      "yaw": 1.2762720155208536,
+      "pitch": 0.5851986315510399
+     }
+    },
+    {
+     "casterAim": {
+      "yaw": 1.272562972177736,
+      "pitch": 0.5809922915645982
+     },
+     "casterLook": {
+      "yaw": 1.2801390346784243,
+      "pitch": 0.5766617953420143
+     },
+     "watcherRec": {
+      "held": {
+       "kind": "charge",
+       "id": 1327,
+       "startSeq": 2230,
+       "at": 37536.90000000596,
+       "until": null,
+       "bitSeen": true
+      },
+      "dash": null,
+      "action": {
+       "id": 1007,
+       "at": 25537.40000000596,
+       "charge": 0
+      },
+      "actions": 8,
+      "aimYaw": 1.2725329373503822,
+      "aimPitch": 0.5810129545199177,
+      "aimPrecise": true,
+      "lookYaw": 1.2762720155208536,
+      "lookYaw0": 1.2762720155208536,
+      "lookPitch": 0.5851986315510399,
+      "lookPitch0": 0.5831914770798663,
+      "aimAt": 37536.90000000596,
+      "aim": {
+       "yaw": 1.2725329373503822,
+       "pitch": 0.5810129545199177
+      }
+     },
+     "watcherView": {
+      "yaw": 1.2762720155208536,
+      "pitch": 0.5851986315510399
+     }
+    }
+   ],
+   "poseMatch": true,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "boulder_heave_release",
+   "label": "charge: Boulder Heave released",
+   "caster": {
+    "actions": [
+     "castStaff"
+    ],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "watcher": {
+    "actions": [
+     "castStaff"
+    ],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 1,
+   "dashVariants": [],
+   "raw": [],
+   "poseMatch": true,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "whirling_blades",
+   "label": "orbit: Whirling Blades",
+   "caster": {
+    "actions": [
+     "castStaff"
+    ],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "watcher": {
+    "actions": [
+     "castStaff"
+    ],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 1,
+   "dashVariants": [],
+   "raw": [],
+   "poseMatch": true,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "magma_dash",
+   "label": "Magma Dash held: jet flight (climbing)",
+   "caster": {
+    "actions": [
+     "jet"
+    ],
+    "held": [
+     "jet"
+    ],
+    "dashHold": true,
+    "bodyPitchMin": -1.17
+   },
+   "watcher": {
+    "actions": [
+     "jet"
+    ],
+    "held": [
+     "jet"
+    ],
+    "dashHold": true,
+    "bodyPitchMin": -1.01
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 1,
+   "dashVariants": [
+    "1/1"
+   ],
+   "raw": [],
+   "poseMatch": true,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "glacier_step",
+   "label": "Glacier Step held: skate",
+   "caster": {
+    "actions": [
+     "skate"
+    ],
+    "held": [
+     "skate"
+    ],
+    "dashHold": true,
+    "bodyPitchMin": -0.42
+   },
+   "watcher": {
+    "actions": [
+     "skate"
+    ],
+    "held": [
+     "skate"
+    ],
+    "dashHold": true,
+    "bodyPitchMin": -0.42
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 1,
+   "dashVariants": [
+    "2/2"
+   ],
+   "raw": [],
+   "poseMatch": true,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "static_step",
+   "label": "Static Step held: blink chain",
+   "caster": {
+    "actions": [
+     "rush"
+    ],
+    "held": [
+     "rush"
+    ],
+    "dashHold": true,
+    "bodyPitchMin": -0.7
+   },
+   "watcher": {
+    "actions": [
+     "rush"
+    ],
+    "held": [
+     "rush"
+    ],
+    "dashHold": true,
+    "bodyPitchMin": -0.7
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 1,
+   "dashVariants": [
+    "5/5"
+   ],
+   "raw": [],
+   "poseMatch": true,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "root_launch",
+   "label": "Root Launch held",
+   "caster": {
+    "actions": [
+     "rush"
+    ],
+    "held": [
+     "rush"
+    ],
+    "dashHold": true,
+    "bodyPitchMin": -0.7
+   },
+   "watcher": {
+    "actions": [
+     "rush"
+    ],
+    "held": [
+     "rush"
+    ],
+    "dashHold": true,
+    "bodyPitchMin": -0.7
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 1,
+   "dashVariants": [
+    "4/4"
+   ],
+   "raw": [],
+   "poseMatch": true,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "updraft",
+   "label": "Updraft held: soar",
+   "caster": {
+    "actions": [
+     "soar"
+    ],
+    "held": [
+     "soar"
+    ],
+    "dashHold": true,
+    "bodyPitchMin": -1.1
+   },
+   "watcher": {
+    "actions": [
+     "soar"
+    ],
+    "held": [
+     "soar"
+    ],
+    "dashHold": true,
+    "bodyPitchMin": -1.1
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 1,
+   "dashVariants": [
+    "6/6"
+   ],
+   "raw": [],
+   "poseMatch": true,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "sunstep",
+   "label": "Sunstep held: radiant trail",
+   "caster": {
+    "actions": [
+     "rush"
+    ],
+    "held": [
+     "rush"
+    ],
+    "dashHold": true,
+    "bodyPitchMin": -0.7
+   },
+   "watcher": {
+    "actions": [
+     "rush"
+    ],
+    "held": [
+     "rush"
+    ],
+    "dashHold": true,
+    "bodyPitchMin": -0.7
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 1,
+   "dashVariants": [
+    "7/7"
+   ],
+   "raw": [],
+   "poseMatch": true,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "skip",
+   "label": "Skip held: phase",
+   "caster": {
+    "actions": [
+     "rush"
+    ],
+    "held": [
+     "rush"
+    ],
+    "dashHold": true,
+    "bodyPitchMin": -0.7
+   },
+   "watcher": {
+    "actions": [
+     "rush"
+    ],
+    "held": [
+     "rush"
+    ],
+    "dashHold": true,
+    "bodyPitchMin": -0.7
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 1,
+   "dashVariants": [
+    "8/8"
+   ],
+   "raw": [],
+   "poseMatch": true,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "phase_slip",
+   "label": "Phase Slip held: blood dash",
+   "caster": {
+    "actions": [
+     "rush"
+    ],
+    "held": [
+     "rush"
+    ],
+    "dashHold": true,
+    "bodyPitchMin": -0.7
+   },
+   "watcher": {
+    "actions": [
+     "rush"
+    ],
+    "held": [
+     "rush"
+    ],
+    "dashHold": true,
+    "bodyPitchMin": -0.7
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 1,
+   "dashVariants": [
+    "3/3"
+   ],
+   "raw": [],
+   "poseMatch": true,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "sword_attack",
+   "label": "sword: slash (arc in the world for both)",
+   "caster": {
+    "actions": [
+     "slash"
+    ],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": -0.08
+   },
+   "watcher": {
+    "actions": [
+     "slash"
+    ],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": -0.04
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 1,
+   "dashVariants": [],
+   "raw": [],
+   "poseMatch": true,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "spear_attack",
+   "label": "spear: thrust",
+   "caster": {
+    "actions": [
+     "thrust"
+    ],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": -0.15
+   },
+   "watcher": {
+    "actions": [
+     "thrust"
+    ],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": -0.15
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 1,
+   "dashVariants": [],
+   "raw": [],
+   "poseMatch": true,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "staff_attack",
+   "label": "staff: bolt",
+   "caster": {
+    "actions": [
+     "bolt"
+    ],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "watcher": {
+    "actions": [
+     "bolt"
+    ],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 1,
+   "dashVariants": [],
+   "raw": [],
+   "poseMatch": true,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "wand_attack",
+   "label": "wand: jab",
+   "caster": {
+    "actions": [
+     "bolt"
+    ],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "watcher": {
+    "actions": [
+     "bolt"
+    ],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 1,
+   "dashVariants": [],
+   "raw": [],
+   "poseMatch": true,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "sword_guard",
+   "label": "sword: parry stance (held)",
+   "caster": {
+    "actions": [
+     "parry"
+    ],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "watcher": {
+    "actions": [
+     "parry"
+    ],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 0.17,
+   "dashVariants": [],
+   "raw": [],
+   "poseMatch": true,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "sword_release",
+   "label": "sword: released",
+   "caster": {
+    "actions": [],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "watcher": {
+    "actions": [
+     "parry"
+    ],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 0.9,
+   "dashVariants": [],
+   "raw": [],
+   "poseMatch": false,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "spear_guard",
+   "label": "spear: charge (held)",
+   "caster": {
+    "actions": [
+     "charge"
+    ],
+    "held": [
+     "charge"
+    ],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "watcher": {
+    "actions": [
+     "charge"
+    ],
+    "held": [
+     "charge"
+    ],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 1,
+   "dashVariants": [],
+   "raw": [],
+   "poseMatch": true,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "spear_release",
+   "label": "spear: released",
+   "caster": {
+    "actions": [
+     "charge",
+     "thrust"
+    ],
+    "held": [
+     "charge"
+    ],
+    "dashHold": false,
+    "bodyPitchMin": -0.15
+   },
+   "watcher": {
+    "actions": [
+     "charge",
+     "thrust"
+    ],
+    "held": [
+     "charge"
+    ],
+    "dashHold": false,
+    "bodyPitchMin": -0.15
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 1,
+   "dashVariants": [],
+   "raw": [],
+   "poseMatch": true,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "bow_guard",
+   "label": "bow: draw held 3.6 s",
+   "caster": {
+    "actions": [
+     "draw"
+    ],
+    "held": [
+     "draw"
+    ],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "watcher": {
+    "actions": [
+     "draw"
+    ],
+    "held": [
+     "draw"
+    ],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 1,
+   "dashVariants": [],
+   "raw": [],
+   "poseMatch": true,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "bow_release",
+   "label": "bow: released",
+   "caster": {
+    "actions": [
+     "draw",
+     "bow"
+    ],
+    "held": [
+     "draw"
+    ],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "watcher": {
+    "actions": [
+     "draw",
+     "bow"
+    ],
+    "held": [
+     "draw"
+    ],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 0.88,
+   "dashVariants": [],
+   "raw": [],
+   "poseMatch": true,
+   "heldPoseMatch": true
+  }
+ ],
+ "summary": {
+  "sharedStateBuild": true,
+  "rows": 32,
+  "poseMatch": 31,
+  "heldPoseMatch": 32,
+  "aimErrDegMedianByKey": {
+   "cauterize": {
+    "replicated": 7.860916214712354,
+    "drawnLook": 4.33941926182268,
+    "replicatedFinal": 0.001,
+    "drawnLookFinal": 0.324,
+    "thirdPersonConvergence": 0.4702087184020186
+   },
+   "cinder_spray": {
+    "replicated": 0.0014901305240171072,
+    "drawnLook": 0.32805188105901506,
+    "replicatedFinal": 0.001,
+    "drawnLookFinal": 0.328,
+    "thirdPersonConvergence": 0.470140290527019
+   },
+   "arc_sparks": {
+    "replicated": 0.0022689979275497263,
+    "drawnLook": 0.23316783169694216,
+    "replicatedFinal": 0.002,
+    "drawnLookFinal": 0.233,
+    "thirdPersonConvergence": 3.8424348565797435
+   },
+   "starfall_hail": {
+    "replicated": 0.0012532245793660931,
+    "drawnLook": 0.3228452446330891,
+    "replicatedFinal": 0.001,
+    "drawnLookFinal": 0.323,
+    "thirdPersonConvergence": 3.730800163951107
+   },
+   "boulder_heave": {
+    "replicated": 0.0020887817279723895,
+    "drawnLook": 0.3213179732952805,
+    "replicatedFinal": 0.002,
+    "drawnLookFinal": 0.321,
+    "thirdPersonConvergence": 0.4999854425164268
+   }
+  }
+ }
+}

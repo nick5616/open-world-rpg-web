@@ -9,6 +9,10 @@
 // First person, FirstPersonWeapon publishes the real tip / hand position
 // (fpOrigin). Bodies use castOrigin() below, which matches the avatar's cast
 // poses (avatarAnim 'cast' / 'castStaff').
+//
+// CR 022 (shared spell visuals): casterHand() is the one entry the FX
+// engine uses for every body, yours in third person and everyone else's:
+// the same weapon rule (weaponFor) and the same pose function.
 
 import type { WeaponKind } from '../weapons/look';
 
@@ -25,7 +29,25 @@ export const castHooks = {
   fpOrigin: null as ((out: { x: number; y: number; z: number }) => boolean) | null,
   /** Another player's weapon kind (RemotePlayers' avatars). */
   weaponOf: null as ((id: number) => WeaponKind | null) | null,
+  /** CR 022: the socketed gem's element (-1 none) tinting a body's weapon swings: yours / another player's. */
+  selfGem: -1,
+  gemOf: null as ((id: number) => number) | null,
 };
+
+/** CR 022: a caster's weapon kind, by the same rule for you and for others. */
+export function weaponFor(key: 'self' | number): WeaponKind | null {
+  return key === 'self' ? castHooks.selfWeapon : (castHooks.weaponOf?.(key) ?? null);
+}
+
+/** CR 022: a caster's socketed gem element (-1 none). */
+export function gemFor(key: 'self' | number): number {
+  return key === 'self' ? castHooks.selfGem : (castHooks.gemOf?.(key) ?? -1);
+}
+
+/** CR 022: where a body's casts leave: castOrigin with the caster's own weapon (yours in third person, and everyone's). */
+export function casterHand(key: 'self' | number, x: number, y: number, z: number, yaw: number, pitch: number, out: V3): V3 {
+  return castOrigin(x, y, z, yaw, pitch, weaponFor(key), out);
+}
 
 /** Casts from the weapon itself? */
 export function castsFromWeapon(kind: WeaponKind | null | undefined): boolean {

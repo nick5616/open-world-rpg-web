@@ -9,7 +9,7 @@
 // number appears when HitResult confirms it (a refused claim just shows no
 // number).
 
-import { COMBAT, HITSTOP_MS, InputFlag, MOVE_STEP_HZ, i16ToPitch, u16ToYaw, type Event as ZoneEvent, type HitResult, type MoveDef, type SpellDef } from '@lodestone/contracts';
+import { COMBAT, HITSTOP_MS, InputFlag, MOVE_STEP_HZ, type Event as ZoneEvent, type HitResult, type MoveDef, type SpellDef } from '@lodestone/contracts';
 import type { GroundQuery } from '../sim/ground';
 import type { MoveState } from '../sim/movement';
 import type { RemoteView } from '../net/interpolation';
@@ -26,6 +26,12 @@ import { isHostilePlayer } from '../ui/pvp/hostile';
 import { spellFx } from './fx/api';
 // CR 020: the shared spell simulation (the zone's twin re-flies homing shots and judges stream shots the same way).
 import { canAcquire, chargeMult, homingParams, homingStep, launchShot, orbOffset, rainOffset, shotJitter, SIM_DT, streamSeed, type HomingParams, type HomingShot } from './spellsim';
+// CR 022: your caster record (the state your visuals and everyone else's are drawn from) and the shared aim.
+import { castState, remoteEvent, CAST_FX_DASH, CAST_FX_GUARD } from './castState';
+import { aimPoint as sharedAimPoint, aimTarget as sharedAimTarget } from './aim';
+import { dashLive } from './dashes';
+import { castHooks, gemFor } from './fx/castOrigin';
+import type { WeaponKind } from './weapons/look';
 
 const STEP_MS = 1000 / MOVE_STEP_HZ;
 const EYE = 1.6;
@@ -291,6 +297,8 @@ export class CombatRuntime {
     const hud = useCombatHud.getState();
     const lo = hud.loadouts[hud.activeLoadout];
     if (lo) this.timeline.loadout = { weapon: lo.weapon, spells: lo.spells, gem: lo.gem };
+    castHooks.selfGem = this.timeline.loadout.gem; // CR 022: your swings' tint (others read it from your weapon look)
+    castHooks.selfWeapon = this.timeline.loadout.weapon as WeaponKind;
     const sel = validSelection(hud.selected, this.timeline.loadout.spells);
     if (sel !== hud.selected) hud.set({ selected: sel });
   }
@@ -299,19 +307,33 @@ export class CombatRuntime {
    * Called by LocalSim before each 60 Hz step: returns the combat bits for
    * this step's InputFrame (attack/alt/dodge/cast/interact + castSlot).
    */
-  stepHook(seq: number, before: MoveState, sprinting: boolean): { flags: number; castSlot: number } {
+  stepHook(seq: number, before: MoveState, sprinting: boolean): { flags: number; castSlot: number; aim?: { yaw: number; pitch: number } | null } {
     if (!this.enabled) return { flags: 0, castSlot: 0 };
     const b = this.buttons;
     this.timeline.sprinting = sprinting;
     const gy = this.ground ? this.ground.heightAt(before.pos.x, before.pos.z) : before.pos.y;
-    const out = this.timeline.step(seq, b, before, gy, performance.now());
+    const now = performance.now();
+    const heldBefore = castState.peek('self')?.held ?? null; // a charge released on this step still aimed it
+    const out = this.timeline.step(seq, b, before, gy, now);
     this.buttons = { ...blankButtons(), attackDown: b.attackDown, altDown: b.altDown, castHeld: b.castHeld };
+    // CR 022: your caster record, from the same step bits the zone replays (it sends others the same):
+    // a dash start (dodge + variant: Event 214 | 0x8000), the held dash's thrust (the casting bit),
+    // the guard (the secondary on a sword, spear or bow: 214 0x4001 and the casting bit).
+    if ((out.flags & InputFlag.dodge) !== 0 && out.castSlot) castState.action('self', CAST_FX_DASH | out.castSlot, now);
+    castState.dashHolding('self', dashLive.variant, dashLive.held, now);
+    const wk = this.timeline.weapon().key;
+    if (wk !== 'staff' && wk !== 'wand') {
+      if (this.timeline.heldSteps === 1) castState.action('self', CAST_FX_GUARD, now);
+      else if (this.timeline.heldSteps === 0) castState.release('self', 'guard');
+    }
     // CR 020: a stream or charge that ended, a charge that began, the stream's shots this step.
     if (out.channelEnd) {
       spellFx.channelEnd('self', out.channelEnd.spell);
+      castState.release('self', out.channelEnd.charge ? 'charge' : 'stream');
       this.streaming = null;
     }
     if (out.chargeStart) {
+      castState.hold('self', 'charge', out.chargeStart.id, seq, now);
       spellFx.chargeStart(out.chargeStart, 'self');
       emitSound('cast', { element: out.chargeStart.tree, kind: 'charge' });
     }
@@ -323,7 +345,16 @@ export class CombatRuntime {
       useCombatHud.getState().set({ refused: { id: out.refused.id, at: performance.now() } });
       if (out.refused.reason === 'mana') toast('Not enough mana');
     }
-    return { flags: out.flags, castSlot: out.castSlot };
+    // CR 022: on a step that aims something (a spell cast, a shot or area move, a released charge)
+    // and while a stream, charge or beam is held, the frame carries the aim the spell really flies
+    // along (third person: the crosshair's convergence, up to a few degrees off the camera look),
+    // so the zone validates it and every other player draws it along that exact aim (Events 214,
+    // 223, 226). Melee cones and dashes keep the camera look (what their prediction uses).
+    const h = castState.peek('self')?.held ?? heldBefore;
+    const st = out.started;
+    const aiming = (h && h.kind !== 'guard') || (st && (st.spell ? st.spell.type !== 'mobility' : !!st.move && (st.move.speed > 0 || st.move.radius > 1)));
+    const aim = aiming && (localPlayer.aimYaw !== localPlayer.yaw || localPlayer.aimPitch !== localPlayer.pitch) ? { yaw: localPlayer.aimYaw, pitch: localPlayer.aimPitch } : null;
+    return { flags: out.flags, castSlot: out.castSlot, aim };
   }
 
   /** After each step: i-frame bookkeeping for the probe and active hit windows. */
@@ -339,17 +370,24 @@ export class CombatRuntime {
     this.probe.started(s, performance.now());
     this.lastStarted = s;
     this.startedCount++;
+    const now = performance.now();
     if (s.stream && s.spell) {
       // CR 020: a hold-to-fire stream: its shots arrive one by one (fireShot).
       this.streaming = { spell: s.spell, start: s.seq };
+      castState.hold('self', 'stream', s.spell.id, s.seq, now); // CR 022 (others: Event 223)
       spellFx.streamStart(s.spell, 'self', streamSeed(s.seq, s.spell.id));
       emitSound('cast', { element: s.spell.tree, kind: s.spell.type });
       return;
     }
+    // CR 022: the action on your caster record (others get it as Event 214; a mobility
+    // spell's is its dash variant, noted in stepHook like the zone does).
+    if (s.spell?.type !== 'mobility') castState.action('self', s.id, now, s.charge);
     const total = s.startup + s.active + Math.max(0, s.spell?.durationSteps ?? 0);
     this.actives.push({ s, yaw, pitch, aimYaw: localPlayer.aimYaw, aimPitch: localPlayer.aimPitch, hit: new Set(), impact: null, ticks: 0, until: s.seq + total + 1, lastHit: null });
     const color = s.spell?.color ?? (s.form ? '#ffd76a' : '#e8e8e8');
     if (s.move && s.move.speed === 0) fxQueue.push({ t: 'swing', arc: s.move.arc, reach: s.move.reach, color, durationMs: (s.startup + s.active) * STEP_MS, at: performance.now() });
+    // CR 022: the swing's arc in the world (the same FX others see from Event 214).
+    if (s.move && s.move.speed === 0 && s.move.radius <= 1) spellFx.swing('self', s.move.id, yaw, gemFor('self'));
     if (s.spell) {
       // Hand flourish, windup telegraph (where an area will land, the target
       // of a long direct spell), dash trails, shields: spellFx (fx/engine.ts).
@@ -464,9 +502,9 @@ export class CombatRuntime {
         if (seq < firstHit || (seq - firstHit) % every !== 0 || a.ticks >= ticks) return;
         a.ticks++;
         const t = this.aimTarget(eye, localPlayer.aimYaw, localPlayer.aimPitch, sp.range, 6);
-        const end = t ? { x: t.x, y: t.y + 0.9, z: t.z } : this.aimPoint(eye, localPlayer.aimYaw, localPlayer.aimPitch, sp.range);
-        // One beam per cast (same id every tick: it stays up and re-aims).
-        spellFx.beam(`l${s.seq}`, sp, 'self', end, sp.type === 'beam' ? every * STEP_MS + 60 : 160);
+        // CR 022: one beam per cast that follows your aim every frame (castState), drawn by the
+        // same call that draws another player's beam from their replicated aim.
+        if (a.ticks === 1) spellFx.channelBeam(sp, 'self', sp.type === 'beam' ? sp.durationMs : 150);
         if (!t) return;
         this.predictHit(s, t, st.pos, 'spell', sp.type === 'beam');
         if (sp.chain > 0) {
@@ -551,41 +589,15 @@ export class CombatRuntime {
     }
   }
 
-  /** The aim point on the terrain along the look ray (or at range). */
+  /** The aim point on the terrain along the look ray (or at range): aim.ts, shared with the FX engine. */
   private aimPoint(eye: { x: number; y: number; z: number }, yaw: number, pitch: number, range: number): { x: number; y: number; z: number } {
-    const cp = Math.cos(pitch);
-    const dx = -Math.sin(yaw) * cp;
-    const dz = -Math.cos(yaw) * cp;
-    const dy = Math.sin(pitch);
-    for (let d = 1; d <= range; d += 0.5) {
-      const x = eye.x + dx * d;
-      const y = eye.y + dy * d;
-      const z = eye.z + dz * d;
-      const g = this.ground ? this.ground.heightAt(x, z) : 0;
-      if (y <= g) return { x, y: g, z };
-    }
-    const x = eye.x + dx * range;
-    const z = eye.z + dz * range;
-    return { x, y: this.ground ? this.ground.heightAt(x, z) : eye.y + dy * range, z };
+    const g = this.ground;
+    return sharedAimPoint(eye, yaw, pitch, range, g ? (x, z) => g.heightAt(x, z) : null);
   }
 
-  /** The enemy nearest the crosshair within range and `deg` degrees. */
+  /** The enemy nearest the crosshair within range and `deg` degrees (aim.ts). */
   private aimTarget(eye: { x: number; y: number; z: number }, yaw: number, pitch: number, range: number, deg: number): RemoteView | null {
-    const cp = Math.cos(pitch);
-    const f = { x: -Math.sin(yaw) * cp, y: Math.sin(pitch), z: -Math.cos(yaw) * cp };
-    let best: RemoteView | null = null;
-    let bestA = (deg * Math.PI) / 180;
-    for (const e of this.enemies()) {
-      const v = { x: e.x - eye.x, y: e.y + 0.9 - eye.y, z: e.z - eye.z };
-      const d = Math.hypot(v.x, v.y, v.z);
-      if (d > range + 1 || d < 0.1) continue;
-      const ang = Math.acos(Math.max(-1, Math.min(1, (v.x * f.x + v.y * f.y + v.z * f.z) / d))) - Math.atan2(enemyInfo(e).radius, d);
-      if (ang < bestA) {
-        bestA = ang;
-        best = e;
-      }
-    }
-    return best;
+    return sharedAimTarget(eye, yaw, pitch, range, deg, this.enemies(), () => true);
   }
 
   private launch(s: Started, speed: number, gravity: number, radius: number, range: number, pierce: boolean, aoe: number, a: Active, yawOff = 0, color = '#e8d8a0', spread = false, pitchOff = 0): void {
@@ -650,6 +662,10 @@ export class CombatRuntime {
   /** Per rendered frame: local projectiles and hitstop. */
   update(dtMs: number): void {
     const dt = Math.min(dtMs, 50) / 1000;
+    // CR 022: your aim on your caster record every frame (your beams and held spells follow it).
+    const now = performance.now();
+    castState.aim('self', localPlayer.aimYaw, localPlayer.aimPitch, true, now);
+    castState.expire('self', now);
     const keep: LocalShot[] = [];
     for (const sh of this.shots) {
       let alive = true;
@@ -798,37 +814,30 @@ export class CombatRuntime {
         spellFx.enemyProjectile(ev.entityId, Number(ev.targetId), ev.x / 100, ev.y / 100, ev.z / 100, vx, vy, vz, d.getUint16(6, true) / 100, range);
         return;
       }
-      case EV.cast: {
-        // Another player's attack, cast, form or dash (contracts/events.md 214).
-        if (ev.data.length < 4) return;
-        const d = new DataView(ev.data.buffer, ev.data.byteOffset, ev.data.byteLength);
-        // CR 020: a released charge carries u8 its held fraction.
-        const charge = ev.data.length >= 5 ? ev.data[4] / 255 : 0;
-        spellFx.remoteCast(ev.entityId, Number(ev.targetId), ev.x / 100, ev.y / 100, ev.z / 100, u16ToYaw(d.getUint16(0, true)), i16ToPitch(d.getInt16(2, true)), charge);
+      case EV.cast:
+      case EV.held:
+        // Another player's attack, cast, form, dash or guard (214, with its exact aim; a released
+        // charge's u8 fraction), or the precise aim of what they hold (CR 022: 226): their caster
+        // record and the FX, at the moment their drawn body reaches it (castState.ts).
+        remoteEvent(ev, self, now, spellFx);
         return;
-      }
       case EV.channel: {
         // CR 020: a stream / charge started (1, 2) or stopped (0); contracts/events.md 223.
-        const d = new DataView(ev.data.buffer, ev.data.byteOffset, ev.data.byteLength);
-        const sp = spellById.get(ev.targetId);
-        if (ev.value === 0) {
+        if (ev.entityId === self) {
+          if (ev.value !== 0) return;
+          const d = new DataView(ev.data.buffer, ev.data.byteOffset, ev.data.byteLength);
           const start = ev.data.length >= 6 ? d.getUint32(2, true) : 0;
-          if (ev.entityId === self) {
-            // The zone ended our stream first (mana): stop predicting it.
-            const c = this.timeline.channel;
-            if (c && !c.charge && c.start === start) {
-              this.timeline.endChannel(this.timeline.seq, null);
-              spellFx.channelEnd('self', c.spell);
-              this.streaming = null;
-            }
-          } else spellFx.remoteChannelEnd(ev.entityId);
+          // The zone ended our stream first (mana): stop predicting it.
+          const c = this.timeline.channel;
+          if (c && !c.charge && c.start === start) {
+            this.timeline.endChannel(this.timeline.seq, null);
+            spellFx.channelEnd('self', c.spell);
+            castState.release('self', 'stream');
+            this.streaming = null;
+          }
           return;
         }
-        if (!sp || ev.data.length < 8 || ev.entityId === self) return;
-        const yaw = u16ToYaw(d.getUint16(0, true));
-        const pitch = i16ToPitch(d.getInt16(2, true));
-        if (ev.value === 2) spellFx.chargeStart(sp, ev.entityId);
-        else spellFx.remoteStream(ev.entityId, sp, ev.x / 100, ev.y / 100, ev.z / 100, yaw, pitch, streamSeed(d.getUint32(4, true), sp.id));
+        remoteEvent(ev, self, now, spellFx); // another player's: their caster record (castState.ts)
         return;
       }
       case EV.detonate: {
@@ -849,6 +858,7 @@ export class CombatRuntime {
         return;
       case EV.shield:
         if (ev.entityId === self || ev.entityId === 0) spellFx.shieldPoints(ev.value);
+        else remoteEvent(ev, self, now, spellFx); // CR 022: another player's shield broke
         return;
       case EV.damage:
         pushNumber(ev.x / 100, ev.y / 100 + 0.4, ev.z / 100, ev.value, 'dealt');
@@ -910,6 +920,7 @@ export class CombatRuntime {
           this.timeline.endChannel(this.timeline.seq, null); // CR 020: a refused stream never ran
           this.timeline.refund(sp.id);
           spellFx.channelEnd('self', sp);
+          castState.release('self');
           this.streaming = null;
         }
         hud.set({ refused: { id: ev.targetId, at: now } });

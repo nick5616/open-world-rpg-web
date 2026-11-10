@@ -23,6 +23,8 @@ export const COMBO_WINDOW_STEPS = 24;
 export const PLUNGE_MIN_HEIGHT = 3;
 export const SPRINT_ATTACK_SPEED = 8 * 0.75;
 export const FORM_SLOT = 4;
+/** A form's first hit frame after its start step (CR 022: others draw its burst then too). */
+export const FORM_STARTUP_STEPS = 2;
 export const TECHNIQUE_SLOT = 5;
 
 const moveByKey = new Map(COMBAT.moves.map((m) => [m.key, m]));
@@ -366,7 +368,7 @@ export class CombatTimeline {
         out.flags |= InputFlag.cast;
         out.castSlot = FORM_SLOT;
         if (f.dash) this.pendingDash = f.dash;
-        out.started = { kind: 'form', id: f.id, seq, form: f, charge: 0, fallHeight: 0, startup: 2, active: 8, recovery: 10, pressedAt: x.pressedAt };
+        out.started = { kind: 'form', id: f.id, seq, form: f, charge: 0, fallHeight: 0, startup: FORM_STARTUP_STEPS, active: 8, recovery: 10, pressedAt: x.pressedAt };
         return 'done';
       }
       default:

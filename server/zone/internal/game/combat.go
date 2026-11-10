@@ -488,6 +488,9 @@ func (s *Server) combatTick(tick uint32) {
 	for _, sess := range s.sessions {
 		if e := sess.ent; e != nil && e.cbt != nil {
 			syncPlayerHealth(e)
+			// CR 022: the casting bit while a held action runs (stream, charge,
+			// beam, held dash, guard): every observer ends it where the caster did.
+			e.npcActivity = e.cbt.HeldActivity(tick)
 		}
 	}
 	// WP19: the debug snapshot walks every group and allocates a record per
@@ -651,8 +654,9 @@ func combatIntoLocal(e *Entity, progressSkillTree *[]byte, known, equipped *[]st
 	pr.MarkSaved()
 }
 
-// combatActivity is extra Activity bits for enemies (the casting bit while
-// winding up an attack).
+// combatActivity is extra Activity bits: an enemy's casting bit while it
+// winds up an attack, a player's while they hold something (CR 022,
+// combat/held.go).
 func (e *Entity) combatActivity() uint8 { return e.npcActivity }
 
 // CombatDebugInfo is the /debug/combat snapshot (published once a second by

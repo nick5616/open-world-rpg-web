@@ -8,6 +8,7 @@ import { CombatRuntime } from './runtime';
 import { useCombatHud } from './store';
 import { drawnRemotes } from '../net/netStore';
 import { dashSlamEvent } from './dashFeel';
+import { castState } from './castState';
 
 /** The live runtime (PlayerController hook, 3D layer, dev handle). */
 export const combatRuntime: { current: CombatRuntime | null } = { current: null };
@@ -33,6 +34,11 @@ export function attachCombat(session: ZoneSession, ground: GroundQuery, input = 
     // CR 020: interact() lets dev runs grant and slot spells (combat Interact 50; ActDevGrant needs a dev zone).
     w.__lodestoneCombat = { runtime: rt, probe: () => rt.probe.summary(), hud: () => ({ ...useCombatHud.getState() }), interact: (kind: number, action: number, arg: number) => session.sendInteract(kind, 0n, action, arg) };
     (w as unknown as { __lodestoneDrawn?: unknown }).__lodestoneDrawn = () => drawnRemotes.views; // headless runs aim at what is drawn
+    // CR 022: a caster record ('self' or an entity id), for the shared-visuals parity runs.
+    (w as unknown as { __lodestoneCastState?: unknown }).__lodestoneCastState = (key: 'self' | number) => {
+      const s = castState.peek(key);
+      return s ? { held: s.held ? { ...s.held, until: Number.isFinite(s.held.until) ? s.held.until : null } : null, dash: s.dash, action: s.action, actions: s.actions, aimYaw: s.aimYaw, aimPitch: s.aimPitch, aimPrecise: s.aimPrecise, lookYaw: s.lookYaw, lookYaw0: s.lookYaw0, lookPitch: s.lookPitch, lookPitch0: s.lookPitch0, aimAt: s.aimAt, aim: castState.aimOf(key, s.lookYaw, s.lookPitch, performance.now()) } : null;
+    };
   }
   return () => {
     session.eventListeners.delete(onEvent);
