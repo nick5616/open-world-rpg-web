@@ -88,8 +88,9 @@ async function main() {
   const report: Record<string, unknown> = {};
   try {
     await waitHttp(`http://127.0.0.1:${vitePort}/`, 90000);
-    const camp = 'slime slime moss_slime slime';
-    zone = await startZone(bin, SEED, { LODESTONE_ZONE_DEBUG_CAMP: `${HINT.x},${HINT.z},6,${camp}`, LODESTONE_ZONE_NO_ATLAS_ENEMIES: '1', LODESTONE_ZONE_NO_DEMONS: '1' });
+    // A training camp of dummies (dev placement's `dummy` flag: they stand and take hits), sturdy
+    // enough (level 20) to survive the whole run, so every mechanic has something to hit.
+    zone = await startZone(bin, SEED, { LODESTONE_ZONE_DEBUG_CAMP: `${HINT.x},${HINT.z},20,sentinel boar wolf ram brute sentinel,,dummy`, LODESTONE_ZONE_NO_ATLAS_ENEMIES: '1', LODESTONE_ZONE_NO_DEMONS: '1' });
     let anchor: { x: number; z: number } | null = null;
     for (let i = 0; i < 60 && !anchor; i++) {
       const dbg = (await (await fetch(`http://127.0.0.1:${zone.port}/debug/combat`)).json()) as { groups?: { kind: string; x: number; z: number }[] } | null;
@@ -97,11 +98,37 @@ async function main() {
       if (!anchor) await sleep(250);
     }
     if (!anchor) throw new Error('no training camp');
-    const A = anchor;
+    const A = { ...anchor };
+    const home = { ...anchor };
     browser = await chromium.launch({ headless: true, args: ['--use-angle=d3d11', '--enable-gpu', '--ignore-gpu-blocklist', '--disable-background-timer-throttling', '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows'] });
-    const caster = await join(browser, vitePort, zone, 'Caster', { x: A.x + 13, z: A.z });
-    const watcher = await join(browser, vitePort, zone, 'Watcher', { x: A.x + 10, z: A.z + 9 });
+    const caster = await join(browser, vitePort, zone, 'Caster', { x: home.x + 14, z: home.z });
+    const watcher = await join(browser, vitePort, zone, 'Watcher', { x: home.x + 11, z: home.z + 10 });
     await sleep(1500);
+    // The caster looks at the nearest living slime (its chest), yawOff radians to the side.
+    const aim = async (yawOff = 0, pitchAdd = 0) => {
+      const t = await caster.evaluate(([o, pa]) => {
+        const l = (window as unknown as W).__lodestone;
+        const me = l.player().pos;
+        const vs = ((window as unknown as W).__lodestoneDrawn?.() ?? []).filter((v) => v.kind === 2 && v.healthPct > 0) as { x: number; y?: number; z: number }[];
+        vs.sort((a, b) => Math.hypot(a.x - me.x, a.z - me.z) - Math.hypot(b.x - me.x, b.z - me.z));
+        const e = vs[0];
+        if (!e) return null;
+        const d = Math.hypot(e.x - me.x, e.z - me.z);
+        l.setLook(Math.atan2(-(e.x - me.x), -(e.z - me.z)) + o, Math.atan2((e.y ?? me.y) + 0.7 - (me.y + 1.6), d) + pa);
+        return { x: e.x, z: e.z };
+      }, [yawOff, pitchAdd] as const);
+      if (t) {
+        A.x = t.x;
+        A.z = t.z;
+      }
+    };
+    const drink = async () => {
+      const low = await caster.evaluate(() => {
+        const h = (window as unknown as W).__lodestoneCombat!.hud() as unknown as { health?: number; healthMax?: number };
+        return (h.health ?? 100) < (h.healthMax ?? 100) * 0.5;
+      });
+      if (low) await caster.evaluate(() => (window as unknown as W).__lodestoneCombat!.runtime.press('drink' as unknown as number));
+    };
     const stats = async (p: Page) => p.evaluate(() => (window as unknown as W).__lodestoneFx!.stats());
     const claims = async () => (await (await fetch(`http://127.0.0.1:${zone!.port}/debug/combat`)).json()) as { stats: { ClaimsAccepted: number; ClaimsRefused: number; Kills: number } };
     // Learn and slot a spell (slot 0 of the active loadout), then wait for combat_sync.
@@ -135,14 +162,15 @@ async function main() {
     // ---- Streams: hold to fire ----
     const streams: { label: string; png: Buffer }[] = [];
     for (const [key, label, pitch] of [
-      ['cinder_spray', 'Cinder Spray (fire, tier 1): hold to spray sparks, 12/s', -0.1],
-      ['arc_sparks', 'Arc Sparks (lightning, tier 2): 15/s, shock', -0.1],
-      ['frost_bubbles', 'Frost Bubbles (ice, tier 2): drifting bubbles that pop and slow', -0.02],
-      ['starfall_hail', 'Starfall Hail (void, tier 3): hail falls around the aim point', -0.3],
+      ['cinder_spray', 'Cinder Spray (fire, tier 1): hold to spray sparks, 12/s', 0.02],
+      ['arc_sparks', 'Arc Sparks (lightning, tier 2): 15/s, shock', 0.02],
+      ['frost_bubbles', 'Frost Bubbles (ice, tier 2): drifting bubbles that pop and slow', 0.0],
+      ['starfall_hail', 'Starfall Hail (void, tier 3): hail falls around the aim point', -0.06],
     ] as const) {
       await equip(key);
       await waitMana(60);
-      await face(caster, A.x, A.z, pitch);
+      await drink();
+      await aim(0, pitch);
       await frameWatcher();
       const before = await claims();
       await caster.evaluate(() => (window as unknown as W).__lodestoneCombat!.runtime.hold(0, true));
@@ -158,13 +186,14 @@ async function main() {
     // ---- Homing ----
     const homing: { label: string; png: Buffer }[] = [];
     for (const [key, label, off, ms] of [
-      ['guiding_motes', 'Guiding Motes (light, tier 1): aimed 40 deg off the camp, the motes curve in', 0.7, 260],
+      ['guiding_motes', 'Guiding Motes (light, tier 1): aimed 35 deg off the slime, the motes curve in', 0.6, 300],
       ['storm_seekers', 'Storm Seekers (lightning, tier 3): a fan that curves in after 0.3 s', 0.4, 520],
       ['hungering_souls', 'Hungering Souls (dark, tier 3): four souls hunt, heal you on hit', 0.5, 700],
     ] as const) {
       await equip(key);
       await waitMana(30);
-      await face(caster, A.x, A.z, -0.05, off);
+      await drink();
+      await aim(off, 0.02);
       await frameWatcher();
       const before = await claims();
       await caster.evaluate(() => (window as unknown as W).__lodestoneCombat!.runtime.press(0));
@@ -179,7 +208,7 @@ async function main() {
     const co: { label: string; png: Buffer }[] = [];
     await equip('boulder_heave');
     await waitMana(30);
-    await face(caster, A.x, A.z, 0.05);
+    await aim(0, 0.12);
     await frameWatcher();
     let before = await claims();
     await caster.evaluate(() => (window as unknown as W).__lodestoneCombat!.runtime.hold(0, true));
@@ -191,7 +220,7 @@ async function main() {
     await record('boulder_heave', before);
     await equip('whirling_blades');
     await waitMana(30);
-    await face(caster, A.x, A.z, -0.35);
+    await aim(0, -0.3);
     await frameWatcher();
     before = await claims();
     await caster.evaluate(() => (window as unknown as W).__lodestoneCombat!.runtime.press(0));
@@ -205,7 +234,7 @@ async function main() {
     const bursts: { label: string; png: Buffer }[] = [];
     await equip('burrowing_seed');
     await waitMana(30);
-    await face(caster, A.x, A.z, -0.06);
+    await aim(0, 0);
     await frameWatcher();
     before = await claims();
     await caster.evaluate(() => (window as unknown as W).__lodestoneCombat!.runtime.press(0));
@@ -214,7 +243,7 @@ async function main() {
     await record('burrowing_seed', before);
     await equip('pyre_brand');
     await waitMana(30);
-    await face(caster, A.x, A.z, -0.06);
+    await aim(0, 0);
     before = await claims();
     await caster.evaluate(() => (window as unknown as W).__lodestoneCombat!.runtime.press(0));
     await sleep(600);
@@ -231,7 +260,8 @@ async function main() {
     ] as const) {
       await equip(key);
       await waitMana(30);
-      await face(caster, A.x, A.z, -0.12);
+      await drink();
+      await aim(0, -0.1);
       await frameWatcher();
       before = await claims();
       await caster.evaluate(() => (window as unknown as W).__lodestoneCombat!.runtime.press(0));

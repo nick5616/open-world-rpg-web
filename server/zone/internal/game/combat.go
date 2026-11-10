@@ -113,7 +113,7 @@ func (s *Server) initCombat() {
 	s.log.Info("combat ready", "groups", len(w.Groups), "camps", counts["camp"], "bandit", counts["bandit"], "guardian", counts["guardian"], "packs", counts["pack"], "bosses", counts["boss"], "test", counts["test"])
 }
 
-// devPlacement reads LODESTONE_ZONE_DEBUG_CAMP="x,z,level,key key ...[;...]"
+// devPlacement reads LODESTONE_ZONE_DEBUG_CAMP="x,z,level,key key ...[,elite[,dummy]][;...]"
 // and LODESTONE_ZONE_DEBUG_BOSS="x,z,level,boss[,element]" (acceptance runs
 // on known ground; dev builds only).
 func devPlacement(w *combat.World, log func(string, ...any)) {
@@ -131,6 +131,7 @@ func devPlacement(w *combat.World, log func(string, ...any)) {
 		}
 		x, z = w.WalkableNear(x, z, 120, 8)
 		g := w.TestGroup(movement.Vec3{X: x, Z: z}, strings.Fields(f[3]), lvl, elite)
+		g.Dummy = len(f) >= 6 && strings.TrimSpace(f[5]) == "dummy" // CR 020: training dummies for evidence runs
 		log("dev camp", "group", g.ID, "x", x, "z", z, "members", f[3])
 	}
 	for _, spec := range strings.Split(os.Getenv("LODESTONE_ZONE_DEBUG_BOSS"), ";") {

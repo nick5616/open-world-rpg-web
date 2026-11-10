@@ -381,7 +381,7 @@ export class CombatRuntime {
       const gy = this.ground ? this.ground.heightAt(x, z) : aim.y;
       const sh: LocalShot = { started: s, x, y: gy + sp.rain.height, z, vx: 0, vy: -sp.speed, vz: 0, gravity: 0, radius, left: sp.rain.height + 4, hit: new Set(), pierce: false, aoe, fx: 0, homing: null };
       this.shots.push(sh);
-      sh.fx = spellFx.projectile(sp, sh.x, sh.y, sh.z, 0, -sp.speed, 0, 0, radius, (sp.rain.height + 4) / sp.speed, { explode: aoe, spread: true });
+      sh.fx = spellFx.projectile(sp, sh.x, sh.y, sh.z, 0, -sp.speed, 0, 0, Math.min(radius, 0.4), (sp.rain.height + 4) / sp.speed, { explode: aoe, spread: true });
       if (k % 3 === 0) emitSound('cast', { element: sp.tree, kind: 'stream' });
       return;
     }
@@ -603,7 +603,7 @@ export class CombatRuntime {
     void a;
     void color;
     // The visual starts at your off hand and is ended by update() below (hit, ground, range).
-    sh.fx = spellFx.projectile(s.spell ?? null, sh.x, sh.y, sh.z, sh.vx, sh.vy, sh.vz, gravity, Math.max(0.12, radius), range / Math.max(1, speed), { local: true, explode: aoe, pierce, spread, kind: 'arrow', homing: !!hp });
+    sh.fx = spellFx.projectile(s.spell ?? null, sh.x, sh.y, sh.z, sh.vx, sh.vy, sh.vz, gravity, Math.max(0.12, s.shot !== undefined ? Math.min(radius, 0.4) : radius), range / Math.max(1, speed), { local: true, explode: aoe, pierce, spread, kind: 'arrow', homing: !!hp });
   }
 
   /** CR 020: one shared 1/60 s homing step for a seeking shot (acquire, steer, move). */

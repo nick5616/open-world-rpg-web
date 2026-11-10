@@ -561,7 +561,17 @@ export class SpellFxEngine {
     s.halo.visible = false;
     this.prims.releaseLight(s.light);
     s.light = null;
-    if (s.explode > 0 && kind !== 'expire') {
+    if (s.explode > 0 && s.spread && kind !== 'expire') {
+      // CR 020: a stream's bursting shot (bubbles, hail) pops small: 8-15 of these a second.
+      const v = s.v;
+      const x = s.px;
+      const y = s.py;
+      const z = s.pz;
+      this.at(x, y, z, () => {
+        R.impact(this.prims, v, x, y, z, null, 0.7, 'hit', camPos);
+        R.ringBurst(x, y + 0.1, z, s.explode * 0.6, R.cols(v.palette).k('hm'), 6, 2, { life: [0.15, 0.3], size: [0.04, 0.08] });
+      });
+    } else if (s.explode > 0 && kind !== 'expire') {
       const v = s.v;
       const x = s.px;
       const y = s.py;
@@ -1393,7 +1403,7 @@ export class SpellFxEngine {
           n++;
           const kk = k++;
           if (this.lod(px, py, pz) <= 0) continue;
-          const radius = Math.max(0.12, Math.min(sp.radius, 1));
+          const radius = Math.max(0.12, Math.min(sp.radius, 0.4)); // a stream shot's visual core (bubbles burst wider than they look)
           if (sp.rain) {
             const aim = this.aimPoint({ x: px, y: py + EYE, z: pz }, yaw, pitch, sp.range || 30);
             const off = rainOffset(seed, kk, sp.rain.radius);

@@ -57,6 +57,7 @@ type Group struct {
 	Arena    *Arena
 	Comp     []string // explicit composition (tests), else from tables
 	Elite    string   // forced elite affix (tests)
+	Dummy    bool     // CR 020: training dummies (dev evidence runs): its members never move or attack
 	// AreaLevel: the group takes its level and tier from the area it stands
 	// in when it spawns (playtest 1, World.Areas); set for every atlas group.
 	AreaLevel bool

@@ -361,6 +361,7 @@ Combat should feel closer to an action game than to Monster Hunter World or Elde
 - Wizard Wars' Fire, Ice, Dark and Earth trees are ported with their spells. Its Sword school moves out of magic into weapon skills.
 - New trees for Lightning, Wind, Light and Void, each with a mobility spell, 3 to 5 core spells, a domain expansion and a pinnacle. Names follow the Wizard Wars naming philosophy and need Nicole's sign-off.
 - Learn spells from tomes (structures, bounties, bosses) and skill points; equip any four, from any trees.
+- *Added by CR 020 (playtest 2):* generic spell mechanics any spell can carry in combat.yaml: homing (seeks a target in a cone; the server re-flies the same path), hold-to-fire streams (up to 15 shots/s, mana per shot; the wire carries only start and stop), rain, hold-to-empower charges, orbiting orbs, delayed charges and chain-reaction brands, and summoned allies (server-side, capped per player, PvP only under the PvP rules). Fourteen spells across the trees use them; a stream and a seeker are learnable on a new character's first skill point.
 - Light is the anti-demon school: its damage kills demons the way sunsteel does.
 - Spells hit enemies and terrain only; projectiles pass through players. One-shot spells like Death Note work on non-boss enemies only.
 - Experience comes from discovery (towers, caves, structures, towns) as much as from combat, so explorers level too.
