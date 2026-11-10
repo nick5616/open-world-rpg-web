@@ -57,14 +57,15 @@ export const POSES: Record<WeaponKind, Pose> = {
 };
 /**
  * CR 033 (playtest 2 bow rework): the bow raised to shoot. Drawing lifts it
- * from POSES.bow to this hold: upright with a slight cant, the arrow running
- * along the view a little left of and below the crosshair, so a full draw
- * (BOW_MAX_DRAW) brings the string hand back to the anchor under the right
- * cheek (BOW_ANCHOR).
+ * from POSES.bow to this hold: canted a little left, below the crosshair,
+ * the arrow running from the lower right toward it (a few degrees off the
+ * view line so you can see it), and a full draw (BOW_MAX_DRAW) brings the
+ * string hand back to the anchor under the right cheek (BOW_ANCHOR), where
+ * only its top shows at the bottom edge (as your own draw hand would).
  */
-export const BOW_AIM: Pose = { pos: [-0.035, -0.075, -0.56], up: [0.2, 0.98, 0], face: [0.12, 0.02, 1], scale: 0.85 };
-/** Where the string hand ends at full draw (camera space): the right cheek, just in view. */
-export const BOW_ANCHOR = new THREE.Vector3(0.01, -0.06, -0.135);
+export const BOW_AIM: Pose = { pos: [0, -0.13, -0.6], up: [-0.3, 0.95, 0], face: [0.0748, 0.008, 0.5], scale: 0.85 };
+/** Where the string hand ends at full draw (camera space): under the right cheek, its top just in view. */
+export const BOW_ANCHOR = new THREE.Vector3(0.06, -0.075, -0.1);
 /** The drawing arm's elbow while drawing: up and out to the right, level with the hand. */
 const BOW_ELBOW = new THREE.Vector3(0.42, -0.14, 0.12);
 /** ms the bow stays raised after a shot (a follow-up draw starts from the aim). */

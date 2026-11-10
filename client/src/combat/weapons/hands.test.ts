@@ -145,10 +145,13 @@ describe('first-person hands (playtest 2)', () => {
     expect(hand.distanceTo(bowStringHand(1))).toBeLessThan(1e-6);
     expect(hand.distanceTo(BOW_ANCHOR)).toBeLessThan(0.04);
     // drawn ~0.4 m back from the rest of the string (it was 0.2: a third of the way)
-    expect(bowStringHand(1).distanceTo(bowStringHand(0))).toBeGreaterThan(0.29);
-    // still in view: in front of the near plane, inside a 75 degree view
-    expect(-hand.z).toBeGreaterThan(0.1);
-    expect(Math.abs(hand.y / hand.z)).toBeLessThan(Math.tan(THREE.MathUtils.degToRad(37.5)));
+    expect(bowStringHand(1).distanceTo(bowStringHand(0))).toBeGreaterThan(0.35);
+    // at the cheek: in front of the near plane (0.05), its top in a 75 degree view, its middle near the bottom edge
+    expect(-hand.z).toBeGreaterThan(0.075);
+    expect(-hand.z).toBeLessThan(0.11);
+    const below = Math.abs(hand.y / hand.z) / Math.tan(THREE.MathUtils.degToRad(37.5));
+    expect(below).toBeGreaterThan(0.75); // near the bottom edge
+    expect(Math.abs(hand.y + 0.045) / -hand.z / Math.tan(THREE.MathUtils.degToRad(37.5))).toBeLessThan(1);
     // the arrow points within a few degrees of the crosshair, its head past the riser
     const fwd = new THREE.Vector3(0, 0, -1).transformDirection(rig.weapon.matrixWorld);
     expect(deg(fwd.angleTo(new THREE.Vector3(0, 0, -1)))).toBeLessThan(10);

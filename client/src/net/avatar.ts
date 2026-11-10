@@ -327,6 +327,8 @@ const HOLD: Record<WeaponKind, { up: [number, number, number]; face: [number, nu
 /** Mid LOD: the weapon hangs this far below its shoulder pivot (the old one-piece arm's hand). */
 const MID_HAND_Y = -0.66;
 
+const X_AXIS = new THREE.Vector3(1, 0, 0);
+
 function holdQuat(kind: WeaponKind): THREE.Quaternion {
   const h = HOLD[kind];
   const y = new THREE.Vector3(...h.up).normalize();
@@ -334,6 +336,8 @@ function holdQuat(kind: WeaponKind): THREE.Quaternion {
   z.addScaledVector(y, -z.dot(y)).normalize();
   return new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(new THREE.Vector3().crossVectors(y, z), y, z));
 }
+
+const BOW_HOLD = holdQuat('bow');
 
 interface Arm {
   shoulder: THREE.Group;
@@ -767,6 +771,8 @@ export class Avatar {
     this.neck.rotation.x = p.headPitch;
     poseArm(this.armR, p.armR, 1);
     poseArm(this.armL, p.armL, -1);
+    // CR 033: the bow stays upright in the raised bow hand (the wrist turns it; it used to lie along the arm when drawing)
+    if (this.bowGeo) this.weaponHi.quaternion.setFromAxisAngle(X_AXIS, -(p.armL.swing + p.armL.bend)).multiply(BOW_HOLD);
     poseLeg(this.legR, p.legR, 1);
     poseLeg(this.legL, p.legL, -1);
     this.glowHand(this.armL, p.glowL, p);
