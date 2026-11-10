@@ -134,6 +134,8 @@ export async function walkTo(page, x, z, { stopAt = 1.5, timeoutMs = 90000, spri
 // ---- street routing (from tools/acceptance/g4.mjs): players walk the streets ----
 let GRAPH = null;
 export async function townGraphNear(page) {
+  // The towns handle arrives with the world a moment after "playing" (a script that walks at once raced it).
+  await page.waitForFunction(() => (window.__lodestoneTowns?.settlements?.().length ?? 0) > 0, null, { timeout: 60000 });
   const town = await page.evaluate(() => {
     const T = window.__lodestoneTowns;
     const me = window.__lodestone.player().pos;

@@ -30,6 +30,7 @@ async function talkAt(m0) {
     const p = (await pl(page)).pos;
     await look(page, yawTo(p, npc.x, npc.z), Math.atan2(npc.y + 1.3 - (p.y + 1.6), Math.max(0.5, Math.hypot(npc.x - p.x, npc.z - p.z))));
   }
+  await dismissCards(page); // a modal card holds E (the welcome comes up a few seconds in)
   await sleep(400);
   const prompt = await page.evaluate(() => document.querySelector('[data-testid="town-prompt"]')?.textContent ?? '');
   await page.keyboard.press('KeyE');

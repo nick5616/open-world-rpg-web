@@ -1,6 +1,6 @@
 // Playtest pass 7: the spawn town's forge and anvil (crafting UI as a new
 // player sees it), a merchant's shop, and buying something.
-import { launch, newCharacter, sleep, pl, go, look, yawTo, hudBoxes, overlaps } from './lib.mjs';
+import { launch, newCharacter, sleep, pl, go, look, yawTo, hudBoxes, overlaps, dismissCards } from './lib.mjs';
 
 const out = process.argv[2] ?? 'tmp/playtest7';
 const t = await launch(out);
@@ -24,6 +24,7 @@ try {
       issue('town', `no ${label} in the spawn town`);
       continue;
     }
+    await dismissCards(page); // the welcome card (a new browser) waits for the first panel to close, then holds E
     await go(page, prop.x, prop.z, { stopAt: 2, timeoutMs: 60000 });
     const me = (await pl(page)).pos;
     await look(page, yawTo(me, prop.x, prop.z), -0.35);
@@ -43,6 +44,7 @@ try {
   }
   const m = town.merchants.find((x) => x.role !== 1) ?? town.merchants[0];
   if (m) {
+    await dismissCards(page);
     await go(page, m.x, m.z, { stopAt: 2, timeoutMs: 60000 });
     const npc = await page.evaluate(([mx, mz]) => (window.__lodestoneDrawn?.() ?? []).filter((e) => e.kind === 5).map((e) => ({ x: e.x, y: e.y, z: e.z, d: Math.hypot(e.x - mx, e.z - mz) })).sort((a, b) => a.d - b.d)[0], [m.x, m.z]);
     const me = (await pl(page)).pos;
