@@ -46,7 +46,7 @@ type dashState struct {
 	variant int
 	def     *combatdefs.Dash
 	spell   *combatdefs.Spell
-	moving  int  // State.Dash after the last applied step
+	moving  int    // State.Dash after the last applied step
 	ended   uint32 // tick the movement dash ran out (0 while it runs)
 	velY    float64
 	air     bool
