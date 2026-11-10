@@ -212,12 +212,15 @@ func (s *Server) demonBlocked(e *combat.Enemy, x, z float64) bool {
 	if t := w.WardAt(x, z); t >= 0 && !s.wardWeak(t) {
 		return true
 	}
+	if e.Demon.Goal == nil && s.campSafeAt(x, z, 0) {
+		return true // CR 025: never into a burning campfire's circle (camps.go)
+	}
 	return e.Demon.Rank == "lesser" && e.Demon.Goal == nil && w.NearLantern(x, z)
 }
 
 func (s *Server) demonSheltered(_ *combat.Enemy, p *combat.Player) bool {
 	t := s.night.cfg.World.WardAt(p.Pos.X, p.Pos.Z)
-	return t >= 0 && !s.wardWeak(t)
+	return (t >= 0 && !s.wardWeak(t)) || s.campSafeAt(p.Pos.X, p.Pos.Z, 0) // CR 025: by a burning campfire
 }
 
 func (s *Server) wetInRain(p movement.Vec3) bool {
@@ -463,7 +466,7 @@ func (s *Server) spawnSpot(x, z float64) bool {
 		return false
 	}
 	w := s.night.cfg.World
-	if w.WardAt(x, z) >= 0 || w.NearLantern(x, z) {
+	if w.WardAt(x, z) >= 0 || w.NearLantern(x, z) || s.campSafeAt(x, z, campSafeMargin) { // CR 025: not near a burning campfire
 		return false
 	}
 	y := g.HeightAt(x, z)
@@ -495,7 +498,7 @@ func (s *Server) huntTopUp(idx int64) {
 		// caveSys is only maintained with a cave world (caves.go); without
 		// one every entity reads 0 and nobody was ever hunted (playtest 1 fix).
 		underground := e.caveSys >= 0 && s.caves() != nil
-		if underground || w.WardAt(e.Move.Pos.X, e.Move.Pos.Z) >= 0 {
+		if underground || w.WardAt(e.Move.Pos.X, e.Move.Pos.Z) >= 0 || s.campSafeAt(e.Move.Pos.X, e.Move.Pos.Z, 0) { // CR 025: safe by a burning campfire
 			continue
 		}
 		// Playtest 1 (difficulty.go): the area's tier scales the hunt (none

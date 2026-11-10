@@ -1,5 +1,17 @@
 [
   {
+    "id": "pt2-camps",
+    "date": "2026-11-10",
+    "title": "Make camp",
+    "items": [
+      "Press P to make camp: craft a kit, then place a campfire, a bedroll, a storage chest, a workbench or a signpost in the wild (wheel or R turns it, left mouse places it).",
+      "Gather firewood from fallen branches, or buy it at a general store.",
+      "A burning campfire keeps demons away at night, and you can cook on it.",
+      "Rest in your bedroll to wake Rested (faster healing, more stamina); it is also where you come back after a fall.",
+      "Your chest keeps 16 stacks, just for you or shared with your party; hold E on your own piece to pack it up again."
+    ]
+  },
+  {
     "id": "pt2-enemy-models",
     "date": "2026-11-10",
     "title": "Monsters with character",

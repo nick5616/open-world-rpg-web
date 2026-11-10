@@ -12,6 +12,7 @@ import { useExploration } from './store';
 import { trackedQuest } from '../quests/store'; // playtest 1: quest markers on the strip
 import { liveMarkers } from '../quests/live'; // playtest 2: a person's marker follows them
 import { useContent } from '../content/store'; // CR 023: world events on the strip
+import { useCamps } from '../camps/store'; // CR 025: your and your party's signposts
 
 const W = 560;
 const H = 46;
@@ -40,7 +41,7 @@ export interface CompassMark {
   dist: number;
   color: string;
   label: string;
-  kind: 'party' | 'pin' | 'quest' | 'event';
+  kind: 'party' | 'pin' | 'quest' | 'event' | 'camp';
 }
 
 /** What the strip shows right now (exported for the dev handle and tests). */
@@ -68,6 +69,11 @@ export function compassMarks(): CompassMark[] {
   for (const e of Object.values(useContent.getState().events)) {
     if (e.phase !== 1) continue;
     out.push({ rel: wrapAngle(bearing(px, pz, e.x, e.z) - head), dist: Math.max(0, Math.hypot(e.x - px, e.z - pz) - e.r), color: '#ff7b54', label: e.name, kind: 'event' });
+  }
+  // CR 025: signposts (yours and your party's), labelled, beyond 30 m.
+  for (const m of useCamps.getState().mine.markers) {
+    const d = Math.hypot(m.x - px, m.z - pz);
+    if (d > 30) out.push({ rel: wrapAngle(bearing(px, pz, m.x, m.z) - head), dist: d, color: m.mine ? '#ffb35a' : '#e9c46a', label: m.label, kind: 'camp' });
   }
   return out;
 }
@@ -123,6 +129,13 @@ export function Compass() {
         ctx.lineWidth = 1.5;
         ctx.beginPath();
         if (m.kind === 'party') ctx.arc(x, 18, 5, 0, Math.PI * 2);
+        else if (m.kind === 'camp') {
+          // A little tent.
+          ctx.moveTo(x, 10);
+          ctx.lineTo(x + 7, 24);
+          ctx.lineTo(x - 7, 24);
+          ctx.closePath();
+        }
         else if (m.kind === 'event') {
           for (let i = 0; i < 10; i++) {
             const a = (i * Math.PI) / 5 - Math.PI / 2;

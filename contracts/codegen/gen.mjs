@@ -12,6 +12,7 @@ import { parseWorldSpec, genWorldSpecTs, genWorldSpecGo, genWorldSpecRust } from
 import { parseCombat, genCombatTs, genCombatJson } from './lib/combat.mjs'; // WP13 (CR 009)
 import { parseItems, genItemsTs, genItemsJson } from './lib/items.mjs'; // WP14 (CR 010)
 import { parseContent, genContentTs, genContentJson } from './lib/content.mjs'; // playtest 2 content (CR 022)
+import { parseCamps, genCampsTs, genCampsJson } from './lib/camps.mjs'; // playtest 2 camps (CR 025)
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const rd = (...p) => fs.readFileSync(path.join(root, ...p), 'utf8');
@@ -24,6 +25,7 @@ const worldspec = parseWorldSpec(JSON.parse(rd('contracts', 'worldspec.schema.js
 const combat = parseCombat(YAML.parse(rd('contracts', 'combat.yaml')), constants);
 const items = parseItems(YAML.parse(rd('contracts', 'items.yaml')), combat);
 const content = parseContent(YAML.parse(rd('contracts', 'content.yaml')), combat, items);
+const camps = parseCamps(YAML.parse(rd('contracts', 'camps.yaml')), items);
 
 const outputs = {
   'contracts/ts/src/gen/protocol.ts': genTs(protocol),
@@ -44,6 +46,8 @@ const outputs = {
   'server/pkg/itemdefs/items_gen.json': genItemsJson(items),
   'contracts/ts/src/gen/content.ts': genContentTs(content),
   'server/pkg/contentdefs/content_gen.json': genContentJson(content),
+  'contracts/ts/src/gen/camps.ts': genCampsTs(camps),
+  'server/pkg/campdefs/camps_gen.json': genCampsJson(camps),
 };
 
 let stale = 0;

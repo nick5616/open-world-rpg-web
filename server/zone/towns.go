@@ -98,6 +98,29 @@ func doorsConfig(cfg *game.Config, pool *pgxpool.Pool) {
 	}
 }
 
+// campsConfig persists camp pieces in Postgres (camp_pieces, migration
+// 0026; CR 025) when the zone has a database.
+func campsConfig(cfg *game.Config, pool *pgxpool.Pool) {
+	if pool != nil {
+		cfg.CampStore = &game.PGCampStore{Pool: pool}
+	}
+}
+
+// restoreCamps loads the placed camp pieces (and their chests) before the
+// zone ticks.
+func restoreCamps(ctx context.Context, zone *game.Server, log *slog.Logger) {
+	rctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	n, err := zone.RestoreCamps(rctx)
+	if err != nil {
+		log.Warn("camp pieces not restored", "err", err)
+		return
+	}
+	if n > 0 {
+		log.Info("camp pieces restored", "pieces", n)
+	}
+}
+
 // restoreDoors loads the persisted door states before the zone ticks, so
 // a restart (or a zone taking a region over) keeps closed doors closed.
 func restoreDoors(ctx context.Context, zone *game.Server, log *slog.Logger) {

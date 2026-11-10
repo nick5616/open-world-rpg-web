@@ -8,5 +8,6 @@ export * from './gen/worldspec';
 export * from './gen/combat'; // WP13 combat tables (contracts/combat.yaml)
 export * from './gen/items'; // WP14 items, rarities, recipes, loot (contracts/items.yaml)
 export * from './gen/content'; // playtest 2 content: codex, lore, feats, herbs, events (contracts/content.yaml)
+export * from './gen/camps'; // playtest 2 camps: pieces, placement, fire, rest (contracts/camps.yaml)
 export * as C from './gen/constants';
 export * from './gen/constants';

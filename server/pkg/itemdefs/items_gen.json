@@ -315,7 +315,9 @@
   "weapon": 1,
   "armor": 1,
   "key": 1,
-  "quest": 10
+  "quest": 10,
+  "wood": 50,
+  "camp": 5
  },
  "pouches": {
   "gem": "gem",
@@ -1209,6 +1211,72 @@
    "pouch": "inv",
    "level": 1,
    "value": 0,
+   "sockets": 0
+  },
+  {
+   "key": "wood:firewood",
+   "name": "Firewood",
+   "category": "wood",
+   "kind": "material",
+   "stack": 50,
+   "pouch": "inv",
+   "level": 1,
+   "value": 2,
+   "sockets": 0
+  },
+  {
+   "key": "camp:campfire",
+   "name": "Campfire Kit",
+   "category": "camp",
+   "kind": "tool",
+   "stack": 5,
+   "pouch": "inv",
+   "level": 1,
+   "value": 10,
+   "sockets": 0
+  },
+  {
+   "key": "camp:bedroll",
+   "name": "Bedroll Kit",
+   "category": "camp",
+   "kind": "tool",
+   "stack": 5,
+   "pouch": "inv",
+   "level": 1,
+   "value": 18,
+   "sockets": 0
+  },
+  {
+   "key": "camp:chest",
+   "name": "Storage Chest Kit",
+   "category": "camp",
+   "kind": "tool",
+   "stack": 5,
+   "pouch": "inv",
+   "level": 1,
+   "value": 24,
+   "sockets": 0
+  },
+  {
+   "key": "camp:workbench",
+   "name": "Workbench Kit",
+   "category": "camp",
+   "kind": "tool",
+   "stack": 5,
+   "pouch": "inv",
+   "level": 1,
+   "value": 30,
+   "sockets": 0
+  },
+  {
+   "key": "camp:signpost",
+   "name": "Signpost Kit",
+   "category": "camp",
+   "kind": "tool",
+   "stack": 5,
+   "pouch": "inv",
+   "level": 1,
+   "value": 8,
    "sockets": 0
   },
   {
@@ -2844,6 +2912,186 @@
    "sockets": 0,
    "blueprint": null,
    "xp": 20
+  },
+  {
+   "key": "kit_campfire",
+   "id": 31,
+   "station": "camp",
+   "inputs": [
+    {
+     "item": "wood:firewood",
+     "qty": 4
+    }
+   ],
+   "output": "camp:campfire",
+   "qty": 1,
+   "sockets": 0,
+   "blueprint": null,
+   "xp": 4
+  },
+  {
+   "key": "kit_bedroll",
+   "id": 32,
+   "station": "camp",
+   "inputs": [
+    {
+     "item": "hide:wolf",
+     "qty": 2
+    },
+    {
+     "item": "wood:firewood",
+     "qty": 2
+    }
+   ],
+   "output": "camp:bedroll",
+   "qty": 1,
+   "sockets": 0,
+   "blueprint": null,
+   "xp": 6
+  },
+  {
+   "key": "kit_chest",
+   "id": 33,
+   "station": "camp",
+   "inputs": [
+    {
+     "item": "wood:firewood",
+     "qty": 8
+    },
+    {
+     "item": "ore:copper",
+     "qty": 1
+    }
+   ],
+   "output": "camp:chest",
+   "qty": 1,
+   "sockets": 0,
+   "blueprint": null,
+   "xp": 8
+  },
+  {
+   "key": "kit_workbench",
+   "id": 34,
+   "station": "camp",
+   "inputs": [
+    {
+     "item": "wood:firewood",
+     "qty": 10
+    },
+    {
+     "item": "tool:rope",
+     "qty": 1
+    }
+   ],
+   "output": "camp:workbench",
+   "qty": 1,
+   "sockets": 0,
+   "blueprint": null,
+   "xp": 10
+  },
+  {
+   "key": "kit_signpost",
+   "id": 35,
+   "station": "camp",
+   "inputs": [
+    {
+     "item": "wood:firewood",
+     "qty": 3
+    }
+   ],
+   "output": "camp:signpost",
+   "qty": 1,
+   "sockets": 0,
+   "blueprint": null,
+   "xp": 3
+  },
+  {
+   "key": "bench_torch",
+   "id": 36,
+   "station": "workbench",
+   "inputs": [
+    {
+     "item": "wood:firewood",
+     "qty": 2
+    }
+   ],
+   "output": "tool:torch",
+   "qty": 1,
+   "sockets": 0,
+   "blueprint": null,
+   "xp": 2
+  },
+  {
+   "key": "bench_rope",
+   "id": 37,
+   "station": "workbench",
+   "inputs": [
+    {
+     "item": "hide:wolf",
+     "qty": 1
+    }
+   ],
+   "output": "tool:rope",
+   "qty": 2,
+   "sockets": 0,
+   "blueprint": null,
+   "xp": 3
+  },
+  {
+   "key": "bench_whetstone",
+   "id": 38,
+   "station": "workbench",
+   "inputs": [
+    {
+     "item": "ore:copper",
+     "qty": 1
+    }
+   ],
+   "output": "tool:whetstone",
+   "qty": 1,
+   "sockets": 0,
+   "blueprint": null,
+   "xp": 3
+  },
+  {
+   "key": "bench_copper_arrows",
+   "id": 39,
+   "station": "workbench",
+   "inputs": [
+    {
+     "item": "wood:firewood",
+     "qty": 1
+    },
+    {
+     "item": "ore:copper",
+     "qty": 1
+    }
+   ],
+   "output": "ammo:copper_arrow",
+   "qty": 10,
+   "sockets": 0,
+   "blueprint": null,
+   "xp": 4
+  },
+  {
+   "key": "bench_iron_arrows",
+   "id": 40,
+   "station": "workbench",
+   "inputs": [
+    {
+     "item": "wood:firewood",
+     "qty": 1
+    },
+    {
+     "item": "ore:iron",
+     "qty": 1
+    }
+   ],
+   "output": "ammo:iron_arrow",
+   "qty": 10,
+   "sockets": 0,
+   "blueprint": null,
+   "xp": 5
   }
  ],
  "starter": [

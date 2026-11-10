@@ -859,9 +859,16 @@ func (w *World) playerUpkeep() {
 		if D.HasTechnique("spellcraft", p.Profile.SkillLevel("spellcraft"), "mana_flow") {
 			regen *= 1.2
 		}
+		if p.ManaRegenMult > 0 {
+			regen *= p.ManaRegenMult // CR 025: Rested
+		}
 		p.Mana = math.Min(p.ManaMax, p.Mana+regen*dt)
 		if tick-p.lastHurtTick > secondsToTicks(constants.PlayerRegenDelayS) && p.HP < p.HPMax {
-			p.HP = math.Min(p.HPMax, p.HP+constants.PlayerRegenPerS*dt)
+			hp := constants.PlayerRegenPerS
+			if p.RegenMult > 0 {
+				hp *= p.RegenMult // CR 025: Rested
+			}
+			p.HP = math.Min(p.HPMax, p.HP+hp*dt)
 		}
 		if p.hotEnd > tick {
 			p.HP = math.Min(p.HPMax, p.HP+p.hotPerTick)

@@ -78,7 +78,7 @@ func (s *Server) applyProgression(e *Entity, refill bool) {
 		}
 		syncPlayerHealth(e)
 	}
-	want := int(math.Round(staminaPoints(p.Level, n) * constants.StaminaFinePerPoint))
+	want := int(math.Round((staminaPoints(p.Level, n) + s.campRestedStamina(e)) * constants.StaminaFinePerPoint)) // CR 025: Rested
 	if old := e.Move.StaminaMax; want != old && want > 0 {
 		e.Move.StaminaMax = want
 		if want > old {
