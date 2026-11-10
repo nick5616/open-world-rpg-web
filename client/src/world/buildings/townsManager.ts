@@ -26,6 +26,7 @@
 //    "[E] Open door" / "[E] Close door" targets.
 
 import * as THREE from 'three';
+import { liveStyle } from '../style/styles';
 import type { Towns } from '@lodestone/worldgen';
 import type { WorldRuntime } from '../core/runtime';
 import { worldClock } from '../../state/live';
@@ -324,7 +325,7 @@ export class TownsManager {
       }
       const s = p.userData.seed as number;
       const flicker = 0.85 + 0.1 * Math.sin(now * 0.011 + s) + 0.05 * Math.sin(now * 0.031 + s * 1.7);
-      p.intensity = 9 * this.night * flicker;
+      p.intensity = 9 * this.night * flicker * liveStyle.torch; // playtest 2 styles: warmer nights
       n++;
     }
     this.stats.lights = n;
