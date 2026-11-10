@@ -19,6 +19,7 @@ import { EV } from '../events';
 import { newMoveState } from '../../sim/movement';
 import { drawnRemotes } from '../../net/netStore';
 import type { RemoteView } from '../../net/interpolation';
+import { streamSeed } from '../spellsim';
 
 afterEach(() => {
   setSpellFxEngine(null);
@@ -278,6 +279,52 @@ describe('the runtime drives the FX engine', () => {
     expect(byKind.status).toEqual([99, 1]);
     expect(byKind.shieldPoints).toEqual([0]);
     expect(byKind.enemyProjectile[0]).toBe(5);
+  });
+  it('CR 020: your stream starts, fires a projectile per shot and ends; a held charge gathers then fires', () => {
+    const calls = fake();
+    const r = runtime();
+    r.timeline.loadout = { weapon: 'wand', spells: ['cinder_spray', 'boulder_heave', null, null], gem: -1 };
+    const st = newMoveState({ x: 0, y: 10, z: 0 });
+    r.hold(0, true);
+    for (let s = 10; s < 21; s++) r.stepHook(s, st, false);
+    r.hold(0, false);
+    r.stepHook(21, st, false);
+    const ks = calls.map((c) => c.k);
+    expect(ks).toContain('streamStart');
+    expect(ks.filter((k) => k === 'projectile').length).toBe(3); // shots at steps 10, 15, 20
+    expect(ks).toContain('channelEnd');
+    calls.length = 0;
+    r.hold(1, true);
+    for (let s = 40; s < 60; s++) r.stepHook(s, st, false);
+    r.hold(1, false);
+    r.stepHook(60, st, false);
+    for (let s = 60; s < 64; s++) r.afterStep(s, st);
+    const k2 = calls.map((c) => c.k);
+    expect(k2).toContain('chargeStart');
+    expect(k2).toContain('projectile');
+  });
+  it('CR 020 Events: a remote stream (223) simulated from its seed, its stop, bursts (224), ally attacks (225), a released charge (214 + u8)', () => {
+    const calls = fake();
+    const r = runtime();
+    const sp = COMBAT.spells.find((s) => s.key === 'arc_sparks')!;
+    const start = new Uint8Array(8);
+    new DataView(start.buffer).setUint32(4, 4242, true);
+    r.onEvent(ev(EV.channel, { entityId: 9, targetId: sp.id, value: 1, data: start }));
+    r.onEvent(ev(EV.channel, { entityId: 9, targetId: sp.id, value: 0, data: new Uint8Array(6) }));
+    const radius = new Uint8Array(2);
+    new DataView(radius.buffer).setUint16(0, 300, true);
+    r.onEvent(ev(EV.detonate, { entityId: 9, targetId: 50, value: COMBAT.spells.find((s) => s.key === 'burrowing_seed')!.id, data: radius }));
+    r.onEvent(ev(EV.summonAttack, { entityId: 77, targetId: 50, value: COMBAT.spells.find((s) => s.key === 'wraith_hound')!.id }));
+    const charged = new Uint8Array(5);
+    charged[4] = 255;
+    r.onEvent(ev(EV.cast, { entityId: 9, targetId: COMBAT.spells.find((s) => s.key === 'boulder_heave')!.id, data: charged }));
+    const byKind = Object.fromEntries(calls.map((c) => [c.k, c.a]));
+    expect(byKind.remoteStream[0]).toBe(9);
+    expect(byKind.remoteStream[7]).toBe(streamSeed(4242, sp.id));
+    expect(byKind.remoteChannelEnd).toEqual([9]);
+    expect(byKind.detonate[4]).toBe(3);
+    expect(byKind.summonAttack.slice(0, 2)).toEqual([77, 50]);
+    expect(byKind.remoteCast[7]).toBe(1);
   });
   it('remote casts route: dash variants, forms, spells (visual only, from the event origin)', () => {
     const e = new SpellFxEngine(0);

@@ -30,7 +30,7 @@ import * as R from './recipes';
 import { screenKick, screenTick, screenTint } from './screen';
 import type { CircleMat, ZoneMat } from './materials';
 import { COMBAT } from '@lodestone/contracts';
-import { canAcquire, chargeMult, homingParams, homingStep, launchShot, orbOffset, rainOffset, shotJitter, SIM_DT, type HomingParams, type HomingShot } from '../spellsim';
+import { canAcquire, chargeMult, homingParams, homingStep, orbOffset, rainOffset, shotJitter, SIM_DT, type HomingParams, type HomingShot } from '../spellsim';
 
 const EYE = 1.6;
 const STEP_MS = 1000 / 60;

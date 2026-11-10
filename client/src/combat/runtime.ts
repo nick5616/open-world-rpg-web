@@ -702,9 +702,12 @@ export class CombatRuntime {
 
   private explode(sh: LocalShot): void {
     // The explosion visual is the projectile's end (spellFx.projectileEnd with the radius).
-    emitSound('impact', { at: { x: sh.x, y: sh.y, z: sh.z }, element: sh.started.spell?.tree ?? 'earth' });
+    const stream = sh.started.shot !== undefined;
+    // CR 020: a stream pops 8-15 times a second: one quiet impact cue in three, claims for at most 4 (the zone's per-shot limit).
+    if (!stream || (sh.started.shot ?? 0) % 3 === 0) emitSound('impact', { at: { x: sh.x, y: sh.y, z: sh.z }, element: sh.started.spell?.tree ?? 'earth' });
+    let n = 0;
     for (const e of this.enemies()) {
-      if (Math.hypot(e.x - sh.x, e.z - sh.z) <= sh.aoe + enemyInfo(e).radius) this.predictHit(sh.started, e, { x: sh.x, y: sh.y, z: sh.z }, sh.started.kind, true);
+      if (Math.hypot(e.x - sh.x, e.z - sh.z) <= sh.aoe + enemyInfo(e).radius && (!stream || n++ < 4)) this.predictHit(sh.started, e, { x: sh.x, y: sh.y, z: sh.z }, sh.started.kind, true);
     }
   }
 
@@ -725,7 +728,7 @@ export class CombatRuntime {
     fxQueue.push({ t: 'spark', x: at.x, y: at.y, z: at.z, color: s.spell?.color ?? '#fff3c0', at: now });
     const gem = this.timeline.loadout.gem;
     spellFx.hit(s.spell ?? null, at.x, at.y, at.z, { tint: !s.spell && gem >= 0 ? ELEMENT_COLORS[gem] : null, heavy: kind === 'form' || s.move?.kind === 'heavy' });
-    if (!impactIsOrigin) emitSound('impact', { at, element: s.spell?.tree, weapon: this.timeline.weapon().key });
+    if (!impactIsOrigin && (s.shot === undefined || s.shot % 3 === 0)) emitSound('impact', { at, element: s.spell?.tree, weapon: this.timeline.weapon().key }); // CR 020: a stream rings every third hit
     if (kind === 'move' || kind === 'form') this.hitstopUntil = Math.max(this.hitstopUntil, now + HITSTOP_MS);
     this.probe.localHit(s, now, kind === 'move' || kind === 'form' ? HITSTOP_MS : 0);
     const claimAt = impactIsOrigin ? origin : localPlayer.pos;
