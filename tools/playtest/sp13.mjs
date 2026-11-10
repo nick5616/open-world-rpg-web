@@ -106,11 +106,12 @@ const scenes = [
   [
     'pet-wheel',
     async () => {
+      await busy(true); // the zone's pet sync can clear the injected pet: put it back right before the key
       await page.keyboard.down('Digit6');
       await sleep(500);
     },
     async () => {
-      await page.keyboard.press('Escape');
+      if (await visible('pet-wheel')) await page.keyboard.press('Escape'); // no wheel: Esc would open the menu
       await page.keyboard.up('Digit6');
     },
   ],
@@ -125,7 +126,16 @@ const scenes = [
       P.usePets.setState({ meter: null });
     }),
   ],
-  ['esc-menu', () => page.keyboard.press('Escape'), () => page.keyboard.press('Escape')],
+  ['character-spell-cards', () => page.keyboard.press('KeyC'), () => page.keyboard.press('KeyC')],
+  [
+    'esc-menu',
+    async () => {
+      const up = await page.evaluate(() => [...document.querySelectorAll('[data-ui-panel], [data-testid="emote-wheel"], [data-testid="pet-wheel"]')].filter((e) => e.getClientRects().length).map((e) => e.dataset.testid || e.className || e.tagName));
+      if (up.length) note(`before Esc: ${up.join(', ')} up`);
+      await page.keyboard.press('Escape');
+    },
+    () => page.keyboard.press('Escape'),
+  ],
 ];
 
 try {
@@ -140,6 +150,7 @@ try {
     await sleep(800);
     result[key] = {};
     for (const [name, up, down] of scenes) {
+      await dismissCards(page); // the welcome card can come up between scenes (it waits for panels to close)
       await busy(true);
       await up();
       const r = await check(`${key}-${name}`);
@@ -151,7 +162,7 @@ try {
     }
     // nothing left open by a scene
     await busy(false);
-    for (const id of ['camp-menu', 'steed-panel', 'pet-panel', 'music-overlay', 'emote-wheel', 'pet-wheel', 'esc-menu']) if (await visible(id)) issue('panel-stuck', `${key}: ${id} still open after its scene`);
+    for (const id of ['camp-menu', 'steed-panel', 'pet-panel', 'music-overlay', 'emote-wheel', 'pet-wheel', 'character-panel', 'esc-menu']) if (await visible(id)) issue('panel-stuck', `${key}: ${id} still open after its scene`);
   }
 } catch (e) {
   issue('script', String(e?.stack ?? e).slice(0, 800));

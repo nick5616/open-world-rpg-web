@@ -28,6 +28,7 @@ try {
     await go(page, prop.x, prop.z, { stopAt: 2, timeoutMs: 60000 });
     const me = (await pl(page)).pos;
     await look(page, yawTo(me, prop.x, prop.z), -0.35);
+    await dismissCards(page); // it may have come up on the way
     await sleep(500);
     const prompt = await page.evaluate(() => document.querySelector('[data-testid="town-prompt"]')?.textContent ?? '');
     note(`${label} prompt: ${prompt}`);
