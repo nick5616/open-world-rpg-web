@@ -4,7 +4,7 @@
 // never occludes anything and the fog pass leaves it alone (depth = 1).
 
 import * as THREE from 'three';
-import { SKY_GLSL } from './atmosphere';
+import { SKY_GLSL, SKY_STYLE_GLSL } from './atmosphere';
 import { WIND_GLSL, windUniforms } from '../wind';
 
 const VERT = /* glsl */ `
@@ -22,6 +22,7 @@ uniform float uClouds;
 uniform float uCloudCover;
 varying vec3 vDir;
 ${SKY_GLSL}
+${SKY_STYLE_GLSL}
 ${WIND_GLSL}
 float h21(vec2 p) { return fract(sin(dot(p, vec2(41.3, 289.1))) * 45758.5453); }
 float n2(vec2 p) {
@@ -64,17 +65,18 @@ void main() {
   }
   // Below the horizon: a dim mirror of the horizon colour (seen past the world's edge).
   if (v.y < 0.0) col = mix(col, col * 0.4, smoothstep(0.0, -0.3, v.y));
+  col = lsSkyStyle(col, v.y);
   gl_FragColor = vec4(col, 1.0);
 }
 `;
 
 export interface SkyDome {
   mesh: THREE.Mesh;
-  uniforms: { uSunDir: { value: THREE.Vector3 }; uClouds: { value: number }; uCloudCover: { value: number } };
+  uniforms: { uSunDir: { value: THREE.Vector3 }; uClouds: { value: number }; uCloudCover: { value: number }; uSkyStyle: { value: THREE.Vector4 } };
 }
 
 export function createSkyDome(): SkyDome {
-  const uniforms = { uSunDir: { value: new THREE.Vector3(0, 1, 0) }, uClouds: { value: 1 }, uCloudCover: { value: 0.42 } };
+  const uniforms = { uSunDir: { value: new THREE.Vector3(0, 1, 0) }, uClouds: { value: 1 }, uCloudCover: { value: 0.42 }, uSkyStyle: { value: new THREE.Vector4(1, 1, 0, 0) } };
   const mat = new THREE.ShaderMaterial({
     vertexShader: VERT,
     fragmentShader: FRAG,

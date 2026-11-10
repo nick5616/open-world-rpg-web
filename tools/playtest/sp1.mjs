@@ -31,8 +31,11 @@ try {
     if (o.length) issue('hud-overlap', `${name} open: ${o.join('; ')}`);
     await page.keyboard.press(key);
     await sleep(400);
-    await page.keyboard.press('Escape');
-    await sleep(300);
+    // Esc closes a panel the key left open; with nothing open it opens the Esc menu (playtest 2), so only then.
+    if (await page.evaluate(() => [...document.querySelectorAll('[data-ui-panel]')].some((e) => getComputedStyle(e).display !== 'none'))) {
+      await page.keyboard.press('Escape');
+      await sleep(300);
+    }
   }
   const stray = await page.evaluate(() => [...document.querySelectorAll('[data-ui-panel]')].filter((e) => getComputedStyle(e).display !== 'none').map((e) => e.dataset.testid));
   if (stray.length) issue('panel-stuck', `still open after toggling: ${stray.join(', ')}`);

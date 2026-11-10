@@ -39,7 +39,7 @@ describe('event payloads (Go vectors)', () => {
 });
 
 const ev = (kind: number, extra: Partial<ZoneEvent> = {}): ZoneEvent => ({ type: 'Event', kind, entityId: 1, targetId: 0, value: 0, x: 0, y: 0, z: 0, data: new Uint8Array(0), ...extra });
-const base = (): ExplorationState => ({ progress: emptyProgress(), pins: [], partyId: 0, toasts: [], mapOpen: false, stats: { events: 0, discoveries: 0, towers: 0, xpGained: 0, teleports: 0 }, actions: null });
+const base = (): ExplorationState => ({ progress: emptyProgress(), pins: [], partyId: 0, toasts: [], mapOpen: false, respawnName: '', stats: { events: 0, discoveries: 0, towers: 0, xpGained: 0, teleports: 0 }, actions: null });
 
 describe('reducer', () => {
   it('discovery and tower toasts, stats', () => {

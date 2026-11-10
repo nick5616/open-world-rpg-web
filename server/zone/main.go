@@ -163,11 +163,11 @@ func main() {
 	cfg.PartyChat = partyChat(world.ID, log)                                     // playtest 2: duel results in party chat (pvp.go)
 	zone := game.New(cfg)
 	zone.SetWorldEvents(!env.Bool("LODESTONE_ZONE_NO_WORLD_EVENTS", false)) // CR 023 content: world events (kill switch)
-	zone.SetVaultPacks(env.Bool("LODESTONE_ZONE_VAULT_PACKS", true))           // CR 023: evidence runs turn the vault yards' packs off
-	serveCombatDebug(s.Mux, zone)                  // WP13
-	serveItemsDebug(s, zone, cfg.Items.Containers) // WP14
-	serveNightDebug(s.Mux, zone)                   // WP15
-	serveDifficultyDebug(s.Mux, zone)              // playtest 1
+	zone.SetVaultPacks(env.Bool("LODESTONE_ZONE_VAULT_PACKS", true))        // CR 023: evidence runs turn the vault yards' packs off
+	serveCombatDebug(s.Mux, zone)                                           // WP13
+	serveItemsDebug(s, zone, cfg.Items.Containers)                          // WP14
+	serveNightDebug(s.Mux, zone)                                            // WP15
+	serveDifficultyDebug(s.Mux, zone)                                       // playtest 1
 	restoreEdits(ctx, zone, log)
 	restoreWorldItems(ctx, zone, log) // WP14: dropped items survive a restart (until they despawn)
 	restoreDoors(ctx, zone, log)      // building doors stay as they were left (towns.go)

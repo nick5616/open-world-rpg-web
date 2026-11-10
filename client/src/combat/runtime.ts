@@ -18,6 +18,7 @@ import { localPlayer } from '../state/live';
 import { CombatTimeline, spellById, weaponById, type CombatButtons, type Started } from './timeline';
 import { EV, INTERACT_COMBAT, ACT, ELEMENT_COLORS, decodeSync, decodeTelegraph, enemyInfo } from './events';
 import { fxQueue, pushNumber, toast, useCombatHud } from './store';
+import { GRACE_MS, killerName, respawnSiteName } from './downed';
 import { CombatProbe } from './probe';
 import { nextSelection, validSelection, WheelStepper } from './spellSelect';
 import { emitSound } from '../audio/bridge';
@@ -765,6 +766,7 @@ export class CombatRuntime {
     this.pendingClaims.delete(key);
     this.probe.confirmed(r.accepted, p?.at ?? 0, performance.now());
     if (!p || !r.accepted) return;
+    if (useCombatHud.getState().graceUntil) useCombatHud.getState().set({ graceUntil: 0 }); // CR 024: a landed hit ends the grace
     const kind = r.flags & 1 ? 'crit' : r.flags & 4 ? 'weak' : r.flags & 8 ? 'resist' : 'dealt';
     pushNumber(p.x, p.y + 0.4, p.z, r.damage, kind);
   }
@@ -890,12 +892,13 @@ export class CombatRuntime {
       case EV.playerDowned:
         if (ev.entityId === self) {
           this.timeline.downed = true;
-          hud.set({ downedUntil: now + ev.value });
+          // Playtest 2 (CR 024): name what downed you and where you come back.
+          hud.set({ downedUntil: now + ev.value, downedBy: killerName(ev.targetId, drawnRemotes.views), respawnAt: respawnSiteName(), graceUntil: 0 });
         }
         return;
       case EV.respawned:
         this.timeline.downed = false;
-        hud.set({ downedUntil: 0 });
+        hud.set({ downedUntil: 0, graceUntil: now + GRACE_MS });
         return;
       case EV.bossEngaged:
         hud.set({ boss: { id: ev.entityId, name: new TextDecoder().decode(ev.data), phase: 1, phases: COMBAT.bosses.length ? 3 : 1, pct: 100 } });

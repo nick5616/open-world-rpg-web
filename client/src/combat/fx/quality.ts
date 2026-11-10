@@ -10,9 +10,11 @@
 //   ultra   "go all out": 1.5x particles, hotter HDR, stronger distortion.
 //
 // Which tier runs (resolveFxTier, pure, tested):
-//   1. `localStorage.lodestone_fx_quality` ('low'|'medium'|'high'|'ultra')
-//      wins when set: a per-player FX override (dev console or the later
-//      graphics-settings screen: setFxSetting()).
+//   1. The Graphics screen's "Spell effects" control wins when set: the
+//      quality store's `effects` (stores/qualityStore.ts, persisted with the
+//      rest of the graphics settings; setFxSetting() writes it). A value
+//      under the pre-settings key `localStorage.lodestone_fx_quality` is
+//      adopted once and removed.
 //   2. Else an explicit graphics setting picks it: low -> low, medium ->
 //      medium, high -> ultra (the player chose high graphics: go all out).
 //   3. Else (graphics 'auto') the auto tier, capped by the GPU assessment
@@ -20,7 +22,7 @@
 //      only ever picks this default; it never overrides 1 or 2.
 //
 // The pooled light COUNT is fixed when the FX layer mounts (from the shader
-// tier: low 0, medium 2, high 4) so lit materials never recompile mid-session
+// tier: low 0, medium 2, high and ultra 4) so lit materials never recompile mid-session
 // (the WP19 "lurch" rule); everything else follows the live FX tier.
 
 import { useQualityStore, type QualitySetting, type QualityTier } from '../../stores/qualityStore';
@@ -62,7 +64,7 @@ export const FX_PROFILES: Record<FxTier, FxProfile> = {
 
 /** Pooled point lights per shader tier (fixed for the session, see header). */
 export function fxLightCount(shaderTier: QualityTier): number {
-  return shaderTier === 'high' ? 4 : shaderTier === 'medium' ? 2 : 0;
+  return shaderTier === 'high' || shaderTier === 'ultra' ? 4 : shaderTier === 'medium' ? 2 : 0;
 }
 
 const ORDER: Record<FxTier, number> = { low: 0, medium: 1, high: 2, ultra: 3 };
@@ -93,31 +95,29 @@ export function resolveFxTier(i: FxResolveInput): FxTier {
 
 // ── Live state ──────────────────────────────────────────────────────────────
 
-let fxSetting: FxSetting = readSetting();
 let gpuCap: FxTier | null = null;
 
-function readSetting(): FxSetting {
+/** One-time adoption of the pre-settings override key into the quality store. */
+function adoptLegacySetting(): void {
   try {
     const v = typeof localStorage !== 'undefined' ? localStorage.getItem(FX_STORAGE_KEY) : null;
-    return v === 'low' || v === 'medium' || v === 'high' || v === 'ultra' ? v : 'auto';
+    if (v === 'low' || v === 'medium' || v === 'high' || v === 'ultra') {
+      if (useQualityStore.getState().effects === 'auto') useQualityStore.getState().setEffects(v);
+      localStorage.removeItem(FX_STORAGE_KEY);
+    }
   } catch {
-    return 'auto';
+    /* private mode */
   }
 }
+adoptLegacySetting();
 
-/** Settings hook for the graphics-settings screen: 'auto' clears the override. */
+/** Settings hook (the Graphics screen, the console): 'auto' follows the graphics tier. Stored in the quality store. */
 export function setFxSetting(s: FxSetting): void {
-  fxSetting = s;
-  try {
-    if (s === 'auto') localStorage.removeItem(FX_STORAGE_KEY);
-    else localStorage.setItem(FX_STORAGE_KEY, s);
-  } catch {
-    /* private mode: in-memory only */
-  }
+  useQualityStore.getState().setEffects(s);
 }
 
 export function getFxSetting(): FxSetting {
-  return fxSetting;
+  return useQualityStore.getState().effects;
 }
 
 /** Set by the GPU assessment (gpu.ts). */
@@ -132,7 +132,7 @@ export function getGpuCap(): FxTier | null {
 /** The FX tier right now (cheap: read per cast and per frame). */
 export function currentFxTier(): FxTier {
   const q = useQualityStore.getState();
-  return resolveFxTier({ fxSetting, qualitySetting: q.setting, tier: q.tier, gpuCap });
+  return resolveFxTier({ fxSetting: q.effects, qualitySetting: q.setting, tier: q.tier, gpuCap });
 }
 
 export function currentFxProfile(): FxProfile {

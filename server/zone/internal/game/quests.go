@@ -3,8 +3,12 @@ package game
 // Quests in the zone (playtest 1, CR 013): every character's quest log
 // (internal/quests) is server-authoritative and persisted. Accepted
 // bounties from WP20's board and bounty keeper become quests (they were
-// kept in zone memory only before), the starter story "Ward against the
-// night" starts on a character's first login and points at the blacksmith,
+// kept in zone memory only before). Playtest 2: a new character's first
+// quest is "Slimes in the meadows" (a townsperson of the Haven town, five
+// slimes at the marked packs nearby, back for gold, draughts and a cap);
+// finishing or dropping it starts the story "Ward against the
+// night" (characters who started before playtest 2 got the Ward on their
+// first login), which points at the blacksmith,
 // a reachable sunlit sunsteel seam, the blueprint, the forge and a Light
 // tome, and every step carries the map markers the client draws on the map,
 // the compass and in the world. Events 950-959 and Interact 60 are in
@@ -24,6 +28,7 @@ import (
 	"encoding/json"
 	"errors"
 	"math"
+	"sort"
 	"strconv"
 	"time"
 
@@ -96,6 +101,7 @@ type pendingClear struct {
 type questsGlue struct {
 	handed  map[string]*quests.Log
 	places  map[int]*quests.WardPlaces
+	meadows map[int]*quests.MeadowsPlaces
 	clears  []pendingClear
 	hap     []quests.Happening
 	offered map[string]bool // characters offered the Ward this session by a blacksmith
@@ -178,6 +184,7 @@ func init() {
 
 func (s *Server) initQuests() {
 	s.qst.places = map[int]*quests.WardPlaces{}
+	s.qst.meadows = map[int]*quests.MeadowsPlaces{}
 	s.qst.offered = map[string]bool{}
 	prev := s.cbt.w.OnKill
 	s.cbt.w.OnKill = func(k combat.KillInfo) {
@@ -200,15 +207,35 @@ func (s *Server) questsJoin(sess *session) {
 		sess.quests = &questState{log: quests.NewLog()}
 	}
 	l := sess.quests.log
-	if !l.HasStarted(quests.WardKey) && !l.IsDone(quests.WardKey) {
-		if q := s.wardFor(e.Move.Pos.X, e.Move.Pos.Z); q != nil && l.Add(q) == nil {
+	// A brand-new character starts with the slimes; the Ward follows it
+	// (questsWardHandoff), or starts at once where there is no starter.
+	if !l.HasStarted(quests.MeadowsKey) && !l.HasStarted(quests.WardKey) && !l.IsDone(quests.WardKey) {
+		if q := s.meadowsFor(e.Move.Pos.X, e.Move.Pos.Z); q != nil && l.Add(q) == nil {
 			s.log.Info("quest started", "character", e.CharacterID, "quest", q.Key, "settlement", q.Settlement)
 			s.sendEvent(sess, &proto.Event{Kind: EventQuestStarted, EntityID: e.ID, TargetID: q.ID, Data: startedJSON(q)})
 		}
 	}
+	s.questsWardHandoff(sess)
 	sess.quests.recheck = true
 	s.sendQuestLog(sess)
 	s.saveQuests(sess)
+}
+
+// questsWardHandoff starts "Ward against the night" once the starter quest
+// is out of the log (finished, dropped, or never available) for a
+// character who never had the Ward, and tracks it.
+func (s *Server) questsWardHandoff(sess *session) {
+	e, l := sess.ent, sess.quests.log
+	if l.HasStarted(quests.WardKey) || l.IsDone(quests.WardKey) || l.ByKey(quests.MeadowsKey) != nil {
+		return
+	}
+	q := s.wardFor(e.Move.Pos.X, e.Move.Pos.Z)
+	if q == nil || l.Add(q) != nil {
+		return
+	}
+	l.Track(q.ID)
+	s.log.Info("quest started", "character", e.CharacterID, "quest", q.Key, "settlement", q.Settlement)
+	s.sendEvent(sess, &proto.Event{Kind: EventQuestStarted, EntityID: e.ID, TargetID: q.ID, Data: startedJSON(q)})
 }
 
 func startedJSON(q *quests.Quest) []byte {
@@ -356,8 +383,13 @@ func (s *Server) questsAdvance(sess *session, sig *quests.Signal) []quests.Happe
 	// local profiles (everyone on the live deploy) never got the new log, so
 	// the tracker, journal and markers stayed on the step they had finished.
 	changed := q.log.Dirty() || len(hs) > 0
+	handoff := false
 	for _, h := range hs {
 		s.questHappened(sess, h)
+		handoff = handoff || h.Finished && h.Quest.Key == quests.MeadowsKey
+	}
+	if handoff {
+		s.questsWardHandoff(sess)
 	}
 	if changed || q.log.Dirty() {
 		s.sendQuestLog(sess)
@@ -468,12 +500,22 @@ func (s *Server) questsTurnIn(sess *session, settlement int) {
 	}
 }
 
-// questsOnKill queues demon kills (applied now) and groups that may have
-// been cleared (checked on the next ticks, after combat resets the group).
+// questsOnKill counts kills for kill steps (applied now), applies demon
+// kills (now) and queues groups that may have been cleared (checked on the
+// next ticks, after combat resets the group).
 func (s *Server) questsOnKill(k combat.KillInfo) {
 	en := k.Enemy
 	if en == nil {
 		return
+	}
+	if en.Def != nil && en.Demon == nil { // kill steps count non-demon enemies (the starter quest, CR 023 side quests and stories)
+		for _, id := range k.Eligible {
+			if pe := s.entityByID(id); pe != nil {
+				if sess := s.byChar[pe.CharacterID]; sess != nil && sess.quests != nil && sess.quests.log.Needs(quests.ObjKill) {
+					s.questsAdvance(sess, &quests.Signal{Kind: quests.ObjKill, Family: en.Def.Family, X: en.Pos.X, Z: en.Pos.Z, Site: -1})
+				}
+			}
+		}
 	}
 	if en.Demon != nil {
 		for _, id := range k.Eligible {
@@ -559,6 +601,9 @@ func (s *Server) questInteract(sess *session, m *proto.Interact) {
 			return
 		}
 		s.log.Info("quest abandoned", "character", e.CharacterID, "quest", qq.Key)
+		if qq.Key == quests.MeadowsKey {
+			s.questsWardHandoff(sess) // dropping the slimes moves the story on
+		}
 	case QuestActTurnIn:
 		qq := q.log.Find(id)
 		c := (*quests.Step)(nil)
@@ -676,6 +721,91 @@ func (s *Server) settlementName(si int) string {
 		return a.Name
 	}
 	return "the town"
+}
+
+// ---- the first quest: slimes in the meadows ----
+
+// meadowsFor builds "Slimes in the meadows" for the settlement nearest
+// (x, z); nil without towns, a townsperson to give it or slimes nearby.
+func (s *Server) meadowsFor(x, z float64) *quests.Quest {
+	w := s.cfg.Towns
+	if w == nil || len(w.T.Settlements) == 0 {
+		return nil
+	}
+	best, bd := -1, math.Inf(1)
+	for i := range w.T.Settlements {
+		st := &w.T.Settlements[i]
+		if d := math.Hypot(st.X-x, st.Z-z); d < bd {
+			best, bd = i, d
+		}
+	}
+	p := s.qst.meadows[best]
+	if p == nil {
+		p = s.resolveMeadows(best)
+		if s.qst.meadows == nil {
+			s.qst.meadows = map[int]*quests.MeadowsPlaces{}
+		}
+		s.qst.meadows[best] = p
+	}
+	return quests.Meadows(*p, s.cfg.Now().UnixMilli())
+}
+
+// meadowsGiverRoles: who asks, in order of preference (the slimes eat the
+// crops; the blacksmith and the bounty keeper have their own business).
+var meadowsGiverRoles = []uint8{towns.RoleFarmer, towns.RoleGuard, towns.RoleInnkeeper, towns.RoleVillager, towns.RoleMerchant}
+
+// meadowsPackRangeM: slime packs this far from the town centre are marked.
+const meadowsPackRangeM = 480
+
+// resolveMeadows picks the giver and the nearest slime packs: wild packs in
+// the Haven (CR 012: every member there is a beginner creature, i.e. a
+// slime), nearest the town first, at most three.
+func (s *Server) resolveMeadows(si int) *quests.MeadowsPlaces {
+	w := s.cfg.Towns
+	st := &w.T.Settlements[si]
+	town := s.settlementName(si)
+	p := &quests.MeadowsPlaces{Settlement: si, Town: town}
+	for _, role := range meadowsGiverRoles {
+		for i := st.NPCFirst; i < st.NPCFirst+st.NPCs; i++ {
+			if d := &w.T.NPCs[i]; d.Role == role && d.Name != "" {
+				p.Giver, p.GiverRole, p.GiverTitle = d.Name, int(role), towns.RoleNames[role]
+				p.GiverAt = quests.Place{OK: true, X: d.WorkX, Z: d.WorkZ}
+				break
+			}
+		}
+		if p.Giver != "" {
+			break
+		}
+	}
+	for i := st.NPCFirst; i < st.NPCFirst+st.NPCs; i++ {
+		if d := &w.T.NPCs[i]; d.Role == towns.RoleBlacksmith {
+			p.Smith = d.Name
+			break
+		}
+	}
+	cw := s.cbt.w
+	hr := combat.D.Difficulty.HavenRadiusM
+	if cw == nil || cw.Atlas == nil || hr <= 0 {
+		return p
+	}
+	type cand struct {
+		x, z, d float64
+	}
+	var cs []cand
+	for _, g := range cw.Groups {
+		if g.Kind != combat.GroupPack || math.Hypot(g.Anchor.X-cw.Atlas.SpawnX, g.Anchor.Z-cw.Atlas.SpawnZ) > hr {
+			continue
+		}
+		if d := math.Hypot(g.Anchor.X-st.X, g.Anchor.Z-st.Z); d <= meadowsPackRangeM {
+			cs = append(cs, cand{g.Anchor.X, g.Anchor.Z, d})
+		}
+	}
+	sort.Slice(cs, func(a, b int) bool { return cs[a].d < cs[b].d })
+	for _, c := range cs[:min(3, len(cs))] {
+		p.Packs = append(p.Packs, quests.Place{OK: true, X: c.x, Z: c.z, R: 18, Name: "Slimes", Where: quests.Where(st.X, st.Z, c.x, c.z, town)})
+	}
+	s.log.Info("meadows places", "settlement", si, "town", town, "giver", p.Giver, "packs", len(p.Packs))
+	return p
 }
 
 // ---- the starter quest's places ----

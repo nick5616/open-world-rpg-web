@@ -8,7 +8,7 @@
 // A quest is a list of steps; exactly one step is current. A step has one
 // objective (talk to an NPC role in a settlement, hold items, reach a place,
 // know a spell, clear the enemies at a site, kill a demon near a site, hand
-// items in at a settlement) and the markers the map and compass show while
+// items in at a settlement, kill a number of one enemy family) and the markers the map and compass show while
 // it is current. Steps whose objective already holds when they become
 // current complete at once (a player who already mined the ore skips to the
 // blueprint). Everything a quest needs is stored in the log itself (the
@@ -94,8 +94,8 @@ type Objective struct {
 	N      int     `json:"n,omitempty"`
 	Family string  `json:"family,omitempty"`
 	X      float64 `json:"x,omitempty"`
-	Z          float64   `json:"z,omitempty"`
-	R          float64   `json:"r,omitempty"`
+	Z      float64 `json:"z,omitempty"`
+	R      float64 `json:"r,omitempty"`
 }
 
 // Step is one stage of a quest.
@@ -329,9 +329,10 @@ type Signal struct {
 	Family     string  // kill: the enemy's combat family
 }
 
-// killCounts reports whether sig is a kill a kill step counts.
+// killCounts reports whether sig is a kill a kill step counts (R 0:
+// anywhere, the starter quest's slimes).
 func killCounts(o *Objective, sig *Signal) bool {
-	return sig != nil && sig.Kind == ObjKill && math.Hypot(sig.X-o.X, sig.Z-o.Z) <= o.R && (o.Family == "" || o.Family == sig.Family)
+	return sig != nil && sig.Kind == ObjKill && (o.R <= 0 || math.Hypot(sig.X-o.X, sig.Z-o.Z) <= o.R) && (o.Family == "" || o.Family == sig.Family)
 }
 
 // met reports whether the step's objective holds now (state objectives) or

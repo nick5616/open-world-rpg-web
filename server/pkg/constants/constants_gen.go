@@ -323,6 +323,9 @@ const PartyDmgPerPlayer float64 = 0.1
 // PlayerRespawnS: Downed players respawn at their last waypoint (RespawnPoint) after this long, keeping everything (spec 8).
 const PlayerRespawnS float64 = 3
 
+// PlayerRespawnGraceS: Playtest 2 (CR 024): after a respawn enemies ignore you and cannot hurt you, nor can PvP hits, for this long or until you land a hit.
+const PlayerRespawnGraceS float64 = 5
+
 // PlayerRegenDelayS: Health regenerates only after this long without taking damage.
 const PlayerRegenDelayS float64 = 6
 

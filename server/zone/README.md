@@ -549,15 +549,26 @@ starter line, bounties as quests, the wire JSON). Glue:
   a settlement, hold items (alternatives), reach a place, know a spell,
   clear a site's enemies (a group of that site wiped with you eligible, or
   arriving while it is quiet), kill a demon near a site, hand items in at a
-  settlement's board/bounty keeper. A step whose objective already holds
+  settlement's board/bounty keeper, kill N enemies of a family (playtest 2;
+  the count is the quest's saved `tally`, kills arrive through combat's
+  OnKill hook for every eligible player). A step whose objective already holds
   completes when it becomes current. Steps can hand over items (gold, a
   tome) exactly once (`loot_grants` marker `quest:<key>:<step>`); a
   finished quest pays its gold and XP. Event 950 (whole log, JSON) after
   join and on every change; 951 offer, 952 step, 953 completed, 954
   refused, 955 started; Interact 60 (accept, abandon, hand in, track).
-- **Ward against the night** (starter, `quests.Ward`): starts on a
-  character's first login (never again once started or done) at the
-  settlement nearest them: talk to its blacksmith (25 gold and the line
+- **Slimes in the meadows** (playtest 2, `quests.Meadows`): a brand-new
+  character's first quest, at the settlement nearest them: talk to a
+  townsperson (a farmer, else a guard, innkeeper, villager or merchant),
+  kill 5 slimes (markers: the three nearest wild packs in the Haven, which
+  the Haven tier makes all slimes, within 480 m of the town), go back.
+  15 gold + 60 XP, 2 healing draughts and a leather cap; the last line
+  sends you to the blacksmith. Finishing or abandoning it starts the Ward
+  (tracked). No giver or no Haven packs: the Ward starts at once.
+  Characters who already started the Ward never get it.
+- **Ward against the night** (`quests.Ward`): starts after the slimes (it
+  started on a character's first login before playtest 2; never again once
+  started or done) at the settlement nearest them: talk to its blacksmith (25 gold and the line
   that explains sunsteel), mine 4 sunsteel ore (marked: the nearest cave
   whose sunlit/entrance chambers hold sunsteel veins, as an area around the
   veins plus its mouth), buy the Sunsteel Blade blueprint, forge the blade
@@ -580,7 +591,10 @@ starter line, bounties as quests, the wire JSON). Glue:
   change and at logout; local profiles in their save blob
   (`localsave.State.Quests`); across a handoff as the `quests` HandoffField.
 - Tests: `internal/quests` (every objective kind, limits, round trip, wire),
-  `internal/game/quests_test.go` (official world in process: the Ward from
+  `internal/game/meadows_test.go` (the slimes on the official world with the
+  real atlas enemies and the Haven tier: the giver, packs that spawn slimes,
+  kills through OnKill, the reward, the hand-off to the Ward, abandoning,
+  old characters), `internal/game/quests_test.go` (official world in process: the Ward from
   login to the Light tome incl. the blacksmith's line, the purchase and the
   slotted spell, saved and not restarted; every bounty kind on today's
   board accepted, persisted over a reconnect, deliveries handed in at the

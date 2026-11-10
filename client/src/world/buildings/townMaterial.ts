@@ -41,14 +41,33 @@ function patch(m: THREE.MeshStandardMaterial, tex: THREE.DataArrayTexture, u: To
     shader.uniforms.uNight = u.uNight;
     shader.uniforms.uGlow = u.uGlow;
     shader.vertexShader = shader.vertexShader
-      .replace('#include <common>', '#include <common>\nattribute vec2 aTexUv;\nattribute vec2 aLG;\nvarying vec2 vTexUv;\nflat varying float vLayer;\nvarying float vGlowV;')
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvTexUv = aTexUv;\nvLayer = aLG.x;\nvGlowV = aLG.y;');
+      .replace('#include <common>', '#include <common>\nattribute vec2 aTexUv;\nattribute vec2 aLG;\nvarying vec2 vTexUv;\nvarying vec3 vTexAff;\nflat varying float vLayer;\nvarying float vGlowV;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvTexUv = aTexUv;\nvLayer = aLG.x;\nvGlowV = aLG.y;')
+      // Playtest 2 Retro style: uv * w and w, so the fragment can undo the
+      // perspective correction (affine texture wobble, styleShader.ts lsRetro.z).
+      .replace('#include <project_vertex>', '#include <project_vertex>\nvTexAff = vec3(aTexUv * gl_Position.w, gl_Position.w);');
     shader.fragmentShader = shader.fragmentShader
       .replace(
         '#include <common>',
-        '#include <common>\nuniform highp sampler2DArray tTown;\nuniform float uNight;\nuniform float uGlow;\nvarying vec2 vTexUv;\nflat varying float vLayer;\nvarying float vGlowV;\nvec4 townTexel;',
+        '#include <common>\nuniform highp sampler2DArray tTown;\nuniform float uNight;\nuniform float uGlow;\nvarying vec2 vTexUv;\nvarying vec3 vTexAff;\nflat varying float vLayer;\nvarying float vGlowV;\nvec4 townTexel;',
       )
-      .replace('#include <map_fragment>', 'townTexel = texture(tTown, vec3(vTexUv, floor(vLayer + 0.5)));\ndiffuseColor.rgb *= townTexel.rgb;')
+      .replace(
+        '#include <map_fragment>',
+        `{
+  vec2 tuv = vTexUv;
+  // Retro: affine interpolation (faded in past 2 m, where a big floor quad
+  // would otherwise swim wildly) and texel-snapped sampling (nearest look,
+  // with the smooth uv's gradients so mip selection stays put).
+  if (lsRetro.z > 0.0 && vTexAff.z > 0.05) tuv = mix(tuv, vTexAff.xy / vTexAff.z, lsRetro.z * smoothstep(2.0, 6.0, length(vViewPosition)));
+  if (lsRetro.w > 0.0) {
+    vec2 ts = vec2(textureSize(tTown, 0).xy);
+    townTexel = textureGrad(tTown, vec3((floor(tuv * ts) + 0.5) / ts, floor(vLayer + 0.5)), dFdx(vTexUv), dFdy(vTexUv));
+  } else {
+    townTexel = texture(tTown, vec3(tuv, floor(vLayer + 0.5)));
+  }
+}
+diffuseColor.rgb *= townTexel.rgb;`,
+      )
       .replace(
         '#include <emissivemap_fragment>',
         `#include <emissivemap_fragment>
@@ -64,7 +83,7 @@ function patch(m: THREE.MeshStandardMaterial, tex: THREE.DataArrayTexture, u: To
 }`,
       );
   };
-  m.customProgramCacheKey = () => 'lodestone-town-v1';
+  m.customProgramCacheKey = () => 'lodestone-town-v2';
 }
 
 export function makeTownMaterials(tex: THREE.DataArrayTexture): TownMaterials {
