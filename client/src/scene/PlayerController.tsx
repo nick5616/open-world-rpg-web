@@ -252,6 +252,7 @@ export function PlayerController({ onStep, driver }: Props) {
     localPlayer.aimPitch = aim.pitch;
     localPlayer.grounded = grounded;
     localPlayer.airJumps = s.airJumps;
+    localPlayer.dash = fly ? 0 : (s.dash ?? 0); // CR 021: camera feel (combat/dashFeel.ts)
     localPlayer.mode = mode;
     localPlayer.seq = sim.seq;
     localPlayer.stamina = s.stamina / FINE;

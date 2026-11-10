@@ -27,6 +27,7 @@ import { currentFxTier, FX_PROFILES } from './quality';
 import { castHooks, castOrigin } from './castOrigin';
 import { ELEMENT_FAMILY, PALETTES, spellVisual, statusById, statusByKey, ZONE_STYLE, enemyAttackById, formById, spellById, mobilitySpellForDash, type SpellVisual, type Family } from './spellVisual';
 import * as R from './recipes';
+import { DASH_FX_MAX_S, DASH_FX_MIN_SPEED, dashFxStep, newDashFxState } from './dashFx'; // CR 021
 import { screenKick, screenTick, screenTint } from './screen';
 import type { CircleMat, ZoneMat } from './materials';
 import { COMBAT } from '@lodestone/contracts';
@@ -337,10 +338,14 @@ export class SpellFxEngine {
     if (!this.anchorPos(caster, prev)) return;
     this.at(prev.x, prev.y, prev.z, () => R.dashBurst(this.prims, v, prev.x, prev.y, prev.z, false));
     const t0 = fxTime();
+    const df = newDashFxState(); // CR 021: held dashes keep their FX while the caster moves at dash speed (dashFx.ts)
     this.push({
-      until: t0 + ms / 1000,
-      tick: () => {
+      until: t0 + DASH_FX_MAX_S,
+      tick: (t, dt) => {
         if (!this.anchorPos(caster, cur)) return false;
+        const speed = Math.hypot(cur.x - prev.x, cur.y - prev.y, cur.z - prev.z) / Math.max(1e-3, dt);
+        if (t - t0 > ms / 1000 && speed < DASH_FX_MIN_SPEED) return false;
+        if (speed > 1) this.at(cur.x, cur.y, cur.z, () => dashFxStep(this.prims, v, prev, cur, speed, df));
         if (Math.hypot(cur.x - prev.x, cur.z - prev.z) > 0.05 || Math.abs(cur.y - prev.y) > 0.05) this.at(cur.x, cur.y, cur.z, () => R.dashTrail(this.prims, v, prev, cur));
         prev.x = cur.x;
         prev.y = cur.y;

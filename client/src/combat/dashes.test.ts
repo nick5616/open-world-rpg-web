@@ -6,6 +6,7 @@ import { FlatGround } from '../sim/ground';
 import { newMoveState, stepMovement, type MoveState } from '../sim/movement';
 import { CombatTimeline, type CombatButtons } from './timeline';
 import { holdManaPerStep } from './dashes';
+import { kickFor } from './dashFeel';
 
 const idle = (held = false): CombatButtons => ({ attackDown: false, altDown: false, attackPress: 0, altPress: 0, altRelease: 0, dodgePress: 0, castPress: [null, null, null, null], formPress: 0, techniquePress: 0, drinkPress: 0, castHeld: [false, false, held, false] });
 const g = new FlatGround(0);
@@ -50,6 +51,12 @@ describe('held dashes in the timeline (CR 021)', () => {
     t.mana = spell.mana + 10 * holdManaPerStep(jet) + 1e-9;
     const { frames } = fly(t, 40, 40);
     expect(frames.filter((f) => (f.flags & InputFlag.channel) !== 0).length).toBe(10);
+  });
+
+  it('the camera kick follows dash speed: none at sprint, full at jet speed', () => {
+    expect(kickFor(12.8, true)).toBe(0);
+    expect(kickFor(jet.sustain!.speed, true)).toBeGreaterThan(0.85);
+    expect(kickFor(20, false)).toBe(0); // falling fast without a dash is not a dash
   });
 
   it('a tap is the plain dash: no hold, castSlot only through the dash', () => {
