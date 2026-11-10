@@ -83,9 +83,12 @@ anything renders (so the world builds at the right tier, no recompile), then
 samples frame times once the world is up and only ever lowers; the refined
 tier is where auto starts next session. An explicit choice always wins.
 
-The spell FX branch (`pt2/spell-vfx`) has its own FX tier and GPU classifier;
-its FX setting should read `effects` from this store (one source of truth)
-when it merges.
+The spell FX layer (`combat/fx/quality.ts`) keeps its own tier mapping
+(graphics High = FX Ultra) and GPU cap for the Auto default, but its
+override is the store's `effects` (one source of truth; the old
+`lodestone_fx_quality` key is adopted once). Its screen pass (shockwave,
+shake, flash) runs first in the same single EffectPass as the fog, grade and
+style effects.
 
 ## A bug this exposed
 

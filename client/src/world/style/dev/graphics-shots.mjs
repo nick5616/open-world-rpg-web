@@ -8,6 +8,7 @@
 //   night-fire    a town's campfire or brazier at 22:30 (lanterns, warm lights)
 //   cave          the cave chamber with the most gem veins
 //   rain          the meadow at 14:00 in a shower (wet ground, overcast, streaks)
+//   spell         an eruption (spell VFX, playtest 2) in the meadow at 16:30, in third person
 //
 // on High for each style (lodestone, painterly, grim, retro), plus Low for
 // Lodestone and Retro. Writes docs/evidence/pt2-graphics-<style>-<scene>-<tier>.png,
@@ -38,7 +39,7 @@ const software = process.env.LODESTONE_BENCH_GL === 'swiftshader';
 const gpuArgs = software ? ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] : ['--use-angle=d3d11', '--enable-gpu', '--ignore-gpu-blocklist'];
 
 const ALL_STYLES = ['lodestone', 'painterly', 'grim', 'retro'];
-const ALL_SCENES = ['day-town', 'dusk-meadow', 'night-fire', 'cave', 'rain'];
+const ALL_SCENES = ['day-town', 'dusk-meadow', 'night-fire', 'cave', 'rain', 'spell'];
 const styles = arg('--only', ALL_STYLES.join(',')).split(',');
 const scenes = arg('--scenes', ALL_SCENES.join(',')).split(',');
 const lowStyles = arg('--low', 'lodestone,retro').split(',').filter(Boolean);
@@ -165,7 +166,10 @@ async function places(page) {
 }
 
 async function placeScene(page, scene, P) {
-  await L(page, () => window.__lodestone.setRain(false));
+  await L(page, () => {
+    window.__lodestone.setRain(false);
+    window.__lodestone.setView('first');
+  });
   if (scene === 'day-town' && P.town) {
     const t = P.town;
     await L(page, ([x, z]) => window.__lodestone.teleport({ x, z }), [t.x + 26, t.z + 18]);
@@ -178,6 +182,12 @@ async function placeScene(page, scene, P) {
     if (scene === 'rain') await L(page, () => window.__lodestone.setRain(true));
     await settle(page, scene === 'rain' ? 9000 : 2500); // the shower eases in over a few seconds
     await look(page, scene === 'rain' ? 2.4 : 1.25, -0.04); // dusk: three-quarters toward the setting sun (west)
+  } else if (scene === 'spell') {
+    await L(page, ([x, z]) => window.__lodestone.teleport({ x, z }), [P.meadow.x, P.meadow.z]);
+    await L(page, (s) => window.__lodestone.setTimeOfDay(s), hour(16.5));
+    await L(page, () => window.__lodestone.setView('third'));
+    await settle(page, 2500);
+    await look(page, 2.4, -0.12);
   } else if (scene === 'night-fire' && P.town) {
     const f = P.fire ?? { x: P.town.x, y: P.town.y, z: P.town.z };
     await L(page, ([x, z]) => window.__lodestone.teleport({ x, z }), [f.x + 6, f.z + 5]);
@@ -211,6 +221,11 @@ async function shoot(page, errors, tier, style, scene) {
     window.__shots.rec = false;
     return window.__shots.frames;
   });
+  if (scene === 'spell') {
+    // The FX layer runs in debug solo builds (combat/fx/debug.ts): an eruption 9 m ahead, caught mid-burst.
+    await L(page, () => window.__lodestoneFx?.cast('eruption', { ahead: 6 }));
+    await sleep(1150); // the sigil, then the burst
+  }
   const file = `pt2-graphics-${style}-${scene}-${tier}.png`;
   await page.screenshot({ path: path.join(evidence, file) });
   const s = [...frames].sort((a, b) => a - b);
