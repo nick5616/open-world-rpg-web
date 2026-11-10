@@ -1,0 +1,26 @@
+{
+  "issues": [],
+  "log": [
+    "[11:41:44] playing as Newbie2185 at {\"x\":0,\"y\":0,\"z\":0}",
+    "[11:41:57] whatsnew after the first login: welcome",
+    "[11:41:58] marker after closing: pt2-onboarding",
+    "[11:42:00] tip: look shown",
+    "[11:42:00] lock hint: \"Click to look around · Esc: menu and controls\"",
+    "[11:42:01] controls rows: 34",
+    "[11:42:02] controls page height {\"h\":787,\"view\":787}",
+    "[11:42:04] inventory-panel: open true, after Esc open false, menu false",
+    "[11:42:05] map-screen: open true, after Esc open false, menu false",
+    "[11:42:06] quest-journal: open true, after Esc open false, menu false",
+    "[11:42:07] character-panel: open true, after Esc open false, menu false",
+    "[11:42:08] sound-settings: open true, after Esc open false, menu false",
+    "[11:42:08] friends-panel: open true, after Esc open false, menu false",
+    "[11:42:12] tracked quest: {\"id\":1397508429,\"key\":\"story:meadows\",\"kind\":1,\"title\":\"Slimes in the meadows\",\"giver\":\"Tammir, farmer of Draedmore\",\"step\":0,\"steps\":[{\"text\":\"Talk to Tammir, the farmer of Draedmore\",\"done\":false},{\"text\":\"Kill 5 slimes in the meadows around Draedmore\",\"done\":false},{\"text\":\"Return to Tammir in D",
+    "[11:42:19] returning (last saw pt2-world): news [\"pt2-onboarding\",\"pt2-graphics\",\"pt2-content\",\"pt2-spells\",\"pt2-pvp\",\"pt2-third-person\",\"pt2-skills\"]",
+    "[11:42:30] Esc > What's new lists 9 entries",
+    "[11:42:36] rejoined next to the camp at {\"x\":2624,\"y\":113.0302505493164,\"z\":2273}",
+    "[11:42:40] downed screen: \"Downed\\nby a Bandit Brute\\nBack on your feet where you first arrived in 3 s\\nYou keep everything you carry. Touch a waypoint to come back there next time.\"",
+    "[11:42:43] after the respawn: \"Enemies leave you alone for 5 s, or until you strike\"",
+    "[11:42:43] respawned at {\"x\":1912.5,\"y\":82.44649124145508,\"z\":2272.5}: 708 m from the camp, 0 m from the first spawn",
+    "[11:42:49] issues: 0"
+  ]
+}

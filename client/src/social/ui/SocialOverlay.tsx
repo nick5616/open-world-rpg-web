@@ -22,6 +22,7 @@ export function SocialOverlay(props: SocialOverlayProps) {
       const t = e.target as HTMLElement | null;
       if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return;
       if (e.code === 'KeyO') setFriendsOpen((v) => !v);
+      else if (e.code === 'Escape') setFriendsOpen(false); // playtest 2: Esc closes it like every other panel
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);

@@ -1,7 +1,7 @@
 // Playtest 2 ("Need third person mode"): T switches between the first-person
 // and the over-the-shoulder camera (persisted, stores/viewStore.ts), with a
 // short toast; CameraSettings is the settings row (view, shoulder, distance)
-// shown under the pointer-lock hint while the mouse is free and in the debug
+// shown in the Esc menu (playtest 2 onboarding; it was under the lock hint) and in the debug
 // panel. T is free: V is fly / push-to-talk, F dodge, G glider, Q form.
 
 import { useEffect, useState, type CSSProperties } from 'react';
@@ -50,7 +50,7 @@ export function ViewHud() {
 
 const btn = (on: boolean): CSSProperties => ({ font: '12px system-ui, sans-serif', padding: '2px 8px', borderRadius: 3, border: '1px solid #495057', background: on ? '#2b4f7a' : '#1b1f2a', color: '#e9ecef', cursor: 'pointer' });
 
-/** View / shoulder / distance controls (the lock hint's second line, the debug panel). */
+/** View / shoulder / distance controls (the Esc menu, the debug panel). */
 export function CameraSettings({ compact = false }: { compact?: boolean }) {
   const mode = useViewStore((s) => s.mode);
   const shoulder = useViewStore((s) => s.shoulder);

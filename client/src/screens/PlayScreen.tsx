@@ -33,6 +33,11 @@ import { QuestHud } from '../ui/quests/QuestHud';
 import { ContentHud } from '../ui/content/ContentHud';
 // Sound and music: boots the audio engine after the first playable frame; K = sound settings (client/src/audio/README.md).
 import { AudioRoot } from '../audio/ui/AudioRoot';
+// Playtest 2 onboarding: Esc menu (controls, sound, plug-in settings, leave) and contextual tips (client/src/ui/menu, ui/tips).
+import { EscMenu } from '../ui/menu/EscMenu';
+import { TipsHud } from '../ui/tips/TipsHud';
+// Playtest 2: what's new since this browser last played (client/src/ui/whatsnew).
+import { WhatsNew } from '../ui/whatsnew/WhatsNew';
 // Playtest 2: spell FX (online it is CombatLayer's; debug solo mounts it for the FX gallery and cast-spam bench).
 import { SpellFxLayer } from '../combat/fx/SpellFxLayer';
 // `?nofx`: solo without the FX layer (the A/B of the spell FX benchmark, combat/fx/dev/fx-bench.mjs).
@@ -77,6 +82,9 @@ export default function PlayScreen() {
       <QuestHud />
       <ContentHud />
       <AudioRoot />
+      <TipsHud />
+      <EscMenu />
+      <WhatsNew />
     </>
   );
 }

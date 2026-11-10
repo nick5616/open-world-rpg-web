@@ -622,9 +622,7 @@ func (s *Server) contentOnKill(k combat.KillInfo) {
 			s.sendEvent(sess, &proto.Event{Kind: EventCodexUnlocked, EntityID: pe.ID, TargetID: uint32(en.Def.ID), Value: 1, Data: []byte(en.Def.Key)})
 		}
 		sess.cnt.recheck = true
-		if !demon && sess.quests != nil && sess.quests.log.Needs(quests.ObjKill) {
-			s.questsAdvance(sess, &quests.Signal{Kind: quests.ObjKill, X: en.Pos.X, Z: en.Pos.Z, Family: en.Def.Family, Site: -1})
-		}
+		// Kill steps are counted in questsOnKill (quests.go), content on or off.
 	}
 }
 

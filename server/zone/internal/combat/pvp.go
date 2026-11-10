@@ -85,6 +85,9 @@ func (w *World) ClaimPlayer(p *Player, c *proto.HitClaim, q *Player, how PvPHit)
 	if q.Downed {
 		return PvPResult{ClaimResult: w.refuse(RefuseDead)}
 	}
+	if q.Graced(w.tick) {
+		return PvPResult{ClaimResult: w.refuse(RefuseInvulnerable)} // CR 024: just respawned
+	}
 	a, shot := p.lookup(c.AttackSeq, int(c.AttackID)) // CR 020: a stream's shot by its nominal seq
 	if a == nil {
 		if c.AttackSeq > p.LastSeq {
@@ -169,6 +172,7 @@ func (w *World) applyPlayerHit(p *Player, a *Action, q *Player, how PvPHit, shot
 	p.inCombatTick = w.tick
 	w.Stats.ClaimsAccepted++
 	w.Stats.PvPHits++
+	p.graceTick = 0 // landing a hit ends your own respawn grace (CR 024)
 	res.ClaimResult = ClaimResult{Accepted: true, Damage: uint16(min(65535, math.Round(dealt))), Flags: flags, HPPct: q.HealthPct()}
 	return res
 }
@@ -193,7 +197,7 @@ func (p *Player) HealthPct() uint8 {
 // hit can down q (the usual respawn, no item loss). Returns the health lost
 // and whether a shield absorbed some of it.
 func (w *World) hurtByPlayer(q *Player, dmg float64, by *Player, duel bool) (float64, bool) {
-	if q.Downed {
+	if q.Downed || q.Graced(w.tick) { // CR 024: respawn grace (claims, allies)
 		return 0, false
 	}
 	dmg, shielded := w.mitigate(q, dmg)
