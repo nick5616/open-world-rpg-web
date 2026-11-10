@@ -1,4 +1,4 @@
-/* global getComputedStyle, Buffer */
+/* global getComputedStyle */
 // Playtest pass 12 (playtest 2: instruments; CR 028). Two characters in one
 // headless browser (two pages): the Bard stands by a town's townsfolk with
 // every instrument (the dev kit) and plays each with the real keyboard
