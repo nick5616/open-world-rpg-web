@@ -132,7 +132,7 @@ function WhatsNewInner() {
       // the welcome card covered a new player's first talk with the smith): wait for it to close.
       if (uiPanelUp()) return;
       const intro = useIntro.getState();
-      const busy = !!intro.current || intro.queue.length > 0 || useMenu.getState().open || useCombatHud.getState().downedUntil > 0;
+      const busy = !!intro.current || intro.queue.length > 0 || useMenu.getState().open || useCombatHud.getState().downedUntil > 0 || !!document.querySelector('[data-testid="levelup-fanfare"]'); // not over the level-up card either
       if (busy && now - t0 < MAX_WAIT_MS) return;
       clearInterval(t);
       setShown(whatsNew(ENTRIES, readSeen(), RETURNING_AT_LOAD));

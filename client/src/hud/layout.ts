@@ -23,7 +23,7 @@ export const CENTER_HALF_PX = 260;
 export const NARROW_PX = 1080;
 
 /** Panels drawn in the middle of the screen (playtest 2): what sits in the middle or left waits under them. */
-const CENTRE_PANELS = ['camp-menu', 'camp-chest', 'camp-label', 'steed-panel', 'pet-panel', 'tablet-reader'].map((id) => `[data-testid="${id}"]`).join(', ');
+const CENTRE_PANELS = ['camp-menu', 'camp-chest', 'camp-label', 'steed-panel', 'pet-panel', 'tablet-reader', 'quest-journal', 'quest-offer', 'inventory-panel'].map((id) => `[data-testid="${id}"]`).join(', ');
 
 export const HUD_CSS = `
 :root {
