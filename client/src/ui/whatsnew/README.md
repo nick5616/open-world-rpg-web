@@ -10,7 +10,7 @@
 | `news.test.ts` | The rules, and that the shipped `changelog.json` is well formed |
 
 After login (online, once the world is up) the panel lists the entries above
-the id this browser last closed the panel on (at most 8). A browser with no
+the id this browser last closed the panel on (at most 8, the most important first: entries of one date can be in any order, so put the big ones on top; the footer counts the rest, "N more: Esc, What's new"). It waits for the arrival cards and for any open panel. A browser with no
 marker and no older Lodestone settings is a first-time player: a three-line
 welcome instead of the history. A browser with older settings but no marker
 (it played before this panel existed) gets the list. Closing stores the

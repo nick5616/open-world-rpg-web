@@ -69,7 +69,7 @@ export function validEntries(raw: unknown): ChangelogEntry[] {
   return out;
 }
 
-export type WhatsNew = { kind: 'none' } | { kind: 'welcome'; newest: string } | { kind: 'news'; entries: ChangelogEntry[]; newest: string };
+export type WhatsNew = { kind: 'none' } | { kind: 'welcome'; newest: string } | { kind: 'news'; entries: ChangelogEntry[]; newest: string; /** Newer entries left out by the cap (shown in the Esc menu's full list). */ more: number };
 
 /**
  * What to show after login.
@@ -82,11 +82,12 @@ export type WhatsNew = { kind: 'none' } | { kind: 'welcome'; newest: string } | 
 export function whatsNew(entries: readonly ChangelogEntry[], seen: string | null, returning: boolean): WhatsNew {
   if (!entries.length) return { kind: 'none' };
   const newest = entries[0].id;
-  if (seen === null) return returning ? { kind: 'news', entries: entries.slice(0, MAX_SHOWN), newest } : { kind: 'welcome', newest };
+  if (seen === null) return returning ? { kind: 'news', entries: entries.slice(0, MAX_SHOWN), newest, more: Math.max(0, entries.length - MAX_SHOWN) } : { kind: 'welcome', newest };
   if (seen === newest) return { kind: 'none' };
   const at = entries.findIndex((e) => e.id === seen);
   const fresh = at < 0 ? entries.slice(0, Math.min(3, MAX_SHOWN)) : entries.slice(0, Math.min(at, MAX_SHOWN));
-  return fresh.length ? { kind: 'news', entries: fresh, newest } : { kind: 'none' };
+  const more = at < 0 ? 0 : Math.max(0, at - fresh.length);
+  return fresh.length ? { kind: 'news', entries: fresh, newest, more } : { kind: 'none' };
 }
 
 // ---- storage (per browser; every access guarded: private windows throw)

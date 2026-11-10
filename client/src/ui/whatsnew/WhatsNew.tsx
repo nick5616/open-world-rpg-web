@@ -9,6 +9,8 @@ import { useNetStore } from '../../net/netStore';
 import { registerMenuEntry, useMenu } from '../menu/store';
 import { useIntro } from '../intro/queue';
 import { useCombatHud } from '../../combat/store';
+import { isTextTarget } from '../../input/useKeyboard';
+import { uiPanelUp } from '../../input/interact';
 import raw from './changelog.json';
 import { RETURNING_AT_LOAD, readSeen, validEntries, whatsNew, writeSeen, type ChangelogEntry, type WhatsNew as Shown } from './news';
 
@@ -50,7 +52,7 @@ export function EntryList({ entries }: { entries: readonly ChangelogEntry[] }) {
 function Panel({ shown, onClose }: { shown: Exclude<Shown, { kind: 'none' }>; onClose: () => void }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.code === 'Escape') {
+      if (e.code === 'Escape' && !isTextTarget(e.target)) {
         e.preventDefault();
         e.stopImmediatePropagation();
         onClose();
@@ -88,7 +90,11 @@ function Panel({ shown, onClose }: { shown: Exclude<Shown, { kind: 'none' }>; on
           )}
         </div>
         <div style={{ padding: '10px 22px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
-          {!welcome && <span style={{ fontSize: 12, opacity: 0.55 }}>The full list: Esc, What&apos;s new</span>}
+          {!welcome && (
+            <span data-testid="whatsnew-more" style={{ fontSize: 12, opacity: shown.kind === 'news' && shown.more > 0 ? 0.8 : 0.55 }}>
+              {shown.kind === 'news' && shown.more > 0 ? `${shown.more} more: Esc, What's new` : "The full list: Esc, What's new"}
+            </span>
+          )}
           <button data-testid="whatsnew-close" onMouseDown={(e) => e.preventDefault()} onClick={onClose} style={{ ...BTN, marginLeft: 'auto' }}>
             {welcome ? "Let's go" : 'Got it'}
           </button>
@@ -122,6 +128,9 @@ function WhatsNewInner() {
     const t = setInterval(() => {
       const now = performance.now();
       if (now - t0 < SHOW_AFTER_MS) return;
+      // Never on top of a shop, the inventory or any other open panel (playtest 2 integration QA:
+      // the welcome card covered a new player's first talk with the smith): wait for it to close.
+      if (uiPanelUp()) return;
       const intro = useIntro.getState();
       const busy = !!intro.current || intro.queue.length > 0 || useMenu.getState().open || useCombatHud.getState().downedUntil > 0;
       if (busy && now - t0 < MAX_WAIT_MS) return;

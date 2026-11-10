@@ -12,7 +12,10 @@
 //
 //   node tools/playtest/stack.mjs --zone-env LODESTONE_ZONE_DEV_SPAWN=1 --zone-env LODESTONE_ZONE_DEV_COMBAT=1 --zone-env "LODESTONE_ZONE_DEBUG_CAMP=x,z,8,brute brute brute"
 //   LODESTONE_CLIENT_URL=<its url> SP9_CAMP=x,z node tools/playtest/sp9.mjs <outDir> [whatsnew|menu|quest|death]   (all by default)
+import { readFileSync } from 'node:fs';
 import { launch, newCharacter, hudBoxes, overlaps, sleep, pl, go, walkTo, look, yawTo } from './lib.mjs';
+
+const CHANGELOG = JSON.parse(readFileSync(new URL('../../client/src/ui/whatsnew/changelog.json', import.meta.url), 'utf8'));
 
 const out = process.argv[2] ?? 'tmp/playtest9';
 const only = process.argv[3] ?? 'all';
@@ -184,7 +187,12 @@ async function whatsNewReturning() {
   const kind = await waitFor(panelKind, 15000);
   const shown = await page.evaluate(() => [...document.querySelectorAll('[data-testid="whatsnew"] [data-testid="whatsnew-entry"]')].map((e) => e.getAttribute('data-id')));
   note(`returning (last saw pt2-world): ${kind} ${JSON.stringify(shown)}`);
-  if (kind !== 'news' || shown.includes('pt2-world') || shown.includes('pt2-fixes') || !shown.includes('pt2-onboarding')) issue('whatsnew', `expected only entries newer than pt2-world: ${JSON.stringify(shown)}`);
+  // The newest entries above pt2-world, at most MAX_SHOWN (8); the rest are counted ("N more: Esc, What's new").
+  const newer = CHANGELOG.slice(0, CHANGELOG.findIndex((e) => e.id === 'pt2-world')).map((e) => e.id);
+  if (kind !== 'news' || JSON.stringify(shown) !== JSON.stringify(newer.slice(0, 8))) issue('whatsnew', `expected the newest ${Math.min(8, newer.length)} of the ${newer.length} entries newer than pt2-world: ${JSON.stringify(shown)}`);
+  const more = await page.evaluate(() => document.querySelector('[data-testid="whatsnew-more"]')?.textContent ?? '');
+  note(`footer: ${more}`);
+  if (newer.length > 8 && !more.startsWith(`${newer.length - 8} more`)) issue('whatsnew', `the footer should count the ${newer.length - 8} entries left out: "${more}"`);
   await shot('whatsnew-since');
   const box = await page.evaluate(() => {
     const r = document.querySelector('[data-testid="whatsnew"] > div')?.getBoundingClientRect();

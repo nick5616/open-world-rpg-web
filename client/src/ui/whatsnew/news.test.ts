@@ -12,8 +12,8 @@ describe("what's new", () => {
   });
 
   it('shows only the entries newer than the one this browser saw', () => {
-    expect(whatsNew(list, 'a', false)).toEqual({ kind: 'news', entries: [list[0], list[1]], newest: 'c' });
-    expect(whatsNew(list, 'b', true)).toEqual({ kind: 'news', entries: [list[0]], newest: 'c' });
+    expect(whatsNew(list, 'a', false)).toEqual({ kind: 'news', entries: [list[0], list[1]], newest: 'c', more: 0 });
+    expect(whatsNew(list, 'b', true)).toEqual({ kind: 'news', entries: [list[0]], newest: 'c', more: 0 });
     expect(whatsNew(list, 'c', true)).toEqual({ kind: 'none' });
   });
 
@@ -30,6 +30,9 @@ describe("what's new", () => {
     const many = Array.from({ length: 20 }, (_, i) => e(`n${20 - i}`));
     const r = whatsNew(many, 'n1', false);
     expect(r.kind === 'news' && r.entries.length).toBe(MAX_SHOWN);
+    // the rest are counted for the panel's "N more: Esc, What's new"
+    expect(r.kind === 'news' && r.more).toBe(19 - MAX_SHOWN);
+    expect(whatsNew(many, null, true)).toMatchObject({ kind: 'news', more: 20 - MAX_SHOWN });
     expect(whatsNew([], null, true)).toEqual({ kind: 'none' });
   });
 

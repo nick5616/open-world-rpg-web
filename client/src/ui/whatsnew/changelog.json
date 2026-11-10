@@ -1,131 +1,5 @@
 [
   {
-    "id": "pt2-weather",
-    "date": "2026-11-10",
-    "title": "Weather that changes",
-    "items": [
-      "Each region has its own weather now: clear skies, clouds, fog banks, drizzle, rain and thunderstorms; snow and blizzards on the peaks; heat haze and sandstorms in the badlands. Fronts roll in and out over a minute or two, and the clock shows a short forecast.",
-      "Thunderstorms throw lightning. It finds the tallest thing around, and anyone holding a sword or spear. If your blade crackles, switch to your bow or staff, fast.",
-      "Lightning can set dry grass on fire. Rain still makes climbing slippery.",
-      "Snow slows you down, and nights in the cold leave you Chilled (no health regeneration). Stay by a campfire, in town, or eat something warm like a stew.",
-      "Strong winds push your glider and your arrows. Fog hides you from enemies, and them from you.",
-      "Look for a rainbow after the rain."
-    ]
-  },
-  {
-    "id": "pt2-pets",
-    "date": "2026-11-10",
-    "title": "Taming and pet companions",
-    "items": [
-      "Tame wolves, boars, slimes, rams, the Glintfox and more: carry a food it likes, weaken it, and when it stops to sniff the air, feed it (E). Stay close while the meter fills.",
-      "Your pet follows you, joins your fights, levels up and has an ability of its own: a healing slime, a howling wolf, a charging boar.",
-      "Press 6 to send it at what you aim at (hold 6 for the pet wheel), 7 to make it stay or follow, E beside it to pet it.",
-      "Pets are knocked out, never killed: they limp home to recover and come back. The rest wait in your stable at your camp or in any town (C, Your pets).",
-      "Some tamed creatures turn out shiny or elemental. The bestiary says which creatures can be tamed and what they like to eat."
-    ]
-  },
-  {
-    "id": "pt2-instruments",
-    "date": "2026-11-10",
-    "title": "Play music",
-    "items": [
-      "Carry a lute, a wooden flute, a hand drum or handbells (general stores and tool merchants, or make one at a camp workbench or a forge) and press U to play.",
-      "Your keyboard becomes the instrument: Q W E R… play a scale from its root, the number row an octave up, A S D… and Z X C… lower. Shift raises a note, Space accents it, the mouse wheel changes octave, the arrows change key and scale.",
-      "Players within 40 m hear you from where you stand, echoing in caves and halls. Press Enter for a metronome everyone near you shares.",
-      "Play for the townsfolk and they'll applaud. Play by a campfire at night and everyone by the fire rises Rested. Play 100 notes to become a Bard."
-    ]
-  },
-  {
-    "id": "pt2-mounts",
-    "date": "2026-11-10",
-    "title": "Spirit steeds",
-    "items": [
-      "Buy a Spirit Whistle at any general store (40 gold) and press 5: a spirit steed gallops in to you. E rides it, E (or Space standing still) gets off.",
-      "W trots, a Shift press spurs it to a gallop and a second spur bursts ahead (each spur costs stamina); S reins in and backs up; Space jumps fences.",
-      "It won't climb cliffs or wade into deep water, shies from demons at night, and a hard hit can throw you. Bows, staves, wands and spells work from the saddle.",
-      "Name it and pick its colour: Character (C), Your steed. Other players see you ride."
-    ]
-  },
-  {
-    "id": "pt2-fishing",
-    "date": "2026-11-10",
-    "title": "Gone fishing",
-    "items": [
-      "Buy a fishing rod from a general store or a tool merchant (or make one at a forge or your camp workbench), face a lake, river or the sea and press E.",
-      "Wait for the float to go under (a nibble is not a bite), strike, then reel: hold to pull in, let go when the line strains.",
-      "Fourteen kinds of fish live in different waters, biomes, hours and weather. A few are rare, and two are the stuff of legend.",
-      "Cook your catch at a hearth or campfire (thirteen new recipes), fill the new Fish tab in your journal (J) and earn four new feats."
-    ]
-  },
-  {
-    "id": "pt2-emotes",
-    "date": "2026-11-10",
-    "title": "Emotes",
-    "items": [
-      "Hold H for the emote wheel: wave, bow, cheer, point, sit, dance, laugh, shrug, salute and rest by the fire.",
-      "Everyone nearby sees them. Tap H to repeat your last one, or type /emote wave in chat."
-    ]
-  },
-  {
-    "id": "pt2-photo-mode",
-    "date": "2026-11-10",
-    "title": "Photo mode",
-    "items": [
-      "Press L for photo mode: the camera leaves your character and the HUD disappears.",
-      "Fly with WASD (Space and Ctrl for up and down), pick a visual style, preview any hour of the day, and add depth of field, vignette and film grain.",
-      "Press Enter to save a PNG. Esc frees the mouse, Esc again takes you back."
-    ]
-  },
-  {
-    "id": "pt2-camps",
-    "date": "2026-11-10",
-    "title": "Make camp",
-    "items": [
-      "Press P to make camp: craft a kit, then place a campfire, a bedroll, a storage chest, a workbench or a signpost in the wild (wheel or R turns it, left mouse places it).",
-      "Gather firewood from fallen branches, or buy it at a general store.",
-      "A burning campfire keeps demons away at night, and you can cook on it.",
-      "Rest in your bedroll to wake Rested (faster healing, more stamina); it is also where you come back after a fall.",
-      "Your chest keeps 16 stacks, just for you or shared with your party; hold E on your own piece to pack it up again."
-    ]
-  },
-  {
-    "id": "pt2-enemy-models",
-    "date": "2026-11-10",
-    "title": "Monsters with character",
-    "items": [
-      "Every creature has its own look now: squishy slimes with big eyes, boars with tusks, hooded bandits with real weapons, horned demons with glowing eyes, and bigger, grander bosses.",
-      "Enemies move like animals and fighters: they trot, hop, flap and look at you, wind up visibly before they strike, flinch when hit, reel when parried, and fall (or splat) when beaten.",
-      "Your summoned allies are glowing spirits in their element's colour.",
-      "Damage numbers are smaller, coloured by element, stack neatly, and crits pop.",
-      "Big crowds of enemies draw much faster."
-    ]
-  },
-  {
-    "id": "pt2-onboarding",
-    "date": "2026-11-10",
-    "title": "A friendlier first hour",
-    "items": [
-      "Press Esc for the new menu: every control in one place, sound, camera, tips and Leave.",
-      "Short tips show up when they matter instead of a wall of keys.",
-      "New characters start with \"Slimes in the meadows\": meet a townsperson, clear five slimes, collect your reward.",
-      "Quest markers now follow the person you are looking for, even when they leave work for the evening.",
-      "Getting downed tells you what got you, where you will wake up and that you keep everything.",
-      "After a respawn, enemies leave you alone for 5 seconds (or until you strike first).",
-      "This \"What's new\" panel: it shows what changed since you last played (Esc, What's new)."
-    ]
-  },
-  {
-    "id": "pt2-graphics",
-    "date": "2026-11-10",
-    "title": "Graphics settings and art styles",
-    "items": [
-      "New Graphics screen: the Graphics button at the top right, F10, or Esc > Graphics.",
-      "Pick a look: Lodestone (the new default), Painterly, Grim or Retro 32-bit.",
-      "Quality presets from Low to Ultra, chosen for your graphics card on first run, and you can change any single setting.",
-      "Rain now soaks the world: wet ground, grey skies, thicker fog."
-    ]
-  },
-  {
     "id": "pt2-content",
     "date": "2026-11-10",
     "title": "More to do out there",
@@ -147,6 +21,141 @@
       "14 new spells: hold-to-fire streams, homing souls, charged throws, orbiting blades, brands that chain, summoned allies.",
       "Dashes are fast and last as long as you hold the key. Magma Dash flies like a jet; Glacier Step skates across water.",
       "Other players now see your spells exactly as you do: same aim, same timing, same held poses."
+    ]
+  },
+  {
+    "id": "pt2-mounts",
+    "date": "2026-11-10",
+    "title": "Spirit steeds",
+    "items": [
+      "Buy a Spirit Whistle at any general store (40 gold) and press 5: a spirit steed gallops in to you. E rides it, E (or Space standing still) gets off.",
+      "W trots, a Shift press spurs it to a gallop and a second spur bursts ahead (each spur costs stamina); S reins in and backs up; Space jumps fences.",
+      "It won't climb cliffs or wade into deep water, shies from demons at night, and a hard hit can throw you. Bows, staves, wands and spells work from the saddle.",
+      "Name it and pick its colour: Character (C), Your steed. Other players see you ride."
+    ]
+  },
+  {
+    "id": "pt2-pets",
+    "date": "2026-11-10",
+    "title": "Taming and pet companions",
+    "items": [
+      "Tame wolves, boars, slimes, rams, the Glintfox and more: carry a food it likes, weaken it, and when it stops to sniff the air, feed it (E). Stay close while the meter fills.",
+      "Your pet follows you, joins your fights, levels up and has an ability of its own: a healing slime, a howling wolf, a charging boar.",
+      "Press 6 to send it at what you aim at (hold 6 for the pet wheel), 7 to make it stay or follow, E beside it to pet it.",
+      "Pets are knocked out, never killed: they limp home to recover and come back. The rest wait in your stable at your camp or in any town (C, Your pets).",
+      "Some tamed creatures turn out shiny or elemental. The bestiary says which creatures can be tamed and what they like to eat."
+    ]
+  },
+  {
+    "id": "pt2-camps",
+    "date": "2026-11-10",
+    "title": "Make camp",
+    "items": [
+      "Press P to make camp: craft a kit, then place a campfire, a bedroll, a storage chest, a workbench or a signpost in the wild (wheel or R turns it, left mouse places it).",
+      "Gather firewood from fallen branches, or buy it at a general store.",
+      "A burning campfire keeps demons away at night, and you can cook on it.",
+      "Rest in your bedroll to wake Rested (faster healing, more stamina); it is also where you come back after a fall.",
+      "Your chest keeps 16 stacks, just for you or shared with your party; hold E on your own piece to pack it up again."
+    ]
+  },
+  {
+    "id": "pt2-weather",
+    "date": "2026-11-10",
+    "title": "Weather that changes",
+    "items": [
+      "Each region has its own weather now: clear skies, clouds, fog banks, drizzle, rain and thunderstorms; snow and blizzards on the peaks; heat haze and sandstorms in the badlands. Fronts roll in and out over a minute or two, and the clock shows a short forecast.",
+      "Thunderstorms throw lightning. It finds the tallest thing around, and anyone holding a sword or spear. If your blade crackles, switch to your bow or staff, fast.",
+      "Rain soaks the ground and greys the sky, and still makes climbing slippery. Lightning can set dry grass on fire.",
+      "Snow slows you down, and nights in the cold leave you Chilled (no health regeneration). Stay by a campfire, in town, or eat something warm like a stew.",
+      "Strong winds push your glider and your arrows. Fog hides you from enemies, and them from you.",
+      "Look for a rainbow after the rain."
+    ]
+  },
+  {
+    "id": "pt2-fishing",
+    "date": "2026-11-10",
+    "title": "Gone fishing",
+    "items": [
+      "Buy a fishing rod from a general store or a tool merchant (or make one at a forge or your camp workbench), face a lake, river or the sea and press E.",
+      "Wait for the float to go under (a nibble is not a bite), strike, then reel: hold to pull in, let go when the line strains.",
+      "Fourteen kinds of fish live in different waters, biomes, hours and weather. A few are rare, and two are the stuff of legend.",
+      "Cook your catch at a hearth or campfire (thirteen new recipes), fill the new Fish tab in your journal (J) and earn four new feats."
+    ]
+  },
+  {
+    "id": "pt2-onboarding",
+    "date": "2026-11-10",
+    "title": "A friendlier first hour",
+    "items": [
+      "Press Esc for the new menu: every control in one place, sound, camera, tips and Leave.",
+      "Short tips show up when they matter instead of a wall of keys.",
+      "New characters start with \"Slimes in the meadows\": meet a townsperson, clear five slimes, collect your reward.",
+      "Quest markers now follow the person you are looking for, even when they leave work for the evening.",
+      "Getting downed tells you what got you, where you will wake up and that you keep everything.",
+      "After a respawn, enemies leave you alone for 5 seconds (or until you strike first).",
+      "This \"What's new\" panel, which shows what changed since you last played. The full list is in Esc, What's new."
+    ]
+  },
+  {
+    "id": "pt2-controls",
+    "date": "2026-11-10",
+    "title": "Controls, tidied up",
+    "items": [
+      "E does one thing at a time: whatever the [E] line under the crosshair says. In the saddle, E always gets you off.",
+      "The weapon technique moved from V to Tab, so talking on voice chat no longer swings it.",
+      "Esc, Controls lists every key, including fishing and photo mode."
+    ]
+  },
+  {
+    "id": "pt2-graphics",
+    "date": "2026-11-10",
+    "title": "Graphics settings and art styles",
+    "items": [
+      "New Graphics screen: the Graphics button at the top right, F10, or Esc > Graphics.",
+      "Pick a look: Lodestone (the new default), Painterly, Grim or Retro 32-bit.",
+      "Quality presets from Low to Ultra, chosen for your graphics card on first run, and you can change any single setting."
+    ]
+  },
+  {
+    "id": "pt2-instruments",
+    "date": "2026-11-10",
+    "title": "Play music",
+    "items": [
+      "Carry a lute, a wooden flute, a hand drum or handbells (general stores and tool merchants, or make one at a camp workbench or a forge) and press U to play.",
+      "Your keyboard becomes the instrument: Q W E R… play a scale from its root, the number row an octave up, A S D… and Z X C… lower. Shift raises a note, Space accents it, the mouse wheel changes octave, the arrows change key and scale.",
+      "Players within 40 m hear you from where you stand, echoing in caves and halls. Press Enter for a metronome everyone near you shares.",
+      "Play for the townsfolk and they'll applaud. Play by a campfire at night and everyone by the fire rises Rested. Play 100 notes to become a Bard."
+    ]
+  },
+  {
+    "id": "pt2-enemy-models",
+    "date": "2026-11-10",
+    "title": "Monsters with character",
+    "items": [
+      "Every creature has its own look now: squishy slimes with big eyes, boars with tusks, hooded bandits with real weapons, horned demons with glowing eyes, and bigger, grander bosses.",
+      "Enemies move like animals and fighters: they trot, hop, flap and look at you, wind up visibly before they strike, flinch when hit, reel when parried, and fall (or splat) when beaten.",
+      "Your summoned allies are glowing spirits in their element's colour.",
+      "Damage numbers are smaller, coloured by element, stack neatly, and crits pop.",
+      "Big crowds of enemies draw much faster."
+    ]
+  },
+  {
+    "id": "pt2-emotes",
+    "date": "2026-11-10",
+    "title": "Emotes",
+    "items": [
+      "Hold H for the emote wheel: wave, bow, cheer, point, sit, dance, laugh, shrug, salute and rest by the fire.",
+      "Everyone nearby sees them. Tap H to repeat your last one, or type /emote wave in chat."
+    ]
+  },
+  {
+    "id": "pt2-photo-mode",
+    "date": "2026-11-10",
+    "title": "Photo mode",
+    "items": [
+      "Press L for photo mode: the camera leaves your character and the HUD disappears.",
+      "Fly with WASD (Space and Ctrl for up and down), pick a visual style, preview any hour of the day, and add depth of field, vignette and film grain.",
+      "Press Enter to save a PNG. Esc frees the mouse, Esc again takes you back."
     ]
   },
   {
