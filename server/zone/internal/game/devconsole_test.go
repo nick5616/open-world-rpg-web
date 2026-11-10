@@ -304,7 +304,9 @@ func TestDevConsoleCommands(t *testing.T) {
 	})
 	a.devOK(t, DevActDespawn, 0, 0)
 	h.do(func() {
-		if len(h.srv.dev.groups) != 0 || slices.ContainsFunc(h.srv.cbt.w.Groups, func(g *combat.Group) bool { return g.Kind == combat.GroupTest || g.Kind == combat.GroupBoss && g.Site < 0 }) {
+		if len(h.srv.dev.groups) != 0 || slices.ContainsFunc(h.srv.cbt.w.Groups, func(g *combat.Group) bool {
+			return g.Kind == combat.GroupTest || g.Kind == combat.GroupBoss && g.Site < 0
+		}) {
 			t.Error("despawn left groups")
 		}
 	})
@@ -324,6 +326,16 @@ func TestDevConsoleCommands(t *testing.T) {
 			t.Error("no attunement boons")
 		}
 	})
+
+	// Places: towers, towns and vaults to teleport to.
+	a.dev(DevActPlaces, 0, 0)
+	var places map[string][]devPlace
+	if err := json.Unmarshal(a.take(EventDevPlaces, 3*time.Second).Data, &places); err != nil {
+		t.Fatal(err)
+	}
+	if len(places["towers"]) != len(h.srv.cfg.Explore.Towers) || len(places["towns"]) == 0 || len(places["vaults"]) == 0 {
+		t.Errorf("places: %d towers, %d towns, %d vaults", len(places["towers"]), len(places["towns"]), len(places["vaults"]))
+	}
 
 	// Quests: a two-step quest, one step, then the rest (rewards paid).
 	h.do(func() {

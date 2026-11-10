@@ -62,12 +62,14 @@ const (
 	DevActQuest       = 23 // targetId: quest id (0 = every active one); arg: 1 finish the step, 2 finish the quest, 3 abandon
 	DevActReveal      = 24 // every tower and waypoint
 	DevActAttune      = 25 // every tower crystal (boons, XP)
+	DevActPlaces      = 26 // send 1402: towers, towns, vaults (teleport targets)
 )
 
 // Event kinds 1400-1419 (contracts/events.md, playtest 2 dev console).
 const (
 	EventDevStatus = 1400
 	EventDevResult = 1401
+	EventDevPlaces = 1402
 )
 
 // Event 1401 value.
@@ -136,7 +138,7 @@ func devName(a uint8) string {
 	names := map[uint8]string{DevActStatus: "status", DevActGive: "give", DevActLearn: "learn", DevActUnlearn: "unlearn", DevActLevel: "level", DevActXP: "xp",
 		DevActGold: "gold", DevActSkillPoints: "skillpoints", DevActWeaponSkill: "weaponskill", DevActRefill: "refill", DevActFlags: "flags", DevActSpeed: "speed",
 		DevActReset: "reset", DevActTeleport: "teleport", DevActTime: "time", DevActWeather: "weather", DevActSpawn: "spawn", DevActDespawn: "despawn",
-		DevActEvent: "event", DevActTameable: "tameable", DevActPet: "pet", DevActSteed: "steed", DevActQuest: "quest", DevActReveal: "reveal", DevActAttune: "attune"}
+		DevActEvent: "event", DevActTameable: "tameable", DevActPet: "pet", DevActSteed: "steed", DevActQuest: "quest", DevActReveal: "reveal", DevActAttune: "attune", DevActPlaces: "places"}
 	if n, ok := names[a]; ok {
 		return n
 	}
@@ -162,6 +164,10 @@ func (s *Server) devInteract(sess *session, m *proto.Interact) {
 	}
 	if m.Action == DevActStatus {
 		s.sendDevStatus(sess)
+		return
+	}
+	if m.Action == DevActPlaces {
+		s.sendDevPlaces(sess)
 		return
 	}
 	code, msg := s.devApply(sess, m)
@@ -962,6 +968,43 @@ func (s *Server) devQuest(sess *session, id uint32, op int) (int32, string) {
 	s.sendQuestLog(sess)
 	s.saveQuests(sess)
 	return devOK("%d step(s) done, %d quest(s) finished", steps, done)
+}
+
+// devPlace is one teleport target (Event 1402).
+type devPlace struct {
+	Name string  `json:"n"`
+	X    float64 `json:"x"`
+	Z    float64 `json:"z"`
+}
+
+// sendDevPlaces lists the towers, towns and vaults (Event 1402 data JSON
+// {towers, towns, vaults}: [{n, x, z}]).
+func (s *Server) sendDevPlaces(sess *session) {
+	out := map[string][]devPlace{"towers": {}, "towns": {}, "vaults": {}}
+	r2 := func(v float64) float64 { return math.Round(v*10) / 10 }
+	if w := s.cfg.Explore; w != nil {
+		for _, t := range w.Towers {
+			name := fmt.Sprintf("Tower %d", t.Site)
+			if st := &w.Atlas.Sites[t.Site]; int(st.Region) < len(w.Atlas.Regions) {
+				name = w.Atlas.Regions[st.Region].Name + " tower"
+			}
+			out["towers"] = append(out["towers"], devPlace{name, r2(t.Shape.CX), r2(t.Shape.CZ)})
+		}
+	}
+	if tw := s.cfg.Towns; tw != nil {
+		for i := range tw.T.Settlements {
+			st := &tw.T.Settlements[i]
+			out["towns"] = append(out["towns"], devPlace{s.settlementName(i), r2(st.X), r2(st.Z)})
+		}
+	}
+	if s.cfg.Explore != nil {
+		for _, v := range s.vaultPlans() {
+			out["vaults"] = append(out["vaults"], devPlace{v.Name, r2(v.Door.X), r2(v.Door.Z)})
+		}
+		slices.SortFunc(out["vaults"], func(a, b devPlace) int { return strings.Compare(a.Name, b.Name) })
+	}
+	b, _ := json.Marshal(out)
+	s.sendEvent(sess, &proto.Event{Kind: EventDevPlaces, EntityID: sess.ent.ID, Data: b})
 }
 
 // ---- reset ----
