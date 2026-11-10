@@ -31,8 +31,8 @@ func TestMeadowsStepByStep(t *testing.T) {
 	f := &facts{have: map[string]int{}, known: map[string]bool{}}
 	slime := &Signal{Kind: ObjKill, Family: "slime", Site: -1}
 	// A kill before the talk doesn't count.
-	if hs := l.Advance(f, slime, nil); len(hs) != 0 || q.Tally != 0 {
-		t.Fatalf("kill before the talk: %+v tally %d", hs, q.Tally)
+	if hs := l.Advance(f, slime, nil); len(hs) != 0 || q.Count != 0 {
+		t.Fatalf("kill before the talk: %+v count %d", hs, q.Count)
 	}
 	w := view(q)
 	if len(w.Markers) != 1 || w.Markers[0].Label != "Hild, farmer" || !strings.Contains(w.Text, "Hild, the farmer of Draedmore") {
@@ -47,26 +47,26 @@ func TestMeadowsStepByStep(t *testing.T) {
 		t.Fatalf("kill step wire %+v", w)
 	}
 	// Other families don't count; slimes do, one per kill.
-	if hs := l.Advance(f, &Signal{Kind: ObjKill, Family: "wolf"}, nil); len(hs) != 0 || q.Tally != 0 {
-		t.Fatalf("wolf counted: tally %d", q.Tally)
+	if hs := l.Advance(f, &Signal{Kind: ObjKill, Family: "wolf"}, nil); len(hs) != 0 || q.Count != 0 {
+		t.Fatalf("wolf counted: count %d", q.Count)
 	}
 	for i := 1; i < MeadowsSlimes; i++ {
-		if hs := l.Advance(f, slime, nil); len(hs) != 0 || q.Tally != i || q.Progress != i {
-			t.Fatalf("kill %d: %+v tally %d progress %d", i, hs, q.Tally, q.Progress)
+		if hs := l.Advance(f, slime, nil); len(hs) != 0 || q.Count != i || q.Progress != i {
+			t.Fatalf("kill %d: %+v count %d progress %d", i, hs, q.Count, q.Progress)
 		}
 	}
-	// The tally survives a save and load (it is the only record of the kills).
+	// The count survives a save and load (it is the only record of the kills).
 	l2 := Load(l.JSON())
-	if q2 := l2.Find(MeadowsID); q2 == nil || q2.Tally != MeadowsSlimes-1 || q2.Step != 1 {
+	if q2 := l2.Find(MeadowsID); q2 == nil || q2.Count != MeadowsSlimes-1 || q2.Step != 1 {
 		t.Fatalf("reloaded %+v", q2)
 	}
 	// A state check (no signal) doesn't count a kill.
-	if hs := l.Advance(f, nil, nil); len(hs) != 0 || q.Tally != MeadowsSlimes-1 {
+	if hs := l.Advance(f, nil, nil); len(hs) != 0 || q.Count != MeadowsSlimes-1 {
 		t.Fatal("a recheck counted a kill")
 	}
 	hs = l.Advance(f, slime, nil)
-	if len(hs) != 1 || q.Step != 2 || q.Tally != 0 {
-		t.Fatalf("fifth slime: %+v step %d tally %d", hs, q.Step, q.Tally)
+	if len(hs) != 1 || q.Step != 2 || q.Count != 0 {
+		t.Fatalf("fifth slime: %+v step %d count %d", hs, q.Step, q.Count)
 	}
 	// One kill is used up by one step: the return step still needs the talk.
 	if hs := l.Advance(f, slime, nil); len(hs) != 0 || q.Step != 2 {
@@ -102,9 +102,9 @@ func TestMeadowsNeedsGiverAndSlimes(t *testing.T) {
 // never for one that doesn't.
 func TestKillCountsPerQuest(t *testing.T) {
 	l := NewLog()
-	a := &Quest{ID: 1, Key: "story:a", Kind: KindStory, Steps: []Step{{Obj: Objective{Kind: ObjKill, Family: "slime", Count: 2}}}}
-	b := &Quest{ID: 2, Key: "story:b", Kind: KindStory, Steps: []Step{{Obj: Objective{Kind: ObjKill, Count: 1}}}} // any family
-	c := &Quest{ID: 3, Key: "story:c", Kind: KindStory, Steps: []Step{{Obj: Objective{Kind: ObjKill, Family: "wolf", Count: 1}}}}
+	a := &Quest{ID: 1, Key: "story:a", Kind: KindStory, Steps: []Step{{Obj: Objective{Kind: ObjKill, Family: "slime", N: 2}}}}
+	b := &Quest{ID: 2, Key: "story:b", Kind: KindStory, Steps: []Step{{Obj: Objective{Kind: ObjKill, N: 1}}}} // any family
+	c := &Quest{ID: 3, Key: "story:c", Kind: KindStory, Steps: []Step{{Obj: Objective{Kind: ObjKill, Family: "wolf", N: 1}}}}
 	for _, q := range []*Quest{a, b, c} {
 		if err := l.Add(q); err != nil {
 			t.Fatal(err)
@@ -112,8 +112,8 @@ func TestKillCountsPerQuest(t *testing.T) {
 	}
 	f := &facts{have: map[string]int{}, known: map[string]bool{}}
 	hs := l.Advance(f, &Signal{Kind: ObjKill, Family: "slime"}, nil)
-	if len(hs) != 1 || hs[0].Quest != b || a.Tally != 1 || c.Tally != 0 {
-		t.Fatalf("first slime: %+v a %d c %d", hs, a.Tally, c.Tally)
+	if len(hs) != 1 || hs[0].Quest != b || a.Count != 1 || c.Count != 0 {
+		t.Fatalf("first slime: %+v a %d c %d", hs, a.Count, c.Count)
 	}
 	if !l.Needs(ObjKill) {
 		t.Fatal("kill steps left")

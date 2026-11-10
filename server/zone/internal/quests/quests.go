@@ -32,19 +32,27 @@ const (
 	ObjClear  = "clear"  // the enemies at Site (within R of X, Z) are dead
 	ObjSlay   = "slay"   // kill a demon within R of (X, Z)
 	ObjTurnIn = "turnin" // hand Items[0] in at Settlement's board or bounty keeper
-	ObjKill   = "kill"   // kill Count enemies of Family (playtest 2: the starter quest's slimes)
+	// Playtest 2 content (CR 022).
+	ObjKill    = "kill"    // kill N non-demon enemies (of Family, if set) within R of (X, Z); Quest.Count counts
+	ObjGive    = "give"    // talk to NPC (Role/Settlement, NPC if set) holding Items[0]: they take it
+	ObjEscort  = "escort"  // stand within R of (X, Z) with the quest's follower close by (Escorter)
+	ObjRead    = "read"    // read the lore tablet at atlas Site
+	ObjAttune  = "attune"  // attune to any tower crystal
+	ObjDungeon = "dungeon" // clear the sealed vault at atlas Site (its keeper falls with you near)
 )
 
 // Quest kinds (Event 950 `kind`).
 const (
 	KindBounty = 0 // a settlement's bounty board / bounty keeper
 	KindStory  = 1 // the starter line and other authored quests
+	KindSide   = 2 // playtest 2 content: a townsperson's request (CR 022)
 )
 
 // Limits.
 const (
 	MaxBounties = 5  // WP20's rule: at most five bounties held
-	MaxActive   = 12 // bounties + story quests
+	MaxActive   = 12 // bounties + story quests + side quests
+	MaxSide     = 6  // CR 022: townsfolk requests held at once
 	maxDone     = 64 // remembered completions (today's bounties, finished stories)
 )
 
@@ -79,11 +87,15 @@ type Objective struct {
 	Items      []ItemQty `json:"items,omitempty"`
 	Spell      string    `json:"spell,omitempty"`
 	Site       int       `json:"site"`
-	X          float64   `json:"x,omitempty"`
-	Z          float64   `json:"z,omitempty"`
-	R          float64   `json:"r,omitempty"`
-	Family     string    `json:"family,omitempty"` // kill: the enemy family (combat.yaml), "" any
-	Count      int       `json:"count,omitempty"`  // kill: how many
+	// CR 022: NPC is the towns-buffer NPC index + 1 a talk/give step wants
+	// (0: anyone of Role in Settlement); N a kill count; Family the combat
+	// family kills must be of ("" any non-demon).
+	NPC    int     `json:"npc,omitempty"`
+	N      int     `json:"n,omitempty"`
+	Family string  `json:"family,omitempty"`
+	X      float64 `json:"x,omitempty"`
+	Z      float64 `json:"z,omitempty"`
+	R      float64 `json:"r,omitempty"`
 }
 
 // Step is one stage of a quest.
@@ -112,9 +124,21 @@ type Quest struct {
 	// Progress is the current step's count (have/turn-in: units held), for
 	// the HUD only; the objective is re-evaluated, never trusted from here.
 	Progress int `json:"progress,omitempty"`
-	// Tally counts the current kill step's kills (saved: kills are events,
-	// not a state the world can be asked about again).
-	Tally int `json:"tally,omitempty"`
+	// Count is a kill step's kills so far (CR 022; saved: kills are events,
+	// not state that can be re-read).
+	Count int `json:"count,omitempty"`
+	// CR 022 rewards beyond gold and XP: items handed over at the end,
+	// equipment rolls (story quests) and reputation with Settlement.
+	Items     []ItemQty `json:"items,omitempty"`
+	RollItems int       `json:"rollItems,omitempty"`
+	Rep       int       `json:"rep,omitempty"`
+	// CR 022 side quests: the giver's towns-buffer NPC index + 1 and their
+	// sequence number (finishing it brings the giver's next offer).
+	GiverNPC int `json:"giverNpc,omitempty"`
+	Seq      int `json:"seq,omitempty"`
+	// Start (CR 022) is handed over when the quest is accepted (a
+	// delivery's parcel).
+	Start []ItemQty `json:"start,omitempty"`
 }
 
 // Current is the current step (nil when finished).
@@ -187,10 +211,12 @@ func (l *Log) IsDone(key string) bool { return slices.Contains(l.Done, key) }
 func (l *Log) HasStarted(key string) bool { return slices.Contains(l.Started, key) }
 
 // Bounties counts held bounties.
-func (l *Log) Bounties() int {
+func (l *Log) Bounties() int { return l.count(KindBounty) }
+
+func (l *Log) count(kind uint8) int {
 	n := 0
 	for _, q := range l.Active {
-		if q.Kind == KindBounty {
+		if q.Kind == kind {
 			n++
 		}
 	}
@@ -206,7 +232,7 @@ func (l *Log) Add(q *Quest) error {
 		return ErrHave
 	case l.IsDone(q.Key):
 		return ErrDone
-	case len(l.Active) >= MaxActive || (q.Kind == KindBounty && l.Bounties() >= MaxBounties):
+	case len(l.Active) >= MaxActive || (q.Kind == KindBounty && l.Bounties() >= MaxBounties) || (q.Kind == KindSide && l.count(KindSide) >= MaxSide):
 		return ErrTooMany
 	}
 	l.Active = append(l.Active, q)
@@ -286,23 +312,34 @@ type Happening struct {
 	Finished bool // the whole quest completed (Quest already removed)
 }
 
+// Escorter is optional on Facts (CR 022): whether quest id's follower (a
+// rescued villager) is close to the character.
+type Escorter interface {
+	Escorted(questID uint32) bool
+}
+
 // Signal is an event in the world a step may be waiting for.
 type Signal struct {
-	Kind       string // ObjTalk, ObjClear, ObjSlay, ObjTurnIn, ObjKill
-	Family     string // kill: the enemy's family
+	Kind       string // ObjTalk (also completes ObjGive), ObjClear, ObjSlay, ObjTurnIn, ObjKill, ObjRead, ObjAttune, ObjDungeon
 	Role       int
 	Settlement int
-	Site       int     // clear: the cleared group's site (-1 none)
-	X, Z       float64 // clear/slay: where it happened
+	NPC        int     // talk: the towns-buffer NPC index + 1 (0 unknown)
+	Site       int     // clear: the cleared group's site (-1 none); read/dungeon: the atlas site
+	X, Z       float64 // clear/slay/kill: where it happened
+	Family     string  // kill: the enemy's combat family
+}
+
+// killCounts reports whether sig is a kill a kill step counts (R 0:
+// anywhere, the starter quest's slimes).
+func killCounts(o *Objective, sig *Signal) bool {
+	return sig != nil && sig.Kind == ObjKill && (o.R <= 0 || math.Hypot(sig.X-o.X, sig.Z-o.Z) <= o.R) && (o.Family == "" || o.Family == sig.Family)
 }
 
 // met reports whether the step's objective holds now (state objectives) or
 // is satisfied by sig (event objectives).
-func met(q *Quest, s *Step, f Facts, sig *Signal) bool {
+func met(qid uint32, s *Step, f Facts, sig *Signal) bool {
 	o := &s.Obj
 	switch o.Kind {
-	case ObjKill:
-		return q.Tally >= max(1, o.Count)
 	case ObjHave:
 		for _, it := range o.Items {
 			if f.Have(it.Item) >= it.Qty {
@@ -315,7 +352,20 @@ func met(q *Quest, s *Step, f Facts, sig *Signal) bool {
 		x, z := f.Pos()
 		return math.Hypot(x-o.X, z-o.Z) <= o.R
 	case ObjTalk:
-		return sig != nil && sig.Kind == ObjTalk && sig.Role == o.Role && sig.Settlement == o.Settlement
+		return sig != nil && sig.Kind == ObjTalk && sig.Role == o.Role && sig.Settlement == o.Settlement && (o.NPC == 0 || o.NPC == sig.NPC)
+	case ObjGive:
+		return sig != nil && sig.Kind == ObjTalk && sig.Role == o.Role && sig.Settlement == o.Settlement && (o.NPC == 0 || o.NPC == sig.NPC) &&
+			len(o.Items) > 0 && f.Have(o.Items[0].Item) >= o.Items[0].Qty
+	case ObjKill:
+		return false // counted in Advance (Quest.Count)
+	case ObjEscort:
+		x, z := f.Pos()
+		es, ok := f.(Escorter)
+		return ok && math.Hypot(x-o.X, z-o.Z) <= o.R && es.Escorted(qid)
+	case ObjRead, ObjDungeon:
+		return sig != nil && sig.Kind == o.Kind && sig.Site == o.Site
+	case ObjAttune:
+		return sig != nil && sig.Kind == ObjAttune
 	case ObjClear:
 		if sig != nil && sig.Kind == ObjClear && (sig.Site == o.Site && o.Site >= 0 || math.Hypot(sig.X-o.X, sig.Z-o.Z) <= o.R) {
 			return true
@@ -336,8 +386,8 @@ func met(q *Quest, s *Step, f Facts, sig *Signal) bool {
 func progress(q *Quest, s *Step, f Facts) int {
 	switch s.Obj.Kind {
 	case ObjKill:
-		return min(q.Tally, max(1, s.Obj.Count))
-	case ObjHave, ObjTurnIn:
+		return min(q.Count, s.Obj.N)
+	case ObjHave, ObjTurnIn, ObjGive:
 		if len(s.Obj.Items) > 0 {
 			return min(f.Have(s.Obj.Items[0].Item), s.Obj.Items[0].Qty)
 		}
@@ -357,18 +407,21 @@ func (l *Log) Advance(f Facts, sig *Signal, out []Happening) []Happening {
 			if s == nil {
 				break
 			}
-			if qs != nil && qs.Kind == ObjKill && s.Obj.Kind == ObjKill && (s.Obj.Family == "" || s.Obj.Family == qs.Family) {
-				q.Tally++ // the kill is used up by this step
+			if s.Obj.Kind == ObjKill && killCounts(&s.Obj, qs) {
+				q.Count++
 				l.dirty = true
 				qs = nil
-			}
-			if !met(q, s, f, qs) {
+				if q.Count < s.Obj.N {
+					break
+				}
+			} else if s.Obj.Kind == ObjKill && q.Count >= s.Obj.N && s.Obj.N > 0 {
+				// already counted (a reloaded log)
+			} else if !met(q.ID, s, f, qs) {
 				break
 			}
 			out = append(out, Happening{Quest: q, Step: q.Step})
 			q.Step++
-			q.Progress = 0
-			q.Tally = 0
+			q.Progress, q.Count = 0, 0
 			l.dirty = true
 			qs = nil // one signal completes one step; later steps need their own
 		}
@@ -391,7 +444,7 @@ func (l *Log) Advance(f Facts, sig *Signal, out []Happening) []Happening {
 // (reach and clear objectives), so the glue skips players who don't.
 func (l *Log) Wants() bool {
 	for _, q := range l.Active {
-		if s := q.Current(); s != nil && (s.Obj.Kind == ObjReach || s.Obj.Kind == ObjClear) {
+		if s := q.Current(); s != nil && (s.Obj.Kind == ObjReach || s.Obj.Kind == ObjClear || s.Obj.Kind == ObjEscort) {
 			return true
 		}
 	}

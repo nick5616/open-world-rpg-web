@@ -193,7 +193,8 @@ func TestMeadowsFirstQuestToWard(t *testing.T) {
 	t.Logf("handed off: %s: %s", sj.Title, sj.Text)
 	time.Sleep(200 * time.Millisecond)
 	inv := a.inventory(t)
-	if inv.Gold != gold0+quests.MeadowsGold {
+	// At least the quest's gold (the first kill also pays CR 023's First Blood feat, when content runs).
+	if inv.Gold < gold0+quests.MeadowsGold || inv.Gold > gold0+quests.MeadowsGold+5 {
 		t.Fatalf("gold %d -> %d", gold0, inv.Gold)
 	}
 	if findItem(inv, "armor:leather_cap") == nil {

@@ -161,6 +161,8 @@ func main() {
 	cfg.Difficulty = difficultySetup(cfg.Combat, pool, world.ID, log)            // playtest 1: discovery-stamped areas (difficulty.go)
 	cfg.PartyChat = partyChat(world.ID, log)                                     // playtest 2: duel results in party chat (pvp.go)
 	zone := game.New(cfg)
+	zone.SetWorldEvents(!env.Bool("LODESTONE_ZONE_NO_WORLD_EVENTS", false)) // CR 023 content: world events (kill switch)
+	zone.SetVaultPacks(env.Bool("LODESTONE_ZONE_VAULT_PACKS", true))           // CR 023: evidence runs turn the vault yards' packs off
 	serveCombatDebug(s.Mux, zone)                  // WP13
 	serveItemsDebug(s, zone, cfg.Items.Containers) // WP14
 	serveNightDebug(s.Mux, zone)                   // WP15
@@ -178,6 +180,19 @@ func main() {
 	s.Mux.HandleFunc("GET /debug/zone", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{"zoneId": cfg.ZoneID, "worldId": cfg.WorldID, "seed": cfg.Seed, "genVersion": cfg.GenVersion, "spec": json.RawMessage(nonEmptyJSON(world.Spec)), "atlasHash": world.AtlasHash, "players": zone.Players()})
+	})
+	// CR 023 content: vault plans, live world events, tablets and quest
+	// givers (tools and the evidence harness, client/src/ui/content/dev).
+	s.Mux.HandleFunc("GET /debug/content", func(w http.ResponseWriter, r *http.Request) {
+		var out map[string]any
+		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+		defer cancel()
+		if err := zone.Do(ctx, func() { out = zone.ContentDebug() }); err != nil {
+			http.Error(w, err.Error(), http.StatusServiceUnavailable)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(out)
 	})
 	s.Mux.HandleFunc("GET /debug/tickstats", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

@@ -12,7 +12,9 @@ import { setMapOpen, useExploration } from '../map/store';
 import { headingOf } from '../map/Compass';
 import { ensureQuestHook } from './link';
 import { netRuntime } from '../../net/netStore';
-import { distanceText, whereText, type QuestMarker, type QuestView } from './events';
+import { distanceText, whereText, QUEST_KIND_LABEL, type QuestMarker, type QuestView } from './events';
+import { ITEMS } from '@lodestone/contracts';
+import { JournalContentTab, JournalTabBar, type JournalTab } from '../content/JournalTabs';
 import { liveMarkers } from './live';
 import { dismissOffer, offerMarkers, pruneNotes, setJournalOpen, setQuestPreview, trackedQuest, useQuests } from './store';
 
@@ -203,6 +205,11 @@ function OfferCard() {
       <div style={{ fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: GOLD, opacity: 0.8 }}>Quest offered</div>
       <div style={{ font: '600 22px Georgia, serif', color: '#f6e7c0' }}>{q.title}</div>
       <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 10 }}>{q.giver}</div>
+      {q.say && (
+        <div data-testid="quest-offer-say" style={{ font: 'italic 15px/1.5 Georgia, serif', color: '#f3e3bd', borderLeft: '3px solid rgba(255,209,102,0.6)', padding: '4px 0 4px 12px', margin: '0 0 12px' }}>
+          &ldquo;{q.say}&rdquo;
+        </div>
+      )}
       <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
         <ol style={{ flex: '1 1 240px', margin: 0, paddingLeft: 20, fontSize: 13 }}>
           {q.steps.map((s, i) => {
@@ -223,7 +230,7 @@ function OfferCard() {
         {markers.length > 0 && <MiniMap markers={markers} />}
       </div>
       <div style={{ marginTop: 10, fontSize: 13 }}>
-        Reward: <span style={{ color: GOLD }}>{q.gold} gold · {q.xp} XP</span>
+        Reward: <span style={{ color: GOLD }}>{rewardText(q)}</span>
       </div>
       <div style={{ display: 'flex', gap: 8, marginTop: 12, justifyContent: 'flex-end' }}>
         <button data-testid="quest-offer-map" onClick={() => { setQuestPreview({ title: q.title, markers, from: 'offer' }); setMapOpen(true); }} style={btn(false)}>Show on map</button>
@@ -232,6 +239,15 @@ function OfferCard() {
       </div>
     </div>
   );
+}
+
+/** "30 gold · 200 XP · +12 renown with Draedmore · a rolled rare" */
+export function rewardText(q: Pick<QuestView, 'gold' | 'xp' | 'rep' | 'repTown' | 'items' | 'rollItems'>): string {
+  const parts = [`${q.gold} gold`, `${q.xp} XP`];
+  for (const it of q.items ?? []) parts.push(`${it.qty > 1 ? `${it.qty} x ` : ''}${ITEMS.items.find((x) => x.key === it.item)?.name ?? it.item}`);
+  if (q.rollItems) parts.push(q.rollItems > 1 ? `${q.rollItems} pieces of gear` : 'a piece of gear');
+  if (q.rep) parts.push(`+${q.rep} renown${q.repTown ? ` with ${q.repTown}` : ''}`);
+  return parts.join(' · ');
 }
 
 function btn(primary: boolean): React.CSSProperties {
@@ -243,22 +259,37 @@ function Journal() {
   const log = useQuests((s) => s.log);
   const actions = useQuests((s) => s.actions);
   const [sel, setSel] = useState<number | null>(null);
+  const [tab, setTab] = useState<JournalTab>('quests');
   useEffect(() => {
     if (open && document.pointerLockElement) document.exitPointerLock();
   }, [open]);
   if (!open) return null;
+  if (tab !== 'quests') {
+    return (
+      <div data-testid="quest-journal" data-ui-panel style={{ ...PANEL, position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: 'min(760px, 94vw)', height: 'min(560px, 88vh)', display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 36, padding: 12 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <JournalTabBar tab={tab} setTab={setTab} />
+          <button onClick={() => setJournalOpen(false)} style={btn(false)}>Close</button>
+        </div>
+        <div style={{ flex: 1, minHeight: 0 }}>
+          <JournalContentTab tab={tab} />
+        </div>
+      </div>
+    );
+  }
   const q = log.quests.find((x) => x.id === sel) ?? log.quests.find((x) => x.id === log.tracked) ?? log.quests[0];
   const px = localPlayer.pos.x;
   const pz = localPlayer.pos.z;
   return (
     <div data-testid="quest-journal" data-ui-panel style={{ ...PANEL, position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: 'min(760px, 94vw)', height: 'min(520px, 86vh)', display: 'grid', gridTemplateColumns: 'minmax(160px, 240px) 1fr', overflow: 'hidden', zIndex: 36 }}>
       <div style={{ borderRight: '1px solid rgba(255,209,102,0.25)', overflowY: 'auto', padding: 10 }}>
-        <div style={{ font: '600 18px Georgia, serif', color: GOLD, marginBottom: 8 }}>Journal</div>
+        <div style={{ font: '600 18px Georgia, serif', color: GOLD, marginBottom: 6 }}>Journal</div>
+        <JournalTabBar tab={tab} setTab={setTab} />
         {log.quests.length === 0 && <div style={{ opacity: 0.7, fontSize: 13 }}>No quests. Bounty boards and townsfolk have work.</div>}
         {log.quests.map((x) => (
           <div key={x.id} onClick={() => setSel(x.id)} style={{ padding: '6px 8px', borderRadius: 4, cursor: 'pointer', background: x.id === q?.id ? 'rgba(255,209,102,0.15)' : 'transparent', marginBottom: 2 }}>
             <div style={{ fontSize: 13, fontWeight: 600 }}>{x.id === log.tracked ? '◆ ' : ''}{x.title}</div>
-            <div style={{ fontSize: 11, opacity: 0.65 }}>{x.kind === 1 ? 'Story' : 'Bounty'} · step {Math.min(x.step + 1, x.steps.length)}/{x.steps.length}</div>
+            <div style={{ fontSize: 11, opacity: 0.65 }}>{QUEST_KIND_LABEL[x.kind] ?? 'Quest'} · step {Math.min(x.step + 1, x.steps.length)}/{x.steps.length}</div>
           </div>
         ))}
       </div>
@@ -286,7 +317,7 @@ function Journal() {
               </div>
             ))}
             <div style={{ fontSize: 13, margin: '8px 0' }}>
-              Reward: <span style={{ color: GOLD }}>{q.gold} gold · {q.xp} XP</span>
+              Reward: <span style={{ color: GOLD }}>{rewardText(q)}</span>
             </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <button disabled={!actions || q.id === log.tracked} onClick={() => actions?.track(q.id)} style={btn(true)}>{q.id === log.tracked ? 'Tracked' : 'Track'}</button>

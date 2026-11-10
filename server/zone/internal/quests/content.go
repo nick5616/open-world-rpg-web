@@ -203,7 +203,7 @@ func Meadows(p MeadowsPlaces, nowMs int64) *Quest {
 		{
 			Text:    fmt.Sprintf("Kill %d slimes in the meadows around %s", MeadowsSlimes, p.Town),
 			Note:    "The marked meadows have slimes. Left click attacks, 1-4 cast spells, F dodges. Health comes back out of combat; R drinks a draught.",
-			Obj:     Objective{Kind: ObjKill, Family: MeadowsFamily, Count: MeadowsSlimes, Settlement: -1, Site: -1},
+			Obj:     Objective{Kind: ObjKill, Family: MeadowsFamily, N: MeadowsSlimes, Settlement: -1, Site: -1},
 			Markers: packs,
 		},
 		{

@@ -109,6 +109,9 @@ type Rolled struct {
 	Forged  bool    // a forge roll (guaranteed sockets from the recipe)
 	MinSock int
 	Deep    bool // deep-cave / void source: primordial bases prefer voidglass
+	// MinRarity (playtest 2 content, CR 022): the roll is at least this tier
+	// (a vault chest's guaranteed rare).
+	MinRarity int
 }
 
 // randomBases are the bases loot can roll: everything except sunsteel
@@ -198,7 +201,7 @@ func RollEquipment(r *RNG, ctx Rolled) *Item {
 			base = cands[len(cands)-1]
 		}
 	}
-	rar := RollRarity(r, ctx.Luck)
+	rar := max(RollRarity(r, ctx.Luck), min(ctx.MinRarity, len(D.Rarities)-2))
 	rd := D.Rarities[rar]
 	// Primordial: "5 plus a unique, on a starmetal or voidglass base".
 	if len(rd.Bases) > 0 && !slices.Contains(rd.Bases, base.Material) {

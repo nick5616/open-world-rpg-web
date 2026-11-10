@@ -19,7 +19,7 @@ function fail(msg) {
 
 const CATEGORY_KIND = {
   weapon: 'weapon', armor: 'armor', ammo: 'ammo', potion: 'consumable', food: 'consumable',
-  meat: 'material', herb: 'material', hide: 'material', seed: 'material', tool: 'tool',
+  meat: 'material', herb: 'material', hide: 'material', seed: 'material', tool: 'tool', quest: 'material',
   currency: 'currency', gem: 'gem', ore: 'ore', ingot: 'ingot', blueprint: 'blueprint', tome: 'tome', key: 'key',
 };
 

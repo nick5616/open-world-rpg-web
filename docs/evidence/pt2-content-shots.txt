@@ -1,0 +1,53 @@
+town "Draedmore" (1920, 2272); open ground (2060, 2514)
+zone :38812, vite :44275; 14 vaults, 69 tablets, 102 quest givers
+givers in Draedmore: Caelia (rescue), Fenen (rescue), Quila (rescue)
+shot pt2-content-sidequest-dialogue.png: Caelia offers "Lost near The Shattered Arch" ("Una took a wrong turn chasing a goat, the fool, somewhere near The Shattered Arch. Bring them back to Draedmore?")
+shot pt2-content-sidequest-accepted.png (the request in the tracker, its markers on the compass)
+shot pt2-content-event-caravan.png: caravan at (2060, 2455); enemies drawn: #58, #59, #60, #61, #62
+shot pt2-content-event-starfall.png: starfall at (2060, 2455); enemies drawn: #58, #59, #60, #61, #62, Warded Starfall Sentinel, #98, #99
+vault "The Undervault of The Moonlit Ruins" (levers) at (1248, 2656), order [1,0,2]
+shot pt2-content-vault-puzzle.png (lever, lever, lever, door, chest)
+  at the lever of moon: 0.6 m (dy 0.0), prompt {"kind":"vault","site":112,"part":2,"label":"[E] Pull the lever of the moon"}
+  at the lever of sun: 1.0 m (dy 0.0), prompt {"kind":"vault","site":112,"part":1,"label":"[E] Pull the lever of the sun"}
+shot pt2-content-vault-lever.png (two of three levers down)
+  at the lever of star: 1.0 m (dy -0.1), prompt {"kind":"vault","site":112,"part":3,"label":"[E] Pull the lever of the star"}
+shot pt2-content-vault-keeper.png (phase 1, 2 frames)
+shot pt2-content-lore-tablet-world.png / pt2-content-lore-tablet.png: The Forgotten Shrine (tablet 8)
+codex: {"slime":1}
+shot pt2-content-codex.png (bestiary) and pt2-content-feats.png (feats and titles)
+
+zone log (content):
+{"time":"2026-11-10T03:15:30.4929092-08:00","level":"WARN","msg":"world row is not minted (placeholder gen_version); serving spec_from_seed(seed). The account service mints it on start, or run `go run ./server/pkg/cmd/mintworld -official`.","svc":"zone","world":"content-1794309328154","seed":20261108,"rowGenVersion":"dev"}
+{"time":"2026-11-10T03:15:31.3726158-08:00","level":"INFO","msg":"zone config","svc":"zone","zone":"zone-content-38812","world":"content-1794309328154","seed":20261108,"genVersion":"2","devSpawn":true}
+{"time":"2026-11-10T03:15:34.4061947-08:00","level":"INFO","msg":"quest started","svc":"zone","character":"pt2-content-1794309332790-1","quest":"story:ward","settlement":9}
+{"time":"2026-11-10T03:15:34.4061947-08:00","level":"INFO","msg":"join","svc":"zone","entity":1,"character":"pt2-content-1794309332790-1","name":"Wanderer1","remote":"127.0.0.1:53734","x":1871.44,"z":2273.03}
+{"time":"2026-11-10T03:15:34.4392885-08:00","level":"INFO","msg":"exploration","svc":"zone","character":"pt2-content-1794309332790-1","kind":602,"site":9,"name":"Draedmore","xp":100}
+{"time":"2026-11-10T03:15:34.4392885-08:00","level":"INFO","msg":"level up","svc":"zone","character":"pt2-content-1794309332790-1","from":1,"to":2}
+{"time":"2026-11-10T03:15:49.2057552-08:00","level":"INFO","msg":"quest accepted","svc":"zone","character":"pt2-content-1794309332790-1","quest":"side:9:111:0","kind":"rescue"}
+{"time":"2026-11-10T03:15:50.9392415-08:00","level":"INFO","msg":"leave","svc":"zone","entity":1,"character":"pt2-content-1794309332790-1"}
+{"time":"2026-11-10T03:15:51.9725797-08:00","level":"INFO","msg":"quest started","svc":"zone","character":"pt2-content-1794309351580-2","quest":"story:ward","settlement":37}
+{"time":"2026-11-10T03:15:51.973095-08:00","level":"INFO","msg":"join","svc":"zone","entity":24,"character":"pt2-content-1794309351580-2","name":"Defender2","remote":"127.0.0.1:50273","x":2060,"z":2514.49}
+{"time":"2026-11-10T03:15:56.9725465-08:00","level":"INFO","msg":"world event","svc":"zone","id":2952790017,"kind":"caravan","x":2060,"z":2454}
+{"time":"2026-11-10T03:16:08.1724183-08:00","level":"INFO","msg":"leave","svc":"zone","entity":24,"character":"pt2-content-1794309351580-2"}
+{"time":"2026-11-10T03:16:09.2397066-08:00","level":"INFO","msg":"quest started","svc":"zone","character":"pt2-content-1794309368836-3","quest":"story:ward","settlement":37}
+{"time":"2026-11-10T03:16:09.2397066-08:00","level":"INFO","msg":"join","svc":"zone","entity":63,"character":"pt2-content-1794309368836-3","name":"Defender3","remote":"127.0.0.1:50287","x":2060,"z":2514.49}
+{"time":"2026-11-10T03:16:14.5727489-08:00","level":"INFO","msg":"world event","svc":"zone","id":2952790018,"kind":"starfall","x":2060,"z":2454}
+{"time":"2026-11-10T03:16:24.7061783-08:00","level":"INFO","msg":"leave","svc":"zone","entity":63,"character":"pt2-content-1794309368836-3"}
+{"time":"2026-11-10T03:16:25.7728932-08:00","level":"INFO","msg":"quest started","svc":"zone","character":"pt2-content-1794309385365-4","quest":"story:ward","settlement":8}
+{"time":"2026-11-10T03:16:25.7728932-08:00","level":"INFO","msg":"join","svc":"zone","entity":100,"character":"pt2-content-1794309385365-4","name":"Delver4","remote":"127.0.0.1:50297","x":1264,"z":2666}
+{"time":"2026-11-10T03:16:25.7728932-08:00","level":"INFO","msg":"exploration","svc":"zone","character":"pt2-content-1794309385365-4","kind":602,"site":112,"name":"The Moonlit Ruins","xp":50}
+{"time":"2026-11-10T03:16:26.2061713-08:00","level":"INFO","msg":"world event ended","svc":"zone","id":2952790017,"kind":"caravan","won":false,"rewarded":0}
+{"time":"2026-11-10T03:16:26.7062075-08:00","level":"INFO","msg":"vault awake","svc":"zone","site":112,"name":"The Undervault of The Moonlit Ruins","puzzle":"levers"}
+{"time":"2026-11-10T03:16:44.0873641-08:00","level":"INFO","msg":"vault open","svc":"zone","site":112}
+{"time":"2026-11-10T03:16:48.618787-08:00","level":"INFO","msg":"leave","svc":"zone","entity":100,"character":"pt2-content-1794309385365-4"}
+{"time":"2026-11-10T03:16:49.8729253-08:00","level":"INFO","msg":"quest started","svc":"zone","character":"pt2-content-1794309409338-5","quest":"story:ward","settlement":9}
+{"time":"2026-11-10T03:16:49.8734458-08:00","level":"INFO","msg":"join","svc":"zone","entity":105,"character":"pt2-content-1794309409338-5","name":"Reader5","remote":"127.0.0.1:50319","x":2045.51,"z":2115.87}
+{"time":"2026-11-10T03:16:49.9064039-08:00","level":"INFO","msg":"exploration","svc":"zone","character":"pt2-content-1794309409338-5","kind":602,"site":119,"name":"The Forgotten Shrine","xp":50}
+{"time":"2026-11-10T03:16:59.0399635-08:00","level":"INFO","msg":"leave","svc":"zone","entity":105,"character":"pt2-content-1794309409338-5"}
+{"time":"2026-11-10T03:17:00.1065849-08:00","level":"INFO","msg":"quest started","svc":"zone","character":"pt2-content-1794309419651-6","quest":"story:ward","settlement":37}
+{"time":"2026-11-10T03:17:00.1065849-08:00","level":"INFO","msg":"join","svc":"zone","entity":142,"character":"pt2-content-1794309419651-6","name":"Hunter6","remote":"127.0.0.1:50428","x":2065,"z":2514.49}
+{"time":"2026-11-10T03:17:08.2066882-08:00","level":"INFO","msg":"kill loot","svc":"zone","character":"pt2-content-1794309419651-6","enemy":"slime","level":1,"elite":false,"boss":false,"rollSeed":14397809169014254248,"luck":1,"items":["currency:gold x5 (common)"]}
+{"time":"2026-11-10T03:17:08.9734399-08:00","level":"INFO","msg":"feat earned","svc":"zone","character":"pt2-content-1794309419651-6","feat":"first_steps"}
+{"time":"2026-11-10T03:17:10.2068088-08:00","level":"INFO","msg":"kill loot","svc":"zone","character":"pt2-content-1794309419651-6","enemy":"moss_slime","level":1,"elite":false,"boss":false,"rollSeed":15779516407905819210,"luck":1,"items":["currency:gold x3 (common)"]}
+{"time":"2026-11-10T03:17:10.2399158-08:00","level":"INFO","msg":"loot granted","svc":"zone","character":"pt2-content-1794309419651-6","item":"currency:gold","qty":3,"rarity":0,"key":"kill:abefa91cac64eb54:177:2955:0","rollSeed":-2667227665803732406}
+{"time":"2026-11-10T03:17:12.3076756-08:00","level":"INFO","msg":"leave","svc":"zone","entity":142,"character":"pt2-content-1794309419651-6"}
