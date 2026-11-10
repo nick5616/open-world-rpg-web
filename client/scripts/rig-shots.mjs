@@ -53,7 +53,20 @@ try {
     await page.screenshot({ path: join(out, `${prefix}-${name}.jpg`), type: 'jpeg', quality: 78 });
     console.log(`shot ${prefix}-${name}.jpg`);
   };
+  if (process.env.RIG_SHOTS_SHEET) {
+    // a one-off sheet: RIG_SHOTS_SHEET='{"cols":2,"rows":2,"items":[{"fp":{...}}]}' -> <prefix>-custom.jpg
+    const c = JSON.parse(process.env.RIG_SHOTS_SHEET);
+    await shot('custom', c.cols, c.rows, c.items);
+  }
   const W = ['sword', 'spear', 'bow', 'staff', 'wand'];
+  // 16:9 tiles with the middle-40% box and the crosshair (playtest 2 "fix the view")
+  await shot('fp-rest', 2, 2, ['sword', 'spear', 'staff', 'wand'].map((weapon) => ({ fp: { weapon, box: true, label: `rest: ${weapon}` } })));
+  await shot('fp-swing-wide', 2, 2, [
+    { fp: { weapon: 'sword', swing: 0.2, box: true, label: 'forehand: wind-up' } },
+    { fp: { weapon: 'sword', swing: 0.4, box: true, label: 'forehand: cut' } },
+    { fp: { weapon: 'sword', swing: 0.4, dir: -1, box: true, label: 'backhand: cut' } },
+    { fp: { weapon: 'sword', cast: 1, box: true, label: 'sword + off-hand cast' } },
+  ]);
   await shot('fp', 3, 2, [
     ...W.map((weapon) => ({ fp: { weapon, draw: weapon === 'bow' ? 0.7 : 0, label: `first person: ${weapon}` } })),
     { fp: { weapon: 'sword', cast: 1, label: 'first person: sword + off-hand cast' } },
