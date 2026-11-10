@@ -163,7 +163,7 @@ export function CombatLayer() {
     // CR 020: an ally appearing bursts; an idle aura while it lasts.
     frame.n++;
     for (const v of all) {
-      if (v.kind !== 7) continue;
+      if (v.kind !== 7 || ((v.typeId ?? 0) & 0x8000) !== 0) continue; // CR 029: pets are not summons
       const def = summonById.get((v.typeId ?? 0) & 0xff);
       const sp = def ? summonSpell.get(def.key) ?? null : null;
       let a = allies.get(v.id);

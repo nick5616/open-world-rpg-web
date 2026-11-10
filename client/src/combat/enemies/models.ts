@@ -1100,6 +1100,7 @@ export function modelFor(spec: ModelSpec): Model {
     }
   })();
   if (joints.length !== JOINT_COUNT[spec.rig]) throw new Error(`rig ${spec.rig}: ${joints.length} joints`);
+  if (spec.collar) collar(k, spec);
   const parts = k.build(spec.variant);
   // rest-pose world matrices -> the merged mid LOD
   for (let j = 0; j < joints.length; j++) {
@@ -1133,6 +1134,49 @@ export function modelFor(spec: ModelSpec): Model {
   };
   cache.set(spec.variant, m);
   return m;
+}
+
+// ── CR 029: a pet's collar ───────────────────────────────────────────────
+
+/** Neck ring radius per quadruped style (model space at size 1). */
+const NECK: Partial<Record<Style, number>> = { boar: 0.21, wolf: 0.15, ram: 0.17, stalker: 0.15, lurker: 0.19, glintfox: 0.1, gloamhound: 0.15, behemoth: 0.25 };
+
+/**
+ * A tamed pet's collar: a leather band (gold for a shiny) around the neck
+ * with a gold tag that catches the light; a slime wears it as a ribbon
+ * round its middle, a crawler behind its head.
+ */
+function collar(k: Kit, s: ModelSpec): void {
+  const band = s.collar === 2 ? '#f0c040' : '#b8352a';
+  const tag = '#ffd76a';
+  const ring = (b: PartBuilder, r: number, tube: number, pos: V3, rot: V3) => {
+    b.add(new THREE.TorusGeometry(r, tube, 4, 14), band, { pos, rot, jitter: 0.02, shade: 0.05 });
+  };
+  switch (s.rig) {
+    case 'slime': {
+      const b = k.at(SL.body);
+      ring(b, 0.5, 0.045, [0, 0.34, 0], [HALF, 0, 0]);
+      b.ball(0.06, tag, { pos: [0, 0.3, -0.53], detail: 0, glow: 0.35 });
+      return;
+    }
+    case 'quadruped': {
+      const r = NECK[s.style] ?? 0.15;
+      const b = k.at(Q.head);
+      ring(b, r, Math.max(0.025, r * 0.18), [0, -0.01, -0.03], [-0.45, 0, 0]);
+      b.ball(Math.max(0.028, r * 0.22), tag, { pos: [0, -r - 0.02, -0.09], detail: 0, glow: 0.35 });
+      return;
+    }
+    case 'crawler': {
+      const b = k.at(C.head);
+      ring(b, 0.16, 0.03, [0, 0, 0.02], [0, 0, 0]);
+      b.ball(0.035, tag, { pos: [0, -0.17, 0], detail: 0, glow: 0.35 });
+      return;
+    }
+    default: {
+      const b = k.at(0);
+      ring(b, 0.2, 0.03, [0, 0.3, 0], [HALF, 0, 0]);
+    }
+  }
 }
 
 /** Variants built so far (tests, the gallery). */

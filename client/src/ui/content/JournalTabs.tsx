@@ -7,6 +7,7 @@
 import { useEffect, useState } from 'react';
 import { COMBAT, CONTENT } from '@lodestone/contracts';
 import { codexEntries, useContent } from './store';
+import { abilityOf, foodsText, tameableEnemy } from '../pets/events';
 
 const GOLD = '#ffd166';
 const ELEMENTS = ['fire', 'ice', 'lightning', 'earth', 'wind', 'light', 'dark', 'void'];
@@ -73,12 +74,44 @@ function Bestiary() {
                 )}
                 {def.family === 'demon' && <tr><td style={{ opacity: 0.7 }}>Bane</td><td style={{ color: '#ffe08a' }}>Sunsteel, Light magic, the sunrise</td></tr>}
                 <tr><td style={{ opacity: 0.7 }}>Attacks</td><td>{def.attacks.length}</td></tr>
+                {/* CR 029: can it be tamed, and with what */}
+                <TameRow enemy={def.key} />
               </tbody>
             </table>
           </div>
         )}
       </div>
     </div>
+  );
+}
+
+/** CR 029: the bestiary says whether a creature can be tamed, its foods and its ability. */
+export function TameRow({ enemy }: { enemy: string }) {
+  const sp = tameableEnemy(enemy);
+  if (!sp) {
+    return (
+      <tr data-testid="codex-tame">
+        <td style={{ opacity: 0.7 }}>Tameable</td>
+        <td style={{ opacity: 0.6 }}>No</td>
+      </tr>
+    );
+  }
+  const ab = abilityOf(sp);
+  return (
+    <>
+      <tr data-testid="codex-tame">
+        <td style={{ opacity: 0.7 }}>Tameable</td>
+        <td style={{ color: '#ffe9a8' }}>Yes: weaken it, then feed it {foodsText(sp)}</td>
+      </tr>
+      {ab && (
+        <tr>
+          <td style={{ opacity: 0.7 }}>As a pet</td>
+          <td>
+            <b style={{ color: GOLD }}>{ab.name}</b>: {ab.desc}
+          </td>
+        </tr>
+      )}
+    </>
   );
 }
 

@@ -85,6 +85,10 @@ type State struct {
 	// {"v":1,"steeds":[{kind,name,colour,bondedAt}]}; mirrors
 	// character_mounts from migration 0028). Optional.
 	Mounts json.RawMessage `json:"mounts,omitempty"`
+	// Pets are the creatures the character tamed (playtest 2, CR 029:
+	// {"v":1,"pets":[...],"active":id,...}; mirrors character_pets.data
+	// from migration 0029). Optional.
+	Pets json.RawMessage `json:"pets,omitempty"`
 }
 
 // NewCharacterState is a level-1 character standing at spawn, matching the

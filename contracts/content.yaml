@@ -402,6 +402,11 @@ feats:
   angler: {name: Angler, desc: "Land 50 fish", stat: fish, n: 50, gold: 60, xp: 300, title: the Angler}
   fishwise: {name: Master of the Waters, desc: "Catch every kind of fish", stat: fishspecies, n: 14, gold: 200, xp: 900, title: Master of the Waters}
   tall_tale: {name: Tall Tale, desc: "Land a legendary fish", stat: fishlegend, n: 1, gold: 100, xp: 400, title: the Teller of Tall Tales}
+  # playtest 2 pets (CR 029): tamed (creatures tamed), tamedspecies (kinds tamed), shinytamed (shiny pets tamed), petlevel (your best pet's level)
+  first_pet: {name: Beast Friend, desc: "Tame your first creature", stat: tamed, n: 1, gold: 15, xp: 60}
+  menagerie: {name: Keeper of Beasts, desc: "Tame every kind of creature that can be tamed", stat: tamedspecies, n: 9, gold: 200, xp: 900, title: the Keeper of Beasts}
+  shiny_pet: {name: Glimmerfriend, desc: "Tame a shiny creature", stat: shinytamed, n: 1, gold: 80, xp: 300, title: the Glimmerfriend}
+  pet_veteran: {name: Packleader, desc: "Raise a pet to level 10", stat: petlevel, n: 10, gold: 60, xp: 300, title: the Packleader}
   # playtest 2 instruments (CR 028): notes (notes played), ovations (songs the townsfolk applauded), firesongs (rested by a fireside song)
   bard: {name: Bard, desc: "Play 100 notes on an instrument", stat: notes, n: 100, gold: 15, xp: 60, title: the Bard}
   troubadour: {name: Troubadour, desc: "Play 2,000 notes", stat: notes, n: 2000, gold: 80, xp: 300, title: the Troubadour}
@@ -508,6 +513,7 @@ emotes:
     fishing: {id: 20, name: Fishing, loop: true, system: true}
     show_catch: {id: 21, name: Show a catch, durS: 2.6, system: true}
     playing: {id: 22, name: Playing music, loop: true, system: true}   # CR 028: value = the instrument id
+    pet: {id: 25, name: Pet your companion, durS: 2.2, system: true}
 
 # ---- instruments (playtest 2, CR 028; docs/cr/028-instruments.md) ----
 # Carry one (items.yaml instrument:*: the merchants below, a camp workbench,
@@ -548,3 +554,77 @@ instruments:
   wares:
     general: [{item: instrument:lute, price: 60, stock: 2}, {item: instrument:wooden_flute, price: 24, stock: 4}, {item: instrument:hand_drum, price: 36, stock: 3}]
     tools: [{item: instrument:handbells, price: 80, stock: 2}, {item: instrument:wooden_flute, price: 22, stock: 3}]
+
+# ---- taming and pet companions (playtest 2; docs/cr/029-pets.md) ----
+# Carry a food a creature likes and weaken it below weakenPct of its health:
+# with you (or anyone carrying one) within smellM it stops fighting and
+# sniffs the air for calmS. Feed it (E, within feedReachM): the taming meter
+# fills over the species' tameS (x favouriteMult with its favourite, the
+# first of its foods) while you stay within stayM and nothing hurts it or
+# you (a hit interrupts it: it fights on). When the meter is full the zone
+# rolls the species' chance (+favouriteBonus with the favourite): tamed
+# (maybe a shiny or an elemental variant), or it snatches the food and
+# fights on. One pet follows you; the others wait in your stable (within
+# stableM of one of your camp pieces, or in any town). Pets level from the
+# fights they help win, have one ability each, and are knocked out (home to
+# recover for koRecoverS, then back to you) instead of dying.
+taming:
+  weakenPct: 0.5
+  calmS: 30
+  smellM: 14
+  feedReachM: 4
+  stayM: 8
+  favouriteMult: 0.6
+  favouriteBonus: 0.15
+  shinyChance: 0.03       # a tamed creature is a shiny (gold-touched, +10 % health and damage)
+  elementalChance: 0.08   # ... or takes its region's element (its bite and ability carry it)
+  maxPets: 6
+  koRecoverS: 150
+  stableM: 24
+  levelMax: 20
+  xpBase: 40              # pet XP to reach level 2 (creatures it helped defeat give their XP); each level needs xpGrowth x more
+  xpGrowth: 1.3
+  hpPerLevel: 0.12
+  damagePerLevel: 0.08
+  regenPctS: 0.02         # health per second out of a fight
+  feedHealPct: 0.35       # feeding your pet heals this share of its health
+  followM: 2.6
+  warpM: 60               # farther than this from you (a fast travel, a fall): it catches up at once
+  stayGuardM: 10          # told to stay, it fights what comes this close to its spot
+  aggroM: 16              # it joins fights this close to itself (and within leashM of you)
+  leashM: 28
+  # kind: heal (when you are below healBelow of your health: power of it to you, and to the pet;
+  # party: also to the players near you), buff (your damage x (1 + power) for durationS, when a
+  # fight starts), charge (a rush at a target rangeM away: power x its bite, then the status),
+  # strike (power x its bite and the status; radiusM > 0: everything that close to the target)
+  abilities:
+    mend: {id: 1, name: Soothing Ooze, kind: heal, cooldownS: 12, power: 0.12, healBelow: 0.7, desc: "Splashes you with soothing jelly when you are hurt: 12 % of your health, and some of its own"}
+    bloom: {id: 2, name: Mossbloom, kind: heal, cooldownS: 15, power: 0.09, healBelow: 0.8, party: true, desc: "Blooms when your party is hurt: heals you and everyone near you"}
+    howl: {id: 3, name: Rallying Howl, kind: buff, cooldownS: 22, power: 0.15, durationS: 8, desc: "Howls as a fight starts: you deal 15 % more damage for 8 s"}
+    charge: {id: 4, name: Tusk Charge, kind: charge, cooldownS: 9, power: 2.0, rangeM: [4, 12], status: stun, desc: "Charges a foe from afar: double damage and a stun"}
+    headlong: {id: 5, name: Headlong, kind: strike, cooldownS: 8, power: 1.8, status: knockback, desc: "A headbutt that knocks its target back"}
+    frost_breath: {id: 6, name: Frost Breath, kind: strike, cooldownS: 10, power: 1.4, radiusM: 3, status: slow, element: ice, desc: "Breathes rime over its target and everything near it: ice damage and a slow"}
+    mire: {id: 7, name: Mire, kind: strike, cooldownS: 12, power: 0.8, radiusM: 4, status: slow, element: earth, desc: "Spits mud around its target: everything near it is slowed"}
+    venom: {id: 8, name: Venom Sting, kind: strike, cooldownS: 9, power: 1.3, status: curse, desc: "A sting that leaves its target taking 20 % more damage"}
+    dazzle: {id: 9, name: Dazzle, kind: strike, cooldownS: 11, power: 1.0, status: stun, desc: "Flashes its glinting tail: the target is stunned"}
+  # enemy: the combat.yaml creature (its model, its codex entry). foods: the first is its favourite.
+  # hp, damage: level-1 pet values; attack: its bite (melee); speed: how fast it follows you.
+  species:
+    slime: {id: 1, enemy: slime, foods: [herb:heartleaf, food:apple, herb:glowmoss], tameS: 3, chance: 0.95, hp: 150, damage: 6, speed: 8.0, attack: {reach: 1.9, everyMs: 1300, windupMs: 300}, ability: mend,
+      blurb: "A loyal blob. It bounces after you everywhere and heals your scrapes."}
+    moss_slime: {id: 2, enemy: moss_slime, foods: [herb:glowmoss, herb:heartleaf], tameS: 3.5, chance: 0.9, hp: 170, damage: 6, speed: 7.8, attack: {reach: 2.0, everyMs: 1400, windupMs: 300}, ability: bloom,
+      blurb: "Its moss cap flowers when you are kind to it. It keeps the whole party patched up."}
+    boar: {id: 3, enemy: boar, foods: [food:apple, food:berry_tart, herb:emberroot], tameS: 5, chance: 0.8, hp: 170, damage: 10, speed: 8.6, attack: {reach: 2.3, everyMs: 1300, windupMs: 350}, ability: charge,
+      blurb: "Stubborn, brave and always hungry. Point it at something and it charges."}
+    wolf: {id: 4, enemy: wolf, foods: [meat:raw, food:grilled_meat], tameS: 6, chance: 0.75, hp: 130, damage: 11, speed: 9.4, attack: {reach: 2.2, everyMs: 1100, windupMs: 250}, ability: howl,
+      blurb: "A wolf that chose you. It hunts at your side and its howl steels your arm."}
+    ram: {id: 5, enemy: ram, foods: [herb:frostcap, herb:heartleaf, food:bread], tameS: 5, chance: 0.8, hp: 180, damage: 10, speed: 8.4, attack: {reach: 2.4, everyMs: 1400, windupMs: 400}, ability: headlong,
+      blurb: "A crag ram with opinions. Most of them are about headbutting."}
+    stalker: {id: 6, enemy: stalker, foods: [fish:frostgill_char, fish:speckled_trout, meat:raw], tameS: 7, chance: 0.65, hp: 140, damage: 10, speed: 9.0, attack: {reach: 2.3, everyMs: 1200, windupMs: 300}, ability: frost_breath,
+      blurb: "Its breath still falls as needles, but now it falls on your foes."}
+    lurker: {id: 7, enemy: lurker, foods: [fish:mudback_carp, fish:bog_pike, fish:reed_perch], tameS: 6, chance: 0.7, hp: 190, damage: 8, speed: 8.2, attack: {reach: 2.5, everyMs: 1400, windupMs: 350}, ability: mire,
+      blurb: "A mossy log that follows you home. It spits mud at anything you dislike."}
+    scuttler: {id: 8, enemy: scuttler, foods: [meat:raw, fish:silverfin], tameS: 5, chance: 0.75, hp: 130, damage: 10, speed: 8.8, attack: {reach: 2.1, everyMs: 1200, windupMs: 300}, ability: venom,
+      blurb: "Armoured, patient and venomous, and now on your side."}
+    glintfox: {id: 9, enemy: glintfox, foods: [food:berry_tart, fish:silverfin, food:cheese], tameS: 8, chance: 0.5, hp: 110, damage: 7, speed: 9.8, attack: {reach: 1.8, everyMs: 1000, windupMs: 250}, ability: dazzle,
+      blurb: "The fox from the stories, tamed at last. It still glints when it is pleased with itself."}

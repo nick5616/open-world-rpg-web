@@ -893,3 +893,31 @@ night hooks, WP16 `campset`), `camps_chest.go` (storage chests through the item 
   and spells work. Validation: mounted speeds only while mounted (`movement.MaxHorizontalSpeed`).
 - Wire: player typeId bit 14 (`TypeRiding`) while riding; Events 1140-1143 (your steed; steeds within `STEED_SEE_M` on
   change and to newcomers every 2 s; refusals; thrown). Nothing is sent while nobody has a steed (wire digest unchanged).
+
+## Pets (playtest 2, CR 029)
+
+`internal/game/pets.go` (the glue), `internal/combat/pets.go` (the companion in the combat world), `internal/content/pets.go`
+(records, the taming roll, levels and stats; pure). `docs/cr/029-pets.md`; data: `contracts/content.yaml` `taming`.
+
+- Taming: the combat world reports a tameable creature (`World.Tameable`, set only when content is on) hurt below
+  `taming.weakenPct` (`PetOutputs.Weakened`); if the player who hurt it, or anyone within `smellM`, carries a food it likes,
+  `World.Calm` stops it (it stands and sniffs; a hit breaks it: `CalmBroken`) and Event 1201 tells players near. Interact
+  130/1 feeds it (one food spent, the favourite first) and starts the meter (1202); `tameTick` interrupts it when the tamer
+  walks off (`stayM`), is hurt, goes down, or the calm ends; at the end `content.RollTame` (world seed, character, roll count,
+  creature) decides: `World.Tame` removes the creature (no XP, no loot, its group quietly cleared) and the pet is added (the
+  active one when none is out), or it fights on.
+- The pet out is an Enemy with an ally record (the CR 020 summon machinery: `allyStrike` / `allyHit`, `moveToward`) kept in
+  `World.pets` and `summonIdx` (so the host mirrors it as EntityKind effect, `combat.PetTypeID`, named "Owner's Name").
+  `petThink`: follow (a spot behind its owner, catching up faster the farther it is; beyond `warpM` it is set down beside
+  you), stay (holds its spot, guards `stayGuardM`), an attack order (Interact 130/2); it only joins fights (never wakes a
+  sleeping or idle creature), uses its ability (heal, buff, charge, strike) and regenerates out of a fight.
+- Enemies: a pet's bites build `petThreat`; while it beats the player threat the creature chases the pet (`chasePet`, a
+  serial-AI path, `windupAt`), and enemy strikes (`strikePets`) and shots (`shotHitsPet`) hit pets in their area. At 0 health
+  the pet is knocked out (`PetOutputs.KO`): removed, its record recovers at home for `koRecoverS`, then it comes back to you.
+  The creature a pet bit last gives it XP when it falls (`PetOutputs.XP`; `content.PetRec.GainXP`, stats `content.PetStats`).
+- Persistence: one JSON per character (`PetStore`: `character_pets`, migration 0029, epoch-fenced; local saves `pets`),
+  a handoff field `pets` (the next zone puts the pet out beside you). Stables: within `stableM` of one of your camp pieces,
+  or in a town (anywhere in a world with neither).
+- Wire: pets are ordinary snapshot entities (one per player with one out); Events 1200-1205 go to pet owners, tamers and
+  players within 48 m of a calm creature or a pet's act. The scale world has no content, so `LODESTONE_WIRE_DIGEST=1` is
+  unchanged.

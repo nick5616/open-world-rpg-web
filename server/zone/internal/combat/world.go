@@ -170,6 +170,16 @@ type World struct {
 	SummonPvP   func(owner, victim uint32) (PvPHit, bool)
 	OnSummonPvP func(owner, victim uint32, res PvPResult)
 
+	// CR 029 pets (pets.go): tamed companions (allies in summonIdx, never in
+	// enemies), the creatures the host lets be tamed (enemy def id; nil:
+	// taming is off) and below which health share, and what happened this
+	// tick for the host (drained by DrainPets).
+	pets          []*Enemy
+	Tameable      map[int]bool
+	TameWeakenPct float64
+	petOut        PetOutputs
+	quietClear    bool // Tame: the group is cleared without the "camp cleared" Event
+
 	// Stats for metrics and evidence.
 	Stats Stats
 	// quietDamage: the hit being applied is a stream shot (no observer damage Event; CR 020).
@@ -561,6 +571,7 @@ func cmpID(a, b uint32) int {
 // RemovePlayer forgets a leaving player (threat, strikes).
 func (w *World) RemovePlayer(id uint32) {
 	w.DismissSummons(id) // CR 020
+	w.DismissPets(id)    // CR 029 (the host saved its pet first)
 	delete(w.players, id)
 	w.dropListed(id)
 	for _, e := range w.enemies {
@@ -683,6 +694,7 @@ func (w *World) Step(tick uint32) {
 	w.pruneWinding() // WP19
 	w.thinkAll(tick) // WP19b: partitioned across workers (par.go)
 	w.stepSummons()  // CR 020: allies act after the enemies thought (summon.go)
+	w.stepPets()     // CR 029: tamed companions (pets.go)
 	w.stepBursts()   // CR 020: delayed charges and brand chain reactions (detonate.go)
 	w.stepShots()
 	w.settleStrikes()
@@ -792,7 +804,7 @@ func (w *World) groupCleared(g *Group) {
 	}
 	g.Spawned = false
 	g.Members = nil
-	if g.Kind != GroupBoss {
+	if g.Kind != GroupBoss && !w.quietClear { // CR 029: a tamed last member clears it quietly
 		w.near(g.Anchor, 120, 0, Out{Ev: ev(EvCampCleared, 0, uint32(g.ID), int32(g.Kind), g.Anchor, []byte(g.Name))})
 	}
 }

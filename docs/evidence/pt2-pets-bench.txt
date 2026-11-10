@@ -1,0 +1,11 @@
+CR 029 taming and pets: G5 scale checks (Windows, 16 threads, go test ./internal/game in server/zone)
+
+LODESTONE_WIRE_DIGEST=1 go test ./internal/game -run WireDigest -v
+  main  1fe0355:   p90_e600 831bb7f4b4b9511ac1a06c34cdafcda36e147b8f3b9d9bb6798b04b15af6bbde  p300_e2000 8c29d4086261064f4f15f3445e5a349a40d72d966f9a5a4d6898a27a4b397cfc
+  pt2/pets:        p90_e600 831bb7f4b4b9511ac1a06c34cdafcda36e147b8f3b9d9bb6798b04b15af6bbde  p300_e2000 8c29d4086261064f4f15f3445e5a349a40d72d966f9a5a4d6898a27a4b397cfc  (identical)
+  (taming is off in atlas-less worlds such as the scale world, and bots never carry food or own pets: no 1200 at join, no calm, no pet entities)
+
+go test ./internal/game -run XXX -bench BenchmarkScale/p300_e2000 -count 4
+  pt2/pets:  cpu-Mcycles 86.22 87.36 88.44 88.47; kbps/client 134.3 134.7 133.9 133.8; p50-ms 2.52 2.51 2.56 2.54; p99-ms 4.20 3.84 4.22 4.20; combat-ms 0.59 0.57 0.62 0.58; allocs/op 1985 1984 1983 1983
+  main:      cpu-Mcycles 86.88 88.09 88.98 88.11; kbps/client 134.6 134.0 134.4 134.5; p50-ms 2.55 2.77 2.83 2.52; p99-ms 4.39 4.02 4.27 4.14; combat-ms 0.60 0.67 0.71 0.57; allocs/op 1984 1985 1984 1984
+  (noise: with no pets and nothing calm the additions are a length check in stepPets, strikeArea and stepShots, a field check in chase, kill and applyDamage (Tameable is nil), and a once-a-second loop over sessions with pets)

@@ -19,7 +19,7 @@ import type { RemoteView } from '../../net/interpolation';
 import { COMBAT } from '@lodestone/contracts';
 import { enemyInfo } from '../events';
 import { EnemyAnimator, attackAnim, defaultAttack, type AnimInput } from './anim';
-import { modelSpec, summonSpec, type ModelSpec, type Rig } from './spec';
+import { isPetTypeId, modelSpec, petSpec, summonSpec, type ModelSpec, type Rig } from './spec';
 import { modelFor, farGeometry, type MatKind, type Model } from './models';
 import { MAX_JOINTS, POSE_STRIDE } from './rigs';
 import { writePose, type PoseCtx } from './pose';
@@ -59,6 +59,8 @@ interface Batch {
 interface Enemy {
   id: number;
   ally: boolean;
+  /** CR 029: a tamed pet (an ally with real health and a collar). */
+  pet: boolean;
   typeId: number;
   spec: ModelSpec;
   model: Model;
@@ -366,7 +368,7 @@ export class EnemyRenderer {
       if (!a.alive && sp.deathFx !== 'smoke' && sp.deathFx !== 'shatter') _fx[3] = -1;
       if (e.ally) {
         _fx[1] = 0;
-        if (e.health < 15 && a.alive) _fx[2] = 0.25 * Math.abs(Math.sin(nowMs / 120)); // flickers out at the end
+        if (e.health < 15 && a.alive && !e.pet) _fx[2] = 0.25 * Math.abs(Math.sin(nowMs / 120)); // flickers out at the end
       }
       _q.setFromAxisAngle(_yAxis, e.yaw);
       const lift = sp.flyer ? m.flyLift * s : 0;
@@ -421,12 +423,12 @@ export class EnemyRenderer {
         this.push(b, _root);
       }
       // aura rings (elites, elementals, bosses)
-      if (a.alive && lod < 2 && (e.ally || sp.elite || sp.boss || sp.element < 8)) {
+      if (a.alive && lod < 2 && ((e.ally && !e.pet) || sp.elite || sp.boss || sp.element < 8)) {
         const strongRing = sp.elite || sp.boss;
         const r = m.foot * s * (sp.boss ? 1.45 : 1.2) * (1 + 0.04 * Math.sin(nowMs / 260 + e.phase));
         _q.setFromAxisAngle(_yAxis, nowMs / 1400 + e.phase);
         _root.compose(_p.set(e.x, e.y + 0.05 - (sp.flyer ? FLY_M : 0), e.z), _q, _s.set(r, 1, r));
-        _col.set(sp.element < 8 || e.ally ? (e.ally ? sp.color : sp.accent) : sp.boss ? '#ff6040' : '#ffd060');
+        _col.set(sp.element < 8 || e.ally ? (e.ally && !e.pet ? sp.color : sp.accent) : sp.boss ? '#ff6040' : '#ffd060');
         if (strongRing) {
           if (strong >= this.auraCap) this.growOverlays(this.auraCap * 2);
           this.auraStrong.setMatrixAt(strong, _root);
@@ -453,7 +455,7 @@ export class EnemyRenderer {
         _p.addScaledVector(_camRight, (-(w - fw) / 2) * sc);
         _root.compose(_p, _q, _s.set(fw * sc, sc, 1));
         this.barFill.setMatrixAt(bars, _root);
-        _col.set(e.ally ? sp.color : sp.boss ? '#ff4040' : sp.elite ? '#ffb020' : '#d04040');
+        _col.set(e.pet ? '#5fd16b' : e.ally ? sp.color : sp.boss ? '#ff4040' : sp.elite ? '#ffb020' : '#d04040');
         this.barFill.setColorAt(bars, _col);
         bars++;
         if (e.label) {
@@ -520,17 +522,19 @@ export class EnemyRenderer {
 
   private make(v: RemoteView, ally: boolean): Enemy {
     const typeId = v.typeId ?? 0;
-    const spec = ally ? summonSpec(typeId) : modelSpec(enemyInfo(v));
+    const pet = ally && isPetTypeId(typeId); // CR 029
+    const spec = pet ? petSpec(typeId) : ally ? summonSpec(typeId) : modelSpec(enemyInfo(v));
     const model = modelFor(spec);
     const g = GAIT[spec.rig];
     // allies have no telegraph: the casting bit winds up their one attack (a bite, a bow shot, a bolt)
     const allyKind = spec.style === 'wraith_hound' ? 'bite' : spec.style === 'gale_phantom' ? 'shoot' : 'cast';
-    const fallback = ally ? { key: 'ally', kind: allyKind, windupMs: 250, activeMs: 100, recoveryMs: 400 } as const : defaultAttack(spec.key);
+    const fallback = pet ? defaultAttack(spec.key) : ally ? { key: 'ally', kind: allyKind, windupMs: 250, activeMs: 100, recoveryMs: 400 } as const : defaultAttack(spec.key);
     const anim = new EnemyAnimator({ refSpeed: g.ref * Math.sqrt(spec.scale), stride: g.stride * spec.scale, deathMs: spec.deathMs, fallback });
     const h = (v.id * 2654435761) >>> 0;
     const e: Enemy = {
       id: v.id,
       ally,
+      pet,
       typeId,
       spec,
       model,
@@ -575,7 +579,7 @@ export class EnemyRenderer {
       e.label = null;
     }
     if (!name || typeof document === 'undefined') return;
-    e.label = labelSprite(name, e.ally ? '#d8ffe0' : e.spec.boss ? '#ff8080' : e.spec.elite ? '#ffd27a' : '#f1f3f5');
+    e.label = labelSprite(name, e.pet ? '#ffe9a8' : e.ally ? '#d8ffe0' : e.spec.boss ? '#ff8080' : e.spec.elite ? '#ffd27a' : '#f1f3f5');
     this.root.add(e.label);
   }
 

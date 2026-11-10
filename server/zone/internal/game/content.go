@@ -456,6 +456,12 @@ func (s *Server) featStat(sess *session, stat string) int {
 	if v := sess.cnt.st.Stat2(stat); v >= 0 {
 		return v
 	}
+	if stat == "petlevel" { // CR 029 (pets.go)
+		if sess.pets == nil {
+			return 0
+		}
+		return sess.pets.st.BestLevel()
+	}
 	x := sess.x
 	if x == nil || x.prog == nil {
 		return 0

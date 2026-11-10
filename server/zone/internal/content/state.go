@@ -30,7 +30,9 @@ type State struct {
 	Vaults   map[string]int64  `json:"vaults,omitempty"`   // atlas site -> last chest (unix ms; 0 = discovered)
 	Forage   map[string]int64  `json:"forage,omitempty"`   // herb patch id -> regrows at (unix ms)
 	Fish     map[string][2]int `json:"fish,omitempty"`     // playtest 2 fishing: species key -> [landed, best weight g]
-	dirty    bool
+	// TamedKinds: playtest 2 pets (CR 029): pet species key -> creatures tamed.
+	TamedKinds map[string]int `json:"tamed,omitempty"`
+	dirty      bool
 }
 
 // NewState is an empty state.
@@ -292,6 +294,10 @@ func (s *State) Stat2(stat string) int {
 		return s.Codex()
 	case stat == "fishspecies":
 		return len(s.Fish)
+	case stat == "tamedspecies":
+		return len(s.TamedKinds)
+	case stat == "petlevel":
+		return -1 // the glue: the pets' best level (pets.go)
 	case stat == "honored":
 		return s.Honored()
 	case stat == "quests":
