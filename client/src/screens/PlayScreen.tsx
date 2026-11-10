@@ -50,6 +50,8 @@ import { EscMenu } from '../ui/menu/EscMenu';
 import { TipsHud } from '../ui/tips/TipsHud';
 // Playtest 2: what's new since this browser last played (client/src/ui/whatsnew).
 import { WhatsNew } from '../ui/whatsnew/WhatsNew';
+// Playtest 2 weather (CR 030): solo, the weather pill (online it rides NightHud's clock chip).
+import { WeatherHud } from '../systems/weather/WeatherHud';
 // Playtest 2: spell FX (online it is CombatLayer's; debug solo mounts it for the FX gallery and cast-spam bench).
 import { SpellFxLayer } from '../combat/fx/SpellFxLayer';
 // `?nofx`: solo without the FX layer (the A/B of the spell FX benchmark, combat/fx/dev/fx-bench.mjs).
@@ -105,6 +107,7 @@ export default function PlayScreen() {
       <TipsHud />
       <EscMenu />
       <WhatsNew />
+      <WeatherHud />
     </>
   );
 }

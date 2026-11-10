@@ -294,7 +294,7 @@ groups:
     LIGHTNING_WARN_STEPS: {type: i32, value: 10, doc: "A drawn bolt is announced (the weapon crackles) this many chemistry steps before it strikes: time to switch to a wooden weapon."}
     LIGHTNING_DAMAGE: {type: f64, value: 45, doc: "Damage of a bolt to the player or enemy it strikes (before armor); others within LIGHTNING_SPLASH_M take half."}
     LIGHTNING_SPLASH_M: {type: f64, value: 4, doc: "Splash radius of a bolt."}
-    LIGHTNING_EVENT_M: {type: f64, value: 260, doc: "Players within this distance of a strike the zone resolves get it as an event (1200)."}
+    LIGHTNING_EVENT_M: {type: f64, value: 260, doc: "Players within this distance of a strike the zone resolves get it as an event (1220)."}
     LIGHTNING_LOCAL_M: {type: f64, value: 200, doc: "Clients draw seeded strikes farther than this from them on their own; nearer ones wait for the zone's event."}
     COLD_ONSET_S: {type: f64, value: 20, doc: "Seconds out in the cold (a cold-climate cell at night, or a snowstorm) before you are Chilled."}
     COLD_WARMTH_M: {type: f64, value: 9, doc: "A burning campfire or a town hearth within this distance keeps you warm."}

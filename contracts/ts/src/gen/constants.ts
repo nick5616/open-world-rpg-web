@@ -478,7 +478,7 @@ export const LIGHTNING_WARN_STEPS = 10;
 export const LIGHTNING_DAMAGE = 45;
 /** Splash radius of a bolt. */
 export const LIGHTNING_SPLASH_M = 4;
-/** Players within this distance of a strike the zone resolves get it as an event (1200). */
+/** Players within this distance of a strike the zone resolves get it as an event (1220). */
 export const LIGHTNING_EVENT_M = 260;
 /** Clients draw seeded strikes farther than this from them on their own; nearer ones wait for the zone's event. */
 export const LIGHTNING_LOCAL_M = 200;

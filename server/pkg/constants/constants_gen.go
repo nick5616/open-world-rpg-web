@@ -725,7 +725,7 @@ const LightningDamage float64 = 45
 // LightningSplashM: Splash radius of a bolt.
 const LightningSplashM float64 = 4
 
-// LightningEventM: Players within this distance of a strike the zone resolves get it as an event (1200).
+// LightningEventM: Players within this distance of a strike the zone resolves get it as an event (1220).
 const LightningEventM float64 = 260
 
 // LightningLocalM: Clients draw seeded strikes farther than this from them on their own; nearer ones wait for the zone's event.

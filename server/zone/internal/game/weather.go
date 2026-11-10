@@ -13,14 +13,14 @@ package game
 //     nearby, or a player in the open close enough (much farther for one
 //     holding a metal weapon: a sword or a spear), deals LIGHTNING_DAMAGE
 //     (splash: half), sets dry grass alight through the chemistry engine,
-//     and is told to the players within LIGHTNING_EVENT_M (Event 1200).
+//     and is told to the players within LIGHTNING_EVENT_M (Event 1220).
 //     A player in the open in a storm holding metal also draws bolts of
 //     their own (LIGHTNING_METAL_PCT per slot), announced 2 s ahead
-//     (Event 1201: the blade crackles; switch to the bow or a staff);
+//     (Event 1221: the blade crackles; switch to the bow or a staff);
 //   - cold: out in a cold-climate cell at night, or in a snowstorm, for
 //     COLD_ONSET_S without warmth (a burning campfire or a town hearth
 //     within COLD_WARMTH_M, a settlement, a cave, Rested, warm food) makes
-//     you Chilled (no health regeneration, slower mana; Event 1202);
+//     you Chilled (no health regeneration, slower mana; Event 1222);
 //   - fog banks, snowstorms and sandstorms cut enemies' aggro range
 //     (combat World.AggroMult);
 //   - fishing reads rain where the bobber lands.
@@ -41,14 +41,14 @@ import (
 	"lodestone/server/zone/internal/chem"
 )
 
-// Event kinds (contracts/events.md, 1200-1219).
+// Event kinds (contracts/events.md, 1220-1239).
 const (
-	EventLightning     = 1200
-	EventLightningWarn = 1201
-	EventWeatherStatus = 1202
+	EventLightning     = 1220
+	EventLightningWarn = 1221
+	EventWeatherStatus = 1222
 )
 
-// Lightning flags (Event 1200 data[0]).
+// Lightning flags (Event 1220 data[0]).
 const (
 	BoltSeeded  = 1 // a storm cell's seeded strike (clients may have drawn it themselves)
 	BoltDrawn   = 2 // drawn by a metal weapon
@@ -56,7 +56,7 @@ const (
 	BoltIgnited = 8 // set the ground alight
 )
 
-// Weather status bits (Event 1202 value).
+// Weather status bits (Event 1222 value).
 const (
 	WeatherChilled = 1
 	WeatherWarm    = 2 // warm food active (targetId = seconds left)

@@ -282,7 +282,7 @@ export function PlayerController({ onStep, driver }: Props) {
     localPlayer.staminaMax = s.staminaMax / FINE;
     localPlayer.exhausted = (s.flags & MoveFlag.exhausted) !== 0;
     localPlayer.drowned = (s.flags & MoveFlag.drowned) !== 0;
-    localPlayer.raining = sim.lastEnv.raining;
+    localPlayer.raining = sim.lastEnv.raining || (sim.lastEnv.weather?.moveWeatherAt(s.pos.x, s.pos.z).rain ?? false); // CR 030: rain where you stand
     localPlayer.mounted = mountedNow;
     localPlayer.gait = mountedNow ? s.lunge & 3 : 0;
   });

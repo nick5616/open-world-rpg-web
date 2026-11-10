@@ -479,7 +479,7 @@ pub const LIGHTNING_WARN_STEPS: i32 = 10;
 pub const LIGHTNING_DAMAGE: f64 = 45.0;
 /// Splash radius of a bolt.
 pub const LIGHTNING_SPLASH_M: f64 = 4.0;
-/// Players within this distance of a strike the zone resolves get it as an event (1200).
+/// Players within this distance of a strike the zone resolves get it as an event (1220).
 pub const LIGHTNING_EVENT_M: f64 = 260.0;
 /// Clients draw seeded strikes farther than this from them on their own; nearer ones wait for the zone's event.
 pub const LIGHTNING_LOCAL_M: f64 = 200.0;

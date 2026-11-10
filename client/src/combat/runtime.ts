@@ -25,6 +25,8 @@ import { emitSound } from '../audio/bridge';
 import { isHostilePlayer } from '../ui/pvp/hostile';
 // Playtest 2: every spell visual goes through the FX engine (fx/README in ../README.md).
 import { spellFx } from './fx/api';
+// Playtest 2 weather (CR 030): the wind pushes arrows.
+import { arrowWindAt } from '../systems/weather/runtime';
 // CR 020: the shared spell simulation (the zone's twin re-flies homing shots and judges stream shots the same way).
 import { canAcquire, chargeMult, homingParams, homingStep, launchShot, orbOffset, rainOffset, shotJitter, SIM_DT, streamSeed, type HomingParams, type HomingShot } from './spellsim';
 // CR 022: your caster record (the state your visuals and everyone else's are drawn from) and the shared aim.
@@ -62,6 +64,8 @@ interface LocalShot {
   fx: number;
   /** CR 020: a seeking shot (stepped at 60 Hz by the shared homing step). */
   homing: { p: HomingParams; s: HomingShot; lock: number; acc: number } | null;
+  /** CR 030: the wind's pull on an arrow (m/s^2, x and z); null when calm. */
+  wind?: [number, number] | null;
 }
 
 interface Active {
@@ -617,6 +621,11 @@ export class CombatRuntime {
     const hp = s.spell ? homingParams(s.spell) : null;
     const sh: LocalShot = { started: s, x: eye.x, y: eye.y, z: eye.z, vx: -Math.sin(yaw) * cp * speed, vy: Math.sin(pitch) * speed, vz: -Math.cos(yaw) * cp * speed, gravity, radius, left: range, hit: new Set(), pierce, aoe, fx: 0, homing: null };
     if (hp) sh.homing = { p: hp, s: launchShot(eye, yaw, pitch, speed), lock: 0, acc: 0 };
+    else if (gravity > 0) {
+      // CR 030: a strong wind carries arrows downwind (a degree or two at full range: inside the zone's aim slack).
+      const w = arrowWindAt(eye.x, eye.z);
+      if (w[0] !== 0 || w[1] !== 0) sh.wind = w;
+    }
     this.shots.push(sh);
     void a;
     void color;
@@ -682,6 +691,10 @@ export class CombatRuntime {
         if (sh.homing) this.homingTick(sh);
         else {
           sh.vy -= sh.gravity * h;
+          if (sh.wind) {
+            sh.vx += sh.wind[0] * h;
+            sh.vz += sh.wind[1] * h;
+          }
           sh.x += sh.vx * h;
           sh.y += sh.vy * h;
           sh.z += sh.vz * h;
@@ -716,7 +729,7 @@ export class CombatRuntime {
           }
         }
       }
-      if (alive && sh.homing && n > 0) spellFx.projectileMove(sh.fx, sh.x, sh.y, sh.z, sh.vx, sh.vy, sh.vz);
+      if (alive && ((sh.homing && n > 0) || sh.wind)) spellFx.projectileMove(sh.fx, sh.x, sh.y, sh.z, sh.vx, sh.vy, sh.vz);
       if (alive) keep.push(sh);
     }
     this.shots = keep;

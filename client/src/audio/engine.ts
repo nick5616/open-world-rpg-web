@@ -40,6 +40,8 @@ import { nextStrike } from './emitters';
 import { SPACE_CAVE } from './spatial';
 import type { StepSurface } from './surface';
 import { WorldProbe } from './worldProbe';
+// Playtest 2 weather (CR 030): rain level, wind, storm, sand, thunder from real strikes.
+import { liveWeather, weatherOn } from '../systems/weather/runtime';
 
 const EYE = 1.6;
 const HOUR_S = DAY_LENGTH_S / 24;
@@ -344,8 +346,13 @@ export class AudioEngine {
 
     // Weather through the shelter.
     const night = useNightHud.getState();
-    const raining = this.forcedRain ?? (night.online ? night.raining : localPlayer.raining);
-    const rain = this.rain.update(raining, dt, nowMs / 1000);
+    // CR 030: the weather's rain level where you are (drizzle is quieter than a storm).
+    const wm = liveWeather.mix;
+    const dyn = weatherOn();
+    const raining = this.forcedRain ?? (dyn ? wm.rain > 0.12 : night.online ? night.raining : localPlayer.raining);
+    const rain = this.rain.update(raining, dt, nowMs / 1000, this.forcedRain !== null || !dyn ? 1 : Math.min(1, wm.rain * 1.15));
+    // Thunder from the strikes the weather drew (delayed by distance in thunderFor).
+    while (liveWeather.thunder.length) this.ambience.thunder(liveWeather.thunder.shift()!);
     const shelter = { roof, indoors };
     const w = weatherMix(rain, shelter, leak);
     const v = localPlayer.vel;
@@ -355,11 +362,15 @@ export class AudioEngine {
     const hour = worldClock.timeOfDayS / HOUR_S;
     const isNight = hour >= 18.5 || hour < 6;
     this.ambience.setTargets({
-      wind: Math.min(1, 0.18 + altitude * 0.4 + rain * 0.25 + (gliding ? Math.min(0.6, speed / 30) : 0)),
-      windSpeed: gliding ? Math.min(1, speed / 25) : altitude * 0.4,
+      wind: Math.min(1, 0.18 + altitude * 0.4 + rain * 0.25 + wm.wind * 0.45 + (gliding ? Math.min(0.6, speed / 30) : 0)),
+      windSpeed: gliding ? Math.min(1, speed / 25) : Math.min(1, altitude * 0.4 + wm.wind * 0.5),
+      storm: Math.min(1, wm.storm * 0.9 + wm.wind * 0.15 * wm.cloud),
+      gust: Math.max(0, wm.wind - 0.5) * 2,
+      sand: wm.dust,
+      syncedThunder: dyn,
       rain: w.rain,
       roofRain: w.roofRain,
-      insects: isNight && rain < 0.2 && !audioWorld.inTown ? 1 : 0,
+      insects: isNight && rain < 0.2 && wm.snow < 0.2 && wm.wind < 0.6 && !audioWorld.inTown ? 1 : 0,
       water: localPlayer.mode === 'swim' ? 1 : 0,
       drips: u,
       weatherGain: w.gain,

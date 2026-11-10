@@ -39,10 +39,46 @@ uniform float uHaze;
 // fog colour climbs the sky at the horizon, and moonlit in-scatter at night.
 uniform vec4 uFogRange;
 uniform vec3 uMoonColor;
+// Playtest 2 weather (CR 030): x fog bank density, y blowing sand, z lightning
+// flash, w heat shimmer; drift = the banks' wind offset (xy) and time (z).
+uniform vec4 uWeather;
+uniform vec3 uWeatherDrift;
 ${SKY_GLSL}
 ${SKY_STYLE_GLSL}
 vec3 fogColour(vec3 d) {
-  return lsSkyStyle(skyAmbient(normalize(vec3(d.x, max(d.y, 0.03), d.z)), uSunDir), d.y);
+  vec3 c = lsSkyStyle(skyAmbient(normalize(vec3(d.x, max(d.y, 0.03), d.z)), uSunDir), d.y);
+  // Blowing sand tints the air ochre.
+  return mix(c, vec3(0.62, 0.48, 0.32) * (0.3 + dot(c, vec3(0.6))), uWeather.y);
+}
+float wbN(vec2 p) {
+  vec2 i = floor(p); vec2 f = fract(p); vec2 u = f * f * (3.0 - 2.0 * f);
+  float a = fract(sin(dot(i, vec2(127.1, 311.7))) * 43758.5453);
+  float b = fract(sin(dot(i + vec2(1, 0), vec2(127.1, 311.7))) * 43758.5453);
+  float c = fract(sin(dot(i + vec2(0, 1), vec2(127.1, 311.7))) * 43758.5453);
+  float e = fract(sin(dot(i + vec2(1, 1), vec2(127.1, 311.7))) * 43758.5453);
+  return mix(mix(a, b, u.x), mix(c, e, u.x), u.y);
+}
+// A fog bank: patchy, drifting, hugging the ground around you (density
+// sampled at four points along the first 240 m of the ray).
+float fogBank(vec3 d, float L) {
+  float span = min(L, 240.0);
+  float acc = 0.0;
+  for (int i = 0; i < 4; i++) {
+    float s = (float(i) + 0.5) * 0.25 * span;
+    vec3 p = uCamPos + d * s;
+    float h = exp(-max(p.y - uCamPos.y + 4.0, 0.0) / 22.0);
+    float n = wbN(p.xz * 0.013 + uWeatherDrift.xy) * 0.65 + wbN(p.xz * 0.041 - uWeatherDrift.xy * 1.7) * 0.35;
+    acc += h * (0.35 + 0.65 * smoothstep(0.3, 0.75, n));
+  }
+  return uWeather.x * 0.03 * (acc * 0.25 * span + max(L - span, 0.0) * 0.4);
+}
+void mainUv(inout vec2 uv) {
+  // Heat shimmer: a fine wobble over the lower half of the view.
+  if (uWeather.w > 0.0) {
+    float m = uWeather.w * smoothstep(0.62, 0.3, uv.y);
+    uv.x += sin(uv.y * 220.0 + uWeatherDrift.z * 5.0) * 0.0011 * m;
+    uv.y += sin(uv.x * 160.0 + uWeatherDrift.z * 3.7) * 0.0008 * m;
+  }
 }
 void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth, out vec4 outputColor) {
   vec3 col = inputColor.rgb;
@@ -60,6 +96,7 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
     // Inf * a vanishing base is NaN (black squares once bloom spreads it).
     float k = clamp(b * d.y * L, -60.0, 60.0);
     float fh = abs(k) > 1e-4 ? base * L * (1.0 - exp(-k)) / k : base * L;
+    if (uWeather.x > 0.0) fh += fogBank(d, L);
     float T = exp(-(max(fh, 0.0) + uHaze * L));
     if (uFogRange.y > 0.0) T = min(T, 1.0 - smoothstep(uFogRange.x, uFogRange.y, L));
     // Fog colour: the sky's Rayleigh + ambient light at the horizon in this
@@ -76,12 +113,18 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
     float mm = dot(d, -uSunDir);
     inscatter += uMoonColor * (0.25 + (1.0 - g * g) / (4.0 * PI_ * pow(1.0 + g * g - 2.0 * g * mm, 1.5)));
     col = col * T + (sky + inscatter) * (1.0 - T);
+  } else if (uWeather.x > 0.0 || uWeather.y > 0.0) {
+    // The sky itself is lost in a thick bank or a sandstorm.
+    vec4 vp = uInvProj * vec4(uv * 2.0 - 1.0, 1.0, 1.0);
+    vec3 d = normalize((uCamWorld * vec4(vp.xyz / vp.w, 0.0)).xyz);
+    col = mix(col, fogColour(d), clamp(max(uWeather.x * 0.9, uWeather.y * 0.8) * (1.0 - 0.6 * smoothstep(0.0, 0.6, d.y)), 0.0, 0.92));
   } else if (uFogRange.z > 0.0) {
     // Retro: the fog colour climbs the sky at the horizon (the far plane is a wall of fog).
     vec4 vp = uInvProj * vec4(uv * 2.0 - 1.0, 1.0, 1.0);
     vec3 d = normalize((uCamWorld * vec4(vp.xyz / vp.w, 0.0)).xyz);
     col = mix(col, fogColour(d), uFogRange.z * (1.0 - smoothstep(0.0, 0.3, d.y)));
   }
+  col += vec3(0.55, 0.6, 0.8) * uWeather.z * 0.35; // lightning lights the air
   outputColor = vec4(col * uExposure, inputColor.a);
 }
 `;
@@ -103,6 +146,8 @@ export class AtmosphereFogEffect extends Effect {
         ['uHaze', new THREE.Uniform(1 / 9000)],
         ['uFogRange', new THREE.Uniform(new THREE.Vector4(0, 0, 0, 0))],
         ['uMoonColor', new THREE.Uniform(new THREE.Color(0, 0, 0))],
+        ['uWeather', new THREE.Uniform(new THREE.Vector4(0, 0, 0, 0))],
+        ['uWeatherDrift', new THREE.Uniform(new THREE.Vector3(0, 0, 0))],
         ['uSkyStyle', new THREE.Uniform(new THREE.Vector4(1, 1, 0, 0))],
       ]),
     });
