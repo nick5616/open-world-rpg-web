@@ -46,7 +46,11 @@ type Config struct {
 	// DevSpawn lets a client pick its spawn with /ws?spawn=x,z. Only for dev
 	// and soak bots (main enables it only with the dev ticket key or
 	// LODESTONE_ZONE_DEV_SPAWN=1); real spawns come from the character row.
-	DevSpawn  bool
+	DevSpawn bool
+	// Dev turns the dev console's commands on (playtest 2, CR 032,
+	// devconsole.go): LODESTONE_ZONE_DEV=1, set by scripts/dev.mjs for `npm run
+	// dev` and never by a deploy (server/zone/devconsole_test.go checks infra/).
+	Dev       bool
 	TicketKey ed25519.PublicKey
 	Ground    movement.Ground
 	// WP10: the updraft hook for the movement step (debug columns from
@@ -177,6 +181,7 @@ type Server struct {
 	steeds     steedGlue     // playtest 2 mounts (CR 027): mounts.go
 	wx         weatherState  // playtest 2 weather (CR 030): weather.go
 	petsG      petGlue       // playtest 2 pets (CR 029): pets.go
+	dev        devGlue       // playtest 2 dev console (CR 032): devconsole.go
 	// WP11: next earshot hand-off (earshot.go).
 	earshotNext time.Time
 	phases      tickPhases // WP19: per-phase tick timing (phases.go)
@@ -371,6 +376,7 @@ func (s *Server) onTick() {
 	s.emotesTick(tick)      // playtest 2: looping emotes and lines in the water (emotes.go, fishing.go)
 	s.musicTick(tick)       // playtest 2: songs, the fireside, playing poses that ended (music.go)
 	s.weatherTick(tick)     // CR 030 weather: lightning, cold (weather.go)
+	s.devTick(tick)         // CR 032 dev console: god mode, infinite mana, no cooldowns, frozen time (devconsole.go)
 	s.phases.mark(phNight)
 
 	// Quantize once per entity and rebuild the grid; every client's snapshot

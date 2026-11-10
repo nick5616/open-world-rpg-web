@@ -360,7 +360,11 @@ func (s *Server) handleCombatInteract(sess *session, m *proto.Interact) {
 		ok = pr.EquipSpell(int(m.Arg&0xf), int(m.Arg>>4&0xf), key)
 	case combat.ActLearn:
 		if sp := combatdefs.D.SpellByID(int(m.Arg)); sp != nil {
-			ok = pr.LearnWith(sp.Key, p.Level, p.Boons.SkillPoints) == combat.LearnOK
+			if s.devFreeLearn(sess) {
+				ok = pr.Grant(sp.Key) // CR 032 dev console: every tier, no points
+			} else {
+				ok = pr.LearnWith(sp.Key, p.Level, p.Boons.SkillPoints) == combat.LearnOK
+			}
 			if ok {
 				learnedSpellIntoSlot(p, sp.Key) // a free slot in the active loadout, like tomes
 			}

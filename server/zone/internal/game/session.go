@@ -78,6 +78,7 @@ type session struct {
 	fish             *fishState         // playtest 2 fishing (fishing.go); nil until the first cast
 	emotes           *emoteState        // playtest 2 emotes (emotes.go); nil until the first emote
 	music            *musicState        // playtest 2 instruments (music.go); nil until the first Interact 120
+	dev              *devSess           // CR 032 dev console (devconsole.go); nil until the first dev command
 
 	// Reader-owned.
 	buckets    [256]*ratelimit.Bucket
@@ -312,6 +313,9 @@ func (s *Server) readLoop(sess *session) {
 		if b[0] == proto.MsgInteract && len(b) > 1 && b[1] == InteractMusic {
 			bk = sess.musicMsgBucket() // CR 028: notes arrive every batchMs while playing (music.go)
 		}
+		if b[0] == proto.MsgInteract && len(b) > 1 && b[1] == InteractDev && s.cfg.Dev {
+			bk = nil // CR 032: a local dev zone does not rate-limit its console
+		}
 		if bk != nil && !bk.Take(now) {
 			s.m.rateLimited.Add(1)
 			if !sess.violations.Take(now) {
@@ -365,6 +369,10 @@ func (s *Server) drainTaken(sess *session, now time.Time) {
 		if it, ok := m.(*proto.Interact); ok {
 			if it.TargetKind == InteractChem || it.TargetKind == InteractNight {
 				s.nightInteract(sess, it) // WP15: chemistry sync mode, dev night tools (night.go)
+				continue
+			}
+			if it.TargetKind == InteractDev {
+				s.devInteract(sess, it) // CR 032: the dev console (devconsole.go; LODESTONE_ZONE_DEV zones only)
 				continue
 			}
 			if it.TargetKind == InteractFriend {
@@ -523,7 +531,8 @@ func (s *Server) applyFrames(sess *session, now time.Time) {
 		}
 		f = s.combatFrame(sess, f) // WP13: log attacks/casts, refuse illegal dashes (combat.go)
 		// Building doors: the ground with the doors closed for this frame (doors.go).
-		if !e.applyFrame(f, s.frameGround(sess, f.Seq), s.env) {
+		// CR 032: dev fly and infinite stamina (devconsole.go) step first.
+		if !s.devFrame(sess, f) && !e.applyFrame(f, s.frameGround(sess, f.Seq), s.env) {
 			s.m.speedViolations.Add(1)
 		}
 		s.combatAfterFrame(sess, f)

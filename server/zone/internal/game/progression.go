@@ -72,7 +72,7 @@ func (s *Server) applyProgression(e *Entity, refill bool) {
 		if c.Level != p.Level {
 			c.SetLevel(p.Level)
 		}
-		c.SetBoons(combat.Boons{Health: lv.Attune.Health * float64(n), SkillPoints: lv.Attune.SkillPoints * n})
+		c.SetBoons(combat.Boons{Health: lv.Attune.Health * float64(n), SkillPoints: lv.Attune.SkillPoints*n + s.devSkillBonus(e)}) // CR 032: dev skill points
 		if refill && !c.Downed {
 			c.HP = c.HPMax
 		}

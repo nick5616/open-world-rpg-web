@@ -808,6 +808,9 @@ func (w *World) hurtPlayer(p *Player, dmg float64, src *Enemy, att *combatdefs.E
 
 // mitigate applies a player's passives, armor and shield to incoming damage.
 func (w *World) mitigate(p *Player, dmg float64) (float64, bool) {
+	if p.DevGod {
+		return 0, false // CR 032 dev console: god mode
+	}
 	if p.Profile.Knows("thick_bark") {
 		dmg *= 0.95
 	}
