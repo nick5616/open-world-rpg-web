@@ -4,6 +4,7 @@
 // seed. Dev overrides from the URL, mirrored on the zone by env vars:
 //   ?updraft=x,z,radius,top,lift[;...]   (zone: LODESTONE_ZONE_DEBUG_UPDRAFTS)
 //   ?rain=1 | ?rain=0                     (zone: LODESTONE_ZONE_DEBUG_RAIN=1|0)
+//   ?weather=<state>                      (zone: LODESTONE_ZONE_DEBUG_WEATHER, CR 030)
 // A mismatch between the two only costs prediction corrections, never safety:
 // the zone simulates with its own env.
 
@@ -11,7 +12,9 @@ import type { StepEnv, UpdraftField } from './movement';
 import { parseUpdrafts, UpdraftColumns } from './updraft';
 import { isRaining } from './weather';
 // WP15: world time includes the world's clock offset; fire feeds the updrafts.
-import { worldClockState, worldTime } from '../systems/clock';
+import { chemStep, worldClockState, worldTime } from '../systems/clock';
+// CR 030: the weather where the player stands (snow, rain, the gale under the glider).
+import { weatherField } from '../systems/weather/runtime';
 import { chemRuntime } from '../systems/chem/ground';
 
 /** Seed used offline (solo builds have no world row): WP04's official world seed. */
@@ -47,10 +50,18 @@ export function rainOverride(): boolean | null {
   return r === '1' ? true : r === '0' ? false : null;
 }
 
-/** The env for a world seed at a server time (ms), with the dev overrides applied. */
+/**
+ * The env for a world seed at a server time (ms), with the dev overrides
+ * applied. With dynamic weather (CR 030) it carries the shared weather field
+ * of that chemistry step (the overrides force its state); without (an
+ * atlas-less zone), WP10's global rain.
+ */
 export function envAt(seed: bigint, serverTimeMs: number): StepEnv {
+  const t = worldTime(serverTimeMs);
+  const f = weatherField(seed, chemStep(t));
+  if (f) return { raining: false, updraft: chemUpdraft(), weather: f };
   const forced = rainOverride() ?? worldClockState.rain;
-  return { raining: forced ?? isRaining(seed, worldTime(serverTimeMs)), updraft: chemUpdraft() };
+  return { raining: forced ?? isRaining(seed, t), updraft: chemUpdraft() };
 }
 
 /** WP15: fire's updrafts (the live chemistry view) plus the debug columns. */

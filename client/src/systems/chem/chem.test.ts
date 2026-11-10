@@ -7,6 +7,7 @@ import { biomeMaterial, ChemSim, inWorld, MAT_NONE, MAT_WATER, seedWords, type C
 import { ChemGround, chemRuntime, pillarHeight } from './ground';
 import { BitmapSync, EventSync } from './sync';
 import { FlatGround } from '../../sim/ground';
+import { Climate } from '../weather/weather';
 
 interface Scenario {
   name: string;
@@ -15,6 +16,8 @@ interface Scenario {
   start: number;
   steps: number;
   rain: boolean | null;
+  /** CR 030: a uniform weather climate (-1: the global rain windows). */
+  climate: number;
   ops: { step: number; kind: number; cell: number; radius: number }[];
   hashes: number[];
   burning: number[];
@@ -40,6 +43,7 @@ describe('chemistry simulation (Go twin vectors)', () => {
       const seed = BigInt(sc.seed);
       const sim = new ChemSim(seed, sc.windDeg, synth(seed), sc.start);
       sim.rain = sc.rain;
+      if (sc.climate >= 0) sim.weather = { climate: Climate.uniform(sc.climate), override: -1 };
       for (const o of sc.ops) sim.schedule({ ...o });
       const hashes: number[] = [];
       const burning: number[] = [];

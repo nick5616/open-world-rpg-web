@@ -23,6 +23,7 @@ import {
   WORLD_SIZE_M,
 } from '@lodestone/contracts';
 import { seededRainAtStep, windAtStep } from '../clock';
+import { CELLS_N, cellOf, Climate, isWet, NUM_STATES, stateAtStep } from '../weather/weather';
 
 export const MAT_NONE = 0;
 export const MAT_GRASS = 1;
@@ -151,6 +152,11 @@ export class ChemSim {
   step: number;
   /** Rain override (dev); null = seeded. */
   rain: boolean | null = null;
+  /**
+   * Playtest 2 weather (CR 030): rain where each cell is (its weather cell's
+   * state); null = WP10's global rain windows (Go Sim.Weather).
+   */
+  weather: { climate: Climate; override: number } | null = null;
   late = 0;
   surfaceVersion = 0;
   changed = false;
@@ -208,8 +214,27 @@ export class ChemSim {
     while (this.step < k) this.stepOnce(this.step + 1);
   }
 
-  private raining(k: number): boolean {
-    return this.rain ?? seededRainAtStep(this.seed, k);
+  /** Rain at step k per cell (Go rainFn): the override, the weather where the cell is, or the global windows. */
+  private rainFn(k: number): (id: number) => boolean {
+    if (this.rain !== null) {
+      const r = this.rain;
+      return () => r;
+    }
+    const w = this.weather;
+    if (!w) {
+      const r = seededRainAtStep(this.seed, k);
+      return () => r;
+    }
+    const memo = new Int8Array(CELLS_N * CELLS_N);
+    return (id: number) => {
+      const [cx, cz] = cellOf(cellCenter(cellX(id)), cellCenter(cellZ(id)));
+      const i = cz * CELLS_N + cx;
+      if (memo[i] === 0) {
+        const st = w.override >= 0 && w.override < NUM_STATES ? w.override : stateAtStep(this.seed, w.climate, cx, cz, k);
+        memo[i] = isWet(st) ? 2 : 1;
+      }
+      return memo[i] === 2;
+    };
   }
 
   private set(id: number, c: Cell): void {
@@ -257,7 +282,7 @@ export class ChemSim {
       this.pillars = keep;
     }
     if (this.burningN === 0) return;
-    const rain = this.raining(k);
+    const rain = this.rainFn(k);
     const klo = k >>> 0;
     const khi = Math.floor(k / 4294967296) >>> 0;
     const [s0, s1] = this.seedW;
@@ -268,7 +293,7 @@ export class ChemSim {
       if (c.st === ST_FROZEN) {
         if (this.nearBurning(id)) melt.push(id);
       } else if (c.st === ST_BURNING) {
-        if (rain && hash4(s0, s1, klo, khi, id, 0x7261696e) % 1000 < FIRE_RAIN_OUT_PERMILLE) doused.push(id);
+        if (rain(id) && hash4(s0, s1, klo, khi, id, 0x7261696e) % 1000 < FIRE_RAIN_OUT_PERMILLE) doused.push(id);
       }
     }
     for (const id of melt) this.set(id, { st: ST_NONE, until: 0, y: 0 });
@@ -292,7 +317,7 @@ export class ChemSim {
         mult = Math.min(400, Math.max(15, mult));
         let chance = Math.trunc((base * mult) / 100);
         if (o[0] !== 0 && o[1] !== 0) chance = Math.trunc((chance * 7) / 10);
-        if (rain) chance = Math.trunc(chance / 5);
+        if (rain(id)) chance = Math.trunc(chance / 5);
         if (hash4(s0, s1, klo, khi, id, nid) % 1000 < chance) catchSet.add(nid);
       }
     }

@@ -54,6 +54,10 @@ type Sim struct {
 	Step    int64
 	// Rain overrides the weather (dev: LODESTONE_ZONE_DEBUG_RAIN); nil = seeded.
 	Rain *bool
+	// Weather (playtest 2, CR 030): rain where each cell is (the weather
+	// cell's state); nil = WP10's global rain windows (the vectors, worlds
+	// without an atlas).
+	Weather *Weather
 
 	cells   map[uint32]cell
 	burning int
@@ -127,11 +131,42 @@ func (s *Sim) AdvanceTo(k int64) {
 	}
 }
 
-func (s *Sim) raining(k int64) bool {
+// Weather is the climate the simulation reads rain from (CR 030).
+type Weather struct {
+	Climate  *weather.Climate
+	Override int // >= 0: this state everywhere (dev)
+}
+
+// rainFn is rain at step k per cell: the override, the weather where the
+// cell is (each weather cell evaluated once), or the global windows.
+func (s *Sim) rainFn(k int64) func(id uint32) bool {
 	if s.Rain != nil {
-		return *s.Rain
+		r := *s.Rain
+		return func(uint32) bool { return r }
 	}
-	return weather.RainingAtStep(s.Seed, k)
+	w := s.Weather
+	if w == nil || w.Climate == nil {
+		r := weather.RainingAtStep(s.Seed, k)
+		return func(uint32) bool { return r }
+	}
+	var memo [weather.CellsN * weather.CellsN]int8
+	return func(id uint32) bool {
+		ix, iz := CellXZ(id)
+		x, z := CellCenter(ix, iz)
+		cx, cz := weather.CellOf(x, z)
+		i := cz*weather.CellsN + cx
+		if memo[i] == 0 {
+			st := w.Override
+			if st < 0 || st >= weather.NumStates {
+				st = weather.StateAtStep(s.Seed, w.Climate, cx, cz, k)
+			}
+			memo[i] = 1
+			if weather.IsWet(st) {
+				memo[i] = 2
+			}
+		}
+		return memo[i] == 2
+	}
 }
 
 var neighbors = [8][2]int{{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {1, -1}, {-1, 1}, {-1, -1}}
@@ -211,7 +246,7 @@ func (s *Sim) stepOnce(k int64) {
 		return
 	}
 	// 3. Fire near ice melts it early (spec 8); rain douses (spec 8).
-	rain := s.raining(k)
+	rain := s.rainFn(k)
 	klo, khi := uint32(k), uint32(uint64(k)>>32)
 	var melt, doused []uint32
 	for id := range s.active {
@@ -221,7 +256,7 @@ func (s *Sim) stepOnce(k int64) {
 				melt = append(melt, id)
 			}
 		case StBurning:
-			if rain && hash4(s.Seed, klo, khi, id, 0x7261696e)%1000 < constants.FireRainOutPermille {
+			if rain(id) && hash4(s.Seed, klo, khi, id, 0x7261696e)%1000 < constants.FireRainOutPermille {
 				doused = append(doused, id)
 			}
 		}
@@ -264,7 +299,7 @@ func (s *Sim) stepOnce(k int64) {
 			if o[0] != 0 && o[1] != 0 {
 				chance = chance * 7 / 10
 			}
-			if rain {
+			if rain(id) {
 				chance /= 5
 			}
 			if int(hash4(s.Seed, klo, khi, id, nid)%1000) < chance {

@@ -35,12 +35,14 @@ export interface TerrainShared {
   uFlat: { value: THREE.Color[] };
   /** World-space wetness 0..1 (rain, later); darkens albedo, lowers roughness (spec 12 "wet materials"). */
   uWet: { value: number };
+  /** Playtest 2 weather (CR 030): settled snow 0..1 on upward-facing ground. */
+  uSnowCover: { value: number };
 }
 
 export function makeTerrainShared(): TerrainShared {
   // Rough guesses until the manifest's measured means arrive.
   const flat = ['#5d6b3a', '#6b5440', '#5c5a55', '#e8ecf0', '#d8c8a8', '#5b4a38', '#4f4a30', '#7b746c', '#b07a62'].map((c) => new THREE.Color(c));
-  return { tColor: { value: null }, tNormal: { value: null }, tOrm: { value: null }, uTexReady: { value: 0 }, uFlat: { value: flat }, uWet: { value: 0 } };
+  return { tColor: { value: null }, tNormal: { value: null }, tOrm: { value: null }, uTexReady: { value: 0 }, uFlat: { value: flat }, uWet: { value: 0 }, uSnowCover: { value: 0 } };
 }
 
 export interface TerrainTileUniforms {
@@ -91,6 +93,7 @@ uniform sampler2DArray tOrm;
 uniform float uTexReady;
 uniform vec3 uFlat[${NL}];
 uniform float uWet;
+uniform float uSnowCover;
 varying vec4 vSplatA;
 varying vec4 vSplatB;
 varying vec4 vBiome;
@@ -245,6 +248,14 @@ albedo *= 0.82 + 0.36 * macro;
 // Wet ground: darker, glossier.
 albedo *= 1.0 - 0.35 * uWet;
 terrainRough = mix(terrainRough, terrainRough * 0.35, uWet);
+// CR 030: puddles in level hollows while the ground is wet (dark, mirror-smooth)...
+float pud = uWet * smoothstep(0.93, 0.99, Ng.y) * smoothstep(0.52, 0.7, tNoise(vWPos.xz * 0.09) * 0.7 + tNoise(vWPos.xz * 0.31) * 0.3);
+albedo *= 1.0 - 0.3 * pud;
+terrainRough = mix(terrainRough, 0.03, pud);
+// ...and snow settling on upward-facing ground, patchy at first.
+float snowUp = uSnowCover * smoothstep(0.55, 0.86, Ng.y) * smoothstep(0.0, 0.35, uSnowCover * 1.3 - 0.3 + tNoise(vWPos.xz * 0.17) * 0.6);
+albedo = mix(albedo, vec3(0.82, 0.86, 0.92), snowUp);
+terrainRough = mix(terrainRough, 0.8, snowUp);
 diffuseColor.rgb *= albedo;
 `;
 
@@ -287,7 +298,7 @@ export function createTerrainMaterial(shared: TerrainShared, normalMaps: boolean
       .replace('#include <normal_fragment_maps>', FRAG_NORMAL)
       .replace('#include <aomap_fragment>', FRAG_AO);
   };
-  m.customProgramCacheKey = () => `lodestone-terrain-1${normalMaps ? 'n' : ''}`;
+  m.customProgramCacheKey = () => `lodestone-terrain-2${normalMaps ? 'n' : ''}`;
   return m;
 }
 

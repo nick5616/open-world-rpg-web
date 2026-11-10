@@ -20,6 +20,8 @@ const FRAG = /* glsl */ `
 uniform vec3 uSunDir;
 uniform float uClouds;
 uniform float uCloudCover;
+// Playtest 2 weather (CR 030): x storm darkness, y rainbow, z lightning flash, w blowing sand.
+uniform vec4 uWeatherSky;
 varying vec3 vDir;
 ${SKY_GLSL}
 ${SKY_STYLE_GLSL}
@@ -54,6 +56,18 @@ void main() {
   vec3 m = -s;
   float mm = dot(v, normalize(vec3(m.x, max(m.y, 0.25), m.z)));
   col += vec3(0.85, 0.9, 1.0) * 1.2 * smoothstep(0.99975, 0.99985, mm) * night;
+  // CR 030: a storm darkens the whole dome; a rainbow stands opposite a low sun after a shower.
+  col *= 1.0 - 0.45 * uWeatherSky.x;
+  if (uWeatherSky.y > 0.0 && v.y > 0.0) {
+    float ang = degrees(acos(clamp(dot(v, -s), -1.0, 1.0)));
+    float lum = dot(col, vec3(0.2126, 0.7152, 0.0722));
+    float b1 = (ang - 40.6) / 2.0;
+    float b2 = (53.4 - ang) / 3.0;
+    vec3 bow = vec3(0.0);
+    if (b1 > 0.0 && b1 < 1.0) bow += clamp(abs(mod((1.0 - b1) * 4.6 + vec3(0.0, 4.0, 2.0), 6.0) - 3.0) - 1.0, 0.0, 1.0) * sin(b1 * 3.14159);
+    if (b2 > 0.0 && b2 < 1.0) bow += 0.35 * clamp(abs(mod((1.0 - b2) * 4.6 + vec3(0.0, 4.0, 2.0), 6.0) - 3.0) - 1.0, 0.0, 1.0) * sin(b2 * 3.14159);
+    col += bow * (lum * 1.3 + 0.08) * uWeatherSky.y * smoothstep(0.0, 0.12, v.y);
+  }
   // Clouds: a plane at ~2 km projected onto the dome, drifting downwind.
   if (uClouds > 0.0 && v.y > 0.01) {
     vec2 cp = v.xz / (v.y + 0.08) * 1.6 + uWindDir * uWindTime * 0.012;
@@ -61,8 +75,12 @@ void main() {
     float cover = smoothstep(1.0 - uCloudCover, 1.0 - uCloudCover + 0.35, c);
     vec3 lit = skyRadiance(vec3(0.0, 1.0, 0.0), s) * 1.6 + sunTrans(s.y) * SUN_E * 0.035 * (0.6 + 0.4 * mu);
     vec3 shade = lit * mix(0.55, 1.0, smoothstep(0.3, 0.9, c));
+    shade *= 1.0 - 0.7 * uWeatherSky.x;
+    shade += vec3(0.75, 0.8, 1.0) * uWeatherSky.z * 2.5 * smoothstep(0.35, 0.8, c); // lightning inside the clouds
     col = mix(col, shade, cover * smoothstep(0.01, 0.15, v.y) * 0.9);
   }
+  col += vec3(0.5, 0.55, 0.75) * uWeatherSky.z * 0.6;
+  if (uWeatherSky.w > 0.0) col = mix(col, vec3(0.78, 0.62, 0.42) * (0.25 + dot(col, vec3(0.33))), 0.7 * uWeatherSky.w);
   // Below the horizon: a dim mirror of the horizon colour (seen past the world's edge).
   if (v.y < 0.0) col = mix(col, col * 0.4, smoothstep(0.0, -0.3, v.y));
   col = lsSkyStyle(col, v.y);
@@ -72,11 +90,11 @@ void main() {
 
 export interface SkyDome {
   mesh: THREE.Mesh;
-  uniforms: { uSunDir: { value: THREE.Vector3 }; uClouds: { value: number }; uCloudCover: { value: number }; uSkyStyle: { value: THREE.Vector4 } };
+  uniforms: { uSunDir: { value: THREE.Vector3 }; uClouds: { value: number }; uCloudCover: { value: number }; uSkyStyle: { value: THREE.Vector4 }; uWeatherSky: { value: THREE.Vector4 } };
 }
 
 export function createSkyDome(): SkyDome {
-  const uniforms = { uSunDir: { value: new THREE.Vector3(0, 1, 0) }, uClouds: { value: 1 }, uCloudCover: { value: 0.42 }, uSkyStyle: { value: new THREE.Vector4(1, 1, 0, 0) } };
+  const uniforms = { uSunDir: { value: new THREE.Vector3(0, 1, 0) }, uClouds: { value: 1 }, uCloudCover: { value: 0.42 }, uSkyStyle: { value: new THREE.Vector4(1, 1, 0, 0) }, uWeatherSky: { value: new THREE.Vector4(0, 0, 0, 0) } };
   const mat = new THREE.ShaderMaterial({
     vertexShader: VERT,
     fragmentShader: FRAG,

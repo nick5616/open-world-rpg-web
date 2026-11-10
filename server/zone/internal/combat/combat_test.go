@@ -135,6 +135,7 @@ func TestNoAttackOrSpellCanDamageAPlayer(t *testing.T) {
 // hurtPlayer, whose call sites all pass an enemy as the source, and
 // hurtByPlayer (playtest 2, CR 019), called only from applyPlayerHit, which
 // only ClaimPlayer reaches (the game layer calls it after its PvP rules).
+// CR 030: plus HurtByWeather (weather.go), lightning the zone resolved.
 func TestOnlyEnemiesCallHurtPlayer(t *testing.T) {
 	files, _ := filepath.Glob("*.go")
 	re := regexp.MustCompile(`hurtPlayer\(([^)]*)\)`)
@@ -170,7 +171,8 @@ func TestOnlyEnemiesCallHurtPlayer(t *testing.T) {
 			if writes.MatchString(line) {
 				ok := (f == "ai.go" && (strings.Contains(fn, "hurtPlayer(") || strings.Contains(fn, "downPlayer("))) ||
 					(f == "pvp.go" && strings.Contains(fn, "hurtByPlayer(")) ||
-					(f == "dashes.go" && strings.Contains(fn, "payBlood(")) // CR 021: the blood dash costs your own health
+					(f == "dashes.go" && strings.Contains(fn, "payBlood(")) || // CR 021: the blood dash costs your own health
+					(f == "weather.go" && strings.Contains(fn, "HurtByWeather(")) // CR 030: lightning, the one environmental source
 				if !ok {
 					t.Errorf("%s: player health lowered outside hurtPlayer/hurtByPlayer: %s (in %s)", f, strings.TrimSpace(line), fn)
 				}

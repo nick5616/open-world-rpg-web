@@ -73,6 +73,7 @@ import {
   SWIM_SPEED,
   UPDRAFT_MAX_LIFT,
   WALKABLE_TAN_SQ,
+  WIND_GLIDE_PUSH_MS,
   WORLD_SIZE_M,
   u16ToYaw,
   i16ToPitch,
@@ -164,7 +165,43 @@ export interface UpdraftField {
 export interface StepEnv {
   raining: boolean;
   updraft: UpdraftField | null;
+  /**
+   * Playtest 2 weather (CR 030): rain, snow and wind where the player stands,
+   * read once at the start of each step (absent: none). Rain from it adds to
+   * `raining`; snow slows walking; wind pushes a glider downwind.
+   */
+  weather?: MoveField | null;
 }
+
+/** What the step reads about the weather where the player stands (Go weather.MoveWeather). */
+export interface MoveWeather {
+  rain: boolean;
+  speedMult: number;
+  pushX: number;
+  pushZ: number;
+}
+
+/** Go weather.MoveField. */
+export interface MoveField {
+  moveWeatherAt(x: number, z: number): MoveWeather;
+}
+
+/** The env a mode step uses: the caller's plus the weather resolved at the step's start. */
+interface ResolvedEnv extends StepEnv {
+  mw: MoveWeather;
+}
+
+const CALM: MoveWeather = Object.freeze({ rain: false, speedMult: 1, pushX: 0, pushZ: 0 });
+
+function resolveEnv(env: Readonly<StepEnv>, x: number, z: number): ResolvedEnv {
+  if (!env.weather) return { raining: env.raining, updraft: env.updraft, mw: CALM };
+  const w = env.weather.moveWeatherAt(x, z);
+  const mw = w.speedMult > 0 ? w : { ...w, speedMult: 1 };
+  return { raining: env.raining || mw.rain, updraft: env.updraft, mw };
+}
+
+/** The strongest downwind drift a glider can get (a gale; Go MaxGlidePush). */
+export const MAX_GLIDE_PUSH = 2 * WIND_GLIDE_PUSH_MS;
 
 export const NO_ENV: Readonly<StepEnv> = Object.freeze({ raining: false, updraft: null });
 
@@ -407,8 +444,9 @@ function finish(prev: MoveState, s: MoveState): MoveState {
  * position like WP02's step did. Order inside each mode is the contract with
  * the Go port (README.md).
  */
-export function stepMovement(state: MoveState, input: MoveInput, groundIn: GroundQuery, dt: number = STEP_DT, env: Readonly<StepEnv> = NO_ENV): MoveState {
+export function stepMovement(state: MoveState, input: MoveInput, groundIn: GroundQuery, dt: number = STEP_DT, envIn: Readonly<StepEnv> = NO_ENV): MoveState {
   const ground = atLevel(groundIn, state.pos.y); // WP09: caves see the ground at the player's level (caves.ts)
+  const env = resolveEnv(envIn, state.pos.x, state.pos.z); // CR 030: the weather where the step starts
   const yaw = u16ToYaw(input.yaw);
   const wish = wishDirFromFlags(input.flags, yaw);
   // CR 027: a rider can't climb, glide or swim (the step drops the flag);
@@ -434,7 +472,7 @@ export function stepMovement(state: MoveState, input: MoveInput, groundIn: Groun
       out = stepSwim(st, input.flags, wish, gm, dt);
       break;
     default:
-      out = riding ? stepRide(st, input.flags, wishDirFromFlags(input.flags & (InputFlag.forward | InputFlag.left | InputFlag.right), yaw), yaw, gm, dt) : stepWalk(st, input.flags, wish, gm, dt, dashed.dashing);
+      out = riding ? stepRide(st, input.flags, wishDirFromFlags(input.flags & (InputFlag.forward | InputFlag.left | InputFlag.right), yaw), yaw, gm, dt) : stepWalk(st, input.flags, wish, gm, dt, dashed.dashing, env.mw);
   }
   out = collideStep(ground, out); // WP09: cave walls and ceilings (caves.ts)
   out = collideHead(ground, out); // CR 027: the steed's chest (ride.ts)
@@ -448,11 +486,12 @@ export function stepMovement(state: MoveState, input: MoveInput, groundIn: Groun
  * gravity -> jump -> integrate -> snap) plus slope rules, glider opening,
  * grabbing walls, entering water and the sprint/regen stamina rules.
  */
-function stepWalk(s: MoveState, flags: number, wish: Vec2xz, ground: GroundQuery, dt: number, dashing = false): MoveState {
+function stepWalk(s: MoveState, flags: number, wish: Vec2xz, ground: GroundQuery, dt: number, dashing = false, mw: MoveWeather = CALM): MoveState {
   const exhausted = (s.flags & MoveFlag.exhausted) !== 0;
   const canUse = !exhausted && s.stamina > 0;
   const sprinting = (flags & InputFlag.sprint) !== 0 && canUse;
-  const speed = BASE_MOVE_SPEED * (sprinting ? SPRINT_MULTIPLIER : 1);
+  let speed = BASE_MOVE_SPEED * (sprinting ? SPRINT_MULTIPLIER : 1);
+  if (mw.speedMult > 0 && mw.speedMult !== 1) speed *= mw.speedMult; // CR 030: snow underfoot
 
   // Grounded is whatever the previous step's snap left behind (y exactly on
   // the ground). wizard-wars once used a 0.05 tolerance here and client and
@@ -637,13 +676,19 @@ function asWalk(s: MoveState, mode: number): MoveState {
  * wheel closes it and the step runs as a fall; touching ground lands (or grabs
  * a climbable wall when holding into it); deep water swims.
  */
-function stepGlide(s: MoveState, flags: number, wish: Vec2xz, ground: GroundQuery, dt: number, env: Readonly<StepEnv>): MoveState {
+function stepGlide(s: MoveState, flags: number, wish: Vec2xz, ground: GroundQuery, dt: number, env: Readonly<ResolvedEnv>): MoveState {
   const canUse = (s.flags & MoveFlag.exhausted) === 0 && s.stamina > 0;
   if (!canUse || (flags & (InputFlag.jump_edge | InputFlag.glide_toggle)) !== 0) {
-    return stepWalk(asWalk(s, MoveMode.air), flags & ~(InputFlag.jump_edge | InputFlag.glide_toggle), wish, ground, dt);
+    return stepWalk(asWalk(s, MoveMode.air), flags & ~(InputFlag.jump_edge | InputFlag.glide_toggle), wish, ground, dt, false, env.mw);
   }
   const vel: Vec2xz = { x: s.vel.x, z: s.vel.z };
-  moveToward2(vel, wish.x * GLIDE_SPEED, wish.z * GLIDE_SPEED, GLIDE_ACCEL * dt);
+  let tx = wish.x * GLIDE_SPEED;
+  let tz = wish.z * GLIDE_SPEED;
+  if (env.mw.pushX !== 0 || env.mw.pushZ !== 0) {
+    tx += env.mw.pushX; // CR 030: the wind carries the glider
+    tz += env.mw.pushZ;
+  }
+  moveToward2(vel, tx, tz, GLIDE_ACCEL * dt);
   let lift = env.updraft ? env.updraft.liftAt(s.pos.x, s.pos.y, s.pos.z) : 0;
   if (!(lift > 0)) lift = 0; // also maps NaN to 0
   if (lift > UPDRAFT_MAX_LIFT) lift = UPDRAFT_MAX_LIFT;
@@ -683,7 +728,7 @@ function stepGlide(s: MoveState, flags: number, wish: Vec2xz, ground: GroundQuer
  * wheel or an unclimbable surface lets go, which on a heightfield means
  * sliding down it.
  */
-function stepClimb(s: MoveState, flags: number, wish: Vec2xz, ground: GroundQuery, dt: number, env: Readonly<StepEnv>): MoveState {
+function stepClimb(s: MoveState, flags: number, wish: Vec2xz, ground: GroundQuery, dt: number, env: Readonly<ResolvedEnv>): MoveState {
   const canUse = (s.flags & MoveFlag.exhausted) === 0 && s.stamina > 0;
   const here = slopeAt(ground, s.pos.x, s.pos.z);
   if (!canUse || here.t2 <= WALKABLE_TAN_SQ || here.t2 > CLIMB_MAX_TAN_SQ) {
@@ -692,7 +737,7 @@ function stepClimb(s: MoveState, flags: number, wish: Vec2xz, ground: GroundQuer
     // wantsClimb fails for an empty wheel or an unclimbable surface.
     // The climb's velocity is only a report of the last move, so it must not
     // leak into walk physics (an upward vy would launch us off the wall).
-    return stepWalk({ ...s, mode: MoveMode.ground, vel: { x: 0, y: 0, z: 0 } }, flags & ~(InputFlag.jump | InputFlag.jump_edge), wish, ground, dt);
+    return stepWalk({ ...s, mode: MoveMode.ground, vel: { x: 0, y: 0, z: 0 } }, flags & ~(InputFlag.jump | InputFlag.jump_edge), wish, ground, dt, false, env.mw);
   }
   const t = Math.sqrt(here.t2);
   const ux = here.gx / t;

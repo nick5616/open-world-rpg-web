@@ -1,5 +1,18 @@
 [
   {
+    "id": "pt2-weather",
+    "date": "2026-11-10",
+    "title": "Weather that changes",
+    "items": [
+      "Each region has its own weather now: clear skies, clouds, fog banks, drizzle, rain and thunderstorms; snow and blizzards on the peaks; heat haze and sandstorms in the badlands. Fronts roll in and out over a minute or two, and the clock shows a short forecast.",
+      "Thunderstorms throw lightning. It finds the tallest thing around, and anyone holding a sword or spear. If your blade crackles, switch to your bow or staff, fast.",
+      "Lightning can set dry grass on fire. Rain still makes climbing slippery.",
+      "Snow slows you down, and nights in the cold leave you Chilled (no health regeneration). Stay by a campfire, in town, or eat something warm like a stew.",
+      "Strong winds push your glider and your arrows. Fog hides you from enemies, and them from you.",
+      "Look for a rainbow after the rain."
+    ]
+  },
+  {
     "id": "pt2-pets",
     "date": "2026-11-10",
     "title": "Taming and pet companions",

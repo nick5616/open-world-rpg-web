@@ -669,6 +669,83 @@ const PillarHalfM float64 = 1.5
 // PillarWallRunM: Horizontal run of the pillar's walls (6 m over 1.06 m = 80 degrees: climbable by WP10's rules, like tower walls).
 const PillarWallRunM float64 = 1.06
 
+// ---- weather
+
+// WeatherWindowS: A weather front keeps its state this long (each front's windows start at a seeded phase, so fronts change at different moments).
+const WeatherWindowS = 600
+
+// WeatherCellM: Weather cell edge (8 x 8 cells per world); a cell's climate comes from its biomes.
+const WeatherCellM = 512
+
+// WeatherFrontCells: A front spans this many cells per edge (2 x 512 m = a region): one severity roll per front and window, nudged per cell by up to WEATHER_JITTER.
+const WeatherFrontCells = 2
+
+// WeatherJitter: Per-cell nudge (+-) of the front's severity roll (0-99), so fronts have ragged edges.
+const WeatherJitter = 7
+
+// WeatherBlendS: Visual crossfade between a front's windows, centred on the change (clients only; gameplay switches at the change).
+const WeatherBlendS float64 = 90
+
+// SnowMoveMult: Walking and sprinting speed while it snows where you stand.
+const SnowMoveMult float64 = 0.9
+
+// SnowstormMoveMult: Walking and sprinting speed in a snowstorm.
+const SnowstormMoveMult float64 = 0.8
+
+// WindGlidePushMs: A glider drifts downwind at this many m/s per wind level above 1 (windy and storms are level 2, snowstorms and sandstorms 3).
+const WindGlidePushMs float64 = 1.25
+
+// WindArrowAccel: Arrows drift downwind at this many m/s^2 per wind level.
+const WindArrowAccel float64 = 0.6
+
+// LightningSlotS: Thunderstorm cells roll for a seeded strike every this many seconds.
+const LightningSlotS = 3
+
+// LightningSlotPct: Chance (percent) that a thunderstorm cell is struck in a slot.
+const LightningSlotPct = 35
+
+// LightningTallProbeM: A seeded strike lands on the highest of nine points on a grid this far apart around its seeded spot (tall things draw lightning).
+const LightningTallProbeM float64 = 12
+
+// LightningAttractM: A strike within this distance of a player in the open jumps to them (plus half their height above the ground, up to 20 m more).
+const LightningAttractM float64 = 10
+
+// LightningMetalAttractM: The same for a player holding a metal weapon.
+const LightningMetalAttractM float64 = 30
+
+// LightningMetalPct: Each slot, a player in the open in a thunderstorm holding a metal weapon draws a bolt of their own with this chance (percent).
+const LightningMetalPct = 6
+
+// LightningWarnSteps: A drawn bolt is announced (the weapon crackles) this many chemistry steps before it strikes: time to switch to a wooden weapon.
+const LightningWarnSteps = 10
+
+// LightningDamage: Damage of a bolt to the player or enemy it strikes (before armor); others within LIGHTNING_SPLASH_M take half.
+const LightningDamage float64 = 45
+
+// LightningSplashM: Splash radius of a bolt.
+const LightningSplashM float64 = 4
+
+// LightningEventM: Players within this distance of a strike the zone resolves get it as an event (1220).
+const LightningEventM float64 = 260
+
+// LightningLocalM: Clients draw seeded strikes farther than this from them on their own; nearer ones wait for the zone's event.
+const LightningLocalM float64 = 200
+
+// ColdOnsetS: Seconds out in the cold (a cold-climate cell at night, or a snowstorm) before you are Chilled.
+const ColdOnsetS float64 = 20
+
+// ColdWarmthM: A burning campfire or a town hearth within this distance keeps you warm.
+const ColdWarmthM float64 = 9
+
+// ColdFoodWarmS: Warm food (stews, broths, skewers, curry) keeps you warm this long.
+const ColdFoodWarmS float64 = 600
+
+// ColdManaRegenMult: Chilled: mana regenerates at this rate and health not at all.
+const ColdManaRegenMult float64 = 0.6
+
+// FogAggroMult: Enemies in a fog bank, sandstorm or snowstorm notice players at this fraction of their aggro range.
+const FogAggroMult float64 = 0.6
+
 // ---- security
 
 // TicketTtlS: Connect ticket lifetime.

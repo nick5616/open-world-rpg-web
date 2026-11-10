@@ -441,6 +441,57 @@ export const PILLAR_HEIGHT_M = 6;
 export const PILLAR_HALF_M = 1.5;
 /** Horizontal run of the pillar's walls (6 m over 1.06 m = 80 degrees: climbable by WP10's rules, like tower walls). */
 export const PILLAR_WALL_RUN_M = 1.06;
+// ---- weather
+/** A weather front keeps its state this long (each front's windows start at a seeded phase, so fronts change at different moments). */
+export const WEATHER_WINDOW_S = 600;
+/** Weather cell edge (8 x 8 cells per world); a cell's climate comes from its biomes. */
+export const WEATHER_CELL_M = 512;
+/** A front spans this many cells per edge (2 x 512 m = a region): one severity roll per front and window, nudged per cell by up to WEATHER_JITTER. */
+export const WEATHER_FRONT_CELLS = 2;
+/** Per-cell nudge (+-) of the front's severity roll (0-99), so fronts have ragged edges. */
+export const WEATHER_JITTER = 7;
+/** Visual crossfade between a front's windows, centred on the change (clients only; gameplay switches at the change). */
+export const WEATHER_BLEND_S = 90;
+/** Walking and sprinting speed while it snows where you stand. */
+export const SNOW_MOVE_MULT = 0.9;
+/** Walking and sprinting speed in a snowstorm. */
+export const SNOWSTORM_MOVE_MULT = 0.8;
+/** A glider drifts downwind at this many m/s per wind level above 1 (windy and storms are level 2, snowstorms and sandstorms 3). */
+export const WIND_GLIDE_PUSH_MS = 1.25;
+/** Arrows drift downwind at this many m/s^2 per wind level. */
+export const WIND_ARROW_ACCEL = 0.6;
+/** Thunderstorm cells roll for a seeded strike every this many seconds. */
+export const LIGHTNING_SLOT_S = 3;
+/** Chance (percent) that a thunderstorm cell is struck in a slot. */
+export const LIGHTNING_SLOT_PCT = 35;
+/** A seeded strike lands on the highest of nine points on a grid this far apart around its seeded spot (tall things draw lightning). */
+export const LIGHTNING_TALL_PROBE_M = 12;
+/** A strike within this distance of a player in the open jumps to them (plus half their height above the ground, up to 20 m more). */
+export const LIGHTNING_ATTRACT_M = 10;
+/** The same for a player holding a metal weapon. */
+export const LIGHTNING_METAL_ATTRACT_M = 30;
+/** Each slot, a player in the open in a thunderstorm holding a metal weapon draws a bolt of their own with this chance (percent). */
+export const LIGHTNING_METAL_PCT = 6;
+/** A drawn bolt is announced (the weapon crackles) this many chemistry steps before it strikes: time to switch to a wooden weapon. */
+export const LIGHTNING_WARN_STEPS = 10;
+/** Damage of a bolt to the player or enemy it strikes (before armor); others within LIGHTNING_SPLASH_M take half. */
+export const LIGHTNING_DAMAGE = 45;
+/** Splash radius of a bolt. */
+export const LIGHTNING_SPLASH_M = 4;
+/** Players within this distance of a strike the zone resolves get it as an event (1220). */
+export const LIGHTNING_EVENT_M = 260;
+/** Clients draw seeded strikes farther than this from them on their own; nearer ones wait for the zone's event. */
+export const LIGHTNING_LOCAL_M = 200;
+/** Seconds out in the cold (a cold-climate cell at night, or a snowstorm) before you are Chilled. */
+export const COLD_ONSET_S = 20;
+/** A burning campfire or a town hearth within this distance keeps you warm. */
+export const COLD_WARMTH_M = 9;
+/** Warm food (stews, broths, skewers, curry) keeps you warm this long. */
+export const COLD_FOOD_WARM_S = 600;
+/** Chilled: mana regenerates at this rate and health not at all. */
+export const COLD_MANA_REGEN_MULT = 0.6;
+/** Enemies in a fog bank, sandstorm or snowstorm notice players at this fraction of their aggro range. */
+export const FOG_AGGRO_MULT = 0.6;
 // ---- security
 /** Connect ticket lifetime. */
 export const TICKET_TTL_S = 60;

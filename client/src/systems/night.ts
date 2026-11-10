@@ -15,6 +15,10 @@ import { TerrainMaterial } from './chem/material';
 import { chemRuntime } from './chem/ground';
 import { createChemView, type ChemMode, type ChemView } from './chem/sync';
 import type { ChemEvent } from './chem/codec';
+// Playtest 2 weather (CR 030): the zone's weather byte, Events 1220-1222, rain where you stand.
+import { liveWeather, onZoneWeatherByte, resetZoneWeather, setWeatherWorld, weatherClient, weatherOn, weatherOverride } from './weather/runtime';
+import { onWeatherEvent } from './weather/link';
+import { isWet } from './weather/weather';
 
 /** Event kinds (contracts/events.md 500-599). */
 export const EV = {
@@ -131,8 +135,13 @@ function rebuildView(): void {
   const src = new TerrainMaterial(rt.terrainGround, worldClockState.seed, rt.data);
   const view = createChemView(nightRuntime.mode, worldClockState.seed, worldClockState.windDeg, src, zoneStep() - 2);
   if ('sim' in view) {
-    const ev = view as ChemView & { sim: { rain: boolean | null }; onStep: ((s: number, sim: { hash(): number; burning(): number }) => void) | null };
+    const ev = view as ChemView & { sim: { rain: boolean | null; weather: unknown }; onStep: ((s: number, sim: { hash(): number; burning(): number }) => void) | null };
     ev.sim.rain = worldClockState.rain;
+    // CR 030: rain where each burning cell is (the zone's chem.Sim.Weather).
+    if (weatherOn() && weatherClient.climate) {
+      ev.sim.rain = null;
+      ev.sim.weather = { climate: weatherClient.climate, override: weatherOverride() };
+    }
     ev.onStep = (s, sim) => nightRuntime.onStep?.(s, sim.hash(), sim.burning());
   }
   nightRuntime.view = view;
@@ -144,6 +153,7 @@ function rebuildView(): void {
 /** NetPlay: the world runtime is loaded (terrain + atlas for the chemistry materials). */
 export function nightWorld(rt: WorldRuntime): void {
   nightRuntime.runtime = rt;
+  setWeatherWorld(rt.data); // CR 030: the climate before the chemistry view reads it
   rebuildView();
 }
 
@@ -163,6 +173,7 @@ function onClock(e: { data: Uint8Array }): void {
   const zoneMode: ChemMode = d[12] === 2 ? 'bitmap' : 'events';
   worldClockState.demonIntensity = v.getFloat32(13, true);
   worldClockState.rain = d[17] === 1 ? true : d[17] === 2 ? false : null;
+  onZoneWeatherByte(d.length > 18 ? d[18] : undefined); // CR 030
   worldClockState.announced = true;
   const s = nightRuntime.session;
   if (s?.welcome) worldClockState.seed = s.welcome.seed;
@@ -188,6 +199,10 @@ export function attachNight(session: SessionLike): () => void {
   nightRuntime.session = session;
   const hud = useNightHud.getState();
   const onEvent: Parameters<SessionLike['eventListeners']['add']>[0] = (e) => {
+    if (e.kind >= 1220 && e.kind <= 1239) {
+      onWeatherEvent(e, session.welcome?.entityId ?? 0); // CR 030
+      return;
+    }
     if (e.kind >= 520 && e.kind <= 525) {
       if (nightRuntime.view) nightRuntime.view.onEvent(e);
       else nightRuntime.queue.push(e);
@@ -241,6 +256,7 @@ export function attachNight(session: SessionLike): () => void {
   };
   session.eventListeners.add(onEvent);
   worldClock.source = () => timeOfDayS(worldTime(session.clock.serverNow()));
+  weatherClient.timeS = () => worldTime(session.clock.serverNow()); // CR 030
   hud.set({ online: true });
   const w = typeof window !== 'undefined' ? (window as unknown as { __lodestoneNight?: unknown }) : null;
   if (w) {
@@ -275,6 +291,7 @@ export function attachNight(session: SessionLike): () => void {
     worldClockState.announced = false;
     worldClockState.offsetS = 0;
     worldClockState.rain = null;
+    resetZoneWeather();
     useNightHud.getState().set({ online: false, defense: null });
   };
 }
@@ -293,7 +310,7 @@ export function nightFrame(px: number, pz: number): void {
   setPrevailingWind(w.sector * 45, 2 + w.strength * 1.5);
   const hud = useNightHud.getState();
   const n = nightIndex(t);
-  const raining = rainingAtStep(worldClockState.seed, k);
+  const raining = weatherOn() ? isWet(liveWeather.state) : rainingAtStep(worldClockState.seed, k);
   const burning = v && 'sim' in v ? (v as unknown as { sim: { burning(): number } }).sim.burning() : 0;
   const hour = Math.floor(hourOf(t) * 4) / 4;
   if (hud.hour !== hour || hud.raining !== raining || hud.nightIdx !== n || hud.burning !== burning) {

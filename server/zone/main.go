@@ -28,6 +28,7 @@
 //	LODESTONE_ZONE_DEBUG_RAIN      WP10: 1 = always rain, 0 = never (default: the seeded weather stub)
 //	LODESTONE_ZONE_CLUSTER / _ROLE / _REGIONS ...  WP16 multiple zones (cluster.go; off by default)
 //	LODESTONE_ZONE_TIME_OFFSET_S / _NO_DEMONS / _NO_CHEM / _DEV_NIGHT / _CHEM_SYNC / _DEBUG_DEFENSE  WP15 night and chemistry (night.go)
+//	LODESTONE_ZONE_DEBUG_WEATHER / _NO_WEATHER / _NO_LIGHTNING / _NO_COLD  CR 030 weather (weather.go)
 //	LODESTONE_ZONE_GOGC / _MEMLIMIT_MB  GC pacing, default 300 / 3072 MiB unless GOGC / GOMEMLIMIT are set (gc.go)
 //	LODESTONE_PG_URL, LODESTONE_REDIS_ADDR
 package main
@@ -159,6 +160,7 @@ func main() {
 	cfg.Combat = combatSetup(terrain, world.Seed, world.Spec, devKey, log)       // WP13 (combat.go)
 	cfg.Items = itemsSetup(pool, terrain, cfg.Combat, world.Spec, world.ID, log) // WP14 (items.go)
 	withNight(&cfg, terrain, world.Spec, devKey, log)                            // WP15: wards, demons, chemistry, ice/pillar ground (night.go)
+	withWeather(&cfg, terrain, world.Spec, log)                                  // CR 030: dynamic weather from the atlas biomes (weather.go)
 	cfg.Difficulty = difficultySetup(cfg.Combat, pool, world.ID, log)            // playtest 1: discovery-stamped areas (difficulty.go)
 	cfg.PartyChat = partyChat(world.ID, log)                                     // playtest 2: duel results in party chat (pvp.go)
 	zone := game.New(cfg)

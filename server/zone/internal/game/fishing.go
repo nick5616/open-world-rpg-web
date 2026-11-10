@@ -274,7 +274,7 @@ func (s *Server) fishCastAt(sess *session, fs *fishState, x, z float64, now time
 		n = fs.casts
 	}
 	t := s.worldTimeS()
-	raining := weather.IsRaining(s.cfg.Seed, t)
+	raining := s.rainingAt(x, z, t) // CR 030: the weather where the bobber lands
 	if s.cfg.Rain != nil {
 		raining = *s.cfg.Rain
 	}

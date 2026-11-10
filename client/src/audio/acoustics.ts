@@ -103,8 +103,9 @@ export class RainIntensity {
     readonly fallS = 9,
   ) {}
 
-  update(raining: boolean, dt: number, tS: number): number {
-    const target = raining ? 0.8 + 0.12 * Math.sin(tS * 0.11) + 0.08 * Math.sin(tS * 0.037 + 1.3) : 0;
+  /** level (CR 030): how hard it rains (drizzle ~0.4, a storm 1). */
+  update(raining: boolean, dt: number, tS: number, level = 1): number {
+    const target = raining ? level * (0.8 + 0.12 * Math.sin(tS * 0.11) + 0.08 * Math.sin(tS * 0.037 + 1.3)) : 0;
     const tau = raining ? this.riseS / 3 : this.fallS / 3;
     this.value += (target - this.value) * (1 - Math.exp(-Math.max(0, dt) / tau));
     if (!raining && this.value < 0.002) this.value = 0;

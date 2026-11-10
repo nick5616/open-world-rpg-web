@@ -5,6 +5,9 @@
 import { useEffect, useState } from 'react';
 import { MOON_NAMES } from './clock';
 import { useNightHud } from './night';
+// CR 030: the weather on the clock pill and a forecast line under it.
+import { ForecastLine, WeatherChip } from './weather/WeatherHud';
+import { useWeatherHud } from './weather/runtime';
 
 const MOON_GLYPHS = ['\u{1F311}', '\u{1F312}', '\u{1F313}', '\u{1F314}', '\u{1F315}', '\u{1F316}', '\u{1F317}', '\u{1F318}'];
 
@@ -18,6 +21,7 @@ const TONE: Record<string, string> = { night: '#b9a8ff', dawn: '#ffd27a', danger
 
 export function NightHud() {
   const s = useNightHud();
+  const weatherActive = useWeatherHud((w) => w.active);
   const [, force] = useState(0);
   useEffect(() => {
     const t = setInterval(() => force((n) => n + 1), 500);
@@ -32,9 +36,10 @@ export function NightHud() {
         <span>{s.night ? MOON_GLYPHS[s.moon] : '☀️'}</span>
         <span>{hhmm(s.hour)}</span>
         {s.night && <span style={{ opacity: 0.75 }}>{MOON_NAMES[s.moon]}</span>}
-        {s.raining && <span title="rain">{'\u{1F327}️'}</span>}
+        {weatherActive ? <WeatherChip /> : s.raining && <span title="rain">{'\u{1F327}️'}</span>}
         {s.burning > 0 && <span style={{ color: '#ffa040' }}>{'\u{1F525}'} {s.burning}</span>}
       </div>
+      <ForecastLine />
       {d && (
         <div data-testid="night-defense" style={{ background: 'rgba(30,8,8,0.7)', padding: '6px 12px', borderRadius: 8, minWidth: 260, textAlign: 'center' }}>
           <div style={{ fontWeight: 600, color: '#ffb09a' }}>

@@ -11,6 +11,7 @@ import (
 	"lodestone/server/pkg/constants"
 	"lodestone/server/pkg/movement"
 	"lodestone/server/pkg/proto"
+	"lodestone/server/pkg/weather"
 )
 
 var update = flag.Bool("update", false, "rewrite testdata/sim_vectors.json")
@@ -51,6 +52,7 @@ type scenario struct {
 	Start   int64    `json:"start"`
 	Steps   int      `json:"steps"`
 	Rain    *bool    `json:"rain"`
+	Climate int      `json:"climate"` // CR 030: a uniform weather climate (-1: WP10's global rain)
 	Ops     []vecOp  `json:"ops"`
 	Hashes  []uint32 `json:"hashes"`  // after every 10th step
 	Burning []int    `json:"burning"` // burning count after every 10th step
@@ -62,6 +64,9 @@ func runScenario(sc *scenario) *Sim {
 	_ = json.Unmarshal([]byte(sc.Seed), &seed)
 	s := NewSim(seed, sc.WindDeg, synth{seed}, sc.Start)
 	s.Rain = sc.Rain
+	if sc.Climate >= 0 {
+		s.Weather = &Weather{Climate: weather.UniformClimate(sc.Climate), Override: -1}
+	}
 	for _, o := range sc.Ops {
 		s.Schedule(Op{Step: o.Step, Kind: o.Kind, Cell: o.Cell, Radius: o.Radius})
 	}
@@ -102,16 +107,19 @@ func scenarios() []*scenario {
 	start := int64(8813000123) // a realistic world-time step (> 2^32)
 	c := func(ix, iz int) uint32 { return CellID(ix, iz) }
 	return []*scenario{
-		{Name: "meadow-fire", Seed: "20261108", WindDeg: 270, Start: start, Steps: 300, Rain: &dry,
+		{Name: "meadow-fire", Seed: "20261108", WindDeg: 270, Start: start, Steps: 300, Rain: &dry, Climate: -1,
 			Ops: []vecOp{{start + 3, OpIgnite, c(900, 905), 1}}},
-		{Name: "two-fires-wind-north", Seed: "1234", WindDeg: 0, Start: start, Steps: 400, Rain: &dry,
+		{Name: "two-fires-wind-north", Seed: "1234", WindDeg: 0, Start: start, Steps: 400, Rain: &dry, Climate: -1,
 			Ops: []vecOp{{start + 3, OpIgnite, c(1100, 1100), 0}, {start + 40, OpIgnite, c(1130, 1090), 2}, {start + 120, OpExtinguish, c(1100, 1110), 6}}},
-		{Name: "rain-douses", Seed: "7", WindDeg: 135, Start: start, Steps: 300, Rain: &wet,
+		{Name: "rain-douses", Seed: "7", WindDeg: 135, Start: start, Steps: 300, Rain: &wet, Climate: -1,
 			Ops: []vecOp{{start + 1, OpIgnite, c(950, 950), 3}}},
-		{Name: "ice-and-fire", Seed: "20261108", WindDeg: 45, Start: start, Steps: 350, Rain: &dry,
+		{Name: "ice-and-fire", Seed: "20261108", WindDeg: 45, Start: start, Steps: 350, Rain: &dry, Climate: -1,
 			Ops: []vecOp{{start + 2, OpFreeze, c(1000, 1000), 6}, {start + 2, OpIgnite, c(1000, 1033), 2}, {start + 5, OpFreeze, c(1025, 1000), 4}, {start + 60, OpIgnite, c(1000, 1031), 1}}},
-		{Name: "seeded-rain", Seed: "99", WindDeg: 200, Start: 0, Steps: 400, Rain: nil,
+		{Name: "seeded-rain", Seed: "99", WindDeg: 200, Start: 0, Steps: 400, Rain: nil, Climate: -1,
 			Ops: []vecOp{{2, OpIgnite, c(700, 640), 2}, {2, OpIgnite, c(705, 650), 0}}},
+		// CR 030: rain where each burning cell is (a wet climate; fronts differ).
+		{Name: "weather-rain", Seed: "20261108", WindDeg: 90, Start: start, Steps: 500, Rain: nil, Climate: 1,
+			Ops: []vecOp{{start + 2, OpIgnite, c(700, 640), 3}, {start + 2, OpIgnite, c(1400, 1500), 3}, {start + 2, OpIgnite, c(260, 1800), 3}}},
 	}
 }
 

@@ -31,3 +31,17 @@ clients in Event 500), `Hour`, `IsNight` (18:30-06:00), `NightIndex`,
 TS twin: `client/src/systems/clock.ts`; both replay
 `testdata/clock_vectors.json` (`go test ./weather -run ClockVectors -update`
 rewrites it).
+
+## Dynamic weather (playtest 2, CR 030)
+
+`states.go` owns the weather now (`docs/cr/030-weather.md`): eleven states
+(clear .. sandstorm) per 512 m cell, from a climate voted over the atlas
+biome grid (`NewClimate`) and a severity roll per 2 x 2 front and 10-minute
+window (seeded phase per front, a per-cell nudge). `StateAtStep`, `Next`,
+`WindLevel`, `MoveSpeedMult`, `GlidePush`, `ArrowAccel`, the per-step
+`Field` the movement `Env` reads (`MoveField`), and the lightning schedule
+(`StrikeInSlot`, `StrikesBetween`, `TallSpot`). TS twin:
+`client/src/systems/weather/weather.ts`; both replay
+`testdata/weather_vectors.json` (`go test ./weather -run WeatherVectors
+-update` rewrites it). `IsRaining` / `RainingAtStep` stay: worlds without an
+atlas (the flat and scale worlds) and the clock vectors use them.

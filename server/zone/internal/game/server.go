@@ -111,6 +111,9 @@ type Config struct {
 	// WP15 night, demons and chemistry (night.go); nil = none. TimeOffsetS
 	// above is the world clock's offset (same env on every zone of a world).
 	Night *NightSetup
+	// Playtest 2 dynamic weather (CR 030, weather.go); nil = WP10's global
+	// rain stub, no lightning, snow, wind or cold (atlas-less worlds).
+	Weather *WeatherSetup
 	// Playtest 1 discovery-stamped difficulty (difficulty.go); nil = the
 	// WP13 region danger curve.
 	Difficulty *DifficultySetup
@@ -172,6 +175,7 @@ type Server struct {
 	cnt        contentGlue   // playtest 2 content (CR 023): content.go, content_quests.go, worldevents.go, dungeons.go
 	camp       campState     // playtest 2 camps (CR 025): camps.go, camps_chest.go, camps_store.go
 	steeds     steedGlue     // playtest 2 mounts (CR 027): mounts.go
+	wx         weatherState  // playtest 2 weather (CR 030): weather.go
 	petsG      petGlue       // playtest 2 pets (CR 029): pets.go
 	// WP11: next earshot hand-off (earshot.go).
 	earshotNext time.Time
@@ -366,6 +370,7 @@ func (s *Server) onTick() {
 	s.friendTravelTick(now) // playtest 2: travel-to-friend channels (friendtravel.go)
 	s.emotesTick(tick)      // playtest 2: looping emotes and lines in the water (emotes.go, fishing.go)
 	s.musicTick(tick)       // playtest 2: songs, the fireside, playing poses that ended (music.go)
+	s.weatherTick(tick)     // CR 030 weather: lightning, cold (weather.go)
 	s.phases.mark(phNight)
 
 	// Quantize once per entity and rebuild the grid; every client's snapshot

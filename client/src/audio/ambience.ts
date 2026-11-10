@@ -48,6 +48,12 @@ export interface AmbienceTargets {
   /** The weather submix (wind, rain, thunder, insects) through the shelter. */
   weatherGain: number;
   weatherLowpassHz: number;
+  /** Playtest 2 weather (CR 030): a storm's low roll 0..1, gusting 0..1, blowing sand 0..1. */
+  storm?: number;
+  gust?: number;
+  sand?: number;
+  /** Thunder comes from real strikes (the weather runtime), not the random rumbles of a downpour. */
+  syncedThunder?: boolean;
 }
 
 const ZERO: AmbienceTargets = { wind: 0, windSpeed: 0, rain: 0, roofRain: 0, insects: 0, water: 0, drips: 0, weatherGain: 1, weatherLowpassHz: 16000 };
@@ -61,6 +67,9 @@ export class Ambience {
   private water: GainNode;
   private weatherLp: BiquadFilterNode;
   private weather: GainNode;
+  private storm: GainNode;
+  private sand: GainNode;
+  private gustAt = 0;
   private sources: AudioScheduledSourceNode[] = [];
   private dropAt = 0;
   private chirpAt = 0;
@@ -132,6 +141,21 @@ export class Ambience {
     this.rain = ctx.createGain();
     this.rain.gain.value = 0;
     loop(white).connect(hp).connect(lp).connect(this.rain).connect(this.weatherLp);
+    // CR 030: a storm's low roll (brown noise under 140 Hz, swelling) and
+    // blowing sand (a hiss in the 2-5 kHz band), both in the weather submix.
+    const sl = ctx.createBiquadFilter();
+    sl.type = 'lowpass';
+    sl.frequency.value = 140;
+    this.storm = ctx.createGain();
+    this.storm.gain.value = 0;
+    loop(brown).connect(sl).connect(this.storm).connect(this.weatherLp);
+    const sb = ctx.createBiquadFilter();
+    sb.type = 'bandpass';
+    sb.frequency.value = 3200;
+    sb.Q.value = 0.7;
+    this.sand = ctx.createGain();
+    this.sand.gain.value = 0;
+    loop(white).connect(sb).connect(this.sand).connect(this.weatherLp);
     // rain on the roof (rendered texture), outside the weather submix: it is
     // the sound of the shelter itself.
     this.roof = ctx.createGain();
@@ -160,6 +184,8 @@ export class Ambience {
     this.roof.gain.setTargetAtTime(t.roofRain * 0.5, now, 0.35);
     this.insects.gain.setTargetAtTime(t.insects * 0.05, now, 2);
     this.water.gain.setTargetAtTime(t.water * 0.7, now, 0.2);
+    this.storm.gain.setTargetAtTime((t.storm ?? 0) * 0.35, now, 1.2);
+    this.sand.gain.setTargetAtTime((t.sand ?? 0) * 0.16, now, 0.8);
     // Shelter: quick enough to follow a doorway (~0.3 s), slow enough not to zipper.
     this.weather.gain.setTargetAtTime(t.weatherGain, now, 0.25);
     this.weatherLp.frequency.setTargetAtTime(Math.max(120, t.weatherLowpassHz), now, 0.25);
@@ -182,7 +208,16 @@ export class Ambience {
     }
     // Thunder while it pours: a strike somewhere 0.6-5 km away every
     // 25-80 s; its rumble arrives (and is as loud and dark) as far as it is.
-    if (t.rain > 0.6) {
+    // CR 030: in a gale the wind comes in gusts (a swell over a second or two).
+    if ((t.gust ?? 0) > 0.2 && nowMs > this.gustAt) {
+      const g = t.gust ?? 0;
+      const now = this.ctx.currentTime;
+      const peak = Math.min(1, t.wind + 0.35 * g) * 0.55;
+      this.wind.gain.setTargetAtTime(peak, now, 0.35);
+      this.wind.gain.setTargetAtTime(t.wind * 0.55, now + 0.9 + Math.random() * 1.2, 0.8);
+      this.gustAt = nowMs + 2500 + Math.random() * (6000 / g);
+    }
+    if (t.rain > 0.6 && !t.syncedThunder) {
       if (!this.thunderAt) this.thunderAt = nowMs + 8000 + Math.random() * 30000;
       else if (nowMs > this.thunderAt) {
         this.thunder(600 + Math.random() * 4400);
@@ -219,6 +254,22 @@ export class Ambience {
     s.start(t, Math.random() * this.brown.duration);
     s.stop(t + dur);
     this.thunders++;
+    // CR 030: a strike close by cracks before it rolls (a white-noise snap).
+    if (distanceM < 450 && this.white) {
+      const c = ctx.createBufferSource();
+      c.buffer = this.white;
+      const cf = ctx.createBiquadFilter();
+      cf.type = 'highpass';
+      cf.frequency.value = 900;
+      const cg = ctx.createGain();
+      const loud = Math.min(1, 1.2 - distanceM / 450) * 0.8;
+      cg.gain.setValueAtTime(0, t);
+      cg.gain.linearRampToValueAtTime(loud, t + 0.005);
+      cg.gain.exponentialRampToValueAtTime(0.0001, t + 0.35);
+      c.connect(cf).connect(cg).connect(this.weatherLp);
+      c.start(t, Math.random() * (this.white.duration - 0.5));
+      c.stop(t + 0.4);
+    }
   }
 
   /** A water drop in a cave (from WP09's caveAudio.ts): a falling sine blip, mostly reverb. */
