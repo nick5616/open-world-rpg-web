@@ -422,6 +422,10 @@ func (s *Server) devGive(sess *session, m *proto.Interact) (int32, string) {
 			err = ci.inv.Equip(first, items.ArmorSlot(def), &d)
 			note = ", equipped"
 		default:
+			if def.Kind == "tome" && e.cbt != nil && e.cbt.Profile.Knows(strings.TrimPrefix(key, "tome:")) {
+				note = ", already known (kept)"
+				break
+			}
 			err = s.useItem(sess, first, &d) // tomes learn, arrows load, draughts go on the drink key
 			note = ", used"
 		}

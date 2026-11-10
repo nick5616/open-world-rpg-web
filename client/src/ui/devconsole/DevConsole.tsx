@@ -362,6 +362,7 @@ function WorldTab() {
   const [tx, setTx] = useState(() => Math.round(localPlayer.pos.x));
   const [tz, setTz] = useState(() => Math.round(localPlayer.pos.z));
   const [hour, setHour] = useState(st.hour);
+  useEffect(() => setHour(st.hour), [st.hour]); // follow the zone's clock (1400)
   const [enemy, setEnemy] = useState(ENEMIES[0].id);
   const [count, setCount] = useState(3);
   const [lvl, setLvl] = useState(0);

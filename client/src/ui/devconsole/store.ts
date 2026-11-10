@@ -93,6 +93,13 @@ export function sendDev(s: DevSend): boolean {
     return false;
   }
   f(s);
+  if (s.action === DEV_ACT.flags) {
+    // Optimistic: the next toggle (a second command typed before 1400 came
+    // back) builds on this one instead of undoing it. 1400 confirms.
+    const status = { ...useDev.getState().status, flags: s.arg, frozen: (s.arg & DEV_FLAG.freezeTime) !== 0 };
+    applyDevFlags(status);
+    useDev.setState({ status });
+  }
   return true;
 }
 
