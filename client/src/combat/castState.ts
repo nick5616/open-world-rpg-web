@@ -55,6 +55,8 @@ const HELD_MAX_MS = 30000;
 const AIM_FRESH_MS = 2500;
 /** A drawn look unchanged this long is at rest (ms). */
 const LOOK_REST_MS = 150;
+/** A dash not held by then (ms after its start) is a plain burst: its record ends. */
+const DASH_UNHELD_MS = 600;
 
 const spellById = new Map(COMBAT.spells.map((s) => [s.id, s]));
 
@@ -228,7 +230,13 @@ export const castState = {
         if (h.kind === 'stream' || h.kind === 'charge') fx?.remoteChannelEnd(id);
       }
     }
-    if (s.dash) s.dash.holding = casting && !s.held && now - s.dash.at < HELD_MAX_MS;
+    if (s.dash) {
+      const hold = casting && !s.held && now - s.dash.at < HELD_MAX_MS;
+      // A dash whose hold ended, or that nobody held through its burst, is over: a later casting
+      // bit (a guard, a stream) is not its thrust.
+      if (!hold && (s.dash.holding || now - s.dash.at > DASH_UNHELD_MS)) s.dash = null;
+      else s.dash.holding = hold;
+    }
   },
 
   /** Your (or anyone's) held state ending by time: beams, stale holds. */

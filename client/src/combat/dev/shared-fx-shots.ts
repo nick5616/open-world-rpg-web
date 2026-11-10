@@ -361,7 +361,7 @@ async function main() {
     await aim(0, -0.3);
     await frameWatcher();
     await press(0);
-    await sleep(500);
+    await sleep(150);
     await capture('channels', 'whirling_blades', 'orbit: Whirling Blades', 800, false);
     await sleep(800);
     }

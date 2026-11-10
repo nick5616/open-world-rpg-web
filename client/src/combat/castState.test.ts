@@ -155,7 +155,12 @@ describe('replication decoders (castState.remoteEvent)', () => {
     castState.activity(10, 8, 0, 0, 0, 40);
     expect(castState.get(10).dash?.holding).toBe(true);
     castState.activity(10, 0, 0, 0, 0, 50);
-    expect(castState.get(10).dash?.holding).toBe(false);
+    expect(castState.get(10).dash).toBeNull(); // the hold ended: the dash is over
+    // a later casting bit (a sword's parry stance) is not a dash's thrust
+    remoteEvent(ev(214, { entityId: 10, targetId: CAST_FX_DASH | 1, data: aimData(0, 0) }), 1, 0, fx);
+    castState.activity(10, 0, 0, 0, 0, performance.now() + 700); // a plain burst, never held
+    castState.activity(10, 8, 0, 0, 0, performance.now() + 800);
+    expect(castState.get(10).dash).toBeNull();
   });
 
   it('aimOf: yours exactly; theirs is the precise aim moved by their drawn look since, the drawn look when stale', () => {
