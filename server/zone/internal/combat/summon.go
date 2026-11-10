@@ -95,10 +95,10 @@ func (w *World) summon(p *Player, a *Action) {
 	for i := 0; i < max(1, s.Summon.Count); i++ {
 		w.capSummons(p.ID, def, s.Summon.Max)
 		// In front of the caster (a turret where the caster aims, within range).
-		yaw := a.Yaw + float64(i)*0.8
+		yaw := a.Yaw - 0.9 - float64(i)*0.8 // front right, out of the line of fire
 		d := math.Min(2.5, s.Range)
 		if def.Behavior == "turret" {
-			d = w.aimDistance(a.Pos, a.Yaw, a.Pitch, s.Range)
+			d, yaw = w.aimDistance(a.Pos, a.Yaw, a.Pitch, s.Range), a.Yaw
 		}
 		x, z := a.Pos.X-math.Sin(yaw)*d, a.Pos.Z-math.Cos(yaw)*d
 		e := newEnemy(def.Body, p.Level, def.Element, nil, w.place(x, z, def.Body))

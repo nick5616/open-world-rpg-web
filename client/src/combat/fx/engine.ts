@@ -1449,7 +1449,10 @@ export class SpellFxEngine {
           cur.z = pos.z + off.z;
           const p = (prev[i] ??= { ...cur });
           this.at(cur.x, cur.y, cur.z, () => {
-            R.trail(v, p, cur, ob.orbRadius * 0.6, 1);
+            R.trail(v, p, cur, ob.orbRadius, 1.6);
+            // the orb itself: a hot core re-emitted every frame (reads as a solid spinning blade of light)
+            glowPool.emit(cur.x, cur.y, cur.z, 0, 0, 0, c.hotH, 0.07, ob.orbRadius * 1.1, 0, 0, SHAPE_GLOW);
+            glowPool.emit(cur.x, cur.y, cur.z, 0, 0, 0, c.mainH, 0.12, ob.orbRadius * 1.8, 0, 0, SHAPE_GLOW);
             if (Math.random() < 0.25) R.burst(cur.x, cur.y, cur.z, [c.hotH, c.mainH], 1, { speed: [0.2, 0.8], life: [0.2, 0.4], size: [0.06, 0.12] });
           });
           p.x = cur.x;
