@@ -42,6 +42,8 @@ func (w *World) Frame(p *Player, f proto.InputFrame, before movement.State) Fram
 		w.channelEvent(p, r, f, before, false) // observers simulate the stream from its seed: nothing per shot
 	case a.Spell != nil && a.Spell.Charge != nil:
 		w.castFXCharge(p, a, f, before)
+	case a.Move != nil && a.Charge > 0:
+		w.castFXCharge(p, a, f, before) // CR 022: a charged shot's draw, so others fly it at its speed
 	default:
 		w.castFX(p, a.ID, f, before)
 	}
@@ -115,8 +117,10 @@ func (w *World) channelEvent(p *Player, r FrameResult, f proto.InputFrame, befor
 	}
 }
 
-// castFXCharge is Event 214 for a released charge: the usual data plus u8
-// the held fraction (0..255), so observers draw the empowered shot.
+// castFXCharge is Event 214 for a released charge (a charge spell, or CR
+// 022 a charged weapon move: the bow's drawn shot, the spear's charge): the
+// usual data plus u8 the held fraction (0..255), so observers draw the
+// empowered shot.
 func (w *World) castFXCharge(p *Player, a *Action, f proto.InputFrame, before movement.State) {
 	data := binary.LittleEndian.AppendUint16(nil, f.Yaw)
 	data = binary.LittleEndian.AppendUint16(data, uint16(f.Pitch))

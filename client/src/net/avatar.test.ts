@@ -43,9 +43,12 @@ describe('remote avatar weapon (pt/ux)', () => {
 });
 
 describe('remote avatar animation (playtest 2)', () => {
-  it('Event 214 swings the sword arm; the weapon in the hand moves with it', async () => {
+  it('Event 214 swings the sword arm (through their caster record, CR 022); the weapon in the hand moves with it', async () => {
     const { Avatar } = await import('./avatar');
     const { animateFromEvent } = await import('./RemotePlayers');
+    const { castState, remoteEvent } = await import('../combat/castState');
+    const { followCaster } = await import('./avatarAnim');
+    const fx = { remoteCast: () => {}, remoteStream: () => {}, remoteChannelEnd: () => {}, chargeStart: () => {}, shieldBroken: () => {} };
     const a = new Avatar(7);
     const cam = new THREE.PerspectiveCamera();
     cam.position.set(10, 1.6, 24);
@@ -54,8 +57,10 @@ describe('remote avatar animation (playtest 2)', () => {
     a.root.updateMatrixWorld(true);
     const rest = new THREE.Box3().setFromObject(a.weaponMesh!).getCenter(new THREE.Vector3());
     const slash = COMBAT.moves.find((m) => m.key === 'sword_slash_1')!.id;
-    const routed = animateFromEvent({ kind: 214, entityId: 7, targetId: slash, value: 0, x: 0, y: 0, z: 0, data: new Uint8Array(4) } as unknown as ZoneEvent, new Map([[7, a]]));
+    followCaster(a.anim, castState.get(7), a.weaponKind); // first sight
+    const routed = remoteEvent({ kind: 214, entityId: 7, targetId: slash, value: 0, x: 0, y: 0, z: 0, data: new Uint8Array(4) } as unknown as ZoneEvent, 1, performance.now(), fx);
     expect(routed).toBe(true);
+    followCaster(a.anim, castState.get(7), a.weaponKind);
     expect(a.anim.current).toBe('slash');
     let top = -Infinity;
     for (let i = 0; i < 8; i++) {
@@ -64,8 +69,10 @@ describe('remote avatar animation (playtest 2)', () => {
       top = Math.max(top, new THREE.Box3().setFromObject(a.weaponMesh!).getCenter(new THREE.Vector3()).y);
     }
     expect(top).toBeGreaterThan(rest.y + 0.4); // raised over the shoulder
-    // other players' events and unknown kinds are ignored
-    expect(animateFromEvent({ kind: 214, entityId: 8, targetId: slash } as unknown as ZoneEvent, new Map([[7, a]]))).toBe(false);
+    // spell actions are their caster record's; this router only takes hurts, downs and teleports
+    expect(animateFromEvent({ kind: 214, entityId: 7, targetId: slash } as unknown as ZoneEvent, new Map([[7, a]]))).toBe(false);
+    expect(animateFromEvent({ kind: 222, entityId: 8, targetId: 1 } as unknown as ZoneEvent, new Map([[7, a]]))).toBe(false);
+    castState.clear();
   });
 
   it('LOD: full rig near, simplified to 80 m, no animation beyond', async () => {

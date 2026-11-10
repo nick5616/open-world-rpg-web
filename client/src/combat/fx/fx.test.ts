@@ -326,25 +326,35 @@ describe('the runtime drives the FX engine', () => {
     expect(byKind.summonAttack.slice(0, 2)).toEqual([77, 50]);
     expect(byKind.remoteCast[7]).toBe(1);
   });
-  it('remote casts route: dash variants, forms, spells (visual only, from the event origin)', () => {
+  it('remote casts route: dash variants, forms (on their first hit frame, as yours), spells, weapon moves (visual only, from the event origin)', () => {
+    vi.useFakeTimers({ toFake: ['performance'] });
     const e = new SpellFxEngine(0);
-    const spy = { castStart: vi.spyOn(e, 'castStart'), form: vi.spyOn(e, 'form'), castFrom: vi.spyOn(e, 'castFrom') };
+    const spy = { castStart: vi.spyOn(e, 'castStart'), form: vi.spyOn(e, 'form'), castFrom: vi.spyOn(e, 'castFrom'), swing: vi.spyOn(e, 'swing') };
     drawnRemotes.views = [{ id: 7, x: 1, y: 0, z: 1, kind: 1, healthPct: 100 } as RemoteView];
-    e.update(new THREE.PerspectiveCamera(), { width: 1280, height: 720, dpr: 1, maxPoint: 256 });
+    const cam = new THREE.PerspectiveCamera();
+    const frame = () => e.update(cam, { width: 1280, height: 720, dpr: 1, maxPoint: 256 });
+    frame();
     const dash = COMBAT.spells.find((s) => s.type === 'mobility')!;
     e.remoteCast(7, 0x8000 | dash.dash, 1, 0, 1, 0, 0);
     expect(spy.castStart.mock.calls[0][0].key).toBe(dash.key);
     e.remoteCast(7, COMBAT.forms[0].id, 1, 0, 1, 0, 0);
+    expect(spy.form).toHaveBeenCalledTimes(0);
+    vi.advanceTimersByTime(50); // FORM_STARTUP_STEPS (2) later
+    frame();
     expect(spy.form).toHaveBeenCalledTimes(1);
     e.remoteCast(7, 1005, 1, 0, 1, 0, 0);
     expect(spy.castFrom.mock.calls[0][0].key).toBe('fireball');
     e.remoteCast(8, 1001, 5, 0, 5, 0, 0); // a caster we don't draw: plays from the event origin
     expect(spy.castFrom.mock.calls[1][1]).toEqual({ x: 5, y: 0, z: 5 });
-    e.remoteCast(7, 1, 1, 0, 1, 0, 0); // a weapon attack: the avatar shows it
+    const slash = COMBAT.moves.find((m) => m.key === 'sword_slash_1')!;
+    e.remoteCast(7, slash.id, 1, 0, 1, 0, 0); // CR 022: a weapon swing draws its arc for others too
     expect(spy.castFrom).toHaveBeenCalledTimes(2);
+    expect(spy.swing).toHaveBeenCalledTimes(1);
+    expect(spy.swing.mock.calls[0].slice(0, 2)).toEqual([7, slash.id]);
     drawnRemotes.views = [];
     e.clear();
     e.dispose();
+    vi.useRealTimers();
   });
   it('every castable spell, every form and every status plays through the engine without errors', () => {
     vi.useFakeTimers({ toFake: ['performance'] });

@@ -2,16 +2,18 @@
 // players see (net/avatar.ts), fed from local state every frame instead of
 // snapshots: the drawn feet position and the view's yaw/pitch, ground speed,
 // the movement mode as Activity bits, health from the combat HUD, the
-// equipped weapon's look, and your actions straight from the combat runtime
-// (whatever started, the held secondary button for the parry / spear charge /
-// bow draw, mining swings, losing health). Hidden in first person and when
-// the third-person camera is pulled into the head.
+// equipped weapon's look, and your actions from your caster record (CR 022,
+// combat/castState.ts: whatever started, the stream / charge / guard you
+// hold, your held dash's flight, mining swings), posed by the same
+// followCaster other players' bodies use, plus losing health. Hidden in
+// first person and when the third-person camera is pulled into the head.
 
 import { useEffect, useMemo } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Activity } from '@lodestone/contracts';
 import { Avatar } from '../net/avatar';
-import { CAST_FX_GUARD, classifyAction, MINE_SPEC } from '../net/avatarAnim';
+import { followCaster } from '../net/avatarAnim';
+import { castState, CAST_FX_MINE } from '../combat/castState';
 import type { RemoteView } from '../net/interpolation';
 import { localActions, localPlayer, view, type MoveMode } from '../state/live';
 import { combatRuntime } from '../combat/link';
@@ -27,7 +29,6 @@ const ACTIVITY: Partial<Record<MoveMode, number>> = {
 };
 /** Offline (no combat), the first-person arms hold the ice wand: so does the body. */
 const OFFLINE_LOOK = packLook({ weapon: 'wand', material: '', gem: 1 });
-const STAFFY = new Set<WeaponKind>(['staff', 'wand']);
 
 export function LocalAvatar() {
   const camera = useThree((s) => s.camera);
@@ -36,8 +37,6 @@ export function LocalAvatar() {
     () => ({
       avatar: null as Avatar | null,
       v: { id: 0, x: 0, y: 0, z: 0, yaw: 0, pitch: 0, speed: 0, kind: 1, name: '', level: 0, healthPct: 100, activity: 0, partyId: 0, typeId: 0, ring: 'near', delayMs: 0, mode: 'interp' } as RemoteView,
-      started: -1,
-      held: false,
       mines: localActions.mineSwings,
       health: -1,
     }),
@@ -69,7 +68,15 @@ export function LocalAvatar() {
     }
     const show = view.third && !view.hideBody;
     a.root.visible = show;
-    if (!view.third) return; // first person: nothing to animate
+    const me = castState.get('self');
+    if (localActions.mineSwings !== st.mines) {
+      st.mines = localActions.mineSwings;
+      castState.action('self', CAST_FX_MINE, performance.now()); // CR 022: a swing on your caster record
+    }
+    if (!view.third) {
+      a.anim.seenActions = me.actions; // first person: nothing to animate (no replay on switching)
+      return;
+    }
 
     const v = st.v;
     v.id = id;
@@ -89,24 +96,12 @@ export function LocalAvatar() {
       // Lost health: flinch.
       if (st.health >= 0 && hud.health < st.health && hud.health > 0) a.anim.hurt();
       st.health = hud.health;
-      // Whatever started (attack, cast, form, mobility dash).
-      if (st.started < 0) st.started = rt.startedCount;
-      if (rt.startedCount !== st.started) {
-        st.started = rt.startedCount;
-        if (rt.lastStarted) a.anim.trigger(classifyAction(rt.lastStarted.id, kind));
-      }
-      // The held secondary: sword parry, spear charge, bow draw (staff/wand use it as a heavy attack).
-      const held = rt.timeline.heldSteps > 0 && !STAFFY.has(kind);
-      if (held && !st.held) a.anim.trigger(classifyAction(CAST_FX_GUARD, kind));
-      else if (!held && st.held) a.anim.release();
-      st.held = held;
+      // CR 022: what you started and hold (the runtime keeps your caster record), posed like everyone's.
+      followCaster(a.anim, me, kind);
     } else {
       v.healthPct = 100;
       v.typeId = OFFLINE_LOOK;
-    }
-    if (localActions.mineSwings !== st.mines) {
-      st.mines = localActions.mineSwings;
-      a.anim.trigger(MINE_SPEC);
+      followCaster(a.anim, me, 'wand');
     }
     a.update(v, camera, delta);
   });

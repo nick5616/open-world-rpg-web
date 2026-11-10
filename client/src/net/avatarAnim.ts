@@ -33,6 +33,7 @@
 import { Activity, COMBAT, DODGE_SPEED, MOVE_STEP_HZ, SPRINT_MULTIPLIER } from '@lodestone/contracts';
 import type { WeaponKind } from '../combat/weapons/look';
 import { ELEMENT_COLORS } from '../combat/events';
+import { CAST_FX_MINE, type CasterState } from '../combat/castState';
 
 /** CR 018: Event 214 targetId for "the secondary button went down" (sword parry, spear charge, bow draw). Go: combat.CastFXGuard. */
 export const CAST_FX_GUARD = 0x4001;
@@ -41,7 +42,11 @@ export const EV_MINE_SWING = 707;
 /** Event 214 targetId flag for a mobility dash variant (contracts/events.md). */
 export const CAST_FX_DASH = 0x8000;
 
-export type ActionKind = 'slash' | 'thrust' | 'spin' | 'plunge' | 'bow' | 'bolt' | 'bonk' | 'cast' | 'castStaff' | 'castBig' | 'castBeam' | 'shield' | 'form' | 'dash' | 'dodge' | 'parry' | 'charge' | 'draw' | 'mine';
+// CR 022: held dashes pose the whole body while their key holds them: jet
+// (Magma Dash: Iron Man flight along the velocity), skate (Glacier Step),
+// soar (Updraft's glide), rush (the burst dashes: Static Step's blinks,
+// Root Launch, Sunstep, Skip, Phase Slip).
+export type ActionKind = 'slash' | 'thrust' | 'spin' | 'plunge' | 'bow' | 'bolt' | 'bonk' | 'cast' | 'castStaff' | 'castBig' | 'castBeam' | 'shield' | 'form' | 'dash' | 'dodge' | 'parry' | 'charge' | 'draw' | 'mine' | 'jet' | 'skate' | 'soar' | 'rush';
 
 export interface ActionSpec {
   kind: ActionKind;
@@ -73,6 +78,17 @@ const spec = (key: string, kind: ActionKind, durMs: number, color: string | null
   return s;
 };
 
+const dashSustain = new Map(COMBAT.dashes.map((d) => [d.id, d.sustain?.kind ?? null]));
+const HELD_DASH_KIND: Record<string, ActionKind> = { jet: 'jet', skate: 'skate', glide: 'soar', blink: 'rush', dash: 'rush', phase: 'rush' };
+const HELD_KINDS = new Set<ActionKind>(['jet', 'skate', 'soar', 'rush']);
+
+/** CR 022: the held pose of a dash variant while its key holds it (null: it cannot be held). */
+export function heldDashSpec(variant: number): ActionSpec | null {
+  const k = dashSustain.get(variant);
+  if (!k) return null;
+  return spec(`held-dash:${variant}`, HELD_DASH_KIND[k] ?? 'rush', 30000, dashColor.get(variant) ?? null, 1, true);
+}
+
 /** The plain dodge (no event: derived from the speed jump). */
 export const DODGE_SPEC: ActionSpec = { kind: 'dodge', durMs: 380, color: null, dir: 1, hold: false };
 /** A pickaxe swing (Event 707, or the local miner). */
@@ -83,6 +99,7 @@ export const MINE_SPEC: ActionSpec = { kind: 'mine', durMs: 520, color: null, di
  * 0x8000, or CAST_FX_GUARD) looks like on a player holding `weapon`.
  */
 export function classifyAction(id: number, weapon: WeaponKind | null): ActionSpec {
+  if (id === CAST_FX_MINE) return MINE_SPEC;
   if (id === CAST_FX_GUARD) {
     if (weapon === 'spear') return spec('guard:spear', 'charge', 2500, null, 1, true);
     if (weapon === 'bow') return spec('guard:bow', 'draw', 3000, null, 1, true);
@@ -264,6 +281,11 @@ export class AvatarAnimator {
     return this.action ? this.action.kind : null;
   }
 
+  /** CR 022 (followCaster): the caster record's action counter seen, and the held pose shown. */
+  seenActions = 0;
+  heldSpec: ActionSpec | null = null;
+  heldId = 0;
+
   /** Start an action now (replaces the one playing; a release ends a held draw/charge). */
   trigger(s: ActionSpec): void {
     // A shot released from a held draw looses at once instead of drawing again.
@@ -278,8 +300,13 @@ export class AvatarAnimator {
 
   /** A held draw/charge/parry ended without an attack (button released). */
   release(): void {
-    if (this.action?.hold) this.action = null;
+    if (this.action?.hold) {
+      if (HELD_KINDS.has(this.action.kind)) this.heldEndedAt = this.time;
+      this.action = null;
+    }
   }
+  /** When a held dash pose last ended (its carry is not a dodge). */
+  private heldEndedAt = -1e9;
 
   /** An enemy hit them. */
   hurt(): void {
@@ -356,7 +383,7 @@ export class AvatarAnimator {
     const sp = inp.speed;
 
     // A plain dodge: a sudden burst of ground speed.
-    if (alive && !gliding && !climbing && !swimming && sp > DODGE_MIN_SPEED && sp - this.speedAvg > DODGE_JUMP && now - this.lastDodge > 0.45 && this.action?.kind !== 'dash') this.trigger(DODGE_SPEC);
+    if (alive && !gliding && !climbing && !swimming && sp > DODGE_MIN_SPEED && sp - this.speedAvg > DODGE_JUMP && now - this.lastDodge > 0.45 && this.action?.kind !== 'dash' && !(this.action && HELD_KINDS.has(this.action.kind)) && now - this.heldEndedAt > 0.6) this.trigger(DODGE_SPEC);
     this.speedAvg += (sp - this.speedAvg) * (1 - Math.exp(-dt / 0.15));
 
     // Landing dip.
@@ -622,6 +649,69 @@ export class AvatarAnimator {
         gl = gr = true;
         break;
       }
+      case 'jet': {
+        // Iron Man: the body lies along the flight (upright climbing, flat in
+        // level flight, head first in a dive), arms back and down thrusting,
+        // legs straight together, the head kept toward the flight.
+        const hs = Math.hypot(this.vx, this.vz);
+        const elev = Math.atan2(this.vy, Math.max(0.5, hs));
+        const lean = -(Math.PI / 2 - elev) * 0.92;
+        p.bodyPitch += (lean - p.bodyPitch) * w;
+        p.bodyRoll *= 1 - w;
+        p.headPitch += (clamp(-lean * 0.65, 0, 1.2) - p.headPitch) * w;
+        p.torsoPitch *= 1 - w;
+        set(R, -0.3, 0.32, 0.05);
+        set(L, -0.3, 0.32, 0.05);
+        set(this.t.r, 0.04, 0.03, 0.08);
+        mix(p.legR, this.t.r, w);
+        set(this.t.r, -0.04, 0.03, 0.12);
+        mix(p.legL, this.t.r, w);
+        glow = 1;
+        gl = gr = true;
+        break;
+      }
+      case 'skate': {
+        // Long skating strides on the frozen path, leaning in, arms swinging wide.
+        const s = Math.sin(this.time * 7);
+        p.bodyPitch += (-0.42 - p.bodyPitch) * w;
+        set(R, 0.2 - 0.7 * s, 0.45, 0.4);
+        set(L, 0.2 + 0.7 * s, 0.45, 0.4);
+        set(this.t.r, 0.35 + 0.45 * s, 0.25 + 0.15 * Math.max(0, -s), 0.55 - 0.3 * s);
+        mix(p.legR, this.t.r, w);
+        set(this.t.r, 0.35 - 0.45 * s, 0.25 + 0.15 * Math.max(0, s), 0.55 + 0.3 * s);
+        mix(p.legL, this.t.r, w);
+        glow = 0.6;
+        gl = gr = true;
+        break;
+      }
+      case 'soar': {
+        // A held glide: arms spread wide like wings, body flat, legs trailing.
+        p.bodyPitch += (-1.1 - p.bodyPitch) * w;
+        p.headPitch += (0.9 - p.headPitch) * w;
+        set(R, Math.PI / 2, 1.25, 0.05);
+        set(L, Math.PI / 2, 1.25, 0.05);
+        set(this.t.r, -0.15, 0.12, 0.1);
+        mix(p.legR, this.t.r, w);
+        mix(p.legL, this.t.r, w);
+        glow = 0.7;
+        gl = gr = true;
+        break;
+      }
+      case 'rush': {
+        // A sustained burst: low forward lean, arms swept back, legs driving.
+        const s = Math.sin(this.time * 14);
+        p.bodyPitch += (-0.7 - p.bodyPitch) * w;
+        p.headPitch += (0.5 - p.headPitch) * w;
+        set(R, -0.95, 0.3, 0.15);
+        set(L, -0.95, 0.3, 0.15);
+        set(this.t.r, 0.6 * s + 0.3, 0.05, 0.6 + 0.6 * Math.max(0, s));
+        mix(p.legR, this.t.r, w);
+        set(this.t.r, -0.6 * s + 0.3, 0.05, 0.6 + 0.6 * Math.max(0, -s));
+        mix(p.legL, this.t.r, w);
+        glow = 0.9;
+        gl = gr = true;
+        break;
+      }
       case 'dodge': {
         // A roll in the direction of travel; tucked in the middle.
         const k = smooth(0.04, 0.92, u);
@@ -665,4 +755,68 @@ export class AvatarAnimator {
       p.glowColor = a.color;
     }
   }
+}
+
+/** An action older than this (ms) is not played when an avatar first follows its record. */
+const ACTION_FRESH_MS = 1500;
+
+/** What followCaster reads of a caster record (combat/castState.ts). */
+export type CasterView = Pick<CasterState, 'action' | 'actions' | 'held' | 'dash'>;
+
+/** The held pose a caster record asks for now (null: none). */
+export function heldSpecOf(st: CasterView, weapon: WeaponKind | null): ActionSpec | null {
+  const h = st.held;
+  if (h) {
+    switch (h.kind) {
+      case 'stream':
+        return classifyChannel(h.id, 1, weapon);
+      case 'charge':
+        return classifyChannel(h.id, 2, weapon);
+      case 'guard': {
+        const g = classifyAction(CAST_FX_GUARD, weapon);
+        return g.hold ? g : null; // a sword's parry is a short stance (its press played it)
+      }
+      default:
+        return null; // a beam: its castBeam action lasts its duration
+    }
+  }
+  if (st.dash?.holding) return heldDashSpec(st.dash.variant);
+  return null;
+}
+
+/**
+ * CR 022: drive an avatar from its caster's shared state, every frame. The
+ * SAME call poses your own third-person body (scene/LocalAvatar.tsx, fed by
+ * your prediction) and every other player's (RemotePlayers.tsx, fed by
+ * replication): a new action plays its pose, a held stream / charge / guard
+ * holds its pose until it ends (a stream's end flicks the hand), a held dash
+ * flies / skates / soars / rushes while its key holds it, and an action
+ * played over a hold returns to the hold when it ends.
+ */
+export function followCaster(anim: AvatarAnimator, st: CasterView | undefined, weapon: WeaponKind | null, now = performance.now()): void {
+  if (!st) {
+    anim.seenActions = 0; // a record made later counts from its first action
+    if (anim.heldSpec) {
+      anim.release();
+      anim.heldSpec = null;
+    }
+    return;
+  }
+  if (st.actions !== anim.seenActions) {
+    anim.seenActions = st.actions;
+    // (an action from before this body was drawn is not replayed)
+    if (st.action && now - st.action.at < ACTION_FRESH_MS) anim.trigger(classifyAction(st.action.id, weapon));
+  }
+  const want = heldSpecOf(st, weapon);
+  const prev = anim.heldSpec;
+  if (want !== prev) {
+    anim.heldSpec = want;
+    if (want) {
+      anim.heldId = st.held?.id ?? 0;
+      anim.trigger(want);
+    } else if (prev) {
+      anim.release();
+      if (prev.kind === 'cast' || prev.kind === 'castStaff') anim.trigger(classifyChannel(anim.heldId, 0, weapon)); // the stream's release flick
+    }
+  } else if (want && anim.current === null) anim.trigger(want); // an action played over the hold ended
 }

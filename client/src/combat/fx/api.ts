@@ -72,4 +72,8 @@ export const spellFx = {
   summonAttack: (...a: Args<'summonAttack'>) => call('summonAttack', ...a),
   summonAppear: (...a: Args<'summonAppear'>) => call('summonAppear', ...a),
   summonAura: (...a: Args<'summonAura'>) => call('summonAura', ...a),
+  // CR 022 shared spell visuals
+  channelBeam: (...a: Args<'channelBeam'>) => call('channelBeam', ...a),
+  swing: (...a: Args<'swing'>) => call('swing', ...a),
+  shieldBroken: (...a: Args<'shieldBroken'>) => call('shieldBroken', ...a),
 };

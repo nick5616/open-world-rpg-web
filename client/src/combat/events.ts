@@ -31,6 +31,8 @@ export const EV = {
   channel: 223,
   detonate: 224,
   summonAttack: 225,
+  // CR 022 shared spell visuals: the precise aim of a held action (and a keepalive)
+  held: 226,
 } as const;
 
 export const INTERACT_COMBAT = 50;

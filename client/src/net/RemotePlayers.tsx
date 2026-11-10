@@ -3,10 +3,13 @@
 // inside GameCanvas by the networked play screen.
 //
 // Playtest 2: other players' actions drive their avatars' animation
-// (avatarAnim.ts) from the zone Events that already reach us: 214 (an
-// attack, cast, form, dash or CR 018's "secondary pressed" started), 222 (an
-// enemy hit them), 203 (downed), 707 (CR 018: a pickaxe swing), 2 (a
-// teleport: forget their motion history).
+// (avatarAnim.ts). CR 022 (shared spell visuals): their spell and action
+// poses come from their caster record (combat/castState.ts), the same state
+// your own third-person body is posed from: replication fills it from Events
+// 214 / 223 / 226 / 707 and, every frame here, their drawn Activity bits
+// (the casting bit: a held action or a held dash's thrust). Events 222 (an
+// enemy hit them), 203 (downed) and 2 (a teleport: forget their motion
+// history) still go straight to the animator.
 
 import { useEffect, useMemo } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
@@ -14,34 +17,28 @@ import * as THREE from 'three';
 import { EntityKind, type Event as ZoneEvent } from '@lodestone/contracts';
 import { netStats } from '../state/live';
 import { Avatar, FullRigBudget } from './avatar';
-import { classifyAction, classifyChannel, EV_MINE_SWING, MINE_SPEC } from './avatarAnim';
+import { EV_MINE_SWING, followCaster } from './avatarAnim';
 import { drawnRemotes } from './netStore';
 import type { RemoteView } from './interpolation';
 import type { ZoneSession } from './zoneSession';
 import { EV } from '../combat/events';
 import { DEBUG } from '../config';
 import { castHooks } from '../combat/fx/castOrigin';
+import { castState, remoteEvent } from '../combat/castState';
+import { spellFx } from '../combat/fx/api';
+import { unpackLook } from '../combat/weapons/look';
 
 /** Route one zone Event to the avatar it animates (exported for tests). */
 export function animateFromEvent(e: ZoneEvent, avatars: ReadonlyMap<number, Avatar>): boolean {
   const a = avatars.get(e.entityId);
   if (!a) return false;
   switch (e.kind) {
-    case EV.cast:
-      a.anim.trigger(classifyAction(Number(e.targetId), a.weaponKind));
-      return true;
-    case EV.channel: // CR 020: a stream or charge holds the casting pose
-      a.anim.trigger(classifyChannel(Number(e.targetId), e.value, a.weaponKind));
-      return true;
     case EV.strikeHit:
       a.anim.hurt();
       return true;
     case EV.playerDowned:
       a.anim.downedEvent();
       a.anim.hurt();
-      return true;
-    case EV_MINE_SWING:
-      a.anim.trigger(MINE_SPEC);
       return true;
     case 2: // core teleport
       a.anim.resetMotion();
@@ -62,8 +59,13 @@ export function RemotePlayers({ session }: { session: ZoneSession }) {
   useEffect(() => {
     // Playtest 2: spells leave another player's staff/wand tip or off hand (combat/fx/castOrigin.ts).
     castHooks.weaponOf = (id) => avatars.get(id)?.weaponKind ?? null;
+    castHooks.gemOf = (id) => {
+      const a = avatars.get(id);
+      return a ? unpackLook(a.weaponType).gem : -1;
+    };
     return () => {
       castHooks.weaponOf = null;
+      castHooks.gemOf = null;
       for (const a of avatars.values()) a.dispose();
       avatars.clear();
     };
@@ -78,7 +80,9 @@ export function RemotePlayers({ session }: { session: ZoneSession }) {
 
   useEffect(() => {
     const l = (e: ZoneEvent) => {
-      if (e.kind === EV.cast || e.kind === EV.channel || e.kind === EV.strikeHit || e.kind === EV.playerDowned || e.kind === EV_MINE_SWING || e.kind === 2) animateFromEvent(e, avatars);
+      if (e.kind === EV.strikeHit || e.kind === EV.playerDowned || e.kind === 2) animateFromEvent(e, avatars);
+      // CR 022: a pickaxe swing is an action on their caster record (the combat runtime routes the spell Events).
+      else if (e.kind === EV_MINE_SWING) remoteEvent(e, session.welcome?.entityId ?? 0, performance.now(), spellFx);
     };
     session.eventListeners.add(l);
     return () => {
@@ -89,6 +93,7 @@ export function RemotePlayers({ session }: { session: ZoneSession }) {
   useFrame((_, delta) => {
     session.views(delta * 1000, views);
     seen.clear();
+    const now = performance.now();
     // Playtest 2: at most ~32 full animated rigs; a dense crowd shrinks their radius.
     const fullM = budget.rigs.step(budget.full);
     budget.full = 0;
@@ -101,14 +106,19 @@ export function RemotePlayers({ session }: { session: ZoneSession }) {
         avatars.set(v.id, a);
         group.add(a.root);
       }
+      // CR 022: their caster record (drawn look, casting bit, interpolation delay), then the pose from it.
+      castState.activity(v.id, v.activity, v.yaw, v.pitch, v.delayMs, now, spellFx);
+      followCaster(a.anim, castState.peek(v.id), a.weaponKind);
       a.update(v, camera, delta, fullM);
       if (a.animLevel === 0) budget.full++;
     }
+    castState.flush(now); // replication events whose drawn moment has come
     for (const [id, a] of avatars) {
       if (!seen.has(id)) {
         group.remove(a.root);
         a.dispose();
         avatars.delete(id);
+        castState.forget(id);
       }
     }
     drawnRemotes.views = views.map((v) => ({ ...v }));
