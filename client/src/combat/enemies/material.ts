@@ -18,6 +18,13 @@
 // warm-up (warm.ts).
 
 import * as THREE from 'three';
+import { installStyleChunks } from '../../world/style/styleShader';
+
+// Playtest 2 graphics styles: the enemy materials are MeshStandardMaterials, so the
+// style chunks (toon bands and rim light in RE_Direct, the retro vertex snap) and
+// the shared lsStyle / lsRetro uniforms reach them like every other lit material;
+// installing here guarantees the chunks are patched before an enemy program compiles.
+installStyleChunks();
 
 export type EnemyMatKind = 'opaque' | 'jelly' | 'spectral';
 
@@ -31,7 +38,9 @@ export const enemyUniforms = {
 const mats = new Map<string, THREE.MeshStandardMaterial>();
 
 function patch(m: THREE.MeshStandardMaterial, kind: EnemyMatKind): void {
-  m.onBeforeCompile = (shader) => {
+  const styleHook = THREE.Material.prototype.onBeforeCompile; // the style uniforms (styleShader.ts)
+  m.onBeforeCompile = (shader, renderer) => {
+    styleHook.call(m, shader, renderer);
     Object.assign(shader.uniforms, enemyUniforms);
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', '#include <common>\nattribute float glow;\nattribute vec4 iFx;\nvarying float vEGlow;\nvarying vec4 vEFx;\nvarying vec3 vELocal;')

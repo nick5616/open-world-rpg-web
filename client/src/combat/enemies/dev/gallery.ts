@@ -23,11 +23,20 @@ import { modelSpec, summonSpec, contractSummons } from '../spec';
 import { enemyInfo } from '../../events';
 import { enemyWarmObjects } from '../warm';
 import { pushNumber, fxQueue, type DamageNumber } from '../../store';
+import { lsRetro, lsStyle } from '../../../world/style/styleShader';
+import { STYLES, isVisualStyle } from '../../../world/style/styles';
 
 const q = new URLSearchParams(location.search);
 const tier = (q.get('tier') ?? 'high') as QualityTier;
 const night = q.has('night');
 useQualityStore.getState().setSetting(tier);
+// ?style=lodestone|painterly|grim|retro: the graphics style's material hooks (toon, rim, vertex snap; not its screen pass)
+const styleKey = q.get('style');
+if (styleKey && isVisualStyle(styleKey)) {
+  const st = STYLES[styleKey];
+  lsStyle.set([st.toon, st.rim, st.toonBands, st.toonSoft]);
+  lsRetro.set(st.retro ? [st.retro.snap[0], st.retro.snap[1], st.retro.affine, 1] : [0, 0, 0, 0]);
+}
 
 const h = (x: number, z: number) => 0.25 * Math.sin(x * 0.11) * Math.cos(z * 0.09) + 0.15 * Math.sin(x * 0.05 + z * 0.07);
 

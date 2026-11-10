@@ -3,7 +3,7 @@
 // chain, synthetic snapshot views, headless Chromium on the GPU).
 //
 //   npx vite-node src/combat/enemies/dev/enemy-shots.ts          (from client/)
-//   LODESTONE_ENEMY_ONLY=families,crowd,numbers,bench ...         a subset
+//   LODESTONE_ENEMY_ONLY=families,styles,crowd,numbers,bench ...  a subset
 //   LODESTONE_ENEMY_URL=http://127.0.0.1:5291 ...                 an already running Vite
 //   LODESTONE_ENEMY_GROUPS=slimes,beasts ...                      some family sheets only
 //
@@ -122,6 +122,18 @@ async function main() {
         await sheet(page, path.join(out, `pt2-enemy-models-${file}.jpg`), title, imgs, 3, 640, 360);
         await open();
       }
+    }
+
+    if (want('styles')) {
+      // the graphics styles reach the enemy materials (toon bands, rim light, retro vertex snap)
+      const imgs: { label: string; img: Buffer }[] = [];
+      for (const style of ['none', 'lodestone', 'painterly', 'grim', 'retro']) {
+        await open(`tier=high${style === 'none' ? '' : `&style=${style}`}`);
+        await page.evaluate(() => E().show(['slime', 'wolf', 'cutthroat', 'gloamling', 'crystal_golem']));
+        await sleep(600);
+        imgs.push({ label: style === 'none' ? 'no style hooks (before the graphics styles)' : `${style} (material hooks)`, img: await shot(page) });
+      }
+      await sheet(page, path.join(out, 'pt2-enemy-models-styles.jpg'), 'Graphics styles on the enemy materials (toon / rim / vertex snap; the screen pass is not in the gallery)', imgs, 3, 640, 360);
     }
 
     if (want('numbers')) {
