@@ -69,10 +69,11 @@ describe('quality presets', () => {
     expect(grassFor(0)).toEqual({ grassDistance: 0, grassDensity: 0 });
     expect(grassFor(1)).toEqual({ grassDistance: 36, grassDensity: 2.4 });
   });
-  it('the spell screen pass runs from Medium up, never in Retro', () => {
+  it('the spell screen pass runs from Medium up, in every style', () => {
     expect(resolveGraphics('low', 'low', {}, 'lodestone').spellScreen).toBe(false);
     expect(resolveGraphics('high', 'high', {}, 'lodestone').spellScreen).toBe(true);
-    expect(resolveGraphics('high', 'high', {}, 'retro').spellScreen).toBe(false);
+    for (const s of STYLE_ORDER) expect(resolveGraphics('high', 'high', {}, s).spellScreen).toBe(true);
+    expect(resolveGraphics('low', 'low', {}, 'retro').spellScreen).toBe(false);
   });
 });
 

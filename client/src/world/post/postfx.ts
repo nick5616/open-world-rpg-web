@@ -157,7 +157,7 @@ export interface PostConfig {
   godRays: boolean;
   /** Playtest 2 graphics settings: an FXAA pass after the main one. */
   fxaa?: boolean;
-  /** Playtest 2: the spell screen effect (medium and up, not Retro; combat/fx/screen.ts). */
+  /** Playtest 2: the spell screen effect (medium and up, every style; combat/fx/screen.ts). */
   spellScreen?: boolean;
 }
 

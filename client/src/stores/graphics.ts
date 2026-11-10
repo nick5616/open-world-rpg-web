@@ -38,7 +38,7 @@ export interface ResolvedGraphics {
   maxLights: number;
   /** Terrain texture anisotropy. */
   anisotropy: number;
-  /** Spell screen effect (shockwave/shake/flash, combat/fx/screen.ts) in the post chain: medium and up, not Retro. */
+  /** Spell screen effect (shockwave/shake/flash/shield tint, combat/fx/screen.ts) in the post chain: medium and up, every style (Retro too: the dash shake and your shield tint are feedback, not decoration). */
   spellScreen: boolean;
   retro: RetroProfile | null;
 }
@@ -103,7 +103,7 @@ export function resolveGraphics(tier: QualityTier, shaderTier: QualityTier, over
     normalMaps: sp.normalMaps,
     maxLights: sp.maxLights,
     anisotropy: TIER_ORDER.indexOf(shaderTier) >= TIER_ORDER.indexOf('high') ? 8 : 4,
-    spellScreen: shaderTier !== 'low' && !retro,
+    spellScreen: shaderTier !== 'low',
     retro,
   };
 }
