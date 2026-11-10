@@ -81,7 +81,7 @@ function othersBusy(): boolean {
   const cave = q('[data-testid="cave-hud"]');
   const loot = q('[data-testid="loot-prompt"]');
   const townPanel = q('[data-testid="town-panel"]');
-  return !!town?.textContent || !!cave?.textContent || !!loot?.textContent || (!!townPanel && townPanel.style.display !== 'none') || !!q('[data-ui-panel]');
+  return !!town?.textContent || !!cave?.textContent || !!loot?.textContent || (!!townPanel && townPanel.style.display !== 'none') || [...document.querySelectorAll<HTMLElement>('[data-ui-panel]')].some((el) => el.getClientRects().length > 0 && el.dataset.testid !== 'tablet-reader');
 }
 
 function useTicker(ms: number) {
@@ -103,7 +103,7 @@ function EventTracker() {
   const done = e.phase !== EVENT_PHASE.active;
   const color = done ? (e.phase === EVENT_PHASE.won ? '#9fe08a' : '#ff9a7a') : '#ff8f6b';
   return (
-    <div data-testid="world-event" style={{ position: 'fixed', top: 58, left: '50%', transform: 'translateX(-50%)', width: 'min(440px, 70vw)', textAlign: 'center', pointerEvents: 'none', zIndex: 14, color: '#f8efe0', textShadow: '0 1px 3px #000, 0 0 8px rgba(0,0,0,0.8)' }}>
+    <div data-testid="world-event" style={{ position: 'fixed', top: 92, left: '50%', transform: 'translateX(-50%)', width: 'min(440px, 70vw)', textAlign: 'center', pointerEvents: 'none', zIndex: 14, color: '#f8efe0', textShadow: '0 1px 3px #000, 0 0 8px rgba(0,0,0,0.8)' }}>
       <div style={{ font: '700 12px system-ui', letterSpacing: 3, textTransform: 'uppercase', color }}>{done ? (e.phase === EVENT_PHASE.won ? 'World event won' : 'World event over') : 'World event'}</div>
       <div style={{ font: '600 20px Georgia, serif', color: '#ffe2c4' }}>✦ {e.name}</div>
       <div style={{ fontSize: 13, opacity: 0.92 }}>{e.text}</div>

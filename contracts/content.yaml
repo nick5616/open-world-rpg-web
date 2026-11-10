@@ -211,7 +211,7 @@ events:
     starfall:
       name: Starfall
       weight: 3
-      announce: "A star has fallen near {where}! Something guards the shard."
+      announce: "A star has fallen {where}! Something guards the shard."
       success: "The starfall shard is yours to take."
       fail: "The shard's glow fades and it crumbles to ash."
       durationS: 480
@@ -222,7 +222,7 @@ events:
     caravan:
       name: Caravan Ambush
       weight: 3
-      announce: "Bandits are attacking a merchant caravan near {where}! Defend it."
+      announce: "Bandits are attacking a merchant caravan {where}! Defend it."
       success: "The caravan rolls on. The merchants won't forget this."
       fail: "The caravan is lost. The bandits scatter with the goods."
       durationS: 300
@@ -235,7 +235,7 @@ events:
     behemoth:
       name: The Wandering Behemoth
       weight: 2
-      announce: "The Thornhide Behemoth is on the move near {where}. Bring friends."
+      announce: "The Thornhide Behemoth is on the move {where}. Bring friends."
       success: "The Behemoth falls with a sound like a felled oak."
       fail: "The Behemoth wanders off into the hills."
       durationS: 900
@@ -248,7 +248,7 @@ events:
       name: The Wild Hunt
       weight: 3
       night: true
-      announce: "Horns in the dark near {where}... The Wild Hunt rides tonight."
+      announce: "Horns in the dark {where}... The Wild Hunt rides tonight."
       success: "The Huntsman's horn is silent. The hunt is broken."
       fail: "The horns fade toward the hills. The hunt passes on."
       durationS: 360
@@ -258,7 +258,7 @@ events:
     glintfox:
       name: The Glintfox
       weight: 2
-      announce: "A Glintfox has been spotted near {where}, its tail full of stolen gems! Catch it before it vanishes."
+      announce: "A Glintfox has been spotted {where}, its tail full of stolen gems! Catch it before it vanishes."
       success: "The Glintfox drops its hoard!"
       fail: "The Glintfox slips away into the brush."
       durationS: 90

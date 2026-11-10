@@ -7,7 +7,7 @@
 
 import { create } from 'zustand';
 import type { Event as ZoneEvent } from '@lodestone/contracts';
-import { CONTENT } from '@lodestone/contracts';
+import { COMBAT, CONTENT } from '@lodestone/contracts';
 import { CEV, CONTENT_REFUSAL, EVENT_PHASE, decodeJSON, decodePlaces, decodeSync, decodeText, decodeVault, decodeWorldEvent, type ContentSync, type HerbPatch, type TabletPlace, type VaultView, type WorldEventView } from './events';
 import { playerTitles } from './titles';
 
@@ -66,7 +66,7 @@ const initial = (): Omit<ContentState, 'actions'> => ({
   stats: { events: 0, places: 0, feats: 0 },
 });
 
-const enemyName = (key: string) => key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+const enemyName = (key: string) => COMBAT.enemies.find((e) => e.key === key)?.name ?? key.replace(/_/g, ' ');
 
 /** Pure: the state change for one zone Event (null = not ours). */
 export function reduceContentEvent(s: ContentState, ev: ZoneEvent, now: number, selfId = 0): Partial<ContentState> | null {

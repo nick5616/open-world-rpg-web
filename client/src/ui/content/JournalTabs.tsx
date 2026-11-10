@@ -45,7 +45,7 @@ function Bestiary() {
     <div data-testid="journal-bestiary" style={{ display: 'grid', gridTemplateColumns: 'minmax(150px, 210px) 1fr', gap: 12, height: '100%' }}>
       <div style={{ overflowY: 'auto', borderRight: '1px solid rgba(255,209,102,0.2)', paddingRight: 6 }}>
         <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 6 }}>{known.length} of {entries.length} creatures</div>
-        {entries.map((e) => (
+        {[...known, ...entries.filter((e) => !e.unlocked)].map((e) => (
           <div key={e.key} onClick={() => e.unlocked && setSel(e.key)} style={{ padding: '3px 6px', borderRadius: 3, fontSize: 13, cursor: e.unlocked ? 'pointer' : 'default', opacity: e.unlocked ? 1 : 0.35, background: cur?.key === e.key ? 'rgba(255,209,102,0.15)' : 'transparent' }}>
             {e.unlocked ? (COMBAT.enemies.find((x) => x.id === e.enemyId)?.name ?? e.key) : '???'}
           </div>
@@ -56,14 +56,14 @@ function Bestiary() {
         {cur && def && (
           <div data-testid="codex-entry">
             <div style={{ font: '600 20px Georgia, serif', color: '#f6e7c0' }}>{def.name}</div>
-            <div style={{ fontSize: 12, opacity: 0.7, textTransform: 'capitalize' }}>{def.family} · {cur.habitat}</div>
+            <div style={{ fontSize: 12, opacity: 0.7 }}>{def.family[0].toUpperCase() + def.family.slice(1)} · {cur.habitat}</div>
             <p style={{ fontSize: 13, fontStyle: 'italic', color: '#e6d6ae' }}>{cur.lore}</p>
             <table style={{ fontSize: 13, borderSpacing: '10px 2px' }}>
               <tbody>
                 <tr><td style={{ opacity: 0.7 }}>Defeated</td><td style={{ color: GOLD }}>{cur.kills}</td></tr>
                 <tr><td style={{ opacity: 0.7 }}>Health (level 1)</td><td>{def.hp}</td></tr>
                 <tr><td style={{ opacity: 0.7 }}>Speed</td><td>{def.speed} m/s</td></tr>
-                <tr><td style={{ opacity: 0.7 }}>Element</td><td style={{ textTransform: 'capitalize' }}>{def.element < 8 ? ELEMENTS[def.element] : 'none (takes the land\'s element as an elite)'}</td></tr>
+                <tr><td style={{ opacity: 0.7 }}>Element</td><td style={{ textTransform: def.element < 8 ? 'capitalize' : 'none' }}>{def.element < 8 ? ELEMENTS[def.element] : 'None (an elite takes the land\'s element)'}</td></tr>
                 {def.element < 8 && (
                   <>
                     <tr><td style={{ opacity: 0.7 }}>Weak to</td><td style={{ color: '#9fe08a', textTransform: 'capitalize' }}>{weaknesses(def.element).weakTo.join(', ')}</td></tr>

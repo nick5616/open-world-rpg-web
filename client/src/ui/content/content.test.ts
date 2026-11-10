@@ -65,7 +65,7 @@ describe('content events', () => {
     expect(s.sync.kills.slime).toBe(3);
     s = { ...s, ...reduceContentEvent(s, ev(CEV.codex, 'wolf'), 10) };
     expect(s.sync.kills.wolf).toBe(1);
-    expect(s.notes.at(-1)?.text).toBe('Wolf');
+    expect(s.notes.at(-1)?.text).toBe('Mossjaw Wolf');
     s = { ...s, ...reduceContentEvent(s, ev(CEV.feat, { key: 'slimebane', name: 'Slimebane', desc: 'Defeat 100 slimes', title: 'Slimebane', gold: 40, xp: 200 }), 20) };
     expect(s.sync.feats).toContain('slimebane');
     expect(s.sync.title).toBe('slimebane');

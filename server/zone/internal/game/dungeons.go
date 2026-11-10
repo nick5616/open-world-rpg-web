@@ -16,6 +16,7 @@ package game
 import (
 	"encoding/json"
 	"math"
+	"sort"
 	"strconv"
 
 	"lodestone/server/pkg/combatdefs"
@@ -54,9 +55,14 @@ type liveVault struct {
 }
 
 type vaultsState struct {
-	plans map[int]*content.Vault
-	live  map[int]*liveVault
+	plans  map[int]*content.Vault
+	live   map[int]*liveVault
+	noPack bool // evidence runs: no elite packs in the yards (SetVaultPacks)
 }
+
+// SetVaultPacks turns the vault yards' elite packs on/off (dev evidence runs:
+// LODESTONE_ZONE_VAULT_PACKS=0).
+func (s *Server) SetVaultPacks(on bool) { s.cnt.vault.noPack = !on }
 
 func (s *Server) vaultPlan(site int) *content.Vault {
 	vs := &s.cnt.vault
@@ -165,6 +171,9 @@ func (s *Server) wakeVault(v *content.Vault) *liveVault {
 	lv := &liveVault{v: v, seal: content.NewSeal(v), parts: map[uint32]bool{}, told: map[string]uint32{}, lastNear: s.tick, ver: 1}
 	dg := &contentdefs.D.Dungeons
 	for i, at := range v.Packs {
+		if s.cnt.vault.noPack {
+			break
+		}
 		comp := dg.Packs[int(content.Mix(s.cfg.Seed^uint64(v.Site.Index)^uint64(i)*0x51)%uint64(len(dg.Packs)))]
 		elite := []string{"shielded", "fast", "splitting"}[int(content.Mix(uint64(v.Site.Index)+uint64(i))%3)]
 		p := movement.Vec3{X: at[0], Y: s.cfg.Ground.HeightAt(at[0], at[1]), Z: at[1]}
@@ -460,5 +469,6 @@ func (s *Server) VaultDebug() []map[string]any {
 		}
 		out = append(out, m)
 	}
+	sort.Slice(out, func(i, j int) bool { return out[i]["site"].(int) < out[j]["site"].(int) })
 	return out
 }
