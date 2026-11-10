@@ -1,0 +1,25 @@
+CR 020 spell mechanics: G5 tick budget and wire, same machine, same session (other agents' work running).
+
+go test ./internal/game -run XXX -bench 'BenchmarkScale/p300_e2000' -benchtime 300x -count 3   (server/zone)
+
+base = main b6c4553 (a detached worktree), head = pt2/spell-mechanics 0cf134b
+
+          p50-ms  p99-ms  combat-ms  combat-p99-ms  cpu-Mcycles  kbps/client
+base      3.509   5.648   0.833      1.674          91.91        137.2
+base      3.651   9.851   1.058      3.168          90.96        137.2
+base      3.519   5.674   0.854      2.085          92.63        137.2
+head      3.275   5.675   0.820      2.186          90.66        137.2
+head      3.140   4.644   0.751      2.055          89.50        137.2
+head      3.179   5.191   0.799      2.088          91.33        137.2
+
+No cost: the scale scenario's bots never cast the new spells; the per-tick
+additions are two empty checks (stepSummons, stepBursts).
+
+LODESTONE_WIRE_DIGEST=1 go test ./internal/game -run WireDigest -v
+
+base  DIGEST p90_e600 400 ticks: 21071668 bytes 831bb7f4b4b9511ac1a06c34cdafcda36e147b8f3b9d9bb6798b04b15af6bbde
+base  DIGEST p300_e2000 300 ticks: 55563662 bytes 8c29d4086261064f4f15f3445e5a349a40d72d966f9a5a4d6898a27a4b397cfc
+head  DIGEST p90_e600 400 ticks: 21071668 bytes 831bb7f4b4b9511ac1a06c34cdafcda36e147b8f3b9d9bb6798b04b15af6bbde
+head  DIGEST p300_e2000 300 ticks: 55563662 bytes 8c29d4086261064f4f15f3445e5a349a40d72d966f9a5a4d6898a27a4b397cfc
+
+Identical: the wire is byte-for-byte unchanged for the scale scenario.
