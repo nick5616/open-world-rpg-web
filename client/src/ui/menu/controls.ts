@@ -99,6 +99,16 @@ export function controlGroups(debug: boolean): ControlGroup[] {
       ],
     },
     {
+      title: 'Camping',
+      rows: [
+        { keys: ['P'], action: 'Camp menu: craft kits, place pieces', note: 'campfire, bedroll, chest, workbench, signpost', src: [['ui/camps/CampHud.tsx', "'KeyP'"]] },
+        { keys: ['Mouse wheel', 'R'], action: 'Turn the piece you are placing', src: [['ui/camps/CampHud.tsx', 'onWheel'], ['ui/camps/CampHud.tsx', "'KeyR'"]] },
+        { keys: ['Left mouse'], action: 'Place it (green only)', src: [['ui/camps/CampHud.tsx', 'e.button === 0']] },
+        { keys: ['Right mouse', 'Esc'], action: 'Stop placing', src: [['ui/camps/CampHud.tsx', 'e.button === 2'], ['ui/camps/CampHud.tsx', "'Escape'"]] },
+        { keys: ['E'], action: 'Use a piece: cook, rest, open, name', note: 'hold E on your own piece to pick it up', src: [['ui/camps/CampHud.tsx', "'KeyE'"]] },
+      ],
+    },
+    {
       title: 'Your character',
       rows: [
         { keys: ['I'], action: 'Inventory', note: 'G or Delete drops the selected item', src: [['ui/inventory/InventoryScreen.tsx', "'KeyI'"], ['ui/inventory/InventoryScreen.tsx', "'Delete'"]] },

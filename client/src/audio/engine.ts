@@ -25,7 +25,7 @@ import { useInventory } from '../ui/inventory/store';
 import { useSocialStore } from '../social/store';
 import { useAudioSettings } from './settings';
 import { busEnvFilter, busInput, getAudioContext, masterNode, onAudioReady } from './context';
-import { audioWorld, setTriggerSink, type Vec3 } from './bridge';
+import { audioWorld, loopSources, setTriggerSink, type Vec3 } from './bridge';
 import { SfxEngine, type PlayOpts } from './sfx';
 import { CUES, type CueId } from './cues';
 import { Ambience } from './ambience';
@@ -380,6 +380,7 @@ export class AudioEngine {
       this.water = cave ? null : this.probe.waterNear(feet.x, feet.z);
     }
     const emitters: LoopEmitter[] = [...this.probe.firesNear(feet.x, feet.z, FIRE_SCAN_M), ...this.probe.chemistryFires(nightRuntime.view)];
+    for (const src of loopSources) for (const e of src(feet.x, feet.z)) emitters.push(e); // CR 025: camp campfires
     if (this.water) emitters.push(this.water);
     const L = this.sfx.listener;
     this.loops.update(selectLoops(emitters, { x: L.x, y: L.y, z: L.z, space, leak }, this.loops.playing));

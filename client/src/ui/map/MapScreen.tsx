@@ -23,6 +23,8 @@ import { PAPER, siteGlyph } from './mapRender';
 import { trackedQuest, useQuests } from '../quests/store';
 // CR 023: discovered sealed vaults and world events in range.
 import { useContent } from '../content/store';
+// CR 025: signposts (yours and your party's) and your bedroll.
+import { useCamps } from '../camps/store';
 import { whereText } from '../quests/events';
 
 interface Hit {
@@ -253,6 +255,9 @@ function MapView() {
       const cs = useContent.getState();
       for (const v of cs.sync.vaults) drawVault(ctx, sx(v.x), sy(v.z), v.name);
       for (const e of Object.values(cs.events)) if (e.phase === 1) drawQuestMarker(ctx, sx(e.x), sy(e.z), Math.max(6, e.r * k), '#ff7b54', e.name, 1, false, placed);
+      const camp = useCamps.getState().mine;
+      for (const m of camp.markers) drawCamp(ctx, sx(m.x), sy(m.z), m.mine ? m.label : `${m.label} (${m.owner})`, m.mine ? '#ffb35a' : '#e9c46a');
+      if (camp.spawn && !camp.markers.some((m) => m.mine && Math.hypot(m.x - camp.spawn![0], m.z - camp.spawn![1]) < 25)) drawCamp(ctx, sx(camp.spawn[0]), sy(camp.spawn[1]), 'Your bedroll', '#ffb35a');
 
       // Party members (drawn remotes in my party: the party ring keeps them at any distance).
       if (st.partyId) {
@@ -617,6 +622,31 @@ export function drawVault(ctx: CanvasRenderingContext2D, x: number, y: number, n
   ctx.lineWidth = 3;
   ctx.strokeStyle = 'rgba(0,0,0,0.7)';
   ctx.strokeText(name, x, y + 17);
+  ctx.fillText(name, x, y + 17);
+  ctx.restore();
+}
+
+/** A camp signpost or your bedroll (CR 025): a small tent with its name. */
+export function drawCamp(ctx: CanvasRenderingContext2D, x: number, y: number, name: string, color: string) {
+  ctx.save();
+  ctx.fillStyle = color;
+  ctx.strokeStyle = '#2a1d10';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(x, y - 8);
+  ctx.lineTo(x + 7, y + 5);
+  ctx.lineTo(x - 7, y + 5);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = '#2a1d10';
+  ctx.fillRect(x - 1.5, y, 3, 5);
+  ctx.font = '600 10px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = 'rgba(0,0,0,0.7)';
+  ctx.strokeText(name, x, y + 17);
+  ctx.fillStyle = color;
   ctx.fillText(name, x, y + 17);
   ctx.restore();
 }

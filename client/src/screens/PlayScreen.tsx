@@ -31,6 +31,8 @@ import { SkillScreen } from '../ui/skills';
 import { QuestHud } from '../ui/quests/QuestHud';
 // Playtest 2 content (CR 023): world events, lore tablets, herbs, sealed vaults, feats (client/src/ui/content/README.md).
 import { ContentHud } from '../ui/content/ContentHud';
+// Playtest 2 camps (CR 025): P = camp menu, placement, chests, signposts, Rested (client/src/ui/camps/README.md).
+import { CampHud } from '../ui/camps/CampHud';
 // Sound and music: boots the audio engine after the first playable frame; K = sound settings (client/src/audio/README.md).
 import { AudioRoot } from '../audio/ui/AudioRoot';
 // Playtest 2 onboarding: Esc menu (controls, sound, plug-in settings, leave) and contextual tips (client/src/ui/menu, ui/tips).
@@ -81,6 +83,7 @@ export default function PlayScreen() {
       {/* Playtest 1: quest tracker, offers with location previews, journal (J) */}
       <QuestHud />
       <ContentHud />
+      <CampHud />
       <AudioRoot />
       <TipsHud />
       <EscMenu />

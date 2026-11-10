@@ -8,6 +8,7 @@
 //   audioWorld.underground = 0.8              // world state the director reads
 
 import type { TriggerName, TriggerPayload } from './triggers';
+import type { LoopEmitter } from './loopPool';
 
 export interface Vec3 {
   x: number;
@@ -32,6 +33,13 @@ export const audioWorld = {
   /** Enemies engaged with the player recently (engine-computed). */
   combatUntil: 0,
 };
+
+/**
+ * Positional loop sources outside the towns buffer, asked for the emitters
+ * near the listener every engine update (CR 025: burning camp campfires,
+ * ui/camps/CampLayer.tsx registers one).
+ */
+export const loopSources = new Set<(x: number, z: number) => LoopEmitter[]>();
 
 type Sink = (name: TriggerName, payload: TriggerPayload) => void;
 let sink: Sink | null = null;

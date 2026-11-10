@@ -34,6 +34,8 @@ import { ensureQuestHook, unhookQuests } from '../ui/quests/link';
 import { QuestLayer } from '../ui/quests/QuestLayer';
 import { ensureContentHook } from '../ui/content/link'; // CR 023 content
 import { ContentLayer } from '../ui/content/ContentLayer';
+import { ensureCampHook } from '../ui/camps/link'; // CR 025 camps
+import { CampLayer } from '../ui/camps/CampLayer';
 import { NightHud } from '../systems/NightHud';
 // Playtest 1: character stats, area difficulty, tower attunement (Events 900-903).
 import { attachProgression } from '../ui/progression';
@@ -116,6 +118,7 @@ export function NetPlay({ ready }: { ready: ReadySession }) {
     const detachPvp = attachPvp(s); // after attachCombat: chains its HitResult handler
     ensureQuestHook(); // playtest 1: quest log (ui/quests), before Hello so Event 950 is never missed
     ensureContentHook(); // CR 023: content sync and places (ui/content), before Hello too
+    ensureCampHook(); // CR 025: camp pieces near you and your camp (ui/camps), before Hello too
     let live = true;
     s.onEnd = (end) => live && setPhase({ kind: 'ended', end });
     s.start().then(
@@ -208,6 +211,7 @@ export function NetPlay({ ready }: { ready: ReadySession }) {
           <NightLayer />
           <QuestLayer />
           <ContentLayer />
+          <CampLayer />
           <DuelRing />
         </WorldCanvas>
       )}
