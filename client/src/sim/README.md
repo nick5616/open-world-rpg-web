@@ -19,6 +19,7 @@ reproduce.
 | `inputFrame.ts` | Held keys to InputFrame flags, jump-edge latch, yaw/pitch quantization. |
 | `fixedStep.ts` | Render-frame to fixed-step accumulator with a capped backlog. |
 | `localSim.ts` | Per-frame driver: latch edges, run steps, interpolate the render pose. |
+| `ride.ts` | CR 027: riding the spirit steed (`stepRide`, `collideHead`, the gait bits); see "Riding" below. |
 | `fly.ts` | Debug noclip step. Client only, NOT part of the contract. |
 | `golden/` | Scripted inputs, scenarios, generator and the committed golden JSON. |
 
@@ -357,6 +358,20 @@ npm run golden -w client      # regenerate after an intended change (then update
 npm run test -w client        # fails if stepMovement no longer reproduces the files bit-exactly
 npm run compare:ww -w client  # re-run the wizard-wars side-by-side (needs refs/)
 ```
+
+## Riding (playtest 2 mounts, CR 027)
+
+`ride.ts` (Go twin `server/pkg/movement/ride.go`; `docs/cr/027-mounts.md`). MoveFlag.mounted (8, SelfState flags bit 3) is
+set only by the zone; the step only clears it. While mounted the walk family runs `stepRide` instead of `stepWalk`
+(dodge and channel are masked before `beginDash`; climb/glide/swim drop the flag): the gait rides in `lunge` (bits 0-1
+trot/walk/gallop, bit 2 Shift held last step, bit 3 backing; `finish` keeps lunge while mounted), W rides at the gait, a
+Shift press spurs (stamina, +RIDE_SPUR_KICK capped at RIDE_SPUR_MAX_SPEED, gait up), the velocity turns toward the
+camera-relative W/A/D wish by a literal angle per step (150/110/75 deg/s), S brakes then backs up, uphill past
+RIDE_WALKABLE_TAN_SQ (35 deg) is a wall, past RIDE_SLIDE_TAN_SQ it slides, water deeper than RIDE_WADE_DEPTH_M is refused,
+Space jumps (at a standstill: hops off), a hard landing or deep water throws the rider. After the cave push-out,
+`collideHead` pushes the steed's chest (RIDE_HEAD_PROBE_M ahead) out of the same colliders. Goldens:
+`golden/movement_pt2_ride_{flat,plane,course_east,course_west}.json` (`golden/ride.ts`, Go replay
+`ride_golden_test.go`).
 
 ## Caves (WP09)
 
