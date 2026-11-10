@@ -245,7 +245,7 @@ func (s *Server) sendCombatSync(sess *session) {
 	// pt/ux: the weapon look rides in the player's typeId for others
 	// (weaponlook.go) and, per loadout, at the end of combat_sync for you.
 	mats, look := weaponLooks(sess)
-	e.TypeID = look | e.pvpTypeBits() // playtest 2: bits 12-13 are the PvP flag and dueling (pvp.go)
+	e.TypeID = look | e.pvpTypeBits() | e.TypeID&TypeRiding // playtest 2: bits 12-13 are the PvP flag and dueling (pvp.go); CR 027: 14 riding (mounts.go)
 	s.sendEvent(sess, &proto.Event{Kind: combat.EvCombatSync, EntityID: e.ID, Value: int32(e.cbt.Profile.Active), Data: append(combat.EncodeSync(e.cbt), mats[0], mats[1])})
 	s.questsChanged(sess) // quests.go: "know a spell" objectives
 }
@@ -266,6 +266,7 @@ func (s *Server) combatFrame(sess *session, f proto.InputFrame) proto.InputFrame
 	if e == nil || e.cbt == nil {
 		return f
 	}
+	f = mountedFrame(e, f) // CR 027: no dodges, dashes or melee from the saddle (mounts.go)
 	r := s.cbt.w.Frame(e.cbt, f, e.Move)
 	s.nightAction(sess, r.Started) // WP15: Fire/Ice/Earth chemistry where it lands (night.go)
 	s.vaultMagic(sess, r.Started)  // CR 023: braziers and fonts of the sealed vaults (dungeons.go)
