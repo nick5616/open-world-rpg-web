@@ -766,6 +766,9 @@ func (w *World) wakeTick() {
 	}
 }
 
+// havenRespawnS: how long a cleared beginner (Haven) pack stays away.
+const havenRespawnS = 75.0
+
 // groupCleared handles a group whose members are all dead.
 func (w *World) groupCleared(g *Group) {
 	for _, e := range g.Members {
@@ -775,6 +778,11 @@ func (w *World) groupCleared(g *Group) {
 	}
 	if g.Kind == GroupBoss {
 		g.respawn = w.tick + secondsToTicks(w.cfg.BossRespawnS)
+	} else if g.tier != nil && g.tier.Beginner >= 1 {
+		// Playtest 2: the Haven's beginner packs come back quickly. In a
+		// shared world other players clear them, and a new character sent to
+		// "kill 5 slimes" found every marked pack gone for ten minutes.
+		g.respawn = w.tick + secondsToTicks(min(w.cfg.CampRespawnS, havenRespawnS))
 	} else {
 		g.respawn = w.tick + secondsToTicks(w.cfg.CampRespawnS)
 	}

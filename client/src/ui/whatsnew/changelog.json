@@ -12,6 +12,18 @@
     ]
   },
   {
+    "id": "pt2-enemy-models",
+    "date": "2026-11-10",
+    "title": "Monsters with character",
+    "items": [
+      "Every creature has its own look now: squishy slimes with big eyes, boars with tusks, hooded bandits with real weapons, horned demons with glowing eyes, and bigger, grander bosses.",
+      "Enemies move like animals and fighters: they trot, hop, flap and look at you, wind up visibly before they strike, flinch when hit, reel when parried, and fall (or splat) when beaten.",
+      "Your summoned allies are glowing spirits in their element's colour.",
+      "Damage numbers are smaller, coloured by element, stack neatly, and crits pop.",
+      "Big crowds of enemies draw much faster."
+    ]
+  },
+  {
     "id": "pt2-onboarding",
     "date": "2026-11-10",
     "title": "A friendlier first hour",

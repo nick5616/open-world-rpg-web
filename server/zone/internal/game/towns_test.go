@@ -191,7 +191,7 @@ func TestTownNPCsTalkShopBountiesInnForge(t *testing.T) {
 		t.Fatalf("second accept refusal %d", r.Value)
 	}
 	// Too far from the merchant (the board is elsewhere in the square).
-	if math.Hypot(board.X-md.WorkX, board.Z-md.WorkZ) > 6 {
+	if math.Hypot(board.X-md.WorkX, board.Z-md.WorkZ) > npcReachM+2 {
 		b.send(&proto.Interact{TargetKind: InteractNPC, TargetID: uint64(mid), Action: ActionTalk})
 		if r := b.nextEvent(EventTownRefused, 3*time.Second); r.Value != TownRefuseTooFar {
 			t.Fatalf("far talk refusal %d", r.Value)

@@ -19,6 +19,7 @@ import { makeTownMaterials, townTexture } from './buildings/townMaterial';
 import { caveRockMaterial } from './caves/caveVisuals';
 import { weaponMaterial } from '../combat/weapons/material';
 import { spellFxWarmObjects } from '../combat/fx/warm';
+import { enemyWarmObjects } from '../combat/enemies/warm';
 
 let kept: THREE.Object3D[] | null = null;
 
@@ -66,6 +67,9 @@ export function warmExtras(): THREE.Object3D[] {
   // Playtest 2 spell FX (combat/fx/warm.ts): particles, ribbons, every custom
   // spell shader, lit spikes, sprites and cores, so the first cast never compiles.
   out.push(...spellFxWarmObjects());
+  // Playtest 2 enemy models (combat/enemies/warm.ts): the instanced part materials
+  // (opaque, jelly, spectral, tinted), bars, auras and the damage-number glyphs.
+  out.push(...enemyWarmObjects());
   for (const o of out) o.frustumCulled = false;
   kept = out;
   return out;

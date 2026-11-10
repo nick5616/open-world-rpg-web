@@ -214,3 +214,9 @@ export async function go(page, x, z, opts = {}) {
   for (const n of path) await walkTo(page, n.x, n.z, { stopAt: 1.8, sprint: opts.sprint, timeoutMs: 20000 });
   return walkTo(page, x, z, opts);
 }
+
+/** Close the welcome / What's new card if it is up (a player would click it away). */
+export async function dismissCards(page) {
+  const b = page.getByTestId('whatsnew-close');
+  if (await b.isVisible().catch(() => false)) await b.click().catch(() => {});
+}
