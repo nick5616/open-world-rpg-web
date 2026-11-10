@@ -7,7 +7,7 @@
 
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
-import { aimOpenHand, CAST_REST, CAST_UP, L_SHOULDER, makeRig, PIVOT, POSES, poseHands, setRigWeapon } from './FirstPersonWeapon';
+import { aimOpenHand, BOW_AIM, BOW_ANCHOR, bowGrip, bowStringHand, CAST_REST, CAST_UP, L_SHOULDER, makeRig, PIVOT, POSES, poseHands, setRigWeapon, stringAfterRelease } from './FirstPersonWeapon';
 import { BOW_MAX_DRAW, bowNock, FIST_WRIST, fistGeometry, GRIP_R, OPEN_WRIST, openHandGeometry, weaponGeometry } from './models';
 import { WEAPON_KINDS, type WeaponKind } from './look';
 
@@ -127,6 +127,42 @@ describe('first-person hands (playtest 2)', () => {
     expect(palm.x).toBeGreaterThan(0); // and in toward the centre of the view
     const wrist = OPEN_WRIST.clone().applyMatrix4(rig.castFist.matrixWorld);
     expect(new THREE.Vector3().setFromMatrixPosition(rig.castArm.matrixWorld).distanceTo(wrist)).toBeLessThan(1e-6);
+  });
+
+  // CR 033 ("they don't pull all the way back"): a full draw takes the string to BOW_MAX_DRAW with
+  // the hand at the cheek anchor, the arrow along the view and its head still past the riser.
+  it('bow: a full draw pulls the string hand back to the cheek, the arrow along the view', () => {
+    const cam = new THREE.Group();
+    const rig = makeRig();
+    cam.add(rig.root);
+    setRigWeapon(rig, { weapon: 'bow', material: '', gem: -1 });
+    bowGrip(1, rig.grip.position, rig.grip.quaternion);
+    const s = BOW_AIM.scale ?? 1;
+    rig.rFist.position.copy(bowNock(BOW_MAX_DRAW)).multiplyScalar(s);
+    poseHands(rig, 'bow', new THREE.Vector3(0.42, -0.14, 0.12));
+    cam.updateMatrixWorld(true);
+    const hand = new THREE.Vector3().setFromMatrixPosition(rig.rFist.matrixWorld);
+    expect(hand.distanceTo(bowStringHand(1))).toBeLessThan(1e-6);
+    expect(hand.distanceTo(BOW_ANCHOR)).toBeLessThan(0.04);
+    // drawn ~0.4 m back from the rest of the string (it was 0.2: a third of the way)
+    expect(bowStringHand(1).distanceTo(bowStringHand(0))).toBeGreaterThan(0.29);
+    // still in view: in front of the near plane, inside a 75 degree view
+    expect(-hand.z).toBeGreaterThan(0.1);
+    expect(Math.abs(hand.y / hand.z)).toBeLessThan(Math.tan(THREE.MathUtils.degToRad(37.5)));
+    // the arrow points within a few degrees of the crosshair, its head past the riser
+    const fwd = new THREE.Vector3(0, 0, -1).transformDirection(rig.weapon.matrixWorld);
+    expect(deg(fwd.angleTo(new THREE.Vector3(0, 0, -1)))).toBeLessThan(10);
+    const riser = new THREE.Vector3().setFromMatrixPosition(rig.weapon.matrixWorld);
+    expect(hand.z - 0.74 * s).toBeLessThan(riser.z - 0.1);
+    // the string hand can hold it: workable grip and wrist
+    const r = wristAngles(rig.rFist, rig.rArm);
+    expect(r.grip).toBeGreaterThan(34);
+    expect(r.grip).toBeLessThan(100);
+    expect(r.bend).toBeLessThan(55);
+    // the release rings the string down to rest
+    expect(stringAfterRelease(BOW_MAX_DRAW, 0)).toBe(BOW_MAX_DRAW);
+    expect(stringAfterRelease(BOW_MAX_DRAW, 18)).toBeLessThan(0);
+    expect(Math.abs(stringAfterRelease(BOW_MAX_DRAW, 400))).toBeLessThan(0.001);
   });
 
   it('hands are small and cached', () => {

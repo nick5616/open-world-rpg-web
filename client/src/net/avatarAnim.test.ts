@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Activity, COMBAT } from '@lodestone/contracts';
-import { AvatarAnimator, CAST_FX_DASH, CAST_FX_GUARD, classifyAction, DODGE_MIN_SPEED, MINE_SPEC, type AnimInput, type Pose } from './avatarAnim';
+import { AvatarAnimator, BOW_DRAW_MS, CAST_FX_DASH, CAST_FX_GUARD, classifyAction, DODGE_MIN_SPEED, MINE_SPEC, type AnimInput, type Pose } from './avatarAnim';
 
 const DT = 1 / 60;
 
@@ -175,6 +175,34 @@ describe('avatar animation state machine', () => {
     }
     expect(maxBend).toBeGreaterThan(1.2); // pulled back
     expect(minBendAfterPeak).toBeLessThan(0.5); // thrust out
+  });
+
+  // CR 033: observers see the archer's real draw: it grows with the hold as the archer's own does
+  // (linear to bow_charged's chargeMs), a release snaps from where it got to, a late observer starts
+  // mid-draw, and a held full draw trembles without ever timing out.
+  it('bow: the draw follows the hold time, the release looses from the draw reached', () => {
+    expect(BOW_DRAW_MS).toBeCloseTo(1000, 6);
+    const a = new AvatarAnimator();
+    a.trigger(classifyAction(CAST_FX_GUARD, 'bow'));
+    expect(run(a, 30).bowDraw).toBeCloseTo(0.5, 1); // half a second: half drawn
+    a.trigger(classifyAction(moveId('bow_charged'), 'bow')); // a half-draw release
+    const first = run(a, 1).bowDraw;
+    expect(first).toBeLessThan(0.5);
+    expect(first).toBeGreaterThan(0.1); // snapping from the half draw (not from a full one, nor drawn again)
+    expect(run(a, 4).bowDraw).toBeLessThan(0.02);
+    // late: joined 0.8 s into the draw (Event 226's progress), it starts 80% drawn
+    const late = new AvatarAnimator();
+    late.trigger(classifyAction(CAST_FX_GUARD, 'bow'), 800);
+    expect(run(late, 1).bowDraw).toBeGreaterThan(0.75);
+    // held 20 s at full draw: still drawn, and the arms tremble
+    const held = new AvatarAnimator();
+    held.trigger(classifyAction(CAST_FX_GUARD, 'bow'));
+    run(held, 60 * 20);
+    const swings: number[] = [];
+    for (let i = 0; i < 20; i++) swings.push(run(held, 3).armL.swing);
+    expect(held.current).toBe('draw');
+    expect(held.pose.bowDraw).toBeGreaterThan(0.95);
+    expect(Math.max(...swings) - Math.min(...swings)).toBeGreaterThan(0.005);
   });
 
   it('bow: the guard draws and holds, the release snaps the string', () => {

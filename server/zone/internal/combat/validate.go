@@ -430,7 +430,7 @@ func (w *World) geometryOK(p *Player, a *Action, radius, height float64, tp move
 		case m.Radius > 1: // arrow rain: an area at the impact point
 			return hdist(impact, a.Pos) <= m.Reach+constants.HitRangeSlackM && hdist(impact, tp) <= m.Radius+r
 		case m.Speed > 0:
-			rng := m.Reach
+			rng := ShotRange(m, a.Charge) // CR 033: a weak draw flies slower, so shorter
 			return aimed(a.Pos, a.Yaw, rng, aimSlack)
 		case m.Kind == "plunge":
 			return hdist(p.Pos, tp) <= m.Reach+r && vertical(p.Pos, 2)

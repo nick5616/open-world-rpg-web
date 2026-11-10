@@ -15,7 +15,7 @@ import type { MoveState } from '../sim/movement';
 import type { RemoteView } from '../net/interpolation';
 import { drawnRemotes } from '../net/netStore';
 import { localPlayer } from '../state/live';
-import { CombatTimeline, spellById, weaponById, type CombatButtons, type Started } from './timeline';
+import { CombatTimeline, shotRange, shotSpeed, spellById, weaponById, type CombatButtons, type Started } from './timeline';
 import { EV, INTERACT_COMBAT, ACT, ELEMENT_COLORS, decodeSync, decodeTelegraph, enemyInfo } from './events';
 import { fxQueue, pushNumber, toast, useCombatHud } from './store';
 import { GRACE_MS, killerName, respawnSiteName } from './downed';
@@ -125,7 +125,6 @@ export class CombatRuntime {
     const altDown = () => {
       this.buttons.altDown = true;
       this.buttons.altPress++;
-      if (this.timeline.weapon().key === 'bow') emitSound('bow_draw');
     };
     const altUp = () => {
       this.buttons.altDown = false;
@@ -266,6 +265,15 @@ export class CombatRuntime {
     else this.buttons.castPress[what] = t;
   }
 
+  /** CR 033, scripted: hold (or let go of) the primary button, as the left mouse button does (a bow draws while held). */
+  holdAttack(on: boolean): void {
+    if (on && !this.buttons.attackDown) {
+      this.buttons.attackPress++;
+      this.probe.press('attack', performance.now());
+    }
+    this.buttons.attackDown = on;
+  }
+
   /** CR 020, scripted: hold (or let go of) a spell slot's key (streams, charges). A hold also presses it. */
   hold(slot: number, on: boolean): void {
     if (on && !this.buttons.castHeld[slot]) this.buttons.castPress[slot] = performance.now();
@@ -334,7 +342,10 @@ export class CombatRuntime {
     castState.dashHolding('self', dashLive.variant, dashLive.held, now);
     const wk = this.timeline.weapon().key;
     if (wk !== 'staff' && wk !== 'wand') {
-      if (this.timeline.heldSteps === 1) castState.action('self', CAST_FX_GUARD, now);
+      if (this.timeline.heldSteps === 1) {
+        castState.action('self', CAST_FX_GUARD, now);
+        if (wk === 'bow') emitSound('bow_draw'); // CR 033: the draw starts on the step the primary arms it
+      }
       else if (this.timeline.heldSteps === 0) castState.release('self', 'guard');
     }
     // CR 020: a stream or charge that ended, a charge that began, the stream's shots this step.
@@ -458,7 +469,7 @@ export class CombatRuntime {
     if (s.move) {
       const m = s.move;
       if (m.speed > 0) {
-        if (seq === firstHit) this.launch(s, m.speed * (m.chargeSpeed && s.charge > 0 ? 1 + (m.chargeSpeed / m.speed - 1) * s.charge : 1), m.gravity, m.radius, m.reach, false, 0, a);
+        if (seq === firstHit) this.launch(s, shotSpeed(m, s.charge), m.gravity, m.radius, shotRange(m, s.charge), false, 0, a); // CR 033: the draw sets speed and reach
         return;
       }
       if (m.radius > 1) {

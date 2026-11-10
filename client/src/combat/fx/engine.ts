@@ -37,7 +37,7 @@ import { currentFxTier, FX_PROFILES } from './quality';
 import { castHooks, casterHand, gemFor } from './castOrigin';
 import { castState, type CasterKey } from '../castState';
 import { aimPoint as sharedAimPoint, beamEnd, lookDir, AIM_EYE, SHOT_Y } from '../aim';
-import { FORM_STARTUP_STEPS, moveById } from '../timeline';
+import { FORM_STARTUP_STEPS, moveById, shotRange, shotSpeed } from '../timeline';
 import { ELEMENT_FAMILY, PALETTES, spellVisual, statusById, statusByKey, ZONE_STYLE, enemyAttackById, formById, spellById, mobilitySpellForDash, type SpellVisual, type Family } from './spellVisual';
 import * as R from './recipes';
 import { DASH_FX_MAX_S, DASH_FX_MIN_SPEED, dashFxStep, newDashFxState } from './dashFx'; // CR 021
@@ -1245,12 +1245,12 @@ export class SpellFxEngine {
       if (!this.anchorPos(caster, pos)) return;
       if (m.speed > 0) {
         // the same launch as yours (runtime.launch): eye path, charged speed, the hand it leaves
-        const speed = m.speed * (m.chargeSpeed && charge > 0 ? 1 + (m.chargeSpeed / m.speed - 1) * charge : 1);
+        const speed = shotSpeed(m, charge);
         const pt = pitch + (m.gravity > 0 ? 0.05 : 0);
         const d = lookDir(yaw, pt);
         const hand = { x: 0, y: 0, z: 0 };
         this.remoteHand(pos.x, pos.y, pos.z, yaw, hand, typeof caster === 'number' ? caster : 0, pitch);
-        this.projectile(null, pos.x, pos.y + SHOT_Y, pos.z, d.x * speed, d.y * speed, d.z * speed, m.gravity, m.radius, m.reach / Math.max(1, speed), { collide: 'enemies', kind: 'arrow', hand });
+        this.projectile(null, pos.x, pos.y + SHOT_Y, pos.z, d.x * speed, d.y * speed, d.z * speed, m.gravity, m.radius, shotRange(m, charge) / Math.max(1, speed), { collide: 'enemies', kind: 'arrow', hand }); // CR 033: the draw sets speed and reach
         return;
       }
       const p = sharedAimPoint({ x: pos.x, y: pos.y + EYE, z: pos.z }, yaw, pitch, m.reach, (x, z, ny) => this.prims.heightAt(x, z, ny));

@@ -70,6 +70,19 @@ describe('key bindings', () => {
     expect(readFileSync(path.join(SRC, 'ui/achievements/AchievementsHud.tsx'), 'utf8')).toContain('usePvp.getState().challenge');
   });
 
+  it('CR 033: a bow draws on the left button and Z lowers the draw (the Controls say so)', () => {
+    const world = (code: string) => BINDINGS.filter((b) => b.ctx === 'world' && b.code === code).map((b) => b.does);
+    expect(world('KeyZ')).toEqual(["the weapon's secondary (hold); a bow: lower the draw"]);
+    const rows = controlGroups(false).find((g) => g.title === 'Fighting')!.rows;
+    expect(rows.find((r) => r.keys.includes('Left mouse'))!.note).toMatch(/bow: hold to draw, let go to shoot/);
+    expect(rows.find((r) => r.keys.includes('Left mouse'))!.note).toMatch(/never run out of arrows/);
+    expect(rows.find((r) => r.keys.includes('Z'))!.action).toMatch(/bow: lower the draw/);
+    // the runtime's left button feeds the timeline's draw (attackDown), not a bow-only key
+    const rt = readFileSync(path.join(SRC, 'combat/runtime.ts'), 'utf8');
+    expect(rt).toContain('this.buttons.attackDown = true');
+    expect(readFileSync(path.join(SRC, 'combat/timeline.ts'), 'utf8')).toContain('drawWeapon(w)');
+  });
+
   it("every binding a player can use is in the Esc menu's Controls", () => {
     const listed = new Set(controlGroups(true).flatMap((g) => g.rows.flatMap((r) => r.keys)));
     const missing = BINDINGS.filter((b) => b.ctx !== 'debug' && b.ctx !== 'title' && b.code !== 'ShiftRight')
