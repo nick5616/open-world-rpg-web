@@ -24,7 +24,8 @@ import { Activity, CONTENT } from '@lodestone/contracts';
 import type { RemoteView } from './interpolation';
 import { isSpeaking } from '../voice/levels';
 import { unpackLook, type WeaponKind } from '../combat/weapons/look';
-import { weaponGeometry } from '../combat/weapons/models';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { fistGeometry, GRIP_R, weaponGeometry } from '../combat/weapons/models';
 import { weaponMaterial } from '../combat/weapons/material';
 import { AvatarAnimator, RIDE_HIP_RAISE, type AnimInput, type LimbPose, type Pose } from './avatarAnim';
 import { ridingOf, TYPE_RIDING } from '../ui/mounts/events';
@@ -121,12 +122,110 @@ let shared: {
 const bodyMats = new Map<number, THREE.MeshStandardMaterial>();
 const glowMats = new Map<string, THREE.SpriteMaterial>();
 
-/** A limb segment: a rounded box hanging from its joint (pivot at the top). */
-function segment(w: number, len: number, d: number): THREE.BufferGeometry {
-  const g = new THREE.CapsuleGeometry(Math.min(w, d) / 2, Math.max(0.01, len - Math.min(w, d)), 3, 8);
+/**
+ * A limb segment hanging from its joint: a capsule whose end caps are
+ * centred on the joint (the pivot) and `len` below it, so the next segment's
+ * cap shares the same centre: a ball joint that stays closed at any bend
+ * (playtest 2: elbows and knees opened a notch when bent).
+ */
+function segment(w: number, len: number): THREE.BufferGeometry {
+  const g = new THREE.CapsuleGeometry(w / 2, Math.max(0.01, len), 3, 8);
   g.translate(0, -len / 2, 0);
   return g;
 }
+
+/** The deltoid caps (torso frame): centred just inside the shoulder joints, a little larger than the upper arm. */
+export const DELTOID = { x: 0.352, y: 0.493, r: 0.08 };
+/** The upper arm's radius (its top ball is centred on the shoulder joint). */
+export const ARM_R = 0.065;
+/** Third-person fists: the first-person fist at third-person detail, scaled to the rig's chunky limbs. */
+const HAND_SCALE = 1.5;
+
+/** The torso's outline (torso frame): y, half width (x), half depth (z), bottom to top. */
+export const TORSO_PROFILE: readonly (readonly [number, number, number])[] = [
+  [-0.2, 0.12, 0.1],
+  [-0.165, 0.185, 0.14],
+  [-0.09, 0.215, 0.155],
+  [0.04, 0.212, 0.152],
+  [0.18, 0.238, 0.165],
+  [0.32, 0.272, 0.175],
+  [0.42, 0.298, 0.172],
+  [0.49, 0.3, 0.158],
+  [0.555, 0.225, 0.125],
+  [0.605, 0.12, 0.092],
+];
+
+/**
+ * Playtest 2 ("make the model's arms connect to their body"): the torso,
+ * shaped like one rather than a round capsule: broad across the shoulders
+ * (the shoulder joints sit at its top corners), narrower at the waist,
+ * flatter front to back, with a rounded deltoid cap over each shoulder joint
+ * so the upper arm's ball always sits inside it, whatever the arm does. One
+ * merged geometry (the same single draw call as the capsule it replaces), in
+ * the torso joint's frame.
+ */
+export function torsoGeometry(): THREE.BufferGeometry {
+  const prof = TORSO_PROFILE;
+  const BOTTOM = -0.215;
+  const TOP = 0.63;
+  const n = 16;
+  const pos: number[] = [];
+  const idx: number[] = [];
+  for (const [y, rx, rz] of prof)
+    for (let k = 0; k < n; k++) {
+      const a = (k / n) * Math.PI * 2;
+      pos.push(Math.cos(a) * rx, y, -Math.sin(a) * rz);
+    }
+  const bottom = pos.length / 3;
+  pos.push(0, BOTTOM, 0);
+  const top = bottom + 1;
+  pos.push(0, TOP, 0);
+  for (let r = 0; r < prof.length - 1; r++)
+    for (let k = 0; k < n; k++) {
+      const k2 = (k + 1) % n;
+      const a = r * n + k;
+      const b = r * n + k2;
+      const c = (r + 1) * n + k2;
+      const d = (r + 1) * n + k;
+      idx.push(a, b, c, a, c, d);
+    }
+  const last = (prof.length - 1) * n;
+  for (let k = 0; k < n; k++) {
+    const k2 = (k + 1) % n;
+    idx.push(bottom, k2, k);
+    idx.push(top, last + k, last + k2);
+  }
+  const body = new THREE.BufferGeometry();
+  body.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  body.setIndex(idx);
+  body.computeVertexNormals();
+  const parts = [body];
+  for (const side of [-1, 1]) {
+    const cap = new THREE.SphereGeometry(DELTOID.r, 12, 8);
+    cap.scale(1, 1.04, 0.95);
+    cap.translate(side * DELTOID.x, DELTOID.y, 0);
+    cap.deleteAttribute('uv');
+    parts.push(cap);
+  }
+  const g = mergeGeometries(parts, false)!;
+  g.name = 'avatar-torso';
+  return g;
+}
+
+/**
+ * The fist's turn in the hand frame (the forearm runs up +Y from the hand):
+ * its grip axis along `grip`, the wrist toward the forearm. Empty-handed it
+ * closes on nothing, thumb forward.
+ */
+function handQuat(grip: THREE.Vector3, out: THREE.Quaternion): THREE.Quaternion {
+  const y = grip.clone().normalize();
+  const z = new THREE.Vector3(0, 1, 0).addScaledVector(y, -y.y);
+  if (z.lengthSq() < 1e-4) z.set(0, 0, 1).addScaledVector(y, -y.z);
+  z.normalize();
+  const x = new THREE.Vector3().crossVectors(y, z);
+  return out.setFromRotationMatrix(new THREE.Matrix4().makeBasis(x, y, z));
+}
+const EMPTY_GRIP = new THREE.Vector3(0, 0.15, -1);
 
 function glowTexture(): THREE.Texture {
   const c = typeof document !== 'undefined' ? document.createElement('canvas') : null;
@@ -147,13 +246,13 @@ function glowTexture(): THREE.Texture {
 function res() {
   if (!shared) {
     shared = {
-      chest: new THREE.CapsuleGeometry(0.25, 0.36, 4, 12),
+      chest: torsoGeometry(),
       head: new THREE.SphereGeometry(0.2, 16, 12),
       visor: new THREE.BoxGeometry(0.26, 0.08, 0.06),
-      upperArm: segment(0.13, UPPER_ARM + 0.04, 0.13),
-      forearm: segment(0.11, FOREARM + 0.03, 0.11),
-      thigh: segment(0.16, THIGH + 0.04, 0.16),
-      shin: segment(0.13, SHIN + 0.02, 0.13),
+      upperArm: segment(ARM_R * 2, UPPER_ARM),
+      forearm: segment(0.11, FOREARM - 0.05), // to the wrist; the fist hangs below it
+      thigh: segment(0.16, THIGH),
+      shin: segment(0.13, SHIN + 0.02 - 0.065), // the sole stays where it was (knee - 0.46)
       bodyMid: new THREE.CapsuleGeometry(0.3, 0.75, 2, 4),
       headMid: new THREE.SphereGeometry(0.2, 6, 4),
       low: new THREE.BoxGeometry(0.6, 1.8, 0.4),
@@ -162,7 +261,7 @@ function res() {
       legMat: new THREE.MeshStandardMaterial({ color: 0x3a4152, roughness: 0.85 }),
       // playtest 2: the same skin and shirt as your first-person arms (FirstPersonArms SKIN / SLEEVE)
       skinMat: new THREE.MeshStandardMaterial({ color: 0xc9a27e, roughness: 0.7 }),
-      hand: new THREE.SphereGeometry(0.06, 10, 8),
+      hand: fistGeometry(GRIP_R.sword, 1),
       glider: new THREE.BoxGeometry(2.2, 0.04, 0.9),
       gliderMat: new THREE.MeshStandardMaterial({ color: 0xc98a3a, roughness: 0.8, side: THREE.DoubleSide }),
       glowTex: glowTexture(),
@@ -240,6 +339,8 @@ interface Arm {
   shoulder: THREE.Group;
   elbow: THREE.Group;
   hand: THREE.Group;
+  /** The fist mesh (turned to close on whatever the hand holds). */
+  fist: THREE.Mesh;
   glow: THREE.Sprite;
 }
 interface Leg {
@@ -378,7 +479,6 @@ export class Avatar {
     this.torso.rotation.order = 'YXZ';
     this.body.add(this.torso);
     const chest = mesh(r.chest);
-    chest.position.y = 0.25;
     this.torso.add(chest);
     this.neck.position.y = NECK_Y;
     this.torso.add(this.neck);
@@ -396,8 +496,10 @@ export class Avatar {
       const fore = mesh(r.forearm);
       const hand = new THREE.Group();
       hand.position.y = -FOREARM;
+      // playtest 2: a fist (was a ball), mirrored for the left hand
       const palm = mesh(r.hand, r.skinMat);
-      palm.scale.set(1, 1.15, 0.8);
+      palm.scale.set(side * HAND_SCALE, HAND_SCALE, HAND_SCALE);
+      handQuat(EMPTY_GRIP, palm.quaternion);
       hand.add(palm);
       const glow = new THREE.Sprite(glowMat('#ffffff'));
       glow.visible = false;
@@ -406,7 +508,7 @@ export class Avatar {
       elbow.add(fore, hand);
       shoulder.add(upper, elbow);
       this.torso.add(shoulder);
-      return { shoulder, elbow, hand, glow };
+      return { shoulder, elbow, hand, fist: palm, glow };
     };
     this.armL = arm(-1);
     this.armR = arm(1);
@@ -502,6 +604,8 @@ export class Avatar {
     this.weaponKind = look.weapon;
     this.weaponHi.removeFromParent();
     this.weaponMid.removeFromParent();
+    handQuat(EMPTY_GRIP, this.armR.fist.quaternion);
+    handQuat(EMPTY_GRIP, this.armL.fist.quaternion);
     if (!look.weapon) {
       this.weaponHi.visible = this.weaponMid.visible = false;
       return;
@@ -511,6 +615,8 @@ export class Avatar {
     this.weaponHi.geometry = weaponGeometry(look, 2); // playtest 2: the same model as in first person
     this.weaponHi.quaternion.copy(q);
     this.weaponHi.position.set(0, 0, 0);
+    // the fist closes round the grip: its grip axis along the weapon's
+    handQuat(new THREE.Vector3(0, 1, 0).applyQuaternion(q), (h.left ? this.armL : this.armR).fist.quaternion);
     (h.left ? this.armL : this.armR).hand.add(this.weaponHi);
     this.weaponMid.geometry = weaponGeometry(look, 0);
     this.weaponMid.quaternion.copy(q);
