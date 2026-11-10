@@ -53,6 +53,8 @@ const ACTIVITY_CASTING = 8;
 const HELD_MAX_MS = 30000;
 /** A precise aim older than this falls back to the drawn look (ms). */
 const AIM_FRESH_MS = 2500;
+/** A drawn look unchanged this long is at rest (ms). */
+const LOOK_REST_MS = 150;
 
 const spellById = new Map(COMBAT.spells.map((s) => [s.id, s]));
 
@@ -98,6 +100,8 @@ export interface CasterState {
   /** The drawn look (replication; activity()). */
   lookYaw: number;
   lookPitch: number;
+  /** Replication: when the drawn look last moved (aimOf only follows it while it turns). */
+  lookMovedAt: number;
 }
 
 /** What replication asks the FX engine to draw (fx/api.ts spellFx implements it). */
@@ -113,7 +117,7 @@ const states = new Map<CasterKey, CasterState>();
 const queue: { due: number; run: () => void }[] = [];
 
 function blank(key: CasterKey): CasterState {
-  return { key, aimYaw: 0, aimPitch: 0, aimAt: -1e9, aimPrecise: false, lookYaw0: 0, lookPitch0: 0, held: null, dash: null, action: null, actions: 0, delayMs: 0, lookYaw: 0, lookPitch: 0 };
+  return { key, aimYaw: 0, aimPitch: 0, aimAt: -1e9, aimPrecise: false, lookYaw0: 0, lookPitch0: 0, held: null, dash: null, action: null, actions: 0, delayMs: 0, lookYaw: 0, lookPitch: 0, lookMovedAt: -1e9 };
 }
 
 function heldKindOf(id: number): HeldKind | null {
@@ -211,6 +215,7 @@ export const castState = {
    */
   activity(id: number, activity: number, lookYaw: number, lookPitch: number, delayMs: number, now: number, fx?: RemoteFx): void {
     const s = castState.get(id);
+    if (Math.abs(angleDelta(lookYaw, s.lookYaw)) > 1e-4 || Math.abs(lookPitch - s.lookPitch) > 1e-4) s.lookMovedAt = now;
     s.lookYaw = lookYaw;
     s.lookPitch = lookPitch;
     s.delayMs = delayMs;
@@ -241,6 +246,10 @@ export const castState = {
     const s = states.get(key);
     if (!s || !s.aimPrecise || now - s.aimAt > AIM_FRESH_MS) return { yaw: lookYaw, pitch: lookPitch };
     if (key === 'self') return { yaw: s.aimYaw, pitch: s.aimPitch };
+    // While their drawn look still turns, follow it from the last exact aim; once it rests, the
+    // newest exact aim stands alone (the zone sends the aim a turn ended on within 0.2 s), so a
+    // drawn look that was still catching up when the update arrived leaves no lasting offset.
+    if (now - s.lookMovedAt > LOOK_REST_MS) return { yaw: s.aimYaw, pitch: s.aimPitch };
     return { yaw: s.aimYaw + angleDelta(lookYaw, s.lookYaw0), pitch: s.aimPitch + (lookPitch - s.lookPitch0) };
   },
 

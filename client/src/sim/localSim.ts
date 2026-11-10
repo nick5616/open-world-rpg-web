@@ -14,7 +14,7 @@ import type { GroundQuery } from './ground';
 import { advanceFixedStep, lerp } from './fixedStep';
 import { stepFly } from './fly';
 import { JumpEdgeLatch, makeMoveInput, type HeldButtons } from './inputFrame';
-import { MoveMode } from '@lodestone/contracts';
+import { MoveMode, pitchToI16, yawToU16 } from '@lodestone/contracts';
 import { stepClock } from './stepClock';
 import { cloneMoveState, MoveFlag, newMoveState, NO_ENV, stepMovement, STEP_DT, type MoveInput, type MoveState, type StepEnv, type Vec3 } from './movement';
 
@@ -58,7 +58,8 @@ export class LocalSim {
    * interact) and castSlot to put in that step's InputFrame. afterStep sees
    * the result (hit windows, the timing probe).
    */
-  combatHook: ((seq: number, before: Readonly<MoveState>, sprinting: boolean) => { flags: number; castSlot: number }) | null = null;
+  /** WP13 combat bits for the step; CR 022: `aim` replaces the frame's look while a held spell aims elsewhere (third person). */
+  combatHook: ((seq: number, before: Readonly<MoveState>, sprinting: boolean) => { flags: number; castSlot: number; aim?: { yaw: number; pitch: number } | null }) | null = null;
   afterStep: ((seq: number, state: Readonly<MoveState>) => void) | null = null;
 
   constructor(private ground: GroundQuery, spawn: Vec3) {
@@ -115,6 +116,10 @@ export class LocalSim {
         const c = this.combatHook(this.seq + 1, this.cur, inp.held.sprint);
         input.flags |= c.flags;
         input.castSlot = c.castSlot;
+        if (c.aim) {
+          input.yaw = yawToU16(c.aim.yaw);
+          input.pitch = pitchToI16(c.aim.pitch);
+        }
       }
       const env = this.envSource ? this.envSource() : NO_ENV;
       this.lastEnv = env;

@@ -34,7 +34,8 @@ import (
 //     every heldMinTicks and only when it moved at least heldAimStep, plus a
 //     keepalive every heldKeepTicks for every held action so a player who
 //     comes into range mid-hold learns what it is. Only to players within
-//     heldRadius, never to the caster.
+//     heldRadius, never to the caster. A smaller change is sent once
+//     heldSettleTicks after the last update (the aim a turn ended on).
 //   - the starts and stops already on the wire (Events 214, 223).
 
 // EvHeld (contracts/events.md 226): see the file comment. entityId = the
@@ -49,6 +50,8 @@ const (
 	heldRadius = 64
 	// heldMinTicks: at most one aim update per 3 ticks (10 Hz) per holder.
 	heldMinTicks = 3
+	// heldSettleTicks: an aim that changed by less than a step is sent this long after the last update.
+	heldSettleTicks = 6
 	// heldKeepTicks: a keepalive every second while held (late observers).
 	heldKeepTicks = 30
 	// heldAimStep: an aim update needs this much change (u16 yaw units /
@@ -140,7 +143,10 @@ func (w *World) heldTick() {
 			dp = -dp
 		}
 		moved := dy >= heldAimStepYaw || dp >= heldAimStepPitch
-		if !(aimed && moved && since >= heldMinTicks) && since < heldKeepTicks {
+		// settled: the aim stopped a little off the last update (a turn that ended between
+		// updates): one more, so observers rest on the exact aim.
+		settled := (dy > 0 || dp > 0) && since >= heldSettleTicks
+		if !(aimed && (moved && since >= heldMinTicks || settled)) && since < heldKeepTicks {
 			continue
 		}
 		h.last, h.yaw, h.pitch = w.tick, p.aimYaw, p.aimPitch

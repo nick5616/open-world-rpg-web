@@ -166,6 +166,9 @@ describe('replication decoders (castState.remoteEvent)', () => {
     const a = castState.aimOf(7, 0.6, 0.15, 100);
     expect(a.yaw).toBeCloseTo(0.62, 9);
     expect(a.pitch).toBeCloseTo(0.16, 9);
+    // a drawn look at rest leaves no offset: the newest exact aim stands (the zone sends the one a turn ended on)
+    castState.activity(7, 0, 0.6, 0.15, 0, 50);
+    expect(castState.aimOf(7, 0.6, 0.15, 400)).toEqual({ yaw: 0.52, pitch: 0.11 });
     expect(castState.aimOf(7, 0.6, 0.15, 10000)).toEqual({ yaw: 0.6, pitch: 0.15 });
     expect(angleDelta(0.1, 2 * Math.PI - 0.1)).toBeCloseTo(0.2, 9);
   });

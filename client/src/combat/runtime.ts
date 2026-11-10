@@ -307,7 +307,7 @@ export class CombatRuntime {
    * Called by LocalSim before each 60 Hz step: returns the combat bits for
    * this step's InputFrame (attack/alt/dodge/cast/interact + castSlot).
    */
-  stepHook(seq: number, before: MoveState, sprinting: boolean): { flags: number; castSlot: number } {
+  stepHook(seq: number, before: MoveState, sprinting: boolean): { flags: number; castSlot: number; aim?: { yaw: number; pitch: number } | null } {
     if (!this.enabled) return { flags: 0, castSlot: 0 };
     const b = this.buttons;
     this.timeline.sprinting = sprinting;
@@ -344,7 +344,12 @@ export class CombatRuntime {
       useCombatHud.getState().set({ refused: { id: out.refused.id, at: performance.now() } });
       if (out.refused.reason === 'mana') toast('Not enough mana');
     }
-    return { flags: out.flags, castSlot: out.castSlot };
+    // CR 022: while a stream, charge or beam is held, the frame carries the aim the spell really
+    // flies along (third person: the crosshair's convergence, a few degrees off the camera look),
+    // so the zone validates and every other player draws it along that exact aim (Event 226).
+    const h = castState.peek('self')?.held;
+    const aim = h && h.kind !== 'guard' && (localPlayer.aimYaw !== localPlayer.yaw || localPlayer.aimPitch !== localPlayer.pitch) ? { yaw: localPlayer.aimYaw, pitch: localPlayer.aimPitch } : null;
+    return { flags: out.flags, castSlot: out.castSlot, aim };
   }
 
   /** After each step: i-frame bookkeeping for the probe and active hit windows. */

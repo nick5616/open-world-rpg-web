@@ -75,7 +75,7 @@ export function RemotePlayers({ session }: { session: ZoneSession }) {
     if (!DEBUG || typeof window === 'undefined') return;
     // Headless captures: what each remote avatar is doing.
     (window as unknown as { __lodestoneAvatars?: unknown }).__lodestoneAvatars = () =>
-      [...avatars.values()].map((a) => ({ id: a.id, action: a.anim.current, animLevel: a.animLevel, lod: a.lodLevel, weapon: a.weaponKind, x: a.root.position.x, y: a.root.position.y, z: a.root.position.z, glow: a.pose.glow, bowDraw: a.pose.bowDraw }));
+      [...avatars.values()].map((a) => ({ id: a.id, action: a.anim.current, held: a.anim.heldSpec?.kind ?? null, bodyPitch: a.pose.bodyPitch, animLevel: a.animLevel, lod: a.lodLevel, weapon: a.weaponKind, x: a.root.position.x, y: a.root.position.y, z: a.root.position.z, glow: a.pose.glow, bowDraw: a.pose.bowDraw }));
   }, [avatars]);
 
   useEffect(() => {
@@ -94,6 +94,7 @@ export function RemotePlayers({ session }: { session: ZoneSession }) {
     session.views(delta * 1000, views);
     seen.clear();
     const now = performance.now();
+    castState.flush(now); // replication events whose drawn moment has come (before the poses: a dash start is not a dodge)
     // Playtest 2: at most ~32 full animated rigs; a dense crowd shrinks their radius.
     const fullM = budget.rigs.step(budget.full);
     budget.full = 0;
@@ -112,7 +113,6 @@ export function RemotePlayers({ session }: { session: ZoneSession }) {
       a.update(v, camera, delta, fullM);
       if (a.animLevel === 0) budget.full++;
     }
-    castState.flush(now); // replication events whose drawn moment has come
     for (const [id, a] of avatars) {
       if (!seen.has(id)) {
         group.remove(a.root);

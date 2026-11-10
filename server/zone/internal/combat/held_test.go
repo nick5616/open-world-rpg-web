@@ -2,6 +2,7 @@ package combat
 
 import (
 	"encoding/binary"
+	"math"
 	"testing"
 
 	"lodestone/server/pkg/movement"
@@ -72,6 +73,7 @@ func TestHeldStreamAimUpdatesRateLimitedAndAudience(t *testing.T) {
 	if len(evs) > 120/heldMinTicks {
 		t.Fatalf("%d updates in 120 ticks (cap %d)", len(evs), 120/heldMinTicks)
 	}
+	t.Logf("sweeping a stream 4 s: %d Event 226 per observer, %.2f kbps per observer (encoded frames)", len(evs), wireKbps(evs, 4))
 	for _, o := range evs {
 		e := o.Ev
 		if o.Aud.To != 0 || o.Aud.Radius != heldRadius || o.Aud.Except != h.p.ID {
@@ -112,6 +114,35 @@ func TestHeldStillAimSendsOnlyKeepalives(t *testing.T) {
 	// 5 s held at a fixed aim: one keepalive a second (late observers), nothing else.
 	if len(evs) < 4 || len(evs) > 5 {
 		t.Fatalf("still aim, 150 ticks: %d events, want 4-5 keepalives", len(evs))
+	}
+	t.Logf("holding a stream still 5 s: %d Event 226 per observer, %.3f kbps per observer", len(evs), wireKbps(evs, 5))
+}
+
+// wireKbps is what a list of Events costs one observer over secs (encoded
+// message bytes, before transport framing).
+func wireKbps(evs []Out, secs float64) float64 {
+	n := 0
+	for _, o := range evs {
+		e := o.Ev
+		n += len(proto.Encode(&e))
+	}
+	return float64(n) * 8 / 1000 / secs
+}
+
+func TestHeldAimSettlesOnTheExactAim(t *testing.T) {
+	w, _ := newWorld()
+	h := caster(w, "cinder_spray", movement.Vec3{X: 100, Z: 100})
+	heldRun(h, 10, func(i int) (uint16, int, float64, float64) {
+		if i == 0 {
+			return castF, 0, eastYaw, 0
+		}
+		return holdF, 0, eastYaw, 0
+	})
+	// a nudge smaller than an update step (10 of 64 units), then still: one update with the exact aim
+	nudge := eastYaw + 10*2*math.Pi/65536
+	evs := heldRun(h, 12, func(int) (uint16, int, float64, float64) { return holdF, 0, nudge, 0 })
+	if len(evs) != 1 || uint16(uint32(evs[0].Ev.Value)) != proto.YawToU16(nudge) {
+		t.Fatalf("settle: %d events (want 1 with the exact aim)", len(evs))
 	}
 }
 
