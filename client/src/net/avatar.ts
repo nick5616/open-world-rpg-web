@@ -49,6 +49,14 @@ export class FullRigBudget {
   }
 }
 const NAMEPLATE_Y = 2.25;
+/** Playtest 2 fishing: the rod's length (m); its tip is where the line leaves (rodTip). */
+const ROD_LEN = 1.9;
+
+/** Playtest 2: every avatar drawn now by entity id (your own body under SELF_AVATAR), for the fishing lines. */
+export const liveAvatars = new Map<number, Avatar>();
+export const SELF_AVATAR = -1;
+/** Photo mode: hide nameplates. */
+export const avatarFlags = { hidePlates: false };
 
 // Rig dimensions (m, rest pose). Feet at y = 0, facing -Z.
 const HIP_Y = 0.88;
@@ -97,6 +105,10 @@ let shared: {
   glider: THREE.BufferGeometry;
   gliderMat: THREE.Material;
   glowTex: THREE.Texture;
+  rod: THREE.BufferGeometry;
+  rodMat: THREE.Material;
+  fishGeo: THREE.BufferGeometry;
+  fishMat: THREE.Material;
 } | null = null;
 const bodyMats = new Map<number, THREE.MeshStandardMaterial>();
 const glowMats = new Map<string, THREE.SpriteMaterial>();
@@ -146,8 +158,15 @@ function res() {
       glider: new THREE.BoxGeometry(2.2, 0.04, 0.9),
       gliderMat: new THREE.MeshStandardMaterial({ color: 0xc98a3a, roughness: 0.8, side: THREE.DoubleSide }),
       glowTex: glowTexture(),
+      // playtest 2 fishing (CR 026): a rod in the hand while the line is out, a fish held up after a catch
+      rod: new THREE.CylinderGeometry(0.008, 0.018, ROD_LEN, 5),
+      rodMat: new THREE.MeshStandardMaterial({ color: 0x7a5530, roughness: 0.7 }),
+      fishGeo: new THREE.SphereGeometry(0.1, 10, 6),
+      fishMat: new THREE.MeshStandardMaterial({ color: 0x9fb4c4, roughness: 0.35, metalness: 0.3 }),
     };
     shared.low.translate(0, 0.9, 0);
+    shared.rod.translate(0, ROD_LEN / 2, 0);
+    shared.fishGeo.scale(0.9, 0.55, 3.2);
   }
   return shared;
 }
@@ -229,6 +248,8 @@ export class Avatar {
   /** pt/ux: the equipped weapon (snapshot typeId, weapons/look.ts): in the hand (high LOD) and on the shoulder pivot (mid LOD). */
   private weaponHi: THREE.Mesh;
   private weaponMid: THREE.Mesh;
+  private rod: THREE.Mesh;
+  private fishMesh: THREE.Mesh;
   /** The weapon look typeId shown (pt/ux packLook; CR 022: the gem tints its swing FX). */
   weaponType = -1;
   /** The weapon kind in hand (classifies Event 214 actions). */
@@ -356,6 +377,16 @@ export class Avatar {
     this.weaponHi.visible = false;
     this.weaponMid = new THREE.Mesh(undefined, weaponMaterial());
     this.weaponMid.visible = false;
+    // playtest 2 fishing: the rod rises from the right hand, forward and up; the catch hangs across both hands
+    this.rod = new THREE.Mesh(r.rod, r.rodMat);
+    this.rod.rotation.x = -1.25;
+    this.rod.visible = false;
+    this.armR.hand.add(this.rod);
+    this.fishMesh = new THREE.Mesh(r.fishGeo, r.fishMat);
+    this.fishMesh.position.set(-0.18, -0.05, -0.05);
+    this.fishMesh.rotation.y = Math.PI / 2;
+    this.fishMesh.visible = false;
+    this.armR.hand.add(this.fishMesh);
 
     const low = new THREE.Mesh(r.low, mat);
 
@@ -453,6 +484,7 @@ export class Avatar {
       else this.applyMid(p);
     }
 
+    if (this.plate) this.plate.visible = !avatarFlags.hidePlates;
     if (this.plate) {
       // Roughly constant on-screen size (about a twelfth of the view width
       // at 75 degrees FOV), never smaller than 0.6 m up close (playtest 2: a
@@ -464,7 +496,19 @@ export class Avatar {
     }
   }
 
+  /** Playtest 2 fishing: the rod tip in world space (false when no rod is shown or the full rig isn't drawn). */
+  rodTip(out: THREE.Vector3): boolean {
+    if (!this.rod.visible || this.shown !== 0) return false;
+    out.set(0, ROD_LEN, 0);
+    this.rod.updateWorldMatrix(true, false);
+    this.rod.localToWorld(out);
+    return true;
+  }
+
   private applyFull(p: Pose): void {
+    this.rod.visible = p.rod;
+    this.fishMesh.visible = p.fish > 0;
+    if (this.weaponType > 0) this.weaponHi.visible = !p.rod && p.fish === 0 && this.weaponKind !== null;
     this.body.position.y = HIP_Y + p.bodyY;
     this.body.rotation.set(p.bodyPitch, p.bodyYaw, p.bodyRoll);
     this.torso.rotation.set(p.torsoPitch, p.torsoYaw, 0);

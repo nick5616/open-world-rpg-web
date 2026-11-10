@@ -55,6 +55,10 @@ export const view = {
   boom: 0,
   /** Hide the own body: first person, or a boom so short the camera is in the head. */
   hideBody: true,
+  /** Playtest 2 photo mode (ui/photo): a free camera; your body shows, the first-person arms don't. */
+  photo: false,
+  /** Playtest 2 fishing: a rod is held in first person (the weapon view model hides). */
+  fpProp: false,
 };
 
 /**

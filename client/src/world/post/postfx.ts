@@ -19,6 +19,8 @@ import * as THREE from 'three';
 import { BlendFunction, BloomEffect, Effect, EffectAttribute, EffectComposer, EffectPass, FXAAEffect, GodRaysEffect, RenderPass, ToneMappingEffect, ToneMappingMode, type Pass } from 'postprocessing';
 import { SKY_GLSL, SKY_STYLE_GLSL } from '../sky/atmosphere';
 import { StyleEffect } from './styleEffect';
+// Playtest 2 photo mode: depth of field, vignette, grain (its own pass, off outside photo mode).
+import { PhotoEffect } from './photoEffect';
 // Playtest 2: spell shockwave distortion, shake and flashes (combat/fx/screen.ts).
 import { SpellScreenEffect } from '../../combat/fx/screen';
 
@@ -174,6 +176,10 @@ export class PostFX {
   readonly passes: Pass[] = [];
   /** The god-ray weight the chain was built with (styles scale it). */
   readonly godRayWeight = 0.22;
+  /** Playtest 2 photo mode's pass (photoEffect.ts) and the pass that draws to the screen without it. */
+  readonly photo = new PhotoEffect();
+  private readonly photoPass: EffectPass;
+  private readonly lastPass: Pass;
 
   constructor(
     readonly renderer: THREE.WebGLRenderer,
@@ -204,11 +210,26 @@ export class PostFX {
     const main = new EffectPass(camera, ...effects);
     this.composer.addPass(main);
     this.passes.push(main);
+    let last: Pass = main;
     if (cfg.fxaa) {
       const aa = new EffectPass(camera, new FXAAEffect());
       this.composer.addPass(aa);
       this.passes.push(aa);
+      last = aa;
     }
+    this.lastPass = last;
+    this.photoPass = new EffectPass(camera, this.photo);
+    this.composer.addPass(this.photoPass);
+    this.passes.push(this.photoPass);
+    this.setPhoto(false);
+  }
+
+  /** Playtest 2 photo mode: run the photo pass last (on) or leave it out (off; ordinary play). */
+  setPhoto(on: boolean): void {
+    if (this.photoPass.enabled === on && this.photoPass.renderToScreen === on) return;
+    this.photoPass.enabled = on;
+    this.photoPass.renderToScreen = on;
+    this.lastPass.renderToScreen = !on;
   }
 
   /** Per frame: sun disc placement (inside the far plane) and fog camera matrices. */

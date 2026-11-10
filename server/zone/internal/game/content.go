@@ -409,22 +409,26 @@ func (s *Server) sendContentSync(sess *session) {
 	}
 	st := cs.st
 	out := struct {
-		V        int            `json:"v"`
-		Kills    map[string]int `json:"kills"`
-		Tablets  []int          `json:"tablets"`
-		Feats    []string       `json:"feats"`
-		Title    string         `json:"title"`
-		Stats    map[string]int `json:"stats"`
-		Regions  int            `json:"regions"`
-		Rep      []syncRep      `json:"rep"`
-		Vaults   []syncVault    `json:"vaults"`
-		Progress map[string]int `json:"progress"`
-	}{V: 1, Kills: st.Kills, Tablets: st.Tablets, Feats: st.Feats, Title: st.Title, Stats: st.Stats, Regions: st.RegionsWalked(), Progress: map[string]int{}}
+		V        int               `json:"v"`
+		Kills    map[string]int    `json:"kills"`
+		Tablets  []int             `json:"tablets"`
+		Feats    []string          `json:"feats"`
+		Title    string            `json:"title"`
+		Stats    map[string]int    `json:"stats"`
+		Regions  int               `json:"regions"`
+		Rep      []syncRep         `json:"rep"`
+		Vaults   []syncVault       `json:"vaults"`
+		Progress map[string]int    `json:"progress"`
+		Fish     map[string][2]int `json:"fish"` // playtest 2 fishing: species -> [landed, best g]
+	}{V: 1, Kills: st.Kills, Tablets: st.Tablets, Feats: st.Feats, Title: st.Title, Stats: st.Stats, Regions: st.RegionsWalked(), Progress: map[string]int{}, Fish: st.Fish}
 	if out.Kills == nil {
 		out.Kills = map[string]int{}
 	}
 	if out.Stats == nil {
 		out.Stats = map[string]int{}
+	}
+	if out.Fish == nil {
+		out.Fish = map[string][2]int{}
 	}
 	for k, v := range st.Rep {
 		si, _ := strconv.Atoi(k)

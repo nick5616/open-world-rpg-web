@@ -30,10 +30,16 @@
 // `bend` is the elbow (forward) or knee (backward). Body/torso/head pitch
 // are rotation.x values: positive leans back / looks up.
 
-import { Activity, COMBAT, DODGE_SPEED, MOVE_STEP_HZ, SPRINT_MULTIPLIER } from '@lodestone/contracts';
+import { Activity, COMBAT, CONTENT, DODGE_SPEED, MOVE_STEP_HZ, SPRINT_MULTIPLIER } from '@lodestone/contracts';
 import type { WeaponKind } from '../combat/weapons/look';
 import { ELEMENT_COLORS } from '../combat/events';
 import { CAST_FX_MINE, type CasterState } from '../combat/castState';
+
+/** Playtest 2 emotes (CR 026, contracts/content.yaml emotes): id -> definition. */
+const EMOTE_BY_ID = new Map(CONTENT.emotes.list.map((e) => [e.id, e]));
+/** The zone's fishing pose (the line is out) and "showing a catch" (Event 1090 ids 20, 21). */
+export const EMOTE_FISHING = 20;
+export const EMOTE_SHOW_CATCH = 21;
 
 /** CR 018: Event 214 targetId for "the secondary button went down" (sword parry, spear charge, bow draw). Go: combat.CastFXGuard. */
 export const CAST_FX_GUARD = 0x4001;
@@ -196,6 +202,9 @@ export interface Pose {
   /** Bow draw 0..1 (for a string that can show it). */
   bowDraw: number;
   glider: boolean;
+  /** Playtest 2 emotes/fishing: a fishing rod in the right hand (the weapon hides), a fish held up (species id, 0 none). */
+  rod: boolean;
+  fish: number;
 }
 
 export interface AnimInput {
@@ -213,7 +222,7 @@ export interface AnimInput {
 
 const limb = (): LimbPose => ({ swing: 0, spread: 0, twist: 0, bend: 0 });
 export function newPose(): Pose {
-  return { bodyY: 0, bodyPitch: 0, bodyRoll: 0, bodyYaw: 0, torsoPitch: 0, torsoYaw: 0, headPitch: 0, armL: limb(), armR: limb(), legL: limb(), legR: limb(), glow: 0, glowL: false, glowR: false, glowColor: null, bowDraw: 0, glider: false };
+  return { bodyY: 0, bodyPitch: 0, bodyRoll: 0, bodyYaw: 0, torsoPitch: 0, torsoYaw: 0, headPitch: 0, armL: limb(), armR: limb(), legL: limb(), legR: limb(), glow: 0, glowL: false, glowR: false, glowColor: null, bowDraw: 0, glider: false, rod: false, fish: 0 };
 }
 
 const TAU = Math.PI * 2;
@@ -286,8 +295,37 @@ export class AvatarAnimator {
   heldSpec: ActionSpec | null = null;
   heldId = 0;
 
+  // ---- playtest 2 emotes (CR 026): one emote at a time, blended over the whole body.
+  private emoteId = 0;
+  private emoteValue = 0;
+  private emoteAt = 0;
+  private emoteDur = 0; // s; 0 = loops until the body moves
+  private emoteW = 0;
+  private lastEmote = 0;
+  /** The emote record counter seen (followEmote). */
+  seenEmote = 0;
+
+  /** The emote playing (0 none). */
+  get currentEmote(): number {
+    return this.emoteId;
+  }
+
+  /** Play emote id (0 stops); value: extra (the fish held up). Loops hold until the body moves. */
+  emote(id: number, value = 0): void {
+    const def = EMOTE_BY_ID.get(id);
+    if (!id || !def) {
+      this.emoteId = 0;
+      return;
+    }
+    this.emoteId = id;
+    this.emoteValue = value;
+    this.emoteAt = this.time;
+    this.emoteDur = def.loop ? 0 : def.durS;
+  }
+
   /** Start an action now (replaces the one playing; a release ends a held draw/charge). */
   trigger(s: ActionSpec): void {
+    if (this.emoteId !== EMOTE_FISHING) this.emoteId = 0; // fighting ends an emote (the zone ends a line itself)
     // A shot released from a held draw looses at once instead of drawing again.
     this.fromDraw = s.kind === 'bow' && this.action?.kind === 'draw' && this.time - this.actionAt > 0.25;
     this.action = s;
@@ -475,6 +513,18 @@ export class AvatarAnimator {
       aim = pitch - clamp(pitch * 0.3, -0.35, 0.35);
     }
 
+    // ---- emote (whole body, blended in and out; moving ends a loop)
+    p.rod = false;
+    p.fish = 0;
+    if (this.emoteId) {
+      const el = now - this.emoteAt;
+      const busy = !alive || gliding || climbing || swimming || air;
+      if (busy || (this.emoteDur > 0 && el >= this.emoteDur) || (this.emoteDur === 0 && el > 0.4 && sp > 1.2)) this.emoteId = 0;
+    }
+    this.emoteW += ((this.emoteId ? 1 : 0) - this.emoteW) * (1 - Math.exp(-dt / 0.12));
+    if (this.emoteId) this.lastEmote = this.emoteId;
+    if (this.lastEmote && this.emoteW > 0.002) this.applyEmote(this.lastEmote, now - this.emoteAt, this.emoteW, pitch, p);
+
     // ---- action over the upper body
     const a = this.action;
     if (a && alive) {
@@ -516,6 +566,160 @@ export class AvatarAnimator {
     }
     return p;
   }
+
+  /** Emote id posed at e seconds in, with weight w (pitch: the look, for pointing). */
+  private applyEmote(id: number, e: number, w: number, pitch: number, p: Pose): void {
+    const R = this.t.r;
+    const L = this.t.l;
+    const LR = this.e.r;
+    const LL = this.e.l;
+    // Legs keep the locomotion pose unless the emote sets them.
+    set(LR, p.legR.swing, p.legR.spread, p.legR.bend);
+    set(LL, p.legL.swing, p.legL.spread, p.legL.bend);
+    let bodyY = p.bodyY;
+    let bodyPitch = p.bodyPitch;
+    let bodyRoll = p.bodyRoll;
+    let torsoPitch = p.torsoPitch;
+    let torsoYaw = p.torsoYaw;
+    let headPitch = p.headPitch;
+    const dur = EMOTE_BY_ID.get(id)?.durS || 1;
+    const env = smooth(0, 0.3, e) * (1 - smooth(dur - 0.35, dur, e));
+    switch (id) {
+      case 1: {
+        // wave: the right hand up beside the head, waving from the elbow
+        const wv = Math.sin(e * 10);
+        set(R, 2.55, 0.55, 0.55 + 0.45 * wv * env, 0.2);
+        set(L, 0.1, 0.12, 0.25);
+        headPitch = 0.08;
+        torsoYaw = 0.12 * env;
+        break;
+      }
+      case 2: {
+        // bow: a deep bow from the waist, right hand to the chest, left behind the back
+        const k = smooth(0.15, 0.6, e) * (1 - smooth(1.3, 1.8, e));
+        torsoPitch = -1.0 * k;
+        headPitch = -0.35 * k;
+        set(R, 0.7, -0.45, 1.7);
+        set(L, -0.45, 0.15, 1.3);
+        break;
+      }
+      case 3: {
+        // cheer: both arms up, pumping, a little hop
+        const b = Math.sin(e * 8);
+        set(R, 2.8 + 0.2 * b, 0.3, 0.25);
+        set(L, 2.8 - 0.2 * b, 0.3, 0.25);
+        bodyY = p.bodyY + 0.07 * Math.abs(b) * env;
+        headPitch = 0.3;
+        torsoPitch = 0.1;
+        break;
+      }
+      case 4: {
+        // point: the right arm straight out along the look
+        set(R, 1.55 + clamp(pitch, -0.8, 0.9) * 0.9, 0.05, 0.02);
+        set(L, 0.15, 0.1, 0.2);
+        torsoYaw = 0.15;
+        headPitch = clamp(pitch * 0.6, -0.5, 0.5);
+        break;
+      }
+      case 5: {
+        // sit: on the ground, legs out, leaning back on the hands
+        const k = smooth(0, 0.45, e);
+        bodyY = p.bodyY + (-0.74 - p.bodyY) * k;
+        torsoPitch = 0.18 * k;
+        set(LR, 1.45 * k, 0.12, 0.3 * k);
+        set(LL, 1.35 * k, 0.16, 0.45 * k);
+        set(R, -0.55, 0.28, 0.1);
+        set(L, -0.55, 0.28, 0.1);
+        headPitch = 0.05 + 0.03 * Math.sin(e * 1.7);
+        break;
+      }
+      case 6: {
+        // dance: a bouncing two-step, arms swinging overhead in turn
+        const beat = e * Math.PI * 2 * 1.15;
+        const sn = Math.sin(beat);
+        bodyY = p.bodyY - 0.06 * Math.abs(sn) * smooth(0, 0.3, e);
+        bodyRoll = 0.12 * sn;
+        torsoYaw = 0.35 * Math.sin(beat * 0.5);
+        set(R, 1.3 + 1.3 * Math.max(0, sn), 0.45, 1.0 - 0.6 * Math.max(0, sn));
+        set(L, 1.3 + 1.3 * Math.max(0, -sn), 0.45, 1.0 - 0.6 * Math.max(0, -sn));
+        set(LR, 0.3 * sn, 0.1, 0.5 * Math.max(0, sn));
+        set(LL, -0.3 * sn, 0.1, 0.5 * Math.max(0, -sn));
+        headPitch = 0.1 * Math.sin(beat * 2);
+        break;
+      }
+      case 7: {
+        // laugh: head back, shoulders shaking, hands on the belly
+        const sh = Math.sin(e * 22) * env;
+        torsoPitch = 0.12 + 0.07 * sh;
+        headPitch = 0.4 + 0.08 * sh;
+        bodyY = p.bodyY + 0.015 * sh;
+        set(R, 0.45, -0.3, 1.5);
+        set(L, 0.45, -0.3, 1.5);
+        break;
+      }
+      case 8: {
+        // shrug: forearms up, palms out, head tilted
+        set(R, 0.25, 0.55 * env, 1.65 * env, -0.6 * env);
+        set(L, 0.25, 0.55 * env, 1.65 * env, -0.6 * env);
+        bodyY = p.bodyY + 0.03 * env;
+        bodyRoll = 0.1 * env;
+        headPitch = 0.1;
+        break;
+      }
+      case 9: {
+        // salute: the right hand to the brow, standing straight
+        set(R, 2.05, 0.8, 2.35);
+        set(L, 0, 0.08, 0.05);
+        bodyPitch = 0;
+        torsoPitch = 0.04;
+        headPitch = 0.05;
+        break;
+      }
+      case 10: {
+        // rest by the fire: sitting, knees up, arms resting on them
+        const k = smooth(0, 0.5, e);
+        bodyY = p.bodyY + (-0.72 - p.bodyY) * k;
+        torsoPitch = -0.12 * k;
+        set(LR, 1.05 * k, 0.18, 1.7 * k);
+        set(LL, 1.0 * k, 0.22, 1.75 * k);
+        set(R, 0.95, -0.05, 0.75);
+        set(L, 0.95, -0.05, 0.75);
+        headPitch = -0.12 + 0.04 * Math.sin(e * 1.3);
+        break;
+      }
+      case EMOTE_FISHING: {
+        // the line is out: the rod held up and forward, the other hand on the reel
+        const sway = Math.sin(e * 1.6) * 0.04;
+        set(R, 1.0 + sway, 0.12, 0.55);
+        set(L, 0.85, -0.32, 1.15, 0.2 * Math.sin(e * 3));
+        torsoPitch = 0.02;
+        p.rod = w > 0.3;
+        break;
+      }
+      case EMOTE_SHOW_CATCH: {
+        // holding the catch up with both hands
+        const lift = smooth(0, 0.4, e);
+        set(R, 0.5 + 1.6 * lift, 0.18, 0.5);
+        set(L, 0.5 + 1.6 * lift, 0.18, 0.5);
+        headPitch = 0.25 * lift;
+        p.fish = w > 0.3 ? this.emoteValue || 1 : 0;
+        break;
+      }
+      default:
+        return;
+    }
+    mix(p.armR, R, w);
+    mix(p.armL, L, w);
+    mix(p.legR, LR, w);
+    mix(p.legL, LL, w);
+    p.bodyY += (bodyY - p.bodyY) * w;
+    p.bodyPitch += (bodyPitch - p.bodyPitch) * w;
+    p.bodyRoll += (bodyRoll - p.bodyRoll) * w;
+    p.torsoPitch += (torsoPitch - p.torsoPitch) * w;
+    p.torsoYaw += (torsoYaw - p.torsoYaw) * w;
+    p.headPitch += (headPitch - p.headPitch) * w;
+  }
+  private readonly e: { r: LimbPose; l: LimbPose } = { r: limb(), l: limb() };
 
   private applyAction(a: ActionSpec, e: number, aim: number, p: Pose): void {
     const u = e / a.durMs;
@@ -819,4 +1023,19 @@ export function followCaster(anim: AvatarAnimator, st: CasterView | undefined, w
       if (prev.kind === 'cast' || prev.kind === 'castStaff') anim.trigger(classifyChannel(anim.heldId, 0, weapon)); // the stream's release flick
     }
   } else if (want && anim.current === null) anim.trigger(want); // an action played over the hold ended
+}
+
+/** What followEmote reads: an emote record (ui/emotes/store.ts). */
+export interface EmoteView {
+  id: number;
+  value: number;
+  /** Bumped per emote (a replay of the same emote plays it again). */
+  n: number;
+}
+
+/** Playtest 2: drive an avatar's emote from its record (yours or another player's), every frame. */
+export function followEmote(anim: AvatarAnimator, st: EmoteView | undefined): void {
+  if (!st || st.n === anim.seenEmote) return;
+  anim.seenEmote = st.n;
+  anim.emote(st.id, st.value);
 }

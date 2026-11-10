@@ -53,7 +53,7 @@ const NOTE_MS = 6500;
 const EVENT_LINGER_MS = 9000;
 let noteId = 1;
 
-export const emptySync = (): ContentSync => ({ kills: {}, tablets: [], feats: [], title: '', stats: {}, regions: 0, rep: [], vaults: [], progress: {} });
+export const emptySync = (): ContentSync => ({ kills: {}, tablets: [], feats: [], title: '', stats: {}, regions: 0, rep: [], vaults: [], progress: {}, fish: {} });
 
 const initial = (): Omit<ContentState, 'actions'> => ({
   sync: emptySync(),

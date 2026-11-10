@@ -48,6 +48,8 @@ export interface ContentSync {
   rep: { town: number; name: string; rep: number; tier: number }[];
   vaults: { site: number; name: string; x: number; z: number }[];
   progress: Record<string, number>;
+  /** Playtest 2 fishing (CR 026): species key -> [landed, best weight g]. */
+  fish: Record<string, [number, number]>;
 }
 
 export interface TabletPlace {
@@ -140,6 +142,7 @@ export function decodeSync(data: Uint8Array): ContentSync {
     rep: j.rep ?? [],
     vaults: j.vaults ?? [],
     progress: j.progress ?? {},
+    fish: j.fish ?? {},
   };
 }
 
