@@ -26,7 +26,10 @@ import { isSpeaking } from '../voice/levels';
 import { unpackLook, type WeaponKind } from '../combat/weapons/look';
 import { weaponGeometry } from '../combat/weapons/models';
 import { weaponMaterial } from '../combat/weapons/material';
-import { AvatarAnimator, type AnimInput, type LimbPose, type Pose } from './avatarAnim';
+import { AvatarAnimator, RIDE_HIP_RAISE, type AnimInput, type LimbPose, type Pose } from './avatarAnim';
+import { ridingOf, TYPE_RIDING } from '../ui/mounts/events';
+import { SteedRig } from '../ui/mounts/model';
+import { steedLookOf } from '../ui/mounts/store';
 import { MARK_COLOR, drawSwords, pvpMark } from '../ui/pvp/plate';
 import { titleOf } from '../ui/content/titles'; // CR 023: feat titles under the name
 
@@ -285,6 +288,68 @@ export class Avatar {
   /** Distance band chosen this frame: 0 full, 1 simplified, 2 none. */
   animLevel = 0;
   private readonly input: AnimInput = { x: 0, y: 0, z: 0, yaw: 0, pitch: 0, speed: 0, activity: 0, healthPct: 100 };
+  // CR 027: the steed under a rider (built on first ride, kept while the avatar lives).
+  private steed: SteedRig | null = null;
+  private riderHidden = false;
+  /** The steed's heading (yaw, -Z forward), eased toward the drawn motion. */
+  heading = 0;
+  private hx = Number.NaN;
+  private hz = 0;
+  private hvx = 0;
+  private hvz = 0;
+  private hvy = 0;
+  private hy = 0;
+  /** Captures: the steed's gait while riding ('' on foot). */
+  get steedGait(): string {
+    return this.steed?.root.parent ? this.steed.gait : '';
+  }
+
+  private steedHeading(v: RemoteView, dt: number): number {
+    if (Number.isNaN(this.hx) || dt <= 0) {
+      this.hx = v.x;
+      this.hz = v.z;
+      this.hy = v.y;
+      this.heading = v.yaw;
+      return this.heading;
+    }
+    const k = 1 - Math.exp(-dt / 0.12);
+    const jump = Math.abs(v.x - this.hx) + Math.abs(v.z - this.hz) > 8;
+    if (!jump) {
+      this.hvx += ((v.x - this.hx) / dt - this.hvx) * k;
+      this.hvz += ((v.z - this.hz) / dt - this.hvz) * k;
+      this.hvy += ((v.y - this.hy) / dt - this.hvy) * k;
+    }
+    this.hx = v.x;
+    this.hz = v.z;
+    this.hy = v.y;
+    const sp = Math.hypot(this.hvx, this.hvz);
+    if (sp > 0.6) {
+      // Backing up (moving against the look) keeps the steed facing ahead.
+      const fx = -Math.sin(v.yaw);
+      const fz = -Math.cos(v.yaw);
+      const back = (this.hvx * fx + this.hvz * fz) / sp < -0.5 && sp < 3;
+      const target = back ? Math.atan2(this.hvx, this.hvz) : Math.atan2(-this.hvx, -this.hvz);
+      let d = target - this.heading;
+      d = Math.atan2(Math.sin(d), Math.cos(d));
+      this.heading += d * (1 - Math.exp(-dt / 0.1));
+    }
+    return this.heading;
+  }
+
+  private updateSteed(v: RemoteView, riding: boolean, dt: number): void {
+    if (!riding) {
+      if (this.steed?.root.parent) this.root.remove(this.steed.root);
+      this.hx = Number.NaN;
+      return;
+    }
+    if (!this.steed) {
+      this.steed = new SteedRig(0, { reins: true });
+      this.steed.setFirstPerson(this.riderHidden);
+    }
+    if (!this.steed.root.parent) this.root.add(this.steed.root);
+    this.steed.setColour(steedLookOf(v.id).colour);
+    if (this.animLevel < 2) this.steed.update(dt, v.speed, (v.activity & Activity.airborne) !== 0, this.hvy);
+  }
 
   constructor(
     readonly id: number,
@@ -410,6 +475,14 @@ export class Avatar {
     }
   }
 
+  /** CR 027: hide the rider's figure but keep their steed (your own body, first person in the saddle). */
+  setRiderVisible(on: boolean): void {
+    for (const l of this.levels) l.visible = on;
+    this.riderHidden = !on;
+    this.steed?.setFirstPerson(!on);
+    if (!on) this.glider.visible = false;
+  }
+
   /** Which LOD level is showing (0 high, 1 mid, 2 low): for tests and captures. */
   get lodLevel(): number {
     return Math.max(0, this.shown);
@@ -455,8 +528,11 @@ export class Avatar {
    */
   update(v: RemoteView, camera: THREE.Camera, dt: number, fullM: number = LOD_MID_M): void {
     this.root.position.set(v.x, v.y, v.z);
-    this.root.rotation.y = v.yaw;
-    if ((v.typeId ?? 0) !== this.weaponType) this.setWeapon(v.typeId ?? 0);
+    // CR 027: a rider (typeId bit 14) sits on their steed, both facing its
+    // heading (from the drawn motion); the look turns the torso and head.
+    const riding = ridingOf(v.typeId ?? 0);
+    this.root.rotation.y = riding ? this.steedHeading(v, dt) : v.yaw;
+    if (((v.typeId ?? 0) & ~TYPE_RIDING) !== (this.weaponType & ~TYPE_RIDING) || this.weaponType < 0) this.setWeapon((v.typeId ?? 0) & ~TYPE_RIDING);
 
     const d = camera.position.distanceTo(this.root.position);
     // 1 m of hysteresis at each band edge: no flicker for someone standing on it
@@ -481,11 +557,19 @@ export class Avatar {
       inp.speed = v.speed;
       inp.activity = v.activity;
       inp.healthPct = v.healthPct;
+      inp.riding = riding;
       const p = this.anim.update(inp, dt);
+      if (riding) {
+        // The look turns the rider's torso (and the aimed arms) on the saddle.
+        let d = v.yaw - this.heading;
+        d = Math.atan2(Math.sin(d), Math.cos(d));
+        p.torsoYaw += Math.max(-1.3, Math.min(1.3, d)) * 0.75;
+      }
       this.glider.visible = p.glider;
       if (this.animLevel === 0) this.applyFull(p);
       else this.applyMid(p);
     }
+    this.updateSteed(v, riding, dt);
 
     if (this.plate) this.plate.visible = !avatarFlags.hidePlates;
     if (this.plate) {
@@ -494,7 +578,7 @@ export class Avatar {
       // player beside you had a nameplate wider than they were).
       const w = Math.min(60, Math.max(0.6, d * 0.12));
       this.plate.scale.set(w, w / 4, 1);
-      this.plate.position.y = NAMEPLATE_Y + w / 8;
+      this.plate.position.y = NAMEPLATE_Y + w / 8 + (riding ? RIDE_HIP_RAISE : 0);
       this.drawPlate(v);
     }
   }
@@ -593,6 +677,7 @@ export class Avatar {
   }
 
   dispose(): void {
+    this.steed?.dispose();
     this.plateTex?.dispose();
     (this.plate?.material as THREE.SpriteMaterial | undefined)?.dispose();
   }

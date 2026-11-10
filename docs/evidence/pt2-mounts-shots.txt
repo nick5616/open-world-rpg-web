@@ -1,0 +1,20 @@
+riding ground from 2047.8, 2438.6 east, outside "Draedmore"
+whistle: {"owned":true,"name":"Spirit Steed","colour":0,"kind":1,"whistle":true,"phase":1,"x":2047.84,"z":2440.8,"coolMs":0,"colours":6,"count":1,"arriveMs":2400}; steed arriving from (2021.8, 2440.8) to (2047.8, 2440.8)
+shot pt2-mounts-summon.png: the spirit steed galloping in after the whistle (key 5), third person
+mounted: true (gait 0)
+galloping: speed 16.13 m/s, gait gallop, at (2128.6, 2439.7)
+shot pt2-mounts-gallop-third.png: galloping in third person on a spur's burst (boom pulled back, FOV kick, spur pips under the crosshair)
+shot pt2-mounts-observer.png: Birch's view of Ash riding past (remote avatar: steed gait gallop, heading 4.67, at (2129.4, 2439.9))
+shot pt2-mounts-first.png: first person in the saddle at 13.5 m/s (the eye rides 0.95 m higher; the steed's neck and head below, the gallop's FOV kick)
+shot pt2-mounts-panel.png: the steed panel: {"owned":true,"name":"Misty","colour":1,"kind":1,"whistle":true,"phase":3,"x":2047.84,"z":2439.62,"coolMs":0,"colours":6,"count":1,"arriveMs":0}
+after E: mounted false; steed phase 2; notes ["A spirit steed answers your whistle. Name it in the steed panel (Character, C)."]
+
+zone log (mounts):
+{"time":"2026-11-10T05:29:15.4760168-08:00","level":"WARN","msg":"world row is not minted (placeholder gen_version); serving spec_from_seed(seed). The account service mints it on start, or run `go run ./server/pkg/cmd/mintworld -official`.","svc":"zone","world":"mounts-1794317353129","seed":20261108,"rowGenVersion":"dev"}
+{"time":"2026-11-10T05:29:16.3434369-08:00","level":"INFO","msg":"zone config","svc":"zone","zone":"zone-mounts-26106","world":"mounts-1794317353129","seed":20261108,"genVersion":"2","devSpawn":true}
+{"time":"2026-11-10T05:29:19.5433405-08:00","level":"INFO","msg":"quest started","svc":"zone","character":"pt2-mounts-a-1794317356932","quest":"story:ward","settlement":37}
+{"time":"2026-11-10T05:29:19.5438625-08:00","level":"INFO","msg":"join","svc":"zone","entity":1,"character":"pt2-mounts-a-1794317356932","name":"Ash","remote":"127.0.0.1:52036","x":2047.84,"z":2438.6}
+{"time":"2026-11-10T05:29:29.2769415-08:00","level":"INFO","msg":"quest started","svc":"zone","character":"pt2-mounts-b-1794317368172","quest":"story:ward","settlement":20}
+{"time":"2026-11-10T05:29:29.2769415-08:00","level":"INFO","msg":"join","svc":"zone","entity":35,"character":"pt2-mounts-b-1794317368172","name":"Birch","remote":"127.0.0.1:52052","x":2121.84,"z":2451.6}
+{"time":"2026-11-10T05:29:54.7105139-08:00","level":"INFO","msg":"leave","svc":"zone","entity":1,"character":"pt2-mounts-a-1794317356932"}
+{"time":"2026-11-10T05:29:54.7105139-08:00","level":"INFO","msg":"leave","svc":"zone","entity":35,"character":"pt2-mounts-b-1794317368172"}

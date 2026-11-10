@@ -127,6 +127,9 @@ structs:
       #   bit 0 exhausted (stamina ran out; no sprint/climb/glide until full)
       #   bit 1 drowned (helpless in deep water, respawn at shore pending)
       #   bit 2 sliding (standing on ground steeper than WALKABLE_SLOPE_DEG)
+      #   bit 3 mounted (CR 027: riding the spirit steed; only the zone sets
+      #         it, the shared step clears it); while mounted bits 4-7 carry
+      #         the gait (bits 4-5 trot/walk/gallop, 6 Shift held, 7 backing)
       #   bits 4-7 climb-jump lunge steps remaining (0..15)
       flags: u8
       # WP10 (CR 004, protocol v2): the rest of the movement state a client

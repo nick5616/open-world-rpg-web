@@ -81,6 +81,10 @@ type State struct {
 	// lore tablets, feats and title, vaults, herb patches; mirrors
 	// character_content.data from migration 0025). Optional.
 	Content json.RawMessage `json:"content,omitempty"`
+	// Mounts are the steeds bonded to the character (playtest 2, CR 027:
+	// {"v":1,"steeds":[{kind,name,colour,bondedAt}]}; mirrors
+	// character_mounts from migration 0028). Optional.
+	Mounts json.RawMessage `json:"mounts,omitempty"`
 }
 
 // NewCharacterState is a level-1 character standing at spawn, matching the

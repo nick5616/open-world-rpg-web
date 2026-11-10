@@ -80,6 +80,7 @@ import {
 import type { GroundQuery } from './ground';
 import { beginDash, SUSTAIN, skateGround } from './dash';
 import { atLevel, collideStep } from './caves';
+import { collideHead, MOUNTED, stepRide } from './ride';
 
 export interface Vec3 {
   x: number;
@@ -101,6 +102,8 @@ export const MoveFlag = {
   drowned: 2,
   /** This step stood on ground steeper than walkable (animation/HUD). */
   sliding: 4,
+  /** CR 027: riding the spirit steed (./ride.ts). Only the zone sets it; the step only clears it. */
+  mounted: MOUNTED,
 } as const;
 
 /** Everything a step carries over to the next one (all of it rides in SelfState). */
@@ -390,7 +393,7 @@ function family(mode: number): number {
 /** Stamina clamp, exhaustion bookkeeping and the family-change timer reset, shared by every mode. */
 function finish(prev: MoveState, s: MoveState): MoveState {
   if (family(s.mode) !== family(prev.mode)) s.timer = 0;
-  if (s.mode !== MoveMode.climb) s.lunge = 0;
+  if (s.mode !== MoveMode.climb && (s.flags & MOUNTED) === 0) s.lunge = 0; // CR 027: a rider's gait rides in lunge
   if (s.stamina < 0) s.stamina = 0;
   if (s.stamina > s.staminaMax) s.stamina = s.staminaMax;
   if (s.stamina === 0) s.flags |= MoveFlag.exhausted;
@@ -408,9 +411,15 @@ export function stepMovement(state: MoveState, input: MoveInput, groundIn: Groun
   const ground = atLevel(groundIn, state.pos.y); // WP09: caves see the ground at the player's level (caves.ts)
   const yaw = u16ToYaw(input.yaw);
   const wish = wishDirFromFlags(input.flags, yaw);
+  // CR 027: a rider can't climb, glide or swim (the step drops the flag);
+  // riding never dashes (no dodge, no held dash).
+  let s0 = state;
+  if ((s0.flags & MOUNTED) !== 0 && s0.mode !== MoveMode.ground && s0.mode !== MoveMode.air) s0 = { ...s0, flags: s0.flags & ~MOUNTED, lunge: 0 };
+  const riding = (s0.flags & MOUNTED) !== 0;
+  const dashFlags = riding ? input.flags & ~(InputFlag.dodge | InputFlag.channel) : input.flags;
   // WP13: dodge / dash bookkeeping first (Go stepFull -> beginDash); CR 021: the pitch flies a jet dash.
-  const grounded = state.pos.y <= ground.heightAt(state.pos.x, state.pos.z) + GROUND_EPS;
-  const dashed = beginDash(state, input.flags, input.castSlot ?? 0, yaw, i16ToPitch(input.pitch), wish, grounded, dt);
+  const grounded = s0.pos.y <= ground.heightAt(s0.pos.x, s0.pos.z) + GROUND_EPS;
+  const dashed = beginDash(s0, dashFlags, riding ? 0 : (input.castSlot ?? 0), yaw, i16ToPitch(input.pitch), wish, grounded, dt);
   const st = dashed.state;
   const gm = dashed.kind === SUSTAIN.skate ? skateGround(ground) : ground; // CR 021: a held skate runs over water
   let out: MoveState;
@@ -425,9 +434,10 @@ export function stepMovement(state: MoveState, input: MoveInput, groundIn: Groun
       out = stepSwim(st, input.flags, wish, gm, dt);
       break;
     default:
-      out = stepWalk(st, input.flags, wish, gm, dt, dashed.dashing);
+      out = riding ? stepRide(st, input.flags, wishDirFromFlags(input.flags & (InputFlag.forward | InputFlag.left | InputFlag.right), yaw), yaw, gm, dt) : stepWalk(st, input.flags, wish, gm, dt, dashed.dashing);
   }
   out = collideStep(ground, out); // WP09: cave walls and ceilings (caves.ts)
+  out = collideHead(ground, out); // CR 027: the steed's chest (ride.ts)
   out.dash = st.dash ?? 0;
   out.iframes = st.iframes ?? 0;
   return finish(state, out);

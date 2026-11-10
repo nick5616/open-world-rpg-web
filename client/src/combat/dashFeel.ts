@@ -64,12 +64,18 @@ export function kickFor(speed: number, dashing: boolean): number {
   return Math.max(0, Math.min(1, (speed - KICK_FROM) / (KICK_FULL - KICK_FROM)));
 }
 
+/** CR 027: the FOV kick (0..1 of FOV_KICK) for a rider's ground speed: nothing at a trot, ~+5 deg galloping, ~+9 deg on a spur's burst. */
+export function rideKick(speed: number): number {
+  return Math.max(0, Math.min(0.56, (speed - 9) / 18));
+}
+
 export function dashFeelTick(camera: THREE.Camera, dt: number): void {
   const cam = camera as THREE.PerspectiveCamera;
   if (cam.isPerspectiveCamera === undefined) return;
   const v = localPlayer.vel;
   const speed = Math.hypot(v.x, v.y, v.z);
-  const want = kickFor(speed, localPlayer.dash > 0);
+  // CR 027: a gallop widens the view too (a spur's burst most), without speed lines.
+  const want = Math.max(kickFor(speed, localPlayer.dash > 0), localPlayer.mounted ? rideKick(Math.hypot(v.x, v.z)) : 0);
   // Fast in, slower out.
   const k = want > feel.kick ? 1 - Math.exp(-dt * 14) : 1 - Math.exp(-dt * 4);
   feel.kick += (want - feel.kick) * k;
@@ -83,9 +89,9 @@ export function dashFeelTick(camera: THREE.Camera, dt: number): void {
   }
   feel.applied = feel.kick > 0 ? FOV_KICK * feel.kick : 0;
   const el = speedLines();
-  if (el) el.style.opacity = (Math.min(1, feel.kick * 1.2) * 0.75).toFixed(3);
+  if (el) el.style.opacity = (Math.min(1, (localPlayer.mounted && localPlayer.dash === 0 ? 0 : feel.kick) * 1.2) * 0.75).toFixed(3);
   const tier = currentFxTier();
-  if (feel.kick > 0.25 && (tier === 'high' || tier === 'ultra')) screenShake(0.15 * feel.kick);
+  if (feel.kick > 0.25 && !localPlayer.mounted && (tier === 'high' || tier === 'ultra')) screenShake(0.15 * feel.kick);
   if (dashLive.held && performance.now() >= feel.nextWhoosh) {
     feel.nextWhoosh = performance.now() + 300;
     const sp = mobilitySpellForDash(dashLive.variant);

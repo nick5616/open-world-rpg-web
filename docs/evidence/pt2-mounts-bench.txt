@@ -1,0 +1,11 @@
+CR 027 mounts: G5 scale checks (Windows, 16 threads, go test ./internal/game in server/zone)
+
+LODESTONE_WIRE_DIGEST=1 go test ./internal/game -run WireDigest -v
+  main  ddfd50d:   p90_e600 831bb7f4b4b9511ac1a06c34cdafcda36e147b8f3b9d9bb6798b04b15af6bbde  p300_e2000 8c29d4086261064f4f15f3445e5a349a40d72d966f9a5a4d6898a27a4b397cfc
+  pt2/mounts:      p90_e600 831bb7f4b4b9511ac1a06c34cdafcda36e147b8f3b9d9bb6798b04b15af6bbde  p300_e2000 8c29d4086261064f4f15f3445e5a349a40d72d966f9a5a4d6898a27a4b397cfc  (identical)
+  (a first build sent Event 1140 to every joining bot: c8431004... / 2f322793..., +28 / +629 bytes; now 1140 at join only for steed owners and whistle holders)
+
+go test ./internal/game -run XXX -bench BenchmarkScale/p300_e2000 -count 4
+  pt2/mounts: cpu-Mcycles 86.76 87.66 88.25 88.85; kbps/client 134.1 134.0 134.2 134.8; max-ms 4.54 4.41 5.21 5.15
+  main:       cpu-Mcycles 87.57 87.06 88.39 87.37; kbps/client 134.5 134.0 134.0 133.8; max-ms 7.39 4.61 4.69 4.16
+  (noise: bots never mount; the only per-tick additions are a nil check per session and the 2 s newcomer check, which returns at once while nobody has a steed out)

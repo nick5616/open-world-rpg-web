@@ -111,6 +111,16 @@ export function controlGroups(debug: boolean): ControlGroup[] {
       ],
     },
     {
+      title: 'Riding',
+      rows: [
+        { keys: ['5'], action: 'Whistle for your spirit steed', note: 'needs a Spirit Whistle (general stores); C → Your steed: name, colour', src: [['ui/mounts/MountHud.tsx', "'Digit5'"]] },
+        { keys: ['E'], action: 'Ride it / get off', note: 'Space at a standstill also gets off', src: [['ui/mounts/MountHud.tsx', "'KeyE'"]] },
+        { keys: [mv('forward')[0], mv('back')[0]], action: 'Trot / rein in, brake, back up', note: 'steer with the mouse and A/D' },
+        { keys: mv('sprint'), action: 'Spur: gallop, then a burst', note: 'a press, not a hold; each spur costs stamina' },
+        { keys: mv('jump'), action: 'Jump fences and logs' },
+      ],
+    },
+    {
       title: 'Your character',
       rows: [
         { keys: ['I'], action: 'Inventory', note: 'G or Delete drops the selected item', src: [['ui/inventory/InventoryScreen.tsx', "'KeyI'"], ['ui/inventory/InventoryScreen.tsx', "'Delete'"]] },

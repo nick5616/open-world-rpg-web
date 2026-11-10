@@ -1,5 +1,16 @@
 [
   {
+    "id": "pt2-mounts",
+    "date": "2026-11-10",
+    "title": "Spirit steeds",
+    "items": [
+      "Buy a Spirit Whistle at any general store (40 gold) and press 5: a spirit steed gallops in to you. E rides it, E (or Space standing still) gets off.",
+      "W trots, a Shift press spurs it to a gallop and a second spur bursts ahead (each spur costs stamina); S reins in and backs up; Space jumps fences.",
+      "It won't climb cliffs or wade into deep water, shies from demons at night, and a hard hit can throw you. Bows, staves, wands and spells work from the saddle.",
+      "Name it and pick its colour: Character (C), Your steed. Other players see you ride."
+    ]
+  },
+  {
     "id": "pt2-fishing",
     "date": "2026-11-10",
     "title": "Gone fishing",

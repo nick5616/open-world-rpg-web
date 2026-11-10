@@ -7,6 +7,7 @@ import { goldenPath, serializeGolden, wasmPath } from './io';
 import { loadWorldgenGround } from '../worldgenGround';
 import { runWp10, scenarioGround, summarize, WP10_SCENARIOS, WP10_SEED } from './wp10';
 import { runWp13, WP13_SCENARIOS } from './wp13';
+import { RIDE_SCENARIOS, rideRun, rideSummary } from './ride';
 
 for (const sc of SCENARIOS) {
   const g = runScenario(sc);
@@ -19,6 +20,13 @@ for (const sc of WP13_SCENARIOS) {
   const g = runWp13(sc.name);
   writeFileSync(goldenPath(`wp13_${sc.name}`), serializeGolden(g));
   console.log(`wrote ${goldenPath(`wp13_${sc.name}`)} (${g.states.length} steps)`);
+}
+
+// CR 027: riding the spirit steed (flat, plane, two synthetic courses).
+for (const sc of RIDE_SCENARIOS) {
+  const g = rideRun(sc.name);
+  writeFileSync(goldenPath(`pt2_${sc.name}`), serializeGolden(g));
+  console.log(`wrote ${goldenPath(`pt2_${sc.name}`)} ${JSON.stringify(rideSummary(g))}`);
 }
 
 if (!existsSync(wasmPath)) {

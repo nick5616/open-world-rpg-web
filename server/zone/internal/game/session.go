@@ -58,6 +58,7 @@ type session struct {
 	quests *questState     // quest log: loaded before join (quests.go)
 	cnt    *contentSess    // CR 023 content state: loaded before join (content.go)
 	camp   *campSess       // CR 025 camps: areas known, Rested, the open chest (camps.go)
+	steed  *steedSess      // CR 027 mounts: owned steeds (loaded before join), the one out, steeds told (mounts.go)
 	// Playtest 2: travel to a friend (friendtravel.go).
 	travel           *friendTravel
 	lastFriendTravel time.Time
@@ -229,6 +230,7 @@ func (s *Server) accept(c transport.Conn, spawnHint *movement.Vec3) {
 		sess.items = s.loadItems(claims.CharacterID, sess.x)                          // WP14
 		sess.quests = s.loadQuests(claims.CharacterID, sess.x)                        // quests.go
 		sess.cnt = s.loadContent(claims.CharacterID, sess.x)                          // CR 023 (content.go)
+		sess.steed = s.loadSteeds(claims.CharacterID, sess.x)                         // CR 027 (mounts.go)
 	}
 
 	select {
@@ -358,6 +360,10 @@ func (s *Server) drainTaken(sess *session, now time.Time) {
 			}
 			if it.TargetKind == InteractFriend {
 				s.friendInteract(sess, it, now) // playtest 2: travel to a friend (friendtravel.go)
+				continue
+			}
+			if it.TargetKind == InteractSteed {
+				s.steedInteract(sess, it) // CR 027: whistle, mount, dismount, name, colour (mounts.go)
 				continue
 			}
 			if it.TargetKind == InteractCamp {
