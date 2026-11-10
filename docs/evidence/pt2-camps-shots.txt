@@ -2,30 +2,30 @@ camp ground 2110.5, 2382.0 outside "Draedmore"
 shot pt2-camps-menu.png: the camp menu (P) with every piece, its kit recipe and the kits in the pack
 ghost (campfire): (2110.53, 75.81, 2382.00) rot 1 reason 0
 shot pt2-camps-ghost-valid.png: the campfire ghost, green, with its footprint and the safe circle demons keep out of
-placed: true; campfire #604238745134 burning true
+placed: true; campfire #788695271340 burning true
 ghost (workbench into the fire): reason 6
 shot pt2-camps-ghost-invalid.png: the workbench ghost red over the campfire ("Something is in the way")
 camp: campfire, bedroll, chest, workbench, signpost
-shot pt2-camps-dusk.png: the camp at dusk from (2117.6, 2387.9): the fire burning, its light on the pieces, "Ember Hollow" on the signpost
+shot pt2-camps-dusk.png: the camp at dusk from (2115.5, 2386.5): the fire burning, its light on the pieces, "Ember Hollow" on the signpost
 shot pt2-camps-dusk-third.png: the same in third person
-rested: {"until":1053247.5,"info":{"fire":true,"manaRegenMult":1.5,"regenMult":2,"staminaBonus":25}}
+rested: {"until":1052485,"info":{"fire":true,"manaRegenMult":1.5,"regenMult":2,"staminaBonus":25}}
 shot pt2-camps-rested.png: Rested (badge), safe by the fire at night
 chest: 3 slots used
 shot pt2-camps-storage.png: the storage chest panel (16 slots, the pack below, share with party)
 
 zone log (camps):
-{"time":"2026-11-10T04:09:28.5803946-08:00","level":"WARN","msg":"world row is not minted (placeholder gen_version); serving spec_from_seed(seed). The account service mints it on start, or run `go run ./server/pkg/cmd/mintworld -official`.","svc":"zone","world":"camps-1794312566336","seed":20261108,"rowGenVersion":"dev"}
-{"time":"2026-11-10T04:09:29.686359-08:00","level":"INFO","msg":"combat ready","svc":"zone","groups":111,"camps":13,"bandit":9,"guardian":76,"packs":0,"bosses":13,"test":0}
-{"time":"2026-11-10T04:09:29.686359-08:00","level":"INFO","msg":"zone config","svc":"zone","zone":"zone-camps-41856","world":"camps-1794312566336","seed":20261108,"genVersion":"2","devSpawn":true}
-{"time":"2026-11-10T04:09:32.7874661-08:00","level":"INFO","msg":"quest started","svc":"zone","character":"pt2-camps-1794312571068","quest":"story:ward","settlement":20}
-{"time":"2026-11-10T04:09:32.7874661-08:00","level":"INFO","msg":"join","svc":"zone","entity":1,"character":"pt2-camps-1794312571068","name":"Wren","remote":"127.0.0.1:60587","x":2107.53,"z":2385}
-{"time":"2026-11-10T04:09:45.9542807-08:00","level":"INFO","msg":"camp piece placed","svc":"zone","piece":604238745134,"kind":"campfire","owner":"pt2-camps-1794312571068","x":2110.53,"y":75.81,"z":2382,"rot":1}
-{"time":"2026-11-10T04:09:48.2874368-08:00","level":"INFO","msg":"camp piece placed","svc":"zone","piece":1030706593519,"kind":"bedroll","owner":"pt2-camps-1794312571068","x":2113.93,"y":75.7,"z":2382.6,"rot":2}
-{"time":"2026-11-10T04:09:49.0208269-08:00","level":"INFO","msg":"camp piece placed","svc":"zone","piece":275897072581,"kind":"chest","owner":"pt2-camps-1794312571068","x":2107.93,"y":75.8,"z":2380.8,"rot":6}
-{"time":"2026-11-10T04:09:49.7204453-08:00","level":"INFO","msg":"camp piece placed","svc":"zone","piece":386312833625,"kind":"workbench","owner":"pt2-camps-1794312571068","x":2110.13,"y":75.76,"z":2378.6,"rot":0}
-{"time":"2026-11-10T04:09:50.4209426-08:00","level":"INFO","msg":"camp piece placed","svc":"zone","piece":892614532561,"kind":"signpost","owner":"pt2-camps-1794312571068","x":2113.33,"y":75.72,"z":2385.4,"rot":7}
-{"time":"2026-11-10T04:10:03.3540855-08:00","level":"INFO","msg":"rested","svc":"zone","character":"pt2-camps-1794312571068","piece":1030706593519,"fire":true,"seconds":1020}
-{"time":"2026-11-10T04:10:07.6540363-08:00","level":"INFO","msg":"camp chest store","svc":"zone","character":"pt2-camps-1794312571068","piece":275897072581,"slot":0,"item":"119a1af5-8968-4f3c-b2c0-d8feaf2875f4","base":"wood:firewood","qty":27,"persisted":false}
-{"time":"2026-11-10T04:10:08.3209587-08:00","level":"INFO","msg":"camp chest store","svc":"zone","character":"pt2-camps-1794312571068","piece":275897072581,"slot":1,"item":"9fe6fac6-7d8d-4f97-90d7-f84fc799549b","base":"potion:health","qty":3,"persisted":false}
-{"time":"2026-11-10T04:10:08.9540135-08:00","level":"INFO","msg":"camp chest store","svc":"zone","character":"pt2-camps-1794312571068","piece":275897072581,"slot":2,"item":"9be5c35c-2728-4c38-8e07-3f14842cd9e4","base":"hide:wolf","qty":4,"persisted":false}
-{"time":"2026-11-10T04:10:09.7875249-08:00","level":"INFO","msg":"leave","svc":"zone","entity":1,"character":"pt2-camps-1794312571068"}
+{"time":"2026-11-10T04:24:01.766549-08:00","level":"WARN","msg":"world row is not minted (placeholder gen_version); serving spec_from_seed(seed). The account service mints it on start, or run `go run ./server/pkg/cmd/mintworld -official`.","svc":"zone","world":"camps-1794313439428","seed":20261108,"rowGenVersion":"dev"}
+{"time":"2026-11-10T04:24:02.6457305-08:00","level":"INFO","msg":"combat ready","svc":"zone","groups":111,"camps":13,"bandit":9,"guardian":76,"packs":0,"bosses":13,"test":0}
+{"time":"2026-11-10T04:24:02.6457305-08:00","level":"INFO","msg":"zone config","svc":"zone","zone":"zone-camps-32262","world":"camps-1794313439428","seed":20261108,"genVersion":"2","devSpawn":true}
+{"time":"2026-11-10T04:24:05.8138615-08:00","level":"INFO","msg":"quest started","svc":"zone","character":"pt2-camps-1794313444009","quest":"story:ward","settlement":20}
+{"time":"2026-11-10T04:24:05.8140984-08:00","level":"INFO","msg":"join","svc":"zone","entity":1,"character":"pt2-camps-1794313444009","name":"Wren","remote":"127.0.0.1:62005","x":2107.53,"z":2385}
+{"time":"2026-11-10T04:24:19.213265-08:00","level":"INFO","msg":"camp piece placed","svc":"zone","piece":788695271340,"kind":"campfire","owner":"pt2-camps-1794313444009","x":2110.53,"y":75.81,"z":2382,"rot":1}
+{"time":"2026-11-10T04:24:21.513036-08:00","level":"INFO","msg":"camp piece placed","svc":"zone","piece":1039404716210,"kind":"bedroll","owner":"pt2-camps-1794313444009","x":2113.93,"y":75.7,"z":2382.6,"rot":2}
+{"time":"2026-11-10T04:24:22.2464776-08:00","level":"INFO","msg":"camp piece placed","svc":"zone","piece":655222995512,"kind":"chest","owner":"pt2-camps-1794313444009","x":2107.93,"y":75.8,"z":2380.8,"rot":6}
+{"time":"2026-11-10T04:24:22.9465328-08:00","level":"INFO","msg":"camp piece placed","svc":"zone","piece":807300841445,"kind":"workbench","owner":"pt2-camps-1794313444009","x":2110.13,"y":75.76,"z":2378.6,"rot":0}
+{"time":"2026-11-10T04:24:23.6462494-08:00","level":"INFO","msg":"camp piece placed","svc":"zone","piece":918510584442,"kind":"signpost","owner":"pt2-camps-1794313444009","x":2113.33,"y":75.72,"z":2385.4,"rot":7}
+{"time":"2026-11-10T04:24:35.546368-08:00","level":"INFO","msg":"rested","svc":"zone","character":"pt2-camps-1794313444009","piece":1039404716210,"fire":true,"seconds":1020}
+{"time":"2026-11-10T04:24:39.913224-08:00","level":"INFO","msg":"camp chest store","svc":"zone","character":"pt2-camps-1794313444009","piece":655222995512,"slot":0,"item":"f0789d9c-5feb-478f-8717-dd110fab90af","base":"wood:firewood","qty":27,"persisted":false}
+{"time":"2026-11-10T04:24:40.5466232-08:00","level":"INFO","msg":"camp chest store","svc":"zone","character":"pt2-camps-1794313444009","piece":655222995512,"slot":1,"item":"172da92d-a259-41f3-8ff9-4f36e2658787","base":"potion:health","qty":3,"persisted":false}
+{"time":"2026-11-10T04:24:41.2129251-08:00","level":"INFO","msg":"camp chest store","svc":"zone","character":"pt2-camps-1794313444009","piece":655222995512,"slot":2,"item":"16c775ed-02b7-41ce-a05d-bb05baa20e5c","base":"hide:wolf","qty":4,"persisted":false}
+{"time":"2026-11-10T04:24:41.9797862-08:00","level":"INFO","msg":"leave","svc":"zone","entity":1,"character":"pt2-camps-1794313444009"}
