@@ -1669,8 +1669,52 @@
    "title": "the Teller of Tall Tales"
   },
   {
-   "key": "bard",
+   "key": "first_pet",
    "id": 30,
+   "name": "Beast Friend",
+   "desc": "Tame your first creature",
+   "stat": "tamed",
+   "n": 1,
+   "gold": 15,
+   "xp": 60,
+   "title": ""
+  },
+  {
+   "key": "menagerie",
+   "id": 31,
+   "name": "Keeper of Beasts",
+   "desc": "Tame every kind of creature that can be tamed",
+   "stat": "tamedspecies",
+   "n": 9,
+   "gold": 200,
+   "xp": 900,
+   "title": "the Keeper of Beasts"
+  },
+  {
+   "key": "shiny_pet",
+   "id": 32,
+   "name": "Glimmerfriend",
+   "desc": "Tame a shiny creature",
+   "stat": "shinytamed",
+   "n": 1,
+   "gold": 80,
+   "xp": 300,
+   "title": "the Glimmerfriend"
+  },
+  {
+   "key": "pet_veteran",
+   "id": 33,
+   "name": "Packleader",
+   "desc": "Raise a pet to level 10",
+   "stat": "petlevel",
+   "n": 10,
+   "gold": 60,
+   "xp": 300,
+   "title": "the Packleader"
+  },
+  {
+   "key": "bard",
+   "id": 34,
    "name": "Bard",
    "desc": "Play 100 notes on an instrument",
    "stat": "notes",
@@ -1681,7 +1725,7 @@
   },
   {
    "key": "troubadour",
-   "id": 31,
+   "id": 35,
    "name": "Troubadour",
    "desc": "Play 2,000 notes",
    "stat": "notes",
@@ -1692,7 +1736,7 @@
   },
   {
    "key": "crowd_pleaser",
-   "id": 32,
+   "id": 36,
    "name": "Crowd Pleaser",
    "desc": "Earn five ovations from townsfolk",
    "stat": "ovations",
@@ -1703,7 +1747,7 @@
   },
   {
    "key": "fireside_tales",
-   "id": 33,
+   "id": 37,
    "name": "Fireside Tales",
    "desc": "Play a song by a campfire at night until you rise Rested",
    "stat": "firesongs",
@@ -2340,6 +2384,419 @@
     "durS": 0,
     "loop": true,
     "system": true
+   },
+   {
+    "key": "pet",
+    "id": 25,
+    "name": "Pet your companion",
+    "durS": 2.2,
+    "loop": false,
+    "system": true
+   }
+  ]
+ },
+ "taming": {
+  "weakenPct": 0.5,
+  "calmS": 30,
+  "smellM": 14,
+  "feedReachM": 4,
+  "stayM": 8,
+  "favouriteMult": 0.6,
+  "favouriteBonus": 0.15,
+  "shinyChance": 0.03,
+  "elementalChance": 0.08,
+  "maxPets": 6,
+  "koRecoverS": 150,
+  "stableM": 24,
+  "levelMax": 20,
+  "xpBase": 40,
+  "xpGrowth": 1.3,
+  "hpPerLevel": 0.12,
+  "damagePerLevel": 0.08,
+  "regenPctS": 0.02,
+  "feedHealPct": 0.35,
+  "followM": 2.6,
+  "warpM": 60,
+  "stayGuardM": 10,
+  "aggroM": 16,
+  "leashM": 28,
+  "abilities": [
+   {
+    "key": "mend",
+    "id": 1,
+    "name": "Soothing Ooze",
+    "kind": "heal",
+    "cooldownS": 12,
+    "power": 0.12,
+    "healBelow": 0.7,
+    "party": false,
+    "durationS": 0,
+    "rangeM": [
+     0,
+     0
+    ],
+    "radiusM": 0,
+    "status": "",
+    "element": -1,
+    "desc": "Splashes you with soothing jelly when you are hurt: 12 % of your health, and some of its own"
+   },
+   {
+    "key": "bloom",
+    "id": 2,
+    "name": "Mossbloom",
+    "kind": "heal",
+    "cooldownS": 15,
+    "power": 0.09,
+    "healBelow": 0.8,
+    "party": true,
+    "durationS": 0,
+    "rangeM": [
+     0,
+     0
+    ],
+    "radiusM": 0,
+    "status": "",
+    "element": -1,
+    "desc": "Blooms when your party is hurt: heals you and everyone near you"
+   },
+   {
+    "key": "howl",
+    "id": 3,
+    "name": "Rallying Howl",
+    "kind": "buff",
+    "cooldownS": 22,
+    "power": 0.15,
+    "healBelow": 0,
+    "party": false,
+    "durationS": 8,
+    "rangeM": [
+     0,
+     0
+    ],
+    "radiusM": 0,
+    "status": "",
+    "element": -1,
+    "desc": "Howls as a fight starts: you deal 15 % more damage for 8 s"
+   },
+   {
+    "key": "charge",
+    "id": 4,
+    "name": "Tusk Charge",
+    "kind": "charge",
+    "cooldownS": 9,
+    "power": 2,
+    "healBelow": 0,
+    "party": false,
+    "durationS": 0,
+    "rangeM": [
+     4,
+     12
+    ],
+    "radiusM": 0,
+    "status": "stun",
+    "element": -1,
+    "desc": "Charges a foe from afar: double damage and a stun"
+   },
+   {
+    "key": "headlong",
+    "id": 5,
+    "name": "Headlong",
+    "kind": "strike",
+    "cooldownS": 8,
+    "power": 1.8,
+    "healBelow": 0,
+    "party": false,
+    "durationS": 0,
+    "rangeM": [
+     0,
+     0
+    ],
+    "radiusM": 0,
+    "status": "knockback",
+    "element": -1,
+    "desc": "A headbutt that knocks its target back"
+   },
+   {
+    "key": "frost_breath",
+    "id": 6,
+    "name": "Frost Breath",
+    "kind": "strike",
+    "cooldownS": 10,
+    "power": 1.4,
+    "healBelow": 0,
+    "party": false,
+    "durationS": 0,
+    "rangeM": [
+     0,
+     0
+    ],
+    "radiusM": 3,
+    "status": "slow",
+    "element": 1,
+    "desc": "Breathes rime over its target and everything near it: ice damage and a slow"
+   },
+   {
+    "key": "mire",
+    "id": 7,
+    "name": "Mire",
+    "kind": "strike",
+    "cooldownS": 12,
+    "power": 0.8,
+    "healBelow": 0,
+    "party": false,
+    "durationS": 0,
+    "rangeM": [
+     0,
+     0
+    ],
+    "radiusM": 4,
+    "status": "slow",
+    "element": 3,
+    "desc": "Spits mud around its target: everything near it is slowed"
+   },
+   {
+    "key": "venom",
+    "id": 8,
+    "name": "Venom Sting",
+    "kind": "strike",
+    "cooldownS": 9,
+    "power": 1.3,
+    "healBelow": 0,
+    "party": false,
+    "durationS": 0,
+    "rangeM": [
+     0,
+     0
+    ],
+    "radiusM": 0,
+    "status": "curse",
+    "element": -1,
+    "desc": "A sting that leaves its target taking 20 % more damage"
+   },
+   {
+    "key": "dazzle",
+    "id": 9,
+    "name": "Dazzle",
+    "kind": "strike",
+    "cooldownS": 11,
+    "power": 1,
+    "healBelow": 0,
+    "party": false,
+    "durationS": 0,
+    "rangeM": [
+     0,
+     0
+    ],
+    "radiusM": 0,
+    "status": "stun",
+    "element": -1,
+    "desc": "Flashes its glinting tail: the target is stunned"
+   }
+  ],
+  "species": [
+   {
+    "key": "slime",
+    "id": 1,
+    "enemy": "slime",
+    "enemyId": 50,
+    "foods": [
+     "herb:heartleaf",
+     "food:apple",
+     "herb:glowmoss"
+    ],
+    "tameS": 3,
+    "chance": 0.95,
+    "hp": 150,
+    "damage": 6,
+    "speed": 8,
+    "attack": {
+     "reach": 1.9,
+     "everyMs": 1300,
+     "windupMs": 300
+    },
+    "ability": 1,
+    "blurb": "A loyal blob. It bounces after you everywhere and heals your scrapes."
+   },
+   {
+    "key": "moss_slime",
+    "id": 2,
+    "enemy": "moss_slime",
+    "enemyId": 51,
+    "foods": [
+     "herb:glowmoss",
+     "herb:heartleaf"
+    ],
+    "tameS": 3.5,
+    "chance": 0.9,
+    "hp": 170,
+    "damage": 6,
+    "speed": 7.8,
+    "attack": {
+     "reach": 2,
+     "everyMs": 1400,
+     "windupMs": 300
+    },
+    "ability": 2,
+    "blurb": "Its moss cap flowers when you are kind to it. It keeps the whole party patched up."
+   },
+   {
+    "key": "boar",
+    "id": 3,
+    "enemy": "boar",
+    "enemyId": 1,
+    "foods": [
+     "food:apple",
+     "food:berry_tart",
+     "herb:emberroot"
+    ],
+    "tameS": 5,
+    "chance": 0.8,
+    "hp": 170,
+    "damage": 10,
+    "speed": 8.6,
+    "attack": {
+     "reach": 2.3,
+     "everyMs": 1300,
+     "windupMs": 350
+    },
+    "ability": 4,
+    "blurb": "Stubborn, brave and always hungry. Point it at something and it charges."
+   },
+   {
+    "key": "wolf",
+    "id": 4,
+    "enemy": "wolf",
+    "enemyId": 2,
+    "foods": [
+     "meat:raw",
+     "food:grilled_meat"
+    ],
+    "tameS": 6,
+    "chance": 0.75,
+    "hp": 130,
+    "damage": 11,
+    "speed": 9.4,
+    "attack": {
+     "reach": 2.2,
+     "everyMs": 1100,
+     "windupMs": 250
+    },
+    "ability": 3,
+    "blurb": "A wolf that chose you. It hunts at your side and its howl steels your arm."
+   },
+   {
+    "key": "ram",
+    "id": 5,
+    "enemy": "ram",
+    "enemyId": 3,
+    "foods": [
+     "herb:frostcap",
+     "herb:heartleaf",
+     "food:bread"
+    ],
+    "tameS": 5,
+    "chance": 0.8,
+    "hp": 180,
+    "damage": 10,
+    "speed": 8.4,
+    "attack": {
+     "reach": 2.4,
+     "everyMs": 1400,
+     "windupMs": 400
+    },
+    "ability": 5,
+    "blurb": "A crag ram with opinions. Most of them are about headbutting."
+   },
+   {
+    "key": "stalker",
+    "id": 6,
+    "enemy": "stalker",
+    "enemyId": 4,
+    "foods": [
+     "fish:frostgill_char",
+     "fish:speckled_trout",
+     "meat:raw"
+    ],
+    "tameS": 7,
+    "chance": 0.65,
+    "hp": 140,
+    "damage": 10,
+    "speed": 9,
+    "attack": {
+     "reach": 2.3,
+     "everyMs": 1200,
+     "windupMs": 300
+    },
+    "ability": 6,
+    "blurb": "Its breath still falls as needles, but now it falls on your foes."
+   },
+   {
+    "key": "lurker",
+    "id": 7,
+    "enemy": "lurker",
+    "enemyId": 6,
+    "foods": [
+     "fish:mudback_carp",
+     "fish:bog_pike",
+     "fish:reed_perch"
+    ],
+    "tameS": 6,
+    "chance": 0.7,
+    "hp": 190,
+    "damage": 8,
+    "speed": 8.2,
+    "attack": {
+     "reach": 2.5,
+     "everyMs": 1400,
+     "windupMs": 350
+    },
+    "ability": 7,
+    "blurb": "A mossy log that follows you home. It spits mud at anything you dislike."
+   },
+   {
+    "key": "scuttler",
+    "id": 8,
+    "enemy": "scuttler",
+    "enemyId": 5,
+    "foods": [
+     "meat:raw",
+     "fish:silverfin"
+    ],
+    "tameS": 5,
+    "chance": 0.75,
+    "hp": 130,
+    "damage": 10,
+    "speed": 8.8,
+    "attack": {
+     "reach": 2.1,
+     "everyMs": 1200,
+     "windupMs": 300
+    },
+    "ability": 8,
+    "blurb": "Armoured, patient and venomous, and now on your side."
+   },
+   {
+    "key": "glintfox",
+    "id": 9,
+    "enemy": "glintfox",
+    "enemyId": 70,
+    "foods": [
+     "food:berry_tart",
+     "fish:silverfin",
+     "food:cheese"
+    ],
+    "tameS": 8,
+    "chance": 0.5,
+    "hp": 110,
+    "damage": 7,
+    "speed": 9.8,
+    "attack": {
+     "reach": 1.8,
+     "everyMs": 1000,
+     "windupMs": 250
+    },
+    "ability": 9,
+    "blurb": "The fox from the stories, tamed at last. It still glints when it is pleased with itself."
    }
   ]
  },

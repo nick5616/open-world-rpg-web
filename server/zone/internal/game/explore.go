@@ -488,6 +488,7 @@ func (s *Server) localState(sess *session) localsave.State {
 	itemsIntoLocal(sess, &st)                                                                                    // WP14
 	contentIntoLocal(sess, &st.Content)                                                                          // content.go
 	steedsIntoLocal(sess, &st.Mounts)                                                                            // CR 027 (mounts.go)
+	petsIntoLocal(sess, &st.Pets)                                                                                // CR 029 (pets.go)
 	questsIntoLocal(sess, &st.Quests)                                                                            // quests.go
 	st.LastWaypoint = nil
 	if p.LastWaypoint >= 0 {

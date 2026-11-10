@@ -549,6 +549,9 @@ func (w *World) damageOf(p *Player, a *Action, e *Enemy) (dmg float64, element i
 		dmg *= orOne(p.Gear.WeaponMult) * (1 + p.Gear.DamagePct/100) * orOne(p.Gear.FormMult) // WP14: weapon + gem cut
 	}
 	dmg *= D.DamageMult(p.Level) // playtest 1: character level (combat.yaml leveling, CR 012)
+	if p.petBuffEnd > w.tick {
+		dmg *= p.petBuffMult // CR 029: a pet's howl (pets.go)
+	}
 	em := D.ElementMult(element, e.Element)
 	if em > 1 {
 		flags |= FlagWeak
@@ -781,6 +784,11 @@ func (w *World) applyDamage(e *Enemy, src uint32, dmg float64, element int, at m
 	if dmg > 0 && !w.quietDamage {
 		w.near(at, 64, src, Out{Ev: ev(EvDamage, src, e.ID, int32(math.Round(dmg)), at, []byte{flags, e.HealthPct()})})
 	}
+	if e.calmUntil != 0 && dealt > 0 {
+		w.breakCalm(e) // CR 029: hurt while calm, it fights on (pets.go)
+	} else if w.Tameable != nil && e.HP > 0 && dealt > 0 {
+		w.noteWeakened(e, src) // CR 029: weak enough to be calmed? (pets.go)
+	}
 	if e.HP <= 0 {
 		w.kill(e, src)
 	} else if e.Boss != nil {
@@ -839,6 +847,9 @@ func (w *World) kill(e *Enemy, killer uint32) {
 	slicesSortU32(ids)
 	for _, id := range ids {
 		w.XP = append(w.XP, XPGrant{Player: id, XP: int64(math.Round(xp)), Reason: e.Def.Key})
+	}
+	if e.lastPetHit != 0 {
+		w.petKill(e, xp) // CR 029: the pet that fought it learns from it (pets.go)
 	}
 	if p := w.players[killer]; p != nil && p.Profile.Knows("crimson_hunger") {
 		w.healPlayer(p, p, 15)

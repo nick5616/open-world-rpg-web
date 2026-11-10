@@ -317,7 +317,11 @@ func (w *World) allyStrike(e *Enemy, tp movement.Vec3, tr float64) {
 	e.State = Chase
 	d := hdist(tp, e.Pos)
 	data := binary.LittleEndian.AppendUint16(nil, uint16(st.def.ID))
-	w.near(e.Pos, 64, 0, Out{Ev: ev(EvSummonAttack, e.ID, st.target, int32(st.spell.ID), movement.Vec3{X: e.Pos.X, Y: e.Pos.Y + e.Height(), Z: e.Pos.Z}, data)})
+	spell := int32(0) // CR 029: a pet's bite has no spell (the client poses it from the casting bit)
+	if st.spell != nil {
+		spell = int32(st.spell.ID)
+	}
+	w.near(e.Pos, 64, 0, Out{Ev: ev(EvSummonAttack, e.ID, st.target, spell, movement.Vec3{X: e.Pos.X, Y: e.Pos.Y + e.Height(), Z: e.Pos.Z}, data)})
 	if at.Shape == "melee" {
 		if d <= at.Reach+tr+0.5 {
 			w.allyHit(e, st.target, st.tPlayer)
@@ -374,6 +378,9 @@ func (w *World) allyHit(e *Enemy, target uint32, player bool) {
 	dmg := base * D.ElementMult(el, t.Element) * t.damageTakenMult(w.tick)
 	dmg = math.Max(1, math.Round(dmg))
 	at := movement.Vec3{X: t.Pos.X, Y: t.Pos.Y + t.Height(), Z: t.Pos.Z}
+	if e.pet != nil {
+		w.petBit(e, t, dmg) // CR 029: it draws the creature off its owner (pets.go)
+	}
 	w.applyDamage(t, owner.ID, dmg, el, at, 0, true, st.killing)
 	// The caster sees the number too (applyDamage tells everyone else).
 	w.toPlayer(owner.ID, Out{Ev: ev(EvDamage, owner.ID, t.ID, int32(dmg), at, []byte{0, t.HealthPct()})})

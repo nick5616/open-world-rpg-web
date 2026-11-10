@@ -125,6 +125,9 @@ func (w *World) think(e *Enemy) {
 	if w.forcedMove(e) || e.disabled(tick) {
 		return
 	}
+	if e.calmUntil != 0 && w.calmThink(e) {
+		return // CR 029: calmed for taming, it stands and sniffs (pets.go)
+	}
 	if e.Demon != nil && w.demonGoal(e) {
 		return // WP15: a defense wave walks to the ward garden
 	}
@@ -305,6 +308,9 @@ func (w *World) face(e *Enemy, p movement.Vec3) {
 func (w *World) chase(e *Enemy) {
 	tick := w.tick
 	p := w.players[e.Target]
+	if e.petTgt != 0 && w.chasePet(e, p) {
+		return // CR 029: a pet drew it off its owner (pets.go)
+	}
 	sheltered := p != nil && e.Demon != nil && w.DemonHooks.Sheltered != nil && w.DemonHooks.Sheltered(e, p) // WP15
 	if p == nil || p.Downed || p.Graced(tick) || sheltered || hdist(p.Pos, e.Home) > e.leash()+e.Def.Aggro*0.5 || hdist(e.Pos, e.Home) > e.leash() {
 		if np := w.acquire(e, 1.5); np != nil && hdist(e.Pos, e.Home) <= e.leash() {
@@ -433,6 +439,11 @@ func (w *World) pruneWinding() {
 // windup starts a telegraphed attack: the shape is decided now and sent to
 // nearby players, so what they see is exactly what will hit.
 func (w *World) windup(e *Enemy, a *combatdefs.EnemyAttack, p *Player) {
+	w.windupAt(e, a, p.Pos)
+}
+
+// windupAt winds up attack a aimed at the point t (a player, or a pet: CR 029).
+func (w *World) windupAt(e *Enemy, a *combatdefs.EnemyAttack, t movement.Vec3) {
 	tick := w.tick
 	e.attack = a
 	e.State, e.stateAt = Windup, tick
@@ -441,10 +452,10 @@ func (w *World) windup(e *Enemy, a *combatdefs.EnemyAttack, p *Player) {
 		w.winding = append(w.winding, e)
 	}
 	e.Vel = movement.Vec3{}
-	w.face(e, p.Pos)
+	w.face(e, t)
 	e.attackYaw = e.Yaw
 	e.attackFrom = e.Pos
-	area := w.areaOf(e, a, p.Pos)
+	area := w.areaOf(e, a, t)
 	e.attackAim = area.center
 	cd := float64(a.CooldownSteps) * e.cooldownMult
 	if e.Boss != nil {
@@ -502,6 +513,9 @@ func (w *World) strikeStart(e *Enemy) {
 // strikeArea queues a strike on every player in the area (and, for
 // "everyone" attacks, at each player's own position: meteors).
 func (w *World) strikeArea(e *Enemy, a *combatdefs.EnemyAttack, area attackArea, already map[uint32]bool) {
+	if len(w.pets) > 0 {
+		w.strikePets(e, a, area, already) // CR 029: pets in the area are hit too (pets.go)
+	}
 	for _, p := range w.playersNear(area.center, area.reach+area.radius+12) {
 		if p.Downed || (already != nil && already[p.ID]) {
 			continue
@@ -931,6 +945,10 @@ func (w *World) stepShots() {
 			s.pos.Z += s.vel.Z * h
 			s.left -= math.Hypot(math.Hypot(s.vel.X, s.vel.Z), s.vel.Y) * h
 			if s.left <= 0 || s.pos.Y < w.ground.HeightAt(s.pos.X, s.pos.Z) {
+				alive = false
+				break
+			}
+			if len(w.pets) > 0 && w.shotHitsPet(s) { // CR 029 (pets.go)
 				alive = false
 				break
 			}

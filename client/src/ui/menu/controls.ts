@@ -134,6 +134,15 @@ export function controlGroups(debug: boolean): ControlGroup[] {
       ],
     },
     {
+      title: 'Taming and pets',
+      rows: [
+        { keys: ['E'], action: 'Feed a calm creature: tame it', note: 'weaken it while you carry a food it likes; stay close while the meter fills', src: [['ui/pets/PetHud.tsx', "'KeyE'"]] },
+        { keys: ['6'], action: 'Send your pet at what you aim at', note: 'hold 6 for the pet wheel: follow, stay, come, pet, feed', src: [['ui/pets/PetHud.tsx', "'Digit6'"]] },
+        { keys: ['7'], action: 'Pet: stay here / follow me', src: [['ui/pets/PetHud.tsx', "'Digit7'"]] },
+        { keys: ['E'], action: 'Pet your pet', note: 'beside it; C → Your pets: names, stats, the stable', src: [['ui/pets/PetHud.tsx', "'KeyE'"]] },
+      ],
+    },
+    {
       title: 'Your character',
       rows: [
         { keys: ['I'], action: 'Inventory', note: 'G or Delete drops the selected item', src: [['ui/inventory/InventoryScreen.tsx', "'KeyI'"], ['ui/inventory/InventoryScreen.tsx', "'Delete'"]] },

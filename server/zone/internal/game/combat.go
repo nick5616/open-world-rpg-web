@@ -432,6 +432,9 @@ func (s *Server) combatTick(tick uint32) {
 		ent := &Entity{ID: en.ID, Kind: proto.EntityKindEnemy, Name: en.Name, Level: uint8(min(255, en.Level)), npc: en, TypeID: en.TypeID()}
 		if en.Owner() != 0 {
 			ent.Kind, ent.Name = proto.EntityKindEffect, s.summonName(en) // CR 020: an ally (summons.go)
+			if en.IsPet() {
+				ent.Name = s.petEntityName(en) // CR 029: "Nicole's Bramble" (pets.go)
+			}
 		}
 		ent.Move.Pos = en.Pos
 		ent.Yaw = en.Yaw

@@ -114,10 +114,24 @@ type Enemy struct {
 	// CR 020: an ally (summon.go; never in World.enemies) and a brand (detonate.go).
 	ally  *summonState
 	brand *brandMark
+	// CR 029 pets (pets.go): a tamed companion (an ally that persists:
+	// real health, levels, an ability; never in World.enemies), and on a
+	// wild creature the pet it fights (petTgt with the threat it built:
+	// the pet draws it off its owner), the last pet that bit it (the pet's
+	// XP when it falls) and taming's calm (it stands still, sniffing).
+	pet        *petState
+	petTgt     uint32
+	petThreat  float64
+	lastPetHit uint32
+	calmUntil  uint32
+	calmAgain  uint32 // a calm that ended: not again before this tick
 }
 
 // Typeid is the wire typeId (combatdefs.TypeID).
 func (e *Enemy) TypeID() uint16 {
+	if e.pet != nil {
+		return e.pet.typeID // CR 029: drawn as EntityKind effect with the pet bit
+	}
 	if e.ally != nil {
 		return combatdefs.SummonTypeID(e.ally.def) // CR 020: drawn as EntityKind effect
 	}
@@ -151,7 +165,7 @@ func (e *Enemy) Winding() bool { return e.State == Windup }
 
 // HealthPct is the 0..100 health percentage for snapshots.
 func (e *Enemy) HealthPct() uint8 {
-	if e.ally != nil {
+	if e.ally != nil && e.pet == nil {
 		return e.ally.pct // CR 020: an ally shows the time it has left
 	}
 	if e.HPMax <= 0 || !e.Alive() {
