@@ -9,7 +9,7 @@
 # therefore needs a new genVersion (spec section 5). Changing a movement value
 # changes client prediction AND server simulation together, which is the point
 # of keeping them here.
-version: 6   # v6: playtest 2 mounts (docs/cr/027-mounts.md); v5: fire spread tuned down (docs/cr/016-fire-spread.md); v4: WP15 night, demons and chemistry (docs/cr/011-wp15-night-chemistry.md)
+version: 7   # v7: playtest 2 dynamic weather (docs/cr/030-weather.md); v6: playtest 2 mounts (docs/cr/027-mounts.md); v5: fire spread tuned down (docs/cr/016-fire-spread.md); v4: WP15 night, demons and chemistry (docs/cr/011-wp15-night-chemistry.md)
 
 groups:
   world:
@@ -269,6 +269,38 @@ groups:
     PILLAR_HEIGHT_M: {type: f64, value: 6, doc: "Pillar height above the ground at its centre."}
     PILLAR_HALF_M: {type: f64, value: 1.5, doc: "Half the pillar's top edge (a 3 m square top)."}
     PILLAR_WALL_RUN_M: {type: f64, value: 1.06, doc: "Horizontal run of the pillar's walls (6 m over 1.06 m = 80 degrees: climbable by WP10's rules, like tower walls)."}
+
+  weather:
+    # ---- Playtest 2 dynamic weather (CR 030). Weather is a pure function of
+    # the seed, the chemistry step and the weather cell (server/pkg/weather
+    # states.go = client/src/systems/weather/weather.ts, shared vectors), so
+    # nothing about it is sent per tick. Worlds without an atlas keep WP10's
+    # global rain stub and get no lightning, snow or wind push.
+    WEATHER_WINDOW_S: {type: i32, value: 600, doc: "A weather front keeps its state this long (each front's windows start at a seeded phase, so fronts change at different moments)."}
+    WEATHER_CELL_M: {type: i32, value: 512, doc: "Weather cell edge (8 x 8 cells per world); a cell's climate comes from its biomes."}
+    WEATHER_FRONT_CELLS: {type: i32, value: 2, doc: "A front spans this many cells per edge (2 x 512 m = a region): one severity roll per front and window, nudged per cell by up to WEATHER_JITTER."}
+    WEATHER_JITTER: {type: i32, value: 7, doc: "Per-cell nudge (+-) of the front's severity roll (0-99), so fronts have ragged edges."}
+    WEATHER_BLEND_S: {type: f64, value: 90, doc: "Visual crossfade between a front's windows, centred on the change (clients only; gameplay switches at the change)."}
+    SNOW_MOVE_MULT: {type: f64, value: 0.9, doc: "Walking and sprinting speed while it snows where you stand."}
+    SNOWSTORM_MOVE_MULT: {type: f64, value: 0.8, doc: "Walking and sprinting speed in a snowstorm."}
+    WIND_GLIDE_PUSH_MS: {type: f64, value: 1.25, doc: "A glider drifts downwind at this many m/s per wind level above 1 (windy and storms are level 2, snowstorms and sandstorms 3)."}
+    WIND_ARROW_ACCEL: {type: f64, value: 0.6, doc: "Arrows drift downwind at this many m/s^2 per wind level."}
+    LIGHTNING_SLOT_S: {type: i32, value: 3, doc: "Thunderstorm cells roll for a seeded strike every this many seconds."}
+    LIGHTNING_SLOT_PCT: {type: i32, value: 35, doc: "Chance (percent) that a thunderstorm cell is struck in a slot."}
+    LIGHTNING_TALL_PROBE_M: {type: f64, value: 12, doc: "A seeded strike lands on the highest of nine points on a grid this far apart around its seeded spot (tall things draw lightning)."}
+    LIGHTNING_ATTRACT_M: {type: f64, value: 10, doc: "A strike within this distance of a player in the open jumps to them (plus half their height above the ground, up to 20 m more)."}
+    LIGHTNING_METAL_ATTRACT_M: {type: f64, value: 30, doc: "The same for a player holding a metal weapon."}
+    LIGHTNING_METAL_PCT: {type: i32, value: 6, doc: "Each slot, a player in the open in a thunderstorm holding a metal weapon draws a bolt of their own with this chance (percent)."}
+    LIGHTNING_WARN_STEPS: {type: i32, value: 10, doc: "A drawn bolt is announced (the weapon crackles) this many chemistry steps before it strikes: time to switch to a wooden weapon."}
+    LIGHTNING_DAMAGE: {type: f64, value: 45, doc: "Damage of a bolt to the player or enemy it strikes (before armor); others within LIGHTNING_SPLASH_M take half."}
+    LIGHTNING_SPLASH_M: {type: f64, value: 4, doc: "Splash radius of a bolt."}
+    LIGHTNING_EVENT_M: {type: f64, value: 260, doc: "Players within this distance of a strike the zone resolves get it as an event (1200)."}
+    LIGHTNING_LOCAL_M: {type: f64, value: 200, doc: "Clients draw seeded strikes farther than this from them on their own; nearer ones wait for the zone's event."}
+    COLD_ONSET_S: {type: f64, value: 20, doc: "Seconds out in the cold (a cold-climate cell at night, or a snowstorm) before you are Chilled."}
+    COLD_WARMTH_M: {type: f64, value: 9, doc: "A burning campfire or a town hearth within this distance keeps you warm."}
+    COLD_FOOD_WARM_S: {type: f64, value: 600, doc: "Warm food (stews, broths, skewers, curry) keeps you warm this long."}
+    COLD_MANA_REGEN_MULT: {type: f64, value: 0.6, doc: "Chilled: mana regenerates at this rate and health not at all."}
+    FOG_AGGRO_MULT: {type: f64, value: 0.6, doc: "Enemies in a fog bank, sandstorm or snowstorm notice players at this fraction of their aggro range."}
 
   security:
     TICKET_TTL_S: {type: i32, value: 60, doc: "Connect ticket lifetime."}

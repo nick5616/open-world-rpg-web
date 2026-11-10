@@ -5,6 +5,7 @@ import type { GoldenFile } from './scenarios';
 import type { Wp10Golden } from './wp10';
 import type { Wp13Golden } from './wp13';
 import type { RideGolden } from './ride';
+import type { WeatherGolden } from './weather';
 
 const here = dirname(fileURLToPath(import.meta.url));
 
@@ -17,7 +18,7 @@ export function goldenPath(name: string): string {
  * double is its shortest round-trip form, which Go's strconv.ParseFloat (and
  * encoding/json) reads back bit-exactly.
  */
-export function serializeGolden(g: GoldenFile | Wp10Golden | Wp13Golden | RideGolden): string {
+export function serializeGolden(g: GoldenFile | Wp10Golden | Wp13Golden | RideGolden | WeatherGolden): string {
   const { frames, states, ...head } = g;
   return [
     '{',

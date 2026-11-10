@@ -8,6 +8,7 @@ import { loadWorldgenGround } from '../worldgenGround';
 import { runWp10, scenarioGround, summarize, WP10_SCENARIOS, WP10_SEED } from './wp10';
 import { runWp13, WP13_SCENARIOS } from './wp13';
 import { RIDE_SCENARIOS, rideRun, rideSummary } from './ride';
+import { WEATHER_SCENARIOS, weatherRun, weatherSummary } from './weather';
 
 for (const sc of SCENARIOS) {
   const g = runScenario(sc);
@@ -27,6 +28,13 @@ for (const sc of RIDE_SCENARIOS) {
   const g = rideRun(sc.name);
   writeFileSync(goldenPath(`pt2_${sc.name}`), serializeGolden(g));
   console.log(`wrote ${goldenPath(`pt2_${sc.name}`)} ${JSON.stringify(rideSummary(g))}`);
+}
+
+// CR 030: snow, rain from the weather field and a gale under the glider.
+for (const sc of WEATHER_SCENARIOS) {
+  const g = weatherRun(sc.name);
+  writeFileSync(goldenPath(`pt2_${sc.name}`), serializeGolden(g));
+  console.log(`wrote ${goldenPath(`pt2_${sc.name}`)} ${weatherSummary(g)}`);
 }
 
 if (!existsSync(wasmPath)) {

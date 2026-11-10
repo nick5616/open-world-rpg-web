@@ -43,6 +43,7 @@ import (
 	"lodestone/server/pkg/combatdefs"
 	"lodestone/server/pkg/constants"
 	"lodestone/server/pkg/proto"
+	"lodestone/server/pkg/weather"
 )
 
 // Dt is one movement step: each InputFrame advances the simulation by exactly
@@ -120,7 +121,30 @@ type UpdraftField interface {
 type Env struct {
 	Raining bool
 	Updraft UpdraftField
+	// Weather (playtest 2, CR 030): rain, snow and wind where the player
+	// stands, read once at the start of each step (nil: none). Rain from it
+	// adds to Raining; snow slows walking; wind pushes a glider downwind.
+	Weather weather.MoveField
+	mw      weather.MoveWeather // resolved by stepFull
 }
+
+// resolve reads the weather at p into the env the mode steps use.
+func (e Env) resolve(p Vec3) Env {
+	e.mw = weather.MoveWeather{SpeedMult: 1}
+	if e.Weather != nil {
+		e.mw = e.Weather.MoveWeatherAt(p.X, p.Z)
+		if e.mw.Rain {
+			e.Raining = true
+		}
+		if !(e.mw.SpeedMult > 0) {
+			e.mw.SpeedMult = 1
+		}
+	}
+	return e
+}
+
+// MaxGlidePush is the strongest downwind drift a glider can get (a gale).
+const MaxGlidePush = 2 * constants.WindGlidePushMs
 
 // Flat is a flat plane at height Y (tests and the no-wasm fallback).
 type Flat struct{ Y float64 }
@@ -222,6 +246,7 @@ func StepEnv(s State, flags uint16, yaw float64, g Ground, env Env) State {
 // along the look).
 func stepFull(s State, flags uint16, castSlot uint8, yaw, pitch float64, g Ground, env Env) State {
 	g = AtLevel(g, s.Pos.Y) // WP09: caves see the ground at the player's level (caves.go)
+	env = env.resolve(s.Pos) // CR 030: the weather where the step starts
 	wx, wz := wishDir(flags, yaw)
 	s0 := s
 	// CR 027 (ride.go): a rider can't climb, glide or swim (the step drops
@@ -254,7 +279,7 @@ func stepFull(s State, flags uint16, castSlot uint8, yaw, pitch float64, g Groun
 			rx, rz := wishDir(flags&(proto.InputFlagForward|proto.InputFlagLeft|proto.InputFlagRight), yaw)
 			out = stepRide(s, flags, rx, rz, yaw, gm)
 		} else {
-			out = stepWalk(s, flags, wx, wz, gm, dashing)
+			out = stepWalk(s, flags, wx, wz, gm, dashing, env)
 		}
 	}
 	out.Dash, out.IFrames = s.Dash, s.IFrames
@@ -388,12 +413,15 @@ func FindShore(g Ground, x, z float64) Vec3 {
 
 // stepWalk is WP02's walk/air step plus slope rules, glider opening, wall
 // grabs, water entry and the sprint/regen stamina rules (TS stepWalk).
-func stepWalk(s State, flags uint16, wx, wz float64, g Ground, dashing bool) State {
+func stepWalk(s State, flags uint16, wx, wz float64, g Ground, dashing bool, env Env) State {
 	use := canUse(s)
 	sprinting := flags&proto.InputFlagSprint != 0 && use
 	speed := constants.BaseMoveSpeed
 	if sprinting {
 		speed *= constants.SprintMultiplier
+	}
+	if m := env.mw.SpeedMult; m > 0 && m != 1 {
+		speed *= m // CR 030: snow underfoot
 	}
 
 	h0 := g.HeightAt(s.Pos.X, s.Pos.Z)
@@ -560,9 +588,13 @@ func stepGlide(s State, flags uint16, wx, wz float64, g Ground, env Env) State {
 	if !use || flags&presses != 0 {
 		a := s
 		a.Mode = ModeAir
-		return stepWalk(a, flags&^presses, wx, wz, g, false)
+		return stepWalk(a, flags&^presses, wx, wz, g, false, env)
 	}
-	vx, vz := moveToward2(s.Vel.X, s.Vel.Z, wx*constants.GlideSpeed, wz*constants.GlideSpeed, constants.GlideAccel*dt)
+	tx, tz := wx*constants.GlideSpeed, wz*constants.GlideSpeed
+	if env.mw.PushX != 0 || env.mw.PushZ != 0 {
+		tx, tz = tx+env.mw.PushX, tz+env.mw.PushZ // CR 030: the wind carries the glider
+	}
+	vx, vz := moveToward2(s.Vel.X, s.Vel.Z, tx, tz, constants.GlideAccel*dt)
 	lift := 0.0
 	if env.Updraft != nil {
 		lift = env.Updraft.LiftAt(s.Pos.X, s.Pos.Y, s.Pos.Z)
@@ -612,7 +644,7 @@ func stepClimb(s State, flags uint16, wx, wz float64, g Ground, env Env) State {
 		a := s
 		a.Mode = ModeGround
 		a.Vel = Vec3{}
-		return stepWalk(a, flags&^(proto.InputFlagJump|proto.InputFlagJumpEdge), wx, wz, g, false)
+		return stepWalk(a, flags&^(proto.InputFlagJump|proto.InputFlagJumpEdge), wx, wz, g, false, env)
 	}
 	t := math.Sqrt(here.T2)
 	ux, uz := here.GX/t, here.GZ/t
@@ -827,7 +859,7 @@ func modeSpeedBound(mode int, prev State) float64 {
 	case ModeClimb:
 		return max(constants.ClimbJumpSpeed, constants.ClimbSlipSpeed, constants.ClimbSpeed)
 	case ModeGlide:
-		return max(constants.GlideSpeed, HorizontalSpeed(prev))
+		return max(constants.GlideSpeed+MaxGlidePush, HorizontalSpeed(prev)) // CR 030: a tailwind
 	case ModeSwim:
 		return max(constants.SwimSpeed, HorizontalSpeed(prev))
 	}
