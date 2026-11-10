@@ -58,6 +58,9 @@ type Group struct {
 	Comp     []string // explicit composition (tests), else from tables
 	Elite    string   // forced elite affix (tests)
 	Dummy    bool     // CR 020: training dummies (dev evidence runs): its members never move or attack
+	// Retired (CR 022): a finished world event's or reset vault's group;
+	// it never spawns again (content.go RetireGroup).
+	Retired bool
 	// AreaLevel: the group takes its level and tier from the area it stands
 	// in when it spawns (playtest 1, World.Areas); set for every atlas group.
 	AreaLevel bool
@@ -716,7 +719,7 @@ func (w *World) spawnTick() {
 		}
 	}
 	for _, g := range w.Groups {
-		if g.nearPass == pass && !g.Spawned && w.tick >= g.respawn && w.areaReady(g) {
+		if g.nearPass == pass && !g.Spawned && !g.Retired && w.tick >= g.respawn && w.areaReady(g) {
 			w.spawnGroup(g)
 		}
 		if g.Spawned && w.tick-g.lastNear > secondsToTicks(constants.EnemyDespawnS) {

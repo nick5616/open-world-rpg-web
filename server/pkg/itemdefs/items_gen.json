@@ -314,7 +314,8 @@
   "currency": 1000000,
   "weapon": 1,
   "armor": 1,
-  "key": 1
+  "key": 1,
+  "quest": 10
  },
  "pouches": {
   "gem": "gem",
@@ -1041,6 +1042,66 @@
    "heal": 40
   },
   {
+   "key": "food:emberroot_skewer",
+   "name": "Emberroot Skewer",
+   "category": "food",
+   "kind": "consumable",
+   "stack": 20,
+   "pouch": "inv",
+   "level": 1,
+   "value": 10,
+   "sockets": 0,
+   "heal": 45
+  },
+  {
+   "key": "food:frostcap_broth",
+   "name": "Frostcap Broth",
+   "category": "food",
+   "kind": "consumable",
+   "stack": 20,
+   "pouch": "inv",
+   "level": 1,
+   "value": 10,
+   "sockets": 0,
+   "heal": 50
+  },
+  {
+   "key": "potion:glowmoss_tonic",
+   "name": "Glowmoss Tonic",
+   "category": "potion",
+   "kind": "consumable",
+   "stack": 20,
+   "pouch": "inv",
+   "level": 1,
+   "value": 34,
+   "sockets": 0,
+   "heal": 65
+  },
+  {
+   "key": "potion:duskpetal_draught",
+   "name": "Duskpetal Draught",
+   "category": "potion",
+   "kind": "consumable",
+   "stack": 20,
+   "pouch": "inv",
+   "level": 1,
+   "value": 45,
+   "sockets": 0,
+   "heal": 75
+  },
+  {
+   "key": "potion:dawnroot_elixir",
+   "name": "Dawnroot Elixir",
+   "category": "potion",
+   "kind": "consumable",
+   "stack": 20,
+   "pouch": "inv",
+   "level": 1,
+   "value": 110,
+   "sockets": 0,
+   "heal": 120
+  },
+  {
    "key": "meat:raw",
    "name": "Raw Meat",
    "category": "meat",
@@ -1063,6 +1124,50 @@
    "sockets": 0
   },
   {
+   "key": "herb:emberroot",
+   "name": "Emberroot",
+   "category": "herb",
+   "kind": "material",
+   "stack": 40,
+   "pouch": "inv",
+   "level": 1,
+   "value": 6,
+   "sockets": 0
+  },
+  {
+   "key": "herb:frostcap",
+   "name": "Frostcap",
+   "category": "herb",
+   "kind": "material",
+   "stack": 40,
+   "pouch": "inv",
+   "level": 1,
+   "value": 6,
+   "sockets": 0
+  },
+  {
+   "key": "herb:glowmoss",
+   "name": "Glowmoss",
+   "category": "herb",
+   "kind": "material",
+   "stack": 40,
+   "pouch": "inv",
+   "level": 1,
+   "value": 8,
+   "sockets": 0
+  },
+  {
+   "key": "herb:duskpetal",
+   "name": "Duskpetal",
+   "category": "herb",
+   "kind": "material",
+   "stack": 40,
+   "pouch": "inv",
+   "level": 1,
+   "value": 8,
+   "sockets": 0
+  },
+  {
    "key": "hide:wolf",
    "name": "Wolf Pelt",
    "category": "hide",
@@ -1082,6 +1187,28 @@
    "pouch": "inv",
    "level": 1,
    "value": 30,
+   "sockets": 0
+  },
+  {
+   "key": "quest:parcel",
+   "name": "Sealed Parcel",
+   "category": "quest",
+   "kind": "material",
+   "stack": 10,
+   "pouch": "inv",
+   "level": 1,
+   "value": 0,
+   "sockets": 0
+  },
+  {
+   "key": "quest:watch_banner",
+   "name": "Banner of the Old Watch",
+   "category": "quest",
+   "kind": "material",
+   "stack": 10,
+   "pouch": "inv",
+   "level": 1,
+   "value": 0,
    "sockets": 0
   },
   {
@@ -2609,6 +2736,114 @@
    "sockets": 0,
    "blueprint": null,
    "xp": 10
+  },
+  {
+   "key": "cook_emberroot_skewer",
+   "id": 26,
+   "station": "cook",
+   "inputs": [
+    {
+     "item": "meat:raw",
+     "qty": 1
+    },
+    {
+     "item": "herb:emberroot",
+     "qty": 1
+    }
+   ],
+   "output": "food:emberroot_skewer",
+   "qty": 1,
+   "sockets": 0,
+   "blueprint": null,
+   "xp": 8
+  },
+  {
+   "key": "cook_frostcap_broth",
+   "id": 27,
+   "station": "cook",
+   "inputs": [
+    {
+     "item": "herb:frostcap",
+     "qty": 2
+    },
+    {
+     "item": "herb:heartleaf",
+     "qty": 1
+    }
+   ],
+   "output": "food:frostcap_broth",
+   "qty": 1,
+   "sockets": 0,
+   "blueprint": null,
+   "xp": 8
+  },
+  {
+   "key": "brew_glowmoss_tonic",
+   "id": 28,
+   "station": "cook",
+   "inputs": [
+    {
+     "item": "herb:glowmoss",
+     "qty": 2
+    },
+    {
+     "item": "herb:heartleaf",
+     "qty": 1
+    }
+   ],
+   "output": "potion:glowmoss_tonic",
+   "qty": 1,
+   "sockets": 0,
+   "blueprint": null,
+   "xp": 10
+  },
+  {
+   "key": "brew_duskpetal_draught",
+   "id": 29,
+   "station": "cook",
+   "inputs": [
+    {
+     "item": "herb:duskpetal",
+     "qty": 2
+    },
+    {
+     "item": "herb:glowmoss",
+     "qty": 1
+    }
+   ],
+   "output": "potion:duskpetal_draught",
+   "qty": 1,
+   "sockets": 0,
+   "blueprint": null,
+   "xp": 12
+  },
+  {
+   "key": "brew_dawnroot_elixir",
+   "id": 30,
+   "station": "cook",
+   "inputs": [
+    {
+     "item": "herb:emberroot",
+     "qty": 1
+    },
+    {
+     "item": "herb:frostcap",
+     "qty": 1
+    },
+    {
+     "item": "herb:glowmoss",
+     "qty": 1
+    },
+    {
+     "item": "herb:duskpetal",
+     "qty": 1
+    }
+   ],
+   "output": "potion:dawnroot_elixir",
+   "qty": 1,
+   "sockets": 0,
+   "blueprint": null,
+   "xp": 20
   }
  ],
  "starter": [
@@ -2686,6 +2921,14 @@
     "item": 0.06,
     "consumable": 0.12,
     "food": 0.15
+   },
+   "critter": {
+    "gem": 0.5
+   },
+   "hunt": {
+    "item": 0.25,
+    "hide": 0.3,
+    "consumable": 0.05
    }
   },
   "elite": {

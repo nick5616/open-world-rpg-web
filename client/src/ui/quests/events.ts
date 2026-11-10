@@ -24,7 +24,10 @@ export const QUEST_REFUSAL: Record<number, string> = {
   6: 'You already completed that quest',
 };
 
-export const QUEST_KIND = { bounty: 0, story: 1 } as const;
+export const QUEST_KIND = { bounty: 0, story: 1, side: 2 } as const;
+
+/** The journal's word for a quest kind. */
+export const QUEST_KIND_LABEL: Record<number, string> = { 0: 'Bounty', 1: 'Story', 2: 'Request' };
 
 /** A place a quest step points at (meters). r > 0: an area circle. */
 export interface QuestMarker {
@@ -52,6 +55,12 @@ export interface QuestView {
   turnIn?: boolean;
   /** Offers only: every step's markers. */
   stepMarkers?: QuestMarker[][];
+  /** CR 023: reward items, equipment rolls, renown (with repTown), the giver's offer line. */
+  items?: { item: string; qty: number }[];
+  rollItems?: number;
+  rep?: number;
+  repTown?: string;
+  say?: string;
 }
 
 export interface QuestLogView {
@@ -87,6 +96,11 @@ function normQuest(q: Partial<QuestView>): QuestView {
     xp: q.xp ?? 0,
     turnIn: q.turnIn,
     stepMarkers: q.stepMarkers,
+    items: q.items,
+    rollItems: q.rollItems,
+    rep: q.rep,
+    repTown: q.repTown,
+    say: q.say,
   };
 }
 

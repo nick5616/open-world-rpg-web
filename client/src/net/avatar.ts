@@ -28,6 +28,7 @@ import { weaponGeometry } from '../combat/weapons/models';
 import { weaponMaterial } from '../combat/weapons/material';
 import { AvatarAnimator, type AnimInput, type LimbPose, type Pose } from './avatarAnim';
 import { MARK_COLOR, drawSwords, pvpMark } from '../ui/pvp/plate';
+import { titleOf } from '../ui/content/titles'; // CR 023: feat titles under the name
 
 export const LOD_MID_M = 25;
 export const LOD_LOW_M = 80;
@@ -242,6 +243,7 @@ export class Avatar {
   private plateLevel = -1;
   private plateAct = -1;
   private plateMark = '';
+  private plateTitle = '';
   private high: THREE.Group;
   private glider: THREE.Mesh;
   // the rig
@@ -499,7 +501,9 @@ export class Avatar {
     const shown = v.kind === 1 ? v.activity & ~Activity.casting : v.activity;
     const act = isSpeaking(v.name) ? shown | Activity.speaking : shown;
     const mark = pvpMark(v.typeId); // playtest 2 (CR 019): red crossed swords = flagged for PvP, gold = dueling
-    if (v.name === this.plateName && v.level === this.plateLevel && act === this.plateAct && mark === this.plateMark) return;
+    const title = titleOf(v.id);
+    if (v.name === this.plateName && v.level === this.plateLevel && act === this.plateAct && mark === this.plateMark && title === this.plateTitle) return;
+    this.plateTitle = title;
     this.plateName = v.name;
     this.plateLevel = v.level;
     this.plateAct = act;
@@ -519,6 +523,14 @@ export class Avatar {
     const label = `${v.name || '?'}  ·  ${v.level}`;
     c.fillText(label, mark ? 276 : 256, 39);
     if (mark) drawSwords(c, Math.max(44, 276 - Math.min(400, c.measureText(label).width) / 2 - 30), 39, 44, MARK_COLOR[mark]);
+    if (title && !labels.length) {
+      c.font = 'italic 600 30px Georgia, serif';
+      c.fillStyle = '#ffd166';
+      c.strokeStyle = 'rgba(0,0,0,0.85)';
+      c.lineWidth = 5;
+      c.strokeText(title, 256, 100, 470);
+      c.fillText(title, 256, 100, 470);
+    }
     if (labels.length) {
       c.font = '500 28px system-ui, "Segoe UI", sans-serif';
       const text = labels.join('  ');

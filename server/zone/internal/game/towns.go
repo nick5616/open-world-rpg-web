@@ -241,19 +241,20 @@ func (s *Server) npcInteract(e *Entity, m *proto.Interact, now time.Time) {
 		}
 		s.townEvent(e, &proto.Event{Kind: EventNPCSay, EntityID: ne.ID, TargetID: uint32(d.Role), Value: ov, Data: []byte(w.Say(i, tod, open))})
 		if sess := s.byChar[e.CharacterID]; sess != nil {
-			s.questsTalk(sess, d.Role, d.Settlement, ne.ID) // quests.go: talk steps, the blacksmith's starter offer
+			done := s.questsTalk(sess, d.Role, d.Settlement, ne.ID, i) // quests.go: talk steps, the blacksmith's starter offer
+			s.contentTalk(sess, i, ne.ID, done)                        // CR 023: townsfolk side quests and stories (content_quests.go)
 		}
 		if !open {
 			return
 		}
-		if ws := w.Wares(i); ws != nil {
+		if ws := s.waresFor(e, i); ws != nil { // CR 023: reputation adds stock (content.go)
 			s.townEvent(e, &proto.Event{Kind: EventShop, EntityID: ne.ID, Value: int32(d.Merchant), Data: npc.EncodeShop(ws)})
 		}
 		if d.Role == towns.RoleBounty {
 			s.sendBounties(e, d.Settlement, ne.ID, now)
 		}
 	case ActionBuy:
-		ws := w.Wares(i)
+		ws := s.waresFor(e, i)
 		switch {
 		case ws == nil:
 			s.refuseTown(e, m.TargetID, TownRefuseUnknown)

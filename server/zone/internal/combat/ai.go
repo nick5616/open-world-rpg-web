@@ -128,6 +128,10 @@ func (w *World) think(e *Enemy) {
 	if e.Demon != nil && w.demonGoal(e) {
 		return // WP15: a defense wave walks to the ward garden
 	}
+	if e.Def.Behavior == "flee" {
+		w.flee(e) // playtest 2 content (CR 022): the Glintfox never fights
+		return
+	}
 	switch e.State {
 	case Idle:
 		if t := w.acquire(e, 1); t != nil {

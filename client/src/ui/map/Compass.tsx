@@ -10,6 +10,7 @@ import { drawnRemotes } from '../../net/netStore';
 import { PIN_COLORS } from './events';
 import { useExploration } from './store';
 import { trackedQuest } from '../quests/store'; // playtest 1: quest markers on the strip
+import { useContent } from '../content/store'; // CR 023: world events on the strip
 
 const W = 560;
 const H = 46;
@@ -38,7 +39,7 @@ export interface CompassMark {
   dist: number;
   color: string;
   label: string;
-  kind: 'party' | 'pin' | 'quest';
+  kind: 'party' | 'pin' | 'quest' | 'event';
 }
 
 /** What the strip shows right now (exported for the dev handle and tests). */
@@ -62,6 +63,11 @@ export function compassMarks(): CompassMark[] {
   const q = trackedQuest();
   const qm = (q?.markers ?? []).map((m) => ({ m, d: Math.max(0, Math.hypot(m.x - px, m.z - pz) - (m.r ?? 0)) })).sort((a, b) => a.d - b.d);
   qm.forEach(({ m, d }, i) => out.push({ rel: wrapAngle(bearing(px, pz, m.x, m.z) - head), dist: d, color: '#ffd166', label: i === 0 ? m.label : '', kind: 'quest' }));
+  // CR 023: world events in range (a red star, labelled).
+  for (const e of Object.values(useContent.getState().events)) {
+    if (e.phase !== 1) continue;
+    out.push({ rel: wrapAngle(bearing(px, pz, e.x, e.z) - head), dist: Math.max(0, Math.hypot(e.x - px, e.z - pz) - e.r), color: '#ff7b54', label: e.name, kind: 'event' });
+  }
   return out;
 }
 
@@ -116,7 +122,15 @@ export function Compass() {
         ctx.lineWidth = 1.5;
         ctx.beginPath();
         if (m.kind === 'party') ctx.arc(x, 18, 5, 0, Math.PI * 2);
-        else if (m.kind === 'quest') {
+        else if (m.kind === 'event') {
+          for (let i = 0; i < 10; i++) {
+            const a = (i * Math.PI) / 5 - Math.PI / 2;
+            const r = i % 2 ? 3.2 : 8;
+            if (i === 0) ctx.moveTo(x + r * Math.cos(a), 18 + r * Math.sin(a));
+            else ctx.lineTo(x + r * Math.cos(a), 18 + r * Math.sin(a));
+          }
+          ctx.closePath();
+        } else if (m.kind === 'quest') {
           ctx.moveTo(x, 10);
           ctx.lineTo(x + 6, 18);
           ctx.lineTo(x, 26);
