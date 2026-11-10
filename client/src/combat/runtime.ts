@@ -146,7 +146,7 @@ export class CombatRuntime {
         } else altDown();
       }
       // Middle button: the camera view toggle (hud/ViewHud.tsx), not combat (playtest 2: it did nothing
-      // for anyone without a weapon technique; techniques stay on V).
+      // for anyone without a weapon technique; techniques are on Tab).
     };
     const onUp = (e: MouseEvent) => {
       if (e.button === 0) this.buttons.attackDown = false;
@@ -195,7 +195,10 @@ export class CombatRuntime {
         case 'KeyQ':
           this.buttons.formPress++;
           break;
-        case 'KeyV':
+        // Playtest 2 integration QA: the weapon technique moved from V to Tab. V is push-to-talk
+        // (voice/runtime.ts) and every push to talk also fired the technique.
+        case 'Tab':
+          e.preventDefault(); // no focus jump to a HUD button
           this.buttons.techniquePress++;
           break;
         case 'KeyR':
