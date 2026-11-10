@@ -10,7 +10,8 @@
 // no panel is open and you are not riding; its own prompt carries
 // data-testid="content-prompt" so the ones below it yield.
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { BELOW_CLOCK, useHudHeight } from '../../hud/layout';
 import { CONTENT } from '@lodestone/contracts';
 import { DEBUG } from '../../config';
 import { isTextTarget } from '../../input/useKeyboard';
@@ -102,7 +103,7 @@ function EventTracker() {
   const done = e.phase !== EVENT_PHASE.active;
   const color = done ? (e.phase === EVENT_PHASE.won ? '#9fe08a' : '#ff9a7a') : '#ff8f6b';
   return (
-    <div data-testid="world-event" style={{ position: 'fixed', top: 92, left: '50%', transform: 'translateX(-50%)', width: 'min(440px, 70vw)', textAlign: 'center', pointerEvents: 'none', zIndex: 14, color: '#f8efe0', textShadow: '0 1px 3px #000, 0 0 8px rgba(0,0,0,0.8)' }}>
+    <div data-testid="world-event" style={{ position: 'fixed', top: BELOW_CLOCK, left: '50%', transform: 'translateX(-50%)', width: 'min(440px, 70vw)', textAlign: 'center', pointerEvents: 'none', zIndex: 14, color: '#f8efe0', textShadow: '0 1px 3px #000, 0 0 8px rgba(0,0,0,0.8)' }}>
       <div style={{ font: '700 12px system-ui', letterSpacing: 3, textTransform: 'uppercase', color }}>{done ? (e.phase === EVENT_PHASE.won ? 'World event won' : 'World event over') : 'World event'}</div>
       <div style={{ font: '600 20px Georgia, serif', color: '#ffe2c4' }}>✦ {e.name}</div>
       <div style={{ fontSize: 13, opacity: 0.92 }}>{e.text}</div>
@@ -165,10 +166,13 @@ function VaultPanel() {
   const px = localPlayer.pos.x;
   const pz = localPlayer.pos.z;
   const v = Object.values(vaults).find((x) => Math.hypot(x.x - px, x.z - pz) <= x.r + 45);
+  // Playtest 2 integration QA: your pet's card sits under this panel (hud/layout.ts --ls-vault-h).
+  const ref = useRef<HTMLDivElement>(null);
+  useHudHeight(ref, '--ls-vault-h', !!v);
   if (!v) return null;
   const phase = ['Sealed', 'The keeper is awake', 'Cleared'][v.phase] ?? '';
   return (
-    <div data-testid="vault-panel" style={{ ...PANEL, position: 'fixed', left: 14, top: 'min(46vh, 420px)', width: 'min(300px, 34vw)', padding: '10px 12px', zIndex: 12, pointerEvents: 'none' }}>
+    <div ref={ref} data-testid="vault-panel" style={{ ...PANEL, position: 'fixed', left: 14, top: 'min(46vh, 420px)', width: 'min(300px, 34vw)', padding: '10px 12px', zIndex: 12, pointerEvents: 'none' }}>
       <div style={{ fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: GOLD, opacity: 0.85 }}>Sealed vault · {phase}</div>
       <div style={{ font: '600 16px Georgia, serif', color: '#f6e7c0' }}>{v.name}</div>
       {v.phase === 0 && (

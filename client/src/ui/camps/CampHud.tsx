@@ -334,7 +334,7 @@ function Badges() {
   const left = rested ? Math.max(0, Math.ceil((rested.until - now) / 1000)) : 0;
   if (!left && !fire) return null;
   return (
-    <div style={{ position: 'fixed', left: 16, bottom: 150, display: 'flex', flexDirection: 'column', gap: 4, pointerEvents: 'none', zIndex: 12, font: '12px system-ui, sans-serif' }}>
+    <div data-testid="camp-strips" style={{ position: 'fixed', left: 16, bottom: 150, display: 'flex', flexDirection: 'column', gap: 4, pointerEvents: 'none', zIndex: 12, font: '12px system-ui, sans-serif' }}>
       {left > 0 && rested && (
         <div data-testid="camp-rested" style={strip} title={`+${rested.info.staminaBonus} stamina, x${rested.info.regenMult} health regeneration`}>
           <span style={{ color: '#ffd98a', fontWeight: 700 }}>Rested</span> {Math.floor(left / 60)}:{String(left % 60).padStart(2, '0')} · +{rested.info.staminaBonus} stamina · x{rested.info.regenMult} regen

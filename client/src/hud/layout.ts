@@ -22,6 +22,9 @@ export const CENTER_HALF_PX = 260;
 /** Below this width the corners lift above the centre stack. */
 export const NARROW_PX = 1080;
 
+/** Panels drawn in the middle of the screen (playtest 2): what sits in the middle or left waits under them. */
+const CENTRE_PANELS = ['camp-menu', 'camp-chest', 'camp-label', 'steed-panel', 'pet-panel', 'tablet-reader'].map((id) => `[data-testid="${id}"]`).join(', ');
+
 export const HUD_CSS = `
 :root {
   --ls-center-half: ${CENTER_HALF_PX}px;
@@ -30,6 +33,8 @@ export const HUD_CSS = `
   --ls-corner-bottom: 12px;
   --ls-chat-w: min(400px, calc(50vw - var(--ls-center-half) - 24px));
   --ls-badge-h: 0px;
+  --ls-clock-h: 30px;
+  --ls-vault-h: 130px;
 }
 /* Netlify's free tier injects a "Powered by Netlify" badge in the bottom-right
    corner of the live site; keep the right corner's overlays above it. */
@@ -41,6 +46,21 @@ body:has([data-ui-panel]:not([style*="display: none"])) [data-testid="lock-hint"
 body:has([data-testid="sound-settings"], [data-testid="graphics-settings"], [data-testid="friends-panel"], [data-testid="craft-panel"]) [data-testid="quest-tracker"] { visibility: hidden; }
 /* The "[E] ..." prompt is noise once the thing it offers is open. */
 body:has([data-ui-panel]:not([style*="display: none"])) [data-testid="town-prompt"] { visibility: hidden; }
+/* Playtest 2 integration QA (tools/playtest/sp13.mjs: every playtest 2 overlay at once at
+   1920x1080, 1600x900 and 1280x720). Top centre: the world event tracker sits under the clock
+   pill and its forecast line (--ls-clock-h, measured), and steps aside for the big centre cards
+   (level up, a new place, a catch) and anything covering the middle. */
+body:has([data-testid="levelup-fanfare"], [data-testid="discovery-intro"], [data-testid="fish-caught"], ${CENTRE_PANELS}, [data-testid="emote-wheel"], [data-testid="pet-wheel"]) [data-testid="world-event"] { visibility: hidden; }
+/* Left column: content notes (top), the vault puzzle, the pet card under it (--ls-vault-h), the
+   Rested strip (bottom). A centred panel or the instrument overlay covers them at 1280 wide. */
+body:has([data-testid="vault-panel"]) [data-testid="pet-card"] { top: calc(min(46vh, 420px) + var(--ls-vault-h, 130px) + 8px) !important; }
+body:has(${CENTRE_PANELS}, [data-testid="music-overlay"]) :is([data-testid="content-notes"], [data-testid="vault-panel"], [data-testid="pet-card"], [data-testid="camp-strips"]) { visibility: hidden; }
+/* The level-up card (4 s) doesn't sit on the top edge of a centred panel you opened. */
+body:has(${CENTRE_PANELS}) [data-testid="levelup-fanfare"] { visibility: hidden; }
+/* A held emote / pet wheel fills the middle: the tip and the lock hint under it wait. */
+body:has([data-testid="emote-wheel"], [data-testid="pet-wheel"]) :is([data-testid="tip"], [data-testid="lock-hint"]) { visibility: hidden; }
+/* Playing an instrument: the overlay takes the bottom; chat can't be opened (Enter is the metronome). */
+body:has([data-testid="music-overlay"]) :is([data-testid="chat-open"], [data-testid="chat-toast"]) { visibility: hidden; }
 /* A shop / NPC dialogue sits on the right: loot toasts (a purchase, a quest reward) move to its left. */
 body:has([data-testid="town-panel"]:not([style*="display: none"])) [data-testid="loot-toasts"] { right: calc(4% + min(380px, 86vw) + 14px) !important; }
 @media (max-width: ${NARROW_PX}px) {
@@ -62,6 +82,8 @@ export const GRAPHICS_BUTTON_RIGHT = 12 + SOUND_BUTTON_W + 8;
 export const FRIENDS_BUTTON_RIGHT = GRAPHICS_BUTTON_RIGHT + GRAPHICS_BUTTON_W + 8;
 /** Chat column width. */
 export const CHAT_WIDTH = 'var(--ls-chat-w, 400px)';
+/** Top of the world event tracker: under the clock pill, its forecast line and night notices (--ls-clock-h). */
+export const BELOW_CLOCK = 'calc(56px + var(--ls-clock-h, 30px) + 6px)';
 /** Bottom offset right above the centre stack (hotbar + hint). */
 export const ABOVE_HOTBAR = 'calc(var(--ls-hotbar-h, 0px) + 14px)';
 
@@ -74,7 +96,7 @@ export function ensureHudLayoutCss(): void {
 }
 
 /** Publish an element's height as a CSS variable while it is mounted. */
-export function useHudHeight(ref: RefObject<HTMLElement | null>, name: '--ls-hotbar-h' | '--ls-hint-h', active = true): void {
+export function useHudHeight(ref: RefObject<HTMLElement | null>, name: '--ls-hotbar-h' | '--ls-hint-h' | '--ls-clock-h' | '--ls-vault-h', active = true): void {
   useEffect(() => {
     ensureHudLayoutCss();
     const el = ref.current;
