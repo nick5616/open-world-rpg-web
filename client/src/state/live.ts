@@ -33,6 +33,9 @@ export const localPlayer = {
    */
   aimYaw: 0,
   aimPitch: 0,
+  /** CR 027: riding the spirit steed (MoveFlag.mounted), its gait (sim/ride.ts GAIT) and spurs left in the wheel. */
+  mounted: false,
+  gait: 0,
 };
 
 /** Playtest 2: local actions with no other hook, counted for the own third-person avatar. */

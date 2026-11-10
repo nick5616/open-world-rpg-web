@@ -12,7 +12,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
-import { PLAYER_HEIGHT } from '@lodestone/contracts';
+import { PLAYER_HEIGHT, RIDE_EYE_RAISE_M } from '@lodestone/contracts';
 import { useKeyboard } from '../input/useKeyboard';
 import { useMouseLook } from '../input/useMouseLook';
 import { LocalSim, type StepRecord } from '../sim/localSim';
@@ -43,6 +43,8 @@ export const SPAWN = { x: 2048, z: 2048 };
 // respawn) skip the easing. Values from wizard-wars CameraController.
 const CORRECTION_SMOOTH_TAU = 0.09; // s
 const CORRECTION_SNAP_DIST = 3; // m
+/** CR 027: the third-person boom grows this much in the saddle (the steed fills the old view). */
+const RIDE_BOOM_EXTRA_M = 1.6;
 
 /** What the networked play screen plugs in (client/src/net/usePlayerDriver). */
 export interface PlayerDriver {
@@ -86,6 +88,7 @@ export function PlayerController({ onStep, driver }: Props) {
   const look = useRef({ yaw: 0, pitch: 0 });
   const offset = useRef({ x: 0, y: 0, z: 0 });
   const warned = useRef(false);
+  const ride = useMemo(() => ({ k: 0 }), []); // CR 027: 0 on foot .. 1 in the saddle, eased
   const euler = useMemo(() => new THREE.Euler(0, 0, 0, 'YXZ'), []);
   const render = useMemo(() => ({ x: 0, y: 0, z: 0 }), []);
   // Playtest 2 third person: the boom, its collision probe and the aim scratch (no per-frame allocations).
@@ -176,20 +179,34 @@ export function PlayerController({ onStep, driver }: Props) {
     vw.feet.x = render.x + o.x;
     vw.feet.y = render.y + o.y;
     vw.feet.z = render.z + o.z;
+    // CR 027: in the saddle the eye rides higher and the third-person boom
+    // pulls back (eased, so mounting and getting off glide).
+    const mountedNow = !fly && (sim.state.flags & MoveFlag.mounted) !== 0;
+    ride.k += ((mountedNow ? 1 : 0) - ride.k) * (1 - Math.exp(-Math.min(delta, 0.25) / 0.18));
+    if (Math.abs(ride.k - (mountedNow ? 1 : 0)) < 1e-3) ride.k = mountedNow ? 1 : 0;
     vw.eye.x = vw.feet.x;
-    vw.eye.y = vw.feet.y + PLAYER_HEIGHT;
+    vw.eye.y = vw.feet.y + PLAYER_HEIGHT + RIDE_EYE_RAISE_M * ride.k;
     vw.eye.z = vw.feet.z;
     const vs = useViewStore.getState();
     const third = vs.mode === 'third' && !fly;
     if (third !== vw.third || tp) boom.reset();
     vw.third = third;
-    if (third) {
-      probe.setLevel(ground, vw.feet.y);
-      const c = boom.update(vw.eye, lk.yaw, lk.pitch, vs.shoulder, vs.distance, probe.blocked, delta);
+    if (third || ride.k > 0.01) {
+      let c: V3;
+      if (third) {
+        probe.setLevel(ground, vw.feet.y);
+        c = boom.update(vw.eye, lk.yaw, lk.pitch, vs.shoulder, vs.distance + RIDE_BOOM_EXTRA_M * ride.k, probe.blocked, delta);
+        vw.boom = boom.dist;
+        // with a little hysteresis, so a boom hovering at the limit doesn't flicker
+        vw.hideBody = boom.dist < THIRD.hideAvatarBelow + (vw.hideBody && vw.third ? 0.15 : 0);
+      } else {
+        // First person in the saddle: the camera is above the combat eye, so the aim converges too.
+        c = vw.eye;
+        vw.boom = 0;
+        vw.hideBody = true;
+        probe.setLevel(ground, vw.feet.y);
+      }
       camera.position.set(c.x, c.y, c.z);
-      vw.boom = boom.dist;
-      // with a little hysteresis, so a boom hovering at the limit doesn't flicker
-      vw.hideBody = boom.dist < THIRD.hideAvatarBelow + (vw.hideBody && vw.third ? 0.15 : 0);
       // Converge the combat aim on what the crosshair (the camera ray) is on.
       forwardOf(lk.yaw, lk.pitch, fwd);
       aimSpheres.length = 0;
@@ -204,7 +221,7 @@ export function PlayerController({ onStep, driver }: Props) {
         s.r = info.radius + info.height * 0.5;
         aimSpheres.push(s);
       }
-      const t = crosshairDistance(c, fwd, boom.dist + 0.6, THIRD.aimRange, probe.heightAt, aimSpheres);
+      const t = crosshairDistance(c, fwd, (third ? boom.dist : 0) + 0.6, THIRD.aimRange, probe.heightAt, aimSpheres);
       aimAt.x = c.x + fwd.x * t;
       aimAt.y = c.y + fwd.y * t;
       aimAt.z = c.z + fwd.z * t;
@@ -260,6 +277,8 @@ export function PlayerController({ onStep, driver }: Props) {
     localPlayer.exhausted = (s.flags & MoveFlag.exhausted) !== 0;
     localPlayer.drowned = (s.flags & MoveFlag.drowned) !== 0;
     localPlayer.raining = sim.lastEnv.raining;
+    localPlayer.mounted = mountedNow;
+    localPlayer.gait = mountedNow ? s.lunge & 3 : 0;
   });
 
   return null;

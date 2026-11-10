@@ -21,6 +21,7 @@ import { towerPrompt, type TowerPrompt, type TowerLike } from './towerPrompt';
 import { useIntro } from '../intro/queue';
 import { openSkillScreen } from '../skills/store';
 import { PvpPanelSection } from '../pvp/PvpHud';
+import { openSteedPanel } from '../mounts/MountHud';
 
 const GOLD = '#ffd166';
 const PANEL: CSSProperties = { background: 'rgba(12,14,20,0.94)', border: '1px solid rgba(255,209,102,0.35)', borderRadius: 6, color: '#f1f3f5', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' };
@@ -207,6 +208,10 @@ function CharacterPanel() {
         </button>
         <button data-testid="open-build" onClick={() => openFromPanel('build')} style={PANEL_BTN}>
           Build overview <span style={{ opacity: 0.6 }}>B</span>
+        </button>
+        {/* CR 027: name, colour and call your spirit steed (ui/mounts). */}
+        <button data-testid="open-steed" onClick={() => openSteedPanel()} style={PANEL_BTN}>
+          Your steed <span style={{ opacity: 0.6 }}>5</span>
         </button>
       </div>
       <div style={{ marginTop: 6 }}>

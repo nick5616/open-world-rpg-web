@@ -18,6 +18,16 @@ import { COMBAT, INPUT_BUFFER_MS, InputFlag, MOVE_STEP_HZ, type MoveDef, type Sp
 import type { MoveState } from '../sim/movement';
 import { dashStep, startDashHold, type DashHold } from './dashes';
 
+/** CR 027: riding the spirit steed (sim/ride.ts MOUNTED, SelfState flags bit 3). */
+function riding(s: MoveState): boolean {
+  return (s.flags & 8) !== 0;
+}
+
+/** Weapons with no use from the saddle (the zone's mountedFrame strips the same). */
+export function meleeKey(key: string): boolean {
+  return key === 'sword' || key === 'spear';
+}
+
 export const BUFFER_STEPS = Math.round((INPUT_BUFFER_MS * MOVE_STEP_HZ) / 1000);
 export const COMBO_WINDOW_STEPS = 24;
 export const PLUNGE_MIN_HEIGHT = 3;
@@ -261,7 +271,8 @@ export class CombatTimeline {
 
     // alt_attack is held while the secondary button is held (bow draw, spear
     // charge, sword parry). Staff/wand use the press as a heavy attack instead.
-    const alt = b.altDown && !staffy;
+    // CR 027: in the saddle a sword or spear neither parries nor charges (the zone strips it too).
+    const alt = b.altDown && !staffy && !(riding(before) && meleeKey(w.key));
     const air = before.mode === 1 || before.mode === 3; // air, glide
     if (air) {
       if (!this.wasAir) this.airTop = before.pos.y;
@@ -304,6 +315,7 @@ export class CombatTimeline {
   private tryFire(x: Buffered, out: StepOut, w: WeaponDef, before: MoveState, groundY: number, air: boolean, alt: boolean, seq: number): 'done' | 'wait' | 'refused' {
     switch (x.kind) {
       case 'dodge': {
+        if (riding(before)) return 'refused'; // CR 027: no dodging from the saddle
         if ((before.dash ?? 0) > 1 || (before.iframes ?? 0) > 1) return 'wait';
         if (before.mode === 2 || before.mode === 4) return 'wait'; // climbing, swimming
         out.flags |= InputFlag.dodge;
@@ -328,6 +340,10 @@ export class CombatTimeline {
           return 'refused';
         }
         if (s.type === 'mobility') {
+          if (riding(before)) {
+            out.refused = { id: s.id, reason: 'locked' }; // CR 027: no dashes from the saddle
+            return 'refused';
+          }
           if ((before.dash ?? 0) > 0 || (before.iframes ?? 0) > 0 || before.mode === 2 || before.mode === 4) return 'wait';
           out.flags |= InputFlag.dodge;
           out.castSlot = s.dash;
@@ -357,6 +373,7 @@ export class CombatTimeline {
         return 'done';
       }
       case 'form': {
+        if (riding(before)) return 'refused'; // CR 027
         const f = formByElement.get(this.loadout.gem);
         const tech = w.key === 'spear' ? 'spear_form' : 'sword_form';
         if (!f || (w.key !== 'sword' && w.key !== 'spear') || !this.skills.has(w.skill, tech)) {
@@ -402,6 +419,7 @@ export class CombatTimeline {
     }
     if (!m) return 'refused';
     void alt;
+    if (riding(before) && meleeKey(w.key)) return 'refused'; // CR 027: bows, staves and wands work from the saddle; swords and spears don't
     // Legal start: after the previous move, or after its hit frames when a
     // dodge since then cancelled the recovery (spec 8).
     const cancel = this.dodgeSeq >= this.activeEnd && this.activeEnd > 0 && this.dodgeSeq <= seq;

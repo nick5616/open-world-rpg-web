@@ -22,6 +22,7 @@ for your package; document each kind's use of `entityId`, `targetId`, `value`,
 | 990-999 | Playtest 2 PvP and duels (CR 019: the PvP flag, kill feed, duel challenge, state and result). 998-999 reserved |
 | 1000-1029 | Playtest 2 content (CR 023: codex, feats and titles, lore tablets, renown, herb patches, world events, sealed vaults). 1012-1019 and 1023-1029 reserved |
 | 1100-1119 | Playtest 2 camps (CR 025: pieces by area, placement refusals, chests, Rested, your camp and signposts). 1108-1119 reserved |
+| 1140-1159 | Playtest 2 mounts (CR 027: your steed, steeds near you, refusals, riders thrown). 1144-1159 reserved |
 
 ## Registered kinds
 
@@ -160,6 +161,10 @@ for your package; document each kind's use of `entityId`, `targetId`, `value`,
 | 1105 | `camp_rested` | CR 025. To you: `value` = seconds of Rested left (0 = it ended), `data` = JSON `{staminaBonus, regenMult, manaRegenMult, fire}` (empty when it ended). The stamina wheel arrives in SelfState as usual |
 | 1106 | `camp_mine` | CR 025. To you after join, on changes to your camp and when your party changes: `value` = your pieces, `data` = JSON `{pieces: [{id, kind, x, z}], markers: [{id, x, z, label, owner, mine}] (your and your party's signposts), spawn: [x, z] \| null (your bedroll: your respawn point), max, restedS}` |
 | 1107 | `camp_note` | CR 025. To you: a line (`value` 0 info (a signpost's name), 1 the fire, 2 rest), `data` = UTF-8 |
+| 1140 | `steed_sync` | CR 027. To you after join and on every change to your steed: `entityId` = you, `value` = its phase (1141), `data` = UTF-8 JSON `{owned, name, colour, kind, whistle (a Spirit Whistle in your pack), phase, x, z, coolMs (spooked: ms before it can be called), colours (choices), count, arriveMs}` |
+| 1141 | `steed_state` | CR 027. A player's steed, to the owner and every player within `STEED_SEE_M` of the owner or the steed: on every change, and to players who come near (checked every 2 s; never sent while nobody has a steed out). `entityId` = the owner, `value` = phase (0 gone, 1 arriving, 2 standing, 3 ridden (its owner's snapshot typeId has bit 14), 4 bolting (spooked; then gone)), `targetId` = state version, `x/y/z` = where it stands (cm; ridden: where it was mounted), `data` = UTF-8 JSON `{p, x, y, z, fx, fz (arriving: where it gallops in from; bolting: where it runs to), ms (arriving / bolting: ms left), c (colour), n (name), k (kind)}` |
+| 1142 | `steed_refused` | CR 027. To you: an Interact 110 was refused. `value` = 1 unknown, 2 no steed and no Spirit Whistle, 3 spooked (`targetId` = ms left), 4 not underground, 5 too far to mount (`STEED_MOUNT_REACH_M`), 6 not now (swimming, climbing, gliding, in the air, dashing), 7 no steed out, 8 you are down, 9 bad name (1-16 letters, digits, spaces, ' or -), 10 already riding; `data` = u8 action |
+| 1143 | `steed_thrown` | CR 027. To the rider and players within `STEED_SEE_M`: the rider left the saddle. `entityId` = the rider, `value` = cause (0 hopped off with Space, 1 a hit, 2 a demon spooked the steed, 3 a hard landing, 4 deep water, 5 got off (E), 6 a fast travel or respawn: the steed stays behind), `x/y/z` = where (cm) |
 | 997 | `duel_outside` | Playtest 2. To a duelist: `value` = ms before you forfeit for standing outside the ring (`pvp.duel.outsideForfeitS`), 0 = back inside; `targetId` = duel id |
 
 HitResult refusal codes (HitResult.flags when `accepted` is false; also
@@ -214,6 +219,7 @@ to a thing" verb. `targetKind` is a registry like Event kinds; `action` and
 | 61 `friend` | Playtest 2 (CR 017) | FNV-1a 64 of the friend's character id (UTF-8 bytes; the zone matches it against its players and the world presence feed) | 1 = travel to them (a 3 s channel, Event 980), 2 = cancel a channel | 0 |
 | 80 `content` | Playtest 2 (CR 023) | 2: atlas site of a lore tablet; 3: herb patch id (1007); 4: `atlas site << 8 \| part id` (1020); 5: feat id (0 = no title); else 0 | 1 = send 1000, 2 = read a lore tablet (4.5 m from the eye), 3 = gather a herb patch (`forage.reachM`), 4 = use a vault part (a lever, the door, the chest; 4.5 m), 5 = show a feat's title, 9 = dev builds only: start world event `arg` near you | 9: event kind (1 starfall, 2 caravan, 3 behemoth, 4 wild hunt, 5 glintfox); else 0 |
 | 90 `camp` | Playtest 2 camps (CR 025) | 1: `kind \| rot << 8 \| x cm << 16 \| z cm << 40` (kind = camps.yaml piece id, rot 0-7 in 45 degree steps, x/z cm 24 bits each); 2-4, 8: piece id (40 bits); 5: `piece id \| qty << 40` (16 bits, 0 = all); 6: `piece id \| slot << 40`; 7: `piece id \| chunk << 40`; 9, 10: 0 | 1 = place a piece from its kit (the zone checks server/pkg/camps rules; 1101 or 1103), 2 = pick up your piece (its kit back; a chest must be empty), 3 = use (campfire: light it with one firewood if cold, else open cooking (404 kind 3); bedroll: rest (1105); chest: open (1104); workbench: open it (404 kind 4); signpost: its name (1107)), 4 = add firewood, 5 = put an item in a chest, 6 = take a chest slot, 7 = a chunk of a signpost name (4 ASCII bytes in `arg`, a 0 byte ends it; chunk 0 starts over; 24 characters at most), 8 = chest lock (0 owner only, 1 the owner's party), 9 = dev builds only: every kit and materials, 10 = send 1106 again. Reach: `limits.reachM` from the feet | 4: firewood (0 = as much as fits); 5: item handle (Event 400 `h`); 7: label bytes; 8: lock; else 0 |
+| 110 `steed` | Playtest 2 mounts (CR 027) | 4: name chunk index (0 starts over); else 0 | 1 = whistle (key 5): the first call with a Spirit Whistle in your pack bonds a steed to the character, every call brings it (1141 arriving, or 1142), 2 = mount (within `STEED_MOUNT_REACH_M` of it, on the ground, not dashing: the zone sets SelfState flags bit 3), 3 = get off, 4 = a chunk of its name (4 ASCII bytes in `arg`, a 0 byte ends it, 16 characters at most), 5 = colour, 6 = send it away, 7 = send 1140 again, 9 = dev builds only: a Spirit Whistle | 4: name bytes; 5: colour (0-5); else 0 |
 | 70 `pvp` | Playtest 2 (CR 019) | 1: 0; 2: the party member's entity id; 3: the challenger's entity id (0 = whoever challenged you); 4: 0 | 1 = set your PvP flag (on: at once; off: after `pvp.flagOffDelayS`, restarted by any PvP hit meanwhile; requests `pvp.toggleCooldownS` apart, refused within `pvp.combatLockS` of fighting; 990 or 991), 2 = challenge a party member within `pvp.duel.challengeRangeM` to a duel (994 to them, 995 to you, or 991), 3 = answer a challenge, 4 = yield: withdraw your challenge, decline one, or forfeit your duel (996) | 1: 1 on, 0 off; 3: 1 accept, 0 decline; else 0 |
 
 WorldEdits for `vein_mined` (WP09) carry 16 bytes of `params` (f32 x, y, z,
@@ -228,8 +234,9 @@ ordinary, else 1 + the index in items.yaml `materials`: 4 iron, 5 silver,
 6 sunsteel...; the equipped item's material, else the loadout's dev
 material), bits 8-11 = socketed gem element + 1 (0 none); playtest 2 (CR
 017): bit 12 = flagged for PvP (also while a turn-off waits), bit 13 = in a
-duel (countdown or fight). The zone sets it
-only when the loadout, gear, PvP flag or duel changes (with every `combat_sync`), never per
+duel (countdown or fight); playtest 2 mounts (CR 027): bit 14 = riding a
+steed (its look comes from Event 1141). The zone sets it
+only when the loadout, gear, PvP flag, duel or saddle changes (with every `combat_sync`), never per
 tick; it rides the usual delta coding, ghosts and handoffs. The same
 per-loadout material codes end `combat_sync` (212) for the owner's own
 first-person view. See server/zone/internal/game/weaponlook.go and
