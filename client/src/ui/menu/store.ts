@@ -1,7 +1,7 @@
 // Playtest 2 (new player onboarding): the Esc menu's state and its plug-in
-// entries. Other packages add a row with registerMenuEntry (the graphics
-// settings panel does: "Graphics"), either opening their own panel (the
-// menu closes first) or drawing a page inside the menu.
+// entries. Other packages add a row with registerMenuEntry (What's new
+// does; Graphics and Sound are built in), either opening their own panel
+// (the menu closes first) or drawing a page inside the menu.
 
 import type { ReactNode } from 'react';
 import { create } from 'zustand';

@@ -14,6 +14,17 @@
     ]
   },
   {
+    "id": "pt2-graphics",
+    "date": "2026-11-10",
+    "title": "Graphics settings and art styles",
+    "items": [
+      "New Graphics screen: the Graphics button at the top right, F10, or Esc > Graphics.",
+      "Pick a look: Lodestone (the new default), Painterly, Grim or Retro 32-bit.",
+      "Quality presets from Low to Ultra, chosen for your graphics card on first run, and you can change any single setting.",
+      "Rain now soaks the world: wet ground, grey skies, thicker fog."
+    ]
+  },
+  {
     "id": "pt2-content",
     "date": "2026-11-10",
     "title": "More to do out there",

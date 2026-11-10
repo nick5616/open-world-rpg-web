@@ -114,6 +114,18 @@ async function menuPass() {
   if (await visible('[data-testid="esc-menu"]')) issue('menu', 'the menu stayed over the sound panel');
   await page.keyboard.press('Escape');
   await sleep(300);
+  // 4b. Graphics from the menu opens the graphics screen (main: openGraphicsPanel)
+  await page.keyboard.press('Escape');
+  await sleep(300);
+  await page.getByTestId('menu-entry-graphics').click();
+  await sleep(400);
+  if (!(await visible('[data-testid="graphics-settings"]'))) issue('menu', 'Graphics did not open the graphics screen');
+  if (await visible('[data-testid="esc-menu"]')) issue('menu', 'the menu stayed over the graphics screen');
+  await shot('menu-graphics');
+  await page.keyboard.press('Escape');
+  await sleep(300);
+  if (await visible('[data-testid="graphics-settings"]')) issue('menu', 'Esc did not close the graphics screen');
+  if (await visible('[data-testid="esc-menu"]')) issue('menu', 'Esc on the graphics screen opened the menu too');
   // 5. Tips toggle
   await page.keyboard.press('Escape');
   await sleep(300);
@@ -191,7 +203,7 @@ async function whatsNewReturning() {
   await sleep(300);
   const all = await page.locator('[data-testid="menu-whatsnew-page"] [data-testid="whatsnew-entry"]').count();
   note(`Esc > What's new lists ${all} entries`);
-  if (all < 8) issue('whatsnew', `the menu page lists ${all} entries`);
+  if (all < 9) issue('whatsnew', `the menu page lists ${all} entries`);
   await shot('whatsnew-menu');
   await page.keyboard.press('Escape');
   await sleep(300);

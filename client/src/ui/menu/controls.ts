@@ -72,7 +72,7 @@ export function controlGroups(debug: boolean): ControlGroup[] {
         { keys: mv('jump'), action: 'Jump', note: 'again in the air: double jump, then again: glide' },
         { keys: mv('glide'), action: 'Open or close the glider' },
         { keys: [mv('forward')[0]], action: 'Climb (hold into a cliff)', note: 'Space leaps up while climbing; uses stamina' },
-        { keys: ['T'], action: 'First / third person camera', src: [['hud/ViewHud.tsx', "'KeyT'"]] },
+        { keys: ['T', 'Middle mouse'], action: 'First / third person camera', src: [['hud/ViewHud.tsx', "'KeyT'"], ['hud/ViewHud.tsx', 'e.button !== 1']] },
       ],
     },
     {
@@ -85,7 +85,7 @@ export function controlGroups(debug: boolean): ControlGroup[] {
         { keys: ['1', '2', '3', '4'], action: 'Cast the spell in that slot', src: [[C, "'Digit1'"], [C, "'Digit4'"]] },
         { keys: ['F', 'Alt'], action: 'Dodge', note: 'a short moment nothing can hit you', src: [[C, "'KeyF'"], [C, "'AltLeft'"]] },
         { keys: ['Q'], action: 'Elemental form', note: 'with a gem socketed in your weapon', src: [[C, "'KeyQ'"]] },
-        { keys: ['V', 'Middle mouse'], action: 'Weapon technique', note: 'once your weapon skill has one', src: [[C, "'KeyV'"], [C, 'e.button === 1']] },
+        { keys: ['V'], action: 'Weapon technique', note: 'once your weapon skill has one', src: [[C, "'KeyV'"]] },
         { keys: ['R'], action: 'Drink a healing draught', src: [[C, "'KeyR'"]] },
         { keys: ['X'], action: 'Swap loadout (weapon + 4 spells)', src: [[C, "'KeyX'"]] },
       ],
@@ -121,6 +121,7 @@ export function controlGroups(debug: boolean): ControlGroup[] {
       rows: [
         { keys: ['Esc'], action: 'Close the open panel, else this menu', src: [['ui/menu/EscMenu.tsx', "'Escape'"]] },
         { keys: ['K'], action: 'Sound settings', src: [['audio/ui/AudioRoot.tsx', "'KeyK'"]] },
+        { keys: ['F10'], action: 'Graphics settings', note: 'quality, style', src: [['ui/graphics/GraphicsPanel.tsx', "'F10'"]] },
       ],
     },
   ];

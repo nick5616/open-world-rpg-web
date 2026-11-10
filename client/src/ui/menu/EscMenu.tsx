@@ -1,7 +1,8 @@
 // Playtest 2 (new player onboarding): the Esc menu. Esc with no panel open
 // (or freeing the mouse with Esc while it is captured) opens it: Resume,
 // Controls (the full key reference, controls.ts), Sound, plug-in rows
-// (registerMenuEntry: Graphics), the camera, tips on/off, Leave to title.
+// (registerMenuEntry: What's new), Graphics (openGraphicsPanel, F10), the
+// camera, tips on/off, Leave to title.
 // It is not a pause: the world is shared and keeps going (spec 8).
 //
 // Esc keeps its other jobs: a panel's own Esc handler still closes that
@@ -16,6 +17,7 @@ import { useAudioSettings } from '../../audio/settings';
 import { useSocialStore } from '../../social/store';
 import { useNetStore } from '../../net/netStore';
 import { CameraSettings } from '../../hud/ViewHud';
+import { openGraphicsPanel } from '../graphics/GraphicsPanel';
 import { DEBUG } from '../../config';
 import { useTips } from '../tips/store';
 import { controlGroups } from './controls';
@@ -253,7 +255,7 @@ export function EscMenu() {
   const sound = useAudioSettings((s) => s.setPanelOpen);
   const card = useRef<HTMLDivElement>(null);
   if (!open) return null;
-  const all: MenuEntry[] = [{ id: 'sound', label: 'Sound', order: 10, open: () => sound(true) }, ...entries];
+  const all: MenuEntry[] = [{ id: 'graphics', label: 'Graphics', order: 5, open: openGraphicsPanel }, { id: 'sound', label: 'Sound', order: 10, open: () => sound(true) }, ...entries.filter((e) => e.id !== 'graphics')];
   all.sort((a, b) => (a.order ?? 50) - (b.order ?? 50));
   const entry = page.startsWith('entry:') ? all.find((e) => `entry:${e.id}` === page) : undefined;
   return (
