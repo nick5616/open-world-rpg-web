@@ -38,6 +38,11 @@ export interface CombatHudState {
   skillPoints: number;
   boss: BossBar | null;
   downedUntil: number;
+  /** Playtest 2 (CR 024): who downed you ("a Dewdrop Slime"), where you come back. */
+  downedBy: string;
+  respawnAt: string;
+  /** performance.now() until which enemies leave you alone after a respawn (0 = none). */
+  graceUntil: number;
   toast: { text: string; at: number } | null;
   refused: { id: number; at: number } | null;
   /** Playtest 1: what the right mouse button uses: -1 the weapon secondary, 0-3 a spell slot (wheel cycles; spellSelect.ts). */
@@ -63,6 +68,9 @@ export const useCombatHud = create<CombatHudState>()((set) => ({
   skillPoints: 0,
   boss: null,
   downedUntil: 0,
+  downedBy: '',
+  respawnAt: '',
+  graceUntil: 0,
   toast: null,
   refused: null,
   selected: -1,
