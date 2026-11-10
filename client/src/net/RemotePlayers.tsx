@@ -17,9 +17,10 @@ import * as THREE from 'three';
 import { EntityKind, type Event as ZoneEvent } from '@lodestone/contracts';
 import { netStats } from '../state/live';
 import { Avatar, FullRigBudget } from './avatar';
-import { EV_MINE_SWING, followCaster, followEmote } from './avatarAnim';
+import { EV_MINE_SWING, followCaster, followEmote, followMusic } from './avatarAnim';
 import { liveAvatars } from './avatar';
 import { emoteOf } from '../ui/emotes/store';
+import { takeNoteHits } from '../ui/music/store';
 import { drawnRemotes } from './netStore';
 import type { RemoteView } from './interpolation';
 import type { ZoneSession } from './zoneSession';
@@ -80,7 +81,7 @@ export function RemotePlayers({ session }: { session: ZoneSession }) {
     if (!DEBUG || typeof window === 'undefined') return;
     // Headless captures: what each remote avatar is doing.
     (window as unknown as { __lodestoneAvatars?: unknown }).__lodestoneAvatars = () =>
-      [...avatars.values()].map((a) => ({ id: a.id, action: a.anim.current, held: a.anim.heldSpec?.kind ?? null, bodyPitch: a.pose.bodyPitch, animLevel: a.animLevel, lod: a.lodLevel, weapon: a.weaponKind, x: a.root.position.x, y: a.root.position.y, z: a.root.position.z, glow: a.pose.glow, bowDraw: a.pose.bowDraw, emote: a.anim.currentEmote, rod: a.pose.rod, fish: a.pose.fish }));
+      [...avatars.values()].map((a) => ({ id: a.id, action: a.anim.current, held: a.anim.heldSpec?.kind ?? null, bodyPitch: a.pose.bodyPitch, animLevel: a.animLevel, lod: a.lodLevel, weapon: a.weaponKind, x: a.root.position.x, y: a.root.position.y, z: a.root.position.z, glow: a.pose.glow, bowDraw: a.pose.bowDraw, emote: a.anim.currentEmote, rod: a.pose.rod, fish: a.pose.fish, instrument: a.pose.instrument }));
   }, [avatars]);
 
   useEffect(() => {
@@ -117,6 +118,7 @@ export function RemotePlayers({ session }: { session: ZoneSession }) {
       castState.activity(v.id, v.activity, v.yaw, v.pitch, v.delayMs, now, spellFx);
       followCaster(a.anim, castState.peek(v.id), a.weaponKind);
       followEmote(a.anim, emoteOf(v.id)); // playtest 2: emotes and the fishing pose (Event 1090, ui/emotes)
+      followMusic(a.anim, takeNoteHits(v.id, now)); // CR 028: their notes strum, strike and blow (Event 1120, ui/music)
       a.update(v, camera, delta, fullM);
       if (a.animLevel === 0) budget.full++;
     }

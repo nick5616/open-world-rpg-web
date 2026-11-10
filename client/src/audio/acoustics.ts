@@ -156,12 +156,14 @@ export interface DuckState {
   speaking: boolean;
   sting: boolean;
   hidden: boolean;
+  /** CR 028: an instrument is playing near you (yours or another player's): the score steps back. */
+  instrument?: boolean;
 }
 
 export function duckLevels(d: DuckState): { music: number; ambience: number; sfx: number } {
   if (d.hidden) return { music: 0, ambience: 0, sfx: 0 };
   return {
-    music: d.speaking ? 0.35 : d.sting ? 0.5 : 1,
+    music: d.speaking ? 0.35 : d.sting ? 0.5 : d.instrument ? 0.3 : 1,
     ambience: d.speaking ? 0.6 : d.sting ? 0.72 : 1,
     sfx: d.speaking ? 0.8 : 1,
   };

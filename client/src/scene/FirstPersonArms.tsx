@@ -37,7 +37,7 @@ function Arms() {
   useFrame((state, delta) => {
     const g = rig.current;
     if (!g) return;
-    g.visible = (!view.third || view.hideBody) && !view.photo; // playtest 2: third person shows the whole body instead (unless the boom collapsed)
+    g.visible = (!view.third || view.hideBody) && !view.photo && !view.fpInstrument; // playtest 2: third person shows the whole body instead (unless the boom collapsed); an instrument has its own hands
     const dt = Math.min(delta, 0.1);
     const lp = localPlayer;
     const hs = Math.hypot(lp.vel.x, lp.vel.z);

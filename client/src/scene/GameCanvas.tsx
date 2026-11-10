@@ -25,6 +25,7 @@ import { LocalAvatar } from './LocalAvatar';
 import { PhotoRig } from '../ui/photo/PhotoRig';
 import { FirstPersonEmote } from '../ui/emotes/FirstPersonEmote';
 import { FishingLayer } from '../ui/fishing/FishingLayer';
+import { FirstPersonInstrument } from '../ui/music/FirstPersonInstrument';
 import { SkyAndSun } from './SkyAndSun';
 import { FlatTerrain } from './FlatTerrain';
 import { CellBorders } from './CellBorders';
@@ -110,6 +111,7 @@ export function GameCanvas({ ground = DEFAULT_GROUND, terrain, onStep, driver, c
         <LocalAvatar />
         <FirstPersonEmote />
         <FishingLayer />
+        <FirstPersonInstrument />
         <PhotoRig />
       </GroundContext.Provider>
     </Canvas>

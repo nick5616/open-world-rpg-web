@@ -40,6 +40,9 @@ const EMOTE_BY_ID = new Map(CONTENT.emotes.list.map((e) => [e.id, e]));
 /** The zone's fishing pose (the line is out) and "showing a catch" (Event 1090 ids 20, 21). */
 export const EMOTE_FISHING = 20;
 export const EMOTE_SHOW_CATCH = 21;
+/** Playtest 2 instruments (CR 028): playing; the emote value is the instrument id. */
+export const EMOTE_PLAYING = 22;
+const INSTRUMENT_POSE = new Map(CONTENT.instruments.list.map((i) => [i.id, i.pose]));
 
 /** CR 018: Event 214 targetId for "the secondary button went down" (sword parry, spear charge, bow draw). Go: combat.CastFXGuard. */
 export const CAST_FX_GUARD = 0x4001;
@@ -205,6 +208,8 @@ export interface Pose {
   /** Playtest 2 emotes/fishing: a fishing rod in the right hand (the weapon hides), a fish held up (species id, 0 none). */
   rod: boolean;
   fish: number;
+  /** Playtest 2 instruments (CR 028): the instrument in the hands (content.yaml id, 0 none; the weapon hides). */
+  instrument: number;
 }
 
 export interface AnimInput {
@@ -222,7 +227,7 @@ export interface AnimInput {
 
 const limb = (): LimbPose => ({ swing: 0, spread: 0, twist: 0, bend: 0 });
 export function newPose(): Pose {
-  return { bodyY: 0, bodyPitch: 0, bodyRoll: 0, bodyYaw: 0, torsoPitch: 0, torsoYaw: 0, headPitch: 0, armL: limb(), armR: limb(), legL: limb(), legR: limb(), glow: 0, glowL: false, glowR: false, glowColor: null, bowDraw: 0, glider: false, rod: false, fish: 0 };
+  return { bodyY: 0, bodyPitch: 0, bodyRoll: 0, bodyYaw: 0, torsoPitch: 0, torsoYaw: 0, headPitch: 0, armL: limb(), armR: limb(), legL: limb(), legR: limb(), glow: 0, glowL: false, glowR: false, glowColor: null, bowDraw: 0, glider: false, rod: false, fish: 0, instrument: 0 };
 }
 
 const TAU = Math.PI * 2;
@@ -304,6 +309,20 @@ export class AvatarAnimator {
   private lastEmote = 0;
   /** The emote record counter seen (followEmote). */
   seenEmote = 0;
+
+  // ---- playtest 2 instruments (CR 028): note hits drive the strum, the strike, the breath.
+  private noteAt = -1e9;
+  private noteVel = 5;
+  private noteHand = 0;
+  private notePitch = 60;
+
+  /** A note sounded now (followMusic): the playing pose answers it. */
+  noteHit(midi: number, vel: number): void {
+    this.noteAt = this.time;
+    this.noteVel = vel;
+    this.noteHand ^= 1;
+    this.notePitch = midi;
+  }
 
   /** The emote playing (0 none). */
   get currentEmote(): number {
@@ -516,6 +535,7 @@ export class AvatarAnimator {
     // ---- emote (whole body, blended in and out; moving ends a loop)
     p.rod = false;
     p.fish = 0;
+    p.instrument = 0;
     if (this.emoteId) {
       const el = now - this.emoteAt;
       const busy = !alive || gliding || climbing || swimming || air;
@@ -694,6 +714,57 @@ export class AvatarAnimator {
         set(L, 0.85, -0.32, 1.15, 0.2 * Math.sin(e * 3));
         torsoPitch = 0.02;
         p.rod = w > 0.3;
+        break;
+      }
+      case EMOTE_PLAYING: {
+        // Playtest 2 instruments: the instrument's hold, answering each note (k: 1 at a hit, decaying).
+        const since = this.time - this.noteAt;
+        const k = Math.exp(-since / 0.09) * (0.55 + 0.45 * (this.noteVel / 7));
+        const alt = this.noteHand ? 1 : -1;
+        const idle = Math.sin(e * 1.4) * 0.03;
+        switch (INSTRUMENT_POSE.get(this.emoteValue)) {
+          case 'strum': {
+            // the lute across the belly: left hand on the neck, right hand strumming over the rose
+            set(L, 0.75 + idle, 0.05, 0.9, 0.1);
+            set(R, 0.2 + 0.16 * k * alt, -0.5, 1.3 - 0.12 * k, 0.15);
+            headPitch = -0.28 + 0.04 * Math.sin(e * 0.9);
+            torsoPitch = -0.06;
+            torsoYaw = -0.08;
+            break;
+          }
+          case 'flute': {
+            // the flute to the right of the lips, both hands on it; a breath lifts the shoulders
+            const lift = 0.05 * k;
+            set(R, 1.35 + lift, -0.12, 1.55, 0.25);
+            set(L, 1.5 + lift, -0.55, 1.95, -0.1);
+            headPitch = 0.04 - 0.05 * k;
+            torsoYaw = -0.12;
+            bodyRoll = -0.03 + 0.015 * Math.sin(e * 0.8);
+            break;
+          }
+          case 'drum': {
+            // the drum at the waist: hands rise and fall on it, alternately (the low notes with both)
+            const both = this.notePitch < 48;
+            const hitR = this.noteHand || both ? k : 0;
+            const hitL = !this.noteHand || both ? k : 0;
+            set(R, 0.55 + 0.25 * (1 - hitR) * 0.4 - 0.2 * hitR, -0.35, 1.25 - 0.25 * hitR, 0.1);
+            set(L, 0.55 + 0.25 * (1 - hitL) * 0.4 - 0.2 * hitL, -0.35, 1.25 - 0.25 * hitL, 0.1);
+            headPitch = -0.32;
+            torsoPitch = -0.1 - 0.04 * k;
+            bodyY = p.bodyY - 0.015 * k;
+            break;
+          }
+          default: {
+            // handbells at the chest, a bell swung up and back on each note
+            const ringR = this.noteHand ? k : 0;
+            const ringL = this.noteHand ? 0 : k;
+            set(R, 0.95 + 0.45 * ringR + idle, 0.12, 1.05 - 0.3 * ringR);
+            set(L, 0.95 + 0.45 * ringL - idle, 0.12, 1.05 - 0.3 * ringL);
+            headPitch = 0.05;
+            break;
+          }
+        }
+        p.instrument = w > 0.3 ? this.emoteValue : 0;
         break;
       }
       case EMOTE_SHOW_CATCH: {
@@ -1031,6 +1102,11 @@ export interface EmoteView {
   value: number;
   /** Bumped per emote (a replay of the same emote plays it again). */
   n: number;
+}
+
+/** Playtest 2 instruments (CR 028): note hits due now (ui/music/store.ts takeNoteHits) into an avatar's playing pose. */
+export function followMusic(anim: AvatarAnimator, hits: readonly { midi: number; vel: number }[]): void {
+  for (const h of hits) anim.noteHit(h.midi, h.vel);
 }
 
 /** Playtest 2: drive an avatar's emote from its record (yours or another player's), every frame. */

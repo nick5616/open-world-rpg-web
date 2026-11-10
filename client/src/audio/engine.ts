@@ -310,7 +310,7 @@ export class AudioEngine {
    */
   private applyDucks(nowMs: number): void {
     const t = this.ctx.currentTime;
-    const d = duckLevels({ speaking: this.anyoneSpeaking(), sting: this.stingDuckUntil > nowMs, hidden: this.hidden });
+    const d = duckLevels({ speaking: this.anyoneSpeaking(), sting: this.stingDuckUntil > nowMs, hidden: this.hidden, instrument: audioWorld.instrumentUntil > nowMs });
     busInput('music')?.gain.setTargetAtTime(d.music, t, this.hidden ? 0.25 : d.music < 1 ? 0.08 : 0.6);
     busInput('ambience')?.gain.setTargetAtTime(d.ambience, t, this.hidden ? 0.25 : 0.3);
     busInput('sfx')?.gain.setTargetAtTime(d.sfx, t, this.hidden ? 0.25 : 0.3);

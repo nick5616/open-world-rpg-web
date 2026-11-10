@@ -12,9 +12,10 @@ import { useEffect, useMemo } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Activity } from '@lodestone/contracts';
 import { Avatar } from '../net/avatar';
-import { followCaster, followEmote } from '../net/avatarAnim';
+import { followCaster, followEmote, followMusic } from '../net/avatarAnim';
 import { liveAvatars, SELF_AVATAR } from '../net/avatar';
 import { emoteOf, SELF } from '../ui/emotes/store';
+import { takeNoteHits, SELF as MUSIC_SELF } from '../ui/music/store';
 import { castState, CAST_FX_MINE } from '../combat/castState';
 import type { RemoteView } from '../net/interpolation';
 import { localActions, localPlayer, view, type MoveMode } from '../state/live';
@@ -80,6 +81,7 @@ export function LocalAvatar() {
       castState.action('self', CAST_FX_MINE, performance.now()); // CR 022: a swing on your caster record
     }
     followEmote(a.anim, emoteOf(SELF)); // playtest 2: your emotes and fishing pose (ui/emotes)
+    followMusic(a.anim, takeNoteHits(MUSIC_SELF)); // CR 028: your notes, on your body in third person (ui/music)
     if (!third) {
       a.anim.seenActions = me.actions; // first person: nothing to animate (no replay on switching)
       if (!a.anim.currentEmote) return;
