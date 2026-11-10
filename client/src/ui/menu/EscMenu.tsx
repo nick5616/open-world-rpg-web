@@ -25,9 +25,9 @@ import { closeMenu, escAction, openMenu, unlockOpensMenu, useMenu, type MenuEntr
 
 const MENU_KEY = 'Escape';
 
-/** A panel that freed the mouse on purpose is up (not this menu). */
+/** A panel that freed the mouse on purpose is up (not this menu), or a held emote / pet wheel (Esc cancels the wheel). */
 function panelUp(): boolean {
-  for (const el of document.querySelectorAll<HTMLElement>('[data-ui-panel]:not([style*="display: none"])')) {
+  for (const el of document.querySelectorAll<HTMLElement>('[data-ui-panel]:not([style*="display: none"]), [data-testid="emote-wheel"], [data-testid="pet-wheel"]')) {
     if (el.dataset.testid !== 'esc-menu') return true;
   }
   return false;

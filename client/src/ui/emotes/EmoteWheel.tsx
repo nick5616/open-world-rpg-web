@@ -61,7 +61,7 @@ export function EmoteWheel() {
       }
     };
     const onDown = (e: KeyboardEvent) => {
-      if (e.code === 'Escape' && s.open) {
+      if (e.code === 'Escape' && s.open && !isTextTarget(e.target)) {
         close(false);
         return;
       }
