@@ -14,6 +14,8 @@ export const localPlayer = {
   pitch: 0,
   grounded: true,
   airJumps: 0,
+  /** CR 021: dash steps left after the latest step (0 = no dash; held dashes keep it up). */
+  dash: 0,
   mode: 'idle' as MoveMode,
   /** Movement steps simulated so far (= InputFrame seq). */
   seq: 0,

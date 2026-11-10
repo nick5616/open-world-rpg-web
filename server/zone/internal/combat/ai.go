@@ -118,6 +118,10 @@ func (w *World) think(e *Enemy) {
 	if e.Shield < e.ShieldMax && e.Affix != nil && e.Affix.ShieldRegenSteps > 0 && tick-e.shieldHit > ticksOf(e.Affix.ShieldRegenSteps) {
 		e.Shield = e.ShieldMax // a warded elite re-raises its ward if left alone
 	}
+	if e.Group != nil && e.Group.Dummy {
+		e.Vel = movement.Vec3{}
+		return // CR 020: a training dummy (dev placement) only stands and takes hits
+	}
 	if w.forcedMove(e) || e.disabled(tick) {
 		return
 	}

@@ -7,6 +7,7 @@ import type { GroundQuery } from '../sim/ground';
 import { CombatRuntime } from './runtime';
 import { useCombatHud } from './store';
 import { drawnRemotes } from '../net/netStore';
+import { dashSlamEvent } from './dashFeel';
 
 /** The live runtime (PlayerController hook, 3D layer, dev handle). */
 export const combatRuntime: { current: CombatRuntime | null } = { current: null };
@@ -19,14 +20,18 @@ export function attachCombat(session: ZoneSession, ground: GroundQuery, input = 
     selfId: () => session.welcome?.entityId ?? 0,
   });
   rt.ground = ground;
-  const onEvent = (ev: Parameters<CombatRuntime['onEvent']>[0]) => rt.onEvent(ev);
+  const onEvent = (ev: Parameters<CombatRuntime['onEvent']>[0]) => {
+    rt.onEvent(ev);
+    if (ev.kind === 230) dashSlamEvent(ev); // CR 021: a flight dived into the ground (dashFeel.ts)
+  };
   session.eventListeners.add(onEvent);
   session.onHitResult = (r) => rt.onHitResult(r);
   if (input && typeof window !== 'undefined') rt.attachInput(window);
   combatRuntime.current = rt;
   const w = typeof window !== 'undefined' ? (window as unknown as { __lodestoneCombat?: unknown }) : null;
   if (w) {
-    w.__lodestoneCombat = { runtime: rt, probe: () => rt.probe.summary(), hud: () => ({ ...useCombatHud.getState() }) };
+    // CR 020: interact() lets dev runs grant and slot spells (combat Interact 50; ActDevGrant needs a dev zone).
+    w.__lodestoneCombat = { runtime: rt, probe: () => rt.probe.summary(), hud: () => ({ ...useCombatHud.getState() }), interact: (kind: number, action: number, arg: number) => session.sendInteract(kind, 0n, action, arg) };
     (w as unknown as { __lodestoneDrawn?: unknown }).__lodestoneDrawn = () => drawnRemotes.views; // headless runs aim at what is drawn
   }
   return () => {

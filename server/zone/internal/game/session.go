@@ -85,7 +85,9 @@ func newBuckets() [256]*ratelimit.Bucket {
 	mk := func(capacity, rate float64) *ratelimit.Bucket { x := ratelimit.New(capacity, rate); return &x }
 	b[proto.MsgInput] = mk(60, 40)
 	b[proto.MsgClockPing] = mk(16, 4)
-	b[proto.MsgHitClaim] = mk(30, 15)
+	// CR 020: a hold-to-fire stream claims every bullet (up to 15/s, a bursting
+	// shot up to 4 targets): 60/s sustained, bursts of 120.
+	b[proto.MsgHitClaim] = mk(120, 60)
 	b[proto.MsgInteract] = mk(10, 5)
 	b[proto.MsgBye] = mk(4, 1)
 	b[proto.MsgHello] = mk(2, 0.1)

@@ -27,9 +27,11 @@ import { currentFxTier, FX_PROFILES } from './quality';
 import { castHooks, castOrigin } from './castOrigin';
 import { ELEMENT_FAMILY, PALETTES, spellVisual, statusById, statusByKey, ZONE_STYLE, enemyAttackById, formById, spellById, mobilitySpellForDash, type SpellVisual, type Family } from './spellVisual';
 import * as R from './recipes';
+import { DASH_FX_MAX_S, DASH_FX_MIN_SPEED, dashFxStep, newDashFxState } from './dashFx'; // CR 021
 import { screenKick, screenTick, screenTint } from './screen';
 import type { CircleMat, ZoneMat } from './materials';
 import { COMBAT } from '@lodestone/contracts';
+import { canAcquire, chargeMult, homingParams, homingStep, orbOffset, rainOffset, shotJitter, SIM_DT, type HomingParams, type HomingShot } from '../spellsim';
 
 const EYE = 1.6;
 const STEP_MS = 1000 / 60;
@@ -73,6 +75,8 @@ interface Proj {
   light: ReturnType<FxPrims['holdLight']>;
   lastHit: number;
   spin: number;
+  /** CR 020: a seeking shot this engine steers itself (remote casts; spellsim.ts), null otherwise. */
+  hs: { p: HomingParams; s: HomingShot; lock: number; acc: number; last: number } | null;
 }
 
 interface Ongoing {
@@ -155,7 +159,7 @@ export class SpellFxEngine {
       mesh.frustumCulled = halo.frustumCulled = false;
       halo.renderOrder = 21;
       this.group.add(mesh, halo);
-      this.projs.push({ on: false, handle: 0, v: spellVisual(COMBAT.spells[0]), x0: 0, y0: 0, z0: 0, vx: 0, vy: 0, vz: 0, g: 0, t0: 0, life: 0, core: 0.2, local: false, collide: 'none', explode: 0, pierce: false, spread: false, mesh, halo, px: 0, py: 0, pz: 0, ox: 0, oy: 0, oz: 0, light: null, lastHit: 0, spin: 0 });
+      this.projs.push({ on: false, handle: 0, v: spellVisual(COMBAT.spells[0]), x0: 0, y0: 0, z0: 0, vx: 0, vy: 0, vz: 0, g: 0, t0: 0, life: 0, core: 0.2, local: false, collide: 'none', explode: 0, pierce: false, spread: false, mesh, halo, px: 0, py: 0, pz: 0, ox: 0, oy: 0, oz: 0, light: null, lastHit: 0, spin: 0, hs: null });
     }
     const hm = new THREE.SpriteMaterial({ map: glowTexture(), blending: THREE.AdditiveBlending, transparent: true, depthWrite: false, depthTest: false, opacity: 0 });
     const hs = new THREE.Sprite(hm);
@@ -337,10 +341,14 @@ export class SpellFxEngine {
     if (!this.anchorPos(caster, prev)) return;
     this.at(prev.x, prev.y, prev.z, () => R.dashBurst(this.prims, v, prev.x, prev.y, prev.z, false));
     const t0 = fxTime();
+    const df = newDashFxState(); // CR 021: held dashes keep their FX while the caster moves at dash speed (dashFx.ts)
     this.push({
-      until: t0 + ms / 1000,
-      tick: () => {
+      until: t0 + DASH_FX_MAX_S,
+      tick: (t, dt) => {
         if (!this.anchorPos(caster, cur)) return false;
+        const speed = Math.hypot(cur.x - prev.x, cur.y - prev.y, cur.z - prev.z) / Math.max(1e-3, dt);
+        if (t - t0 > ms / 1000 && speed < DASH_FX_MIN_SPEED) return false;
+        if (speed > 1) this.at(cur.x, cur.y, cur.z, () => dashFxStep(this.prims, v, prev, cur, speed, df));
         if (Math.hypot(cur.x - prev.x, cur.z - prev.z) > 0.05 || Math.abs(cur.y - prev.y) > 0.05) this.at(cur.x, cur.y, cur.z, () => R.dashTrail(this.prims, v, prev, cur));
         prev.x = cur.x;
         prev.y = cur.y;
@@ -419,7 +427,7 @@ export class SpellFxEngine {
    * the runtime (projectileEnd); remote and enemy shots test the ground and
    * bodies here. Returns a handle.
    */
-  projectile(sp: SpellDef | null, x: number, y: number, z: number, vx: number, vy: number, vz: number, gravity: number, radius: number, life: number, o: { local?: boolean; collide?: Proj['collide']; explode?: number; pierce?: boolean; spread?: boolean; family?: Family; kind?: 'enemy' | 'arrow' } = {}): number {
+  projectile(sp: SpellDef | null, x: number, y: number, z: number, vx: number, vy: number, vz: number, gravity: number, radius: number, life: number, o: { local?: boolean; collide?: Proj['collide']; explode?: number; pierce?: boolean; spread?: boolean; family?: Family; kind?: 'enemy' | 'arrow'; homing?: boolean } = {}): number {
     this.counts.shots++;
     let s = this.projs.find((p) => !p.on);
     if (!s) {
@@ -448,6 +456,10 @@ export class SpellFxEngine {
     s.spread = !!o.spread;
     s.lastHit = 0;
     s.spin = Math.random() * 6;
+    s.hs = null;
+    // CR 020: a remote seeking shot steers itself (your own are moved by the runtime: projectileMove).
+    const hp = o.homing && !o.local && sp ? homingParams(sp) : null;
+    if (hp) s.hs = { p: hp, s: { x, y, z, vx, vy, vz, age: 0, state: 0 }, lock: 0, acc: 0, last: fxTime() };
     const c = R.cols(v.palette);
     // Look: shared geometry and cached materials (nothing allocated per shot).
     const m = s.mesh;
@@ -554,7 +566,17 @@ export class SpellFxEngine {
     s.halo.visible = false;
     this.prims.releaseLight(s.light);
     s.light = null;
-    if (s.explode > 0 && kind !== 'expire') {
+    if (s.explode > 0 && s.spread && kind !== 'expire') {
+      // CR 020: a stream's bursting shot (bubbles, hail) pops small: 8-15 of these a second.
+      const v = s.v;
+      const x = s.px;
+      const y = s.py;
+      const z = s.pz;
+      this.at(x, y, z, () => {
+        R.impact(this.prims, v, x, y, z, null, 0.7, 'hit', camPos);
+        R.ringBurst(x, y + 0.1, z, s.explode * 0.6, R.cols(v.palette).k('hm'), 6, 2, { life: [0.15, 0.3], size: [0.04, 0.08] });
+      });
+    } else if (s.explode > 0 && kind !== 'expire') {
       const v = s.v;
       const x = s.px;
       const y = s.py;
@@ -563,9 +585,64 @@ export class SpellFxEngine {
     } else this.impactAt(s.v, s.px, s.py, s.pz, s, kind);
   }
 
+  /** CR 020: rebase a projectile onto a new position and velocity (homing: the closed-form flight restarts here). */
+  private rebase(s: Proj, t: number, x: number, y: number, z: number, vx: number, vy: number, vz: number): void {
+    const age = Math.max(0, t - s.t0);
+    const k = Math.exp(-age / 0.07);
+    s.ox *= k;
+    s.oy *= k;
+    s.oz *= k;
+    s.x0 = x;
+    s.y0 = y;
+    s.z0 = z;
+    s.vx = vx;
+    s.vy = vy;
+    s.vz = vz;
+    s.g = 0;
+    s.life = Math.max(0.05, s.life - age);
+    s.t0 = t;
+  }
+
+  /** CR 020: your seeking shot's position from the runtime's homing step (the path the zone re-flies). */
+  projectileMove(handle: number, x: number, y: number, z: number, vx: number, vy: number, vz: number): void {
+    const s = this.projs.find((p) => p.on && p.handle === handle);
+    if (s) this.rebase(s, fxTime(), x, y, z, vx, vy, vz);
+  }
+
+  /** CR 020: a remote seeking shot steps the shared homing simulation against the drawn enemies. */
+  private steer(s: Proj, t: number): void {
+    const h = s.hs!;
+    h.acc += Math.max(0, t - h.last);
+    h.last = t;
+    let n = Math.floor(h.acc / SIM_DT + 1e-9);
+    h.acc -= n * SIM_DT;
+    n = Math.min(n, 6);
+    for (let i = 0; i < n; i++) {
+      const hs = h.s;
+      if (hs.state === 0 && hs.age >= h.p.delay) {
+        let bd = Infinity;
+        for (const v of drawnRemotes.views) {
+          if ((v.kind !== 2 && v.kind !== 6) || v.healthPct <= 0) continue;
+          const c = { x: v.x, y: v.y + enemyInfo(v).height, z: v.z };
+          if (!canAcquire(hs, c, h.p)) continue;
+          const d = Math.hypot(c.x - hs.x, c.y - hs.y, c.z - hs.z);
+          if (d < bd) {
+            bd = d;
+            h.lock = v.id;
+          }
+        }
+        if (h.lock) hs.state = 1;
+      }
+      const tv = hs.state === 1 ? this.viewById.get(h.lock) : undefined;
+      homingStep(hs, tv && tv.healthPct > 0 ? { x: tv.x, y: tv.y + enemyInfo(tv).height, z: tv.z } : null, h.p);
+    }
+    if (n > 0) this.rebase(s, t, h.s.x, h.s.y, h.s.z, h.s.vx, h.s.vy, h.s.vz);
+  }
+
   private updateProjs(t: number): void {
     for (const s of this.projs) {
       if (!s.on) continue;
+      if (s.hs) this.steer(s, t);
       const age = t - s.t0;
       if (age >= s.life + (s.local ? 0.5 : 0)) {
         this.endProj(s, s.explode > 0 ? 'ground' : 'expire');
@@ -1107,7 +1184,7 @@ export class SpellFxEngine {
   // ── Other players (Event 214) and enemies (205) ───────────────────────────
 
   /** Event 214: another player's attack / cast / form / dash started at (x, y, z) feet. */
-  remoteCast(casterId: number, id: number, x: number, y: number, z: number, yaw: number, pitch: number): void {
+  remoteCast(casterId: number, id: number, x: number, y: number, z: number, yaw: number, pitch: number, charge = 0): void {
     this.counts.remoteCasts++;
     // a caster we don't draw (yet): play it from the event's origin
     const caster: Anchor = this.viewById.has(casterId) ? casterId : { x, y, z };
@@ -1120,29 +1197,29 @@ export class SpellFxEngine {
     if (f) return void this.form(f, caster, yaw);
     const sp = spellById.get(id);
     if (!sp) return; // weapon moves: the avatar's swing shows them
-    this.castFrom(sp, caster, x, y, z, yaw, pitch);
+    this.castFrom(sp, caster, x, y, z, yaw, pitch, charge);
   }
 
   /** Plays a whole cast (windup, then the spell) from a caster at (x, y, z) feet: remote casts, the gallery, the bench. */
-  castFrom(sp: SpellDef, caster: Anchor, x: number, y: number, z: number, yaw: number, pitch: number): void {
+  castFrom(sp: SpellDef, caster: Anchor, x: number, y: number, z: number, yaw: number, pitch: number, charge = 0): void {
     const c0 = performance.now();
-    this.castFromInner(sp, caster, x, y, z, yaw, pitch);
+    this.castFromInner(sp, caster, x, y, z, yaw, pitch, charge);
     this.counts.maxCastMs = Math.max(this.counts.maxCastMs, performance.now() - c0);
   }
 
-  private castFromInner(sp: SpellDef, caster: Anchor, x: number, y: number, z: number, yaw: number, pitch: number): void {
+  private castFromInner(sp: SpellDef, caster: Anchor, x: number, y: number, z: number, yaw: number, pitch: number, charge = 0): void {
     const eye = { x, y: y + EYE, z };
     const aim = sp.type === 'aoe' || sp.type === 'rune' ? this.aimPoint(eye, yaw, pitch, sp.range || 30) : null;
     const tgt = sp.type === 'direct' && sp.windupMs > 0 ? this.aimTarget(eye, yaw, pitch, sp.range || 30, 12) : null;
     this.castStart(sp, caster, aim, yaw, tgt ? tgt.id : null);
-    const fire = () => this.remoteResolve(sp, caster, yaw, pitch, aim);
+    const fire = () => this.remoteResolve(sp, caster, yaw, pitch, aim, charge);
     if (sp.windupMs > 0) {
       const at = fxTime() + sp.windupMs / 1000;
       this.push({ until: at, tick: () => true, end: fire });
     } else fire();
   }
 
-  private remoteResolve(sp: SpellDef, caster: Anchor, yaw: number, pitch: number, aim: V3 | null): void {
+  private remoteResolve(sp: SpellDef, caster: Anchor, yaw: number, pitch: number, aim: V3 | null, charge = 0): void {
     const pos = { x: 0, y: 0, z: 0 };
     if (!this.anchorPos(caster, pos)) return;
     const casterId = typeof caster === 'number' ? caster : 0;
@@ -1157,11 +1234,18 @@ export class SpellFxEngine {
           const yw = yaw + off;
           const pt = pitch + (sp.gravity > 0 ? 0.05 : 0);
           const cp = Math.cos(pt);
-          const range = sp.range || 40;
-          this.projectile(sp, hand.x, hand.y, hand.z, -Math.sin(yw) * cp * sp.speed, Math.sin(pt) * sp.speed, -Math.cos(yw) * cp * sp.speed, sp.gravity, Math.max(0.2, Math.min(sp.radius, 1)), range / Math.max(1, sp.speed), { collide: 'enemies', explode: sp.radius > 1 ? sp.radius : 0, pierce: sp.pierce, spread: n > 1 });
+          // CR 020: a released charge flies faster and bursts wider; seekers steer themselves (steer()).
+          const sm = sp.charge ? chargeMult(sp.charge.speedMult, charge) : 1;
+          const rm = sp.charge ? chargeMult(sp.charge.radiusMult, charge) : 1;
+          const speed = sp.speed * sm;
+          const range = (sp.range || 40) * sm;
+          this.projectile(sp, hand.x, hand.y, hand.z, -Math.sin(yw) * cp * speed, Math.sin(pt) * speed, -Math.cos(yw) * cp * speed, sp.gravity, Math.max(0.2, Math.min(sp.radius * rm, 1.4)), range / Math.max(1, speed), { collide: 'enemies', explode: sp.radius > 1 ? sp.radius * rm : 0, pierce: sp.pierce, spread: n > 1, homing: !!sp.homing });
         }
         return;
       }
+      case 'orbit':
+        this.orbit(sp, caster, sp.durationMs);
+        return;
       case 'hitscan':
       case 'beam': {
         const t = this.aimTarget(eye, yaw, pitch, sp.range || 40, 6);
@@ -1218,6 +1302,215 @@ export class SpellFxEngine {
     const family = ELEMENT_FAMILY[el] ?? 'steel';
     const sp = Math.max(1, Math.hypot(vx, vy, vz));
     this.projectile(null, x, y, z, vx, vy, vz, 0, Math.max(0.15, radius), range / sp, { collide: 'players', family });
+  }
+
+  // ── CR 020 mechanics: streams, charges, orbits, bursts, allies ────────────
+
+  /** Live streams / gathering charges by caster ('self' or an entity id): what channelEnd stops. */
+  private readonly channels = new Map<Anchor, Ongoing>();
+
+  private stopChannel(key: Anchor): void {
+    const o = this.channels.get(key);
+    if (!o) return;
+    this.channels.delete(key);
+    o.until = 0; // ends on the next update (end() runs there)
+  }
+
+  /** Your stream started: the off hand glows for as long as it runs (the shots are ordinary projectiles). */
+  streamStart(sp: SpellDef, caster: Anchor, seed: number): void {
+    void seed;
+    if (caster !== 'self') return;
+    const c = R.cols(spellVisual(sp).palette);
+    this.hand.color.copy(c.mainH);
+    this.hand.pulse = 1;
+    this.hand.charge = 0.6;
+    this.hand.chargeUntil = fxTime() + 600;
+  }
+
+  /** A stream or charge ended (yours: 'self'). */
+  channelEnd(caster: Anchor, sp: SpellDef | null): void {
+    void sp;
+    if (caster === 'self') this.hand.chargeUntil = 0;
+    this.stopChannel(caster);
+  }
+
+  /** Event 223 value 0 for another player. */
+  remoteChannelEnd(casterId: number): void {
+    this.stopChannel(casterId);
+  }
+
+  /** A charge gathering at the caster's hand: a growing knot of the element until release (or 6 s). */
+  chargeStart(sp: SpellDef, caster: Anchor): void {
+    this.stopChannel(caster);
+    const v = spellVisual(sp);
+    const c = R.cols(v.palette);
+    const t0 = fxTime();
+    const max = (sp.charge?.maxMs ?? 1000) / 1000;
+    if (caster === 'self') {
+      this.hand.color.copy(c.mainH);
+      this.hand.charge = 0;
+      this.hand.chargeUntil = t0 + 6;
+    }
+    const pos = { x: 0, y: 0, z: 0 };
+    const o: Ongoing = {
+      until: t0 + 6,
+      tick: (t, dt) => {
+        const k = Math.min(1, (t - t0) / max);
+        if (caster === 'self') {
+          if (!this.camera) return true;
+          this.selfHand(tmpV);
+          this.camera.getWorldDirection(tmpV2);
+          pos.x = tmpV.x + tmpV2.x * 0.6;
+          pos.y = tmpV.y + tmpV2.y * 0.6 + 0.05;
+          pos.z = tmpV.z + tmpV2.z * 0.6;
+        } else {
+          const v0 = this.viewById.get(caster as number);
+          if (!v0) return false;
+          this.remoteHand(v0.x, v0.y, v0.z, v0.yaw, pos, v0.id, v0.pitch);
+        }
+        this.at(pos.x, pos.y, pos.z, () => R.charge(v, pos.x, pos.y, pos.z, 0.15 + 0.45 * k, Math.max(1, Math.round((2 + 4 * k) * dt * 60))));
+        if (k >= 1 && Math.random() < 0.3) R.burst(pos.x, pos.y, pos.z, [c.hotH, c.mainH], 2, { speed: [0.5, 1.5], life: [0.15, 0.3], size: [0.05, 0.1] });
+        return true;
+      },
+      end: () => {
+        if (caster === 'self') this.hand.chargeUntil = 0;
+      },
+    };
+    this.channels.set(caster, o);
+    this.push(o);
+  }
+
+  /**
+   * Event 223 value 1: another player's stream, simulated from its seed:
+   * one shot per interval from their hand along their drawn aim (leaning by
+   * the same jitter the caster's shots do), or falling around their aim
+   * point for rain, until Event 223 value 0 (or 30 s).
+   */
+  remoteStream(casterId: number, sp: SpellDef, x: number, y: number, z: number, yaw0: number, pitch0: number, seed: number): void {
+    this.stopChannel(casterId);
+    const a = sp.auto;
+    if (!a) return;
+    const t0 = fxTime();
+    const every = (a.intervalSteps * STEP_MS) / 1000;
+    let k = 0;
+    const hand = { x: 0, y: 0, z: 0 };
+    const o: Ongoing = {
+      until: t0 + 30,
+      tick: (t) => {
+        const v0 = this.viewById.get(casterId);
+        const px = v0?.x ?? x;
+        const py = v0?.y ?? y;
+        const pz = v0?.z ?? z;
+        const yaw = v0?.yaw ?? yaw0;
+        const pitch = v0?.pitch ?? pitch0;
+        let n = 0;
+        while (t0 + k * every <= t && n < 3) {
+          n++;
+          const kk = k++;
+          if (this.lod(px, py, pz) <= 0) continue;
+          const radius = Math.max(0.12, Math.min(sp.radius, 0.4)); // a stream shot's visual core (bubbles burst wider than they look)
+          if (sp.rain) {
+            const aim = this.aimPoint({ x: px, y: py + EYE, z: pz }, yaw, pitch, sp.range || 30);
+            const off = rainOffset(seed, kk, sp.rain.radius);
+            const gx = aim.x + off.dx;
+            const gz = aim.z + off.dz;
+            const gy = this.prims.heightAt(gx, gz, aim.y);
+            this.projectile(sp, gx, gy + sp.rain.height, gz, 0, -sp.speed, 0, 0, radius, (sp.rain.height + 2) / sp.speed, { collide: 'enemies', explode: sp.radius > 1 ? sp.radius : 0, spread: true });
+            continue;
+          }
+          const j = shotJitter(seed, kk, a.jitterDeg);
+          this.remoteHand(px, py, pz, yaw, hand, casterId, pitch);
+          const yw = yaw + j.dyaw;
+          const pt = pitch + j.dpitch;
+          const cp = Math.cos(pt);
+          this.projectile(sp, hand.x, hand.y, hand.z, -Math.sin(yw) * cp * sp.speed, Math.sin(pt) * sp.speed, -Math.cos(yw) * cp * sp.speed, sp.gravity, radius, (sp.range || 20) / Math.max(1, sp.speed), { collide: 'enemies', explode: sp.radius > 1 ? sp.radius : 0, spread: true });
+        }
+        return true;
+      },
+    };
+    this.channels.set(casterId, o);
+    this.push(o);
+  }
+
+  /** An orbit: `count` orbs circling the caster for ms (the same positions the runtime hits with: spellsim orbOffset). */
+  orbit(sp: SpellDef, caster: Anchor, ms: number): void {
+    const ob = sp.orbit;
+    if (!ob) return;
+    const v = spellVisual(sp);
+    const c = R.cols(v.palette);
+    const t0 = fxTime();
+    const prev: V3[] = [];
+    const pos = { x: 0, y: 0, z: 0 };
+    const cur = { x: 0, y: 0, z: 0 };
+    this.push({
+      until: t0 + ms / 1000,
+      tick: (t) => {
+        if (!this.anchorPos(caster, pos)) return false;
+        const steps = ((t - t0) * 1000) / STEP_MS;
+        for (let i = 0; i < ob.count; i++) {
+          const off = orbOffset(i, ob.count, steps, ob.periodSteps, ob.radius);
+          cur.x = pos.x + off.x;
+          cur.y = pos.y + off.y;
+          cur.z = pos.z + off.z;
+          const p = (prev[i] ??= { ...cur });
+          this.at(cur.x, cur.y, cur.z, () => {
+            R.trail(v, p, cur, ob.orbRadius, 1.6);
+            // the orb itself: a hot core re-emitted every frame (reads as a solid spinning blade of light)
+            glowPool.emit(cur.x, cur.y, cur.z, 0, 0, 0, c.hotH, 0.07, ob.orbRadius * 1.1, 0, 0, SHAPE_GLOW);
+            glowPool.emit(cur.x, cur.y, cur.z, 0, 0, 0, c.mainH, 0.12, ob.orbRadius * 1.8, 0, 0, SHAPE_GLOW);
+            if (Math.random() < 0.25) R.burst(cur.x, cur.y, cur.z, [c.hotH, c.mainH], 1, { speed: [0.2, 0.8], life: [0.2, 0.4], size: [0.06, 0.12] });
+          });
+          p.x = cur.x;
+          p.y = cur.y;
+          p.z = cur.z;
+        }
+        return true;
+      },
+    });
+  }
+
+  /** Event 224: a delayed charge or a brand bursting (the zone's own hits). */
+  detonate(sp: SpellDef, x: number, y: number, z: number, radius: number): void {
+    const v = spellVisual(sp);
+    this.at(x, y, z, () => R.explosion(this.prims, v, x, y + 0.6, z, Math.max(1.2, radius), camPos));
+  }
+
+  /** Event 225: an ally attacked: a bolt toward its target (visual), or a bite burst on it. */
+  summonAttack(allyId: number, targetId: number, sp: SpellDef, x: number, y: number, z: number): void {
+    const def = sp.summon ? COMBAT.summons.find((m) => m.key === sp.summon!.key) : undefined;
+    const t = this.viewById.get(targetId);
+    const v = spellVisual(sp);
+    if (!def || !t) return;
+    const h = enemyInfo(t).height;
+    if (def.attack.shape === 'melee') {
+      this.at(t.x, t.y + h, t.z, () => R.impact(this.prims, v, t.x, t.y + h, t.z, null, 0.9, 'hit', camPos));
+      return;
+    }
+    const a = this.viewById.get(allyId);
+    const ox = a?.x ?? x;
+    const oy = (a ? a.y + 1.2 * def.size : y) + 0.1;
+    const oz = a?.z ?? z;
+    const dx = t.x - ox;
+    const dy = t.y + h - oy;
+    const dz = t.z - oz;
+    const d = Math.max(0.5, Math.hypot(dx, dy, dz));
+    const s = def.attack.speed;
+    this.projectile(sp, ox, oy, oz, (dx / d) * s, (dy / d) * s, (dz / d) * s, 0, 0.25, (d + 1) / s, { collide: 'enemies', spread: true });
+  }
+
+  /** A new ally appeared (CombatLayer): a burst of its element where it stands. */
+  summonAppear(sp: SpellDef, x: number, y: number, z: number): void {
+    const v = spellVisual(sp);
+    this.at(x, y, z, () => {
+      R.areaBurst(this.prims, v, x, y, z, { radius: 1.6, cone: 0, line: 0, yaw: 0 }, camPos);
+      R.dashBurst(this.prims, v, x, y + 0.8, z, true);
+    });
+  }
+
+  /** An ally's idle aura (CombatLayer, a few times a second). */
+  summonAura(sp: SpellDef, x: number, y: number, z: number, size: number): void {
+    const v = spellVisual(sp);
+    this.at(x, y, z, () => R.charge(v, x, y + 0.9 * size, z, 0.5 * size, 6), 0.6);
   }
 
   // ── Aim helpers (remote casts) ────────────────────────────────────────────

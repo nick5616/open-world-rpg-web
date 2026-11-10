@@ -33,6 +33,10 @@ const (
 	EvBossReset    = 220
 	EvRespawned    = 221
 	EvStrikeHit    = 222 // an enemy strike landed on a player (observers: the hit flash)
+	// CR 020 spell mechanics.
+	EvChannel      = 223 // a stream / charge started or stopped (observers simulate the stream from the seed)
+	EvDetonate     = 224 // a delayed charge or a brand burst (the zone's own hits)
+	EvSummonAttack = 225 // an ally attacked (melee bite or a bolt toward its target)
 )
 
 // EvCast targetIds that are not attack/spell/form ids (CR 018).
@@ -54,6 +58,7 @@ const (
 	ActLearn       = 4 // arg = spell id
 	ActSetGem      = 5 // arg = loadout | (element + 1) << 8 (0 = none); dev builds only (WP14 sockets)
 	ActSetMaterial = 6 // WP15: arg = loadout | material id << 8 (0 = ordinary); dev builds only (WP14 equips forged items)
+	ActDevGrant    = 7 // CR 020: arg = spell id; dev builds only (evidence runs: a tome stand-in that teaches any spell)
 )
 
 // Audience of an output Event.

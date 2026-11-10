@@ -1137,10 +1137,11 @@ const STATUS_PAL: Record<string, Palette> = {
   knockback: PALETTES.wind,
   taunt: PALETTES.crystal,
   black_flame: PALETTES.blackflame,
+  brand: PALETTES.fire, // CR 020: a pyre brand (bursts on death)
 };
 
 /** The status order for the one shell an enemy wears (the most telling first). */
-export const STATUS_PRIORITY = ['freeze', 'petrify', 'black_flame', 'burn', 'shock', 'stun', 'curse', 'slow', 'pull', 'airborne', 'knockback', 'taunt'];
+export const STATUS_PRIORITY = ['freeze', 'petrify', 'black_flame', 'burn', 'brand', 'shock', 'stun', 'curse', 'slow', 'pull', 'airborne', 'knockback', 'taunt'];
 
 /** A status's shell colour (HDR main of its palette). */
 export function statusColor(status: string): THREE.Color | null {
@@ -1198,6 +1199,13 @@ export function statusEmit(fx: FxPrims, status: string, x: number, y: number, z:
       return;
     case 'pull':
       ringBurst(x, y + h * 0.5, z, r * 2.5, c.k('ma'), rate(90), -1, O156);
+      return;
+    case 'brand':
+      // CR 020: a sigil of embers circling the waist and rising sparks (it bursts when the target dies)
+      for (let i = 0; i < 2; i++) {
+        const a = t * 3 + i * Math.PI;
+        if (Math.random() < rate(40)) glowPool.emit(x + Math.cos(a) * r * 1.3, y + h * 0.6, z + Math.sin(a) * r * 1.3, 0, 0.8, 0, c.hot, 0.35, 0.12, 0, 0, SHAPE_STAR);
+      }
       return;
     case 'taunt':
       if (Math.random() < rate(4)) glowPool.emit(x, y + h + 0.5, z, 0, 0.6, 0, c.main, 0.5, 0.25, 0, 1, SHAPE_STAR);

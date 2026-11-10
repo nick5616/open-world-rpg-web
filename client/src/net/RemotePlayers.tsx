@@ -14,7 +14,7 @@ import * as THREE from 'three';
 import { EntityKind, type Event as ZoneEvent } from '@lodestone/contracts';
 import { netStats } from '../state/live';
 import { Avatar, FullRigBudget } from './avatar';
-import { classifyAction, EV_MINE_SWING, MINE_SPEC } from './avatarAnim';
+import { classifyAction, classifyChannel, EV_MINE_SWING, MINE_SPEC } from './avatarAnim';
 import { drawnRemotes } from './netStore';
 import type { RemoteView } from './interpolation';
 import type { ZoneSession } from './zoneSession';
@@ -29,6 +29,9 @@ export function animateFromEvent(e: ZoneEvent, avatars: ReadonlyMap<number, Avat
   switch (e.kind) {
     case EV.cast:
       a.anim.trigger(classifyAction(Number(e.targetId), a.weaponKind));
+      return true;
+    case EV.channel: // CR 020: a stream or charge holds the casting pose
+      a.anim.trigger(classifyChannel(Number(e.targetId), e.value, a.weaponKind));
       return true;
     case EV.strikeHit:
       a.anim.hurt();
@@ -75,7 +78,7 @@ export function RemotePlayers({ session }: { session: ZoneSession }) {
 
   useEffect(() => {
     const l = (e: ZoneEvent) => {
-      if (e.kind === EV.cast || e.kind === EV.strikeHit || e.kind === EV.playerDowned || e.kind === EV_MINE_SWING || e.kind === 2) animateFromEvent(e, avatars);
+      if (e.kind === EV.cast || e.kind === EV.channel || e.kind === EV.strikeHit || e.kind === EV.playerDowned || e.kind === EV_MINE_SWING || e.kind === 2) animateFromEvent(e, avatars);
     };
     session.eventListeners.add(l);
     return () => {

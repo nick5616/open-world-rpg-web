@@ -198,6 +198,10 @@ export const DODGE_STAMINA = 12;
 export const DASH_EXIT_SPEED = 6;
 /** Lenient PvE validation (spec 9): a claimed hit may be this much beyond the move's reach at the best sample of the target's last HIT_HISTORY_MS. */
 export const HIT_RANGE_SLACK_M = 1;
+/** CR 020: allies (summon spells) one player may have at once; a new one past the cap sends the oldest away. */
+export const SUMMONS_PER_PLAYER = 3;
+/** CR 020: the fastest hold-to-fire stream (shots per second); combat.yaml auto.rateHz may not exceed it and the zone never fires faster. */
+export const AUTO_MAX_RATE_HZ = 15;
 /** Favor the player: an enemy strike on a player settles only after the player's input frames up to this long after the strike; a dodge (i-frames) or being outside the area in any of them evades it. */
 export const HIT_GRACE_MS = 200;
 /** Players counted for enemy scaling at most (party size 4 is the tuning point; spec 16). */

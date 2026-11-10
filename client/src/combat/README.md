@@ -196,3 +196,21 @@ scaling and the frame budget, GPU classification and the frame sample,
 recipe selection for every spell in combat.yaml, pools and caps, the light
 pool, spikes near the camera, bolts and the ribbon cap, the projectile cap,
 the runtime's routing of casts and Events 214/206/219/205).
+
+## Spell mechanics (playtest 2, CR 020)
+
+Hold-to-fire streams, rain, hold-to-empower charges, homing shots, orbits,
+delayed charges and brands, summoned allies (docs/cr/020-spell-mechanics.md).
+
+| File | What |
+| --- | --- |
+| `spellsim.ts` | The shared simulation (the zone's twin is `spellsim.go`; `golden/spellsim_golden.json` pins both): homing step, seeded jitter and rain, orbit positions, charge |
+| `timeline.ts` | Streams and charges: the slot keys' held state (`CombatButtons.castHeld`), `InputFlag.channel`, shots on the zone's schedule (`StepOut.shots`), release and interrupt rules, restart while held |
+| `runtime.ts` | Per-shot prediction and claims (each shot claims its own seq), rain drops, homing shots on whole 60 Hz steps, orbit touches, charge scaling; Events 223 (streams), 224 (bursts), 225 (ally attacks) |
+| `fx/engine.ts` | Seekers steered on the shared step (yours moved by the runtime, others' by the engine), remote streams simulated from their seed, charge gathering, orbits, bursts, ally bolts and auras, small pops for stream bursts |
+| `CombatLayer.tsx` | Allies (EntityKind effect): spectral bodies (hound, archer, crystal turret) with a time-left bar |
+| `dev/mechanics-shots.ts` | Evidence on a real zone with training dummies: `docs/evidence/pt2-spell-mechanics-*.jpg` |
+
+Controls: hold 1-4 (or RMB with the slot selected) to keep a stream firing
+or to gather a charge; let go to stop / release. Tests: `spellsim.test.ts`,
+`mechanics.test.ts`.

@@ -78,7 +78,7 @@ func (w *World) Claim(p *Player, c *proto.HitClaim) ClaimResult {
 	if !e.Alive() {
 		return w.refuse(RefuseDead)
 	}
-	a := p.Action(c.AttackSeq, int(c.AttackID))
+	a, shot := p.lookup(c.AttackSeq, int(c.AttackID)) // CR 020: a stream's shot by its nominal seq
 	if a == nil {
 		if c.AttackSeq > p.LastSeq {
 			return ClaimResult{Pending: true}
@@ -88,12 +88,8 @@ func (w *World) Claim(p *Player, c *proto.HitClaim) ClaimResult {
 	if !a.Legal {
 		return w.refuse(uint8(a.Refusal))
 	}
-	if w.tick-a.Tick > maxAgeTicks(a) {
-		return w.refuse(RefuseStale)
-	}
-	allowed, maxTargets := hitLimits(a)
-	if a.hits[e.ID] >= allowed || (a.hits[e.ID] == 0 && a.targets >= maxTargets) {
-		return w.refuse(RefuseHits)
+	if r := w.claimable(a, shot, e.ID); r != 0 {
+		return w.refuse(r)
 	}
 	if e.Boss != nil && e.Boss.transitionUntil > w.tick {
 		return w.refuse(RefuseInvulnerable)
@@ -110,27 +106,180 @@ func (w *World) Claim(p *Player, c *proto.HitClaim) ClaimResult {
 		}
 	}
 	impact := movement.Vec3{X: proto.CmToMeters(c.X), Y: proto.CmToMeters(c.Y), Z: proto.CmToMeters(c.Z)}
+	if r := w.judge(p, a, shot, c, e.ID, e.Radius(), e.Height(), e.samples, e.posAt, impact); r != 0 {
+		return w.refuse(r)
+	}
+	return w.applyHit(p, a, e, impact, shot)
+}
+
+// claimable: the CR 020-aware age and hit-count checks (0 = fine).
+func (w *World) claimable(a *Action, shot int, target uint32) uint8 {
+	if a.Spell != nil && a.Spell.Type == "summon" {
+		return RefuseIllegal // allies hit on their own (summon.go)
+	}
+	fired := a.Tick
+	if shot >= 0 {
+		fired = a.shot(shot).tick
+	}
+	if w.tick-fired > maxAgeTicks(a) {
+		return RefuseStale
+	}
+	if shot >= 0 {
+		// A stream: each shot hits each target once, one target (a few for a
+		// bursting or piercing shot).
+		lim := 1
+		if a.Spell.Radius > 1 || a.Spell.Pierce {
+			lim = 4
+		}
+		if a.shotHits[uint64(shot)<<32|uint64(target)] || a.shotTgts[shot] >= lim {
+			return RefuseHits
+		}
+		return 0
+	}
+	allowed, maxTargets := hitLimits(a)
+	if a.hits[target] >= allowed || (a.hits[target] == 0 && a.targets >= maxTargets) {
+		return RefuseHits
+	}
+	if o := a.Spell; o != nil && o.Orbit != nil && a.hits[target] > 0 && w.tick-a.lastHit[target]+3 < ticksOf(o.Orbit.HitEverySteps) {
+		return RefuseHits // an orbit touches one target at most every hitEveryMs
+	}
+	return 0
+}
+
+// judge checks a claim's geometry and line of sight against a target
+// (radius, centre height, its recorded positions): 0 = in reach.
+func (w *World) judge(p *Player, a *Action, shot int, c *proto.HitClaim, target uint32, radius, height float64, samples func(lo, hi uint32, fn func(movement.Vec3)), posAt func(uint32) movement.Vec3, impact movement.Vec3) uint8 {
 	ct := min(c.Tick, w.tick)
 	lo, hi := ct-min(ct, historyTicks), min(w.tick, ct+futureTicks)
+	s := a.Spell
 	inReach, sawLOS := false, false
-	e.samples(lo, hi, func(tp movement.Vec3) {
+	samples(lo, hi, func(tp movement.Vec3) {
 		if inReach && sawLOS {
 			return
 		}
-		if w.geometryOK(p, a, e.Radius(), e.Height(), tp, impact) {
+		var ok bool
+		switch {
+		case shot >= 0:
+			ok = w.shotGeometryOK(a, shot, radius, tp, impact)
+		case s != nil && s.Orbit != nil:
+			ok = w.orbitGeometryOK(p, s, radius, tp, impact, lo, hi)
+		default:
+			ok = w.geometryOK(p, a, radius, height, tp, impact)
+		}
+		if ok {
 			inReach = true
-			if !needsLOS(a, p.Pos, tp) || w.lineOfSight(a.Pos, p.Pos, tp, e.Height()) {
+			if !needsLOS(a, p.Pos, tp) || w.lineOfSight(a.Pos, p.Pos, tp, height) {
 				sawLOS = true
 			}
 		}
 	})
+	if !inReach && s != nil && s.Homing != nil && shot < 0 && w.homingReach(a, target, radius, height, posAt) {
+		inReach, sawLOS = true, true // the zone re-flew the seeking path into it (spellsim.go)
+	}
 	if !inReach {
-		return w.refuse(RefuseRange)
+		return RefuseRange
 	}
 	if !sawLOS {
-		return w.refuse(RefuseLOS)
+		return RefuseLOS
 	}
-	return w.applyHit(p, a, e, impact)
+	return 0
+}
+
+// shotGeometryOK: a stream's shot k from where it was fired, leaning by the
+// stream's seeded jitter (or, for rain, falling near the aim point).
+func (w *World) shotGeometryOK(a *Action, k int, radius float64, tp, impact movement.Vec3) bool {
+	s := a.Spell
+	sh := a.shot(k)
+	r := radius + constants.HitRangeSlackM
+	if s.Rain != nil {
+		return hdist(impact, sh.pos) <= s.Range+s.Rain.Radius+constants.HitRangeSlackM && hdist(impact, tp) <= math.Max(s.Radius, 0.5)+r
+	}
+	if s.Radius > 1 && hdist(impact, sh.pos) <= s.Range+r && hdist(impact, tp) <= s.Radius+r {
+		return true // a bursting shot (bubbles): the area where it popped
+	}
+	yaw, _ := shotAim(a, k, sh)
+	d := hdist(sh.pos, tp)
+	if d > s.Range+r {
+		return false
+	}
+	return d < 3 || angleDiff(yawTo(tp.X-sh.pos.X, tp.Z-sh.pos.Z), yaw) <= aimSlack+math.Atan2(r, d)
+}
+
+// orbitGeometryOK: the claimed orb position sits on the orbit ring around
+// one of the caster's recent positions and touches the target.
+func (w *World) orbitGeometryOK(p *Player, s *combatdefs.Spell, radius float64, tp, impact movement.Vec3, lo, hi uint32) bool {
+	o := s.Orbit
+	if hdist(impact, tp) > o.OrbRadius+radius+constants.HitRangeSlackM {
+		return false
+	}
+	ok := false
+	p.samples(lo, hi, func(ps movement.Vec3) {
+		if math.Abs(hdist(ps, impact)-o.Radius) <= o.OrbRadius+constants.HitRangeSlackM && math.Abs(impact.Y-ps.Y-1) < 3 {
+			ok = true
+		}
+	})
+	return ok
+}
+
+// homingEye is where the client launches a shot from (eye level less a
+// little: runtime.ts launch).
+const homingEye = 1.6 - 0.15
+
+// homingReach re-flies a homing spell's shots (each orb of a volley) in the
+// shared 1/60 s steps against the target's recorded positions, a few
+// render lags back, and reports whether one reaches it (CR 020).
+func (w *World) homingReach(a *Action, target uint32, radius, height float64, posAt func(uint32) movement.Vec3) bool {
+	s := a.Spell
+	hp := homingParamsOf(s)
+	n := max(1, s.Spread)
+	steps := int(math.Ceil(s.Range/math.Max(1, s.Speed)*simHz)) + 2
+	pr := math.Max(0.2, math.Min(s.Radius, 1))
+	eye := movement.Vec3{X: a.Pos.X, Y: a.Pos.Y + homingEye, Z: a.Pos.Z}
+	slack := constants.HitRangeSlackM
+	if a.orbUsed == nil {
+		a.orbUsed = map[uint32]uint32{}
+	}
+	for _, lag := range []uint32{3, 8, 14} {
+		for i := 0; i < n && i < 32; i++ {
+			if a.orbUsed[target]&(1<<i) != 0 {
+				continue
+			}
+			off := 0.0
+			if n > 1 {
+				off = (float64(i) - float64(n-1)/2) * s.SpreadDeg * math.Pi / 180
+			}
+			pitch := a.Pitch
+			if s.Gravity > 0 {
+				pitch += 0.05
+			}
+			sh := launchShot(eye, a.Yaw+off, pitch, s.Speed)
+			lastTick, tp := uint32(math.MaxUint32), movement.Vec3{}
+			for st := 0; st < steps; st++ {
+				tk := a.Tick + uint32(st/2)
+				tk -= min(tk, lag)
+				if tk != lastTick {
+					tp, lastTick = posAt(tk), tk
+				}
+				cen := movement.Vec3{X: tp.X, Y: tp.Y + height, Z: tp.Z}
+				if sh.canAcquire(cen, hp) {
+					sh.state = 1
+				}
+				var cp *movement.Vec3
+				if sh.state == 1 {
+					cp = &cen
+				}
+				sh.step(cp, hp)
+				if hdist(sh.pos, tp) <= radius+pr+0.25+slack && math.Abs(cen.Y-sh.pos.Y) <= height+pr+0.4+slack {
+					a.orbUsed[target] |= 1 << i
+					return true
+				}
+				if sh.pos.Y < w.ground.HeightAt(sh.pos.X, sh.pos.Z)-1 {
+					break
+				}
+			}
+		}
+	}
+	return false
 }
 
 // maxAgeTicks bounds how late a claim for an action may arrive.
@@ -183,6 +332,9 @@ func hitLimits(a *Action) (perTarget, targets int) {
 			if s.Spread > 1 {
 				targets = s.Spread
 			}
+			if s.Homing != nil {
+				perTarget = max(perTarget, s.Spread) // CR 020: a whole volley may seek one target
+			}
 		case "hitscan":
 			targets = 1 + s.Chain
 			if s.Pierce {
@@ -190,6 +342,8 @@ func hitLimits(a *Action) (perTarget, targets int) {
 			}
 		case "beam":
 			targets = 3
+		case "orbit":
+			targets = 16 // CR 020: each orb touches what it passes (hits per target, hitEveryMs apart)
 		default:
 			targets = 1
 		}
@@ -203,7 +357,7 @@ func needsLOS(a *Action, from, to movement.Vec3) bool {
 	if a.Move != nil && a.Move.Speed == 0 {
 		return false // melee: reach is the check
 	}
-	if a.Spell != nil && (a.Spell.SelfCast || a.Spell.Type == "domain") {
+	if a.Spell != nil && (a.Spell.SelfCast || a.Spell.Type == "domain" || a.Spell.Rain != nil || a.Spell.Orbit != nil) {
 		return false
 	}
 	return hdist(from, to) > 6
@@ -288,7 +442,9 @@ func (w *World) geometryOK(p *Player, a *Action, radius, height float64, tp move
 		switch s.Type {
 		case "projectile", "arc":
 			slack := aimSlack + float64(max(0, s.Spread-1))*10*math.Pi/180
-			return aimed(a.Pos, a.Yaw, s.Range, slack) || (s.Radius > 1 && hdist(impact, a.Pos) <= s.Range+r && hdist(impact, tp) <= s.Radius+r)
+			_, rm, sm := chargeOf(a) // CR 020: a held charge flies farther and bursts wider
+			rng := s.Range * sm
+			return aimed(a.Pos, a.Yaw, rng, slack) || (s.Radius > 1 && hdist(impact, a.Pos) <= rng+r && hdist(impact, tp) <= s.Radius*rm+r)
 		case "hitscan", "beam":
 			if a.targets > 0 && s.Chain > 0 {
 				return hdist(impact, tp) <= chainRange+r // chains hop from the previous target (claim x/y/z)
@@ -371,6 +527,8 @@ func (w *World) damageOf(p *Player, a *Action, e *Enemy) (dmg float64, element i
 		if e.Boss != nil && s.BossDamage > 0 {
 			dmg = s.BossDamage
 		}
+		cm, _, _ := chargeOf(a) // CR 020: a held charge hits harder
+		dmg *= cm
 		sc := pr.SkillLevel("spellcraft")
 		dmg *= a.Weapon.SpellPower * (1 + 0.01*float64(sc))
 		if D.HasTechnique("spellcraft", sc, "overflow") {
@@ -402,7 +560,7 @@ func (w *World) damageOf(p *Player, a *Action, e *Enemy) (dmg float64, element i
 	if pr.Knows("solar_flare") {
 		crit += 0.1
 	}
-	if critRoll(a.Seq, e.ID, p.ID) < crit {
+	if critRoll(a.rollSeq(), e.ID, p.ID) < crit {
 		dmg *= 1.5
 		flags |= FlagCrit
 	}
@@ -476,7 +634,23 @@ func (w *World) statusOf(p *Player, a *Action) []string {
 }
 
 // applyHit applies an accepted claim.
-func (w *World) applyHit(p *Player, a *Action, e *Enemy, impact movement.Vec3) ClaimResult {
+func (w *World) applyHit(p *Player, a *Action, e *Enemy, impact movement.Vec3, shot int) ClaimResult {
+	if shot >= 0 {
+		// CR 020: a stream's shot rolls its own crit and counts on its own.
+		a.critSeq = a.shotSeq(shot)
+		defer func() { a.critSeq = 0 }()
+		if a.shotHits == nil {
+			a.shotHits, a.shotTgts = map[uint64]bool{}, map[int]int{}
+		}
+		a.shotHits[uint64(shot)<<32|uint64(e.ID)] = true
+		a.shotTgts[shot]++
+	}
+	if a.Spell != nil && a.Spell.Orbit != nil {
+		if a.lastHit == nil {
+			a.lastHit = map[uint32]uint32{}
+		}
+		a.lastHit[e.ID] = w.tick
+	}
 	dmg, element, flags := w.damageOf(p, a, e)
 	killing := KillsDemons(p, a) // WP15 (demon.go)
 	if e.Demon != nil && a.Form != nil && a.Form.DemonMult > 0 {
@@ -485,9 +659,11 @@ func (w *World) applyHit(p *Player, a *Action, e *Enemy, impact movement.Vec3) C
 	if a.Spell != nil && a.Spell.StripShield {
 		e.Shield = 0
 	}
-	a.hits[e.ID]++
-	if a.hits[e.ID] == 1 {
-		a.targets++
+	if shot < 0 {
+		a.hits[e.ID]++
+		if a.hits[e.ID] == 1 {
+			a.targets++
+		}
 	}
 	if a.Spell != nil && a.Spell.Damage == 0 {
 		dmg = 0
@@ -497,7 +673,11 @@ func (w *World) applyHit(p *Player, a *Action, e *Enemy, impact movement.Vec3) C
 		dmg = 1
 	}
 	at := movement.Vec3{X: e.Pos.X, Y: e.Pos.Y + e.Height(), Z: e.Pos.Z}
+	// CR 020: observers draw a stream's impacts from the stream itself, so its
+	// shots send them no damage Event (12+ a second per shooter otherwise).
+	w.quietDamage = shot >= 0
 	dealt, shielded := w.applyDamage(e, p.ID, dmg, element, at, flags, true, killing)
+	w.quietDamage = false
 	if element == combatdefs.Lightning {
 		w.wetChain(p.ID, e, dmg, killing) // WP15: rain chains lightning across water
 	}
@@ -528,6 +708,9 @@ func (w *World) applyHit(p *Player, a *Action, e *Enemy, impact movement.Vec3) C
 			w.near(e.Pos, 64, 0, Out{Ev: ev(EvStatus, p.ID, e.ID, int32(def.ID), e.Pos, []byte{byte(min(255, ticksOf(def.DurationSteps)))})})
 		}
 	}
+	if a.Spell != nil && a.Spell.Detonate != nil && e.Alive() {
+		w.plantDetonation(p, a, e) // CR 020: a delayed charge or a brand (detonate.go)
+	}
 	// Lifesteal and kill heals (Dark tree).
 	ls := 0.0
 	if a.Spell != nil {
@@ -544,6 +727,9 @@ func (w *World) applyHit(p *Player, a *Action, e *Enemy, impact movement.Vec3) C
 	// Skills grow by use (spec 8): every landed hit trains the skill that
 	// made it; a kill trains it more.
 	xp := int64(2)
+	if shot >= 0 && shot%4 != 0 {
+		xp = 0 // CR 020: a stream trains like a cast every fourth shot, not every bullet
+	}
 	if !e.Alive() {
 		xp += 6
 	}
@@ -591,7 +777,7 @@ func (w *World) applyDamage(e *Enemy, src uint32, dmg float64, element int, at m
 		e.Target = src
 		e.State, e.stateAt = Chase, w.tick
 	}
-	if dmg > 0 {
+	if dmg > 0 && !w.quietDamage {
 		w.near(at, 64, src, Out{Ev: ev(EvDamage, src, e.ID, int32(math.Round(dmg)), at, []byte{flags, e.HealthPct()})})
 	}
 	if e.HP <= 0 {
@@ -621,6 +807,7 @@ func (w *World) healArea(by *Player, amount, radius float64) {
 // kill finishes an enemy: XP to everyone who fought it (and their party
 // nearby), the loot hook, splitting elites, group bookkeeping.
 func (w *World) kill(e *Enemy, killer uint32) {
+	w.brandOnDeath(e) // CR 020: a branded enemy bursts (detonate.go)
 	e.HP = 0
 	e.State = Dead
 	e.diedTick = w.tick

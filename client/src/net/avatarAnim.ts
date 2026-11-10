@@ -135,6 +135,21 @@ export function classifyAction(id: number, weapon: WeaponKind | null): ActionSpe
   return spec('unknown', 'cast', 400, null);
 }
 
+/**
+ * CR 020: Event 223 (a stream or charge of another player). A stream (1)
+ * holds the casting arm out for as long as it runs; a charge (2) holds the
+ * big gathering pose; the stop (0) plays a short release flick (a charge's
+ * release also arrives as Event 214, the cast itself).
+ */
+export function classifyChannel(spellId: number, value: number, weapon: WeaponKind | null): ActionSpec {
+  const s = spellById.get(spellId);
+  const color = s ? (s.color ?? ELEMENT_COLORS[s.element] ?? null) : null;
+  const staff = weapon === 'staff' || weapon === 'wand';
+  if (value === 1) return spec(`stream:${spellId}:${staff ? 'tip' : 'hand'}`, staff ? 'castStaff' : 'cast', 30000, color, 1, true);
+  if (value === 2) return spec(`charge:${spellId}`, 'castBig', 30000, color, 1, true);
+  return spec(`release:${spellId}:${staff ? 'tip' : 'hand'}`, staff ? 'castStaff' : 'cast', 260, color);
+}
+
 export interface LimbPose {
   swing: number;
   spread: number;

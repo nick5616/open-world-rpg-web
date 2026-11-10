@@ -6,7 +6,11 @@ import { FlatGround, PlaneGround, type GroundQuery } from '../ground';
 import { newMoveState, stepMovement, STEP_DT, type MoveState } from '../movement';
 import { goldenScript, type ScriptFrame } from './script';
 
-export type GroundSpec = { kind: 'flat'; height: number } | { kind: 'plane'; base: number; sx: number; sz: number };
+export type GroundSpec =
+  | { kind: 'flat'; height: number }
+  | { kind: 'plane'; base: number; sx: number; sz: number }
+  // CR 021 (dash overhaul): an island of radius r (top `height`) in a lake (bottom `bottom`, surface `water`) (glacier step skates off it).
+  | { kind: 'island'; height: number; bottom: number; water: number; cx: number; cz: number; r: number };
 
 export interface Scenario {
   name: string;
@@ -20,6 +24,11 @@ export const SCENARIOS: Scenario[] = [
 ];
 
 export function makeGround(g: GroundSpec): GroundQuery {
+  if (g.kind === 'island') {
+    const { height, bottom, water, cx, cz, r } = g;
+    const on = (x: number, z: number) => (x - cx) * (x - cx) + (z - cz) * (z - cz) < r * r;
+    return { heightAt: (x: number, z: number) => (on(x, z) ? height : bottom), waterAt: (x: number, z: number) => (on(x, z) ? -Infinity : water) };
+  }
   return g.kind === 'flat' ? new FlatGround(g.height) : new PlaneGround(g.base, g.sx, g.sz);
 }
 

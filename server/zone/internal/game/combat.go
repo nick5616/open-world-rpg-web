@@ -105,6 +105,7 @@ func (s *Server) initCombat() {
 		devPlacement(w, s.log.Info)
 	}
 	s.cbt = combatGlue{w: w, setup: setup, byID: map[uint32]*Entity{}}
+	s.summonHooks(w) // CR 020: allies under the PvP rules (summons.go)
 	counts := map[string]int{}
 	for _, g := range w.Groups {
 		counts[g.Kind.String()]++
@@ -112,7 +113,7 @@ func (s *Server) initCombat() {
 	s.log.Info("combat ready", "groups", len(w.Groups), "camps", counts["camp"], "bandit", counts["bandit"], "guardian", counts["guardian"], "packs", counts["pack"], "bosses", counts["boss"], "test", counts["test"])
 }
 
-// devPlacement reads LODESTONE_ZONE_DEBUG_CAMP="x,z,level,key key ...[;...]"
+// devPlacement reads LODESTONE_ZONE_DEBUG_CAMP="x,z,level,key key ...[,elite[,dummy]][;...]"
 // and LODESTONE_ZONE_DEBUG_BOSS="x,z,level,boss[,element]" (acceptance runs
 // on known ground; dev builds only).
 func devPlacement(w *combat.World, log func(string, ...any)) {
@@ -130,6 +131,7 @@ func devPlacement(w *combat.World, log func(string, ...any)) {
 		}
 		x, z = w.WalkableNear(x, z, 120, 8)
 		g := w.TestGroup(movement.Vec3{X: x, Z: z}, strings.Fields(f[3]), lvl, elite)
+		g.Dummy = len(f) >= 6 && strings.TrimSpace(f[5]) == "dummy" // CR 020: training dummies for evidence runs
 		log("dev camp", "group", g.ID, "x", x, "z", z, "members", f[3])
 	}
 	for _, spec := range strings.Split(os.Getenv("LODESTONE_ZONE_DEBUG_BOSS"), ";") {
@@ -219,6 +221,7 @@ func (s *Server) combatJoin(sess *session) {
 	if prof == nil {
 		prof = combat.NewProfile()
 	}
+	s.devGrantSpells(prof) // CR 021: dev evidence runs (dashes.go)
 	p := combat.NewPlayer(e.ID, e.Name, prof, int(e.Level))
 	p.Pos = e.Move.Pos
 	p.PartyID = e.PartyID
@@ -364,6 +367,10 @@ func (s *Server) handleCombatInteract(sess *session, m *proto.Interact) {
 		if s.cbt.setup.Dev {
 			ok = pr.SetGem(int(m.Arg&0xff), int(m.Arg>>8)-1)
 		}
+	case combat.ActDevGrant: // CR 020: evidence runs learn any spell like a tome (dev builds only)
+		if sp := combatdefs.D.SpellByID(int(m.Arg)); s.cbt.setup.Dev && sp != nil {
+			ok = pr.Grant(sp.Key) || pr.Knows(sp.Key)
+		}
 	case combat.ActSetMaterial: // WP15: dev sunsteel until WP14 equips forged items
 		if s.cbt.setup.Dev {
 			key := ""
@@ -417,9 +424,13 @@ func (s *Server) combatTick(tick uint32) {
 		}
 	}
 	w.Step(tick)
+	s.dashEnvTick(tick) // CR 021: dash trails set grass alight and freeze water (dashes.go)
 	events, spawned, removed, xp, respawn, synced := w.Drain()
 	for _, en := range spawned {
 		ent := &Entity{ID: en.ID, Kind: proto.EntityKindEnemy, Name: en.Name, Level: uint8(min(255, en.Level)), npc: en, TypeID: en.TypeID()}
+		if en.Owner() != 0 {
+			ent.Kind, ent.Name = proto.EntityKindEffect, s.summonName(en) // CR 020: an ally (summons.go)
+		}
 		ent.Move.Pos = en.Pos
 		ent.Yaw = en.Yaw
 		ent.prevValid, ent.view = ent.Move, ent.Move
@@ -459,7 +470,7 @@ func (s *Server) combatTick(tick uint32) {
 	parallelFor(len(s.ents), s.phaseWorkers(len(s.ents)), viewChunk, func(_, i int) {
 		ent := s.ents[i]
 		en := ent.npc
-		if en == nil || s.cbt.byID[ent.ID] != ent || w.Enemy(ent.ID) == nil {
+		if en == nil || s.cbt.byID[ent.ID] != ent || (w.Enemy(ent.ID) == nil && w.Summon(ent.ID) == nil) {
 			return
 		}
 		ent.Move.Pos, ent.Move.Vel = en.Pos, en.Vel
@@ -488,7 +499,7 @@ func (s *Server) combatTick(tick uint32) {
 		st := w.Stats
 		awake := 0
 		for _, ent := range s.cbt.byID {
-			if en := ent.npc; en != nil && en.State != combat.Asleep && en.Alive() {
+			if en := ent.npc; en != nil && en.State != combat.Asleep && en.Alive() && en.Owner() == 0 {
 				awake++
 			}
 		}
