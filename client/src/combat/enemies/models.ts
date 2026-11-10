@@ -53,6 +53,10 @@ export interface Model {
   /** Model-space bounds at size 1 (bars, culling, the far box). */
   height: number;
   radius: number;
+  /** Ground footprint radius (aura rings): the body, not a weapon or a wing tip. */
+  foot: number;
+  /** Flyers: how far the model drops so its body sits at the zone's hover height (v.y is 1.5 m up). */
+  flyLift: number;
   tris: number;
   midTris: number;
 }
@@ -74,7 +78,7 @@ class Kit {
     const key = `${joint}|${m}`;
     let e = this.builders.get(key);
     if (!e) {
-      e = { joint, mat: m, b: new PartBuilder(this.rand) };
+      e = { joint, mat: m, b: new PartBuilder(this.rand, this.spec.spectral ? new THREE.Color(this.spec.color) : null) };
       this.builders.set(key, e);
     }
     return e.b;
@@ -329,8 +333,38 @@ function buildQuad(k: Kit, p: Pal): Joint[] {
     quadLegs(k, d.upper, d.lower, 0.065, 0.05, p.body, p.light, { paw: true });
     return quadJoints(d);
   }
-  // wolf (and the wraith hound, the summon in its spectral material)
+  if (st === 'behemoth') {
+    // thornhide behemoth: a hulking, mossy, thorn-backed grazer with a gore horn
+    const d = { hipH: 0.7, len: 1.0, halfW: 0.3, upper: 0.32, lower: 0.34, neckY: 0.02, jaw: [0, -0.12, -0.16] as V3 };
+    const body = k.at(Q.body);
+    body.sphere(0.55, 8, 6, p.body, { scale: [1.0, 0.85, 1.25], jitter: 0.09 });
+    body.sphere(0.45, 7, 4, p.belly, { pos: [0, -0.2, -0.05], scale: [0.9, 0.5, 1.15] });
+    body.sphere(0.4, 7, 4, p.dark, { pos: [0, 0.18, -0.38], scale: [1.15, 0.9, 0.8], jitter: 0.12 }); // shoulder hump
+    const r = rng(17);
+    for (let i = 0; i < 16; i++) {
+      const a = (r() - 0.5) * 2.2;
+      const z = -0.5 + r();
+      const base: V3 = [Math.sin(a) * 0.42, 0.12 + Math.cos(a) * 0.4, z * 0.9];
+      horn(body, base, [Math.sin(a), Math.cos(a), 0.3], 0.18 + r() * 0.16, 0.05, i % 3 ? '#3a2a1a' : s.accent, -0.3, [1, 0, 0], 2, i % 3 ? 0 : 0.35);
+    }
+    for (let i = 0; i < 8; i++) body.ball(0.12, '#5f7a30', { pos: [(r() - 0.5) * 0.7, 0.42, (r() - 0.5) * 0.9], scale: [1.4, 0.4, 1.2], detail: 0 });
+    const head = k.at(Q.head);
+    head.box(0.38, 0.32, 0.44, p.dark, { pos: [0, -0.04, -0.2], rot: [0.35, 0, 0], jitter: 0.08 });
+    head.box(0.3, 0.2, 0.18, p.body, { pos: [0, -0.14, -0.4], rot: [0.35, 0, 0] });
+    horn(head, [0, 0.08, -0.38], [0, 1, -0.6], 0.42, 0.08, p.bone, 0.35, [1, 0, 0], 3); // the gore horn
+    hornPair(head, [0.18, 0.1, -0.05], [1, 0.2, 0.2], 0.3, 0.06, p.bone, 0.6, [0, 0, 1], 3);
+    eyes(head, 0.17, 0.04, -0.3, 0.03, s);
+    const jaw = k.at(Q.jaw);
+    jaw.box(0.26, 0.08, 0.26, p.deep, { pos: [0, -0.02, -0.14] });
+    const tail = k.at(Q.tail);
+    horn(tail, [0, 0, 0], [0, -0.6, 1], 0.4, 0.07, p.dark, 0.3, [1, 0, 0], 3);
+    quadLegs(k, d.upper, d.lower, 0.13, 0.11, p.dark, p.hoof);
+    return quadJoints(d);
+  }
+  // wolf (the gloamhound, the glintfox, and the wraith hound: the summon in its spectral material)
   const hound = st === 'wraith_hound';
+  const fox = st === 'glintfox';
+  const gloam = st === 'gloamhound';
   const d = { hipH: 0.62, len: 0.82, halfW: 0.14, upper: 0.3, lower: 0.31, neckY: 0.14, jaw: [0, -0.06, -0.14] as V3 };
   const body = k.at(Q.body);
   body.sphere(0.29, 7, 5, p.body, { pos: [0, 0, 0.04], scale: [0.85, 0.95, 1.6], jitter: 0.07 });
@@ -339,18 +373,34 @@ function buildQuad(k: Kit, p: Pal): Joint[] {
   body.cone(0.16, 0.24, 5, p.dark, { pos: [0, -0.2, -0.32], rot: [PI, 0, 0] });
   body.sphere(0.22, 6, 4, p.belly, { pos: [0, -0.1, 0.06], scale: [0.8, 0.7, 1.5] });
   if (hound) for (let i = 0; i < 5; i++) body.cone(0.06, 0.3, 4, s.accent, { pos: [0, 0.24, -0.25 + i * 0.13], rot: [0.9, 0, 0], glow: 0.8 });
+  if (fox) body.sphere(0.2, 6, 4, '#f6efe0', { pos: [0, -0.06, -0.32], scale: [0.8, 1, 0.7] }); // white bib
+  if (gloam) {
+    // the Huntsman's hounds: a studded collar and a pale stripe
+    body.cyl(0.25, 0.27, 0.07, 7, '#3a2a1c', { pos: [0, 0.1, -0.42], rot: [1.2, 0, 0] });
+    for (let i = 0; i < 6; i++) body.cone(0.02, 0.06, 3, '#b0b0b0', { pos: [Math.cos(i * 1.05) * 0.26, 0.1 + Math.sin(i * 1.05) * 0.2, -0.42], rot: [0, 0, i * 1.05 - HALF] });
+    body.box(0.06, 0.03, 0.6, '#8a9ab0', { pos: [0, 0.27, 0.05] });
+  }
   const head = k.at(Q.head);
   head.sphere(0.16, 6, 4, p.body, { pos: [0, 0.05, -0.1], scale: [1, 0.9, 1.1] });
   head.cyl(0.05, 0.085, 0.22, 5, p.body, { pos: [0, 0.0, -0.27], rot: [-HALF + 0.1, 0, 0] });
   head.ball(0.035, '#1a1410', { pos: [0, 0.02, -0.38], detail: 0 });
   head.pair((b, o) => b.cone(0.06, 0.17, 4, p.dark, { ...o, scale: [1, 1, 0.6] }), { pos: [0.08, 0.22, -0.04], rot: [-0.15, 0, -0.18] });
-  eyes(head, 0.07, 0.09, -0.19, 0.024, hound ? { ...s, glowEyes: true } : s);
+  if (fox) {
+    head.pair((b, o) => b.cone(0.07, 0.22, 4, p.body, { ...o, scale: [1, 1, 0.55] }), { pos: [0.08, 0.25, -0.04], rot: [-0.1, 0, -0.25] });
+    head.pair((b, o) => b.ball(0.06, '#f6efe0', { ...o, detail: 0 }), { pos: [0.07, -0.02, -0.25] }); // white cheeks
+  }
+  eyes(head, 0.07, 0.09, -0.19, 0.024, hound || gloam ? { ...s, glowEyes: true } : s);
   const jaw = k.at(Q.jaw);
   jaw.box(0.08, 0.04, 0.2, p.light, { pos: [0, -0.01, -0.1] });
   jaw.pair((b, o) => b.cone(0.012, 0.05, 3, '#ffffff', { ...o, rot: [PI, 0, 0] }), { pos: [0.03, 0.035, -0.17] });
   const tail = k.at(Q.tail);
-  horn(tail, [0, 0, 0], [0, -0.2, 1], 0.42, 0.09, p.dark, 0.3, [1, 0, 0], 3);
-  quadLegs(k, d.upper, d.lower, 0.06, 0.045, p.dark, p.deep, { paw: true });
+  if (fox) {
+    // the Glintfox: a huge bushy tail with a white tip that glints
+    horn(tail, [0, 0, 0], [0, 0.35, 1], 0.5, 0.16, p.body, -0.25, [1, 0, 0], 3);
+    tail.ball(0.12, '#fff8e8', { pos: [0, 0.32, 0.46], detail: 0, scale: [1, 1, 1.3] });
+    for (let i = 0; i < 4; i++) tail.ball(0.025, '#fff2a0', { pos: [Math.cos(i * 1.6) * 0.1, 0.2 + i * 0.05, 0.2 + i * 0.08], glow: 1, detail: 0 });
+  } else horn(tail, [0, 0, 0], [0, -0.2, 1], 0.42, 0.09, p.dark, 0.3, [1, 0, 0], 3);
+  quadLegs(k, d.upper, d.lower, 0.06, 0.045, fox ? '#2a1a14' : p.dark, p.deep, { paw: true });
   void glow;
   return quadJoints(d);
 }
@@ -514,21 +564,38 @@ function weapon(k: Kit, joint: number, fore: number, kind: string, p: Pal, size 
     b.cyl(0.11, 0.05, 0.6, 6, '#6a4a2a', { pos: at(0.38), rot, jitter: 0.1 });
     for (let i = 0; i < 4; i++) b.cone(0.02, 0.07, 3, '#8a8a8a', { pos: [Math.cos(i * 1.6) * 0.1, at(0.5 + i * 0.05)[1], at(0.5 + i * 0.05)[2]], rot: [0, 0, -HALF + i * 1.6] });
   } else if (kind === 'hammer') {
+    // carried head-down ahead of the feet (raised overhead, the head comes up for the slam)
     const L = 1.3 * size;
-    b.cyl(0.04, 0.04, L, 6, '#4a3a2a', { pos: at(L / 2 - 0.25), rot });
-    const hp = at(L - 0.25);
+    const down = (len: number): V3 => [0, y - Math.cos(0.45) * len, -Math.sin(0.45) * len];
+    const rot: V3 = [-0.45, 0, 0];
+    b.cyl(0.04, 0.04, L, 6, '#4a3a2a', { pos: down(L / 2 - 0.25), rot });
+    const hp = down(L - 0.25);
     b.box(0.5, 0.3, 0.3, '#6e6e6a', { pos: hp, rot, jitter: 0.06 });
     b.box(0.52, 0.06, 0.32, '#8a7a50', { pos: [hp[0], hp[1], hp[2]], rot });
     b.box(0.08, 0.12, 0.32, k.spec.accent, { pos: [0.27, hp[1], hp[2]], rot, glow: 0.7 });
     b.box(0.08, 0.12, 0.32, k.spec.accent, { pos: [-0.27, hp[1], hp[2]], rot, glow: 0.7 });
+  } else if (kind === 'spear' || kind === 'keystaff') {
+    const L = (kind === 'spear' ? 1.7 : 2.0) * size;
+    b.cyl(0.025, 0.03, L, 5, kind === 'spear' ? '#6a4a2a' : '#c8a050', { pos: at(L / 2 - 0.5), rot });
+    const tip = at(L - 0.5);
+    if (kind === 'spear') {
+      b.cone(0.05, 0.26, 4, p.metal, { pos: at(L - 0.37), rot, scale: [1, 1, 0.4] });
+      b.box(0.03, 0.12, 0.03, '#b03a2a', { pos: at(L - 0.55), rot });
+    } else {
+      // a keystaff: a gilded ring holding a light
+      b.add(new THREE.TorusGeometry(0.18, 0.03, 4, 12), '#c8a050', { pos: tip, rot: [0.35, 0, 0] });
+      b.ball(0.1, '#ffe9a0', { pos: tip, glow: 1, detail: 0 });
+      b.box(0.14, 0.04, 0.04, '#c8a050', { pos: at(L - 0.78), rot });
+    }
   } else if (kind === 'bow') {
     // vertical in the left hand: two limbs and a string
     const g = k.spec.spectral ? k.spec.accent : '#6a4a2a';
+    // limbs along the forearm's Z: the bow hangs level at rest and stands upright when aimed (arm raised)
     const by = y;
-    b.box(0.035, 0.42, 0.035, g, { pos: [0, by + 0.2, -0.06], rot: [-0.25, 0, 0] });
-    b.box(0.035, 0.42, 0.035, g, { pos: [0, by - 0.2, -0.06], rot: [0.25, 0, 0] });
-    b.box(0.045, 0.12, 0.05, p.leather, { pos: [0, by, -0.02] });
-    b.box(0.006, 0.8, 0.006, '#e8e0d0', { pos: [0, by, 0.04], glow: k.spec.spectral ? 0.8 : 0 });
+    b.box(0.035, 0.035, 0.42, g, { pos: [0, by - 0.06, -0.2], rot: [0.25, 0, 0] });
+    b.box(0.035, 0.035, 0.42, g, { pos: [0, by - 0.06, 0.2], rot: [-0.25, 0, 0] });
+    b.box(0.045, 0.05, 0.12, p.leather, { pos: [0, by - 0.02, 0] });
+    b.box(0.006, 0.006, 0.8, '#e8e0d0', { pos: [0, by + 0.04, 0], glow: k.spec.spectral ? 0.8 : 0 });
   }
 }
 function s_glowEdge(k: Kit): string {
@@ -610,6 +677,24 @@ function buildBiped(k: Kit, p: Pal): Joint[] {
       weapon(k, B.elR, d.fore, 'club', p);
       return bipedJoints(d);
     }
+    case 'hunt_master': {
+      // the Huntsman: tall, an antlered hood, a fur mantle, a throwing spear
+      const d = avatarDims();
+      humanoid(k, d, { skin: '#c9a27e', shirt: p.body, pants: '#3a3020', boots: '#2a2018', chest: 0.21 });
+      const t = k.at(B.torso);
+      t.cyl(0.3, 0.36, 0.22, 8, '#6a5440', { pos: [0, d.shoulderY - 0.02, 0.02], jitter: 0.14 }); // fur mantle
+      t.cone(0.34, 0.9, 7, shadeHex(p.body, -0.05), { pos: [0, 0.12, 0.14], scale: [1, 1, 0.4], jitter: 0.08 });
+      t.box(0.06, 0.5, 0.36, p.leather, { pos: [0, 0.25, 0], rot: [0, 0, -0.5] });
+      t.cone(0.05, 0.22, 5, '#d8c8a0', { pos: [0.22, 0.02, -0.08], rot: [0, 0, 1.9] }); // hunting horn
+      const h = k.at(B.head);
+      hoodedHead(h, s, shadeHex(p.body, -0.04), '#c9a27e', '#2a2a24');
+      hornPair(h, [0.1, 0.3, 0.06], [0.6, 1, 0.2], 0.42, 0.03, '#d8c8a0', -0.25, [0, 0, 1], 3); // antlers
+      hornPair(h, [0.2, 0.42, 0.08], [1, 0.6, -0.2], 0.16, 0.018, '#d8c8a0', 0.2, [0, 0, 1], 2);
+      weapon(k, B.elR, d.fore, 'spear', p);
+      return bipedJoints(d);
+    }
+    case 'starfall_sentinel':
+    case 'vault_keeper':
     case 'sentinel':
     case 'mud_golem':
     case 'crystal_golem':
@@ -651,10 +736,12 @@ function buildBiped(k: Kit, p: Pal): Joint[] {
 function buildGolem(k: Kit, p: Pal): Joint[] {
   const s = k.spec;
   const st = s.style;
-  const warden = st === 'warden';
+  const warden = st === 'warden' || st === 'vault_keeper';
+  const keeper = st === 'vault_keeper';
+  const star = st === 'starfall_sentinel';
   const d = avatarDims({ wide: warden ? 1.35 : 1.55, arm: warden ? 1.05 : 1.2, leg: warden ? 0.95 : 0.78 });
   const stone = p.body;
-  const glowCol = s.element < 8 ? s.accent : st === 'crystal_golem' ? '#bfe8ff' : st === 'mud_golem' ? '#d0a050' : warden ? '#ffb040' : '#7fd8ff';
+  const glowCol = keeper ? '#ffe08a' : s.element < 8 ? s.accent : st === 'crystal_golem' ? '#bfe8ff' : st === 'mud_golem' ? '#d0a050' : warden ? '#ffb040' : '#7fd8ff';
   const hips = k.at(B.hips);
   hips.box(0.5, 0.26, 0.34, p.dark, { pos: [0, -0.02, 0], jitter: 0.08 });
   const t = k.at(B.torso);
@@ -672,16 +759,18 @@ function buildGolem(k: Kit, p: Pal): Joint[] {
   if (!lumpy) for (let i = 0; i < 3; i++) t.box(0.03, 0.2, 0.02, glowCol, { pos: [-0.2 + i * 0.2, 0.36, -0.215], rot: [0, 0, (i - 1) * 0.6], glow: 0.9 });
   // shoulders: boulders / pauldrons / crystals
   for (const side of [-1, 1]) {
+    if (star) for (let i = 0; i < 3; i++) t.add(new THREE.OctahedronGeometry(0.1 + i * 0.03, 0), i === 1 ? '#e8e0ff' : glowCol, { pos: [side * (0.3 + i * 0.07), d.shoulderY + 0.2 + i * 0.05, 0.04], scale: [0.6, 1.6, 0.6], rot: [0, 0, side * -0.5], glow: 0.9 });
     if (st === 'crystal_golem') for (let i = 0; i < 4; i++) t.cone(0.07 + i * 0.01, 0.34 + i * 0.06, 5, i % 2 ? glowCol : shadeHex(glowCol, -0.1), { pos: [side * (0.3 + i * 0.04), d.shoulderY + 0.1, -0.05 + i * 0.06], rot: [0.3 + i * 0.1, 0, side * -(0.4 + i * 0.15)], glow: 0.5 });
     else t.box(0.3, 0.22, 0.34, warden ? '#5a5048' : stone, { pos: [side * (d.shoulderX + 0.02), d.shoulderY + 0.06, 0], rot: [0, 0, side * -0.3], jitter: 0.08 });
   }
-  if (warden || st === 'mud_golem') for (let i = 0; i < 6; i++) t.ball(0.07, '#5a7a30', { pos: [(i - 2.5) * 0.11, d.shoulderY + 0.12, 0.08 + (i % 2) * 0.06], scale: [1.2, 0.5, 1], detail: 0 }); // moss
+  if (st === 'warden' || st === 'mud_golem') for (let i = 0; i < 6; i++) t.ball(0.07, '#5a7a30', { pos: [(i - 2.5) * 0.11, d.shoulderY + 0.12, 0.08 + (i % 2) * 0.06], scale: [1.2, 0.5, 1], detail: 0 }); // moss
   if (warden) {
     // a tattered tabard and a mossy cape
-    t.box(0.34, 0.6, 0.03, '#6a2a24', { pos: [0, 0.0, -0.22] });
+    t.box(0.34, 0.6, 0.03, keeper ? '#2a3a6a' : '#6a2a24', { pos: [0, 0.0, -0.22] });
     t.box(0.22, 0.08, 0.035, '#c8a050', { pos: [0, 0.2, -0.235] });
+    if (keeper) for (let i = 0; i < 3; i++) t.box(0.74, 0.04, 0.44, '#c8a050', { pos: [0, 0.18 + i * 0.16, 0], glow: 0.1 }); // gilded bands
     const cape = k.at(B.tail);
-    cape.box(0.66, 1.1, 0.04, '#3a4a2a', { pos: [0, 0.0, 0.08], jitter: 0.1 });
+    cape.box(0.66, 1.1, 0.04, keeper ? '#2a3a6a' : '#3a4a2a', { pos: [0, 0.0, 0.08], jitter: 0.1 });
   }
   // arms: thick stone limbs and big fists
   for (const [sh, el] of [
@@ -709,11 +798,17 @@ function buildGolem(k: Kit, p: Pal): Joint[] {
   }
   // a small head sunk between the shoulders
   const h = k.at(B.head);
-  if (warden) {
+  if (keeper) {
+    // a hooded stone face with a glowing slit and a crown of keys
+    h.box(0.28, 0.32, 0.28, '#7a7468', { pos: [0, 0.12, 0] });
+    h.sphere(0.24, 7, 4, '#2a3a6a', { pos: [0, 0.16, 0.03], thetaLen: PI * 0.6 });
+    h.box(0.2, 0.04, 0.03, glowCol, { pos: [0, 0.14, -0.145], glow: 1 });
+    for (let i = 0; i < 5; i++) h.box(0.03, 0.16, 0.03, '#c8a050', { pos: [(i - 2) * 0.07, 0.36, 0], rot: [0, 0, (i - 2) * 0.2] });
+  } else if (warden) {
     h.box(0.3, 0.32, 0.3, '#5a5048', { pos: [0, 0.12, 0] });
     h.box(0.22, 0.05, 0.03, glowCol, { pos: [0, 0.15, -0.155], glow: 1 });
     demonHorns(h, 'curl', '#bfb49a', 0, 0.22);
-  } else if (st === 'sentinel') {
+  } else if (st === 'sentinel' || star) {
     h.box(0.26, 0.24, 0.26, stone, { pos: [0, 0.06, 0], rot: [0, PI / 4, 0] });
     h.box(0.04, 0.1, 0.04, glowCol, { pos: [0, 0.08, -0.17], glow: 1 });
     h.cone(0.06, 0.2, 4, p.dark, { pos: [0, 0.27, 0] });
@@ -722,7 +817,9 @@ function buildGolem(k: Kit, p: Pal): Joint[] {
     eyes(h, 0.06, 0.08, -0.16, 0.03, { ...s, glowEyes: true, eye: glowCol });
     if (st === 'crystal_golem') h.cone(0.05, 0.26, 4, glowCol, { pos: [0, 0.24, 0], glow: 0.6 });
   }
-  if (warden) weapon(k, B.elR, d.fore, 'hammer', p);
+  if (st === 'warden') weapon(k, B.elR, d.fore, 'hammer', p);
+  if (keeper) weapon(k, B.elR, d.fore, 'keystaff', p);
+  if (star) k.at(B.torso).add(new THREE.OctahedronGeometry(0.14, 0), '#f0e8ff', { pos: [0, 0.36, -0.24], glow: 1 }); // a fallen star in the chest
   return bipedJoints({ ...d, neckY: d.neckY - 0.08 });
 }
 
@@ -1028,6 +1125,9 @@ export function modelFor(spec: ModelSpec): Model {
     midMat,
     height: Math.max(0.3, bb.max.y),
     radius: Math.max(0.3, Math.hypot(Math.max(-bb.min.x, bb.max.x), Math.max(-bb.min.z, bb.max.z))),
+    foot: Math.max(0.3, Math.min(Math.hypot(Math.max(-bb.min.x, bb.max.x), Math.max(-bb.min.z, bb.max.z)), bb.max.y * 0.42)),
+    // the body (joint 0) of a hovering model sits ~0.45 m above the zone's position
+    flyLift: spec.rig === 'floater' || spec.rig === 'winged' ? Math.max(0, joints[0].pos[1] - 0.45) : 0,
     tris: parts.reduce((a, pt) => a + triCount(pt.geo), 0),
     midTris: triCount(mid),
   };

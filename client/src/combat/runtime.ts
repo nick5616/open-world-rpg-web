@@ -87,7 +87,7 @@ export class CombatRuntime {
   private buttons: CombatButtons = blankButtons();
   private actives: Active[] = [];
   private shots: LocalShot[] = [];
-  private pendingClaims = new Map<string, { at: number; x: number; y: number; z: number; kind: 'move' | 'spell' | 'form' }>();
+  private pendingClaims = new Map<string, { at: number; x: number; y: number; z: number; kind: 'move' | 'spell' | 'form'; element: number }>();
   hitstopUntil = 0;
   /** CR 020: the stream this player is firing (HUD, avatar pose). */
   streaming: { spell: SpellDef; start: number } | null = null;
@@ -746,8 +746,11 @@ export class CombatRuntime {
   private predictHit(s: Started, e: RemoteView, origin: { x: number; y: number; z: number }, kind: 'move' | 'spell' | 'form', impactIsOrigin = false): void {
     const now = performance.now();
     const at = { x: e.x, y: e.y + enemyInfo(e).height, z: e.z };
-    fxQueue.push({ t: 'spark', x: at.x, y: at.y, z: at.z, color: s.spell?.color ?? '#fff3c0', at: now });
     const gem = this.timeline.loadout.gem;
+    const heavyHit = kind === 'form' || s.move?.kind === 'heavy';
+    fxQueue.push({ t: 'spark', x: at.x, y: at.y, z: at.z, color: s.spell?.color ?? '#fff3c0', at: now, target: e.id, heavy: heavyHit });
+    // playtest 2: the number takes the colour of what hit (the spell's element, the weapon gem, else physical)
+    const element = s.spell ? (s.spell.element >= 0 ? s.spell.element : 8) : gem >= 0 ? gem : 8;
     spellFx.hit(s.spell ?? null, at.x, at.y, at.z, { tint: !s.spell && gem >= 0 ? ELEMENT_COLORS[gem] : null, heavy: kind === 'form' || s.move?.kind === 'heavy' });
     if (!impactIsOrigin && (s.shot === undefined || s.shot % 3 === 0)) emitSound('impact', { at, element: s.spell?.tree, weapon: this.timeline.weapon().key }); // CR 020: a stream rings every third hit
     if (kind === 'move' || kind === 'form') this.hitstopUntil = Math.max(this.hitstopUntil, now + HITSTOP_MS);
@@ -755,7 +758,7 @@ export class CombatRuntime {
     const claimAt = impactIsOrigin ? origin : localPlayer.pos;
     const yaw = Math.round((((localPlayer.yaw % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)) / (2 * Math.PI) * 65536) & 0xffff;
     this.link.sendHitClaim({ attackSeq: s.seq, attackId: s.id, targetId: e.id, tick: this.link.latestTick(), x: Math.round(claimAt.x * 100), y: Math.round(claimAt.y * 100), z: Math.round(claimAt.z * 100), yaw, pitch: 0 });
-    this.pendingClaims.set(`${s.seq}:${e.id}`, { at: now, ...at, kind });
+    this.pendingClaims.set(`${s.seq}:${e.id}`, { at: now, ...at, kind, element });
   }
 
   /** HitResult: show the number for confirmed hits (refused: nothing). */
@@ -766,7 +769,7 @@ export class CombatRuntime {
     this.probe.confirmed(r.accepted, p?.at ?? 0, performance.now());
     if (!p || !r.accepted) return;
     const kind = r.flags & 1 ? 'crit' : r.flags & 4 ? 'weak' : r.flags & 8 ? 'resist' : 'dealt';
-    pushNumber(p.x, p.y + 0.4, p.z, r.damage, kind);
+    pushNumber(p.x, p.y + 0.4, p.z, r.damage, kind, p.element);
   }
 
   /** Combat Events from the zone. */
@@ -855,16 +858,24 @@ export class CombatRuntime {
       }
       case EV.status:
         spellFx.status(Number(ev.targetId), ev.value);
+        // playtest 2 enemy models: holds (freeze, petrify) and staggers (stun, knockback) in the pose
+        fxQueue.push({ t: 'enemy', what: 'status', enemy: Number(ev.targetId), value: ev.value, at: now });
+        return;
+      case EV.enemyDied:
+        fxQueue.push({ t: 'enemy', what: 'died', enemy: ev.entityId, value: 0, at: now });
         return;
       case EV.shield:
         if (ev.entityId === self || ev.entityId === 0) spellFx.shieldPoints(ev.value);
         else remoteEvent(ev, self, now, spellFx); // CR 022: another player's shield broke
         return;
-      case EV.damage:
-        pushNumber(ev.x / 100, ev.y / 100 + 0.4, ev.z / 100, ev.value, 'dealt');
-        fxQueue.push({ t: 'spark', x: ev.x / 100, y: ev.y / 100, z: ev.z / 100, color: '#fff3c0', at: now });
+      case EV.damage: {
+        // data: u8 HitResult flags (1 crit, 4 weak, 8 resist) | u8 health %
+        const fl = ev.data.length > 0 ? ev.data[0] : 0;
+        pushNumber(ev.x / 100, ev.y / 100 + 0.4, ev.z / 100, ev.value, fl & 1 ? 'crit' : fl & 4 ? 'weak' : fl & 8 ? 'resist' : 'dealt');
+        fxQueue.push({ t: 'spark', x: ev.x / 100, y: ev.y / 100, z: ev.z / 100, color: '#fff3c0', at: now, target: Number(ev.targetId) });
         spellFx.hit(null, ev.x / 100, ev.y / 100, ev.z / 100);
         return;
+      }
       case EV.playerHurt:
         if (ev.entityId === self) {
           pushNumber(localPlayer.pos.x, localPlayer.pos.y + 2.1, localPlayer.pos.z, ev.value, 'taken');
@@ -872,6 +883,7 @@ export class CombatRuntime {
         }
         return;
       case EV.evaded:
+        if (ev.value === 2) fxQueue.push({ t: 'enemy', what: 'parried', enemy: Number(ev.targetId), value: 0, at: now }); // the attacker reels
         if (ev.entityId === self) {
           toast(ev.value === 2 ? 'Parried!' : 'Dodged!');
           this.probe.strike(now, true);

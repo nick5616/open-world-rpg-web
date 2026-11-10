@@ -62,7 +62,11 @@ const _hsl = { h: 0, s: 0, l: 0 };
  */
 export class PartBuilder {
   private list: THREE.BufferGeometry[] = [];
-  constructor(private readonly rand: () => number = rng(1)) {}
+  constructor(
+    private readonly rand: () => number = rng(1),
+    /** Spectral bodies: every colour pulled toward this one (the summon's element). */
+    private readonly tint: THREE.Color | null = null,
+  ) {}
 
   get empty(): boolean {
     return this.list.length === 0;
@@ -89,6 +93,7 @@ export class PartBuilder {
     const jit = o.jitter ?? 0.06;
     const shade = o.shade ?? 0.18;
     _c.set(color);
+    if (this.tint) _c.lerp(this.tint, 0.78);
     _c.getHSL(_hsl);
     // one jitter per triangle: the facets read as painted planes
     for (let t = 0; t < n; t += 3) {

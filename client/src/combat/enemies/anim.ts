@@ -24,7 +24,7 @@
 
 import { COMBAT, type EnemyAttackDef } from '@lodestone/contracts';
 
-export type AttackKind = 'bite' | 'swipe' | 'slam' | 'punch' | 'stomp' | 'charge' | 'leap' | 'shoot' | 'spit' | 'sting' | 'cast' | 'nova' | 'bump';
+export type AttackKind = 'bite' | 'swipe' | 'slam' | 'punch' | 'stomp' | 'charge' | 'leap' | 'shoot' | 'spit' | 'sting' | 'throw' | 'cast' | 'nova' | 'bump';
 
 export interface AttackAnim {
   key: string;
@@ -50,6 +50,11 @@ const BY_KEY: Record<string, AttackKind> = {
   grave_slam: 'slam',
   golem_punch: 'punch',
   stinger: 'sting',
+  hunt_spear: 'throw',
+  star_slam: 'slam',
+  behemoth_quake: 'stomp',
+  keeper_sigil: 'cast',
+  keeper_sweep: 'swipe',
   headbutt: 'bite',
   gore: 'bite',
   lord_meteor: 'cast',

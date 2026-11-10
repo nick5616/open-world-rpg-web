@@ -20,6 +20,9 @@ export type Style =
   | 'ram'
   | 'stalker'
   | 'lurker'
+  | 'glintfox'
+  | 'gloamhound'
+  | 'behemoth'
   // many-legged
   | 'scuttler'
   | 'cave_crawler'
@@ -41,6 +44,9 @@ export type Style =
   | 'void_maw'
   | 'sovereign'
   | 'warden'
+  | 'hunt_master'
+  | 'starfall_sentinel'
+  | 'vault_keeper'
   // floaters
   | 'wisp'
   | 'frost_mote'
@@ -57,7 +63,7 @@ export type Style =
   | 'gale_phantom'
   | 'sunlit_sentinel';
 
-export type Weapon = 'sword' | 'bow' | 'club' | 'cleaver' | 'hammer' | null;
+export type Weapon = 'sword' | 'bow' | 'club' | 'cleaver' | 'hammer' | 'spear' | 'keystaff' | null;
 export type DeathFx = 'splat' | 'smoke' | 'dust' | 'shatter' | 'motes';
 
 export interface ModelSpec {
@@ -99,6 +105,12 @@ const STYLE_RIG: Record<Style, Rig> = {
   ram: 'quadruped',
   stalker: 'quadruped',
   lurker: 'quadruped',
+  glintfox: 'quadruped',
+  gloamhound: 'quadruped',
+  behemoth: 'quadruped',
+  hunt_master: 'biped',
+  starfall_sentinel: 'biped',
+  vault_keeper: 'biped',
   scuttler: 'crawler',
   cave_crawler: 'crawler',
   void_mite: 'crawler',
@@ -136,6 +148,7 @@ export const ALL_STYLES = Object.keys(STYLE_RIG) as Style[];
 
 const KEY_STYLE: Record<string, Style> = {
   starless_sovereign: 'sovereign',
+  thornhide_behemoth: 'behemoth',
 };
 
 /** Fallback by family (an enemy added to combat.yaml without a model of its own). */
@@ -148,6 +161,8 @@ const FAMILY_STYLE: Record<string, Style> = {
   cave: 'cave_crawler',
   demon: 'gloamling',
   boss: 'warden',
+  critter: 'glintfox',
+  hunt: 'gloamhound',
 };
 
 const WEAPON: Partial<Record<Style, Weapon>> = {
@@ -156,6 +171,8 @@ const WEAPON: Partial<Record<Style, Weapon>> = {
   gale_phantom: 'bow',
   brute: 'club',
   warden: 'hammer',
+  hunt_master: 'spear',
+  vault_keeper: 'keystaff',
   sovereign: 'cleaver',
 };
 
@@ -192,9 +209,9 @@ export function modelSpec(info: Pick<EnemyInfo, 'key' | 'family' | 'behavior' | 
   const boss = info.affix === 7 || info.family === 'boss' || style === 'sovereign';
   const elite = info.affix >= 1 && info.affix <= 3;
   const accent = el < 8 ? ELEMENT_COLORS[el] : lighten(info.color);
-  const glowEyes = demon || boss || info.family === 'elemental' || info.family === 'guardian' || style === 'crystal_golem' || style === 'gloom_bat' || style === 'cave_crawler';
+  const glowEyes = demon || boss || style === 'gloamhound' || info.family === 'elemental' || info.family === 'guardian' || style === 'crystal_golem' || style === 'gloom_bat' || style === 'cave_crawler';
   const eye = demon ? (el < 8 ? ELEMENT_COLORS[el] : '#ff3b2a') : glowEyes ? (el < 8 ? ELEMENT_COLORS[el] : style === 'cave_crawler' ? '#c8ff6a' : '#bfe8ff') : '#1a1410';
-  const deathFx: DeathFx = demon ? 'smoke' : style === 'crystal_golem' || style === 'sentinel' || style === 'mud_golem' ? 'shatter' : (DEATH[rig] ?? 'dust');
+  const deathFx: DeathFx = demon ? 'smoke' : style === 'crystal_golem' || style === 'sentinel' || style === 'mud_golem' || style === 'starfall_sentinel' || style === 'vault_keeper' ? 'shatter' : (DEATH[rig] ?? 'dust');
   const spec: ModelSpec = {
     key: info.key,
     variant: `${style}|${el}`,

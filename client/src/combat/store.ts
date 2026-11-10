@@ -12,6 +12,8 @@ export interface DamageNumber {
   value: number;
   kind: 'dealt' | 'taken' | 'heal' | 'crit' | 'weak' | 'resist' | 'miss';
   at: number;
+  /** Playtest 2: the element of what hit (0-7; 8 / absent physical): the number's colour. */
+  element?: number;
 }
 
 export interface BossBar {
@@ -80,14 +82,16 @@ export function toast(text: string): void {
  * areas, runes...) go through the spell FX engine instead (fx/api.ts).
  */
 export type Fx =
-  | { t: 'spark'; x: number; y: number; z: number; color: string; at: number }
+  | { t: 'spark'; x: number; y: number; z: number; color: string; at: number; target?: number; heavy?: boolean }
   | { t: 'number'; n: DamageNumber }
-  | { t: 'telegraph'; enemy: number; shape: number; x: number; y: number; z: number; yaw: number; radius: number; reach: number; arc: number; width: number; windupMs: number; at: number }
+  | { t: 'telegraph'; enemy: number; shape: number; x: number; y: number; z: number; yaw: number; radius: number; reach: number; arc: number; width: number; windupMs: number; attackId?: number; activeMs?: number; at: number }
+  // playtest 2 enemy models: what the enemy renderer animates (201 deaths, 206 statuses, 207 parries)
+  | { t: 'enemy'; what: 'died' | 'status' | 'parried'; enemy: number; value: number; at: number }
   | { t: 'swing'; arc: number; reach: number; color: string; durationMs: number; at: number };
 
 export const fxQueue: Fx[] = [];
 
 let numId = 1;
-export function pushNumber(x: number, y: number, z: number, value: number, kind: DamageNumber['kind']): void {
-  fxQueue.push({ t: 'number', n: { id: numId++, x, y, z, value, kind, at: performance.now() } });
+export function pushNumber(x: number, y: number, z: number, value: number, kind: DamageNumber['kind'], element?: number): void {
+  fxQueue.push({ t: 'number', n: { id: numId++, x, y, z, value, kind, at: performance.now(), element } });
 }
