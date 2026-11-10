@@ -442,19 +442,19 @@ func (s *Server) vaultData(lv *liveVault, now float64) []byte {
 		}
 	}
 	b, _ := json.Marshal(struct {
-		Site     int             `json:"site"`
-		Name     string          `json:"name"`
-		Phase    int             `json:"phase"`
-		Puzzle   string          `json:"puzzle"`
-		Title    string          `json:"title"`
-		Hint     string          `json:"hint"`
-		Parts    []vaultPartWire `json:"parts"`
-		Keeper   int             `json:"keeper"`
-		X        float64         `json:"x"`
-		Z        float64         `json:"z"`
-		R        float64         `json:"r"`
-		HoldS    float64         `json:"holdS,omitempty"`
-		Element  string          `json:"element,omitempty"`
+		Site    int             `json:"site"`
+		Name    string          `json:"name"`
+		Phase   int             `json:"phase"`
+		Puzzle  string          `json:"puzzle"`
+		Title   string          `json:"title"`
+		Hint    string          `json:"hint"`
+		Parts   []vaultPartWire `json:"parts"`
+		Keeper  int             `json:"keeper"`
+		X       float64         `json:"x"`
+		Z       float64         `json:"z"`
+		R       float64         `json:"r"`
+		HoldS   float64         `json:"holdS,omitempty"`
+		Element string          `json:"element,omitempty"`
 	}{v.Site.Index, v.Name, lv.phase, v.Puzzle.Key, v.Puzzle.Name, v.Hint, parts, keeperHP, v.Site.X, v.Site.Z, v.Site.R, v.Puzzle.HoldS, v.Puzzle.Element})
 	return b
 }

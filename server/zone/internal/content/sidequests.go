@@ -217,7 +217,7 @@ func SideQuest(w *World, t *Town, npc, seq int, nowMs int64) *Offer {
 		}
 		kv["other"], kv["otherNpc"], kv["where"] = o.Name, dest.Name, quests.Where(t.X, t.Z, o.X, o.Z, t.Name)
 		q.Steps = []quests.Step{{Text: Fill(k.Step, kv), Note: Fill(k.Note, kv), Say: Fill(thanks, kv),
-			Obj: quests.Objective{Kind: quests.ObjGive, Role: dest.Role, Settlement: o.Index, NPC: dest.Index + 1, Site: -1, Items: []quests.ItemQty{{Item: Parcel, Qty: 1}}},
+			Obj:     quests.Objective{Kind: quests.ObjGive, Role: dest.Role, Settlement: o.Index, NPC: dest.Index + 1, Site: -1, Items: []quests.ItemQty{{Item: Parcel, Qty: 1}}},
 			Markers: []quests.Marker{marker(dest.X, dest.Z, 0, dest.Name+" in "+o.Name), marker(o.X, o.Z, o.Radius, o.Name)}}}
 		q.Start = []quests.ItemQty{{Item: Parcel, Qty: 1}}
 		q.Gold += int(math.Hypot(o.X-t.X, o.Z-t.Z) / 80)

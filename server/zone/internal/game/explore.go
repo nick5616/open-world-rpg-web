@@ -483,7 +483,7 @@ func (s *Server) localState(sess *session) localsave.State {
 	st.Progress.Pins = p.PinsJSON()
 	combatIntoLocal(e, (*[]byte)(&st.Progress.SkillTree), &st.Progress.SpellsKnown, &st.Progress.SpellsEquipped) // WP13
 	itemsIntoLocal(sess, &st)                                                                                    // WP14
-	contentIntoLocal(sess, &st.Content) // content.go
+	contentIntoLocal(sess, &st.Content)                                                                          // content.go
 	questsIntoLocal(sess, &st.Quests)                                                                            // quests.go
 	st.LastWaypoint = nil
 	if p.LastWaypoint >= 0 {
