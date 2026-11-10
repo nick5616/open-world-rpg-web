@@ -134,6 +134,7 @@ const st2 = await S('state');
 check(st2.loadouts[0].spells[3] === 'cauterize', `drag to slot 4: loadout 1 = ${JSON.stringify(st2.loadouts[0].spells)}`);
 // Click-to-assign: pick Fireball, then click slot 4 of loadout 2.
 await page.click('[data-testid="skill-node-fireball"]');
+await page.click('[data-testid="skill-slot-tab-1"]'); // the sidebar shows one loadout at a time
 await page.click('[data-testid="skill-slot-1-3"]');
 await sleep(300);
 const st3 = await S('state');

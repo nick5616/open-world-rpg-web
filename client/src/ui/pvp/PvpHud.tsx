@@ -11,6 +11,7 @@ import { emitSound } from '../../audio/bridge';
 import { DUEL_PHASE } from './events';
 import { prunePvp, usePvp, type Banner } from './store';
 import { SwordsIcon } from './icons';
+import { BORDER, BORDER_GOLD, BTN_BG, TEXT, TEXT_2 } from '../spellcards/theme';
 
 const RED = '#ff5d5d';
 const GOLD = '#ffd166';
@@ -222,18 +223,18 @@ export function PvpPanelSection() {
   const on = flagged && !turningOff;
   return (
     <div data-testid="pvp-panel" style={{ marginTop: 12 }}>
-      <div style={{ font: '600 12px system-ui, sans-serif', letterSpacing: 1, textTransform: 'uppercase', color: GOLD, opacity: 0.85, marginBottom: 4 }}>PvP</div>
+      <div style={{ font: '600 12px system-ui, sans-serif', letterSpacing: 1, textTransform: 'uppercase', color: GOLD, marginBottom: 4 }}>PvP</div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <SwordsIcon size={20} color={on ? RED : '#868e96'} />
+        <SwordsIcon size={20} color={on ? RED : TEXT_2} />
         <span style={{ flex: 1 }}>
-          {on ? <b style={{ color: RED }}>Flagged for PvP</b> : turningOff ? <span>Turning off…</span> : <span style={{ opacity: 0.8 }}>Not flagged</span>}
+          {on ? <b style={{ color: RED }}>Flagged for PvP</b> : turningOff ? <span>Turning off…</span> : <span style={{ color: TEXT_2 }}>Not flagged</span>}
           {flagged && safe && <span style={{ color: GREEN, fontSize: 11, marginLeft: 6 }}>safe zone · {safeName}</span>}
         </span>
-        <button data-testid="pvp-toggle" disabled={!actions} onClick={() => actions?.setFlag(!on)} style={{ font: '12px system-ui, sans-serif', padding: '3px 12px', cursor: 'pointer' }}>
+        <button data-testid="pvp-toggle" disabled={!actions} onClick={() => actions?.setFlag(!on)} style={{ font: '12px system-ui, sans-serif', padding: '3px 12px', cursor: actions ? 'pointer' : 'default', borderRadius: 4, background: BTN_BG, color: actions ? TEXT : TEXT_2, border: `1px solid ${actions ? BORDER_GOLD : BORDER}` }}>
           {on ? 'Turn off' : 'Turn on'}
         </button>
       </div>
-      <div style={{ fontSize: 11, opacity: 0.65, marginTop: 4, lineHeight: 1.45 }}>
+      <div style={{ fontSize: 11.5, color: TEXT_2, marginTop: 4, lineHeight: 1.45 }}>
         Flagged players outside your party can fight each other anywhere but towns and the Haven, at {Math.round(p.damageMult * 100)}% damage; nothing is lost on death. Turning off takes {p.flagOffDelayS} s (longer if you keep fighting); not within {p.combatLockS} s of a fight. Party members duel instead: the Duel button in the party frame, or /duel Name.
       </div>
     </div>
