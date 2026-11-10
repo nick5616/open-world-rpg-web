@@ -1,4 +1,4 @@
-client: http://127.0.0.1:31324
+client: http://127.0.0.1:36491
 mock: {"known":14,"spent":11,"spells":["Ember Flick","Frost Bite","Magma Dash","Spark Shot","Kindling","Fireball","Combustion","Glint","Sunstep","Radiant Lance","Spark Jab","Lightning Strike","Frost Needle","Brittle"]}
 ok   1920x1080: no dropdowns left in the panel
 ok   1920x1080: panel inside the viewport, no horizontal scroll

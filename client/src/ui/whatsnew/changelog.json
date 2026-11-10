@@ -1,5 +1,16 @@
 [
   {
+    "id": "pt2-spell-cards",
+    "date": "2026-11-10",
+    "title": "Spell cards",
+    "items": [
+      "The character screen (C) shows your spells as cards instead of dropdowns: each card shows its school, type (projectile, stream, homing, charge, summon...), tier, damage, mana and cooldown at a glance.",
+      "Hover a card (or tab to it) for everything else: range, status effects, how hard it hits with your gear, and which slots hold it.",
+      "Click a card and then a slot, or drag it onto a slot. The x clears a slot, and you can set up both loadouts from the same screen.",
+      "Text on the character screen is brighter and easier to read."
+    ]
+  },
+  {
     "id": "pt2-weather",
     "date": "2026-11-10",
     "title": "Weather that changes",
