@@ -185,6 +185,8 @@ items:
   tool:torch: {name: Torch, value: 6}
   tool:rope: {name: Rope, value: 10}
   tool:whetstone: {name: Whetstone, value: 8}
+  # playtest 2 mounts (CR 027): blow it (H) to bond with and summon your spirit steed; general stores sell it
+  tool:spirit_whistle: {name: Spirit Whistle, value: 40}
   # ---- currency (not in the spec: WP20's shops and bounties price things, see CR 010) ----
   currency:gold: {name: Gold, value: 1}
 

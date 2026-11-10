@@ -224,8 +224,19 @@ func stepFull(s State, flags uint16, castSlot uint8, yaw, pitch float64, g Groun
 	g = AtLevel(g, s.Pos.Y) // WP09: caves see the ground at the player's level (caves.go)
 	wx, wz := wishDir(flags, yaw)
 	s0 := s
+	// CR 027 (ride.go): a rider can't climb, glide or swim (the step drops
+	// the flag); riding never dashes (no dodge, no held dash).
+	if Mounted(s) && s.Mode != ModeGround && s.Mode != ModeAir {
+		s = Dismount(s)
+	}
+	riding := Mounted(s)
+	dashFlags, dashSlot := flags, castSlot
+	if riding {
+		dashFlags &^= proto.InputFlagDodge | proto.InputFlagChannel
+		dashSlot = 0
+	}
 	grounded := s.Pos.Y <= g.HeightAt(s.Pos.X, s.Pos.Z)+groundEps
-	s, dashing, kind := beginDash(s, flags, castSlot, yaw, pitch, wx, wz, grounded)
+	s, dashing, kind := beginDash(s, dashFlags, dashSlot, yaw, pitch, wx, wz, grounded)
 	gm := g
 	if kind == combatdefs.SustainSkate {
 		gm = skateGround{g} // CR 021: a held skate runs over water
@@ -239,10 +250,16 @@ func stepFull(s State, flags uint16, castSlot uint8, yaw, pitch float64, g Groun
 	case ModeSwim:
 		out = stepSwim(s, flags, wx, wz, gm)
 	default:
-		out = stepWalk(s, flags, wx, wz, gm, dashing)
+		if riding {
+			rx, rz := wishDir(flags&(proto.InputFlagForward|proto.InputFlagLeft|proto.InputFlagRight), yaw)
+			out = stepRide(s, flags, rx, rz, yaw, gm)
+		} else {
+			out = stepWalk(s, flags, wx, wz, gm, dashing)
+		}
 	}
 	out.Dash, out.IFrames = s.Dash, s.IFrames
 	out = collideStep(g, out) // WP09: cave walls and ceilings (caves.go)
+	out = collideHead(g, out) // CR 027: the steed's chest (ride.go)
 	return finish(s0, out)
 }
 
@@ -284,7 +301,7 @@ func finish(prev, s State) State {
 	if family(s.Mode) != family(prev.Mode) {
 		s.Timer = 0
 	}
-	if s.Mode != ModeClimb {
+	if s.Mode != ModeClimb && s.Flags&FlagMounted == 0 { // CR 027: a rider's gait rides in Lunge
 		s.Lunge = 0
 	}
 	if s.Stamina < 0 {
@@ -774,14 +791,36 @@ const MaxLegitHorizontalSpeed = constants.BaseMoveSpeed * constants.SprintMultip
 // previous speed; climbing moves at most at the lunge speed (or mantles). A
 // step that changes mode ran the old mode's physics first (walking into a
 // lake accelerates like walking), so it gets the larger of both bounds.
+//
+// CR 027 (ride.go): mounted speeds are accepted only while mounted. A step
+// that starts and ends in the saddle is bounded by the spur cap (or what it
+// already carried); a step on the ground without a mount or a dash can't
+// gain more than the air-strafe cap over its previous speed beyond the
+// sprint wish speed (or a slide's cap), so a gallop without the flag (which
+// only the zone sets) is a violation even though it is under the generous
+// walk-family bound.
 func MaxHorizontalSpeed(prev, next State) float64 {
 	const slack = 1e-6
+	if Mounted(prev) && Mounted(next) {
+		return max(MaxRideSpeed, HorizontalSpeed(prev)) + slack
+	}
 	b := max(modeSpeedBound(next.Mode, prev), modeSpeedBound(prev.Mode, prev))
-	if prev.Dash > 0 || next.Dash > 0 {
+	dash := prev.Dash > 0 || next.Dash > 0
+	if dash {
 		b = max(b, MaxDashSpeed) // WP13 dash.go
+	}
+	if Mounted(prev) {
+		b = max(b, MaxRideSpeed, HorizontalSpeed(prev)) // the step that throws or drops the rider
+	} else if !dash && prev.Mode == ModeGround && next.Mode == ModeGround {
+		b = max(HorizontalSpeed(prev)+constants.AirCapSpeed, MaxWalkWishSpeed, constants.SlideMaxSpeed)
 	}
 	return b + slack
 }
+
+// MaxWalkWishSpeed is the fastest a person on foot wishes to go (sprint):
+// friction and ground acceleration never carry a grounded step past it, or
+// past the speed it already had.
+const MaxWalkWishSpeed = constants.BaseMoveSpeed * constants.SprintMultiplier
 
 func modeSpeedBound(mode int, prev State) float64 {
 	switch mode {

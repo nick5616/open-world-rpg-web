@@ -47,7 +47,7 @@ type Ware struct {
 // Item ids are contracts/items.yaml keys (WP14; itemdefs tests check every
 // one exists). Prices are in gold (currency:gold, CR 010).
 var wares = [5][]Ware{
-	{{"food:bread", 4, 20}, {"tool:torch", 6, 12}, {"tool:rope", 10, 6}, {"tool:pickaxe", 40, 3}, {"wood:firewood", 2, 40}}, // general (CR 025: firewood for camps)
+	{{"food:bread", 4, 20}, {"tool:torch", 6, 12}, {"tool:rope", 10, 6}, {"tool:pickaxe", 40, 3}, {"wood:firewood", 2, 40}, {"tool:spirit_whistle", 40, 5}}, // general (CR 025: firewood for camps; CR 027: the spirit steed's whistle)
 	{{"food:bread", 3, 30}, {"food:cheese", 6, 12}, {"food:apple", 2, 40}, {"food:stew", 9, 8}},                             // provisions
 	{{"herb:heartleaf", 5, 15}, {"potion:health", 25, 6}, {"potion:antidote", 18, 6}, {"seed:wardbloom", 30, 4}},            // herbalist
 	{{"tool:pickaxe", 35, 4}, {"ingot:copper", 12, 10}, {"ingot:iron", 20, 8}, {"tool:whetstone", 8, 10}},                   // tools

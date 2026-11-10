@@ -1324,6 +1324,17 @@
    "sockets": 0
   },
   {
+   "key": "tool:spirit_whistle",
+   "name": "Spirit Whistle",
+   "category": "tool",
+   "kind": "tool",
+   "stack": 1,
+   "pouch": "inv",
+   "level": 1,
+   "value": 40,
+   "sockets": 0
+  },
+  {
    "key": "currency:gold",
    "name": "Gold",
    "category": "currency",
