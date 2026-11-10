@@ -99,7 +99,7 @@ describe('weather blending', () => {
     const f = forecast(seed, cl, 4 * 512 + 10, 4 * 512 + 10, t);
     expect(f.inS).toBeCloseTo(50, 5);
     expect(f.next).toBe(stateAtStep(seed, cl, 4, 4, windowStart(seed, 4, 4, 300)));
-    expect(forecastLine(W.clear, W.thunderstorm, 30)).toBe('Storm rolling in soon');
+    expect(forecastLine(W.clear, W.thunderstorm, 30)).toBe('Storm coming soon');
     expect(forecastLine(W.rain, W.cloudy, 150)).toBe('Clearing in 3 min');
     expect(forecastLine(W.cloudy, W.snow, 90)).toBe('Snow in 2 min');
     expect(forecastLine(W.clear, W.clear, 30)).toBe('');

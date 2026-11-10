@@ -1,0 +1,13 @@
+CR 030 weather: G5 scale checks (Windows, 16 threads, go test ./internal/game in server/zone)
+
+LODESTONE_WIRE_DIGEST=1 go test ./internal/game -run WireDigest -v
+  main 1b56e67:  p90_e600 831bb7f4b4b9511ac1a06c34cdafcda36e147b8f3b9d9bb6798b04b15af6bbde  p300_e2000 8c29d4086261064f4f15f3445e5a349a40d72d966f9a5a4d6898a27a4b397cfc
+  pt2/weather:   p90_e600 831bb7f4b4b9511ac1a06c34cdafcda36e147b8f3b9d9bb6798b04b15af6bbde  p300_e2000 8c29d4086261064f4f15f3445e5a349a40d72d966f9a5a4d6898a27a4b397cfc  (identical)
+  (a first build appended Event 500's weather byte for every zone: c82d7c2b... / f6005881..., +1 byte per clock event per bot;
+   the byte is now sent only by zones that run dynamic weather, which atlas-less worlds such as the scale worlds don't)
+
+go test ./internal/game -run XXX -bench BenchmarkScale/p300_e2000 -count 2, alternating main (a detached checkout of 1b56e67) and head, twice
+  main:        cpu-Mcycles 86.24 87.78 86.25 87.45; kbps/client 134.5 134.2 134.7 134.2; p99-ms 3.86 4.00 4.16 3.99; max-ms 4.52 4.23 4.63 4.15
+  pt2/weather: cpu-Mcycles 86.97 87.49 88.45 87.24; kbps/client 134.2 134.0 135.1 134.0; p99-ms 4.01 3.83 4.24 4.12; max-ms 5.03 4.03 5.15 5.01
+  (noise: the scale worlds have no atlas, so no weather field, no lightning and no cold; the per-tick additions are a nil
+   check in stepEnv and weatherTick and one Env.resolve per movement step; 1984-1985 allocs/op both)

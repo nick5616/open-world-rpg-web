@@ -1,5 +1,5 @@
 // The weather on the HUD (CR 030): an icon and name on the clock pill, a
-// short forecast line under it ("Storm rolling in soon"), and your cold
+// short forecast line under it ("Storm coming soon"), and your cold
 // status (Chilled, warm food). Online it sits inside NightHud's clock chip;
 // solo, WeatherHud shows the same pill on its own.
 

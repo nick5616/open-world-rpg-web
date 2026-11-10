@@ -189,14 +189,14 @@ export const weatherIcon = (s: number) => ICONS[s] ?? ICONS[0];
 const isWetS = (s: number) => s === W.drizzle || s === W.rain || s === W.thunderstorm;
 const isSnowS = (s: number) => s === W.snow || s === W.snowstorm;
 
-/** A short forecast line: "Storm rolling in", "Clearing soon", "Snow easing". */
+/** A short forecast line: "Storm coming soon", "Clearing in 3 min", "Snow easing soon". */
 export function forecastLine(now: number, next: number, inS: number): string {
   if (!Number.isFinite(inS) || next === now || inS > 240) return '';
   const soon = inS < 60 ? 'soon' : `in ${Math.max(1, Math.round(inS / 60))} min`;
-  if (next === W.thunderstorm) return `Storm rolling in ${soon}`;
+  if (next === W.thunderstorm) return `Storm coming ${soon}`;
   if (next === W.snowstorm) return `Blizzard coming ${soon}`;
   if (next === W.sandstorm) return `Sandstorm coming ${soon}`;
-  if (next === W.fog) return `Fog rolling in ${soon}`;
+  if (next === W.fog) return `Fog coming ${soon}`;
   if (isWetS(next) && !isWetS(now)) return `Rain ${soon}`;
   if (isSnowS(next) && !isSnowS(now)) return `Snow ${soon}`;
   if (isWetS(now) && !isWetS(next)) return `Clearing ${soon}`;

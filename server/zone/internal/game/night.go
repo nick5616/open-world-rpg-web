@@ -273,16 +273,16 @@ func (s *Server) clockData() []byte {
 		}
 	}
 	d = append(d, rain)
-	// CR 030: d[18] = 0 no dynamic weather (WP10's global rain), 1 seeded
-	// weather, 2 + s forced to state s everywhere (dev).
-	wx := byte(0)
+	// CR 030: d[18] = 1 seeded weather, 2 + s forced to state s everywhere
+	// (dev); absent = no dynamic weather (WP10's global rain: atlas-less
+	// worlds send the WP15 event unchanged, so the scale wire is too).
 	if w := s.cfg.Weather; s.weatherOn() {
-		wx = 1
+		wx := byte(1)
 		if w.Override >= 0 {
 			wx = byte(2 + w.Override)
 		}
+		d = append(d, wx)
 	}
-	d = append(d, wx)
 	return d
 }
 
