@@ -1,6 +1,6 @@
 {
   "cinder_spray": {
-    "accepted": 19,
+    "accepted": 17,
     "refused": 0,
     "watcherFx": {
       "rings": 0,
@@ -18,17 +18,17 @@
       "projectiles": 0,
       "ongoing": 0,
       "statuses": 0,
-      "particles": 14,
+      "particles": 15,
       "casts": 0,
       "remoteCasts": 0,
-      "shots": 23,
-      "impacts": 23,
-      "maxUpdateMs": 3.7000000178813934,
+      "shots": 22,
+      "impacts": 22,
+      "maxUpdateMs": 3,
       "maxCastMs": 0
     }
   },
   "arc_sparks": {
-    "accepted": 26,
+    "accepted": 27,
     "refused": 0,
     "watcherFx": {
       "rings": 0,
@@ -40,27 +40,27 @@
       "beams": 0,
       "shells": 1,
       "lights": 0,
-      "bolts": 4,
-      "boltSegments": 32,
+      "bolts": 3,
+      "boltSegments": 24,
       "spikes": 0,
       "projectiles": 0,
       "ongoing": 0,
       "statuses": 1,
-      "particles": 4,
+      "particles": 6,
       "casts": 0,
       "remoteCasts": 0,
-      "shots": 50,
-      "impacts": 50,
-      "maxUpdateMs": 3.7000000178813934,
+      "shots": 47,
+      "impacts": 47,
+      "maxUpdateMs": 3,
       "maxCastMs": 0
     }
   },
   "frost_bubbles": {
-    "accepted": 11,
+    "accepted": 13,
     "refused": 0,
     "watcherFx": {
       "rings": 0,
-      "flashes": 2,
+      "flashes": 1,
       "scorches": 0,
       "sigils": 0,
       "zones": 0,
@@ -74,17 +74,17 @@
       "projectiles": 1,
       "ongoing": 0,
       "statuses": 1,
-      "particles": 289,
+      "particles": 263,
       "casts": 0,
       "remoteCasts": 0,
-      "shots": 64,
-      "impacts": 50,
-      "maxUpdateMs": 3.7000000178813934,
+      "shots": 60,
+      "impacts": 47,
+      "maxUpdateMs": 3,
       "maxCastMs": 0
     }
   },
   "starfall_hail": {
-    "accepted": 5,
+    "accepted": 8,
     "refused": 0,
     "watcherFx": {
       "rings": 0,
@@ -102,12 +102,12 @@
       "projectiles": 0,
       "ongoing": 0,
       "statuses": 0,
-      "particles": 11,
+      "particles": 15,
       "casts": 0,
       "remoteCasts": 0,
-      "shots": 82,
-      "impacts": 50,
-      "maxUpdateMs": 5.300000011920929,
+      "shots": 77,
+      "impacts": 47,
+      "maxUpdateMs": 3.9000000059604645,
       "maxCastMs": 0
     }
   },
@@ -133,10 +133,10 @@
       "particles": 0,
       "casts": 1,
       "remoteCasts": 1,
-      "shots": 84,
-      "impacts": 52,
-      "maxUpdateMs": 5.300000011920929,
-      "maxCastMs": 0.7999999821186066
+      "shots": 79,
+      "impacts": 49,
+      "maxUpdateMs": 3.9000000059604645,
+      "maxCastMs": 0.699999988079071
     }
   },
   "storm_seekers": {
@@ -161,10 +161,10 @@
       "particles": 0,
       "casts": 2,
       "remoteCasts": 2,
-      "shots": 87,
-      "impacts": 55,
-      "maxUpdateMs": 5.300000011920929,
-      "maxCastMs": 0.7999999821186066
+      "shots": 82,
+      "impacts": 52,
+      "maxUpdateMs": 3.9000000059604645,
+      "maxCastMs": 0.699999988079071
     }
   },
   "hungering_souls": {
@@ -189,14 +189,14 @@
       "particles": 0,
       "casts": 3,
       "remoteCasts": 3,
-      "shots": 91,
-      "impacts": 59,
-      "maxUpdateMs": 5.300000011920929,
-      "maxCastMs": 0.7999999821186066
+      "shots": 86,
+      "impacts": 56,
+      "maxUpdateMs": 3.9000000059604645,
+      "maxCastMs": 0.699999988079071
     }
   },
   "boulder_heave": {
-    "accepted": 1,
+    "accepted": 0,
     "refused": 0,
     "watcherFx": {
       "rings": 1,
@@ -214,17 +214,17 @@
       "projectiles": 0,
       "ongoing": 0,
       "statuses": 0,
-      "particles": 129,
+      "particles": 141,
       "casts": 4,
       "remoteCasts": 4,
-      "shots": 92,
-      "impacts": 59,
-      "maxUpdateMs": 5.300000011920929,
-      "maxCastMs": 0.7999999821186066
+      "shots": 87,
+      "impacts": 56,
+      "maxUpdateMs": 3.9000000059604645,
+      "maxCastMs": 0.699999988079071
     }
   },
   "whirling_blades": {
-    "accepted": 0,
+    "accepted": 1,
     "refused": 0,
     "watcherFx": {
       "rings": 0,
@@ -242,13 +242,13 @@
       "projectiles": 0,
       "ongoing": 1,
       "statuses": 0,
-      "particles": 109,
+      "particles": 168,
       "casts": 5,
       "remoteCasts": 5,
-      "shots": 92,
-      "impacts": 59,
-      "maxUpdateMs": 5.300000011920929,
-      "maxCastMs": 0.7999999821186066
+      "shots": 87,
+      "impacts": 56,
+      "maxUpdateMs": 3.9000000059604645,
+      "maxCastMs": 0.699999988079071
     }
   },
   "burrowing_seed": {
@@ -270,17 +270,17 @@
       "projectiles": 0,
       "ongoing": 1,
       "statuses": 1,
-      "particles": 217,
+      "particles": 305,
       "casts": 6,
       "remoteCasts": 6,
-      "shots": 93,
-      "impacts": 60,
-      "maxUpdateMs": 5.300000011920929,
-      "maxCastMs": 0.7999999821186066
+      "shots": 88,
+      "impacts": 57,
+      "maxUpdateMs": 3.9000000059604645,
+      "maxCastMs": 0.699999988079071
     }
   },
   "pyre_brand": {
-    "accepted": 1,
+    "accepted": 2,
     "refused": 0,
     "watcherFx": {
       "rings": 0,
@@ -298,13 +298,13 @@
       "projectiles": 1,
       "ongoing": 1,
       "statuses": 2,
-      "particles": 270,
+      "particles": 367,
       "casts": 7,
       "remoteCasts": 7,
-      "shots": 96,
-      "impacts": 62,
-      "maxUpdateMs": 5.300000011920929,
-      "maxCastMs": 0.7999999821186066
+      "shots": 91,
+      "impacts": 59,
+      "maxUpdateMs": 3.9000000059604645,
+      "maxCastMs": 0.699999988079071
     }
   },
   "wraith_hound_alliesSeenByWatcher": 1,
@@ -313,7 +313,7 @@
     "refused": 0,
     "watcherFx": {
       "rings": 0,
-      "flashes": 0,
+      "flashes": 2,
       "scorches": 0,
       "sigils": 0,
       "zones": 0,
@@ -327,13 +327,13 @@
       "projectiles": 0,
       "ongoing": 0,
       "statuses": 2,
-      "particles": 105,
+      "particles": 104,
       "casts": 8,
       "remoteCasts": 8,
-      "shots": 96,
-      "impacts": 63,
-      "maxUpdateMs": 5.300000011920929,
-      "maxCastMs": 0.7999999821186066
+      "shots": 91,
+      "impacts": 60,
+      "maxUpdateMs": 3.9000000059604645,
+      "maxCastMs": 0.699999988079071
     }
   },
   "gale_phantom_alliesSeenByWatcher": 2,
@@ -356,13 +356,13 @@
       "projectiles": 1,
       "ongoing": 0,
       "statuses": 2,
-      "particles": 106,
+      "particles": 101,
       "casts": 9,
       "remoteCasts": 9,
-      "shots": 99,
-      "impacts": 65,
-      "maxUpdateMs": 5.300000011920929,
-      "maxCastMs": 0.7999999821186066
+      "shots": 94,
+      "impacts": 62,
+      "maxUpdateMs": 3.9000000059604645,
+      "maxCastMs": 0.699999988079071
     }
   },
   "sunlit_sentinel_alliesSeenByWatcher": 3,
@@ -377,21 +377,21 @@
       "zones": 0,
       "domes": 0,
       "beams": 0,
-      "shells": 0,
+      "shells": 2,
       "lights": 0,
       "bolts": 0,
       "boltSegments": 0,
       "spikes": 0,
       "projectiles": 1,
       "ongoing": 0,
-      "statuses": 0,
-      "particles": 101,
+      "statuses": 2,
+      "particles": 149,
       "casts": 10,
       "remoteCasts": 10,
-      "shots": 105,
-      "impacts": 71,
-      "maxUpdateMs": 5.300000011920929,
-      "maxCastMs": 0.7999999821186066
+      "shots": 100,
+      "impacts": 68,
+      "maxUpdateMs": 3.9000000059604645,
+      "maxCastMs": 0.699999988079071
     }
   }
 }

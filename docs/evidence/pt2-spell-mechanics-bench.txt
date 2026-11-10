@@ -23,3 +23,9 @@ head  DIGEST p90_e600 400 ticks: 21071668 bytes 831bb7f4b4b9511ac1a06c34cdafcda3
 head  DIGEST p300_e2000 300 ticks: 55563662 bytes 8c29d4086261064f4f15f3445e5a349a40d72d966f9a5a4d6898a27a4b397cfc
 
 Identical: the wire is byte-for-byte unchanged for the scale scenario.
+
+After merging pt2/dash-overhaul (CR 021) into this branch (head 3d6c879):
+merged    3.512   5.350   cpu 92.55 Mcycles   137.2 kbps/client
+merged    3.513   5.568   cpu 91.86 Mcycles   137.2 kbps/client
+merged  DIGEST p90_e600 400 ticks: 21071668 bytes 831bb7f4b4b9511ac1a06c34cdafcda36e147b8f3b9d9bb6798b04b15af6bbde
+merged  DIGEST p300_e2000 300 ticks: 55563662 bytes 8c29d4086261064f4f15f3445e5a349a40d72d966f9a5a4d6898a27a4b397cfc
