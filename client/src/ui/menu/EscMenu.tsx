@@ -21,6 +21,7 @@ import { openGraphicsPanel } from '../graphics/GraphicsPanel';
 import { DEBUG } from '../../config';
 import { useTips } from '../tips/store';
 import { controlGroups } from './controls';
+import { useDev } from '../devconsole/store';
 import { closeMenu, escAction, openMenu, unlockOpensMenu, useMenu, type MenuEntry } from './store';
 
 const MENU_KEY = 'Escape';
@@ -211,7 +212,8 @@ function Main({ entries }: { entries: MenuEntry[] }) {
 }
 
 function Controls() {
-  const groups = controlGroups(DEBUG);
+  const dev = useDev((s) => s.dev); // CR 032: the Dev group shows only on a dev zone
+  const groups = controlGroups(DEBUG, dev);
   return (
     <div data-testid="menu-controls-page" style={{ width: 'min(860px, calc(100vw - 32px))', maxHeight: 'calc(100vh - 48px)', overflowY: 'auto', padding: '16px 20px', boxSizing: 'border-box' }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 6 }}>

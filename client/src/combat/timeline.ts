@@ -140,6 +140,9 @@ export interface SkillView {
   has(skill: string, technique: string): boolean;
 }
 
+/** Playtest 2 dev console (CR 032): the zone refills mana and clears cooldowns every tick; the prediction does too. */
+export const devCombat = { infiniteMana: false, noCooldowns: false };
+
 export class CombatTimeline {
   loadout: Loadout = { weapon: 'sword', spells: ['ember_flick', 'frost_bite', 'magma_dash', null], gem: -1 };
   mana = 100;
@@ -230,7 +233,8 @@ export class CombatTimeline {
    */
   step(seq: number, b: CombatButtons, before: MoveState, groundY: number, now: number): StepOut {
     this.seq = seq;
-    this.mana = Math.min(this.manaMax, this.mana + this.manaRegenPerStep);
+    this.mana = devCombat.infiniteMana ? this.manaMax : Math.min(this.manaMax, this.mana + this.manaRegenPerStep);
+    if (devCombat.noCooldowns) this.readyAt.clear();
     const out: StepOut = { flags: 0, castSlot: 0, started: null, refused: null, shots: [], chargeStart: null, channelEnd: null };
     const w = this.weapon();
     if (this.downed) {

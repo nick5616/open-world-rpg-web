@@ -10,7 +10,7 @@ export const FLY_SPEED = 20; // m/s: crosses a 64 m chunk in ~3 s
 export const FLY_SPRINT_MULT = 4; // shift: ~80 m/s for crossing the 4 km world quickly
 
 /** Camera-relative flight: forward follows pitch, jump rises, crouch sinks. No gravity, no ground. */
-export function stepFly(state: MoveState, input: MoveInput, dt: number): MoveState {
+export function stepFly(state: MoveState, input: MoveInput, dt: number, speedMult = 1): MoveState {
   const yaw = u16ToYaw(input.yaw);
   const pitch = i16ToPitch(input.pitch);
   const f = input.flags;
@@ -31,7 +31,8 @@ export function stepFly(state: MoveState, input: MoveInput, dt: number): MoveSta
   if (f & InputFlag.jump) dy += 1;
   if (f & InputFlag.crouch) dy -= 1;
   const len = Math.sqrt(dx * dx + dy * dy + dz * dz);
-  const speed = FLY_SPEED * (f & InputFlag.sprint ? FLY_SPRINT_MULT : 1);
+  // CR 032: the dev console's fly speed (the zone's DevFlyStep multiplies the same way).
+  const speed = FLY_SPEED * speedMult * (f & InputFlag.sprint ? FLY_SPRINT_MULT : 1);
   const k = len > 0 ? speed / len : 0;
   const vel = { x: dx * k, y: dy * k, z: dz * k };
   // Stamina and timers are left as they were; leaving fly drops you into a fall.

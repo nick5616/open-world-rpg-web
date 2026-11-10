@@ -13,10 +13,11 @@
 import type { GroundQuery } from './ground';
 import { advanceFixedStep, lerp } from './fixedStep';
 import { stepFly } from './fly';
+import { stepDev } from './devStep';
 import { JumpEdgeLatch, makeMoveInput, type HeldButtons } from './inputFrame';
 import { MoveMode, pitchToI16, yawToU16 } from '@lodestone/contracts';
 import { stepClock } from './stepClock';
-import { cloneMoveState, MoveFlag, newMoveState, NO_ENV, stepMovement, STEP_DT, type MoveInput, type MoveState, type StepEnv, type Vec3 } from './movement';
+import { cloneMoveState, MoveFlag, newMoveState, NO_ENV, STEP_DT, type MoveInput, type MoveState, type StepEnv, type Vec3 } from './movement';
 
 export interface FrameInput {
   held: HeldButtons;
@@ -125,7 +126,7 @@ export class LocalSim {
       this.lastEnv = env;
       this.prev = this.cur;
       stepClock.seq = this.seq + 1; // doors (stepClock.ts): the world as the zone sees it for this input seq
-      this.cur = inp.fly ? stepFly(this.cur, input, STEP_DT) : stepMovement(this.cur, input, this.ground, STEP_DT, env);
+      this.cur = inp.fly ? stepFly(this.cur, input, STEP_DT) : stepDev(this.cur, input, this.ground, STEP_DT, env); // CR 032: dev fly/stamina ride env.dev
       this.seq++;
       this.onStep?.({ seq: this.seq, input, state: this.cur, fly: inp.fly, env });
       this.afterStep?.(this.seq, this.cur);

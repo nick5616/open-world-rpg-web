@@ -10,6 +10,7 @@ import { useQualityStore, type QualitySetting } from '../stores/qualityStore';
 import { localPlayer, worldClock } from '../state/live';
 import { WorldDebugSection } from '../world/debug/WorldDebugSection';
 import { CameraSettings } from './ViewHud';
+import { setDevOpen, useDev } from '../ui/devconsole/store';
 
 const box: CSSProperties = { position: 'fixed', top: 10, right: 10, zIndex: 30, width: 280, font: '13px system-ui, sans-serif', color: '#e9ecef', background: 'rgba(12,15,24,0.92)', border: '1px solid #343a40', borderRadius: 6, padding: 12 };
 const row: CSSProperties = { display: 'flex', alignItems: 'center', gap: 8, margin: '8px 0' };
@@ -20,6 +21,7 @@ export function DebugPanel() {
   const setScreen = useAppStore((s) => s.setScreen);
   const setting = useQualityStore((s) => s.setting);
   const setSetting = useQualityStore((s) => s.setSetting);
+  const devZone = useDev((s) => s.dev); // CR 032: the zone runs the dev console
   const [tp, setTp] = useState('');
   const [tpErr, setTpErr] = useState(false);
   const [hour, setHour] = useState(() => Math.round((worldClock.timeOfDayS / DAY_LENGTH_S) * 24 * 4) / 4);
@@ -85,6 +87,19 @@ export function DebugPanel() {
         <CameraSettings compact />
       </div>
       <WorldDebugSection />
+      {devZone && (
+        <div style={row}>
+          <button
+            data-testid="debug-open-dev-console"
+            onClick={() => {
+              setOpen(false);
+              setDevOpen(true);
+            }}
+          >
+            Dev console (F2): items, spells, cheats, world
+          </button>
+        </div>
+      )}
       <div style={{ ...row, justifyContent: 'space-between' }}>
         <button onClick={() => setScreen('title')}>Back to title</button>
         <button onClick={() => setOpen(false)}>Close (`)</button>

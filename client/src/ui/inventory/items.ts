@@ -287,7 +287,7 @@ export const REFUSAL: Record<number, string> = {
 };
 
 /** Event 401 sources. */
-export const SOURCE_LABEL: Record<number, string> = { 1: 'loot', 2: 'container', 3: 'mined', 4: 'crafted', 5: 'bought', 6: 'starter kit', 7: 'picked up', 8: 'gem' };
+export const SOURCE_LABEL: Record<number, string> = { 1: 'loot', 2: 'container', 3: 'mined', 4: 'crafted', 5: 'bought', 6: 'starter kit', 7: 'picked up', 8: 'gem', 11: 'dev console' };
 
 /** Container kinds (Event 406). */
 export const CONTAINER_LABEL = ['chest', 'buried cache', 'urn', 'crate'] as const;

@@ -171,6 +171,8 @@ export interface StepEnv {
    * `raining`; snow slows walking; wind pushes a glider downwind.
    */
   weather?: MoveField | null;
+  /** Playtest 2 dev console (CR 032, sim/devStep.ts): fly and infinite stamina, stepped like the zone does. */
+  dev?: { fly: number; stamina: boolean } | null;
 }
 
 /** What the step reads about the weather where the player stands (Go weather.MoveWeather). */
