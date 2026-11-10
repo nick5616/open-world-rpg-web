@@ -58,6 +58,7 @@ const (
 	ActLearn       = 4 // arg = spell id
 	ActSetGem      = 5 // arg = loadout | (element + 1) << 8 (0 = none); dev builds only (WP14 sockets)
 	ActSetMaterial = 6 // WP15: arg = loadout | material id << 8 (0 = ordinary); dev builds only (WP14 equips forged items)
+	ActDevGrant    = 7 // CR 020: arg = spell id; dev builds only (evidence runs: a tome stand-in that teaches any spell)
 )
 
 // Audience of an output Event.

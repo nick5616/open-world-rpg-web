@@ -26,7 +26,8 @@ export function attachCombat(session: ZoneSession, ground: GroundQuery, input = 
   combatRuntime.current = rt;
   const w = typeof window !== 'undefined' ? (window as unknown as { __lodestoneCombat?: unknown }) : null;
   if (w) {
-    w.__lodestoneCombat = { runtime: rt, probe: () => rt.probe.summary(), hud: () => ({ ...useCombatHud.getState() }) };
+    // CR 020: interact() lets dev runs grant and slot spells (combat Interact 50; ActDevGrant needs a dev zone).
+    w.__lodestoneCombat = { runtime: rt, probe: () => rt.probe.summary(), hud: () => ({ ...useCombatHud.getState() }), interact: (kind: number, action: number, arg: number) => session.sendInteract(kind, 0n, action, arg) };
     (w as unknown as { __lodestoneDrawn?: unknown }).__lodestoneDrawn = () => drawnRemotes.views; // headless runs aim at what is drawn
   }
   return () => {

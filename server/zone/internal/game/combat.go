@@ -365,6 +365,10 @@ func (s *Server) handleCombatInteract(sess *session, m *proto.Interact) {
 		if s.cbt.setup.Dev {
 			ok = pr.SetGem(int(m.Arg&0xff), int(m.Arg>>8)-1)
 		}
+	case combat.ActDevGrant: // CR 020: evidence runs learn any spell like a tome (dev builds only)
+		if sp := combatdefs.D.SpellByID(int(m.Arg)); s.cbt.setup.Dev && sp != nil {
+			ok = pr.Grant(sp.Key) || pr.Knows(sp.Key)
+		}
 	case combat.ActSetMaterial: // WP15: dev sunsteel until WP14 equips forged items
 		if s.cbt.setup.Dev {
 			key := ""

@@ -34,7 +34,7 @@ export const EV = {
 } as const;
 
 export const INTERACT_COMBAT = 50;
-export const ACT = { swapLoadout: 1, equipWeapon: 2, equipSpell: 3, learn: 4, setGem: 5 } as const;
+export const ACT = { swapLoadout: 1, equipWeapon: 2, equipSpell: 3, learn: 4, setGem: 5, devGrant: 7 } as const;
 
 const weaponById = new Map(COMBAT.weapons.map((w) => [w.id, w.key]));
 const spellById = new Map(COMBAT.spells.map((s) => [s.id, s.key]));
