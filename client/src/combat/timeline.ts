@@ -16,6 +16,7 @@
 
 import { COMBAT, INPUT_BUFFER_MS, InputFlag, MOVE_STEP_HZ, type MoveDef, type SpellDef, type WeaponDef, type FormDef } from '@lodestone/contracts';
 import type { MoveState } from '../sim/movement';
+import { dashStep, startDashHold, type DashHold } from './dashes';
 
 export const BUFFER_STEPS = Math.round((INPUT_BUFFER_MS * MOVE_STEP_HZ) / 1000);
 export const COMBO_WINDOW_STEPS = 24;
@@ -56,6 +57,8 @@ export interface CombatButtons {
   formPress: number;
   techniquePress: number;
   drinkPress: number;
+  /** Held state of the four spell slots (key 1-4, or RMB with the slot selected): CR 020 auto spells, CR 021 held dashes. */
+  castHeld: boolean[];
 }
 
 export interface Loadout {
@@ -122,6 +125,8 @@ export class CombatTimeline {
   private readyAt = new Map<number, number>();
   private buf: Buffered[] = [];
   private pendingDash = 0; // wind form: dash variant on the next step
+  /** CR 021: the mobility dash this timeline started and whether its key still holds it (dashes.ts). */
+  dashHold: DashHold | null = null;
   /** Last step's seq (probe/tests). */
   seq = 0;
 
@@ -205,6 +210,7 @@ export class CombatTimeline {
         i--;
       }
     }
+    dashStep(this, b, before, out, seq); // CR 021: name the running dash, hold it while the key is down (dashes.ts)
     if (alt) out.flags |= InputFlag.alt_attack;
     if (staffy && (out.flags & InputFlag.attack) !== 0 && out.started?.move?.kind === 'heavy') out.flags |= InputFlag.alt_attack;
     this.altHeld = alt ? this.altHeld + 1 : 0;
@@ -240,6 +246,7 @@ export class CombatTimeline {
           out.flags |= InputFlag.dodge;
           out.castSlot = s.dash;
           this.dodgeSeq = seq;
+          this.dashHold = startDashHold(x.slot, s.dash, seq); // CR 021: hold the key to sustain it (dashes.ts)
         } else {
           out.flags |= InputFlag.cast;
           out.castSlot = x.slot;

@@ -9,7 +9,7 @@ import { decodeSync, enemyInfo } from './events';
 import { inCone } from './runtime';
 
 const ms = (steps: number) => (steps * 1000) / MOVE_STEP_HZ;
-const idle = (): CombatButtons => ({ attackDown: false, altDown: false, attackPress: 0, altPress: 0, altRelease: 0, dodgePress: 0, castPress: [null, null, null, null], formPress: 0, techniquePress: 0, drinkPress: 0 });
+const idle = (): CombatButtons => ({ attackDown: false, altDown: false, attackPress: 0, altPress: 0, altRelease: 0, dodgePress: 0, castPress: [null, null, null, null], formPress: 0, techniquePress: 0, drinkPress: 0, castHeld: [false, false, false, false] });
 
 function run(t: CombatTimeline, from: number, steps: number, at: Record<number, Partial<CombatButtons>> = {}) {
   const st = newMoveState({ x: 0, y: 0, z: 0 });

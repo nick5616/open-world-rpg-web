@@ -80,8 +80,9 @@ export const dashing = (s: Pick<MoveState, 'dash'>): boolean => (s.dash ?? 0) > 
 const SUSTAIN_BLOCK = InputFlag.attack | InputFlag.dodge | InputFlag.cast;
 
 /** Do these frame bits hold the dash `prev` is running? (Go Holding.) */
-export function holding(prev: Pick<MoveState, 'dash'>, flags: number, castSlot: number): boolean {
+export function holding(prev: Pick<MoveState, 'dash' | 'mode'>, flags: number, castSlot: number): boolean {
   if ((prev.dash ?? 0) <= 0 || (flags & InputFlag.channel) === 0 || (flags & SUSTAIN_BLOCK) !== 0) return false;
+  if (prev.mode !== MoveMode.ground && prev.mode !== MoveMode.air && prev.mode !== MoveMode.glide) return false;
   const v = dashVariant(castSlot);
   return !!v && v.kind !== 0 && castSlot !== 0;
 }
@@ -101,7 +102,7 @@ export function beginDash(s: MoveState, flags: number, castSlot: number, yaw: nu
   const prevDash = s.dash ?? 0;
   const d: MoveState = { ...s, pos: { ...s.pos }, vel: { ...s.vel }, dash: Math.max(0, prevDash - 1), iframes: Math.max(0, (s.iframes ?? 0) - 1) };
   let kind = 0;
-  if (holding(s, flags, castSlot) && (d.mode === MoveMode.ground || d.mode === MoveMode.air || d.mode === MoveMode.glide)) {
+  if (holding(s, flags, castSlot)) {
     const v = dashVariant(castSlot)!;
     kind = v.kind;
     let dx = wish.x;

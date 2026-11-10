@@ -129,7 +129,7 @@ const sustainBlock = proto.InputFlagAttack | proto.InputFlagDodge | proto.InputF
 // state with Dash > 0 is running: the zone's combat layer pays for exactly
 // these steps.
 func Holding(prev State, flags uint16, castSlot uint8) bool {
-	if prev.Dash <= 0 || flags&proto.InputFlagChannel == 0 || flags&sustainBlock != 0 {
+	if prev.Dash <= 0 || flags&proto.InputFlagChannel == 0 || flags&sustainBlock != 0 || (prev.Mode != ModeGround && prev.Mode != ModeAir && prev.Mode != ModeGlide) {
 		return false
 	}
 	v := Dash(int(castSlot))
@@ -152,7 +152,7 @@ func beginDash(s State, flags uint16, castSlot uint8, yaw, pitch, wx, wz float64
 	d.Dash = max(0, s.Dash-1)
 	d.IFrames = max(0, s.IFrames-1)
 	kind := 0
-	if Holding(s, flags, castSlot) && (d.Mode == ModeGround || d.Mode == ModeAir || d.Mode == ModeGlide) {
+	if Holding(s, flags, castSlot) {
 		v := Dash(int(castSlot))
 		kind = v.Kind
 		dx, dz := wx, wz

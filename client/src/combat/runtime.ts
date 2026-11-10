@@ -119,6 +119,7 @@ export class CombatRuntime {
         const sel = useCombatHud.getState().selected;
         if (sel >= 0 && this.timeline.loadout.spells[sel]) {
           rmbCast = true;
+          this.buttons.castHeld[sel] = true;
           this.buttons.castPress[sel] = now();
         } else altDown();
       }
@@ -128,7 +129,10 @@ export class CombatRuntime {
     const onUp = (e: MouseEvent) => {
       if (e.button === 0) this.buttons.attackDown = false;
       if (e.button === 2) {
-        if (rmbCast) rmbCast = false;
+        if (rmbCast) {
+          rmbCast = false;
+          this.buttons.castHeld = this.buttons.castHeld.map(() => false);
+        }
         else if (this.buttons.altDown) altUp();
       }
     };
@@ -141,6 +145,10 @@ export class CombatRuntime {
     };
     const onKeyUp = (e: KeyboardEvent) => {
       if (e.code === 'KeyZ' && this.buttons.altDown) altUp();
+      if (e.code.startsWith('Digit')) {
+        const slot = Number(e.code.slice(5)) - 1;
+        if (slot >= 0 && slot < 4) this.buttons.castHeld[slot] = false;
+      }
     };
     const onKey = (e: KeyboardEvent) => {
       if (isText(e.target) || e.repeat) return;
@@ -158,6 +166,7 @@ export class CombatRuntime {
         case 'Digit4': {
           const slot = Number(e.code.slice(5)) - 1;
           this.buttons.castPress[slot] = t;
+          this.buttons.castHeld[slot] = true;
           if (this.timeline.loadout.spells[slot]) useCombatHud.getState().set({ selected: slot });
           break;
         }
@@ -185,6 +194,7 @@ export class CombatRuntime {
     const release = () => {
       this.buttons.attackDown = false;
       this.buttons.altDown = false;
+      this.buttons.castHeld = [false, false, false, false];
     };
     target.addEventListener('mousedown', onDown);
     target.addEventListener('mouseup', onUp);
@@ -244,6 +254,11 @@ export class CombatRuntime {
     useCombatHud.getState().set({ selected: validSelection(slot, this.timeline.loadout.spells), selectedAt: performance.now() });
   }
 
+  /** Scripted: hold or let go of a spell slot's key (CR 021 held dashes, CR 020 hold-to-fire). */
+  holdCast(slot: number, on: boolean): void {
+    this.buttons.castHeld[slot] = on;
+  }
+
   useSelected(): void {
     const sel = useCombatHud.getState().selected;
     if (sel >= 0 && this.timeline.loadout.spells[sel]) this.buttons.castPress[sel] = performance.now();
@@ -276,7 +291,7 @@ export class CombatRuntime {
     this.timeline.sprinting = sprinting;
     const gy = this.ground ? this.ground.heightAt(before.pos.x, before.pos.z) : before.pos.y;
     const out = this.timeline.step(seq, b, before, gy, performance.now());
-    this.buttons = { ...blankButtons(), attackDown: b.attackDown, altDown: b.altDown };
+    this.buttons = { ...blankButtons(), attackDown: b.attackDown, altDown: b.altDown, castHeld: b.castHeld };
     if (out.started) this.begin(out.started, before);
     if ((out.flags & InputFlag.dodge) !== 0) this.probe.dodgeStart(seq, performance.now());
     if ((out.flags & InputFlag.interact) !== 0) this.probe.drinkStart(performance.now());
@@ -738,7 +753,7 @@ export class CombatRuntime {
 }
 
 function blankButtons(): CombatButtons {
-  return { attackDown: false, altDown: false, attackPress: 0, altPress: 0, altRelease: 0, dodgePress: 0, castPress: [null, null, null, null], formPress: 0, techniquePress: 0, drinkPress: 0 };
+  return { attackDown: false, altDown: false, attackPress: 0, altPress: 0, altRelease: 0, dodgePress: 0, castPress: [null, null, null, null], formPress: 0, techniquePress: 0, drinkPress: 0, castHeld: [false, false, false, false] };
 }
 
 export function levelFor(xp: number): number {
