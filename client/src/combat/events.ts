@@ -27,6 +27,10 @@ export const EV = {
   bossReset: 220,
   respawned: 221,
   strikeHit: 222,
+  // CR 020 spell mechanics
+  channel: 223,
+  detonate: 224,
+  summonAttack: 225,
 } as const;
 
 export const INTERACT_COMBAT = 50;

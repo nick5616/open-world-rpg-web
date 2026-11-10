@@ -79,8 +79,8 @@ describe('node state', () => {
   });
   it('counts learned nodes per tree', () => {
     const c = learnedCounts(MOCK.known);
-    expect(c.fire).toEqual({ learned: 6, total: 17 });
-    expect(c.light).toEqual({ learned: 3, total: 9 });
+    expect(c.fire).toEqual({ learned: 6, total: 19 });
+    expect(c.light).toEqual({ learned: 3, total: 11 });
   });
 });
 
