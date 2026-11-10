@@ -109,7 +109,8 @@ export function reduceItemEvent(s: InventoryState, ev: ZoneEvent, now: number): 
       return { toasts: pushToasts(s, now, makeToast('warn', text, now, { detail: kind === 22 ? 'crafting' : undefined })), stats: { ...stats, refusals: stats.refusals + 1 } };
     }
     case EV.station:
-      return { station: { kind: 'cook', prop: ev.data.length >= 8 ? u64(ev.data) : 0n, settlement: -1, level: ev.value, offline: false }, stats };
+      // CR 025 camps: targetId 4 is a camp workbench; 3 a hearth, campfire or camp campfire.
+      return { station: { kind: ev.targetId === 4 ? 'workbench' : 'cook', prop: ev.data.length >= 8 ? u64(ev.data) : 0n, settlement: -1, level: ev.value, offline: false }, stats };
     case EV.stationOpened: {
       const st = ev.data.length >= 8 ? decodeStationOpened(ev.data) : { prop: 0n, settlement: -1 };
       return { station: { kind: stationKind805(ev.targetId), prop: st.prop, settlement: st.settlement, level: s.station?.level ?? null, offline: false }, stats };
