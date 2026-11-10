@@ -69,6 +69,7 @@ export function FirstPersonEmote() {
     if (!live) st.id = 0;
     const fp = !view.third && !view.photo;
     st.hand.visible = false;
+    view.fpGesture = false;
     if (!live || !fp) return;
     const n = emoteNod(st.id, t);
     camera.position.y -= n.drop;
@@ -99,6 +100,7 @@ export function FirstPersonEmote() {
         h.rotation.set(0.1, 0, 0.15);
         break;
     }
+    view.fpGesture = h.visible;
   });
   return null;
 }

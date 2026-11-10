@@ -60,8 +60,10 @@ async function closePanels(p) {
 }
 
 try {
-  await newCharacter(A, 'Angler');
-  await newCharacter(B, 'Watcher');
+  // Names are unique per world: a letter per run lets the script run twice on one stack.
+  const tag = 'abcdefghijklmnopqrstuvwxyz'[Math.floor(Date.now() / 1000) % 26];
+  await newCharacter(A, `Angler${tag}`);
+  await newCharacter(B, `Watcher${tag}`);
   await sleep(2500);
   await closePanels(A);
   await closePanels(B);
@@ -256,8 +258,12 @@ try {
   const fx = -Math.sin(spot.yaw);
   const fz = -Math.cos(spot.yaw);
   const me = (await pl(A)).pos;
-  await A.evaluate(([x, y, z, yaw]) => window.__lodestonePhoto.pose(x, y, z, yaw, -0.12), [me.x + fx * 4.5 + fz * 1.5, me.y + 2.1, me.z + fz * 4.5 - fx * 1.5, spot.yaw + Math.PI - 0.3]);
-  await A.evaluate(() => window.__lodestonePhoto.set({ hour: 18.4, dof: 0.75, focusM: 0, vignette: 0.45, grain: 0.25, panelHidden: true }));
+  // Beside the angler, 4 m out and a little ahead, looking at them.
+  const cam0 = { x: me.x + Math.cos(spot.yaw) * 4 + fx * 1.5, y: me.y + 1.8, z: me.z - Math.sin(spot.yaw) * 4 + fz * 1.5 };
+  await A.evaluate(([x, y, z, yaw]) => window.__lodestonePhoto.pose(x, y, z, yaw, -0.12), [cam0.x, cam0.y, cam0.z, yawTo(cam0, me.x, me.z)]);
+  const focus = Math.round(Math.hypot(cam0.x - me.x, cam0.z - me.z) * 2) / 2; // the angler sharp, the far bank soft
+  await A.evaluate((f) => window.__lodestonePhoto.set({ hour: 17.4, dof: 0.75, focusM: f, vignette: 0.45, grain: 0.25, panelHidden: true }), focus);
+  note(`local body in photo mode: ${JSON.stringify(await A.evaluate(() => window.__lodestoneLocalAvatar?.() ?? null))}`);
   await sleep(1200);
   await shot(A, 'photo-dusk-dof');
   // Try to fly far away: the camera stops at the radius.

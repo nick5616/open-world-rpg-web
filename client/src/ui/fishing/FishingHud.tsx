@@ -27,7 +27,7 @@ function othersBusy(): boolean {
   const q = (sel: string) => document.querySelector<HTMLElement>(sel);
   const busy = ['[data-testid="town-prompt"]', '[data-testid="cave-hud"]', '[data-testid="loot-prompt"]', '[data-testid="content-prompt"]', '[data-testid="camp-prompt"]'].some((sel) => !!q(sel)?.textContent);
   const townPanel = q('[data-testid="town-panel"]');
-  return busy || (!!townPanel && townPanel.style.display !== 'none') || !!document.querySelector('[data-ui-panel]:not([style*="display: none"])');
+  return busy || (!!townPanel && townPanel.style.display !== 'none') || !!document.querySelector('[data-ui-panel]:not([style*="display: none"]), [data-testid="emote-wheel"]');
 }
 
 export function hasRod(): boolean {
@@ -189,7 +189,10 @@ export function FishingHud() {
 
   return (
     <>
-      {body && <div style={{ position: 'fixed', left: '50%', top: s.phase === 'result' || s.phase === 'fight' || s.phase === 'landing' ? '54%' : '62%', transform: 'translateX(-50%)', pointerEvents: 'none', zIndex: 20 }}>{body}</div>}
+      {body && (
+        // The fight sits beside the crosshair (your third-person body is under it), the catch card up under the compass.
+        <div style={{ position: 'fixed', pointerEvents: 'none', zIndex: 20, ...(s.phase === 'fight' || s.phase === 'landing' ? { left: 'min(calc(50% + 200px), calc(100% - 300px))', top: '42%' } : { left: '50%', top: s.phase === 'result' ? '18%' : '62%', transform: 'translateX(-50%)' }) }}>{body}</div>
+      )}
       {showNotice && (
         <div data-testid="fish-notice" style={{ ...text, position: 'fixed', left: '50%', top: '57%', transform: 'translateX(-50%)', color: '#ffd8a8', pointerEvents: 'none', zIndex: 20 }}>
           {s.notice}
