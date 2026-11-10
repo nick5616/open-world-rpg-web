@@ -417,6 +417,7 @@ func (s *Server) combatTick(tick uint32) {
 		}
 	}
 	w.Step(tick)
+	s.dashEnvTick(tick) // CR 021: dash trails set grass alight and freeze water (dashes.go)
 	events, spawned, removed, xp, respawn, synced := w.Drain()
 	for _, en := range spawned {
 		ent := &Entity{ID: en.ID, Kind: proto.EntityKindEnemy, Name: en.Name, Level: uint8(min(255, en.Level)), npc: en, TypeID: en.TypeID()}
