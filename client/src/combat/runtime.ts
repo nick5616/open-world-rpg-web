@@ -828,7 +828,6 @@ export class CombatRuntime {
         const sp = spellById.get(ev.value);
         const r = ev.data.length >= 2 ? new DataView(ev.data.buffer, ev.data.byteOffset, 2).getUint16(0, true) / 100 : 3;
         if (sp) spellFx.detonate(sp, ev.x / 100, ev.y / 100, ev.z / 100, r);
-        emitSound('impact', { at: { x: ev.x / 100, y: ev.y / 100, z: ev.z / 100 }, element: sp?.tree ?? 'fire' });
         return;
       }
       case EV.summonAttack: {

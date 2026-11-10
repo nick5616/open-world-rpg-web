@@ -12,7 +12,7 @@
 import { useEffect, useMemo } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
-import { HITSTOP_MS } from '@lodestone/contracts';
+import { COMBAT, HITSTOP_MS } from '@lodestone/contracts';
 import { drawnRemotes } from '../net/netStore';
 import type { RemoteView } from '../net/interpolation';
 import { combatRuntime } from './link';
@@ -21,6 +21,7 @@ import { fxQueue, type Fx } from './store';
 // The newest melee swing (set from the FX queue below, read by the weapon).
 import { FirstPersonWeapon, swing } from './weapons/FirstPersonWeapon';
 import { SpellFxLayer } from './fx/SpellFxLayer';
+import { spellFx } from './fx/api';
 
 const geo = {
   body: new THREE.CapsuleGeometry(0.45, 0.7, 4, 10),
@@ -90,6 +91,86 @@ function makeEnemy(v: RemoteView): EnemyMesh {
   }
   root.add(plate);
   return { root, body, mat, bar, barBack, plate, label, aura, flash: 0, phase: Math.random() * 10 };
+}
+
+// ---- CR 020: allies from summon spells (EntityKind effect, typeId = summon id | (element + 1) << 8) ----
+
+const summonById = new Map(COMBAT.summons.map((m) => [m.id, m]));
+const summonSpell = new Map(COMBAT.summons.map((m) => [m.key, COMBAT.spells.find((s) => s.summon?.key === m.key) ?? null]));
+const allyGeo = {
+  crystal: new THREE.OctahedronGeometry(0.45, 0),
+  ring: new THREE.TorusGeometry(0.55, 0.04, 6, 32),
+  bow: new THREE.TorusGeometry(0.45, 0.03, 4, 16, Math.PI),
+};
+
+interface AllyMesh {
+  root: THREE.Group;
+  body: THREE.Group;
+  mat: THREE.MeshStandardMaterial;
+  bar: THREE.Mesh;
+  barBack: THREE.Mesh;
+  plate: THREE.Group;
+  label: THREE.Sprite | null;
+  phase: number;
+  aura: number;
+  turret: boolean;
+  size: number;
+}
+
+/** A spectral body: the enemy silhouettes in a translucent glowing material (beast, humanoid with a bow, floating crystal turret). */
+function makeAlly(v: RemoteView): AllyMesh {
+  const def = summonById.get((v.typeId ?? 0) & 0xff);
+  const s = def?.size ?? 1;
+  const color = new THREE.Color(def?.color ?? '#b0a0ff');
+  const mat = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.9, transparent: true, opacity: 0.55, roughness: 0.3, depthWrite: false });
+  const root = new THREE.Group();
+  const body = new THREE.Group();
+  root.add(body);
+  const fam = def?.family ?? 'humanoid';
+  if (fam === 'turret') {
+    const c = new THREE.Mesh(allyGeo.crystal, mat);
+    c.scale.set(s, s * 1.6, s);
+    c.position.y = 1.4 * s;
+    const r = new THREE.Mesh(allyGeo.ring, mat);
+    r.rotation.x = Math.PI / 2;
+    r.position.y = 0.25;
+    r.scale.setScalar(s * 1.4);
+    body.add(c, r);
+  } else {
+    const b = new THREE.Mesh(geo.body, mat);
+    b.scale.setScalar(s);
+    const h = new THREE.Mesh(geo.head, mat);
+    h.scale.setScalar(s);
+    if (fam === 'beast') {
+      b.rotation.x = Math.PI / 2;
+      b.position.y = 0.55 * s;
+      h.position.set(0, 0.75 * s, -0.65 * s);
+    } else {
+      b.position.y = 0.8 * s;
+      h.position.y = 1.55 * s;
+      const bow = new THREE.Mesh(allyGeo.bow, mat);
+      bow.rotation.set(0, Math.PI / 2, Math.PI / 2);
+      bow.position.set(0.35 * s, 1.0 * s, -0.25 * s);
+      body.add(bow);
+    }
+    body.add(b, h);
+  }
+  const plate = new THREE.Group();
+  plate.position.y = 2.0 * s + 0.2;
+  const barBack = new THREE.Mesh(geo.bar, new THREE.MeshBasicMaterial({ color: '#222222', depthTest: false, side: THREE.DoubleSide }));
+  const bar = new THREE.Mesh(geo.bar, new THREE.MeshBasicMaterial({ color, depthTest: false, side: THREE.DoubleSide }));
+  barBack.renderOrder = bar.renderOrder = 10;
+  bar.position.z = 0.001;
+  barBack.scale.set(0.7, 0.6, 1);
+  plate.add(barBack, bar);
+  let label: THREE.Sprite | null = null;
+  if (v.name) {
+    label = labelSprite(v.name, '#d8ffe0');
+    label.position.y = 0.22;
+    plate.add(label);
+  }
+  root.add(plate);
+  return { root, body, mat, bar, barBack, plate, label, phase: Math.random() * 10, aura: 0, turret: fam === 'turret', size: s };
 }
 
 /** A name label (sprites always face the camera). */
@@ -196,6 +277,7 @@ export function CombatLayer() {
   const camera = useThree((s) => s.camera);
   const root = useMemo(() => new THREE.Group(), []);
   const enemies = useMemo(() => new Map<number, EnemyMesh>(), []);
+  const allies = useMemo(() => new Map<number, AllyMesh>(), []); // CR 020
   const live = useMemo<Live[]>(() => [], []);
 
   useEffect(() => {
@@ -204,8 +286,9 @@ export function CombatLayer() {
       scene.remove(root);
       root.clear();
       enemies.clear();
+      allies.clear();
     };
-  }, [scene, root, enemies]);
+  }, [scene, root, enemies, allies]);
 
   useFrame((_, delta) => {
     const rt = combatRuntime.current;
@@ -254,6 +337,51 @@ export function CombatLayer() {
           (m.label.material as THREE.SpriteMaterial).dispose();
         }
         enemies.delete(id);
+      }
+    }
+
+    // CR 020: allies (time left as the bar, a casting pulse, an idle aura; a burst when one appears).
+    const seenAlly = new Set<number>();
+    for (const v of drawnRemotes.views) {
+      if (v.kind !== 7) continue;
+      seenAlly.add(v.id);
+      let m = allies.get(v.id);
+      const def = summonById.get((v.typeId ?? 0) & 0xff);
+      const sp = def ? summonSpell.get(def.key) ?? null : null;
+      if (!m) {
+        m = makeAlly(v);
+        allies.set(v.id, m);
+        root.add(m.root);
+        if (sp) spellFx.summonAppear(sp, v.x, v.y, v.z);
+      }
+      m.root.position.set(v.x, v.y, v.z);
+      m.root.rotation.y = v.yaw;
+      m.phase += delta * (2 + v.speed);
+      m.body.position.y = (m.turret ? 0.2 : 0.06) * Math.sin(m.phase * (m.turret ? 0.8 : 1.5));
+      if (m.turret) m.body.rotation.y += delta * 1.5;
+      const winding = (v.activity & 8) !== 0;
+      m.mat.emissiveIntensity = winding ? 1.6 + 0.6 * Math.sin(now / 50) : 0.8 + 0.15 * Math.sin(now / 300);
+      m.mat.opacity = v.healthPct < 15 ? 0.25 + 0.3 * Math.abs(Math.sin(now / 120)) : 0.55; // flickers out at the end
+      m.bar.scale.x = Math.max(0.001, (v.healthPct / 100) * m.barBack.scale.x);
+      m.bar.position.x = -(m.barBack.scale.x - m.bar.scale.x) / 2;
+      faceCamera(m.plate, camera);
+      m.aura -= delta;
+      if (m.aura <= 0 && sp) {
+        m.aura = 0.25;
+        spellFx.summonAura(sp, v.x, v.y, v.z, m.size);
+      }
+    }
+    for (const [id, m] of allies) {
+      if (!seenAlly.has(id)) {
+        root.remove(m.root);
+        m.mat.dispose();
+        (m.bar.material as THREE.Material).dispose();
+        (m.barBack.material as THREE.Material).dispose();
+        if (m.label) {
+          (m.label.material as THREE.SpriteMaterial).map?.dispose();
+          (m.label.material as THREE.SpriteMaterial).dispose();
+        }
+        allies.delete(id);
       }
     }
 
