@@ -83,6 +83,7 @@ export function createScatterMaterial(o: ScatterMaterialOptions): ScatterMateria
         float g = windGust(iPos.xz + mvPosition.xz * 0.3);
         vec2 bend = w * uSway * hk * hk * iH;
         bend += aFoliage * uFlutter * iH * vec2(sin(uWindTime * 7.0 + mvPosition.x * 2.1 + mvPosition.y * 1.3), cos(uWindTime * 6.1 + mvPosition.z * 2.3)) * g * hk;
+        bend *= mix(1.0, uWindSweep.x, 0.5); // playtest 2 styles (wind.ts uWindSweep)
         mvPosition.xz += bend;
         mvPosition.y -= dot(bend, bend) * 0.3 / max(iH, 0.1);
         // Fully faded instances collapse to a point: no fragments, no overdraw.
@@ -94,7 +95,7 @@ export function createScatterMaterial(o: ScatterMaterialOptions): ScatterMateria
       .replace('#include <common>', `#include <common>\nvarying float vFade;\n${DITHER}`)
       .replace('#include <clipping_planes_fragment>', `#include <clipping_planes_fragment>\nif (vFade < 0.999 && bayer4(gl_FragCoord.xy) >= vFade) discard;`);
   };
-  m.customProgramCacheKey = () => `lodestone-scatter-1-${o.doubleSided ? 'ds' : 'fs'}`;
+  m.customProgramCacheKey = () => `lodestone-scatter-2-${o.doubleSided ? 'ds' : 'fs'}`;
   return m;
 }
 

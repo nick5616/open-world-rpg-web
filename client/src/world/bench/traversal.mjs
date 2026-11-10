@@ -60,8 +60,9 @@ async function runTier(tier) {
   const browser = await chromium.launch({ headless: true, args: gpuArgs });
   const context = await browser.newContext({ viewport });
   // Pin the tier before the app reads it (zustand persist format).
-  await context.addInitScript((t) => {
-    localStorage.setItem('lodestone_quality_settings', JSON.stringify({ state: { setting: t }, version: 0 }));
+  // LODESTONE_BENCH_STYLE: a visual style (playtest 2 graphics settings; default: the game's default).
+  await context.addInitScript(([t, style]) => {
+    localStorage.setItem('lodestone_quality_settings', JSON.stringify(style ? { state: { setting: t, style }, version: 1 } : { state: { setting: t }, version: 0 }));
     // Frame recorder + long-task observer, installed before any app code runs.
     const w = window;
     w.__bench = { frames: [], longTasks: [], recording: false, samples: [] };
@@ -86,7 +87,7 @@ async function runTier(tier) {
       w.__bench.links.push({ t: performance.now(), recording: w.__bench.recording, p });
       return link.call(this, p);
     };
-  }, tier);
+  }, [tier, process.env.LODESTONE_BENCH_STYLE ?? '']);
   const page = await context.newPage();
   const errors = [];
   page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));

@@ -125,6 +125,7 @@ export function boulderGeometry(): THREE.BufferGeometry {
  */
 export function caveRockMaterial(): THREE.MeshStandardMaterial {
   const m = new THREE.MeshStandardMaterial({ color: 0x8c8176, roughness: 0.93, metalness: 0.0, flatShading: true });
+  m.defines = { LS_NO_RIM: '' }; // caves stay lit by the lantern alone (style/styleShader.ts)
   m.onBeforeCompile = (sh) => {
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', '#include <common>\nattribute float aBand;\nvarying vec3 vCaveWorld;\nvarying vec3 vCaveN;\nvarying float vBand;')

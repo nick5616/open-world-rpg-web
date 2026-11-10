@@ -271,7 +271,8 @@ export function createTerrainMaterial(shared: TerrainShared, normalMaps: boolean
   const tile: TerrainTileUniforms = { uK: { value: 0 }, uEdge: { value: new THREE.Vector4() } };
   const m = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 1, metalness: 0 }) as TerrainMaterial;
   m.userData.tile = tile;
-  if (normalMaps) m.defines = { TERRAIN_NORMALS: '' };
+  // LS_NO_RIM: the style rim light (style/styleShader.ts) would wash out grazing ground.
+  m.defines = normalMaps ? { TERRAIN_NORMALS: '', LS_NO_RIM: '' } : { LS_NO_RIM: '' };
   m.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, shared, tile);
     shader.vertexShader = shader.vertexShader

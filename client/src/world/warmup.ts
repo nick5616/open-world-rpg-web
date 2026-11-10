@@ -22,6 +22,13 @@ import * as THREE from 'three';
 
 let target: THREE.WebGLRenderTarget | null = null;
 
+function compileGroup(gl: THREE.WebGLRenderer, objs: THREE.Object3D[], camera: THREE.Camera, scene: THREE.Scene): Promise<unknown> {
+  const g = new THREE.Group();
+  for (const o of objs) g.add(o);
+  g.updateMatrixWorld(true);
+  return gl.compileAsync(g, camera, scene).finally(() => g.clear());
+}
+
 export interface WarmResult {
   ms: number;
   /** Programs three.js holds after the warm-up. */
@@ -34,7 +41,7 @@ export interface WarmResult {
  * Compiles `scene` (and `extra`, as if it were in the scene) for `camera`,
  * resolving when every program is ready or after `limitMs`.
  */
-export async function warmShaders(gl: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.Camera, extra: THREE.Object3D[] = [], limitMs = 8000): Promise<WarmResult> {
+export async function warmShaders(gl: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.Camera, extra: THREE.Object3D[] = [], limitMs = 8000, post: THREE.Object3D[] = []): Promise<WarmResult> {
   const t0 = performance.now();
   target ??= new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType });
   const prev = gl.getRenderTarget();
@@ -48,6 +55,16 @@ export async function warmShaders(gl: THREE.WebGLRenderer, scene: THREE.Scene, c
       for (const o of extra) g.add(o);
       g.updateMatrixWorld(true);
       jobs.push(gl.compileAsync(g, camera, scene).finally(() => g.clear()));
+    }
+    // Playtest 2: the post chain's full-screen materials (PostFX.warmObjects).
+    // The last pass draws to the screen, so its program is the canvas'
+    // variant (output colour space): compile those against the canvas.
+    const inTarget = post.slice(0, -1);
+    const toScreen = post.slice(-1);
+    if (inTarget.length) jobs.push(compileGroup(gl, inTarget, camera, scene));
+    if (toScreen.length) {
+      gl.setRenderTarget(null);
+      jobs.push(compileGroup(gl, toScreen, camera, scene));
     }
   } finally {
     gl.setRenderTarget(prev);

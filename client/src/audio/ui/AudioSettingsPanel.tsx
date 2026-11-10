@@ -5,6 +5,7 @@
 import type { CSSProperties } from 'react';
 import { BUSES, useAudioSettings, type BusName } from '../settings';
 import { SOUND_BUTTON_W, TOP_BUTTON_TOP } from '../../hud/layout';
+import { useGraphicsUi } from '../../ui/graphics/GraphicsPanel';
 
 const glass: CSSProperties = {
   background: 'rgba(10,13,20,0.78)',
@@ -34,7 +35,10 @@ export function SoundButton() {
       // Never keep focus: Space (jump) would click it again.
       tabIndex={-1}
       onMouseDown={(e) => e.preventDefault()}
-      onClick={() => setOpen(!open)}
+      onClick={() => {
+        setOpen(!open);
+        if (!open) useGraphicsUi.getState().setOpen(false); // they share the corner
+      }}
       style={{ ...glass, position: 'fixed', right: 12, top: TOP_BUTTON_TOP, width: SOUND_BUTTON_W, boxSizing: 'border-box', textAlign: 'center', zIndex: 31, padding: '5px 9px', cursor: 'pointer', opacity: 0.8 }}
     >
       {muted ? 'Sound off' : 'Sound'}
