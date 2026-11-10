@@ -70,5 +70,21 @@ export function siteName(index: number, sites: readonly { name: string | null; c
 /** Where the zone will put you (RespawnPoint: the last waypoint touched; else the name Event 608 gave it). */
 export function respawnSiteName(): string {
   const ex = useExploration.getState();
-  return siteName(ex.progress.lastWaypoint, useMapWorld.getState().data?.sites) || ex.respawnName;
+  const data = useMapWorld.getState().data;
+  return siteName(ex.progress.lastWaypoint, data?.sites) || ex.respawnName || spawnTownName(data?.spawn, data?.sites);
+}
+
+/** No waypoint touched yet: the zone uses the world spawn, in the starting town (the Haven). */
+export function spawnTownName(spawn: { x: number; z: number } | undefined, sites: readonly { name: string | null; category: string; x: number; z: number }[] | undefined): string {
+  if (!spawn || !sites) return '';
+  let best = '';
+  let bd = 600; // the Haven's reach: farther than this, no town to name
+  for (const s of sites) {
+    const d = Math.hypot(s.x - spawn.x, s.z - spawn.z);
+    if (s.category === 'settlement' && s.name?.trim() && d < bd) {
+      bd = d;
+      best = s.name.trim();
+    }
+  }
+  return best;
 }

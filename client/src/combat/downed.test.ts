@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { COMBAT, PLAYER_RESPAWN_GRACE_S } from '@lodestone/contracts';
-import { downedLines, GRACE_MS, graceLine, killerName, siteName } from './downed';
+import { downedLines, GRACE_MS, graceLine, killerName, siteName, spawnTownName } from './downed';
 
 const slime = COMBAT.enemies.find((e) => e.key === 'slime')!;
 
@@ -41,6 +41,17 @@ describe('downed screen (CR 024)', () => {
     expect(siteName(2, sites)).toBe('Old Shrine');
     expect(siteName(1, sites)).toBe('the Draedmore waypoint');
     expect(siteName(0, undefined)).toBe('');
+  });
+
+  it('with no waypoint touched, names the starting town', () => {
+    const sites = [
+      { name: 'Far Keep', category: 'settlement', x: 2000, z: 0 },
+      { name: 'Draedmore', category: 'settlement', x: 30, z: 10 },
+      { name: 'Old Shrine', category: 'poi', x: 1, z: 1 },
+    ];
+    expect(spawnTownName({ x: 0, z: 0 }, sites)).toBe('Draedmore');
+    expect(spawnTownName({ x: 5000, z: 5000 }, sites)).toBe('');
+    expect(spawnTownName(undefined, sites)).toBe('');
   });
 
   it('counts the respawn grace down from the shared constant', () => {

@@ -225,7 +225,10 @@ async function deathPass() {
     note('death pass skipped (SP9_CAMP not set)');
     return;
   }
-  const spawn = (await pl(page)).pos;
+  const spawn = await waitFor(async () => {
+    const p = (await pl(page)).pos;
+    return Math.abs(p.x) + Math.abs(p.z) > 1 ? p : null;
+  }, 30000);
   await rejoin({ x: camp[0] + 4, z: camp[1] });
   note(`rejoined next to the camp at ${JSON.stringify((await pl(page)).pos)}`);
   const downed = await waitFor(() => visible('[data-testid="downed"]'), 90000);
@@ -241,6 +244,7 @@ async function deathPass() {
   if (!/Downed/.test(text)) issue('death', 'no "Downed" title');
   if (!/by an? \w+/.test(text)) issue('death', `the downed screen does not name the enemy: ${text}`);
   if (!/Back on your feet/.test(text) || !/keep everything/.test(text)) issue('death', 'the downed screen does not say where/when and what you keep');
+  if (!/Back on your feet at \S/.test(text)) issue('death', `the downed screen does not name where you come back: ${text}`);
   const back = await waitFor(async () => !(await visible('[data-testid="downed"]')), 15000);
   if (!back) issue('death', 'still downed after 15 s');
   await sleep(500);
@@ -250,7 +254,7 @@ async function deathPass() {
   await shot('respawned');
   const p = (await pl(page)).pos;
   const fromCamp = Math.hypot(p.x - camp[0], p.z - camp[1]);
-  const fromSpawn = Math.hypot(p.x - spawn.x, p.z - spawn.z);
+  const fromSpawn = spawn ? Math.hypot(p.x - spawn.x, p.z - spawn.z) : NaN;
   note(`respawned at ${JSON.stringify(p)}: ${fromCamp.toFixed(0)} m from the camp, ${fromSpawn.toFixed(0)} m from the first spawn`);
   if (fromCamp < 100) issue('death', 'respawned next to the camp');
   const h = await page.evaluate(() => window.__lodestone.selfHealth());

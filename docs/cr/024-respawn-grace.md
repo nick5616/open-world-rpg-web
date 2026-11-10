@@ -23,14 +23,19 @@ to get their bearings.
 - Zone (`combat`): `Player.graceTick` set at the respawn. While
   `Graced(tick)`: enemies don't acquire or keep the player as a target
   (`acquire`, `chase`), enemy strikes and projectiles don't hurt them
-  (`hurtPlayer`), and PvP claims on them are refused (`RefuseInvulnerable`).
+  (`hurtPlayer`), PvP claims on them are refused (`RefuseInvulnerable`),
+  no PvP damage lands on them (`hurtByPlayer`: claims and CR 020's summoned
+  allies) and allies don't pick them as a target.
   Landing an accepted hit (PvE `applyHit`, PvP `applyPlayerHit`) ends the
   grace at once, so it can't be used to attack untouchable.
 - No protocol change: the client knows the respawn (Event 221) and its own
   accepted hits, so it draws the grace from the shared constant.
-- Client: the downed screen ("Downed by a Dewdrop Slime", "Back on your feet
-  at <waypoint> in 3 s", "You keep everything you carry") and a grace line
-  after the respawn (`client/src/combat/downed.ts`, `DownedOverlay`).
+- Client: the downed screen ("Downed by a Bandit Brute", "Back on your feet
+  at Draedmore in 3 s", "You keep everything you carry. Touch a waypoint to
+  come back there next time.") and a grace line after the respawn
+  (`client/src/combat/downed.ts`, `DownedOverlay.tsx`). Where you come back:
+  the last waypoint's name (progress sync + atlas), else the name Event 608
+  gave it, else the starting town nearest the world spawn.
 
 Environmental damage (fire, drowning) is not affected: the grace is about
 enemies and players.
@@ -41,4 +46,8 @@ enemies and players.
 downed event names one of them and the wait, the respawn is at the respawn
 point with full health/mana and draughts kept, brutes placed on the respawn
 point neither target nor hurt the player for the grace and do afterwards; an
-accepted hit ends the grace. Client: `downed.test.ts`.
+accepted hit ends the grace. Client: `downed.test.ts`. Headless:
+`tools/playtest/sp9.mjs ... death` on a private stack with a dev camp of
+level-8 brutes 700 m from the spawn (downed in ~4 s, the screen names the
+brute and Draedmore, respawn 700 m away at full health with the grace line,
+gone after 5 s).
