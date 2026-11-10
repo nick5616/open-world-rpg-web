@@ -29,6 +29,8 @@ import { PvpHud } from '../ui/pvp';
 // Playtest 2: skill tree (N) and build overview (B) (client/src/ui/skills/README.md).
 import { SkillScreen } from '../ui/skills';
 import { QuestHud } from '../ui/quests/QuestHud';
+// Playtest 2 content (CR 023): world events, lore tablets, herbs, sealed vaults, feats (client/src/ui/content/README.md).
+import { ContentHud } from '../ui/content/ContentHud';
 // Sound and music: boots the audio engine after the first playable frame; K = sound settings (client/src/audio/README.md).
 import { AudioRoot } from '../audio/ui/AudioRoot';
 // Playtest 2: spell FX (online it is CombatLayer's; debug solo mounts it for the FX gallery and cast-spam bench).
@@ -73,6 +75,7 @@ export default function PlayScreen() {
       <SkillScreen />
       {/* Playtest 1: quest tracker, offers with location previews, journal (J) */}
       <QuestHud />
+      <ContentHud />
       <AudioRoot />
     </>
   );

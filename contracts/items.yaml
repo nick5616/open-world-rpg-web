@@ -87,7 +87,7 @@ ores:
   voidglass: {name: Voidglass, smelt: 3}
 
 # Stacks: how many fit in one stack per category (1 = never stacks).
-stacks: {ore: 99, ingot: 99, gem: 99, food: 20, potion: 20, meat: 20, herb: 40, hide: 20, ammo: 99, tool: 1, seed: 20, blueprint: 1, tome: 1, currency: 1000000, weapon: 1, armor: 1, key: 1}
+stacks: {ore: 99, ingot: 99, gem: 99, food: 20, potion: 20, meat: 20, herb: 40, hide: 20, ammo: 99, tool: 1, seed: 20, blueprint: 1, tome: 1, currency: 1000000, weapon: 1, armor: 1, key: 1, quest: 10}
 
 # Where a category lives (spec 8: 40 slots plus a gem pouch and an ore pouch;
 # coins in a purse that takes no slot).
@@ -155,11 +155,24 @@ items:
   food:stew: {name: Hearty Stew, heal: 55, value: 9}
   food:grilled_meat: {name: Grilled Meat, heal: 30, value: 6}
   food:berry_tart: {name: Berry Tart, heal: 40, value: 8}
+  # playtest 2 content (contracts/content.yaml foraging): cooked and brewed from gathered herbs
+  food:emberroot_skewer: {name: Emberroot Skewer, heal: 45, value: 10}
+  food:frostcap_broth: {name: Frostcap Broth, heal: 50, value: 10}
+  potion:glowmoss_tonic: {name: Glowmoss Tonic, heal: 65, value: 34}
+  potion:duskpetal_draught: {name: Duskpetal Draught, heal: 75, value: 45}
+  potion:dawnroot_elixir: {name: Dawnroot Elixir, heal: 120, value: 110}
   # ---- ingredients and trade goods ----
   meat:raw: {name: Raw Meat, value: 2}
   herb:heartleaf: {name: Heartleaf, value: 5}
+  herb:emberroot: {name: Emberroot, value: 6}
+  herb:frostcap: {name: Frostcap, value: 6}
+  herb:glowmoss: {name: Glowmoss, value: 8}
+  herb:duskpetal: {name: Duskpetal, value: 8}
   hide:wolf: {name: Wolf Pelt, value: 6}
   seed:wardbloom: {name: Wardbloom Seed, value: 30}
+  # ---- quest items (playtest 2 content: carried for a quest, worthless to merchants) ----
+  quest:parcel: {name: Sealed Parcel, value: 0}
+  quest:watch_banner: {name: Banner of the Old Watch, value: 0}
   # ---- tools (v1: carried, not yet required; spec 7's pickaxe is implicit; every character starts with one) ----
   tool:pickaxe: {name: Pickaxe, value: 40}
   tool:torch: {name: Torch, value: 6}
@@ -250,6 +263,12 @@ recipes:
   cook_berry_tart: {station: cook, inputs: {food:apple: 2, food:bread: 1}, output: food:berry_tart, xp: 6}
   brew_health: {station: cook, inputs: {herb:heartleaf: 2}, output: potion:health, xp: 6}
   brew_greater_health: {station: cook, inputs: {herb:heartleaf: 2, potion:health: 1}, output: potion:greater_health, xp: 10}
+  # playtest 2 content: foraged herbs (contracts/content.yaml forage)
+  cook_emberroot_skewer: {station: cook, inputs: {meat:raw: 1, herb:emberroot: 1}, output: food:emberroot_skewer, xp: 8}
+  cook_frostcap_broth: {station: cook, inputs: {herb:frostcap: 2, herb:heartleaf: 1}, output: food:frostcap_broth, xp: 8}
+  brew_glowmoss_tonic: {station: cook, inputs: {herb:glowmoss: 2, herb:heartleaf: 1}, output: potion:glowmoss_tonic, xp: 10}
+  brew_duskpetal_draught: {station: cook, inputs: {herb:duskpetal: 2, herb:glowmoss: 1}, output: potion:duskpetal_draught, xp: 12}
+  brew_dawnroot_elixir: {station: cook, inputs: {herb:emberroot: 1, herb:frostcap: 1, herb:glowmoss: 1, herb:duskpetal: 1}, output: potion:dawnroot_elixir, xp: 20}
 
 # What a new character carries (spec 8's consumables replace WP13's
 # stand-in draught; granted once per character, exactly once). Playtest 2:
@@ -270,6 +289,9 @@ loot:
     cave: {item: 0.2, gem: 0.15, ore: 0.4, blueprint: 0.04, consumable: 0.05}
     boss: {item: 1.0, gem: 1.0, blueprint: 1.0, consumable: 1.0}
     slime: {item: 0.06, consumable: 0.12, food: 0.15}  # playtest 1 (CR 012): Haven beginners
+    # playtest 2 content (CR 022): world-event creatures (the event itself pays the real reward)
+    critter: {gem: 0.5}
+    hunt: {item: 0.25, hide: 0.3, consumable: 0.05}
   # Elites: one guaranteed equipment roll with this luck. Bosses: `items`
   # equipment rolls, a tome, and luck; weekly lockout per character (spec 8).
   elite: {items: 1, luck: 2.0}

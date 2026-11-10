@@ -21,6 +21,8 @@ import { anyExploredIn, currentExplored, exploredMask } from './explored';
 import { PAPER, siteGlyph } from './mapRender';
 // Playtest 1: quest markers and offer previews.
 import { trackedQuest, useQuests } from '../quests/store';
+// CR 023: discovered sealed vaults and world events in range.
+import { useContent } from '../content/store';
 import { whereText } from '../quests/events';
 
 interface Hit {
@@ -247,6 +249,10 @@ function MapView() {
         for (const m of q.markers) drawQuestMarker(ctx, sx(m.x), sy(m.z), (m.r ?? 0) * k, tracked ? '#ffd166' : '#e8a33d', tracked ? m.label : '', tracked ? 1 : 0.6, false, placed);
       }
       if (qs.preview) for (const m of qs.preview.markers) drawQuestMarker(ctx, sx(m.x), sy(m.z), (m.r ?? 0) * k, '#7fe3ff', m.label, 1, true, placed);
+      // CR 023: sealed vaults you found (a keyhole) and world events in range (a red circle).
+      const cs = useContent.getState();
+      for (const v of cs.sync.vaults) drawVault(ctx, sx(v.x), sy(v.z), v.name);
+      for (const e of Object.values(cs.events)) if (e.phase === 1) drawQuestMarker(ctx, sx(e.x), sy(e.z), Math.max(6, e.r * k), '#ff7b54', e.name, 1, false, placed);
 
       // Party members (drawn remotes in my party: the party ring keeps them at any distance).
       if (st.partyId) {
@@ -591,4 +597,26 @@ function drawPin(ctx: CanvasRenderingContext2D, x: number, y: number, color: str
     ctx.textAlign = 'center';
     ctx.fillText(letter, x, y - 10);
   }
+}
+
+/** A discovered sealed vault (CR 023): a dark stone square with a gold keyhole. */
+export function drawVault(ctx: CanvasRenderingContext2D, x: number, y: number, name: string) {
+  ctx.save();
+  ctx.fillStyle = '#3a332a';
+  ctx.strokeStyle = '#e8c47a';
+  ctx.lineWidth = 1.5;
+  ctx.fillRect(x - 6, y - 6, 12, 12);
+  ctx.strokeRect(x - 6, y - 6, 12, 12);
+  ctx.fillStyle = '#e8c47a';
+  ctx.beginPath();
+  ctx.arc(x, y - 1.5, 2.2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillRect(x - 1, y - 1, 2, 5);
+  ctx.font = '600 10px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = 'rgba(0,0,0,0.7)';
+  ctx.strokeText(name, x, y + 17);
+  ctx.fillText(name, x, y + 17);
+  ctx.restore();
 }
