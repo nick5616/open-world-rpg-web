@@ -228,7 +228,8 @@ export class Avatar {
   /** pt/ux: the equipped weapon (snapshot typeId, weapons/look.ts): in the hand (high LOD) and on the shoulder pivot (mid LOD). */
   private weaponHi: THREE.Mesh;
   private weaponMid: THREE.Mesh;
-  private weaponType = -1;
+  /** The weapon look typeId shown (pt/ux packLook; CR 022: the gem tints its swing FX). */
+  weaponType = -1;
   /** The weapon kind in hand (classifies Event 214 actions). */
   weaponKind: WeaponKind | null = null;
   /** The three figures (high, mid, low); only the one in use is in the scene graph. */
@@ -494,7 +495,9 @@ export class Avatar {
   private drawPlate(v: RemoteView): void {
     // WP11: someone we hear shows "speaking" from our own analyser at once,
     // without waiting for the zone's activity bit to round-trip.
-    const act = isSpeaking(v.name) ? v.activity | Activity.speaking : v.activity;
+    // CR 022: a player's casting bit means "holding a spell or a dash": their pose shows it, not the plate.
+    const shown = v.kind === 1 ? v.activity & ~Activity.casting : v.activity;
+    const act = isSpeaking(v.name) ? shown | Activity.speaking : shown;
     const mark = pvpMark(v.typeId); // playtest 2 (CR 019): red crossed swords = flagged for PvP, gold = dueling
     if (v.name === this.plateName && v.level === this.plateLevel && act === this.plateAct && mark === this.plateMark) return;
     this.plateName = v.name;

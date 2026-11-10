@@ -214,3 +214,21 @@ delayed charges and brands, summoned allies (docs/cr/020-spell-mechanics.md).
 Controls: hold 1-4 (or RMB with the slot selected) to keep a stream firing
 or to gather a charge; let go to stop / release. Tests: `spellsim.test.ts`,
 `mechanics.test.ts`.
+
+## Shared spell visuals (playtest 2, CR 022)
+
+"Make spells graphics/animations shared client state" (docs/cr/022-shared-spell-fx.md):
+what you see of your own spells and casting animations is what everyone
+else sees of them, because both are drawn from one state per caster.
+
+| File | What |
+| --- | --- |
+| `castState.ts` | The caster record (`castState.get('self' \| entityId)`): the newest action, what is held (stream, charge, beam, guard), the running dash and whether its key holds it, the precise aim. Your prediction fills yours (`runtime.ts`, `scene/LocalAvatar.tsx` for mining); `remoteEvent()` fills everyone else's from Events 214 / 223 / 226 / 219 / 707, `activity()` from their drawn Activity casting bit, each applied when their drawn body reaches it (their interpolation delay) |
+| `aim.ts` | One aim walk (`aimPoint`), target pick (`aimTarget`, `beamEnd`) and look vector for your claims, your visuals and everyone's |
+| `fx/castOrigin.ts` | `casterHand(key, ...)`: where every body's casts leave (staff/wand tip or off hand), yours in third person and theirs |
+| `fx/engine.ts` | Reads the record: beams follow the caster's aim every frame (`channelBeam`), remote streams and rain shoot along the replicated aim, held dashes keep full FX while held, shells burst on break (`shieldBroken`), weapon swing arcs (`swing`) and others' arrows, bolts and slams; projectiles leave the hand and ease onto the eye path for every caster; the cast flourish for every caster |
+| `../net/avatarAnim.ts` | `followCaster(anim, record, weapon)`: the one call posing your third-person body and every other player's (action edge, held stream / charge / guard pose, held dash flight: jet, skate, soar, rush) |
+| `dev/shared-fx-shots.ts` | Two clients on a private zone, caster vs observer for every mechanic, with parity samples: `docs/evidence/pt2-shared-fx-*` |
+
+Tests: `castState.test.ts` (decoders, delay, casting bit, parity of your
+pose and theirs, beams and dashes drawn from the record).

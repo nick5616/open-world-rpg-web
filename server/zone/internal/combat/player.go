@@ -145,6 +145,12 @@ type Player struct {
 	manaSentTick uint32
 	inCombatTick uint32
 	dash         dashState // CR 021: the dash allowDash allowed (dashes.go)
+	// CR 022 (held.go): what the player holds, for other clients' visuals.
+	held      heldState
+	beam      beamRun
+	aimYaw    uint16 // the newest frame's look, exactly as sent
+	aimPitch  int16
+	guardHeld bool
 }
 
 // InCombatWithin reports whether the player hurt something or was hurt in
@@ -378,6 +384,7 @@ func (p *Player) Frame(f proto.InputFrame, before movement.State, g movement.Gro
 		p.altHeld = 0
 	}
 	p.altPrev = alt
+	p.noteHeldFrame(f, alt && w.Key != "staff" && w.Key != "wand") // CR 022 (held.go)
 	return r
 }
 

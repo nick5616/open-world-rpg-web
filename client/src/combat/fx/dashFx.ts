@@ -52,8 +52,12 @@ const MIST: BurstOpts = { life: [0.6, 1.0], size: [0.5, 0.9], shape: SHAPE_PUFF,
 const WISP: BurstOpts = { life: [0.4, 0.8], size: [0.08, 0.16], speed: [0.2, 1.2], drag: 2 };
 const BLINK_BOLT = { width: 0.07, duration: 0.18, forks: 2, segs: 8, jitter: 0.5 };
 
-/** One frame of a running dash: the caster went from a to b (feet) at `speed` m/s. */
-export function dashFxStep(fx: FxPrims, v: SpellVisual, a: V3, b: V3, speed: number, st: DashFxState): void {
+/**
+ * One frame of a running dash: the caster went from a to b (feet) at `speed`
+ * m/s. `held` (CR 022, the shared held state): its key holds it now, so a
+ * jet thrusts at full flame; the carry after it coasts on a smaller one.
+ */
+export function dashFxStep(fx: FxPrims, v: SpellVisual, a: V3, b: V3, speed: number, st: DashFxState, held = true): void {
   const c = R.cols(v.palette);
   const t = fxTime();
   const dx = b.x - a.x;
@@ -63,7 +67,7 @@ export function dashFxStep(fx: FxPrims, v: SpellVisual, a: V3, b: V3, speed: num
   st.dir.x = -dx / len;
   st.dir.y = -dy / len;
   st.dir.z = -dz / len;
-  const fast = Math.min(1, speed / 30);
+  const fast = Math.min(1, speed / 30) * (held ? 1 : 0.4);
   const cy = b.y + 0.9;
   switch (v.family) {
     case 'fire':
