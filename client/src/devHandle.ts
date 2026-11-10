@@ -79,6 +79,10 @@ export function installDevHandle(): void {
     },
     weather: () => ({ state: STATE_KEYS[liveWeather.state], mix: { ...liveWeather.mix }, wet: liveWeather.wet, snowCover: liveWeather.snowCover, rainbow: liveWeather.rainbow, flash: liveWeather.flash, bolts: liveWeather.bolts.length, stats: { ...liveWeather.stats }, dynamic: weatherClient.dynamic, climate: weatherClient.climate ? [...weatherClient.climate.cells] : null, hud: { ...useWeatherHud.getState() } }),
     weatherStrike: (x: number, z: number, y?: number) => zoneBolt((Math.random() * 1e9) >>> 0, x, y ?? localPlayer.pos.y, z, false, localPlayer.pos),
+    /** Solo: shift the world clock the weather reads (seconds), to find a front about to change. */
+    setWorldOffset: (s: number) => {
+      if (!worldClockState.announced) worldClockState.offsetS = s;
+    },
     setRainbow: (v: number | null) => {
       weatherClient.devRainbow = v;
     },

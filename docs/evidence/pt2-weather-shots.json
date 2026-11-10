@@ -1,5 +1,5 @@
 {
-  "date": "2026-11-10T15:39:32.361Z",
+  "date": "2026-11-10T15:53:42.148Z",
   "base": "http://127.0.0.1:5383",
   "results": [
     {
@@ -311,34 +311,6 @@
       "errors": 0
     },
     {
-      "file": "pt2-weather-seeded-hud.png",
-      "weather": null,
-      "style": "lodestone",
-      "hour": 13,
-      "state": "windy",
-      "hud": {
-        "line": "Storm rolling in in 3 min",
-        "state": 2
-      },
-      "mix": {
-        "cloud": 0.42,
-        "rain": 0,
-        "snow": 0.03,
-        "fog": 0.01,
-        "wind": 0.78,
-        "dust": 0,
-        "haze": 0,
-        "storm": 0.01
-      },
-      "wet": 0,
-      "snowCover": 0.71,
-      "rainbow": 0,
-      "frames": 72,
-      "p50": 16.7,
-      "p95": 16.7,
-      "errors": 0
-    },
-    {
       "file": "pt2-weather-rain-low.png",
       "weather": "rain",
       "style": "lodestone",
@@ -619,10 +591,6 @@
       "errors": 0
     },
     {
-      "tier": "high",
-      "errors": []
-    },
-    {
       "file": "pt2-weather-snowstorm-low.png",
       "weather": "snowstorm",
       "style": "lodestone",
@@ -651,7 +619,35 @@
       "errors": 0
     },
     {
-      "tier": "low",
+      "file": "pt2-weather-seeded-hud.png",
+      "weather": null,
+      "style": "lodestone",
+      "hour": 13,
+      "state": "clear",
+      "hud": {
+        "line": "Heat haze in 2 min",
+        "state": 0
+      },
+      "mix": {
+        "cloud": 0.1,
+        "rain": 0,
+        "snow": 0,
+        "fog": 0,
+        "wind": 0.15,
+        "dust": 0,
+        "haze": 0,
+        "storm": 0
+      },
+      "wet": 0,
+      "snowCover": 0,
+      "rainbow": 0,
+      "frames": 73,
+      "p50": 16.7,
+      "p95": 16.7,
+      "errors": 0
+    },
+    {
+      "tier": "high",
       "errors": []
     }
   ]

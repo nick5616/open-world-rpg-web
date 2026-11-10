@@ -205,7 +205,17 @@ try {
       await shot(page, errors, `snow-${style}`, { at: cold, weather: 'snow', style, wait: 6000, pitch: -0.15 });
     }
     // The HUD pill with a forecast: seeded weather (no override), whatever it is now.
-    await shot(page, errors, 'seeded-hud', { at: m, weather: null, wait: 6000 });
+    // Shift the solo weather clock until the front here is about to change, so the pill shows a forecast line.
+    if (!only || only.has('seeded-hud')) {
+      await L(page, ([x, z]) => window.__lodestone.teleport({ x, z }), [m.x, m.z]);
+      await L(page, () => window.__lodestone.setWeather(null));
+      for (let k = 0; k < 240; k++) {
+        await L(page, (s) => window.__lodestone.setWorldOffset(s), k * 90);
+        await sleep(350);
+        if ((await L(page, () => window.__lodestone.weather().hud.line)) !== '') break;
+      }
+    }
+    await shot(page, errors, 'seeded-hud', { at: m, weather: null, wait: 2000 });
     if (errors.length) console.log(`errors:\n  ${errors.slice(0, 12).join('\n  ')}`);
     results.push({ tier: 'high', errors: errors.slice(0, 20) });
   } finally {
