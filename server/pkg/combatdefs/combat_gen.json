@@ -6544,7 +6544,7 @@
    "homing": {
     "turnDegS": 320,
     "acquireM": 24,
-    "coneDeg": 90,
+    "coneDeg": 110,
     "delayMs": 80,
     "delaySteps": 5,
     "loseDeg": 120
