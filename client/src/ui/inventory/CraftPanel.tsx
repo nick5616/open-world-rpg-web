@@ -17,8 +17,8 @@ import { ensureInventoryStyles, GOLD, PANEL_BG, PANEL_BORDER, TEXT } from './sty
 import { isTextTarget } from '../../input/useKeyboard';
 import { useCombatHud } from '../../combat/store';
 
-const TITLE = { forge: 'The forge', anvil: 'The anvil', cook: 'Cooking fire' } as const;
-const SUB = { forge: 'Smelting and forging', anvil: 'Smelting and forging', cook: 'Cooking and brewing' } as const;
+const TITLE = { forge: 'The forge', anvil: 'The anvil', cook: 'Cooking fire', workbench: 'Workbench', camp: 'Camp kits' } as const;
+const SUB = { forge: 'Smelting and forging', anvil: 'Smelting and forging', cook: 'Cooking and brewing', workbench: 'Tools, rope and arrows away from town', camp: 'Pack a kit, then place it (P)' } as const;
 
 export function CraftPanel() {
   const station = useInventory((s) => s.station);

@@ -49,7 +49,8 @@ function scorchAlpha(): THREE.Texture | null {
 }
 const MAX_ICE = 4000;
 
-const flameMat = new THREE.ShaderMaterial({
+// Exported for camp fires (CR 025, ui/camps/CampLayer.tsx): the same instanced flame cards, animated here.
+export const flameMat = new THREE.ShaderMaterial({
   transparent: true,
   depthWrite: false,
   blending: THREE.AdditiveBlending,
@@ -81,7 +82,7 @@ const flameMat = new THREE.ShaderMaterial({
     }`,
 });
 
-function flameGeometry(): THREE.BufferGeometry {
+export function flameGeometry(): THREE.BufferGeometry {
   // Two crossed cards, 1.6 m tall: a flame reads from every side.
   const a = new THREE.PlaneGeometry(1.7, 1.6);
   a.translate(0, 0.8, 0);

@@ -32,6 +32,8 @@ import { CaveCellStore } from '../caves/caveStore';
 import type { GroundQuery } from '../../sim/ground';
 // WP15: ice sheets and earth pillars on top (client/src/systems/chem/ground.ts; pass-through when there are none).
 import { ChemGround } from '../../systems/chem/ground';
+// CR 025: solid camp pieces (chest, workbench, signpost) on top of the doors (ui/camps/collide.ts; pass-through without pieces).
+import { CampGround } from '../../ui/camps/collide';
 
 export interface LoadTimings {
   wasmMs: number;
@@ -102,6 +104,7 @@ export class WorldRuntime {
         this.doors = new TownDoors(this.towns);
         this.doorStates = new DoorStates(this.doors.count);
         ground = new DoorGround(ground, this.doors, this.doorStates);
+        ground = new CampGround(ground);
       } catch (err) {
         console.warn('[world] towns unavailable', err);
       }

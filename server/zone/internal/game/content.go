@@ -795,6 +795,10 @@ func (s *Server) forage(sess *session, id uint32, refuse func(int32)) {
 	}
 	herb := content.HerbByID(p.Herb)
 	n := 1 + int(content.Mix(s.cfg.Seed^uint64(id)^uint64(now/60000)^hashString(e.CharacterID))%forageGrantMax)
+	wood := herb != nil && len(herb.Item) > 5 && herb.Item[:5] == "wood:" // CR 025: deadfall gives firewood (2-3), not a herb
+	if wood {
+		n++
+	}
 	ci := sess.items
 	if herb == nil || ci == nil || !ci.inv.CanFit(herb.Item, n) {
 		refuse(ContentRefuseFull)
@@ -808,7 +812,9 @@ func (s *Server) forage(sess *session, id uint32, refuse func(int32)) {
 	s.sendGranted(sess, SourceContent, []*items.Item{it})
 	until := now + int64(contentdefs.D.Forage.RegrowS*1000)
 	sess.cnt.st.Pick(id, until, now)
-	sess.cnt.st.Add("forage", n)
+	if !wood {
+		sess.cnt.st.Add("forage", n) // Green Thumb counts herbs
+	}
 	sess.cnt.recheck = true
 	s.sendEvent(sess, &proto.Event{Kind: EventForagePicked, EntityID: e.ID, TargetID: id, Value: int32(until - now), Data: []byte(herb.Item)})
 	s.questsChanged(sess)

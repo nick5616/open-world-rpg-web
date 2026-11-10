@@ -9,6 +9,10 @@ import { PLAYER_RESPAWN_GRACE_S } from '@lodestone/contracts';
 import { enemyInfo } from './events';
 import { useExploration } from '../ui/map/store';
 import { useMapWorld } from '../ui/map/world';
+import { useCamps } from '../ui/camps/store'; // CR 025: a bedroll is your respawn point
+
+/** The downed screen's name for a bedroll respawn (CR 025). */
+export const BEDROLL_PLACE = 'your bedroll';
 
 const PLAYER = 1;
 
@@ -44,7 +48,7 @@ export function downedLines(d: Downed, now: number): { title: string; by: string
     title: 'Downed',
     by: d.by ? `by ${d.by}` : '',
     when: s > 0 ? `Back on your feet ${where} in ${s} s` : `Back on your feet ${where}…`,
-    keep: 'You keep everything you carry. Touch a waypoint to come back there next time.',
+    keep: d.respawnAt === BEDROLL_PLACE ? 'You keep everything you carry. Your bedroll is your respawn point.' : 'You keep everything you carry. Touch a waypoint to come back there next time.',
   };
 }
 
@@ -67,8 +71,9 @@ export function siteName(index: number, sites: readonly { name: string | null; c
   return town ? `the ${town.name!.trim()} waypoint` : 'your last waypoint';
 }
 
-/** Where the zone will put you (RespawnPoint: the last waypoint touched; else the name Event 608 gave it). */
+/** Where the zone will put you (RespawnPoint: your bedroll (CR 025); else the last waypoint touched; else the name Event 608 gave it). */
 export function respawnSiteName(): string {
+  if (useCamps.getState().mine.spawn) return BEDROLL_PLACE; // CR 025: the zone respawns you beside your bedroll
   const ex = useExploration.getState();
   const data = useMapWorld.getState().data;
   return siteName(ex.progress.lastWaypoint, data?.sites) || ex.respawnName || spawnTownName(data?.spawn, data?.sites);

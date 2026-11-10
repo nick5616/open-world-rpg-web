@@ -415,6 +415,8 @@ forage:
     frostcap: {item: herb:frostcap, biomes: [snowpeak, highlands], color: '#a8dcff', weight: 3}
     glowmoss: {item: herb:glowmoss, biomes: [wetland, forest], color: '#c4ff6e', weight: 2}
     duskpetal: {item: herb:duskpetal, biomes: [meadow, forest, highlands], color: '#9a6bff', weight: 2}
+    # playtest 2 camps (CR 025): fallen branches, gathered like herbs; camp kits and campfire fuel
+    deadfall: {item: wood:firewood, biomes: [meadow, forest, highlands, wetland, badlands], color: '#8a6a44', weight: 3}
 
 # ---- fishing (playtest 2 "fishing"; docs/cr/026-fishing-emotes-photo.md) ----
 # Cast a rod (items.yaml tool:fishing_rod) at open water: a lake, a river or

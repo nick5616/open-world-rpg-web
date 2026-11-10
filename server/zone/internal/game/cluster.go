@@ -148,6 +148,8 @@ const (
 	ctlDoor    = "door"    // to the owner: please open (A 1) / close (A 2) door D for player By
 	ctlDoorNo  = "doorno"  // owner -> asker: refused, A = Event 972 reason
 	ctlDoorSet = "doorset" // owner -> every zone: door D is now open (A 1) / closed (A 2)
+	// Camps (CR 025, camps.go): the zone owning a piece tells every other zone.
+	ctlCampSet = "campset" // owner -> every zone: piece Camp placed, changed or gone
 )
 
 type ctlMsg struct {
@@ -159,6 +161,8 @@ type ctlMsg struct {
 	Door uint64 `json:"d,omitempty"`
 	A    int    `json:"a,omitempty"`
 	By   uint32 `json:"b,omitempty"`
+	// Camps (ctlCampSet): the piece (campJSON).
+	Camp json.RawMessage `json:"camp,omitempty"`
 }
 
 func (m ctlMsg) encode() []byte { b, _ := json.Marshal(m); return b }
@@ -166,7 +170,7 @@ func (m ctlMsg) encode() []byte { b, _ := json.Marshal(m); return b }
 func decodeCtl(b []byte) (ctlMsg, error) {
 	var m ctlMsg
 	err := json.Unmarshal(b, &m)
-	door := m.T == ctlDoor || m.T == ctlDoorNo || m.T == ctlDoorSet
+	door := m.T == ctlDoor || m.T == ctlDoorNo || m.T == ctlDoorSet || m.T == ctlCampSet
 	if err == nil && (m.T == "" || (m.Char == "" && !door)) {
 		err = errors.New("control message without type or character")
 	}

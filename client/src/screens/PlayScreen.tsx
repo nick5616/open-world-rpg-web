@@ -3,7 +3,7 @@
 // screen handed over a ReadySession, else the generated world offline
 // (solo builds, "continue offline"); both render through WP05's WorldCanvas.
 import { WorldCanvas } from '../world/WorldCanvas';
-// Playtest 2: photo mode (P) and fishing take their keys in the capture phase from module load,
+// Playtest 2: photo mode (L) and fishing take their keys in the capture phase from module load,
 // before any panel's own listener (ui/photo/PhotoMode.tsx, ui/fishing/FishingHud.tsx).
 import { PhotoMode } from '../ui/photo/PhotoMode';
 import { FishingHud } from '../ui/fishing/FishingHud';
@@ -37,6 +37,8 @@ import { SkillScreen } from '../ui/skills';
 import { QuestHud } from '../ui/quests/QuestHud';
 // Playtest 2 content (CR 023): world events, lore tablets, herbs, sealed vaults, feats (client/src/ui/content/README.md).
 import { ContentHud } from '../ui/content/ContentHud';
+// Playtest 2 camps (CR 025): P = camp menu, placement, chests, signposts, Rested (client/src/ui/camps/README.md).
+import { CampHud } from '../ui/camps/CampHud';
 // Sound and music: boots the audio engine after the first playable frame; K = sound settings (client/src/audio/README.md).
 import { AudioRoot } from '../audio/ui/AudioRoot';
 // Playtest 2 onboarding: Esc menu (controls, sound, plug-in settings, leave) and contextual tips (client/src/ui/menu, ui/tips).
@@ -87,7 +89,8 @@ export default function PlayScreen() {
       {/* Playtest 1: quest tracker, offers with location previews, journal (J) */}
       <QuestHud />
       <ContentHud />
-      {/* Playtest 2: fishing (E at deep water with a rod), emotes (H), photo mode (P) */}
+      <CampHud />
+      {/* Playtest 2: fishing (E at deep water with a rod), emotes (H), photo mode (L) */}
       <FishingHud />
       <EmoteWheel />
       <PhotoMode />

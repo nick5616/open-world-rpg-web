@@ -87,7 +87,7 @@ ores:
   voidglass: {name: Voidglass, smelt: 3}
 
 # Stacks: how many fit in one stack per category (1 = never stacks).
-stacks: {ore: 99, ingot: 99, gem: 99, food: 20, potion: 20, meat: 20, herb: 40, hide: 20, ammo: 99, tool: 1, seed: 20, blueprint: 1, tome: 1, currency: 1000000, weapon: 1, armor: 1, key: 1, quest: 10, fish: 20}
+stacks: {ore: 99, ingot: 99, gem: 99, food: 20, potion: 20, meat: 20, herb: 40, hide: 20, ammo: 99, tool: 1, seed: 20, blueprint: 1, tome: 1, currency: 1000000, weapon: 1, armor: 1, key: 1, quest: 10, wood: 50, camp: 5, fish: 20}
 
 # Where a category lives (spec 8: 40 slots plus a gem pouch and an ore pouch;
 # coins in a purse that takes no slot).
@@ -202,6 +202,13 @@ items:
   # ---- quest items (playtest 2 content: carried for a quest, worthless to merchants) ----
   quest:parcel: {name: Sealed Parcel, value: 0}
   quest:watch_banner: {name: Banner of the Old Watch, value: 0}
+  # ---- camps (playtest 2, CR 025: contracts/camps.yaml): firewood (deadfall, merchants) and camp kits ----
+  wood:firewood: {name: Firewood, value: 2}
+  camp:campfire: {name: Campfire Kit, value: 10}
+  camp:bedroll: {name: Bedroll Kit, value: 18}
+  camp:chest: {name: Storage Chest Kit, value: 24}
+  camp:workbench: {name: Workbench Kit, value: 30}
+  camp:signpost: {name: Signpost Kit, value: 8}
   # ---- tools (v1: carried, not yet required; spec 7's pickaxe is implicit; every character starts with one) ----
   tool:pickaxe: {name: Pickaxe, value: 40}
   tool:torch: {name: Torch, value: 6}
@@ -299,8 +306,21 @@ recipes:
   brew_glowmoss_tonic: {station: cook, inputs: {herb:glowmoss: 2, herb:heartleaf: 1}, output: potion:glowmoss_tonic, xp: 10}
   brew_duskpetal_draught: {station: cook, inputs: {herb:duskpetal: 2, herb:glowmoss: 1}, output: potion:duskpetal_draught, xp: 12}
   brew_dawnroot_elixir: {station: cook, inputs: {herb:emberroot: 1, herb:frostcap: 1, herb:glowmoss: 1, herb:duskpetal: 1}, output: potion:dawnroot_elixir, xp: 20}
+  # playtest 2 camps (CR 025): kits are made anywhere (station camp: the camp menu, P); the
+  # workbench is a camp piece (station workbench: tools and arrows away from town)
+  kit_campfire: {station: camp, inputs: {wood:firewood: 4}, output: camp:campfire, xp: 4}
+  kit_bedroll: {station: camp, inputs: {hide:wolf: 2, wood:firewood: 2}, output: camp:bedroll, xp: 6}
+  kit_chest: {station: camp, inputs: {wood:firewood: 8, ore:copper: 1}, output: camp:chest, xp: 8}
+  kit_workbench: {station: camp, inputs: {wood:firewood: 10, tool:rope: 1}, output: camp:workbench, xp: 10}
+  kit_signpost: {station: camp, inputs: {wood:firewood: 3}, output: camp:signpost, xp: 3}
+  bench_torch: {station: workbench, inputs: {wood:firewood: 2}, output: tool:torch, xp: 2}
+  bench_rope: {station: workbench, inputs: {hide:wolf: 1}, output: tool:rope, qty: 2, xp: 3}
+  bench_whetstone: {station: workbench, inputs: {ore:copper: 1}, output: tool:whetstone, xp: 3}
+  bench_copper_arrows: {station: workbench, inputs: {wood:firewood: 1, ore:copper: 1}, output: ammo:copper_arrow, qty: 10, xp: 4}
+  bench_iron_arrows: {station: workbench, inputs: {wood:firewood: 1, ore:iron: 1}, output: ammo:iron_arrow, qty: 10, xp: 5}
   # playtest 2 fishing (CR 026): a rod at the forge, fish at the hearth
   forge_fishing_rod: {station: forge, inputs: {ingot:copper: 1}, output: tool:fishing_rod, xp: 5}
+  bench_fishing_rod: {station: workbench, inputs: {wood:firewood: 2, tool:rope: 1}, output: tool:fishing_rod, xp: 4}
   cook_fish_skewer: {station: cook, inputs: {fish:silverfin: 2}, output: food:fish_skewer, xp: 4}
   cook_fried_perch: {station: cook, inputs: {fish:reed_perch: 1}, output: food:fried_perch, xp: 4}
   cook_grilled_trout: {station: cook, inputs: {fish:speckled_trout: 1, herb:heartleaf: 1}, output: food:grilled_trout, xp: 6}

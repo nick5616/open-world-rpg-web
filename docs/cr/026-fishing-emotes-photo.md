@@ -6,7 +6,7 @@ Branch `pt2/fishing-emotes-photo`. Nicole: "all sorts of good shit" (inspiration
 
 - **Fishing**: a fishing rod (`tool:fishing_rod`: general and tool merchants, or forged from a copper ingot); E at deep water casts; the float bobs, false nibbles, then the bite (strike within 1.2 s); the reel fight is a tension minigame; 14 species by water (lake, river, sea), biome, hour and weather (6 common, 4 uncommon, 2 rare, 2 legendary); 13 new hearth recipes; a Fish journal tab; four feats.
 - **Emotes**: 10 emotes on a wheel (hold H) or `/emote <name>`, posed on the avatar rig, sent to players within 48 m; first person gets a camera nod and a hand gesture.
-- **Photo mode** (P): a free camera clamped around the player, no HUD, style and time-of-day preview, depth of field / vignette / grain, PNG shots. Nothing on the wire.
+- **Photo mode** (L; P is the camp menu, CR 025): a free camera clamped around the player, no HUD, style and time-of-day preview, depth of field / vignette / grain, PNG shots. Nothing on the wire.
 
 ## Contract changes
 

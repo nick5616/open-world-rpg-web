@@ -19,7 +19,7 @@ function fail(msg) {
 
 const CATEGORY_KIND = {
   weapon: 'weapon', armor: 'armor', ammo: 'ammo', potion: 'consumable', food: 'consumable',
-  meat: 'material', herb: 'material', hide: 'material', seed: 'material', tool: 'tool', quest: 'material', fish: 'material',
+  meat: 'material', herb: 'material', hide: 'material', seed: 'material', tool: 'tool', quest: 'material', wood: 'material', camp: 'tool', fish: 'material',
   currency: 'currency', gem: 'gem', ore: 'ore', ingot: 'ingot', blueprint: 'blueprint', tome: 'tome', key: 'key',
 };
 
@@ -96,7 +96,7 @@ export function parseItems(doc, combat) {
   }
 
   const recipes = Object.entries(doc.recipes).map(([key, r], i) => {
-    if (!['forge', 'cook'].includes(r.station)) fail(`recipe ${key}: station must be forge or cook`);
+    if (!['forge', 'cook', 'camp', 'workbench'].includes(r.station)) fail(`recipe ${key}: station must be forge, cook, camp (CR 025: anywhere) or workbench (a camp piece)`);
     const out = byKey.get(r.output);
     if (!out) fail(`recipe ${key}: unknown output ${r.output}`);
     const inputs = Object.entries(r.inputs).map(([item, qty]) => {
@@ -159,7 +159,7 @@ export interface ItemDef {
 }
 export interface ItemAffixDef { key: string; name: string; stat: ItemStat; min: number; max: number; slots: string[]; weight: number; elements: number[]; themes: string[] }
 export interface UniqueDef { key: string; name: string; stats: Partial<Record<ItemStat, number>> }
-export interface RecipeDef { key: string; id: number; station: 'forge' | 'cook'; inputs: { item: string; qty: number }[]; output: string; qty: number; sockets: number; blueprint: string | null; xp: number }
+export interface RecipeDef { key: string; id: number; station: 'forge' | 'cook' | 'camp' | 'workbench'; inputs: { item: string; qty: number }[]; output: string; qty: number; sockets: number; blueprint: string | null; xp: number }
 export interface ItemDefs {
   version: number; rarities: RarityDef[]; luckCap: number; materials: MaterialDef[]; gems: GemDef[]; cuts: CutDef[]; combineCount: number; ores: OreDef[];
   stacks: Record<string, number>; pouches: Record<string, string>; items: ItemDef[]; tome: { name: string; value: number };

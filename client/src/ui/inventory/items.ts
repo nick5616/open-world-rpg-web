@@ -6,6 +6,7 @@
 
 import { COMBAT, ITEMS, type ItemDef, type ItemStat, type RarityDef, type RecipeDef } from '@lodestone/contracts';
 import { skillProgress, type SkillProgress } from '../progression/gains';
+import type { StationKind } from './events';
 
 /** One affix on an item (Event 400 `a`). */
 export interface WireAffix {
@@ -242,8 +243,8 @@ export function countOf(items: readonly WireItem[], key: string): number {
   return n;
 }
 
-export function recipesFor(station: 'forge' | 'anvil' | 'cook'): RecipeDef[] {
-  const s = station === 'cook' ? 'cook' : 'forge';
+export function recipesFor(station: StationKind): RecipeDef[] {
+  const s = station === 'cook' || station === 'workbench' || station === 'camp' ? station : 'forge';
   return ITEMS.recipes.filter((r) => r.station === s);
 }
 
@@ -264,6 +265,8 @@ export function recipeGroup(r: RecipeDef): string {
   if (r.key.startsWith('smelt_')) return 'Smelting';
   if (r.key.startsWith('brew_')) return 'Brewing';
   if (r.station === 'cook') return 'Cooking';
+  if (r.station === 'camp') return 'Camp kits';
+  if (r.station === 'workbench') return r.key.includes('arrows') ? 'Fletching' : 'Tools';
   return 'Forging';
 }
 
@@ -316,10 +319,10 @@ export interface SmithingView {
  * cooking fire (which trains no Smithing) shows the level only. Without a
  * sync (offline, or before the first one) Event 404's level is used if any.
  */
-export function smithingView(kind: 'forge' | 'anvil' | 'cook', stationLevel: number | null, synced: boolean, xp: number | undefined): SmithingView | null {
+export function smithingView(kind: StationKind, stationLevel: number | null, synced: boolean, xp: number | undefined): SmithingView | null {
   if (synced) {
     const p = skillProgress(xp ?? 0);
-    return { level: p.level, progress: kind === 'cook' ? null : p };
+    return { level: p.level, progress: kind === 'forge' || kind === 'anvil' ? p : null };
   }
   return stationLevel !== null ? { level: stationLevel, progress: null } : null;
 }

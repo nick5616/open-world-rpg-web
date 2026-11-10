@@ -4,7 +4,7 @@
     "date": "2026-11-10",
     "title": "Gone fishing",
     "items": [
-      "Buy a fishing rod from a general store or a tool merchant (or forge one), face a lake, river or the sea and press E.",
+      "Buy a fishing rod from a general store or a tool merchant (or make one at a forge or your camp workbench), face a lake, river or the sea and press E.",
       "Wait for the float to go under (a nibble is not a bite), strike, then reel: hold to pull in, let go when the line strains.",
       "Fourteen kinds of fish live in different waters, biomes, hours and weather. A few are rare, and two are the stuff of legend.",
       "Cook your catch at a hearth or campfire (thirteen new recipes), fill the new Fish tab in your journal (J) and earn four new feats."
@@ -24,9 +24,33 @@
     "date": "2026-11-10",
     "title": "Photo mode",
     "items": [
-      "Press P for photo mode: the camera leaves your character and the HUD disappears.",
+      "Press L for photo mode: the camera leaves your character and the HUD disappears.",
       "Fly with WASD (Space and Ctrl for up and down), pick a visual style, preview any hour of the day, and add depth of field, vignette and film grain.",
       "Press Enter to save a PNG. Esc frees the mouse, Esc again takes you back."
+    ]
+  },
+  {
+    "id": "pt2-camps",
+    "date": "2026-11-10",
+    "title": "Make camp",
+    "items": [
+      "Press P to make camp: craft a kit, then place a campfire, a bedroll, a storage chest, a workbench or a signpost in the wild (wheel or R turns it, left mouse places it).",
+      "Gather firewood from fallen branches, or buy it at a general store.",
+      "A burning campfire keeps demons away at night, and you can cook on it.",
+      "Rest in your bedroll to wake Rested (faster healing, more stamina); it is also where you come back after a fall.",
+      "Your chest keeps 16 stacks, just for you or shared with your party; hold E on your own piece to pack it up again."
+    ]
+  },
+  {
+    "id": "pt2-enemy-models",
+    "date": "2026-11-10",
+    "title": "Monsters with character",
+    "items": [
+      "Every creature has its own look now: squishy slimes with big eyes, boars with tusks, hooded bandits with real weapons, horned demons with glowing eyes, and bigger, grander bosses.",
+      "Enemies move like animals and fighters: they trot, hop, flap and look at you, wind up visibly before they strike, flinch when hit, reel when parried, and fall (or splat) when beaten.",
+      "Your summoned allies are glowing spirits in their element's colour.",
+      "Damage numbers are smaller, coloured by element, stack neatly, and crits pop.",
+      "Big crowds of enemies draw much faster."
     ]
   },
   {

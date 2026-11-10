@@ -25,7 +25,7 @@ import { cast, fishLive, floatState, press, release, useFishing } from './store'
 
 function othersBusy(): boolean {
   const q = (sel: string) => document.querySelector<HTMLElement>(sel);
-  const busy = ['[data-testid="town-prompt"]', '[data-testid="cave-hud"]', '[data-testid="loot-prompt"]', '[data-testid="content-prompt"]'].some((sel) => !!q(sel)?.textContent);
+  const busy = ['[data-testid="town-prompt"]', '[data-testid="cave-hud"]', '[data-testid="loot-prompt"]', '[data-testid="content-prompt"]', '[data-testid="camp-prompt"]'].some((sel) => !!q(sel)?.textContent);
   const townPanel = q('[data-testid="town-panel"]');
   return busy || (!!townPanel && townPanel.style.display !== 'none') || !!document.querySelector('[data-ui-panel]:not([style*="display: none"])');
 }

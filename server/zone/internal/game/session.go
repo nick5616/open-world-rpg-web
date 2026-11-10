@@ -57,6 +57,7 @@ type session struct {
 	items  *charItems      // WP14: loaded before join (items.go)
 	quests *questState     // quest log: loaded before join (quests.go)
 	cnt    *contentSess    // CR 023 content state: loaded before join (content.go)
+	camp   *campSess       // CR 025 camps: areas known, Rested, the open chest (camps.go)
 	// Playtest 2: travel to a friend (friendtravel.go).
 	travel           *friendTravel
 	lastFriendTravel time.Time
@@ -357,6 +358,10 @@ func (s *Server) drainTaken(sess *session, now time.Time) {
 			}
 			if it.TargetKind == InteractFriend {
 				s.friendInteract(sess, it, now) // playtest 2: travel to a friend (friendtravel.go)
+				continue
+			}
+			if it.TargetKind == InteractCamp {
+				s.campInteract(sess, it) // CR 025: place, pick up, use, fuel, chests, signposts (camps.go)
 				continue
 			}
 			if it.TargetKind == InteractContent {

@@ -1737,6 +1737,21 @@
     ],
     "color": "#9a6bff",
     "weight": 2
+   },
+   {
+    "key": "deadfall",
+    "id": 6,
+    "item": "wood:firewood",
+    "name": "Firewood",
+    "biomes": [
+     0,
+     1,
+     2,
+     5,
+     4
+    ],
+    "color": "#8a6a44",
+    "weight": 3
    }
   ]
  },

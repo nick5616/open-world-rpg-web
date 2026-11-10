@@ -1,10 +1,10 @@
-// Playtest 2 photo mode (Valheim / Breath of the Wild style): P frees the
+// Playtest 2 photo mode (Valheim / Breath of the Wild style): L frees the
 // camera from your character (PhotoRig.tsx flies it), hides the HUD, and
 // opens a panel: the visual style (restored when you leave), a time-of-day
 // preview of the light (client only: the world clock and everyone else's
 // sky are untouched), depth of field with auto or set focus, vignette,
 // grain, field of view, nameplates; Enter (or the button) saves a PNG of
-// the frame without the HUD. Esc frees the mouse, Esc again (or P) leaves.
+// the frame without the HUD. Esc frees the mouse, Esc again (or L) leaves.
 // Works in first and third person; nothing is sent to the zone.
 //
 // Keys: the handler is installed when this module loads (before any
@@ -21,7 +21,7 @@ import { PHOTO_DEFAULTS, PHOTO_KEYS, photoKeys, photoLive, usePhoto } from './st
 import { DEBUG } from '../../config';
 import { photoDebug } from './PhotoRig';
 
-export const PHOTO_KEY = 'KeyP';
+export const PHOTO_KEY = 'KeyL'; // L for lens (P is the camp menu, CR 025)
 const SHOT_KEY = 'Enter';
 const PANEL_KEY = 'KeyH';
 

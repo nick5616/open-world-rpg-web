@@ -101,6 +101,9 @@ type Config struct {
 	// Building door states (doors_sync.go): persisted by the zone owning
 	// each door's region; nil = zone memory only.
 	DoorStore DoorStore
+	// Playtest 2 camps (CR 025, camps.go): placed pieces persisted by the
+	// zone owning each piece; nil = zone memory only.
+	CampStore CampStore
 	// WP14 items (items.go): persistence, world containers, loot themes,
 	// the drop despawn timer, the Bitchin' announcement; nil = memory-only
 	// items with the spec's timers.
@@ -166,6 +169,7 @@ type Server struct {
 	obst       obstacleState // enemies respect buildings (obstacles.go)
 	pvp        pvpState      // playtest 2: PvP flags, safe zones, duels (pvp.go, duel.go)
 	cnt        contentGlue   // playtest 2 content (CR 023): content.go, content_quests.go, worldevents.go, dungeons.go
+	camp       campState     // playtest 2 camps (CR 025): camps.go, camps_chest.go, camps_store.go
 	// WP11: next earshot hand-off (earshot.go).
 	earshotNext time.Time
 	phases      tickPhases // WP19: per-phase tick timing (phases.go)
@@ -352,6 +356,7 @@ func (s *Server) onTick() {
 	s.nightTick(tick)       // WP15: clock, demons, defense events, chemistry (night.go)
 	s.questsTick(tick)      // quests: flagged rechecks, 2 Hz reach/clear checks (quests.go)
 	s.contentTick(tick)     // CR 023 content: regions, feats, titles, places, followers, world events, vaults (content.go)
+	s.campsTick(tick)       // CR 025 camps: piece areas, Rested, owner visits, decay, fires (camps.go)
 	s.friendTravelTick(now) // playtest 2: travel-to-friend channels (friendtravel.go)
 	s.emotesTick(tick)      // playtest 2: looping emotes and lines in the water (emotes.go, fishing.go)
 	s.phases.mark(phNight)
@@ -485,6 +490,7 @@ func (s *Server) join(sess *session) {
 	s.nightJoin(sess)       // WP15: world clock, pillars, defense state (night.go)
 	s.questsJoin(sess)      // quests: the log, the starter quest (quests.go)
 	s.contentJoin(sess)     // CR 023: codex, feats, reputation, vaults (content.go)
+	s.campJoin(sess)        // CR 025: camp pieces near you, your camp, Rested (camps.go)
 	s.clusterJoined(sess)   // WP16: owner record, arrival checkpoint
 	s.log.Info("join", "entity", e.ID, "character", e.CharacterID, "name", e.Name, "remote", sess.conn.RemoteAddr(),
 		"x", math.Round(e.Move.Pos.X*100)/100, "z", math.Round(e.Move.Pos.Z*100)/100)
@@ -532,6 +538,7 @@ func (s *Server) leave(sess *session) {
 	s.exploreLeave(sess) // WP12: progress save
 	s.questsLeave(sess)  // quests: log save (quests.go)
 	s.contentLeave(sess) // CR 023 (content.go)
+	s.campLeave(sess)    // CR 025 (camps.go)
 	s.emotesLeave(sess)  // playtest 2: emotes, fishing (emotes.go)
 	if s.cfg.Queue != nil {
 		s.checkpoint(e)

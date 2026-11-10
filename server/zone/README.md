@@ -855,3 +855,25 @@ Events 1000-1022 and Interact 80: `contracts/events.md`. Env:
 `LODESTONE_ZONE_NO_WORLD_EVENTS=1` (kill switch), `LODESTONE_ZONE_VAULT_PACKS=0`
 (evidence runs). `GET /debug/content`: vault plans, live events, tablets,
 quest givers.
+
+## Camps (playtest 2, CR 025)
+
+`internal/game/camps.go` (state, Interact 90, Events 1100-1107, area baselines, Rested, respawn, decay,
+night hooks, WP16 `campset`), `camps_chest.go` (storage chests through the item journal), `camps_store.go`
+(`camp_pieces`, migration 0026; `PGCampStore`); pure rules and the Go half of the collision twin in
+`server/pkg/camps`; data in `contracts/camps.yaml` (`server/pkg/campdefs`).
+
+- Placement: `camps.Check` (reach, settlements, slope, water, caves, overlaps with town boxes and other
+  pieces, someone else's camp, one camp of at most 6 pieces) plus bodies for solid pieces. The kit is spent,
+  the row written once that committed.
+- Solid pieces (chest, workbench, signpost) are pushed out of after the doors in the movement step
+  (`frameGround` -> `campWrap`, within 24 m of one) and block enemies (`enemyBlocked`).
+- A burning campfire (`burn_until` on the world clock): no demon rises within its circle + 6 m, none steps
+  in, players inside are sheltered and get no hunters (`campSafeAt`, read by the AI workers from a list the
+  tick replaces).
+- Bedroll: `RespawnPoint` puts its owner beside it; resting gives Rested (`combat.Player.RegenMult`,
+  `ManaRegenMult`, the stamina wheel through `applyProgression`).
+- Decay: the authority removes a camp whose owner has not been within `decay.visitM` for `decay.days`
+  (checked every `decay.checkEveryS`; never while the owner is online).
+- `GET /debug/camps`: every piece (kind, owner, position, fuel, chest fill, which zone is its authority).
+- `CampStore` is `nil` without a database (dev tickets, evidence runs: memory only).

@@ -704,6 +704,8 @@ func (s *Server) handleCtl(m ctlMsg, now time.Time) {
 			s.dropStandbyConn(sb)
 		}
 		s.sendCtl(m.From, ctlMsg{T: ctlNone, Char: m.Char})
+	case ctlCampSet:
+		s.campCtl(m) // CR 025 (camps.go)
 	case ctlDoor, ctlDoorNo, ctlDoorSet:
 		s.doorCtl(m) // building doors across zones (doors_sync.go)
 	}

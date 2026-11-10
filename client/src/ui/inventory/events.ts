@@ -65,7 +65,8 @@ export interface Container {
   opened: boolean;
 }
 
-export type StationKind = 'forge' | 'anvil' | 'cook';
+/** CR 025 camps: 'workbench' (a camp piece, Event 404 kind 4), 'camp' (kits, made anywhere: the camp menu). */
+export type StationKind = 'forge' | 'anvil' | 'cook' | 'workbench' | 'camp';
 
 const dec = new TextDecoder();
 

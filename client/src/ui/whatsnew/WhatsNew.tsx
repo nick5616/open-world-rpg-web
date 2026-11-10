@@ -57,11 +57,21 @@ function Panel({ shown, onClose }: { shown: Exclude<Shown, { kind: 'none' }>; on
       }
     };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    // Never trap a player in a fight behind it (playtest: a slime pack
+    // downed a new character while the welcome card ate every click).
+    let hp = useCombatHud.getState().health;
+    const unsub = useCombatHud.subscribe((st) => {
+      if (st.health < hp) onClose();
+      hp = st.health;
+    });
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      unsub();
+    };
   }, [onClose]);
   const welcome = shown.kind === 'welcome';
   return (
-    <div data-testid="whatsnew" data-kind={shown.kind} data-ui-panel style={{ position: 'fixed', inset: 0, zIndex: 65, display: 'grid', placeItems: 'center', background: 'rgba(4,6,10,0.35)', pointerEvents: 'auto' }}>
+    <div data-testid="whatsnew" data-kind={shown.kind} data-ui-panel onMouseDown={(e) => e.target === e.currentTarget && onClose()} style={{ position: 'fixed', inset: 0, zIndex: 65, display: 'grid', placeItems: 'center', background: 'rgba(4,6,10,0.35)', pointerEvents: 'auto' }}>
       <div style={{ ...CARD, width: 'min(520px, calc(100vw - 32px))', maxHeight: 'calc(100vh - 64px)', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
         <div style={{ padding: '18px 22px 8px' }}>
           <div style={{ font: '24px Georgia, serif', letterSpacing: 0.5 }}>{welcome ? 'Welcome to Lodestone' : "What's new since you last played"}</div>

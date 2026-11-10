@@ -97,7 +97,17 @@ export function controlGroups(debug: boolean): ControlGroup[] {
         { keys: ['M'], action: 'Map', src: [['ui/map/ExplorationHud.tsx', "'KeyM'"]] },
         { keys: ['J'], action: 'Quest journal', note: 'bestiary, fish, lore, feats, renown', src: [['ui/quests/QuestHud.tsx', "'KeyJ'"]] },
         { keys: ['E'], action: 'Fish: cast, strike, hold to reel', note: 'with a fishing rod, facing deep water', src: [['ui/fishing/FishingHud.tsx', "'KeyE'"]] },
-        { keys: ['P'], action: 'Photo mode', note: 'free camera, no HUD, Enter saves a PNG', src: [['ui/photo/PhotoMode.tsx', "'KeyP'"]] },
+        { keys: ['L'], action: 'Photo mode', note: 'free camera, no HUD, Enter saves a PNG', src: [['ui/photo/PhotoMode.tsx', "'KeyL'"]] },
+      ],
+    },
+    {
+      title: 'Camping',
+      rows: [
+        { keys: ['P'], action: 'Camp menu: craft kits, place pieces', note: 'campfire, bedroll, chest, workbench, signpost', src: [['ui/camps/CampHud.tsx', "'KeyP'"]] },
+        { keys: ['Mouse wheel', 'R'], action: 'Turn the piece you are placing', src: [['ui/camps/CampHud.tsx', 'onWheel'], ['ui/camps/CampHud.tsx', "'KeyR'"]] },
+        { keys: ['Left mouse'], action: 'Place it (green only)', src: [['ui/camps/CampHud.tsx', 'e.button === 0']] },
+        { keys: ['Right mouse', 'Esc'], action: 'Stop placing', src: [['ui/camps/CampHud.tsx', 'e.button === 2'], ['ui/camps/CampHud.tsx', "'Escape'"]] },
+        { keys: ['E'], action: 'Use a piece: cook, rest, open, name', note: 'hold E on your own piece to pick it up', src: [['ui/camps/CampHud.tsx', "'KeyE'"]] },
       ],
     },
     {

@@ -1,310 +1,119 @@
-/* global document */
-// Playtest pass 10 (playtest 2: fishing, emotes, photo mode; CR 026). Two
-// characters in one headless browser (two pages): the Angler fishes at the
-// nearest shore of the spawn, the Watcher stands beside them and sees the
-// rod, the line and the catch held up; then the Angler emotes (the wheel,
-// the debug handle, /emote in chat) and the Watcher photographs each one;
-// then photo mode (panel, a dusk preview with depth of field, Painterly,
-// a saved PNG, Esc restores everything). Screenshots go to docs/evidence
-// as pt2-fishing-*, pt2-emotes-*, pt2-photo-*; notes and issues to
-// <outDir>/report.json and docs/evidence/pt2-fishing-emotes-photo.json.
-//
-//   node tools/playtest/stack.mjs --zone-env LODESTONE_ZONE_DEV_SPAWN=1 --zone-env LODESTONE_ZONE_FISH_FAST=1
-//   LODESTONE_CLIENT_URL=<its url> node tools/playtest/sp10.mjs <outDir>
-import { writeFileSync } from 'node:fs';
-import { launch, newCharacter, sleep, pl, look, yawTo } from './lib.mjs';
+// Playtest pass 10: play the new-player quest "Slimes in the meadows" start
+// to finish like a player (talk to the giver, kill the slimes at the marked
+// packs, go back, hand in), then check the hand-off to the blacksmith.
+import { launch, newCharacter, sleep, pl, go, look, yawTo, dismissCards } from './lib.mjs';
 
 const out = process.argv[2] ?? 'tmp/playtest10';
-const EVD = 'docs/evidence';
 const t = await launch(out);
-const { browser, page: A, note, issue, issues, log, save } = t;
-const B = await browser.newPage({ viewport: { width: 1600, height: 900 } });
-B.on('pageerror', (e) => issue('pageerror-watcher', e.message));
-const shots = [];
-const shot = async (page, name) => {
-  const f = `${EVD}/pt2-${name}.png`;
-  await page.screenshot({ path: f });
-  shots.push(f);
-  note(`shot ${f}`);
-};
-const waitFor = async (fn, ms = 15000, every = 100) => {
-  const t0 = Date.now();
-  while (Date.now() - t0 < ms) {
-    const v = await fn();
-    if (v) return v;
-    await sleep(every);
+const { page, shot, note, issue } = t;
+const tracked = () => page.evaluate(() => window.__lodestoneQuests?.tracked?.() ?? null);
+const drawn = () =>
+  page.evaluate(() => {
+    const me = window.__lodestone.player().pos;
+    return (window.__lodestoneDrawn?.() ?? []).map((e) => ({ id: e.id, kind: e.kind, x: e.x, y: e.y, z: e.z, hp: e.healthPct, d: Math.hypot(e.x - me.x, e.z - me.z) })).sort((a, b) => a.d - b.d);
+  });
+
+async function talkAt(m0) {
+  // the marker follows the person (they walk about); refresh it as we go
+  let m = m0;
+  for (let i = 0; i < 4; i++) {
+    await go(page, m.x, m.z, { stopAt: 2.2, timeoutMs: 45000 });
+    const q = await tracked();
+    const nm = q?.markers?.[0];
+    if (!nm || Math.hypot(nm.x - m.x, nm.z - m.z) < 2) break;
+    m = nm;
   }
-  return null;
-};
-const fish = (p = A) => p.evaluate(() => window.__lodestoneFishing.state());
-const visible = (p, sel) => p.evaluate((s) => [...document.querySelectorAll(s)].some((e) => getComputedStyle(e).display !== 'none' && e.getBoundingClientRect().height > 0), sel);
-const avatarsOf = (p) => p.evaluate(() => window.__lodestoneAvatars?.() ?? []);
-const selfId = (p) => p.evaluate(() => window.__lodestone.netDebug()?.self?.id ?? window.__lodestone.netDebug()?.entityId ?? null);
-async function rejoin(p, at) {
-  await p.evaluate(() => window.__lodestone.screen('title'));
-  await sleep(3000);
-  await p.evaluate((a) => window.__lodestone.rejoinAt(a), at);
-  await p.waitForFunction(() => window.__lodestone?.netDebug?.()?.phase === 'playing', null, { timeout: 120000 });
-  await sleep(2500);
+  const npc = (await drawn()).filter((e) => e.kind === 5).sort((a, b) => Math.hypot(a.x - m.x, a.z - m.z) - Math.hypot(b.x - m.x, b.z - m.z))[0];
+  const me = (await pl(page)).pos;
+  if (npc) {
+    if (Math.hypot(npc.x - me.x, npc.z - me.z) > 2.5) await go(page, npc.x, npc.z, { stopAt: 2, timeoutMs: 20000 });
+    const p = (await pl(page)).pos;
+    await look(page, yawTo(p, npc.x, npc.z), Math.atan2(npc.y + 1.3 - (p.y + 1.6), Math.max(0.5, Math.hypot(npc.x - p.x, npc.z - p.z))));
+  }
+  await sleep(400);
+  const prompt = await page.evaluate(() => document.querySelector('[data-testid="town-prompt"]')?.textContent ?? '');
+  await page.keyboard.press('KeyE');
+  await sleep(1200);
+  const panel = await page.evaluate(() => document.querySelector('[data-testid="town-panel"]')?.innerText ?? '');
+  // accept / hand in buttons if the panel offers them
+  for (const label of ['Accept', 'Hand in', 'Complete', 'Turn in']) {
+    const b = page.locator('[data-testid="town-panel"] button', { hasText: label }).first();
+    if (await b.count()) await b.click().catch(() => {});
+  }
+  await page.keyboard.press('Escape');
+  await sleep(800);
+  return { prompt, panel: panel.slice(0, 300).replace(/\n/g, ' | ') };
 }
-async function closePanels(p) {
-  for (let i = 0; i < 2; i++) {
-    if (await visible(p, '[data-testid="whatsnew"], [data-testid="whatsnew-panel"]')) {
-      await p.keyboard.press('Escape');
-      await sleep(400);
+
+async function fightNear(x, z, ms) {
+  const t0 = Date.now();
+  let kills = 0;
+  while (Date.now() - t0 < ms) {
+    await dismissCards(page);
+    const e = (await drawn()).find((v) => v.kind === 2 && v.hp > 0 && Math.hypot(v.x - x, v.z - z) < 40);
+    if (!e) {
+      await sleep(500);
+      if (!(await drawn()).some((v) => v.kind === 2 && v.hp > 0 && Math.hypot(v.x - x, v.z - z) < 40)) break;
+      continue;
     }
+    const me = (await pl(page)).pos;
+    await look(page, yawTo(me, e.x, e.z), Math.max(-0.5, Math.min(0.3, Math.atan2(e.y + 0.4 - (me.y + 1.6), Math.max(0.5, e.d)))));
+    if (e.d > 2.3) {
+      await page.keyboard.down('KeyW');
+      await sleep(Math.min(400, (e.d - 2) * 160));
+      await page.keyboard.up('KeyW');
+      continue;
+    }
+    await page.mouse.down();
+    await sleep(40);
+    await page.mouse.up();
+    await sleep(260);
+    const after = (await drawn()).find((v) => v.id === e.id);
+    if (!after || after.hp <= 0) kills++;
   }
-  if (await visible(p, '[data-testid="esc-menu"]')) {
-    await p.keyboard.press('Escape');
-    await sleep(300);
-  }
+  return kills;
 }
 
 try {
-  await newCharacter(A, 'Angler');
-  await newCharacter(B, 'Watcher');
-  await sleep(2500);
-  await closePanels(A);
-  await closePanels(B);
-  const spawn = (await pl(A)).pos;
-  note(`spawned at ${spawn.x.toFixed(1)}, ${spawn.z.toFixed(1)}`);
-  const spot = await A.evaluate(([x, z]) => window.__lodestoneFishing.findSpot(x, z, 1200), [spawn.x, spawn.z]);
-  if (!spot) throw new Error('no shore with deep water within 1200 m of the spawn');
-  note(`fishing spot ${JSON.stringify(spot)}`);
-  await rejoin(A, { x: spot.x, z: spot.z });
-  // The watcher stands 7 m to the angler's left, a little toward the water, facing them.
-  const rx = Math.cos(spot.yaw);
-  const rz = -Math.sin(spot.yaw);
-  await rejoin(B, { x: spot.x - rx * 7 - Math.sin(spot.yaw) * 1.5, z: spot.z - rz * 7 - Math.cos(spot.yaw) * 1.5 });
-  await closePanels(A);
-  await closePanels(B);
-  const aPos = (await pl(A)).pos;
-  const bPos = (await pl(B)).pos;
-  note(`angler at ${JSON.stringify(aPos)}, watcher at ${JSON.stringify(bPos)}`);
-  await B.evaluate(() => window.__lodestone.setView('first'));
-  await look(B, yawTo(bPos, aPos.x, aPos.z), -0.05);
-
-  // ---------------- fishing ----------------
-  await A.evaluate(() => window.__lodestone.setView('third', 1, 3.6));
-  await look(A, spot.yaw, -0.1);
-  await sleep(800);
-  let st = await fish();
-  if (st.canCast) issue('fishing', 'the cast prompt shows without a rod');
-  await A.evaluate(() => window.__lodestoneFishing.devRod());
-  st = await waitFor(async () => {
-    const s = await fish();
-    return s.rod && s.canCast ? s : null;
-  }, 10000);
-  if (!st) {
-    issue('fishing', `no cast prompt with a rod: ${JSON.stringify(await fish())}`);
-  } else note(`cast target ${JSON.stringify(st.target)}`);
-  await shot(A, 'fishing-prompt');
-
-  const species = [];
-  for (let round = 0; round < 3; round++) {
-    await A.keyboard.press('KeyE');
-    const w = await waitFor(async () => {
-      const s = await fish();
-      return s.phase === 'waiting' ? s : null;
-    }, 6000, 50);
-    if (!w) {
-      issue('fishing', `cast ${round}: no line in the water: ${JSON.stringify(await fish())}`);
-      break;
-    }
-    note(`cast ${round}: ${w.water}, bobber ${JSON.stringify(w.bobber)}`);
-    if (round === 0) {
-      await sleep(500);
-      await shot(A, 'fishing-waiting');
-      const seen = await avatarsOf(B);
-      const them = seen.find((x) => Math.hypot(x.x - aPos.x, x.z - aPos.z) < 3);
-      note(`watcher sees the angler: ${JSON.stringify(them)}`);
-      if (!them || them.emote !== 20 || !them.rod) issue('fishing', 'the watcher does not see the fishing pose and rod');
-      await shot(B, 'fishing-remote');
-    }
-    // the bite
-    const bite = await waitFor(() => A.evaluate(() => document.querySelector('[data-testid="fish-waiting"]')?.getAttribute('data-float') === 'bite'), 12000, 30);
-    if (!bite) {
-      issue('fishing', `cast ${round}: never saw the bite (${JSON.stringify(await fish())})`);
-      break;
-    }
-    if (round === 0) await shot(A, 'fishing-bite');
-    await A.keyboard.press('KeyE');
-    const hooked = await waitFor(async () => ((await fish()).phase === 'fight' ? true : null), 4000, 30);
-    if (!hooked) {
-      issue('fishing', `cast ${round}: not hooked: ${JSON.stringify(await fish())}`);
-      await sleep(2600);
-      continue;
-    }
-    // Reel like a player watching the bar: hold, let go when it reddens.
-    let held = false;
-    let shotFight = round !== 0;
-    const t0 = Date.now();
-    for (;;) {
-      const s = await fish();
-      if (s.phase !== 'fight') break;
-      const f = s.fight;
-      const want = held ? f.tension < 0.85 : f.tension < 0.45;
-      if (want !== held) {
-        held = want;
-        if (held) await A.keyboard.down('KeyE');
-        else await A.keyboard.up('KeyE');
-      }
-      if (!shotFight && Date.now() - t0 > 1200) {
-        shotFight = true;
-        await shot(A, 'fishing-fight');
-      }
-      if (Date.now() - t0 > 100000) break;
-      await sleep(40);
-    }
-    if (held) await A.keyboard.up('KeyE');
-    const res = await waitFor(async () => {
-      const s = await fish();
-      return s.phase === 'result' ? s : null;
-    }, 5000, 50);
-    note(`cast ${round}: ${JSON.stringify(res?.caught ?? res?.lost)} after ${((Date.now() - t0) / 1000).toFixed(1)} s`);
-    if (res?.caught) {
-      species.push(res.caught.key);
-      if (species.length === 1) {
-        await sleep(300);
-        await shot(A, 'fishing-caught');
-        await sleep(300);
-        const seen = await avatarsOf(B);
-        const them = seen.find((x) => Math.hypot(x.x - aPos.x, x.z - aPos.z) < 3);
-        note(`watcher sees the catch: ${JSON.stringify(them)}`);
-        if (!them || them.emote !== 21 || !them.fish) issue('fishing', 'the watcher does not see the catch held up');
-        await shot(B, 'fishing-remote-catch');
-      }
-    } else issue('fishing', `cast ${round} lost: ${res?.lost}`);
-    await sleep(4600); // the card, then the cooldown
+  const t0 = Date.now();
+  await newCharacter(page, 'Meadow' + (Date.now() % 100000));
+  await sleep(4000);
+  await dismissCards(page);
+  let q = await tracked();
+  note(`start: ${q?.title} step ${q?.step} "${q?.text}"`);
+  const r1 = await talkAt(q.markers[0]);
+  note(`talk 1: prompt "${r1.prompt}" panel "${r1.panel}"`);
+  q = await tracked();
+  note(`after talk: step ${q?.step} "${q?.text}" (${q?.progress}/${q?.need}) markers ${q?.markers?.length}`);
+  if (q?.step !== 1) issue('quest', 'talking to the giver did not start the slime hunt');
+  for (let round = 0; round < 8 && q && q.step === 1; round++) {
+    // the marked packs in turn, nearest first, moving on when one is empty
+    const me = (await pl(page)).pos;
+    const ms = q.markers.slice().sort((a, b) => Math.hypot(a.x - me.x, a.z - me.z) - Math.hypot(b.x - me.x, b.z - me.z));
+    const target = ms[round % ms.length];
+    await go(page, target.x, target.z, { stopAt: 15, timeoutMs: 90000, sprint: true });
+    await sleep(1500);
+    const k = await fightNear(target.x, target.z, 60000);
+    q = await tracked();
+    note(`round ${round} at ${target.label ?? 'marker'}: killed ~${k}; quest ${q?.progress}/${q?.need} step ${q?.step}`);
+    if (round === 0) await shot('slimes');
   }
-  note(`caught: ${species.join(', ')}`);
-  // The inventory holds the fish (Event 400), the journal's Fish tab lists them.
-  const inv = await A.evaluate(() => window.__lodestoneInventory?.state?.()?.inv?.items?.map((i) => i.b) ?? null);
-  note(`inventory: ${JSON.stringify(inv)}`);
-  for (const k of species) if (inv && !inv.includes(`fish:${k}`)) issue('fishing', `fish:${k} not in the inventory`);
-  await A.keyboard.press('KeyJ');
-  await sleep(500);
-  await A.getByTestId('journal-tab-fish').click();
-  await sleep(500);
-  await shot(A, 'fishing-journal');
-  await A.keyboard.press('Escape');
-  await sleep(400);
-
-  // ---------------- emotes ----------------
-  await A.evaluate(() => window.__lodestone.setView('third', 1, 3.6));
-  await look(A, yawTo(aPos, bPos.x, bPos.z), -0.05); // face the watcher
-  await sleep(600);
-  await A.keyboard.down('KeyH');
-  await sleep(300);
-  if (!(await visible(A, '[data-testid="emote-wheel"]'))) issue('emotes', 'holding H shows no wheel');
-  await A.hover('[data-testid="emote-wave"]').catch(() => {});
-  await shot(A, 'emotes-wheel');
-  await A.locator('[data-testid="emote-wave"]').dispatchEvent('mousedown');
-  await A.keyboard.up('KeyH');
-  await sleep(700);
-  let seen = (await avatarsOf(B)).find((x) => Math.hypot(x.x - aPos.x, x.z - aPos.z) < 3);
-  note(`watcher sees after the wheel's wave: emote ${seen?.emote}`);
-  if (seen?.emote !== 1) issue('emotes', 'the wave from the wheel did not reach the watcher');
-  await shot(B, 'emotes-remote-wave');
-  for (const key of ['bow', 'cheer', 'dance', 'sit', 'salute', 'rest', 'point', 'shrug']) {
-    await sleep(1700); // the rate limit: one per 1.5 s after the burst
-    const ok = await A.evaluate((k) => window.__lodestoneEmotes.play(k), key);
-    await sleep(key === 'bow' ? 900 : 700);
-    seen = (await avatarsOf(B)).find((x) => Math.hypot(x.x - aPos.x, x.z - aPos.z) < 3);
-    note(`${key}: played ${ok}, watcher sees emote ${seen?.emote}`);
-    if (!ok || !seen?.emote) issue('emotes', `${key} did not reach the watcher`);
-    await shot(B, `emotes-remote-${key}`);
+  if (q?.step === 1) issue('quest', `could not finish the slime hunt (${q?.progress}/${q?.need})`);
+  if (q?.step === 2) {
+    const r2 = await talkAt(q.markers[0]);
+    note(`hand in: "${r2.panel}"`);
+    await sleep(1500);
+    q = await tracked();
+    note(`after hand-in: ${q?.title} step ${q?.step} "${q?.text}"`);
+    await shot('handed-in');
+    if (q?.title === 'Slimes in the meadows') issue('quest', 'hand-in did not complete the quest');
   }
-  // /emote in chat
-  await sleep(1700);
-  await A.keyboard.press('Enter');
-  await sleep(300);
-  await A.keyboard.type('/emote laugh');
-  await A.keyboard.press('Enter');
-  await sleep(700);
-  seen = (await avatarsOf(B)).find((x) => Math.hypot(x.x - aPos.x, x.z - aPos.z) < 3);
-  note(`/emote laugh: watcher sees emote ${seen?.emote}`);
-  if (seen?.emote !== 7) issue('emotes', '/emote laugh did not reach the watcher');
-  await shot(B, 'emotes-remote-laugh-chat');
-  await A.keyboard.press('Escape'); // leave the chat
-  await sleep(300);
-  // First person: the nod and the hand.
-  await sleep(1500);
-  await A.evaluate(() => window.__lodestone.setView('first'));
-  await sleep(300);
-  await A.evaluate(() => window.__lodestoneEmotes.play('salute'));
-  await sleep(500);
-  await shot(A, 'emotes-firstperson-salute');
-  await sleep(1800);
-  await A.evaluate(() => window.__lodestoneEmotes.play('wave'));
-  await sleep(450);
-  await shot(A, 'emotes-firstperson-wave');
-  await sleep(2000);
-
-  // ---------------- photo mode ----------------
-  await A.evaluate(() => window.__lodestone.setView('first'));
-  await look(A, spot.yaw, -0.05);
-  await sleep(500);
-  const styleBefore = await A.evaluate(() => window.__lodestone.graphics().style);
-  await A.keyboard.press('KeyP');
-  await sleep(600);
-  const ph = await A.evaluate(() => window.__lodestonePhoto.state());
-  if (!ph.active) issue('photo', 'P did not open photo mode');
-  const hudHidden = await A.evaluate(() => document.body.classList.contains('ls-photo') && getComputedStyle(document.querySelector('[data-testid="photo-panel"]')).visibility === 'visible');
-  if (!hudHidden) issue('photo', 'the HUD is not hidden or the panel is not shown');
-  await shot(A, 'photo-panel');
-  // Fly out over the water and look back at the angler (no pointer lock headless: place the camera).
-  const fx = -Math.sin(spot.yaw);
-  const fz = -Math.cos(spot.yaw);
-  const me = (await pl(A)).pos;
-  await A.evaluate(([x, y, z, yaw]) => window.__lodestonePhoto.pose(x, y, z, yaw, -0.12), [me.x + fx * 4.5 + fz * 1.5, me.y + 2.1, me.z + fz * 4.5 - fx * 1.5, spot.yaw + Math.PI - 0.3]);
-  await A.evaluate(() => window.__lodestonePhoto.set({ hour: 18.4, dof: 0.75, focusM: 0, vignette: 0.45, grain: 0.25, panelHidden: true }));
-  await sleep(1200);
-  await shot(A, 'photo-dusk-dof');
-  // Try to fly far away: the camera stops at the radius.
-  await A.keyboard.down('KeyS');
-  await A.keyboard.down('ShiftLeft');
-  await sleep(3500);
-  await A.keyboard.up('ShiftLeft');
-  await A.keyboard.up('KeyS');
-  const cam = (await A.evaluate(() => window.__lodestonePhoto.state())).cam;
-  const camD = Math.hypot(cam.x - me.x, cam.y - (me.y + 1.6), cam.z - me.z);
-  note(`camera after flying away: ${camD.toFixed(1)} m from the eye`);
-  if (camD > 30.01) issue('photo', `the camera left its radius: ${camD.toFixed(1)} m`);
-  const body = await B.evaluate(() => window.__lodestone.player().pos);
-  const angler = (await avatarsOf(B)).find((x) => Math.hypot(x.x - aPos.x, x.z - aPos.z) < 3);
-  note(`the watcher sees the angler stand still at ${JSON.stringify(angler && { x: angler.x, z: angler.z })} (watcher at ${JSON.stringify(body)})`);
-  if (!angler || Math.hypot(angler.x - me.x, angler.z - me.z) > 0.5) issue('photo', 'the angler moved on the server while flying the photo camera');
-  await A.evaluate(([x, y, z, yaw]) => window.__lodestonePhoto.pose(x, y, z, yaw, -0.18), [me.x - fx * 3 + fz * 2.2, me.y + 2.4, me.z - fz * 3 - fx * 2.2, spot.yaw - 0.5]);
-  await A.evaluate(() => window.__lodestone.setStyle('painterly'));
-  await A.evaluate(() => window.__lodestonePhoto.set({ hour: 10, dof: 0, vignette: 0.3, grain: 0.1 }));
-  await sleep(1500);
-  await shot(A, 'photo-painterly-noon');
-  // Save a PNG the way a player does (Enter): the browser downloads it.
-  const dl = A.waitForEvent('download', { timeout: 10000 }).catch(() => null);
-  await A.keyboard.press('Enter');
-  const d = await dl;
-  if (!d) issue('photo', 'Enter saved no PNG');
-  else {
-    await d.saveAs(`${EVD}/pt2-photo-saved.png`);
-    note(`saved ${d.suggestedFilename()} -> ${EVD}/pt2-photo-saved.png`);
-    shots.push(`${EVD}/pt2-photo-saved.png`);
-  }
-  await sleep(300);
-  await A.evaluate(() => window.__lodestonePhoto.set({ panelHidden: false }));
-  await A.keyboard.press('Escape');
-  await sleep(600);
-  const after = await A.evaluate(() => ({ active: window.__lodestonePhoto.state().active, cls: document.body.classList.contains('ls-photo'), style: window.__lodestone.graphics().style, menu: !!document.querySelector('[data-testid="esc-menu"]') }));
-  note(`after Esc: ${JSON.stringify(after)}`);
-  if (after.active || after.cls) issue('photo', 'Esc did not leave photo mode');
-  if (after.style !== styleBefore) issue('photo', `the style was not restored (${after.style} vs ${styleBefore})`);
-  if (after.menu) issue('photo', 'Esc in photo mode opened the Esc menu');
-  await shot(A, 'photo-after');
+  const inv = await page.evaluate(() => (window.__lodestoneInventory?.state()?.inv?.items ?? []).map((i) => `${i.b}x${i.q}`));
+  note(`inventory: ${inv.join(', ')}; total ${((Date.now() - t0) / 1000).toFixed(0)} s`);
 } catch (e) {
-  issue('script', String(e?.stack ?? e));
+  issue('script', String(e?.stack ?? e).slice(0, 600));
+  await shot('error').catch(() => {});
 } finally {
-  save();
-  writeFileSync(`${EVD}/pt2-fishing-emotes-photo.json`, JSON.stringify({ issues, shots, log }, null, 2));
-  await browser.close();
-  note(`done: ${issues.length} issue(s)`);
+  t.save();
+  await t.browser.close();
 }

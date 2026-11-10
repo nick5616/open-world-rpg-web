@@ -327,6 +327,7 @@ export function ContentLayer() {
     for (const h of Object.values(s.patches)) {
       if (n >= MAX_HERBS * 3) break;
       if (h.readyAt > now || Math.abs(h.x - px) > HERB_M || Math.abs(h.z - pz) > HERB_M) continue;
+      if (CONTENT.forage.herbs[h.herb - 1]?.item.startsWith('wood:')) continue; // CR 025: deadfall is drawn as branches (ui/camps/CampLayer.tsx)
       const col = herbColors[h.herb - 1] ?? herbColors[0];
       for (let i = 0; i < 3; i++) {
         const a = h.id * 2.3 + i * 2.1;
