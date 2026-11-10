@@ -14,7 +14,7 @@
 
 import { useEffect, useState, type CSSProperties } from 'react';
 import { CONTENT } from '@lodestone/contracts';
-import { isTextTarget, KEY_MAP } from '../../input/useKeyboard';
+import { isTextTarget } from '../../input/useKeyboard';
 import { DEBUG } from '../../config';
 import { usePvp } from '../pvp/store';
 import { carriedInstruments, cycleInstrument, devInstruments, ensureMusicHook, enterPlay, exitPlay, loadMusicAudio, noteDown, noteOfKey, noteUp, setClick, setTempo } from './link';
@@ -48,10 +48,13 @@ function onKey(e: KeyboardEvent): void {
   }
   if (isTextTarget(e.target)) return; // the overlay's own selects
   if (e.ctrlKey || e.metaKey) return; // browser shortcuts stay the browser's
+  // A duel challenge waiting for an answer keeps Y and U (accept / decline) even while you play.
+  if ((e.code === 'KeyY' || e.code === 'KeyU') && usePvp.getState().challenge) return;
   if (e.code === 'Space') accent = e.type === 'keydown';
   if (e.type === 'keyup') {
+    // Every release still reaches the game: a key held before you picked the instrument up
+    // (W, a spell key, Z) must not stay held (playtest 2 integration QA).
     if (isNoteKey(e.code)) noteUp(e.code);
-    if (!KEY_MAP[e.code]) e.stopImmediatePropagation(); // a movement key's release still reaches the body (no stuck W)
     return;
   }
   if (/^F\d+$/.test(e.code)) return; // F-keys (debug, graphics) stay
@@ -84,7 +87,7 @@ function onKey(e: KeyboardEvent): void {
 }
 
 function onMouse(e: MouseEvent): void {
-  if (!useMusic.getState().active) return;
+  if (!useMusic.getState().active || e.type === 'mouseup') return; // a release always reaches combat (no held attack)
   if ((e.target as HTMLElement | null)?.tagName !== 'CANVAS') return;
   e.stopImmediatePropagation(); // no attacks or casts while the hands are on an instrument
 }
