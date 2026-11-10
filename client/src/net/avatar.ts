@@ -60,6 +60,9 @@ const THIGH = 0.44;
 const SHIN = 0.44;
 const HIP_X = 0.13;
 
+/** The rig's joint layout (enemy humanoids, combat/enemies, are built on the same skeleton). */
+export const AVATAR_RIG = { HIP_Y, TORSO_Y, SHOULDER, NECK_Y, UPPER_ARM, FOREARM, THIGH, SHIN, HIP_X } as const;
+
 const ACTIVITY_LABELS: [number, string][] = [
   [Activity.climbing, 'climbing'],
   [Activity.gliding, 'gliding'],
