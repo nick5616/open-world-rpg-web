@@ -216,6 +216,8 @@ export class CombatRuntime {
       if ((e.target as HTMLElement | null)?.tagName === 'CANVAS') e.preventDefault();
     };
     const release = () => {
+      // CR 033: losing the window lowers a bow's draw instead of loosing it (the secondary's cancel)
+      if (this.buttons.attackDown && this.timeline.weapon().key === 'bow') this.buttons.altPress++;
       this.buttons.attackDown = false;
       this.buttons.altDown = false;
       this.buttons.castHeld = [false, false, false, false];
