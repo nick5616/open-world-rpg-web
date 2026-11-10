@@ -63,6 +63,8 @@ Balance (damage per mana and per second, before scaling): Cinder Spray 48/s for 
 - Stream rate: the zone fires shots on its own schedule from the logged start and refuses claims for shot seqs it never fired (between shots, beyond the last shot, or when the stream ended for want of mana); `mechanics_test.go TestStreamCannotBeatItsRate` drives tap / release / re-press / spam patterns and never gets more than `steps / interval + 1` shots.
 - Each shot hits each target once and one target (four for a bursting shot); a homing volley hits a target once per orb, and only orbs whose re-flown path reaches it.
 - Allies and bursts are the zone's own hits; a claim on an ally is refused (it is no enemy), a summon spell cannot be claimed.
+- The zone's HitClaim rate budget was 30 / 15 per second, which a full-rate stream would exceed (and refusals count toward the rate-limit kick): it is now 120 / 60 per second (15 shots/s x the 4-target cap of a bursting shot; `claims_rate_test.go`), and the client claims at most 4 targets per bursting stream shot.
+- With CR 021 (held dashes reuse `InputFlag.channel`): a stream or charge cannot start while a dash runs (the client waits; the zone refuses it), so a channel bit always means one thing at a time.
 
 ## Performance (G5)
 
