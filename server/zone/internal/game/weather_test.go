@@ -6,9 +6,61 @@ import (
 	"time"
 
 	"lodestone/server/pkg/constants"
+	"lodestone/server/pkg/movement"
+	"lodestone/server/pkg/proto"
 	"lodestone/server/pkg/weather"
 	"lodestone/server/zone/internal/chem"
 )
+
+// A walk predicted with the shared weather field lands where the zone puts
+// it (snow slows both), with no speed violations; the calm prediction does not.
+func TestSnowWalkPredictedEqualsZone(t *testing.T) {
+	r := weatherRig(t, weather.Snowstorm, 12)
+	x, z := r.flatSpot(t)
+	a := r.join(t, "wx-w", "Walker", x, z)
+	a.ride(10, 0, 0, nil, nil)
+	sim := movement.FromSelf(a.ackedState(t))
+	sim.Pos.Y = movement.GroundAt(r.srv.cfg.Ground, sim.Pos.X, sim.Pos.Y, sim.Pos.Z)
+	calm := sim
+	var before int64
+	var f *weather.Field
+	r.do(func() {
+		before = r.srv.m.speedViolations.Load()
+		f = r.srv.curField()
+	})
+	env := movement.Env{Weather: f}
+	g := r.srv.cfg.Ground
+	east := -math.Pi / 2
+	var prev *proto.InputFrame
+	for i := 0; i < 180; i += 2 {
+		var frames []proto.InputFrame
+		if prev != nil {
+			frames = append(frames, *prev)
+		}
+		for k := 0; k < 2; k++ {
+			a.seq++
+			fr := proto.InputFrame{Seq: a.seq, Flags: proto.InputFlagForward | proto.InputFlagSprint, Yaw: proto.YawToU16(east)}
+			frames = append(frames, fr)
+			sim = movement.StepFrameEnv(sim, fr, g, env)
+			calm = movement.StepFrame(calm, fr, g)
+			prev = &frames[len(frames)-1]
+		}
+		a.send(&proto.Input{AckTick: a.dec.Latest(), Frames: frames})
+		a.pump(33 * time.Millisecond)
+	}
+	got := movement.FromSelf(a.ackedState(t))
+	if d := math.Hypot(got.Pos.X-sim.Pos.X, got.Pos.Z-sim.Pos.Z); d > 0.02 {
+		t.Fatalf("zone %+v vs predicted %+v (%.3f m)", got.Pos, sim.Pos, d)
+	}
+	if d := math.Hypot(got.Pos.X-calm.Pos.X, got.Pos.Z-calm.Pos.Z); d < 1 {
+		t.Fatalf("the snowstorm did not slow the zone's walk (%.2f m from the calm path)", d)
+	}
+	var after int64
+	r.do(func() { after = r.srv.m.speedViolations.Load() })
+	if after != before {
+		t.Fatalf("%d speed violations", after-before)
+	}
+}
 
 // CR 030: the zone's half of the weather on the official world (towns,
 // terrain), with the weather forced so the rules are what is tested.
