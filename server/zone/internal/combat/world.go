@@ -151,8 +151,21 @@ type World struct {
 	// it must only read.
 	Obstacles func(x, y, z, r, h float64) bool
 
+	// CR 020 spell mechanics: allies (summon.go; never in enemies), ally bolts
+	// in flight, scheduled bursts (detonate.go). SummonPvP is the game
+	// layer's PvP rule for an ally of owner hitting victim (nil: allies never
+	// hurt players); OnSummonPvP tells it what such a hit did (duels, kill feed).
+	summons     []*Enemy
+	summonIdx   map[uint32]*Enemy
+	bolts       []pendingBolt
+	bursts      []burst
+	SummonPvP   func(owner, victim uint32) (PvPHit, bool)
+	OnSummonPvP func(owner, victim uint32, res PvPResult)
+
 	// Stats for metrics and evidence.
 	Stats Stats
+	// quietDamage: the hit being applied is a stream shot (no observer damage Event; CR 020).
+	quietDamage bool
 }
 
 // Stats are cumulative counters.
@@ -538,6 +551,7 @@ func cmpID(a, b uint32) int {
 
 // RemovePlayer forgets a leaving player (threat, strikes).
 func (w *World) RemovePlayer(id uint32) {
+	w.DismissSummons(id) // CR 020
 	delete(w.players, id)
 	w.dropListed(id)
 	for _, e := range w.enemies {
@@ -659,6 +673,8 @@ func (w *World) Step(tick uint32) {
 	}
 	w.pruneWinding() // WP19
 	w.thinkAll(tick) // WP19b: partitioned across workers (par.go)
+	w.stepSummons() // CR 020: allies act after the enemies thought (summon.go)
+	w.stepBursts()  // CR 020: delayed charges and brand chain reactions (detonate.go)
 	w.stepShots()
 	w.settleStrikes()
 	w.playerUpkeep()

@@ -68,6 +68,15 @@ type Action struct {
 	Refusal    int
 	hits       map[uint32]int
 	targets    int
+	// CR 020: a stream's fired shots (stream.go), per-shot hits, the orbs of
+	// a homing volley spent per target, an orbit's last hit per target.
+	shots    [streamRing]shotRec
+	nShots   int
+	shotHits map[uint64]bool
+	shotTgts map[int]int
+	orbUsed  map[uint32]uint32
+	lastHit  map[uint32]uint32
+	critSeq  uint32 // the seq a stream shot's crit is rolled on (0 = Seq)
 }
 
 // frameRec is one applied input frame's outcome (strike grace window).
@@ -113,6 +122,8 @@ type Player struct {
 	riposte   bool
 	airTop    float64 // highest feet y since leaving the ground (plunge height)
 	wasAir    bool
+	ch        *channel // CR 020: a running stream or gathering charge (stream.go)
+	yaw       float64  // CR 020: the newest frame's view yaw (allies follow behind it)
 
 	frames [frameRing]frameRec
 	nFrame int
@@ -284,6 +295,13 @@ type FrameResult struct {
 	Spent   bool             // mana changed
 	Drink   bool             // a consumable use started
 	Guard   bool             // CR 018: the secondary button went down (sword parry, spear charge, bow draw)
+	// CR 020 (stream.go): a stream or charge started / stopped this frame
+	// (Channel*), the stream's shots fired this frame, and the stream that
+	// stopped (its Action).
+	Channel int
+	Shots   int
+	Stopped *Action
+	StopID  int // the spell id of what stopped
 }
 
 // Frame processes one input frame BEFORE the movement step runs on it
@@ -296,9 +314,16 @@ func (p *Player) Frame(f proto.InputFrame, before movement.State, g movement.Gro
 	if p.Downed {
 		// Down: no actions, no movement (the client stops sending keys too).
 		r.Frame.Flags = 0
+		if p.ch != nil {
+			p.endStream(f.Seq, &r)
+		}
 		return r
 	}
 	seq := f.Seq
+	p.yaw = proto.U16ToYaw(f.Yaw)
+	if p.ch != nil {
+		p.channelFrame(f, before, tick, &r) // CR 020: a running stream or charge first (stream.go)
+	}
 	alt := f.Flags&proto.InputFlagAltAttack != 0
 	w := p.Weapon()
 	ground := g.HeightAt(before.Pos.X, before.Pos.Z)
@@ -482,6 +507,14 @@ func (p *Player) startCast(f proto.InputFrame, before movement.State, w *combatd
 			a.Legal, a.Refusal = false, RefuseCooldown
 		case p.Mana < s.Mana:
 			a.Legal, a.Refusal = false, RefuseMana
+		case s.Auto != nil:
+			// CR 020: a stream logs its one Action now; its shots pay as they fire.
+			la := p.log(a)
+			p.beginChannel(s, la, f, before, tick, r)
+			return la
+		case s.Charge != nil:
+			p.beginChannel(s, nil, f, before, tick, r)
+			return nil // the release logs the Action (stream.go)
 		default:
 			p.Mana -= s.Mana
 			p.readyAt[s.ID] = seq + uint32(p.cooldownSteps(s.CooldownSteps))

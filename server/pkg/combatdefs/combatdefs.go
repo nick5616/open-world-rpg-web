@@ -168,6 +168,7 @@ type Spell struct {
 	Gravity        float64        `json:"gravity"`
 	Hits           int            `json:"hits"`
 	Spread         int            `json:"spread"`
+	SpreadDeg      float64        `json:"spreadDeg"`
 	Cone           float64        `json:"cone"`
 	Line           float64        `json:"line"`
 	Chain          int            `json:"chain"`

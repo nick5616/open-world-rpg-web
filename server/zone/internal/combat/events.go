@@ -33,6 +33,10 @@ const (
 	EvBossReset    = 220
 	EvRespawned    = 221
 	EvStrikeHit    = 222 // an enemy strike landed on a player (observers: the hit flash)
+	// CR 020 spell mechanics.
+	EvChannel      = 223 // a stream / charge started or stopped (observers simulate the stream from the seed)
+	EvDetonate     = 224 // a delayed charge or a brand burst (the zone's own hits)
+	EvSummonAttack = 225 // an ally attacked (melee bite or a bolt toward its target)
 )
 
 // EvCast targetIds that are not attack/spell/form ids (CR 018).

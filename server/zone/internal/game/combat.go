@@ -105,6 +105,7 @@ func (s *Server) initCombat() {
 		devPlacement(w, s.log.Info)
 	}
 	s.cbt = combatGlue{w: w, setup: setup, byID: map[uint32]*Entity{}}
+	s.summonHooks(w) // CR 020: allies under the PvP rules (summons.go)
 	counts := map[string]int{}
 	for _, g := range w.Groups {
 		counts[g.Kind.String()]++
@@ -420,6 +421,9 @@ func (s *Server) combatTick(tick uint32) {
 	events, spawned, removed, xp, respawn, synced := w.Drain()
 	for _, en := range spawned {
 		ent := &Entity{ID: en.ID, Kind: proto.EntityKindEnemy, Name: en.Name, Level: uint8(min(255, en.Level)), npc: en, TypeID: en.TypeID()}
+		if en.Owner() != 0 {
+			ent.Kind, ent.Name = proto.EntityKindEffect, s.summonName(en) // CR 020: an ally (summons.go)
+		}
 		ent.Move.Pos = en.Pos
 		ent.Yaw = en.Yaw
 		ent.prevValid, ent.view = ent.Move, ent.Move
@@ -459,7 +463,7 @@ func (s *Server) combatTick(tick uint32) {
 	parallelFor(len(s.ents), s.phaseWorkers(len(s.ents)), viewChunk, func(_, i int) {
 		ent := s.ents[i]
 		en := ent.npc
-		if en == nil || s.cbt.byID[ent.ID] != ent || w.Enemy(ent.ID) == nil {
+		if en == nil || s.cbt.byID[ent.ID] != ent || (w.Enemy(ent.ID) == nil && w.Summon(ent.ID) == nil) {
 			return
 		}
 		ent.Move.Pos, ent.Move.Vel = en.Pos, en.Vel
@@ -488,7 +492,7 @@ func (s *Server) combatTick(tick uint32) {
 		st := w.Stats
 		awake := 0
 		for _, ent := range s.cbt.byID {
-			if en := ent.npc; en != nil && en.State != combat.Asleep && en.Alive() {
+			if en := ent.npc; en != nil && en.State != combat.Asleep && en.Alive() && en.Owner() == 0 {
 				awake++
 			}
 		}
