@@ -15,7 +15,7 @@ import { useExploration } from '../map/store';
 import { hasBit } from '../map/events';
 import { useMapWorld } from '../map/world';
 import { useNetStore } from '../../net/netStore';
-import { learnable, nextTechnique, skillLevel, slottable, statsAt, upcoming } from './gains';
+import { learnable, nextTechnique, skillLevel, statsAt, upcoming } from './gains';
 import { installProgressionDebug } from './dev';
 import { FANFARE_MS, isAttuned, pruneProgression, setPanelOpen, useProgression, type Notice } from './store';
 import { towerPrompt, type TowerPrompt, type TowerLike } from './towerPrompt';
@@ -24,6 +24,10 @@ import { openSkillScreen } from '../skills/store';
 import { PvpPanelSection } from '../pvp/PvpHud';
 import { openSteedPanel } from '../mounts/MountHud';
 import { openPetPanel } from '../pets/PetHud';
+import { useChar } from '../skills/char';
+import { SchoolLine, SpellBoard } from '../spellcards/SpellCards';
+import { spellCardData } from '../spellcards/card';
+import { BORDER, BORDER_GOLD, BTN_BG, PANEL_BG, TEXT, TEXT_2, TEXT_3, WARN } from '../spellcards/theme';
 
 const GOLD = '#ffd166';
 const PANEL: CSSProperties = { background: 'rgba(12,14,20,0.94)', border: '1px solid rgba(255,209,102,0.35)', borderRadius: 6, color: '#f1f3f5', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' };
@@ -117,11 +121,11 @@ function TowerPromptView({ p }: { p: TowerPrompt }) {
 
 function Row({ label, value, sub }: { label: string; value: ReactNode; sub?: string }) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '3px 0', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-      <span style={{ opacity: 0.75 }}>{label}</span>
-      <span>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '3px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+      <span style={{ color: TEXT_2 }}>{label}</span>
+      <span style={{ color: TEXT }}>
         {value}
-        {sub && <span style={{ opacity: 0.55, marginLeft: 6, fontSize: 11 }}>{sub}</span>}
+        {sub && <span style={{ color: TEXT_3, marginLeft: 6, fontSize: 11 }}>{sub}</span>}
       </span>
     </div>
   );
@@ -130,45 +134,16 @@ function Row({ label, value, sub }: { label: string; value: ReactNode; sub?: str
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div style={{ marginTop: 12 }}>
-      <div style={{ font: '13px Georgia, serif', color: GOLD, letterSpacing: 1, marginBottom: 4 }}>{title}</div>
+      <div style={{ font: '14px Georgia, serif', color: GOLD, letterSpacing: 1, marginBottom: 4 }}>{title}</div>
       {children}
     </div>
   );
 }
 
-/** The active loadout's four spell slots: pick any known castable spell (a spell already in another slot moves). */
-function SpellSlots({ slots, known, disabled, onPick }: { slots: readonly (string | null)[]; known: readonly string[]; disabled: boolean; onPick: (slot: number, spellId: number) => void }) {
-  const options = slottable(known);
-  return (
-    <div>
-      {[0, 1, 2, 3].map((i) => {
-        const cur = slots[i] ?? '';
-        return (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '2px 0' }}>
-            <span style={{ width: 16, color: GOLD }}>{i + 1}</span>
-            <select
-              data-testid={`spell-slot-${i}`}
-              value={cur}
-              disabled={disabled}
-              onChange={(e) => onPick(i, options.find((o) => o.key === e.target.value)?.id ?? 0)}
-              style={{ flex: 1, font: '12px system-ui, sans-serif', background: 'rgba(0,0,0,0.35)', color: '#f1ead8', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 4, padding: '2px 4px' }}
-            >
-              <option value="">(empty)</option>
-              {options.map((o) => (
-                <option key={o.key} value={o.key}>
-                  {o.name} · {o.tree} {o.tier}
-                </option>
-              ))}
-            </select>
-          </div>
-        );
-      })}
-      <div style={{ fontSize: 11, opacity: 0.6, marginTop: 3 }}>New spells fill an empty slot by themselves. Cast with 1-4, or wheel to select and right-click.</div>
-    </div>
-  );
-}
-
-const PANEL_BTN: CSSProperties = { flex: 1, font: '12px system-ui, sans-serif', padding: '5px 8px', borderRadius: 4, border: '1px solid rgba(255,209,102,0.5)', background: 'rgba(255,209,102,0.1)', color: '#f1f3f5', cursor: 'pointer' };
+const PANEL_BTN: CSSProperties = { flex: 1, font: '12px system-ui, sans-serif', padding: '5px 8px', borderRadius: 4, border: `1px solid ${BORDER_GOLD}`, background: BTN_BG, color: TEXT, cursor: 'pointer' };
+/** Small buttons inside sections (Learn): readable enabled and disabled (no greyed-out native button). */
+const SMALL_BTN: CSSProperties = { font: '12px system-ui, sans-serif', padding: '2px 12px', borderRadius: 4, border: `1px solid ${BORDER_GOLD}`, background: BTN_BG, color: GOLD };
+const KEY: CSSProperties = { color: TEXT_2 };
 
 function openFromPanel(tab?: string) {
   setPanelOpen(false);
@@ -176,6 +151,25 @@ function openFromPanel(tab?: string) {
 }
 
 const SKILL_NAMES: Record<string, string> ={ swordsmanship: 'Swordsmanship', spearmanship: 'Spearmanship', archery: 'Archery', spellcraft: 'Spellcraft', mining: 'Mining', smithing: 'Smithing' };
+
+const STAT_TEXT: Record<string, (v: string) => string> = { Damage: (v) => `${v} dmg`, Heals: (v) => `heals ${v}`, Shield: (v) => `${v} shield`, 'Ally hits': (v) => `ally hits ${v}`, Utility: () => '' };
+
+/** A spell you could learn: name, its school (glyph + colour), type and tier, then the action. */
+function LearnRow({ k, killsDemons, children }: { k: string; killsDemons: boolean; children: ReactNode }) {
+  const d = spellCardData(k);
+  if (!d) return null;
+  return (
+    <div data-testid={`learn-row-${k}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, padding: '3px 0', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+      <span style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flexWrap: 'wrap' }}>
+        <span style={{ color: TEXT }}>{d.name}</span>
+        <SchoolLine d={d} size={11} />
+        <span style={{ fontSize: 11.5, color: TEXT_2 }}>{d.passive ? 'Passive' : [d.kind, STAT_TEXT[d.stat.label](d.stat.value), `${d.mana} mana`].filter(Boolean).join(' · ')}</span>
+        {killsDemons && <span style={{ color: GOLD, fontSize: 11.5 }}>kills demons</span>}
+      </span>
+      {children}
+    </div>
+  );
+}
 
 function CharacterPanel() {
   const stats = useProgression((s) => s.stats);
@@ -185,8 +179,7 @@ function CharacterPanel() {
   const skillXp = useCombatHud((s) => s.skillXp);
   const freePoints = useCombatHud((s) => s.skillPoints);
   const combatActive = useCombatHud((s) => s.active);
-  const loadouts = useCombatHud((s) => s.loadouts);
-  const activeLoadout = useCombatHud((s) => s.activeLoadout);
+  const c = useChar();
   const name = useNetStore((s) => s.ready?.character.name) ?? 'Adventurer';
   const level = stats?.level ?? 1;
   const base = statsAt(level, stats?.attunedCount ?? 0);
@@ -197,7 +190,7 @@ function CharacterPanel() {
   const ready = spells.filter((s) => s.ready).slice(0, 8);
   const locked = spells.filter((s) => !s.ready).slice(0, 4);
   return (
-    <div data-testid="character-panel" data-ui-panel style={{ ...PANEL, position: 'fixed', left: 24, top: 70, width: 430, maxHeight: 'calc(100vh - 150px)', overflowY: 'auto', padding: '14px 18px', zIndex: 35, font: '13px system-ui, sans-serif', pointerEvents: 'auto' }}>
+    <div data-testid="character-panel" data-ui-panel style={{ ...PANEL, background: PANEL_BG, color: TEXT, position: 'fixed', left: 24, top: 70, width: 'min(580px, calc(100vw - 48px))', boxSizing: 'border-box', maxHeight: 'calc(100vh - 150px)', overflowY: 'auto', padding: '14px 18px', zIndex: 35, font: '13px system-ui, sans-serif', pointerEvents: 'auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
         <div style={{ font: '22px Georgia, serif' }}>{name}</div>
         <div style={{ font: '700 18px Georgia, serif', color: GOLD }}>Level {level}</div>
@@ -205,11 +198,11 @@ function CharacterPanel() {
       <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
         {/* Playtest 2: the full skill tree and the build overview (client/src/ui/skills). */}
         <button data-testid="open-skill-tree" onClick={() => openFromPanel()} style={PANEL_BTN}>
-          Skill tree <span style={{ opacity: 0.6 }}>N</span>
+          Skill tree <span style={KEY}>N</span>
           {free > 0 && <span style={{ color: GOLD }}> · {free} to spend</span>}
         </button>
         <button data-testid="open-build" onClick={() => openFromPanel('build')} style={PANEL_BTN}>
-          Build overview <span style={{ opacity: 0.6 }}>B</span>
+          Build overview <span style={KEY}>B</span>
         </button>
         {/* CR 027: name, colour and call your spirit steed (ui/mounts). */}
         <button data-testid="open-steed" onClick={() => openSteedPanel()} style={PANEL_BTN}>
@@ -224,7 +217,7 @@ function CharacterPanel() {
         <div style={{ height: 8, background: 'rgba(255,255,255,0.1)', borderRadius: 4, overflow: 'hidden' }}>
           <div data-testid="xp-bar" style={{ width: `${Math.min(100, (100 * into) / Math.max(1, next))}%`, height: '100%', background: `linear-gradient(90deg, #b388ff, ${GOLD})` }} />
         </div>
-        <div style={{ fontSize: 11, opacity: 0.7, marginTop: 3 }}>
+        <div style={{ fontSize: 11.5, color: TEXT_2, marginTop: 3 }}>
           {into} / {next} XP to level {level + 1} · discoveries, towers and fights all give XP
         </div>
       </div>
@@ -236,30 +229,23 @@ function CharacterPanel() {
         <Row label="Skill points" value={<span style={{ color: free > 0 ? GOLD : undefined }}>{free} unspent</span>} sub={`of ${stats?.skillTotal ?? base.skillPoints}`} />
         <Row label="Crystals attuned" value={stats?.attunedCount ?? 0} sub="each: a permanent boon" />
       </Section>
-      <Section title={`Spell slots · loadout ${activeLoadout + 1} (X swaps)`}>
-        <SpellSlots slots={loadouts[activeLoadout]?.spells ?? []} known={known} disabled={!actions} onPick={(slot, id) => actions?.equipSpell(activeLoadout, slot, id)} />
+      {/* Playtest 2 (Nicole): spell cards instead of a dropdown per slot (ui/spellcards). */}
+      <Section title="Spells">
+        <SpellBoard c={c} />
       </Section>
       <Section title={`Learn spells${free > 0 ? ` (${free} point${free === 1 ? '' : 's'} to spend)` : ''}`}>
-        {ready.length === 0 && <div style={{ opacity: 0.6 }}>Nothing new to learn right now.</div>}
+        {ready.length === 0 && <div style={{ color: TEXT_3 }}>Nothing new to learn right now.</div>}
         {ready.map((s) => (
-          <div key={s.key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '2px 0' }}>
-            <span>
-              {s.name}
-              <span style={{ opacity: 0.55, marginLeft: 6, fontSize: 11 }}>
-                {s.tree} · tier {s.tier}
-                {s.passive ? ' · passive' : ''}
-              </span>
-              {s.killsDemons && <span style={{ color: GOLD, marginLeft: 6, fontSize: 11 }}>kills demons</span>}
-            </span>
-            <button data-testid={`learn-${s.key}`} disabled={free <= 0 || !actions} onClick={() => actions?.learn(s.id)} style={{ font: '12px system-ui, sans-serif', padding: '2px 10px', cursor: free > 0 ? 'pointer' : 'default' }}>
+          <LearnRow key={s.key} k={s.key} killsDemons={s.killsDemons}>
+            <button data-testid={`learn-${s.key}`} disabled={free <= 0 || !actions} onClick={() => actions?.learn(s.id)} style={{ ...SMALL_BTN, cursor: free > 0 && actions ? 'pointer' : 'default', color: free > 0 && actions ? GOLD : TEXT_3, borderColor: free > 0 && actions ? BORDER_GOLD : BORDER }}>
               Learn
             </button>
-          </div>
+          </LearnRow>
         ))}
         {locked.map((s) => (
-          <div key={s.key} style={{ opacity: 0.5, padding: '2px 0' }}>
-            {s.name} <span style={{ fontSize: 11 }}>· {s.tree} tier {s.tier} · needs level {s.needsLevel}</span>
-          </div>
+          <LearnRow key={s.key} k={s.key} killsDemons={s.killsDemons}>
+            <span style={{ fontSize: 11.5, color: WARN }}>needs level {s.needsLevel}</span>
+          </LearnRow>
         ))}
       </Section>
       {/* Playtest 2: the PvP flag and how duels work (CR 019) */}
@@ -267,14 +253,14 @@ function CharacterPanel() {
       {area && (
         <Section title="Where you stand">
           <Row label={area.haven ? 'The Haven' : area.tierName} value={`area level ${area.level}`} sub={area.by && !area.haven ? `shaped by ${area.by}` : undefined} />
-          <div style={{ fontSize: 11, opacity: 0.65, marginTop: 3 }}>New lands take the measure of the first explorer to reach them: the stronger you are, the harder the places you discover.</div>
+          <div style={{ fontSize: 11.5, color: TEXT_2, marginTop: 3 }}>New lands take the measure of the first explorer to reach them: the stronger you are, the harder the places you discover.</div>
         </Section>
       )}
       <Section title="Coming next">
         {upcoming(level).map((u) => (
           <div key={u.level} style={{ display: 'flex', gap: 10, padding: '2px 0' }}>
             <span style={{ width: 54, color: GOLD, flex: 'none' }}>Level {u.level}</span>
-            <span style={{ opacity: 0.85 }}>{u.lines.join(' · ')}</span>
+            <span style={{ color: TEXT_2 }}>{u.lines.join(' · ')}</span>
           </div>
         ))}
       </Section>
@@ -285,7 +271,7 @@ function CharacterPanel() {
           return <Row key={sk.key} label={SKILL_NAMES[sk.key] ?? sk.key} value={lv} sub={t ? `${t.name} at ${t.level}` : undefined} />;
         })}
       </Section>
-      <div style={{ fontSize: 11, opacity: 0.55, marginTop: 10 }}>C or Esc to close</div>
+      <div style={{ fontSize: 11.5, color: TEXT_3, marginTop: 10 }}>C or Esc to close</div>
     </div>
   );
 }

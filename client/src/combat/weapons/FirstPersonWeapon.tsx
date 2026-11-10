@@ -22,7 +22,7 @@ import { useCombatHud } from '../store';
 import { moveOf } from '../timeline';
 import { lookKey, materialKey, type WeaponKind, type WeaponLook } from './look';
 import { weaponMaterial, tickWeaponMaterial } from './material';
-import { BOW_MAX_DRAW, bowNock, fistGeometry, forearmGeometry, setBowDraw, weaponGeometry } from './models';
+import { BOW_MAX_DRAW, bowNock, FIST_WRIST, fistGeometry, forearmGeometry, GRIP_R, OPEN_WRIST, openHandGeometry, setBowDraw, weaponGeometry } from './models';
 import { castHooks, castsFromWeapon } from '../fx/castOrigin';
 
 /** The newest melee swing (CombatLayer writes it from the FX queue; the weapon reads it). */
@@ -39,19 +39,26 @@ interface Pose {
   scale?: number;
   /** Off hand on the weapon at this local +Y (spear). */
   offhand?: number;
+  /** Where the right forearm runs to (camera space; R_SHOULDER by default). */
+  elbow?: V;
 }
 
-const POSES: Record<WeaponKind, Pose> = {
-  sword: { pos: [0.24, -0.22, -0.44], up: [-0.32, 0.64, -0.7], face: [-0.3, 0.45, 1] },
-  spear: { pos: [0.22, -0.28, -0.22], up: [-0.13, 0.12, -1], face: [0, 1, 0.1], offhand: 0.46 },
+// Playtest 2 ("the hand is fucked up here"): each hold keeps the grip at
+// 45-80 degrees to the forearm (the handle across the palm, the wrist only a
+// little bent toward the little finger), the way a hand can actually close
+// on it; before, the sword and wand pointed straight down the forearm and the
+// fist had to fold sideways at the wrist to hold them.
+export const POSES: Record<WeaponKind, Pose> = {
+  sword: { pos: [0.24, -0.22, -0.44], up: [-0.32, 0.9, -0.55], face: [-0.3, 0.35, 1], elbow: [0.34, -0.36, 0.15] },
+  spear: { pos: [0.22, -0.28, -0.22], up: [-0.13, 0.12, -1], face: [0, 1, 0.1], offhand: 0.46, elbow: [0.3, -0.75, 0] },
   bow: { pos: [-0.14, -0.1, -0.58], up: [0.35, 0.95, 0.3], face: [0.1, -0.3, 0.95], scale: 0.85 },
-  staff: { pos: [0.27, -0.28, -0.46], up: [-0.15, 1, -0.65], face: [0.3, 0, 1] },
-  wand: { pos: [0.22, -0.2, -0.38], up: [-0.3, 0.62, -1], face: [0.3, 1, 0.3] },
+  staff: { pos: [0.27, -0.28, -0.46], up: [-0.15, 1, -0.45], face: [0.3, 0, 1], elbow: [0.36, -0.4, 0.15] },
+  wand: { pos: [0.22, -0.2, -0.38], up: [-0.3, 0.75, -0.6], face: [0.3, 1, 0.3], elbow: [0.32, -0.3, 0.15] },
 };
 /** The swing pivots about the right shoulder region, so a cut sweeps across the view. */
-const PIVOT = new THREE.Vector3(0.22, -0.45, -0.1);
-const R_SHOULDER = new THREE.Vector3(0.3, -0.6, 0.12);
-const L_SHOULDER = new THREE.Vector3(-0.3, -0.6, 0.12);
+export const PIVOT = new THREE.Vector3(0.22, -0.45, -0.1);
+export const R_SHOULDER = new THREE.Vector3(0.3, -0.6, 0.12);
+export const L_SHOULDER = new THREE.Vector3(-0.3, -0.6, 0.12);
 const STRIDE_M = 2.4;
 
 function poseQuat(p: Pose): THREE.Quaternion {
@@ -61,14 +68,14 @@ function poseQuat(p: Pose): THREE.Quaternion {
   const x = new THREE.Vector3().crossVectors(y, z);
   return new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(x, y, z));
 }
-const QUATS = Object.fromEntries(Object.entries(POSES).map(([k, p]) => [k, poseQuat(p)])) as Record<WeaponKind, THREE.Quaternion>;
+export const QUATS = Object.fromEntries(Object.entries(POSES).map(([k, p]) => [k, poseQuat(p)])) as Record<WeaponKind, THREE.Quaternion>;
 
 const smooth = (a: number, b: number, x: number) => {
   const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
   return t * t * (3 - 2 * t);
 };
 
-interface Rig {
+export interface Rig {
   root: THREE.Group;
   pivot: THREE.Group;
   grip: THREE.Group;
@@ -85,14 +92,14 @@ interface Rig {
 }
 
 /** Off-hand cast pose (camera space): low and out of view at rest, raised toward the crosshair at the push. */
-const CAST_REST = new THREE.Vector3(-0.32, -0.62, -0.3);
-const CAST_UP = new THREE.Vector3(-0.21, -0.17, -0.5);
+export const CAST_REST = new THREE.Vector3(-0.32, -0.62, -0.3);
+export const CAST_UP = new THREE.Vector3(-0.21, -0.17, -0.5);
 /** The spell leaves just in front of the raised palm (so the hand stays visible behind it). */
 const CAST_FROM = new THREE.Vector3(-0.18, -0.11, -0.64);
 const CAST_MS = 520;
 const tipLocal = new THREE.Vector3();
 
-function makeRig(): Rig {
+export function makeRig(): Rig {
   const mat = weaponMaterial();
   const mesh = (g: THREE.BufferGeometry) => {
     const m = new THREE.Mesh(g, mat);
@@ -103,8 +110,8 @@ function makeRig(): Rig {
   const pivot = new THREE.Group();
   const grip = new THREE.Group();
   const weapon = mesh(weaponGeometry({ weapon: 'sword', material: '', gem: -1 }, 2));
-  const rFist = mesh(fistGeometry());
-  const lFist = mesh(fistGeometry());
+  const rFist = mesh(fistGeometry(GRIP_R.sword));
+  const lFist = mesh(fistGeometry(GRIP_R.spear));
   lFist.scale.x = -1; // mirrored: a left hand
   const rArm = mesh(forearmGeometry());
   const lArm = mesh(forearmGeometry());
@@ -113,7 +120,7 @@ function makeRig(): Rig {
   root.add(pivot, rArm, lArm);
   pivot.add(grip);
   grip.add(weapon, rFist, lFist);
-  const castFist = mesh(fistGeometry());
+  const castFist = mesh(openHandGeometry()); // playtest 2: an open palm pushes the spell out
   castFist.scale.x = -1;
   const castArm = mesh(forearmGeometry());
   castArm.scale.x = -1;
@@ -124,22 +131,81 @@ function makeRig(): Rig {
 
 const v1 = new THREE.Vector3();
 const v2 = new THREE.Vector3();
-const up = new THREE.Vector3(0, 1, 0);
+const v3 = new THREE.Vector3();
+const m4 = new THREE.Matrix4();
+const BACK = new THREE.Vector3(-0.25, 0, 1).normalize();
 
-/** Turn a fist about its grip axis so its wrist (+Z) faces the shoulder; place the forearm from wrist to shoulder. */
-function aimArm(rig: Rig, fist: THREE.Mesh, arm: THREE.Mesh, shoulder: THREE.Vector3): void {
+/** The bowstring is thin: the drawing hand closes on it tightly. */
+const STRING_R = 0.0075;
+
+/** Switch the rig to a weapon: its model, scale, hold and the fists that fit its grip. */
+export function setRigWeapon(rig: Rig, look: WeaponLook): void {
+  const kind = look.weapon ?? 'sword';
+  rig.weapon.geometry = weaponGeometry(look, 2);
+  rig.weapon.geometry.computeBoundingBox();
+  rig.tipY = rig.weapon.geometry.boundingBox?.max.y ?? 0.8;
+  const p = POSES[kind];
+  rig.weapon.scale.setScalar(p.scale ?? 1);
+  rig.grip.quaternion.copy(QUATS[kind]);
+  const s = p.scale ?? 1;
+  rig.rFist.geometry = fistGeometry(kind === 'bow' ? STRING_R : GRIP_R[kind] * s);
+  rig.lFist.geometry = fistGeometry(GRIP_R[kind] * s);
+  rig.lFist.visible = rig.lArm.visible = kind === 'spear' || kind === 'bow';
+}
+
+/**
+ * Roll a fist about its grip axis so its wrist faces the shoulder (the only
+ * freedom a hand closed on a handle has), then lay the forearm from the
+ * wrist to the shoulder with its wide side across the grip.
+ */
+export function aimArm(rig: Rig, fist: THREE.Mesh, arm: THREE.Mesh, shoulder: THREE.Vector3): void {
   rig.root.updateMatrixWorld(true);
   const s = v1.copy(shoulder).applyMatrix4(rig.root.matrixWorld);
   fist.parent!.worldToLocal(s);
   s.sub(fist.position);
-  fist.rotation.set(0, Math.atan2(s.x, s.z), 0);
+  // the wrist sits a little off +Z (toward the back of the hand); mirrored for a left hand
+  fist.rotation.set(0, Math.atan2(s.x, s.z) - Math.atan2(FIST_WRIST.x * fist.scale.x, FIST_WRIST.z), 0);
   fist.updateMatrixWorld(true);
-  const wrist = v2.set(0, -0.004, 0.05).applyMatrix4(fist.matrixWorld);
+  placeForearm(rig, fist, arm, shoulder, FIST_WRIST);
+}
+
+/** The open casting hand: fingers up and a little forward, palm toward the crosshair, the forearm to the shoulder. */
+export function aimOpenHand(rig: Rig, hand: THREE.Mesh, arm: THREE.Mesh, shoulder: THREE.Vector3): void {
+  const f = v1.copy(hand.position).sub(shoulder).normalize(); // shoulder to hand
+  const y = v2.set(0, 1, 0).addScaledVector(f, 0.4).normalize();
+  const z = v3.copy(BACK).addScaledVector(y, -BACK.dot(y)).normalize();
+  const x = f.crossVectors(y, z);
+  hand.quaternion.setFromRotationMatrix(m4.makeBasis(x, y, z));
+  rig.root.updateMatrixWorld(true);
+  placeForearm(rig, hand, arm, shoulder, OPEN_WRIST);
+}
+
+function placeForearm(rig: Rig, hand: THREE.Mesh, arm: THREE.Mesh, shoulder: THREE.Vector3, wristLocal: THREE.Vector3): void {
+  const wrist = v2.copy(wristLocal).applyMatrix4(hand.matrixWorld);
   rig.root.worldToLocal(wrist);
   arm.position.copy(wrist);
   const dir = v1.copy(shoulder).sub(wrist).normalize();
-  arm.quaternion.setFromUnitVectors(up, dir);
+  // the hand's grip axis (thumb to little finger), in root space, across the forearm
+  const across = v3.set(0, 1, 0).transformDirection(hand.matrixWorld);
+  m4.copy(rig.root.matrixWorld).invert();
+  across.transformDirection(m4);
+  across.addScaledVector(dir, -across.dot(dir));
+  if (across.lengthSq() < 1e-6) across.set(1, 0, 0).addScaledVector(dir, -dir.x);
+  across.normalize();
+  const z = v2.crossVectors(across, dir);
+  arm.quaternion.setFromRotationMatrix(m4.makeBasis(across, dir, z));
 }
+
+/** Both hands on the weapon (right on the grip or the string, left on the shaft or the bow) for this frame's grip pose. */
+export function poseHands(rig: Rig, kind: WeaponKind): void {
+  const pose = POSES[kind];
+  if (kind !== 'bow') rig.rFist.position.set(0, 0, 0);
+  rig.lFist.position.set(0, pose.offhand ?? 0, 0);
+  if (kind === 'bow') aimArm(rig, rig.lFist, rig.lArm, L_SHOULDER);
+  aimArm(rig, rig.rFist, rig.rArm, ELBOWS[kind]);
+  if (kind !== 'bow' && rig.lFist.visible) aimArm(rig, rig.lFist, rig.lArm, L_SHOULDER);
+}
+const ELBOWS = Object.fromEntries(Object.entries(POSES).map(([k, p]) => [k, p.elbow ? new THREE.Vector3(...p.elbow) : R_SHOULDER])) as Record<WeaponKind, THREE.Vector3>;
 
 export function FirstPersonWeapon() {
   const camera = useThree((s) => s.camera);
@@ -184,13 +250,7 @@ export function FirstPersonWeapon() {
     if (key !== st.key) {
       st.key = key;
       st.kind = look.weapon!;
-      rig.weapon.geometry = weaponGeometry(look, 2);
-      rig.weapon.geometry.computeBoundingBox();
-      rig.tipY = rig.weapon.geometry.boundingBox?.max.y ?? 0.8;
-      const p = POSES[st.kind];
-      rig.weapon.scale.setScalar(p.scale ?? 1);
-      rig.grip.quaternion.copy(QUATS[st.kind]);
-      rig.lFist.visible = rig.lArm.visible = st.kind === 'spear' || st.kind === 'bow';
+      setRigWeapon(rig, look);
     }
     const pose = POSES[st.kind];
     castHooks.selfWeapon = st.kind;
@@ -274,18 +334,8 @@ export function FirstPersonWeapon() {
       // right hand on the string at the nock point
       rig.rFist.position.copy(bowNock(draw * BOW_MAX_DRAW)).multiplyScalar(pose.scale ?? 1);
     }
-    if (st.kind !== 'bow') rig.rFist.position.set(0, 0, 0);
-    if (pose.offhand) rig.lFist.position.set(0, pose.offhand, 0);
-    else rig.lFist.position.set(0, 0, 0);
-
     // Hands: right fist on the grip (or the string), left on the shaft/bow.
-    if (st.kind === 'bow') {
-      aimArm(rig, rig.lFist, rig.lArm, L_SHOULDER);
-      aimArm(rig, rig.rFist, rig.rArm, R_SHOULDER);
-    } else {
-      aimArm(rig, rig.rFist, rig.rArm, R_SHOULDER);
-      if (rig.lFist.visible) aimArm(rig, rig.lFist, rig.lArm, L_SHOULDER);
-    }
+    poseHands(rig, st.kind);
 
     // Playtest 2 ("it is confusing where the spells are coming from"): a
     // sword's free off hand rises into view and pushes when you cast; a
@@ -298,8 +348,7 @@ export function FirstPersonWeapon() {
       const k = smooth(0, 0.3, ct / CAST_MS) * (1 - smooth(0.65, 1, ct / CAST_MS));
       const push = smooth(0.25, 0.45, ct / CAST_MS) * (1 - smooth(0.6, 1, ct / CAST_MS));
       rig.castFist.position.lerpVectors(CAST_REST, CAST_UP, k).z -= 0.08 * push;
-      rig.castFist.rotation.set(0, 0, 0);
-      aimArm(rig, rig.castFist, rig.castArm, L_SHOULDER);
+      aimOpenHand(rig, rig.castFist, rig.castArm, L_SHOULDER);
     }
   });
 

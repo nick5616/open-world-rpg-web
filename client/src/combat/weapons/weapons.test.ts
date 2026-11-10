@@ -99,7 +99,7 @@ describe('weapon models', () => {
   it('hands are small and cached', () => {
     expect(fistGeometry()).toBe(fistGeometry());
     expect(forearmGeometry().index!.count / 3).toBeLessThan(200);
-    expect(fistGeometry().index!.count / 3).toBeLessThan(800);
+    expect(fistGeometry().index!.count / 3).toBeLessThan(1400); // playtest 2: an anatomical fist (hands.test.ts)
   });
 });
 

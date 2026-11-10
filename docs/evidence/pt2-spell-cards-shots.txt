@@ -1,0 +1,49 @@
+client: http://127.0.0.1:36491
+mock: {"known":14,"spent":11,"spells":["Ember Flick","Frost Bite","Magma Dash","Spark Shot","Kindling","Fireball","Combustion","Glint","Sunstep","Radiant Lance","Spark Jab","Lightning Strike","Frost Needle","Brittle"]}
+ok   1920x1080: no dropdowns left in the panel
+ok   1920x1080: panel inside the viewport, no horizontal scroll
+ok   1920x1080: four slot cards
+ok   1920x1080: slot 1 card shows name, school, damage and mana: 1FireballFire· T3Lobbed85DMG22MANA2.2sCD×
+ok   1920x1080: grid of known castable spells (11), no passives
+screenshot docs/evidence/pt2-spell-cards-panel-1920x1080.png
+ok   1920x1080: tooltip has full stats, your hit and the slot: FireballFire· T3LobbedlearnedTypeLobbedDamage85Cooldown2.2 sMana22Range54 mRadius2.5 mStatusBurnYour hitabout 240 (loadout 1, before the enemy's element)In loadout 1 slot 1
+ok   1920x1080: tooltip beside the panel, on screen
+screenshot docs/evidence/pt2-spell-cards-hover-1920x1080.png
+ok   1920x1080: card picked
+ok   1920x1080: pick + click a slot: ["fireball","radiant_lance","lightning_strike","spark_shot"]
+ok   1920x1080: no tooltip while dragging
+screenshot docs/evidence/pt2-spell-cards-drag-1920x1080.png
+ok   1920x1080: drag onto slot 2: ["fireball","frost_bite","lightning_strike","spark_shot"]
+ok   1920x1080: slot to slot moves the spell: ["fireball",null,"frost_bite","spark_shot"]
+ok   1920x1080: x clears a slot
+ok   1920x1080: loadout 2 shows its own slots
+ok   1920x1080: assign into loadout 2 (moves within it): ["ember_flick","frost_needle",null,"glint"]
+ok   1920x1080: keyboard focus shows the tooltip
+ok   1920x1080: keyboard pick + place
+ok   1920x1080: C closes the panel
+ok   1280x720: no dropdowns left in the panel
+ok   1280x720: panel inside the viewport, no horizontal scroll
+ok   1280x720: four slot cards
+ok   1280x720: slot 1 card shows name, school, damage and mana: 1FireballFire· T3Lobbed85DMG22MANA2.2sCD×
+ok   1280x720: grid of known castable spells (11), no passives
+screenshot docs/evidence/pt2-spell-cards-panel-1280x720.png
+ok   1280x720: tooltip has full stats, your hit and the slot: FireballFire· T3LobbedlearnedTypeLobbedDamage85Cooldown2.2 sMana22Range54 mRadius2.5 mStatusBurnYour hitabout 240 (loadout 1, before the enemy's element)In loadout 1 slot 1
+ok   1280x720: tooltip beside the panel, on screen
+screenshot docs/evidence/pt2-spell-cards-hover-1280x720.png
+ok   1280x720: card picked
+ok   1280x720: pick + click a slot: ["fireball","radiant_lance","lightning_strike","spark_shot"]
+ok   1280x720: no tooltip while dragging
+screenshot docs/evidence/pt2-spell-cards-drag-1280x720.png
+ok   1280x720: drag onto slot 2: ["fireball","frost_bite","lightning_strike","spark_shot"]
+ok   1280x720: slot to slot moves the spell: ["fireball",null,"frost_bite","spark_shot"]
+ok   1280x720: x clears a slot
+ok   1280x720: loadout 2 shows its own slots
+ok   1280x720: assign into loadout 2 (moves within it): ["ember_flick","frost_needle",null,"glint"]
+ok   1280x720: keyboard focus shows the tooltip
+ok   1280x720: keyboard pick + place
+ok   1280x720: C closes the panel
+ok   skill tree: four slot cards (one loadout at a time)
+ok   skill tree: the loadout toggle shows loadout 2
+screenshot docs/evidence/pt2-spell-cards-skill-tree-1920x1080.png
+screenshot docs/evidence/pt2-spell-cards-skill-tree-1280x720.png
+no page errors; all checks PASS
