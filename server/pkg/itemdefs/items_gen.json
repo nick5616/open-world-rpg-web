@@ -315,7 +315,8 @@
   "weapon": 1,
   "armor": 1,
   "key": 1,
-  "quest": 10
+  "quest": 10,
+  "fish": 20
  },
  "pouches": {
   "gem": "gem",
@@ -1102,6 +1103,162 @@
    "heal": 120
   },
   {
+   "key": "food:fish_skewer",
+   "name": "Silverfin Skewer",
+   "category": "food",
+   "kind": "consumable",
+   "stack": 20,
+   "pouch": "inv",
+   "level": 1,
+   "value": 8,
+   "sockets": 0,
+   "heal": 28
+  },
+  {
+   "key": "food:fried_perch",
+   "name": "Pan-Fried Perch",
+   "category": "food",
+   "kind": "consumable",
+   "stack": 20,
+   "pouch": "inv",
+   "level": 1,
+   "value": 9,
+   "sockets": 0,
+   "heal": 34
+  },
+  {
+   "key": "food:grilled_trout",
+   "name": "Herb-Grilled Trout",
+   "category": "food",
+   "kind": "consumable",
+   "stack": 20,
+   "pouch": "inv",
+   "level": 1,
+   "value": 12,
+   "sockets": 0,
+   "heal": 50
+  },
+  {
+   "key": "food:fish_stew",
+   "name": "Fisherman's Stew",
+   "category": "food",
+   "kind": "consumable",
+   "stack": 20,
+   "pouch": "inv",
+   "level": 1,
+   "value": 16,
+   "sockets": 0,
+   "heal": 60
+  },
+  {
+   "key": "food:seafarer_pie",
+   "name": "Seafarer's Pie",
+   "category": "food",
+   "kind": "consumable",
+   "stack": 20,
+   "pouch": "inv",
+   "level": 1,
+   "value": 20,
+   "sockets": 0,
+   "heal": 70
+  },
+  {
+   "key": "food:pike_steak",
+   "name": "Bog Pike Steak",
+   "category": "food",
+   "kind": "consumable",
+   "stack": 20,
+   "pouch": "inv",
+   "level": 1,
+   "value": 22,
+   "sockets": 0,
+   "heal": 68
+  },
+  {
+   "key": "food:frostgill_chowder",
+   "name": "Frostgill Chowder",
+   "category": "food",
+   "kind": "consumable",
+   "stack": 20,
+   "pouch": "inv",
+   "level": 1,
+   "value": 22,
+   "sockets": 0,
+   "heal": 70
+  },
+  {
+   "key": "food:ember_curry",
+   "name": "Ember Loach Curry",
+   "category": "food",
+   "kind": "consumable",
+   "stack": 20,
+   "pouch": "inv",
+   "level": 1,
+   "value": 20,
+   "sockets": 0,
+   "heal": 62
+  },
+  {
+   "key": "food:smoked_eel",
+   "name": "Smoked Gloam Eel",
+   "category": "food",
+   "kind": "consumable",
+   "stack": 20,
+   "pouch": "inv",
+   "level": 1,
+   "value": 22,
+   "sockets": 0,
+   "heal": 65
+  },
+  {
+   "key": "potion:moonlit_tonic",
+   "name": "Moonlit Koi Tonic",
+   "category": "potion",
+   "kind": "consumable",
+   "stack": 20,
+   "pouch": "inv",
+   "level": 1,
+   "value": 90,
+   "sockets": 0,
+   "heal": 110
+  },
+  {
+   "key": "food:storm_fillet",
+   "name": "Stormray Fillet",
+   "category": "food",
+   "kind": "consumable",
+   "stack": 20,
+   "pouch": "inv",
+   "level": 1,
+   "value": 70,
+   "sockets": 0,
+   "heal": 95
+  },
+  {
+   "key": "food:sturgeon_feast",
+   "name": "Feast of the Humming Sturgeon",
+   "category": "food",
+   "kind": "consumable",
+   "stack": 20,
+   "pouch": "inv",
+   "level": 1,
+   "value": 300,
+   "sockets": 0,
+   "heal": 200
+  },
+  {
+   "key": "food:deepmaw_banquet",
+   "name": "Deepmaw Banquet",
+   "category": "food",
+   "kind": "consumable",
+   "stack": 20,
+   "pouch": "inv",
+   "level": 1,
+   "value": 400,
+   "sockets": 0,
+   "heal": 240
+  },
+  {
    "key": "meat:raw",
    "name": "Raw Meat",
    "category": "meat",
@@ -1179,6 +1336,160 @@
    "sockets": 0
   },
   {
+   "key": "fish:silverfin",
+   "name": "Silverfin Minnow",
+   "category": "fish",
+   "kind": "material",
+   "stack": 20,
+   "pouch": "inv",
+   "level": 1,
+   "value": 3,
+   "sockets": 0
+  },
+  {
+   "key": "fish:reed_perch",
+   "name": "Reed Perch",
+   "category": "fish",
+   "kind": "material",
+   "stack": 20,
+   "pouch": "inv",
+   "level": 1,
+   "value": 4,
+   "sockets": 0
+  },
+  {
+   "key": "fish:speckled_trout",
+   "name": "Speckled Trout",
+   "category": "fish",
+   "kind": "material",
+   "stack": 20,
+   "pouch": "inv",
+   "level": 1,
+   "value": 6,
+   "sockets": 0
+  },
+  {
+   "key": "fish:mudback_carp",
+   "name": "Mudback Carp",
+   "category": "fish",
+   "kind": "material",
+   "stack": 20,
+   "pouch": "inv",
+   "level": 1,
+   "value": 5,
+   "sockets": 0
+  },
+  {
+   "key": "fish:tidewing_mackerel",
+   "name": "Tidewing Mackerel",
+   "category": "fish",
+   "kind": "material",
+   "stack": 20,
+   "pouch": "inv",
+   "level": 1,
+   "value": 5,
+   "sockets": 0
+  },
+  {
+   "key": "fish:sandflat_flounder",
+   "name": "Sandflat Flounder",
+   "category": "fish",
+   "kind": "material",
+   "stack": 20,
+   "pouch": "inv",
+   "level": 1,
+   "value": 6,
+   "sockets": 0
+  },
+  {
+   "key": "fish:bog_pike",
+   "name": "Bog Pike",
+   "category": "fish",
+   "kind": "material",
+   "stack": 20,
+   "pouch": "inv",
+   "level": 1,
+   "value": 14,
+   "sockets": 0
+  },
+  {
+   "key": "fish:frostgill_char",
+   "name": "Frostgill Char",
+   "category": "fish",
+   "kind": "material",
+   "stack": 20,
+   "pouch": "inv",
+   "level": 1,
+   "value": 14,
+   "sockets": 0
+  },
+  {
+   "key": "fish:emberscale_loach",
+   "name": "Emberscale Loach",
+   "category": "fish",
+   "kind": "material",
+   "stack": 20,
+   "pouch": "inv",
+   "level": 1,
+   "value": 12,
+   "sockets": 0
+  },
+  {
+   "key": "fish:gloam_eel",
+   "name": "Gloam Eel",
+   "category": "fish",
+   "kind": "material",
+   "stack": 20,
+   "pouch": "inv",
+   "level": 1,
+   "value": 13,
+   "sockets": 0
+  },
+  {
+   "key": "fish:stormray",
+   "name": "Stormray",
+   "category": "fish",
+   "kind": "material",
+   "stack": 20,
+   "pouch": "inv",
+   "level": 1,
+   "value": 40,
+   "sockets": 0
+  },
+  {
+   "key": "fish:moonlit_koi",
+   "name": "Moonlit Koi",
+   "category": "fish",
+   "kind": "material",
+   "stack": 20,
+   "pouch": "inv",
+   "level": 1,
+   "value": 45,
+   "sockets": 0
+  },
+  {
+   "key": "fish:humming_sturgeon",
+   "name": "Humming Sturgeon",
+   "category": "fish",
+   "kind": "material",
+   "stack": 20,
+   "pouch": "inv",
+   "level": 1,
+   "value": 180,
+   "sockets": 0
+  },
+  {
+   "key": "fish:deepmaw",
+   "name": "Deepmaw",
+   "category": "fish",
+   "kind": "material",
+   "stack": 20,
+   "pouch": "inv",
+   "level": 1,
+   "value": 240,
+   "sockets": 0
+  },
+  {
    "key": "seed:wardbloom",
    "name": "Wardbloom Seed",
    "category": "seed",
@@ -1253,6 +1564,17 @@
    "pouch": "inv",
    "level": 1,
    "value": 8,
+   "sockets": 0
+  },
+  {
+   "key": "tool:fishing_rod",
+   "name": "Fishing Rod",
+   "category": "tool",
+   "kind": "tool",
+   "stack": 1,
+   "pouch": "inv",
+   "level": 1,
+   "value": 25,
    "sockets": 0
   },
   {
@@ -2844,6 +3166,278 @@
    "sockets": 0,
    "blueprint": null,
    "xp": 20
+  },
+  {
+   "key": "forge_fishing_rod",
+   "id": 31,
+   "station": "forge",
+   "inputs": [
+    {
+     "item": "ingot:copper",
+     "qty": 1
+    }
+   ],
+   "output": "tool:fishing_rod",
+   "qty": 1,
+   "sockets": 0,
+   "blueprint": null,
+   "xp": 5
+  },
+  {
+   "key": "cook_fish_skewer",
+   "id": 32,
+   "station": "cook",
+   "inputs": [
+    {
+     "item": "fish:silverfin",
+     "qty": 2
+    }
+   ],
+   "output": "food:fish_skewer",
+   "qty": 1,
+   "sockets": 0,
+   "blueprint": null,
+   "xp": 4
+  },
+  {
+   "key": "cook_fried_perch",
+   "id": 33,
+   "station": "cook",
+   "inputs": [
+    {
+     "item": "fish:reed_perch",
+     "qty": 1
+    }
+   ],
+   "output": "food:fried_perch",
+   "qty": 1,
+   "sockets": 0,
+   "blueprint": null,
+   "xp": 4
+  },
+  {
+   "key": "cook_grilled_trout",
+   "id": 34,
+   "station": "cook",
+   "inputs": [
+    {
+     "item": "fish:speckled_trout",
+     "qty": 1
+    },
+    {
+     "item": "herb:heartleaf",
+     "qty": 1
+    }
+   ],
+   "output": "food:grilled_trout",
+   "qty": 1,
+   "sockets": 0,
+   "blueprint": null,
+   "xp": 6
+  },
+  {
+   "key": "cook_fish_stew",
+   "id": 35,
+   "station": "cook",
+   "inputs": [
+    {
+     "item": "fish:mudback_carp",
+     "qty": 1
+    },
+    {
+     "item": "fish:reed_perch",
+     "qty": 1
+    },
+    {
+     "item": "herb:heartleaf",
+     "qty": 1
+    }
+   ],
+   "output": "food:fish_stew",
+   "qty": 1,
+   "sockets": 0,
+   "blueprint": null,
+   "xp": 8
+  },
+  {
+   "key": "cook_seafarer_pie",
+   "id": 36,
+   "station": "cook",
+   "inputs": [
+    {
+     "item": "fish:tidewing_mackerel",
+     "qty": 1
+    },
+    {
+     "item": "fish:sandflat_flounder",
+     "qty": 1
+    },
+    {
+     "item": "food:bread",
+     "qty": 1
+    }
+   ],
+   "output": "food:seafarer_pie",
+   "qty": 1,
+   "sockets": 0,
+   "blueprint": null,
+   "xp": 8
+  },
+  {
+   "key": "cook_pike_steak",
+   "id": 37,
+   "station": "cook",
+   "inputs": [
+    {
+     "item": "fish:bog_pike",
+     "qty": 1
+    },
+    {
+     "item": "herb:glowmoss",
+     "qty": 1
+    }
+   ],
+   "output": "food:pike_steak",
+   "qty": 1,
+   "sockets": 0,
+   "blueprint": null,
+   "xp": 10
+  },
+  {
+   "key": "cook_frostgill_chowder",
+   "id": 38,
+   "station": "cook",
+   "inputs": [
+    {
+     "item": "fish:frostgill_char",
+     "qty": 1
+    },
+    {
+     "item": "herb:frostcap",
+     "qty": 1
+    }
+   ],
+   "output": "food:frostgill_chowder",
+   "qty": 1,
+   "sockets": 0,
+   "blueprint": null,
+   "xp": 10
+  },
+  {
+   "key": "cook_ember_curry",
+   "id": 39,
+   "station": "cook",
+   "inputs": [
+    {
+     "item": "fish:emberscale_loach",
+     "qty": 1
+    },
+    {
+     "item": "herb:emberroot",
+     "qty": 1
+    }
+   ],
+   "output": "food:ember_curry",
+   "qty": 1,
+   "sockets": 0,
+   "blueprint": null,
+   "xp": 10
+  },
+  {
+   "key": "cook_smoked_eel",
+   "id": 40,
+   "station": "cook",
+   "inputs": [
+    {
+     "item": "fish:gloam_eel",
+     "qty": 1
+    },
+    {
+     "item": "herb:emberroot",
+     "qty": 1
+    }
+   ],
+   "output": "food:smoked_eel",
+   "qty": 1,
+   "sockets": 0,
+   "blueprint": null,
+   "xp": 10
+  },
+  {
+   "key": "brew_moonlit_tonic",
+   "id": 41,
+   "station": "cook",
+   "inputs": [
+    {
+     "item": "fish:moonlit_koi",
+     "qty": 1
+    },
+    {
+     "item": "herb:duskpetal",
+     "qty": 1
+    }
+   ],
+   "output": "potion:moonlit_tonic",
+   "qty": 1,
+   "sockets": 0,
+   "blueprint": null,
+   "xp": 16
+  },
+  {
+   "key": "cook_storm_fillet",
+   "id": 42,
+   "station": "cook",
+   "inputs": [
+    {
+     "item": "fish:stormray",
+     "qty": 1
+    }
+   ],
+   "output": "food:storm_fillet",
+   "qty": 1,
+   "sockets": 0,
+   "blueprint": null,
+   "xp": 16
+  },
+  {
+   "key": "cook_sturgeon_feast",
+   "id": 43,
+   "station": "cook",
+   "inputs": [
+    {
+     "item": "fish:humming_sturgeon",
+     "qty": 1
+    },
+    {
+     "item": "herb:heartleaf",
+     "qty": 2
+    }
+   ],
+   "output": "food:sturgeon_feast",
+   "qty": 1,
+   "sockets": 0,
+   "blueprint": null,
+   "xp": 30
+  },
+  {
+   "key": "cook_deepmaw_banquet",
+   "id": 44,
+   "station": "cook",
+   "inputs": [
+    {
+     "item": "fish:deepmaw",
+     "qty": 1
+    },
+    {
+     "item": "food:bread",
+     "qty": 2
+    }
+   ],
+   "output": "food:deepmaw_banquet",
+   "qty": 1,
+   "sockets": 0,
+   "blueprint": null,
+   "xp": 30
   }
  ],
  "starter": [
