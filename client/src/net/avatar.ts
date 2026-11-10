@@ -290,6 +290,7 @@ export class Avatar {
   private readonly input: AnimInput = { x: 0, y: 0, z: 0, yaw: 0, pitch: 0, speed: 0, activity: 0, healthPct: 100 };
   // CR 027: the steed under a rider (built on first ride, kept while the avatar lives).
   private steed: SteedRig | null = null;
+  private riderHidden = false;
   /** The steed's heading (yaw, -Z forward), eased toward the drawn motion. */
   heading = 0;
   private hx = Number.NaN;
@@ -341,7 +342,10 @@ export class Avatar {
       this.hx = Number.NaN;
       return;
     }
-    if (!this.steed) this.steed = new SteedRig(0, { reins: true });
+    if (!this.steed) {
+      this.steed = new SteedRig(0, { reins: true });
+      this.steed.setFirstPerson(this.riderHidden);
+    }
     if (!this.steed.root.parent) this.root.add(this.steed.root);
     this.steed.setColour(steedLookOf(v.id).colour);
     if (this.animLevel < 2) this.steed.update(dt, v.speed, (v.activity & Activity.airborne) !== 0, this.hvy);
@@ -474,6 +478,8 @@ export class Avatar {
   /** CR 027: hide the rider's figure but keep their steed (your own body, first person in the saddle). */
   setRiderVisible(on: boolean): void {
     for (const l of this.levels) l.visible = on;
+    this.riderHidden = !on;
+    this.steed?.setFirstPerson(!on);
     if (!on) this.glider.visible = false;
   }
 

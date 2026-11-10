@@ -127,6 +127,9 @@ export class SteedRig {
   private readonly meshes: THREE.Mesh[] = [];
   private readonly glows: THREE.Mesh[] = [];
   private readonly aura: THREE.Sprite;
+  private readonly torso: THREE.Mesh;
+  private fp = false;
+  private saddleOn = true;
   private readonly saddle: THREE.Mesh;
   private readonly reins: THREE.Line;
   private readonly reinPts: Float32Array;
@@ -152,7 +155,8 @@ export class SteedRig {
     };
     this.body.position.y = 1.28;
     this.root.add(this.body);
-    this.body.add(mesh(g.body));
+    this.torso = mesh(g.body);
+    this.body.add(this.torso);
     // neck and head
     this.neck.position.set(0, 0.12, -0.7);
     this.neck.rotation.x = -0.55;
@@ -208,7 +212,8 @@ export class SteedRig {
     }
     this.saddle = new THREE.Mesh(g.saddle, saddleMat);
     this.saddle.position.set(0, 0.32, -0.12);
-    this.saddle.visible = opts.saddle !== false;
+    this.saddleOn = opts.saddle !== false;
+    this.saddle.visible = this.saddleOn;
     this.body.add(this.saddle);
     this.reinPts = new Float32Array(9);
     const rg = new THREE.BufferGeometry();
@@ -223,6 +228,18 @@ export class SteedRig {
     this.aura.renderOrder = 4;
     this.root.add(this.aura);
     this.colour = colour;
+  }
+
+  /** First person in the saddle: only the neck, head, mane and reins (the rest would fill the view from inside). */
+  setFirstPerson(on: boolean): void {
+    if (on === this.fp) return;
+    this.fp = on;
+    this.torso.visible = !on;
+    for (const l of this.legs) l.hip.visible = !on;
+    if (this.tail[0]) this.tail[0].visible = !on;
+    this.saddle.visible = !on && this.saddleOn;
+    this.aura.visible = !on;
+    for (const m of this.mane) m.visible = !on;
   }
 
   /** Show colour i (STEED_COLOURS index). */

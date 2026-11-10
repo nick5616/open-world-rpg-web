@@ -10,7 +10,7 @@ import { useEffect, useState } from 'react';
 import { RIDE_SPUR_STAMINA, STEED_MOUNT_REACH_M } from '@lodestone/contracts';
 import { isTextTarget } from '../../input/useKeyboard';
 import { localPlayer } from '../../state/live';
-import { PHASE, STEED_COLOURS } from './events';
+import { PHASE, STEED_COLOURS, steedPose } from './events';
 import { ensureMountHook } from './link';
 import { useMounts } from './store';
 
@@ -34,7 +34,8 @@ function steedInReach(): boolean {
   const v = s.steeds[s.selfId];
   if (!v || (v.phase !== PHASE.standing && v.phase !== PHASE.arriving)) return false;
   const p = localPlayer.pos;
-  return Math.hypot(p.x - v.x, p.z - v.z) <= STEED_MOUNT_REACH_M - 0.1 && Math.abs(p.y - v.y) < 2.5;
+  const at = steedPose(v, performance.now()); // an arriving steed counts where it is now, not where it will stand
+  return Math.hypot(p.x - at.x, p.z - at.z) <= STEED_MOUNT_REACH_M - 0.1 && Math.hypot(p.x - v.x, p.z - v.z) <= STEED_MOUNT_REACH_M - 0.1 && Math.abs(p.y - v.y) < 2.5;
 }
 
 function panelOpen(): boolean {
