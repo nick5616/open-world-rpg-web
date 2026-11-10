@@ -220,7 +220,7 @@ func (w *World) acquire(e *Enemy, mult float64) *Player {
 	var best *Player
 	bestScore := -1.0
 	consider := func(p *Player) {
-		if p.Downed {
+		if p.Downed || p.Graced(w.tick) {
 			return
 		}
 		d := hdist(p.Pos, e.Pos)
@@ -298,7 +298,7 @@ func (w *World) chase(e *Enemy) {
 	tick := w.tick
 	p := w.players[e.Target]
 	sheltered := p != nil && e.Demon != nil && w.DemonHooks.Sheltered != nil && w.DemonHooks.Sheltered(e, p) // WP15
-	if p == nil || p.Downed || sheltered || hdist(p.Pos, e.Home) > e.leash()+e.Def.Aggro*0.5 || hdist(e.Pos, e.Home) > e.leash() {
+	if p == nil || p.Downed || p.Graced(tick) || sheltered || hdist(p.Pos, e.Home) > e.leash()+e.Def.Aggro*0.5 || hdist(e.Pos, e.Home) > e.leash() {
 		if np := w.acquire(e, 1.5); np != nil && hdist(e.Pos, e.Home) <= e.leash() {
 			e.Target = np.ID
 			w.engage(e, np)
@@ -758,7 +758,7 @@ func (w *World) evade(p *Player, s *strike, how int32) {
 // enemy strikes and enemy projectiles. The only other way is a PvP hit the
 // game layer allowed (hurtByPlayer, pvp.go; playtest 2, CR 019).
 func (w *World) hurtPlayer(p *Player, dmg float64, src *Enemy, att *combatdefs.EnemyAttack) {
-	if p.Downed || src == nil {
+	if p.Downed || src == nil || p.Graced(w.tick) {
 		return
 	}
 	dmg, _ = w.mitigate(p, dmg)
@@ -801,6 +801,11 @@ func (w *World) mitigate(p *Player, dmg float64) (float64, bool) {
 	return dmg, shielded
 }
 
+// Graced reports a just-respawned player's grace (CR 024): enemies don't
+// pick or keep them as a target and can't hurt them, PvP claims on them are
+// refused (RefuseInvulnerable), until it runs out or they land a hit.
+func (p *Player) Graced(tick uint32) bool { return tick < p.graceTick }
+
 // downPlayer puts a player at 0 health down until the respawn (by = the
 // enemy or, in open PvP, the player that did it).
 func (w *World) downPlayer(p *Player, by uint32) {
@@ -827,6 +832,7 @@ func (w *World) playerUpkeep() {
 				p.Downed = false
 				p.HP = p.HPMax
 				p.Mana = p.ManaMax
+				p.graceTick = tick + secondsToTicks(constants.PlayerRespawnGraceS) // playtest 2: a moment to get your bearings
 				if p.OnDrink == nil { // WP14: inventory consumables never refill
 					p.Charges = D.Start.Consumable.Charges
 				}

@@ -85,6 +85,9 @@ func (w *World) ClaimPlayer(p *Player, c *proto.HitClaim, q *Player, how PvPHit)
 	if q.Downed {
 		return PvPResult{ClaimResult: w.refuse(RefuseDead)}
 	}
+	if q.Graced(w.tick) {
+		return PvPResult{ClaimResult: w.refuse(RefuseInvulnerable)} // CR 024: just respawned
+	}
 	a := p.Action(c.AttackSeq, int(c.AttackID))
 	if a == nil {
 		if c.AttackSeq > p.LastSeq {
@@ -174,6 +177,7 @@ func (w *World) applyPlayerHit(p *Player, a *Action, q *Player, how PvPHit) PvPR
 	p.inCombatTick = w.tick
 	w.Stats.ClaimsAccepted++
 	w.Stats.PvPHits++
+	p.graceTick = 0 // landing a hit ends your own respawn grace (CR 024)
 	res.ClaimResult = ClaimResult{Accepted: true, Damage: uint16(min(65535, math.Round(dealt))), Flags: flags, HPPct: q.HealthPct()}
 	return res
 }

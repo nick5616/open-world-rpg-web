@@ -124,6 +124,9 @@ type Player struct {
 	lastHurtTick uint32
 	Downed       bool
 	respawnTick  uint32
+	// graceTick: until this tick a just-respawned player is left alone
+	// (playtest 2, CR 024: PLAYER_RESPAWN_GRACE_S; ended by landing a hit).
+	graceTick    uint32
 	shield       float64
 	shieldEnd    uint32
 	hotPerTick   float64
