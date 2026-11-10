@@ -11,7 +11,7 @@ prompt. Contract: `docs/cr/012-progression-difficulty.md`; why:
 | `store.ts` | zustand: latest stats, the area you stand in, the fanfare, notices, panel open; `reduceProgressionEvent` is pure. |
 | `towerPrompt.ts` | Pure: what the nearest crystal tower says (climb / attune / attuned / come back). |
 | `link.ts` | `attachProgression(session)`: Events in (via `session.eventListeners`), attune/learn Interacts out. NetPlay calls it. |
-| `ProgressionHud.tsx` | The HUD the play screen mounts: fanfare (top centre, ~7 s, a synthesized chime), notices (left), tower prompt (below the crosshair, above WP14's loot prompt line), character panel (C; Esc closes). |
+| `ProgressionHud.tsx` | The HUD the play screen mounts: fanfare (top centre, ~7 s, a synthesized chime), notices (left), tower prompt (below the crosshair, above WP14's loot prompt line), character panel (C; Esc closes; spell cards from `ui/spellcards` for the loadout slots and known spells, WCAG AA text tokens from `ui/spellcards/theme.ts`). |
 | `dev.ts` | `window.__lodestoneProgression` (debug builds): `state()`, `event()`, `stats(level, attuned, sites)`, `levelUp(prev, level)`, `area(level, tier, flags, by)`, `attuned(site, region, name)`, `open()`. |
 | `dev/shots.mjs` | Headless evidence: solo client + the dev handle; writes `docs/evidence/pt-progression-*.png`. |
 

@@ -12,68 +12,24 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperti
 import { COMBAT } from '@lodestone/contracts';
 import { DEBUG } from '../../config';
 import { isTextTarget } from '../../input/useKeyboard';
-import { useCombatHud } from '../../combat/store';
 import { useInventory } from '../inventory/store';
-import { useProgression, setPanelOpen } from '../progression/store';
-import { skillProgress, statsAt } from '../progression/gains';
-import { buildOverview, fmt, spellHitWith, treeDamageMults, type BuildView, type LoadoutView, type SlotView, type StatLine } from './build';
-import { castable, cap, ELEMENT_COLOR, layoutTree, learnedCounts, namePending, needLine, nodeState, passiveLines, SKILL_EFFECT, SKILL_NAMES, spellByKey, spellFacts, spellName, TECHNIQUE_INFO, TREE_ORDER, treeByKey, type NodeState, type TreeLayout } from './tree';
+import { setPanelOpen } from '../progression/store';
+import { skillProgress } from '../progression/gains';
+import { fmt, treeDamageMults, type LoadoutView, type SlotView, type StatLine } from './build';
+import { equipSpell as equip, learnSpell as learn, useChar, type Char } from './char';
+import { SlotCard, SpellDetail, SpellTooltip } from '../spellcards/SpellCards';
+import { TEXT_3 } from '../spellcards/theme';
+import { castable, cap, ELEMENT_COLOR, layoutTree, learnedCounts, nodeState, SKILL_EFFECT, SKILL_NAMES, spellByKey, spellName, TECHNIQUE_INFO, TREE_ORDER, treeByKey, type NodeState, type TreeLayout } from './tree';
 import { closeSkillScreen, setSkillTab, toggleSkillScreen, useSkillScreen } from './store';
 import { installSkillsDebug } from './dev';
 
 const GOLD = '#ffd166';
 const INK = '#f1f3f5';
-const DIM = 'rgba(241,243,245,0.6)';
+// Secondary text: the character panel's AA token (ui/spellcards/theme.ts).
+const DIM = TEXT_3;
 const PANEL: CSSProperties = { background: 'rgba(11,13,19,0.985)', backdropFilter: 'blur(6px)', border: '1px solid rgba(255,209,102,0.35)', borderRadius: 8, color: INK, boxShadow: '0 16px 40px rgba(0,0,0,0.6)' };
 const CARD: CSSProperties = { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '10px 12px' };
 const BTN: CSSProperties = { font: '12px system-ui, sans-serif', padding: '4px 12px', borderRadius: 4, border: '1px solid rgba(255,209,102,0.5)', background: 'rgba(255,209,102,0.12)', color: INK, cursor: 'pointer' };
-
-// ---- the data every tab reads ----
-
-interface Char {
-  level: number;
-  attuned: number;
-  free: number;
-  total: number;
-  known: string[];
-  knownSet: Set<string>;
-  online: boolean;
-  activeLoadout: number;
-  loadouts: { weapon: string; spells: (string | null)[]; gem: number }[];
-  skillXp: Record<string, number>;
-  view: BuildView;
-}
-
-function useChar(): Char {
-  const stats = useProgression((s) => s.stats);
-  const actions = useProgression((s) => s.actions);
-  const known = useCombatHud((s) => s.known);
-  const skillXp = useCombatHud((s) => s.skillXp);
-  const combatActive = useCombatHud((s) => s.active);
-  const freePoints = useCombatHud((s) => s.skillPoints);
-  const loadouts = useCombatHud((s) => s.loadouts);
-  const activeLoadout = useCombatHud((s) => s.activeLoadout);
-  const combatLevel = useCombatHud((s) => s.level);
-  const items = useInventory((s) => s.inv?.items);
-  return useMemo(() => {
-    const level = stats?.level ?? combatLevel ?? 1;
-    const attuned = stats?.attunedCount ?? 0;
-    const total = stats?.skillTotal ?? statsAt(level, attuned).skillPoints;
-    // Like the character panel: combat_sync's free points while combat runs, else Event 900's.
-    const free = combatActive ? freePoints : (stats?.skillFree ?? total - known.filter((k) => !COMBAT.start.spells.includes(k)).length);
-    const view = buildOverview({ level, attuned, skillFree: free, skillTotal: total, known, skillXp, loadouts, activeLoadout, items: items ?? [], zone: stats ? { manaMax: stats.manaMax, staminaMax: stats.staminaMax } : null });
-    return { level, attuned, free, total, known, knownSet: new Set(known), online: !!actions, activeLoadout, loadouts, skillXp, view };
-  }, [stats, actions, known, skillXp, combatActive, freePoints, loadouts, activeLoadout, combatLevel, items]);
-}
-
-const learn = (key: string) => {
-  const s = spellByKey.get(key);
-  if (s) useProgression.getState().actions?.learn(s.id);
-};
-const equip = (loadout: number, slot: number, key: string | null) => {
-  const id = key ? (spellByKey.get(key)?.id ?? 0) : 0;
-  useProgression.getState().actions?.equipSpell(loadout, slot, id);
-};
 
 // ---- small pieces ----
 
@@ -98,63 +54,15 @@ function Bar({ frac, color }: { frac: number; color: string }) {
   );
 }
 
-// ---- spell card (tooltip and sidebar) ----
-
-function SpellCard({ k, st, c, compact }: { k: string; st: NodeState; c: Char; compact?: boolean }) {
-  const s = spellByKey.get(k);
-  if (!s) return null;
-  const color = ELEMENT_COLOR[s.tree] ?? GOLD;
-  const facts = spellFacts(s);
-  const passive = s.type === 'passive' ? passiveLines(s) : [];
-  const hit = spellHitWith(s, c.view, c.activeLoadout, c.knownSet);
-  const inSlots = c.loadouts.flatMap((l, li) => l.spells.map((x, si) => (x === k ? `loadout ${li + 1} slot ${si + 1}` : ''))).filter(Boolean);
-  const need = needLine(st);
-  return (
-    <div data-testid={`spell-card-${k}`} style={{ font: '12px system-ui, sans-serif', lineHeight: 1.4 }}>
-      <div style={{ font: '17px Georgia, serif', color }}>
-        {spellName(k)}
-        {namePending(k) && <Tag color={GOLD}>name pending</Tag>}
-      </div>
-      <div style={{ color: DIM, fontSize: 11 }}>
-        {cap(s.tree)} · tier {s.tier}
-        {st.needsLevel > 1 ? ` (level ${st.needsLevel}+)` : ''}
-        {st.status === 'learned' && <span style={{ color: '#8ce99a' }}> · learned</span>}
-      </div>
-      {need && <div style={{ color: st.status === 'learnable' ? GOLD : st.status === 'noPoints' ? '#ffc078' : '#ff8787', margin: '4px 0' }}>{need}</div>}
-      <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', columnGap: 10, rowGap: 1, marginTop: 4 }}>
-        {facts.map((f, i) => (
-          <FactRow key={i} label={f.label} value={f.value} accent={f.accent ? color : undefined} />
-        ))}
-        {hit > 0 && <FactRow label="Your hit" value={`about ${hit} (loadout ${c.activeLoadout + 1}, before the enemy's element)`} accent={GOLD} />}
-      </div>
-      {passive.map((p, i) => (
-        <div key={i} style={{ marginTop: 3, color: p.active ? INK : DIM }}>
-          {p.text}
-          {!p.active && <Tag>not in effect yet</Tag>}
-        </div>
-      ))}
-      {!compact && s.ported && <div style={{ marginTop: 4, color: DIM, fontSize: 11 }}>Adapted from Wizard Wars: {s.ported}</div>}
-      {inSlots.length > 0 && <div style={{ marginTop: 4, color: '#8ce99a', fontSize: 11 }}>In {inSlots.join(', ')}</div>}
-      {st.status === 'learned' && s.type === 'passive' && <div style={{ marginTop: 4, color: DIM, fontSize: 11 }}>Passives work on their own: no slot needed.</div>}
-    </div>
-  );
-}
-
-function FactRow({ label, value, accent }: { label: string; value: string; accent?: string }) {
-  return (
-    <>
-      <span style={{ color: DIM }}>{label}</span>
-      <span style={{ color: accent ?? INK }}>{value}</span>
-    </>
-  );
-}
-
 // ---- spell slots (sidebar) ----
 
-function SlotRow({ c, loadout, picked }: { c: Char; loadout: number; picked: string | null }) {
+function SlotRow({ c, picked }: { c: Char; picked: string | null }) {
+  // One loadout at a time (the character panel's toggle): both at once pushed the picked card off a 720p screen.
+  const [loadout, setLoadout] = useState(c.activeLoadout);
+  useEffect(() => setLoadout(c.activeLoadout), [c.activeLoadout]);
   const lo = c.loadouts[loadout];
   const [over, setOver] = useState(-1);
-  const canPlace = !!picked && c.knownSet.has(picked) && castable(picked);
+  const canPlace = !!picked && c.knownSet.has(picked) && castable(picked) && c.online;
   const onDrop = (e: DragEvent, slot: number) => {
     e.preventDefault();
     setOver(-1);
@@ -163,19 +71,36 @@ function SlotRow({ c, loadout, picked }: { c: Char; loadout: number; picked: str
   };
   return (
     <div style={{ marginBottom: 8 }}>
-      <div style={{ fontSize: 11, color: loadout === c.activeLoadout ? GOLD : DIM, marginBottom: 3 }}>
-        Loadout {loadout + 1} · {c.view.loadouts[loadout]?.weaponName ?? lo?.weapon}
-        {loadout === c.activeLoadout ? ' · active' : ''}
+      <div role="tablist" aria-label="Loadouts" style={{ display: 'flex', gap: 4, marginBottom: 4 }}>
+        {c.loadouts.map((l, i) => (
+          <button
+            key={i}
+            role="tab"
+            aria-selected={i === loadout}
+            data-testid={`skill-slot-tab-${i}`}
+            onClick={() => setLoadout(i)}
+            style={{ ...BTN, flex: 1, minWidth: 0, padding: '3px 6px', fontSize: 11, textAlign: 'left', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', background: i === loadout ? 'rgba(255,209,102,0.18)' : 'transparent', border: `1px solid ${i === loadout ? GOLD : 'rgba(255,255,255,0.2)'}`, color: i === loadout ? INK : DIM }}
+          >
+            <b style={{ color: i === loadout ? GOLD : INK }}>{i + 1}</b> {c.view.loadouts[i]?.weaponName ?? l.weapon}
+            {i === c.activeLoadout ? ' · active' : ''}
+          </button>
+        ))}
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 4 }}>
+      {/* The character panel's slot cards (ui/spellcards), two by two in the sidebar. */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 4 }}>
         {[0, 1, 2, 3].map((i) => {
           const k = lo?.spells[i] ?? null;
           const s = k ? spellByKey.get(k) : undefined;
-          const color = s ? (ELEMENT_COLOR[s.tree] ?? INK) : DIM;
           return (
-            <div
+            <SlotCard
               key={i}
-              data-testid={`skill-slot-${loadout}-${i}`}
+              k={k}
+              index={i}
+              loadout={loadout}
+              testid={`skill-slot-${loadout}-${i}`}
+              target={canPlace}
+              over={over === i}
+              onClear={c.online ? () => equip(loadout, i, null) : undefined}
               draggable={!!k}
               onDragStart={(e) => k && e.dataTransfer.setData('text/x-lodestone-spell', k)}
               onDragOver={(e) => {
@@ -185,7 +110,7 @@ function SlotRow({ c, loadout, picked }: { c: Char; loadout: number; picked: str
               onDragLeave={() => setOver(-1)}
               onDrop={(e) => onDrop(e, i)}
               onClick={() => {
-                if (canPlace && c.online) {
+                if (canPlace) {
                   equip(loadout, i, picked);
                   useSkillScreen.setState({ picked: null });
                 } else if (k && s) {
@@ -193,36 +118,9 @@ function SlotRow({ c, loadout, picked }: { c: Char; loadout: number; picked: str
                   useSkillScreen.setState({ picked: k });
                 }
               }}
-              title={k ? `${spellName(k)} · drag away or press x to clear` : 'Empty: drag a learned spell here'}
-              style={{
-                position: 'relative',
-                minHeight: 40,
-                padding: '3px 4px 3px 5px',
-                borderRadius: 4,
-                cursor: canPlace || k ? 'pointer' : 'default',
-                background: over === i ? 'rgba(255,209,102,0.2)' : 'rgba(0,0,0,0.35)',
-                border: `1px solid ${over === i || (canPlace && c.online) ? GOLD : s ? `${color}88` : 'rgba(255,255,255,0.12)'}`,
-                boxShadow: canPlace && c.online ? `0 0 6px ${GOLD}66` : undefined,
-                fontSize: 11,
-                lineHeight: 1.2,
-              }}
-            >
-              <div style={{ color: GOLD, fontSize: 10 }}>{i + 1}</div>
-              <div style={{ color, overflow: 'hidden', textOverflow: 'ellipsis' }}>{k ? spellName(k) : 'empty'}</div>
-              {k && c.online && (
-                <button
-                  aria-label={`clear slot ${i + 1}`}
-                  data-testid={`skill-slot-clear-${loadout}-${i}`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    equip(loadout, i, null);
-                  }}
-                  style={{ position: 'absolute', top: 1, right: 2, border: 'none', background: 'none', color: DIM, cursor: 'pointer', fontSize: 11, padding: 0 }}
-                >
-                  x
-                </button>
-              )}
-            </div>
+              title={k ? `${spellName(k)} · x clears the slot` : 'Empty: drag a learned spell here'}
+              style={{ minHeight: 76 }}
+            />
           );
         })}
       </div>
@@ -403,15 +301,13 @@ function TreeTab({ tree, c }: { tree: string; c: Char }) {
       <div style={{ width: 'clamp(250px, 22vw, 330px)', flex: 'none', display: 'flex', flexDirection: 'column', gap: 10, overflowY: 'auto' }}>
         <div style={CARD}>
           <H right="drag a learned spell here">Spell slots</H>
-          {[c.activeLoadout, 1 - c.activeLoadout].map((l) => (
-            <SlotRow key={l} c={c} loadout={l} picked={pickedInTree} />
-          ))}
+          <SlotRow c={c} picked={pickedInTree} />
           <div style={{ fontSize: 11, color: DIM }}>Cast with 1-4 or the wheel + right mouse. X swaps loadouts.</div>
         </div>
         <div style={{ ...CARD, flex: 'none' }} data-testid="skill-picked">
           {pickedInTree && pickedState ? (
             <>
-              <SpellCard k={pickedInTree} st={pickedState} c={c} />
+              <SpellDetail k={pickedInTree} st={pickedState} c={c} />
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
                 {pickedState.status === 'learnable' && (
                   <button data-testid="skill-learn" disabled={!c.online} onClick={() => learn(pickedInTree)} style={{ ...BTN, borderColor: GOLD, background: 'rgba(255,209,102,0.25)', fontWeight: 600 }}>
@@ -438,23 +334,7 @@ function TreeTab({ tree, c }: { tree: string; c: Char }) {
           )}
         </div>
       </div>
-      {hover && hover.k !== pickedInTree && <HoverCard k={hover.k} r={hover.r} c={c} />}
-    </div>
-  );
-}
-
-function HoverCard({ k, r, c }: { k: string; r: DOMRect; c: Char }) {
-  const s = spellByKey.get(k);
-  if (!s) return null;
-  const st = nodeState(s.tree, k, c.knownSet, c.level, c.free);
-  const W = 290;
-  const vw = typeof window !== 'undefined' ? window.innerWidth : 1920;
-  const vh = typeof window !== 'undefined' ? window.innerHeight : 1080;
-  const left = r.right + 10 + W < vw ? r.right + 10 : Math.max(8, r.left - 10 - W);
-  const top = Math.max(8, Math.min(vh - 300, r.top - 10));
-  return (
-    <div data-testid="skill-tooltip" style={{ ...PANEL, position: 'fixed', left, top, width: W, padding: '10px 12px', zIndex: 60, pointerEvents: 'none', borderColor: `${ELEMENT_COLOR[s.tree] ?? GOLD}88` }}>
-      <SpellCard k={k} st={st} c={c} compact />
+      {hover && hover.k !== pickedInTree && <SpellTooltip k={hover.k} c={c} anchor={hover.r} />}
     </div>
   );
 }
