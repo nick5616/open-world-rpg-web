@@ -101,9 +101,9 @@ let auraStrong: THREE.MeshBasicMaterial | null = null;
 let auraSoft: THREE.MeshBasicMaterial | null = null;
 
 export function barMaterials(): { back: THREE.MeshBasicMaterial; fill: THREE.MeshBasicMaterial } {
-  barBack ??= new THREE.MeshBasicMaterial({ color: '#16181c', transparent: true, opacity: 0.85, depthTest: false, depthWrite: false, side: THREE.DoubleSide, fog: false });
+  barBack ??= new THREE.MeshBasicMaterial({ color: '#16181c', transparent: true, opacity: 0.85, depthTest: false, depthWrite: false, side: THREE.DoubleSide, fog: false, toneMapped: false });
   // (transparent too, so it sorts with the back by renderOrder: opaque objects draw before every transparent one)
-  barFill ??= new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, depthTest: false, depthWrite: false, side: THREE.DoubleSide, fog: false });
+  barFill ??= new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, depthTest: false, depthWrite: false, side: THREE.DoubleSide, fog: false, toneMapped: false });
   return { back: barBack, fill: barFill };
 }
 

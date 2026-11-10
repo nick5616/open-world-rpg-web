@@ -155,7 +155,7 @@ export class EnemyRenderer {
     this.root.name = 'enemies';
     this.ctx = { a: null as unknown as EnemyAnimator, spec: null as unknown as ModelSpec, look: 0, lookPitch: 0, phase: 0, side: 1, drop: 0.5 };
     const bm = barMaterials();
-    const bar = new THREE.PlaneGeometry(1, 0.09);
+    const bar = new THREE.PlaneGeometry(1, 0.06);
     this.barBack = new THREE.InstancedMesh(bar, bm.back, 1);
     this.barFill = new THREE.InstancedMesh(bar, bm.fill, 1);
     this.barBack.renderOrder = 10;
@@ -438,11 +438,13 @@ export class EnemyRenderer {
         }
       }
       // health bar (billboard)
-      const showBar = a.alive && (dist < BAR_M || sp.boss) && lod < 2;
+      // (not when it is right on top of the camera: up close a world-space bar filled the screen)
+      const showBar = a.alive && (dist < BAR_M || sp.boss) && lod < 2 && dist > 1.2;
       if (showBar) {
         if (bars >= this.barCap) this.growOverlays(this.barCap * 2);
         const w = e.ally ? 0.7 : Math.max(1, s * 0.6);
-        const sc = Math.max(1, dist / 18); // stays readable further out
+        // Roughly constant on-screen size: shrinks up close (a thick block filled the view at 1-2 m), grows far out.
+        const sc = Math.min(Math.max(0.3, dist / 12), Math.max(1, dist / 18));
         const y = e.y - (sp.flyer ? m.flyLift * s : 0) + m.height * s + 0.25;
         _q.copy(camera.quaternion);
         _root.compose(_p.set(e.x, y, e.z), _q, _s.set(w * sc, sc, 1));

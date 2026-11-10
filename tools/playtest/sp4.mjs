@@ -1,6 +1,6 @@
 // Playtest pass 4: walk to the nearest creature group around spawn (positions
 // from the zone's /debug/combat), fight it with weapon and spells, loot.
-import { launch, newCharacter, sleep, pl, go, look, yawTo } from './lib.mjs';
+import { launch, newCharacter, sleep, pl, go, look, yawTo, dismissCards } from './lib.mjs';
 
 const out = process.argv[2] ?? 'tmp/playtest4';
 const ZONE = process.env.LODESTONE_ZONE_DEBUG ?? 'http://127.0.0.1:8092';
@@ -23,6 +23,7 @@ try {
   const w = await go(page, g.x, g.z, { stopAt: 25, timeoutMs: 90000, sprint: true });
   note(`walk: ok=${w.ok} left ${w.d.toFixed(0)} m in ${(w.ms / 1000).toFixed(0)} s`);
   await sleep(1500);
+  await dismissCards(page);
   const gs = (await groups()).find((x) => x.id === g.id);
   note(`group now spawned=${gs.spawned} alive=${gs.alive} members=${gs.members}`);
   const d = await drawn();
@@ -37,6 +38,7 @@ try {
   let casts = 0;
   const t0 = Date.now();
   while (target && Date.now() - t0 < 90000) {
+    await dismissCards(page);
     const cur = (await drawn()).find((x) => x.id === target.id);
     if (!cur || cur.hp <= 0) {
       target = (await drawn()).find((e) => e.kind === 2 && e.hp > 0 && e.d < 30);
