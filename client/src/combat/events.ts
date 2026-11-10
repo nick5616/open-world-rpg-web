@@ -111,6 +111,9 @@ export interface TelegraphView {
   arc: number;
   width: number;
   windupMs: number;
+  /** combat.yaml enemyAttacks id (the wind-up pose) and its active ms. */
+  attackId: number;
+  activeMs: number;
 }
 
 /** telegraph Event (204) payload. */
@@ -130,6 +133,8 @@ export function decodeTelegraph(ev: ZoneEvent): TelegraphView | null {
     arc: d[7] * 2,
     width: v.getUint16(8, true) / 100,
     windupMs: ev.value,
+    attackId: Number(ev.targetId),
+    activeMs: d.length >= 12 ? v.getUint16(10, true) : 0,
   };
 }
 
