@@ -291,7 +291,7 @@ export function PetHud() {
         </div>
       )}
       {s.meter && (
-        <div data-testid="tame-meter" style={{ position: 'fixed', left: '50%', top: 'calc(50% + 44px)', transform: 'translateX(-50%)', pointerEvents: 'none', zIndex: 21, textAlign: 'center', font: '12px system-ui, sans-serif', color: TEXT, textShadow: '0 1px 2px #000' }}>
+        <div data-testid="tame-meter" style={{ position: 'fixed', left: '50%', top: 'calc(50% - 96px)' /* above the crosshair: the [E] prompts sit below it (integration QA) */, transform: 'translateX(-50%)', pointerEvents: 'none', zIndex: 21, textAlign: 'center', font: '12px system-ui, sans-serif', color: TEXT, textShadow: '0 1px 2px #000' }}>
           <div style={{ marginBottom: 4, font: '600 13px system-ui, sans-serif' }}>
             Taming the {nice(meterSp?.key)}… <span style={{ opacity: 0.75, fontWeight: 400 }}>stay close, don't get hurt</span>
           </div>

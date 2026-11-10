@@ -35,6 +35,9 @@ const PANEL: CSSProperties = { background: 'rgba(12,14,20,0.94)', border: '1px s
 // ---- the level-up fanfare ----
 
 
+/** The welcome / What's new card is up (ui/whatsnew). */
+const whatsNewUp = () => typeof document !== 'undefined' && !!document.querySelector('[data-testid="whatsnew"]');
+
 function LevelUpFanfare() {
   const f = useProgression((s) => s.fanfare);
   // A discovery card owns the screen; the fanfare waits for it to finish
@@ -44,7 +47,7 @@ function LevelUpFanfare() {
   useEffect(() => {
     // The level-up sound comes from the audio system (Event 604 -> level up sound 1-3).
   }, [id]);
-  if (!f || introUp) return null; // shown after the discovery card (the store holds it meanwhile)
+  if (!f || introUp || whatsNewUp()) return null; // shown after the discovery card and the welcome (the store holds it meanwhile)
   return (
     <div key={f.id} data-testid="levelup-fanfare" className="pt-fanfare" style={{ position: 'fixed', top: '15%', left: '50%', transform: 'translateX(-50%)', zIndex: 20, pointerEvents: 'none', textAlign: 'center', ['--pt-ms' as string]: `${FANFARE_MS}ms` }}>
       <div style={{ font: '600 15px Georgia, serif', letterSpacing: 6, color: GOLD, textShadow: '0 0 12px rgba(255,209,102,0.7)' }}>LEVEL UP</div>
@@ -190,7 +193,7 @@ function CharacterPanel() {
   const ready = spells.filter((s) => s.ready).slice(0, 8);
   const locked = spells.filter((s) => !s.ready).slice(0, 4);
   return (
-    <div data-testid="character-panel" data-ui-panel style={{ ...PANEL, background: PANEL_BG, color: TEXT, position: 'fixed', left: 24, top: 70, width: 'min(580px, calc(100vw - 48px))', boxSizing: 'border-box', maxHeight: 'calc(100vh - 150px)', overflowY: 'auto', padding: '14px 18px', zIndex: 35, font: '13px system-ui, sans-serif', pointerEvents: 'auto' }}>
+    <div data-testid="character-panel" data-ui-panel style={{ ...PANEL, background: PANEL_BG, color: TEXT, position: 'fixed', left: 24, top: 70, width: 'min(580px, calc(100vw - 48px))', boxSizing: 'border-box', maxHeight: 'calc(100vh - 100px - var(--ls-hotbar-h, 120px))' /* above the hotbar (integration QA: the wider panel covered it at 1280x720) */, overflowY: 'auto', padding: '14px 18px', zIndex: 35, font: '13px system-ui, sans-serif', pointerEvents: 'auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
         <div style={{ font: '22px Georgia, serif' }}>{name}</div>
         <div style={{ font: '700 18px Georgia, serif', color: GOLD }}>Level {level}</div>
@@ -306,7 +309,8 @@ export function ProgressionHud() {
   const prompt = useTowerPrompt();
   useProgressionKeys(prompt);
   useEffect(() => {
-    const id = setInterval(() => pruneProgression(performance.now(), !!useIntro.getState().current), 500);
+    // The level-up also waits for the welcome / What's new card (integration QA: it opened on top of it).
+    const id = setInterval(() => pruneProgression(performance.now(), !!useIntro.getState().current || whatsNewUp()), 500);
     return () => clearInterval(id);
   }, []);
   useEffect(() => {

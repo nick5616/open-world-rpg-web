@@ -55,10 +55,11 @@ body:has([data-testid="levelup-fanfare"], [data-testid="discovery-intro"], [data
    Rested strip (bottom). A centred panel or the instrument overlay covers them at 1280 wide. */
 body:has([data-testid="vault-panel"]) [data-testid="pet-card"] { top: calc(min(46vh, 420px) + var(--ls-vault-h, 130px) + 8px) !important; }
 body:has(${CENTRE_PANELS}, [data-testid="music-overlay"], [data-testid="character-panel"]) :is([data-testid="content-notes"], [data-testid="vault-panel"], [data-testid="pet-card"], [data-testid="camp-strips"], [data-testid="pet-notes"], [data-testid="steed-notes"]) { visibility: hidden; }
-/* The character panel (spell cards, min(580px, ...) wide) reaches the clock pill below 1400 px wide: the pill waits. */
-@media (max-width: 1400px) { body:has([data-testid="character-panel"]) :is([data-testid="night-hud"], [data-testid="world-event"]) { visibility: hidden; } }
-/* The level-up card (4 s) doesn't sit on the top edge of a centred panel you opened. */
-body:has(${CENTRE_PANELS}) [data-testid="levelup-fanfare"] { visibility: hidden; }
+/* The character panel (spell cards, 604 px from the left edge) reaches the clock pill below ~1450 px wide and the world event tracker below ~1680 px: they wait. */
+@media (max-width: 1450px) { body:has([data-testid="character-panel"]) [data-testid="night-hud"] { visibility: hidden; } }
+@media (max-width: 1680px) { body:has([data-testid="character-panel"]) [data-testid="world-event"] { visibility: hidden; } }
+/* The level-up and arrival cards (a few seconds) do not sit on a panel you opened. */
+body:has(${CENTRE_PANELS}, [data-testid="character-panel"]) :is([data-testid="levelup-fanfare"], [data-testid="discovery-intro"]) { visibility: hidden !important; }
 /* A held emote / pet wheel fills the middle: the tip and the lock hint under it wait. */
 body:has([data-testid="emote-wheel"], [data-testid="pet-wheel"]) :is([data-testid="tip"], [data-testid="lock-hint"]) { visibility: hidden; }
 /* Playing an instrument: the overlay takes the bottom; chat can't be opened (Enter is the metronome). */
