@@ -91,6 +91,7 @@ let shared: {
   visorMat: THREE.Material;
   legMat: THREE.Material;
   skinMat: THREE.Material;
+  hand: THREE.BufferGeometry;
   /** WP10: the glider wing shown while the activity bit says gliding. */
   glider: THREE.BufferGeometry;
   gliderMat: THREE.Material;
@@ -138,7 +139,9 @@ function res() {
       visorMat: new THREE.MeshStandardMaterial({ color: 0x1b1f2a, roughness: 0.3, metalness: 0.4 }),
       // playtest 2: legs and head read apart from the coloured tunic (same draw calls)
       legMat: new THREE.MeshStandardMaterial({ color: 0x3a4152, roughness: 0.85 }),
-      skinMat: new THREE.MeshStandardMaterial({ color: 0xd2a77f, roughness: 0.75 }),
+      // playtest 2: the same skin and shirt as your first-person arms (FirstPersonArms SKIN / SLEEVE)
+      skinMat: new THREE.MeshStandardMaterial({ color: 0xc9a27e, roughness: 0.7 }),
+      hand: new THREE.SphereGeometry(0.06, 10, 8),
       glider: new THREE.BoxGeometry(2.2, 0.04, 0.9),
       gliderMat: new THREE.MeshStandardMaterial({ color: 0xc98a3a, roughness: 0.8, side: THREE.DoubleSide }),
       glowTex: glowTexture(),
@@ -148,12 +151,21 @@ function res() {
   return shared;
 }
 
-/** Stable per-player color from the entity id (golden-ratio hue spread). */
+/**
+ * The tunic: the navy shirt of your first-person sleeves (playtest 2: "I have
+ * a blue shirt and a white skin hand, make me look like that"), with a slight
+ * per-player shade (golden-ratio spread over 12 slots) so a crowd isn't clones.
+ */
+export const SHIRT = 0x3b4a6b;
 function bodyMat(id: number): THREE.MeshStandardMaterial {
   const hueSlot = Math.floor(((id * 0.618033988749895) % 1) * 12);
   let m = bodyMats.get(hueSlot);
   if (!m) {
-    m = new THREE.MeshStandardMaterial({ color: new THREE.Color().setHSL(hueSlot / 12, 0.55, 0.52), roughness: 0.7 });
+    const c = new THREE.Color(SHIRT);
+    const hsl = { h: 0, s: 0, l: 0 };
+    c.getHSL(hsl);
+    c.setHSL(hsl.h + (hueSlot - 6) * 0.01, hsl.s + ((hueSlot % 3) - 1) * 0.04, hsl.l + ((hueSlot % 4) - 1.5) * 0.02);
+    m = new THREE.MeshStandardMaterial({ color: c, roughness: 0.8 });
     bodyMats.set(hueSlot, m);
   }
   return m;
@@ -216,7 +228,8 @@ export class Avatar {
   /** pt/ux: the equipped weapon (snapshot typeId, weapons/look.ts): in the hand (high LOD) and on the shoulder pivot (mid LOD). */
   private weaponHi: THREE.Mesh;
   private weaponMid: THREE.Mesh;
-  private weaponType = -1;
+  /** The weapon look typeId shown (pt/ux packLook; CR 022: the gem tints its swing FX). */
+  weaponType = -1;
   /** The weapon kind in hand (classifies Event 214 actions). */
   weaponKind: WeaponKind | null = null;
   /** The three figures (high, mid, low); only the one in use is in the scene graph. */
@@ -286,6 +299,9 @@ export class Avatar {
       const fore = mesh(r.forearm);
       const hand = new THREE.Group();
       hand.position.y = -FOREARM;
+      const palm = mesh(r.hand, r.skinMat);
+      palm.scale.set(1, 1.15, 0.8);
+      hand.add(palm);
       const glow = new THREE.Sprite(glowMat('#ffffff'));
       glow.visible = false;
       glow.renderOrder = 5;
@@ -376,7 +392,7 @@ export class Avatar {
     }
     const h = HOLD[look.weapon];
     const q = holdQuat(look.weapon);
-    this.weaponHi.geometry = weaponGeometry(look, 1);
+    this.weaponHi.geometry = weaponGeometry(look, 2); // playtest 2: the same model as in first person
     this.weaponHi.quaternion.copy(q);
     this.weaponHi.position.set(0, 0, 0);
     (h.left ? this.armL : this.armR).hand.add(this.weaponHi);
@@ -436,9 +452,10 @@ export class Avatar {
     }
 
     if (this.plate) {
-      // Roughly constant on-screen size (about a fifth of the view width at
-      // 75 degrees FOV), never smaller than 1.6 m up close.
-      const w = Math.min(160, Math.max(1.6, d * 0.32));
+      // Roughly constant on-screen size (about a twelfth of the view width
+      // at 75 degrees FOV), never smaller than 0.6 m up close (playtest 2: a
+      // player beside you had a nameplate wider than they were).
+      const w = Math.min(60, Math.max(0.6, d * 0.12));
       this.plate.scale.set(w, w / 4, 1);
       this.plate.position.y = NAMEPLATE_Y + w / 8;
       this.drawPlate(v);
@@ -478,7 +495,9 @@ export class Avatar {
   private drawPlate(v: RemoteView): void {
     // WP11: someone we hear shows "speaking" from our own analyser at once,
     // without waiting for the zone's activity bit to round-trip.
-    const act = isSpeaking(v.name) ? v.activity | Activity.speaking : v.activity;
+    // CR 022: a player's casting bit means "holding a spell or a dash": their pose shows it, not the plate.
+    const shown = v.kind === 1 ? v.activity & ~Activity.casting : v.activity;
+    const act = isSpeaking(v.name) ? shown | Activity.speaking : shown;
     const mark = pvpMark(v.typeId); // playtest 2 (CR 019): red crossed swords = flagged for PvP, gold = dueling
     if (v.name === this.plateName && v.level === this.plateLevel && act === this.plateAct && mark === this.plateMark) return;
     this.plateName = v.name;

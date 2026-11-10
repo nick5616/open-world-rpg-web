@@ -88,7 +88,7 @@ func (w *World) ClaimPlayer(p *Player, c *proto.HitClaim, q *Player, how PvPHit)
 	if q.Graced(w.tick) {
 		return PvPResult{ClaimResult: w.refuse(RefuseInvulnerable)} // CR 024: just respawned
 	}
-	a := p.Action(c.AttackSeq, int(c.AttackID))
+	a, shot := p.lookup(c.AttackSeq, int(c.AttackID)) // CR 020: a stream's shot by its nominal seq
 	if a == nil {
 		if c.AttackSeq > p.LastSeq {
 			return PvPResult{ClaimResult: ClaimResult{Pending: true}}
@@ -98,12 +98,8 @@ func (w *World) ClaimPlayer(p *Player, c *proto.HitClaim, q *Player, how PvPHit)
 	if !a.Legal {
 		return PvPResult{ClaimResult: w.refuse(uint8(a.Refusal))}
 	}
-	if w.tick-a.Tick > maxAgeTicks(a) {
-		return PvPResult{ClaimResult: w.refuse(RefuseStale)}
-	}
-	allowed, maxTargets := hitLimits(a)
-	if a.hits[q.ID] >= allowed || (a.hits[q.ID] == 0 && a.targets >= maxTargets) {
-		return PvPResult{ClaimResult: w.refuse(RefuseHits)}
+	if r := w.claimable(a, shot, q.ID); r != 0 {
+		return PvPResult{ClaimResult: w.refuse(r)}
 	}
 	if s := a.Spell; s != nil {
 		if s.RequiresStatus != "" || s.Damage == 0 {
@@ -114,28 +110,10 @@ func (w *World) ClaimPlayer(p *Player, c *proto.HitClaim, q *Player, how PvPHit)
 		}
 	}
 	impact := movement.Vec3{X: proto.CmToMeters(c.X), Y: proto.CmToMeters(c.Y), Z: proto.CmToMeters(c.Z)}
-	ct := min(c.Tick, w.tick)
-	lo, hi := ct-min(ct, historyTicks), min(w.tick, ct+futureTicks)
-	height := playerCentre
-	inReach, sawLOS := false, false
-	q.samples(lo, hi, func(tp movement.Vec3) {
-		if inReach && sawLOS {
-			return
-		}
-		if w.geometryOK(p, a, playerRadius, height, tp, impact) {
-			inReach = true
-			if !needsLOS(a, p.Pos, tp) || w.lineOfSight(a.Pos, p.Pos, tp, height) {
-				sawLOS = true
-			}
-		}
-	})
-	if !inReach {
-		return PvPResult{ClaimResult: w.refuse(RefuseRange)}
+	if r := w.judge(p, a, shot, c, q.ID, playerRadius, playerCentre, q.samples, q.posAt, impact); r != 0 {
+		return PvPResult{ClaimResult: w.refuse(r)}
 	}
-	if !sawLOS {
-		return PvPResult{ClaimResult: w.refuse(RefuseLOS)}
-	}
-	return w.applyPlayerHit(p, a, q, how)
+	return w.applyPlayerHit(p, a, q, how, shot)
 }
 
 // playerCentre is a player's body centre above the feet (an enemy's
@@ -143,15 +121,32 @@ func (w *World) ClaimPlayer(p *Player, c *proto.HitClaim, q *Player, how PvPHit)
 const playerCentre = 0.9
 
 // applyPlayerHit applies an accepted PvP claim.
-func (w *World) applyPlayerHit(p *Player, a *Action, q *Player, how PvPHit) PvPResult {
+func (w *World) applyPlayerHit(p *Player, a *Action, q *Player, how PvPHit, shot int) PvPResult {
 	// The same hit against a physical enemy with the victim's health (low
 	// target health bonuses read it), crit rolled per (action, victim).
 	proxy := &Enemy{ID: q.ID, HP: q.HP, HPMax: q.HPMax, Element: combatdefs.Physical}
+	if shot >= 0 {
+		a.critSeq = a.shotSeq(shot) // CR 020: each stream shot rolls and counts on its own
+		if a.shotHits == nil {
+			a.shotHits, a.shotTgts = map[uint64]bool{}, map[int]int{}
+		}
+		a.shotHits[uint64(shot)<<32|uint64(q.ID)] = true
+		a.shotTgts[shot]++
+	}
 	dmg, _, flags := w.damageOf(p, a, proxy)
+	a.critSeq = 0
 	dmg *= D.PvP.DamageMult
-	a.hits[q.ID]++
-	if a.hits[q.ID] == 1 {
-		a.targets++
+	if shot < 0 {
+		a.hits[q.ID]++
+		if a.hits[q.ID] == 1 {
+			a.targets++
+		}
+	}
+	if a.Spell != nil && a.Spell.Orbit != nil {
+		if a.lastHit == nil {
+			a.lastHit = map[uint32]uint32{}
+		}
+		a.lastHit[q.ID] = w.tick
 	}
 	dealt, shielded := w.hurtByPlayer(q, dmg, p, how.Duel)
 	if shielded {
@@ -202,7 +197,7 @@ func (p *Player) HealthPct() uint8 {
 // hit can down q (the usual respawn, no item loss). Returns the health lost
 // and whether a shield absorbed some of it.
 func (w *World) hurtByPlayer(q *Player, dmg float64, by *Player, duel bool) (float64, bool) {
-	if q.Downed {
+	if q.Downed || q.Graced(w.tick) { // CR 024: respawn grace (claims, allies)
 		return 0, false
 	}
 	dmg, shielded := w.mitigate(q, dmg)

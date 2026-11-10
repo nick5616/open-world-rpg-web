@@ -118,6 +118,10 @@ func (w *World) think(e *Enemy) {
 	if e.Shield < e.ShieldMax && e.Affix != nil && e.Affix.ShieldRegenSteps > 0 && tick-e.shieldHit > ticksOf(e.Affix.ShieldRegenSteps) {
 		e.Shield = e.ShieldMax // a warded elite re-raises its ward if left alone
 	}
+	if e.Group != nil && e.Group.Dummy {
+		e.Vel = movement.Vec3{}
+		return // CR 020: a training dummy (dev placement) only stands and takes hits
+	}
 	if w.forcedMove(e) || e.disabled(tick) {
 		return
 	}
@@ -797,6 +801,10 @@ func (w *World) mitigate(p *Player, dmg float64) (float64, bool) {
 		dmg -= a
 		shielded = a > 0
 		w.toPlayer(p.ID, Out{Ev: ev(EvShield, p.ID, 0, int32(math.Round(p.shield)), p.Pos, nil)})
+		if p.shield <= 0 && a > 0 {
+			// CR 022: the shell others see bursts when it breaks, as the caster's does.
+			w.near(p.Pos, 64, p.ID, Out{Ev: ev(EvShield, p.ID, 0, 0, p.Pos, nil)})
+		}
 	}
 	return dmg, shielded
 }
@@ -832,7 +840,8 @@ func (w *World) playerUpkeep() {
 				p.Downed = false
 				p.HP = p.HPMax
 				p.Mana = p.ManaMax
-				p.graceTick = tick + secondsToTicks(constants.PlayerRespawnGraceS) // playtest 2: a moment to get your bearings
+				// CR 024: a moment to get your bearings
+				p.graceTick = tick + secondsToTicks(constants.PlayerRespawnGraceS)
 				if p.OnDrink == nil { // WP14: inventory consumables never refill
 					p.Charges = D.Start.Consumable.Charges
 				}

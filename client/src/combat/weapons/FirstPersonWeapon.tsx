@@ -13,7 +13,7 @@
 // Parented to the camera through a portal; one shared material (material.ts);
 // 3 to 5 draw calls (weapon, fists, forearms).
 
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { createPortal, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { localPlayer, view } from '../../state/live';
@@ -23,6 +23,7 @@ import { moveOf } from '../timeline';
 import { lookKey, materialKey, type WeaponKind, type WeaponLook } from './look';
 import { weaponMaterial, tickWeaponMaterial } from './material';
 import { BOW_MAX_DRAW, bowNock, fistGeometry, forearmGeometry, setBowDraw, weaponGeometry } from './models';
+import { castHooks, castsFromWeapon } from '../fx/castOrigin';
 
 /** The newest melee swing (CombatLayer writes it from the FX queue; the weapon reads it). */
 export const swing = { at: 0, dur: 0 };
@@ -76,7 +77,20 @@ interface Rig {
   lFist: THREE.Mesh;
   rArm: THREE.Mesh;
   lArm: THREE.Mesh;
+  /** Playtest 2: the free off hand that rises to cast (sword). */
+  castFist: THREE.Mesh;
+  castArm: THREE.Mesh;
+  /** Weapon tip height (+Y) of the current geometry. */
+  tipY: number;
 }
+
+/** Off-hand cast pose (camera space): low and out of view at rest, raised toward the crosshair at the push. */
+const CAST_REST = new THREE.Vector3(-0.32, -0.62, -0.3);
+const CAST_UP = new THREE.Vector3(-0.21, -0.17, -0.5);
+/** The spell leaves just in front of the raised palm (so the hand stays visible behind it). */
+const CAST_FROM = new THREE.Vector3(-0.18, -0.11, -0.64);
+const CAST_MS = 520;
+const tipLocal = new THREE.Vector3();
 
 function makeRig(): Rig {
   const mat = weaponMaterial();
@@ -99,7 +113,13 @@ function makeRig(): Rig {
   root.add(pivot, rArm, lArm);
   pivot.add(grip);
   grip.add(weapon, rFist, lFist);
-  return { root, pivot, grip, weapon, rFist, lFist, rArm, lArm };
+  const castFist = mesh(fistGeometry());
+  castFist.scale.x = -1;
+  const castArm = mesh(forearmGeometry());
+  castArm.scale.x = -1;
+  castFist.visible = castArm.visible = false;
+  root.add(castFist, castArm);
+  return { root, pivot, grip, weapon, rFist, lFist, rArm, lArm, castFist, castArm, tipY: 0.8 };
 }
 
 const v1 = new THREE.Vector3();
@@ -165,12 +185,15 @@ export function FirstPersonWeapon() {
       st.key = key;
       st.kind = look.weapon!;
       rig.weapon.geometry = weaponGeometry(look, 2);
+      rig.weapon.geometry.computeBoundingBox();
+      rig.tipY = rig.weapon.geometry.boundingBox?.max.y ?? 0.8;
       const p = POSES[st.kind];
       rig.weapon.scale.setScalar(p.scale ?? 1);
       rig.grip.quaternion.copy(QUATS[st.kind]);
       rig.lFist.visible = rig.lArm.visible = st.kind === 'spear' || st.kind === 'bow';
     }
     const pose = POSES[st.kind];
+    castHooks.selfWeapon = st.kind;
 
     // Swing: driven by the newest started melee move; hitstop freezes it.
     const frozen = now < rt.hitstopUntil;
@@ -263,7 +286,50 @@ export function FirstPersonWeapon() {
       aimArm(rig, rig.rFist, rig.rArm, R_SHOULDER);
       if (rig.lFist.visible) aimArm(rig, rig.lFist, rig.lArm, L_SHOULDER);
     }
+
+    // Playtest 2 ("it is confusing where the spells are coming from"): a
+    // sword's free off hand rises into view and pushes when you cast; a
+    // staff or wand casts out of its tip (castOrigin.ts; the flick above
+    // thrusts it); a spear or bow casts from the off hand already on it.
+    const ct = now - castHooks.selfCastAt;
+    const handCast = st.kind === 'sword' && ct >= 0 && ct < CAST_MS;
+    rig.castFist.visible = rig.castArm.visible = handCast && rig.root.visible;
+    if (handCast) {
+      const k = smooth(0, 0.3, ct / CAST_MS) * (1 - smooth(0.65, 1, ct / CAST_MS));
+      const push = smooth(0.25, 0.45, ct / CAST_MS) * (1 - smooth(0.6, 1, ct / CAST_MS));
+      rig.castFist.position.lerpVectors(CAST_REST, CAST_UP, k).z -= 0.08 * push;
+      rig.castFist.rotation.set(0, 0, 0);
+      aimArm(rig, rig.castFist, rig.castArm, L_SHOULDER);
+    }
   });
+
+  // Where your casts leave in first person (fx engine; castOrigin.ts).
+  useEffect(() => {
+    castHooks.fpOrigin = (out) => {
+      if (view.third && !view.hideBody) return false;
+      const kind = st.kind;
+      if (castsFromWeapon(kind)) {
+        rig.weapon.updateWorldMatrix(true, false);
+        tipLocal.set(0, rig.tipY, 0);
+        rig.weapon.localToWorld(tipLocal);
+      } else if (kind === 'sword') {
+        rig.root.updateWorldMatrix(true, false);
+        tipLocal.copy(CAST_FROM);
+        rig.root.localToWorld(tipLocal);
+      } else {
+        rig.lFist.updateWorldMatrix(true, false);
+        tipLocal.set(0, 0, 0);
+        rig.lFist.localToWorld(tipLocal);
+      }
+      out.x = tipLocal.x;
+      out.y = tipLocal.y;
+      out.z = tipLocal.z;
+      return true;
+    };
+    return () => {
+      castHooks.fpOrigin = null;
+    };
+  }, [rig, st]);
 
   return createPortal(<primitive object={rig.root} />, camera);
 }

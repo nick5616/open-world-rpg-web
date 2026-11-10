@@ -16,12 +16,22 @@ import type { RemoteView } from '../net/interpolation';
 import { drawnRemotes } from '../net/netStore';
 import { localPlayer } from '../state/live';
 import { CombatTimeline, spellById, weaponById, type CombatButtons, type Started } from './timeline';
-import { EV, INTERACT_COMBAT, ACT, decodeSync, decodeTelegraph, enemyInfo } from './events';
+import { EV, INTERACT_COMBAT, ACT, ELEMENT_COLORS, decodeSync, decodeTelegraph, enemyInfo } from './events';
 import { fxQueue, pushNumber, toast, useCombatHud } from './store';
 import { CombatProbe } from './probe';
 import { nextSelection, validSelection, WheelStepper } from './spellSelect';
 import { emitSound } from '../audio/bridge';
 import { isHostilePlayer } from '../ui/pvp/hostile';
+// Playtest 2: every spell visual goes through the FX engine (fx/README in ../README.md).
+import { spellFx } from './fx/api';
+// CR 020: the shared spell simulation (the zone's twin re-flies homing shots and judges stream shots the same way).
+import { canAcquire, chargeMult, homingParams, homingStep, launchShot, orbOffset, rainOffset, shotJitter, SIM_DT, streamSeed, type HomingParams, type HomingShot } from './spellsim';
+// CR 022: your caster record (the state your visuals and everyone else's are drawn from) and the shared aim.
+import { castState, remoteEvent, CAST_FX_DASH, CAST_FX_GUARD } from './castState';
+import { aimPoint as sharedAimPoint, aimTarget as sharedAimTarget } from './aim';
+import { dashLive } from './dashes';
+import { castHooks, gemFor } from './fx/castOrigin';
+import type { WeaponKind } from './weapons/look';
 
 const STEP_MS = 1000 / MOVE_STEP_HZ;
 const EYE = 1.6;
@@ -49,6 +59,8 @@ interface LocalShot {
   pierce: boolean;
   aoe: number;
   fx: number;
+  /** CR 020: a seeking shot (stepped at 60 Hz by the shared homing step). */
+  homing: { p: HomingParams; s: HomingShot; lock: number; acc: number } | null;
 }
 
 interface Active {
@@ -63,9 +75,11 @@ interface Active {
   impact: { x: number; y: number; z: number } | null;
   ticks: number; // area ticks claimed so far (lingering spells)
   until: number; // seq the action stops checking
+  /** CR 020: an orbit's last touch (step) per target. */
+  lastHit: Map<number, number> | null;
+  hitCount?: Map<number, number>;
 }
 
-let shotIds = 1;
 
 export class CombatRuntime {
   readonly timeline = new CombatTimeline();
@@ -75,6 +89,8 @@ export class CombatRuntime {
   private shots: LocalShot[] = [];
   private pendingClaims = new Map<string, { at: number; x: number; y: number; z: number; kind: 'move' | 'spell' | 'form' }>();
   hitstopUntil = 0;
+  /** CR 020: the stream this player is firing (HUD, avatar pose). */
+  streaming: { spell: SpellDef; start: number } | null = null;
   /** Playtest 2: the newest action this player started, and a counter (the own third-person avatar animates from it). */
   lastStarted: Started | null = null;
   startedCount = 0;
@@ -99,6 +115,7 @@ export class CombatRuntime {
     // Playtest 1: the right button uses the wheel's selection (the weapon's
     // secondary, or a spell slot); Z holds the weapon's secondary always.
     let rmbCast = false;
+    let rmbSlot = 0; // CR 020: the slot RMB holds (streams, charges)
     const altDown = () => {
       this.buttons.altDown = true;
       this.buttons.altPress++;
@@ -118,14 +135,21 @@ export class CombatRuntime {
         const sel = useCombatHud.getState().selected;
         if (sel >= 0 && this.timeline.loadout.spells[sel]) {
           rmbCast = true;
+          rmbSlot = sel;
+          this.buttons.castHeld[sel] = true;
           this.buttons.castPress[sel] = now();
         } else altDown();
-      } else if (e.button === 1) this.buttons.techniquePress++;
+      }
+      // Middle button: the camera view toggle (hud/ViewHud.tsx), not combat (playtest 2: it did nothing
+      // for anyone without a weapon technique; techniques stay on V).
     };
     const onUp = (e: MouseEvent) => {
       if (e.button === 0) this.buttons.attackDown = false;
       if (e.button === 2) {
-        if (rmbCast) rmbCast = false;
+        if (rmbCast) {
+          rmbCast = false;
+          this.buttons.castHeld[rmbSlot] = false;
+        }
         else if (this.buttons.altDown) altUp();
       }
     };
@@ -138,6 +162,7 @@ export class CombatRuntime {
     };
     const onKeyUp = (e: KeyboardEvent) => {
       if (e.code === 'KeyZ' && this.buttons.altDown) altUp();
+      if (/^Digit[1-4]$/.test(e.code)) this.buttons.castHeld[Number(e.code.slice(5)) - 1] = false; // CR 020
     };
     const onKey = (e: KeyboardEvent) => {
       if (isText(e.target) || e.repeat) return;
@@ -155,6 +180,7 @@ export class CombatRuntime {
         case 'Digit4': {
           const slot = Number(e.code.slice(5)) - 1;
           this.buttons.castPress[slot] = t;
+          this.buttons.castHeld[slot] = true; // CR 020: streams and charges run while held
           if (this.timeline.loadout.spells[slot]) useCombatHud.getState().set({ selected: slot });
           break;
         }
@@ -182,6 +208,7 @@ export class CombatRuntime {
     const release = () => {
       this.buttons.attackDown = false;
       this.buttons.altDown = false;
+      this.buttons.castHeld = [false, false, false, false];
     };
     target.addEventListener('mousedown', onDown);
     target.addEventListener('mouseup', onUp);
@@ -228,6 +255,12 @@ export class CombatRuntime {
     else this.buttons.castPress[what] = t;
   }
 
+  /** CR 020, scripted: hold (or let go of) a spell slot's key (streams, charges). A hold also presses it. */
+  hold(slot: number, on: boolean): void {
+    if (on && !this.buttons.castHeld[slot]) this.buttons.castPress[slot] = performance.now();
+    this.buttons.castHeld[slot] = on;
+  }
+
   /** Wheel: move the right-button selection (weapon, then non-empty spell slots). */
   cycleSelection(dir: 1 | -1): number {
     const hud = useCombatHud.getState();
@@ -239,6 +272,11 @@ export class CombatRuntime {
   /** Scripted: select a slot (-1 weapon) / use the selection as the right button would. */
   select(slot: number): void {
     useCombatHud.getState().set({ selected: validSelection(slot, this.timeline.loadout.spells), selectedAt: performance.now() });
+  }
+
+  /** Scripted: hold or let go of a spell slot's key (CR 021 held dashes, CR 020 hold-to-fire). */
+  holdCast(slot: number, on: boolean): void {
+    this.buttons.castHeld[slot] = on;
   }
 
   useSelected(): void {
@@ -259,6 +297,8 @@ export class CombatRuntime {
     const hud = useCombatHud.getState();
     const lo = hud.loadouts[hud.activeLoadout];
     if (lo) this.timeline.loadout = { weapon: lo.weapon, spells: lo.spells, gem: lo.gem };
+    castHooks.selfGem = this.timeline.loadout.gem; // CR 022: your swings' tint (others read it from your weapon look)
+    castHooks.selfWeapon = this.timeline.loadout.weapon as WeaponKind;
     const sel = validSelection(hud.selected, this.timeline.loadout.spells);
     if (sel !== hud.selected) hud.set({ selected: sel });
   }
@@ -267,21 +307,54 @@ export class CombatRuntime {
    * Called by LocalSim before each 60 Hz step: returns the combat bits for
    * this step's InputFrame (attack/alt/dodge/cast/interact + castSlot).
    */
-  stepHook(seq: number, before: MoveState, sprinting: boolean): { flags: number; castSlot: number } {
+  stepHook(seq: number, before: MoveState, sprinting: boolean): { flags: number; castSlot: number; aim?: { yaw: number; pitch: number } | null } {
     if (!this.enabled) return { flags: 0, castSlot: 0 };
     const b = this.buttons;
     this.timeline.sprinting = sprinting;
     const gy = this.ground ? this.ground.heightAt(before.pos.x, before.pos.z) : before.pos.y;
-    const out = this.timeline.step(seq, b, before, gy, performance.now());
-    this.buttons = { ...blankButtons(), attackDown: b.attackDown, altDown: b.altDown };
+    const now = performance.now();
+    const heldBefore = castState.peek('self')?.held ?? null; // a charge released on this step still aimed it
+    const out = this.timeline.step(seq, b, before, gy, now);
+    this.buttons = { ...blankButtons(), attackDown: b.attackDown, altDown: b.altDown, castHeld: b.castHeld };
+    // CR 022: your caster record, from the same step bits the zone replays (it sends others the same):
+    // a dash start (dodge + variant: Event 214 | 0x8000), the held dash's thrust (the casting bit),
+    // the guard (the secondary on a sword, spear or bow: 214 0x4001 and the casting bit).
+    if ((out.flags & InputFlag.dodge) !== 0 && out.castSlot) castState.action('self', CAST_FX_DASH | out.castSlot, now);
+    castState.dashHolding('self', dashLive.variant, dashLive.held, now);
+    const wk = this.timeline.weapon().key;
+    if (wk !== 'staff' && wk !== 'wand') {
+      if (this.timeline.heldSteps === 1) castState.action('self', CAST_FX_GUARD, now);
+      else if (this.timeline.heldSteps === 0) castState.release('self', 'guard');
+    }
+    // CR 020: a stream or charge that ended, a charge that began, the stream's shots this step.
+    if (out.channelEnd) {
+      spellFx.channelEnd('self', out.channelEnd.spell);
+      castState.release('self', out.channelEnd.charge ? 'charge' : 'stream');
+      this.streaming = null;
+    }
+    if (out.chargeStart) {
+      castState.hold('self', 'charge', out.chargeStart.id, seq, now);
+      spellFx.chargeStart(out.chargeStart, 'self');
+      emitSound('cast', { element: out.chargeStart.tree, kind: 'charge' });
+    }
     if (out.started) this.begin(out.started, before);
+    for (const s of out.shots) this.fireShot(s, before);
     if ((out.flags & InputFlag.dodge) !== 0) this.probe.dodgeStart(seq, performance.now());
     if ((out.flags & InputFlag.interact) !== 0) this.probe.drinkStart(performance.now());
     if (out.refused) {
       useCombatHud.getState().set({ refused: { id: out.refused.id, at: performance.now() } });
       if (out.refused.reason === 'mana') toast('Not enough mana');
     }
-    return { flags: out.flags, castSlot: out.castSlot };
+    // CR 022: on a step that aims something (a spell cast, a shot or area move, a released charge)
+    // and while a stream, charge or beam is held, the frame carries the aim the spell really flies
+    // along (third person: the crosshair's convergence, up to a few degrees off the camera look),
+    // so the zone validates it and every other player draws it along that exact aim (Events 214,
+    // 223, 226). Melee cones and dashes keep the camera look (what their prediction uses).
+    const h = castState.peek('self')?.held ?? heldBefore;
+    const st = out.started;
+    const aiming = (h && h.kind !== 'guard') || (st && (st.spell ? st.spell.type !== 'mobility' : !!st.move && (st.move.speed > 0 || st.move.radius > 1)));
+    const aim = aiming && (localPlayer.aimYaw !== localPlayer.yaw || localPlayer.aimPitch !== localPlayer.pitch) ? { yaw: localPlayer.aimYaw, pitch: localPlayer.aimPitch } : null;
+    return { flags: out.flags, castSlot: out.castSlot, aim };
   }
 
   /** After each step: i-frame bookkeeping for the probe and active hit windows. */
@@ -297,14 +370,68 @@ export class CombatRuntime {
     this.probe.started(s, performance.now());
     this.lastStarted = s;
     this.startedCount++;
+    const now = performance.now();
+    if (s.stream && s.spell) {
+      // CR 020: a hold-to-fire stream: its shots arrive one by one (fireShot).
+      this.streaming = { spell: s.spell, start: s.seq };
+      castState.hold('self', 'stream', s.spell.id, s.seq, now); // CR 022 (others: Event 223)
+      spellFx.streamStart(s.spell, 'self', streamSeed(s.seq, s.spell.id));
+      emitSound('cast', { element: s.spell.tree, kind: s.spell.type });
+      return;
+    }
+    // CR 022: the action on your caster record (others get it as Event 214; a mobility
+    // spell's is its dash variant, noted in stepHook like the zone does).
+    if (s.spell?.type !== 'mobility') castState.action('self', s.id, now, s.charge);
     const total = s.startup + s.active + Math.max(0, s.spell?.durationSteps ?? 0);
-    this.actives.push({ s, yaw, pitch, aimYaw: localPlayer.aimYaw, aimPitch: localPlayer.aimPitch, hit: new Set(), impact: null, ticks: 0, until: s.seq + total + 1 });
+    this.actives.push({ s, yaw, pitch, aimYaw: localPlayer.aimYaw, aimPitch: localPlayer.aimPitch, hit: new Set(), impact: null, ticks: 0, until: s.seq + total + 1, lastHit: null });
     const color = s.spell?.color ?? (s.form ? '#ffd76a' : '#e8e8e8');
     if (s.move && s.move.speed === 0) fxQueue.push({ t: 'swing', arc: s.move.arc, reach: s.move.reach, color, durationMs: (s.startup + s.active) * STEP_MS, at: performance.now() });
+    // CR 022: the swing's arc in the world (the same FX others see from Event 214).
+    if (s.move && s.move.speed === 0 && s.move.radius <= 1) spellFx.swing('self', s.move.id, yaw, gemFor('self'));
+    if (s.spell) {
+      // Hand flourish, windup telegraph (where an area will land, the target
+      // of a long direct spell), dash trails, shields: spellFx (fx/engine.ts).
+      const sp = s.spell;
+      const eye = { x: before.pos.x, y: before.pos.y + EYE, z: before.pos.z };
+      const aim = sp.windupMs > 0 && (sp.type === 'aoe' || sp.type === 'rune') && !sp.selfCast && !sp.cone && !sp.line ? this.aimPoint(eye, localPlayer.aimYaw, localPlayer.aimPitch, sp.range) : null;
+      const target = sp.type === 'direct' && sp.windupMs > 0 ? this.aimTarget(eye, localPlayer.aimYaw, localPlayer.aimPitch, sp.range, 12) : null;
+      spellFx.castStart(sp, 'self', aim, yaw, target ? target.id : null);
+    }
     // Sound from the prediction, instantly (spec 8); client/src/audio/triggers.ts.
     if (s.spell) emitSound('cast', { element: s.spell.tree, kind: s.spell.type });
     else emitSound('attack', { weapon: this.timeline.weapon().key, kind: s.move?.kind ?? 'heavy' });
     void before;
+  }
+
+  /**
+   * CR 020: one shot of a hold-to-fire stream. It leaves along the current
+   * aim leaning by the stream's seeded jitter (spellsim.ts, the zone judges
+   * the claim from the same lean), or for rain falls from above a seeded
+   * point around the aim point. Its claims name the shot's own seq.
+   */
+  private fireShot(s: Started, before: MoveState): void {
+    const sp = s.spell!;
+    const seed = streamSeed(s.streamStart ?? s.seq, sp.id);
+    const k = s.shot ?? 0;
+    const aoe = sp.radius > 1 ? sp.radius : 0;
+    const radius = Math.max(0.12, Math.min(sp.radius, 1));
+    if (sp.rain) {
+      const eye = { x: before.pos.x, y: before.pos.y + EYE, z: before.pos.z };
+      const aim = this.aimPoint(eye, localPlayer.aimYaw, localPlayer.aimPitch, sp.range);
+      const off = rainOffset(seed, k, sp.rain.radius);
+      const x = aim.x + off.dx;
+      const z = aim.z + off.dz;
+      const gy = this.ground ? this.ground.heightAt(x, z) : aim.y;
+      const sh: LocalShot = { started: s, x, y: gy + sp.rain.height, z, vx: 0, vy: -sp.speed, vz: 0, gravity: 0, radius, left: sp.rain.height + 4, hit: new Set(), pierce: false, aoe, fx: 0, homing: null };
+      this.shots.push(sh);
+      sh.fx = spellFx.projectile(sp, sh.x, sh.y, sh.z, 0, -sp.speed, 0, 0, Math.min(radius, 0.4), (sp.rain.height + 4) / sp.speed, { explode: aoe, spread: true });
+      if (k % 3 === 0) emitSound('cast', { element: sp.tree, kind: 'stream' });
+      return;
+    }
+    const j = shotJitter(seed, k, sp.auto?.jitterDeg ?? 0);
+    const a: Active = { s, yaw: localPlayer.yaw, pitch: localPlayer.pitch, aimYaw: localPlayer.aimYaw, aimPitch: localPlayer.aimPitch, hit: new Set(), impact: null, ticks: 0, until: 0, lastHit: null };
+    this.launch(s, sp.speed, sp.gravity, radius, sp.range, sp.pierce, aoe, a, j.dyaw, sp.color, true, j.dpitch);
+    if (k % 3 === 0) emitSound('cast', { element: sp.tree, kind: 'stream' });
   }
 
   /** The enemies the player sees (interpolated, as drawn this frame), and the players they may fight (playtest 2 PvP and duels, ui/pvp). */
@@ -347,7 +474,7 @@ export class CombatRuntime {
         const ok = f.shape === 'aoe' ? Math.hypot(e.x - st.pos.x, e.z - st.pos.z) <= f.radius + r : f.shape === 'cone' ? inCone(st.pos, a.yaw, f.reach + r, f.arc, e) : inLine(st.pos, a.yaw, f.reach, f.width / 2 + r, e);
         if (ok) this.predictHit(s, e, st.pos, 'form');
       }
-      fxQueue.push({ t: 'area', x: st.pos.x, y: st.pos.y, z: st.pos.z, radius: Math.max(f.radius, f.reach), color: '#ffd76a', durationMs: 300, at: performance.now() });
+      spellFx.form(f, 'self', a.yaw);
       return;
     }
     const sp = s.spell!;
@@ -364,7 +491,7 @@ export class CombatRuntime {
           const n = Math.max(1, sp.spread);
           for (let i = 0; i < n; i++) {
             const off = n > 1 ? ((i - (n - 1) / 2) * sp.spreadDeg * Math.PI) / 180 : 0;
-            this.launch(s, sp.speed, sp.gravity, Math.max(0.2, Math.min(sp.radius, 1)), sp.range, sp.pierce, sp.radius > 1 ? sp.radius : 0, a, off, color);
+            this.launch(s, sp.speed, sp.gravity, Math.max(0.2, Math.min(sp.radius, 1)), sp.range, sp.pierce, sp.radius > 1 ? sp.radius : 0, a, off, color, n > 1);
           }
         }
         return;
@@ -375,8 +502,9 @@ export class CombatRuntime {
         if (seq < firstHit || (seq - firstHit) % every !== 0 || a.ticks >= ticks) return;
         a.ticks++;
         const t = this.aimTarget(eye, localPlayer.aimYaw, localPlayer.aimPitch, sp.range, 6);
-        const end = t ? { x: t.x, y: t.y + 0.9, z: t.z } : this.aimPoint(eye, localPlayer.aimYaw, localPlayer.aimPitch, sp.range);
-        fxQueue.push({ t: 'beam', x: eye.x, y: eye.y - 0.3, z: eye.z, x2: end.x, y2: end.y, z2: end.z, color, durationMs: sp.type === 'beam' ? every * STEP_MS + 30 : 120, at: performance.now() });
+        // CR 022: one beam per cast that follows your aim every frame (castState), drawn by the
+        // same call that draws another player's beam from their replicated aim.
+        if (a.ticks === 1) spellFx.channelBeam(sp, 'self', sp.type === 'beam' ? sp.durationMs : 150);
         if (!t) return;
         this.predictHit(s, t, st.pos, 'spell', sp.type === 'beam');
         if (sp.chain > 0) {
@@ -387,18 +515,41 @@ export class CombatRuntime {
             for (const e of this.enemies()) if (!used.has(e.id) && Math.hypot(e.x - prev.x, e.z - prev.z) < 8 && (!best || Math.hypot(e.x - prev.x, e.z - prev.z) < Math.hypot(best.x - prev.x, best.z - prev.z))) best = e;
             if (!best) break;
             used.add(best.id);
-            fxQueue.push({ t: 'beam', x: prev.x, y: prev.y + 0.9, z: prev.z, x2: best.x, y2: best.y + 0.9, z2: best.z, color, durationMs: 150, at: performance.now() });
+            spellFx.chain(sp, { x: prev.x, y: prev.y + enemyInfo(prev).height, z: prev.z }, { x: best.x, y: best.y + enemyInfo(best).height, z: best.z });
             this.predictHit(s, best, prev, 'spell');
             prev = best;
           }
         }
         return;
       }
+      case 'orbit': {
+        // CR 020: orbs circle you (spellsim orbOffset, same as the zone's ring check) and touch what they pass.
+        const o = sp.orbit!;
+        if (seq === firstHit) spellFx.orbit(sp, 'self', sp.durationMs);
+        if (seq >= firstHit + Math.max(1, sp.durationSteps)) return;
+        a.lastHit ??= new Map();
+        const hitsOn = (a.hitCount ??= new Map());
+        for (let i = 0; i < o.count; i++) {
+          const off = orbOffset(i, o.count, seq - s.seq, o.periodSteps, o.radius);
+          const orb = { x: st.pos.x + off.x, y: st.pos.y + off.y, z: st.pos.z + off.z };
+          for (const e of this.enemies()) {
+            const last = a.lastHit.get(e.id);
+            if ((last !== undefined && seq - last < o.hitEverySteps) || (hitsOn.get(e.id) ?? 0) >= sp.hits) continue;
+            if (Math.hypot(e.x - orb.x, e.z - orb.z) > o.orbRadius + enemyInfo(e).radius || Math.abs(e.y + enemyInfo(e).height - orb.y) > 2) continue;
+            a.lastHit.set(e.id, seq);
+            hitsOn.set(e.id, (hitsOn.get(e.id) ?? 0) + 1);
+            this.predictHit(s, e, orb, 'spell', true);
+          }
+        }
+        return;
+      }
+      case 'summon':
+        return; // CR 020: the zone calls the ally (castStart drew the summoning)
       case 'direct': {
         if (seq !== firstHit) return;
         const t = this.aimTarget(eye, a.aimYaw, a.aimPitch, sp.range, 12);
         if (t) {
-          fxQueue.push({ t: 'area', x: t.x, y: t.y, z: t.z, radius: 1.2, color, durationMs: 500, at: performance.now() });
+          spellFx.targetHit(sp, t.x, t.y, t.z, enemyInfo(t).height * 2);
           this.predictHit(s, t, st.pos, 'spell');
         }
         return;
@@ -409,8 +560,9 @@ export class CombatRuntime {
         const lingering = sp.type === 'rune' || sp.durationSteps > 0;
         if (seq === firstHit) {
           a.impact = sp.selfCast || sp.type === 'domain' || sp.cone > 0 || sp.line > 0 ? { ...st.pos } : this.aimPoint(eye, a.aimYaw, a.aimPitch, sp.range);
-          const r = sp.type === 'domain' ? sp.radius : sp.cone > 0 ? sp.radius : sp.line > 0 ? sp.line : sp.radius;
-          fxQueue.push({ t: 'area', x: a.impact.x, y: a.impact.y, z: a.impact.z, radius: r, color, durationMs: Math.max(400, sp.durationSteps * STEP_MS), at: performance.now() });
+          const p = a.impact;
+          if (sp.type === 'rune') spellFx.rune(sp, p.x, p.y, p.z);
+          else spellFx.area(sp, p.x, p.y, p.z, { radius: sp.radius, cone: sp.cone, line: sp.line, yaw: a.yaw }, lingering ? sp.durationSteps * STEP_MS : 0, sp.selfCast || sp.type === 'domain' ? 'self' : null);
         }
         if (!a.impact) return;
         const ticks = Math.max(1, sp.hits);
@@ -437,72 +589,107 @@ export class CombatRuntime {
     }
   }
 
-  /** The aim point on the terrain along the look ray (or at range). */
+  /** The aim point on the terrain along the look ray (or at range): aim.ts, shared with the FX engine. */
   private aimPoint(eye: { x: number; y: number; z: number }, yaw: number, pitch: number, range: number): { x: number; y: number; z: number } {
-    const cp = Math.cos(pitch);
-    const dx = -Math.sin(yaw) * cp;
-    const dz = -Math.cos(yaw) * cp;
-    const dy = Math.sin(pitch);
-    for (let d = 1; d <= range; d += 0.5) {
-      const x = eye.x + dx * d;
-      const y = eye.y + dy * d;
-      const z = eye.z + dz * d;
-      const g = this.ground ? this.ground.heightAt(x, z) : 0;
-      if (y <= g) return { x, y: g, z };
-    }
-    const x = eye.x + dx * range;
-    const z = eye.z + dz * range;
-    return { x, y: this.ground ? this.ground.heightAt(x, z) : eye.y + dy * range, z };
+    const g = this.ground;
+    return sharedAimPoint(eye, yaw, pitch, range, g ? (x, z) => g.heightAt(x, z) : null);
   }
 
-  /** The enemy nearest the crosshair within range and `deg` degrees. */
+  /** The enemy nearest the crosshair within range and `deg` degrees (aim.ts). */
   private aimTarget(eye: { x: number; y: number; z: number }, yaw: number, pitch: number, range: number, deg: number): RemoteView | null {
-    const cp = Math.cos(pitch);
-    const f = { x: -Math.sin(yaw) * cp, y: Math.sin(pitch), z: -Math.cos(yaw) * cp };
-    let best: RemoteView | null = null;
-    let bestA = (deg * Math.PI) / 180;
-    for (const e of this.enemies()) {
-      const v = { x: e.x - eye.x, y: e.y + 0.9 - eye.y, z: e.z - eye.z };
-      const d = Math.hypot(v.x, v.y, v.z);
-      if (d > range + 1 || d < 0.1) continue;
-      const ang = Math.acos(Math.max(-1, Math.min(1, (v.x * f.x + v.y * f.y + v.z * f.z) / d))) - Math.atan2(enemyInfo(e).radius, d);
-      if (ang < bestA) {
-        bestA = ang;
-        best = e;
-      }
-    }
-    return best;
+    return sharedAimTarget(eye, yaw, pitch, range, deg, this.enemies(), () => true);
   }
 
-  private launch(s: Started, speed: number, gravity: number, radius: number, range: number, pierce: boolean, aoe: number, a: Active, yawOff = 0, color = '#e8d8a0'): void {
+  private launch(s: Started, speed: number, gravity: number, radius: number, range: number, pierce: boolean, aoe: number, a: Active, yawOff = 0, color = '#e8d8a0', spread = false, pitchOff = 0): void {
     const eye = { x: localPlayer.pos.x, y: localPlayer.pos.y + EYE - 0.15, z: localPlayer.pos.z };
+    // CR 020: a held charge flies faster and bursts wider (the zone scales the same way).
+    const ch = s.spell?.charge;
+    if (ch && s.charge > 0) {
+      speed *= chargeMult(ch.speedMult, s.charge);
+      range *= chargeMult(ch.speedMult, s.charge);
+      if (aoe > 0) aoe *= chargeMult(ch.radiusMult, s.charge);
+    }
     // Playtest 2: the converged aim (third person: toward what the crosshair is on).
     const yaw = localPlayer.aimYaw + yawOff;
-    const pitch = localPlayer.aimPitch + (gravity > 0 ? 0.05 : 0);
+    const pitch = localPlayer.aimPitch + pitchOff + (gravity > 0 ? 0.05 : 0);
     const cp = Math.cos(pitch);
-    const sh: LocalShot = { started: s, x: eye.x, y: eye.y, z: eye.z, vx: -Math.sin(yaw) * cp * speed, vy: Math.sin(pitch) * speed, vz: -Math.cos(yaw) * cp * speed, gravity, radius, left: range, hit: new Set(), pierce, aoe, fx: shotIds++ };
+    const hp = s.spell ? homingParams(s.spell) : null;
+    const sh: LocalShot = { started: s, x: eye.x, y: eye.y, z: eye.z, vx: -Math.sin(yaw) * cp * speed, vy: Math.sin(pitch) * speed, vz: -Math.cos(yaw) * cp * speed, gravity, radius, left: range, hit: new Set(), pierce, aoe, fx: 0, homing: null };
+    if (hp) sh.homing = { p: hp, s: launchShot(eye, yaw, pitch, speed), lock: 0, acc: 0 };
     this.shots.push(sh);
     void a;
-    fxQueue.push({ t: 'projectile', id: sh.fx, x: sh.x, y: sh.y, z: sh.z, vx: sh.vx, vy: sh.vy, vz: sh.vz, gravity, radius: Math.max(0.12, radius), color, life: range / Math.max(1, speed), at: performance.now(), enemy: false });
+    void color;
+    // The visual starts at your off hand and is ended by update() below (hit, ground, range).
+    sh.fx = spellFx.projectile(s.spell ?? null, sh.x, sh.y, sh.z, sh.vx, sh.vy, sh.vz, gravity, Math.max(0.12, s.shot !== undefined ? Math.min(radius, 0.4) : radius), range / Math.max(1, speed), { local: true, explode: aoe, pierce, spread, kind: 'arrow', homing: !!hp });
+  }
+
+  /** CR 020: one shared 1/60 s homing step for a seeking shot (acquire, steer, move). */
+  private homingTick(sh: LocalShot): void {
+    const h = sh.homing!;
+    const s = h.s;
+    if (s.state === 0 && s.age >= h.p.delay) {
+      let best: RemoteView | null = null;
+      let bd = Infinity;
+      for (const e of this.enemies()) {
+        const c = { x: e.x, y: e.y + enemyInfo(e).height, z: e.z };
+        if (!canAcquire(s, c, h.p)) continue;
+        const d = Math.hypot(c.x - s.x, c.y - s.y, c.z - s.z);
+        if (d < bd) {
+          bd = d;
+          best = e;
+        }
+      }
+      if (best) {
+        s.state = 1;
+        h.lock = best.id;
+      }
+    }
+    let t: { x: number; y: number; z: number } | null = null;
+    if (s.state === 1) {
+      const e = this.enemies().find((v) => v.id === h.lock);
+      if (e) t = { x: e.x, y: e.y + enemyInfo(e).height, z: e.z };
+    }
+    homingStep(s, t, h.p);
+    sh.left -= Math.hypot(s.x - sh.x, s.y - sh.y, s.z - sh.z);
+    sh.x = s.x;
+    sh.y = s.y;
+    sh.z = s.z;
+    sh.vx = s.vx;
+    sh.vy = s.vy;
+    sh.vz = s.vz;
   }
 
   /** Per rendered frame: local projectiles and hitstop. */
   update(dtMs: number): void {
     const dt = Math.min(dtMs, 50) / 1000;
+    // CR 022: your aim on your caster record every frame (your beams and held spells follow it).
+    const now = performance.now();
+    castState.aim('self', localPlayer.aimYaw, localPlayer.aimPitch, true, now);
+    castState.expire('self', now);
     const keep: LocalShot[] = [];
     for (const sh of this.shots) {
       let alive = true;
-      const n = 3;
+      // Seeking shots run whole 1/60 s steps (the zone re-flies the same ones); others three substeps.
+      let n = 3;
+      if (sh.homing) {
+        sh.homing.acc += dt;
+        n = Math.floor(sh.homing.acc / SIM_DT + 1e-9);
+        sh.homing.acc -= n * SIM_DT;
+      }
       for (let k = 0; k < n && alive; k++) {
         const h = dt / n;
-        sh.vy -= sh.gravity * h;
-        sh.x += sh.vx * h;
-        sh.y += sh.vy * h;
-        sh.z += sh.vz * h;
-        sh.left -= Math.hypot(sh.vx, sh.vy, sh.vz) * h;
+        if (sh.homing) this.homingTick(sh);
+        else {
+          sh.vy -= sh.gravity * h;
+          sh.x += sh.vx * h;
+          sh.y += sh.vy * h;
+          sh.z += sh.vz * h;
+          sh.left -= Math.hypot(sh.vx, sh.vy, sh.vz) * h;
+        }
         const g = this.ground ? this.ground.heightAt(sh.x, sh.z) : -1e9;
         if (sh.left <= 0 || sh.y < g) {
           if (sh.aoe > 0) this.explode(sh);
+          spellFx.projectileEnd(sh.fx, sh.x, Math.max(sh.y, g + 0.05), sh.z, sh.y < g ? 'ground' : 'expire', sh.aoe);
           alive = false;
           break;
         }
@@ -514,32 +701,40 @@ export class CombatRuntime {
             sh.hit.add(e.id);
             if (sh.aoe > 0) {
               this.explode(sh);
+              spellFx.projectileEnd(sh.fx, sh.x, sh.y, sh.z, 'hit', sh.aoe);
               alive = false;
               break;
             }
             this.predictHit(sh.started, e, localPlayer.pos, sh.started.kind);
             if (!sh.pierce) {
+              spellFx.projectileEnd(sh.fx, sh.x, sh.y, sh.z, 'hit');
               alive = false;
               break;
             }
+            spellFx.projectileHit(sh.fx, sh.x, sh.y, sh.z);
           }
         }
       }
+      if (alive && sh.homing && n > 0) spellFx.projectileMove(sh.fx, sh.x, sh.y, sh.z, sh.vx, sh.vy, sh.vz);
       if (alive) keep.push(sh);
     }
     this.shots = keep;
   }
 
   private explode(sh: LocalShot): void {
-    fxQueue.push({ t: 'area', x: sh.x, y: sh.y, z: sh.z, radius: sh.aoe, color: sh.started.spell?.color ?? '#ffaa44', durationMs: 350, at: performance.now() });
-    emitSound('impact', { at: { x: sh.x, y: sh.y, z: sh.z }, element: sh.started.spell?.tree ?? 'earth' });
+    // The explosion visual is the projectile's end (spellFx.projectileEnd with the radius).
+    const stream = sh.started.shot !== undefined;
+    // CR 020: a stream pops 8-15 times a second: one quiet impact cue in three, claims for at most 4 (the zone's per-shot limit).
+    if (!stream || (sh.started.shot ?? 0) % 3 === 0) emitSound('impact', { at: { x: sh.x, y: sh.y, z: sh.z }, element: sh.started.spell?.tree ?? 'earth' });
+    let n = 0;
     for (const e of this.enemies()) {
-      if (Math.hypot(e.x - sh.x, e.z - sh.z) <= sh.aoe + enemyInfo(e).radius) this.predictHit(sh.started, e, { x: sh.x, y: sh.y, z: sh.z }, sh.started.kind, true);
+      if (Math.hypot(e.x - sh.x, e.z - sh.z) <= sh.aoe + enemyInfo(e).radius && (!stream || n++ < 4)) this.predictHit(sh.started, e, { x: sh.x, y: sh.y, z: sh.z }, sh.started.kind, true);
     }
   }
 
   private areaAt(a: Active, p: { x: number; y: number; z: number }, radius: number, s: Started, color: string): void {
-    fxQueue.push({ t: 'area', x: p.x, y: p.y, z: p.z, radius, color, durationMs: 500, at: performance.now() });
+    spellFx.slam(p.x, p.y, p.z, radius);
+    void color;
     for (const e of this.enemies()) if (Math.hypot(e.x - p.x, e.z - p.z) <= radius + enemyInfo(e).radius) this.predictHit(s, e, p, 'move', true);
     void a;
   }
@@ -552,7 +747,9 @@ export class CombatRuntime {
     const now = performance.now();
     const at = { x: e.x, y: e.y + enemyInfo(e).height, z: e.z };
     fxQueue.push({ t: 'spark', x: at.x, y: at.y, z: at.z, color: s.spell?.color ?? '#fff3c0', at: now });
-    if (!impactIsOrigin) emitSound('impact', { at, element: s.spell?.tree, weapon: this.timeline.weapon().key });
+    const gem = this.timeline.loadout.gem;
+    spellFx.hit(s.spell ?? null, at.x, at.y, at.z, { tint: !s.spell && gem >= 0 ? ELEMENT_COLORS[gem] : null, heavy: kind === 'form' || s.move?.kind === 'heavy' });
+    if (!impactIsOrigin && (s.shot === undefined || s.shot % 3 === 0)) emitSound('impact', { at, element: s.spell?.tree, weapon: this.timeline.weapon().key }); // CR 020: a stream rings every third hit
     if (kind === 'move' || kind === 'form') this.hitstopUntil = Math.max(this.hitstopUntil, now + HITSTOP_MS);
     this.probe.localHit(s, now, kind === 'move' || kind === 'form' ? HITSTOP_MS : 0);
     const claimAt = impactIsOrigin ? origin : localPlayer.pos;
@@ -613,12 +810,60 @@ export class CombatRuntime {
         const vz = d.getInt16(4, true) / 50;
         const range = d.getUint16(8, true) / 100;
         const sp = Math.max(1, Math.hypot(vx, vy, vz));
-        fxQueue.push({ t: 'projectile', id: shotIds++, x: ev.x / 100, y: ev.y / 100, z: ev.z / 100, vx, vy, vz, gravity: 0, radius: d.getUint16(6, true) / 100, color: '#ff5050', life: range / sp, at: now, enemy: true });
+        void sp;
+        spellFx.enemyProjectile(ev.entityId, Number(ev.targetId), ev.x / 100, ev.y / 100, ev.z / 100, vx, vy, vz, d.getUint16(6, true) / 100, range);
         return;
       }
+      case EV.cast:
+      case EV.held:
+        // Another player's attack, cast, form, dash or guard (214, with its exact aim; a released
+        // charge's u8 fraction), or the precise aim of what they hold (CR 022: 226): their caster
+        // record and the FX, at the moment their drawn body reaches it (castState.ts).
+        remoteEvent(ev, self, now, spellFx);
+        return;
+      case EV.channel: {
+        // CR 020: a stream / charge started (1, 2) or stopped (0); contracts/events.md 223.
+        if (ev.entityId === self) {
+          if (ev.value !== 0) return;
+          const d = new DataView(ev.data.buffer, ev.data.byteOffset, ev.data.byteLength);
+          const start = ev.data.length >= 6 ? d.getUint32(2, true) : 0;
+          // The zone ended our stream first (mana): stop predicting it.
+          const c = this.timeline.channel;
+          if (c && !c.charge && c.start === start) {
+            this.timeline.endChannel(this.timeline.seq, null);
+            spellFx.channelEnd('self', c.spell);
+            castState.release('self', 'stream');
+            this.streaming = null;
+          }
+          return;
+        }
+        remoteEvent(ev, self, now, spellFx); // another player's: their caster record (castState.ts)
+        return;
+      }
+      case EV.detonate: {
+        // CR 020: a delayed charge or a brand burst (the zone's own hits).
+        const sp = spellById.get(ev.value);
+        const r = ev.data.length >= 2 ? new DataView(ev.data.buffer, ev.data.byteOffset, 2).getUint16(0, true) / 100 : 3;
+        if (sp) spellFx.detonate(sp, ev.x / 100, ev.y / 100, ev.z / 100, r);
+        return;
+      }
+      case EV.summonAttack: {
+        // CR 020: an ally attacked (its bite or bolt; the damage comes as Event 200).
+        const sp = spellById.get(ev.value);
+        if (sp) spellFx.summonAttack(ev.entityId, Number(ev.targetId), sp, ev.x / 100, ev.y / 100, ev.z / 100);
+        return;
+      }
+      case EV.status:
+        spellFx.status(Number(ev.targetId), ev.value);
+        return;
+      case EV.shield:
+        if (ev.entityId === self || ev.entityId === 0) spellFx.shieldPoints(ev.value);
+        else remoteEvent(ev, self, now, spellFx); // CR 022: another player's shield broke
+        return;
       case EV.damage:
         pushNumber(ev.x / 100, ev.y / 100 + 0.4, ev.z / 100, ev.value, 'dealt');
         fxQueue.push({ t: 'spark', x: ev.x / 100, y: ev.y / 100, z: ev.z / 100, color: '#fff3c0', at: now });
+        spellFx.hit(null, ev.x / 100, ev.y / 100, ev.z / 100);
         return;
       case EV.playerHurt:
         if (ev.entityId === self) {
@@ -671,6 +916,13 @@ export class CombatRuntime {
       case EV.refused: {
         const sp = spellById.get(ev.targetId);
         if (sp) this.timeline.refund(sp.id);
+        if (sp && this.timeline.channel?.spell.id === sp.id) {
+          this.timeline.endChannel(this.timeline.seq, null); // CR 020: a refused stream never ran
+          this.timeline.refund(sp.id);
+          spellFx.channelEnd('self', sp);
+          castState.release('self');
+          this.streaming = null;
+        }
         hud.set({ refused: { id: ev.targetId, at: now } });
         return;
       }
@@ -700,7 +952,7 @@ export class CombatRuntime {
 }
 
 function blankButtons(): CombatButtons {
-  return { attackDown: false, altDown: false, attackPress: 0, altPress: 0, altRelease: 0, dodgePress: 0, castPress: [null, null, null, null], formPress: 0, techniquePress: 0, drinkPress: 0 };
+  return { attackDown: false, altDown: false, attackPress: 0, altPress: 0, altRelease: 0, dodgePress: 0, castPress: [null, null, null, null], castHeld: [false, false, false, false], formPress: 0, techniquePress: 0, drinkPress: 0 };
 }
 
 export function levelFor(xp: number): number {

@@ -157,7 +157,9 @@ func TestOnlyEnemiesCallHurtPlayer(t *testing.T) {
 			}
 			calls++
 		}
-		if n := len(byPlayer.FindAllString(src, -1)); n > 0 && (f != "pvp.go" || n != 2) {
+		// CR 020: and once in summon.go (allyHit), only after the game layer's
+		// SummonPvP rule said the ally's caster may hurt that player.
+		if n := len(byPlayer.FindAllString(src, -1)); n > 0 && !(f == "pvp.go" && n == 2) && !(f == "summon.go" && n == 1) {
 			t.Errorf("%s: hurtByPlayer appears %d times (only its definition and applyPlayerHit, in pvp.go)", f, n)
 		}
 		fn := ""
@@ -167,7 +169,8 @@ func TestOnlyEnemiesCallHurtPlayer(t *testing.T) {
 			}
 			if writes.MatchString(line) {
 				ok := (f == "ai.go" && (strings.Contains(fn, "hurtPlayer(") || strings.Contains(fn, "downPlayer("))) ||
-					(f == "pvp.go" && strings.Contains(fn, "hurtByPlayer("))
+					(f == "pvp.go" && strings.Contains(fn, "hurtByPlayer(")) ||
+					(f == "dashes.go" && strings.Contains(fn, "payBlood(")) // CR 021: the blood dash costs your own health
 				if !ok {
 					t.Errorf("%s: player health lowered outside hurtPlayer/hurtByPlayer: %s (in %s)", f, strings.TrimSpace(line), fn)
 				}

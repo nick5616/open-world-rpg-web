@@ -1,0 +1,899 @@
+{
+ "tag": "-before",
+ "rows": [
+  {
+   "key": "ember_flick",
+   "label": "cast: Ember Flick from the open off hand (sword)",
+   "caster": {
+    "actions": [],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "watcher": {
+    "actions": [
+     "cast"
+    ],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": null
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 1,
+   "dashVariants": [],
+   "raw": [],
+   "poseMatch": false,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "ember_flick",
+   "label": "castStaff: Ember Flick from the staff tip",
+   "caster": {
+    "actions": [],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "watcher": {
+    "actions": [
+     "castStaff"
+    ],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": null
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 1,
+   "dashVariants": [],
+   "raw": [],
+   "poseMatch": false,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "eruption",
+   "label": "castBig: Eruption (windup sigil at the aim point)",
+   "caster": {
+    "actions": [],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "watcher": {
+    "actions": [
+     "castBig"
+    ],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": null
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 1,
+   "dashVariants": [],
+   "raw": [],
+   "poseMatch": false,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "ice_wall",
+   "label": "shield: Ice Wall (the shell others see)",
+   "caster": {
+    "actions": [],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "watcher": {
+    "actions": [
+     "shield"
+    ],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": null
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 1,
+   "dashVariants": [],
+   "raw": [],
+   "poseMatch": false,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "wraith_hound",
+   "label": "summon: Wraith Hound (flourish at the hand, the ally)",
+   "caster": {
+    "actions": [],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "watcher": {
+    "actions": [
+     "castStaff"
+    ],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": null
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 1,
+   "dashVariants": [],
+   "raw": [],
+   "poseMatch": false,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "guiding_motes",
+   "label": "homing: Guiding Motes aimed 35 deg off, curving in",
+   "caster": {
+    "actions": [],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "watcher": {
+    "actions": [
+     "castStaff"
+    ],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": null
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 1,
+   "dashVariants": [],
+   "raw": [],
+   "poseMatch": false,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "pyre_brand",
+   "label": "brand: Pyre Brand fan",
+   "caster": {
+    "actions": [],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "watcher": {
+    "actions": [
+     "castStaff"
+    ],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": null
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 1,
+   "dashVariants": [],
+   "raw": [],
+   "poseMatch": false,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "cauterize",
+   "label": "castBeam: Cauterize, turning while it burns",
+   "caster": {
+    "actions": [],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "watcher": {
+    "actions": [
+     "castBeam"
+    ],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": null
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 1,
+   "dashVariants": [],
+   "raw": [],
+   "poseMatch": false,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "cinder_spray",
+   "label": "stream: Cinder Spray held, sweeping",
+   "caster": {
+    "actions": [],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "watcher": {
+    "actions": [
+     "castStaff"
+    ],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": null
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 1,
+   "dashVariants": [],
+   "raw": [],
+   "poseMatch": false,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "arc_sparks",
+   "label": "stream: Arc Sparks held",
+   "caster": {
+    "actions": [],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "watcher": {
+    "actions": [
+     "castStaff"
+    ],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": null
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 1,
+   "dashVariants": [],
+   "raw": [],
+   "poseMatch": false,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "starfall_hail",
+   "label": "rain: Starfall Hail held (seeded points around the aim)",
+   "caster": {
+    "actions": [],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "watcher": {
+    "actions": [
+     "castStaff"
+    ],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": null
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 1,
+   "dashVariants": [],
+   "raw": [],
+   "poseMatch": false,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "boulder_heave",
+   "label": "charge: Boulder Heave gathering (held)",
+   "caster": {
+    "actions": [],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "watcher": {
+    "actions": [
+     "castBig"
+    ],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": null
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 1,
+   "dashVariants": [],
+   "raw": [],
+   "poseMatch": false,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "boulder_heave_release",
+   "label": "charge: Boulder Heave released",
+   "caster": {
+    "actions": [],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "watcher": {
+    "actions": [
+     "castStaff"
+    ],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": null
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 1,
+   "dashVariants": [],
+   "raw": [],
+   "poseMatch": false,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "whirling_blades",
+   "label": "orbit: Whirling Blades",
+   "caster": {
+    "actions": [],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "watcher": {
+    "actions": [],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": null
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 1,
+   "dashVariants": [],
+   "raw": [],
+   "poseMatch": true,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "magma_dash",
+   "label": "Magma Dash held: jet flight (climbing)",
+   "caster": {
+    "actions": [],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "watcher": {
+    "actions": [
+     "dodge"
+    ],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": null
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 1,
+   "dashVariants": [],
+   "raw": [],
+   "poseMatch": false,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "glacier_step",
+   "label": "Glacier Step held: skate",
+   "caster": {
+    "actions": [],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "watcher": {
+    "actions": [
+     "dash"
+    ],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": null
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 1,
+   "dashVariants": [],
+   "raw": [],
+   "poseMatch": false,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "static_step",
+   "label": "Static Step held: blink chain",
+   "caster": {
+    "actions": [],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "watcher": {
+    "actions": [
+     "dodge"
+    ],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": null
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 1,
+   "dashVariants": [],
+   "raw": [],
+   "poseMatch": false,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "root_launch",
+   "label": "Root Launch held",
+   "caster": {
+    "actions": [],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "watcher": {
+    "actions": [
+     "dash"
+    ],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": null
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 1,
+   "dashVariants": [],
+   "raw": [],
+   "poseMatch": false,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "updraft",
+   "label": "Updraft held: soar",
+   "caster": {
+    "actions": [],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "watcher": {
+    "actions": [
+     "dodge"
+    ],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": null
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 1,
+   "dashVariants": [],
+   "raw": [],
+   "poseMatch": false,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "sunstep",
+   "label": "Sunstep held: radiant trail",
+   "caster": {
+    "actions": [],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "watcher": {
+    "actions": [
+     "dash"
+    ],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": null
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 1,
+   "dashVariants": [],
+   "raw": [],
+   "poseMatch": false,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "skip",
+   "label": "Skip held: phase",
+   "caster": {
+    "actions": [],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "watcher": {
+    "actions": [],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": null
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 1,
+   "dashVariants": [],
+   "raw": [],
+   "poseMatch": true,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "phase_slip",
+   "label": "Phase Slip held: blood dash",
+   "caster": {
+    "actions": [],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "watcher": {
+    "actions": [],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": null
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 1,
+   "dashVariants": [],
+   "raw": [],
+   "poseMatch": true,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "sword_attack",
+   "label": "sword: slash (arc in the world for both)",
+   "caster": {
+    "actions": [],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "watcher": {
+    "actions": [
+     "slash"
+    ],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": null
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 1,
+   "dashVariants": [],
+   "raw": [],
+   "poseMatch": false,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "spear_attack",
+   "label": "spear: thrust",
+   "caster": {
+    "actions": [],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "watcher": {
+    "actions": [
+     "thrust"
+    ],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": null
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 1,
+   "dashVariants": [],
+   "raw": [],
+   "poseMatch": false,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "staff_attack",
+   "label": "staff: bolt",
+   "caster": {
+    "actions": [],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "watcher": {
+    "actions": [
+     "bolt"
+    ],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": null
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 1,
+   "dashVariants": [],
+   "raw": [],
+   "poseMatch": false,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "wand_attack",
+   "label": "wand: jab",
+   "caster": {
+    "actions": [],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "watcher": {
+    "actions": [
+     "bolt"
+    ],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": null
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 1,
+   "dashVariants": [],
+   "raw": [],
+   "poseMatch": false,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "sword_guard",
+   "label": "sword: parry stance (held)",
+   "caster": {
+    "actions": [],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "watcher": {
+    "actions": [
+     "parry"
+    ],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": null
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 1,
+   "dashVariants": [],
+   "raw": [],
+   "poseMatch": false,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "sword_release",
+   "label": "sword: released",
+   "caster": {
+    "actions": [],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "watcher": {
+    "actions": [],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": null
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 1,
+   "dashVariants": [],
+   "raw": [],
+   "poseMatch": true,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "spear_guard",
+   "label": "spear: charge (held)",
+   "caster": {
+    "actions": [],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "watcher": {
+    "actions": [
+     "charge"
+    ],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": null
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 1,
+   "dashVariants": [],
+   "raw": [],
+   "poseMatch": false,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "spear_release",
+   "label": "spear: released",
+   "caster": {
+    "actions": [],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "watcher": {
+    "actions": [
+     "charge",
+     "thrust"
+    ],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": null
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 1,
+   "dashVariants": [],
+   "raw": [],
+   "poseMatch": false,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "bow_guard",
+   "label": "bow: draw held 3.6 s",
+   "caster": {
+    "actions": [],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "watcher": {
+    "actions": [],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": null
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 1,
+   "dashVariants": [],
+   "raw": [],
+   "poseMatch": true,
+   "heldPoseMatch": true
+  },
+  {
+   "key": "bow_release",
+   "label": "bow: released",
+   "caster": {
+    "actions": [],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": 0
+   },
+   "watcher": {
+    "actions": [
+     "bow"
+    ],
+    "held": [],
+    "dashHold": false,
+    "bodyPitchMin": null
+   },
+   "aimErrDegMedian": null,
+   "drawnLookErrDegMedian": null,
+   "aimErrDegFinal": null,
+   "drawnLookErrDegFinal": null,
+   "thirdPersonConvergenceDeg": null,
+   "heldStateAgreement": 1,
+   "dashVariants": [],
+   "raw": [],
+   "poseMatch": false,
+   "heldPoseMatch": true
+  }
+ ],
+ "summary": {
+  "sharedStateBuild": false,
+  "rows": 32,
+  "poseMatch": 5,
+  "heldPoseMatch": 32,
+  "aimErrDegMedianByKey": {}
+ }
+}

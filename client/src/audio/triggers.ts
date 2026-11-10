@@ -190,6 +190,19 @@ export const ZONE_EVENTS: Record<number, EventHandler> = {
     if (sp) a.play(sp.type === 'domain' ? 'domain' : castCue(sp.tree), { at });
     else if (id >= 100 && id < 600) a.play(swingCue(WEAPON_BY_HUNDRED[Math.floor(id / 100)], undefined), { at });
   },
+  // CR 020: another player's stream / charge started (the shots themselves stay silent: one cue, no per-bullet sound), a burst, an ally's attack.
+  223: (e, a) => {
+    const sp = SPELL_TREE.get(e.targetId);
+    if (sp && e.value > 0) a.play(castCue(sp.tree), { at: cm(e), rate: e.value === 2 ? 0.7 : 1.2 });
+  },
+  224: (e, a) => {
+    const sp = SPELL_TREE.get(e.value);
+    a.play(impactCue(sp?.tree), { at: cm(e) });
+  },
+  225: (e, a) => {
+    const sp = SPELL_TREE.get(e.value);
+    a.play(castCue(sp?.tree), { at: cm(e), volume: 0.5, rate: 1.2 });
+  },
   215: (_e, a) => a.play('spell_refused'),
   216: (_e, a) => a.play('skill_up'),
   217: (e, a) => {
@@ -295,6 +308,12 @@ export const ZONE_EVENTS: Record<number, EventHandler> = {
     } else if (e.value === 2) a.play('ui_confirm');
   },
   996: (e, a) => a.play(e.entityId !== 0 && e.entityId === a.selfId() ? 'quest_complete' : e.targetId !== 0 && e.targetId === a.selfId() ? 'player_downed' : 'notify'),
+  // CR 021: a flight dived into the ground (dash_slam)
+  230: (e, a) => {
+    a.play('land', { volume: 1 });
+    a.play(e.entityId === a.selfId() ? 'hit_crit' : 'hit');
+    a.markCombat(6);
+  },
   997: (e, a) => {
     if (e.value > 0) a.play('ui_error');
   },
@@ -311,7 +330,10 @@ export const TRIGGERS = {
     a.markCombat(6);
   },
   cast: (p, a) => {
-    a.play(p.kind === 'domain' ? 'domain' : castCue(p.element), at(p));
+    // CR 020: a stream's shots are quieter, quicker repeats of the element's cast; a charge starts low and slow.
+    if (p.kind === 'stream') a.play(castCue(p.element), { ...at(p), volume: 0.45, rate: 1.35 });
+    else if (p.kind === 'charge') a.play(castCue(p.element), { ...at(p), volume: 0.7, rate: 0.7 });
+    else a.play(p.kind === 'domain' ? 'domain' : castCue(p.element), at(p));
     a.markCombat(6);
   },
   bow_draw: (_p, a) => a.play('bow_draw'),
@@ -321,6 +343,11 @@ export const TRIGGERS = {
     a.markCombat(8);
   },
   dodge: (_p, a) => a.play('dash'),
+  // CR 021: a held dash's whoosh every few hundred ms (the element's cast under the dash cue)
+  dash_sustain: (p, a) => {
+    a.play('dash', { volume: 0.55 });
+    a.play(castCue(p.element), { volume: 0.35 });
+  },
   // Movement
   step: (p, a) => a.play(stepCue(p.surface)),
   jump: (_p, a) => a.play('jump'),

@@ -27,10 +27,16 @@ export const EV = {
   bossReset: 220,
   respawned: 221,
   strikeHit: 222,
+  // CR 020 spell mechanics
+  channel: 223,
+  detonate: 224,
+  summonAttack: 225,
+  // CR 022 shared spell visuals: the precise aim of a held action (and a keepalive)
+  held: 226,
 } as const;
 
 export const INTERACT_COMBAT = 50;
-export const ACT = { swapLoadout: 1, equipWeapon: 2, equipSpell: 3, learn: 4, setGem: 5 } as const;
+export const ACT = { swapLoadout: 1, equipWeapon: 2, equipSpell: 3, learn: 4, setGem: 5, devGrant: 7 } as const;
 
 const weaponById = new Map(COMBAT.weapons.map((w) => [w.id, w.key]));
 const spellById = new Map(COMBAT.spells.map((s) => [s.id, s.key]));

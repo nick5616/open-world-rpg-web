@@ -79,3 +79,15 @@ G4: a leashed `combatbot` (a `Goal` + `Leash`, e.g. the night bots at a ward gar
 ### G5: 4 vCPU (2 cores + SMT)
 
 `spawnTick` (once a second) marks a group "a player is within ENEMY_SPAWN_M" with a pass number on the group instead of a map rebuilt every pass, and skips the distance test for a group already marked this pass (no other player can change its marks). With 300 players among 500 camps it was ~150,000 `Hypot` calls and ~40,000 map writes in one tick: a +1.2 ms spike every 30th tick on two cores with SMT, i.e. inside the tick p99. Same marks, same spawns and despawns (all combat tests unchanged).
+
+## Spell mechanics (playtest 2, CR 020)
+
+| File | What |
+| --- | --- |
+| `spellsim.go` | The shared spell simulation, twin of `client/src/combat/spellsim.ts`: the 1/60 s homing step (acquire in a cone, turn-rate-limited steering, lose lock), the seeded stream jitter and rain points, orbit positions, charge fractions. `spellsim_golden_test.go` replays the client's golden vectors |
+| `stream.go` | Hold-to-fire streams (one Action per stream, each shot recorded where it was fired; claims name a shot by its nominal seq) and hold-to-empower charges (the release logs the Action with the held fraction); `InputFlag.channel` |
+| `validate.go` | `claimable` (per-shot and per-orb hit limits, orbit touch rate), `judge` (shot geometry from where it was fired with its jitter, rain, orbit ring, the homing re-flight `homingReach`), charge scaling of damage, radius and range |
+| `summon.go` | Allies: zone-side bodies on the Enemy struct (the enemies' steering), never in `enemies`; target, follow, wind up, bite or bolt; caps; the PvP hook `SummonPvP` |
+| `detonate.go` | Delayed charges and brands that burst on death (chain reactions): the zone's own hits |
+
+Tests: `mechanics_test.go` (stream rate, mana drain and anti-cheat patterns, per-shot claims, charges, homing re-flights, orbit geometry and rate, delayed charges, brand chains, ally lifecycle, caps, targets and the PvP rule).

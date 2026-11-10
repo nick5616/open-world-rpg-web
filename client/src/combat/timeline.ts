@@ -16,12 +16,15 @@
 
 import { COMBAT, INPUT_BUFFER_MS, InputFlag, MOVE_STEP_HZ, type MoveDef, type SpellDef, type WeaponDef, type FormDef } from '@lodestone/contracts';
 import type { MoveState } from '../sim/movement';
+import { dashStep, startDashHold, type DashHold } from './dashes';
 
 export const BUFFER_STEPS = Math.round((INPUT_BUFFER_MS * MOVE_STEP_HZ) / 1000);
 export const COMBO_WINDOW_STEPS = 24;
 export const PLUNGE_MIN_HEIGHT = 3;
 export const SPRINT_ATTACK_SPEED = 8 * 0.75;
 export const FORM_SLOT = 4;
+/** A form's first hit frame after its start step (CR 022: others draw its burst then too). */
+export const FORM_STARTUP_STEPS = 2;
 export const TECHNIQUE_SLOT = 5;
 
 const moveByKey = new Map(COMBAT.moves.map((m) => [m.key, m]));
@@ -53,6 +56,8 @@ export interface CombatButtons {
   altRelease: number;
   dodgePress: number;
   castPress: (number | null)[]; // slot presses (0..3)
+  /** CR 020: the slot's key (or RMB with the slot selected) is held down now (streams, charges, sustained dashes). */
+  castHeld: boolean[];
   formPress: number;
   techniquePress: number;
   drinkPress: number;
@@ -80,12 +85,34 @@ export interface Started {
   recovery: number;
   /** Real time (performance.now) of the press that caused it (probe). */
   pressedAt: number;
+  /** CR 020: a stream's shot index (its seq is the shot's nominal seq, what claims name). */
+  shot?: number;
+  /** CR 020: the cast that starts a stream (its shots come as separate Starteds). */
+  stream?: boolean;
+  /** CR 020: the stream's start seq (seed of its jitter / rain pattern). */
+  streamStart?: number;
+}
+
+/** CR 020: a running stream or gathering charge (mirrors server/zone/internal/combat/stream.go). */
+export interface Channel {
+  slot: number;
+  spell: SpellDef;
+  start: number;
+  /** Stream: nominal seq of the next shot. */
+  next: number;
+  shots: number;
+  charge: boolean;
 }
 
 export interface StepOut {
   flags: number;
   castSlot: number;
   started: Started | null;
+  /** CR 020: stream shots fired this step (each its own Started: seq = nominal shot seq). */
+  shots: Started[];
+  /** CR 020: a charge began gathering this step / a stream or charge ended this step. */
+  chargeStart: SpellDef | null;
+  channelEnd: Channel | null;
   /** The press was refused locally (cooldown, mana): HUD flash. */
   refused: { id: number; reason: 'cooldown' | 'mana' | 'locked' } | null;
 }
@@ -122,6 +149,10 @@ export class CombatTimeline {
   private readyAt = new Map<number, number>();
   private buf: Buffered[] = [];
   private pendingDash = 0; // wind form: dash variant on the next step
+  /** CR 020: the running stream or gathering charge. */
+  channel: Channel | null = null;
+  /** CR 021: the mobility dash this timeline started and whether its key still holds it (dashes.ts). */
+  dashHold: DashHold | null = null;
   /** Last step's seq (probe/tests). */
   seq = 0;
 
@@ -145,6 +176,34 @@ export class CombatTimeline {
     return Math.round(base * m);
   }
 
+  /** CR 020: fire the running stream's next shot if it is due and paid for (stream.go streamShot). */
+  private streamShot(seq: number, out: StepOut, now: number): void {
+    const c = this.channel;
+    if (!c || c.charge || seq < c.next) return;
+    const s = c.spell;
+    const a = s.auto!;
+    if (this.mana < a.manaPerShot) {
+      this.endChannel(seq, out);
+      return;
+    }
+    this.mana -= a.manaPerShot;
+    out.shots.push({ kind: 'spell', id: s.id, seq: c.next, spell: s, charge: 0, fallHeight: 0, startup: 0, active: 1, recovery: 0, pressedAt: now, shot: c.shots, streamStart: c.start });
+    c.next += a.intervalSteps;
+    c.shots++;
+  }
+
+  /** CR 020: end the stream or charge at seq (a stream: ready one interval after its last shot or cooldownMs from now). */
+  endChannel(seq: number, out: StepOut | null): void {
+    const c = this.channel;
+    if (!c) return;
+    this.channel = null;
+    if (out) out.channelEnd = c;
+    if (c.charge) return;
+    let ready = seq + this.cooldownSteps(c.spell.cooldownSteps);
+    if (c.shots > 0) ready = Math.max(ready, c.start + c.spell.windupSteps + (c.shots - 1) * c.spell.auto!.intervalSteps + c.spell.auto!.intervalSteps);
+    this.readyAt.set(c.spell.id, ready);
+  }
+
   /** The server refused a start: forget its cooldown (the zone didn't charge it). */
   refund(id: number): void {
     this.readyAt.delete(id);
@@ -162,11 +221,31 @@ export class CombatTimeline {
   step(seq: number, b: CombatButtons, before: MoveState, groundY: number, now: number): StepOut {
     this.seq = seq;
     this.mana = Math.min(this.manaMax, this.mana + this.manaRegenPerStep);
-    const out: StepOut = { flags: 0, castSlot: 0, started: null, refused: null };
+    const out: StepOut = { flags: 0, castSlot: 0, started: null, refused: null, shots: [], chargeStart: null, channelEnd: null };
     const w = this.weapon();
     if (this.downed) {
       this.buf = [];
+      if (this.channel) this.endChannel(seq, out);
       return out;
+    }
+    // CR 020: a stream key still held after its stream ended (mana, a dodge)
+    // starts it again as soon as it is ready and paid for.
+    const held = b.castHeld ?? [];
+    if (!this.channel)
+      held.forEach((h, slot) => {
+        const k = this.loadout.spells[slot];
+        const s = h && k ? spellByKey.get(k) : undefined;
+        if (s?.auto && b.castPress[slot] == null && seq >= (this.readyAt.get(s.id) ?? 0) && this.mana >= s.mana && !this.buf.some((x) => x.kind === 'cast' && x.slot === slot)) b.castPress[slot] = now;
+      });
+    const prior = this.channel;
+    if (prior?.charge && !held[prior.slot]) {
+      // Release: the charge fires on this step, which carries nothing else
+      // (an attack, dodge or cast here would cancel it on the zone).
+      this.channel = null;
+      out.channelEnd = prior;
+      const f = Math.min(1, Math.max(0, (seq - prior.start) / Math.max(1, prior.spell.charge!.maxSteps)));
+      const s = prior.spell;
+      out.started = { kind: 'spell', id: s.id, seq, spell: s, charge: f, fallHeight: 0, startup: Math.max(1, s.windupSteps), active: 1, recovery: 0, pressedAt: now };
     }
     // Latch presses into the buffer (they fire now or within BUFFER_STEPS).
     const staffy = w.key === 'staff' || w.key === 'wand';
@@ -191,7 +270,7 @@ export class CombatTimeline {
     this.wasAir = air;
 
     this.buf = this.buf.filter((x) => x.until >= seq);
-    if (this.pendingDash) {
+    if (this.pendingDash && !out.channelEnd) {
       out.flags |= InputFlag.dodge;
       out.castSlot = this.pendingDash;
       this.pendingDash = 0;
@@ -205,6 +284,15 @@ export class CombatTimeline {
         i--;
       }
     }
+    // CR 020: the stream / charge that ran before this step (stream.go's channelFrame).
+    if (prior && this.channel === prior) {
+      if ((out.flags & (InputFlag.dodge | InputFlag.cast | InputFlag.attack)) !== 0 || !held[prior.slot]) this.endChannel(seq, out);
+      else {
+        out.flags |= InputFlag.channel;
+        if (!prior.charge) this.streamShot(seq, out, now);
+      }
+    }
+    dashStep(this, b, before, out, seq); // CR 021: name the running dash, hold it while the key is down (dashes.ts)
     if (alt) out.flags |= InputFlag.alt_attack;
     if (staffy && (out.flags & InputFlag.attack) !== 0 && out.started?.move?.kind === 'heavy') out.flags |= InputFlag.alt_attack;
     this.altHeld = alt ? this.altHeld + 1 : 0;
@@ -227,6 +315,10 @@ export class CombatTimeline {
         const key = this.loadout.spells[x.slot];
         const s = key ? spellByKey.get(key) : undefined;
         if (!s || s.type === 'passive') return 'refused';
+        // CR 020: casting the spell that is streaming ends that stream first (the zone does the same).
+        if (this.channel && this.channel.spell.id === s.id) this.endChannel(seq, out);
+        // CR 020 x CR 021: a stream or charge waits for a running dash to end (its channel bit would hold the dash).
+        if ((s.auto || s.charge) && (before.dash ?? 0) > 0) return 'wait';
         if (seq < (this.readyAt.get(s.id) ?? 0)) {
           if (x.until === seq) out.refused = { id: s.id, reason: 'cooldown' };
           return 'wait';
@@ -240,9 +332,24 @@ export class CombatTimeline {
           out.flags |= InputFlag.dodge;
           out.castSlot = s.dash;
           this.dodgeSeq = seq;
+          this.dashHold = startDashHold(x.slot, s.dash, seq); // CR 021: hold the key to sustain it (dashes.ts)
         } else {
           out.flags |= InputFlag.cast;
           out.castSlot = x.slot;
+        }
+        if (s.auto || s.charge) {
+          // CR 020: a stream (shots pay as they fire) or a charge (paid now, fires on release).
+          if (this.channel) this.endChannel(seq, out);
+          this.channel = { slot: x.slot, spell: s, start: seq, next: seq + s.windupSteps, shots: 0, charge: !!s.charge };
+          if (s.charge) {
+            this.mana -= s.mana;
+            this.readyAt.set(s.id, seq + this.cooldownSteps(s.cooldownSteps));
+            out.chargeStart = s;
+          } else {
+            out.started = { kind: 'spell', id: s.id, seq, spell: s, charge: 0, fallHeight: 0, startup: 0, active: 1, recovery: 0, pressedAt: x.pressedAt, stream: true, streamStart: seq };
+            this.streamShot(seq, out, x.pressedAt);
+          }
+          return 'done';
         }
         this.mana -= s.mana;
         this.readyAt.set(s.id, seq + this.cooldownSteps(s.cooldownSteps));
@@ -261,7 +368,7 @@ export class CombatTimeline {
         out.flags |= InputFlag.cast;
         out.castSlot = FORM_SLOT;
         if (f.dash) this.pendingDash = f.dash;
-        out.started = { kind: 'form', id: f.id, seq, form: f, charge: 0, fallHeight: 0, startup: 2, active: 8, recovery: 10, pressedAt: x.pressedAt };
+        out.started = { kind: 'form', id: f.id, seq, form: f, charge: 0, fallHeight: 0, startup: FORM_STARTUP_STEPS, active: 8, recovery: 10, pressedAt: x.pressedAt };
         return 'done';
       }
       default:

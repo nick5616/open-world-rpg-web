@@ -75,9 +75,10 @@ import {
   WALKABLE_TAN_SQ,
   WORLD_SIZE_M,
   u16ToYaw,
+  i16ToPitch,
 } from '@lodestone/contracts';
 import type { GroundQuery } from './ground';
-import { beginDash } from './dash';
+import { beginDash, SUSTAIN, skateGround } from './dash';
 import { atLevel, collideStep } from './caves';
 
 export interface Vec3 {
@@ -407,22 +408,24 @@ export function stepMovement(state: MoveState, input: MoveInput, groundIn: Groun
   const ground = atLevel(groundIn, state.pos.y); // WP09: caves see the ground at the player's level (caves.ts)
   const yaw = u16ToYaw(input.yaw);
   const wish = wishDirFromFlags(input.flags, yaw);
-  // WP13: dodge / dash bookkeeping first (Go stepFull -> beginDash).
-  const dashed = beginDash(state, input.flags, input.castSlot ?? 0, yaw, wish);
+  // WP13: dodge / dash bookkeeping first (Go stepFull -> beginDash); CR 021: the pitch flies a jet dash.
+  const grounded = state.pos.y <= ground.heightAt(state.pos.x, state.pos.z) + GROUND_EPS;
+  const dashed = beginDash(state, input.flags, input.castSlot ?? 0, yaw, i16ToPitch(input.pitch), wish, grounded, dt);
   const st = dashed.state;
+  const gm = dashed.kind === SUSTAIN.skate ? skateGround(ground) : ground; // CR 021: a held skate runs over water
   let out: MoveState;
   switch (st.mode) {
     case MoveMode.climb:
-      out = stepClimb(st, input.flags, wish, ground, dt, env);
+      out = stepClimb(st, input.flags, wish, gm, dt, env);
       break;
     case MoveMode.glide:
-      out = stepGlide(st, input.flags, wish, ground, dt, env);
+      out = stepGlide(st, input.flags, wish, gm, dt, env);
       break;
     case MoveMode.swim:
-      out = stepSwim(st, input.flags, wish, ground, dt);
+      out = stepSwim(st, input.flags, wish, gm, dt);
       break;
     default:
-      out = stepWalk(st, input.flags, wish, ground, dt, dashed.dashing);
+      out = stepWalk(st, input.flags, wish, gm, dt, dashed.dashing);
   }
   out = collideStep(ground, out); // WP09: cave walls and ceilings (caves.ts)
   out.dash = st.dash ?? 0;

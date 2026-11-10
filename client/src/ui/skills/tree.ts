@@ -200,6 +200,8 @@ const TYPE_LABEL: Record<string, string> = {
   mobility: 'Mobility (dash)',
   defensive: 'Defensive',
   passive: 'Passive',
+  orbit: 'Orbit',
+  summon: 'Summon (ally)',
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -215,6 +217,7 @@ const STATUS_LABEL: Record<string, string> = {
   knockback: 'Knockback',
   taunt: 'Taunt',
   black_flame: 'Black flame',
+  brand: 'Brand',
 };
 
 export const statusLabel = (s: string): string => STATUS_LABEL[s] ?? cap(s.replace(/_/g, ' '));
@@ -319,6 +322,18 @@ export function spellFacts(s: SpellDef): Fact[] {
     if (s.type === 'mobility') {
       const d = COMBAT.dashes.find((x) => x.key === s.key || x.id === s.dash);
       if (d) out.push({ label: 'Dash', value: `${d.lift ? `${d.lift} m/s upward` : `${d.speed} m/s`} · ${Math.round((d.iframes * 1000) / COMBAT.stepHz)} ms untouchable` });
+    }
+    // CR 020 mechanics.
+    if (s.auto) out.push({ label: 'Hold to fire', value: `${Math.round(COMBAT.stepHz / s.auto.intervalSteps)} shots/s · ${s.auto.manaPerShot} mana each`, accent: true });
+    if (s.rain) out.push({ label: 'Rains', value: `around the aim point, ${s.rain.radius} m` });
+    if (s.spread > 1) out.push({ label: 'Volley', value: `${s.spread} at once` });
+    if (s.homing) out.push({ label: 'Seeks', value: `targets within ${s.homing.acquireM} m (${s.homing.turnDegS} deg/s turns)`, accent: true });
+    if (s.charge) out.push({ label: 'Hold to charge', value: `up to x${s.charge.damageMult} damage in ${sec(s.charge.maxMs)}`, accent: true });
+    if (s.orbit) out.push({ label: 'Orbit', value: `${s.orbit.count} orbs at ${s.orbit.radius} m, a touch every ${sec(s.orbit.hitEveryMs)}` });
+    if (s.detonate) out.push({ label: s.detonate.onDeath ? 'Brands' : 'Bursts', value: s.detonate.onDeath ? `a branded enemy bursts for ${s.detonate.damage} (${s.detonate.radius} m) when it dies` : `${s.detonate.damage} (${s.detonate.radius} m) after ${sec(s.detonate.delayMs)}`, accent: true });
+    if (s.summon) {
+      const m = COMBAT.summons.find((x) => x.key === s.summon!.key);
+      if (m) out.push({ label: 'Calls', value: `${m.name} (${m.attack.damage} damage every ${sec(m.attack.everyMs)}), up to ${s.summon.max}`, accent: true });
     }
   }
   if (s.status) out.push({ label: 'Status', value: statusLabel(s.status), accent: true });

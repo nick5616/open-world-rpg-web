@@ -21,8 +21,19 @@ export function ViewHud() {
       useViewStore.getState().toggle();
       setToastAt(performance.now());
     };
+    // Playtest 2: the middle mouse button also switches first / third person.
+    const onMouse = (e: MouseEvent) => {
+      if (e.button !== 1 || (e.target as HTMLElement | null)?.tagName !== 'CANVAS') return;
+      e.preventDefault(); // no autoscroll
+      useViewStore.getState().toggle();
+      setToastAt(performance.now());
+    };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    window.addEventListener('mousedown', onMouse);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('mousedown', onMouse);
+    };
   }, []);
   useEffect(() => {
     if (!toastAt) return;

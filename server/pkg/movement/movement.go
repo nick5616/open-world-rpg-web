@@ -40,6 +40,7 @@ package movement
 import (
 	"math"
 
+	"lodestone/server/pkg/combatdefs"
 	"lodestone/server/pkg/constants"
 	"lodestone/server/pkg/proto"
 )
@@ -201,7 +202,7 @@ func StepFrame(s State, f proto.InputFrame, g Ground) State {
 // StepFrameEnv applies one input frame. Yaw is dequantized from the wire
 // u16 so server and client steer by the identical angle the client sent.
 func StepFrameEnv(s State, f proto.InputFrame, g Ground, env Env) State {
-	return stepFull(s, f.Flags, f.CastSlot, proto.U16ToYaw(f.Yaw), g, env)
+	return stepFull(s, f.Flags, f.CastSlot, proto.U16ToYaw(f.Yaw), proto.I16ToPitch(f.Pitch), g, env)
 }
 
 // Step advances s by one fixed Dt with input flags (proto.InputFlag*) and yaw
@@ -213,26 +214,32 @@ func Step(s State, flags uint16, yaw float64, g Ground) State {
 // StepEnv is the full step: dispatch on the carried mode, then the shared
 // stamina/timer bookkeeping (finish). Mirrors stepMovement in TS.
 func StepEnv(s State, flags uint16, yaw float64, g Ground, env Env) State {
-	return stepFull(s, flags, 0, yaw, g, env)
+	return stepFull(s, flags, 0, yaw, 0, g, env)
 }
 
 // stepFull is StepEnv with the frame's castSlot (the dash variant when the
-// dodge flag is set, WP13 dash.go).
-func stepFull(s State, flags uint16, castSlot uint8, yaw float64, g Ground, env Env) State {
+// dodge flag is set, WP13 dash.go) and pitch (CR 021: a jet dash flies
+// along the look).
+func stepFull(s State, flags uint16, castSlot uint8, yaw, pitch float64, g Ground, env Env) State {
 	g = AtLevel(g, s.Pos.Y) // WP09: caves see the ground at the player's level (caves.go)
 	wx, wz := wishDir(flags, yaw)
 	s0 := s
-	s, dashing := beginDash(s, flags, castSlot, yaw, wx, wz)
+	grounded := s.Pos.Y <= g.HeightAt(s.Pos.X, s.Pos.Z)+groundEps
+	s, dashing, kind := beginDash(s, flags, castSlot, yaw, pitch, wx, wz, grounded)
+	gm := g
+	if kind == combatdefs.SustainSkate {
+		gm = skateGround{g} // CR 021: a held skate runs over water
+	}
 	var out State
 	switch s.Mode {
 	case ModeClimb:
-		out = stepClimb(s, flags, wx, wz, g, env)
+		out = stepClimb(s, flags, wx, wz, gm, env)
 	case ModeGlide:
-		out = stepGlide(s, flags, wx, wz, g, env)
+		out = stepGlide(s, flags, wx, wz, gm, env)
 	case ModeSwim:
-		out = stepSwim(s, flags, wx, wz, g)
+		out = stepSwim(s, flags, wx, wz, gm)
 	default:
-		out = stepWalk(s, flags, wx, wz, g, dashing)
+		out = stepWalk(s, flags, wx, wz, gm, dashing)
 	}
 	out.Dash, out.IFrames = s.Dash, s.IFrames
 	out = collideStep(g, out) // WP09: cave walls and ceilings (caves.go)
