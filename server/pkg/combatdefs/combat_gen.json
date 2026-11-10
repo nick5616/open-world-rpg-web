@@ -1195,12 +1195,12 @@
    "sustain": {
     "kind": "glide",
     "kindId": 5,
-    "speed": 26,
+    "speed": 30,
     "steer": 0,
     "carrySteps": 4,
     "blinkSpeed": 0,
     "blinkEvery": 0,
-    "sink": 1.5,
+    "sink": 1,
     "manaPerS": 12,
     "healthPerS": 0
    },

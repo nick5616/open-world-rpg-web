@@ -17,7 +17,7 @@ import (
 // exactly. Passing means a dodging player is where the client predicted.
 func TestReplaysDashGoldens(t *testing.T) {
 	dir := filepath.Join("..", "..", "..", "client", "src", "sim", "golden")
-	for _, name := range []string{"movement_wp13_dash_flat.json", "movement_wp13_dash_plane.json"} {
+	for _, name := range []string{"movement_wp13_dash_flat.json", "movement_wp13_dash_plane.json", "movement_wp13_dash_island.json"} {
 		raw, err := os.ReadFile(filepath.Join(dir, name))
 		if err != nil {
 			t.Skipf("client goldens not available: %v", err)
@@ -25,8 +25,8 @@ func TestReplaysDashGoldens(t *testing.T) {
 		var g struct {
 			Dt     float64 `json:"dt"`
 			Ground struct {
-				Kind                 string
-				Height, Base, Sx, Sz float64
+				Kind                                     string
+				Height, Base, Sx, Sz, Bottom, Water, Cx, Cz, R float64
 			} `json:"ground"`
 			Initial [11]float64   `json:"initial"`
 			Frames  [][5]float64  `json:"frames"` // seq flags yawU16 pitchI16 castSlot
@@ -38,6 +38,10 @@ func TestReplaysDashGoldens(t *testing.T) {
 		var ground Ground = Flat{Y: g.Ground.Height}
 		if g.Ground.Kind == "plane" {
 			ground = plane{g.Ground.Base, g.Ground.Sx, g.Ground.Sz}
+		}
+		if g.Ground.Kind == "island" { // CR 021: the skate over a lake
+			gg := g.Ground
+			ground = island{gg.Height, gg.Bottom, gg.Water, gg.Cx, gg.Cz, gg.R}
 		}
 		s := NewState(Vec3{g.Initial[0], g.Initial[1], g.Initial[2]})
 		dashes, inv := 0, 0

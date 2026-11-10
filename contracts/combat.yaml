@@ -212,7 +212,7 @@ dashes:
   phase_slip: {id: 3, speed: 40, steps: 12, iframes: 12, lift: 0, exitSpeed: 16, sustain: {kind: dash, speed: 32, carrySteps: 4, manaPerS: 6, healthPerS: 14}, trail: {radius: 1.8, damage: 12, lifesteal: 0.6}}
   root_launch: {id: 4, speed: 30, steps: 8, iframes: 6, lift: 6, exitSpeed: 14, sustain: {kind: dash, speed: 26, carrySteps: 4, manaPerS: 18}, trail: {radius: 2.0, damage: 16, status: knockback}}
   static_step: {id: 5, speed: 54, steps: 6, iframes: 6, lift: 0, exitSpeed: 16, sustain: {kind: blink, speed: 22, blinkSpeed: 120, blinkEvery: 5, carrySteps: 5, manaPerS: 20}, trail: {radius: 1.8, damage: 10, status: shock}}
-  updraft: {id: 6, speed: 18, steps: 6, iframes: 6, lift: 14, exitSpeed: 18, sustain: {kind: glide, speed: 26, sink: 1.5, carrySteps: 4, manaPerS: 12}, trail: {radius: 2.2, damage: 6, status: knockback}}
+  updraft: {id: 6, speed: 18, steps: 6, iframes: 6, lift: 14, exitSpeed: 18, sustain: {kind: glide, speed: 30, sink: 1.0, carrySteps: 4, manaPerS: 12}, trail: {radius: 2.2, damage: 6, status: knockback}}
   sunstep: {id: 7, speed: 46, steps: 10, iframes: 8, lift: 0, exitSpeed: 16, sustain: {kind: dash, speed: 30, carrySteps: 4, manaPerS: 16}, trail: {radius: 1.8, damage: 8, heal: 6, healRadius: 8}}
   skip: {id: 8, speed: 60, steps: 10, iframes: 10, lift: 0, exitSpeed: 18, sustain: {kind: phase, speed: 34, carrySteps: 4, manaPerS: 28}, trail: {radius: 1.8, damage: 10}}
   gale_cut: {id: 9, speed: 40, steps: 15, iframes: 9, lift: 0, exitSpeed: 14}
