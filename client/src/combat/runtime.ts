@@ -943,7 +943,13 @@ export class CombatRuntime {
         hud.set({ downedUntil: 0, graceUntil: now + GRACE_MS });
         return;
       case EV.bossEngaged:
-        hud.set({ boss: { id: ev.entityId, name: new TextDecoder().decode(ev.data), phase: 1, phases: COMBAT.bosses.length ? 3 : 1, pct: 100 } });
+        {
+          // The boss's real phase count (it used to guess 3: a two-phase boss showed "phase 1/3").
+          const view = drawnRemotes.views.find((v) => v.id === ev.entityId);
+          const key = view ? enemyInfo(view).key : '';
+          const phases = COMBAT.bosses.find((b) => b.key === key)?.phases.length ?? 1;
+          hud.set({ boss: { id: ev.entityId, name: new TextDecoder().decode(ev.data), phase: 1, phases: Math.max(1, phases), pct: 100 } });
+        }
         return;
       case EV.bossPhase: {
         const name = new TextDecoder().decode(ev.data.subarray(2));
