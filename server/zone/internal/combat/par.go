@@ -67,7 +67,7 @@ func (w *World) SetParallel(p Parallel, workers int) {
 // serialAI reports an enemy whose think may touch other enemies, players or
 // the world's lists directly (see the file comment).
 func (e *Enemy) serialAI() bool {
-	if e.Boss != nil || e.Demon != nil || e.Group == nil {
+	if e.Boss != nil || e.Demon != nil || e.Group == nil || e.petTgt != 0 { // CR 029: chasing a pet winds up on it directly
 		return true
 	}
 	for i := range e.statuses {

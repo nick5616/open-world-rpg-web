@@ -18,7 +18,8 @@ const SIDE_KINDS = ['hunt', 'gather', 'deliver', 'explore', 'rescue'];
 const STEP_KINDS = ['talk', 'reach', 'read', 'attune', 'kill', 'clear', 'give', 'dungeon'];
 const SITE_KINDS = ['shrine', 'ruin', 'watchtower', 'tower', 'banditcamp', 'landmark', 'dungeon'];
 const TOWNS = ['home', 'next', 'far'];
-const FEAT_STATS = ['towers', 'kills', 'demons', 'regions', 'duels', 'quests', 'side', 'stories', 'events', 'dungeons', 'tablets', 'codex', 'forage', 'honored', 'level', 'bounties', 'fish', 'fishspecies', 'fishlegend'];
+const FEAT_STATS = ['towers', 'kills', 'demons', 'regions', 'duels', 'quests', 'side', 'stories', 'events', 'dungeons', 'tablets', 'codex', 'forage', 'honored', 'level', 'bounties', 'fish', 'fishspecies', 'fishlegend', 'tamed', 'tamedspecies', 'shinytamed', 'petlevel'];
+const PET_ABILITY_KINDS = ['heal', 'buff', 'charge', 'strike'];
 const EVENT_KINDS = ['starfall', 'caravan', 'behemoth', 'wildhunt', 'glintfox'];
 const PUZZLES = ['levers', 'plates', 'braziers', 'font'];
 const WATERS = ['lake', 'river', 'sea'];
@@ -253,6 +254,73 @@ export function parseContent(doc, combat, items) {
   });
   const emoteDefs = { seeM: em.seeM, burst: em.burst, everyS: em.everyS, list: emotes };
 
+  // ---- taming and pets (playtest 2, CR 029) ----
+  const tm = doc.taming ?? fail('taming: missing');
+  const num = (v, what, lo = 0, hi = Infinity) => {
+    if (typeof v !== 'number' || !(v >= lo && v <= hi)) fail(`taming.${what}: a number in [${lo}, ${hi}]`);
+    return v;
+  };
+  for (const k of ['weakenPct', 'favouriteMult', 'favouriteBonus', 'shinyChance', 'elementalChance', 'hpPerLevel', 'damagePerLevel', 'regenPctS', 'feedHealPct']) num(tm[k], k, 0, 1);
+  for (const k of ['calmS', 'smellM', 'feedReachM', 'stayM', 'koRecoverS', 'stableM', 'xpBase', 'xpGrowth', 'followM', 'warpM', 'stayGuardM', 'aggroM', 'leashM']) num(tm[k], k, 0.01);
+  if (!(Number.isInteger(tm.maxPets) && tm.maxPets >= 1 && tm.maxPets <= 16)) fail('taming.maxPets: 1..16');
+  if (!(Number.isInteger(tm.levelMax) && tm.levelMax >= 2 && tm.levelMax <= 60)) fail('taming.levelMax: 2..60');
+  if (tm.xpGrowth < 1) fail('taming.xpGrowth: >= 1');
+  const statusKeys = new Set(combat.statuses.map((s) => s.key));
+  const abilityIds = new Set();
+  const petAbilities = Object.entries(tm.abilities ?? {}).map(([key, a]) => {
+    if (!(Number.isInteger(a.id) && a.id > 0 && a.id < 256) || abilityIds.has(a.id)) fail(`taming.abilities.${key}: a unique id 1..255`);
+    abilityIds.add(a.id);
+    if (!PET_ABILITY_KINDS.includes(a.kind)) fail(`taming.abilities.${key}: kind one of ${PET_ABILITY_KINDS.join(', ')}`);
+    num(a.cooldownS, `abilities.${key}.cooldownS`, 1);
+    num(a.power, `abilities.${key}.power`, 0.01, 5);
+    if (a.status && !statusKeys.has(a.status)) fail(`taming.abilities.${key}: unknown status ${a.status}`);
+    let element = -1;
+    if (a.element) {
+      element = combat.elements.indexOf(a.element);
+      if (element < 0) fail(`taming.abilities.${key}: unknown element ${a.element}`);
+    }
+    if (a.kind === 'heal' && !(a.healBelow > 0 && a.healBelow <= 1)) fail(`taming.abilities.${key}: healBelow 0..1`);
+    if (a.kind === 'buff' && !(a.durationS > 0)) fail(`taming.abilities.${key}: durationS`);
+    if (a.kind === 'charge') range(a.rangeM, `taming.abilities.${key}.rangeM`);
+    if (!a.name || !a.desc) fail(`taming.abilities.${key}: name and desc`);
+    return { key, id: a.id, name: a.name, kind: a.kind, cooldownS: a.cooldownS, power: a.power, healBelow: a.healBelow ?? 0, party: !!a.party, durationS: a.durationS ?? 0, rangeM: a.rangeM ?? [0, 0], radiusM: a.radiusM ?? 0, status: a.status ?? '', element, desc: a.desc };
+  });
+  const speciesIds = new Set();
+  const petSpecies = Object.entries(tm.species ?? {}).map(([key, p]) => {
+    if (!(Number.isInteger(p.id) && p.id > 0 && p.id < 64) || speciesIds.has(p.id)) fail(`taming.species.${key}: a unique id 1..63`);
+    speciesIds.add(p.id);
+    const en = enemyByKey.get(enemy(p.enemy, `taming.species.${key}`));
+    if (en.family === 'demon' || en.family === 'boss' || en.demon) fail(`taming.species.${key}: demons and bosses can't be tamed`);
+    if (!Array.isArray(p.foods) || !p.foods.length) fail(`taming.species.${key}: foods (the first is its favourite)`);
+    for (const f of p.foods) {
+      item(f, `taming.species.${key}.foods`);
+      if (!/^(food|meat|herb|fish):/.test(f)) fail(`taming.species.${key}: ${f} is not something to eat`);
+    }
+    num(p.tameS, `species.${key}.tameS`, 0.5, 30);
+    num(p.chance, `species.${key}.chance`, 0.05, 1);
+    num(p.hp, `species.${key}.hp`, 1);
+    num(p.damage, `species.${key}.damage`, 0.1);
+    num(p.speed, `species.${key}.speed`, 1, 20);
+    const at = p.attack ?? fail(`taming.species.${key}: attack`);
+    num(at.reach, `species.${key}.attack.reach`, 0.5, 6);
+    num(at.everyMs, `species.${key}.attack.everyMs`, 200);
+    num(at.windupMs, `species.${key}.attack.windupMs`, 0);
+    const ab = petAbilities.find((a) => a.key === p.ability) ?? fail(`taming.species.${key}: unknown ability ${p.ability}`);
+    if (!p.blurb) fail(`taming.species.${key}: blurb`);
+    return { key, id: p.id, enemy: p.enemy, enemyId: en.id, foods: p.foods, tameS: p.tameS, chance: p.chance, hp: p.hp, damage: p.damage, speed: p.speed, attack: { reach: at.reach, everyMs: at.everyMs, windupMs: at.windupMs }, ability: ab.id, blurb: p.blurb };
+  });
+  if (!petSpecies.length) fail('taming: no species');
+  if (new Set(petSpecies.map((p) => p.enemy)).size !== petSpecies.length) fail('taming: one species per creature');
+  for (const f of feats) if (f.stat === 'tamedspecies' && f.n > petSpecies.length) fail(`feat ${f.key}: more species than can be tamed`);
+  for (const f of feats) if (f.stat === 'petlevel' && f.n > tm.levelMax) fail(`feat ${f.key}: above taming.levelMax`);
+  const taming = {
+    weakenPct: tm.weakenPct, calmS: tm.calmS, smellM: tm.smellM, feedReachM: tm.feedReachM, stayM: tm.stayM, favouriteMult: tm.favouriteMult, favouriteBonus: tm.favouriteBonus,
+    shinyChance: tm.shinyChance, elementalChance: tm.elementalChance, maxPets: tm.maxPets, koRecoverS: tm.koRecoverS, stableM: tm.stableM, levelMax: tm.levelMax,
+    xpBase: tm.xpBase, xpGrowth: tm.xpGrowth, hpPerLevel: tm.hpPerLevel, damagePerLevel: tm.damagePerLevel, regenPctS: tm.regenPctS, feedHealPct: tm.feedHealPct,
+    followM: tm.followM, warpM: tm.warpM, stayGuardM: tm.stayGuardM, aggroM: tm.aggroM, leashM: tm.leashM,
+    abilities: petAbilities, species: petSpecies,
+  };
+
   return {
     version: doc.version,
     reputation: { tiers, shops: SHOPS, wares },
@@ -266,6 +334,7 @@ export function parseContent(doc, combat, items) {
     forage,
     fishing,
     emotes: emoteDefs,
+    taming,
     roles: ROLES,
   };
 }
@@ -286,6 +355,9 @@ export interface HerbDef { key: string; id: number; item: string; name: string; 
 export interface FishDef { key: string; id: number; name: string; item: string; rarity: number; water: number[]; biomes: number[]; time: 'any' | 'day' | 'night' | 'dawn' | 'dusk'; weather: 'any' | 'rain' | 'clear'; weight: [number, number]; fight: { strength: number; erratic: number; stamina: number }; habitat: string; lore: string }
 export interface FishingDefs { rod: string; castM: [number, number]; minDepthM: number; biteS: [number, number]; hookWindowMs: number; maxFightS: number; castCooldownS: number; castBurst: number; castEveryS: number; walkAwayM: number; seeM: number; waters: string[]; times: string[]; rarities: { key: string; id: number; weight: number; color: string }[]; species: FishDef[] }
 export interface EmoteDef { key: string; id: number; name: string; durS: number; loop: boolean; system: boolean }
+export interface PetAbilityDef { key: string; id: number; name: string; kind: 'heal' | 'buff' | 'charge' | 'strike'; cooldownS: number; power: number; healBelow: number; party: boolean; durationS: number; rangeM: [number, number]; radiusM: number; status: string; element: number; desc: string }
+export interface PetSpeciesDef { key: string; id: number; enemy: string; enemyId: number; foods: string[]; tameS: number; chance: number; hp: number; damage: number; speed: number; attack: { reach: number; everyMs: number; windupMs: number }; ability: number; blurb: string }
+export interface TamingDefs { weakenPct: number; calmS: number; smellM: number; feedReachM: number; stayM: number; favouriteMult: number; favouriteBonus: number; shinyChance: number; elementalChance: number; maxPets: number; koRecoverS: number; stableM: number; levelMax: number; xpBase: number; xpGrowth: number; hpPerLevel: number; damagePerLevel: number; regenPctS: number; feedHealPct: number; followM: number; warpM: number; stayGuardM: number; aggroM: number; leashM: number; abilities: PetAbilityDef[]; species: PetSpeciesDef[] }
 export interface ContentDefs {
   version: number;
   reputation: { tiers: RepTierDef[]; shops: string[]; wares: { item: string; price: number; stock: number }[][][] };
@@ -299,6 +371,7 @@ export interface ContentDefs {
   forage: { cellM: number; chance: number; regrowS: number; reachM: number; herbs: HerbDef[] };
   fishing: FishingDefs;
   emotes: { seeM: number; burst: number; everyS: number; list: EmoteDef[] };
+  taming: TamingDefs;
   roles: string[];
 }
 `;

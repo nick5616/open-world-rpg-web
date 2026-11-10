@@ -10,6 +10,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"math"
 )
 
 //go:embed content_gen.json
@@ -310,6 +311,78 @@ type Emotes struct {
 	List   []Emote `json:"list"`
 }
 
+// PetAbility is a pet species' one ability (playtest 2 pets, CR 029).
+type PetAbility struct {
+	Key       string     `json:"key"`
+	ID        int        `json:"id"`
+	Name      string     `json:"name"`
+	Kind      string     `json:"kind"` // heal | buff | charge | strike
+	CooldownS float64    `json:"cooldownS"`
+	Power     float64    `json:"power"`
+	HealBelow float64    `json:"healBelow"`
+	Party     bool       `json:"party"`
+	DurationS float64    `json:"durationS"`
+	RangeM    [2]float64 `json:"rangeM"`
+	RadiusM   float64    `json:"radiusM"`
+	Status    string     `json:"status"`
+	Element   int        `json:"element"` // combat element index, -1 = the pet's own
+	Desc      string     `json:"desc"`
+}
+
+// PetAttack is a pet's bite.
+type PetAttack struct {
+	Reach    float64 `json:"reach"`
+	EveryMs  float64 `json:"everyMs"`
+	WindupMs float64 `json:"windupMs"`
+}
+
+// PetSpecies is a tameable creature (playtest 2 pets, CR 029).
+type PetSpecies struct {
+	Key     string    `json:"key"`
+	ID      int       `json:"id"`
+	Enemy   string    `json:"enemy"`
+	EnemyID int       `json:"enemyId"`
+	Foods   []string  `json:"foods"` // the first is its favourite
+	TameS   float64   `json:"tameS"`
+	Chance  float64   `json:"chance"`
+	HP      float64   `json:"hp"`
+	Damage  float64   `json:"damage"`
+	Speed   float64   `json:"speed"`
+	Attack  PetAttack `json:"attack"`
+	Ability int       `json:"ability"`
+	Blurb   string    `json:"blurb"`
+}
+
+// Taming tunes taming and pets.
+type Taming struct {
+	WeakenPct       float64      `json:"weakenPct"`
+	CalmS           float64      `json:"calmS"`
+	SmellM          float64      `json:"smellM"`
+	FeedReachM      float64      `json:"feedReachM"`
+	StayM           float64      `json:"stayM"`
+	FavouriteMult   float64      `json:"favouriteMult"`
+	FavouriteBonus  float64      `json:"favouriteBonus"`
+	ShinyChance     float64      `json:"shinyChance"`
+	ElementalChance float64      `json:"elementalChance"`
+	MaxPets         int          `json:"maxPets"`
+	KORecoverS      float64      `json:"koRecoverS"`
+	StableM         float64      `json:"stableM"`
+	LevelMax        int          `json:"levelMax"`
+	XPBase          float64      `json:"xpBase"`
+	XPGrowth        float64      `json:"xpGrowth"`
+	HPPerLevel      float64      `json:"hpPerLevel"`
+	DamagePerLevel  float64      `json:"damagePerLevel"`
+	RegenPctS       float64      `json:"regenPctS"`
+	FeedHealPct     float64      `json:"feedHealPct"`
+	FollowM         float64      `json:"followM"`
+	WarpM           float64      `json:"warpM"`
+	StayGuardM      float64      `json:"stayGuardM"`
+	AggroM          float64      `json:"aggroM"`
+	LeashM          float64      `json:"leashM"`
+	Abilities       []PetAbility `json:"abilities"`
+	Species         []PetSpecies `json:"species"`
+}
+
 // Defs is the whole table.
 type Defs struct {
 	Version    int        `json:"version"`
@@ -324,7 +397,54 @@ type Defs struct {
 	Forage     Forage     `json:"forage"`
 	Fishing    Fishing    `json:"fishing"`
 	Emotes     Emotes     `json:"emotes"`
+	Taming     Taming     `json:"taming"`
 	Roles      []string   `json:"roles"`
+}
+
+// PetByID is pet species id's definition (nil if none).
+func (d *Defs) PetByID(id int) *PetSpecies {
+	for i := range d.Taming.Species {
+		if d.Taming.Species[i].ID == id {
+			return &d.Taming.Species[i]
+		}
+	}
+	return nil
+}
+
+// PetByKey is the species by key (nil if none).
+func (d *Defs) PetByKey(key string) *PetSpecies {
+	for i := range d.Taming.Species {
+		if d.Taming.Species[i].Key == key {
+			return &d.Taming.Species[i]
+		}
+	}
+	return nil
+}
+
+// PetByEnemy is the species that tames combat enemy key (nil: not tameable).
+func (d *Defs) PetByEnemy(enemy string) *PetSpecies {
+	for i := range d.Taming.Species {
+		if d.Taming.Species[i].Enemy == enemy {
+			return &d.Taming.Species[i]
+		}
+	}
+	return nil
+}
+
+// PetAbility is ability id's definition (nil if none).
+func (d *Defs) PetAbility(id int) *PetAbility {
+	for i := range d.Taming.Abilities {
+		if d.Taming.Abilities[i].ID == id {
+			return &d.Taming.Abilities[i]
+		}
+	}
+	return nil
+}
+
+// PetXPToNext is the XP a pet of level needs for the next level.
+func (d *Defs) PetXPToNext(level int) int {
+	t := &d.Taming
+	return int(math.Round(t.XPBase * math.Pow(t.XPGrowth, float64(max(0, level-1)))))
 }
 
 // D is the embedded table.

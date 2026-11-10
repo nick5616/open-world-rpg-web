@@ -111,6 +111,9 @@ type Player struct {
 	// Playtest 2 camps (CR 025): the Rested buff multiplies health and mana
 	// regeneration (0 = 1; the zone sets and clears them, camps.go).
 	RegenMult, ManaRegenMult float64
+	// CR 029: a pet's buff (the wolf's howl): damage x petBuffMult until petBuffEnd.
+	petBuffMult float64
+	petBuffEnd  uint32
 
 	readyAt   map[int]uint32 // spell/form/technique id -> seq it is ready
 	actions   [actionRing]Action
