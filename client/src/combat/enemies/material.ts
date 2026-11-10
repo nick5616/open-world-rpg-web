@@ -57,7 +57,7 @@ function patch(m: THREE.MeshStandardMaterial, kind: EnemyMatKind): void {
           'totalEmissiveRadiance += vColor.rgb * vEGlow * uGlowGain * max(0.0, 1.0 + vEFx.w);',
           'totalEmissiveRadiance += vec3(1.0, 0.97, 0.92) * vEFx.x;',
           // the tell: strongest on the rim, so the silhouette flickers warm without repainting the body
-          'totalEmissiveRadiance += uTell * vEFx.y * (0.35 + 1.6 * eRim) * (0.6 + 0.4 * sin(uTime * 20.0));',
+          'totalEmissiveRadiance += uTell * vEFx.y * (0.2 + 1.6 * eRim) * (0.6 + 0.4 * sin(uTime * 20.0));',
           // the hot break-up edge (w < 0: none)
           'if (vEFx.z > 0.001 && vEFx.w > -0.5) totalEmissiveRadiance += uTell * 2.5 * (1.0 - smoothstep(0.0, 0.12, eN - vEFx.z));',
           kind === 'jelly' ? 'totalEmissiveRadiance += diffuseColor.rgb * (0.28 + 0.9 * eRim);' : '',
@@ -92,11 +92,9 @@ let auraStrong: THREE.MeshBasicMaterial | null = null;
 let auraSoft: THREE.MeshBasicMaterial | null = null;
 
 export function barMaterials(): { back: THREE.MeshBasicMaterial; fill: THREE.MeshBasicMaterial } {
-  // depthWrite: the post chain's distance fog reads the depth buffer; a bar that left the
-  // depth of the far ground behind it would be fogged pale (they still draw over everything)
-  barBack ??= new THREE.MeshBasicMaterial({ color: '#16181c', transparent: true, opacity: 0.85, depthTest: false, depthWrite: true, side: THREE.DoubleSide, fog: false });
+  barBack ??= new THREE.MeshBasicMaterial({ color: '#16181c', transparent: true, opacity: 0.85, depthTest: false, depthWrite: false, side: THREE.DoubleSide, fog: false });
   // (transparent too, so it sorts with the back by renderOrder: opaque objects draw before every transparent one)
-  barFill ??= new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, depthTest: false, depthWrite: true, side: THREE.DoubleSide, fog: false });
+  barFill ??= new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, depthTest: false, depthWrite: false, side: THREE.DoubleSide, fog: false });
   return { back: barBack, fill: barFill };
 }
 

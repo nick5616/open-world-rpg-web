@@ -10,10 +10,10 @@ import type { DamageNumber } from '../store';
 import { NUMBER_MS, NUMBER_PX, numberColor, numberMotion, numberText, stackNumbers, type NumberKind } from './layout';
 
 const CHARS = '0123456789+-!MISDOGEPARY';
-const CELL_W = 48;
+const CELL_W = 64;
 const CELL_H = 64;
 /** Glyph advance as a share of the glyph height. */
-const ADVANCE = 0.62;
+const ADVANCE = 0.5;
 const MAX_NUMBERS = 64;
 const MAX_GLYPHS = MAX_NUMBERS * 8;
 
@@ -48,9 +48,9 @@ function glyphAtlas(): THREE.Texture {
     const cx = i * CELL_W + CELL_W / 2;
     g.lineWidth = 9;
     g.strokeStyle = 'rgb(0,255,0)';
-    g.strokeText(CHARS[i], cx, CELL_H / 2 + 2, CELL_W - 4);
+    g.strokeText(CHARS[i], cx, CELL_H / 2 + 2, CELL_W - 14);
     g.fillStyle = 'rgb(255,0,0)';
-    g.fillText(CHARS[i], cx, CELL_H / 2 + 2, CELL_W - 4);
+    g.fillText(CHARS[i], cx, CELL_H / 2 + 2, CELL_W - 14);
   }
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.NoColorSpace;
@@ -250,11 +250,12 @@ export class DamageNumberLayer {
         anc[g * 3 + 2] = u.z;
         rect[g * 4] = u.jitter - total / 2 + adv * (c + 0.5);
         rect[g * 4 + 1] = rise;
-        rect[g * 4 + 2] = hpx * (CELL_W / CELL_H);
+        rect[g * 4 + 2] = hpx * (CELL_W / CELL_H) * 0.92;
         rect[g * 4 + 3] = hpx;
-        uv[g * 4] = ci / CHARS.length;
+        // (a little inset: no bleed from the neighbouring glyph under filtering)
+        uv[g * 4] = (ci + 0.04) / CHARS.length;
         uv[g * 4 + 1] = 0;
-        uv[g * 4 + 2] = (ci + 1) / CHARS.length;
+        uv[g * 4 + 2] = (ci + 0.96) / CHARS.length;
         uv[g * 4 + 3] = 1;
         col[g * 4] = u.color.r;
         col[g * 4 + 1] = u.color.g;

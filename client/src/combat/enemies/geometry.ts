@@ -73,7 +73,7 @@ export class PartBuilder {
   }
 
   add(g: THREE.BufferGeometry, color: THREE.ColorRepresentation, o: PrimOpts = {}): this {
-    let geo = g.index ? g.toNonIndexed() : g;
+    const geo = g.index ? g.toNonIndexed() : g;
     if (geo !== g) g.dispose();
     for (const k of Object.keys(geo.attributes)) if (k !== 'position') geo.deleteAttribute(k);
     const sc = o.scale ?? 1;

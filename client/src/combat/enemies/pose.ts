@@ -389,12 +389,12 @@ function biped(c: PoseCtx, out: Float32Array): void {
   rot(out, B.knR, -(0.15 + 0.85 * Math.max(0, Math.sin(g + PI - 1.2))) * m, 0, 0);
   let hipY = -0.03 * m + Math.abs(Math.cos(g)) * 0.035 * m + Math.sin(t * 1.7) * 0.006;
   let hipZ = 0;
-  let hipRx = 0;
-  let hipRy = 0;
+  const hipRx = 0;
+  const hipRy = 0;
   let sway = heavy ? Math.sin(g) * 0.07 * m : Math.sin(g) * 0.025 * m;
   let tx = sp.hunch + 0.08 * m + Math.sin(t * 1.7) * 0.015; // torso pitch (forward +)
   let ty = Math.sin(g) * 0.12 * m;
-  let tz = 0;
+  const tz = 0;
   const armSwing = Math.sin(g) * 0.45 * m;
   // arms at rest: a fighting stance, a little out
   let lS = -armSwing + 0.1;

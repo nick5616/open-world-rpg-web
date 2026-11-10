@@ -232,3 +232,21 @@ else sees of them, because both are drawn from one state per caster.
 
 Tests: `castState.test.ts` (decoders, delay, casting bit, parity of your
 pose and theirs, beams and dashes drawn from the record).
+
+## Enemy models (playtest 2: "every enemy is a capsule doll")
+
+| File | What |
+| --- | --- |
+| `enemies/spec.ts` | enemy key / family / behaviour -> style, rig, palette (contract colour, element accent, eyes), scale, weapon, death look; `summonSpec` for CR 020 allies (spectral) |
+| `enemies/rigs.ts` | joint layouts per rig (slime, quadruped, crawler, biped on `AVATAR_RIG`, floater, winged); the pose buffer layout |
+| `enemies/geometry.ts` | `PartBuilder`: primitives merged per joint with baked vertex colour (per-face jitter, gradient) and a `glow` attribute |
+| `enemies/models.ts` | the art: one builder per style; cached per variant (style + element); the mid LOD is the rest pose merged |
+| `enemies/material.ts` | one patched flat-shaded material per kind (opaque, jelly, spectral): glow, rim, per-instance `iFx` (flash, tell, dissolve, glow boost) |
+| `enemies/anim.ts` | the state machine (idle, move, windup, strike, recover, stagger, dying) from snapshots and events |
+| `enemies/pose.ts` | per-rig procedural poses from the animator |
+| `enemies/renderer.ts` | instanced batches, LOD (full / mid / far), culling, bars, aura rings, death debris; event entry points (`telegraph`, `hit`, `die`, `status`, `stagger`) |
+| `enemies/warm.ts` | warm-up objects for every program |
+| `numbers/layout.ts`, `numbers/layer.ts` | damage numbers: style, motion, stacking (pure) and the instanced glyph draw |
+| `enemies/dev/` | `gallery.html` (lineups, crowds, numbers), `enemy-shots.ts` (evidence sheets + crowd bench), `legacy.ts` (the old dolls, for the bench) |
+
+Data flow: `CombatLayer` drains the FX queue (a spark with its target id -> `hit`, a telegraph -> `telegraph` with the attack id and active ms, `enemy` died / status / parried) and calls `renderer.update(drawnRemotes.views)` once a frame (kinds 2 and 7). Adding an enemy to combat.yaml needs no client change (it falls back to its family's look); a new look is a style in `spec.ts` plus a builder branch in `models.ts`. Tests: `enemies/enemies.test.ts`, `numbers/layout.test.ts`.
