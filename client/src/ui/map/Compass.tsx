@@ -120,6 +120,10 @@ export function Compass() {
           ctx.fillText(CARDINALS[d / 45], x, 26);
         }
       }
+      // Labels never print over each other (playtest 2 integration QA: a world event, a cave mouth
+      // and the quest step at one bearing were unreadable); the first placed wins (party, pins,
+      // the quest step, events, signposts), the others keep their marker.
+      const placed: [number, number][] = [];
       for (const m of compassMarks()) {
         const clamped = Math.max(-HALF_FOV, Math.min(HALF_FOV, m.rel));
         const x = toX(clamped);
@@ -162,7 +166,12 @@ export function Compass() {
         ctx.font = '600 10px system-ui, sans-serif';
         ctx.fillStyle = '#f1f3f5';
         const dist = m.dist >= 1000 ? `${(m.dist / 1000).toFixed(1)} km` : `${Math.round(m.dist)} m`;
-        ctx.fillText(`${edge ? (m.rel < 0 ? '‹ ' : '') : ''}${m.label ? m.label + ' ' : ''}${dist}${edge && m.rel > 0 ? ' ›' : ''}`, Math.max(40, Math.min(W - 40, x)), 41);
+        const text = `${edge ? (m.rel < 0 ? '‹ ' : '') : ''}${m.label ? m.label + ' ' : ''}${dist}${edge && m.rel > 0 ? ' ›' : ''}`;
+        const tx = Math.max(40, Math.min(W - 40, x));
+        const half = ctx.measureText(text).width / 2 + 4;
+        if (placed.some(([l, r]) => tx - half < r && tx + half > l)) continue;
+        placed.push([tx - half, tx + half]);
+        ctx.fillText(text, tx, 41);
       }
       // Centre notch.
       ctx.fillStyle = '#ffdf6b';
