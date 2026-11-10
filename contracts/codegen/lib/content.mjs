@@ -217,8 +217,8 @@ export function genContentJson(d) {
 
 const TS_TYPES = `
 export interface RepTierDef { key: string; id: number; name: string; min: number }
-export interface StoryDef { key: string; id: number; title: string; role: number; altRole: number; offer: string; gold: number; xp: number; rep: number; items: number; steps: { kind: string; text: string }[] }
-export interface EventKindDef { key: string; id: number; name: string; night: boolean; announce: string; success: string; fail: string; durationS: number; radius: number }
+export interface StoryDef { key: string; id: number; title: string; role: number; altRole: number; offer: string; gold: number; xp: number; rep: number; items: number; steps: { kind: string; text: string; [k: string]: unknown }[]; [k: string]: unknown }
+export interface EventKindDef { key: string; id: number; name: string; night: boolean; announce: string; success: string; fail: string; durationS: number; radius: number; [k: string]: unknown }
 export interface PuzzleDef { key: string; id: number; name: string; hint: string; wrong: string; parts: number; holdS: number; element: string }
 export interface TabletDef { key: string; id: number; title: string; text: string }
 export interface CodexDef { key: string; enemyId: number; habitat: string; lore: string }
