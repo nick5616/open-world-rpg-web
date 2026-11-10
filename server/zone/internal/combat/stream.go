@@ -206,7 +206,6 @@ func chargeOf(a *Action) (dmg, radius, speed float64) {
 	return chargeMult(c.DamageMult, a.Charge), chargeMult(c.RadiusMult, a.Charge), chargeMult(c.SpeedMult, a.Charge)
 }
 
-
 // YawHint is the newest frame's view yaw (allies follow behind it).
 func (p *Player) YawHint() float64 { return p.yaw }
 

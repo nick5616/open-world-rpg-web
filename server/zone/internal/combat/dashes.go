@@ -55,6 +55,9 @@ type dashState struct {
 	hit     map[uint32]bool
 	healAt  uint32
 	held    int // held steps paid (tests, metrics)
+	// holding: the newest dash step was a paid hold (CR 022: the casting bit,
+	// so other clients see the thrust stop where it stopped).
+	holding bool
 }
 
 // dashBegin: allowDash allowed and paid for this variant (spell nil for a form's dash).
@@ -82,6 +85,7 @@ func (p *Player) dashEquipped() bool {
 // sustainDash validates and pays the frame's hold (see the file comment).
 func (p *Player) sustainDash(r *FrameResult, before movement.State) {
 	f := &r.Frame
+	p.dash.holding = false
 	if f.Flags&(proto.InputFlagDodge|proto.InputFlagCast|proto.InputFlagAttack) != 0 || f.CastSlot == 0 {
 		return // a dash start, a cast (castSlot = spell slot) or an attack: not a dash step
 	}
@@ -103,6 +107,7 @@ func (p *Player) sustainDash(r *FrameResult, before movement.State) {
 		p.payBlood(hp)
 	}
 	p.dash.held++
+	p.dash.holding = true
 	r.Spent = r.Spent || mana > 0
 }
 

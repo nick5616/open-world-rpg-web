@@ -45,6 +45,7 @@ func (w *World) Frame(p *Player, f proto.InputFrame, before movement.State) Fram
 	default:
 		w.castFX(p, a.ID, f, before)
 	}
+	p.noteBeam(a, w.tick) // CR 022: a channelled beam is held for its duration (held.go)
 	if s := a.Spell; s != nil && s.Summon != nil {
 		w.summon(p, a) // CR 020 (summon.go)
 	}

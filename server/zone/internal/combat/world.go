@@ -173,6 +173,7 @@ type World struct {
 type Stats struct {
 	ClaimsAccepted, ClaimsRefused, Kills, PlayerHits, Evaded, Downs int64
 	PvPHits                                                         int64 // playtest 2: accepted player-vs-player claims
+	HeldEvents                                                      int64 // CR 022: Event 226 sends (held.go)
 	RefusedBy                                                       [24]int64
 }
 
@@ -674,11 +675,12 @@ func (w *World) Step(tick uint32) {
 	}
 	w.pruneWinding() // WP19
 	w.thinkAll(tick) // WP19b: partitioned across workers (par.go)
-	w.stepSummons() // CR 020: allies act after the enemies thought (summon.go)
-	w.stepBursts()  // CR 020: delayed charges and brand chain reactions (detonate.go)
+	w.stepSummons()  // CR 020: allies act after the enemies thought (summon.go)
+	w.stepBursts()   // CR 020: delayed charges and brand chain reactions (detonate.go)
 	w.stepShots()
 	w.settleStrikes()
 	w.dashTick() // CR 021: held dashes' trails, heals and slams (dashes.go)
+	w.heldTick() // CR 022: what players hold, for every client's visuals (held.go)
 	w.playerUpkeep()
 }
 
