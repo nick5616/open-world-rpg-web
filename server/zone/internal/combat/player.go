@@ -487,6 +487,18 @@ func (p *Player) startMove(f proto.InputFrame, before movement.State, w *combatd
 	if m.Kind == "plunge" {
 		a.FallHeight = math.Max(0, p.airTop-ground)
 	}
+	// CR 033 (playtest 2 bow rework): a weapon whose charged move has a
+	// minimum draw (the bow) looses drawn arrows only: an attack with no
+	// draw (its light move) and a release drawn for fewer steps are refused.
+	// The draw is the alt_attack bit counted per frame (altHeld), the same
+	// count the client's timeline keeps, so a full-power shot needs the
+	// full held time on the wire.
+	if !heavy && (m.Kind == "light" || m.Kind == "charged") {
+		if cm := D.MoveOf(w, "charged", 0); cm != nil && cm.MinChargeSteps > 0 && (m.Kind == "light" || p.altHeld+startTolerance < cm.MinChargeSteps) {
+			a.Legal, a.Refusal = false, RefuseIllegal
+			return p.log(a)
+		}
+	}
 	// Legality: no faster than the previous move allows; a dodge after its
 	// hit frames cancels the recovery (spec 8).
 	cancel := p.dodgeSeq >= p.activeEnd && p.activeEnd > 0 && p.dodgeSeq <= seq

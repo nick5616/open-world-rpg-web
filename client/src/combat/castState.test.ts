@@ -248,8 +248,8 @@ describe('one state, one pose: your avatar and another player\'s', () => {
     const st = newMoveState({ x: 0, y: 10, z: 0 });
     const mine = new AvatarAnimator();
     pose(mine, 'self', 'bow', 1);
-    r.press('alt');
-    for (let s = 10; s < 14; s++) r.stepHook(s, st, false);
+    r.holdAttack(true); // CR 033: the bow draws on the primary
+    for (let s = 10; s < 20; s++) r.stepHook(s, st, false);
     expect(castState.get('self').held?.kind).toBe('guard');
     expect(pose(mine, 'self', 'bow', 2)).toBe('draw');
     const theirs = new AvatarAnimator();
@@ -260,8 +260,8 @@ describe('one state, one pose: your avatar and another player\'s', () => {
     expect(pose(theirs, 9, 'bow', 60 * 4)).toBe('draw'); // 4 s: was a 3 s time-out before
     expect(pose(mine, 'self', 'bow', 60 * 4)).toBe('draw');
     // Letting go looses the drawn shot: your prediction starts it, the zone sends it to them (214 + the draw).
-    r.press('altRelease');
-    r.stepHook(14, st, false);
+    r.holdAttack(false);
+    r.stepHook(20, st, false);
     expect(castState.get('self').held).toBeNull();
     const shot = castState.get('self').action!;
     expect(COMBAT.moves.find((m) => m.id === shot.id)?.key).toBe('bow_charged');

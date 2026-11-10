@@ -371,6 +371,9 @@ export function remoteEvent(ev: ZoneEvent, selfId: number, now: number, fx: Remo
         } else if (kind === 'charge' && sp) {
           castState.hold(id, kind, what, start, t - (progress * 1000) / 60).bitSeen = true;
           fx.chargeStart(sp, id);
+        } else if (kind === 'guard') {
+          // CR 033: a bow draw already under way (progress = steps drawn): the pose starts that far into the draw.
+          castState.hold(id, kind, what, start, t - (progress * 1000) / 60).bitSeen = true;
         } else {
           castState.hold(id, kind, what, start, t, kind === 'beam' && sp ? t + beamHoldMs(sp) : Infinity).bitSeen = true;
         }

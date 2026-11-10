@@ -25,7 +25,7 @@ import type { RemoteView } from './interpolation';
 import { isSpeaking } from '../voice/levels';
 import { unpackLook, type WeaponKind } from '../combat/weapons/look';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { fistGeometry, GRIP_R, weaponGeometry } from '../combat/weapons/models';
+import { BOW_MAX_DRAW, fistGeometry, GRIP_R, setBowDraw, weaponGeometry } from '../combat/weapons/models';
 import { weaponMaterial } from '../combat/weapons/material';
 import { AvatarAnimator, RIDE_HIP_RAISE, type AnimInput, type LimbPose, type Pose } from './avatarAnim';
 import { ridingOf, TYPE_RIDING } from '../ui/mounts/events';
@@ -330,6 +330,8 @@ const HOLD: Record<WeaponKind, { up: [number, number, number]; face: [number, nu
 /** Mid LOD: the weapon hangs this far below its shoulder pivot (the old one-piece arm's hand). */
 const MID_HAND_Y = -0.66;
 
+const X_AXIS = new THREE.Vector3(1, 0, 0);
+
 function holdQuat(kind: WeaponKind): THREE.Quaternion {
   const h = HOLD[kind];
   const y = new THREE.Vector3(...h.up).normalize();
@@ -337,6 +339,8 @@ function holdQuat(kind: WeaponKind): THREE.Quaternion {
   z.addScaledVector(y, -z.dot(y)).normalize();
   return new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(new THREE.Vector3().crossVectors(y, z), y, z));
 }
+
+const BOW_HOLD = holdQuat('bow');
 
 interface Arm {
   shoulder: THREE.Group;
@@ -378,6 +382,8 @@ export class Avatar {
   /** pt/ux: the equipped weapon (snapshot typeId, weapons/look.ts): in the hand (high LOD) and on the shoulder pivot (mid LOD). */
   private weaponHi: THREE.Mesh;
   private weaponMid: THREE.Mesh;
+  /** CR 033: this avatar's own copy of the bow (its string and arrow follow the draw; the cached model is shared). */
+  private bowGeo: THREE.BufferGeometry | null = null;
   private rod: THREE.Mesh;
   private fishMesh: THREE.Mesh;
   /** Playtest 2 instruments: the props of each instrument id, shown while it is played. */
@@ -641,7 +647,16 @@ export class Avatar {
     }
     const h = HOLD[look.weapon];
     const q = holdQuat(look.weapon);
-    this.weaponHi.geometry = weaponGeometry(look, 2); // playtest 2: the same model as in first person
+    this.bowGeo?.dispose();
+    this.bowGeo = null;
+    const hi = weaponGeometry(look, 2); // playtest 2: the same model as in first person
+    if (look.weapon === 'bow') {
+      // CR 033: a string to draw per archer (the first-person bow writes the shared one)
+      this.bowGeo = hi.clone();
+      this.bowGeo.userData = { ...hi.userData, drawKey: undefined };
+      setBowDraw(this.bowGeo, 0, false);
+    }
+    this.weaponHi.geometry = this.bowGeo ?? hi;
     this.weaponHi.quaternion.copy(q);
     this.weaponHi.position.set(0, 0, 0);
     // the fist closes round the grip: its grip axis along the weapon's
@@ -860,12 +875,16 @@ export class Avatar {
     this.fishMesh.visible = p.fish > 0;
     for (const [id, props] of this.instrumentProps) for (const o of props) o.visible = id === p.instrument;
     if (this.weaponType > 0) this.weaponHi.visible = !p.rod && p.fish === 0 && !p.instrument && this.weaponKind !== null;
+    // CR 033: the string comes back with the drawing hand, an arrow on it while drawing; the release snaps it
+    if (this.bowGeo) setBowDraw(this.bowGeo, p.bowDraw * BOW_MAX_DRAW, this.anim.current === 'draw');
     this.body.position.y = HIP_Y + p.bodyY;
     this.body.rotation.set(p.bodyPitch, p.bodyYaw, p.bodyRoll);
     this.torso.rotation.set(p.torsoPitch, p.torsoYaw, 0);
     this.neck.rotation.x = p.headPitch;
     poseArm(this.armR, p.armR, 1);
     poseArm(this.armL, p.armL, -1);
+    // CR 033: the bow stays upright in the raised bow hand (the wrist turns it; it used to lie along the arm when drawing)
+    if (this.bowGeo) this.weaponHi.quaternion.setFromAxisAngle(X_AXIS, -(p.armL.swing + p.armL.bend)).multiply(BOW_HOLD);
     poseLeg(this.legR, p.legR, 1);
     poseLeg(this.legL, p.legL, -1);
     this.glowHand(this.armL, p.glowL, p);
@@ -943,6 +962,7 @@ export class Avatar {
   dispose(): void {
     if (this.armor) releaseArmor(this.appearance); // CR 034: the shared outfit outlives its last wearer only in the cache
     this.armor = null;
+    this.bowGeo?.dispose();
     this.steed?.dispose();
     this.plateTex?.dispose();
     (this.plate?.material as THREE.SpriteMaterial | undefined)?.dispose();

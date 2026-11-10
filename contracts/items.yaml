@@ -155,7 +155,7 @@ items:
   armor:sunsteel_helm: {name: Sunsteel Helm, armor: head, material: sunsteel, level: 10, health: 16, armorPct: 4, value: 420, style: helm}
   armor:sunsteel_mail: {name: Sunsteel Mail, armor: body, material: sunsteel, level: 10, health: 32, armorPct: 8, value: 700, style: mail}
   armor:sunsteel_greaves: {name: Sunsteel Greaves, armor: legs, material: sunsteel, level: 10, health: 22, armorPct: 5, value: 520, style: greaves}
-  # ---- arrows (combat.yaml bow.arrows: using a stack sets the bow's arrowheads) ----
+  # ---- arrows (combat.yaml bow.arrows: using a stack sets the bow's arrowheads; CR 033: bows have infinite ammo, arrows are never spent) ----
   ammo:copper_arrow: {name: Copper Arrows, arrow: copper, value: 1}
   ammo:iron_arrow: {name: Iron Arrows, arrow: iron, value: 1}
   ammo:silver_arrow: {name: Silver Arrows, arrow: silver, value: 3}

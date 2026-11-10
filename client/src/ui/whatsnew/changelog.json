@@ -11,6 +11,17 @@
     ]
   },
   {
+    "id": "pt2-bow",
+    "date": "2026-11-10",
+    "title": "Bows, reworked",
+    "items": [
+      "Hold the left mouse button to draw your bow and let go to shoot. A full draw takes a second and hits hardest, flies fastest and reaches farthest; a quick tap is a weak shot.",
+      "Your string really comes back to your cheek now, and other players see you draw and loose.",
+      "Changed your mind? Z lowers the bow without shooting.",
+      "Bows never run out of arrows. Arrow stacks just fit their arrowheads (iron hits harder, sunsteel kills demons) and you keep them."
+    ]
+  },
+  {
     "id": "pt2-achievements",
     "date": "2026-11-10",
     "title": "Achievements",
