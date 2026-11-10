@@ -20,7 +20,7 @@
 
 import * as THREE from 'three';
 import { ELEMENT_COLORS } from '../events';
-import { MeshBuilder, M, circle, curve, hash, helix, lathe, polygon, shade, surf, sweep, type Surface, type SurfaceAt, type V3 } from './builder';
+import { MeshBuilder, M, circle, curve, hash, helix, lathe, polygon, shade, surf, sweep, type Surface, type V3 } from './builder';
 import { lookKey, type WeaponKind, type WeaponLook } from './look';
 import { buildFist, buildForearm, buildOpenHand } from './handMesh';
 
@@ -69,8 +69,6 @@ const LEATHER_DARK = surf('#4a3020', 0, 0.9);
 const CORD = surf('#8a6a44', 0, 0.9);
 const STRING = surf('#e8e0cc', 0, 0.7);
 const FLETCH = surf('#c23b2b', 0, 0.8);
-const SKIN = surf('#c9a27e', 0, 0.7);
-const SLEEVE = surf('#3b4a6b', 0, 0.85);
 
 /** The socketed gem's surface (element colour, glowing); -1 = plain quartz. */
 export function gemSurface(element: number): Surface {

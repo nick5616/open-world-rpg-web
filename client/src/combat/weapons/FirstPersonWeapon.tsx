@@ -56,8 +56,8 @@ interface Pose {
 // not on it; the spear's point is low, aimed at a foe's waist below the
 // crosshair. Swings still sweep across the view (SWINGS below).
 export const POSES: Record<WeaponKind, Pose> = {
-  sword: { pos: [0.5, -0.24, -0.52], up: [-0.19, 0.92, -0.3], face: [-0.4, 0.6, 1], elbow: [0.46, -0.6, 0] },
-  spear: { pos: [0.22, -0.25, -0.25], up: [-0.1, -0.27, -1], face: [0, 1, 0.1], offhand: 0.46, elbow: [0.3, -0.75, 0] },
+  sword: { pos: [0.5, -0.24, -0.52], up: [-0.19, 0.92, -0.3], face: [0.2, 0.4, 1], elbow: [0.46, -0.6, 0] },
+  spear: { pos: [0.24, -0.2, -0.25], up: [-0.1, -0.32, -1], face: [0, 1, 0.1], offhand: 0.46, elbow: [0.3, -0.75, 0] },
   bow: { pos: [-0.14, -0.1, -0.58], up: [0.35, 0.95, 0.3], face: [0.1, -0.3, 0.95], scale: 0.85 },
   staff: { pos: [0.42, -0.3, -0.52], up: [0.15, 0.88, -0.36], face: [0.3, 0, 1], elbow: [0.5, -0.55, 0.05] },
   wand: { pos: [0.34, -0.27, -0.44], up: [-0.1, 0.95, -0.2], face: [0.3, 1, 0.3], elbow: [0.4, -0.55, 0] },

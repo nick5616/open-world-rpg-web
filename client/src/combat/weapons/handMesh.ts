@@ -227,10 +227,10 @@ function fist(b: MeshBuilder, g: number, d: HandDetail): void {
     [0.012, -0.017, g + 0.008],
     [0.0118, -0.0185, 0.042],
     [FIST_WRIST.x, FIST_WRIST.y, FIST_WRIST.z],
-    [FIST_WRIST.x, FIST_WRIST.y, FIST_WRIST.z + 0.006],
+    [FIST_WRIST.x, FIST_WRIST.y, FIST_WRIST.z + 0.004],
   ];
   // (its end runs on inside the forearm, a little narrower, so the two meet without a step)
-  sweep(b, wrist, rounded(hi ? 12 : 5, 0.0285 * HS, 0.0175 * HS, 2.2), SKIN, { side: [0, 1, 0], smooth: true, capStart: true, capEnd: true, scale: (i) => [[1, 1], [0.94, 0.98], [0.88, 1], [0.78, 0.88]][i] as [number, number] });
+  sweep(b, wrist, rounded(hi ? 12 : 5, 0.0285 * HS, 0.0175 * HS, 2.2), SKIN, { side: [0, 1, 0], smooth: true, capStart: true, capEnd: true, scale: (i) => [[1, 1], [0.94, 0.98], [0.84, 0.94], [0.7, 0.8]][i] as [number, number] });
 
   // Fingers, knuckle to tip, round the grip.
   for (const f of FINGERS) {
@@ -247,7 +247,7 @@ function fist(b: MeshBuilder, g: number, d: HandDetail): void {
   const tj = wrapJoints(th, g, g + 0.019 * HS, g + 0.0105 * HS, -1);
   tj[1][1] = 0.029 * HS;
   tj[2][1] = 0.0275 * HS;
-  digit(b, tj, th.w * HS, th.t * HS, [0, 1, 0], d, polar(4.65, g + 0.01, 0.026 * HS));
+  digit(b, tj, th.w * HS, th.t * HS, [0, 1, 0], d, polar(4.65, g + 0.008, 0.021 * HS));
 }
 
 // ---- the open hand ----
