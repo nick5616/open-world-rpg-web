@@ -9,9 +9,28 @@ package game
 // its feet; nothing for players who are not dashing (no per-tick bytes).
 
 import (
+	"os"
+	"strings"
+
+	"lodestone/server/pkg/combatdefs"
 	"lodestone/server/pkg/movement"
 	"lodestone/server/zone/internal/chem"
+	"lodestone/server/zone/internal/combat"
 )
+
+// devGrantSpells: LODESTONE_ZONE_DEBUG_SPELLS="key,key,..." teaches every
+// joining character these spells (dev combat zones only: the dash evidence
+// run equips spells a new character does not know).
+func (s *Server) devGrantSpells(p *combat.Profile) {
+	if !s.cbt.setup.Dev || p == nil {
+		return
+	}
+	for _, k := range strings.Split(os.Getenv("LODESTONE_ZONE_DEBUG_SPELLS"), ",") {
+		if k = strings.TrimSpace(k); combatdefs.D.SpellByKey(k) != nil {
+			p.Grant(k)
+		}
+	}
+}
 
 // dashChemTicks: a trail op every 0.2 s (a 30 m/s jet: one every 6 m; the
 // ops spread over a radius of 2 cells).

@@ -219,6 +219,7 @@ func (s *Server) combatJoin(sess *session) {
 	if prof == nil {
 		prof = combat.NewProfile()
 	}
+	s.devGrantSpells(prof) // CR 021: dev evidence runs (dashes.go)
 	p := combat.NewPlayer(e.ID, e.Name, prof, int(e.Level))
 	p.Pos = e.Move.Pos
 	p.PartyID = e.PartyID
