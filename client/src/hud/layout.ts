@@ -51,6 +51,8 @@ body:has([data-ui-panel]:not([style*="display: none"])) [data-testid="town-promp
    pill and its forecast line (--ls-clock-h, measured), and steps aside for the big centre cards
    (level up, a new place, a catch) and anything covering the middle. */
 body:has([data-testid="levelup-fanfare"], [data-testid="discovery-intro"], [data-testid="fish-caught"], ${CENTRE_PANELS}, [data-testid="emote-wheel"], [data-testid="pet-wheel"], [data-testid="achievement-toast"]) [data-testid="world-event"] { visibility: hidden; }
+/* Playtest 2 (prod screenshot): the boss bar sits under the clock pill (it printed over it); the world event tracker waits while a boss bar is up. */
+body:has([data-testid="boss-bar"]) [data-testid="world-event"] { visibility: hidden; }
 /* CR 031: the achievement toast (top centre, under the clock) takes the world event tracker's place for its few
    seconds, and never shows over the big centre cards or a panel (ui/achievements/toasts.ts also holds it then). */
 body:has([data-testid="levelup-fanfare"], [data-testid="discovery-intro"], [data-testid="fish-caught"], [data-testid="whatsnew"], ${CENTRE_PANELS}, [data-testid="character-panel"], [data-testid="emote-wheel"], [data-testid="pet-wheel"]) [data-testid="achievement-toast"] { visibility: hidden; }

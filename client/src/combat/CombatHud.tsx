@@ -12,7 +12,7 @@ import { useCombatHud } from './store';
 import { DownedOverlay } from './DownedOverlay';
 import { spellById } from './timeline';
 import { netRuntime } from '../net/netStore';
-import { useHudHeight } from '../hud/layout';
+import { BELOW_CLOCK, useHudHeight } from '../hud/layout';
 import { useInventory } from '../ui/inventory/store';
 import { loadoutWeaponLabel } from '../ui/inventory/items';
 
@@ -95,7 +95,7 @@ export function CombatHud() {
   return (
     <div ref={root} data-testid="combat-hud" style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 12, font: '13px system-ui, sans-serif', color: '#e9ecef' }}>
       {boss && (
-        <div data-testid="boss-bar" style={{ position: 'absolute', top: 54, left: '50%', transform: 'translateX(-50%)', width: 520, textAlign: 'center' }}>
+        <div data-testid="boss-bar" style={{ position: 'absolute', top: BELOW_CLOCK, left: '50%', transform: 'translateX(-50%)', width: 520, textAlign: 'center' }}>
           <div style={{ fontSize: 15, fontWeight: 600, textShadow: '0 0 4px #000' }}>
             {boss.name} <span style={{ opacity: 0.7, fontWeight: 400 }}>· phase {boss.phase}/{boss.phases}</span>
           </div>
