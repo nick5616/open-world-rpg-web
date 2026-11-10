@@ -259,7 +259,9 @@ export function NightLayer() {
         }
       }
     }
-    for (const l of parts.lights) l.intensity = l.userData.on ? (30 + 12 * Math.sin(now / 70 + l.id) + 8 * Math.sin(now / 23 + l.id * 3)) * liveStyle.torch : 0;
+    // A slow, gentle sway (±9 %, periods of 1.6-2.6 s): the old 2-7 Hz, ±67 % flicker strobed the
+    // ground around every fire at night (playtest 2 integration QA: no flashing).
+    for (const l of parts.lights) l.intensity = l.userData.on ? 30 * (1 + 0.06 * Math.sin(now / 420 + l.id) + 0.03 * Math.sin(now / 260 + l.id * 3)) * liveStyle.torch : 0;
     // Pillars rise out of the ground over 0.4 s.
     for (const mesh of parts.pillars.values()) mesh.scale.y = Math.min(1, (now - (mesh.userData.at as number)) / 400);
 

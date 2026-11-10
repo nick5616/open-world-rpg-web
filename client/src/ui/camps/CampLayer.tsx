@@ -158,7 +158,7 @@ export function CampLayer() {
         continue;
       }
       l.position.set(p.x, p.y + 0.9, p.z);
-      l.intensity = 9 * (0.85 + 0.15 * Math.sin(t * 11 + p.id) * Math.sin(t * 7.3 + p.id * 2));
+      l.intensity = 9 * (0.88 + 0.05 * Math.sin(t * 1.7 + p.id) + 0.03 * Math.sin(t * 2.9 + p.id * 2)); // a gentle sway, no strobe
     }
 
     // The ghost.
