@@ -38,7 +38,10 @@ if (!solo) {
     ['zone', config.zonePort],
     ['social', config.socialPort],
   ];
-  for (const [name] of services) children.push(start(name, 'go', ['run', `./server/${name}`], { env: senv }));
+  // CR 032: the zone's dev console (F2 in the client) is on for `npm run dev`
+  // only. No deploy sets LODESTONE_ZONE_DEV (server/zone/devconsole_test.go).
+  const zoneDev = { LODESTONE_ZONE_DEV: process.env.LODESTONE_ZONE_DEV ?? '1' };
+  for (const [name] of services) children.push(start(name, 'go', ['run', `./server/${name}`], { env: name === 'zone' ? { ...senv, ...zoneDev } : senv }));
   for (const [name, port] of services) {
     const ok = await waitHttp(`http://localhost:${port}/healthz`, 120000);
     console.log(ok ? `✓ ${name} healthy on :${port}` : `✗ ${name} did not become healthy on :${port}`);

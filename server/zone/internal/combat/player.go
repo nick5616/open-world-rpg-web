@@ -114,6 +114,9 @@ type Player struct {
 	// Playtest 2 weather (CR 030): Chilled stops health regeneration and
 	// slows mana (COLD_MANA_REGEN_MULT); the zone sets and clears it.
 	Chilled bool
+	// DevGod (playtest 2 dev console, CR 032; LODESTONE_ZONE_DEV zones
+	// only): nothing hurts this player (mitigate turns every hit to 0).
+	DevGod bool
 	// CR 029: a pet's buff (the wolf's howl): damage x petBuffMult until petBuffEnd.
 	petBuffMult float64
 	petBuffEnd  uint32

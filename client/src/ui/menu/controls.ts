@@ -59,8 +59,11 @@ export function movementKeys(button: keyof HeldButtons): string[] {
 
 const C = 'combat/runtime.ts';
 
-/** Every control in the game, grouped. `debug` adds the dev-build tools. */
-export function controlGroups(debug: boolean): ControlGroup[] {
+/**
+ * Every control in the game, grouped. `debug` adds the dev-build tools;
+ * `dev` (a zone in dev mode said so, CR 032) adds the dev console.
+ */
+export function controlGroups(debug: boolean, dev = false): ControlGroup[] {
   const mv = (b: keyof HeldButtons) => movementKeys(b);
   const groups: ControlGroup[] = [
     {
@@ -196,6 +199,19 @@ export function controlGroups(debug: boolean): ControlGroup[] {
         { keys: ['`'], action: 'Debug panel', src: [['hud/useDebugHotkeys.ts', "'Backquote'"]] },
         { keys: ['F4'], action: 'Chunk borders', src: [['hud/useDebugHotkeys.ts', "'F4'"]] },
         { keys: ['V'], action: 'Fly (offline only)', note: 'Space rises, Ctrl sinks', src: [['hud/useDebugHotkeys.ts', "'KeyV'"]] },
+      ],
+    });
+  }
+  if (debug && dev) {
+    groups.push({
+      title: 'Dev (local dev zone only)',
+      rows: [
+        {
+          keys: ['F2'],
+          action: 'Dev console',
+          note: 'every item, spell and cheat: Items, Spells, Character, World tabs and a command line (/help); only on a zone started by npm run dev',
+          src: [['ui/devconsole/DevConsole.tsx', "DEV_KEY = 'F2'"]],
+        },
       ],
     });
   }

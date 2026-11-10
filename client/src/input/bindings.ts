@@ -97,6 +97,7 @@ export const BINDINGS: Binding[] = [
   // Esc: SHARED (closes the top thing, else the menu)
   ...[
     'ui/menu/EscMenu.tsx',
+    'ui/devconsole/DevConsole.tsx',
     'ui/achievements/AchievementsHud.tsx',
     'audio/ui/AudioSettingsPanel.tsx',
     'social/ui/ChatPanel.tsx',
@@ -139,6 +140,7 @@ export const BINDINGS: Binding[] = [
   { code: 'Backquote', ctx: 'debug', file: 'hud/useDebugHotkeys.ts', does: 'debug panel' },
   { code: 'KeyV', ctx: 'debug', file: 'hud/useDebugHotkeys.ts', does: 'fly (offline only)' },
   { code: 'Enter', ctx: 'debug', file: 'hud/DebugPanel.tsx', does: 'teleport (in its text box)' },
+  { code: 'F2', ctx: 'debug', file: 'ui/devconsole/DevConsole.tsx', does: 'dev console (CR 032: only on a zone in dev mode)' },
   { code: 'Enter', ctx: 'focus', file: 'ui/spellcards/SpellCards.tsx', does: 'pick the focused spell card (Space too)' },
   { code: 'Delete', ctx: 'focus', file: 'ui/spellcards/SpellCards.tsx', does: 'clear the focused spell slot' },
   { code: 'Backspace', ctx: 'focus', file: 'ui/spellcards/SpellCards.tsx', does: 'clear the focused spell slot' },
@@ -155,6 +157,10 @@ export const NOT_HANDLERS: Record<string, string> = {
   'ui/menu/controls.ts': "the Esc menu's key reference",
   'ui/music/theory.ts': "the instrument's note rows (context 'instrument': every key is a note)",
   'ui/tips/tips.ts': 'key names in tip text',
+  'ui/devconsole/DevConsole.tsx#Enter': "the dev console's command line (a text field): run",
+  'ui/devconsole/DevConsole.tsx#Tab': "the dev console's command line: complete",
+  'ui/devconsole/DevConsole.tsx#ArrowUp': "the dev console's command line: history",
+  'ui/devconsole/DevConsole.tsx#ArrowDown': "the dev console's command line: history",
   'ui/camps/CampHud.tsx#Enter': "the signpost name box's Enter (a text field)",
   'social/ui/ChatPanel.tsx#Tab': "the chat box's name completion (a text field)",
   'ui/music/InstrumentHud.tsx#KeyY': "lets a pending duel's Y / U through to ui/pvp/PvpHud.tsx while you play",

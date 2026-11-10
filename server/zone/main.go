@@ -122,6 +122,7 @@ func main() {
 		GenVersion: world.GenVersion,
 		MaxPlayers: env.Int("LODESTONE_ZONE_MAX_PLAYERS", 400),
 		DevSpawn:   env.Bool("LODESTONE_ZONE_DEV_SPAWN", devKey),
+		Dev:        devConsole(log, devKey), // CR 032 dev console (devconsole.go): LODESTONE_ZONE_DEV=1, local only
 		TicketKey:  pub,
 		Ground:     ground, // WP07: wasm terrain (terrain.go), flat only without worldgen.wasm
 		Updraft:    updraft,
@@ -266,7 +267,7 @@ func main() {
 		}
 	}
 
-	log.Info("zone config", "zone", cfg.ZoneID, "world", cfg.WorldID, "seed", cfg.Seed, "genVersion", cfg.GenVersion, "devSpawn", cfg.DevSpawn)
+	log.Info("zone config", "zone", cfg.ZoneID, "world", cfg.WorldID, "seed", cfg.Seed, "genVersion", cfg.GenVersion, "devSpawn", cfg.DevSpawn, "devConsole", cfg.Dev)
 	runErr := s.RunContext(ctx, svc.CORS(env.Str("LODESTONE_CORS_ORIGIN", "*"), s.Mux), func(sctx context.Context) {
 		// Order: stop admitting and ticking, kick everyone, checkpoint, flush
 		// the queue, then leave the registry so the director stops routing here.

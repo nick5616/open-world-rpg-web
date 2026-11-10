@@ -24,7 +24,8 @@ import { metersToCm, velToCms } from '@lodestone/contracts';
 import type { GroundQuery } from '../sim/ground';
 import { MoveMode } from '@lodestone/contracts';
 import { groundAt } from '../sim/caves';
-import { MoveFlag, NO_ENV, stepMovement, STEP_DT, type MoveInput, type MoveState, type StepEnv } from '../sim/movement';
+import { stepDev } from '../sim/devStep';
+import { MoveFlag, NO_ENV, STEP_DT, type MoveInput, type MoveState, type StepEnv } from '../sim/movement';
 import { fromSelf, packFlags, packMoveExt, staminaX10 } from '../sim/moveWire';
 import { stepClock } from '../sim/stepClock';
 import type { FullSelf } from './snapshotDecoder';
@@ -173,7 +174,7 @@ export class ClientPrediction {
     this.ackedState = state;
     for (const p of this.pending) {
       stepClock.seq = p.seq; // doors: the state the zone used for this frame
-      state = stepMovement(state, p.input, this.ground, STEP_DT, p.env ?? NO_ENV);
+      state = stepDev(state, p.input, this.ground, STEP_DT, p.env ?? NO_ENV); // CR 032: dev fly/stamina (sim/devStep.ts)
       p.state = state; // keep history consistent with the new timeline
     }
     const predicted = this.pending.length ? this.lastPredicted : acked?.state;
@@ -209,7 +210,7 @@ export class ClientPrediction {
     for (let k = i; k < this.pending.length; k++) {
       const p = this.pending[k];
       stepClock.seq = p.seq;
-      state = stepMovement(state, p.input, this.ground, STEP_DT, p.env ?? NO_ENV);
+      state = stepDev(state, p.input, this.ground, STEP_DT, p.env ?? NO_ENV); // CR 032: dev fly/stamina (sim/devStep.ts)
       p.state = state;
     }
     this.localReplays++;

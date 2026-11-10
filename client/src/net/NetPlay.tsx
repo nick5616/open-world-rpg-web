@@ -19,6 +19,7 @@ import { requestVoiceToken, startVoice, stopVoice, voiceInputFlags } from '../vo
 import { netRuntime, useNetStore } from './netStore';
 import { RemotePlayers } from './RemotePlayers';
 import { envAt } from '../sim/stepEnv';
+import { withDevMove } from '../sim/devStep';
 import { ZoneSession, type SessionEnd } from './zoneSession';
 // WP12: exploration Events, map actions, re-issued local save blobs.
 import { attachExploration } from '../ui/map/zoneLink';
@@ -201,7 +202,7 @@ export function NetPlay({ ready }: { ready: ReadySession }) {
       takeCorrection: () => session.prediction.takeCorrection(),
       // WP10: rain/updrafts from the zone's seed at the synced server time,
       // the same inputs the zone steps with.
-      env: () => envAt(w.seed, session.clock.serverNow()),
+      env: () => withDevMove(envAt(w.seed, session.clock.serverNow())), // CR 032: dev fly / stamina (sim/devStep.ts)
       ...combatDriverHooks(),
     };
   }, [session, phase]);
