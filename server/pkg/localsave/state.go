@@ -77,6 +77,10 @@ type State struct {
 	// Quests is the quest log (playtest 1, CR 013; mirrors
 	// character_quests.log from migration 0023). Optional.
 	Quests json.RawMessage `json:"quests,omitempty"`
+	// Content is the playtest 2 content state (CR 022: reputation, codex,
+	// lore tablets, feats and title, vaults, herb patches; mirrors
+	// character_content.data from migration 0025). Optional.
+	Content json.RawMessage `json:"content,omitempty"`
 }
 
 // NewCharacterState is a level-1 character standing at spawn, matching the

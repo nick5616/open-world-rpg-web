@@ -56,6 +56,7 @@ type session struct {
 	cprof  *combat.Profile // WP13: loaded before join (combat.go)
 	items  *charItems      // WP14: loaded before join (items.go)
 	quests *questState     // quest log: loaded before join (quests.go)
+	cnt    *contentSess    // CR 023 content state: loaded before join (content.go)
 	// Playtest 2: travel to a friend (friendtravel.go).
 	travel           *friendTravel
 	lastFriendTravel time.Time
@@ -224,6 +225,7 @@ func (s *Server) accept(c transport.Conn, spawnHint *movement.Vec3) {
 		sess.cprof = s.loadCombat(claims.CharacterID, sess.x)                         // WP13
 		sess.items = s.loadItems(claims.CharacterID, sess.x)                          // WP14
 		sess.quests = s.loadQuests(claims.CharacterID, sess.x)                        // quests.go
+		sess.cnt = s.loadContent(claims.CharacterID, sess.x)                          // CR 023 (content.go)
 	}
 
 	select {
@@ -353,6 +355,10 @@ func (s *Server) drainTaken(sess *session, now time.Time) {
 			}
 			if it.TargetKind == InteractFriend {
 				s.friendInteract(sess, it, now) // playtest 2: travel to a friend (friendtravel.go)
+				continue
+			}
+			if it.TargetKind == InteractContent {
+				s.contentInteract(sess, it) // CR 023: tablets, herbs, vaults, titles (content.go)
 				continue
 			}
 			if it.TargetKind == InteractQuest {

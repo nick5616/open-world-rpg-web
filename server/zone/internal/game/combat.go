@@ -268,6 +268,7 @@ func (s *Server) combatFrame(sess *session, f proto.InputFrame) proto.InputFrame
 	}
 	r := s.cbt.w.Frame(e.cbt, f, e.Move)
 	s.nightAction(sess, r.Started) // WP15: Fire/Ice/Earth chemistry where it lands (night.go)
+	s.vaultMagic(sess, r.Started)  // CR 023: braziers and fonts of the sealed vaults (dungeons.go)
 	return r.Frame
 }
 

@@ -117,6 +117,7 @@ func (s *Server) levelChanged(sess *session, before int) {
 		s.sendCombatSync(sess)
 	}
 	s.sendStats(sess, StatsLevelUp, before)
+	s.contentLevel(sess) // CR 023: level feats (content.go)
 	s.log.Info("level up", "character", e.CharacterID, "from", before, "to", e.x.prog.Level)
 }
 
@@ -221,4 +222,5 @@ func (s *Server) attune(sess *session, site int) {
 	s.sendProgress(sess)
 	s.saveProgressSoon(sess, false)
 	s.log.Info("tower attuned", "character", e.CharacterID, "site", site, "region", name, "attuned", attunedCount(x.prog))
+	s.contentAttuned(sess) // CR 023: story steps, feats (content.go)
 }
