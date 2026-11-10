@@ -58,6 +58,8 @@ export function FirstPersonInstrument() {
     const hl = hand();
     const hr = hand();
     root.add(hl, hr);
+    // Held at arm's length: the props and hands at 60 % (the size they'd look at the distance they'd be).
+    for (const o of [...Object.values(props), hl, hr]) o.scale.setScalar(0.6);
     return { root, props, bl, br, hl, hr, seen: 0, side: 1, smooth: 0 };
   }, []);
 
@@ -82,38 +84,38 @@ export function FirstPersonInstrument() {
     const { hl, hr } = st;
     switch (def.pose) {
       case 'strum': {
-        // across the lower view, its face tipped up to you, the neck up to the left
+        // across the view above the keyboard overlay, its face tipped up to you, the neck up to the left
         const g = st.props.strum;
-        g.position.set(0.1, -0.4 + sway, -0.5);
-        g.rotation.set(1.0, 0.25, -0.38);
-        hl.position.set(-0.27, -0.26 + sway, -0.66);
+        g.position.set(0.12, -0.1 + sway, -0.55);
+        g.rotation.set(2.0, 0, 0.38); // the face turned up to you, the neck away to the left
+        hl.position.set(-0.27, -0.03 + sway, -0.7);
         hl.rotation.set(-0.9, 0, 0.9);
-        hr.position.set(0.14, -0.33 + 0.035 * st.side * st.smooth, -0.46);
+        hr.position.set(0.2, -0.05 + 0.035 * st.side * st.smooth, -0.5);
         hr.rotation.set(-0.8, 0, -0.5 + 0.25 * st.side * st.smooth);
         break;
       }
       case 'flute': {
         // from your lips out to the right, both hands on it; a breath lifts it a little
         const g = st.props.flute;
-        g.position.set(-0.03, -0.13 + 0.008 * st.smooth + sway * 0.5, -0.24);
+        g.position.set(-0.03, -0.05 + 0.008 * st.smooth + sway * 0.5, -0.24);
         g.rotation.set(0, 0.35, -0.22);
-        hl.position.set(0.1, -0.2 + 0.008 * st.smooth, -0.3);
+        hl.position.set(0.1, -0.1 + 0.008 * st.smooth, -0.3);
         hl.rotation.set(-1.2, 0, -0.3);
-        hr.position.set(0.3, -0.27 + 0.008 * st.smooth, -0.36);
+        hr.position.set(0.3, -0.15 + 0.008 * st.smooth, -0.36);
         hr.rotation.set(-1.1, 0, -0.5);
         break;
       }
       case 'drum': {
         // below you, the skin up; the hands fall on it in turn (both for the low notes)
         const g = st.props.drum;
-        g.position.set(0, -0.56 + sway, -0.5);
-        g.rotation.set(0.55, 0, 0);
+        g.position.set(0, -0.18 + sway, -0.6);
+        g.rotation.set(0.75, 0, 0);
         const both = selfHit.midi < 48;
         const r = st.side > 0 || both ? st.smooth : 0;
         const l = st.side < 0 || both ? st.smooth : 0;
-        hl.position.set(-0.12, -0.32 - 0.07 * l, -0.5);
+        hl.position.set(-0.12, 0.02 - 0.07 * l, -0.58);
         hl.rotation.set(-1.4 + 0.3 * l, 0, 0.3);
-        hr.position.set(0.12, -0.32 - 0.07 * r, -0.5);
+        hr.position.set(0.12, 0.02 - 0.07 * r, -0.58);
         hr.rotation.set(-1.4 + 0.3 * r, 0, -0.3);
         break;
       }
@@ -121,9 +123,9 @@ export function FirstPersonInstrument() {
         // a handbell in each hand; the one that rings swings up
         const r = st.side > 0 ? st.smooth : 0;
         const l = st.side < 0 ? st.smooth : 0;
-        hl.position.set(-0.26, -0.33 + 0.05 * l, -0.55);
+        hl.position.set(-0.26, -0.06 + 0.05 * l, -0.6);
         hl.rotation.set(-0.5 - 0.5 * l, 0, 0.2);
-        hr.position.set(0.26, -0.33 + 0.05 * r, -0.55);
+        hr.position.set(0.26, -0.06 + 0.05 * r, -0.6);
         hr.rotation.set(-0.5 - 0.5 * r, 0, -0.2);
         st.bl.position.copy(hl.position).add(new THREE.Vector3(0, -0.03, -0.01));
         st.bl.rotation.set(-0.3 - 0.6 * l, 0, 0.15);

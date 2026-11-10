@@ -314,7 +314,7 @@ function Toast() {
   const now = useTicker(!!t, 250);
   if (!t || now - t.at > 3500) return null;
   return (
-    <div data-testid="music-toast" style={{ position: 'fixed', left: '50%', bottom: useMusic.getState().active ? 236 : 120, transform: 'translateX(-50%)', padding: '6px 12px', borderRadius: 8, background: 'rgba(14,12,10,0.78)', border: '1px solid rgba(255,209,102,0.3)', color: TEXT, font: '13px system-ui, sans-serif', zIndex: 33, pointerEvents: 'none', maxWidth: '80vw', textAlign: 'center' }}>
+    <div data-testid="music-toast" style={{ position: 'fixed', left: '50%', bottom: useMusic.getState().active ? 312 : 120, transform: 'translateX(-50%)', padding: '6px 12px', borderRadius: 8, background: 'rgba(14,12,10,0.78)', border: '1px solid rgba(255,209,102,0.3)', color: TEXT, font: '13px system-ui, sans-serif', zIndex: 33, pointerEvents: 'none', maxWidth: '80vw', textAlign: 'center' }}>
       {t.text}
     </div>
   );

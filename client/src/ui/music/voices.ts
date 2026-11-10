@@ -328,7 +328,7 @@ export function fluteParams(midi: number, vel: number): FluteParams {
     harmonics: [1, 0.28 + 0.18 * v - 0.12 * high, 0.1 + 0.1 * v - 0.05 * high, 0.04 + 0.04 * v, 0.015 + 0.02 * v],
     breath: 0.05 + 0.06 * v,
     chiff: 0.25 + 0.3 * v,
-    gain: velGain(vel) * 0.42,
+    gain: velGain(vel) * 0.24,
     toneHz: Math.min(16000, hz * (5 + 4 * v)),
   };
 }
