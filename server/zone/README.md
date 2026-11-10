@@ -877,3 +877,19 @@ night hooks, WP16 `campset`), `camps_chest.go` (storage chests through the item 
   (checked every `decay.checkEveryS`; never while the owner is online).
 - `GET /debug/camps`: every piece (kind, owner, position, fuel, chest fill, which zone is its authority).
 - `CampStore` is `nil` without a database (dev tickets, evidence runs: memory only).
+
+## Mounts (playtest 2, CR 027)
+
+`internal/game/mounts.go` (`docs/cr/027-mounts.md`). A Spirit Whistle (general stores) bonds a spirit steed on its first call
+(Interact 110/1); every call brings it (gallops in over `STEED_ARRIVE_S`, or materializes). Owned steeds load before join
+(`MountStore`: `character_mounts`, migration 0028; local saves: `mounts`) and ride a handoff field (`steed`).
+
+- Mount (110/2: within `STEED_MOUNT_REACH_M`, on the ground, not dashing) sets `movement.FlagMounted` on the player's state;
+  only the zone sets it, the shared step only clears it (`server/pkg/movement/ride.go`). Get off: 110/3, or the step (Space
+  at a standstill, a hard landing, deep water). `mountsTick` watches riders: dropped by the step or a teleport (the steed
+  stands beside you, or stays behind), hits (`STEED_HIT_DISMOUNT_CHANCE`), demons at night (`STEED_SPOOK_*`: thrown, the
+  steed bolts, a cooldown).
+- `mountedFrame` (in `combatFrame`) strips dodges, dashes and sword/spear moves from a rider's frames; bows, staves, wands
+  and spells work. Validation: mounted speeds only while mounted (`movement.MaxHorizontalSpeed`).
+- Wire: player typeId bit 14 (`TypeRiding`) while riding; Events 1140-1143 (your steed; steeds within `STEED_SEE_M` on
+  change and to newcomers every 2 s; refusals; thrown). Nothing is sent while nobody has a steed (wire digest unchanged).

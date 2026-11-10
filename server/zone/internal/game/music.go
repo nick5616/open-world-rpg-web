@@ -158,7 +158,7 @@ func (s *Server) musicInteract(sess *session, m *proto.Interact, now time.Time) 
 			refuse(MusicRefuseNoInstrument)
 			return
 		}
-		if (e.cbt != nil && e.cbt.Downed) || !emoteModeOK(e) {
+		if (e.cbt != nil && e.cbt.Downed) || !emoteModeOK(e) || e.TypeID&TypeRiding != 0 { // CR 027: not from the saddle
 			refuse(MusicRefuseNotNow)
 			return
 		}
@@ -538,7 +538,7 @@ func (s *Server) musicTick(tick uint32) {
 			delete(s.bards, sess)
 			continue
 		}
-		if em := sess.emotes; em == nil || em.loop == nil || em.loop.id != EmotePlaying {
+		if em := sess.emotes; em == nil || em.loop == nil || em.loop.id != EmotePlaying || sess.ent.TypeID&TypeRiding != 0 {
 			s.musicStop(sess, false, now)
 			continue
 		}

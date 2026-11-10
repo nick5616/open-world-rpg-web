@@ -389,6 +389,24 @@ func TestMusicFiresideRests(t *testing.T) {
 	}
 }
 
+func TestMusicNotFromTheSaddle(t *testing.T) {
+	h, a, _, _, _ := musicHarness(t)
+	a.send(&proto.Interact{TargetKind: InteractMusic, Action: MusicActDevKit})
+	a.pump(150 * time.Millisecond)
+	_ = h.srv.Do(context.Background(), func() {
+		for _, sess := range h.srv.sessions {
+			if sess.ent != nil && sess.ent.CharacterID == "music-a" {
+				sess.ent.TypeID |= TypeRiding
+			}
+		}
+	})
+	a.send(&proto.Interact{TargetKind: InteractMusic, Action: MusicActStart, TargetID: 1})
+	a.pump(150 * time.Millisecond)
+	if r := lastEv(a, EventMusicRefused); r == nil || r.Value != MusicRefuseNotNow {
+		t.Fatalf("playing on a steed: %+v", r)
+	}
+}
+
 func TestMusicEndsWithTheEmote(t *testing.T) {
 	_, a, _, _, _ := musicHarness(t)
 	startPlaying(t, a, 4)

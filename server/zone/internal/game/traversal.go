@@ -88,6 +88,9 @@ func verticalOK(prev, next movement.State, g movement.Ground) bool {
 	if next.Dash > 0 {
 		up = max(up, movement.MaxDashLift) // WP13: a launch dash (root launch, updraft) starts this step
 	}
+	if movement.Mounted(prev) {
+		up = max(up, constants.RideJumpSpeed) // CR 027: the steed's jump
+	}
 	limit := max(prev.Pos.Y+up*movement.Dt, ground)
 	if next.Mode == movement.ModeSwim {
 		limit = max(limit, movement.WaterAt(g, next.Pos.X, next.Pos.Z)-constants.SwimFloatDepthM)

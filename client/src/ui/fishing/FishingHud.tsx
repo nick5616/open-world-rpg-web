@@ -37,7 +37,7 @@ export function hasRod(): boolean {
 /** Would E cast now. */
 function castReady(): boolean {
   const m = localPlayer.mode;
-  return useFishing.getState().phase === 'idle' && !!fishLive.target && hasRod() && (m === 'idle' || m === 'walk') && !photoActive() && !othersBusy();
+  return useFishing.getState().phase === 'idle' && !!fishLive.target && hasRod() && (m === 'idle' || m === 'walk') && !localPlayer.mounted && !photoActive() && !othersBusy(); // CR 027: E in the saddle gets off
 }
 
 const ACTIVE = new Set(['casting', 'waiting', 'hooking', 'fight', 'landing']);

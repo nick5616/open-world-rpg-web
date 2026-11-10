@@ -22,6 +22,7 @@ import { localActions, localPlayer, view, type MoveMode } from '../state/live';
 import { combatRuntime } from '../combat/link';
 import { useCombatHud } from '../combat/store';
 import { materialKey, packLook, type WeaponKind } from '../combat/weapons/look';
+import { TYPE_RIDING } from '../ui/mounts/events';
 
 const ACTIVITY: Partial<Record<MoveMode, number>> = {
   air: Activity.airborne,
@@ -73,8 +74,11 @@ export function LocalAvatar() {
     }
     // Playtest 2: photo mode shows your body from its free camera, in first person too.
     const third = view.third || view.photo;
-    const show = (view.third && !view.hideBody) || view.photo;
+    // CR 027: first person in the saddle you still see your steed (its neck and head below the view).
+    const steedOnly = !third && localPlayer.mounted;
+    const show = (view.third && !view.hideBody) || view.photo || steedOnly;
     a.root.visible = show;
+    a.setRiderVisible(!steedOnly);
     const me = castState.get('self');
     if (localActions.mineSwings !== st.mines) {
       st.mines = localActions.mineSwings;
@@ -82,7 +86,7 @@ export function LocalAvatar() {
     }
     followEmote(a.anim, emoteOf(SELF)); // playtest 2: your emotes and fishing pose (ui/emotes)
     followMusic(a.anim, takeNoteHits(MUSIC_SELF)); // CR 028: your notes, on your body in third person (ui/music)
-    if (!third) {
+    if (!third && !steedOnly) {
       a.anim.seenActions = me.actions; // first person: nothing to animate (no replay on switching)
       if (!a.anim.currentEmote) return;
       // playtest 2: an emote keeps its clock in first person (switching view mid-emote shows it at the right moment)
@@ -113,6 +117,7 @@ export function LocalAvatar() {
       v.typeId = OFFLINE_LOOK;
       if (third) followCaster(a.anim, me, 'wand');
     }
+    if (localPlayer.mounted) v.typeId = (v.typeId ?? 0) | TYPE_RIDING; // CR 027: you ride (the zone's bit for everyone else)
     a.update(v, camera, delta);
     if (typeof window !== 'undefined') {
       // CR 022 parity runs: what your own body is doing (the remote avatars' twin is __lodestoneAvatars).

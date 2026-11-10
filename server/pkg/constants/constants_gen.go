@@ -220,6 +220,107 @@ const ShoreSearchM float64 = 256
 // StaminaFinePerPoint: Stamina is integer 'fine' units in the step (SelfState.moveExt), = MOVE_STEP_HZ, so whole per-second rates are whole units per step and the wire carries stamina exactly.
 const StaminaFinePerPoint = 60
 
+// ---- mounts
+
+// RideWalkSpeed: Walk gait (S taps rein in to it; A/D alone turn at it), m/s.
+const RideWalkSpeed float64 = 3.6
+
+// RideTrotSpeed: Trot gait, the default with W held, m/s (sprint on foot is 7.8 steady).
+const RideTrotSpeed float64 = 8.5
+
+// RideGallopSpeed: Gallop gait after a spur, held for free while W is down, m/s.
+const RideGallopSpeed float64 = 13.5
+
+// RideSpurKick: A spur (a Shift press with W held) adds this much speed at once, m/s, and steps the gait up (walk, trot, gallop).
+const RideSpurKick float64 = 4.5
+
+// RideSpurMaxSpeed: Spurring never carries the steed above this, m/s (also the zone's mounted speed bound).
+const RideSpurMaxSpeed float64 = 19
+
+// RideSpurStamina: Stamina points one spur costs (a 100 point wheel holds 5 spurs); no spur when exhausted or short.
+const RideSpurStamina float64 = 18
+
+// RideAccel: Speed gained toward the gait, m/s^2.
+const RideAccel float64 = 7
+
+// RideBurstDecay: A spur burst above the gait fades at this rate, m/s^2 (about 1.3 s at a gallop).
+const RideBurstDecay float64 = 3.5
+
+// RideSlowDecel: Slowing to a lower gait (W released for A/D, shallow water), m/s^2.
+const RideSlowDecel float64 = 6
+
+// RideStopDecel: No keys: the steed stops at this rate, m/s^2.
+const RideStopDecel float64 = 10
+
+// RideBrakeDecel: S held while moving: hard stop, m/s^2; once stopped S backs up.
+const RideBrakeDecel float64 = 16
+
+// RideBackSpeed: Backing up (S held from a stop), m/s, away from where you look.
+const RideBackSpeed float64 = 2
+
+// RidePivotSpeed: Below this the steed turns on the spot to where you steer; faster it turns at the gait's rate.
+const RidePivotSpeed float64 = 1
+
+// RideJumpSpeed: Space while moving: the steed jumps (1.36 m apex: fences, logs, low walls), m/s up.
+const RideJumpSpeed float64 = 7
+
+// RideDismountSpeed: Space below this ground speed (and W up) hops you off instead of jumping.
+const RideDismountSpeed float64 = 0.6
+
+// RideThrowFallSpeed: Landing faster than this downward (an 8 m fall) throws the rider off.
+const RideThrowFallSpeed float64 = 17
+
+// RideWalkableTanSq: tan(35 deg)^2 as a literal: the steed walks up slopes to 35 degrees; steeper uphill ground is a wall (it never climbs).
+const RideWalkableTanSq float64 = 0.49029059656570206
+
+// RideSlideTanSq: tan(45 deg)^2 as a literal: standing on steeper ground the steed slides down (no control, like a person past 50 degrees).
+const RideSlideTanSq float64 = 0.9999999999999998
+
+// RideStepUpM: Lips the steed walks over without a jump.
+const RideStepUpM float64 = 0.5
+
+// RideWadeDepthM: The steed refuses water deeper than this (it stops at the edge); a rider who falls into deep water is thrown and swims.
+const RideWadeDepthM float64 = 1.2
+
+// RideSplashDepthM: Wading deeper than this slows every gait (RIDE_WATER_MULT).
+const RideSplashDepthM float64 = 0.35
+
+// RideWaterMult: Gait speed multiplier while wading.
+const RideWaterMult float64 = 0.55
+
+// RideHeadProbeM: Collision: besides the rider's own push-out, the steed's chest this far ahead (along its motion) is pushed out of buildings, props and camp pieces.
+const RideHeadProbeM float64 = 0.9
+
+// RideEyeRaiseM: Client only: the camera rides this much higher when mounted (shots still leave from the 1.6 m combat eye).
+const RideEyeRaiseM float64 = 0.95
+
+// SteedArriveS: A summoned steed gallops in for this long before it stands beside you (mountable from the start).
+const SteedArriveS float64 = 2.4
+
+// SteedArriveFromM: It appears this far away (a walkable, dry spot behind or beside you), or materializes in place when there is none.
+const SteedArriveFromM float64 = 26
+
+// SteedMountReachM: Mount with E within this of the steed (feet to its standing spot).
+const SteedMountReachM float64 = 3.5
+
+// SteedSeeM: Other players are told about a steed (standing or ridden) within this distance (Event 1141).
+const SteedSeeM float64 = 140
+
+// SteedHitDismountChance: Chance that a hit which costs a rider health throws them off.
+const SteedHitDismountChance float64 = 0.25
+
+// SteedSpookRadiusM: At night a demon this close may spook the steed.
+const SteedSpookRadiusM float64 = 12
+
+// SteedSpookChance: Chance per second (demon in range, night) that the steed rears, throws the rider and bolts.
+const SteedSpookChance float64 = 0.35
+
+// SteedSpookCooldownS: A bolted steed can't be summoned again for this long.
+const SteedSpookCooldownS float64 = 20
+
+// SteedIdleS: A standing steed nobody rides fades away after this long (summon it again).
+const SteedIdleS float64 = 600
+
 // ---- aoi
 
 // AoiCellM: Interest grid cell size.

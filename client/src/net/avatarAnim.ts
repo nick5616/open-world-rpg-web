@@ -223,7 +223,12 @@ export interface AnimInput {
   speed: number;
   activity: number;
   healthPct: number;
+  /** CR 027: riding a steed (snapshot typeId bit 14): the seated pose. */
+  riding?: boolean;
 }
+
+/** CR 027: how far the seated rider's hips are above a standing person's (ui/mounts/model.ts SADDLE_Y - the rig's hip height). */
+export const RIDE_HIP_RAISE = 1.68 - 0.88;
 
 const limb = (): LimbPose => ({ swing: 0, spread: 0, twist: 0, bend: 0 });
 export function newPose(): Pose {
@@ -440,7 +445,8 @@ export class AvatarAnimator {
     const sp = inp.speed;
 
     // A plain dodge: a sudden burst of ground speed.
-    if (alive && !gliding && !climbing && !swimming && sp > DODGE_MIN_SPEED && sp - this.speedAvg > DODGE_JUMP && now - this.lastDodge > 0.45 && this.action?.kind !== 'dash' && !(this.action && HELD_KINDS.has(this.action.kind)) && now - this.heldEndedAt > 0.6) this.trigger(DODGE_SPEC);
+    const riding = !!inp.riding; // CR 027: seated on a steed (no dodge from a spur's burst)
+    if (alive && !riding && !gliding && !climbing && !swimming && sp > DODGE_MIN_SPEED && sp - this.speedAvg > DODGE_JUMP && now - this.lastDodge > 0.45 && this.action?.kind !== 'dash' && !(this.action && HELD_KINDS.has(this.action.kind)) && now - this.heldEndedAt > 0.6) this.trigger(DODGE_SPEC);
     this.speedAvg += (sp - this.speedAvg) * (1 - Math.exp(-dt / 0.15));
 
     // Landing dip.
@@ -462,7 +468,24 @@ export class AvatarAnimator {
     p.glowColor = null;
     p.bowDraw = 0;
     let lookable = true;
-    if (gliding) {
+    if (riding && alive) {
+      // CR 027: astride the steed: hips on the saddle, thighs forward and
+      // around its barrel, shins hanging, hands forward on the reins; the
+      // rider sways with the gait and leans into a gallop.
+      const stride = 1.7 + 0.2 * sp;
+      this.phase += (dt * sp * TAU) / stride;
+      if (this.phase > TAU * 1000) this.phase -= TAU * 1000;
+      const gallop = smooth(9, 13, sp);
+      const move = smooth(0.3, 3, sp);
+      const bounce = Math.abs(Math.sin(this.phase)) * (0.035 * move + 0.03 * gallop);
+      p.bodyY = RIDE_HIP_RAISE - bounce + 0.006 * br * (1 - move);
+      p.bodyPitch = -(0.04 + 0.08 * move + 0.18 * gallop) + Math.sin(this.phase) * 0.03 * move;
+      set(p.legR, 1.2, 0.5, 1.45);
+      set(p.legL, 1.2, 0.5, 1.45);
+      set(p.armR, 0.85 + 0.06 * Math.sin(this.phase) * move, 0.12, 1.0);
+      set(p.armL, 0.85 + 0.06 * Math.sin(this.phase) * move, 0.12, 1.0);
+      if (air) p.bodyY += 0.06;
+    } else if (gliding) {
       lookable = false;
       p.bodyPitch = -0.3;
       set(p.armR, Math.PI - 0.15, 0.28, 0.05);

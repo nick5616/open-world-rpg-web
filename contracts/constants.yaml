@@ -9,7 +9,7 @@
 # therefore needs a new genVersion (spec section 5). Changing a movement value
 # changes client prediction AND server simulation together, which is the point
 # of keeping them here.
-version: 5   # v5: fire spread tuned down (docs/cr/016-fire-spread.md); v4: WP15 night, demons and chemistry (docs/cr/011-wp15-night-chemistry.md)
+version: 6   # v6: playtest 2 mounts (docs/cr/027-mounts.md); v5: fire spread tuned down (docs/cr/016-fire-spread.md); v4: WP15 night, demons and chemistry (docs/cr/011-wp15-night-chemistry.md)
 
 groups:
   world:
@@ -94,6 +94,46 @@ groups:
     DROWN_TIME_S: {type: f64, value: 1.5, doc: "Out of stamina in deep water: this long helpless, then respawn at the nearest shore."}
     SHORE_SEARCH_M: {type: f64, value: 256, doc: "Drowning respawn searches for dry walkable ground up to this far (swim drain caps how far from shore you can be)."}
     STAMINA_FINE_PER_POINT: {type: i32, value: 60, doc: "Stamina is integer 'fine' units in the step (SelfState.moveExt), = MOVE_STEP_HZ, so whole per-second rates are whole units per step and the wire carries stamina exactly."}
+
+  mounts:
+    # ---- Playtest 2 mounts (CR 027, docs/cr/027-mounts.md): the spirit
+    # steed. RIDE_* feed the shared movement step's riding mode
+    # (client/src/sim/ride.ts, server/pkg/movement/ride.go), so they change
+    # prediction and simulation together; STEED_* are the zone's rules
+    # (server/zone/internal/game/mounts.go) and the client's presentation.
+    RIDE_WALK_SPEED: {type: f64, value: 3.6, doc: "Walk gait (S taps rein in to it; A/D alone turn at it), m/s."}
+    RIDE_TROT_SPEED: {type: f64, value: 8.5, doc: "Trot gait, the default with W held, m/s (sprint on foot is 7.8 steady)."}
+    RIDE_GALLOP_SPEED: {type: f64, value: 13.5, doc: "Gallop gait after a spur, held for free while W is down, m/s."}
+    RIDE_SPUR_KICK: {type: f64, value: 4.5, doc: "A spur (a Shift press with W held) adds this much speed at once, m/s, and steps the gait up (walk, trot, gallop)."}
+    RIDE_SPUR_MAX_SPEED: {type: f64, value: 19, doc: "Spurring never carries the steed above this, m/s (also the zone's mounted speed bound)."}
+    RIDE_SPUR_STAMINA: {type: f64, value: 18, doc: "Stamina points one spur costs (a 100 point wheel holds 5 spurs); no spur when exhausted or short."}
+    RIDE_ACCEL: {type: f64, value: 7, doc: "Speed gained toward the gait, m/s^2."}
+    RIDE_BURST_DECAY: {type: f64, value: 3.5, doc: "A spur burst above the gait fades at this rate, m/s^2 (about 1.3 s at a gallop)."}
+    RIDE_SLOW_DECEL: {type: f64, value: 6, doc: "Slowing to a lower gait (W released for A/D, shallow water), m/s^2."}
+    RIDE_STOP_DECEL: {type: f64, value: 10, doc: "No keys: the steed stops at this rate, m/s^2."}
+    RIDE_BRAKE_DECEL: {type: f64, value: 16, doc: "S held while moving: hard stop, m/s^2; once stopped S backs up."}
+    RIDE_BACK_SPEED: {type: f64, value: 2, doc: "Backing up (S held from a stop), m/s, away from where you look."}
+    RIDE_PIVOT_SPEED: {type: f64, value: 1, doc: "Below this the steed turns on the spot to where you steer; faster it turns at the gait's rate."}
+    RIDE_JUMP_SPEED: {type: f64, value: 7, doc: "Space while moving: the steed jumps (1.36 m apex: fences, logs, low walls), m/s up."}
+    RIDE_DISMOUNT_SPEED: {type: f64, value: 0.6, doc: "Space below this ground speed (and W up) hops you off instead of jumping."}
+    RIDE_THROW_FALL_SPEED: {type: f64, value: 17, doc: "Landing faster than this downward (an 8 m fall) throws the rider off."}
+    RIDE_WALKABLE_TAN_SQ: {type: f64, value: 0.49029059656570206, doc: "tan(35 deg)^2 as a literal: the steed walks up slopes to 35 degrees; steeper uphill ground is a wall (it never climbs)."}
+    RIDE_SLIDE_TAN_SQ: {type: f64, value: 0.9999999999999998, doc: "tan(45 deg)^2 as a literal: standing on steeper ground the steed slides down (no control, like a person past 50 degrees)."}
+    RIDE_STEP_UP_M: {type: f64, value: 0.5, doc: "Lips the steed walks over without a jump."}
+    RIDE_WADE_DEPTH_M: {type: f64, value: 1.2, doc: "The steed refuses water deeper than this (it stops at the edge); a rider who falls into deep water is thrown and swims."}
+    RIDE_SPLASH_DEPTH_M: {type: f64, value: 0.35, doc: "Wading deeper than this slows every gait (RIDE_WATER_MULT)."}
+    RIDE_WATER_MULT: {type: f64, value: 0.55, doc: "Gait speed multiplier while wading."}
+    RIDE_HEAD_PROBE_M: {type: f64, value: 0.9, doc: "Collision: besides the rider's own push-out, the steed's chest this far ahead (along its motion) is pushed out of buildings, props and camp pieces."}
+    RIDE_EYE_RAISE_M: {type: f64, value: 0.95, doc: "Client only: the camera rides this much higher when mounted (shots still leave from the 1.6 m combat eye)."}
+    STEED_ARRIVE_S: {type: f64, value: 2.4, doc: "A summoned steed gallops in for this long before it stands beside you (mountable from the start)."}
+    STEED_ARRIVE_FROM_M: {type: f64, value: 26, doc: "It appears this far away (a walkable, dry spot behind or beside you), or materializes in place when there is none."}
+    STEED_MOUNT_REACH_M: {type: f64, value: 3.5, doc: "Mount with E within this of the steed (feet to its standing spot)."}
+    STEED_SEE_M: {type: f64, value: 140, doc: "Other players are told about a steed (standing or ridden) within this distance (Event 1141)."}
+    STEED_HIT_DISMOUNT_CHANCE: {type: f64, value: 0.25, doc: "Chance that a hit which costs a rider health throws them off."}
+    STEED_SPOOK_RADIUS_M: {type: f64, value: 12, doc: "At night a demon this close may spook the steed."}
+    STEED_SPOOK_CHANCE: {type: f64, value: 0.35, doc: "Chance per second (demon in range, night) that the steed rears, throws the rider and bolts."}
+    STEED_SPOOK_COOLDOWN_S: {type: f64, value: 20, doc: "A bolted steed can't be summoned again for this long."}
+    STEED_IDLE_S: {type: f64, value: 600, doc: "A standing steed nobody rides fades away after this long (summon it again)."}
 
   aoi:
     AOI_CELL_M: {type: i32, value: 32, doc: "Interest grid cell size."}

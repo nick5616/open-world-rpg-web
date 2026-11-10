@@ -25,7 +25,7 @@ A note event is 16 bits: MIDI note (7), velocity (3; 0 = the note-off of a held 
 
 ## Server authority
 
-Playing needs the item in the pack, the body on the ground (not downed, climbing, gliding, swimming or riding: emotes' rule) and stops the fishing line. The zone ends playing when the pose loop ends: walking 1 m away, another emote, a stop. Songs, applause, Rested and feats are the zone's; the client only reports notes.
+Playing needs the item in the pack and the body on the ground (not downed, climbing, gliding or swimming: emotes' rule; not mounted: CR 027's riding bit). It stops the fishing line, and mounting ends the playing. The zone ends playing when the pose loop ends: walking 1 m away, another emote, a stop. Songs, applause, Rested and feats are the zone's; the client only reports notes.
 
 ## Known gaps
 

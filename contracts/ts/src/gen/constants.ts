@@ -144,6 +144,73 @@ export const DROWN_TIME_S = 1.5;
 export const SHORE_SEARCH_M = 256;
 /** Stamina is integer 'fine' units in the step (SelfState.moveExt), = MOVE_STEP_HZ, so whole per-second rates are whole units per step and the wire carries stamina exactly. */
 export const STAMINA_FINE_PER_POINT = 60;
+// ---- mounts
+/** Walk gait (S taps rein in to it; A/D alone turn at it), m/s. */
+export const RIDE_WALK_SPEED = 3.6;
+/** Trot gait, the default with W held, m/s (sprint on foot is 7.8 steady). */
+export const RIDE_TROT_SPEED = 8.5;
+/** Gallop gait after a spur, held for free while W is down, m/s. */
+export const RIDE_GALLOP_SPEED = 13.5;
+/** A spur (a Shift press with W held) adds this much speed at once, m/s, and steps the gait up (walk, trot, gallop). */
+export const RIDE_SPUR_KICK = 4.5;
+/** Spurring never carries the steed above this, m/s (also the zone's mounted speed bound). */
+export const RIDE_SPUR_MAX_SPEED = 19;
+/** Stamina points one spur costs (a 100 point wheel holds 5 spurs); no spur when exhausted or short. */
+export const RIDE_SPUR_STAMINA = 18;
+/** Speed gained toward the gait, m/s^2. */
+export const RIDE_ACCEL = 7;
+/** A spur burst above the gait fades at this rate, m/s^2 (about 1.3 s at a gallop). */
+export const RIDE_BURST_DECAY = 3.5;
+/** Slowing to a lower gait (W released for A/D, shallow water), m/s^2. */
+export const RIDE_SLOW_DECEL = 6;
+/** No keys: the steed stops at this rate, m/s^2. */
+export const RIDE_STOP_DECEL = 10;
+/** S held while moving: hard stop, m/s^2; once stopped S backs up. */
+export const RIDE_BRAKE_DECEL = 16;
+/** Backing up (S held from a stop), m/s, away from where you look. */
+export const RIDE_BACK_SPEED = 2;
+/** Below this the steed turns on the spot to where you steer; faster it turns at the gait's rate. */
+export const RIDE_PIVOT_SPEED = 1;
+/** Space while moving: the steed jumps (1.36 m apex: fences, logs, low walls), m/s up. */
+export const RIDE_JUMP_SPEED = 7;
+/** Space below this ground speed (and W up) hops you off instead of jumping. */
+export const RIDE_DISMOUNT_SPEED = 0.6;
+/** Landing faster than this downward (an 8 m fall) throws the rider off. */
+export const RIDE_THROW_FALL_SPEED = 17;
+/** tan(35 deg)^2 as a literal: the steed walks up slopes to 35 degrees; steeper uphill ground is a wall (it never climbs). */
+export const RIDE_WALKABLE_TAN_SQ = 0.49029059656570206;
+/** tan(45 deg)^2 as a literal: standing on steeper ground the steed slides down (no control, like a person past 50 degrees). */
+export const RIDE_SLIDE_TAN_SQ = 0.9999999999999998;
+/** Lips the steed walks over without a jump. */
+export const RIDE_STEP_UP_M = 0.5;
+/** The steed refuses water deeper than this (it stops at the edge); a rider who falls into deep water is thrown and swims. */
+export const RIDE_WADE_DEPTH_M = 1.2;
+/** Wading deeper than this slows every gait (RIDE_WATER_MULT). */
+export const RIDE_SPLASH_DEPTH_M = 0.35;
+/** Gait speed multiplier while wading. */
+export const RIDE_WATER_MULT = 0.55;
+/** Collision: besides the rider's own push-out, the steed's chest this far ahead (along its motion) is pushed out of buildings, props and camp pieces. */
+export const RIDE_HEAD_PROBE_M = 0.9;
+/** Client only: the camera rides this much higher when mounted (shots still leave from the 1.6 m combat eye). */
+export const RIDE_EYE_RAISE_M = 0.95;
+/** A summoned steed gallops in for this long before it stands beside you (mountable from the start). */
+export const STEED_ARRIVE_S = 2.4;
+/** It appears this far away (a walkable, dry spot behind or beside you), or materializes in place when there is none. */
+export const STEED_ARRIVE_FROM_M = 26;
+/** Mount with E within this of the steed (feet to its standing spot). */
+export const STEED_MOUNT_REACH_M = 3.5;
+/** Other players are told about a steed (standing or ridden) within this distance (Event 1141). */
+export const STEED_SEE_M = 140;
+/** Chance that a hit which costs a rider health throws them off. */
+export const STEED_HIT_DISMOUNT_CHANCE = 0.25;
+/** At night a demon this close may spook the steed. */
+export const STEED_SPOOK_RADIUS_M = 12;
+/** Chance per second (demon in range, night) that the steed rears, throws the rider and bolts. */
+export const STEED_SPOOK_CHANCE = 0.35;
+/** A bolted steed can't be summoned again for this long. */
+export const STEED_SPOOK_COOLDOWN_S = 20;
+/** A standing steed nobody rides fades away after this long (summon it again). */
+export const STEED_IDLE_S = 600;
 // ---- aoi
 /** Interest grid cell size. */
 export const AOI_CELL_M = 32;
