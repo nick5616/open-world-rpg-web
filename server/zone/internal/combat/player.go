@@ -133,6 +133,7 @@ type Player struct {
 	manaSent     float64
 	manaSentTick uint32
 	inCombatTick uint32
+	dash         dashState // CR 021: the dash allowDash allowed (dashes.go)
 }
 
 // InCombatWithin reports whether the player hurt something or was hurt in
@@ -319,6 +320,7 @@ func (p *Player) Frame(f proto.InputFrame, before movement.State, g movement.Gro
 			r.Frame.CastSlot = 0
 		}
 	}
+	p.sustainDash(&r, before) // CR 021: pay for (or strip) a held dash step (dashes.go)
 	if r.Frame.Flags&proto.InputFlagDodge != 0 && before.Dash == 0 && before.IFrames == 0 {
 		p.dodgeSeq = seq
 	}
@@ -368,6 +370,7 @@ func (p *Player) allowDash(variant int, seq uint32, r *FrameResult) bool {
 		}
 		p.Mana -= s.Mana
 		p.readyAt[s.ID] = seq + uint32(cd)
+		p.dashBegin(variant, s) // CR 021: the dash a hold may sustain (dashes.go)
 		r.Spent = r.Spent || s.Mana > 0
 		return true
 	}
@@ -376,6 +379,7 @@ func (p *Player) allowDash(variant int, seq uint32, r *FrameResult) bool {
 	if f := D.FormByElement(lo.Gem); f != nil && f.Dash == variant && p.readyAt[f.ID] >= uint32(f.CooldownSteps) {
 		start := p.readyAt[f.ID] - uint32(f.CooldownSteps)
 		if seq >= start && seq <= start+2 {
+			p.dashBegin(variant, nil) // CR 021 (dashes.go)
 			return true
 		}
 	}
@@ -525,6 +529,7 @@ func (p *Player) RecordFrame(seq uint32, s movement.State) {
 	p.nFrame++
 	p.LastSeq = seq
 	p.Pos = s.Pos
+	p.noteDash(s) // CR 021 (dashes.go)
 }
 
 // forFrames calls fn for recorded frames with seq in [lo, hi].

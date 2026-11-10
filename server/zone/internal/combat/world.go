@@ -661,6 +661,7 @@ func (w *World) Step(tick uint32) {
 	w.thinkAll(tick) // WP19b: partitioned across workers (par.go)
 	w.stepShots()
 	w.settleStrikes()
+	w.dashTick() // CR 021: held dashes' trails, heals and slams (dashes.go)
 	w.playerUpkeep()
 }
 

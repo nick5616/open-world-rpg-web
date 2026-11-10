@@ -167,7 +167,8 @@ func TestOnlyEnemiesCallHurtPlayer(t *testing.T) {
 			}
 			if writes.MatchString(line) {
 				ok := (f == "ai.go" && (strings.Contains(fn, "hurtPlayer(") || strings.Contains(fn, "downPlayer("))) ||
-					(f == "pvp.go" && strings.Contains(fn, "hurtByPlayer("))
+					(f == "pvp.go" && strings.Contains(fn, "hurtByPlayer(")) ||
+					(f == "dashes.go" && strings.Contains(fn, "payBlood(")) // CR 021: the blood dash costs your own health
 				if !ok {
 					t.Errorf("%s: player health lowered outside hurtPlayer/hurtByPlayer: %s (in %s)", f, strings.TrimSpace(line), fn)
 				}
