@@ -31,6 +31,8 @@ export interface Candidate {
 
 export const REACH_M = 4;
 export const SIGN_REACH_M = 6;
+/** People reach further than stations (zone npcReachM 6.5 m with slack; playtest 2: a farmer behind his hearth). */
+export const NPC_REACH_M = 6;
 export const FACING_COS = Math.cos((35 * Math.PI) / 180);
 
 export function pickTarget(eye: { x: number; y: number; z: number }, fwd: { x: number; y: number; z: number }, cands: readonly Candidate[], reach = REACH_M, cosMin = FACING_COS): Candidate | null {
@@ -41,7 +43,7 @@ export function pickTarget(eye: { x: number; y: number; z: number }, fwd: { x: n
     const dy = c.y - eye.y;
     const dz = c.z - eye.z;
     const d = Math.hypot(dx, dy, dz);
-    const r = c.kind === 'sign' ? SIGN_REACH_M : reach;
+    const r = c.kind === 'sign' ? SIGN_REACH_M : c.kind === 'npc' ? Math.max(reach, NPC_REACH_M) : reach;
     if (d > r) continue;
     // Standing right on top of it: always "facing".
     const cos = d < 0.4 ? 1 : (dx * fwd.x + dy * fwd.y + dz * fwd.z) / d;

@@ -66,6 +66,10 @@ const (
 	npcDeactivateM = 260 // ... and are dropped beyond this (hysteresis)
 	npcEveryTicks  = 15  // activation check twice a second
 	townReachM     = 4.5 // spec "4 m from the eye" plus latency slack
+	// npcReachM: talking to a person reaches further (playtest 2: a farmer
+	// at home stood behind his hearth, 4.7 m from the closest spot a player
+	// could stand, so the first quest couldn't be started).
+	npcReachM = 6.5
 	shaftReachM    = 8
 )
 
@@ -226,7 +230,7 @@ func (s *Server) npcInteract(e *Entity, m *proto.Interact, now time.Time) {
 		return
 	}
 	ne := s.town.active[i]
-	if eyeDist(e, ne.Move.Pos.X, ne.Move.Pos.Y+1.0, ne.Move.Pos.Z) > townReachM {
+	if eyeDist(e, ne.Move.Pos.X, ne.Move.Pos.Y+1.0, ne.Move.Pos.Z) > npcReachM {
 		s.refuseTown(e, m.TargetID, TownRefuseTooFar)
 		return
 	}
