@@ -7,7 +7,7 @@
 
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
-import { aimOpenHand, CAST_REST, CAST_UP, L_SHOULDER, makeRig, PIVOT, POSES, poseHands, setRigWeapon } from './FirstPersonWeapon';
+import { aimOpenHand, aspectShift, CAST_REST, CAST_UP, L_SHOULDER, makeRig, PIVOT, POSES, poseHands, setRigWeapon, swingPose } from './FirstPersonWeapon';
 import { BOW_MAX_DRAW, bowNock, FIST_WRIST, fistGeometry, GRIP_R, OPEN_WRIST, openHandGeometry, weaponGeometry } from './models';
 import { WEAPON_KINDS, type WeaponKind } from './look';
 
@@ -132,8 +132,104 @@ describe('first-person hands (playtest 2)', () => {
   it('hands are small and cached', () => {
     expect(fistGeometry(GRIP_R.staff)).toBe(fistGeometry(GRIP_R.staff));
     expect(fistGeometry(GRIP_R.staff)).not.toBe(fistGeometry(GRIP_R.wand));
-    expect(fistGeometry(GRIP_R.sword).index!.count / 3).toBeLessThan(1400);
+    // playtest 2 ("fix this fucked up hand"): three-phalanx fingers, a rounded palm and wrist (was < 1400)
+    expect(fistGeometry(GRIP_R.sword).index!.count / 3).toBeLessThan(2000);
     expect(fistGeometry(GRIP_R.sword, 1).index!.count / 3).toBeLessThan(400); // third-person fists, two per full rig
-    expect(openHandGeometry().index!.count / 3).toBeLessThan(1400);
+    expect(openHandGeometry().index!.count / 3).toBeLessThan(1500);
+  });
+
+  it('the skin is shaded by its own shape: creases and the curl into the palm darker than the back of the hand', () => {
+    const g = fistGeometry(GRIP_R.sword);
+    const pos = g.getAttribute('position');
+    const nor = g.getAttribute('normal');
+    const col = g.getAttribute('color');
+    let backSum = 0;
+    let backN = 0;
+    let darkest = 1;
+    for (let i = 0; i < pos.count; i++) {
+      const lum = (col.getX(i) + col.getY(i) + col.getZ(i)) / 3;
+      darkest = Math.min(darkest, lum);
+      // the back of the hand: on the +X side, facing out
+      if (pos.getX(i) > GRIP_R.sword + 0.012 && nor.getX(i) > 0.8) {
+        backSum += lum;
+        backN++;
+      }
+    }
+    expect(backN).toBeGreaterThan(10);
+    expect(darkest).toBeLessThan((backSum / backN) * 0.75);
+  });
+
+  it("the staff is held in the right hand alone (no off hand stacked on it); the spear's two hands don't overlap", () => {
+    expect(posed('staff').lFist.visible).toBe(false);
+    expect(posed('wand').lFist.visible).toBe(false);
+    expect(posed('sword').lFist.visible).toBe(false);
+    const rig = posed('spear');
+    const r = new THREE.Vector3().setFromMatrixPosition(rig.rFist.matrixWorld);
+    const l = new THREE.Vector3().setFromMatrixPosition(rig.lFist.matrixWorld);
+    expect(r.distanceTo(l)).toBeGreaterThan(0.2);
+  });
+});
+
+/**
+ * Where a posed rig lands on screen: every vertex of the weapon, hands and
+ * forearms (and points along every triangle edge, so a long thin blade
+ * can't slip through the box between its vertices), projected.
+ */
+function screenPoints(rig: ReturnType<typeof makeRig>, aspect: number, fov: number): THREE.Vector2[] {
+  const cam = new THREE.PerspectiveCamera(fov, aspect, 0.05, 100);
+  cam.updateProjectionMatrix();
+  rig.root.parent!.updateMatrixWorld(true);
+  const out: THREE.Vector2[] = [];
+  const a = new THREE.Vector3();
+  const b = new THREE.Vector3();
+  const p = new THREE.Vector3();
+  for (const m of [rig.weapon, rig.rFist, rig.lFist, rig.rArm, rig.lArm, rig.castFist, rig.castArm]) {
+    if (!m.visible) continue;
+    const pos = m.geometry.getAttribute('position');
+    const idx = m.geometry.index!;
+    for (let t = 0; t < idx.count; t += 3)
+      for (let e = 0; e < 3; e++) {
+        a.fromBufferAttribute(pos, idx.getX(t + e)).applyMatrix4(m.matrixWorld);
+        b.fromBufferAttribute(pos, idx.getX(t + ((e + 1) % 3))).applyMatrix4(m.matrixWorld);
+        for (let k = 0; k < 4; k++) {
+          p.lerpVectors(a, b, k / 4);
+          if (p.z > -0.05) continue; // behind the near plane
+          p.project(cam);
+          out.push(new THREE.Vector2(p.x, p.y));
+        }
+      }
+  }
+  return out;
+}
+
+const inBox = (pts: THREE.Vector2[], half: number) => pts.filter((q) => Math.abs(q.x) < half && Math.abs(q.y) < half).length;
+
+describe('first-person view (playtest 2, "fix the view")', () => {
+  // a boss straight ahead was cut in half by the sword at rest
+  const SCREENS: [string, number][] = [
+    ['16:9', 16 / 9],
+    ['21:9', 2560 / 1080],
+  ];
+  for (const kind of ['sword', 'spear', 'staff', 'wand'] as WeaponKind[])
+    for (const [name, aspect] of SCREENS)
+      it(`${kind} at rest on ${name} leaves the middle of the screen clear`, () => {
+        const rig = posed(kind);
+        rig.root.position.x = aspectShift(aspect);
+        // the middle 40% of the screen (width and height) at the normal field of view
+        expect(inBox(screenPoints(rig, aspect, 75), 0.4)).toBe(0);
+        // and the middle 25% at the widest a dash or a gallop kicks it (75 + 16 degrees)
+        expect(inBox(screenPoints(rig, aspect, 91), 0.25)).toBe(0);
+      });
+
+  it.each([1, -1])('a sword swing (dir %i) still sweeps through the middle of the view', (dir) => {
+    const rig = posed('sword');
+    let crossed = 0;
+    for (let sw = 0.3; sw <= 0.5; sw += 0.05) {
+      swingPose('sword', sw, dir, rig.grip.position, rig.grip.quaternion);
+      rig.grip.position.sub(PIVOT);
+      poseHands(rig, 'sword');
+      crossed += inBox(screenPoints(rig, 16 / 9, 75), 0.15);
+    }
+    expect(crossed).toBeGreaterThan(50);
   });
 });

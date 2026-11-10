@@ -22,6 +22,7 @@ import * as THREE from 'three';
 import { ELEMENT_COLORS } from '../events';
 import { MeshBuilder, M, circle, curve, hash, helix, lathe, polygon, shade, surf, sweep, type Surface, type SurfaceAt, type V3 } from './builder';
 import { lookKey, type WeaponKind, type WeaponLook } from './look';
+import { buildFist, buildForearm, buildOpenHand } from './handMesh';
 
 export type Detail = 0 | 1 | 2;
 
@@ -436,229 +437,11 @@ function wand(b: MeshBuilder, l: WeaponLook, d: Detail): void {
 const BUILDERS: Record<WeaponKind, (b: MeshBuilder, l: WeaponLook, d: Detail) => void> = { sword, spear, bow, staff, wand };
 
 // ---- hands ----
-//
-// Playtest 2 ("the hand is fucked up here. not like what a right hand should
-// do"): a right fist built the way a hand closes on a handle. Local frame:
-// the grip runs along +Y through the origin (the index finger and thumb on
-// the +Y side, toward the blade), the wrist and forearm lie toward +Z, the
-// back of the hand and the knuckle row face +X and the palm faces -X. So
-// the back of the hand is a plate on the +X side running from the wrist to
-// the knuckles at the front (-Z) corner; each finger leaves its knuckle,
-// crosses the front of the grip and curls back along the -X side with its
-// tip pressed into the heel of the palm behind the grip; the thumb rises
-// from the ball of the thumb behind the grip and lies across the index and
-// middle fingers on the -X side, tip forward. The left hand is the same
-// mesh mirrored (scale.x = -1). The fingers wrap a grip of radius `g`, so
-// a thick staff isn't sunk into them and a thin wand isn't loose.
+// Built in handMesh.ts (playtest 2: an anatomical, shaded hand).
 
-/**
- * Where the forearm meets the fist (fist local); FirstPersonWeapon aims the
- * forearm from here. Below the knuckle row (toward -Y, the little-finger
- * side): a handle lies diagonally across the palm, so the forearm meets it
- * at about 70 degrees, not square.
- */
-export const FIST_WRIST = new THREE.Vector3(0.011, -0.02, 0.058);
+export { FIST_WRIST, OPEN_WRIST } from './handMesh';
 /** Grip radius (m) the main-hand fist closes on, per weapon (models above). */
 export const GRIP_R: Record<WeaponKind, number> = { sword: 0.0136, spear: 0.0178, bow: 0.0185, staff: 0.0205, wand: 0.0108 };
-
-/** An ellipsoid (radii rx, ry, rz on the matrix's axes). */
-function blob(b: MeshBuilder, m: THREE.Matrix4, rx: number, ry: number, rz: number, s: SurfaceAt, segs: number, rings: number): void {
-  const prof: [number, number][] = [];
-  for (let i = 0; i <= rings; i++) {
-    const t = -Math.PI / 2 + (i / rings) * Math.PI;
-    prof.push([Math.sin(t) * ry, Math.max(1e-4, Math.cos(t))]);
-  }
-  b.with(m, () => lathe(b, prof, segs, s, { rx, rz }));
-}
-
-/** Squared-off wrap around the grip: angle a (0 = +X, PI/2 = -Z front, PI = -X) at radius r. */
-function wrapAt(a: number, r: number, y: number): V3 {
-  const sq = (v: number) => Math.sign(v) * Math.pow(Math.abs(v), 0.78);
-  return [r * sq(Math.cos(a)), y, -r * sq(Math.sin(a))];
-}
-
-function fist(b: MeshBuilder, g: number, d: Detail): void {
-  const hi = d === 2;
-  const skin = SKIN;
-  const knuckle = shade(SKIN, 1.06);
-  const crease = shade(SKIN, 0.86);
-  // Back of the hand: a plate on the +X side, knuckles (front) to wrist (+Z).
-  const backX = g + 0.0035;
-  const body: [V3, number, number][] = [
-    // centre, half width (along the grip, Y), half thickness (X)
-    [[backX - 0.002, 0.001, -0.021], 0.024, 0.007],
-    [[backX + 0.0005, 0.0, -0.013], 0.037, 0.011],
-    [[backX + 0.001, -0.003, 0.006], 0.039, 0.0125],
-    [[backX - 0.001, -0.01, 0.03], 0.035, 0.0135],
-    [[FIST_WRIST.x, FIST_WRIST.y, FIST_WRIST.z - 0.008], 0.03, 0.0145],
-    [[FIST_WRIST.x, FIST_WRIST.y, FIST_WRIST.z + 0.004], 0.018, 0.009],
-  ];
-  sweep(b, body.map((s) => s[0]), polygon(hi ? 12 : 6, 1, 1), (r) => (r === 1 ? knuckle : skin), {
-    side: [0, 1, 0],
-    smooth: true,
-    capStart: true,
-    capEnd: true,
-    scale: (i) => [body[i][1], body[i][2]],
-  });
-  // Heel of the palm and the ball of the thumb, behind the grip (the fingertips press into them).
-  blob(b, M.t(-0.002, -0.012, g + 0.012), 0.017, 0.026, 0.013, skin, hi ? 10 : 6, hi ? 6 : 3);
-  blob(b, M.of(M.t(-g * 0.55, 0.014, g + 0.011), M.rx(0.5)), 0.014, 0.019, 0.016, skin, hi ? 10 : 6, hi ? 6 : 3);
-
-  // Fingers: index (top) to little finger; each from its knuckle on the
-  // front corner, across the front of the grip, back along the -X side.
-  const fingers: [number, number, number][] = [
-    // y, thickness scale, length scale
-    [0.0262, 0.96, 0.94],
-    [0.0088, 1.0, 1.0],
-    [-0.0088, 0.95, 0.95],
-    [-0.0252, 0.82, 0.8],
-  ];
-  const fr = 0.0088;
-  const L = 0.088; // knuckle to fingertip, middle finger
-  const a0 = 0.62; // knuckle angle (front-right corner)
-  for (const [y, k, lk] of fingers) {
-    const R = g + fr * k * 0.92;
-    // walk the wrap until the finger's length runs out
-    // (from inside the back of the hand, out through the knuckle)
-    const pts: V3[] = hi ? [wrapAt(a0 - 0.5, R * 1.02, y), wrapAt(a0 - 0.18, R * 1.1, y)] : [wrapAt(a0 - 0.4, R * 1.05, y)];
-    const kn = pts.length;
-    let a = a0;
-    let prev = wrapAt(a, R, y);
-    pts.push(prev);
-    const n = hi ? 7 : 3;
-    let len = 0;
-    for (let i = 1; i <= n && a < 5; ) {
-      a += 0.04;
-      const p = wrapAt(a, R, y);
-      len += Math.hypot(p[0] - prev[0], p[2] - prev[2]);
-      prev = p;
-      if (len >= (L * lk * i) / n) {
-        pts.push(p);
-        i++;
-      }
-    }
-    // the tip tucks inward, toward the palm
-    const last = pts[pts.length - 1];
-    pts[pts.length - 1] = [last[0] * 0.92, last[1], last[2] * 0.92];
-    const m = pts.length;
-    sweep(b, pts, polygon(hi ? 7 : 5, fr * k * 1.06, fr * k * 0.92), (r) => (r === kn ? knuckle : r === m - 1 ? shade(SKIN, 1.08) : skin), {
-      side: [0, 1, 0],
-      smooth: true,
-      capEnd: true,
-      scale: (i) => {
-        if (i < kn) return [0.9, 0.85];
-        if (i === kn) return [1.04, 1.16]; // the knuckle stands proud
-        const t = (i - kn) / (m - 1 - kn);
-        const tip = i === m - 1 ? 0.62 : 1;
-        return [(1 - 0.16 * t) * tip, (1 - 0.2 * t) * tip];
-      },
-    });
-  }
-
-  // Thumb: from the ball of the thumb behind the grip, forward along the -X
-  // side over the index and middle fingers, the tip curling round the front.
-  const ox = -(g + fr * 1.75);
-  const thumb = curve(
-    [
-      [-g * 0.4, 0.016, g + 0.016],
-      [ox + 0.004, 0.02, g * 0.6 + 0.004],
-      [ox - 0.001, 0.0185, -0.004],
-      [ox + 0.004, 0.0175, -0.016],
-      [ox + 0.012, 0.017, -g - 0.009],
-    ],
-    hi ? 8 : 4,
-  );
-  const tn = thumb.length;
-  sweep(b, thumb, polygon(hi ? 7 : 5, 0.0098, 0.0082), (r) => (r === tn - 1 ? shade(SKIN, 1.08) : r === Math.floor(tn / 2) ? crease : skin), {
-    side: [0, 1, 0],
-    smooth: true,
-    capEnd: true,
-    scale: (i) => {
-      const t = i / (tn - 1);
-      const tip = i === tn - 1 ? 0.6 : 1;
-      return [(1.05 - 0.25 * t) * tip, (1.0 - 0.2 * t) * tip];
-    },
-  });
-}
-
-/** Where the forearm meets the open hand (hand local). */
-export const OPEN_WRIST = new THREE.Vector3(0, -0.058, 0.004);
-
-/**
- * An open right hand, palm facing -Z, fingers up +Y, the wrist below
- * (the sword's off hand pushing a spell out). Thumb toward -X; mirrored
- * (scale.x = -1) it is the left hand.
- */
-function openHand(b: MeshBuilder): void {
-  const skin = SKIN;
-  // Palm: a plate in the XY plane, wrist (-Y) to the knuckles (+Y).
-  const palm: [V3, number, number][] = [
-    [[0.0, OPEN_WRIST.y - 0.004, 0.006], 0.017, 0.009],
-    [[0.0, OPEN_WRIST.y + 0.01, 0.005], 0.029, 0.0135],
-    [[-0.002, -0.018, 0.003], 0.038, 0.0135],
-    [[0.0, 0.012, 0.002], 0.039, 0.0115],
-    [[0.001, 0.026, 0.002], 0.036, 0.009],
-  ];
-  sweep(b, palm.map((s) => s[0]), polygon(12, 1, 1), skin, { side: [1, 0, 0], smooth: true, capStart: true, capEnd: true, scale: (i) => [palm[i][1], palm[i][2]] });
-  // Ball of the thumb on the palm side.
-  blob(b, M.t(-0.017, -0.028, -0.006), 0.015, 0.022, 0.011, skin, 10, 6);
-  // Fingers: slightly spread, relaxed, curling a little toward the palm (-Z).
-  const fingers: [number, number, number, number][] = [
-    // x at the knuckle, thickness, length, splay (rad)
-    [-0.0255, 0.93, 0.074, 0.12],
-    [-0.0087, 1.0, 0.083, 0.03],
-    [0.0088, 0.95, 0.078, -0.06],
-    [0.0255, 0.82, 0.062, -0.17],
-  ];
-  const n = 6;
-  for (const [x, k, len, sp] of fingers) {
-    const pts: V3[] = [];
-    for (let i = 0; i <= n; i++) {
-      const t = i / n;
-      pts.push([x + Math.sin(sp) * len * t, 0.022 + Math.cos(sp) * len * t * (1 - 0.15 * t), 0.002 - 0.35 * t * t * len]);
-    }
-    sweep(b, pts, polygon(7, 0.0086 * k, 0.0079 * k), (r) => (r === n ? shade(SKIN, 1.08) : skin), {
-      side: [1, 0, 0],
-      smooth: true,
-      capStart: true,
-      capEnd: true,
-      scale: (i) => {
-        const tip = i === n ? 0.62 : 1;
-        return [(1 - (0.18 * i) / n) * tip, (1 - (0.18 * i) / n) * tip];
-      },
-    });
-  }
-  // Thumb: out to the -X side and up, a little in front of the palm.
-  const thumb = curve(
-    [
-      [-0.018, -0.035, -0.002],
-      [-0.034, -0.02, -0.008],
-      [-0.046, -0.002, -0.013],
-      [-0.052, 0.016, -0.016],
-    ],
-    6,
-  );
-  sweep(b, thumb, polygon(7, 0.0098, 0.0084), (r) => (r === 5 ? shade(SKIN, 1.08) : skin), {
-    side: [0, 0, 1],
-    smooth: true,
-    capStart: true,
-    capEnd: true,
-    scale: (i) => {
-      const tip = i === 5 ? 0.62 : 1;
-      return [(1.2 - (0.3 * i) / 5) * tip, (1.15 - (0.25 * i) / 5) * tip];
-    },
-  });
-}
-
-/**
- * Forearm: wrist at the origin, the sleeve running up +Y past the elbow (off
- * screen); wider across X (thumb side to little-finger side) than deep. The
- * wrist end is rounded into the hand so a bent wrist doesn't show a cut.
- */
-function forearm(b: MeshBuilder): void {
-  lathe(b, [[-0.019, 0.004], [-0.014, 0.017], [-0.006, 0.0235], [0.006, 0.0245], [0.042, 0.028]], 10, SKIN, { rx: 1, rz: 0.74 });
-  lathe(b, [[0.04, 0.03], [0.052, 0.036], [0.3, 0.043], [0.55, 0.05]], 10, (r) => (r === 1 ? shade(SLEEVE, 1.15) : SLEEVE), { rx: 1, rz: 0.85 });
-}
 
 // ---- cache ----
 
@@ -713,9 +496,7 @@ export function fistGeometry(gripR = GRIP_R.sword, d: Detail = 2): THREE.BufferG
   const key = `${gripR.toFixed(4)}#${d}`;
   let g = fistGeos.get(key);
   if (!g) {
-    const b = new MeshBuilder();
-    fist(b, gripR, d);
-    g = b.build();
+    g = buildFist(gripR, d === 2 ? 2 : 1);
     g.name = `fist:${key}`;
     fistGeos.set(key, g);
   }
@@ -724,20 +505,12 @@ export function fistGeometry(gripR = GRIP_R.sword, d: Detail = 2): THREE.BufferG
 
 /** An open right hand, palm forward (-Z), fingers up. */
 export function openHandGeometry(): THREE.BufferGeometry {
-  if (!openGeo) {
-    const b = new MeshBuilder();
-    openHand(b);
-    openGeo = b.build();
-  }
+  openGeo ??= buildOpenHand();
   return openGeo;
 }
 
 export function forearmGeometry(): THREE.BufferGeometry {
-  if (!armGeo) {
-    const b = new MeshBuilder();
-    forearm(b);
-    armGeo = b.build();
-  }
+  armGeo ??= buildForearm();
   return armGeo;
 }
 

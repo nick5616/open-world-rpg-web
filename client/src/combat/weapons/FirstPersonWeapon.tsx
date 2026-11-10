@@ -46,14 +46,21 @@ interface Pose {
 // Playtest 2 ("the hand is fucked up here"): each hold keeps the grip at
 // 45-80 degrees to the forearm (the handle across the palm, the wrist only a
 // little bent toward the little finger), the way a hand can actually close
-// on it; before, the sword and wand pointed straight down the forearm and the
-// fist had to fold sideways at the wrist to hold them.
+// on it.
+// Playtest 2 ("fix the view": a boss straight ahead was cut in half by the
+// blade): at rest nothing crosses the middle 40% of the screen (hands.test.ts
+// checks 16:9 to 32:9). The sword is carried low on the right with the
+// blade up and leaning a little left, its tip off the top of the screen
+// right of centre; the staff stands upright on the right, its head in the
+// top-right corner; the wand is held low with its tip beside the crosshair,
+// not on it; the spear's point is low, aimed at a foe's waist below the
+// crosshair. Swings still sweep across the view (SWINGS below).
 export const POSES: Record<WeaponKind, Pose> = {
-  sword: { pos: [0.24, -0.22, -0.44], up: [-0.32, 0.9, -0.55], face: [-0.3, 0.35, 1], elbow: [0.34, -0.36, 0.15] },
-  spear: { pos: [0.22, -0.28, -0.22], up: [-0.13, 0.12, -1], face: [0, 1, 0.1], offhand: 0.46, elbow: [0.3, -0.75, 0] },
+  sword: { pos: [0.5, -0.24, -0.52], up: [-0.19, 0.92, -0.3], face: [-0.4, 0.6, 1], elbow: [0.46, -0.6, 0] },
+  spear: { pos: [0.22, -0.25, -0.25], up: [-0.1, -0.27, -1], face: [0, 1, 0.1], offhand: 0.46, elbow: [0.3, -0.75, 0] },
   bow: { pos: [-0.14, -0.1, -0.58], up: [0.35, 0.95, 0.3], face: [0.1, -0.3, 0.95], scale: 0.85 },
-  staff: { pos: [0.27, -0.28, -0.46], up: [-0.15, 1, -0.45], face: [0.3, 0, 1], elbow: [0.36, -0.4, 0.15] },
-  wand: { pos: [0.22, -0.2, -0.38], up: [-0.3, 0.75, -0.6], face: [0.3, 1, 0.3], elbow: [0.32, -0.3, 0.15] },
+  staff: { pos: [0.42, -0.3, -0.52], up: [0.15, 0.88, -0.36], face: [0.3, 0, 1], elbow: [0.5, -0.55, 0.05] },
+  wand: { pos: [0.34, -0.27, -0.44], up: [-0.1, 0.95, -0.2], face: [0.3, 1, 0.3], elbow: [0.4, -0.55, 0] },
 };
 /** The swing pivots about the right shoulder region, so a cut sweeps across the view. */
 export const PIVOT = new THREE.Vector3(0.22, -0.45, -0.1);
@@ -61,7 +68,18 @@ export const R_SHOULDER = new THREE.Vector3(0.3, -0.6, 0.12);
 export const L_SHOULDER = new THREE.Vector3(-0.3, -0.6, 0.12);
 const STRIDE_M = 2.4;
 
-function poseQuat(p: Pose): THREE.Quaternion {
+/**
+ * Playtest 2 ("fix the view"): the field of view is vertical, so a wider
+ * screen shows more to the sides and the view model, fixed in camera space,
+ * drifts toward the middle of it. Past 16:9 the whole rig slides right in
+ * proportion (to 32:9), keeping the weapon about as far from the crosshair
+ * on an ultrawide as on a 16:9 screen.
+ */
+export function aspectShift(aspect: number): number {
+  return 0.17 * Math.min(1.8, Math.max(0, aspect - 16 / 9));
+}
+
+export function poseQuat(p: Pose): THREE.Quaternion {
   const y = new THREE.Vector3(...p.up).normalize();
   const z = new THREE.Vector3(...p.face);
   z.addScaledVector(y, -z.dot(y)).normalize();
@@ -69,6 +87,71 @@ function poseQuat(p: Pose): THREE.Quaternion {
   return new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(x, y, z));
 }
 export const QUATS = Object.fromEntries(Object.entries(POSES).map(([k, p]) => [k, poseQuat(p)])) as Record<WeaponKind, THREE.Quaternion>;
+
+/**
+ * A melee swing as three held poses between rest and rest (camera space,
+ * grip position and weapon direction like POSES): the wind-up, the cut
+ * across the middle of the view, the follow-through. A forehand is cocked
+ * over the right shoulder and cuts down to the lower left; a backhand is
+ * the mirror, cocked over the left shoulder.
+ */
+export const SWINGS: Record<'fore' | 'back', [Pose, Pose, Pose]> = {
+  fore: [
+    { pos: [0.4, -0.12, -0.38], up: [0.35, 0.8, 0.5], face: [-0.6, 0.6, 0.5] },
+    { pos: [0.14, -0.14, -0.52], up: [-0.6, 0.2, -0.75], face: [-0.6, 0.6, 0.5] },
+    { pos: [-0.12, -0.3, -0.48], up: [-0.7, -0.45, -0.4], face: [-0.6, 0.6, 0.5] },
+  ],
+  back: [
+    { pos: [-0.1, -0.1, -0.42], up: [-0.6, 0.65, 0.3], face: [0.6, 0.6, 0.5] },
+    { pos: [0.0, -0.16, -0.5], up: [0.7, 0.3, -0.65], face: [0.6, 0.6, 0.5] },
+    { pos: [0.36, -0.32, -0.45], up: [0.75, -0.4, -0.35], face: [0.6, 0.6, 0.5] },
+  ],
+};
+const SWING_Q = { fore: SWINGS.fore.map(poseQuat), back: SWINGS.back.map(poseQuat) };
+/** Swing timing (fraction of the move): wind-up ends, the cut passes the middle, the follow-through ends. */
+const SWING_T = [0.22, 0.4, 0.6] as const;
+const sv = new THREE.Vector3();
+const sp = new THREE.Vector3();
+const sq = new THREE.Quaternion();
+
+/**
+ * The grip's camera-space position and orientation `sw` (0..1) of the way
+ * through a melee swing (`dir` 1 forehand, -1 backhand). Staff and wand
+ * swing 70% as far.
+ */
+export function swingPose(kind: WeaponKind, sw: number, dir: number, outPos: THREE.Vector3, outQ: THREE.Quaternion): void {
+  const rest = POSES[kind];
+  const keys = dir > 0 ? SWINGS.fore : SWINGS.back;
+  const qs = dir > 0 ? SWING_Q.fore : SWING_Q.back;
+  const k = kind === 'sword' ? 1 : 0.7;
+  // a key pulled toward rest by k
+  const key = (i: number, p: THREE.Vector3, q: THREE.Quaternion) => {
+    p.set(...rest.pos).lerp(sv.set(...keys[i].pos), k);
+    q.copy(QUATS[kind]).slerp(qs[i], k);
+  };
+  const [t1, t2, t3] = SWING_T;
+  let a: number;
+  let b: number;
+  let u: number;
+  if (sw < t1) [a, b, u] = [-1, 0, smooth(0, t1, sw)];
+  else if (sw < t2) [a, b, u] = [0, 1, ((sw - t1) / (t2 - t1)) ** 1.6];
+  else if (sw < t3) [a, b, u] = [1, 2, 1 - (1 - (sw - t2) / (t3 - t2)) ** 1.6];
+  else [a, b, u] = [2, -1, smooth(t3, 1, sw)];
+  const pa = outPos;
+  const qa = outQ;
+  if (a < 0) {
+    pa.set(...rest.pos);
+    qa.copy(QUATS[kind]);
+  } else key(a, pa, qa);
+  const pb = sp;
+  const qb = sq;
+  if (b < 0) {
+    pb.set(...rest.pos);
+    qb.copy(QUATS[kind]);
+  } else key(b, pb, qb);
+  outPos.lerp(pb, u);
+  outQ.slerp(qb, u);
+}
 
 const smooth = (a: number, b: number, x: number) => {
   const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
@@ -99,6 +182,9 @@ const CAST_FROM = new THREE.Vector3(-0.18, -0.11, -0.64);
 const CAST_MS = 520;
 const tipLocal = new THREE.Vector3();
 
+/** The bowstring is thin: the drawing hand closes on it tightly. */
+const STRING_R = 0.0075;
+
 export function makeRig(): Rig {
   const mat = weaponMaterial();
   const mesh = (g: THREE.BufferGeometry) => {
@@ -110,6 +196,10 @@ export function makeRig(): Rig {
   const pivot = new THREE.Group();
   const grip = new THREE.Group();
   const weapon = mesh(weaponGeometry({ weapon: 'sword', material: '', gem: -1 }, 2));
+  // every hand this rig can need, built now (each bakes its shading, a few
+  // tens of ms) so switching weapons mid-fight never waits on one
+  for (const k of Object.keys(POSES) as WeaponKind[]) fistGeometry(GRIP_R[k] * (POSES[k].scale ?? 1));
+  fistGeometry(STRING_R);
   const rFist = mesh(fistGeometry(GRIP_R.sword));
   const lFist = mesh(fistGeometry(GRIP_R.spear));
   lFist.scale.x = -1; // mirrored: a left hand
@@ -135,8 +225,6 @@ const v3 = new THREE.Vector3();
 const m4 = new THREE.Matrix4();
 const BACK = new THREE.Vector3(-0.25, 0, 1).normalize();
 
-/** The bowstring is thin: the drawing hand closes on it tightly. */
-const STRING_R = 0.0075;
 
 /** Switch the rig to a weapon: its model, scale, hold and the fists that fit its grip. */
 export function setRigWeapon(rig: Rig, look: WeaponLook): void {
@@ -290,10 +378,12 @@ export function FirstPersonWeapon() {
     const hs = Math.hypot(lp.vel.x, lp.vel.z);
     if (lp.grounded) st.phase += (hs * Math.min(delta, 0.1) * Math.PI * 2) / STRIDE_M;
     const amp = lp.grounded ? 0.012 * Math.min(hs / 5, 1.6) : 0;
-    rig.root.position.set(Math.cos(st.phase) * amp, -Math.abs(Math.sin(st.phase)) * amp * 1.4, 0);
+    const aspect = (camera as THREE.PerspectiveCamera).aspect ?? 16 / 9;
+    rig.root.position.set(aspectShift(aspect) + Math.cos(st.phase) * amp, -Math.abs(Math.sin(st.phase)) * amp * 1.4, 0);
 
     // Pose + motion.
     rig.grip.position.set(pose.pos[0] - PIVOT.x, pose.pos[1] - PIVOT.y, pose.pos[2] - PIVOT.z);
+    rig.grip.quaternion.copy(QUATS[st.kind]);
     rig.pivot.rotation.set(0, 0, 0);
     const fwd = v1.set(0, 1, 0).applyQuaternion(rig.grip.quaternion);
     const flick = now - st.flickAt < 260 ? Math.sin(Math.PI * Math.min(1, (now - st.flickAt) / 260)) : 0;
@@ -301,11 +391,8 @@ export function FirstPersonWeapon() {
     if (held > 0) st.heldAt = now;
     if (st.kind === 'sword' || st.kind === 'staff' || st.kind === 'wand') {
       if (st.swinging) {
-        const u1 = smooth(0, 0.22, sw);
-        const u2 = smooth(0.18, 0.6, sw);
-        const back = 1 - smooth(0.62, 1, sw);
-        const k = st.kind === 'sword' ? 1 : 0.7;
-        rig.pivot.rotation.set((0.35 * u1 - 1.05 * u2) * back * k, st.dir * (-0.45 * u1 + 1.5 * u2) * back * k, st.dir * (-0.3 * u1 + 0.6 * u2) * back * k);
+        swingPose(st.kind, sw, st.dir, rig.grip.position, rig.grip.quaternion);
+        rig.grip.position.sub(PIVOT);
       } else if (st.kind !== 'sword' && flick > 0) {
         rig.grip.position.addScaledVector(fwd, 0.07 * flick);
         rig.pivot.rotation.x = -0.18 * flick;

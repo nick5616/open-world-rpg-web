@@ -9,7 +9,7 @@
 
 import * as THREE from 'three';
 import { CONTENT } from '@lodestone/contracts';
-import { aimOpenHand, CAST_REST, CAST_UP, L_SHOULDER, makeRig, PIVOT, POSES, poseHands, setRigWeapon } from '../../combat/weapons/FirstPersonWeapon';
+import { aimOpenHand, aspectShift, poseQuat, CAST_REST, CAST_UP, L_SHOULDER, makeRig, PIVOT, POSES, poseHands, QUATS, setRigWeapon, swingPose } from '../../combat/weapons/FirstPersonWeapon';
 import { BOW_MAX_DRAW, bowNock, FIST_WRIST, setBowDraw } from '../../combat/weapons/models';
 import { packLook, type WeaponKind } from '../../combat/weapons/look';
 import { Avatar } from '../avatar';
@@ -43,7 +43,7 @@ scene.add(camera);
 const rig = makeRig();
 camera.add(rig.root);
 
-type FpOpts = { swing?: number; dir?: number; weapon?: WeaponKind; cast?: number; draw?: number; fov?: number; close?: 'r' | 'l' | 'cast'; label?: string };
+type FpOpts = { swing?: number; dir?: number; weapon?: WeaponKind; cast?: number; draw?: number; fov?: number; close?: 'r' | 'l' | 'cast'; label?: string; box?: boolean; orbit?: [number, number]; pose?: { pos: [number, number, number]; up: [number, number, number]; face: [number, number, number] } };
 
 function fp(o: FpOpts = {}): void {
   avatar.root.visible = false;
@@ -56,22 +56,15 @@ function fp(o: FpOpts = {}): void {
   camera.updateProjectionMatrix();
   camera.updateMatrixWorld(true);
   setRigWeapon(rig, { weapon: kind, material: '', gem: 0 });
-  const p = POSES[kind];
+  const p = { ...POSES[kind], ...o.pose }; // `pose`: try a hold without rebuilding
   rig.grip.position.set(p.pos[0] - PIVOT.x, p.pos[1] - PIVOT.y, p.pos[2] - PIVOT.z);
   rig.pivot.rotation.set(0, 0, 0);
+  rig.grip.quaternion.copy(o.pose ? poseQuat(p) : QUATS[kind]);
+  rig.root.position.set(aspectShift(camera.aspect), 0, 0);
   if (o.swing !== undefined) {
     // FirstPersonWeapon's melee swing at this fraction (dir 1 forehand)
-    const sm = (a: number, b: number, x: number) => {
-      const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
-      return t * t * (3 - 2 * t);
-    };
-    const sw = o.swing;
-    const u1 = sm(0, 0.22, sw);
-    const u2 = sm(0.18, 0.6, sw);
-    const back = 1 - sm(0.62, 1, sw);
-    const k = kind === 'sword' ? 1 : 0.7;
-    const d = o.dir ?? 1;
-    rig.pivot.rotation.set((0.35 * u1 - 1.05 * u2) * back * k, d * (-0.45 * u1 + 1.5 * u2) * back * k, d * (-0.3 * u1 + 0.6 * u2) * back * k);
+    swingPose(kind, o.swing, o.dir ?? 1, rig.grip.position, rig.grip.quaternion);
+    rig.grip.position.sub(PIVOT);
   }
   const draw = o.draw ?? 0;
   if (kind === 'bow') {
@@ -93,6 +86,14 @@ function fp(o: FpOpts = {}): void {
     zoomCam.fov = o.fov ?? 24;
     zoomCam.aspect = camera.aspect;
     zoomCam.position.set(0, 1.6, 0);
+    if (o.orbit) {
+      // look at the hand from round it (yaw, pitch in degrees, 0 0 = from the eye's side)
+      const from = zoomCam.position.clone().sub(world).normalize();
+      from.applyAxisAngle(new THREE.Vector3(0, 1, 0), THREE.MathUtils.degToRad(o.orbit[0]));
+      const side = new THREE.Vector3().crossVectors(from, new THREE.Vector3(0, 1, 0)).normalize();
+      from.applyAxisAngle(side, THREE.MathUtils.degToRad(o.orbit[1]));
+      zoomCam.position.copy(world).addScaledVector(from, 0.3);
+    }
     zoomCam.lookAt(world);
     zoomCam.updateProjectionMatrix();
     renderer.render(scene, zoomCam);
@@ -182,6 +183,14 @@ function sheet(cols: number, rows: number, items: ({ fp: FpOpts } | { tp: TpOpts
     d.textContent = label;
     d.style.cssText = `position:absolute;left:${x + 6}px;top:${H - y - h + 4}px;font:600 12px system-ui;color:#fff;text-shadow:0 1px 2px #000`;
     labels.appendChild(d);
+    if ('fp' in it && it.fp.box) {
+      // the middle 40% of the view that must stay clear at rest (hands.test.ts), and the crosshair
+      const b = document.createElement('div');
+      b.style.cssText = `position:absolute;left:${x + w * 0.3}px;top:${H - y - h + h * 0.3}px;width:${w * 0.4}px;height:${h * 0.4}px;border:1px dashed rgba(255,255,255,.75)`;
+      const c = document.createElement('div');
+      c.style.cssText = `position:absolute;left:${x + w / 2 - 3}px;top:${H - y - h / 2 - 3}px;width:6px;height:6px;border-radius:50%;background:#fff;box-shadow:0 0 2px #000`;
+      labels.append(b, c);
+    }
   });
   renderer.setScissorTest(false);
   tileAspect = W / H;
