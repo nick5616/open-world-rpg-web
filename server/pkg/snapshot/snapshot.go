@@ -52,6 +52,9 @@ type EntState struct {
 	Name      string
 	Level     uint8
 	PartyID   uint32
+	// Appearance (protocol v6, CR 034): what a player wears (proto
+	// EntityRecord.appearance); 0 for everything else.
+	Appearance uint64
 }
 
 // Diff returns the record turning base into cur. base nil means first sight
@@ -124,6 +127,10 @@ func Diff(base, cur *EntState) proto.EntityRecord {
 		r.Mask |= proto.EntityRecordHasPartyID
 		r.PartyID = cur.PartyID
 	}
+	if cur.Appearance != base.Appearance {
+		r.Mask |= proto.EntityRecordHasAppearance
+		r.Appearance = cur.Appearance
+	}
 	return r
 }
 
@@ -179,6 +186,9 @@ func Apply(base *EntState, r *proto.EntityRecord) EntState {
 	}
 	if m&proto.EntityRecordHasPartyID != 0 {
 		s.PartyID = r.PartyID
+	}
+	if m&proto.EntityRecordHasAppearance != 0 {
+		s.Appearance = r.Appearance
 	}
 	return s
 }

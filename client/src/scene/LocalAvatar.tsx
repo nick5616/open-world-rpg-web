@@ -7,6 +7,9 @@
 // hold, your held dash's flight, mining swings), posed by the same
 // followCaster other players' bodies use, plus losing health. Hidden in
 // first person and when the third-person camera is pulled into the head.
+// CR 034: your worn armor from the zone's inventory event (its "ap" is the
+// very number other players' snapshots carry for you), so you and everyone
+// watching see the same pieces.
 
 import { useEffect, useMemo } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
@@ -23,6 +26,7 @@ import { combatRuntime } from '../combat/link';
 import { useCombatHud } from '../combat/store';
 import { materialKey, packLook, type WeaponKind } from '../combat/weapons/look';
 import { TYPE_RIDING } from '../ui/mounts/events';
+import { ownAppearance } from '../combat/armor/own';
 
 const ACTIVITY: Partial<Record<MoveMode, number>> = {
   air: Activity.airborne,
@@ -101,6 +105,7 @@ export function LocalAvatar() {
     v.pitch = localPlayer.pitch;
     v.speed = Math.hypot(localPlayer.vel.x, localPlayer.vel.z);
     v.activity = ACTIVITY[localPlayer.mode] ?? 0;
+    v.appearance = ownAppearance();
     const hud = useCombatHud.getState();
     if (rt && hud.active) {
       v.healthPct = rt.timeline.downed ? 0 : Math.max(1, Math.round((hud.health / Math.max(1, hud.healthMax)) * 100));

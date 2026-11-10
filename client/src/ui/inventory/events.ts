@@ -38,6 +38,8 @@ export interface Inventory {
   quick: string;
   persist: string;
   items: WireItem[];
+  /** CR 034: your worn armor's appearance (the number your snapshot record carries for others: combat/armor). */
+  ap: number;
 }
 
 export interface LootEntry {
@@ -78,7 +80,7 @@ function json<T>(b: Uint8Array): T {
 
 /** Event 400: the whole inventory (full replace). */
 export function decodeInventory(data: Uint8Array): Inventory {
-  const j = json<{ v?: number; gold?: number; quick?: string; persist?: string; items?: WireItem[] }>(data);
+  const j = json<{ v?: number; gold?: number; quick?: string; persist?: string; items?: WireItem[]; ap?: number }>(data);
   if (typeof j !== 'object' || j === null) throw new Error('inventory: not an object');
   const items = Array.isArray(j.items) ? j.items.filter((it) => it && typeof it.b === 'string' && typeof it.s === 'string') : [];
   for (const it of items) {
@@ -87,7 +89,7 @@ export function decodeInventory(data: Uint8Array): Inventory {
     it.r = it.r ?? 0;
     it.p = it.p ?? 0;
   }
-  return { gold: j.gold ?? 0, quick: j.quick ?? '', persist: j.persist ?? 'memory', items };
+  return { gold: j.gold ?? 0, quick: j.quick ?? '', persist: j.persist ?? 'memory', items, ap: typeof j.ap === 'number' ? j.ap : 0 };
 }
 
 /** Event 401: what was just added. */

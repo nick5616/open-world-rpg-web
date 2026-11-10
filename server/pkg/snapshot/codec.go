@@ -208,6 +208,7 @@ var recordFieldSizes = [...]struct {
 	{proto.EntityRecordHasYaw, 1}, {proto.EntityRecordHasPitch, 1}, {proto.EntityRecordHasVx, 2}, {proto.EntityRecordHasVy, 2},
 	{proto.EntityRecordHasVz, 2}, {proto.EntityRecordHasHealthPct, 1}, {proto.EntityRecordHasActivity, 1},
 	{proto.EntityRecordHasTypeID, 2}, {proto.EntityRecordHasLevel, 1}, {proto.EntityRecordHasPartyID, 4},
+	{proto.EntityRecordHasAppearance, 8}, // protocol v6 (CR 034)
 }
 
 // selfSize is the encoded size of a SelfState record.

@@ -66,7 +66,7 @@ for your package; document each kind's use of `entityId`, `targetId`, `value`,
 | 225 | `summon_attack` | CR 020. An ally (summon spell) attacked, within 64 m: `entityId` = the ally (EntityKind effect, typeId = summon id | (element + 1) << 8, health % = time left), `targetId` = its target (enemy or player), `value` = the spell that called it, `x/y/z` = the ally's chest, `data` = u16 summon id. A melee bite lands at once, a bolt when it would arrive (200 / 992 follow); about one a second per ally |
 | 230 | `dash_slam` | Playtest 2 dash overhaul (CR 021). Within 64 m: a held flight dash (magma dash) dived into the ground and burst there (the zone already applied the damage). `entityId` = the player, `targetId` = dash variant (combat.yaml dashes id), `value` = burst radius cm, `x/y/z` = where (cm). 231-239 reserved for dashes |
 
-| 400 | `inventory` | WP14. To you, after join and after every change: your whole inventory. `entityId` = you, `value` = gold, `data` = UTF-8 JSON `{"v":1,"gold":n,"quick":"<consumable key the drink key uses>","persist":"db"\|"local"\|"memory","items":[{h, b, q, l, r, s, n?, a?, u?, k?, t, v, p}]}`: `h` wire handle (u32, the Interact 21 targetId), `b` item key (contracts/items.yaml), `q` quantity, `l` item level, `r` rarity 0-7, `s` slot (`inv:0-39`, `gem:N`, `ore:N`, `purse`, `eq:main0` / `eq:main1` (loadout weapons), `eq:head` / `eq:body` / `eq:legs`), `n` generated name (mythic+), `a` affixes `[{k, s, v}]` (key, stat, value), `u` unique keys, `k` sockets (gem key or "" per socket), `t` tradeable, `v` verified, `p` provenance entries (hands it passed through) |
+| 400 | `inventory` | WP14. To you, after join and after every change: your whole inventory. `entityId` = you, `value` = gold, `data` = UTF-8 JSON `{"v":1,"gold":n,"quick":"<consumable key the drink key uses>","persist":"db"\|"local"\|"memory","ap":n,"items":[{h, b, q, l, r, s, n?, a?, u?, k?, t, v, p}]}`: `h` wire handle (u32, the Interact 21 targetId), `b` item key (contracts/items.yaml), `q` quantity, `l` item level, `r` rarity 0-7, `s` slot (`inv:0-39`, `gem:N`, `ore:N`, `purse`, `eq:main0` / `eq:main1` (loadout weapons), `eq:head` / `eq:body` / `eq:legs`), `n` generated name (mythic+), `a` affixes `[{k, s, v}]` (key, stat, value), `u` unique keys, `k` sockets (gem key or "" per socket), `t` tradeable, `v` verified, `p` provenance entries (hands it passed through). `ap` (CR 034, omitted when 0): your worn armor's appearance, the number your snapshot record carries for everyone else (see "Players" below) |
 | 401 | `loot_granted` | WP14. To you: items just added to your inventory. `targetId` = source (1 kill, 2 container, 3 vein, 4 craft, 5 purchase, 6 starter, 7 a dropped item you took, 8 gem, 9 quest reward (CR 013)), `value` = entries, `data` = JSON `[{b, q, r, n?}]` |
 | 402 | `bitchin` | WP14. To everyone in the zone (and the world's global chat through the social bus): a Bitchin' item was found (spec 8). `entityId` = finder, `data` = JSON `{name, item, displayName, text}` |
 | 403 | `item_refused` | WP14. To you: `targetId` = Interact kind << 8 \| action, `value` = reason: 1 inventory full, 2 no such item, 3 not allowed, 4 missing ingredients, 5 blueprint required, 6 not enough gold, 7 too far, 8 already opened (this character), 9 no such socket, 10 not at a waypoint, 11 busy, 12 no station open here |
@@ -277,6 +277,18 @@ tick; it rides the usual delta coding, ghosts and handoffs. The same
 per-loadout material codes end `combat_sync` (212) for the owner's own
 first-person view. See server/zone/internal/game/weaponlook.go and
 client/src/combat/weapons/look.ts.
+
+Players (playtest 2 visible armor, CR 034, protocol v6) carry what they
+wear in `EntityRecord.appearance` (u64): per slot s (0 head, 1 body, 2 legs)
+at bit 17 x s, bits 0-5 the visual id (1 + the piece's index among
+items.yaml armor, 0 none), bits 6-9 the material code (as the weapon look),
+bits 10-12 the rarity, bits 13-16 the first socketed gem (1 + its index in
+items.yaml gems, 0 none); bits 51-63 zero. The zone recomputes it only when
+the inventory changes, so it costs nothing per tick and nothing at all for
+a player wearing nothing; the delta coding sends it on change and on first
+sight, ghosts and presence records carry it, and the owner reads the same
+number from Event 400 `ap`. See server/zone/internal/game/appearance.go and
+client/src/combat/armor/appearance.ts.
 
 NPCs (WP20) are ordinary snapshot entities: `EntityRecord.kind` = npc (5),
 `typeId` = role | appearance variant << 8, `level` = merchant kind (255

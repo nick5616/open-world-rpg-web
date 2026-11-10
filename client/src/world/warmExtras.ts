@@ -20,6 +20,7 @@ import { caveRockMaterial } from './caves/caveVisuals';
 import { weaponMaterial } from '../combat/weapons/material';
 import { spellFxWarmObjects } from '../combat/fx/warm';
 import { enemyWarmObjects } from '../combat/enemies/warm';
+import { armorMaterial } from '../combat/armor/material';
 
 let kept: THREE.Object3D[] | null = null;
 
@@ -70,6 +71,20 @@ export function warmExtras(): THREE.Object3D[] {
   // Playtest 2 enemy models (combat/enemies/warm.ts): the instanced part materials
   // (opaque, jelly, spectral, tinted), bars, auras and the damage-number glyphs.
   out.push(...enemyWarmObjects());
+  // Playtest 2 visible armor (CR 034, combat/armor): the armor material on the
+  // skinned full-rig outfit, and plain (the mid silhouette, first-person sleeves).
+  const ag = townGeometry();
+  ag.setAttribute('surf', new THREE.BufferAttribute(new Float32Array(9), 3));
+  out.push(new THREE.Mesh(ag, armorMaterial()));
+  const sg = ag.clone();
+  sg.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(new Uint16Array(12), 4));
+  sg.setAttribute('skinWeight', new THREE.Float32BufferAttribute(new Float32Array(12).fill(0.25), 4));
+  const bone = new THREE.Bone();
+  const skinned = new THREE.SkinnedMesh(sg, armorMaterial());
+  skinned.add(bone);
+  skinned.bind(new THREE.Skeleton([bone], [new THREE.Matrix4()]), new THREE.Matrix4());
+  skinned.castShadow = true;
+  out.push(skinned);
   for (const o of out) o.frustumCulled = false;
   kept = out;
   return out;

@@ -39,6 +39,7 @@ type encEnt struct {
 	HealthPct uint8
 	Activity  uint8
 	Level     uint8
+	look      uint16 // CR 034: the appearance, interned (LookID), in what was padding: still 40 bytes
 }
 
 // names interns entity names process-wide (encoders on every snapshot worker
@@ -81,14 +82,67 @@ func NameID(name string) uint32 {
 
 func nameOf(id uint32) string { return (*names.list.Load())[id] }
 
+// Appearances (protocol v6, CR 034) are interned like names, into the two
+// bytes of padding encEnt had, so baseline states stay 40 bytes. Most
+// entities wear nothing (0: no lookup at all); a zone sees a few thousand
+// distinct outfits at most. Past 65,534 a new one gets lookOverflow, which
+// `same` treats as changed and diffEnc re-sends in full from the current
+// state: still correct, a few bytes dearer, and never reached in practice.
+const lookOverflow = 0xffff
+
+var looks = struct {
+	mu   sync.RWMutex
+	ids  map[uint64]uint16
+	list atomic.Pointer[[]uint64]
+}{ids: map[uint64]uint16{0: 0}}
+
+func init() { looks.list.Store(&[]uint64{0}) }
+
+// LookID interns an appearance (0 is 0).
+func LookID(ap uint64) uint16 {
+	if ap == 0 {
+		return 0
+	}
+	looks.mu.RLock()
+	id, ok := looks.ids[ap]
+	looks.mu.RUnlock()
+	if ok {
+		return id
+	}
+	looks.mu.Lock()
+	defer looks.mu.Unlock()
+	if id, ok := looks.ids[ap]; ok {
+		return id
+	}
+	l := *looks.list.Load()
+	if len(l) >= lookOverflow {
+		return lookOverflow
+	}
+	l = append(l, ap)
+	id = uint16(len(l) - 1)
+	looks.ids[ap] = id
+	looks.list.Store(&l)
+	return id
+}
+
+// lookOf is LookID's inverse (lookOverflow: unknown, 0).
+func lookOf(id uint16) uint64 {
+	if l := *looks.list.Load(); int(id) < len(l) {
+		return l[id]
+	}
+	return 0
+}
+
 func toEnc(s *EntState, name uint32) encEnt {
 	return encEnt{ID: s.ID, X: s.X, Y: s.Y, Z: s.Z, PartyID: s.PartyID, name: name, Vx: s.Vx, Vy: s.Vy, Vz: s.Vz,
-		TypeID: s.TypeID, Kind: s.Kind, Yaw: s.Yaw, Pitch: s.Pitch, HealthPct: s.HealthPct, Activity: s.Activity, Level: s.Level}
+		TypeID: s.TypeID, Kind: s.Kind, Yaw: s.Yaw, Pitch: s.Pitch, HealthPct: s.HealthPct, Activity: s.Activity, Level: s.Level,
+		look: LookID(s.Appearance)}
 }
 
 func (b *encEnt) state() EntState {
 	return EntState{ID: b.ID, Kind: b.Kind, X: b.X, Y: b.Y, Z: b.Z, Yaw: b.Yaw, Pitch: b.Pitch, Vx: b.Vx, Vy: b.Vy, Vz: b.Vz,
-		HealthPct: b.HealthPct, Activity: b.Activity, TypeID: b.TypeID, Name: nameOf(b.name), Level: b.Level, PartyID: b.PartyID}
+		HealthPct: b.HealthPct, Activity: b.Activity, TypeID: b.TypeID, Name: nameOf(b.name), Level: b.Level, PartyID: b.PartyID,
+		Appearance: lookOf(b.look)}
 }
 
 // diffEnc is Diff(&b.state(), cur) for cur with name id curName, without
@@ -96,7 +150,11 @@ func (b *encEnt) state() EntState {
 // miss per record): names compare by id, which is the same test.
 func diffEnc(b *encEnt, cur *EntState, curName uint32) proto.EntityRecord {
 	base := EntState{ID: b.ID, Kind: b.Kind, X: b.X, Y: b.Y, Z: b.Z, Yaw: b.Yaw, Pitch: b.Pitch, Vx: b.Vx, Vy: b.Vy, Vz: b.Vz,
-		HealthPct: b.HealthPct, Activity: b.Activity, TypeID: b.TypeID, Name: cur.Name, Level: b.Level, PartyID: b.PartyID}
+		HealthPct: b.HealthPct, Activity: b.Activity, TypeID: b.TypeID, Name: cur.Name, Level: b.Level, PartyID: b.PartyID,
+		Appearance: lookOf(b.look)}
+	if b.look == lookOverflow {
+		base.Appearance = ^cur.Appearance // unknown: send it
+	}
 	r := Diff(&base, cur) // names equal here: no name bit
 	if b.name != curName {
 		r.Mask |= proto.EntityRecordHasName
@@ -110,7 +168,8 @@ func diffEnc(b *encEnt, cur *EntState, curName uint32) proto.EntityRecord {
 func (b *encEnt) same(c *EntState, name uint32) bool {
 	return b.X == c.X && b.Y == c.Y && b.Z == c.Z && b.Vx == c.Vx && b.Vz == c.Vz && b.Vy == c.Vy && b.Yaw == c.Yaw &&
 		b.Pitch == c.Pitch && b.HealthPct == c.HealthPct && b.Activity == c.Activity && b.TypeID == c.TypeID &&
-		b.Kind == c.Kind && b.name == name && b.Level == c.Level && b.PartyID == c.PartyID
+		b.Kind == c.Kind && b.name == name && b.Level == c.Level && b.PartyID == c.PartyID &&
+		b.look != lookOverflow && lookOf(b.look) == c.Appearance
 }
 
 // The frames themselves (G5, 4 vCPU): a frame entry is not the state but a
@@ -172,7 +231,7 @@ func fingerprint(b *encEnt) uint64 {
 		uint64(uint32(b.Z)) | uint64(b.PartyID)<<32,
 		uint64(b.name) | uint64(uint16(b.Vx))<<32 | uint64(uint16(b.Vy))<<48,
 		uint64(uint16(b.Vz)) | uint64(b.TypeID)<<16 | uint64(b.Kind)<<32 | uint64(b.Yaw)<<40 | uint64(b.Pitch)<<48 | uint64(b.HealthPct)<<56,
-		uint64(b.Activity) | uint64(b.Level)<<8,
+		uint64(b.Activity) | uint64(b.Level)<<8 | uint64(b.look)<<16,
 	} {
 		h = (h ^ w) * m
 		h ^= h >> 29

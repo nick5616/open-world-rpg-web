@@ -82,6 +82,7 @@ type Item struct {
 	Sockets  int     `json:"sockets"`
 	Weapon   string  `json:"weapon"`
 	Armor    string  `json:"armor"`
+	Style    string  `json:"style"` // CR 034: the armor shape the avatar wears (items.yaml)
 	Material string  `json:"material"`
 	Health   float64 `json:"health"`
 	ArmorPct float64 `json:"armorPct"`

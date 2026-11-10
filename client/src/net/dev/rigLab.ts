@@ -16,6 +16,9 @@ import { Avatar } from '../avatar';
 import { EMOTE_PLAYING, type ActionKind } from '../avatarAnim';
 import type { RemoteView } from '../interpolation';
 import { TYPE_RIDING } from '../../ui/mounts/events';
+import { dressForearms } from '../../combat/armor/fp';
+import { packAppearance } from '../../combat/armor/appearance';
+import { tickWeaponMaterial } from '../../combat/weapons/material';
 
 const W = 960;
 const H = 540;
@@ -43,7 +46,7 @@ scene.add(camera);
 const rig = makeRig();
 camera.add(rig.root);
 
-type FpOpts = { swing?: number; dir?: number; weapon?: WeaponKind; cast?: number; draw?: number; fov?: number; close?: 'r' | 'l' | 'cast'; label?: string; box?: boolean; orbit?: [number, number]; pose?: { pos: [number, number, number]; up: [number, number, number]; face: [number, number, number] } };
+type FpOpts = { armor?: number; swing?: number; dir?: number; weapon?: WeaponKind; cast?: number; draw?: number; fov?: number; close?: 'r' | 'l' | 'cast'; label?: string; box?: boolean; orbit?: [number, number]; pose?: { pos: [number, number, number]; up: [number, number, number]; face: [number, number, number] } };
 
 function fp(o: FpOpts = {}): void {
   avatar.root.visible = false;
@@ -56,6 +59,8 @@ function fp(o: FpOpts = {}): void {
   camera.updateProjectionMatrix();
   camera.updateMatrixWorld(true);
   setRigWeapon(rig, { weapon: kind, material: '', gem: 0 });
+  dressForearms(rig, o.armor ?? 0); // CR 034: the body armor's sleeves
+  tickWeaponMaterial(scene, 1000);
   const p = { ...POSES[kind], ...o.pose }; // `pose`: try a hold without rebuilding
   rig.grip.position.set(p.pos[0] - PIVOT.x, p.pos[1] - PIVOT.y, p.pos[2] - PIVOT.z);
   rig.pivot.rotation.set(0, 0, 0);
@@ -121,7 +126,7 @@ const SPEC: Partial<Record<ActionKind, { durMs: number; color: string | null }>>
   mine: { durMs: 520, color: null },
 };
 
-type TpOpts = { weapon?: WeaponKind | ''; view?: 'front' | 'side' | 'back' | 'left' | 'threeq'; action?: ActionKind; t?: number; emote?: number; instrument?: string; riding?: boolean; speed?: number; dist?: number; label?: string; at?: [number, number, number] };
+type TpOpts = { armor?: number; weapon?: WeaponKind | ''; view?: 'front' | 'side' | 'back' | 'left' | 'threeq'; action?: ActionKind; t?: number; emote?: number; instrument?: string; riding?: boolean; speed?: number; dist?: number; label?: string; at?: [number, number, number] };
 
 function tp(o: TpOpts = {}): void {
   rig.root.visible = false;
@@ -130,6 +135,8 @@ function tp(o: TpOpts = {}): void {
   const weapon = o.weapon === undefined ? 'sword' : o.weapon;
   view.typeId = (weapon ? packLook({ weapon, material: '', gem: 0 }) : 0) | (o.riding ? TYPE_RIDING : 0);
   view.speed = o.speed ?? 0;
+  view.appearance = o.armor ?? 0; // CR 034: worn armor
+  tickWeaponMaterial(scene, 1000);
   avatar.anim.resetMotion();
   // settle the idle/locomotion pose
   const dt = 1 / 60;
@@ -218,4 +225,4 @@ function diag(): Record<string, { gripToForearm: number; wristBend: number }> {
   return out;
 }
 
-(window as unknown as { __rigLab: unknown }).__rigLab = { fp, tp, sheet, diag, ready: true };
+(window as unknown as { __rigLab: unknown }).__rigLab = { fp, tp, sheet, diag, ap: packAppearance, ready: true }; // CR 034: ap() packs an outfit
