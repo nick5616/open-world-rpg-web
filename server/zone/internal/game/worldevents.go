@@ -574,6 +574,7 @@ func (s *Server) eventReward(sess *session, w *worldEvent) {
 		s.grantCombatXP(combat.XPGrant{Player: e.ID, XP: k.Reward.XP, Reason: "event"})
 	}
 	sess.cnt.st.Add("events", 1)
+	sess.cnt.st.Add("event:"+k.Key, 1) // CR 031: Every Event Under the Sun
 	sess.cnt.recheck = true
 	b, _ := json.Marshal(struct {
 		Name string `json:"name"`

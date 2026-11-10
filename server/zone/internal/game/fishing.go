@@ -344,7 +344,7 @@ func (s *Server) fishLanded(sess *session, fs *fishState, c *fishCast, f *conten
 		s.grantCombatXP(combat.XPGrant{Player: e.ID, XP: 15 + 25*int64(f.Rarity), Reason: "fish"})
 	}
 	if sess.cnt != nil {
-		s.contentFeats(sess)
+		s.contentAchievements(sess)
 		s.saveContent(sess)
 	}
 	s.log.Info("fish landed", "character", e.CharacterID, "fish", f.Key, "g", c.catch.WeightG)

@@ -369,6 +369,7 @@ func (s *Server) strike(id uint32, x, z float64, target *Entity, flags uint8) {
 			dealt = s.cbt.w.HurtByWeather(target.cbt, constants.LightningDamage)
 		}
 		flags |= BoltHit
+		defer s.achLightning(target, flags) // CR 031: struck and still standing (achievements.go)
 		s.wx.Stats.Hits++
 	}
 	if s.cbt.w != nil {

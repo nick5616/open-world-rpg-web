@@ -374,6 +374,7 @@ func (s *Server) dusk(idx int64) {
 	}
 	s.broadcast(&proto.Event{Kind: EventDusk, TargetID: uint32(idx), Value: int32(phase), Data: []byte(msg)}, movement.Vec3{}, 0)
 	s.planDefenses(idx)
+	s.achDusk(idx) // CR 031: nights seen through (achievements.go)
 	s.log.Info("dusk", "night", idx, "moon", phase, "hunters/player", n.cfg.World.HuntersPerPlayer(idx), "defenses", len(n.planned))
 }
 
@@ -415,6 +416,7 @@ func (s *Server) dawn(tick uint32) {
 	n.planned = map[int]float64{} // tonight's attacks that never found anyone
 	s.broadcast(&proto.Event{Kind: EventDawn, Value: int32(burned), TargetID: uint32(fled), Data: []byte("Dawn breaks. The demons burn.")}, movement.Vec3{}, 0)
 	s.log.Info("dawn", "burned", burned, "fled", fled)
+	s.achDawn()
 }
 
 // burnWorld is the combat world (a named accessor keeps night.go readable).

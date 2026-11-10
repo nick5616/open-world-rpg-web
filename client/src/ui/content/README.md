@@ -8,11 +8,11 @@ Names and texts come from `contracts/content.yaml` (generated `CONTENT`).
 | File | What |
 | --- | --- |
 | `events.ts` | Event kinds 1000-1029, Interact 80, decoders (1007 is binary: tablets and herb patches of an area), the world event status line |
-| `store.ts` | zustand: the content sync (codex kills, tablets read, feats, title, renown, vaults found), places near you, world events in range, live vaults, the tablet being read, notes; `reduceContentEvent` is pure |
+| `store.ts` | zustand: the content sync (codex kills, tablets read, achievements earned with their times and points (CR 031), title, renown, vaults found), places near you, world events in range, live vaults, the tablet being read, notes; `reduceContentEvent` is pure |
 | `titles.ts` | other players' titles (Event 1005) read by the nameplate (`net/avatar.ts`) |
 | `link.ts` | hooks the live session (NetPlay calls `ensureContentHook` before Hello) |
 | `ContentHud.tsx` | world event tracker (top centre), notes (left), lore tablet reader, sealed vault panel, the `[E]` prompt for tablets / herbs / vault parts, `window.__lodestoneContent` (debug builds) |
-| `JournalTabs.tsx` | the journal's Bestiary, Lore, Feats and Renown tabs (J) |
+| `JournalTabs.tsx` | the journal's Bestiary, Fish, Lore, Achievements (the list of ui/achievements, compact) and Renown tabs (J) |
 | `ContentLayer.tsx` | in-world: tablets, herb patches (one instanced mesh), vault parts, world event beams, the caravan's wagon, the starfall's shard |
 | `dev/content-shots.ts` | headless evidence: `cd client && npx vite-node src/ui/content/dev/content-shots.ts [--only=dialogue,event,vault,lore,codex]` |
 
@@ -24,4 +24,4 @@ Where to find each thing in game:
 - **Sealed vaults**: one per region at a ruin or shrine; found within 70 m, then on the map (a gold keyhole). The panel on the left reads the inscription.
 - **Lore tablets**: standing stones with a blue rune at ruins, shrines and watchtowers (E to read).
 - **Herbs**: leafy clumps in the wild (E to gather); cook or brew them at a hearth or campfire.
-- **Codex, feats, titles, renown**: J, then the tabs. Titles show under your name for others.
+- **Codex, renown**: J, then the tabs. **Achievements and titles** (CR 031): Y, the Esc menu, the character panel or the journal tab (`client/src/ui/achievements`); titles show under your name for others.

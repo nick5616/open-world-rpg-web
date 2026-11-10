@@ -1,7 +1,8 @@
 // Content state in the browser (playtest 2, CR 023): the zone's content
-// sync (codex kills, tablets read, feats, title, reputation, vaults found),
+// sync (codex kills, tablets read, achievements earned (CR 031), title, reputation, vaults found),
 // the places near you (lore tablets and herb patches by area), world events
-// in range, live vaults, the tablet being read, short notes (feats,
+// in range, live vaults, the tablet being read, short notes (others'
+// gold+ achievements (CR 031),
 // reputation, codex, vault lines, event results) and other players' titles.
 // `reduceContentEvent` is pure and unit-tested; the zone is the truth.
 
@@ -33,7 +34,8 @@ export interface ContentActions {
   read(site: number): void;
   forage(id: number): void;
   vault(site: number, part: number): void;
-  title(featId: number): void;
+  /** Show achievement id's title on your nameplate (0 = none). */
+  title(achievementId: number): void;
   devEvent(kind: number): void;
 }
 
@@ -53,7 +55,7 @@ const NOTE_MS = 6500;
 const EVENT_LINGER_MS = 9000;
 let noteId = 1;
 
-export const emptySync = (): ContentSync => ({ kills: {}, tablets: [], feats: [], title: '', stats: {}, regions: 0, rep: [], vaults: [], progress: {}, fish: {} });
+export const emptySync = (): ContentSync => ({ kills: {}, tablets: [], feats: [], earned: {}, points: 0, title: '', stats: {}, regions: 0, rep: [], vaults: [], progress: {}, fish: {} });
 
 const initial = (): Omit<ContentState, 'actions'> => ({
   sync: emptySync(),
@@ -79,12 +81,29 @@ export function reduceContentEvent(s: ContentState, ev: ZoneEvent, now: number, 
       const kills = { ...s.sync.kills, [key]: Math.max(1, s.sync.kills[key] ?? 0) };
       return { sync: { ...s.sync, kills }, notes: push({ kind: 'codex', title: 'New codex entry', text: enemyName(key) }) };
     }
-    case CEV.feat: {
-      const j = decodeJSON<{ key: string; name: string; desc: string; title: string; gold: number; xp: number }>(ev.data);
-      if (!j) return null;
+    case CEV.achievement: {
+      // CR 031: the unlock card is the achievements toast (ui/achievements, fed by link.ts), not a note here.
+      const j = decodeJSON<{ key: string; title?: string; at?: number }>(ev.data);
+      if (!j?.key) return null;
       const feats = s.sync.feats.includes(j.key) ? s.sync.feats : [...s.sync.feats, j.key];
-      const reward = [j.gold ? `+${j.gold} gold` : '', j.xp ? `+${j.xp} XP` : '', j.title ? `title "${j.title}"` : ''].filter(Boolean).join(' · ');
-      return { sync: { ...s.sync, feats, title: s.sync.title || (j.title ? j.key : '') }, notes: push({ kind: 'feat', title: `Feat: ${j.name}`, text: `${j.desc}${reward ? ` (${reward})` : ''}` }), stats: { ...s.stats, feats: s.stats.feats + 1 } };
+      const earned = { ...s.sync.earned, [j.key]: j.at ?? Date.now() };
+      return { sync: { ...s.sync, feats, earned, points: ev.value || s.sync.points, title: s.sync.title || (j.title ? j.key : '') }, stats: { ...s.stats, feats: s.stats.feats + 1 } };
+    }
+    case CEV.achievementAnnounce: {
+      // Someone near you or in your party earned a gold or platinum achievement: a short line, not the big card.
+      const def = CONTENT.achievements.find((a) => a.id === ev.targetId);
+      if (!def) return null;
+      const tier = CONTENT.achievementTiers[ev.value]?.name ?? '';
+      const who = decodeText(ev.data) || 'Someone';
+      return { notes: push({ kind: 'feat', title: `${who} earned an achievement`, text: `${def.name}${tier ? ` (${tier})` : ''}` }) };
+    }
+    case CEV.achievementsCaughtUp: {
+      // A pre-CR 031 character's first join: everything its old counters had already earned, at once (one toast, ui/achievements).
+      const j = decodeJSON<{ keys?: string[]; pts?: number }>(ev.data);
+      const add = (j?.keys ?? []).filter((k) => !s.sync.feats.includes(k));
+      const earned = { ...s.sync.earned };
+      for (const k of add) earned[k] = 0;
+      return { sync: { ...s.sync, feats: [...s.sync.feats, ...add], earned } };
     }
     case CEV.tablet: {
       const j = decodeJSON<{ site: number; id: number; title: string; text: string; new: boolean; place: string }>(ev.data);

@@ -102,6 +102,7 @@ func (s *Server) emoteInteract(sess *session, m *proto.Interact, now time.Time) 
 		}
 		s.fishStop(sess, FishLostCancelled) // an emote reels a line in (fishing.go)
 		s.playEmote(sess, def.ID, def.Loop, 0, e.Move.Pos.X, e.Move.Pos.Y, e.Move.Pos.Z)
+		s.achAdd(sess, "emotes", 1) // CR 031 (achievements.go)
 	case EmoteActStop:
 		s.stopEmote(sess, true)
 	default:

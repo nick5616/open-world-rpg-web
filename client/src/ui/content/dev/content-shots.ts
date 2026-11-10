@@ -370,10 +370,10 @@ async function main(): Promise<void> {
       await page.click('[data-testid="journal-tab-bestiary"]').catch(() => {});
       await sleep(1200);
       await page.screenshot({ path: shot('codex') });
-      await page.click('[data-testid="journal-tab-feats"]').catch(() => {});
+      await page.click('[data-testid="journal-tab-achievements"]').catch(() => {});
       await sleep(900);
       await page.screenshot({ path: shot('feats') });
-      note('shot pt2-content-codex.png (bestiary) and pt2-content-feats.png (feats and titles)');
+      note('shot pt2-content-codex.png (bestiary) and pt2-content-feats.png (the journal Achievements tab, CR 031)');
       await page.close();
     }
   } finally {

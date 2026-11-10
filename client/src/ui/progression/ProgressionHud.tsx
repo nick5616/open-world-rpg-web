@@ -28,6 +28,9 @@ import { useChar } from '../skills/char';
 import { SchoolLine, SpellBoard } from '../spellcards/SpellCards';
 import { spellCardData } from '../spellcards/card';
 import { BORDER, BORDER_GOLD, BTN_BG, PANEL_BG, TEXT, TEXT_2, TEXT_3, WARN } from '../spellcards/theme';
+import { useContent } from '../content/store';
+import { earnedTitles, points } from '../achievements/model';
+import { openAchievements } from '../achievements/store';
 
 const GOLD = '#ffd166';
 const PANEL: CSSProperties = { background: 'rgba(12,14,20,0.94)', border: '1px solid rgba(255,209,102,0.35)', borderRadius: 6, color: '#f1f3f5', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' };
@@ -174,6 +177,39 @@ function LearnRow({ k, killsDemons, children }: { k: string; killsDemons: boolea
   );
 }
 
+/** CR 031: the nameplate title, picked from the achievements you earned that grant one. */
+function TitleSection() {
+  const sync = useContent((s) => s.sync);
+  const actions = useContent((s) => s.actions);
+  const titles = earnedTitles(sync);
+  const pts = points(sync);
+  return (
+    <Section title={`Title and achievements (${pts.count} of ${pts.of}, ${pts.earned} points)`}>
+      {titles.length === 0 ? (
+        <div style={{ color: TEXT_3 }}>Earn an achievement that grants a title to show one under your name.</div>
+      ) : (
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, color: TEXT_2 }}>
+          Shown under your name
+          <select
+            data-testid="title-select"
+            value={sync.title && titles.some((t) => t.key === sync.title) ? sync.title : ''}
+            disabled={!actions}
+            onChange={(e) => actions?.title(titles.find((t) => t.key === e.target.value)?.id ?? 0)}
+            style={{ font: '13px system-ui, sans-serif', padding: '3px 6px', background: BTN_BG, color: TEXT, border: `1px solid ${BORDER_GOLD}`, borderRadius: 4 }}
+          >
+            <option value="">No title</option>
+            {titles.map((t) => (
+              <option key={t.key} value={t.key}>
+                {t.title} ({t.name})
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+    </Section>
+  );
+}
+
 function CharacterPanel() {
   const stats = useProgression((s) => s.stats);
   const area = useProgression((s) => s.area);
@@ -215,6 +251,17 @@ function CharacterPanel() {
         <button data-testid="open-pets" onClick={() => openPetPanel()} style={PANEL_BTN}>
           Your pets
         </button>
+        {/* CR 031: the Achievements screen (ui/achievements). */}
+        <button
+          data-testid="open-achievements"
+          onClick={() => {
+            setPanelOpen(false);
+            openAchievements();
+          }}
+          style={PANEL_BTN}
+        >
+          Achievements <span style={KEY}>Y</span>
+        </button>
       </div>
       <div style={{ marginTop: 6 }}>
         <div style={{ height: 8, background: 'rgba(255,255,255,0.1)', borderRadius: 4, overflow: 'hidden' }}>
@@ -251,6 +298,7 @@ function CharacterPanel() {
           </LearnRow>
         ))}
       </Section>
+      <TitleSection />
       {/* Playtest 2: the PvP flag and how duels work (CR 019) */}
       <PvpPanelSection />
       {area && (

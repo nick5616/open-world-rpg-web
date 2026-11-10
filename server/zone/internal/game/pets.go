@@ -770,7 +770,7 @@ func (s *Server) petXP(x combat.PetXP) {
 		}
 		s.petNote(sess, PetNoteLevel, rec.ID, rec.Name+" reached level "+itoa(rec.Level))
 		if sess.cnt != nil {
-			s.contentFeats(sess)
+			s.contentAchievements(sess)
 		}
 	}
 	s.sendPetSync(sess)
@@ -979,7 +979,7 @@ func (s *Server) tameFinish(sess *session, en *combat.Enemy) {
 	s.tameEvent(en.ID, TameTamed, uint32(id), at, tameJSON{Species: tr.sp.Key, Food: tr.food, Fav: tr.fav, Variant: roll.Variant, Element: roll.Element, Name: name, By: e.ID}, sess)
 	if sess.cnt != nil {
 		sess.cnt.st.Tamed(tr.sp.Key, roll.Variant == content.VariantShiny)
-		s.contentFeats(sess)
+		s.contentAchievements(sess)
 		s.saveContent(sess)
 	}
 	if wasActive {
@@ -1123,6 +1123,7 @@ func (s *Server) petPetOrFeed(sess *session, action uint8) {
 		}
 		if now := s.cfg.Now(); now.Sub(ps.petted) >= 1500*time.Millisecond {
 			ps.petted = now
+			s.achAdd(sess, "petted", 1) // CR 031
 			s.playEmote(sess, EmotePet, false, int32(en.ID), en.Pos.X, en.Pos.Y, en.Pos.Z)
 			s.petActEvent(en.ID, PetActPetted, e.ID, en.Pos, nil)
 		}

@@ -209,17 +209,46 @@ type Codex struct {
 	Lore    string `json:"lore"`
 }
 
-// Feat is an achievement; Title (optional) is shown on nameplates.
-type Feat struct {
-	Key   string `json:"key"`
-	ID    int    `json:"id"`
-	Name  string `json:"name"`
-	Desc  string `json:"desc"`
-	Stat  string `json:"stat"`
-	N     int    `json:"n"`
-	Gold  int    `json:"gold"`
-	XP    int64  `json:"xp"`
-	Title string `json:"title"`
+// Achievement (CR 031, contracts/achievements.yaml; the CR 023 feats moved
+// in with their keys): earned when counter Stat reaches N. Cat and Tier
+// index AchievementCats / AchievementTiers; Title (optional) is shown on
+// nameplates; Item/Qty an optional item reward; Hidden ones show as "???"
+// (with Hint) until earned; Step/Steps: its place in Chain (0 none).
+type Achievement struct {
+	Key    string `json:"key"`
+	ID     int    `json:"id"`
+	Name   string `json:"name"`
+	Desc   string `json:"desc"`
+	Cat    int    `json:"cat"`
+	Tier   int    `json:"tier"`
+	Pts    int    `json:"pts"`
+	Stat   string `json:"stat"`
+	N      int    `json:"n"`
+	Gold   int    `json:"gold"`
+	XP     int64  `json:"xp"`
+	Title  string `json:"title"`
+	Item   string `json:"item"`
+	Qty    int    `json:"qty"`
+	Hidden bool   `json:"hidden"`
+	Hint   string `json:"hint"`
+	Chain  string `json:"chain"`
+	Step   int    `json:"step"`
+	Steps  int    `json:"steps"`
+}
+
+// AchievementCat is a category of the Achievements screen.
+type AchievementCat struct {
+	Key  string `json:"key"`
+	Name string `json:"name"`
+}
+
+// AchievementTier is bronze, silver, gold or platinum; Announce: unlocks are
+// told to the party and players near (Event 1240).
+type AchievementTier struct {
+	Key      string `json:"key"`
+	Name     string `json:"name"`
+	Pts      int    `json:"pts"`
+	Announce bool   `json:"announce"`
 }
 
 // Herb is a foraging plant.
@@ -439,21 +468,24 @@ func (d *Defs) Instrument(id int) *Instrument {
 
 // Defs is the whole table.
 type Defs struct {
-	Version     int         `json:"version"`
-	Reputation  Reputation  `json:"reputation"`
-	SideQuests  SideQuests  `json:"sidequests"`
-	Stories     []Story     `json:"stories"`
-	Events      Events      `json:"events"`
-	Dungeons    Dungeons    `json:"dungeons"`
-	Tablets     []Tablet    `json:"tablets"`
-	Codex       []Codex     `json:"codex"`
-	Feats       []Feat      `json:"feats"`
-	Forage      Forage      `json:"forage"`
-	Fishing     Fishing     `json:"fishing"`
-	Emotes      Emotes      `json:"emotes"`
-	Instruments Instruments `json:"instruments"`
-	Taming      Taming      `json:"taming"`
-	Roles       []string    `json:"roles"`
+	Version    int        `json:"version"`
+	Reputation Reputation `json:"reputation"`
+	SideQuests SideQuests `json:"sidequests"`
+	Stories    []Story    `json:"stories"`
+	Events     Events     `json:"events"`
+	Dungeons   Dungeons   `json:"dungeons"`
+	Tablets    []Tablet   `json:"tablets"`
+	Codex      []Codex    `json:"codex"`
+	// CR 031 achievements (contracts/achievements.yaml).
+	Achievements     []Achievement     `json:"achievements"`
+	AchievementCats  []AchievementCat  `json:"achievementCats"`
+	AchievementTiers []AchievementTier `json:"achievementTiers"`
+	Forage           Forage            `json:"forage"`
+	Fishing          Fishing           `json:"fishing"`
+	Emotes           Emotes            `json:"emotes"`
+	Instruments      Instruments       `json:"instruments"`
+	Taming           Taming            `json:"taming"`
+	Roles            []string          `json:"roles"`
 }
 
 // PetByID is pet species id's definition (nil if none).
@@ -543,14 +575,22 @@ func (d *Defs) Story(key string) *Story {
 	return nil
 }
 
-// Feat returns the feat by key (nil if none).
-func (d *Defs) Feat(key string) *Feat {
-	for i := range d.Feats {
-		if d.Feats[i].Key == key {
-			return &d.Feats[i]
+// Achievement returns the achievement by key (nil if none).
+func (d *Defs) Achievement(key string) *Achievement {
+	for i := range d.Achievements {
+		if d.Achievements[i].Key == key {
+			return &d.Achievements[i]
 		}
 	}
 	return nil
+}
+
+// AchievementByID returns the achievement by id (1-based; nil if none).
+func (d *Defs) AchievementByID(id int) *Achievement {
+	if id < 1 || id > len(d.Achievements) {
+		return nil
+	}
+	return &d.Achievements[id-1]
 }
 
 // TierOf is the reputation tier index for rep.
