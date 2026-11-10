@@ -95,6 +95,8 @@ export interface ModelSpec {
   spectral: boolean;
   /** Hunched (demons): the torso leans forward at rest. */
   hunch: number;
+  /** CR 029: a tamed pet wears a collar (models.ts); shiny pets a gold one. */
+  collar: 0 | 1 | 2;
 }
 
 const STYLE_RIG: Record<Style, Rig> = {
@@ -231,6 +233,7 @@ export function modelSpec(info: Pick<EnemyInfo, 'key' | 'family' | 'behavior' | 
     deathMs: rig === 'slime' ? 900 : boss ? 1450 : 1250,
     spectral: false,
     hunch: demon ? (style === 'gloamling' ? 0.45 : style === 'grave_brute' ? 0.55 : 0.35) : style === 'brute' ? 0.12 : 0,
+    collar: 0,
   };
   specCache.set(ck, spec);
   return spec;
@@ -277,9 +280,80 @@ export function summonSpec(typeId: number): ModelSpec {
     deathMs: 700,
     spectral: true,
     hunch: 0,
+    collar: 0,
   };
   specCache.set(ck, spec);
   return spec;
+}
+
+// ---- CR 029: tamed pets (EntityKind effect, typeId bit 15) ----
+
+/** A pet's typeId bit (Go: combat.PetTypeBit). */
+export const PET_TYPE_BIT = 0x8000;
+/** A shiny pet's typeId bit (Go: combat.PetTypeShiny). */
+export const PET_TYPE_SHINY = 0x1000;
+
+export function isPetTypeId(typeId: number): boolean {
+  return (typeId & PET_TYPE_BIT) !== 0;
+}
+
+/** A pet's typeId as the zone sends it (tests, the gallery). */
+export function petTypeId(enemyId: number, element = -1, shiny = false): number {
+  return PET_TYPE_BIT | (enemyId & 0xff) | ((element >= 0 && element < 8 ? element + 1 : 0) << 8) | (shiny ? PET_TYPE_SHINY : 0);
+}
+
+const enemyDefById = new Map(COMBAT.enemies.map((e) => [e.id, e]));
+const SHINY_BODY = '#e9c35a';
+
+/**
+ * A tamed pet: its creature's model, friendlier (a warm, lighter body, dark
+ * friendly eyes, no glow), with a red collar and a gold tag; a shiny one is
+ * gold-touched with a gold collar; an elemental one carries its element as
+ * the accent and an aura ring.
+ */
+export function petSpec(typeId: number): ModelSpec {
+  const ck = `pet|${typeId}`;
+  const hit = specCache.get(ck);
+  if (hit) return hit;
+  const def = enemyDefById.get(typeId & 0xff);
+  const el0 = ((typeId >> 8) & 0xf) - 1;
+  const shiny = (typeId & PET_TYPE_SHINY) !== 0;
+  const own = def && def.element >= 0 ? def.element : 8;
+  const el = el0 >= 0 && el0 < 8 ? el0 : own;
+  const key = def?.key ?? 'wolf';
+  const style = styleFor(key, def?.family ?? 'beast', 'melee');
+  const base = def?.color ?? '#8a7a5a';
+  const color = shiny ? mixRgb(base, SHINY_BODY, 0.62) : mixRgb(base, '#fff1d6', 0.12);
+  const spec: ModelSpec = {
+    key,
+    variant: `${style}|${el}|pet${shiny ? '|shiny' : ''}`,
+    rig: rigFor(style),
+    style,
+    color,
+    accent: el < 8 ? ELEMENT_COLORS[el] : shiny ? '#fff3b0' : lighten(color),
+    element: el0 >= 0 && el0 < 8 ? el : 8, // the aura ring only for an elemental variant
+    eye: '#1a1410',
+    glowEyes: false,
+    scale: (def?.size ?? 1) * 0.92,
+    elite: false,
+    boss: false,
+    weapon: null,
+    flyer: false,
+    deathFx: 'dust',
+    deathMs: 900,
+    spectral: false,
+    hunch: 0,
+    collar: shiny ? 2 : 1,
+  };
+  specCache.set(ck, spec);
+  return spec;
+}
+
+function mixRgb(a: string, b: string, t: number): string {
+  const na = parseInt(a.slice(1), 16);
+  const nb = parseInt(b.slice(1), 16);
+  const ch = (s: number) => Math.round(((na >> s) & 255) * (1 - t) + ((nb >> s) & 255) * t);
+  return `#${((ch(16) << 16) | (ch(8) << 8) | ch(0)).toString(16).padStart(6, '0')}`;
 }
 
 /** Every summon in the contract (tests, the gallery): its typeId as the zone sends it. */

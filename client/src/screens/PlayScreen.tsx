@@ -40,6 +40,7 @@ import { ContentHud } from '../ui/content/ContentHud';
 // Playtest 2 camps (CR 025): P = camp menu, placement, chests, signposts, Rested (client/src/ui/camps/README.md).
 import { CampHud } from '../ui/camps/CampHud';
 import { MountHud } from '../ui/mounts/MountHud'; // CR 027 mounts
+import { PetHud } from '../ui/pets/PetHud'; // CR 029 pets
 // Sound and music: boots the audio engine after the first playable frame; K = sound settings (client/src/audio/README.md).
 import { AudioRoot } from '../audio/ui/AudioRoot';
 // Playtest 2 onboarding: Esc menu (controls, sound, plug-in settings, leave) and contextual tips (client/src/ui/menu, ui/tips).
@@ -92,6 +93,7 @@ export default function PlayScreen() {
       <ContentHud />
       <CampHud />
       <MountHud />
+      <PetHud />
       {/* Playtest 2: fishing (E at deep water with a rod), emotes (H), photo mode (L) */}
       <FishingHud />
       <EmoteWheel />

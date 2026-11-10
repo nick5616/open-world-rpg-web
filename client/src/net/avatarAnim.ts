@@ -40,6 +40,8 @@ const EMOTE_BY_ID = new Map(CONTENT.emotes.list.map((e) => [e.id, e]));
 /** The zone's fishing pose (the line is out) and "showing a catch" (Event 1090 ids 20, 21). */
 export const EMOTE_FISHING = 20;
 export const EMOTE_SHOW_CATCH = 21;
+/** CR 029: petting your pet (Event 1090 id 25, sent by the zone; value = the pet's entity id). */
+export const EMOTE_PET = 25;
 
 /** CR 018: Event 214 targetId for "the secondary button went down" (sword parry, spear charge, bow draw). Go: combat.CastFXGuard. */
 export const CAST_FX_GUARD = 0x4001;
@@ -726,6 +728,19 @@ export class AvatarAnimator {
         set(L, 0.5 + 1.6 * lift, 0.18, 0.5);
         headPitch = 0.25 * lift;
         p.fish = w > 0.3 ? this.emoteValue || 1 : 0;
+        break;
+      }
+      case EMOTE_PET: {
+        // CR 029: crouched beside the pet, the right hand stroking its back, the left on a knee
+        const k = smooth(0, 0.35, e) * (1 - smooth(dur - 0.4, dur, e));
+        const stroke = Math.sin(e * 6) * k;
+        bodyY = p.bodyY - 0.42 * k;
+        torsoPitch = -0.55 * k;
+        headPitch = -0.35 * k;
+        set(LR, 1.2 * k, 0.12, 1.9 * k);
+        set(LL, 0.35 * k, 0.16, 1.4 * k);
+        set(R, 0.9 + 0.25 * stroke, 0.1, 0.25 + 0.2 * stroke);
+        set(L, 0.6, -0.1, 1.3);
         break;
       }
       default:

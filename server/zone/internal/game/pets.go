@@ -165,7 +165,7 @@ type petSess struct {
 	labelFor int
 	tame     *tameRun
 	stable   bool // at a stable at the last check (1200 says so)
-	koBack   bool // a knocked-out pet is due back (send a note when it is)
+	petted   time.Time // the last petting (one per 1.5 s reaches others)
 }
 
 // tameRun is the taming meter running for a session.
@@ -1121,8 +1121,11 @@ func (s *Server) petPetOrFeed(sess *session, action uint8) {
 			s.petRefuse(sess, action, PetRefuseNotNow, 0)
 			return
 		}
-		s.playEmote(sess, EmotePet, false, int32(en.ID), en.Pos.X, en.Pos.Y, en.Pos.Z)
-		s.petActEvent(en.ID, PetActPetted, e.ID, en.Pos, nil)
+		if now := s.cfg.Now(); now.Sub(ps.petted) >= 1500*time.Millisecond {
+			ps.petted = now
+			s.playEmote(sess, EmotePet, false, int32(en.ID), en.Pos.X, en.Pos.Y, en.Pos.Z)
+			s.petActEvent(en.ID, PetActPetted, e.ID, en.Pos, nil)
+		}
 		return
 	}
 	// feeding: a food it likes (favourite first), else any food
