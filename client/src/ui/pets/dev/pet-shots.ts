@@ -245,7 +245,7 @@ async function main(): Promise<void> {
     {
       const at0 = await me();
       const pd = (await drawn()).find((d) => d.kind === 7);
-      if (pd) await page.evaluate((y) => (window as unknown as W).__lodestone.setLook(y, -0.3), lookAt(at0, pd) - 0.25);
+      if (pd) await page.evaluate((y) => (window as unknown as W).__lodestone.setLook(y, -0.3), lookAt(at0, pd) - 0.5);
     }
     await sleep(120);
     await page.screenshot({ path: shot('tamed') });
