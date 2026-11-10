@@ -748,6 +748,7 @@ func (s *Server) drink(sess *session) (float64, bool) {
 		return 0, false
 	}
 	s.commitItems(sess, &dl, nil, "drink "+q)
+	s.weatherAte(sess, q) // CR 030: warm food keeps the cold off
 	n := s.consumableCount(ci)
 	ci.charges = n
 	sess.ent.cbt.Charges = n + 1 // Frame decrements after a successful spend

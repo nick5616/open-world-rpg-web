@@ -225,6 +225,9 @@ func (e *Enemy) leash() float64 {
 // acquire picks the player to fight: highest threat among nearby, else the
 // nearest within aggro range (mult widens it for already-alert enemies).
 func (w *World) acquire(e *Enemy, mult float64) *Player {
+	if w.AggroMult != nil {
+		mult *= w.AggroMult(e.Pos.X, e.Pos.Z) // CR 030: fog and storms
+	}
 	var best *Player
 	bestScore := -1.0
 	consider := func(p *Player) {
@@ -862,8 +865,11 @@ func (w *World) playerUpkeep() {
 		if p.ManaRegenMult > 0 {
 			regen *= p.ManaRegenMult // CR 025: Rested
 		}
+		if p.Chilled {
+			regen *= constants.ColdManaRegenMult // CR 030: cold
+		}
 		p.Mana = math.Min(p.ManaMax, p.Mana+regen*dt)
-		if tick-p.lastHurtTick > secondsToTicks(constants.PlayerRegenDelayS) && p.HP < p.HPMax {
+		if tick-p.lastHurtTick > secondsToTicks(constants.PlayerRegenDelayS) && p.HP < p.HPMax && !p.Chilled {
 			hp := constants.PlayerRegenPerS
 			if p.RegenMult > 0 {
 				hp *= p.RegenMult // CR 025: Rested

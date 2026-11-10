@@ -224,7 +224,7 @@ func (s *Server) demonSheltered(_ *combat.Enemy, p *combat.Player) bool {
 }
 
 func (s *Server) wetInRain(p movement.Vec3) bool {
-	if !s.env.Raining {
+	if !s.env.Raining && !(s.weatherOn() && s.rainingAt(p.X, p.Z, 0)) { // CR 030: rain where it lands
 		return false
 	}
 	return movement.WaterAt(s.cfg.Ground, p.X, p.Z) > s.cfg.Ground.HeightAt(p.X, p.Z)
@@ -273,6 +273,16 @@ func (s *Server) clockData() []byte {
 		}
 	}
 	d = append(d, rain)
+	// CR 030: d[18] = 0 no dynamic weather (WP10's global rain), 1 seeded
+	// weather, 2 + s forced to state s everywhere (dev).
+	wx := byte(0)
+	if w := s.cfg.Weather; s.weatherOn() {
+		wx = 1
+		if w.Override >= 0 {
+			wx = byte(2 + w.Override)
+		}
+	}
+	d = append(d, wx)
 	return d
 }
 

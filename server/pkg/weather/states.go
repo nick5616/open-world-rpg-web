@@ -104,8 +104,9 @@ func UniformClimate(c int) *Climate {
 
 // NewClimate votes each cell's climate from the atlas biome grid (gridN x
 // gridN nodes macroRes metres apart, the grid chem/material.go reads): 4 x
-// 4 samples at the cell's sub-centres, nearest node, the most common biome
-// wins (ties: the lower biome id). No grid: temperate everywhere.
+// 4 samples at the cell's sub-centres, nearest node; 4+ snowpeak samples
+// make it cold, else 5+ badlands arid, else the most common biome wins
+// (ties: the lower biome id). No grid: temperate everywhere.
 func NewClimate(gridN, macroRes int, biome []byte) *Climate {
 	var cl Climate
 	if gridN <= 0 || macroRes <= 0 || len(biome) < gridN*gridN {
@@ -133,6 +134,14 @@ func NewClimate(gridN, macroRes int, biome []byte) *Climate {
 				if counts[b] > counts[best] {
 					best = b
 				}
+			}
+			// Peaks and badlands are small: a quarter of snow makes a cold
+			// cell, nearly a third of badlands an arid one.
+			switch {
+			case counts[3] >= 4:
+				best = 3
+			case counts[4] >= 5:
+				best = 4
 			}
 			cl.Cells[cz*CellsN+cx] = biomeClimate[best]
 		}

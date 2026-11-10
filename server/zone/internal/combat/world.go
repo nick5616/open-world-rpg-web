@@ -154,6 +154,10 @@ type World struct {
 	// obstacles.go). nil = none. Called from pass-2 AI workers (par.go):
 	// it must only read.
 	Obstacles func(x, y, z, r, h float64) bool
+	// AggroMult scales enemies' aggro range where they stand (playtest 2
+	// weather, CR 030: fog banks and storms; nil = 1). Called from AI
+	// workers: it must only read.
+	AggroMult func(x, z float64) float64
 
 	// CR 020 spell mechanics: allies (summon.go; never in enemies), ally bolts
 	// in flight, scheduled bursts (detonate.go). SummonPvP is the game

@@ -111,6 +111,9 @@ type Player struct {
 	// Playtest 2 camps (CR 025): the Rested buff multiplies health and mana
 	// regeneration (0 = 1; the zone sets and clears them, camps.go).
 	RegenMult, ManaRegenMult float64
+	// Playtest 2 weather (CR 030): Chilled stops health regeneration and
+	// slows mana (COLD_MANA_REGEN_MULT); the zone sets and clears it.
+	Chilled bool
 
 	readyAt   map[int]uint32 // spell/form/technique id -> seq it is ready
 	actions   [actionRing]Action

@@ -84,7 +84,7 @@ export class Climate {
     return cl;
   }
 
-  /** Go NewClimate: a 4 x 4 vote per cell over the atlas biome grid (nearest node). */
+  /** Go NewClimate: a 4 x 4 vote per cell over the atlas biome grid (nearest node); 4+ snowpeak = cold, 5+ badlands = arid. */
   static fromBiomes(gridN: number, macroRes: number, biome: ArrayLike<number>): Climate {
     const cl = new Climate();
     if (gridN <= 0 || macroRes <= 0 || biome.length < gridN * gridN) return cl;
@@ -106,6 +106,9 @@ export class Climate {
         }
         let best = 0;
         for (let b = 1; b < 6; b++) if (counts[b] > counts[best]) best = b;
+        // Peaks and badlands are small: a quarter of snow makes a cold cell, nearly a third of badlands an arid one.
+        if (counts[3] >= 4) best = 3;
+        else if (counts[4] >= 5) best = 4;
         cl.cells[cz * CELLS_N + cx] = BIOME_CLIMATE[best];
       }
     }
