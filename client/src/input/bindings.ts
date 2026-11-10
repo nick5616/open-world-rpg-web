@@ -27,6 +27,7 @@ export type BindContext =
   | 'skills' // the skill screen is open (other screens' keys close it)
   | 'wheel' // the emote or pet wheel is held open
   | 'debug' // debug builds only
+  | 'focus' // a focused card or button in a panel (its own onKeyDown; chat and jump leave it alone)
   | 'title'; // the title screen
 
 export interface Binding {
@@ -136,6 +137,9 @@ export const BINDINGS: Binding[] = [
   { code: 'Backquote', ctx: 'debug', file: 'hud/useDebugHotkeys.ts', does: 'debug panel' },
   { code: 'KeyV', ctx: 'debug', file: 'hud/useDebugHotkeys.ts', does: 'fly (offline only)' },
   { code: 'Enter', ctx: 'debug', file: 'hud/DebugPanel.tsx', does: 'teleport (in its text box)' },
+  { code: 'Enter', ctx: 'focus', file: 'ui/spellcards/SpellCards.tsx', does: 'pick the focused spell card (Space too)' },
+  { code: 'Delete', ctx: 'focus', file: 'ui/spellcards/SpellCards.tsx', does: 'clear the focused spell slot' },
+  { code: 'Backspace', ctx: 'focus', file: 'ui/spellcards/SpellCards.tsx', does: 'clear the focused spell slot' },
   { code: 'Enter', ctx: 'title', file: 'screens/TitleScreen.tsx', does: 'start' },
   { code: 'Space', ctx: 'title', file: 'screens/TitleScreen.tsx', does: 'start' },
 ];

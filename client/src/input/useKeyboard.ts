@@ -37,6 +37,8 @@ export function useKeyboard() {
       // Keystrokes meant for a text field (debug teleport box, chat later)
       // must not walk the player or be swallowed by preventDefault.
       if (isTextTarget(e.target)) return;
+      // A focused control already used it (Space picks a focused spell card: no jump too).
+      if (e.defaultPrevented && e.code === 'Space') return;
       const k = KEY_MAP[e.code];
       if (!k) return;
       e.preventDefault();

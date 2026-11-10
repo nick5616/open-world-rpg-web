@@ -85,7 +85,7 @@ export function controlGroups(debug: boolean): ControlGroup[] {
         { keys: ['1', '2', '3', '4'], action: 'Cast the spell in that slot', note: 'also picks it for the right button; hold for streams and charges', src: [[C, "'Digit1'"], [C, "'Digit4'"]] },
         { keys: ['F', 'Alt'], action: 'Dodge', note: 'a short moment nothing can hit you', src: [[C, "'KeyF'"], [C, "'AltLeft'"]] },
         { keys: ['Q'], action: 'Elemental form', note: 'with a gem socketed in your weapon', src: [[C, "'KeyQ'"]] },
-        { keys: ['Tab'], action: 'Weapon technique', note: 'once your weapon skill has one (V is push to talk)', src: [[C, "'Tab'"]] },
+        { keys: ['Tab'], action: 'Weapon technique', note: 'once your weapon skill has one (V is push to talk); with a panel open Tab moves between its buttons', src: [[C, "'Tab'"]] },
         { keys: ['R'], action: 'Drink a healing draught', src: [[C, "'KeyR'"]] },
         { keys: ['X'], action: 'Swap loadout (weapon + 4 spells)', src: [[C, "'KeyX'"]] },
       ],
@@ -162,7 +162,8 @@ export function controlGroups(debug: boolean): ControlGroup[] {
       rows: [
         { keys: ['I'], action: 'Inventory', src: [['ui/inventory/InventoryScreen.tsx', "'KeyI'"]] },
         { keys: ['G', 'Delete'], action: 'Drop the selected item', note: 'with the inventory open (G is the glider otherwise)', src: [['ui/inventory/InventoryScreen.tsx', "'KeyG'"], ['ui/inventory/InventoryScreen.tsx', "'Delete'"]] },
-        { keys: ['C'], action: 'Character (level, stats, PvP)', src: [['ui/progression/ProgressionHud.tsx', "'KeyC'"]] },
+        { keys: ['C'], action: 'Character (level, stats, spells, PvP)', src: [['ui/progression/ProgressionHud.tsx', "'KeyC'"]] },
+        { keys: ['Enter', 'Delete', 'Backspace'], action: 'Spell cards: pick the card, or clear the slot', note: 'click or drag works too; Tab moves between cards while the panel is open', src: [['ui/spellcards/SpellCards.tsx', "'Enter'"], ['ui/spellcards/SpellCards.tsx', "'Delete'"]] },
         { keys: ['N'], action: 'Skill tree: learn spells, fill slots', src: [['ui/skills/SkillScreen.tsx', "'KeyN'"]] },
         { keys: ['B'], action: 'Build overview', src: [['ui/skills/SkillScreen.tsx', "'KeyB'"]] },
       ],
