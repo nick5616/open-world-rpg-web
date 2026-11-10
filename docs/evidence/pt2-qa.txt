@@ -1,0 +1,37 @@
+Playtest 2: integration QA (branch pt2/qa), 2026-11-10
+Private stack: node tools/playtest/stack.mjs --zone-env LODESTONE_ZONE_DEV_SPAWN=1 [--zone-env LODESTONE_ZONE_DEV_COMBAT=1 --zone-env LODESTONE_ZONE_FISH_FAST=1 --zone-env "LODESTONE_ZONE_DEBUG_CAMP=2620,2273,8,brute brute brute"]
+One headless Chromium at a time (RTX 3070, ANGLE D3D11).
+
+== Playtest scripts (final runs)
+sp1  onboarding HUD, each panel           0 issues
+sp2  the Ward walk                        talk OK (after abandoning the starter quest); walk to the cave stalls on the smithy wall (script routing)
+sp3  fight the starter creatures          script now routes / reports; first run walked into a house (script routing)
+sp4  camp fight + loot                    0 issues (5 swings, 6 casts, 4 slimes, cheese + apple)
+sp5  map after a walk                     0 issues; walk out of town stalls (script routing)
+sp6  tower climb + attune                 0 issues (188.9 m in 18 s, 1 rest, attuned, level 3)
+sp7  forge / anvil / shop                 forge OK; the walk to the anvil stalls under the smithy roof (script routing)
+sp8  casting first / third person         0 issues
+sp9  welcome, Esc menu, Controls (67 rows), Esc closes 6 panels, returning What's new (8 shown, "10 more"), downed + respawn   0 issues
+sp10 starter quest                        talk, 5 slimes OK; the hand-in walk timed out (script routing)
+sp11 fishing, emotes, photo mode          0 issues (the "reading 'isReady'" page error is gone)
+sp12 instruments                          0 issues
+sp13 HUD audit                            36 scenes, 0 overlaps (below)
+
+== sp13 (tools/playtest/sp13.mjs), final run
+busy HUD in every scene: weather pill + forecast + Chilled, a world event, a sealed vault, a pet out, 2 content notes, Rested, a tip
+scenes: busy, camp-menu, steed-panel, pet-panel, instrument, fishing-fight, fishing-caught, emote-wheel, pet-wheel, tame-meter, character-spell-cards, esc-menu
+1920x1080: 12/12 no overlaps; 1600x900: 12/12; 1280x720: 12/12; no panel left open
+first run (before the layout rules): night-hud <-> world-event at every size; vault-panel <-> pet-card (<=1600x900); world-event <-> camp-menu / pet-panel / fish catch card / emote and pet wheels;
+  content-notes / vault-panel <-> pet-panel and music-overlay; chat <-> music-overlay; wheels <-> tip and lock hint; levelup-fanfare <-> world-event and centred panels;
+  after merging spell cards: character-panel <-> clock pill, world-event, content notes, pet notes, discovery card, hotbar; tame-meter <-> town-prompt
+
+== Turn bench (client/src/world/bench/turn.mjs, stack Vite, LODESTONE_BENCH_QUERY=solo)
+vsync   high {"pan":{"p50":16.7,"p99":16.8,"max":16.8,"over33ms":0},"flick":{"p99":16.8,"max":16.8,"over33ms":0},"longTasks":0}
+vsync   low  {"pan":{"p50":16.7,"p99":16.8,"max":16.8,"over33ms":0},"flick":{"p99":16.8,"max":16.8,"over33ms":0},"longTasks":0}
+uncapped high {"pan":{"frames":1246,"p50":4.7,"p95":5.8,"p99":7.5,"max":9.9},"flick":{"p50":4.6,"p99":7.1,"max":7.8},"longTasks":0}
+uncapped low  {"pan":{"frames":2089,"p50":2.8,"p95":3.6,"p99":4.5,"max":7.4},"flick":{"p50":2.7,"p99":4.6,"max":6.6},"longTasks":0}
+
+== Checks
+gen:check up to date; whatsnew check 20 entries; go vet every module ok; go test every module ok (game 405 s, zone 268 s);
+client/contracts/worldgen typecheck ok (tools/creator fails in a worktree only: ajv resolution, as before); eslint . clean;
+client vitest 84 files / 1042 tests; test:golden PASS (wp01 evidence restored)

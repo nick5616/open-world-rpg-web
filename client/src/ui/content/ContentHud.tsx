@@ -5,15 +5,17 @@
 // the keeper), and the "[E]" prompt for lore tablets, herb patches and
 // vault levers / doors / chests right next to you.
 //
-// E arbitration (like LootHud): this HUD only claims E for a target within
-// CLAIM_M when no town, cave or loot prompt is showing and no panel is
-// open; its own prompt carries data-testid="content-prompt" so the others
-// can yield to it.
+// E arbitration (input/interact.ts E_ORDER): this HUD only claims E for a
+// target within CLAIM_M when no town, cave, tower or loot prompt is showing,
+// no panel is open and you are not riding; its own prompt carries
+// data-testid="content-prompt" so the ones below it yield.
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { BELOW_CLOCK, useHudHeight } from '../../hud/layout';
 import { CONTENT } from '@lodestone/contracts';
 import { DEBUG } from '../../config';
 import { isTextTarget } from '../../input/useKeyboard';
+import { eFree } from '../../input/interact';
 import { localPlayer } from '../../state/live';
 import { distanceText, compassWord } from '../quests/events';
 import { ensureContentHook } from './link';
@@ -75,13 +77,11 @@ export function findContentTarget(s = useContent.getState(), px = localPlayer.po
   return best;
 }
 
+// Playtest 2 integration QA: town, cave, tower and loot prompts, an open
+// panel and the saddle take E first (input/interact.ts E_ORDER). The open
+// tablet reader is handled before this is asked.
 function othersBusy(): boolean {
-  const q = (sel: string) => document.querySelector<HTMLElement>(sel);
-  const town = q('[data-testid="town-prompt"]');
-  const cave = q('[data-testid="cave-hud"]');
-  const loot = q('[data-testid="loot-prompt"]');
-  const townPanel = q('[data-testid="town-panel"]');
-  return !!town?.textContent || !!cave?.textContent || !!loot?.textContent || (!!townPanel && townPanel.style.display !== 'none') || [...document.querySelectorAll<HTMLElement>('[data-ui-panel]')].some((el) => el.getClientRects().length > 0 && el.dataset.testid !== 'tablet-reader');
+  return !eFree('content');
 }
 
 function useTicker(ms: number) {
@@ -103,7 +103,7 @@ function EventTracker() {
   const done = e.phase !== EVENT_PHASE.active;
   const color = done ? (e.phase === EVENT_PHASE.won ? '#9fe08a' : '#ff9a7a') : '#ff8f6b';
   return (
-    <div data-testid="world-event" style={{ position: 'fixed', top: 92, left: '50%', transform: 'translateX(-50%)', width: 'min(440px, 70vw)', textAlign: 'center', pointerEvents: 'none', zIndex: 14, color: '#f8efe0', textShadow: '0 1px 3px #000, 0 0 8px rgba(0,0,0,0.8)' }}>
+    <div data-testid="world-event" style={{ position: 'fixed', top: BELOW_CLOCK, left: '50%', transform: 'translateX(-50%)', width: 'min(440px, 70vw)', textAlign: 'center', pointerEvents: 'none', zIndex: 14, color: '#f8efe0', textShadow: '0 1px 3px #000, 0 0 8px rgba(0,0,0,0.8)' }}>
       <div style={{ font: '700 12px system-ui', letterSpacing: 3, textTransform: 'uppercase', color }}>{done ? (e.phase === EVENT_PHASE.won ? 'World event won' : 'World event over') : 'World event'}</div>
       <div style={{ font: '600 20px Georgia, serif', color: '#ffe2c4' }}>✦ {e.name}</div>
       <div style={{ fontSize: 13, opacity: 0.92 }}>{e.text}</div>
@@ -166,10 +166,13 @@ function VaultPanel() {
   const px = localPlayer.pos.x;
   const pz = localPlayer.pos.z;
   const v = Object.values(vaults).find((x) => Math.hypot(x.x - px, x.z - pz) <= x.r + 45);
+  // Playtest 2 integration QA: your pet's card sits under this panel (hud/layout.ts --ls-vault-h).
+  const ref = useRef<HTMLDivElement>(null);
+  useHudHeight(ref, '--ls-vault-h', !!v);
   if (!v) return null;
   const phase = ['Sealed', 'The keeper is awake', 'Cleared'][v.phase] ?? '';
   return (
-    <div data-testid="vault-panel" style={{ ...PANEL, position: 'fixed', left: 14, top: 'min(46vh, 420px)', width: 'min(300px, 34vw)', padding: '10px 12px', zIndex: 12, pointerEvents: 'none' }}>
+    <div ref={ref} data-testid="vault-panel" style={{ ...PANEL, position: 'fixed', left: 14, top: 'min(46vh, 420px)', width: 'min(300px, 34vw)', padding: '10px 12px', zIndex: 12, pointerEvents: 'none' }}>
       <div style={{ fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: GOLD, opacity: 0.85 }}>Sealed vault · {phase}</div>
       <div style={{ font: '600 16px Georgia, serif', color: '#f6e7c0' }}>{v.name}</div>
       {v.phase === 0 && (
@@ -221,13 +224,13 @@ function Prompt() {
       if (e.code !== 'KeyE') return;
       if (s.reading) {
         closeTablet();
-        e.stopPropagation();
+        e.stopImmediatePropagation();
         return;
       }
       if (othersBusy()) return;
       const target = findContentTarget();
       if (!target || target.kind === 'hint' || !s.actions) return;
-      e.stopPropagation();
+      e.stopImmediatePropagation(); // one press, one thing (input/interact.ts)
       if (target.kind === 'tablet') s.actions.read(target.id);
       else if (target.kind === 'herb') s.actions.forage(target.id);
       else s.actions.vault(target.site, target.part);

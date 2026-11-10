@@ -38,6 +38,8 @@ import type { WorldRuntime } from '../core/runtime';
 import type { ResultMsg } from '../core/protocol';
 import { localActions, localPlayer, view } from '../../state/live';
 import { netRuntime } from '../../net/netStore';
+import { isTextTarget } from '../../input/useKeyboard';
+import { eFree } from '../../input/interact';
 import type { CaveGround } from './caveGround';
 import type { CaveCellStore, StoredCell } from './caveStore';
 import { CaveAudio } from './caveAudio';
@@ -147,7 +149,8 @@ export class CaveManager {
   private nextAudio = 0;
   private active = false;
   private readonly onKey = (e: KeyboardEvent) => {
-    if (e.code === 'KeyE' && !e.repeat) this.swing();
+    // Not while typing in chat, under a panel or in the saddle (input/interact.ts).
+    if (e.code === 'KeyE' && !e.repeat && !isTextTarget(e.target) && eFree('cave')) this.swing();
   };
   private readonly onMouse = (e: MouseEvent) => {
     if (e.button === 0 && document.pointerLockElement) this.swing();
@@ -646,7 +649,7 @@ export class CaveManager {
       document.body.appendChild(this.toastEl);
     }
     const v = this.target;
-    if (v) {
+    if (v && eFree('cave')) {
       const hp = this.serverHp.get(v.id) ?? [this.localHp.get(v.id) ?? v.hp, v.hp];
       const pct = Math.max(0, Math.min(1, hp[0] / Math.max(1, hp[1] || v.hp)));
       this.hud.innerHTML = `<div><b>[E]</b> mine ${veinMaterialName(v)}${v.kind === 'gem' ? '' : ' ore'}</div><div style="margin:4px auto 0;width:120px;height:4px;background:#0008"><div style="width:${Math.round(pct * 100)}%;height:4px;background:#e8c46a"></div></div>`;

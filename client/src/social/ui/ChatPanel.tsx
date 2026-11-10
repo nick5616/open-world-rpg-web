@@ -36,8 +36,11 @@ export function ChatPanel({ extraNames }: ChatPanelProps) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement | null;
-      const typing = !!t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
-      if (e.key === 'Enter' && !typing) {
+      const typing = !!t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable);
+      // Playtest 2 integration QA: Enter on a focused button or spell card (C) is that control's
+      // (it picked the card and opened chat too); only an unhandled Enter opens chat.
+      const control = !!t && (t.tagName === 'BUTTON' || t.getAttribute?.('role') === 'button');
+      if (e.key === 'Enter' && !typing && !control && !e.defaultPrevented) {
         e.preventDefault();
         if (document.pointerLockElement) document.exitPointerLock();
         useSocialStore.getState().setOpen(true);

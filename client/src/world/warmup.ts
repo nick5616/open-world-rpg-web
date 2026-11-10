@@ -26,7 +26,35 @@ function compileGroup(gl: THREE.WebGLRenderer, objs: THREE.Object3D[], camera: T
   const g = new THREE.Group();
   for (const o of objs) g.add(o);
   g.updateMatrixWorld(true);
-  return gl.compileAsync(g, camera, scene).finally(() => g.clear());
+  return compileAsyncSafe(gl, g, camera, scene).finally(() => g.clear());
+}
+
+/**
+ * renderer.compileAsync without its uncatchable failure: three.js polls each
+ * material's program from a setTimeout, and leaving the world mid-warm-up
+ * (a rejoin) disposes the materials under it, so the poll threw "reading
+ * 'isReady'" as an uncaught page error (seen in every sp11 run). Here a
+ * material whose program is gone counts as done, nothing throws, and the
+ * poll gives up after 20 s (the rest compiles on first use).
+ */
+export function compileAsyncSafe(gl: THREE.WebGLRenderer, obj: THREE.Object3D, camera: THREE.Camera, scene?: THREE.Scene): Promise<void> {
+  const mats = gl.compile(obj, camera, scene ?? null) as unknown as Set<THREE.Material>;
+  const until = performance.now() + 20000;
+  return new Promise((resolve) => {
+    const poll = () => {
+      try {
+        for (const m of mats) {
+          const p = (gl.properties.get(m) as { currentProgram?: { isReady(): boolean } }).currentProgram;
+          if (!p || p.isReady()) mats.delete(m);
+        }
+      } catch {
+        mats.clear();
+      }
+      if (mats.size === 0 || performance.now() > until) resolve();
+      else setTimeout(poll, 10);
+    };
+    poll();
+  });
 }
 
 export interface WarmResult {
@@ -49,12 +77,12 @@ export async function warmShaders(gl: THREE.WebGLRenderer, scene: THREE.Scene, c
   gl.setRenderTarget(target);
   try {
     scene.updateMatrixWorld();
-    jobs.push(gl.compileAsync(scene, camera));
+    jobs.push(compileAsyncSafe(gl, scene, camera));
     if (extra.length) {
       const g = new THREE.Group();
       for (const o of extra) g.add(o);
       g.updateMatrixWorld(true);
-      jobs.push(gl.compileAsync(g, camera, scene).finally(() => g.clear()));
+      jobs.push(compileAsyncSafe(gl, g, camera, scene).finally(() => g.clear()));
     }
     // Playtest 2: the post chain's full-screen materials (PostFX.warmObjects).
     // The last pass draws to the screen, so its program is the canvas'

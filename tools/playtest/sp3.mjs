@@ -1,6 +1,6 @@
 // Playtest pass 3: find the starter creatures, fight with the weapon and
 // every slotted spell, loot, check feedback (numbers, hit sounds, kill XP).
-import { launch, newCharacter, sleep, pl, walkTo, look, yawTo } from './lib.mjs';
+import { launch, newCharacter, sleep, pl, walkTo, go, look, yawTo, dismissCards } from './lib.mjs';
 
 const out = process.argv[2] ?? 'tmp/playtest3';
 const t = await launch(out);
@@ -26,7 +26,8 @@ try {
     const p0 = (await pl(page)).pos;
     for (let i = 1; i <= 8 && !target; i++) {
       const a = i * 1.3;
-      await walkTo(page, p0.x + Math.cos(a) * 40 * i, p0.z + Math.sin(a) * 40 * i, { stopAt: 5, timeoutMs: 25000, sprint: true });
+      await dismissCards(page); // the welcome card (a new browser) comes up a few seconds in
+      await go(page, p0.x + Math.cos(a) * 40 * i, p0.z + Math.sin(a) * 40 * i, { stopAt: 5, timeoutMs: 25000, sprint: true }); // town streets first: a straight line walks into houses
       target = (await drawn()).find((e) => e.kind === 2 && e.hp > 0);
     }
   }
@@ -34,7 +35,8 @@ try {
     issue('content', 'no creatures found within ~300 m of spawn');
   } else {
     note(`target type ${target.typeId} at ${target.d.toFixed(0)} m`);
-    await walkTo(page, target.x, target.z, { stopAt: 6, timeoutMs: 60000, sprint: true });
+    await dismissCards(page);
+    await go(page, target.x, target.z, { stopAt: 6, timeoutMs: 60000, sprint: true });
     const before = await xp();
     await shot('approach');
     // spells first from range, then melee
@@ -71,6 +73,7 @@ try {
     }
     const left = (await drawn()).find((x) => x.id === target.id);
     note(`melee: ${swings} swings, target ${left ? `hp ${left.hp}` : 'gone'}`);
+    if (left && left.hp >= target.hp) issue('fight', `the target was never hurt (${swings} swings; it stood ${left.d.toFixed(0)} m away)`);
     await sleep(1500);
     await shot('after-kill');
     const after = await xp();

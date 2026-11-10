@@ -20,7 +20,8 @@ export function SocialOverlay(props: SocialOverlayProps) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement | null;
-      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT')) return;
+      if (e.repeat || e.ctrlKey || e.metaKey) return; // a held O doesn't flicker the panel
       if (e.code === 'KeyO') setFriendsOpen((v) => !v);
       else if (e.code === 'Escape') setFriendsOpen(false); // playtest 2: Esc closes it like every other panel
     };

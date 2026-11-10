@@ -35,6 +35,7 @@ import { aimPoint as sharedAimPoint, aimTarget as sharedAimTarget } from './aim'
 import { dashLive } from './dashes';
 import { castHooks, gemFor } from './fx/castOrigin';
 import type { WeaponKind } from './weapons/look';
+import { uiPanelUp } from '../input/interact';
 
 const STEP_MS = 1000 / MOVE_STEP_HZ;
 const EYE = 1.6;
@@ -146,7 +147,7 @@ export class CombatRuntime {
         } else altDown();
       }
       // Middle button: the camera view toggle (hud/ViewHud.tsx), not combat (playtest 2: it did nothing
-      // for anyone without a weapon technique; techniques stay on V).
+      // for anyone without a weapon technique; techniques are on Tab).
     };
     const onUp = (e: MouseEvent) => {
       if (e.button === 0) this.buttons.attackDown = false;
@@ -195,7 +196,12 @@ export class CombatRuntime {
         case 'KeyQ':
           this.buttons.formPress++;
           break;
-        case 'KeyV':
+        // Playtest 2 integration QA: the weapon technique moved from V to Tab. V is push-to-talk
+        // (voice/runtime.ts) and every push to talk also fired the technique.
+        case 'Tab':
+          // With a panel open Tab moves the focus (spell cards, buttons); in the world it is the technique.
+          if (uiPanelUp()) break;
+          e.preventDefault(); // no focus jump to a HUD button
           this.buttons.techniquePress++;
           break;
         case 'KeyR':

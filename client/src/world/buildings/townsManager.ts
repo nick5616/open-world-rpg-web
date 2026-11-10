@@ -324,7 +324,7 @@ export class TownsManager {
         continue;
       }
       const s = p.userData.seed as number;
-      const flicker = 0.85 + 0.1 * Math.sin(now * 0.011 + s) + 0.05 * Math.sin(now * 0.031 + s * 1.7);
+      const flicker = 0.88 + 0.05 * Math.sin(now * 0.0024 + s) + 0.03 * Math.sin(now * 0.0039 + s * 1.7); // a gentle sway, no strobe
       p.intensity = 9 * this.night * flicker * liveStyle.torch; // playtest 2 styles: warmer nights
       n++;
     }

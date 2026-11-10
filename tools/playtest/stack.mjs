@@ -33,7 +33,16 @@ args.forEach((a, i) => {
     if (k) zoneEnv[k] = v.join('=');
   }
 });
-const log = (m) => console.log(`[stack ${new Date().toISOString().slice(11, 19)}] ${m}`);
+// Vite from the nearest node_modules up the tree (a git worktree under
+// .claude/worktrees has none of its own and resolves the main checkout's).
+function viteBin() {
+  for (let d = root; ; d = path.dirname(d)) {
+    const f = path.join(d, 'node_modules', 'vite', 'bin', 'vite.js');
+    if (fs.existsSync(f)) return f;
+    if (path.dirname(d) === d) throw new Error(`vite not found in any node_modules above ${root}`);
+  }
+}
+const log = (m) => console.log(`[stack${new Date().toISOString().slice(11, 19)}] ${m}`);
 
 function goSync(a) {
   const r = spawnSync('go', a, { cwd: root, env: env(), encoding: 'utf8' });
@@ -105,7 +114,7 @@ try {
   if (!(await waitHttp(`http://${H}:${PORT.director}/healthz`, 30000))) throw new Error('director not healthy');
   start('zone', bin('zone'), [], { ...svc, LODESTONE_ZONE_PORT: String(PORT.zone), LODESTONE_ZONE_ID: `zone-pt-${RUN}`, LODESTONE_ZONE_WT_ADDR: 'off', LODESTONE_ZONE_PUBLIC_URL: `ws://${H}:${PORT.zone}/ws`, ...zoneEnv });
   if (!(await waitHttp(`http://${H}:${PORT.zone}/healthz`, 120000))) throw new Error('zone not healthy');
-  start('vite', process.execPath, [path.join(root, 'node_modules', 'vite', 'bin', 'vite.js'), '--port', String(PORT.vite), '--strictPort', '--host', H], { VITE_ACCOUNT_URL: `http://${H}:${PORT.account}`, VITE_DIRECTOR_URL: `http://${H}:${PORT.director}`, VITE_SOLO: '0' }, path.join(root, 'client'));
+  start('vite', process.execPath, [viteBin(), '--port', String(PORT.vite), '--strictPort', '--host', H], { VITE_ACCOUNT_URL: `http://${H}:${PORT.account}`, VITE_DIRECTOR_URL: `http://${H}:${PORT.director}`, VITE_SOLO: '0' }, path.join(root, 'client'));
   if (!(await waitHttp(`http://${H}:${PORT.vite}/`, 90000))) throw new Error('vite not serving');
   await new Promise((r) => setTimeout(r, 6000)); // the zone's registry heartbeat reaches the director
   fs.writeFileSync(path.join(TMP, 'stack.json'), JSON.stringify({ PORT, DB, zone: `http://${H}:${PORT.zone}` }));

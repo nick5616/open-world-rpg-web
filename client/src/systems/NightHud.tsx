@@ -2,7 +2,8 @@
 // night/dawn/lord notices, the town defense panel with the ward garden's
 // health, and a hint when a demon shrugs off an ordinary weapon.
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useHudHeight } from '../hud/layout';
 import { MOON_NAMES } from './clock';
 import { useNightHud } from './night';
 // CR 030: the weather on the clock pill and a forecast line under it.
@@ -22,6 +23,9 @@ const TONE: Record<string, string> = { night: '#b9a8ff', dawn: '#ffd27a', danger
 export function NightHud() {
   const s = useNightHud();
   const weatherActive = useWeatherHud((w) => w.active);
+  // Playtest 2 integration QA: the world event tracker sits under this column (hud/layout.ts BELOW_CLOCK).
+  const col = useRef<HTMLDivElement>(null);
+  useHudHeight(col, '--ls-clock-h', s.online);
   const [, force] = useState(0);
   useEffect(() => {
     const t = setInterval(() => force((n) => n + 1), 500);
@@ -31,7 +35,7 @@ export function NightHud() {
   const now = performance.now();
   const d = s.defense;
   return (
-    <div data-testid="night-hud" style={{ position: 'fixed', top: 56, left: '50%', transform: 'translateX(-50%)', zIndex: 12, pointerEvents: 'none', font: '13px system-ui, sans-serif', color: '#e9ecef', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+    <div ref={col} data-testid="night-hud" style={{ position: 'fixed', top: 56, left: '50%', transform: 'translateX(-50%)', zIndex: 12, pointerEvents: 'none', font: '13px system-ui, sans-serif', color: '#e9ecef', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
       <div data-testid="night-clock" style={{ background: 'rgba(10,12,20,0.55)', padding: '3px 10px', borderRadius: 12, display: 'flex', gap: 8, alignItems: 'center' }}>
         <span>{s.night ? MOON_GLYPHS[s.moon] : '☀️'}</span>
         <span>{hhmm(s.hour)}</span>

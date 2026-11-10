@@ -81,11 +81,11 @@ export function controlGroups(debug: boolean): ControlGroup[] {
         { keys: ['Left mouse'], action: 'Attack with your weapon', src: [[C, 'e.button === 0']] },
         { keys: ['Mouse wheel'], action: 'Pick what the right button uses', note: 'your weapon or a spell slot', src: [[C, 'onWheel']] },
         { keys: ['Right mouse'], action: 'Use the picked spell or weapon move', src: [[C, 'e.button === 2']] },
-        { keys: ['Z'], action: 'Parry / draw / charge / heavy (hold)', note: 'your weapon\'s move, whatever is picked', src: [[C, "'KeyZ'"]] },
-        { keys: ['1', '2', '3', '4'], action: 'Cast the spell in that slot', src: [[C, "'Digit1'"], [C, "'Digit4'"]] },
+        { keys: ['Z'], action: 'Parry / draw / charge / heavy (hold)', note: "always your weapon's move, whatever the wheel picked", src: [[C, "'KeyZ'"]] },
+        { keys: ['1', '2', '3', '4'], action: 'Cast the spell in that slot', note: 'also picks it for the right button; hold for streams and charges', src: [[C, "'Digit1'"], [C, "'Digit4'"]] },
         { keys: ['F', 'Alt'], action: 'Dodge', note: 'a short moment nothing can hit you', src: [[C, "'KeyF'"], [C, "'AltLeft'"]] },
         { keys: ['Q'], action: 'Elemental form', note: 'with a gem socketed in your weapon', src: [[C, "'KeyQ'"]] },
-        { keys: ['V'], action: 'Weapon technique', note: 'once your weapon skill has one', src: [[C, "'KeyV'"]] },
+        { keys: ['Tab'], action: 'Weapon technique', note: 'once your weapon skill has one (V is push to talk); with a panel open Tab moves between its buttons', src: [[C, "'Tab'"]] },
         { keys: ['R'], action: 'Drink a healing draught', src: [[C, "'KeyR'"]] },
         { keys: ['X'], action: 'Swap loadout (weapon + 4 spells)', src: [[C, "'KeyX'"]] },
       ],
@@ -93,11 +93,26 @@ export function controlGroups(debug: boolean): ControlGroup[] {
     {
       title: 'The world',
       rows: [
-        { keys: ['E'], action: 'Talk, trade, open doors, use forges, mine, pick up', src: [['world/buildings/townHud.ts', "'KeyE'"], ['ui/inventory/LootHud.tsx', "'KeyE'"], ['world/caves/caveManager.ts', "'KeyE'"]] },
-        { keys: ['M'], action: 'Map', src: [['ui/map/ExplorationHud.tsx', "'KeyM'"]] },
+        {
+          keys: ['E'],
+          action: 'Talk, trade, open doors, use forges, mine, take loot, cook, read tablets, gather herbs, attune',
+          note: 'does what the [E] line under the crosshair says, one thing at a time; in the saddle E gets off',
+          src: [['world/buildings/townHud.ts', "'KeyE'"], ['ui/inventory/LootHud.tsx', "'KeyE'"], ['world/caves/caveManager.ts', "'KeyE'"], ['ui/content/ContentHud.tsx', "'KeyE'"], ['ui/progression/ProgressionHud.tsx', "'KeyE'"], ['input/interact.ts', 'E_ORDER']],
+        },
+        { keys: ['M'], action: 'Map', note: 'drag to pan, wheel to zoom, right-click to pin (Shift: for your party)', src: [['ui/map/ExplorationHud.tsx', "'KeyM'"]] },
         { keys: ['J'], action: 'Quest journal', note: 'bestiary, fish, lore, feats, renown', src: [['ui/quests/QuestHud.tsx', "'KeyJ'"]] },
-        { keys: ['E'], action: 'Fish: cast, strike, hold to reel', note: 'with a fishing rod, facing deep water', src: [['ui/fishing/FishingHud.tsx', "'KeyE'"]] },
-        { keys: ['L'], action: 'Photo mode', note: 'free camera, no HUD, Enter saves a PNG', src: [['ui/photo/PhotoMode.tsx', "'KeyL'"]] },
+        { keys: ['E', 'Space', 'Left mouse'], action: 'Fish: cast (E), strike, hold to reel', note: 'with a fishing rod, facing deep water; let go when the line strains', src: [['ui/fishing/FishingHud.tsx', "'KeyE'"], ['ui/fishing/FishingHud.tsx', "'Space'"]] },
+      ],
+    },
+    {
+      title: 'Photo mode',
+      rows: [
+        { keys: ['L'], action: 'Photo mode on / off', note: 'free camera, no HUD; Esc also leaves', src: [['ui/photo/PhotoMode.tsx', "'KeyL'"]] },
+        { keys: ['E', 'Q'], action: 'Camera up / down', note: 'W A S D fly, Space / Ctrl also rise and sink, Alt slow, Shift fast', src: [['ui/photo/store.ts', 'KeyE:'], ['ui/photo/store.ts', 'KeyQ:']] },
+        { keys: ['Z', 'C'], action: 'Roll the camera', src: [['ui/photo/store.ts', 'KeyZ:'], ['ui/photo/store.ts', 'KeyC:']] },
+        { keys: ['Mouse wheel'], action: 'Zoom (field of view)', src: [['ui/photo/PhotoMode.tsx', 'onWheel']] },
+        { keys: ['Enter'], action: 'Save a picture (PNG)', src: [['ui/photo/PhotoMode.tsx', 'SHOT_KEY']] },
+        { keys: ['H'], action: 'Hide / show the photo panel', src: [['ui/photo/PhotoMode.tsx', "'KeyH'"]] },
       ],
     },
     {
@@ -137,7 +152,7 @@ export function controlGroups(debug: boolean): ControlGroup[] {
       title: 'Taming and pets',
       rows: [
         { keys: ['E'], action: 'Feed a calm creature: tame it', note: 'weaken it while you carry a food it likes; stay close while the meter fills', src: [['ui/pets/PetHud.tsx', "'KeyE'"]] },
-        { keys: ['6'], action: 'Send your pet at what you aim at', note: 'hold 6 for the pet wheel: follow, stay, come, pet, feed', src: [['ui/pets/PetHud.tsx', "'Digit6'"]] },
+        { keys: ['6'], action: 'Send your pet at what you aim at', note: 'hold 6 for the pet wheel: attack, follow, stay, come, pet, feed (Esc cancels)', src: [['ui/pets/PetHud.tsx', "'Digit6'"]] },
         { keys: ['7'], action: 'Pet: stay here / follow me', src: [['ui/pets/PetHud.tsx', "'Digit7'"]] },
         { keys: ['E'], action: 'Pet your pet', note: 'beside it; C → Your pets: names, stats, the stable', src: [['ui/pets/PetHud.tsx', "'KeyE'"]] },
       ],
@@ -145,8 +160,10 @@ export function controlGroups(debug: boolean): ControlGroup[] {
     {
       title: 'Your character',
       rows: [
-        { keys: ['I'], action: 'Inventory', note: 'G or Delete drops the selected item', src: [['ui/inventory/InventoryScreen.tsx', "'KeyI'"], ['ui/inventory/InventoryScreen.tsx', "'Delete'"]] },
-        { keys: ['C'], action: 'Character (level, stats, PvP)', src: [['ui/progression/ProgressionHud.tsx', "'KeyC'"]] },
+        { keys: ['I'], action: 'Inventory', src: [['ui/inventory/InventoryScreen.tsx', "'KeyI'"]] },
+        { keys: ['G', 'Delete'], action: 'Drop the selected item', note: 'with the inventory open (G is the glider otherwise)', src: [['ui/inventory/InventoryScreen.tsx', "'KeyG'"], ['ui/inventory/InventoryScreen.tsx', "'Delete'"]] },
+        { keys: ['C'], action: 'Character (level, stats, spells, PvP)', src: [['ui/progression/ProgressionHud.tsx', "'KeyC'"]] },
+        { keys: ['Enter', 'Delete', 'Backspace'], action: 'Spell cards: pick the card, or clear the slot', note: 'click or drag works too; Tab moves between cards while the panel is open', src: [['ui/spellcards/SpellCards.tsx', "'Enter'"], ['ui/spellcards/SpellCards.tsx', "'Delete'"]] },
         { keys: ['N'], action: 'Skill tree: learn spells, fill slots', src: [['ui/skills/SkillScreen.tsx', "'KeyN'"]] },
         { keys: ['B'], action: 'Build overview', src: [['ui/skills/SkillScreen.tsx', "'KeyB'"]] },
       ],
@@ -155,10 +172,10 @@ export function controlGroups(debug: boolean): ControlGroup[] {
       title: 'Other people',
       rows: [
         { keys: ['Enter'], action: 'Chat', note: '/ starts a command (/help)', src: [['social/ui/ChatPanel.tsx', "'Enter'"]] },
-        { keys: ['H'], action: 'Emote wheel (hold)', note: 'tap for the last one; /emote in chat', src: [['ui/emotes/EmoteWheel.tsx', "'KeyH'"]] },
+        { keys: ['H'], action: 'Emote wheel (hold)', note: 'tap for the last one, Esc cancels; /emote in chat', src: [['ui/emotes/EmoteWheel.tsx', "'KeyH'"]] },
         { keys: ['O'], action: 'Friends', src: [['social/ui/SocialOverlay.tsx', "'KeyO'"]] },
         { keys: ['V'], action: 'Push to talk (hold)', note: 'when voice is on push-to-talk', src: [['voice/runtime.ts', "'KeyV'"]] },
-        { keys: ['Y', 'U'], action: 'Accept / decline a duel', src: [['ui/pvp/PvpHud.tsx', "'KeyY'"], ['ui/pvp/PvpHud.tsx', "'KeyU'"]] },
+        { keys: ['Y', 'U'], action: 'Accept / decline a duel', note: 'while a challenge waits, even with an instrument out', src: [['ui/pvp/PvpHud.tsx', "'KeyY'"], ['ui/pvp/PvpHud.tsx', "'KeyU'"]] },
       ],
     },
     {
@@ -177,6 +194,7 @@ export function controlGroups(debug: boolean): ControlGroup[] {
         { keys: ['F3'], action: 'Debug readout', src: [['hud/useDebugHotkeys.ts', "'F3'"]] },
         { keys: ['`'], action: 'Debug panel', src: [['hud/useDebugHotkeys.ts', "'Backquote'"]] },
         { keys: ['F4'], action: 'Chunk borders', src: [['hud/useDebugHotkeys.ts', "'F4'"]] },
+        { keys: ['V'], action: 'Fly (offline only)', note: 'Space rises, Ctrl sinks', src: [['hud/useDebugHotkeys.ts', "'KeyV'"]] },
       ],
     });
   }

@@ -13,6 +13,7 @@
 import { useEffect, useState } from 'react';
 import { CONTENT } from '@lodestone/contracts';
 import { isTextTarget } from '../../input/useKeyboard';
+import { eFree } from '../../input/interact';
 import { localPlayer } from '../../state/live';
 import { useInventory } from '../inventory/store';
 import { countOf } from '../inventory/items';
@@ -23,11 +24,11 @@ import { DEBUG } from '../../config';
 import { findFishingSpot } from './FishingLayer';
 import { cast, fishLive, floatState, press, release, useFishing } from './store';
 
+// Playtest 2 integration QA: the prompts above fishing in input/interact.ts
+// E_ORDER (town, cave, tower, loot, content, camp), an open panel or wheel
+// and the saddle take E first; taming, petting and riding wait for it.
 function othersBusy(): boolean {
-  const q = (sel: string) => document.querySelector<HTMLElement>(sel);
-  const busy = ['[data-testid="town-prompt"]', '[data-testid="cave-hud"]', '[data-testid="loot-prompt"]', '[data-testid="content-prompt"]', '[data-testid="camp-prompt"]'].some((sel) => !!q(sel)?.textContent);
-  const townPanel = q('[data-testid="town-panel"]');
-  return busy || (!!townPanel && townPanel.style.display !== 'none') || !!document.querySelector('[data-ui-panel]:not([style*="display: none"]), [data-testid="emote-wheel"]');
+  return !eFree('fish');
 }
 
 export function hasRod(): boolean {

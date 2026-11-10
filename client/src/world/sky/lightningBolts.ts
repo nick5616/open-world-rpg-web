@@ -1,8 +1,8 @@
 // Lightning bolts (playtest 2, CR 030): a jagged, branching channel from the
 // cloud base down to where the bolt struck, as camera-facing ribbons in one
-// additive HDR mesh (bloom makes it glow), flickering for ~0.45 s. The path
+// additive HDR mesh (bloom makes it glow), fading over ~0.45 s. The path
 // is seeded by the strike id, so everyone who sees a bolt sees the same
-// shape. The flash on the world (sky, fog, hemisphere light) is WorldScene's.
+// shape. Nothing else lights up with it (no full-screen flash).
 
 import * as THREE from 'three';
 import type { Bolt } from '../../systems/weather/runtime';
@@ -66,13 +66,16 @@ function buildPath(b: Bolt): Path {
   return { id: b.id, pts, w };
 }
 
-/** Brightness over a bolt's life: a stroke, a dark gap, a restrike, the fade. */
+/**
+ * Brightness over a bolt's life: on, then one smooth fade. No dark gap and
+ * restrike any more (playtest 2 integration QA, with "No full-screen
+ * flashing"): the on-off-on strobe through the bloom read as the screen
+ * blinking in a storm. Never above 1 (the HDR level is the style's).
+ */
 export function boltBrightness(ms: number): number {
   if (ms < 0 || ms > LIFE_MS) return 0;
-  if (ms < 60) return 1;
-  if (ms < 110) return 0.2;
-  if (ms < 190) return 0.95;
-  return 0.75 * Math.exp(-(ms - 190) / 90);
+  if (ms < 120) return 1;
+  return Math.exp(-(ms - 120) / 110);
 }
 
 export class LightningBolts {
@@ -98,7 +101,7 @@ export class LightningBolts {
   }
 
   /** Per frame: ribbons for the live bolts (width in m, HDR intensity, style tint). */
-  update(camera: THREE.Camera, bolts: Bolt[], now: number, width = 1.4, intensity = 7): void {
+  update(camera: THREE.Camera, bolts: Bolt[], now: number, width = 1.4, intensity = 4): void {
     const live = bolts.filter((b) => now - b.at < LIFE_MS).slice(-MAX_BOLTS);
     this.object.visible = live.length > 0;
     if (!live.length) {

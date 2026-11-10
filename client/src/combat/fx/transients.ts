@@ -582,9 +582,11 @@ export class FxPrims {
       }
       const size = s.s0 + (s.s1 - s.s0) * Math.sqrt(k);
       s.sprite.scale.set(size, size, 1);
-      // Readability: a flash at your own hand never whites out the view.
+      // Readability: a flash at your own hand never whites out the view. No floor: at 15 % a
+      // flash around the camera still washed the whole view, and Static Step's blinks (one at
+      // your chest every 2 m, ~15 a second) strobed it (playtest 2 integration QA: no flashing).
       const d = s.sprite.position.distanceTo(tmpCam);
-      const near = Math.min(1, Math.max(0.15, (d - size * 0.5) / 4));
+      const near = Math.min(1, Math.max(0, (d - size * 0.5) / 4));
       s.mat.opacity = s.op * (1 - k * k) * near;
     }
     for (const l of this.lights) {

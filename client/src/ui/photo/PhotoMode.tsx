@@ -106,11 +106,13 @@ function onKey(e: KeyboardEvent): void {
     } else if (e.code === PANEL_KEY) usePhoto.setState((x) => ({ panelHidden: !x.panelHidden }));
   }
   if (k || e.code === 'Tab') e.preventDefault();
+  // Releases still reach the game: a key held as photo mode opened (Z, a spell key) must not stay held.
+  if (e.type === 'keyup') return;
   e.stopImmediatePropagation();
 }
 
 function onMouse(e: MouseEvent): void {
-  if (!usePhoto.getState().active) return;
+  if (!usePhoto.getState().active || e.type === 'mouseup') return; // a release always reaches combat (no held attack)
   const t = e.target as HTMLElement | null;
   if (t?.tagName !== 'CANVAS') return;
   // No attacks, casts or camera toggles from the photo camera; a click on the view captures the mouse.
