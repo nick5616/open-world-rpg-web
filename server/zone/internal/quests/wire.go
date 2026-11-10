@@ -28,6 +28,13 @@ type WireQuest struct {
 	Gold     int        `json:"gold"`
 	XP       int64      `json:"xp"`
 	TurnIn   bool       `json:"turnIn,omitempty"`
+	// CR 022: reward items, equipment rolls and reputation (town name).
+	Items     []ItemQty `json:"items,omitempty"`
+	RollItems int       `json:"rollItems,omitempty"`
+	Rep       int       `json:"rep,omitempty"`
+	RepTown   string    `json:"repTown,omitempty"`
+	// Say (offers only, CR 022): what the giver says when offering it.
+	Say string `json:"say,omitempty"`
 	// StepMarkers (offers only): every step's markers, so the client can
 	// preview where the whole quest takes place before accepting.
 	StepMarkers [][]Marker `json:"stepMarkers,omitempty"`
@@ -40,7 +47,8 @@ type wireLog struct {
 }
 
 func view(q *Quest) WireQuest {
-	w := WireQuest{ID: q.ID, Key: q.Key, Kind: q.Kind, Title: q.Title, Giver: q.Giver, Step: q.Step, Gold: q.Gold, XP: q.XP, Progress: q.Progress, Markers: []Marker{}}
+	w := WireQuest{ID: q.ID, Key: q.Key, Kind: q.Kind, Title: q.Title, Giver: q.Giver, Step: q.Step, Gold: q.Gold, XP: q.XP, Progress: q.Progress, Markers: []Marker{},
+		Items: q.Items, RollItems: q.RollItems, Rep: q.Rep}
 	for i, s := range q.Steps {
 		w.Steps = append(w.Steps, WireStep{Text: s.Text, Done: i < q.Step})
 	}
@@ -49,8 +57,11 @@ func view(q *Quest) WireQuest {
 		if s.Markers != nil {
 			w.Markers = s.Markers
 		}
-		if (s.Obj.Kind == ObjHave || s.Obj.Kind == ObjTurnIn) && len(s.Obj.Items) > 0 && s.Obj.Items[0].Qty > 1 {
+		if (s.Obj.Kind == ObjHave || s.Obj.Kind == ObjTurnIn || s.Obj.Kind == ObjGive) && len(s.Obj.Items) > 0 && s.Obj.Items[0].Qty > 1 {
 			w.Need = s.Obj.Items[0].Qty
+		}
+		if s.Obj.Kind == ObjKill && s.Obj.N > 0 {
+			w.Need = s.Obj.N
 		}
 		w.TurnIn = s.Obj.Kind == ObjTurnIn
 	}
@@ -71,6 +82,22 @@ func (l *Log) Wire() []byte {
 // step's markers.
 func OfferWire(q *Quest) []byte {
 	w := view(q)
+	for _, s := range q.Steps {
+		m := s.Markers
+		if m == nil {
+			m = []Marker{}
+		}
+		w.StepMarkers = append(w.StepMarkers, m)
+	}
+	b, _ := json.Marshal(w)
+	return b
+}
+
+// OfferWireSay is OfferWire with the giver's offer line and the town whose
+// reputation the quest raises (CR 022: townsfolk side quests and stories).
+func OfferWireSay(q *Quest, say, repTown string) []byte {
+	w := view(q)
+	w.Say, w.RepTown = say, repTown
 	for _, s := range q.Steps {
 		m := s.Markers
 		if m == nil {

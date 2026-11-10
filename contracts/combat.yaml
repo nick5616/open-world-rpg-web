@@ -659,6 +659,18 @@ enemyAttacks:
   lord_cleave: {id: 69, shape: cone, reach: 4.5, arc: 140, windupMs: 500, activeMs: 150, recoveryMs: 700, cooldownMs: 3000, damage: 22}
   lord_nova: {id: 70, shape: circle, radius: 7, windupMs: 600, activeMs: 150, recoveryMs: 900, cooldownMs: 8000, damage: 20}
   lord_meteor: {id: 71, shape: ground, radius: 3, reach: 30, windupMs: 600, activeMs: 117, recoveryMs: 600, cooldownMs: 9000, damage: 18, everyone: true}
+  # playtest 2 content (CR 022): world events and the sealed vaults
+  fox_nip: {id: 80, shape: cone, reach: 1.6, arc: 70, windupMs: 400, activeMs: 100, recoveryMs: 500, cooldownMs: 4000, damage: 3}
+  hound_bite: {id: 81, shape: cone, reach: 2.3, arc: 80, windupMs: 300, activeMs: 100, recoveryMs: 450, cooldownMs: 1500, damage: 10}
+  hound_lunge: {id: 82, shape: line, charge: true, reach: 8, width: 1.4, windupMs: 450, activeMs: 300, recoveryMs: 600, cooldownMs: 5000, damage: 12, minRange: 3}
+  hunt_spear: {id: 83, shape: projectile, speed: 26, radius: 0.5, reach: 28, windupMs: 550, activeMs: 17, recoveryMs: 500, cooldownMs: 3500, damage: 16, minRange: 4}
+  star_slam: {id: 84, shape: ground, radius: 3.2, reach: 10, windupMs: 600, activeMs: 117, recoveryMs: 700, cooldownMs: 4500, damage: 18, element: void}
+  behemoth_quake: {id: 85, shape: circle, radius: 6, windupMs: 600, activeMs: 150, recoveryMs: 900, cooldownMs: 7000, damage: 20, element: earth}
+  behemoth_gore: {id: 86, shape: line, charge: true, reach: 12, width: 2.4, windupMs: 550, activeMs: 450, recoveryMs: 900, cooldownMs: 6500, damage: 22, minRange: 4}
+  # The Vault Keeper's sigil (the telegraphed mechanic): a wide burning sigil
+  # under every player in the fight, readable for the full 600 ms.
+  keeper_sigil: {id: 87, shape: ground, radius: 4.5, reach: 24, windupMs: 600, activeMs: 150, recoveryMs: 800, cooldownMs: 7500, damage: 22, everyone: true, element: light}
+  keeper_sweep: {id: 88, shape: cone, reach: 4.0, arc: 150, windupMs: 500, activeMs: 117, recoveryMs: 700, cooldownMs: 3200, damage: 16}
   # bosses
   boss_cleave: {id: 40, shape: cone, reach: 4.5, arc: 120, windupMs: 500, activeMs: 150, recoveryMs: 700, cooldownMs: 3000, damage: 18}
   boss_slam: {id: 41, shape: ground, radius: 4.0, windupMs: 600, activeMs: 117, recoveryMs: 800, cooldownMs: 5000, damage: 22, reach: 12}
@@ -720,6 +732,16 @@ enemies:
   # bosses: hp is the solo value at level 1 (party scaling multiplies it)
   warden: {id: 100, family: boss, hp: 8400, speed: 4.5, aggro: 30, attacks: [boss_cleave, boss_slam], behavior: melee, xp: 600, size: 3.0, color: '#7a6a5a'}
   archon: {id: 101, family: boss, hp: 6800, speed: 4.0, aggro: 32, attacks: [boss_orbs, boss_nova], behavior: ranged, keepAway: 10, xp: 600, size: 2.6, color: '#5a4a8a'}
+  # playtest 2 content (CR 022). The sealed vaults' mini-boss (a boss with
+  # an arena: the vault yard), the world-event creatures. behavior flee:
+  # never attacks, runs from the nearest player within its aggro (the
+  # Glintfox; ai.go).
+  vault_keeper: {id: 102, family: boss, hp: 2600, speed: 4.2, aggro: 28, attacks: [keeper_sweep, keeper_sigil], behavior: melee, xp: 350, size: 2.2, color: '#8a7a5c'}
+  glintfox: {id: 70, family: critter, hp: 120, speed: 8.2, aggro: 26, attacks: [fox_nip], behavior: flee, xp: 40, size: 0.6, color: '#f0b040'}
+  gloamhound: {id: 71, family: hunt, hp: 82, speed: 7.0, aggro: 40, attacks: [hound_bite, hound_lunge], behavior: melee, xp: 26, size: 0.95, color: '#3c4a5e'}
+  hunt_master: {id: 72, family: hunt, hp: 92, speed: 5.4, aggro: 40, attacks: [hunt_spear, slash], behavior: ranged, keepAway: 10, xp: 60, size: 1.5, color: '#2c3a2a'}
+  starfall_sentinel: {id: 73, family: guardian, hp: 94, speed: 3.6, aggro: 22, attacks: [star_slam, sentinel_sweep], behavior: melee, element: void, xp: 50, size: 1.6, color: '#6a5aa8'}
+  thornhide_behemoth: {id: 74, family: beast, hp: 94, speed: 4.4, aggro: 24, attacks: [behemoth_gore, behemoth_quake], behavior: melee, element: earth, xp: 160, size: 2.4, color: '#4e5a2c'}
 
 bosses:
   # Spec 8: 2 or 3 phases, big telegraphed attacks, adds. `at` is the health
@@ -739,6 +761,14 @@ bosses:
       - {at: 1.0, attacks: [boss_orbs, boss_nova]}
       - {at: 0.6, attacks: [boss_orbs, boss_nova, boss_meteor], adds: 3}
       - {at: 0.3, attacks: [boss_orbs, boss_nova, boss_meteor, boss_beam], adds: 3, cooldownMult: 0.8}
+  vault_keeper:
+    # playtest 2 content (CR 022): the sealed vaults' keeper. Phase 2 burns
+    # its sigil faster and calls two of the vault's guardians.
+    transitionMs: 2000
+    arenaRadius: 22
+    phases:
+      - {at: 1.0, attacks: [keeper_sweep, keeper_sigil]}
+      - {at: 0.5, attacks: [keeper_sweep, keeper_sigil, boss_slam], adds: 2, speedMult: 1.15, cooldownMult: 0.8}
   titles:
     # Boss display name = "<title by element> <name>" ("The Ashen Warden").
     fire: The Ashen
@@ -750,7 +780,7 @@ bosses:
     dark: The Hollow
     void: The Unmade
     none: The Ancient
-  names: {warden: Warden, archon: Archon}
+  names: {warden: Warden, archon: Archon, vault_keeper: Vault Keeper}
 
 affixes:
   # Spec 8 elites: an element and an affix. Wind-ups never leave 300-600 ms.
@@ -794,6 +824,12 @@ enemyNames:
   umbral_stalker: Umbral Stalker
   void_maw: Void Maw
   starless_sovereign: Starless Sovereign
+  vault_keeper: Vault Keeper
+  glintfox: Glintfox
+  gloamhound: Gloamhound
+  hunt_master: The Huntsman
+  starfall_sentinel: Starfall Sentinel
+  thornhide_behemoth: Thornhide Behemoth
 
 demons:
   # WP15 night spawning (server/zone/internal/night): lesser packs around
