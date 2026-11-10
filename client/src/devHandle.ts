@@ -13,6 +13,9 @@ import { useViewStore } from './stores/viewStore';
 import { netDebug, netRuntime, useNetStore } from './net/netStore';
 import { divergenceProbe, resetProbe } from './sim/dev/divergenceProbe';
 import type { ReadySession } from './account/types';
+// Playtest 2 weather (CR 030): dev overrides and inspection.
+import { liveWeather, useWeatherHud, weatherClient, zoneBolt } from './systems/weather/runtime';
+import { STATE_KEYS, stateByKey } from './systems/weather/weather';
 import { voiceDebugHook } from './voice/debugHook';
 
 /** G4: Events and HitResults of the live session, recorded once tapped (headless acceptance). */
@@ -69,6 +72,15 @@ export function installDevHandle(): void {
     /** Force rain on/off (null: the weather decides). Online, the zone's next clock event overrides it. */
     setRain: (v: boolean | null) => {
       worldClockState.rain = v;
+    },
+    /** Playtest 2 weather (CR 030): force a state on this client (null: seeded), inspect it, strike a bolt, show a rainbow. */
+    setWeather: (key: string | null) => {
+      weatherClient.devOverride = key === null ? null : stateByKey(key);
+    },
+    weather: () => ({ state: STATE_KEYS[liveWeather.state], mix: { ...liveWeather.mix }, wet: liveWeather.wet, snowCover: liveWeather.snowCover, rainbow: liveWeather.rainbow, flash: liveWeather.flash, bolts: liveWeather.bolts.length, stats: { ...liveWeather.stats }, dynamic: weatherClient.dynamic, climate: weatherClient.climate ? [...weatherClient.climate.cells] : null, hud: { ...useWeatherHud.getState() } }),
+    weatherStrike: (x: number, z: number, y?: number) => zoneBolt((Math.random() * 1e9) >>> 0, x, y ?? localPlayer.pos.y, z, false, localPlayer.pos),
+    setRainbow: (v: number | null) => {
+      weatherClient.devRainbow = v;
     },
     /** Playtest 2: 'first' | 'third' person camera (optional shoulder 1 right / -1 left, boom distance m). */
     setView: (mode: 'first' | 'third', shoulder?: 1 | -1, distance?: number) => {

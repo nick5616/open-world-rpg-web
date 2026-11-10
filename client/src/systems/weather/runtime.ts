@@ -81,6 +81,8 @@ export const weatherClient = {
   devOverride: null as number | null,
   /** Seconds since the zone announced the clock (online) or null (solo). */
   online: false,
+  /** Dev: a rainbow strength to show regardless of the weather (null: the weather decides). */
+  devRainbow: null as number | null,
   /** A time function (world seconds) set by NetPlay; solo uses the wall clock. */
   timeS: null as (() => number) | null,
 };
@@ -176,6 +178,7 @@ export const liveWeather = {
 const seen = new Set<number>();
 let lastK = -1;
 let hudAcc = 0;
+const lastCam = { x: NaN, z: NaN };
 
 function pushBolt(b: Bolt): void {
   if (seen.has(b.id)) return;
@@ -207,9 +210,18 @@ export function weatherFrame(cam: { x: number; y: number; z: number }, player: {
   let target: WeatherMix;
   if (c && weatherClient.dynamic) target = mixAt(seed, c, cam.x, cam.z, t, o);
   else target = { ...STATE_MIX[legacyRain || (o === W.rain) ? W.rain : W.clear] };
+  // A fast travel or a teleport arrives in the weather there, not the one left behind.
+  const jumped = !(Math.hypot(cam.x - lastCam.x, cam.z - lastCam.z) < 150);
+  lastCam.x = cam.x;
+  lastCam.z = cam.z;
+  if (jumped) {
+    Object.assign(liveWeather.mix, target);
+    liveWeather.wet = Math.min(1, target.rain * 1.4);
+    liveWeather.snowCover = Math.min(1, target.snow * 1.3);
+  }
   easeMix(liveWeather.mix, target, dt);
   accumulate(liveWeather, liveWeather.mix, dt);
-  const rb = c && weatherClient.dynamic && o < 0 ? rainbowAt(seed, c, player.x, player.z, t, sunElevationRad) : 0;
+  const rb = weatherClient.devRainbow ?? (c && weatherClient.dynamic && o < 0 ? rainbowAt(seed, c, player.x, player.z, t, sunElevationRad) : 0);
   liveWeather.rainbow += (rb - liveWeather.rainbow) * Math.min(1, dt * 0.5);
   liveWeather.flash *= Math.exp(-dt * 7);
   const now = performance.now();

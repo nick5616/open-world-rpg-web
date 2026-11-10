@@ -40,15 +40,17 @@ uniform float uHaze;
 uniform vec4 uFogRange;
 uniform vec3 uMoonColor;
 // Playtest 2 weather (CR 030): x fog bank density, y blowing sand, z lightning
-// flash, w heat shimmer; drift = the banks' wind offset (xy) and time (z).
+// flash, w heat shimmer; drift = the banks' wind offset (xy), time (z) and
+// storm darkness (w: the air goes grey-blue under thunderheads).
 uniform vec4 uWeather;
-uniform vec3 uWeatherDrift;
+uniform vec4 uWeatherDrift;
 ${SKY_GLSL}
 ${SKY_STYLE_GLSL}
 vec3 fogColour(vec3 d) {
   vec3 c = lsSkyStyle(skyAmbient(normalize(vec3(d.x, max(d.y, 0.03), d.z)), uSunDir), d.y);
   // Blowing sand tints the air ochre.
-  return mix(c, vec3(0.62, 0.48, 0.32) * (0.3 + dot(c, vec3(0.6))), uWeather.y);
+  c = mix(c, vec3(0.62, 0.48, 0.32) * (0.3 + dot(c, vec3(0.6))), uWeather.y);
+  return c * mix(vec3(1.0), vec3(0.42, 0.46, 0.55), uWeatherDrift.w);
 }
 float wbN(vec2 p) {
   vec2 i = floor(p); vec2 f = fract(p); vec2 u = f * f * (3.0 - 2.0 * f);
@@ -108,7 +110,7 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
     float mu = dot(d, uSunDir);
     float g = 0.55;
     float pm = (1.0 - g * g) / (4.0 * PI_ * pow(1.0 + g * g - 2.0 * g * mu, 1.5));
-    vec3 inscatter = uSunColor * pm * 0.5;
+    vec3 inscatter = uSunColor * pm * 0.5 * (1.0 - 0.7 * uWeatherDrift.w);
     // Moonlight in the night fog (opposite the sun), so valley fog glows faintly blue.
     float mm = dot(d, -uSunDir);
     inscatter += uMoonColor * (0.25 + (1.0 - g * g) / (4.0 * PI_ * pow(1.0 + g * g - 2.0 * g * mm, 1.5)));
@@ -147,7 +149,7 @@ export class AtmosphereFogEffect extends Effect {
         ['uFogRange', new THREE.Uniform(new THREE.Vector4(0, 0, 0, 0))],
         ['uMoonColor', new THREE.Uniform(new THREE.Color(0, 0, 0))],
         ['uWeather', new THREE.Uniform(new THREE.Vector4(0, 0, 0, 0))],
-        ['uWeatherDrift', new THREE.Uniform(new THREE.Vector3(0, 0, 0))],
+        ['uWeatherDrift', new THREE.Uniform(new THREE.Vector4(0, 0, 0, 0))],
         ['uSkyStyle', new THREE.Uniform(new THREE.Vector4(1, 1, 0, 0))],
       ]),
     });

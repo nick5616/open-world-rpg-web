@@ -326,8 +326,8 @@ export function WorldScene({ runtime }: Props) {
     liveStyle.torch = st.torch;
     world.sky.uniforms.uSkyStyle.value.set(st.skySat * (1 - 0.35 * overcast), st.skyBright * (1 - 0.25 * overcast), st.skyBands, st.retro ? 0 : 0.6 * (1 - overcast));
     world.waterU.uWaterStyle.value.set(st.waterTurquoise * (1 - 0.6 * overcast), st.waterFoam, st === STYLES.lodestone ? 0.25 : 0, 0);
-    L.lightIntensity *= 1 - 0.55 * overcast;
-    L.hemiIntensity = L.hemiIntensity * (1 - 0.2 * overcast) + flash * 1.4; // a strike lights the world for a blink
+    L.lightIntensity *= (1 - 0.55 * overcast) * (1 - 0.35 * storm);
+    L.hemiIntensity = L.hemiIntensity * (1 - 0.2 * overcast) * (1 - 0.35 * storm) + flash * 1.4; // a strike lights the world for a blink
     world.sky.uniforms.uSunDir.value.copy(L.sunDir);
     world.sky.mesh.position.copy(camera.position);
     world.hemi.color.copy(L.skyColor);
@@ -363,7 +363,7 @@ export function WorldScene({ runtime }: Props) {
       fogU.u('uHaze').value = (st.haze / 14000) * (1 + 1.5 * rain + 0.8 * wm.snow + 2.5 * wm.dust + 1.2 * wm.haze) * (1 - under);
       // CR 030: fog banks (view distance ~100 m inside one), blowing sand, the strike's flash, heat shimmer.
       (fogU.u('uWeather').value as THREE.Vector4).set(Math.min(1, wm.fog) * look.fogBank * above, Math.min(1, wm.dust) * above, flash, wm.haze * look.shimmer * above);
-      (fogU.u('uWeatherDrift').value as THREE.Vector3).set(world.drift.x, world.drift.y, now / 1000);
+      (fogU.u('uWeatherDrift').value as THREE.Vector4).set(world.drift.x, world.drift.y, now / 1000, storm * above);
       (fogU.u('uMoonColor').value as THREE.Color).setRGB(0.012, 0.018, 0.034).multiplyScalar((1 - L.day) * (1 - under) * (st.nightFog > 0 ? 1 : 0));
       (fogU.u('uSkyStyle').value as THREE.Vector4).copy(world.sky.uniforms.uSkyStyle.value);
       const fr = fogU.u('uFogRange').value as THREE.Vector4;

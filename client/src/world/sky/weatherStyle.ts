@@ -30,7 +30,7 @@ export const WEATHER_LOOK: Record<VisualStyle, WeatherLook> = {
   // Oppressive: darker storms, harsher flashes, washed-out bows, heavier fog.
   grim: { boltWidth: 1.2, boltIntensity: 8, flash: 1.3, rainbow: 0.45, fogBank: 1.35, stormDark: 1, flake: 0.9, square: false, shimmer: 0.8 },
   // Chunky: square flakes, fat bolts, no shimmer (its own wobble is enough).
-  retro: { boltWidth: 2.6, boltIntensity: 6, flash: 0.9, rainbow: 0.9, fogBank: 0.8, stormDark: 0.8, flake: 2.4, square: true, shimmer: 0 },
+  retro: { boltWidth: 2.6, boltIntensity: 6, flash: 0.9, rainbow: 0.9, fogBank: 0.8, stormDark: 0.8, flake: 0.6, square: true, shimmer: 0 },
 };
 
 /** Particle capacity per quality tier (low stays cheap). */

@@ -17,7 +17,7 @@ void main() {
   vSeed = aSeed;
   vec4 mv = modelViewMatrix * vec4(position, 1.0);
   gl_Position = projectionMatrix * mv;
-  gl_PointSize = clamp(uSize * (0.7 + 0.6 * aSeed) * uScale / max(-mv.z, 0.1), 1.0, 48.0);
+  gl_PointSize = clamp(uSize * (0.7 + 0.6 * aSeed) * uScale / max(-mv.z, 0.1), 1.0, 24.0);
 }
 `;
 
@@ -51,7 +51,7 @@ export interface ParticleKind {
 }
 
 export const SNOW: ParticleKind = { box: 46, fall: 1.4, drift: 5, sway: 0.6, color: '#f4f8ff', size: 0.12, opaque: true };
-export const SAND: ParticleKind = { box: 36, fall: 0, drift: 13, sway: 0.25, color: '#c8a070', size: 0.06, opaque: false };
+export const SAND: ParticleKind = { box: 36, fall: 0, drift: 13, sway: 0.25, color: '#b98a58', size: 0.1, opaque: false };
 
 export class WeatherParticles {
   readonly object: THREE.Points;
@@ -105,7 +105,7 @@ export class WeatherParticles {
     this.mat.uniforms.uScale.value = viewportH / (2 * Math.tan((camera.fov * Math.PI) / 360));
     this.mat.uniforms.uSize.value = k.size * sizeMul;
     this.mat.uniforms.uSquare.value = square ? 1 : 0;
-    this.mat.uniforms.uOpacity.value = k.opaque ? 1 : Math.min(0.75, 0.25 + amount * 0.6);
+    this.mat.uniforms.uOpacity.value = k.opaque ? 1 : Math.min(0.85, 0.35 + amount * 0.6);
     const half = k.box / 2;
     const wx = windState.dirX * k.drift * (0.25 + wind) * dt;
     const wz = windState.dirZ * k.drift * (0.25 + wind) * dt;

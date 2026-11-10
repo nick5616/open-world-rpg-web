@@ -66,7 +66,7 @@ void main() {
     vec3 bow = vec3(0.0);
     if (b1 > 0.0 && b1 < 1.0) bow += clamp(abs(mod((1.0 - b1) * 4.6 + vec3(0.0, 4.0, 2.0), 6.0) - 3.0) - 1.0, 0.0, 1.0) * sin(b1 * 3.14159);
     if (b2 > 0.0 && b2 < 1.0) bow += 0.35 * clamp(abs(mod((1.0 - b2) * 4.6 + vec3(0.0, 4.0, 2.0), 6.0) - 3.0) - 1.0, 0.0, 1.0) * sin(b2 * 3.14159);
-    col += bow * lum * 0.55 * uWeatherSky.y * smoothstep(0.0, 0.12, v.y);
+    col += bow * (lum * 1.3 + 0.08) * uWeatherSky.y * smoothstep(0.0, 0.12, v.y);
   }
   // Clouds: a plane at ~2 km projected onto the dome, drifting downwind.
   if (uClouds > 0.0 && v.y > 0.01) {
