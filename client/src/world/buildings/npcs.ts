@@ -25,6 +25,19 @@ import type { Towns } from '@lodestone/worldgen';
 import { drawnRemotes, netRuntime } from '../../net/netStore';
 import type { GroundQuery } from '../../sim/ground';
 import { NPC_ROLE_LABEL } from './townEvents';
+import { emoteOf } from '../../ui/emotes/store';
+
+/** CR 028: townsfolk applaud a song with the cheer emote (Event 1090 id 3 on the NPC; value 0 cheer, 1 clap). */
+const EMOTE_CHEER = 3;
+const CHEER_S = 2.4;
+
+/** How an NPC's arms applaud at t s into a cheer (null: not applauding). Pure: forward raise (about the side axis) and inward swing (about the facing axis). */
+export function applaudArms(value: number, t: number, side: number): { fwd: number; inward: number } | null {
+  if (t < 0 || t > CHEER_S) return null;
+  const env = Math.min(1, t / 0.2) * Math.min(1, (CHEER_S - t) / 0.3);
+  if (value === 1) return { fwd: 1.25 * env, inward: side * (0.22 + 0.16 * Math.abs(Math.sin(t * 13))) * env };
+  return { fwd: (2.75 + 0.22 * Math.sin(t * 8 + (side > 0 ? 0 : 1.2))) * env, inward: side * 0.12 * env };
+}
 
 export const NPC_ROLE = { villager: 0, merchant: 1, blacksmith: 2, innkeeper: 3, bounty: 4, farmer: 5, guard: 6 } as const;
 const MAX = 96;
@@ -181,7 +194,11 @@ export class NpcRenderer {
     let nApron = 0;
     let nSpear = 0;
     let nHair = 0;
+    const nowMs = performance.now();
+    const xAxis = new THREE.Vector3(1, 0, 0);
     this.views.forEach((v, i) => {
+      const em = v.entityId !== null ? emoteOf(v.entityId) : undefined;
+      const cheerT = em && em.id === EMOTE_CHEER ? (nowMs - em.at) / 1000 : -1;
       // Walk cycle: phase advances with speed; idle sway otherwise.
       const ph = (this.phase.get(v.key) ?? (v.key * 1.37) % 6.28) + dt * Math.min(v.speed, 4) * 4.2;
       this.phase.set(v.key, ph);
@@ -206,8 +223,11 @@ export class NpcRenderer {
         this.legs.setMatrixAt(nl, m);
         this.legs.setColorAt(nl++, trousers);
         const guardRight = role === NPC_ROLE.guard && side > 0;
-        tmp.makeRotationAxis(zAxis, guardRight ? 0.5 : -side * swing * 0.8 + sway * side);
-        m.copy(base).multiply(new THREE.Matrix4().makeTranslation(0, 1.43, side * 0.27)).multiply(tmp);
+        const clap = applaudArms(em?.value ?? 0, cheerT, side);
+        tmp.makeRotationAxis(zAxis, clap ? clap.fwd : guardRight ? 0.5 : -side * swing * 0.8 + sway * side);
+        m.copy(base).multiply(new THREE.Matrix4().makeTranslation(0, 1.43, side * 0.27));
+        if (clap) m.multiply(new THREE.Matrix4().makeRotationAxis(xAxis, clap.inward));
+        m.multiply(tmp);
         this.arms.setMatrixAt(na, m);
         this.arms.setColorAt(na++, role === NPC_ROLE.blacksmith ? SKIN[v.variant & 3] : shirt);
       }

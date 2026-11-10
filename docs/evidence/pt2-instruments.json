@@ -1,0 +1,173 @@
+{
+  "instruments": {
+    "lute": {
+      "played": 9,
+      "listenerSees": {
+        "emote": 22,
+        "instrument": 1
+      },
+      "listenerHears": {
+        "sources": 1,
+        "voices": 9,
+        "cached": 9,
+        "click": null
+      },
+      "firstPerson": true
+    },
+    "wooden_flute": {
+      "played": 25,
+      "listenerSees": {
+        "emote": 22,
+        "instrument": 2
+      },
+      "listenerHears": {
+        "sources": 1,
+        "voices": 3,
+        "cached": 12,
+        "click": null
+      },
+      "firstPerson": true
+    },
+    "hand_drum": {
+      "played": 40,
+      "listenerSees": {
+        "emote": 22,
+        "instrument": 3
+      },
+      "listenerHears": {
+        "sources": 1,
+        "voices": 4,
+        "cached": 19,
+        "click": null
+      },
+      "firstPerson": true
+    },
+    "handbells": {
+      "played": 57,
+      "listenerSees": {
+        "emote": 22,
+        "instrument": 4
+      },
+      "listenerHears": {
+        "sources": 1,
+        "voices": 8,
+        "cached": 30,
+        "click": null
+      },
+      "firstPerson": true
+    }
+  },
+  "song": {
+    "notes": 102,
+    "seconds": 31.3,
+    "applause": 6,
+    "line": "The townsfolk applaud your song!",
+    "at": 79166.5
+  },
+  "jam": {
+    "bard": {
+      "bpm": 96,
+      "leader": 26
+    },
+    "listener": {
+      "bpm": 96,
+      "leader": 26
+    }
+  },
+  "wav": {
+    "lute": {
+      "file": "docs/evidence/pt2-instruments-lute.wav",
+      "seconds": 6.34,
+      "peakDb": -7,
+      "rmsDb": -29.8,
+      "sampleRate": 44100,
+      "channels": 2
+    },
+    "flute": {
+      "file": "docs/evidence/pt2-instruments-flute.wav",
+      "seconds": 6.34,
+      "peakDb": -15.8,
+      "rmsDb": -23.3,
+      "sampleRate": 44100,
+      "channels": 2
+    },
+    "drum": {
+      "file": "docs/evidence/pt2-instruments-drum.wav",
+      "seconds": 6.99,
+      "peakDb": -4.7,
+      "rmsDb": -26.7,
+      "sampleRate": 44100,
+      "channels": 2
+    },
+    "handbells": {
+      "file": "docs/evidence/pt2-instruments-handbells.wav",
+      "seconds": 6.04,
+      "peakDb": -4.7,
+      "rmsDb": -25.5,
+      "sampleRate": 44100,
+      "channels": 2
+    },
+    "lute-cave": {
+      "file": "docs/evidence/pt2-instruments-lute-cave.wav",
+      "seconds": 6.34,
+      "peakDb": -5.4,
+      "rmsDb": -28.5,
+      "sampleRate": 44100,
+      "channels": 2
+    }
+  },
+  "shots": [
+    "docs/evidence/pt2-instruments-overlay-lute.jpg",
+    "docs/evidence/pt2-instruments-remote-lute.jpg",
+    "docs/evidence/pt2-instruments-firstperson-lute.jpg",
+    "docs/evidence/pt2-instruments-overlay-wooden_flute.jpg",
+    "docs/evidence/pt2-instruments-remote-wooden_flute.jpg",
+    "docs/evidence/pt2-instruments-firstperson-wooden_flute.jpg",
+    "docs/evidence/pt2-instruments-overlay-hand_drum.jpg",
+    "docs/evidence/pt2-instruments-remote-hand_drum.jpg",
+    "docs/evidence/pt2-instruments-firstperson-hand_drum.jpg",
+    "docs/evidence/pt2-instruments-overlay-handbells.jpg",
+    "docs/evidence/pt2-instruments-remote-handbells.jpg",
+    "docs/evidence/pt2-instruments-firstperson-handbells.jpg",
+    "docs/evidence/pt2-instruments-applause.jpg",
+    "docs/evidence/pt2-instruments-jam.jpg"
+  ],
+  "played": 107,
+  "issues": [],
+  "log": [
+    "[14:18:49] town {\"index\":9,\"name\":\"Draedmore\",\"x\":1920,\"z\":2272,\"square\":12}",
+    "[14:19:00] townsfolk near the square: Garra 1.5 m, Wyndra 2.2 m, Pelmir 4.3 m, Fenia 4.5 m, Oria 8.3 m, Kelmir 8.4 m",
+    "[14:19:00] stage beside Garra",
+    "[14:19:17] bard at {\"x\":1925.01,\"y\":82.19270896911621,\"z\":2266.66}, listener at {\"x\":1926.49,\"y\":82.05160324096681,\"z\":2269.72} (3.4 m)",
+    "[14:19:17] U without an instrument: \"You need an instrument in your pack (general stores and tool merchants sell them, or make one at a camp workbench)\"",
+    "[14:19:19] shot docs/evidence/pt2-instruments-overlay-lute.jpg",
+    "[14:19:20] lute: played 9, listener sees {\"emote\":22,\"instrument\":1}, hears {\"sources\":1,\"voices\":9,\"cached\":9,\"click\":null}",
+    "[14:19:21] shot docs/evidence/pt2-instruments-remote-lute.jpg",
+    "[14:19:23] shot docs/evidence/pt2-instruments-firstperson-lute.jpg",
+    "[console.error] Warning: %s a style property during rerender (%s) when a conflicting property is set (%s) can lead to styling bugs. To avoid this, don't mix shorthand and non-shorthand properties for the same value; instead, replace the shorthand with separate values.%s Removing borderColor border \n    at button\n    at div\n    at div\n    at Overlay (http://127.0.0.1:27510/src/ui/music/InstrumentHu",
+    "[14:19:25] shot docs/evidence/pt2-instruments-overlay-wooden_flute.jpg",
+    "[14:19:25] wooden_flute: played 25, listener sees {\"emote\":22,\"instrument\":2}, hears {\"sources\":1,\"voices\":3,\"cached\":12,\"click\":null}",
+    "[14:19:26] shot docs/evidence/pt2-instruments-remote-wooden_flute.jpg",
+    "[14:19:28] shot docs/evidence/pt2-instruments-firstperson-wooden_flute.jpg",
+    "[console.error] Warning: %s a style property during rerender (%s) when a conflicting property is set (%s) can lead to styling bugs. To avoid this, don't mix shorthand and non-shorthand properties for the same value; instead, replace the shorthand with separate values.%s Removing borderColor border \n    at button\n    at div\n    at div\n    at Overlay (http://127.0.0.1:27510/src/ui/music/InstrumentHu",
+    "[14:19:29] shot docs/evidence/pt2-instruments-overlay-hand_drum.jpg",
+    "[14:19:30] hand_drum: played 40, listener sees {\"emote\":22,\"instrument\":3}, hears {\"sources\":1,\"voices\":4,\"cached\":19,\"click\":null}",
+    "[14:19:31] shot docs/evidence/pt2-instruments-remote-hand_drum.jpg",
+    "[14:19:33] shot docs/evidence/pt2-instruments-firstperson-hand_drum.jpg",
+    "[console.error] Warning: %s a style property during rerender (%s) when a conflicting property is set (%s) can lead to styling bugs. To avoid this, don't mix shorthand and non-shorthand properties for the same value; instead, replace the shorthand with separate values.%s Removing borderColor border \n    at button\n    at div\n    at div\n    at Overlay (http://127.0.0.1:27510/src/ui/music/InstrumentHu",
+    "[14:19:35] shot docs/evidence/pt2-instruments-overlay-handbells.jpg",
+    "[14:19:36] handbells: played 57, listener sees {\"emote\":22,\"instrument\":4}, hears {\"sources\":1,\"voices\":8,\"cached\":30,\"click\":null}",
+    "[14:19:37] shot docs/evidence/pt2-instruments-remote-handbells.jpg",
+    "[14:19:38] shot docs/evidence/pt2-instruments-firstperson-handbells.jpg",
+    "[console.error] Warning: %s a style property during rerender (%s) when a conflicting property is set (%s) can lead to styling bugs. To avoid this, don't mix shorthand and non-shorthand properties for the same value; instead, replace the shorthand with separate values.%s Removing borderColor border \n    at button\n    at div\n    at div\n    at Overlay (http://127.0.0.1:27510/src/ui/music/InstrumentHu",
+    "[14:19:50] song: {\"notes\":102,\"seconds\":31.3,\"applause\":6,\"line\":\"The townsfolk applaud your song!\",\"at\":79166.5}",
+    "[14:19:50] shot docs/evidence/pt2-instruments-applause.jpg",
+    "[14:19:51] jam: bard {\"bpm\":96,\"leader\":26}, listener {\"bpm\":96,\"leader\":26}",
+    "[14:19:52] shot docs/evidence/pt2-instruments-jam.jpg",
+    "[14:19:52] wav docs/evidence/pt2-instruments-lute.wav: 6.34 s, peak -7 dBFS, rms -29.8 dBFS",
+    "[14:19:52] wav docs/evidence/pt2-instruments-flute.wav: 6.34 s, peak -15.8 dBFS, rms -23.3 dBFS",
+    "[14:19:53] wav docs/evidence/pt2-instruments-drum.wav: 6.99 s, peak -4.7 dBFS, rms -26.7 dBFS",
+    "[14:19:53] wav docs/evidence/pt2-instruments-handbells.wav: 6.04 s, peak -4.7 dBFS, rms -25.5 dBFS",
+    "[14:19:53] wav docs/evidence/pt2-instruments-lute-cave.wav: 6.34 s, peak -5.4 dBFS, rms -28.5 dBFS"
+  ]
+}

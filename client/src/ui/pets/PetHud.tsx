@@ -23,6 +23,7 @@ import { clampCursor, pickSector, sectorCenter } from '../emotes/emotes';
 import { localEmote, setEmote, SELF } from '../emotes/store';
 import { EMOTE_PET } from '../../net/avatarAnim';
 import { photoActive } from '../photo/store';
+import { useMusic } from '../music/store';
 import { abilityOf, clock, foodName, foodsText, likedFood, meterFill, MODE, pickAlong, PET_CMD, species, speciesName, speciesOfId, TAMING, variantLabel, WHEEL, type PetInfo, type WheelKey } from './events';
 import { ensurePetHook } from './link';
 import { petOut, usePets } from './store';
@@ -197,7 +198,7 @@ export function PetHud() {
         }
         return;
       }
-      if (panelOpen() || photoActive()) return;
+      if (panelOpen() || photoActive() || useMusic.getState().active) return; // CR 028: the keyboard plays notes
       if (e.code === PET_KEY) {
         if (!petOut(ps)) {
           usePets.setState({ notes: [...ps.notes, { id: Date.now(), text: ps.mine?.pets.length ? 'No pet out with you (Character, C → Your pets).' : 'You have no pet. Weaken a creature while you carry a food it likes, then feed it (E).', at: performance.now(), bad: true }] });

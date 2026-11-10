@@ -1711,6 +1711,50 @@
    "gold": 60,
    "xp": 300,
    "title": "the Packleader"
+  },
+  {
+   "key": "bard",
+   "id": 34,
+   "name": "Bard",
+   "desc": "Play 100 notes on an instrument",
+   "stat": "notes",
+   "n": 100,
+   "gold": 15,
+   "xp": 60,
+   "title": "the Bard"
+  },
+  {
+   "key": "troubadour",
+   "id": 35,
+   "name": "Troubadour",
+   "desc": "Play 2,000 notes",
+   "stat": "notes",
+   "n": 2000,
+   "gold": 80,
+   "xp": 300,
+   "title": "the Troubadour"
+  },
+  {
+   "key": "crowd_pleaser",
+   "id": 36,
+   "name": "Crowd Pleaser",
+   "desc": "Earn five ovations from townsfolk",
+   "stat": "ovations",
+   "n": 5,
+   "gold": 40,
+   "xp": 200,
+   "title": "the Crowd Pleaser"
+  },
+  {
+   "key": "fireside_tales",
+   "id": 37,
+   "name": "Fireside Tales",
+   "desc": "Play a song by a campfire at night until you rise Rested",
+   "stat": "firesongs",
+   "n": 1,
+   "gold": 20,
+   "xp": 80,
+   "title": ""
   }
  ],
  "forage": {
@@ -2334,8 +2378,16 @@
     "system": true
    },
    {
-    "key": "pet",
+    "key": "playing",
     "id": 22,
+    "name": "Playing music",
+    "durS": 0,
+    "loop": true,
+    "system": true
+   },
+   {
+    "key": "pet",
+    "id": 25,
     "name": "Pet your companion",
     "durS": 2.2,
     "loop": false,
@@ -2746,6 +2798,124 @@
     "ability": 9,
     "blurb": "The fox from the stories, tamed at last. It still glints when it is pleased with itself."
    }
+  ]
+ },
+ "instruments": {
+  "hearM": 40,
+  "batchMs": 50,
+  "batchBurst": 12,
+  "batchesPerS": 25,
+  "notesBurst": 40,
+  "notesPerS": 16,
+  "holdMaxS": 8,
+  "song": {
+   "gapS": 4,
+   "minNotes": 16,
+   "minS": 8
+  },
+  "applause": {
+   "npcM": 20,
+   "maxNpcs": 6,
+   "everyS": 45
+  },
+  "fireside": {
+   "songS": 30,
+   "gapS": 5
+  },
+  "jam": {
+   "bpm": [
+    60,
+    180
+   ],
+   "defaultBpm": 96
+  },
+  "list": [
+   {
+    "key": "lute",
+    "id": 1,
+    "item": "instrument:lute",
+    "name": "Lute",
+    "voice": "pluck",
+    "range": [
+     40,
+     84
+    ],
+    "sustain": false,
+    "pose": "strum"
+   },
+   {
+    "key": "wooden_flute",
+    "id": 2,
+    "item": "instrument:wooden_flute",
+    "name": "Wooden Flute",
+    "voice": "flute",
+    "range": [
+     60,
+     96
+    ],
+    "sustain": true,
+    "pose": "flute"
+   },
+   {
+    "key": "hand_drum",
+    "id": 3,
+    "item": "instrument:hand_drum",
+    "name": "Hand Drum",
+    "voice": "drum",
+    "range": [
+     36,
+     84
+    ],
+    "sustain": false,
+    "pose": "drum"
+   },
+   {
+    "key": "handbells",
+    "id": 4,
+    "item": "instrument:handbells",
+    "name": "Handbells",
+    "voice": "bell",
+    "range": [
+     60,
+     96
+    ],
+    "sustain": false,
+    "pose": "bells"
+   }
+  ],
+  "wares": [
+   [
+    {
+     "item": "instrument:lute",
+     "price": 60,
+     "stock": 2
+    },
+    {
+     "item": "instrument:wooden_flute",
+     "price": 24,
+     "stock": 4
+    },
+    {
+     "item": "instrument:hand_drum",
+     "price": 36,
+     "stock": 3
+    }
+   ],
+   [],
+   [],
+   [
+    {
+     "item": "instrument:handbells",
+     "price": 80,
+     "stock": 2
+    },
+    {
+     "item": "instrument:wooden_flute",
+     "price": 22,
+     "stock": 3
+    }
+   ],
+   []
   ]
  },
  "roles": [

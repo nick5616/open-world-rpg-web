@@ -20,7 +20,7 @@
 // Nothing here allocates per frame.
 
 import * as THREE from 'three';
-import { Activity } from '@lodestone/contracts';
+import { Activity, CONTENT } from '@lodestone/contracts';
 import type { RemoteView } from './interpolation';
 import { isSpeaking } from '../voice/levels';
 import { unpackLook, type WeaponKind } from '../combat/weapons/look';
@@ -115,6 +115,8 @@ let shared: {
   rodMat: THREE.Material;
   fishGeo: THREE.BufferGeometry;
   fishMat: THREE.Material;
+  /** Playtest 2 instruments (CR 028). */
+  inst: InstrumentMeshes;
 } | null = null;
 const bodyMats = new Map<number, THREE.MeshStandardMaterial>();
 const glowMats = new Map<string, THREE.SpriteMaterial>();
@@ -169,7 +171,9 @@ function res() {
       rodMat: new THREE.MeshStandardMaterial({ color: 0x7a5530, roughness: 0.7 }),
       fishGeo: new THREE.SphereGeometry(0.1, 10, 6),
       fishMat: new THREE.MeshStandardMaterial({ color: 0x9fb4c4, roughness: 0.35, metalness: 0.3 }),
+      inst: null as unknown as InstrumentMeshes,
     };
+    shared.inst = instrumentMeshes();
     shared.low.translate(0, 0.9, 0);
     shared.rod.translate(0, ROD_LEN / 2, 0);
     shared.fishGeo.scale(0.9, 0.55, 3.2);
@@ -256,6 +260,8 @@ export class Avatar {
   private weaponMid: THREE.Mesh;
   private rod: THREE.Mesh;
   private fishMesh: THREE.Mesh;
+  /** Playtest 2 instruments: the props of each instrument id, shown while it is played. */
+  private instrumentProps = new Map<number, THREE.Object3D[]>();
   /** The weapon look typeId shown (pt/ux packLook; CR 022: the gem tints its swing FX). */
   weaponType = -1;
   /** The weapon kind in hand (classifies Event 214 actions). */
@@ -455,6 +461,7 @@ export class Avatar {
     this.fishMesh.rotation.y = Math.PI / 2;
     this.fishMesh.visible = false;
     this.armR.hand.add(this.fishMesh);
+    this.buildInstruments(r.inst);
 
     const low = new THREE.Mesh(r.low, mat);
 
@@ -592,10 +599,49 @@ export class Avatar {
     return true;
   }
 
+  /**
+   * Playtest 2 instruments (CR 028): the lute rests across the belly (its
+   * neck toward the left hand), the flute at the lips (on the neck, so it
+   * follows the head), the drum at the waist, a handbell in each hand.
+   */
+  private buildInstruments(m: InstrumentMeshes): void {
+    const add = (id: number | undefined, o: THREE.Object3D, parent: THREE.Object3D) => {
+      if (!id) return;
+      o.visible = false;
+      o.traverse((c) => ((c as THREE.Mesh).castShadow = (c as THREE.Mesh).isMesh));
+      parent.add(o);
+      const l = this.instrumentProps.get(id) ?? [];
+      l.push(o);
+      this.instrumentProps.set(id, l);
+    };
+    const byPose = (pose: string) => CONTENT.instruments.list.find((i) => i.pose === pose)?.id;
+    const lute = m.lute.clone();
+    lute.position.set(0.08, 0.1, -0.22);
+    lute.rotation.set(0, -0.6, -0.35, 'YXZ');
+    add(byPose('strum'), lute, this.torso);
+    const flute = m.flute.clone();
+    flute.position.set(-0.02, 0.04, -0.2);
+    flute.rotation.set(0, 0.3, -0.12, 'YXZ');
+    add(byPose('flute'), flute, this.neck);
+    const drum = m.drum.clone();
+    drum.position.set(0, 0.05, -0.3);
+    drum.rotation.set(-1.15, 0, 0);
+    add(byPose('drum'), drum, this.torso);
+    const bellR = m.bell.clone();
+    bellR.position.set(0, -0.04, -0.02);
+    bellR.rotation.set(-0.5, 0, 0);
+    add(byPose('bells'), bellR, this.armR.hand);
+    const bellL = m.bell.clone();
+    bellL.position.set(0, -0.04, -0.02);
+    bellL.rotation.set(-0.5, 0, 0);
+    add(byPose('bells'), bellL, this.armL.hand);
+  }
+
   private applyFull(p: Pose): void {
     this.rod.visible = p.rod;
     this.fishMesh.visible = p.fish > 0;
-    if (this.weaponType > 0) this.weaponHi.visible = !p.rod && p.fish === 0 && this.weaponKind !== null;
+    for (const [id, props] of this.instrumentProps) for (const o of props) o.visible = id === p.instrument;
+    if (this.weaponType > 0) this.weaponHi.visible = !p.rod && p.fish === 0 && !p.instrument && this.weaponKind !== null;
     this.body.position.y = HIP_Y + p.bodyY;
     this.body.rotation.set(p.bodyPitch, p.bodyYaw, p.bodyRoll);
     this.torso.rotation.set(p.torsoPitch, p.torsoYaw, 0);
@@ -681,6 +727,77 @@ export class Avatar {
     this.plateTex?.dispose();
     (this.plate?.material as THREE.SpriteMaterial | undefined)?.dispose();
   }
+}
+
+/** Playtest 2 instruments (CR 028): one prop per instrument, shared by every avatar (cloned groups, shared geometry). */
+export interface InstrumentMeshes {
+  lute: THREE.Group;
+  flute: THREE.Group;
+  drum: THREE.Group;
+  bell: THREE.Group;
+}
+
+export function instrumentMeshes(): InstrumentMeshes {
+  const wood = new THREE.MeshStandardMaterial({ color: 0x7a4a24, roughness: 0.55 });
+  const top = new THREE.MeshStandardMaterial({ color: 0xd2a868, roughness: 0.6 });
+  const dark = new THREE.MeshStandardMaterial({ color: 0x2a1a10, roughness: 0.8 });
+  const skin = new THREE.MeshStandardMaterial({ color: 0xe9dcbc, roughness: 0.85 });
+  const bronze = new THREE.MeshStandardMaterial({ color: 0xc99a4c, roughness: 0.3, metalness: 0.75 });
+  const mesh = (g: THREE.BufferGeometry, m: THREE.Material) => new THREE.Mesh(g, m);
+  // The lute: a pear-shaped bowl (its back), a flat top with a dark rose, a neck to the left and a bent-back pegbox.
+  const lute = new THREE.Group();
+  lute.name = 'lute';
+  const bowl = mesh(new THREE.SphereGeometry(0.17, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2), wood);
+  bowl.rotation.x = Math.PI / 2;
+  bowl.scale.set(1.25, 0.95, 0.6);
+  const face = mesh(new THREE.CircleGeometry(0.17, 18), top);
+  face.scale.set(1.25, 0.95, 1);
+  face.rotation.y = Math.PI;
+  const rose = mesh(new THREE.CircleGeometry(0.035, 12), dark);
+  rose.position.set(-0.05, 0.01, -0.002);
+  rose.rotation.y = Math.PI;
+  const neck = mesh(new THREE.BoxGeometry(0.34, 0.05, 0.03), dark);
+  neck.position.set(-0.36, 0, -0.01);
+  const peg = mesh(new THREE.BoxGeometry(0.12, 0.045, 0.025), wood);
+  peg.position.set(-0.57, 0, 0.03);
+  peg.rotation.y = -0.9;
+  lute.add(bowl, face, rose, neck, peg);
+  // The flute: a slim wooden tube from the lips to the right, with finger holes.
+  const flute = new THREE.Group();
+  flute.name = 'flute';
+  const tube = mesh(new THREE.CylinderGeometry(0.013, 0.013, 0.58, 8), wood);
+  tube.rotation.z = Math.PI / 2;
+  tube.position.x = 0.25;
+  flute.add(tube);
+  for (let i = 0; i < 6; i++) {
+    const h = mesh(new THREE.SphereGeometry(0.006, 5, 4), dark);
+    h.position.set(0.2 + i * 0.045, 0.012, 0);
+    flute.add(h);
+  }
+  // The hand drum: a wooden shell, a pale skin on top, a ring of lacing.
+  const drum = new THREE.Group();
+  drum.name = 'drum';
+  const shell = mesh(new THREE.CylinderGeometry(0.17, 0.13, 0.22, 16, 1, true), wood);
+  shell.material = wood.clone();
+  (shell.material as THREE.MeshStandardMaterial).side = THREE.DoubleSide;
+  const head = mesh(new THREE.CircleGeometry(0.17, 18), skin);
+  head.rotation.x = -Math.PI / 2;
+  head.position.y = 0.11;
+  const rim = mesh(new THREE.TorusGeometry(0.17, 0.012, 5, 18), dark);
+  rim.rotation.x = Math.PI / 2;
+  rim.position.y = 0.11;
+  drum.add(shell, head, rim);
+  // A handbell: a leather handle above a flared bronze bell.
+  const bell = new THREE.Group();
+  bell.name = 'bell';
+  const pts = [0.012, 0.03, 0.045, 0.055, 0.07].map((r, i) => new THREE.Vector2(r, -i * 0.025));
+  const cup = mesh(new THREE.LatheGeometry([new THREE.Vector2(0, 0.005), ...pts], 14), bronze);
+  (cup.material as THREE.MeshStandardMaterial).side = THREE.DoubleSide;
+  cup.position.y = -0.03;
+  const handle = mesh(new THREE.CylinderGeometry(0.012, 0.014, 0.09, 6), dark);
+  handle.position.y = 0.02;
+  bell.add(cup, handle);
+  return { lute, flute, drum, bell };
 }
 
 function poseArm(a: Arm, l: LimbPose, side: number): void {

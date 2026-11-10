@@ -383,22 +383,77 @@ type Taming struct {
 	Species         []PetSpecies `json:"species"`
 }
 
+// Instrument is one playable instrument (playtest 2, CR 028).
+type Instrument struct {
+	Key     string `json:"key"`
+	ID      int    `json:"id"`
+	Item    string `json:"item"`
+	Name    string `json:"name"`
+	Voice   string `json:"voice"`
+	Range   [2]int `json:"range"`
+	Sustain bool   `json:"sustain"`
+	Pose    string `json:"pose"`
+}
+
+// Instruments tunes playing music: the relay radius, rate limits, songs,
+// townsfolk applause, the fireside song and the shared metronome.
+type Instruments struct {
+	HearM       float64 `json:"hearM"`
+	BatchMs     float64 `json:"batchMs"`
+	BatchBurst  float64 `json:"batchBurst"`
+	BatchesPerS float64 `json:"batchesPerS"`
+	NotesBurst  float64 `json:"notesBurst"`
+	NotesPerS   float64 `json:"notesPerS"`
+	HoldMaxS    float64 `json:"holdMaxS"`
+	Song        struct {
+		GapS     float64 `json:"gapS"`
+		MinNotes int     `json:"minNotes"`
+		MinS     float64 `json:"minS"`
+	} `json:"song"`
+	Applause struct {
+		NpcM    float64 `json:"npcM"`
+		MaxNpcs int     `json:"maxNpcs"`
+		EveryS  float64 `json:"everyS"`
+	} `json:"applause"`
+	Fireside struct {
+		SongS float64 `json:"songS"`
+		GapS  float64 `json:"gapS"`
+	} `json:"fireside"`
+	Jam struct {
+		Bpm        [2]int `json:"bpm"`
+		DefaultBpm int    `json:"defaultBpm"`
+	} `json:"jam"`
+	List  []Instrument `json:"list"`
+	Wares [][]Ware     `json:"wares"` // by shop (Reputation.Shops order)
+}
+
+// Instrument returns the instrument by id (nil if none).
+func (d *Defs) Instrument(id int) *Instrument {
+	for i := range d.Instruments.List {
+		if d.Instruments.List[i].ID == id {
+			return &d.Instruments.List[i]
+		}
+	}
+	return nil
+}
+
 // Defs is the whole table.
 type Defs struct {
-	Version    int        `json:"version"`
-	Reputation Reputation `json:"reputation"`
-	SideQuests SideQuests `json:"sidequests"`
-	Stories    []Story    `json:"stories"`
-	Events     Events     `json:"events"`
-	Dungeons   Dungeons   `json:"dungeons"`
-	Tablets    []Tablet   `json:"tablets"`
-	Codex      []Codex    `json:"codex"`
-	Feats      []Feat     `json:"feats"`
-	Forage     Forage     `json:"forage"`
-	Fishing    Fishing    `json:"fishing"`
-	Emotes     Emotes     `json:"emotes"`
-	Taming     Taming     `json:"taming"`
-	Roles      []string   `json:"roles"`
+	Version     int         `json:"version"`
+	Reputation  Reputation  `json:"reputation"`
+	SideQuests  SideQuests  `json:"sidequests"`
+	Stories     []Story     `json:"stories"`
+	Events      Events      `json:"events"`
+	Dungeons    Dungeons    `json:"dungeons"`
+	Tablets     []Tablet    `json:"tablets"`
+	Codex       []Codex     `json:"codex"`
+	Feats       []Feat      `json:"feats"`
+	Forage      Forage      `json:"forage"`
+	Fishing     Fishing     `json:"fishing"`
+	Emotes      Emotes      `json:"emotes"`
+	Instruments Instruments `json:"instruments"`
+	Taming      Taming      `json:"taming"`
+	Roles       []string    `json:"roles"`
 }
 
 // PetByID is pet species id's definition (nil if none).

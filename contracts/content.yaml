@@ -407,6 +407,11 @@ feats:
   menagerie: {name: Keeper of Beasts, desc: "Tame every kind of creature that can be tamed", stat: tamedspecies, n: 9, gold: 200, xp: 900, title: the Keeper of Beasts}
   shiny_pet: {name: Glimmerfriend, desc: "Tame a shiny creature", stat: shinytamed, n: 1, gold: 80, xp: 300, title: the Glimmerfriend}
   pet_veteran: {name: Packleader, desc: "Raise a pet to level 10", stat: petlevel, n: 10, gold: 60, xp: 300, title: the Packleader}
+  # playtest 2 instruments (CR 028): notes (notes played), ovations (songs the townsfolk applauded), firesongs (rested by a fireside song)
+  bard: {name: Bard, desc: "Play 100 notes on an instrument", stat: notes, n: 100, gold: 15, xp: 60, title: the Bard}
+  troubadour: {name: Troubadour, desc: "Play 2,000 notes", stat: notes, n: 2000, gold: 80, xp: 300, title: the Troubadour}
+  crowd_pleaser: {name: Crowd Pleaser, desc: "Earn five ovations from townsfolk", stat: ovations, n: 5, gold: 40, xp: 200, title: the Crowd Pleaser}
+  fireside_tales: {name: Fireside Tales, desc: "Play a song by a campfire at night until you rise Rested", stat: firesongs, n: 1, gold: 20, xp: 80}
 
 # ---- herb foraging (picked by hand with E, regrow per character) ----
 forage:
@@ -488,7 +493,8 @@ fishing:
 # Hold H for the wheel, or /emote <key> in chat. Event 1090 tells players
 # within seeM (not the actor); `loop` ones hold until you move. Ids 1-19
 # are wheel emotes; 20 (fishing: the line is out) and 21 (showing a catch)
-# are sent by the zone's fishing code only.
+# are sent by the zone's fishing code only, 22 (playing an instrument) by
+# its music code (CR 028); townsfolk applauding a song are sent 3 (cheer).
 emotes:
   seeM: 48
   burst: 3              # emotes in a burst, then one per everyS
@@ -506,7 +512,48 @@ emotes:
     rest: {id: 10, name: Rest by the fire, loop: true}
     fishing: {id: 20, name: Fishing, loop: true, system: true}
     show_catch: {id: 21, name: Show a catch, durS: 2.6, system: true}
+    playing: {id: 22, name: Playing music, loop: true, system: true}   # CR 028: value = the instrument id
     pet: {id: 25, name: Pet your companion, durS: 2.2, system: true}
+
+# ---- instruments (playtest 2, CR 028; docs/cr/028-instruments.md) ----
+# Carry one (items.yaml instrument:*: the merchants below, a camp workbench,
+# a forge) and press U to play: the keyboard rows are the notes of a scale.
+# The client sends what you play in small batches (Interact 120); the zone
+# relays them (Event 1120) to the players within hearM, who hear you from
+# where you stand. `range` is the playable MIDI range (notes outside it move
+# by octaves into it); `sustain` instruments hold a note while its key is
+# down (a note-off follows); `voice` is the client's synthesis.
+instruments:
+  hearM: 40
+  batchMs: 50           # the client sends what you played every batchMs (5 note events at most)
+  batchBurst: 12        # zone: Interact 120 messages, a burst ...
+  batchesPerS: 25       # ... then this many per second (the generic Interact limiter does not apply)
+  notesBurst: 40        # zone: notes started, a burst ...
+  notesPerS: 16         # ... then this many per second; the rest are dropped
+  holdMaxS: 8           # listeners end a held note whose note-off never came
+  song:
+    gapS: 4             # this much silence ends a song
+    minNotes: 16        # a song is at least this many notes ...
+    minS: 8             # ... over at least this long
+  applause:
+    npcM: 20            # townsfolk this close applaud a finished song (emote 3 to everyone near them)
+    maxNpcs: 6
+    everyS: 45          # one ovation per player per this long
+  fireside:
+    songS: 30           # play this long at night within camps.yaml fire.warmthM of a burning campfire: you (and listeners by the fire) rise Rested
+    gapS: 5             # a pause longer than this doesn't count
+  jam:
+    bpm: [60, 180]      # the shared metronome (Event 1123)
+    defaultBpm: 96
+  list:
+    lute: {id: 1, item: instrument:lute, name: Lute, voice: pluck, range: [40, 84], sustain: false, pose: strum}
+    wooden_flute: {id: 2, item: instrument:wooden_flute, name: Wooden Flute, voice: flute, range: [60, 96], sustain: true, pose: flute}
+    hand_drum: {id: 3, item: instrument:hand_drum, name: Hand Drum, voice: drum, range: [36, 84], sustain: false, pose: drum}
+    handbells: {id: 4, item: instrument:handbells, name: Handbells, voice: bell, range: [60, 96], sustain: false, pose: bells}
+  # Sold by merchants (content.yaml reputation shops: general, provisions, herbalist, tools, smith).
+  wares:
+    general: [{item: instrument:lute, price: 60, stock: 2}, {item: instrument:wooden_flute, price: 24, stock: 4}, {item: instrument:hand_drum, price: 36, stock: 3}]
+    tools: [{item: instrument:handbells, price: 80, stock: 2}, {item: instrument:wooden_flute, price: 22, stock: 3}]
 
 # ---- taming and pet companions (playtest 2; docs/cr/029-pets.md) ----
 # Carry a food a creature likes and weaken it below weakenPct of its health:

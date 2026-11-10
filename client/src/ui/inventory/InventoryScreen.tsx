@@ -24,6 +24,7 @@ import { pushToast, setInventoryOpen, useInventory } from './store';
 import { ensureInventoryStyles, GOLD, PANEL_BG, PANEL_BORDER, TEXT } from './styles';
 import { isTextTarget } from '../../input/useKeyboard';
 import { useCombatHud } from '../../combat/store';
+import { enterPlay, instrumentItem } from '../music/link';
 
 const TILE = 52;
 const GAP = 6;
@@ -453,6 +454,12 @@ function ItemActions({ item, quick }: { item: WireItem; quick: string }) {
     b('quick', quick === item.b ? 'Drink key ✓' : 'Set as drink', () => send(ITEM_ACT.quick), { disabled: quick === item.b, title: 'The drink key (R) uses this' });
   } else if (def?.kind === 'tome') b('use', 'Learn', () => send(ITEM_ACT.use));
   else if (def?.kind === 'ammo') b('use', 'Use arrows', () => send(ITEM_ACT.use));
+  const ins = instrumentItem(item.b);
+  if (ins)
+    b('play', 'Play (U)', () => {
+      setInventoryOpen(false);
+      enterPlay(ins.id); // CR 028: the keyboard becomes the instrument (ui/music)
+    });
   if (isWeapon(item) && (item.k ?? []).some((g) => !g)) {
     const i = (item.k ?? []).findIndex((g) => !g);
     b('socket', 'Socket a gem', () => useInventory.setState({ socketPick: { weapon: item.h, socket: i } }));

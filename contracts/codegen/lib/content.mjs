@@ -18,7 +18,7 @@ const SIDE_KINDS = ['hunt', 'gather', 'deliver', 'explore', 'rescue'];
 const STEP_KINDS = ['talk', 'reach', 'read', 'attune', 'kill', 'clear', 'give', 'dungeon'];
 const SITE_KINDS = ['shrine', 'ruin', 'watchtower', 'tower', 'banditcamp', 'landmark', 'dungeon'];
 const TOWNS = ['home', 'next', 'far'];
-const FEAT_STATS = ['towers', 'kills', 'demons', 'regions', 'duels', 'quests', 'side', 'stories', 'events', 'dungeons', 'tablets', 'codex', 'forage', 'honored', 'level', 'bounties', 'fish', 'fishspecies', 'fishlegend', 'tamed', 'tamedspecies', 'shinytamed', 'petlevel'];
+const FEAT_STATS = ['towers', 'kills', 'demons', 'regions', 'duels', 'quests', 'side', 'stories', 'events', 'dungeons', 'tablets', 'codex', 'forage', 'honored', 'level', 'bounties', 'fish', 'fishspecies', 'fishlegend', 'notes', 'ovations', 'firesongs', 'tamed', 'tamedspecies', 'shinytamed', 'petlevel'];
 const PET_ABILITY_KINDS = ['heal', 'buff', 'charge', 'strike'];
 const EVENT_KINDS = ['starfall', 'caravan', 'behemoth', 'wildhunt', 'glintfox'];
 const PUZZLES = ['levers', 'plates', 'braziers', 'font'];
@@ -26,6 +26,8 @@ const WATERS = ['lake', 'river', 'sea'];
 const FISH_RARITIES = ['common', 'uncommon', 'rare', 'legendary'];
 const FISH_TIMES = ['any', 'day', 'night', 'dawn', 'dusk'];
 const FISH_WEATHER = ['any', 'rain', 'clear'];
+const VOICES = ['pluck', 'flute', 'drum', 'bell'];
+const POSES = ['strum', 'flute', 'drum', 'bells'];
 
 const range = (v, what) => {
   if (!Array.isArray(v) || v.length !== 2 || !(v[0] <= v[1]) || v[0] < 0) fail(`${what}: [min, max] with 0 <= min <= max`);
@@ -321,6 +323,47 @@ export function parseContent(doc, combat, items) {
     abilities: petAbilities, species: petSpecies,
   };
 
+  // ---- instruments (playtest 2, CR 028) ----
+  const ins = doc.instruments ?? fail('instruments: missing');
+  const pos = (v, what) => {
+    if (!(typeof v === 'number' && v > 0)) fail(`instruments.${what}: a positive number`);
+    return v;
+  };
+  for (const k of ['hearM', 'batchMs', 'batchBurst', 'batchesPerS', 'notesBurst', 'notesPerS', 'holdMaxS']) pos(ins[k], k);
+  if (ins.batchMs > 63) fail('instruments.batchMs: at most 63 (a note offset rides in 6 bits)');
+  if (1000 / ins.batchMs > ins.batchesPerS) fail('instruments.batchesPerS: below what an honest client sends (1000 / batchMs)');
+  for (const k of ['gapS', 'minNotes', 'minS']) pos(ins.song?.[k], `song.${k}`);
+  for (const k of ['npcM', 'maxNpcs', 'everyS']) pos(ins.applause?.[k], `applause.${k}`);
+  for (const k of ['songS', 'gapS']) pos(ins.fireside?.[k], `fireside.${k}`);
+  range(ins.jam?.bpm, 'instruments.jam.bpm');
+  if (!(ins.jam.defaultBpm >= ins.jam.bpm[0] && ins.jam.defaultBpm <= ins.jam.bpm[1])) fail('instruments.jam.defaultBpm: inside bpm');
+  const instrumentIds = new Set();
+  const instrumentList = Object.entries(ins.list).map(([key, x]) => {
+    if (!(Number.isInteger(x.id) && x.id > 0 && x.id < 16)) fail(`instrument ${key}: id 1..15`);
+    if (instrumentIds.has(x.id)) fail(`instrument ${key}: duplicate id ${x.id}`);
+    instrumentIds.add(x.id);
+    item(x.item, `instruments.${key}`);
+    if (!x.item.startsWith('instrument:')) fail(`instruments.${key}: the item must be an instrument: item`);
+    if (!VOICES.includes(x.voice)) fail(`instruments.${key}: voice one of ${VOICES.join(', ')}`);
+    if (!POSES.includes(x.pose)) fail(`instruments.${key}: pose one of ${POSES.join(', ')}`);
+    range(x.range, `instruments.${key}.range`);
+    if (!(Number.isInteger(x.range[0]) && Number.isInteger(x.range[1]) && x.range[0] >= 12 && x.range[1] <= 120 && x.range[1] - x.range[0] >= 12)) fail(`instruments.${key}.range: MIDI notes 12..120, an octave at least`);
+    return { key, id: x.id, item: x.item, name: x.name, voice: x.voice, range: x.range, sustain: !!x.sustain, pose: x.pose };
+  });
+  if (!instrumentList.length) fail('instruments: none listed');
+  for (const s of Object.keys(ins.wares ?? {})) if (!SHOPS.includes(s)) fail(`instruments.wares: unknown shop ${s}`);
+  const instrumentWares = SHOPS.map((s) => (ins.wares?.[s] ?? []).map((w) => ({ item: item(w.item, `instruments.wares.${s}`), price: pos(w.price, `wares.${s}.price`), stock: w.stock ?? 1 })));
+  if (!emotes.some((e) => e.id === 22 && e.system && e.loop)) fail('emotes: 22 (playing music) must be a looping system emote');
+  const instruments = {
+    hearM: ins.hearM, batchMs: ins.batchMs, batchBurst: ins.batchBurst, batchesPerS: ins.batchesPerS, notesBurst: ins.notesBurst, notesPerS: ins.notesPerS, holdMaxS: ins.holdMaxS,
+    song: { gapS: ins.song.gapS, minNotes: ins.song.minNotes, minS: ins.song.minS },
+    applause: { npcM: ins.applause.npcM, maxNpcs: ins.applause.maxNpcs, everyS: ins.applause.everyS },
+    fireside: { songS: ins.fireside.songS, gapS: ins.fireside.gapS },
+    jam: { bpm: ins.jam.bpm, defaultBpm: ins.jam.defaultBpm },
+    list: instrumentList,
+    wares: instrumentWares,
+  };
+
   return {
     version: doc.version,
     reputation: { tiers, shops: SHOPS, wares },
@@ -335,6 +378,7 @@ export function parseContent(doc, combat, items) {
     fishing,
     emotes: emoteDefs,
     taming,
+    instruments,
     roles: ROLES,
   };
 }
@@ -358,6 +402,8 @@ export interface EmoteDef { key: string; id: number; name: string; durS: number;
 export interface PetAbilityDef { key: string; id: number; name: string; kind: 'heal' | 'buff' | 'charge' | 'strike'; cooldownS: number; power: number; healBelow: number; party: boolean; durationS: number; rangeM: [number, number]; radiusM: number; status: string; element: number; desc: string }
 export interface PetSpeciesDef { key: string; id: number; enemy: string; enemyId: number; foods: string[]; tameS: number; chance: number; hp: number; damage: number; speed: number; attack: { reach: number; everyMs: number; windupMs: number }; ability: number; blurb: string }
 export interface TamingDefs { weakenPct: number; calmS: number; smellM: number; feedReachM: number; stayM: number; favouriteMult: number; favouriteBonus: number; shinyChance: number; elementalChance: number; maxPets: number; koRecoverS: number; stableM: number; levelMax: number; xpBase: number; xpGrowth: number; hpPerLevel: number; damagePerLevel: number; regenPctS: number; feedHealPct: number; followM: number; warpM: number; stayGuardM: number; aggroM: number; leashM: number; abilities: PetAbilityDef[]; species: PetSpeciesDef[] }
+export interface InstrumentDef { key: string; id: number; item: string; name: string; voice: 'pluck' | 'flute' | 'drum' | 'bell'; range: [number, number]; sustain: boolean; pose: 'strum' | 'flute' | 'drum' | 'bells' }
+export interface InstrumentDefs { hearM: number; batchMs: number; batchBurst: number; batchesPerS: number; notesBurst: number; notesPerS: number; holdMaxS: number; song: { gapS: number; minNotes: number; minS: number }; applause: { npcM: number; maxNpcs: number; everyS: number }; fireside: { songS: number; gapS: number }; jam: { bpm: [number, number]; defaultBpm: number }; list: InstrumentDef[]; wares: { item: string; price: number; stock: number }[][] }
 export interface ContentDefs {
   version: number;
   reputation: { tiers: RepTierDef[]; shops: string[]; wares: { item: string; price: number; stock: number }[][][] };
@@ -372,6 +418,7 @@ export interface ContentDefs {
   fishing: FishingDefs;
   emotes: { seeM: number; burst: number; everyS: number; list: EmoteDef[] };
   taming: TamingDefs;
+  instruments: InstrumentDefs;
   roles: string[];
 }
 `;

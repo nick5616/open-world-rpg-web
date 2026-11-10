@@ -2,6 +2,9 @@
 // title screen doesn't pull in three.js. Online (WP06) when the account
 // screen handed over a ReadySession, else the generated world offline
 // (solo builds, "continue offline"); both render through WP05's WorldCanvas.
+// Playtest 2 instruments (CR 028): U plays the instrument you carry; while playing every key is a note,
+// so its capture listener is installed first of all (ui/music/InstrumentHud.tsx).
+import { InstrumentHud } from '../ui/music/InstrumentHud';
 import { WorldCanvas } from '../world/WorldCanvas';
 // Playtest 2: photo mode (L) and fishing take their keys in the capture phase from module load,
 // before any panel's own listener (ui/photo/PhotoMode.tsx, ui/fishing/FishingHud.tsx).
@@ -98,6 +101,8 @@ export default function PlayScreen() {
       <FishingHud />
       <EmoteWheel />
       <PhotoMode />
+      {/* Playtest 2 instruments (CR 028): play mode (U), the keyboard overlay, songs and jams */}
+      <InstrumentHud />
       <AudioRoot />
       <TipsHud />
       <EscMenu />
