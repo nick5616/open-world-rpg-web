@@ -13,6 +13,8 @@ import { localPlayer } from '../../state/live';
 import { PHASE, STEED_COLOURS, steedPose } from './events';
 import { ensureMountHook } from './link';
 import { useMounts } from './store';
+import { countOf } from '../inventory/items';
+import { useInventory } from '../inventory/store';
 
 /** The whistle key (all letters are taken; 5 sits by the spell keys 1-4). */
 export const WHISTLE_KEY = 'Digit5';
@@ -147,7 +149,7 @@ function SteedPanel() {
       </div>
       {!mine?.owned ? (
         <div style={{ marginTop: 10, lineHeight: 1.5 }}>
-          {mine?.whistle ? (
+          {mine?.whistle || countOf(useInventory.getState().inv?.items ?? [], 'tool:spirit_whistle') > 0 ? (
             <>
               You carry a <b>Spirit Whistle</b>. Press <b>5</b> to blow it: a spirit steed will answer and bond with you.
             </>

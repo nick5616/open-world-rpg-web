@@ -374,7 +374,9 @@ func (s *Server) steedJoin(sess *session) {
 		st.ver++
 		s.steedBroadcast(sess)
 	}
-	s.sendSteedSync(sess)
+	if len(st.owned) > 0 || s.hasWhistle(sess) { // nothing for everyone else (the scale scenario's wire is unchanged)
+		s.sendSteedSync(sess)
+	}
 }
 
 func (s *Server) steedLeave(sess *session) {

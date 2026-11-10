@@ -121,7 +121,7 @@ func (r *mountRig) join(t *testing.T, char, name string, x, z float64) *client {
 	r.store.rows[char] = movement.Vec3{X: x, Y: r.srv.cfg.Ground.HeightAt(x, z), Z: z}
 	c := r.dial("")
 	c.join(r.harness, char, name)
-	c.take(EventSteedSync, 3*time.Second)
+	c.pump(300 * time.Millisecond) // no 1140 for a character with no steed and no whistle
 	return c
 }
 
