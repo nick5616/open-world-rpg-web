@@ -923,10 +923,17 @@ func (s *Server) waresFor(e *Entity, i int) []npc.Ware {
 		shop = 4
 	}
 	tier := contentdefs.D.TierOf(sess.cnt.st.RepOf(d.Settlement))
-	if shop < 0 || tier == 0 {
+	var extra []contentdefs.Ware // CR 028: instruments (content.yaml instruments.wares)
+	if shop >= 0 && shop < len(contentdefs.D.Instruments.Wares) {
+		extra = contentdefs.D.Instruments.Wares[shop]
+	}
+	if shop < 0 || tier == 0 && len(extra) == 0 {
 		return base
 	}
 	out := append([]npc.Ware(nil), base...)
+	for _, x := range extra {
+		out = append(out, npc.Ware{Item: x.Item, Price: x.Price, Stock: x.Stock})
+	}
 	for t := 1; t <= tier && t < len(contentdefs.D.Reputation.Wares); t++ {
 		for _, x := range contentdefs.D.Reputation.Wares[t][shop] {
 			out = append(out, npc.Ware{Item: x.Item, Price: x.Price, Stock: x.Stock})

@@ -87,7 +87,7 @@ ores:
   voidglass: {name: Voidglass, smelt: 3}
 
 # Stacks: how many fit in one stack per category (1 = never stacks).
-stacks: {ore: 99, ingot: 99, gem: 99, food: 20, potion: 20, meat: 20, herb: 40, hide: 20, ammo: 99, tool: 1, seed: 20, blueprint: 1, tome: 1, currency: 1000000, weapon: 1, armor: 1, key: 1, quest: 10, wood: 50, camp: 5, fish: 20}
+stacks: {ore: 99, ingot: 99, gem: 99, food: 20, potion: 20, meat: 20, herb: 40, hide: 20, ammo: 99, tool: 1, seed: 20, blueprint: 1, tome: 1, currency: 1000000, weapon: 1, armor: 1, key: 1, quest: 10, wood: 50, camp: 5, fish: 20, instrument: 1}
 
 # Where a category lives (spec 8: 40 slots plus a gem pouch and an ore pouch;
 # coins in a purse that takes no slot).
@@ -209,6 +209,11 @@ items:
   camp:chest: {name: Storage Chest Kit, value: 24}
   camp:workbench: {name: Workbench Kit, value: 30}
   camp:signpost: {name: Signpost Kit, value: 8}
+  # ---- instruments (playtest 2, CR 028: contracts/content.yaml instruments): U plays the one you carry ----
+  instrument:lute: {name: Lute, value: 60}
+  instrument:wooden_flute: {name: Wooden Flute, value: 24}
+  instrument:hand_drum: {name: Hand Drum, value: 36}
+  instrument:handbells: {name: Handbells, value: 80}
   # ---- tools (v1: carried, not yet required; spec 7's pickaxe is implicit; every character starts with one) ----
   tool:pickaxe: {name: Pickaxe, value: 40}
   tool:torch: {name: Torch, value: 6}
@@ -334,6 +339,11 @@ recipes:
   cook_storm_fillet: {station: cook, inputs: {fish:stormray: 1}, output: food:storm_fillet, xp: 16}
   cook_sturgeon_feast: {station: cook, inputs: {fish:humming_sturgeon: 1, herb:heartleaf: 2}, output: food:sturgeon_feast, xp: 30}
   cook_deepmaw_banquet: {station: cook, inputs: {fish:deepmaw: 1, food:bread: 2}, output: food:deepmaw_banquet, xp: 30}
+  # playtest 2 instruments (CR 028): carved at a camp workbench, bells cast at a forge
+  bench_wooden_flute: {station: workbench, inputs: {wood:firewood: 2}, output: instrument:wooden_flute, xp: 4}
+  bench_hand_drum: {station: workbench, inputs: {wood:firewood: 3, hide:wolf: 1}, output: instrument:hand_drum, xp: 6}
+  bench_lute: {station: workbench, inputs: {wood:firewood: 5, hide:wolf: 1, tool:rope: 1}, output: instrument:lute, xp: 10}
+  forge_handbells: {station: forge, inputs: {ingot:copper: 2, ingot:iron: 1}, output: instrument:handbells, xp: 12}
 
 # What a new character carries (spec 8's consumables replace WP13's
 # stand-in draught; granted once per character, exactly once). Playtest 2:
