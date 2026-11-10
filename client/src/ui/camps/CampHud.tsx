@@ -508,9 +508,17 @@ function useCampKeys(): void {
       lastWheel = now;
       turnGhost(e.deltaY > 0 ? 1 : -1);
     };
+    let lockTimer = 0;
     const onLock = () => {
       // Esc with a captured mouse frees it instead of sending a key: that cancels too.
-      if (!document.pointerLockElement && useCamps.getState().placing) stopPlacing();
+      // A little later than the Esc menu looks for an open panel (the placement
+      // bar counts as one), so cancelling does not also open the menu.
+      if (!document.pointerLockElement && useCamps.getState().placing) {
+        clearTimeout(lockTimer);
+        lockTimer = window.setTimeout(() => {
+          if (!document.pointerLockElement) stopPlacing();
+        }, 400);
+      }
     };
     window.addEventListener('keydown', onKey, true);
     window.addEventListener('mousedown', onMouse, true);
@@ -521,6 +529,7 @@ function useCampKeys(): void {
       window.removeEventListener('mousedown', onMouse, true);
       window.removeEventListener('wheel', onWheel, { capture: true } as EventListenerOptions);
       document.removeEventListener('pointerlockchange', onLock);
+      clearTimeout(lockTimer);
     };
   }, []);
 }

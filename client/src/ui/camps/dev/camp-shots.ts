@@ -55,7 +55,7 @@ type W = Window & {
   __lodestoneMap?: { towers(): unknown[] };
   __lodestoneIntro?: { volume(v?: number): number; skip(): void };
   __lodestoneCamps?: {
-    state(): { pieces: Record<string, Piece>; chest: { slots: unknown[] } | null; rested: unknown; mine: { pieces: unknown[] } };
+    state(): { pieces: Record<string, Piece>; chest: { slots: unknown[] } | null; rested: unknown; mine: { pieces: unknown[] }; actions: boolean };
     ghost(): { active: boolean; kind: number; rot: number; x: number; y: number; z: number; reason: number };
     startPlacing(kind: number, rot?: number, dist?: number): void;
     stopPlacing(): void;

@@ -129,6 +129,8 @@ export function applyCampEvent(e: ZoneEvent): void {
   if (!patch) return;
   useCamps.setState(patch);
   if (patch.pieces) syncSolid(patch.pieces);
+  // The chest panel needs the mouse.
+  if (patch.chest && typeof document !== 'undefined' && document.pointerLockElement) document.exitPointerLock();
 }
 
 export function resetCamps(): void {
