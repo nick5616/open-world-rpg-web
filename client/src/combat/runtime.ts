@@ -313,6 +313,7 @@ export class CombatRuntime {
     this.timeline.sprinting = sprinting;
     const gy = this.ground ? this.ground.heightAt(before.pos.x, before.pos.z) : before.pos.y;
     const now = performance.now();
+    const heldBefore = castState.peek('self')?.held ?? null; // a charge released on this step still aimed it
     const out = this.timeline.step(seq, b, before, gy, now);
     this.buttons = { ...blankButtons(), attackDown: b.attackDown, altDown: b.altDown, castHeld: b.castHeld };
     // CR 022: your caster record, from the same step bits the zone replays (it sends others the same):
@@ -344,11 +345,15 @@ export class CombatRuntime {
       useCombatHud.getState().set({ refused: { id: out.refused.id, at: performance.now() } });
       if (out.refused.reason === 'mana') toast('Not enough mana');
     }
-    // CR 022: while a stream, charge or beam is held, the frame carries the aim the spell really
-    // flies along (third person: the crosshair's convergence, a few degrees off the camera look),
-    // so the zone validates and every other player draws it along that exact aim (Event 226).
-    const h = castState.peek('self')?.held;
-    const aim = h && h.kind !== 'guard' && (localPlayer.aimYaw !== localPlayer.yaw || localPlayer.aimPitch !== localPlayer.pitch) ? { yaw: localPlayer.aimYaw, pitch: localPlayer.aimPitch } : null;
+    // CR 022: on a step that aims something (a spell cast, a shot or area move, a released charge)
+    // and while a stream, charge or beam is held, the frame carries the aim the spell really flies
+    // along (third person: the crosshair's convergence, up to a few degrees off the camera look),
+    // so the zone validates it and every other player draws it along that exact aim (Events 214,
+    // 223, 226). Melee cones and dashes keep the camera look (what their prediction uses).
+    const h = castState.peek('self')?.held ?? heldBefore;
+    const st = out.started;
+    const aiming = (h && h.kind !== 'guard') || (st && (st.spell ? st.spell.type !== 'mobility' : !!st.move && (st.move.speed > 0 || st.move.radius > 1)));
+    const aim = aiming && (localPlayer.aimYaw !== localPlayer.yaw || localPlayer.aimPitch !== localPlayer.pitch) ? { yaw: localPlayer.aimYaw, pitch: localPlayer.aimPitch } : null;
     return { flags: out.flags, castSlot: out.castSlot, aim };
   }
 

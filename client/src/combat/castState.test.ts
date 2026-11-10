@@ -267,6 +267,31 @@ describe('one state, one pose: your avatar and another player\'s', () => {
     expect(pose(theirs, 9, 'bow', 2)).toBe('bow');
   });
 
+  it('third person: a step that aims a spell carries the crosshair aim in its frame (what the zone and others use); a sword swing keeps the look', async () => {
+    const { localPlayer } = await import('../state/live');
+    const saved = { ...localPlayer };
+    try {
+      localPlayer.yaw = 0;
+      localPlayer.pitch = 0;
+      localPlayer.aimYaw = 0.06; // the crosshair converges 3.4 deg off the camera look
+      localPlayer.aimPitch = -0.02;
+      const r = runtime();
+      r.timeline.loadout = { weapon: 'sword', spells: ['ember_flick', null, null, null], gem: -1 };
+      const st = newMoveState({ x: 0, y: 10, z: 0 });
+      r.press(0);
+      const cast = r.stepHook(10, st, false);
+      expect(cast.aim).toEqual({ yaw: 0.06, pitch: -0.02 });
+      expect(r.stepHook(11, st, false).aim).toBeNull();
+      r.press('attack');
+      let swing = r.stepHook(60, st, false);
+      for (let s = 61; !(swing.flags & 0x100) && s < 90; s++) swing = r.stepHook(s, st, false);
+      expect(swing.flags & 0x100).toBeTruthy();
+      expect(swing.aim).toBeNull();
+    } finally {
+      Object.assign(localPlayer, saved);
+    }
+  });
+
   it('mining and weapon swings: the same action ids for you and for them', () => {
     const mine = new AvatarAnimator();
     const theirs = new AvatarAnimator();
