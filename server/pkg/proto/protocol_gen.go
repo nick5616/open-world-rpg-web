@@ -81,6 +81,7 @@ const (
 	InputFlagInteract    uint16 = 1 << 11
 	InputFlagCast        uint16 = 1 << 12
 	InputFlagGlideToggle uint16 = 1 << 13
+	InputFlagChannel     uint16 = 1 << 14
 	InputFlagSpeaking    uint16 = 1 << 15
 )
 

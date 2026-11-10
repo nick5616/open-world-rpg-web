@@ -111,10 +111,16 @@ type Enemy struct {
 	aiOut      aiRange
 	wantAttack *combatdefs.EnemyAttack
 	windStart  uint32
+	// CR 020: an ally (summon.go; never in World.enemies) and a brand (detonate.go).
+	ally  *summonState
+	brand *brandMark
 }
 
 // Typeid is the wire typeId (combatdefs.TypeID).
 func (e *Enemy) TypeID() uint16 {
+	if e.ally != nil {
+		return combatdefs.SummonTypeID(e.ally.def) // CR 020: drawn as EntityKind effect
+	}
 	af := 0
 	if e.Affix != nil {
 		af = e.Affix.ID
@@ -145,6 +151,9 @@ func (e *Enemy) Winding() bool { return e.State == Windup }
 
 // HealthPct is the 0..100 health percentage for snapshots.
 func (e *Enemy) HealthPct() uint8 {
+	if e.ally != nil {
+		return e.ally.pct // CR 020: an ally shows the time it has left
+	}
 	if e.HPMax <= 0 || !e.Alive() {
 		return 0
 	}

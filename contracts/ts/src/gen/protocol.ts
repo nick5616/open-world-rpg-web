@@ -63,6 +63,7 @@ export const InputFlag = {
   interact: 2048,
   cast: 4096,
   glide_toggle: 8192,
+  channel: 16384,
   speaking: 32768,
 } as const;
 

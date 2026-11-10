@@ -163,7 +163,7 @@ export function mobilitySpellForDash(dashId: number): SpellDef | undefined {
  * Kinds of visual a spell type produces: the audit table in the README and
  * the tests use it to prove every type has a visual. 'none' only for passives.
  */
-export function visualKind(sp: Pick<SpellDef, 'type'>): 'projectile' | 'beam' | 'area' | 'rune' | 'target' | 'dash' | 'shield' | 'domain' | 'none' {
+export function visualKind(sp: Pick<SpellDef, 'type'>): 'projectile' | 'beam' | 'area' | 'rune' | 'target' | 'dash' | 'shield' | 'domain' | 'orbit' | 'summon' | 'none' {
   switch (sp.type) {
     case 'projectile':
     case 'arc':
@@ -183,6 +183,10 @@ export function visualKind(sp: Pick<SpellDef, 'type'>): 'projectile' | 'beam' | 
       return 'dash';
     case 'defensive':
       return 'shield';
+    case 'orbit':
+      return 'orbit'; // CR 020: orbs circling the caster (engine.orbit)
+    case 'summon':
+      return 'summon'; // CR 020: an ally (engine.summonAppear, CombatLayer draws the body)
     default:
       return 'none';
   }

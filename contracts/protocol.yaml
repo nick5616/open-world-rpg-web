@@ -57,11 +57,19 @@ flags:
     #              combat.yaml dashes id). The shared movement step applies it.
     #   cast       set on exactly one step per spell cast; castSlot = 0..3
     #   interact   set on one step per consumable use (WP13 healing draught)
+    #   channel    (CR 020) HELD while the cast key of a hold-to-fire (auto) or
+    #              hold-to-empower (charge) spell stays down after the `cast`
+    #              step that started it; a step without it (or with attack,
+    #              dodge or cast) ends the stream / releases the charge. Held,
+    #              not one-step: a repeated lost frame keeps it, like movement.
+    #              Old zones ignore it and old clients never set it, so the
+    #              protocol version is unchanged.
     type: u16
     # speaking (v3, WP11): the client is transmitting voice right now; the zone
     # mirrors it into Activity.speaking so far players' nameplates show it. Bit
-    # 15, not 14, so movement packages can keep appending from 14.
-    bits: {forward: 0, back: 1, left: 2, right: 3, jump: 4, jump_edge: 5, sprint: 6, crouch: 7, attack: 8, alt_attack: 9, dodge: 10, interact: 11, cast: 12, glide_toggle: 13, speaking: 15}
+    # 15, not 14, so movement packages can keep appending from 14 (CR 020 took
+    # 14 for channel; movement appends no more flags).
+    bits: {forward: 0, back: 1, left: 2, right: 3, jump: 4, jump_edge: 5, sprint: 6, crouch: 7, attack: 8, alt_attack: 9, dodge: 10, interact: 11, cast: 12, glide_toggle: 13, channel: 14, speaking: 15}
   Activity:
     # Rides in every entity record (portfolio protocol.ts activity-bits idea).
     type: u8

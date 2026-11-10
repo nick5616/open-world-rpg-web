@@ -23,15 +23,34 @@ func (w *World) Frame(p *Player, f proto.InputFrame, before movement.State) Fram
 	if r.Guard {
 		w.castFX(p, CastFXGuard, f, before)
 	}
+	if r.StopID != 0 {
+		w.channelEvent(p, r, f, before, true) // CR 020: before a new start in the same frame
+	}
 	a := r.Started
 	if a == nil {
+		if r.Channel == ChannelCharge {
+			w.channelEvent(p, r, f, before, false)
+		}
 		return r
 	}
 	if !a.Legal {
 		w.toPlayer(p.ID, Out{Ev: ev(EvRefused, p.ID, uint32(a.ID), int32(a.Refusal), p.Pos, binary.LittleEndian.AppendUint32(nil, a.Seq))})
 		return r
 	}
-	w.castFX(p, a.ID, f, before)
+	switch {
+	case r.Channel == ChannelStream:
+		w.channelEvent(p, r, f, before, false) // observers simulate the stream from its seed: nothing per shot
+	case a.Spell != nil && a.Spell.Charge != nil:
+		w.castFXCharge(p, a, f, before)
+	case a.Move != nil && a.Charge > 0:
+		w.castFXCharge(p, a, f, before) // CR 022: a charged shot's draw, so others fly it at its speed
+	default:
+		w.castFX(p, a.ID, f, before)
+	}
+	p.noteBeam(a, w.tick) // CR 022: a channelled beam is held for its duration (held.go)
+	if s := a.Spell; s != nil && s.Summon != nil {
+		w.summon(p, a) // CR 020 (summon.go)
+	}
 	if s := a.Spell; s != nil && s.Type == "defensive" {
 		if s.Absorb > 0 {
 			p.shield = s.Absorb * a.Weapon.SpellPower
@@ -64,6 +83,49 @@ func (w *World) castFX(p *Player, id int, f proto.InputFrame, before movement.St
 	data := binary.LittleEndian.AppendUint16(nil, f.Yaw)
 	data = binary.LittleEndian.AppendUint16(data, uint16(f.Pitch))
 	w.near(before.Pos, 64, p.ID, Out{Ev: ev(EvCast, p.ID, uint32(id), 0, before.Pos, data)})
+}
+
+// channelEvent is Event 223 (CR 020): a stream started (value 1, to players
+// within 64 m but the caster: data = u16 yaw | i16 pitch | u32 start seq,
+// the seed of its jitter / rain pattern), a charge started gathering (value
+// 2, same data) or either ended (value 0, to everyone within 64 m and the
+// caster, whose prediction stops on it if the zone ran out of mana first:
+// data = u16 shots fired | u32 start seq). targetId = spell id.
+func (w *World) channelEvent(p *Player, r FrameResult, f proto.InputFrame, before movement.State, stop bool) {
+	switch {
+	case !stop:
+		c := p.ch
+		if c == nil {
+			return
+		}
+		data := binary.LittleEndian.AppendUint16(nil, f.Yaw)
+		data = binary.LittleEndian.AppendUint16(data, uint16(f.Pitch))
+		data = binary.LittleEndian.AppendUint32(data, c.start)
+		val := int32(1)
+		if r.Channel == ChannelCharge {
+			val = 2
+		}
+		w.near(before.Pos, 64, p.ID, Out{Ev: ev(EvChannel, p.ID, uint32(c.spell.ID), val, before.Pos, data)})
+	default:
+		id, shots, start := r.StopID, 0, uint32(0)
+		if a := r.Stopped; a != nil {
+			id, shots, start = a.ID, a.nShots, a.Seq
+		}
+		data := binary.LittleEndian.AppendUint16(nil, uint16(min(65535, shots)))
+		data = binary.LittleEndian.AppendUint32(data, start)
+		w.near(before.Pos, 64, 0, Out{Ev: ev(EvChannel, p.ID, uint32(id), 0, before.Pos, data)})
+	}
+}
+
+// castFXCharge is Event 214 for a released charge (a charge spell, or CR
+// 022 a charged weapon move: the bow's drawn shot, the spear's charge): the
+// usual data plus u8 the held fraction (0..255), so observers draw the
+// empowered shot.
+func (w *World) castFXCharge(p *Player, a *Action, f proto.InputFrame, before movement.State) {
+	data := binary.LittleEndian.AppendUint16(nil, f.Yaw)
+	data = binary.LittleEndian.AppendUint16(data, uint16(f.Pitch))
+	data = append(data, uint8(math.Round(a.Charge*255)))
+	w.near(before.Pos, 64, p.ID, Out{Ev: ev(EvCast, p.ID, uint32(a.ID), 0, before.Pos, data)})
 }
 
 // Sync asks the host to (re)send p's combat_sync.

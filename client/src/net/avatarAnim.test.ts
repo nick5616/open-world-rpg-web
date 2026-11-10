@@ -35,7 +35,9 @@ describe('action classification (Event 214 targetIds)', () => {
     expect(classifyAction(moveId('staff_bolt'), 'staff').kind).toBe('bolt');
     expect(classifyAction(moveId('wand_jab'), 'wand').kind).toBe('bonk');
     const proj = spell((s) => s.type === 'projectile');
-    expect(classifyAction(proj.id, 'staff')).toMatchObject({ kind: 'cast', color: proj.color });
+    // playtest 2: a staff/wand casts from its tip (the weapon hand raises it); other weapons from the off hand
+    expect(classifyAction(proj.id, 'staff')).toMatchObject({ kind: 'castStaff', color: proj.color });
+    expect(classifyAction(proj.id, 'sword')).toMatchObject({ kind: 'cast', color: proj.color });
     expect(classifyAction(spell((s) => s.type === 'aoe' && s.selfCast).id, null).kind).toBe('castBig');
     expect(classifyAction(spell((s) => s.type === 'beam').id, null).kind).toBe('castBeam');
     expect(classifyAction(spell((s) => s.type === 'defensive').id, null).kind).toBe('shield');
@@ -205,7 +207,7 @@ describe('avatar animation state machine', () => {
   it('a cast raises the off hand with a glow in the spell colour', () => {
     const a = new AvatarAnimator();
     const sp = spell((s) => s.type === 'projectile' && !!s.color);
-    const spec = classifyAction(sp.id, 'staff');
+    const spec = classifyAction(sp.id, 'sword');
     a.trigger(spec);
     let glow = 0;
     let lift = 0;
@@ -279,3 +281,18 @@ describe('avatar animation state machine', () => {
 });
 
 const DODGE_SPEED_TEST = DODGE_MIN_SPEED + 2;
+
+describe('staff and wand casts (playtest 2)', () => {
+  it('raise the weapon hand with the glow there', () => {
+    const a = new AvatarAnimator();
+    const sp = COMBAT.spells.find((s) => s.type === 'projectile' && !!s.color)!;
+    a.trigger(classifyAction(sp.id, 'wand'));
+    let lift = 0;
+    for (let i = 0; i < 20; i++) {
+      const p = a.update(input(), 1 / 60);
+      lift = Math.max(lift, p.armR.swing);
+      if (p.glow > 0) expect(p.glowR).toBe(true);
+    }
+    expect(lift).toBeGreaterThan(1);
+  });
+});

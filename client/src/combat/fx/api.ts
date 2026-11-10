@@ -60,4 +60,20 @@ export const spellFx = {
   shieldPoints: (...a: Args<'shieldPoints'>) => call('shieldPoints', ...a),
   remoteCast: (...a: Args<'remoteCast'>) => call('remoteCast', ...a),
   enemyProjectile: (...a: Args<'enemyProjectile'>) => call('enemyProjectile', ...a),
+  // CR 020 mechanics
+  projectileMove: (...a: Args<'projectileMove'>) => call('projectileMove', ...a),
+  streamStart: (...a: Args<'streamStart'>) => call('streamStart', ...a),
+  channelEnd: (...a: Args<'channelEnd'>) => call('channelEnd', ...a),
+  remoteChannelEnd: (...a: Args<'remoteChannelEnd'>) => call('remoteChannelEnd', ...a),
+  chargeStart: (...a: Args<'chargeStart'>) => call('chargeStart', ...a),
+  remoteStream: (...a: Args<'remoteStream'>) => call('remoteStream', ...a),
+  orbit: (...a: Args<'orbit'>) => call('orbit', ...a),
+  detonate: (...a: Args<'detonate'>) => call('detonate', ...a),
+  summonAttack: (...a: Args<'summonAttack'>) => call('summonAttack', ...a),
+  summonAppear: (...a: Args<'summonAppear'>) => call('summonAppear', ...a),
+  summonAura: (...a: Args<'summonAura'>) => call('summonAura', ...a),
+  // CR 022 shared spell visuals
+  channelBeam: (...a: Args<'channelBeam'>) => call('channelBeam', ...a),
+  swing: (...a: Args<'swing'>) => call('swing', ...a),
+  shieldBroken: (...a: Args<'shieldBroken'>) => call('shieldBroken', ...a),
 };

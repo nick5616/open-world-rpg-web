@@ -138,6 +138,55 @@ type Dash struct {
 	Steps   int     `json:"steps"`
 	IFrames int     `json:"iframes"`
 	Lift    float64 `json:"lift"`
+	// Playtest 2 dash overhaul (CR 021).
+	Aim       string       `json:"aim"` // move | look (3D, yaw and pitch)
+	ExitSpeed float64      `json:"exitSpeed"`
+	Sustain   *DashSustain `json:"sustain"`
+	Trail     *DashTrail   `json:"trail"`
+}
+
+// Sustain kinds (DashSustain.KindID; the movement twins switch on them).
+const (
+	SustainJet   = 1
+	SustainDash  = 2
+	SustainSkate = 3
+	SustainBlink = 4
+	SustainGlide = 5
+	SustainPhase = 6
+)
+
+// DashSustain is a dash held by the channel flag (CR 021).
+type DashSustain struct {
+	Kind       string  `json:"kind"`
+	KindID     int     `json:"kindId"`
+	Speed      float64 `json:"speed"`
+	Steer      float64 `json:"steer"`
+	CarrySteps int     `json:"carrySteps"`
+	BlinkSpeed float64 `json:"blinkSpeed"`
+	BlinkEvery int     `json:"blinkEvery"`
+	Sink       float64 `json:"sink"`
+	ManaPerS   float64 `json:"manaPerS"`
+	HealthPerS float64 `json:"healthPerS"`
+}
+
+// DashTrail is what a dash does to the world on its path (CR 021; the zone's).
+type DashTrail struct {
+	Radius     float64   `json:"radius"`
+	Damage     float64   `json:"damage"`
+	Lifesteal  float64   `json:"lifesteal"`
+	Heal       float64   `json:"heal"`
+	HealRadius float64   `json:"healRadius"`
+	Status     string    `json:"status"`
+	Chem       string    `json:"chem"` // ignite | freeze
+	Slam       *DashSlam `json:"slam"`
+}
+
+// DashSlam is a dive into the ground at the end of a flight.
+type DashSlam struct {
+	MinFall float64 `json:"minFall"`
+	Radius  float64 `json:"radius"`
+	Damage  float64 `json:"damage"`
+	Status  string  `json:"status"`
 }
 
 // Rate is a status-conditional multiplier.
@@ -168,6 +217,7 @@ type Spell struct {
 	Gravity        float64        `json:"gravity"`
 	Hits           int            `json:"hits"`
 	Spread         int            `json:"spread"`
+	SpreadDeg      float64        `json:"spreadDeg"`
 	Cone           float64        `json:"cone"`
 	Line           float64        `json:"line"`
 	Chain          int            `json:"chain"`
@@ -188,7 +238,106 @@ type Spell struct {
 	VsStatus       *Rate          `json:"vsStatus"`
 	LowTargetHP    *Rate          `json:"lowTargetHp"`
 	Effect         map[string]any `json:"effect"`
+	// CR 020 mechanics (contracts/combat.yaml spells header); nil when absent.
+	Homing   *Homing      `json:"homing"`
+	Auto     *Auto        `json:"auto"`
+	Rain     *Rain        `json:"rain"`
+	Charge   *Charge      `json:"charge"`
+	Orbit    *Orbit       `json:"orbit"`
+	Detonate *Detonate    `json:"detonate"`
+	Summon   *SummonSpell `json:"summon"`
 }
+
+// Homing: a projectile that seeks (CR 020; spellsim in the zone and client).
+type Homing struct {
+	TurnDegS   float64 `json:"turnDegS"`
+	AcquireM   float64 `json:"acquireM"`
+	ConeDeg    float64 `json:"coneDeg"`
+	DelaySteps int     `json:"delaySteps"`
+	LoseDeg    float64 `json:"loseDeg"`
+}
+
+// Auto: hold to fire (CR 020).
+type Auto struct {
+	RateHz        float64 `json:"rateHz"`
+	IntervalSteps int     `json:"intervalSteps"`
+	ManaPerShot   float64 `json:"manaPerShot"`
+	JitterDeg     float64 `json:"jitterDeg"`
+}
+
+// Rain: an auto spell's shots fall from above around the aim point (CR 020).
+type Rain struct {
+	Radius float64 `json:"radius"`
+	Height float64 `json:"height"`
+}
+
+// Charge: hold to empower (CR 020).
+type Charge struct {
+	MaxSteps   int     `json:"maxSteps"`
+	DamageMult float64 `json:"damageMult"`
+	RadiusMult float64 `json:"radiusMult"`
+	SpeedMult  float64 `json:"speedMult"`
+}
+
+// Orbit: orbs circling the caster (CR 020, spell type orbit).
+type Orbit struct {
+	Count         int     `json:"count"`
+	Radius        float64 `json:"radius"`
+	PeriodSteps   int     `json:"periodSteps"`
+	HitEverySteps int     `json:"hitEverySteps"`
+	OrbRadius     float64 `json:"orbRadius"`
+}
+
+// Detonate: a delayed burst on the target, or a brand that bursts on death (CR 020).
+type Detonate struct {
+	OnDeath    bool    `json:"onDeath"`
+	DelaySteps int     `json:"delaySteps"`
+	Radius     float64 `json:"radius"`
+	Damage     float64 `json:"damage"`
+	Status     string  `json:"status"`
+	Mark       string  `json:"mark"`
+}
+
+// SummonSpell names the ally a summon spell calls (CR 020).
+type SummonSpell struct {
+	Key   string `json:"key"`
+	Count int    `json:"count"`
+	Max   int    `json:"max"`
+}
+
+// SummonAttack is an ally's one attack.
+type SummonAttack struct {
+	Shape       string  `json:"shape"` // melee | bolt
+	Reach       float64 `json:"reach"`
+	Damage      float64 `json:"damage"`
+	EverySteps  int     `json:"everySteps"`
+	WindupSteps int     `json:"windupSteps"`
+	Speed       float64 `json:"speed"`
+	Radius      float64 `json:"radius"`
+}
+
+// Summon is an ally type (combat.yaml summons, CR 020).
+type Summon struct {
+	Key      string       `json:"key"`
+	ID       int          `json:"id"`
+	Name     string       `json:"name"`
+	Family   string       `json:"family"`
+	Behavior string       `json:"behavior"` // melee | ranged | turret
+	Element  int          `json:"element"`
+	Speed    float64      `json:"speed"`
+	Size     float64      `json:"size"`
+	Color    string       `json:"color"`
+	Aggro    float64      `json:"aggro"`
+	KeepAway float64      `json:"keepAway"`
+	LeashM   float64      `json:"leashM"`
+	Attack   SummonAttack `json:"attack"`
+	// Body is an Enemy view of the ally for the zone's shared movement and
+	// steering code (built at load; never in the enemy tables).
+	Body *Enemy `json:"-"`
+}
+
+// SummonTypeID is an ally's wire typeId: id | (element + 1) << 8.
+func SummonTypeID(s *Summon) uint16 { return uint16(s.ID&0xff) | uint16((s.Element+1)&0xf)<<8 }
 
 // Equippable reports a spell that goes in one of the four slots.
 func (s *Spell) Equippable() bool { return s.Type != "passive" }
@@ -353,9 +502,10 @@ type Defs struct {
 		RegenPerLevel float64   `json:"regenPerLevel"`
 		ByTier        []float64 `json:"byTier"`
 	} `json:"mana"`
-	Spells []Spell `json:"spells"`
-	Trees  []Tree  `json:"trees"`
-	Start  struct {
+	Spells  []Spell  `json:"spells"`
+	Trees   []Tree   `json:"trees"`
+	Summons []Summon `json:"summons"` // CR 020
+	Start   struct {
 		Spells     []string  `json:"spells"`
 		Loadouts   []Loadout `json:"loadouts"`
 		Consumable struct {
@@ -413,6 +563,7 @@ type Defs struct {
 	dashByID    map[int]*Dash
 	treeByKey   map[string]*Tree
 	skillByKey  map[string]*Skill
+	summonByKey map[string]*Summon
 }
 
 // D is the loaded table set (read-only after init; safe from any goroutine).
@@ -483,7 +634,20 @@ func (d *Defs) index() {
 	for i := range d.Skills.List {
 		d.skillByKey[d.Skills.List[i].Key] = &d.Skills.List[i]
 	}
+	d.summonByKey = map[string]*Summon{}
+	for i := range d.Summons {
+		s := &d.Summons[i]
+		behavior := s.Behavior
+		if behavior == "turret" {
+			behavior = "melee" // never moves; the zone's steering only reads flyer
+		}
+		s.Body = &Enemy{Key: "summon_" + s.Key, ID: s.ID, Name: s.Name, Family: "summon", HP: 1, Speed: s.Speed, Aggro: s.Aggro, Behavior: behavior, KeepAway: s.KeepAway, Element: s.Element, Size: s.Size, Color: s.Color}
+		d.summonByKey[s.Key] = s
+	}
 }
+
+// SummonByKey is an ally type (CR 020), nil when unknown.
+func (d *Defs) SummonByKey(k string) *Summon { return d.summonByKey[k] }
 
 // Lookups (nil when unknown).
 func (d *Defs) MoveByID(id int) *Move             { return d.moveByID[id] }
