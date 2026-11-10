@@ -66,7 +66,12 @@ export function screenShake(a: number): void {
 }
 
 export function screenFlash(color: THREE.Color, a: number): void {
-  const k = Math.min(0.18, a * budget.profile.flash * (reducedMotion() ? 0.5 : 1));
+  // Full-screen flashes are off (Nicole: "why is the screen flashing at
+  // all? make it not do that"). Impacts keep their local light, sparks and
+  // shockwave distortion; nothing tints the whole view any more.
+  void color;
+  void a;
+  const k = 0;
   if (k <= state.flashA) return;
   state.flash.copy(color);
   state.flashA = k;
