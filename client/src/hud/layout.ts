@@ -54,7 +54,9 @@ body:has([data-testid="levelup-fanfare"], [data-testid="discovery-intro"], [data
 /* Left column: content notes (top), the vault puzzle, the pet card under it (--ls-vault-h), the
    Rested strip (bottom). A centred panel or the instrument overlay covers them at 1280 wide. */
 body:has([data-testid="vault-panel"]) [data-testid="pet-card"] { top: calc(min(46vh, 420px) + var(--ls-vault-h, 130px) + 8px) !important; }
-body:has(${CENTRE_PANELS}, [data-testid="music-overlay"]) :is([data-testid="content-notes"], [data-testid="vault-panel"], [data-testid="pet-card"], [data-testid="camp-strips"]) { visibility: hidden; }
+body:has(${CENTRE_PANELS}, [data-testid="music-overlay"], [data-testid="character-panel"]) :is([data-testid="content-notes"], [data-testid="vault-panel"], [data-testid="pet-card"], [data-testid="camp-strips"], [data-testid="pet-notes"], [data-testid="steed-notes"]) { visibility: hidden; }
+/* The character panel (spell cards, min(580px, ...) wide) reaches the clock pill below 1400 px wide: the pill waits. */
+@media (max-width: 1400px) { body:has([data-testid="character-panel"]) :is([data-testid="night-hud"], [data-testid="world-event"]) { visibility: hidden; } }
 /* The level-up card (4 s) doesn't sit on the top edge of a centred panel you opened. */
 body:has(${CENTRE_PANELS}) [data-testid="levelup-fanfare"] { visibility: hidden; }
 /* A held emote / pet wheel fills the middle: the tip and the lock hint under it wait. */
