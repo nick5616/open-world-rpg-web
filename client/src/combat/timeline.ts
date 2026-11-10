@@ -16,6 +16,7 @@
 
 import { COMBAT, INPUT_BUFFER_MS, InputFlag, MOVE_STEP_HZ, type MoveDef, type SpellDef, type WeaponDef, type FormDef } from '@lodestone/contracts';
 import type { MoveState } from '../sim/movement';
+import { dashStep, startDashHold, type DashHold } from './dashes';
 
 export const BUFFER_STEPS = Math.round((INPUT_BUFFER_MS * MOVE_STEP_HZ) / 1000);
 export const COMBO_WINDOW_STEPS = 24;
@@ -148,6 +149,8 @@ export class CombatTimeline {
   private pendingDash = 0; // wind form: dash variant on the next step
   /** CR 020: the running stream or gathering charge. */
   channel: Channel | null = null;
+  /** CR 021: the mobility dash this timeline started and whether its key still holds it (dashes.ts). */
+  dashHold: DashHold | null = null;
   /** Last step's seq (probe/tests). */
   seq = 0;
 
@@ -287,6 +290,7 @@ export class CombatTimeline {
         if (!prior.charge) this.streamShot(seq, out, now);
       }
     }
+    dashStep(this, b, before, out, seq); // CR 021: name the running dash, hold it while the key is down (dashes.ts)
     if (alt) out.flags |= InputFlag.alt_attack;
     if (staffy && (out.flags & InputFlag.attack) !== 0 && out.started?.move?.kind === 'heavy') out.flags |= InputFlag.alt_attack;
     this.altHeld = alt ? this.altHeld + 1 : 0;
@@ -311,6 +315,8 @@ export class CombatTimeline {
         if (!s || s.type === 'passive') return 'refused';
         // CR 020: casting the spell that is streaming ends that stream first (the zone does the same).
         if (this.channel && this.channel.spell.id === s.id) this.endChannel(seq, out);
+        // CR 020 x CR 021: a stream or charge waits for a running dash to end (its channel bit would hold the dash).
+        if ((s.auto || s.charge) && (before.dash ?? 0) > 0) return 'wait';
         if (seq < (this.readyAt.get(s.id) ?? 0)) {
           if (x.until === seq) out.refused = { id: s.id, reason: 'cooldown' };
           return 'wait';
@@ -324,6 +330,7 @@ export class CombatTimeline {
           out.flags |= InputFlag.dodge;
           out.castSlot = s.dash;
           this.dodgeSeq = seq;
+          this.dashHold = startDashHold(x.slot, s.dash, seq); // CR 021: hold the key to sustain it (dashes.ts)
         } else {
           out.flags |= InputFlag.cast;
           out.castSlot = x.slot;

@@ -1029,58 +1029,218 @@
   {
    "key": "magma_dash",
    "id": 1,
-   "speed": 25,
-   "steps": 15,
+   "speed": 30,
+   "steps": 12,
    "iframes": 6,
-   "lift": 0
+   "lift": 0,
+   "aim": "look",
+   "exitSpeed": 18,
+   "sustain": {
+    "kind": "jet",
+    "kindId": 1,
+    "speed": 36,
+    "steer": 0.09,
+    "carrySteps": 4,
+    "blinkSpeed": 0,
+    "blinkEvery": 0,
+    "sink": 0,
+    "manaPerS": 24,
+    "healthPerS": 0
+   },
+   "trail": {
+    "radius": 1.8,
+    "damage": 14,
+    "lifesteal": 0,
+    "heal": 0,
+    "healRadius": 0,
+    "status": "burn",
+    "chem": "ignite",
+    "slam": {
+     "minFall": 14,
+     "radius": 4.5,
+     "damage": 45,
+     "status": "knockback"
+    }
+   }
   },
   {
    "key": "glacier_step",
    "id": 2,
-   "speed": 48,
+   "speed": 44,
    "steps": 10,
-   "iframes": 10,
-   "lift": 0
+   "iframes": 8,
+   "lift": 0,
+   "aim": "move",
+   "exitSpeed": 16,
+   "sustain": {
+    "kind": "skate",
+    "kindId": 3,
+    "speed": 30,
+    "steer": 0,
+    "carrySteps": 4,
+    "blinkSpeed": 0,
+    "blinkEvery": 0,
+    "sink": 0,
+    "manaPerS": 16,
+    "healthPerS": 0
+   },
+   "trail": {
+    "radius": 1.6,
+    "damage": 8,
+    "lifesteal": 0,
+    "heal": 0,
+    "healRadius": 0,
+    "status": "slow",
+    "chem": "freeze"
+   }
   },
   {
    "key": "phase_slip",
    "id": 3,
-   "speed": 16,
+   "speed": 40,
    "steps": 12,
-   "iframes": 15,
-   "lift": 0
+   "iframes": 12,
+   "lift": 0,
+   "aim": "move",
+   "exitSpeed": 16,
+   "sustain": {
+    "kind": "dash",
+    "kindId": 2,
+    "speed": 32,
+    "steer": 0,
+    "carrySteps": 4,
+    "blinkSpeed": 0,
+    "blinkEvery": 0,
+    "sink": 0,
+    "manaPerS": 6,
+    "healthPerS": 14
+   },
+   "trail": {
+    "radius": 1.8,
+    "damage": 12,
+    "lifesteal": 0.6,
+    "heal": 0,
+    "healRadius": 0
+   }
   },
   {
    "key": "root_launch",
    "id": 4,
-   "speed": 4,
-   "steps": 2,
+   "speed": 30,
+   "steps": 8,
    "iframes": 6,
-   "lift": 13
+   "lift": 6,
+   "aim": "move",
+   "exitSpeed": 14,
+   "sustain": {
+    "kind": "dash",
+    "kindId": 2,
+    "speed": 26,
+    "steer": 0,
+    "carrySteps": 4,
+    "blinkSpeed": 0,
+    "blinkEvery": 0,
+    "sink": 0,
+    "manaPerS": 18,
+    "healthPerS": 0
+   },
+   "trail": {
+    "radius": 2,
+    "damage": 16,
+    "lifesteal": 0,
+    "heal": 0,
+    "healRadius": 0,
+    "status": "knockback"
+   }
   },
   {
    "key": "static_step",
    "id": 5,
-   "speed": 40,
+   "speed": 54,
    "steps": 6,
    "iframes": 6,
-   "lift": 0
+   "lift": 0,
+   "aim": "move",
+   "exitSpeed": 16,
+   "sustain": {
+    "kind": "blink",
+    "kindId": 4,
+    "speed": 22,
+    "steer": 0,
+    "carrySteps": 5,
+    "blinkSpeed": 120,
+    "blinkEvery": 5,
+    "sink": 0,
+    "manaPerS": 20,
+    "healthPerS": 0
+   },
+   "trail": {
+    "radius": 1.8,
+    "damage": 10,
+    "lifesteal": 0,
+    "heal": 0,
+    "healRadius": 0,
+    "status": "shock"
+   }
   },
   {
    "key": "updraft",
    "id": 6,
-   "speed": 6,
-   "steps": 3,
+   "speed": 18,
+   "steps": 6,
    "iframes": 6,
-   "lift": 14
+   "lift": 14,
+   "aim": "move",
+   "exitSpeed": 18,
+   "sustain": {
+    "kind": "glide",
+    "kindId": 5,
+    "speed": 30,
+    "steer": 0,
+    "carrySteps": 4,
+    "blinkSpeed": 0,
+    "blinkEvery": 0,
+    "sink": 1,
+    "manaPerS": 12,
+    "healthPerS": 0
+   },
+   "trail": {
+    "radius": 2.2,
+    "damage": 6,
+    "lifesteal": 0,
+    "heal": 0,
+    "healRadius": 0,
+    "status": "knockback"
+   }
   },
   {
    "key": "sunstep",
    "id": 7,
-   "speed": 48,
+   "speed": 46,
    "steps": 10,
-   "iframes": 10,
-   "lift": 0
+   "iframes": 8,
+   "lift": 0,
+   "aim": "move",
+   "exitSpeed": 16,
+   "sustain": {
+    "kind": "dash",
+    "kindId": 2,
+    "speed": 30,
+    "steer": 0,
+    "carrySteps": 4,
+    "blinkSpeed": 0,
+    "blinkEvery": 0,
+    "sink": 0,
+    "manaPerS": 16,
+    "healthPerS": 0
+   },
+   "trail": {
+    "radius": 1.8,
+    "damage": 8,
+    "lifesteal": 0,
+    "heal": 6,
+    "healRadius": 8
+   }
   },
   {
    "key": "skip",
@@ -1088,15 +1248,38 @@
    "speed": 60,
    "steps": 10,
    "iframes": 10,
-   "lift": 0
+   "lift": 0,
+   "aim": "move",
+   "exitSpeed": 18,
+   "sustain": {
+    "kind": "phase",
+    "kindId": 6,
+    "speed": 34,
+    "steer": 0,
+    "carrySteps": 4,
+    "blinkSpeed": 0,
+    "blinkEvery": 0,
+    "sink": 0,
+    "manaPerS": 28,
+    "healthPerS": 0
+   },
+   "trail": {
+    "radius": 1.8,
+    "damage": 10,
+    "lifesteal": 0,
+    "heal": 0,
+    "healRadius": 0
+   }
   },
   {
    "key": "gale_cut",
    "id": 9,
-   "speed": 32,
+   "speed": 40,
    "steps": 15,
    "iframes": 9,
-   "lift": 0
+   "lift": 0,
+   "aim": "move",
+   "exitSpeed": 14
   }
  ],
  "mana": {
@@ -1803,9 +1986,9 @@
    "tier": 1,
    "type": "mobility",
    "dash": 1,
+   "mana": 6,
    "color": "#ff4500",
-   "killsDemons": false,
-   "mana": 0
+   "killsDemons": false
   },
   {
    "key": "frost_bite",
@@ -2625,9 +2808,9 @@
    "tier": 1,
    "type": "mobility",
    "dash": 2,
+   "mana": 6,
    "color": "#a0d8ff",
-   "killsDemons": false,
-   "mana": 0
+   "killsDemons": false
   },
   {
    "key": "void_touch",
@@ -3551,9 +3734,9 @@
    "tier": 1,
    "type": "mobility",
    "dash": 3,
+   "mana": 6,
    "color": "#6600cc",
-   "killsDemons": false,
-   "mana": 0
+   "killsDemons": false
   },
   {
    "key": "thorn_dart",
@@ -4152,9 +4335,9 @@
    "tier": 1,
    "type": "mobility",
    "dash": 4,
+   "mana": 6,
    "color": "#5a9e3d",
-   "killsDemons": false,
-   "mana": 0
+   "killsDemons": false
   },
   {
    "key": "crystal_shard",
@@ -4628,9 +4811,9 @@
    "tier": 1,
    "type": "mobility",
    "dash": 5,
+   "mana": 6,
    "color": "#ffe066",
-   "killsDemons": false,
-   "mana": 0
+   "killsDemons": false
   },
   {
    "key": "spark_jab",
@@ -5033,9 +5216,9 @@
    "tier": 1,
    "type": "mobility",
    "dash": 6,
+   "mana": 6,
    "color": "#9fe8d8",
-   "killsDemons": false,
-   "mana": 0
+   "killsDemons": false
   },
   {
    "key": "gust",
@@ -5355,9 +5538,9 @@
    "tier": 1,
    "type": "mobility",
    "dash": 7,
+   "mana": 6,
    "color": "#ffd76a",
-   "killsDemons": true,
-   "mana": 0
+   "killsDemons": true
   },
   {
    "key": "glint",
@@ -5712,9 +5895,9 @@
    "tier": 1,
    "type": "mobility",
    "dash": 8,
+   "mana": 6,
    "color": "#b98cff",
-   "killsDemons": false,
-   "mana": 0
+   "killsDemons": false
   },
   {
    "key": "rift_shot",

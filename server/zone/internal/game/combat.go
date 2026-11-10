@@ -221,6 +221,7 @@ func (s *Server) combatJoin(sess *session) {
 	if prof == nil {
 		prof = combat.NewProfile()
 	}
+	s.devGrantSpells(prof) // CR 021: dev evidence runs (dashes.go)
 	p := combat.NewPlayer(e.ID, e.Name, prof, int(e.Level))
 	p.Pos = e.Move.Pos
 	p.PartyID = e.PartyID
@@ -423,6 +424,7 @@ func (s *Server) combatTick(tick uint32) {
 		}
 	}
 	w.Step(tick)
+	s.dashEnvTick(tick) // CR 021: dash trails set grass alight and freeze water (dashes.go)
 	events, spawned, removed, xp, respawn, synced := w.Drain()
 	for _, en := range spawned {
 		ent := &Entity{ID: en.ID, Kind: proto.EntityKindEnemy, Name: en.Name, Level: uint8(min(255, en.Level)), npc: en, TypeID: en.TypeID()}

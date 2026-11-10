@@ -83,7 +83,38 @@ export function parseCombat(doc, consts) {
   uniqueIds(skills.list, 'skill');
   const skillKeys = new Set(skills.list.map((s) => s.key));
 
-  const dashes = Object.entries(doc.dashes).map(([key, d]) => ({ key, ...d }));
+  // Playtest 2 dash overhaul (CR 021): aim, exitSpeed, sustain (hold), trail.
+  const SUSTAIN_KINDS = ['', 'jet', 'dash', 'skate', 'blink', 'glide', 'phase'];
+  const walkBound = C.BASE_MOVE_SPEED * C.SPRINT_MULTIPLIER * 2; // movement.MaxLegitHorizontalSpeed
+  const dashes = Object.entries(doc.dashes).map(([key, d]) => {
+    const out = { key, id: d.id, speed: d.speed, steps: d.steps, iframes: d.iframes, lift: d.lift ?? 0, aim: d.aim ?? 'move', exitSpeed: d.exitSpeed ?? C.DASH_EXIT_SPEED };
+    if (!['move', 'look'].includes(out.aim)) fail(`dash ${key}: aim move | look`);
+    if (!(out.exitSpeed > 0 && out.exitSpeed <= walkBound)) fail(`dash ${key}: exitSpeed 0 < v <= ${walkBound} (the zone's walk bound once the dash ends)`);
+    if (d.sustain) {
+      const s = d.sustain;
+      const kind = SUSTAIN_KINDS.indexOf(s.kind);
+      if (kind <= 0) fail(`dash ${key}: sustain.kind ${SUSTAIN_KINDS.slice(1).join(' | ')}`);
+      const carry = s.carrySteps ?? 4;
+      if (!(carry >= 1 && carry <= 15)) fail(`dash ${key}: sustain.carrySteps 1..15`);
+      if (!(s.speed > 0)) fail(`dash ${key}: sustain.speed`);
+      if (s.kind === 'blink' && !(s.blinkEvery >= 2 && s.blinkEvery <= 15 && s.blinkSpeed > 0)) fail(`dash ${key}: blink needs blinkEvery 2..15 and blinkSpeed`);
+      if (s.kind === 'jet' && !(s.steer > 0 && s.steer <= 1)) fail(`dash ${key}: jet needs steer 0 < k <= 1`);
+      if (!(s.manaPerS >= 0) || !((s.healthPerS ?? 0) >= 0) || (s.manaPerS ?? 0) + (s.healthPerS ?? 0) <= 0) fail(`dash ${key}: a hold must cost mana or health per second`);
+      out.sustain = { kind: s.kind, kindId: kind, speed: s.speed, steer: s.steer ?? 0, carrySteps: carry, blinkSpeed: s.blinkSpeed ?? 0, blinkEvery: s.blinkEvery ?? 0, sink: s.sink ?? 0, manaPerS: s.manaPerS ?? 0, healthPerS: s.healthPerS ?? 0 };
+    }
+    if (d.trail) {
+      const t = d.trail;
+      checkStatus(t.status, `dash ${key} trail`);
+      if (t.chem !== undefined && !['ignite', 'freeze'].includes(t.chem)) fail(`dash ${key}: trail.chem ignite | freeze`);
+      if (!(t.radius > 0)) fail(`dash ${key}: trail.radius`);
+      out.trail = { radius: t.radius, damage: t.damage ?? 0, lifesteal: t.lifesteal ?? 0, heal: t.heal ?? 0, healRadius: t.healRadius ?? 0, ...(t.status ? { status: t.status } : {}), ...(t.chem ? { chem: t.chem } : {}) };
+      if (t.slam) {
+        checkStatus(t.slam.status, `dash ${key} trail.slam`);
+        out.trail.slam = { minFall: t.slam.minFall, radius: t.slam.radius, damage: t.slam.damage ?? 0, ...(t.slam.status ? { status: t.slam.status } : {}) };
+      }
+    }
+    return out;
+  });
   uniqueIds(dashes, 'dash');
   for (const d of dashes) {
     if (d.id > 15) fail(`dash ${d.key}: ids 1..15 (castSlot rides in 4 bits of the variant)`);
@@ -463,7 +494,14 @@ export interface ArrowDef { key: string; mult: number; demonStagger: boolean; ki
 export interface WeaponDef { key: string; id: number; skill: string; spellPower: number; manaRegen: number; cooldownMult: number; moves: string[]; parryMs?: number; parrySteps?: number; arrows?: ArrowDef[] }
 export interface FormDef { key: string; id: number; element: ElementIndex; name: string; pending: boolean; shape: string; radius: number; reach: number; arc: number; width: number; chain: number; lifesteal: number; demonMult: number; killsDemons: boolean; dash: number; selfCast: boolean; damage: number; status?: string; cooldownMs: number; cooldownSteps: number; stamina: number }
 export interface WeaponMaterialDef { key: string; id: number; mult: number; demonStagger: boolean; killsDemons: boolean }
-export interface DashDef { key: string; id: number; speed: number; steps: number; iframes: number; lift: number }
+export interface DashDef {
+  key: string; id: number; speed: number; steps: number; iframes: number; lift: number;
+  /** CR 021: start along the 3D look direction (look) or the held keys (move); the carry speed when it ends. */
+  aim: 'move' | 'look'; exitSpeed: number;
+  sustain?: DashSustainDef; trail?: DashTrailDef;
+}
+export interface DashSustainDef { kind: 'jet' | 'dash' | 'skate' | 'blink' | 'glide' | 'phase'; kindId: number; speed: number; steer: number; carrySteps: number; blinkSpeed: number; blinkEvery: number; sink: number; manaPerS: number; healthPerS: number }
+export interface DashTrailDef { radius: number; damage: number; lifesteal: number; heal: number; healRadius: number; status?: string; chem?: 'ignite' | 'freeze'; slam?: { minFall: number; radius: number; damage: number; status?: string } }
 export interface SpellDef {
   key: string; id: number; name: string; pending: boolean; tree: string; tier: number; type: string; element: ElementIndex;
   damage: number; cooldownMs: number; cooldownSteps: number; windupMs: number; windupSteps: number; durationMs: number; durationSteps: number;

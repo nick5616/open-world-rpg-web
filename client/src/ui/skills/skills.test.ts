@@ -93,7 +93,7 @@ describe('tooltip facts', () => {
     expect(facts('cauterize').Damage).toBe('12 x up to 8 hits');
     expect(facts('death_note').Damage).toBe('kills outright');
     expect(facts('unwritten').Damage).toBe('kills outright (bosses take 800)');
-    expect(facts('magma_dash').Mana).toBe('none');
+    expect(facts('magma_dash').Mana).toBe(String(spellByKey.get('magma_dash')!.mana)); // CR 021: dashes cost mana to start
     expect(facts('magma_dash').Dash).toContain('m/s');
   });
   it('says what passives do and which are not in effect yet', () => {

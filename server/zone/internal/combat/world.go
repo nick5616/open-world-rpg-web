@@ -678,6 +678,7 @@ func (w *World) Step(tick uint32) {
 	w.stepBursts()  // CR 020: delayed charges and brand chain reactions (detonate.go)
 	w.stepShots()
 	w.settleStrikes()
+	w.dashTick() // CR 021: held dashes' trails, heals and slams (dashes.go)
 	w.playerUpkeep()
 }
 

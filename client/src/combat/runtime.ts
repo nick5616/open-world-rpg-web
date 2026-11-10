@@ -268,6 +268,11 @@ export class CombatRuntime {
     useCombatHud.getState().set({ selected: validSelection(slot, this.timeline.loadout.spells), selectedAt: performance.now() });
   }
 
+  /** Scripted: hold or let go of a spell slot's key (CR 021 held dashes, CR 020 hold-to-fire). */
+  holdCast(slot: number, on: boolean): void {
+    this.buttons.castHeld[slot] = on;
+  }
+
   useSelected(): void {
     const sel = useCombatHud.getState().selected;
     if (sel >= 0 && this.timeline.loadout.spells[sel]) this.buttons.castPress[sel] = performance.now();

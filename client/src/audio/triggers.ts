@@ -308,6 +308,12 @@ export const ZONE_EVENTS: Record<number, EventHandler> = {
     } else if (e.value === 2) a.play('ui_confirm');
   },
   996: (e, a) => a.play(e.entityId !== 0 && e.entityId === a.selfId() ? 'quest_complete' : e.targetId !== 0 && e.targetId === a.selfId() ? 'player_downed' : 'notify'),
+  // CR 021: a flight dived into the ground (dash_slam)
+  230: (e, a) => {
+    a.play('land', { volume: 1 });
+    a.play(e.entityId === a.selfId() ? 'hit_crit' : 'hit');
+    a.markCombat(6);
+  },
   997: (e, a) => {
     if (e.value > 0) a.play('ui_error');
   },
@@ -337,6 +343,11 @@ export const TRIGGERS = {
     a.markCombat(8);
   },
   dodge: (_p, a) => a.play('dash'),
+  // CR 021: a held dash's whoosh every few hundred ms (the element's cast under the dash cue)
+  dash_sustain: (p, a) => {
+    a.play('dash', { volume: 0.55 });
+    a.play(castCue(p.element), { volume: 0.35 });
+  },
   // Movement
   step: (p, a) => a.play(stepCue(p.surface)),
   jump: (_p, a) => a.play('jump'),

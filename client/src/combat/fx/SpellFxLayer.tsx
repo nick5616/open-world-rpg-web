@@ -18,6 +18,7 @@ import { fxLightCount, getGpuCap, setGpuCap, minFxTier, currentFxTier, setFxSett
 import { classifyGpu, FrameSampler, gpuInfo } from './gpu';
 import { installFxDebug } from './debug';
 import { worldDebug } from '../../world/debug/worldDebug';
+import { dashFeelTick } from '../dashFeel';
 
 const sampler = new FrameSampler();
 let gpuClass: ReturnType<typeof classifyGpu> | null = null;
@@ -66,6 +67,7 @@ export function SpellFxLayer() {
       engine.prewarm();
     }
     engine.update(state.camera, { width: state.size.width, height: state.size.height, dpr: state.viewport.dpr, maxPoint });
+    dashFeelTick(state.camera, delta); // CR 021: FOV kick, speed lines, shake, whoosh (../dashFeel.ts)
     // Frame-time sample (skips the first second of loading hitches): caps the auto default only.
     if (!sampler.result) {
       const cap = sampler.add(delta * 1000);
