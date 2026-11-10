@@ -55,8 +55,23 @@ func (s *Server) contentTalk(sess *session, npcIndex int, npcEnt uint32, done in
 	l := sess.quests.log
 	now := s.cfg.Now().UnixMilli()
 	var offer *content.Offer
-	// A story first (once per character, by its role, anywhere).
+	giver := content.IsGiver(cw.Seed, t, npcIndex)
+	if giver {
+		seq := sess.cnt.st.GiverSeq(t.Index, npcIndex)
+		for l.IsDone(content.SideKey(t.Index, npcIndex, seq)) {
+			sess.cnt.st.GiverDone(t.Index, npcIndex, seq)
+			seq++
+		}
+		if l.ByKey(content.SideKey(t.Index, npcIndex, seq)) == nil {
+			offer = content.SideQuest(cw, t, npcIndex, seq, now)
+		}
+	}
+	// A story (once per character, by its role, anywhere): from a giver
+	// only once their own request is in your log.
 	for _, def := range content.StoriesFor(int(d.Role)) {
+		if offer != nil {
+			break
+		}
 		key := content.StoryKey(def.Key)
 		if l.HasStarted(key) || l.IsDone(key) || l.ByKey(key) != nil {
 			continue
@@ -65,17 +80,6 @@ func (s *Server) contentTalk(sess *session, npcIndex int, npcEnt uint32, done in
 			offer = &content.Offer{Quest: q, Say: def.Offer, Kind: "story"}
 			break
 		}
-	}
-	if offer == nil && content.IsGiver(cw.Seed, t, npcIndex) {
-		seq := sess.cnt.st.GiverSeq(t.Index, npcIndex)
-		for l.IsDone(content.SideKey(t.Index, npcIndex, seq)) {
-			sess.cnt.st.GiverDone(t.Index, npcIndex, seq)
-			seq++
-		}
-		if l.ByKey(content.SideKey(t.Index, npcIndex, seq)) != nil {
-			return // their current request is in your log already
-		}
-		offer = content.SideQuest(cw, t, npcIndex, seq, now)
 	}
 	if offer == nil {
 		return

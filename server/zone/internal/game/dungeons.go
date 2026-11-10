@@ -64,7 +64,11 @@ func (s *Server) vaultPlan(site int) *content.Vault {
 		vs.plans = map[int]*content.Vault{}
 		cw := s.contentWorld()
 		for _, d := range cw.Dungeons {
-			vs.plans[d.Index] = content.PlanVault(s.cfg.Seed, d)
+			for _, c := range cw.Sites { // the plan names the vault from the site's own name
+				if c.Index == d.Index {
+					vs.plans[d.Index] = content.PlanVault(s.cfg.Seed, c)
+				}
+			}
 		}
 	}
 	return vs.plans[site]
@@ -148,7 +152,7 @@ func (s *Server) vaultsTick(tick uint32) {
 			}
 			lv.ver++
 		}
-		if lv.phase == VaultOpen && lv.keeper != nil && lv.keeper.Spawned && groupDead(lv.keeper) {
+		if lv.phase == VaultOpen && lv.keeper != nil && (lv.keeper.Spawned || lv.keeper.Cleared()) && groupDead(lv.keeper) {
 			s.vaultCleared(lv)
 		}
 		if tick%15 == 0 {
@@ -212,6 +216,7 @@ func (s *Server) vaultsOnKill(k combat.KillInfo) {
 
 func (s *Server) vaultCleared(lv *liveVault) {
 	lv.phase = VaultCleared
+	s.cbt.w.RetireGroup(lv.keeper) // never respawns while the vault stands open
 	lv.ver++
 	v := lv.v
 	for _, e := range s.playersNear(v.Site.X, v.Site.Z, contentdefs.D.Dungeons.ActiveM) {

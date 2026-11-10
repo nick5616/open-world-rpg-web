@@ -161,6 +161,7 @@ func main() {
 	cfg.Difficulty = difficultySetup(cfg.Combat, pool, world.ID, log)            // playtest 1: discovery-stamped areas (difficulty.go)
 	cfg.PartyChat = partyChat(world.ID, log)                                     // playtest 2: duel results in party chat (pvp.go)
 	zone := game.New(cfg)
+	zone.SetWorldEvents(!env.Bool("LODESTONE_ZONE_NO_WORLD_EVENTS", false)) // CR 023 content: world events (kill switch)
 	serveCombatDebug(s.Mux, zone)                  // WP13
 	serveItemsDebug(s, zone, cfg.Items.Containers) // WP14
 	serveNightDebug(s.Mux, zone)                   // WP15

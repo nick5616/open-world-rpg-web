@@ -92,3 +92,18 @@ func (w *World) flee(e *Enemy) {
 	tx, tz := dx*0.94-dz*0.34*wob, dz*0.94+dx*0.34*wob
 	w.moveToward(e, movement.Vec3{X: e.Pos.X + tx*8, Y: e.Pos.Y, Z: e.Pos.Z + tz*8}, 1)
 }
+
+// Slay kills e as if player by had struck it down (dev tools, evidence and
+// tests: the kill path, XP and the loot hook run as for any kill).
+func (w *World) Slay(e *Enemy, by uint32) {
+	if e == nil || !e.Alive() {
+		return
+	}
+	if by != 0 {
+		if e.DamageBy == nil {
+			e.DamageBy = map[uint32]float64{}
+		}
+		e.DamageBy[by] += e.HP
+	}
+	w.kill(e, by)
+}

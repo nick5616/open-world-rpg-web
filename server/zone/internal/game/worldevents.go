@@ -74,7 +74,7 @@ type eventsState struct {
 }
 
 func (s *Server) eventsEnabled() bool {
-	return !s.cnt.ev.disabled && s.cfg.Explore != nil && s.cfg.Towns != nil && s.cbt.w != nil && s.cbt.w.Atlas != nil
+	return s.cfg.Explore != nil && s.cfg.Towns != nil && s.cbt.w != nil && s.cbt.w.Atlas != nil
 }
 
 // SetWorldEvents turns the scheduler on/off (tests, tools).
@@ -87,7 +87,7 @@ func (s *Server) worldEventsTick(tick uint32) {
 	ev := &s.cnt.ev
 	sc := &contentdefs.D.Events.Scheduler
 	every := uint32(math.Max(1, sc.EveryS*constants.TickRateHz))
-	if tick%every == 0 && len(s.sessions) > 0 {
+	if tick%every == 0 && len(s.sessions) > 0 && !ev.disabled {
 		s.scheduleEvents(int64(tick / every))
 	}
 	if tick%15 == 0 {
@@ -403,11 +403,7 @@ func (s *Server) stepEvent(w *worldEvent, tick uint32) {
 		progress = int(math.Round(w.hp / math.Max(1, k.CaravanHP) * 100))
 	case "behemoth":
 		g := w.groups[0]
-		if groupDead(g) && g.Spawned == false && g.Cleared() {
-			won = true
-			break
-		}
-		if groupDead(g) && g.Spawned {
+		if (g.Spawned || g.Cleared()) && groupDead(g) {
 			won = true
 			break
 		}
@@ -440,7 +436,7 @@ func (s *Server) stepEvent(w *worldEvent, tick uint32) {
 		}
 	case "glintfox":
 		g := w.groups[0]
-		if g.Spawned && groupDead(g) {
+		if (g.Spawned || g.Cleared()) && groupDead(g) {
 			won = true
 			break
 		}

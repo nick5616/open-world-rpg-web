@@ -237,7 +237,7 @@ func (s *Seal) Press(id int, now float64) {
 	s.Until[i] = now + s.V.Puzzle.HoldS
 	all := true
 	for k := range s.V.Parts {
-		all = all && s.Until[k] >= now
+		all = all && s.Until[k] > now
 	}
 	if all {
 		s.Open, s.Changed = true, true

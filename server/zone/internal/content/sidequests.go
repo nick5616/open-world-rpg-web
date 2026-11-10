@@ -104,15 +104,19 @@ func sideKind(seed uint64, w *World, t *Town, npc, seq int, ok func(string) bool
 		}
 		return last
 	}
+	// The kinds run as a chain (each excludes the one before), so a seq's
+	// kind is found by walking the chain from 0.
 	prev := ""
-	if seq > 0 {
-		if p := pick(mix(sideHash(seed, t, npc, seq-1)^0x6b1d), ""); p != nil {
-			prev = p.Key
+	var k *contentdefs.SideKind
+	for i := 0; i <= seq; i++ {
+		h := mix(sideHash(seed, t, npc, i) ^ 0x6b1d)
+		k = pick(h, prev)
+		if k == nil {
+			k = pick(h, "")
 		}
-	}
-	k := pick(mix(sideHash(seed, t, npc, seq)^0x6b1d), prev)
-	if k == nil {
-		k = pick(mix(sideHash(seed, t, npc, seq)^0x6b1d), "")
+		if k != nil {
+			prev = k.Key
+		}
 	}
 	return k
 }
