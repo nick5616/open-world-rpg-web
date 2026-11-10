@@ -1,10 +1,59 @@
 {
- "note": "client/src/world/bench/turn.mjs against a solo Vite dev server (RTX 3070, ANGLE D3D11, headless Chromium). before = main 861a48e; after = pt2/graphics. u-* = LODESTONE_BENCH_UNCAPPED=1 (no vsync). turn-after-low-retro and turn-after-high-painterly were the first runs (one streaming long task each); t2-* are the re-runs.",
+ "note": "client/src/world/bench/turn.mjs against a solo Vite dev server (RTX 3070, ANGLE D3D11, headless Chromium; High 1920x1080, Low 1280x720). Re-run after merging main c2e2a6f (third person + avatars, spell mechanics, dash overhaul, shared spell visuals, new content). before = main c2e2a6f (the branch's bench script against main's client); after = pt2/graphics 56a7068. -u = LODESTONE_BENCH_UNCAPPED=1 (no vsync: true frame cost). Style suffix = LODESTONE_BENCH_STYLE; no suffix = the default (Lodestone after, none before).",
  "runs": {
-  "turn-before-high": {
+  "turn-after-high-grim-u": {
    "tier": "high",
+   "style": "grim",
    "pan": {
-    "frames": 361,
+    "frames": 1298,
+    "p50": 4.4,
+    "p95": 6.1,
+    "p99": 7.4,
+    "max": 9.7,
+    "over33ms": 0,
+    "over50ms": 0
+   },
+   "flick": {
+    "frames": 245,
+    "p50": 4.7,
+    "p95": 8.5,
+    "p99": 10.3,
+    "max": 10.4,
+    "over33ms": 0,
+    "over50ms": 0
+   },
+   "longTasks": 0,
+   "worstLongTaskMs": 0
+  },
+  "turn-after-high-painterly-u": {
+   "tier": "high",
+   "style": "painterly",
+   "pan": {
+    "frames": 1350,
+    "p50": 4.3,
+    "p95": 5.6,
+    "p99": 6.6,
+    "max": 9.2,
+    "over33ms": 0,
+    "over50ms": 0
+   },
+   "flick": {
+    "frames": 293,
+    "p50": 4.2,
+    "p95": 5.5,
+    "p99": 7.5,
+    "max": 9.8,
+    "over33ms": 0,
+    "over50ms": 0
+   },
+   "longTasks": 0,
+   "worstLongTaskMs": 0
+  },
+  "turn-after-high-painterly": {
+   "tier": "high",
+   "style": "painterly",
+   "pan": {
+    "frames": 360,
     "p50": 16.7,
     "p95": 16.7,
     "p99": 16.8,
@@ -13,7 +62,7 @@
     "over50ms": 0
    },
    "flick": {
-    "frames": 79,
+    "frames": 81,
     "p50": 16.7,
     "p95": 16.7,
     "p99": 16.8,
@@ -24,8 +73,33 @@
    "longTasks": 0,
    "worstLongTaskMs": 0
   },
-  "turn-before-low": {
-   "tier": "low",
+  "turn-after-high-retro-u": {
+   "tier": "high",
+   "style": "retro",
+   "pan": {
+    "frames": 1447,
+    "p50": 3.7,
+    "p95": 6.5,
+    "p99": 8.5,
+    "max": 17.8,
+    "over33ms": 0,
+    "over50ms": 0
+   },
+   "flick": {
+    "frames": 360,
+    "p50": 3.4,
+    "p95": 4.5,
+    "p99": 5.7,
+    "max": 8.5,
+    "over33ms": 0,
+    "over50ms": 0
+   },
+   "longTasks": 0,
+   "worstLongTaskMs": 0
+  },
+  "turn-after-high-retro": {
+   "tier": "high",
+   "style": "retro",
    "pan": {
     "frames": 360,
     "p50": 16.7,
@@ -47,11 +121,44 @@
    "longTasks": 0,
    "worstLongTaskMs": 0
   },
+  "turn-after-high-u": {
+   "tier": "high",
+   "style": "",
+   "pan": {
+    "frames": 1302,
+    "p50": 4.5,
+    "p95": 5.6,
+    "p99": 6.6,
+    "max": 8.9,
+    "over33ms": 0,
+    "over50ms": 0
+   },
+   "flick": {
+    "frames": 280,
+    "p50": 4.4,
+    "p95": 5.7,
+    "p99": 6.6,
+    "max": 7.7,
+    "over33ms": 0,
+    "over50ms": 0
+   },
+   "longTasks": 0,
+   "worstLongTaskMs": 0
+  },
   "turn-after-high": {
    "tier": "high",
-   "style": "default",
+   "style": "",
    "pan": {
     "frames": 361,
+    "p50": 16.7,
+    "p95": 16.8,
+    "p99": 16.8,
+    "max": 16.8,
+    "over33ms": 0,
+    "over50ms": 0
+   },
+   "flick": {
+    "frames": 79,
     "p50": 16.7,
     "p95": 16.7,
     "p99": 16.8,
@@ -59,12 +166,51 @@
     "over33ms": 0,
     "over50ms": 0
    },
+   "longTasks": 0,
+   "worstLongTaskMs": 0
+  },
+  "turn-after-low-retro-u": {
+   "tier": "low",
+   "style": "retro",
+   "pan": {
+    "frames": 2356,
+    "p50": 2.5,
+    "p95": 3.2,
+    "p99": 3.8,
+    "max": 10.3,
+    "over33ms": 0,
+    "over50ms": 0
+   },
    "flick": {
-    "frames": 86,
-    "p50": 16.7,
-    "p95": 16.8,
-    "p99": 16.8,
-    "max": 16.8,
+    "frames": 445,
+    "p50": 2.7,
+    "p95": 3.6,
+    "p99": 4.7,
+    "max": 10.6,
+    "over33ms": 0,
+    "over50ms": 0
+   },
+   "longTasks": 0,
+   "worstLongTaskMs": 0
+  },
+  "turn-after-low-u": {
+   "tier": "low",
+   "style": "",
+   "pan": {
+    "frames": 2217,
+    "p50": 2.6,
+    "p95": 3.5,
+    "p99": 4.1,
+    "max": 10.2,
+    "over33ms": 0,
+    "over50ms": 0
+   },
+   "flick": {
+    "frames": 461,
+    "p50": 2.6,
+    "p95": 3.7,
+    "p99": 4.6,
+    "max": 9.8,
     "over33ms": 0,
     "over50ms": 0
    },
@@ -73,7 +219,7 @@
   },
   "turn-after-low": {
    "tier": "low",
-   "style": "default",
+   "style": "",
    "pan": {
     "frames": 360,
     "p50": 16.7,
@@ -84,7 +230,7 @@
     "over50ms": 0
    },
    "flick": {
-    "frames": 83,
+    "frames": 80,
     "p50": 16.7,
     "p95": 16.7,
     "p99": 16.8,
@@ -95,69 +241,45 @@
    "longTasks": 0,
    "worstLongTaskMs": 0
   },
-  "turn-after-low-retro": {
-   "tier": "low",
-   "style": "retro",
+  "turn-before-high-u": {
+   "tier": "high",
+   "style": "",
    "pan": {
-    "frames": 346,
-    "p50": 16.7,
-    "p95": 16.8,
-    "p99": 33.3,
-    "max": 116.7,
-    "over33ms": 1,
-    "over50ms": 1
-   },
-   "flick": {
-    "frames": 83,
-    "p50": 16.7,
-    "p95": 16.8,
-    "p99": 33.3,
-    "max": 33.3,
+    "frames": 1354,
+    "p50": 4.3,
+    "p95": 5.5,
+    "p99": 7,
+    "max": 8.8,
     "over33ms": 0,
     "over50ms": 0
    },
-   "longTasks": 1,
-   "worstLongTaskMs": "127"
+   "flick": {
+    "frames": 290,
+    "p50": 4.2,
+    "p95": 5.5,
+    "p99": 7.1,
+    "max": 9.1,
+    "over33ms": 0,
+    "over50ms": 0
+   },
+   "longTasks": 0,
+   "worstLongTaskMs": 0
   },
-  "turn-after-high-painterly": {
+  "turn-before-high": {
    "tier": "high",
-   "style": "painterly",
+   "style": "",
    "pan": {
-    "frames": 330,
+    "frames": 360,
     "p50": 16.7,
-    "p95": 16.8,
-    "p99": 33.4,
-    "max": 333.4,
-    "over33ms": 3,
-    "over50ms": 2
+    "p95": 16.7,
+    "p99": 16.8,
+    "max": 16.8,
+    "over33ms": 0,
+    "over50ms": 0
    },
    "flick": {
     "frames": 81,
     "p50": 16.7,
-    "p95": 16.7,
-    "p99": 16.8,
-    "max": 16.8,
-    "over33ms": 0,
-    "over50ms": 0
-   },
-   "longTasks": 2,
-   "worstLongTaskMs": "298"
-  },
-  "t2-high-painterly": {
-   "tier": "high",
-   "style": "painterly",
-   "pan": {
-    "frames": 360,
-    "p50": 16.7,
-    "p95": 16.8,
-    "p99": 16.8,
-    "max": 16.8,
-    "over33ms": 0,
-    "over50ms": 0
-   },
-   "flick": {
-    "frames": 83,
-    "p50": 16.7,
     "p95": 16.8,
     "p99": 16.8,
     "max": 16.8,
@@ -167,95 +289,23 @@
    "longTasks": 0,
    "worstLongTaskMs": 0
   },
-  "t2-low-retro": {
+  "turn-before-low-u": {
    "tier": "low",
-   "style": "retro",
+   "style": "",
    "pan": {
-    "frames": 359,
-    "p50": 16.7,
-    "p95": 16.8,
-    "p99": 16.8,
-    "max": 33.3,
+    "frames": 2205,
+    "p50": 2.5,
+    "p95": 4.1,
+    "p99": 5.6,
+    "max": 10.4,
     "over33ms": 0,
     "over50ms": 0
    },
    "flick": {
-    "frames": 85,
-    "p50": 16.7,
-    "p95": 16.8,
-    "p99": 16.8,
-    "max": 16.8,
-    "over33ms": 0,
-    "over50ms": 0
-   },
-   "longTasks": 0,
-   "worstLongTaskMs": 0
-  },
-  "u-high-lodestone": {
-   "tier": "high",
-   "style": "lodestone",
-   "pan": {
-    "frames": 1172,
-    "p50": 4.4,
-    "p95": 10.1,
-    "p99": 12.9,
-    "max": 32.2,
-    "over33ms": 0,
-    "over50ms": 0
-   },
-   "flick": {
-    "frames": 213,
-    "p50": 5.7,
-    "p95": 10.4,
-    "p99": 12.7,
-    "max": 14.1,
-    "over33ms": 0,
-    "over50ms": 0
-   },
-   "longTasks": 0,
-   "worstLongTaskMs": 0
-  },
-  "u-high-painterly": {
-   "tier": "high",
-   "style": "painterly",
-   "pan": {
-    "frames": 1203,
-    "p50": 4.8,
-    "p95": 6.8,
-    "p99": 8.5,
-    "max": 15.7,
-    "over33ms": 0,
-    "over50ms": 0
-   },
-   "flick": {
-    "frames": 165,
-    "p50": 8.3,
-    "p95": 11.1,
-    "p99": 14.1,
-    "max": 14.4,
-    "over33ms": 0,
-    "over50ms": 0
-   },
-   "longTasks": 0,
-   "worstLongTaskMs": 0
-  },
-  "u-high-grim": {
-   "tier": "high",
-   "style": "grim",
-   "pan": {
-    "frames": 910,
-    "p50": 5.6,
-    "p95": 11.3,
-    "p99": 15,
-    "max": 18.7,
-    "over33ms": 0,
-    "over50ms": 0
-   },
-   "flick": {
-    "frames": 253,
-    "p50": 4.6,
-    "p95": 9.3,
-    "p99": 10.5,
+    "frames": 469,
+    "p50": 2.5,
+    "p95": 3.6,
+    "p99": 4.7,
     "max": 11.3,
     "over33ms": 0,
     "over50ms": 0
@@ -263,77 +313,82 @@
    "longTasks": 0,
    "worstLongTaskMs": 0
   },
-  "u-high-retro": {
-   "tier": "high",
-   "style": "retro",
-   "pan": {
-    "frames": 1829,
-    "p50": 3.1,
-    "p95": 4.5,
-    "p99": 6.1,
-    "max": 8.9,
-    "over33ms": 0,
-    "over50ms": 0
-   },
-   "flick": {
-    "frames": 347,
-    "p50": 3.4,
-    "p95": 5.2,
-    "p99": 6.2,
-    "max": 7,
-    "over33ms": 0,
-    "over50ms": 0
-   },
-   "longTasks": 0,
-   "worstLongTaskMs": 0
-  },
-  "u-low-lodestone": {
+  "turn-before-low": {
    "tier": "low",
-   "style": "lodestone",
+   "style": "",
    "pan": {
-    "frames": 2051,
-    "p50": 2.7,
-    "p95": 4.6,
-    "p99": 6.6,
-    "max": 10.5,
+    "frames": 360,
+    "p50": 16.7,
+    "p95": 16.7,
+    "p99": 16.8,
+    "max": 16.8,
     "over33ms": 0,
     "over50ms": 0
    },
    "flick": {
-    "frames": 420,
-    "p50": 2.9,
-    "p95": 4.1,
-    "p99": 5.1,
-    "max": 6.8,
+    "frames": 79,
+    "p50": 16.7,
+    "p95": 16.8,
+    "p99": 16.8,
+    "max": 16.8,
     "over33ms": 0,
     "over50ms": 0
    },
    "longTasks": 0,
    "worstLongTaskMs": 0
-  },
-  "u-low-retro": {
-   "tier": "low",
-   "style": "retro",
-   "pan": {
-    "frames": 2092,
-    "p50": 2.7,
-    "p95": 3.9,
-    "p99": 4.7,
-    "max": 7.3,
-    "over33ms": 0,
-    "over50ms": 0
+  }
+ },
+ "warmCheck": {
+  "note": "programs linked after playable while switching to third person and spamming every castable spell from 8 virtual casters for 12 s (__lodestoneFx.spam), per style; solo dev server, 1600x900",
+  "runs": {
+   "high-lodestone": {
+    "programsBeforePlayable": 69,
+    "linkedAfter": 0,
+    "linked": [],
+    "casts": 105,
+    "longTasks": [],
+    "errors": []
    },
-   "flick": {
-    "frames": 433,
-    "p50": 2.8,
-    "p95": 3.8,
-    "p99": 5,
-    "max": 5.9,
-    "over33ms": 0,
-    "over50ms": 0
+   "high-painterly": {
+    "programsBeforePlayable": 69,
+    "linkedAfter": 0,
+    "linked": [],
+    "casts": 107,
+    "longTasks": [],
+    "errors": []
    },
-   "longTasks": 0,
-   "worstLongTaskMs": 0
+   "high-grim": {
+    "programsBeforePlayable": 69,
+    "linkedAfter": 0,
+    "linked": [],
+    "casts": 112,
+    "longTasks": [],
+    "errors": []
+   },
+   "high-retro": {
+    "programsBeforePlayable": 61,
+    "linkedAfter": 0,
+    "linked": [],
+    "casts": 104,
+    "longTasks": [],
+    "errors": []
+   },
+   "low-lodestone": {
+    "programsBeforePlayable": 55,
+    "linkedAfter": 0,
+    "linked": [],
+    "casts": 109,
+    "longTasks": [],
+    "errors": []
+   },
+   "low-retro": {
+    "programsBeforePlayable": 55,
+    "linkedAfter": 0,
+    "linked": [],
+    "casts": 104,
+    "longTasks": [],
+    "errors": []
+   }
   }
  }
 }

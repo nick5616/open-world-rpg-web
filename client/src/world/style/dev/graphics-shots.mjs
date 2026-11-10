@@ -21,7 +21,7 @@
 // Without LODESTONE_CLIENT_URL it starts its own Vite (VITE_SOLO=1) on
 // LODESTONE_SHOTS_PORT (default 5382).
 
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -57,7 +57,8 @@ if (!base) {
   });
   process.on('exit', () => {
     try {
-      if (process.platform === 'win32') spawn('taskkill', ['/pid', String(vite.pid), '/T', '/F']);
+      // Synchronous: an async spawn here never runs (the process is exiting) and Vite outlived the script.
+      if (process.platform === 'win32') spawnSync('taskkill', ['/pid', String(vite.pid), '/T', '/F'], { stdio: 'ignore' });
       else vite.kill();
     } catch {
       /* gone */
@@ -223,7 +224,8 @@ async function shoot(page, errors, tier, style, scene) {
   });
   if (scene === 'spell') {
     // The FX layer runs in debug solo builds (combat/fx/debug.ts): an eruption 9 m ahead, caught mid-burst.
-    await L(page, () => window.__lodestoneFx?.cast('eruption', { ahead: 6 }));
+    // Aimed down so the burst lands ~9 m ahead, mid-frame.
+    await L(page, () => window.__lodestoneFx?.cast('eruption', { ahead: 6, pitch: -0.5 }));
     await sleep(1150); // the sigil, then the burst
   }
   const file = `pt2-graphics-${style}-${scene}-${tier}.png`;
@@ -271,5 +273,16 @@ for (const tier of ['high', 'low']) {
   }
 }
 
-if (!process.argv.includes('--no-json')) fs.writeFileSync(path.join(evidence, 'pt2-graphics-shots.json'), JSON.stringify({ date: new Date().toISOString(), base, results }, null, 2) + '\n');
+if (!process.argv.includes('--no-json')) {
+  // A subset run (--only/--scenes) replaces its own shots and keeps the rest.
+  const file = path.join(evidence, 'pt2-graphics-shots.json');
+  let kept = [];
+  try {
+    const shot = new Set(results.map((r) => r.file).filter(Boolean));
+    kept = JSON.parse(fs.readFileSync(file, 'utf8')).results.filter((r) => r.file && !shot.has(r.file));
+  } catch {
+    /* first run */
+  }
+  fs.writeFileSync(file, JSON.stringify({ date: new Date().toISOString(), base, results: [...kept, ...results] }, null, 2) + '\n');
+}
 process.exit(0);
