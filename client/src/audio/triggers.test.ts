@@ -3,7 +3,7 @@ import type { Event as ZoneEvent } from '@lodestone/contracts';
 import { CUES, type CueId } from './cues';
 import { CUE_FILES } from './cueFiles.gen';
 import { assetNames } from './assets';
-import { ELEMENTS, TRIGGERS, ZONE_EVENTS, castCue, impactCue, levelUpCue, lootCue, runTrigger, runZoneEvent, stepCue, swingCue, type TriggerApi, type TriggerName } from './triggers';
+import { ELEMENTS, TRIGGERS, ZONE_EVENTS, achievementCue, castCue, impactCue, levelUpCue, lootCue, runTrigger, runZoneEvent, stepCue, swingCue, type TriggerApi, type TriggerName } from './triggers';
 import { loadAudioPrefs, DEFAULT_AUDIO_PREFS } from './settings';
 import { sliderToGain } from './context';
 
@@ -79,6 +79,14 @@ describe('trigger map', () => {
     expect(levelUpCue(3, 2)).toBe('level_up');
     expect(levelUpCue(10)).toBe('level_up_big');
     expect(levelUpCue(4, 3)).toBe('level_up_big');
+  });
+
+  it('achievement unlocks (CR 031) use the level-up stings by tier, and gold+ unlocks of others a soft notify', () => {
+    expect([0, 1, 2, 3].map((t) => achievementCue(t))).toEqual(['level_up_small', 'level_up', 'level_up_big', 'level_up_big']);
+    const { a, played } = api();
+    runTrigger('achievement', { tier: 2 }, a);
+    runZoneEvent({ type: 'Event', kind: 1240, entityId: 9, targetId: 1, value: 2, x: 0, y: 0, z: 0, data: new Uint8Array() }, a);
+    expect(played.map((p) => p.cue)).toEqual(['level_up_big', 'notify']);
   });
 
   it('zone events: combat', () => {
@@ -167,7 +175,7 @@ describe('trigger map', () => {
       expect(played.length, name).toBeGreaterThan(0);
       for (const p of played) expect(CUES[p.cue], `${name} -> ${p.cue}`).toBeDefined();
     }
-    for (const hook of ['level_up', 'tower_attuned', 'tower_attuning', 'quest_accept', 'quest_complete', 'door_open', 'door_close', 'discovery_intro']) expect(TRIGGERS).toHaveProperty(hook);
+    for (const hook of ['achievement', 'level_up', 'tower_attuned', 'tower_attuning', 'quest_accept', 'quest_complete', 'door_open', 'door_close', 'discovery_intro']) expect(TRIGGERS).toHaveProperty(hook);
   });
 
   it('local prediction triggers: attack, cast, impact', () => {
@@ -182,7 +190,7 @@ describe('trigger map', () => {
   });
 
   it('every zone event handler is keyed by a registered kind', () => {
-    for (const k of Object.keys(ZONE_EVENTS).map(Number)) expect(k >= 100 && k < 1000, String(k)).toBe(true); // 100-899 WP ranges, 900-999 playtest 1 (events.md)
+    for (const k of Object.keys(ZONE_EVENTS).map(Number)) expect(k >= 100 && k < 1300, String(k)).toBe(true); // 100-899 WP ranges, 900-999 playtest 1, 1000-1299 playtest 2 (events.md)
   });
 });
 

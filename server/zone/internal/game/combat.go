@@ -270,6 +270,7 @@ func (s *Server) combatFrame(sess *session, f proto.InputFrame) proto.InputFrame
 	r := s.cbt.w.Frame(e.cbt, f, e.Move)
 	s.nightAction(sess, r.Started) // WP15: Fire/Ice/Earth chemistry where it lands (night.go)
 	s.vaultMagic(sess, r.Started)  // CR 023: braziers and fonts of the sealed vaults (dungeons.go)
+	s.achCast(sess, r.Started)     // CR 031: spells cast per school (achievements.go)
 	return r.Frame
 }
 
@@ -427,6 +428,7 @@ func (s *Server) combatTick(tick uint32) {
 	}
 	w.Step(tick)
 	s.dashEnvTick(tick) // CR 021: dash trails set grass alight and freeze water (dashes.go)
+	s.achTick()         // CR 031: metres dashed, magma jet flight (achievements.go)
 	events, spawned, removed, xp, respawn, synced := w.Drain()
 	for _, en := range spawned {
 		ent := &Entity{ID: en.ID, Kind: proto.EntityKindEnemy, Name: en.Name, Level: uint8(min(255, en.Level)), npc: en, TypeID: en.TypeID()}

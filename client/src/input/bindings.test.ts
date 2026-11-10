@@ -64,6 +64,10 @@ describe('key bindings', () => {
     expect(world('KeyU')).toEqual(['play your instrument']); // a pending duel ('duel') keeps U for "no"
     expect(world('KeyH')).toEqual(['emote wheel (hold)']); // photo mode's H is its own ('photo')
     expect(world('KeyR')).toEqual(['drink a draught']); // placing a camp piece turns it with R ('placing')
+    // CR 031: Y (the one free letter) opens the Achievements screen; a pending duel's Y accepts instead.
+    expect(world('KeyY')).toEqual(['achievements screen']);
+    expect(BINDINGS.filter((b) => b.ctx === 'duel' && b.code === 'KeyY').map((b) => b.does)).toEqual(['accept the duel']);
+    expect(readFileSync(path.join(SRC, 'ui/achievements/AchievementsHud.tsx'), 'utf8')).toContain('usePvp.getState().challenge');
   });
 
   it("every binding a player can use is in the Esc menu's Controls", () => {

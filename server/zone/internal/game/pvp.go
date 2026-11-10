@@ -277,6 +277,7 @@ func (s *Server) pvpKillFeed(killer, victim *Entity) {
 		}
 	}
 	s.log.Info("pvp kill", "killer", killer.Name, "victim", victim.Name)
+	s.achByChar(killer.CharacterID, func(sess *session) { s.achAdd(sess, "pvpkills", 1) }) // CR 031
 }
 
 // ---- the flag ----

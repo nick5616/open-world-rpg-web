@@ -133,7 +133,7 @@ func TestFishLandedCodexAndFeats(t *testing.T) {
 		t.Fatalf("state %+v stats %+v", s.Fish, s.Stats)
 	}
 	feats := map[string]bool{}
-	for _, f := range s.NewFeats(func(string) int { return 0 }) {
+	for _, f := range earn(s, func(string) int { return 0 }) {
 		feats[f.Key] = true
 	}
 	if !feats["first_catch"] || !feats["tall_tale"] || feats["angler"] {

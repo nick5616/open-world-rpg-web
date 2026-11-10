@@ -59,17 +59,22 @@ describe('content events', () => {
     expect(p!.patches[1].readyAt).toBe(61000);
   });
 
-  it('keeps the sync, codex, feats, renown and titles', () => {
+  it('keeps the sync, codex, achievements, renown and titles', () => {
     let s = state();
-    s = { ...s, ...reduceContentEvent(s, ev(CEV.sync, { kills: { slime: 3 }, feats: ['first_steps'], tablets: [2], title: '', stats: {}, rep: [], vaults: [], progress: {} }), 0) };
+    s = { ...s, ...reduceContentEvent(s, ev(CEV.sync, { kills: { slime: 3 }, feats: ['first_steps'], earned: { first_steps: 0 }, points: 10, tablets: [2], title: '', stats: {}, rep: [], vaults: [], progress: {} }), 0) };
     expect(s.sync.kills.slime).toBe(3);
+    expect(s.sync.earned).toEqual({ first_steps: 0 });
+    expect(s.sync.points).toBe(10);
     s = { ...s, ...reduceContentEvent(s, ev(CEV.codex, 'wolf'), 10) };
     expect(s.sync.kills.wolf).toBe(1);
     expect(s.notes.at(-1)?.text).toBe('Mossjaw Wolf');
-    s = { ...s, ...reduceContentEvent(s, ev(CEV.feat, { key: 'slimebane', name: 'Slimebane', desc: 'Defeat 100 slimes', title: 'Slimebane', gold: 40, xp: 200 }), 20) };
+    const notes = s.notes.length;
+    s = { ...s, ...reduceContentEvent(s, ev(CEV.achievement, { key: 'slimebane', name: 'Slimebane', desc: 'Defeat 100 slimes', title: 'Slimebane', gold: 40, xp: 200, tier: 1, pts: 25, at: 1234 }, { value: 35 }), 20) };
     expect(s.sync.feats).toContain('slimebane');
     expect(s.sync.title).toBe('slimebane');
-    expect(s.notes.at(-1)?.text).toContain('title "Slimebane"');
+    expect(s.sync.earned.slimebane).toBe(1234);
+    expect(s.sync.points).toBe(35);
+    expect(s.notes.length).toBe(notes); // CR 031: your unlock is the achievements toast, not a note
     s = { ...s, ...reduceContentEvent(s, ev(CEV.rep, { town: 'Draedmore', rep: 25, gain: 12, tier: 1, tierName: 'Known', up: true }, { targetId: 9 }), 30) };
     expect(s.sync.rep).toEqual([{ town: 9, name: 'Draedmore', rep: 25, tier: 1 }]);
     expect(s.notes.at(-1)?.title).toBe('Draedmore: Known!');

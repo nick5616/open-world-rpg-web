@@ -486,7 +486,7 @@ func TestSealedVaultLeversKeeperChest(t *testing.T) {
 	}
 	var cs *content.State
 	h.do(func() { cs = h.srv.byChar[char].cnt.st })
-	if cs.Stat("dungeons") != 1 || !cs.HasFeat("vault_breaker") || !cs.VaultKnown(v.Site.Index) {
+	if cs.Stat("dungeons") != 1 || !cs.Has("vault_breaker") || !cs.VaultKnown(v.Site.Index) {
 		t.Fatalf("state %s", cs.JSON())
 	}
 }
@@ -546,7 +546,7 @@ func TestTabletsHerbsFeatsTitleSeenByOthers(t *testing.T) {
 	if r := a.take(EventContentRefused, 2*time.Second); r.Value != ContentRefusePicked {
 		t.Fatalf("second pick %+v", r)
 	}
-	// A duel won earns the Duelist feat and its title, which a player
+	// A duel won earns the Duelist achievement and its title, which a player
 	// nearby sees on the nameplate.
 	h.teleport(char, tab.X+1, tab.Z+1)
 	b := h.dial("")
@@ -556,7 +556,7 @@ func TestTabletsHerbsFeatsTitleSeenByOthers(t *testing.T) {
 		me = h.srv.byChar[char].ent.ID
 		h.srv.contentDuelWon(h.srv.byChar[char].ent)
 	})
-	f := a.take(EventFeatEarned, 2*time.Second)
+	f := a.takeFor(EventFeatEarned, achID("duelist"), 3*time.Second) // CR 031: other unlocks (a tablet read, a herb, a vault found) may come first
 	if eventOf(t, f)["key"] != "duelist" {
 		t.Fatalf("feat %s", f.Data)
 	}

@@ -608,6 +608,7 @@ func (s *Server) sendGranted(sess *session, source int, got []*items.Item) {
 	}
 	b, _ := json.Marshal(list)
 	s.sendEvent(sess, &proto.Event{Kind: EventLootGranted, EntityID: sess.ent.ID, TargetID: uint32(source), Value: int32(len(got)), Data: b})
+	s.achGranted(sess, source, got) // CR 031: gold earned, items found (achievements.go)
 }
 
 // ---- gear, consumables ----
@@ -1121,6 +1122,8 @@ func (s *Server) craft(sess *session, recipeID int, now time.Time) {
 		s.saveCombat(sess, false)
 	}
 	s.announceIfBitchin(sess, out)
+	s.achAdd(sess, "crafted", 1) // CR 031 (achievements.go)
+	s.achAdd(sess, "craft:"+rc.Station, 1)
 }
 
 // ---- purchases (WP20 merchants; currency: CR 010) ----

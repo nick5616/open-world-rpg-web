@@ -36,6 +36,8 @@ export interface TriggerPayload {
   speed?: number;
   /** Surface for steps and landings: soft | hard | wood | snow | water (surface.ts). */
   surface?: string;
+  /** CR 031: achievement tier index (0 bronze .. 3 platinum). */
+  tier?: number;
 }
 
 export interface TriggerApi {
@@ -123,6 +125,17 @@ export function lootCue(r: number): CueId {
   if (r === 2) return 'loot_rare';
   if (r === 1) return 'loot_uncommon';
   return 'loot_common';
+}
+
+/**
+ * CR 031: the achievement unlock fanfare, played when its toast shows (ui/achievements;
+ * a queued card waits for the level-up and discovery cards, so its sound waits too):
+ * the level-up stings by tier, the big one for gold and platinum.
+ */
+export function achievementCue(tier = 0): CueId {
+  if (tier >= 2) return 'level_up_big';
+  if (tier === 1) return 'level_up';
+  return 'level_up_small';
 }
 
 /** Level-up sting by size: Nicole's three level-up sounds. */
@@ -317,6 +330,9 @@ export const ZONE_EVENTS: Record<number, EventHandler> = {
   997: (e, a) => {
     if (e.value > 0) a.play('ui_error');
   },
+  // CR 031: someone near you or in your party earned a gold / platinum achievement (your own
+  // unlocks sound with their toast: TRIGGERS.achievement, emitted by ui/achievements).
+  1240: (_e, a) => a.play('notify'),
 };
 
 type TriggerFn = (p: TriggerPayload, api: TriggerApi) => void;
@@ -382,6 +398,8 @@ export const TRIGGERS = {
   chest_open: (p, a) => a.play('chest_open', at(p)),
   // Playtest 2: the duel's 3-2-1 (client/src/ui/pvp)
   duel_count: (_p, a) => a.play('telegraph'),
+  // CR 031: an achievement toast appears (ui/achievements/AchievementsHud.tsx)
+  achievement: (p, a) => a.play(achievementCue(p.tier ?? 0)),
 } satisfies Record<string, TriggerFn>;
 
 export type TriggerName = keyof typeof TRIGGERS;

@@ -175,7 +175,7 @@ func TestTamedFeats(t *testing.T) {
 		t.Fatalf("stats %v", s.Stats)
 	}
 	got := map[string]bool{}
-	for _, f := range s.NewFeats(nil) {
+	for _, f := range earn(s, nil) {
 		got[f.Key] = true
 	}
 	if !got["first_pet"] || !got["shiny_pet"] || got["menagerie"] {

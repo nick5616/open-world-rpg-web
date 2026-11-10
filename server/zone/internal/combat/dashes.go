@@ -67,6 +67,17 @@ func (p *Player) dashBegin(variant int, s *combatdefs.Spell) {
 	if d != nil {
 		p.dash.moving = d.Steps
 	}
+	p.Dashes++
+}
+
+// DashHolding reports the dash this player runs (its table row) and
+// whether its newest step was a paid hold (a magma jet thrusting): CR 031's
+// "take flight" achievement (internal/game/achievements.go).
+func (p *Player) DashHolding() (d *combatdefs.Dash, holding, ok bool) {
+	if p.dash.variant == 0 || p.dash.def == nil || p.dash.moving <= 0 {
+		return nil, false, false
+	}
+	return p.dash.def, p.dash.holding, true
 }
 
 // dashEquipped: the running dash's spell is still in the active loadout and known.
@@ -195,6 +206,7 @@ func (w *World) dashTick() {
 		}
 		if d.slam && t.Slam != nil {
 			d.slam = false
+			p.Slams++
 			sl := t.Slam
 			for _, id := range w.order {
 				e := w.enemies[id]

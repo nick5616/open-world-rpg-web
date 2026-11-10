@@ -77,6 +77,7 @@ export const BINDINGS: Binding[] = [
   W('KeyT', 'hud/ViewHud.tsx', 'first / third person'),
   W('KeyM', 'ui/map/ExplorationHud.tsx', 'map'),
   W('KeyJ', 'ui/quests/QuestHud.tsx', 'journal'),
+  W('KeyY', 'ui/achievements/AchievementsHud.tsx', 'achievements screen'), // CR 031; a pending duel keeps Y ('duel')
   W('KeyI', 'ui/inventory/InventoryScreen.tsx', 'inventory'),
   W('KeyC', 'ui/progression/ProgressionHud.tsx', 'character'),
   W('KeyN', 'ui/skills/SkillScreen.tsx', 'skill tree'),
@@ -96,6 +97,7 @@ export const BINDINGS: Binding[] = [
   // Esc: SHARED (closes the top thing, else the menu)
   ...[
     'ui/menu/EscMenu.tsx',
+    'ui/achievements/AchievementsHud.tsx',
     'audio/ui/AudioSettingsPanel.tsx',
     'social/ui/ChatPanel.tsx',
     'social/ui/SocialOverlay.tsx',

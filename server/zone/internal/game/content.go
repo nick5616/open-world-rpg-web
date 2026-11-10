@@ -49,7 +49,7 @@ import (
 const (
 	EventContentSync     = 1000
 	EventCodexUnlocked   = 1001
-	EventFeatEarned      = 1002
+	EventFeatEarned      = 1002 // achievement_earned since CR 031 (achievements.go)
 	EventTabletRead      = 1003
 	EventRepChanged      = 1004
 	EventPlayerTitle     = 1005
@@ -72,7 +72,7 @@ const (
 	ContentActRead   = 2 // read the lore tablet at atlas site targetId
 	ContentActForage = 3 // pick herb patch targetId
 	ContentActVault  = 4 // use vault part: targetId = site << 8 | part id
-	ContentActTitle  = 5 // show feat targetId's title (0 = none)
+	ContentActTitle  = 5 // show achievement targetId's title (0 = none)
 	ContentActEvent  = 9 // dev: start world event kind arg near you (dev builds only)
 )
 
@@ -110,7 +110,8 @@ type contentSess struct {
 	told     map[uint32]string // titles of other players told to this client
 	lastSave time.Time
 	region   int
-	recheck  bool // feats need a look (kills, counters)
+	recheck  bool   // achievements need a look (kills, counters)
+	ach      achAcc // CR 031: counts added up between flushes (achievements.go)
 }
 
 // contentGlue is the server-wide part.
@@ -331,6 +332,7 @@ func (s *Server) contentJoin(sess *session) {
 		sess.cnt = &contentSess{st: content.NewState(), areas: map[int32]bool{}, told: map[uint32]string{}, region: -1}
 	}
 	sess.cnt.recheck = true
+	s.achJoin(sess) // CR 031 (achievements.go)
 	s.sendContentSync(sess)
 	if t := sess.cnt.st.TitleText(); t != "" {
 		s.contentTitleChanged(sess)
@@ -420,7 +422,17 @@ func (s *Server) sendContentSync(sess *session) {
 		Vaults   []syncVault       `json:"vaults"`
 		Progress map[string]int    `json:"progress"`
 		Fish     map[string][2]int `json:"fish"` // playtest 2 fishing: species -> [landed, best g]
-	}{V: 1, Kills: st.Kills, Tablets: st.Tablets, Feats: st.Feats, Title: st.Title, Stats: st.Stats, Regions: st.RegionsWalked(), Progress: map[string]int{}, Fish: st.Fish}
+		// CR 031 achievements: when each was earned (unix ms, 0 before CR 031) and the points total.
+		Earned map[string]int64 `json:"earned"`
+		Points int              `json:"points"`
+	}{V: 1, Kills: st.Kills, Tablets: st.Tablets, Feats: st.Feats, Title: st.Title, Stats: st.Stats, Regions: st.RegionsWalked(), Fish: st.Fish,
+		Progress: st.Progress(func(stat string) int { return s.achStat(sess, stat) }), Earned: make(map[string]int64, len(st.Feats)), Points: st.Points()}
+	for _, k := range st.Feats {
+		out.Earned[k] = st.EarnedAt(k)
+	}
+	if out.Feats == nil {
+		out.Feats = []string{}
+	}
 	if out.Kills == nil {
 		out.Kills = map[string]int{}
 	}
@@ -443,70 +455,8 @@ func (s *Server) sendContentSync(sess *session) {
 			}
 		}
 	}
-	for i := range contentdefs.D.Feats {
-		f := &contentdefs.D.Feats[i]
-		out.Progress[f.Key] = s.featStat(sess, f.Stat)
-	}
 	b, _ := json.Marshal(out)
 	s.sendEvent(sess, &proto.Event{Kind: EventContentSync, EntityID: sess.ent.ID, Value: int32(len(st.Feats)), Data: b})
-}
-
-// featStat answers a feat stat for sess.
-func (s *Server) featStat(sess *session, stat string) int {
-	if v := sess.cnt.st.Stat2(stat); v >= 0 {
-		return v
-	}
-	if stat == "petlevel" { // CR 029 (pets.go)
-		if sess.pets == nil {
-			return 0
-		}
-		return sess.pets.st.BestLevel()
-	}
-	x := sess.x
-	if x == nil || x.prog == nil {
-		return 0
-	}
-	switch stat {
-	case "towers":
-		return x.prog.Attuned.Count()
-	case "level":
-		return x.prog.Level
-	}
-	return 0
-}
-
-// contentFeats earns what can be earned now and pays it.
-func (s *Server) contentFeats(sess *session) {
-	cs := sess.cnt
-	if cs == nil || sess.ent == nil {
-		return
-	}
-	cs.recheck = false
-	titled := cs.st.TitleText()
-	for _, f := range cs.st.NewFeats(func(stat string) int { return s.featStat(sess, stat) }) {
-		if f.Gold > 0 {
-			s.questGrant(sess, []quests.ItemQty{{Item: "currency:gold", Qty: f.Gold}}, "feat:"+f.Key, "feat "+f.Key)
-		}
-		if f.XP > 0 {
-			s.grantCombatXP(combat.XPGrant{Player: sess.ent.ID, XP: f.XP, Reason: "feat"})
-		}
-		b, _ := json.Marshal(struct {
-			Key   string `json:"key"`
-			Name  string `json:"name"`
-			Desc  string `json:"desc"`
-			Title string `json:"title"`
-			Gold  int    `json:"gold"`
-			XP    int64  `json:"xp"`
-		}{f.Key, f.Name, f.Desc, f.Title, f.Gold, f.XP})
-		s.sendEvent(sess, &proto.Event{Kind: EventFeatEarned, EntityID: sess.ent.ID, TargetID: uint32(f.ID), Data: b})
-		s.log.Info("feat earned", "character", sess.ent.CharacterID, "feat", f.Key)
-	}
-	if cs.st.TitleText() != titled {
-		s.contentTitleChanged(sess)
-	}
-	if cs.st.Dirty() {
-		s.saveContent(sess)
-	}
 }
 
 // ---- titles on nameplates (Event 1005) ----
@@ -601,8 +551,9 @@ func (s *Server) contentPlayerSecond(sess *session, now time.Time) {
 	}
 	s.vaultDiscover(sess) // dungeons.go
 	s.sendPlacesNear(sess, false)
+	s.achFlush(sess) // CR 031: distances, airtime, dashes, deaths (achievements.go)
 	if cs.recheck {
-		s.contentFeats(sess)
+		s.contentAchievements(sess)
 	}
 	if cs.st.Dirty() && now.Sub(cs.lastSave) >= contentSaveEvery*time.Second {
 		s.saveContent(sess)
@@ -631,6 +582,7 @@ func (s *Server) contentOnKill(k combat.KillInfo) {
 		if sess.cnt.st.Kill(en.Def.Key, en.Def.Family, demon) {
 			s.sendEvent(sess, &proto.Event{Kind: EventCodexUnlocked, EntityID: pe.ID, TargetID: uint32(en.Def.ID), Value: 1, Data: []byte(en.Def.Key)})
 		}
+		s.achKill(sess, en.Def.Element) // CR 031 (achievements.go)
 		sess.cnt.recheck = true
 		// Kill steps are counted in questsOnKill (quests.go), content on or off.
 	}
@@ -643,7 +595,7 @@ func (s *Server) contentAttuned(sess *session) {
 		s.questsAdvance(sess, &quests.Signal{Kind: quests.ObjAttune, Site: -1})
 	}
 	if sess.cnt != nil {
-		s.contentFeats(sess)
+		s.contentAchievements(sess)
 	}
 }
 
@@ -658,7 +610,7 @@ func (s *Server) contentLevel(sess *session) {
 func (s *Server) contentDuelWon(e *Entity) {
 	if sess := s.byChar[e.CharacterID]; sess != nil && sess.cnt != nil {
 		sess.cnt.st.Add("duels", 1)
-		s.contentFeats(sess)
+		s.contentAchievements(sess)
 	}
 }
 
@@ -684,11 +636,12 @@ func (s *Server) contentInteract(sess *session, m *proto.Interact) {
 	case ContentActTitle:
 		key := ""
 		if m.TargetID != 0 {
-			if int(m.TargetID) > len(contentdefs.D.Feats) {
+			a := contentdefs.D.AchievementByID(int(m.TargetID))
+			if a == nil {
 				refuse(ContentRefuseTitle)
 				return
 			}
-			key = contentdefs.D.Feats[m.TargetID-1].Key
+			key = a.Key
 		}
 		if !cs.st.SetTitle(key) {
 			refuse(ContentRefuseTitle)
@@ -749,7 +702,7 @@ func (s *Server) readTablet(sess *session, si int, refuse func(int32)) {
 	s.sendEvent(sess, &proto.Event{Kind: EventTabletRead, EntityID: sess.ent.ID, TargetID: uint32(si), Value: int32(id), Data: b})
 	if first {
 		s.grantCombatXP(combat.XPGrant{Player: sess.ent.ID, XP: 25, Reason: "lore"})
-		s.contentFeats(sess)
+		s.contentAchievements(sess)
 	}
 	if sess.quests != nil && sess.quests.log.Needs(quests.ObjRead) {
 		s.questsAdvance(sess, &quests.Signal{Kind: quests.ObjRead, Site: si})

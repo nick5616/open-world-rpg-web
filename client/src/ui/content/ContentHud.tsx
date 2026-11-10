@@ -257,7 +257,7 @@ function installHandle() {
     forage: (id: number) => useContent.getState().actions?.forage(id),
     vault: (site: number, part: number) => useContent.getState().actions?.vault(site, part),
     sync: () => useContent.getState().actions?.sync(),
-    title: (featId: number) => useContent.getState().actions?.title(featId),
+    title: (achievementId: number) => useContent.getState().actions?.title(achievementId),
     /** Dev builds (zone dev ticket): start world event kind (1 starfall, 2 caravan, 3 behemoth, 4 wild hunt, 5 glintfox) ahead of you. */
     devEvent: (kind: number) => useContent.getState().actions?.devEvent(kind),
   };

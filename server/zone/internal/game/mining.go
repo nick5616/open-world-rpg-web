@@ -327,6 +327,9 @@ func (s *Server) breakVein(cw caveWorld, v caves.Vein, st *veinState, breaker *E
 	st.respawnAt = now.Add(s.respawnDelay(v, st.editID))
 	s.mine.mined++
 	s.m.veinsMined.Add(1)
+	if breaker != nil {
+		s.achByChar(breaker.CharacterID, func(sess *session) { s.achAdd(sess, "mined", 1) }) // CR 031
+	}
 
 	// The edit: carve + mined flag, everywhere at once.
 	carve := caves.Edit{VeinID: v.ID, X: float32(v.X), Y: float32(v.Y), Z: float32(v.Z), R: CarveRadiusM}

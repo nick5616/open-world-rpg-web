@@ -38,8 +38,9 @@ import { PvpHud } from '../ui/pvp';
 // Playtest 2: skill tree (N) and build overview (B) (client/src/ui/skills/README.md).
 import { SkillScreen } from '../ui/skills';
 import { QuestHud } from '../ui/quests/QuestHud';
-// Playtest 2 content (CR 023): world events, lore tablets, herbs, sealed vaults, feats (client/src/ui/content/README.md).
+// Playtest 2 content (CR 023): world events, lore tablets, herbs, sealed vaults (client/src/ui/content/README.md).
 import { ContentHud } from '../ui/content/ContentHud';
+import { AchievementsHud } from '../ui/achievements/AchievementsHud'; // CR 031: the Achievements screen (Y) and unlock toasts
 // Playtest 2 camps (CR 025): P = camp menu, placement, chests, signposts, Rested (client/src/ui/camps/README.md).
 import { CampHud } from '../ui/camps/CampHud';
 import { MountHud } from '../ui/mounts/MountHud'; // CR 027 mounts
@@ -96,6 +97,7 @@ export default function PlayScreen() {
       {/* Playtest 1: quest tracker, offers with location previews, journal (J) */}
       <QuestHud />
       <ContentHud />
+      <AchievementsHud />
       <CampHud />
       <MountHud />
       <PetHud />

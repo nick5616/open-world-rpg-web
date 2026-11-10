@@ -1,4 +1,4 @@
-// Content wire glue (playtest 2, CR 023): Event kinds 1000-1029 and
+// Content wire glue (playtest 2, CR 023): Event kinds 1000-1029 (and CR 031's 1240-1241) and
 // Interact 80 (contracts/events.md). JSON for the rare, wordy ones; Event
 // 1007 (lore tablets and herb patches of an area) is binary because a
 // player walking about receives it for every new area.
@@ -6,7 +6,7 @@
 export const CEV = {
   sync: 1000,
   codex: 1001,
-  feat: 1002,
+  achievement: 1002, // CR 031 (was feat_earned)
   tablet: 1003,
   rep: 1004,
   title: 1005,
@@ -19,6 +19,9 @@ export const CEV = {
   vault: 1020,
   vaultFound: 1021,
   vaultNote: 1022,
+  // CR 031 achievements (1240-1259)
+  achievementAnnounce: 1240,
+  achievementsCaughtUp: 1241,
 } as const;
 
 export const CONTENT_INTERACT = 80;
@@ -41,7 +44,12 @@ export const EVENT_PHASE = { active: 1, won: 2, failed: 3, updated: 4 } as const
 export interface ContentSync {
   kills: Record<string, number>;
   tablets: number[];
+  /** Achievement keys earned, in earn order (CR 023 feats, CR 031 achievements). */
   feats: string[];
+  /** CR 031: key -> unix ms earned (0: before CR 031). */
+  earned: Record<string, number>;
+  /** CR 031: achievement points earned (the zone's count). */
+  points: number;
   title: string;
   stats: Record<string, number>;
   regions: number;
@@ -136,6 +144,8 @@ export function decodeSync(data: Uint8Array): ContentSync {
     kills: j.kills ?? {},
     tablets: j.tablets ?? [],
     feats: j.feats ?? [],
+    earned: j.earned ?? {},
+    points: j.points ?? 0,
     title: j.title ?? '',
     stats: j.stats ?? {},
     regions: j.regions ?? 0,

@@ -23,7 +23,7 @@ export const CENTER_HALF_PX = 260;
 export const NARROW_PX = 1080;
 
 /** Panels drawn in the middle of the screen (playtest 2): what sits in the middle or left waits under them. */
-const CENTRE_PANELS = ['camp-menu', 'camp-chest', 'camp-label', 'steed-panel', 'pet-panel', 'tablet-reader', 'quest-journal', 'quest-offer', 'inventory-panel'].map((id) => `[data-testid="${id}"]`).join(', ');
+const CENTRE_PANELS = ['camp-menu', 'camp-chest', 'camp-label', 'steed-panel', 'pet-panel', 'tablet-reader', 'quest-journal', 'quest-offer', 'inventory-panel', 'achievements-panel'].map((id) => `[data-testid="${id}"]`).join(', ');
 
 export const HUD_CSS = `
 :root {
@@ -50,7 +50,10 @@ body:has([data-ui-panel]:not([style*="display: none"])) [data-testid="town-promp
    1920x1080, 1600x900 and 1280x720). Top centre: the world event tracker sits under the clock
    pill and its forecast line (--ls-clock-h, measured), and steps aside for the big centre cards
    (level up, a new place, a catch) and anything covering the middle. */
-body:has([data-testid="levelup-fanfare"], [data-testid="discovery-intro"], [data-testid="fish-caught"], ${CENTRE_PANELS}, [data-testid="emote-wheel"], [data-testid="pet-wheel"]) [data-testid="world-event"] { visibility: hidden; }
+body:has([data-testid="levelup-fanfare"], [data-testid="discovery-intro"], [data-testid="fish-caught"], ${CENTRE_PANELS}, [data-testid="emote-wheel"], [data-testid="pet-wheel"], [data-testid="achievement-toast"]) [data-testid="world-event"] { visibility: hidden; }
+/* CR 031: the achievement toast (top centre, under the clock) takes the world event tracker's place for its few
+   seconds, and never shows over the big centre cards or a panel (ui/achievements/toasts.ts also holds it then). */
+body:has([data-testid="levelup-fanfare"], [data-testid="discovery-intro"], [data-testid="fish-caught"], [data-testid="whatsnew"], ${CENTRE_PANELS}, [data-testid="character-panel"], [data-testid="emote-wheel"], [data-testid="pet-wheel"]) [data-testid="achievement-toast"] { visibility: hidden; }
 /* Left column: content notes (top), the vault puzzle, the pet card under it (--ls-vault-h), the
    Rested strip (bottom). A centred panel or the instrument overlay covers them at 1280 wide. */
 body:has([data-testid="vault-panel"]) [data-testid="pet-card"] { top: calc(min(46vh, 420px) + var(--ls-vault-h, 130px) + 8px) !important; }

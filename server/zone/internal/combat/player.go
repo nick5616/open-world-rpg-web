@@ -157,6 +157,9 @@ type Player struct {
 	manaSentTick uint32
 	inCombatTick uint32
 	dash         dashState // CR 021: the dash allowDash allowed (dashes.go)
+	// Dashes, Slams (CR 031 achievements): dashes started and magma dives
+	// that landed; the zone reads them once a second (never sent).
+	Dashes, Slams int
 	// CR 022 (held.go): what the player holds, for other clients' visuals.
 	held      heldState
 	beam      beamRun

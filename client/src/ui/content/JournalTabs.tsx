@@ -1,24 +1,28 @@
 // The journal's content tabs (J; playtest 2, CR 023): the bestiary (codex
 // entries unlocked on a creature's first kill: stats from the combat
 // tables, weaknesses from the element table, lore from content.yaml), the
-// lore tablets read, feats and titles (choose the one on your nameplate),
+// lore tablets read, achievements and titles (CR 031: the Achievements
+// screen's list, compact; choose the title on your nameplate),
 // and renown with each town (better stock at higher tiers).
 
 import { useEffect, useState } from 'react';
 import { COMBAT, CONTENT } from '@lodestone/contracts';
 import { codexEntries, useContent } from './store';
 import { abilityOf, foodsText, tameableEnemy } from '../pets/events';
+import { AchievementsBody } from '../achievements/AchievementsScreen';
+import { openAchievements } from '../achievements/store';
+import { setJournalOpen } from '../quests/store';
 
 const GOLD = '#ffd166';
 const ELEMENTS = ['fire', 'ice', 'lightning', 'earth', 'wind', 'light', 'dark', 'void'];
 
-export type JournalTab = 'quests' | 'bestiary' | 'fish' | 'lore' | 'feats' | 'renown';
+export type JournalTab = 'quests' | 'bestiary' | 'fish' | 'lore' | 'achievements' | 'renown';
 export const JOURNAL_TABS: { key: JournalTab; label: string }[] = [
   { key: 'quests', label: 'Quests' },
   { key: 'bestiary', label: 'Bestiary' },
   { key: 'fish', label: 'Fish' },
   { key: 'lore', label: 'Lore' },
-  { key: 'feats', label: 'Feats' },
+  { key: 'achievements', label: 'Achievements' },
   { key: 'renown', label: 'Renown' },
 ];
 
@@ -196,33 +200,19 @@ function Lore() {
   );
 }
 
-function Feats() {
-  const sync = useContent((s) => s.sync);
-  const actions = useContent((s) => s.actions);
+/** CR 031: the Achievements screen's list, compact (Y opens the full screen). */
+function Achievements() {
   return (
-    <div data-testid="journal-feats" style={{ overflowY: 'auto', height: '100%' }}>
-      <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 6 }}>
-        {sync.feats.length} of {CONTENT.feats.length} feats · title: <span style={{ color: GOLD }}>{CONTENT.feats.find((f) => f.key === sync.title)?.title ?? 'none'}</span>
-        {sync.title && <button style={{ ...btn(false), marginLeft: 8 }} disabled={!actions} onClick={() => actions?.title(0)}>Hide title</button>}
+    <div data-testid="journal-achievements" style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
+      <div style={{ flex: 1, minHeight: 0 }}>
+        <AchievementsBody compact />
       </div>
-      {CONTENT.feats.map((f) => {
-        const has = sync.feats.includes(f.key);
-        const p = Math.min(f.n, sync.progress[f.key] ?? 0);
-        return (
-          <div key={f.key} data-testid={`feat-${f.key}`} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', borderBottom: '1px solid rgba(255,209,102,0.08)', opacity: has ? 1 : 0.7 }}>
-            <div style={{ width: 18, color: has ? GOLD : '#666' }}>{has ? '★' : '☆'}</div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 13, fontWeight: 600 }}>{f.name}{f.title ? <span style={{ fontWeight: 400, color: '#d9c79c' }}> · title "{f.title}"</span> : null}</div>
-              <div style={{ fontSize: 12, opacity: 0.75 }}>{f.desc}{!has && f.n > 1 ? ` (${p}/${f.n})` : ''}{f.gold ? ` · ${f.gold} gold` : ''}</div>
-            </div>
-            {has && f.title && (
-              <button style={btn(sync.title === f.key)} disabled={!actions || sync.title === f.key} onClick={() => actions?.title(f.id)}>
-                {sync.title === f.key ? 'Shown' : 'Show'}
-              </button>
-            )}
-          </div>
-        );
-      })}
+      <button data-testid="journal-open-achievements" style={{ ...btn(false), alignSelf: 'flex-end', marginTop: 6 }} onClick={() => {
+          setJournalOpen(false);
+          openAchievements();
+        }}>
+        Open the Achievements screen (Y)
+      </button>
     </div>
   );
 }
@@ -278,8 +268,8 @@ export function JournalContentTab({ tab }: { tab: Exclude<JournalTab, 'quests'> 
       return <FishJournal />;
     case 'lore':
       return <Lore />;
-    case 'feats':
-      return <Feats />;
+    case 'achievements':
+      return <Achievements />;
     case 'renown':
       return <Renown />;
   }
