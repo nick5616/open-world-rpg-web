@@ -18,9 +18,13 @@ const SIDE_KINDS = ['hunt', 'gather', 'deliver', 'explore', 'rescue'];
 const STEP_KINDS = ['talk', 'reach', 'read', 'attune', 'kill', 'clear', 'give', 'dungeon'];
 const SITE_KINDS = ['shrine', 'ruin', 'watchtower', 'tower', 'banditcamp', 'landmark', 'dungeon'];
 const TOWNS = ['home', 'next', 'far'];
-const FEAT_STATS = ['towers', 'kills', 'demons', 'regions', 'duels', 'quests', 'side', 'stories', 'events', 'dungeons', 'tablets', 'codex', 'forage', 'honored', 'level', 'bounties'];
+const FEAT_STATS = ['towers', 'kills', 'demons', 'regions', 'duels', 'quests', 'side', 'stories', 'events', 'dungeons', 'tablets', 'codex', 'forage', 'honored', 'level', 'bounties', 'fish', 'fishspecies', 'fishlegend'];
 const EVENT_KINDS = ['starfall', 'caravan', 'behemoth', 'wildhunt', 'glintfox'];
 const PUZZLES = ['levers', 'plates', 'braziers', 'font'];
+const WATERS = ['lake', 'river', 'sea'];
+const FISH_RARITIES = ['common', 'uncommon', 'rare', 'legendary'];
+const FISH_TIMES = ['any', 'day', 'night', 'dawn', 'dusk'];
+const FISH_WEATHER = ['any', 'rain', 'clear'];
 
 const range = (v, what) => {
   if (!Array.isArray(v) || v.length !== 2 || !(v[0] <= v[1]) || v[0] < 0) fail(`${what}: [min, max] with 0 <= min <= max`);
@@ -196,6 +200,59 @@ export function parseContent(doc, combat, items) {
   if (herbs.length > 15) fail('forage: at most 15 herbs');
   const forage = { cellM: fg.cellM, chance: fg.chance, regrowS: fg.regrowS, reachM: fg.reachM, herbs };
 
+  // ---- fishing (playtest 2, CR 026) ----
+  const fi = doc.fishing ?? fail('fishing: missing');
+  item(fi.rod, 'fishing.rod');
+  const rarityKeys = Object.keys(fi.rarities);
+  if (rarityKeys.join(',') !== FISH_RARITIES.join(',')) fail(`fishing.rarities: exactly ${FISH_RARITIES.join(', ')}`);
+  const fishRarities = rarityKeys.map((k, i) => ({ key: k, id: i, weight: fi.rarities[k].weight, color: fi.rarities[k].color }));
+  const species = Object.entries(fi.species).map(([key, f], i) => {
+    const it = items.items.find((x) => x.key === f.item);
+    if (!it) fail(`fishing.${key}: unknown item ${f.item}`);
+    if (!f.item.startsWith('fish:')) fail(`fishing.${key}: the item must be a fish: item`);
+    const rarity = FISH_RARITIES.indexOf(f.rarity);
+    if (rarity < 0) fail(`fishing.${key}: unknown rarity ${f.rarity}`);
+    const water = f.water.map((w) => {
+      const wi = WATERS.indexOf(w);
+      if (wi < 0) fail(`fishing.${key}: unknown water ${w}`);
+      return wi;
+    });
+    const biomes = f.biomes.includes('any')
+      ? []
+      : f.biomes.map((b) => {
+          const bi = biomeNames.indexOf(b);
+          if (bi < 0) fail(`fishing.${key}: unknown biome ${b}`);
+          return bi;
+        });
+    if (!FISH_TIMES.includes(f.time)) fail(`fishing.${key}: time must be one of ${FISH_TIMES.join(', ')}`);
+    if (!FISH_WEATHER.includes(f.weather)) fail(`fishing.${key}: weather must be one of ${FISH_WEATHER.join(', ')}`);
+    range(f.weight, `fishing.${key}.weight`);
+    const fight = f.fight ?? {};
+    for (const k of ['strength', 'erratic']) if (!(fight[k] >= 0 && fight[k] <= 1)) fail(`fishing.${key}.fight.${k}: 0..1`);
+    if (!(fight.stamina >= 1 && fight.stamina <= 12)) fail(`fishing.${key}.fight.stamina: 1..12 s`);
+    if (!f.habitat || !f.lore) fail(`fishing.${key}: habitat and lore`);
+    return { key, id: i + 1, name: f.name, item: f.item, rarity, water, biomes, time: f.time, weather: f.weather, weight: f.weight, fight: { strength: fight.strength, erratic: fight.erratic, stamina: fight.stamina }, habitat: f.habitat, lore: f.lore };
+  });
+  if (!species.length || species.length > 63) fail('fishing: 1..63 species');
+  for (const f of feats) if (f.stat === 'fishspecies' && f.n > species.length) fail(`feat ${f.key}: more species than exist`);
+  const fishing = {
+    rod: fi.rod, castM: range(fi.castM, 'fishing.castM'), minDepthM: fi.minDepthM, biteS: range(fi.biteS, 'fishing.biteS'), hookWindowMs: fi.hookWindowMs,
+    maxFightS: fi.maxFightS, castCooldownS: fi.castCooldownS, castBurst: fi.castBurst, castEveryS: fi.castEveryS, walkAwayM: fi.walkAwayM, seeM: fi.seeM,
+    waters: WATERS, times: FISH_TIMES, rarities: fishRarities, species,
+  };
+
+  // ---- emotes (playtest 2, CR 026) ----
+  const em = doc.emotes ?? fail('emotes: missing');
+  const emoteIds = new Set();
+  const emotes = Object.entries(em.list).map(([key, e]) => {
+    if (!(Number.isInteger(e.id) && e.id > 0 && e.id < 32)) fail(`emote ${key}: id 1..31`);
+    if (emoteIds.has(e.id)) fail(`emote ${key}: duplicate id ${e.id}`);
+    emoteIds.add(e.id);
+    if (!e.loop && !(e.durS > 0)) fail(`emote ${key}: durS or loop`);
+    return { key, id: e.id, name: e.name, durS: e.durS ?? 0, loop: !!e.loop, system: !!e.system };
+  });
+  const emoteDefs = { seeM: em.seeM, burst: em.burst, everyS: em.everyS, list: emotes };
+
   return {
     version: doc.version,
     reputation: { tiers, shops: SHOPS, wares },
@@ -207,6 +264,8 @@ export function parseContent(doc, combat, items) {
     codex,
     feats,
     forage,
+    fishing,
+    emotes: emoteDefs,
     roles: ROLES,
   };
 }
@@ -224,6 +283,9 @@ export interface TabletDef { key: string; id: number; title: string; text: strin
 export interface CodexDef { key: string; enemyId: number; habitat: string; lore: string }
 export interface FeatDef { key: string; id: number; name: string; desc: string; stat: string; n: number; gold: number; xp: number; title: string }
 export interface HerbDef { key: string; id: number; item: string; name: string; biomes: number[]; color: string; weight: number }
+export interface FishDef { key: string; id: number; name: string; item: string; rarity: number; water: number[]; biomes: number[]; time: 'any' | 'day' | 'night' | 'dawn' | 'dusk'; weather: 'any' | 'rain' | 'clear'; weight: [number, number]; fight: { strength: number; erratic: number; stamina: number }; habitat: string; lore: string }
+export interface FishingDefs { rod: string; castM: [number, number]; minDepthM: number; biteS: [number, number]; hookWindowMs: number; maxFightS: number; castCooldownS: number; castBurst: number; castEveryS: number; walkAwayM: number; seeM: number; waters: string[]; times: string[]; rarities: { key: string; id: number; weight: number; color: string }[]; species: FishDef[] }
+export interface EmoteDef { key: string; id: number; name: string; durS: number; loop: boolean; system: boolean }
 export interface ContentDefs {
   version: number;
   reputation: { tiers: RepTierDef[]; shops: string[]; wares: { item: string; price: number; stock: number }[][][] };
@@ -235,6 +297,8 @@ export interface ContentDefs {
   codex: CodexDef[];
   feats: FeatDef[];
   forage: { cellM: number; chance: number; regrowS: number; reachM: number; herbs: HerbDef[] };
+  fishing: FishingDefs;
+  emotes: { seeM: number; burst: number; everyS: number; list: EmoteDef[] };
   roles: string[];
 }
 `;

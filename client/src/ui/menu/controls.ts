@@ -95,7 +95,9 @@ export function controlGroups(debug: boolean): ControlGroup[] {
       rows: [
         { keys: ['E'], action: 'Talk, trade, open doors, use forges, mine, pick up', src: [['world/buildings/townHud.ts', "'KeyE'"], ['ui/inventory/LootHud.tsx', "'KeyE'"], ['world/caves/caveManager.ts', "'KeyE'"]] },
         { keys: ['M'], action: 'Map', src: [['ui/map/ExplorationHud.tsx', "'KeyM'"]] },
-        { keys: ['J'], action: 'Quest journal', src: [['ui/quests/QuestHud.tsx', "'KeyJ'"]] },
+        { keys: ['J'], action: 'Quest journal', note: 'bestiary, fish, lore, feats, renown', src: [['ui/quests/QuestHud.tsx', "'KeyJ'"]] },
+        { keys: ['E'], action: 'Fish: cast, strike, hold to reel', note: 'with a fishing rod, facing deep water', src: [['ui/fishing/FishingHud.tsx', "'KeyE'"]] },
+        { keys: ['L'], action: 'Photo mode', note: 'free camera, no HUD, Enter saves a PNG', src: [['ui/photo/PhotoMode.tsx', "'KeyL'"]] },
       ],
     },
     {
@@ -121,6 +123,7 @@ export function controlGroups(debug: boolean): ControlGroup[] {
       title: 'Other people',
       rows: [
         { keys: ['Enter'], action: 'Chat', note: '/ starts a command (/help)', src: [['social/ui/ChatPanel.tsx', "'Enter'"]] },
+        { keys: ['H'], action: 'Emote wheel (hold)', note: 'tap for the last one; /emote in chat', src: [['ui/emotes/EmoteWheel.tsx', "'KeyH'"]] },
         { keys: ['O'], action: 'Friends', src: [['social/ui/SocialOverlay.tsx', "'KeyO'"]] },
         { keys: ['V'], action: 'Push to talk (hold)', note: 'when voice is on push-to-talk', src: [['voice/runtime.ts', "'KeyV'"]] },
         { keys: ['Y', 'U'], action: 'Accept / decline a duel', src: [['ui/pvp/PvpHud.tsx', "'KeyY'"], ['ui/pvp/PvpHud.tsx', "'KeyU'"]] },

@@ -17,7 +17,9 @@ import * as THREE from 'three';
 import { EntityKind, type Event as ZoneEvent } from '@lodestone/contracts';
 import { netStats } from '../state/live';
 import { Avatar, FullRigBudget } from './avatar';
-import { EV_MINE_SWING, followCaster } from './avatarAnim';
+import { EV_MINE_SWING, followCaster, followEmote } from './avatarAnim';
+import { liveAvatars } from './avatar';
+import { emoteOf } from '../ui/emotes/store';
 import { drawnRemotes } from './netStore';
 import type { RemoteView } from './interpolation';
 import type { ZoneSession } from './zoneSession';
@@ -66,7 +68,10 @@ export function RemotePlayers({ session }: { session: ZoneSession }) {
     return () => {
       castHooks.weaponOf = null;
       castHooks.gemOf = null;
-      for (const a of avatars.values()) a.dispose();
+      for (const [id, a] of avatars) {
+        a.dispose();
+        if (liveAvatars.get(id) === a) liveAvatars.delete(id);
+      }
       avatars.clear();
     };
   }, [avatars]);
@@ -75,7 +80,7 @@ export function RemotePlayers({ session }: { session: ZoneSession }) {
     if (!DEBUG || typeof window === 'undefined') return;
     // Headless captures: what each remote avatar is doing.
     (window as unknown as { __lodestoneAvatars?: unknown }).__lodestoneAvatars = () =>
-      [...avatars.values()].map((a) => ({ id: a.id, action: a.anim.current, held: a.anim.heldSpec?.kind ?? null, bodyPitch: a.pose.bodyPitch, animLevel: a.animLevel, lod: a.lodLevel, weapon: a.weaponKind, x: a.root.position.x, y: a.root.position.y, z: a.root.position.z, glow: a.pose.glow, bowDraw: a.pose.bowDraw }));
+      [...avatars.values()].map((a) => ({ id: a.id, action: a.anim.current, held: a.anim.heldSpec?.kind ?? null, bodyPitch: a.pose.bodyPitch, animLevel: a.animLevel, lod: a.lodLevel, weapon: a.weaponKind, x: a.root.position.x, y: a.root.position.y, z: a.root.position.z, glow: a.pose.glow, bowDraw: a.pose.bowDraw, emote: a.anim.currentEmote, rod: a.pose.rod, fish: a.pose.fish }));
   }, [avatars]);
 
   useEffect(() => {
@@ -105,11 +110,13 @@ export function RemotePlayers({ session }: { session: ZoneSession }) {
       if (!a) {
         a = new Avatar(v.id);
         avatars.set(v.id, a);
+        liveAvatars.set(v.id, a);
         group.add(a.root);
       }
       // CR 022: their caster record (drawn look, casting bit, interpolation delay), then the pose from it.
       castState.activity(v.id, v.activity, v.yaw, v.pitch, v.delayMs, now, spellFx);
       followCaster(a.anim, castState.peek(v.id), a.weaponKind);
+      followEmote(a.anim, emoteOf(v.id)); // playtest 2: emotes and the fishing pose (Event 1090, ui/emotes)
       a.update(v, camera, delta, fullM);
       if (a.animLevel === 0) budget.full++;
     }
@@ -118,6 +125,7 @@ export function RemotePlayers({ session }: { session: ZoneSession }) {
         group.remove(a.root);
         a.dispose();
         avatars.delete(id);
+        if (liveAvatars.get(id) === a) liveAvatars.delete(id);
         castState.forget(id);
       }
     }

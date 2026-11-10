@@ -11,7 +11,7 @@ export type Command =
   | { kind: 'openWhisper'; to: string }
   | { kind: 'help' }
   /** Playtest 2: a zone-side verb (/pvp, /duel, /yield) for the game's handler (session.ts setGameCommandHandler). */
-  | { kind: 'game'; verb: 'pvp' | 'duel' | 'yield'; args: string }
+  | { kind: 'game'; verb: 'pvp' | 'duel' | 'yield' | 'emote'; args: string }
   | { kind: 'error'; message: string }
   | { kind: 'none' };
 
@@ -23,6 +23,7 @@ export const HELP_LINES = [
   '/mute Name · /unmute Name · /block Name · /unblock Name',
   '/report Name [reason] · /filter on|off',
   '/pvp [on|off] · /duel Name (a party member) · /duel accept|decline · /yield',
+  '/emote name (wave, bow, cheer, point, sit, dance, laugh, shrug, salute, rest) · /emote alone lists them · hold H for the wheel',
 ];
 
 const CHANNEL_ALIASES: Record<string, Channel> = {
@@ -115,6 +116,10 @@ export function parseInput(raw: string, ctx: InputContext): Command {
     case 'yield':
     case 'forfeit':
       return { kind: 'game', verb: 'yield', args: rest };
+    case 'emote':
+    case 'em':
+    case 'e':
+      return { kind: 'game', verb: 'emote', args: rest }; // playtest 2 emotes (ui/emotes)
   }
   if (cmd in NAME_VERBS) {
     const [name] = splitFirst(rest);

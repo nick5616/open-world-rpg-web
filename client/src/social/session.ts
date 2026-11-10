@@ -103,6 +103,13 @@ export function setGameCommandHandler(fn: ((verb: string, args: string) => strin
   gameCommand = fn;
 }
 
+// Playtest 2: /emote goes to the emote link (ui/emotes/link.ts); it returns an error line or null.
+let emoteCommand: ((args: string) => string | null) | null = null;
+
+export function setEmoteCommandHandler(fn: ((args: string) => string | null) | null): void {
+  emoteCommand = fn;
+}
+
 /** Run one line from the chat input. Returns true if the input should be cleared. */
 export function submitChatInput(text: string): boolean {
   const s = useSocialStore.getState();
@@ -120,7 +127,8 @@ export function submitChatInput(text: string): boolean {
       s.openWhisper(cmd.to);
       return true;
     case 'game': {
-      const err = gameCommand ? gameCommand(cmd.verb, cmd.args) : 'Not in the world.';
+      const handler = cmd.verb === 'emote' ? (emoteCommand ? (_v: string, a: string) => emoteCommand!(a) : null) : gameCommand;
+      const err = handler ? handler(cmd.verb, cmd.args) : 'Not in the world.';
       if (err) s.localNotice(err, 'error');
       return true;
     }

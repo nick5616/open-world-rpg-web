@@ -1623,6 +1623,50 @@
    "gold": 50,
    "xp": 0,
    "title": ""
+  },
+  {
+   "key": "first_catch",
+   "id": 26,
+   "name": "Hooked",
+   "desc": "Land your first fish",
+   "stat": "fish",
+   "n": 1,
+   "gold": 10,
+   "xp": 30,
+   "title": ""
+  },
+  {
+   "key": "angler",
+   "id": 27,
+   "name": "Angler",
+   "desc": "Land 50 fish",
+   "stat": "fish",
+   "n": 50,
+   "gold": 60,
+   "xp": 300,
+   "title": "the Angler"
+  },
+  {
+   "key": "fishwise",
+   "id": 28,
+   "name": "Master of the Waters",
+   "desc": "Catch every kind of fish",
+   "stat": "fishspecies",
+   "n": 14,
+   "gold": 200,
+   "xp": 900,
+   "title": "Master of the Waters"
+  },
+  {
+   "key": "tall_tale",
+   "id": 29,
+   "name": "Tall Tale",
+   "desc": "Land a legendary fish",
+   "stat": "fishlegend",
+   "n": 1,
+   "gold": 100,
+   "xp": 400,
+   "title": "the Teller of Tall Tales"
   }
  ],
  "forage": {
@@ -1708,6 +1752,542 @@
     ],
     "color": "#8a6a44",
     "weight": 3
+   }
+  ]
+ },
+ "fishing": {
+  "rod": "tool:fishing_rod",
+  "castM": [
+   3,
+   22
+  ],
+  "minDepthM": 0.45,
+  "biteS": [
+   3,
+   10
+  ],
+  "hookWindowMs": 1200,
+  "maxFightS": 90,
+  "castCooldownS": 1.5,
+  "castBurst": 6,
+  "castEveryS": 4,
+  "walkAwayM": 3,
+  "seeM": 48,
+  "waters": [
+   "lake",
+   "river",
+   "sea"
+  ],
+  "times": [
+   "any",
+   "day",
+   "night",
+   "dawn",
+   "dusk"
+  ],
+  "rarities": [
+   {
+    "key": "common",
+    "id": 0,
+    "weight": 10,
+    "color": "#c9d1d9"
+   },
+   {
+    "key": "uncommon",
+    "id": 1,
+    "weight": 3.5,
+    "color": "#5fd16b"
+   },
+   {
+    "key": "rare",
+    "id": 2,
+    "weight": 1,
+    "color": "#4aa3ff"
+   },
+   {
+    "key": "legendary",
+    "id": 3,
+    "weight": 0.25,
+    "color": "#ffb02e"
+   }
+  ],
+  "species": [
+   {
+    "key": "silverfin",
+    "id": 1,
+    "name": "Silverfin Minnow",
+    "item": "fish:silverfin",
+    "rarity": 0,
+    "water": [
+     1,
+     0
+    ],
+    "biomes": [],
+    "time": "any",
+    "weather": "any",
+    "weight": [
+     0.05,
+     0.3
+    ],
+    "fight": {
+     "strength": 0.2,
+     "erratic": 0.25,
+     "stamina": 2
+    },
+    "habitat": "Rivers and lakes everywhere",
+    "lore": "Every child's first fish. They school in the shallows and flash like dropped coins."
+   },
+   {
+    "key": "reed_perch",
+    "id": 2,
+    "name": "Reed Perch",
+    "item": "fish:reed_perch",
+    "rarity": 0,
+    "water": [
+     0
+    ],
+    "biomes": [
+     0,
+     1,
+     5
+    ],
+    "time": "day",
+    "weather": "any",
+    "weight": [
+     0.2,
+     1.2
+    ],
+    "fight": {
+     "strength": 0.35,
+     "erratic": 0.3,
+     "stamina": 2.6
+    },
+    "habitat": "Reedy lowland lakes, by day",
+    "lore": "Striped green and gold to hide in the reeds. Bold, hungry and not very clever."
+   },
+   {
+    "key": "speckled_trout",
+    "id": 3,
+    "name": "Speckled Trout",
+    "item": "fish:speckled_trout",
+    "rarity": 0,
+    "water": [
+     1
+    ],
+    "biomes": [
+     1,
+     2,
+     0,
+     3
+    ],
+    "time": "any",
+    "weather": "any",
+    "weight": [
+     0.4,
+     2.5
+    ],
+    "fight": {
+     "strength": 0.45,
+     "erratic": 0.45,
+     "stamina": 3
+    },
+    "habitat": "Cold, quick rivers",
+    "lore": "It holds in the current behind a stone and takes whatever the river brings it."
+   },
+   {
+    "key": "mudback_carp",
+    "id": 4,
+    "name": "Mudback Carp",
+    "item": "fish:mudback_carp",
+    "rarity": 0,
+    "water": [
+     0
+    ],
+    "biomes": [
+     5,
+     0,
+     4,
+     1
+    ],
+    "time": "any",
+    "weather": "any",
+    "weight": [
+     1,
+     8
+    ],
+    "fight": {
+     "strength": 0.55,
+     "erratic": 0.2,
+     "stamina": 3.6
+    },
+    "habitat": "Warm, muddy lakes",
+    "lore": "Old, heavy and patient. A mudback carp can live longer than the angler who hooks it."
+   },
+   {
+    "key": "tidewing_mackerel",
+    "id": 5,
+    "name": "Tidewing Mackerel",
+    "item": "fish:tidewing_mackerel",
+    "rarity": 0,
+    "water": [
+     2
+    ],
+    "biomes": [],
+    "time": "any",
+    "weather": "any",
+    "weight": [
+     0.3,
+     1.6
+    ],
+    "fight": {
+     "strength": 0.5,
+     "erratic": 0.6,
+     "stamina": 2.6
+    },
+    "habitat": "The open sea",
+    "lore": "Its fins are long enough to glide a little above the waves when it is chased."
+   },
+   {
+    "key": "sandflat_flounder",
+    "id": 6,
+    "name": "Sandflat Flounder",
+    "item": "fish:sandflat_flounder",
+    "rarity": 0,
+    "water": [
+     2
+    ],
+    "biomes": [],
+    "time": "day",
+    "weather": "any",
+    "weight": [
+     0.4,
+     3
+    ],
+    "fight": {
+     "strength": 0.4,
+     "erratic": 0.25,
+     "stamina": 3
+    },
+    "habitat": "Sandy sea shallows, by day",
+    "lore": "Both its eyes are on one side. It does not seem bothered by this."
+   },
+   {
+    "key": "bog_pike",
+    "id": 7,
+    "name": "Bog Pike",
+    "item": "fish:bog_pike",
+    "rarity": 1,
+    "water": [
+     0,
+     1
+    ],
+    "biomes": [
+     5,
+     1
+    ],
+    "time": "dusk",
+    "weather": "any",
+    "weight": [
+     2,
+     12
+    ],
+    "fight": {
+     "strength": 0.7,
+     "erratic": 0.55,
+     "stamina": 3.8
+    },
+    "habitat": "Wetland and forest waters at dusk",
+    "lore": "A mouth full of needles and a temper to match. It strikes at anything that moves in the evening light."
+   },
+   {
+    "key": "frostgill_char",
+    "id": 8,
+    "name": "Frostgill Char",
+    "item": "fish:frostgill_char",
+    "rarity": 1,
+    "water": [
+     0,
+     1
+    ],
+    "biomes": [
+     3,
+     2
+    ],
+    "time": "any",
+    "weather": "any",
+    "weight": [
+     0.8,
+     5
+    ],
+    "fight": {
+     "strength": 0.6,
+     "erratic": 0.4,
+     "stamina": 3.4
+    },
+    "habitat": "Ice-cold mountain lakes and streams",
+    "lore": "Its gills are rimmed with frost even in summer. The highland folk say it keeps the water cold."
+   },
+   {
+    "key": "emberscale_loach",
+    "id": 9,
+    "name": "Emberscale Loach",
+    "item": "fish:emberscale_loach",
+    "rarity": 1,
+    "water": [
+     1,
+     0
+    ],
+    "biomes": [
+     4,
+     2
+    ],
+    "time": "day",
+    "weather": "clear",
+    "weight": [
+     0.2,
+     1
+    ],
+    "fight": {
+     "strength": 0.55,
+     "erratic": 0.8,
+     "stamina": 2.8
+    },
+    "habitat": "Warm badland waters under a clear sky",
+    "lore": "Its scales are warm to the touch. Cooks swear it seasons itself."
+   },
+   {
+    "key": "gloam_eel",
+    "id": 10,
+    "name": "Gloam Eel",
+    "item": "fish:gloam_eel",
+    "rarity": 1,
+    "water": [
+     0,
+     1,
+     2
+    ],
+    "biomes": [],
+    "time": "night",
+    "weather": "any",
+    "weight": [
+     0.8,
+     4
+    ],
+    "fight": {
+     "strength": 0.65,
+     "erratic": 0.75,
+     "stamina": 3.6
+    },
+    "habitat": "Any water, only at night",
+    "lore": "It rises when the Unsung walk and glows faintly when it is afraid. It is usually afraid."
+   },
+   {
+    "key": "stormray",
+    "id": 11,
+    "name": "Stormray",
+    "item": "fish:stormray",
+    "rarity": 2,
+    "water": [
+     2
+    ],
+    "biomes": [],
+    "time": "any",
+    "weather": "rain",
+    "weight": [
+     4,
+     20
+    ],
+    "fight": {
+     "strength": 0.8,
+     "erratic": 0.6,
+     "stamina": 4.4
+    },
+    "habitat": "The sea, in the rain",
+    "lore": "It comes to the surface when lightning is near and drinks the rain. Its sting tingles for days."
+   },
+   {
+    "key": "moonlit_koi",
+    "id": 12,
+    "name": "Moonlit Koi",
+    "item": "fish:moonlit_koi",
+    "rarity": 2,
+    "water": [
+     0
+    ],
+    "biomes": [
+     0,
+     1,
+     5
+    ],
+    "time": "night",
+    "weather": "clear",
+    "weight": [
+     1,
+     6
+    ],
+    "fight": {
+     "strength": 0.6,
+     "erratic": 0.5,
+     "stamina": 4
+    },
+    "habitat": "Still lowland lakes on clear nights",
+    "lore": "White and silver like the moon on the water. They say each one remembers a wish."
+   },
+   {
+    "key": "humming_sturgeon",
+    "id": 13,
+    "name": "Humming Sturgeon",
+    "item": "fish:humming_sturgeon",
+    "rarity": 3,
+    "water": [
+     0,
+     1
+    ],
+    "biomes": [
+     2,
+     3,
+     1
+    ],
+    "time": "dawn",
+    "weather": "any",
+    "weight": [
+     20,
+     80
+    ],
+    "fight": {
+     "strength": 0.9,
+     "erratic": 0.5,
+     "stamina": 6
+    },
+    "habitat": "Deep highland water at dawn",
+    "lore": "Older than the towers. It hums the Lodestone's note under the water, and the rod hums with it."
+   },
+   {
+    "key": "deepmaw",
+    "id": 14,
+    "name": "Deepmaw",
+    "item": "fish:deepmaw",
+    "rarity": 3,
+    "water": [
+     2
+    ],
+    "biomes": [],
+    "time": "night",
+    "weather": "rain",
+    "weight": [
+     40,
+     160
+    ],
+    "fight": {
+     "strength": 1,
+     "erratic": 0.7,
+     "stamina": 7
+    },
+    "habitat": "The open sea on a stormy night",
+    "lore": "Sailors' stories call it a reef until it opens its mouth. Nobody believes the ones who say they landed it."
+   }
+  ]
+ },
+ "emotes": {
+  "seeM": 48,
+  "burst": 3,
+  "everyS": 1.5,
+  "list": [
+   {
+    "key": "wave",
+    "id": 1,
+    "name": "Wave",
+    "durS": 2.2,
+    "loop": false,
+    "system": false
+   },
+   {
+    "key": "bow",
+    "id": 2,
+    "name": "Bow",
+    "durS": 2,
+    "loop": false,
+    "system": false
+   },
+   {
+    "key": "cheer",
+    "id": 3,
+    "name": "Cheer",
+    "durS": 2.4,
+    "loop": false,
+    "system": false
+   },
+   {
+    "key": "point",
+    "id": 4,
+    "name": "Point",
+    "durS": 1.8,
+    "loop": false,
+    "system": false
+   },
+   {
+    "key": "sit",
+    "id": 5,
+    "name": "Sit",
+    "durS": 0,
+    "loop": true,
+    "system": false
+   },
+   {
+    "key": "dance",
+    "id": 6,
+    "name": "Dance",
+    "durS": 0,
+    "loop": true,
+    "system": false
+   },
+   {
+    "key": "laugh",
+    "id": 7,
+    "name": "Laugh",
+    "durS": 2.4,
+    "loop": false,
+    "system": false
+   },
+   {
+    "key": "shrug",
+    "id": 8,
+    "name": "Shrug",
+    "durS": 1.6,
+    "loop": false,
+    "system": false
+   },
+   {
+    "key": "salute",
+    "id": 9,
+    "name": "Salute",
+    "durS": 2,
+    "loop": false,
+    "system": false
+   },
+   {
+    "key": "rest",
+    "id": 10,
+    "name": "Rest by the fire",
+    "durS": 0,
+    "loop": true,
+    "system": false
+   },
+   {
+    "key": "fishing",
+    "id": 20,
+    "name": "Fishing",
+    "durS": 0,
+    "loop": true,
+    "system": true
+   },
+   {
+    "key": "show_catch",
+    "id": 21,
+    "name": "Show a catch",
+    "durS": 2.6,
+    "loop": false,
+    "system": true
    }
   ]
  },

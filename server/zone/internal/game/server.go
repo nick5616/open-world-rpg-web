@@ -144,7 +144,8 @@ type Server struct {
 	held     []transport.Holder // WP19b: connections held for this tick (inputs.go)
 	byChar   map[string]*session
 	parties  map[uint32][]*Entity
-	grid     *aoi.Grid // players (and anything with a party id): far ring reach
+	emoters  map[*session]struct{} // playtest 2: sessions holding a looping emote or a line (emotes.go)
+	grid     *aoi.Grid             // players (and anything with a party id): far ring reach
 	// gridOthers holds every other entity (WP19, snapshots.go gridFor):
 	// they are never sent beyond the mid ring, so clients query it 200 m out.
 	gridOthers *aoi.Grid
@@ -357,6 +358,7 @@ func (s *Server) onTick() {
 	s.contentTick(tick)     // CR 023 content: regions, feats, titles, places, followers, world events, vaults (content.go)
 	s.campsTick(tick)       // CR 025 camps: piece areas, Rested, owner visits, decay, fires (camps.go)
 	s.friendTravelTick(now) // playtest 2: travel-to-friend channels (friendtravel.go)
+	s.emotesTick(tick)      // playtest 2: looping emotes and lines in the water (emotes.go, fishing.go)
 	s.phases.mark(phNight)
 
 	// Quantize once per entity and rebuild the grid; every client's snapshot
@@ -537,6 +539,7 @@ func (s *Server) leave(sess *session) {
 	s.questsLeave(sess)  // quests: log save (quests.go)
 	s.contentLeave(sess) // CR 023 (content.go)
 	s.campLeave(sess)    // CR 025 (camps.go)
+	s.emotesLeave(sess)  // playtest 2: emotes, fishing (emotes.go)
 	if s.cfg.Queue != nil {
 		s.checkpoint(e)
 	}

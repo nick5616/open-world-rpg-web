@@ -17,18 +17,19 @@ import (
 // title, counters for feats, vaults discovered and their chest timers, and
 // herb patches picked (with their regrow time).
 type State struct {
-	V        int              `json:"v"`
-	Rep      map[string]int   `json:"rep,omitempty"`      // settlement index -> reputation
-	Givers   map[string]int   `json:"givers,omitempty"`   // "settlement:npc" -> next request seq
-	Kills    map[string]int   `json:"kills,omitempty"`    // enemy key -> kills (codex: > 0 unlocked)
-	Families map[string]int   `json:"families,omitempty"` // combat family -> kills
-	Tablets  []int            `json:"tablets,omitempty"`  // tablet ids read
-	Feats    []string         `json:"feats,omitempty"`    // feat keys earned
-	Title    string           `json:"title,omitempty"`    // feat key whose title shows on the nameplate
-	Stats    map[string]int   `json:"stats,omitempty"`    // counters: duels, events, dungeons, forage, side, stories, bounties, demons, kills
-	Regions  uint32           `json:"regions,omitempty"`  // bit r = walked in atlas region r
-	Vaults   map[string]int64 `json:"vaults,omitempty"`   // atlas site -> last chest (unix ms; 0 = discovered)
-	Forage   map[string]int64 `json:"forage,omitempty"`   // herb patch id -> regrows at (unix ms)
+	V        int               `json:"v"`
+	Rep      map[string]int    `json:"rep,omitempty"`      // settlement index -> reputation
+	Givers   map[string]int    `json:"givers,omitempty"`   // "settlement:npc" -> next request seq
+	Kills    map[string]int    `json:"kills,omitempty"`    // enemy key -> kills (codex: > 0 unlocked)
+	Families map[string]int    `json:"families,omitempty"` // combat family -> kills
+	Tablets  []int             `json:"tablets,omitempty"`  // tablet ids read
+	Feats    []string          `json:"feats,omitempty"`    // feat keys earned
+	Title    string            `json:"title,omitempty"`    // feat key whose title shows on the nameplate
+	Stats    map[string]int    `json:"stats,omitempty"`    // counters: duels, events, dungeons, forage, side, stories, bounties, demons, kills
+	Regions  uint32            `json:"regions,omitempty"`  // bit r = walked in atlas region r
+	Vaults   map[string]int64  `json:"vaults,omitempty"`   // atlas site -> last chest (unix ms; 0 = discovered)
+	Forage   map[string]int64  `json:"forage,omitempty"`   // herb patch id -> regrows at (unix ms)
+	Fish     map[string][2]int `json:"fish,omitempty"`     // playtest 2 fishing: species key -> [landed, best weight g]
 	dirty    bool
 }
 
@@ -84,6 +85,29 @@ func (s *State) Kill(enemy, family string, demon bool) (first bool) {
 		bump(&s.Stats, "kills", 1)
 	}
 	return first
+}
+
+// Landed records a fish landed (playtest 2 fishing): first reports a new
+// species (a new codex entry), record a new best weight for it. The fish
+// counter (feat stat "fish") and, for a legendary, "fishlegend" go up.
+func (s *State) Landed(species string, weightG int, legendary bool) (first, record bool) {
+	s.dirty = true
+	if s.Fish == nil {
+		s.Fish = map[string][2]int{}
+	}
+	r, had := s.Fish[species]
+	first = !had
+	record = had && weightG > r[1]
+	r[0]++
+	if weightG > r[1] {
+		r[1] = weightG
+	}
+	s.Fish[species] = r
+	bump(&s.Stats, "fish", 1)
+	if legendary {
+		bump(&s.Stats, "fishlegend", 1)
+	}
+	return first, record
 }
 
 // Codex is the number of creatures in the codex.
@@ -266,6 +290,8 @@ func (s *State) Stat2(stat string) int {
 		return len(s.Tablets)
 	case stat == "codex":
 		return s.Codex()
+	case stat == "fishspecies":
+		return len(s.Fish)
 	case stat == "honored":
 		return s.Honored()
 	case stat == "quests":

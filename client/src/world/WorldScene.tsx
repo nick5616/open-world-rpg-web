@@ -28,6 +28,7 @@ import { makeSkyLighting, skyLighting, sunVisibility } from './sky/atmosphere';
 import { SunShadows } from './sky/sunShadows';
 import { RainStreaks } from './sky/rainStreaks';
 import { PostFX } from './post/postfx';
+import { photoLive, usePhoto } from '../ui/photo/store';
 import { advanceWind, setPrevailingWind, windUniforms } from './wind';
 // Playtest 2 graphics styles: per-frame uniforms, no recompiles (style/styles.ts).
 import { liveStyle, STYLES } from './style/styles';
@@ -287,7 +288,10 @@ export function WorldScene({ runtime }: Props) {
     world.sky.uniforms.uSkyStyle.value.set(st.skySat * (1 - 0.35 * rain), st.skyBright * (1 - 0.25 * rain), st.skyBands, st.retro ? 0 : 0.6 * (1 - rain));
     world.waterU.uWaterStyle.value.set(st.waterTurquoise * (1 - 0.6 * rain), st.waterFoam, st === STYLES.lodestone ? 0.25 : 0, 0);
     // Light and sky for this time of day.
-    const L = skyLighting(worldClock.timeOfDayS, world.lighting);
+    // Playtest 2 photo mode: a client-only time-of-day preview of the light (the world clock itself runs on).
+    const ph = usePhoto.getState();
+    const tod = ph.active && ph.hour !== null ? (ph.hour / 24) * DAY_LENGTH_S : worldClock.timeOfDayS;
+    const L = skyLighting(tod, world.lighting);
     L.lightIntensity *= 1 - 0.55 * rain;
     L.hemiIntensity *= 1 - 0.2 * rain;
     world.sky.uniforms.uSunDir.value.copy(L.sunDir);
@@ -308,7 +312,7 @@ export function WorldScene({ runtime }: Props) {
     if (f) {
       f.sun.update(camera, L.lightDir, L.lightColor, L.lightIntensity * (1 - under));
       // Valley fog: thick at dawn, thin by midday, a little back at dusk.
-      const hour = (worldClock.timeOfDayS / DAY_LENGTH_S) * 24;
+      const hour = (tod / DAY_LENGTH_S) * 24;
       const morning = Math.exp(-(((hour - 6.5) / 1.8) ** 2));
       const evening = Math.exp(-(((hour - 19) / 1.5) ** 2)) * 0.4;
       const fogU = f.post.fog;
@@ -342,6 +346,10 @@ export function WorldScene({ runtime }: Props) {
       // The style's screen pass: outlines (thickness in internal pixels), posterize, vignette, dithered quantize.
       f.post.style.outline.set(st.outline, Math.max(1, gl.getPixelRatio() * 1.3), 0.04, 260);
       f.post.style.look.set(st.posterize, st.vignette, st.quantize, st.quantize > 0 ? 1 : 0);
+      // Playtest 2 photo mode: depth of field, vignette, grain (a pass that only runs in photo mode).
+      const phOn = ph.active && (ph.dof > 0 || ph.vignette > 0 || ph.grain > 0);
+      f.post.setPhoto(phOn);
+      if (phOn) f.post.photo.photo.set(ph.dof, ph.focusM > 0 ? ph.focusM : photoLive.autoFocusM, ph.vignette, ph.grain);
       // Grade: time of day, then the biome under the player (eased, so crossing a border is a drift, not a cut).
       const gr = f.post.grade;
       const day = L.day;

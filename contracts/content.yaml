@@ -397,6 +397,11 @@ feats:
   green_thumb: {name: Green Thumb, desc: "Gather 50 herbs", stat: forage, n: 50, gold: 30, xp: 150, title: Green Thumb}
   honored_guest: {name: Honored Guest, desc: "Become honored in a town", stat: honored, n: 1, gold: 60, xp: 300, title: the Honored}
   seasoned: {name: Seasoned, desc: "Reach level 10", stat: level, n: 10, gold: 50, xp: 0}
+  # playtest 2 fishing (CR 026): fish (fish landed), fishspecies (kinds caught), fishlegend (legendary fish landed)
+  first_catch: {name: Hooked, desc: "Land your first fish", stat: fish, n: 1, gold: 10, xp: 30}
+  angler: {name: Angler, desc: "Land 50 fish", stat: fish, n: 50, gold: 60, xp: 300, title: the Angler}
+  fishwise: {name: Master of the Waters, desc: "Catch every kind of fish", stat: fishspecies, n: 14, gold: 200, xp: 900, title: Master of the Waters}
+  tall_tale: {name: Tall Tale, desc: "Land a legendary fish", stat: fishlegend, n: 1, gold: 100, xp: 400, title: the Teller of Tall Tales}
 
 # ---- herb foraging (picked by hand with E, regrow per character) ----
 forage:
@@ -412,3 +417,87 @@ forage:
     duskpetal: {item: herb:duskpetal, biomes: [meadow, forest, highlands], color: '#9a6bff', weight: 2}
     # playtest 2 camps (CR 025): fallen branches, gathered like herbs; camp kits and campfire fuel
     deadfall: {item: wood:firewood, biomes: [meadow, forest, highlands, wetland, badlands], color: '#8a6a44', weight: 3}
+
+# ---- fishing (playtest 2 "fishing"; docs/cr/026-fishing-emotes-photo.md) ----
+# Cast a rod (items.yaml tool:fishing_rod) at open water: a lake, a river or
+# the sea (the atlas node flags under the bobber; worldgen/README.md NODEP).
+# The zone rolls the catch when the line lands (seeded: world seed, the
+# character, the cast count), from the species that live in that water,
+# biome, hour and weather, weighted by rarity. The bite comes after
+# `biteS`; hook it within `hookWindowMs`; then the reel minigame
+# (client/src/ui/fishing/minigame.ts): the fish pulls in bursts
+# (strength, erratic), reeling raises the line's tension, and about
+# `stamina` seconds of reeling against a calm fish land it. The zone checks
+# the fight took at least the fastest possible time (1250 ms x stamina).
+#   water: lake, river, sea · biomes: any, or atlas biome names
+#   time: any, day (06-19), night (19-06), dawn (04:30-08:30), dusk (17-21)
+#   weather: any, rain, clear · weight: kg [min, max] (skewed small)
+fishing:
+  rod: tool:fishing_rod
+  castM: [3, 22]        # bobber distance from the angler (horizontal)
+  minDepthM: 0.45       # water at least this deep under the bobber
+  biteS: [3, 10]
+  hookWindowMs: 1200
+  maxFightS: 90
+  castCooldownS: 1.5
+  castBurst: 6          # casts in a burst, then one per castEveryS
+  castEveryS: 4
+  walkAwayM: 3          # moving this far from where you cast reels the line in
+  seeM: 48              # others within this see you fishing (the emote event)
+  rarities:
+    common: {weight: 10, color: '#c9d1d9'}
+    uncommon: {weight: 3.5, color: '#5fd16b'}
+    rare: {weight: 1.0, color: '#4aa3ff'}
+    legendary: {weight: 0.25, color: '#ffb02e'}
+  species:
+    silverfin: {name: Silverfin Minnow, item: fish:silverfin, rarity: common, water: [river, lake], biomes: [any], time: any, weather: any, weight: [0.05, 0.3], fight: {strength: 0.2, erratic: 0.25, stamina: 2.0},
+      habitat: "Rivers and lakes everywhere", lore: "Every child's first fish. They school in the shallows and flash like dropped coins."}
+    reed_perch: {name: Reed Perch, item: fish:reed_perch, rarity: common, water: [lake], biomes: [meadow, forest, wetland], time: day, weather: any, weight: [0.2, 1.2], fight: {strength: 0.35, erratic: 0.3, stamina: 2.6},
+      habitat: "Reedy lowland lakes, by day", lore: "Striped green and gold to hide in the reeds. Bold, hungry and not very clever."}
+    speckled_trout: {name: Speckled Trout, item: fish:speckled_trout, rarity: common, water: [river], biomes: [forest, highlands, meadow, snowpeak], time: any, weather: any, weight: [0.4, 2.5], fight: {strength: 0.45, erratic: 0.45, stamina: 3.0},
+      habitat: "Cold, quick rivers", lore: "It holds in the current behind a stone and takes whatever the river brings it."}
+    mudback_carp: {name: Mudback Carp, item: fish:mudback_carp, rarity: common, water: [lake], biomes: [wetland, meadow, badlands, forest], time: any, weather: any, weight: [1.0, 8.0], fight: {strength: 0.55, erratic: 0.2, stamina: 3.6},
+      habitat: "Warm, muddy lakes", lore: "Old, heavy and patient. A mudback carp can live longer than the angler who hooks it."}
+    tidewing_mackerel: {name: Tidewing Mackerel, item: fish:tidewing_mackerel, rarity: common, water: [sea], biomes: [any], time: any, weather: any, weight: [0.3, 1.6], fight: {strength: 0.5, erratic: 0.6, stamina: 2.6},
+      habitat: "The open sea", lore: "Its fins are long enough to glide a little above the waves when it is chased."}
+    sandflat_flounder: {name: Sandflat Flounder, item: fish:sandflat_flounder, rarity: common, water: [sea], biomes: [any], time: day, weather: any, weight: [0.4, 3.0], fight: {strength: 0.4, erratic: 0.25, stamina: 3.0},
+      habitat: "Sandy sea shallows, by day", lore: "Both its eyes are on one side. It does not seem bothered by this."}
+    bog_pike: {name: Bog Pike, item: fish:bog_pike, rarity: uncommon, water: [lake, river], biomes: [wetland, forest], time: dusk, weather: any, weight: [2.0, 12.0], fight: {strength: 0.7, erratic: 0.55, stamina: 3.8},
+      habitat: "Wetland and forest waters at dusk", lore: "A mouth full of needles and a temper to match. It strikes at anything that moves in the evening light."}
+    frostgill_char: {name: Frostgill Char, item: fish:frostgill_char, rarity: uncommon, water: [lake, river], biomes: [snowpeak, highlands], time: any, weather: any, weight: [0.8, 5.0], fight: {strength: 0.6, erratic: 0.4, stamina: 3.4},
+      habitat: "Ice-cold mountain lakes and streams", lore: "Its gills are rimmed with frost even in summer. The highland folk say it keeps the water cold."}
+    emberscale_loach: {name: Emberscale Loach, item: fish:emberscale_loach, rarity: uncommon, water: [river, lake], biomes: [badlands, highlands], time: day, weather: clear, weight: [0.2, 1.0], fight: {strength: 0.55, erratic: 0.8, stamina: 2.8},
+      habitat: "Warm badland waters under a clear sky", lore: "Its scales are warm to the touch. Cooks swear it seasons itself."}
+    gloam_eel: {name: Gloam Eel, item: fish:gloam_eel, rarity: uncommon, water: [lake, river, sea], biomes: [any], time: night, weather: any, weight: [0.8, 4.0], fight: {strength: 0.65, erratic: 0.75, stamina: 3.6},
+      habitat: "Any water, only at night", lore: "It rises when the Unsung walk and glows faintly when it is afraid. It is usually afraid."}
+    stormray: {name: Stormray, item: fish:stormray, rarity: rare, water: [sea], biomes: [any], time: any, weather: rain, weight: [4.0, 20.0], fight: {strength: 0.8, erratic: 0.6, stamina: 4.4},
+      habitat: "The sea, in the rain", lore: "It comes to the surface when lightning is near and drinks the rain. Its sting tingles for days."}
+    moonlit_koi: {name: Moonlit Koi, item: fish:moonlit_koi, rarity: rare, water: [lake], biomes: [meadow, forest, wetland], time: night, weather: clear, weight: [1.0, 6.0], fight: {strength: 0.6, erratic: 0.5, stamina: 4.0},
+      habitat: "Still lowland lakes on clear nights", lore: "White and silver like the moon on the water. They say each one remembers a wish."}
+    humming_sturgeon: {name: Humming Sturgeon, item: fish:humming_sturgeon, rarity: legendary, water: [lake, river], biomes: [highlands, snowpeak, forest], time: dawn, weather: any, weight: [20.0, 80.0], fight: {strength: 0.9, erratic: 0.5, stamina: 6.0},
+      habitat: "Deep highland water at dawn", lore: "Older than the towers. It hums the Lodestone's note under the water, and the rod hums with it."}
+    deepmaw: {name: Deepmaw, item: fish:deepmaw, rarity: legendary, water: [sea], biomes: [any], time: night, weather: rain, weight: [40.0, 160.0], fight: {strength: 1.0, erratic: 0.7, stamina: 7.0},
+      habitat: "The open sea on a stormy night", lore: "Sailors' stories call it a reef until it opens its mouth. Nobody believes the ones who say they landed it."}
+
+# ---- emotes (playtest 2; docs/cr/026-fishing-emotes-photo.md) ----
+# Hold H for the wheel, or /emote <key> in chat. Event 1090 tells players
+# within seeM (not the actor); `loop` ones hold until you move. Ids 1-19
+# are wheel emotes; 20 (fishing: the line is out) and 21 (showing a catch)
+# are sent by the zone's fishing code only.
+emotes:
+  seeM: 48
+  burst: 3              # emotes in a burst, then one per everyS
+  everyS: 1.5
+  list:
+    wave: {id: 1, name: Wave, durS: 2.2}
+    bow: {id: 2, name: Bow, durS: 2.0}
+    cheer: {id: 3, name: Cheer, durS: 2.4}
+    point: {id: 4, name: Point, durS: 1.8}
+    sit: {id: 5, name: Sit, loop: true}
+    dance: {id: 6, name: Dance, loop: true}
+    laugh: {id: 7, name: Laugh, durS: 2.4}
+    shrug: {id: 8, name: Shrug, durS: 1.6}
+    salute: {id: 9, name: Salute, durS: 2.0}
+    rest: {id: 10, name: Rest by the fire, loop: true}
+    fishing: {id: 20, name: Fishing, loop: true, system: true}
+    show_catch: {id: 21, name: Show a catch, durS: 2.6, system: true}

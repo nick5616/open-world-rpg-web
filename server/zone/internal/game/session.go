@@ -73,6 +73,8 @@ type session struct {
 	consumed         uint32             // newest frame seq applied or refused (LastSeq counts applied only)
 	editChunks       map[[2]int32]bool  // WP09: chunks whose WorldEdits this client has (mining.go)
 	doors            *sessDoors         // building doors: settlements known, frame ground (doors.go)
+	fish             *fishState         // playtest 2 fishing (fishing.go); nil until the first cast
+	emotes           *emoteState        // playtest 2 emotes (emotes.go); nil until the first emote
 
 	// Reader-owned.
 	buckets    [256]*ratelimit.Bucket
@@ -368,6 +370,14 @@ func (s *Server) drainTaken(sess *session, now time.Time) {
 			}
 			if it.TargetKind == InteractQuest {
 				s.questInteract(sess, it) // quests: accept, abandon, turn in, track (quests.go)
+				continue
+			}
+			if it.TargetKind == InteractFishing {
+				s.fishInteract(sess, it, now) // playtest 2: cast, hook, land, lose (fishing.go)
+				continue
+			}
+			if it.TargetKind == InteractEmote {
+				s.emoteInteract(sess, it, now) // playtest 2: emotes (emotes.go)
 				continue
 			}
 			if it.TargetKind == InteractPvP {
