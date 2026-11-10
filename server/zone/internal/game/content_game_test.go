@@ -264,7 +264,9 @@ func TestWorldEventsGlintfoxStarfallExpiry(t *testing.T) {
 		for _, tw := range cw.Towns {
 			ok = ok && math.Hypot(tw.X-x, tw.Z-z) > 300
 		}
-		h.do(func() { found = ok && h.srv.eventSpotOK(x, z) && h.srv.eventSpotOK(x+60, z) && h.srv.eventSpotOK(x, z+60) && h.srv.eventSpotOK(x-60, z) && h.srv.eventSpotOK(x, z-60) })
+		h.do(func() {
+			found = ok && h.srv.eventSpotOK(x, z) && h.srv.eventSpotOK(x+60, z) && h.srv.eventSpotOK(x, z+60) && h.srv.eventSpotOK(x-60, z) && h.srv.eventSpotOK(x, z-60)
+		})
 	}
 	if !found {
 		t.Fatal("no open ground")

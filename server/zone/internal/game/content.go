@@ -93,13 +93,13 @@ const (
 const SourceContent = 10
 
 const (
-	contentEveryTicks = 30   // per-player checks once a second (staggered)
-	contentSaveEvery  = 5    // seconds between saves of a changed state
-	tabletReachM      = 4.5  // from the eye
-	titleSeeM         = 140  // titles are sent to players this close
-	titleEveryTicks   = 60   // and checked every 2 s
-	areaSpan          = 1    // places are sent for the 3 x 3 areas around you
-	forageGrantMax    = 2    // herbs per patch
+	contentEveryTicks = 30  // per-player checks once a second (staggered)
+	contentSaveEvery  = 5   // seconds between saves of a changed state
+	tabletReachM      = 4.5 // from the eye
+	titleSeeM         = 140 // titles are sent to players this close
+	titleEveryTicks   = 60  // and checked every 2 s
+	areaSpan          = 1   // places are sent for the 3 x 3 areas around you
+	forageGrantMax    = 2   // herbs per patch
 	contentSaveKey    = "content:"
 )
 
@@ -409,15 +409,15 @@ func (s *Server) sendContentSync(sess *session) {
 	}
 	st := cs.st
 	out := struct {
-		V       int            `json:"v"`
-		Kills   map[string]int `json:"kills"`
-		Tablets []int          `json:"tablets"`
-		Feats   []string       `json:"feats"`
-		Title   string         `json:"title"`
-		Stats   map[string]int `json:"stats"`
-		Regions int            `json:"regions"`
-		Rep     []syncRep      `json:"rep"`
-		Vaults  []syncVault    `json:"vaults"`
+		V        int            `json:"v"`
+		Kills    map[string]int `json:"kills"`
+		Tablets  []int          `json:"tablets"`
+		Feats    []string       `json:"feats"`
+		Title    string         `json:"title"`
+		Stats    map[string]int `json:"stats"`
+		Regions  int            `json:"regions"`
+		Rep      []syncRep      `json:"rep"`
+		Vaults   []syncVault    `json:"vaults"`
 		Progress map[string]int `json:"progress"`
 	}{V: 1, Kills: st.Kills, Tablets: st.Tablets, Feats: st.Feats, Title: st.Title, Stats: st.Stats, Regions: st.RegionsWalked(), Progress: map[string]int{}}
 	if out.Kills == nil {
@@ -573,9 +573,9 @@ func (s *Server) contentTick(tick uint32) {
 	if tick%titleEveryTicks == 0 {
 		s.titlesTick()
 	}
-	s.followersTick()           // content_quests.go
-	s.worldEventsTick(tick)     // worldevents.go
-	s.vaultsTick(tick)          // dungeons.go
+	s.followersTick()       // content_quests.go
+	s.worldEventsTick(tick) // worldevents.go
+	s.vaultsTick(tick)      // dungeons.go
 }
 
 // contentPlayerSecond: regions walked, vault discoveries, places near, feats, saves.
