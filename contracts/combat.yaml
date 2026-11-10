@@ -181,15 +181,41 @@ dashes:
   # DODGE_*). The movement step on both sides reads this table, so every
   # value here changes prediction and simulation together. steps and
   # iframes are at most 15 (they ride in 4 bits of SelfState.moveExt).
-  magma_dash: {id: 1, speed: 25, steps: 15, iframes: 6, lift: 0}
-  glacier_step: {id: 2, speed: 48, steps: 10, iframes: 10, lift: 0}
-  phase_slip: {id: 3, speed: 16, steps: 12, iframes: 15, lift: 0}
-  root_launch: {id: 4, speed: 4, steps: 2, iframes: 6, lift: 13}
-  static_step: {id: 5, speed: 40, steps: 6, iframes: 6, lift: 0}
-  updraft: {id: 6, speed: 6, steps: 3, iframes: 6, lift: 14}
-  sunstep: {id: 7, speed: 48, steps: 10, iframes: 10, lift: 0}
-  skip: {id: 8, speed: 60, steps: 10, iframes: 10, lift: 0}
-  gale_cut: {id: 9, speed: 32, steps: 15, iframes: 9, lift: 0}
+  #
+  # Playtest 2 dash overhaul (docs/cr/021-dash-overhaul.md): every dash is
+  # several times sprint speed (sprint = 12.8 m/s) and the mobility spells
+  # can be HELD. `aim: look` starts the dash along the 3D look direction
+  # (yaw AND pitch: magma dash flies). `exitSpeed` is the horizontal speed a
+  # dash keeps when it ends (the carry; default DASH_EXIT_SPEED, at most the
+  # zone's walk bound). `sustain` (both movement twins read it): while the
+  # dash runs and the frames carry InputFlag.channel with castSlot = this
+  # variant (and no attack, dodge or cast), the dash keeps going:
+  #   jet    thrust toward the 3D look direction (velocity eases onto
+  #          look * speed by `steer` per step, gravity cancelled in the air)
+  #   dash   along the held keys (else straight ahead) at `speed`, steered
+  #   skate  a dash that treats water as ground (a frozen path)
+  #   blink  `speed`, and every `blinkEvery` steps one step at `blinkSpeed`
+  #          (chained short teleports)
+  #   glide  a dash whose fall is held to `sink` m/s
+  #   phase  a dash that keeps the i-frames up
+  # Each held step re-arms `carrySteps` of dash, so letting go keeps the
+  # velocity that long (the carry) before exitSpeed. The zone pays for every
+  # held step (manaPerS, healthPerS: Player.sustainDash) and strips the hold
+  # when it cannot (the step then ends the dash on both sides). `trail` is
+  # what the dash does to the world (the zone's, no claims): enemies it
+  # passes within `radius` take `damage` (once per dash each, `status`,
+  # `lifesteal`), `heal` heals you and your party nearby every half second,
+  # `chem` schedules ignite/freeze chemistry along the path, `slam` is a dive
+  # into the ground (falling faster than minFall m/s) bursting there.
+  magma_dash: {id: 1, speed: 30, steps: 12, iframes: 6, lift: 0, aim: look, exitSpeed: 18, sustain: {kind: jet, speed: 36, steer: 0.09, carrySteps: 4, manaPerS: 24}, trail: {radius: 1.8, damage: 14, status: burn, chem: ignite, slam: {minFall: 14, radius: 4.5, damage: 45, status: knockback}}}
+  glacier_step: {id: 2, speed: 44, steps: 10, iframes: 8, lift: 0, exitSpeed: 16, sustain: {kind: skate, speed: 30, carrySteps: 4, manaPerS: 16}, trail: {radius: 1.6, damage: 8, status: slow, chem: freeze}}
+  phase_slip: {id: 3, speed: 40, steps: 12, iframes: 12, lift: 0, exitSpeed: 16, sustain: {kind: dash, speed: 32, carrySteps: 4, manaPerS: 6, healthPerS: 14}, trail: {radius: 1.8, damage: 12, lifesteal: 0.6}}
+  root_launch: {id: 4, speed: 30, steps: 8, iframes: 6, lift: 6, exitSpeed: 14, sustain: {kind: dash, speed: 26, carrySteps: 4, manaPerS: 18}, trail: {radius: 2.0, damage: 16, status: knockback}}
+  static_step: {id: 5, speed: 54, steps: 6, iframes: 6, lift: 0, exitSpeed: 16, sustain: {kind: blink, speed: 22, blinkSpeed: 120, blinkEvery: 5, carrySteps: 5, manaPerS: 20}, trail: {radius: 1.8, damage: 10, status: shock}}
+  updraft: {id: 6, speed: 18, steps: 6, iframes: 6, lift: 14, exitSpeed: 18, sustain: {kind: glide, speed: 26, sink: 1.5, carrySteps: 4, manaPerS: 12}, trail: {radius: 2.2, damage: 6, status: knockback}}
+  sunstep: {id: 7, speed: 46, steps: 10, iframes: 8, lift: 0, exitSpeed: 16, sustain: {kind: dash, speed: 30, carrySteps: 4, manaPerS: 16}, trail: {radius: 1.8, damage: 8, heal: 6, healRadius: 8}}
+  skip: {id: 8, speed: 60, steps: 10, iframes: 10, lift: 0, exitSpeed: 18, sustain: {kind: phase, speed: 34, carrySteps: 4, manaPerS: 28}, trail: {radius: 1.8, damage: 10}}
+  gale_cut: {id: 9, speed: 40, steps: 15, iframes: 9, lift: 0, exitSpeed: 14}
 
 mana:
   # adapted from wizard-wars shared/leveling.js (MANA_BASE fire/ice average,
@@ -228,7 +254,7 @@ spells:
   inferno_domain: {id: 1014, tree: fire, tier: 11, type: domain, damage: 30, cooldownMs: 60000, durationMs: 4000, radius: 12, hits: 8, status: burn, color: '#ff4500', ported: 'PvP projectile acceleration -> burning ground (no enemy projectiles to speed up)'}
   phoenix: {id: 1015, tree: fire, tier: 12, type: passive, effect: {cheatDeath: 0.2}}
   god_ray: {id: 1016, tree: fire, tier: 13, type: hitscan, damage: 240, cooldownMs: 12000, range: 80, color: '#ffffa0'}
-  magma_dash: {id: 1017, tree: fire, tier: 1, type: mobility, dash: magma_dash, cooldownMs: 1500, damage: 8, color: '#ff4500'}
+  magma_dash: {id: 1017, tree: fire, tier: 1, type: mobility, dash: magma_dash, mana: 6, cooldownMs: 1500, damage: 8, color: '#ff4500'}
   # --- Ice ---
   frost_bite: {id: 1101, tree: ice, tier: 1, type: aoe, damage: 18, cooldownMs: 800, radius: 3.0, cone: 80, status: slow, color: '#a0d8ff'}
   frost_needle: {id: 1102, tree: ice, tier: 2, type: projectile, damage: 9, cooldownMs: 150, speed: 44, radius: 0.12, status: slow, color: '#88ddff'}
@@ -249,7 +275,7 @@ spells:
   absolute_zero: {id: 1117, tree: ice, tier: 10, type: domain, damage: 5, cooldownMs: 75000, durationMs: 3000, radius: 12, hits: 6, status: freeze, color: '#a0d8ff'}
   hypothermia: {id: 1118, tree: ice, tier: 11, type: passive, effect: {vsStatus: {status: slow, mult: 1.1}}}
   divine_judgement: {id: 1119, tree: ice, tier: 12, type: hitscan, damage: 220, cooldownMs: 14000, range: 80, vsStatus: {status: freeze, mult: 2}, color: '#ffffff'}
-  glacier_step: {id: 1120, tree: ice, tier: 1, type: mobility, dash: glacier_step, cooldownMs: 1800, color: '#a0d8ff'}
+  glacier_step: {id: 1120, tree: ice, tier: 1, type: mobility, dash: glacier_step, mana: 6, cooldownMs: 1800, color: '#a0d8ff'}
   # --- Dark ---
   void_touch: {id: 1201, tree: dark, tier: 1, type: aoe, damage: 30, cooldownMs: 900, radius: 3.5, selfCast: true, color: '#6600cc'}
   void_tap: {id: 1202, tree: dark, tier: 2, type: aoe, damage: 18, cooldownMs: 250, radius: 2.8, selfCast: true, color: '#4400aa', ported: 'cooldown 0.1 s -> 0.25 s (no faster than a sword combo)'}
@@ -273,7 +299,7 @@ spells:
   null_gaze: {id: 1220, tree: dark, tier: 12, type: hitscan, damage: 180, cooldownMs: 10000, range: 80, pierce: true, color: '#220044'}
   the_abyss: {id: 1221, tree: dark, tier: 13, type: passive, effect: {treeDamage: 1.1}}
   death_note: {id: 1222, tree: dark, tier: 14, type: direct, damage: 99999, cooldownMs: 120000, range: 30, windupMs: 3500, nonBossOnly: true, color: '#000000', ported: 'once per life -> 2 min cooldown; non-boss enemies only (spec 8)'}
-  phase_slip: {id: 1223, tree: dark, tier: 1, type: mobility, dash: phase_slip, cooldownMs: 2200, color: '#6600cc'}
+  phase_slip: {id: 1223, tree: dark, tier: 1, type: mobility, dash: phase_slip, mana: 6, cooldownMs: 2200, color: '#6600cc'}
   # --- Earth (wizard-wars DRUID + CRYSTALMANCER, the two halves of its old earth class) ---
   thorn_dart: {id: 1301, tree: earth, tier: 1, type: projectile, damage: 28, cooldownMs: 600, speed: 25, radius: 0.35, color: '#5a9e3d'}
   seed_burst: {id: 1302, tree: earth, tier: 2, type: projectile, damage: 9, cooldownMs: 180, speed: 30, radius: 0.22, spread: 3, spreadDeg: 18, hits: 3, color: '#7cb342'}
@@ -289,7 +315,7 @@ spells:
   fissure: {id: 1312, tree: earth, tier: 10, type: aoe, damage: 60, cooldownMs: 7000, line: 12, radius: 1.5, status: airborne, color: '#6B5010'}
   wildwood_domain: {id: 1313, tree: earth, tier: 12, type: domain, damage: 45, cooldownMs: 80000, durationMs: 5000, radius: 12, hits: 5, color: '#3d6e2a'}
   verdant_lance: {id: 1314, tree: earth, tier: 14, type: hitscan, damage: 280, cooldownMs: 16000, range: 80, windupMs: 1000, status: slow, color: '#3d6e2a'}
-  root_launch: {id: 1315, tree: earth, tier: 1, type: mobility, dash: root_launch, cooldownMs: 1800, color: '#5a9e3d'}
+  root_launch: {id: 1315, tree: earth, tier: 1, type: mobility, dash: root_launch, mana: 6, cooldownMs: 1800, color: '#5a9e3d'}
   crystal_shard: {id: 1316, tree: earth, tier: 1, type: projectile, damage: 28, cooldownMs: 600, speed: 25, radius: 0.35, color: '#8fd4ff'}
   shard_burst: {id: 1317, tree: earth, tier: 2, type: projectile, damage: 9, cooldownMs: 180, speed: 30, radius: 0.22, spread: 3, spreadDeg: 18, hits: 3, color: '#a8dfff'}
   geode_bomb: {id: 1318, tree: earth, tier: 2, type: arc, damage: 65, cooldownMs: 3500, speed: 26, radius: 1.8, gravity: 22, color: '#8fd4ff'}
@@ -302,7 +328,7 @@ spells:
   the_monolith: {id: 1325, tree: earth, tier: 13, type: hitscan, damage: 280, cooldownMs: 16000, range: 80, windupMs: 1000, status: slow, color: '#8fd4ff'}
   resonance: {id: 1326, tree: earth, tier: 6, type: passive, effect: {treeDamage: 1.1}}
   # --- Lightning (new tree; Lightning Strike, Static Charge and Chain Lightning come from wizard-wars' fire tree) ---
-  static_step: {id: 1401, tree: lightning, tier: 1, type: mobility, dash: static_step, cooldownMs: 1500, color: '#ffe066'}
+  static_step: {id: 1401, tree: lightning, tier: 1, type: mobility, dash: static_step, mana: 6, cooldownMs: 1500, color: '#ffe066'}
   spark_jab: {id: 1402, tree: lightning, tier: 1, type: projectile, damage: 20, cooldownMs: 350, speed: 60, radius: 0.25, status: shock, color: '#ffe066'}
   lightning_strike: {id: 1403, tree: lightning, tier: 3, type: aoe, damage: 70, cooldownMs: 4000, radius: 2.0, windupMs: 600, status: stun, color: '#ffe066'}
   static_charge: {id: 1404, tree: lightning, tier: 4, type: passive, effect: {treeStatus: stun, chance: 0.25}}
@@ -313,7 +339,7 @@ spells:
   eye_of_the_storm: {id: 1409, tree: lightning, tier: 10, type: domain, damage: 25, cooldownMs: 70000, durationMs: 5000, radius: 12, hits: 8, status: shock, color: '#ffe066'}
   act_of_god: {id: 1410, tree: lightning, tier: 12, type: aoe, damage: 300, cooldownMs: 18000, radius: 4.0, range: 40, windupMs: 600, status: stun, color: '#ffffff'}
   # --- Wind (new tree) ---
-  updraft: {id: 1501, tree: wind, tier: 1, type: mobility, dash: updraft, cooldownMs: 3000, color: '#9fe8d8'}
+  updraft: {id: 1501, tree: wind, tier: 1, type: mobility, dash: updraft, mana: 6, cooldownMs: 3000, color: '#9fe8d8'}
   gust: {id: 1502, tree: wind, tier: 1, type: aoe, damage: 15, cooldownMs: 700, radius: 6.0, cone: 60, status: knockback, color: '#9fe8d8'}
   razor_wind: {id: 1503, tree: wind, tier: 3, type: projectile, damage: 45, cooldownMs: 1400, speed: 40, radius: 0.8, pierce: true, color: '#c9fff1'}
   cyclone: {id: 1504, tree: wind, tier: 5, type: aoe, damage: 10, cooldownMs: 9000, radius: 4.0, range: 20, durationMs: 3000, hits: 6, status: airborne, color: '#9fe8d8'}
@@ -322,7 +348,7 @@ spells:
   howling_expanse: {id: 1507, tree: wind, tier: 10, type: domain, damage: 20, cooldownMs: 70000, durationMs: 4000, radius: 12, hits: 6, status: knockback, color: '#9fe8d8'}
   heavens_exhale: {id: 1508, tree: wind, tier: 12, type: hitscan, damage: 260, cooldownMs: 15000, range: 70, status: knockback, color: '#ffffff'}
   # --- Light (new tree; the anti-demon school: spec 8, WP15 hooks killsDemons) ---
-  sunstep: {id: 1601, tree: light, tier: 1, type: mobility, dash: sunstep, cooldownMs: 2000, color: '#ffd76a'}
+  sunstep: {id: 1601, tree: light, tier: 1, type: mobility, dash: sunstep, mana: 6, cooldownMs: 2000, color: '#ffd76a'}
   glint: {id: 1602, tree: light, tier: 1, type: projectile, damage: 18, cooldownMs: 300, speed: 70, radius: 0.25, color: '#fff2b0'}
   radiant_lance: {id: 1603, tree: light, tier: 3, type: projectile, damage: 80, cooldownMs: 2500, speed: 45, radius: 0.5, pierce: true, color: '#ffd76a'}
   sunburst: {id: 1604, tree: light, tier: 4, type: aoe, damage: 45, cooldownMs: 7000, radius: 5.0, selfCast: true, heal: 25, color: '#ffd76a'}
@@ -332,7 +358,7 @@ spells:
   high_noon: {id: 1608, tree: light, tier: 10, type: domain, damage: 30, cooldownMs: 75000, durationMs: 5000, radius: 12, hits: 6, heal: 40, color: '#fff2b0'}
   let_there_be_light: {id: 1609, tree: light, tier: 12, type: aoe, damage: 250, cooldownMs: 20000, radius: 14, selfCast: true, windupMs: 800, color: '#ffffff'}
   # --- Void (new tree; the rarest gem: pulls, blinks, erases) ---
-  skip: {id: 1701, tree: void, tier: 1, type: mobility, dash: skip, cooldownMs: 2000, color: '#b98cff'}
+  skip: {id: 1701, tree: void, tier: 1, type: mobility, dash: skip, mana: 6, cooldownMs: 2000, color: '#b98cff'}
   rift_shot: {id: 1702, tree: void, tier: 1, type: projectile, damage: 26, cooldownMs: 450, speed: 38, radius: 0.3, color: '#b98cff'}
   collapse: {id: 1703, tree: void, tier: 3, type: aoe, damage: 60, cooldownMs: 6000, radius: 6.0, range: 25, windupMs: 400, status: pull, color: '#7a4dff'}
   unmake: {id: 1704, tree: void, tier: 5, type: direct, damage: 140, cooldownMs: 8000, range: 30, lowTargetHp: {below: 0.25, mult: 3}, color: '#7a4dff'}

@@ -138,6 +138,55 @@ type Dash struct {
 	Steps   int     `json:"steps"`
 	IFrames int     `json:"iframes"`
 	Lift    float64 `json:"lift"`
+	// Playtest 2 dash overhaul (CR 021).
+	Aim       string       `json:"aim"` // move | look (3D, yaw and pitch)
+	ExitSpeed float64      `json:"exitSpeed"`
+	Sustain   *DashSustain `json:"sustain"`
+	Trail     *DashTrail   `json:"trail"`
+}
+
+// Sustain kinds (DashSustain.KindID; the movement twins switch on them).
+const (
+	SustainJet   = 1
+	SustainDash  = 2
+	SustainSkate = 3
+	SustainBlink = 4
+	SustainGlide = 5
+	SustainPhase = 6
+)
+
+// DashSustain is a dash held by the channel flag (CR 021).
+type DashSustain struct {
+	Kind       string  `json:"kind"`
+	KindID     int     `json:"kindId"`
+	Speed      float64 `json:"speed"`
+	Steer      float64 `json:"steer"`
+	CarrySteps int     `json:"carrySteps"`
+	BlinkSpeed float64 `json:"blinkSpeed"`
+	BlinkEvery int     `json:"blinkEvery"`
+	Sink       float64 `json:"sink"`
+	ManaPerS   float64 `json:"manaPerS"`
+	HealthPerS float64 `json:"healthPerS"`
+}
+
+// DashTrail is what a dash does to the world on its path (CR 021; the zone's).
+type DashTrail struct {
+	Radius     float64   `json:"radius"`
+	Damage     float64   `json:"damage"`
+	Lifesteal  float64   `json:"lifesteal"`
+	Heal       float64   `json:"heal"`
+	HealRadius float64   `json:"healRadius"`
+	Status     string    `json:"status"`
+	Chem       string    `json:"chem"` // ignite | freeze
+	Slam       *DashSlam `json:"slam"`
+}
+
+// DashSlam is a dive into the ground at the end of a flight.
+type DashSlam struct {
+	MinFall float64 `json:"minFall"`
+	Radius  float64 `json:"radius"`
+	Damage  float64 `json:"damage"`
+	Status  string  `json:"status"`
 }
 
 // Rate is a status-conditional multiplier.
