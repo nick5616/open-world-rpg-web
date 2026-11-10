@@ -80,7 +80,8 @@ function othersBusy(): boolean {
   const town = q('[data-testid="town-prompt"]');
   const cave = q('[data-testid="cave-hud"]');
   const townPanel = q('[data-testid="town-panel"]');
-  return !!town?.textContent || !!cave?.textContent || (!!townPanel && townPanel.style.display !== 'none');
+  const content = q('[data-testid="content-prompt"]'); // CR 023: a lore tablet, herb or vault part right here
+  return !!town?.textContent || !!cave?.textContent || !!content?.textContent?.startsWith('[E]') || (!!townPanel && townPanel.style.display !== 'none');
 }
 
 function promptText(t: LootTarget): string {

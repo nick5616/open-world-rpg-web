@@ -240,6 +240,9 @@ func (s *Server) endDuel(d *duel, winner int, reason int32) {
 		}
 	}
 	fought := d.phase >= duelCountdown
+	if fought && winner >= 0 && (reason == duelDefeated || reason == duelOutside || reason == duelLeft || reason == duelYielded) {
+		s.contentDuelWon(d.ents[winner]) // CR 023: the Duelist feats (content.go)
+	}
 	a, b := d.ents[0], d.ents[1]
 	var w, l *Entity
 	if winner >= 0 {

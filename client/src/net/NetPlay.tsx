@@ -32,6 +32,8 @@ import { attachNight, nightWorld } from '../systems/night';
 import { NightLayer } from '../systems/NightLayer';
 import { ensureQuestHook, unhookQuests } from '../ui/quests/link';
 import { QuestLayer } from '../ui/quests/QuestLayer';
+import { ensureContentHook } from '../ui/content/link'; // CR 023 content
+import { ContentLayer } from '../ui/content/ContentLayer';
 import { NightHud } from '../systems/NightHud';
 // Playtest 1: character stats, area difficulty, tower attunement (Events 900-903).
 import { attachProgression } from '../ui/progression';
@@ -113,6 +115,7 @@ export function NetPlay({ ready }: { ready: ReadySession }) {
     const detachProgression = attachProgression(s);
     const detachPvp = attachPvp(s); // after attachCombat: chains its HitResult handler
     ensureQuestHook(); // playtest 1: quest log (ui/quests), before Hello so Event 950 is never missed
+    ensureContentHook(); // CR 023: content sync and places (ui/content), before Hello too
     let live = true;
     s.onEnd = (end) => live && setPhase({ kind: 'ended', end });
     s.start().then(
@@ -204,6 +207,7 @@ export function NetPlay({ ready }: { ready: ReadySession }) {
           <LootLayer />
           <NightLayer />
           <QuestLayer />
+          <ContentLayer />
           <DuelRing />
         </WorldCanvas>
       )}

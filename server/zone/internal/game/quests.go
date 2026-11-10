@@ -324,6 +324,9 @@ func (f questFacts) Knows(spell string) bool {
 	return e != nil && e.cbt != nil && e.cbt.Profile.Knows(spell)
 }
 
+// Escorted implements quests.Escorter (CR 023 rescue quests).
+func (f questFacts) Escorted(qid uint32) bool { return f.s.contentEscorted(f.sess, qid) }
+
 func (f questFacts) Pos() (float64, float64) { return f.sess.ent.Move.Pos.X, f.sess.ent.Move.Pos.Z }
 
 func (f questFacts) Quiet(site int, x, z, r float64) bool {
@@ -367,6 +370,7 @@ func (s *Server) questHappened(sess *session, h quests.Happening) {
 	e := sess.ent
 	qq := h.Quest
 	st := &qq.Steps[h.Step]
+	s.contentQuestHappened(sess, h) // CR 023: give steps, followers, rep, rewards, counters (content_quests.go)
 	if st.Obj.Kind == quests.ObjTurnIn && sess.items != nil && len(st.Obj.Items) > 0 {
 		var d items.Delta
 		if sess.items.inv.Spend(st.Obj.Items[0].Item, st.Obj.Items[0].Qty, &d) {
@@ -435,12 +439,14 @@ func (s *Server) questGrant(sess *session, list []quests.ItemQty, marker, src st
 // questsTalk: a talk to an NPC (towns.go npcInteract) may complete a talk
 // step; the NPC then says the step's line. A blacksmith also offers the
 // starter quest to a character who dropped it.
-func (s *Server) questsTalk(sess *session, role uint8, settlement int, npcEnt uint32) {
+func (s *Server) questsTalk(sess *session, role uint8, settlement int, npcEnt uint32, npcIndex int) int {
 	q := sess.quests
 	if q == nil {
-		return
+		return 0
 	}
-	for _, h := range s.questsAdvance(sess, &quests.Signal{Kind: quests.ObjTalk, Role: int(role), Settlement: settlement}) {
+	hs := s.questsAdvance(sess, &quests.Signal{Kind: quests.ObjTalk, Role: int(role), Settlement: settlement, NPC: npcIndex + 1})
+	done := len(hs)
+	for _, h := range hs {
 		if say := h.Quest.Steps[h.Step].Say; say != "" {
 			s.townEvent(sess.ent, &proto.Event{Kind: EventNPCSay, EntityID: npcEnt, TargetID: uint32(role), Value: 1, Data: []byte(say)})
 		}
@@ -451,6 +457,7 @@ func (s *Server) questsTalk(sess *session, role uint8, settlement int, npcEnt ui
 			s.sendEvent(sess, &proto.Event{Kind: EventQuestOffer, EntityID: npcEnt, TargetID: wq.ID, Data: quests.OfferWire(wq)})
 		}
 	}
+	return done
 }
 
 // questsTurnIn: reading a settlement's board or talking to its bounty
@@ -523,7 +530,14 @@ func (s *Server) questInteract(sess *session, m *proto.Interact) {
 	}
 	switch m.Action {
 	case QuestActAccept:
-		if id != quests.WardID || !s.qst.offered[e.CharacterID] {
+		if id != quests.WardID {
+			if r := s.contentAccept(sess, id); r != 0 { // CR 023: townsfolk and story offers (content_quests.go)
+				refuse(r)
+				return
+			}
+			break
+		}
+		if !s.qst.offered[e.CharacterID] {
 			refuse(QuestRefuseUnknown)
 			return
 		}

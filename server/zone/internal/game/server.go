@@ -164,6 +164,7 @@ type Server struct {
 	qst        questsGlue    // playtest 1: quest logs (quests.go)
 	obst       obstacleState // enemies respect buildings (obstacles.go)
 	pvp        pvpState      // playtest 2: PvP flags, safe zones, duels (pvp.go, duel.go)
+	cnt        contentGlue   // playtest 2 content (CR 023): content.go, content_quests.go, worldevents.go, dungeons.go
 	// WP11: next earshot hand-off (earshot.go).
 	earshotNext time.Time
 	phases      tickPhases // WP19: per-phase tick timing (phases.go)
@@ -228,6 +229,7 @@ func New(cfg Config) *Server {
 	s.initItems()      // WP14 (items.go): after combat (loot hook)
 	s.initDifficulty() // playtest 1 (difficulty.go): after combat (World.Areas)
 	s.initQuests()     // quests.go: after combat (kill hook)
+	s.initContent()    // content.go: after quests (kill hook)
 	s.loop = &gameloop.Loop{Interval: interval, Stats: s.stats, OnTick: s.onTick}
 	return s
 }
@@ -348,6 +350,7 @@ func (s *Server) onTick() {
 	s.phases.mark(phTowns)
 	s.nightTick(tick)       // WP15: clock, demons, defense events, chemistry (night.go)
 	s.questsTick(tick)      // quests: flagged rechecks, 2 Hz reach/clear checks (quests.go)
+	s.contentTick(tick)     // CR 023 content: regions, feats, titles, places, followers, world events, vaults (content.go)
 	s.friendTravelTick(now) // playtest 2: travel-to-friend channels (friendtravel.go)
 	s.phases.mark(phNight)
 
@@ -479,6 +482,7 @@ func (s *Server) join(sess *session) {
 	s.itemsJoin(sess)       // WP14: inventory, gear, consumables (items.go)
 	s.nightJoin(sess)       // WP15: world clock, pillars, defense state (night.go)
 	s.questsJoin(sess)      // quests: the log, the starter quest (quests.go)
+	s.contentJoin(sess)     // CR 023: codex, feats, reputation, vaults (content.go)
 	s.clusterJoined(sess)   // WP16: owner record, arrival checkpoint
 	s.log.Info("join", "entity", e.ID, "character", e.CharacterID, "name", e.Name, "remote", sess.conn.RemoteAddr(),
 		"x", math.Round(e.Move.Pos.X*100)/100, "z", math.Round(e.Move.Pos.Z*100)/100)
@@ -525,6 +529,7 @@ func (s *Server) leave(sess *session) {
 	s.combatLeave(sess)  // WP13: combat profile save (combat.go)
 	s.exploreLeave(sess) // WP12: progress save
 	s.questsLeave(sess)  // quests: log save (quests.go)
+	s.contentLeave(sess) // CR 023 (content.go)
 	if s.cfg.Queue != nil {
 		s.checkpoint(e)
 	}
