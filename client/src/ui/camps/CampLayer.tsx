@@ -143,7 +143,7 @@ export function CampLayer() {
       if (nf < MAX_FIRES) {
         const flick = 0.92 + 0.08 * Math.sin(t * 9 + p.id);
         q.setFromAxisAngle(up, (p.id % 7) * 0.45);
-        m4.compose(v.set(p.x, p.y + 0.08, p.z), q, sc.set(0.42, 0.55 * flick, 0.42));
+        m4.compose(v.set(p.x, p.y + 0.08, p.z), q, sc.set(0.5, 0.68 * flick, 0.5));
         parts.flames.setMatrixAt(nf++, m4);
       }
     }
