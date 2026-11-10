@@ -462,8 +462,8 @@ export const WIND_GLIDE_PUSH_MS = 1.25;
 export const WIND_ARROW_ACCEL = 0.6;
 /** Thunderstorm cells roll for a seeded strike every this many seconds. */
 export const LIGHTNING_SLOT_S = 3;
-/** Chance (percent) that a thunderstorm cell is struck in a slot. */
-export const LIGHTNING_SLOT_PCT = 35;
+/** Chance (percent) that a thunderstorm cell is struck in a slot (prod feedback: 35 felt like constant flashing; 8 is a strike per cell about every 40 s). */
+export const LIGHTNING_SLOT_PCT = 8;
 /** A seeded strike lands on the highest of nine points on a grid this far apart around its seeded spot (tall things draw lightning). */
 export const LIGHTNING_TALL_PROBE_M = 12;
 /** A strike within this distance of a player in the open jumps to them (plus half their height above the ground, up to 20 m more). */
@@ -482,6 +482,8 @@ export const LIGHTNING_SPLASH_M = 4;
 export const LIGHTNING_EVENT_M = 260;
 /** Clients draw seeded strikes farther than this from them on their own; nearer ones wait for the zone's event. */
 export const LIGHTNING_LOCAL_M = 200;
+/** Clients draw (bolt + thunder) only strikes within this distance; farther storms are just rain and a dark sky. */
+export const LIGHTNING_VISIBLE_M = 1400;
 /** Seconds out in the cold (a cold-climate cell at night, or a snowstorm) before you are Chilled. */
 export const COLD_ONSET_S = 20;
 /** A burning campfire or a town hearth within this distance keeps you warm. */

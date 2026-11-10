@@ -286,7 +286,7 @@ groups:
     WIND_GLIDE_PUSH_MS: {type: f64, value: 1.25, doc: "A glider drifts downwind at this many m/s per wind level above 1 (windy and storms are level 2, snowstorms and sandstorms 3)."}
     WIND_ARROW_ACCEL: {type: f64, value: 0.6, doc: "Arrows drift downwind at this many m/s^2 per wind level."}
     LIGHTNING_SLOT_S: {type: i32, value: 3, doc: "Thunderstorm cells roll for a seeded strike every this many seconds."}
-    LIGHTNING_SLOT_PCT: {type: i32, value: 35, doc: "Chance (percent) that a thunderstorm cell is struck in a slot."}
+    LIGHTNING_SLOT_PCT: {type: i32, value: 8, doc: "Chance (percent) that a thunderstorm cell is struck in a slot (prod feedback: 35 felt like constant flashing; 8 is a strike per cell about every 40 s)."}
     LIGHTNING_TALL_PROBE_M: {type: f64, value: 12, doc: "A seeded strike lands on the highest of nine points on a grid this far apart around its seeded spot (tall things draw lightning)."}
     LIGHTNING_ATTRACT_M: {type: f64, value: 10, doc: "A strike within this distance of a player in the open jumps to them (plus half their height above the ground, up to 20 m more)."}
     LIGHTNING_METAL_ATTRACT_M: {type: f64, value: 30, doc: "The same for a player holding a metal weapon."}
@@ -296,6 +296,7 @@ groups:
     LIGHTNING_SPLASH_M: {type: f64, value: 4, doc: "Splash radius of a bolt."}
     LIGHTNING_EVENT_M: {type: f64, value: 260, doc: "Players within this distance of a strike the zone resolves get it as an event (1220)."}
     LIGHTNING_LOCAL_M: {type: f64, value: 200, doc: "Clients draw seeded strikes farther than this from them on their own; nearer ones wait for the zone's event."}
+    LIGHTNING_VISIBLE_M: {type: f64, value: 1400, doc: "Clients draw (bolt + thunder) only strikes within this distance; farther storms are just rain and a dark sky."}
     COLD_ONSET_S: {type: f64, value: 20, doc: "Seconds out in the cold (a cold-climate cell at night, or a snowstorm) before you are Chilled."}
     COLD_WARMTH_M: {type: f64, value: 9, doc: "A burning campfire or a town hearth within this distance keeps you warm."}
     COLD_FOOD_WARM_S: {type: f64, value: 600, doc: "Warm food (stews, broths, skewers, curry) keeps you warm this long."}
