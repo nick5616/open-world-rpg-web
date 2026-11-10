@@ -1,6 +1,6 @@
 // Playtest pass 2: follow the starter quest like a new player (talk, walk to
 // the marker, mine), fighting what attacks on the way. Logs every snag.
-import { launch, newCharacter, sleep, pl, walkTo, go, look, yawTo } from './lib.mjs';
+import { launch, newCharacter, sleep, pl, walkTo, go, look, yawTo, dismissCards } from './lib.mjs';
 
 const out = process.argv[2] ?? 'tmp/playtest2';
 const t = await launch(out);
@@ -42,7 +42,23 @@ async function fightNearby(radius = 12, ms = 30000) {
 try {
   await newCharacter(page, 'Quester' + (Date.now() % 100000));
   await sleep(5000);
+  await dismissCards(page);
   let q = await tracked();
+  if (q?.key === 'story:meadows') {
+    // Playtest 2: new characters start with "Slimes in the meadows" (sp9 and
+    // sp10 play it). This pass is the Ward walk, so abandon the starter quest
+    // in the journal like a player would; dropping it starts the Ward.
+    page.once('dialog', (d) => d.accept());
+    await page.keyboard.press('KeyJ');
+    await sleep(700);
+    await page.getByRole('button', { name: 'Abandon' }).first().click();
+    await sleep(2000);
+    await page.keyboard.press('KeyJ');
+    await sleep(500);
+    q = await tracked();
+    note(`abandoned the starter quest; now tracking ${q?.key}`);
+    if (q?.key === 'story:meadows') issue('quest', 'abandoning the starter quest did not start the Ward');
+  }
   note(`quest step ${q?.step}: ${q?.text} markers ${JSON.stringify(q?.markers)}`);
   // 1. talk to the giver
   const m = q.markers[0];
