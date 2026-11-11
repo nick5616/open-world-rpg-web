@@ -12,6 +12,7 @@ package combatbot
 
 import (
 	"math"
+	"math/rand"
 	"sort"
 
 	"lodestone/server/pkg/combatdefs"
@@ -44,6 +45,37 @@ type Telegraph struct {
 	Arc       float64
 	Width     float64
 	Projected bool
+	// Human model (Brain.Human): the step the bot notices it (SeenStep +
+	// its reaction time) and whether it never does.
+	Notice uint32
+	Missed bool
+}
+
+// Human makes a Brain read telegraphs like an average human player
+// (playtest 2 co-op polish) instead of the perfect bot that dodges every
+// wind-up on its last frames: each wind-up is noticed after a reaction time
+// (mean ReactMs, spread JitterMs, at least 150 ms), MissPct of them are not
+// noticed at all, and a noticed one is answered at once by dashing and then
+// running out of the telegraphed area the shortest way (as players do), not
+// by timing the i-frames.
+type Human struct {
+	Rng      *rand.Rand
+	ReactMs  float64
+	JitterMs float64
+	MissPct  float64
+	// SwingGapMs: a human does not chain swings on the first frame they are
+	// allowed: mean extra time between attacks (spread 60 %).
+	SwingGapMs float64
+	// Noticed, Missed: telegraphs that threatened the bot, by outcome.
+	Noticed, Ignored int
+}
+
+// AverageHuman is the model the co-op tuning uses: ~380 ms from the wind-up
+// starting to moving (seeing it, choosing a way out, the network's share),
+// one wind-up in five missed (a busy screen, a partner's spell over it,
+// looking the wrong way).
+func AverageHuman(seed int64) *Human {
+	return &Human{Rng: rand.New(rand.NewSource(seed)), ReactMs: 380, JitterMs: 100, MissPct: 0.2, SwingGapMs: 200}
 }
 
 // Brain is one bot fighter.
@@ -86,6 +118,12 @@ type Brain struct {
 	Safe       *movement.Vec3
 	retreating bool
 	Retreats   int
+	// Human: nil = the perfect bot (every acceptance run and spec 8 sim).
+	Human  *Human
+	escape struct {
+		until uint32
+		yaw   float64
+	}
 
 	// Stats
 	Attacks, Claims, Dodges, Drinks int
@@ -110,6 +148,19 @@ func New(name string, weapon string, g movement.Ground, s movement.State) *Brain
 // SeeTelegraph records a wind-up Event (call when it arrives).
 func (b *Brain) SeeTelegraph(t Telegraph) {
 	t.SeenStep = b.Seq
+	t.Notice = b.Seq
+	if h := b.Human; h != nil {
+		ms := math.Max(150, h.ReactMs+h.Rng.NormFloat64()*h.JitterMs)
+		t.Notice = b.Seq + uint32(math.Round(ms*float64(constants.MoveStepHz)/1000))
+		t.Missed = h.Rng.Float64() < h.MissPct
+		if t.Shape != 4 && contains(&t, b.State.Pos, 0.9) {
+			if t.Missed {
+				h.Ignored++
+			} else {
+				h.Noticed++
+			}
+		}
+	}
 	b.tele = append(b.tele, t)
 }
 
@@ -139,6 +190,9 @@ func (b *Brain) threatened() (in int, area *Telegraph) {
 		}
 		keep = append(keep, t)
 		if t.Shape == 4 { // projectile: dodge when the volley is launched toward us
+			continue
+		}
+		if b.Human != nil && (t.Missed || b.Seq < t.Notice) {
 			continue
 		}
 		if contains(&t, b.State.Pos, 0.9) && left < best {
@@ -324,6 +378,28 @@ func (b *Brain) Step(es []EnemyView, serverTick uint32) (proto.InputFrame, []Cla
 	// Dodge a telegraphed strike: i-frames from now cover the next 9 steps,
 	// and the dodge carries us 2.4 m out of most shapes as well.
 	canDodge := b.State.Flags&movement.FlagExhausted == 0 && b.State.Stamina >= dodgeCost
+	if b.Human != nil {
+		// An average human: the moment the wind-up is noticed, dash and run
+		// out of the area the shortest way, until it has struck.
+		if threat != nil && seq > b.escape.until {
+			b.escape.yaw = escapeYaw(threat, b.State.Pos)
+			b.escape.until = seq + uint32(max(in, 0)) + 6
+			if canDodge && seq >= b.dodgeAt+14 && !movement.Dashing(b.State) && b.State.IFrames == 0 {
+				f.Flags |= proto.InputFlagDodge
+				f.CastSlot = 0
+				b.dodgeAt = seq
+				b.Dodges++
+			}
+		}
+		if seq <= b.escape.until {
+			yaw = b.escape.yaw
+			f.Flags = f.Flags&^(proto.InputFlagAttack|proto.InputFlagBack|proto.InputFlagCast|proto.InputFlagLeft|proto.InputFlagRight) | proto.InputFlagForward
+			if b.State.Stamina*3 > b.State.StaminaMax {
+				f.Flags |= proto.InputFlagSprint
+			}
+		}
+		threat = nil // the perfect bot's last-frame dodge below is not human
+	}
 	if threat != nil && in <= 20 && in > 4 && !canDodge {
 		// No dodge left: walk out of the telegraphed area instead.
 		away := yawTo(b.State.Pos.X-threat.Center.X, b.State.Pos.Z-threat.Center.Z)
@@ -360,6 +436,25 @@ func (b *Brain) Step(es []EnemyView, serverTick uint32) (proto.InputFrame, []Cla
 	f.Yaw = proto.YawToU16(yaw)
 	b.State = movement.StepFrame(b.State, f, b.Ground)
 	return f, claims
+}
+
+// escapeYaw is the look yaw that leaves telegraph t's area soonest from p
+// (16 headings; ties go to the one farther from the area's centre).
+func escapeYaw(t *Telegraph, p movement.Vec3) float64 {
+	best, bestD, bestAway := 0.0, math.Inf(1), -1.0
+	for i := 0; i < 16; i++ {
+		a := float64(i) * math.Pi / 8
+		dx, dz := math.Cos(a), math.Sin(a)
+		d := 0.0
+		for d < 12 && contains(t, movement.Vec3{X: p.X + dx*d, Z: p.Z + dz*d}, 0.9) {
+			d += 0.25
+		}
+		away := dx*(p.X-t.Center.X) + dz*(p.Z-t.Center.Z)
+		if d < bestD-1e-9 || (math.Abs(d-bestD) < 1e-9 && away > bestAway) {
+			best, bestD, bestAway = yawTo(dx, dz), d, away
+		}
+	}
+	return best
 }
 
 // dodgeCost is the plain dodge's stamina in fine units.
@@ -408,6 +503,9 @@ func (b *Brain) attack(f *proto.InputFrame, t *EnemyView, yaw float64, d float64
 		b.FightStart[t.ID] = seq
 	}
 	b.nextSeq = seq + uint32(m.StartupSteps+m.ActiveSteps+m.RecoverySteps)
+	if h := b.Human; h != nil && h.SwingGapMs > 0 {
+		b.nextSeq += uint32(math.Max(0, h.SwingGapMs+h.Rng.NormFloat64()*h.SwingGapMs*0.6) * float64(constants.MoveStepHz) / 1000)
+	}
 	at := seq + uint32(m.StartupSteps)
 	if m.Speed > 0 {
 		at += uint32(math.Round(d / math.Max(1, m.Speed*(1+(m.ChargeMult-1))) * float64(constants.MoveStepHz)))
