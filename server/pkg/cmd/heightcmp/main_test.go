@@ -49,7 +49,7 @@ func TestGoMatchesNode(t *testing.T) {
 	}
 	// Golden world seed-7's atlas: every host built the same one.
 	for host, h := range rep.atlasHash {
-		if h != "e0e3c0c797584a62" {
+		if h != "74516190aeb805df" {
 			t.Fatalf("%s atlas %s", host, h)
 		}
 	}

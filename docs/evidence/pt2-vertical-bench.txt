@@ -1,0 +1,17 @@
+CR 038 vertical world: G5 scale checks (Windows, 16 threads, go test ./internal/game in server/zone)
+
+LODESTONE_WIRE_DIGEST=1 go test ./internal/game -run WireDigest -v
+  main 73f436c (git archive of the base):  p90_e600 944177c4d7f72c26ed0aceea9366f46a4b0ed2b001e0a772a4aa8763aad5fb42  p300_e2000 6dfd63912be3651a2ac5f1cc026366fece520c3fd893d094408c3d28f96fbe6e
+  pt2/vertical-world (zone part):          p90_e600 944177c4d7f72c26ed0aceea9366f46a4b0ed2b001e0a772a4aa8763aad5fb42  p300_e2000 6dfd63912be3651a2ac5f1cc026366fece520c3fd893d094408c3d28f96fbe6e  (identical)
+  (The digests in older STATUS entries, 831bb7f4... / 8c29d408..., predate later merges on main; base and head agree today.
+   The scale worlds have no atlas, so no vertical world: no layers, no layer packs, no vertical updrafts. Fall damage can't
+   trigger there: the bots only hop on flat ground, far below 18 m/s.)
+
+go test ./internal/game -run XXX -bench BenchmarkScale/p300_e2000 -count 1, alternating base (73f436c) and head, 3 rounds.
+The machine was heavily shared during the run (other agents, a headless browser): wall-clock p50/p99 swing 10-34 ms on
+both sides, so read cpu-Mcycles and allocs, not the ms.
+  base: cpu-Mcycles 124.9 121.0 117.4; kbps/client 149.0 149.0 149.0; allocs/op 2016 2002 2038; p50-ms 11.49 12.37 34.46
+  head: cpu-Mcycles 121.4 129.3 123.5; kbps/client 149.0 149.0 149.0; allocs/op 2001 2008 2002; p50-ms 10.72 19.88 9.87
+  (noise: per tick the head adds a nil check in verticalTick (no vertical world), payFalls' loop over entities with a zero
+   landing, one int8 compare per interest candidate, and a struct copy + two compares per applied frame for landings.
+   Re-measure on a quiet box before a deploy.)

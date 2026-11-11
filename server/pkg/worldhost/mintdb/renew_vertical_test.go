@@ -87,3 +87,14 @@ func TestRenewOfficialToVertical(t *testing.T) {
 		t.Fatalf("the villager moved: %v, %v", x, z)
 	}
 }
+
+// curGV is the built generator's genVersion ("3" since CR 038).
+func curGV(t *testing.T) string {
+	t.Helper()
+	load, _ := loader(t)
+	m, err := load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return m.GenVersionString()
+}
