@@ -423,7 +423,11 @@ export class AudioEngine {
       this.water = cave ? null : this.probe.waterNear(feet.x, feet.z);
     }
     const emitters: LoopEmitter[] = [...this.probe.firesNear(feet.x, feet.z, FIRE_SCAN_M), ...this.probe.chemistryFires(nightRuntime.view)];
-    for (const src of loopSources) for (const e of src(feet.x, feet.z)) emitters.push(e); // CR 025: camp campfires
+    for (const src of loopSources)
+      for (const e of src(feet.x, feet.z)) {
+        if (Number.isNaN(e.space)) e.space = this.probe.spaceOf(e.x, e.y, e.z); // playtest 2: loot hums are muffled indoors and in caves like the fires
+        emitters.push(e); // CR 025: camp campfires; playtest 2: loot hums
+      }
     if (this.water) emitters.push(this.water);
     const L = this.sfx.listener;
     this.loops.update(selectLoops(emitters, { x: L.x, y: L.y, z: L.z, space, leak }, this.loops.playing));

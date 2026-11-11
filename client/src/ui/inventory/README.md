@@ -19,7 +19,11 @@ generated table (`contracts/items.yaml` -> `ITEMS` in `@lodestone/contracts`).
 | `InventoryScreen.tsx` | The inventory (I): equipment column, 8x5 bag, gem and ore pouches, purse, the item card and actions; `window.__lodestoneInventory` is installed here |
 | `CraftPanel.tsx` | Smithing (forge/anvil: smelting and forging) or cooking (hearth/campfire: cooking and brewing) recipes with have/need, blueprint, Craft, last crafted; your Smithing level and progress (combat_sync skill XP) |
 | `LootHud.tsx` | Toasts, the Bitchin' banner, the `[E]` prompt and its key |
-| `LootLayer.tsx` | R3F: non-ore/gem pickups (bobbing, rarity colour, light beam for rare+, colour-cycling beam for Bitchin') and Event 406 containers (chest, buried cache, urn, crate; opened ones dimmed, chest lid open). Mounted next to `<CombatLayer />` in NetPlay |
+| `LootLayer.tsx` | R3F: pickups as their real models (CR 037: weapons, armor pieces, a prop per item kind; common/uncommon lie on the grass, rare+ float and turn in their beam), pop-out arcs for new drops, fly-to-you on take, the hums' loop source; Event 406 containers (chest, buried cache, urn, crate; opened ones dimmed, chest lid open). Mounted next to `<CombatLayer />` in NetPlay |
+| `ground/beam.ts` | CR 037: `beamParams` by rarity and tier; `LootLights`: every drop's beam (light pouring down from the sky), splash ring, motes and sparkles in four draw calls; the shader warm-up objects |
+| `ground/models.ts` | CR 037: `dropModelOf` / `dropGeometry`: the model for every item key (weapon look from the key, `armorPieceGeometry`, 36 prop shapes), holographic and hover-glow copies |
+| `ground/hum.ts` | CR 037: each drop's positional hum (family by item type, note / level / reach by rarity) for the audio loop pool |
+| `ground/autoLoot.ts` | CR 037: the "Auto-collect common loot" setting and its sync with the zone (Interact 21/10, Event 400 `auto`) |
 | `ItemIcon.tsx`, `styles.ts` | Inline-SVG icons per item kind; the shared CSS (holographic gradient, banner, tiles) |
 | `dev.ts` | The debug handle and the sample inventory |
 | `dev/shots.mjs` | Headless screenshots (below) |

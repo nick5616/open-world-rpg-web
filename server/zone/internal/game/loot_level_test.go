@@ -46,14 +46,15 @@ func lootLevelHarness(t *testing.T, withDifficulty bool) *harness {
 func openChestLevels(t *testing.T, h *harness, char string, x, z float64, id uint64) []int {
 	t.Helper()
 	cl := h.dial(spawnAt(x, z))
-	cl.join(h, char, char)
+	w := cl.join(h, char, char)
 	cl.pump(300 * time.Millisecond)
 	cl.interact(InteractContainer, id, ActionUse, 0)
 	if ev := cl.lastEvent(EventContainerOpened, 3*time.Second); ev == nil {
 		t.Fatal("not opened")
 	}
+	// Playtest 2 ground loot: the chest's items lie on the ground around it.
 	var levels []int
-	for _, it := range cl.inventory(t).Items {
+	for _, it := range ownDrops(t, h, w.EntityID) {
 		if d := items.D.Item(it.Base); d != nil && (d.Kind == "weapon" || d.Kind == "armor") {
 			levels = append(levels, it.Level)
 		}

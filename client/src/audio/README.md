@@ -74,7 +74,11 @@ the results, so nothing clicks or zippers.
   street), campfire (26 m), forge (30 m, deeper) and camp campfire piece,
   burning grass (cells clustered on a 12 m grid, louder and carrying
   further the more burn), rivers (55 m, flowing) and lake/sea shores (34 m,
-  lapping; a ring probe of the water surface twice a second) is an emitter;
+  lapping; a ring probe of the water surface twice a second) and every
+  dropped item of uncommon or better (CR 037, `ui/inventory/ground/hum.ts`:
+  a metallic ring, a chime, a whisper, a drone or Bitchin's chord, one
+  note per rarity via `LoopEmitter.rate`, ~9 m for uncommon to ~56 m for
+  Bitchin'; synthesized on first use, `synth.ts` hum families) is an emitter;
   only the 8 loudest at the listener get a voice, a playing one keeps its
   slot unless a newcomer is 1.6x louder, and voices fade in (0.3 s) and
   out (0.25 s, then stop and disconnect). By day a smith hammers at every

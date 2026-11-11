@@ -191,8 +191,9 @@ type charItems struct {
 	contSent   bool
 	contSig    uint64 // which containers the last 406 listed (resend when it changes)
 	contVer    int
-	refuseAt   time.Time
+	refuseAt   time.Time // playtest 2 ground loot: the next quiet "inventory full" from auto-collect
 	takes      int
+	autoLoot   bool // playtest 2 ground loot: walk-over collects common materials (Interact 21/10)
 }
 
 type openStation struct {
@@ -212,6 +213,7 @@ type itemDrop struct {
 	source    int
 	takes     int
 	refused   time.Time
+	readyAt   time.Time // playtest 2 ground loot: not auto-collected before (the pop-out arc)
 }
 
 type itemsState struct {
@@ -223,6 +225,7 @@ type itemsState struct {
 	runCtx context.CancelFunc
 	ran    bool
 	loot   int64
+	taken  map[uint32]takenBy // playtest 2: world pickups taken recently (loot_ground.go)
 	// Local profiles' drops parked until their blob is issued (loot.go);
 	// written from the write-behind worker, hence the mutex.
 	ldMu       sync.Mutex
@@ -555,6 +558,10 @@ type inventoryJSON struct {
 	// Ap (CR 034): your worn armor's appearance, the number other players'
 	// snapshots carry for you (appearance.go), so your own body matches it.
 	Ap uint64 `json:"ap,omitempty"`
+	// Auto (playtest 2 ground loot): the auto-collect setting the zone
+	// holds for you (Interact 21/10); the client re-sends its own when
+	// they differ (a new zone after a handoff starts with it off).
+	Auto bool `json:"auto,omitempty"`
 }
 
 var persistNames = [...]string{"memory", "db", "local"}
@@ -564,7 +571,7 @@ func (s *Server) sendInventory(sess *session) {
 	if ci == nil || sess.ent == nil {
 		return
 	}
-	inv := inventoryJSON{V: 1, Gold: ci.inv.Gold(), Quick: ci.quick, Persist: persistNames[ci.persist], Items: make([]items.WireItem, 0, len(ci.inv.Items)), Ap: AppearanceOf(&ci.inv)}
+	inv := inventoryJSON{V: 1, Gold: ci.inv.Gold(), Quick: ci.quick, Persist: persistNames[ci.persist], Items: make([]items.WireItem, 0, len(ci.inv.Items)), Ap: AppearanceOf(&ci.inv), Auto: ci.autoLoot}
 	for _, it := range ci.inv.Items {
 		inv.Items = append(inv.Items, it.Wire())
 	}
@@ -865,6 +872,9 @@ func (s *Server) itemAction(sess *session, m *proto.Interact) {
 	var err error
 	note := ""
 	switch act {
+	case ItemActAutoLoot:
+		s.setAutoLoot(sess, m.Arg != 0)
+		return
 	case ItemActUnequip:
 		slots := []string{items.EqMain0, items.EqMain1, items.EqHead, items.EqBody, items.EqLegs}
 		if int(m.Arg) >= len(slots) {
