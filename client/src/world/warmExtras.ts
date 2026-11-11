@@ -22,6 +22,7 @@ import { spellFxWarmObjects } from '../combat/fx/warm';
 import { enemyWarmObjects } from '../combat/enemies/warm';
 import { armorMaterial } from '../combat/armor/material';
 import { ambientLifeWarmObjects } from './life/ambientLife';
+import { smokeWarmObject } from './buildings/chimneySmoke';
 
 let kept: THREE.Object3D[] | null = null;
 
@@ -90,6 +91,8 @@ export function warmExtras(): THREE.Object3D[] {
   // wing shader), fireflies and motes (points): drawn only when the biome and hour
   // call for them, so possibly first seen long after load.
   out.push(...ambientLifeWarmObjects());
+  // Chimney smoke (buildings/chimneySmoke.ts): appears with the first town in range.
+  out.push(smokeWarmObject());
   for (const o of out) o.frustumCulled = false;
   kept = out;
   return out;

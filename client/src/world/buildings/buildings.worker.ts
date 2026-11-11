@@ -99,7 +99,7 @@ function handle(m: BuildingsIn): void {
       case 'settlement': {
         const t0 = performance.now();
         const mesh = buildSettlementMesh(towns!, m.index, heightAt);
-        post({ type: 'settlement', id: m.id, index: m.index, mesh, ms: performance.now() - t0 }, [...meshTransferables(mesh.shell), ...meshTransferables(mesh.interior), mesh.lights.buffer]);
+        post({ type: 'settlement', id: m.id, index: m.index, mesh, ms: performance.now() - t0 }, [...meshTransferables(mesh.shell), ...meshTransferables(mesh.interior), mesh.lights.buffer, mesh.smoke.buffer]);
         break;
       }
       case 'structure': {

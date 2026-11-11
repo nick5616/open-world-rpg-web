@@ -9,7 +9,7 @@
 
 import fs from 'node:fs';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { BOX_FLAG, loadWorldgen, parseTowns, townsBytes, type Building, type Towns } from '@lodestone/worldgen';
+import { BOX_FLAG, BUILDING_FLAG, loadWorldgen, parseTowns, townsBytes, type Building, type Towns } from '@lodestone/worldgen';
 import { hasWasm, testWorld, wasmPath } from '../testing/wasm';
 import { BK, boxAt, buildSettlementMesh, drawBuildingShell, drawSteps, wallThickness, type Box } from './kit';
 import { MeshBuilder, type MeshData } from './meshBuilder';
@@ -160,6 +160,13 @@ describe.skipIf(!hasWasm)('building kit vs collision boxes', () => {
     expect(m.shell.indexCount / 3).toBeLessThan(120_000);
     expect(m.interior.indexCount).toBeGreaterThan(0);
     expect(m.lights.length / 7).toBeGreaterThan(big.buildingCount / 4);
+    // Playtest 2 immersion pass: one smoke source per chimney stack, above its building's roof, within the town.
+    const chimneys = official.buildings.slice(big.buildingFirst, big.buildingFirst + big.buildingCount).filter((b) => (b.flags & BUILDING_FLAG.chimney) !== 0);
+    expect(m.smoke.length / 3).toBe(chimneys.length);
+    for (let i = 0; i < m.smoke.length; i += 3) {
+      expect(Math.hypot(m.smoke[i] - big.x, m.smoke[i + 2] - big.z)).toBeLessThan(big.radius + 20);
+      expect(m.smoke[i + 1]).toBeGreaterThan(big.y + 2);
+    }
     // All indices in range, all positions finite.
     for (let i = 0; i < m.shell.indexCount; i++) expect(m.shell.index[i]).toBeLessThan(m.shell.vertexCount);
     expect(m.shell.position.every(Number.isFinite)).toBe(true);
