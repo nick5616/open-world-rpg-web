@@ -485,7 +485,7 @@ export class AmbientLife {
       const yaw = Math.atan2(-dx, -dz);
       this.e.set(-0.25 + 0.2 * Math.sin(t * 5), yaw, 0, 'YXZ');
       this.q.setFromEuler(this.e);
-      this.m4.compose(this.v.set(x, y, z), this.q, this.s.setScalar(2.2 + s.ph[k] * 0.8));
+      this.m4.compose(this.v.set(x, y, z), this.q, this.s.setScalar(1.8 + s.ph[k] * 0.7));
       this.butterflies.setMatrixAt(c++, this.m4);
     }
     this.butterflies.count = c;
