@@ -216,7 +216,7 @@ export function baseLine(key: string): string {
     case 'armor':
       return `${mat?.name ?? ''} · ${d.health ? formatStat('health', d.health) : ''}${d.armorPct ? `, ${formatStat('armorPct', d.armorPct)}` : ''} at item level 1`;
     case 'consumable':
-      return d.heal ? `Restores ${d.heal} health` : '';
+      return d.heal ? `Restores ${d.heal}% of your health` : ''; // playtest 2 co-op: draughts grow with your health pool (zone combat drinkScale)
     case 'ammo':
       return `Use: fit ${prettify(d.arrow ?? '')} arrowheads to your bow (bows never run out of arrows; the stack is kept)`; // CR 033
     case 'gem':

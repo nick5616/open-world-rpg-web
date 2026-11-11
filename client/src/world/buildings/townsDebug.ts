@@ -5,6 +5,7 @@ import { BUILDING_ROLES, BUILDING_STYLES, NPC_ROLES, SETTLEMENT_SIZES, TOWN_STRU
 import { DEBUG } from '../../config';
 import { useDebugStore } from '../../stores/debugStore';
 import { frameInfo } from '../debug/worldDebug';
+import { boxAt, BK } from './kit';
 import type { TownsManager } from './townsManager';
 
 export function installTownsDebug(m: TownsManager): () => void {
@@ -20,6 +21,16 @@ export function installTownsDebug(m: TownsManager): () => void {
     buildings: (si: number) => {
       const s = t.settlements[si];
       return t.buildings.slice(s.buildingFirst, s.buildingFirst + s.buildingCount).map((b) => ({ index: b.index, role: BUILDING_ROLES[b.role], style: BUILDING_STYLES[b.style], x: b.x, z: b.z, floorY: b.floorY, hx: b.hx, hz: b.hz, c: b.c, s: b.s, floors: b.floors, doorU: b.doorU, doorW: b.doorW, frontX: b.frontX, frontZ: b.frontZ, flags: b.flags }));
+    },
+    /** Blocking boxes of a settlement (walls, town wall, gates, fences, props), [cx, cz, c, s, hx, hz] each: headless walkers plan around them. */
+    solids: (si: number) => {
+      const s = t.settlements[si];
+      const out: number[][] = [];
+      for (let i = s.boxFirst; i < s.boxFirst + s.boxCount; i++) {
+        const b = boxAt(t, i);
+        if (b.kind === BK.wall || b.kind === BK.townWall || b.kind === BK.gate || b.kind === BK.fence || b.kind === BK.townProp || b.kind === BK.railing || b.kind === BK.piece) out.push([b.cx, b.cz, b.c, b.s, b.hx, b.hz]);
+      }
+      return out;
     },
     npcs: (si: number) =>
       t.npcs.filter((n) => n.settlement === si).map((n) => ({ index: n.index, name: n.name, role: NPC_ROLES[n.role], x: n.workX, z: n.workZ, yaw: n.workYaw, workProp: n.workProp })),

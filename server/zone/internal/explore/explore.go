@@ -283,6 +283,14 @@ func (w *World) Check(p *Progress, pos movement.Vec3, out []Happening) []Happeni
 			p.AddXP(TowerClimbXP)
 			out = append(out, Happening{Kind: TowerUnlocked, Site: t.Site, XP: TowerClimbXP, Region: int(w.Atlas.Sites[t.Site].Region)})
 		}
+		// Playtest 2 co-op: a tower top is a respawn point, like a waypoint
+		// stone. Downed by night hunters at the foot of the Howling Crags'
+		// tower, both players woke 900 m back in the Haven town.
+		if p.LastWaypoint != t.Site {
+			p.LastWaypoint = t.Site
+			p.dirty = true
+			out = append(out, Happening{Kind: RespawnPointSet, Site: t.Site, Region: int(w.Atlas.Sites[t.Site].Region)})
+		}
 	}
 	return out
 }

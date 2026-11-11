@@ -98,6 +98,22 @@ type finaleRun struct {
 
 func (s *Server) finaleSecs(sec float64) uint32 { return uint32(math.Round(sec * 30)) }
 
+// finaleShroudHits: the shroud breaks after this many sunsteel or Light
+// hits (4 + 4 per player in the arena; the Starless Vow 6 per player).
+// Playtest 2 co-op: it was 8 % of the Hush's health, which grows with its
+// level and the party (55,000 at level 33 for two), while the only things
+// that break it are a sunsteel blade forged at level 3 and the first Light
+// spell: two level 30 players needed 450 damage a second from those alone
+// in 10 s, never broke it, ate the Long Quiet every 26 s and watched the
+// Hush heal. A count of hits is a test of focus, the same at any level.
+func finaleShroudHits(players int, hard bool) float64 {
+	per := 4
+	if hard {
+		per = 6
+	}
+	return float64(4 + per*max(1, players))
+}
+
 // finaleMayFight: a character who may wake the Hush.
 func (s *Server) finaleMayFight(sess *session) bool {
 	if sess == nil || sess.quests == nil {
@@ -197,10 +213,7 @@ func (s *Server) finaleTick(tick uint32) {
 		s.finaleTellAll()
 	}
 	if ph != 1 && r.shroud <= 0 && now >= r.nextShroud && (r.nightAt == 0 || r.nightAt-now > s.finaleSecs(finaleShroudUp+2)) {
-		r.shroudMax = r.hush.HPMax * 0.08
-		if r.hard {
-			r.shroudMax = r.hush.HPMax * 0.1
-		}
+		r.shroudMax = finaleShroudHits(len(inArena), r.hard)
 		r.shroud = r.shroudMax
 		r.shroudEnd = now + s.finaleSecs(finaleShroudUp)
 		r.nextShroud = now + s.finaleSecs(s.finaleEvery(finaleShroudS, 20))
@@ -337,7 +350,7 @@ func (s *Server) finaleGuard(e *combat.Enemy, src uint32, dmg float64, killing b
 			s.finaleShrug(src, "Only sunsteel or Light can break the shroud.")
 			return 0
 		}
-		r.shroud -= dmg
+		r.shroud-- // a sunsteel or Light hit (finaleShroudHits)
 		if r.shroud <= 0 {
 			r.shroud = 0
 			r.nextShroud = now + s.finaleSecs(s.finaleEvery(finaleShroudS, 20))

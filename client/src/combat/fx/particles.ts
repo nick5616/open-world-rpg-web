@@ -95,6 +95,7 @@ void main() {
 const FRAG = /* glsl */ `
 uniform float uAdditive;
 uniform float uHdr;
+uniform float uHotK;
 varying vec3 vColor;
 varying float vAlpha;
 varying float vShape;
@@ -132,7 +133,8 @@ void main() {
   a *= vAlpha;
   if (a < 0.003) discard;
   vec3 col = vColor;
-  if (uAdditive > 0.5) col = mix(col, vec3(1.0), vHot * 0.35) * (1.0 + vHot * 0.8) * uHdr;
+  // a fresh particle starts white-hot (uHotK: the flash profile; calm keeps it near its own colour)
+  if (uAdditive > 0.5) col = mix(col, vec3(1.0), vHot * 0.35 * uHotK) * (1.0 + vHot * 0.8 * uHotK) * uHdr;
   gl_FragColor = vec4(col, a);
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
@@ -189,6 +191,7 @@ export class ParticlePool {
         uResolution: { value: new THREE.Vector2(1280, 720) },
         uAdditive: { value: additive ? 1 : 0 },
         uHdr: { value: 1 },
+        uHotK: { value: 1 },
       },
       transparent: true,
       depthWrite: false,

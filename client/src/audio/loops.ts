@@ -8,7 +8,7 @@
 // ours). Voices fade in when picked and fade out and stop when dropped, so
 // a fire 40 m behind you costs nothing and nothing ever clicks.
 
-import type { LoopTarget } from './loopPool';
+import type { LoopEmitter, LoopTarget } from './loopPool';
 import { LOOP_PROFILES } from './spatial';
 import { renderLoop, type LoopFamily } from './synth';
 
@@ -71,7 +71,7 @@ export class LoopVoices {
         v = undefined;
       }
       if (!v) {
-        const nv = this.start(e.id, e.kind, tg.gain, e.x, e.y, e.z);
+        const nv = this.start(e, tg.gain);
         if (!nv) continue;
         v = nv;
         v.lp.frequency.value = Math.max(200, tg.lowpassHz);
@@ -88,8 +88,14 @@ export class LoopVoices {
     for (const [id, v] of this.voices) if (v.dying && t > v.dying + FADE_OUT_TAU * 6) this.reap(id, v);
   }
 
-  private start(id: string, kind: keyof typeof LOOP_PROFILES, gain: number, x: number, y: number, z: number): LoopVoice | null {
-    const p = LOOP_PROFILES[kind];
+  private start(e: LoopEmitter, gain: number): LoopVoice | null {
+    const { id, x, y, z } = e;
+    const p = LOOP_PROFILES[e.kind];
+    if (!this.buffers.has(p.family)) {
+      // Rendered on first use (playtest 2 loot hums: most sessions never hear all five).
+      this.buffers.set(p.family, null);
+      void renderLoop(this.ctx, p.family).then((b) => this.buffers.set(p.family, b));
+    }
     const buf = this.buffers.get(p.family);
     if (!buf || gain <= 0) return null;
     const ctx = this.ctx;
@@ -97,7 +103,7 @@ export class LoopVoices {
     const src = ctx.createBufferSource();
     src.buffer = buf;
     src.loop = true;
-    src.playbackRate.value = p.rate * (0.96 + Math.random() * 0.08);
+    src.playbackRate.value = e.rate !== undefined ? p.rate * e.rate * (0.99 + Math.random() * 0.02) : p.rate * (0.96 + Math.random() * 0.08);
     const lp = ctx.createBiquadFilter();
     lp.type = 'lowpass';
     lp.Q.value = 0.5;

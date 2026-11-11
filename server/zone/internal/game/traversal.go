@@ -55,7 +55,7 @@ func (s *Server) stepEnv() movement.Env {
 	if s.weatherOn() {
 		// CR 030: the weather where each player stands (weather.go); the
 		// dev rain override became the field's override in main.go.
-		return movement.Env{Updraft: s.nightUpdraft(), Weather: s.weatherFieldAt(weather.Step(s.worldTimeS()))}
+		return movement.Env{Updraft: s.nightUpdraft(), Weather: s.moveField(s.weatherFieldAt(weather.Step(s.worldTimeS())))}
 	}
 	raining := weather.IsRaining(s.cfg.Seed, s.worldTimeS()) // WP15: the world clock (night.go)
 	if s.cfg.Rain != nil {

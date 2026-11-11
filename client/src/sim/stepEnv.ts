@@ -8,7 +8,8 @@
 // A mismatch between the two only costs prediction corrections, never safety:
 // the zone simulates with its own env.
 
-import type { StepEnv, UpdraftField } from './movement';
+import type { MoveField, StepEnv, UpdraftField } from './movement';
+import { shelteredField, towerShelters } from './shelter';
 import { parseUpdrafts, UpdraftColumns } from './updraft';
 import { isRaining } from './weather';
 // WP15: world time includes the world's clock offset; fire feeds the updrafts.
@@ -59,7 +60,7 @@ export function rainOverride(): boolean | null {
 export function envAt(seed: bigint, serverTimeMs: number): StepEnv {
   const t = worldTime(serverTimeMs);
   const f = weatherField(seed, chemStep(t));
-  if (f) return { raining: false, updraft: chemUpdraft(), weather: f };
+  if (f) return { raining: false, updraft: chemUpdraft(), weather: sheltered(f) };
   const forced = rainOverride() ?? worldClockState.rain;
   return { raining: forced ?? isRaining(seed, t), updraft: chemUpdraft() };
 }
@@ -76,6 +77,15 @@ let verticalUpdraft: UpdraftField | null = null;
  */
 export function setVerticalUpdrafts(field: UpdraftField | null): void {
   verticalUpdraft = field;
+}
+
+// Playtest 2 co-op: the crystal towers stay dry to climb (sim/shelter.ts), as the zone does.
+let shelterCache: { f: MoveField; ds: readonly unknown[]; out: MoveField } | null = null;
+function sheltered(f: MoveField): MoveField {
+  const ds = towerShelters();
+  if (shelterCache && shelterCache.f === f && shelterCache.ds === ds) return shelterCache.out;
+  shelterCache = { f, ds, out: shelteredField(f, ds) };
+  return shelterCache.out;
 }
 
 /** WP15: fire's updrafts (the live chemistry view) plus the debug columns, plus CR 038's wind columns. */

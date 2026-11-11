@@ -1,5 +1,52 @@
 [
   {
+    "id": "pt2-calm-kills",
+    "date": "2026-11-11",
+    "title": "Calmer hits and kills",
+    "items": [
+      "Hits and kills no longer flash: struck enemies glow softly and fade calmly when they fall.",
+      "New in Graphics: Reduce flashing, on by default. Turn it off for punchier hits that still stay photosensitivity-safe.",
+      "Spell impacts, sparks and your own shots near the camera are gentler, and your system's reduced-motion setting is respected."
+    ]
+  },
+  {
+    "id": "pt2-coop",
+    "date": "2026-11-11",
+    "title": "Better together, all the way to the Hush",
+    "items": [
+      "Playing the story with a friend: the farmer's and the blacksmith's talks count for you both, and a friend beside a sunsteel seam gets their own ore when it breaks.",
+      "The sunlit shaft really is a shaft now: jump in to reach the sunsteel seam.",
+      "Crystal towers stay dry to climb in the rain, and a tower's top is a respawn point.",
+      "Ulus hands you a spirit whistle for the long roads of Act II (press 5), the Act II towers can all be walked up to, and the Last Keeper's stone marker sits on the stone.",
+      "Healing draughts heal a share of your health (40%), so they stay worth drinking at any level.",
+      "No side quest offers pop up from the story's own townsfolk while you still need them.",
+      "The Starless Sovereign comes to you after the vigil, the sanctum's lens waits for its guardian to fall, and the Hush's shroud breaks after a dozen sunsteel or Light hits."
+    ]
+  },
+  {
+    "id": "pt2-ground-loot",
+    "date": "2026-11-11",
+    "title": "Loot you can see from the sky",
+    "items": [
+      "Loot lands on the ground now: chests spill their treasure around them and kills scatter their drops around the body.",
+      "Every good find stands in a beam of light pouring down from the sky in its rarity's colour. Legendaries tower over the trees and you can spot them from far away.",
+      "Dropped swords, bows and armor are the real thing, lying in the grass or floating in their light.",
+      "Listen for it: good drops hum, each rarity its own note, louder and farther the rarer it is. Gems chime and tomes whisper.",
+      "Walk over gold to scoop it up; gear and rare finds wait for E. Auto-collect for common loot is in the Esc menu."
+    ]
+  },
+  {
+    "id": "pt2-voice-settings",
+    "date": "2026-11-11",
+    "title": "Voice settings you can tune",
+    "items": [
+      "Esc > Voice (or the Voice button): pick your microphone and speakers, boost a quiet mic, and turn echo cancellation, noise suppression and auto gain on or off. It all applies at once.",
+      "Push to talk or open mic: rebind the talk key (a mouse side button works too), make it a toggle, or set the open-mic threshold right on a live level meter. 0 mutes your microphone.",
+      "Test your mic: hear yourself (with a delay if you like) or record five seconds and play it back.",
+      "Turn any nearby player up, down or off, remembered per player. And a Diagnostics page shows what voice is doing, explains common problems, and copies a report for bug reports."
+    ]
+  },
+  {
     "id": "pt2-pickaxe-swing",
     "date": "2026-11-11",
     "title": "Swing a real pickaxe",

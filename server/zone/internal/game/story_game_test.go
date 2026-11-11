@@ -116,6 +116,21 @@ func TestMainStoryTwoPlayersEndToEnd(t *testing.T) {
 	t.Logf("places: keeper %s of %s; stone %s; forks %s / %s / %s / %s; vaults %s / %s; vigil %s (%s); smith %s of %s; sanctum %s; last fork %s; Heartfall (%.0f, %.0f) in %s",
 		p.Keeper.Name, p.Home, p.Tablet.Name, p.Forks[0].Name, p.Forks[1].Name, p.Forks[2].Name, p.Forks[3].Name, p.Vaults[0].Name, p.Vaults[1].Name,
 		p.Vigil.Name, p.Captain.Name, p.Smith.Name, p.Smith.Town, p.Sanctum.Name, p.LastFork.Name, p.Heartfall.X, p.Heartfall.Z, p.Heartfall.Region)
+	// Playtest 2 co-op: every story tower can be walked up to.
+	for _, f := range append(p.Forks[:], p.LastFork) {
+		if tw, ok := h.srv.cfg.Explore.TowerOfSite(f.Site); ok && !h.srv.towerApproachable(tw.Shape.CX, tw.Shape.CZ, tw.Shape.MaxR) {
+			t.Fatalf("story tower %s has no walkable approach", f.Name)
+		}
+	}
+	sawCrags := false
+	for _, tw := range h.srv.cfg.Explore.Towers {
+		if a := h.srv.cfg.Explore.Atlas.Sites[tw.Site]; a.Name == "The Forgotten Spire" && tw.Shape.TopY > 400 {
+			sawCrags = !h.srv.towerApproachable(tw.Shape.CX, tw.Shape.CZ, tw.Shape.MaxR)
+		}
+	}
+	if !sawCrags {
+		t.Fatal("the Howling Crags' summit tower (one 46 degree ridge) should count as unapproachable")
+	}
 
 	const A, B = "a1111111-2222-3333-4444-555555555555", "b1111111-2222-3333-4444-555555555555"
 	for i, c := range []string{A, B} {
@@ -179,6 +194,19 @@ func TestMainStoryTwoPlayersEndToEnd(t *testing.T) {
 	talk(p.Keeper)
 	waitStory(t, h, A, 1, 1, both...)
 	waitStory(t, h, B, 1, 1, both...) // shared: B stood beside A
+	// Playtest 2 co-op: B talks to the keeper too (nothing left to do with
+	// him now): no side quest card pops up ("The Lodestone's Hum" is this
+	// story told again, and the keeper keeps to the story he still needs).
+	if id := b.npcEntityID(h, p.Keeper.Index); id != 0 {
+		b.send(&proto.Interact{TargetKind: InteractNPC, TargetID: uint64(id), Action: ActionTalk})
+		b.pump(400 * time.Millisecond)
+		if offers := b.eventsOf(EventQuestOffer); len(offers) != 0 {
+			t.Fatalf("the keeper offered a side quest during the story: %s", offers[0].Data)
+		}
+	}
+	if tp, ok := h.srv.tabletPos(p.Tablet.Site); !ok || math.Hypot(tp.X-p.Tablet.X, tp.Z-p.Tablet.Z) > 0.01 {
+		t.Fatalf("the stone's marker (%.1f, %.1f) is not on the stone %+v", p.Tablet.X, p.Tablet.Z, tp)
+	}
 	near(p.Tablet.X, p.Tablet.Z+8)
 	signal(quests.Signal{Kind: quests.ObjRead, Site: p.Tablet.Site})
 	waitStory(t, h, B, 1, 2, both...)
@@ -286,6 +314,16 @@ func TestMainStoryTwoPlayersEndToEnd(t *testing.T) {
 	if sov.Demon == nil || sov.Def.Key != "starless_sovereign" || sov.Name != "The Starless Sovereign" {
 		t.Fatalf("sovereign %+v", sov.Def.Key)
 	}
+	// Playtest 2 co-op: it comes out within its aggro of the defenders.
+	var nearest float64 = math.Inf(1)
+	h.do(func() {
+		for _, e := range []*Entity{ea, eb} {
+			nearest = math.Min(nearest, math.Hypot(e.Move.Pos.X-sov.Pos.X, e.Move.Pos.Z-sov.Pos.Z))
+		}
+	})
+	if nearest > sov.Def.Aggro {
+		t.Fatalf("the Sovereign walked out %.0f m from the nearest defender (aggro %.0f)", nearest, sov.Def.Aggro)
+	}
 	h.do(func() { h.srv.cbt.w.Slay(sov, ea.ID) })
 	waitStory(t, h, B, 4, 5, both...)
 	talk(p.Captain)
@@ -298,6 +336,28 @@ func TestMainStoryTwoPlayersEndToEnd(t *testing.T) {
 	talk(p.Smith)
 	waitStory(t, h, B, 5, 2, both...)
 	near(p.Sanctum.X+6, p.Sanctum.Z+6)
+	if !p.SanctumBoss {
+		t.Fatal("the official world's sanctum should have a guardian")
+	}
+	// Playtest 2 co-op: the packs around it falling is not the guardian.
+	deadline = time.Now().Add(6 * time.Second)
+	for adds := false; !adds && time.Now().Before(deadline); {
+		h.do(func() {
+			for _, g := range h.srv.cbt.w.Groups {
+				if g.Kind != combat.GroupBoss && g.Spawned && math.Hypot(g.Anchor.X-p.Sanctum.X, g.Anchor.Z-p.Sanctum.Z) < 60 {
+					for _, m := range g.Members {
+						h.srv.cbt.w.Slay(m, ea.ID)
+						adds = true
+					}
+				}
+			}
+		})
+		a.pump(100 * time.Millisecond)
+	}
+	a.pump(500 * time.Millisecond)
+	if _, st := h.storyAt(A); st != 2 {
+		t.Fatalf("the lens step finished without its guardian (step %d)", st)
+	}
 	deadline = time.Now().Add(6 * time.Second)
 	for slain := false; !slain; {
 		h.do(func() {
@@ -363,11 +423,21 @@ func TestMainStoryTwoPlayersEndToEnd(t *testing.T) {
 	a.pump(200 * time.Millisecond)
 	var hp0, shroud float64
 	var blocked, depleted float64
+	var afterOne float64
 	h.do(func() {
 		hp0, shroud = r.hush.HP, r.shroud
 		blocked = h.srv.finaleGuard(r.hush, ea.ID, 200, false)
-		depleted = h.srv.finaleGuard(r.hush, ea.ID, r.shroud+1, true)
+		// Playtest 2 co-op: a count of sunsteel / Light hits, not 8 % of a
+		// level- and party-scaled health pool (12 for two in the arena).
+		depleted = h.srv.finaleGuard(r.hush, ea.ID, 1e6, true)
+		afterOne = r.shroud
+		for i := 0; i < 20 && r.shroud > 0; i++ {
+			depleted += h.srv.finaleGuard(r.hush, ea.ID, 50, true)
+		}
 	})
+	if shroud != finaleShroudHits(2, false) || afterOne != shroud-1 {
+		t.Fatalf("shroud %v hits, %v left after one huge hit", shroud, afterOne)
+	}
 	if shroud <= 0 || blocked != 0 || depleted != 0 || r.shroud != 0 || r.hush.HP != hp0 {
 		t.Fatalf("shroud %v blocked %v depleted %v left %v", shroud, blocked, depleted, r.shroud)
 	}

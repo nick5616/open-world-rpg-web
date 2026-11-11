@@ -77,7 +77,7 @@ export class VoiceMixer {
   private meters: [AnalyserNode, AnalyserNode];
   private meterBuf = new Float32Array(1024);
   private listener = { pos: { x: 0, y: 0, z: 0 } as Vec3, yaw: 0, pitch: 0 };
-  /** Per-player volume (0-2) and mute, by character name. */
+  /** Per-player volume (0-2) and mute, by character id. */
   private volumes = new Map<string, number>();
   private mutes = new Set<string>();
   private masterVolume = 1;
@@ -249,15 +249,25 @@ export class VoiceMixer {
     }
   }
 
-  setVolume(name: string, v: number): void {
-    this.volumes.set(name, v);
-    for (const c of this.chains.values()) if (c.name === name) this.applyVolume(c);
+  /** A player's local volume (0-2) and mute, by character id (playtest 2 voice settings: saved by id). */
+  setPeer(id: string, volume: number, muted: boolean): void {
+    this.volumes.set(id, volume);
+    if (muted) this.mutes.add(id);
+    else this.mutes.delete(id);
+    const c = this.chains.get(id);
+    if (c) this.applyVolume(c);
   }
 
-  setMuted(name: string, muted: boolean): void {
-    if (muted) this.mutes.add(name);
-    else this.mutes.delete(name);
-    for (const c of this.chains.values()) if (c.name === name) this.applyVolume(c);
+  /** One speaker's level as received (pre-volume analyser), dBFS; null when not subscribed. */
+  levelDb(id: string): number | null {
+    const c = this.chains.get(id);
+    if (!c) return null;
+    const buf = this.meterBuf.subarray(0, c.analyser.fftSize);
+    c.analyser.getFloatTimeDomainData(buf);
+    let s = 0;
+    for (let i = 0; i < buf.length; i++) s += buf[i] * buf[i];
+    const rms = Math.sqrt(s / buf.length);
+    return rms > 0 ? Math.max(-100, 20 * Math.log10(rms)) : -100;
   }
 
   setMasterVolume(v: number): void {
@@ -266,7 +276,7 @@ export class VoiceMixer {
   }
 
   private applyVolume(c: Chain): void {
-    const v = this.mutes.has(c.name) ? 0 : (this.volumes.get(c.name) ?? 1) * (c.frame.occluded ? OCCLUDED_GAIN : 1);
+    const v = this.mutes.has(c.id) ? 0 : (this.volumes.get(c.id) ?? 1) * (c.frame.occluded ? OCCLUDED_GAIN : 1);
     c.gain.gain.setTargetAtTime(v, this.ctx.currentTime, 0.03);
   }
 
@@ -296,7 +306,7 @@ export class VoiceMixer {
         rel: f.pos ? relativeToListener(L.pos, L.yaw, L.pitch, f.pos) : null,
         distanceGain: f.mode === 'spatial' && c.distance !== null ? inverseDistanceGain(c.distance) : 1,
         volume: c.gain.gain.value,
-        muted: this.mutes.has(c.name),
+        muted: this.mutes.has(c.id),
         occluded: f.occluded,
         lowpassHz: Math.round(c.lowpass.frequency.value),
         spatialGain: c.spatialGain.gain.value,

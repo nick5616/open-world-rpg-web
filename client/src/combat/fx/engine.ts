@@ -35,6 +35,7 @@ import { glowPool, smokePool, SHAPE_GLOW, SHAPE_PUFF, SHAPE_SPARK } from './part
 import { FxPrims, alive, type Held, type DecalSlot, type BeamSlot, type ShellSlot, type DomeSlot } from './transients';
 import { currentFxTier, FX_PROFILES } from './quality';
 import { castHooks, casterHand, gemFor } from './castOrigin';
+import { flashProfile } from '../flashSafety';
 import { castState, type CasterKey } from '../castState';
 import { aimPoint as sharedAimPoint, beamEnd, lookDir, AIM_EYE, SHOT_Y } from '../aim';
 import { FORM_STARTUP_STEPS, moveById, shotRange, shotSpeed } from '../timeline';
@@ -71,6 +72,10 @@ interface Proj {
   t0: number;
   life: number;
   core: number;
+  /** The core mesh's scale as placed (playtest 2 calm kills: it shrinks away near the lens). */
+  sx: number;
+  sy: number;
+  sz: number;
   local: boolean;
   /** Remote and enemy shots test the ground and bodies themselves (visual only). */
   collide: 'none' | 'enemies' | 'players';
@@ -104,6 +109,8 @@ interface StatusEntry {
   until: Float64Array; // per status id (1..12)
   /** The tinted shell it wears (medium and up), the strongest status first. */
   shell: Held<ShellSlot> | null;
+  /** Playtest 2 calm kills: the shell fades in and out (0..1) instead of popping on and off with each re-applied status. */
+  k: number;
 }
 
 const tmpV = new THREE.Vector3();
@@ -172,7 +179,7 @@ export class SpellFxEngine {
       mesh.frustumCulled = halo.frustumCulled = false;
       halo.renderOrder = 21;
       this.group.add(mesh, halo);
-      this.projs.push({ on: false, handle: 0, v: spellVisual(COMBAT.spells[0]), x0: 0, y0: 0, z0: 0, vx: 0, vy: 0, vz: 0, g: 0, t0: 0, life: 0, core: 0.2, local: false, collide: 'none', explode: 0, pierce: false, spread: false, mesh, halo, px: 0, py: 0, pz: 0, ox: 0, oy: 0, oz: 0, light: null, lastHit: 0, spin: 0, hs: null });
+      this.projs.push({ on: false, handle: 0, v: spellVisual(COMBAT.spells[0]), x0: 0, y0: 0, z0: 0, vx: 0, vy: 0, vz: 0, g: 0, t0: 0, life: 0, core: 0.2, sx: 1, sy: 1, sz: 1, local: false, collide: 'none', explode: 0, pierce: false, spread: false, mesh, halo, px: 0, py: 0, pz: 0, ox: 0, oy: 0, oz: 0, light: null, lastHit: 0, spin: 0, hs: null });
     }
     const hm = new THREE.SpriteMaterial({ map: glowTexture(), blending: THREE.AdditiveBlending, transparent: true, depthWrite: false, depthTest: false, opacity: 0 });
     const hs = new THREE.Sprite(hm);
@@ -575,6 +582,9 @@ export class SpellFxEngine {
         m.material = coreMat(c.hotH);
         m.scale.setScalar(s.core * 0.8);
     }
+    s.sx = m.scale.x;
+    s.sy = m.scale.y;
+    s.sz = m.scale.z;
     s.halo.material = haloMat(v.look === 'void' ? c.main : c.mainH, v.look === 'shard' ? 0.5 : 0.85);
     s.halo.visible = v.look !== 'boulder';
     m.visible = true;
@@ -756,9 +766,15 @@ export class SpellFxEngine {
         tmpQ.setFromUnitVectors(UP, tmpV2.set(s.vx / sp, vy / sp, s.vz / sp));
         m.quaternion.setFromAxisAngle(UP, age * 18 + s.spin).premultiply(tmpQ);
       } else if (s.v.look === 'seed') m.rotation.y = age * 6;
-      // Readability: shrink the glow while the shot is still at the lens.
+      // Readability: shrink the glow while the shot is still at the lens. Playtest 2 calm kills: the
+      // core too (it is gone within 0.7 m and full from 2.5 m): your own shot leaves your hand and
+      // eases onto the eye line, so for a frame or two its HDR core filled a third of the view (a
+      // fireball) or flashed a white shape by the crosshair (every wand bolt, 12-15 a second in a stream).
       const d = Math.hypot(x - camPos.x, y - camPos.y, z - camPos.z);
-      const nearK = Math.min(1, Math.max(0.15, (d - 0.5) / 2.5));
+      const nearK = Math.min(1, Math.max(0, (d - 0.7) / 1.8));
+      const coreK = nearK * nearK;
+      m.scale.set(s.sx * coreK, s.sy * coreK, s.sz * coreK);
+      m.visible = coreK > 0.01;
       const flicker = s.v.family === 'fire' ? 1 + Math.sin(age * 31) * 0.12 + Math.sin(age * 13) * 0.08 : 1 + Math.sin(age * 9) * 0.06;
       const hs = s.core * (s.v.look === 'void' ? 4.5 : s.v.look === 'needle' || s.v.look === 'lance' ? 2.8 : 3.4) * flicker * nearK;
       s.halo.position.set(x, y, z);
@@ -1211,6 +1227,12 @@ export class SpellFxEngine {
       return out;
     };
     const SWING = { life: [0.12, 0.24] as [number, number], size: [0.05, 0.1] as [number, number], speed: [0.2, 1.2] as [number, number], shape: SHAPE_SPARK, drag: 3 };
+    // Playtest 2 calm kills: in first person your own arc sweeps right across the view 2-3 times a
+    // second; it was a band of white-hot glow puffs. Calm: a thin, sparse streak in the steel's colour.
+    const fp = flashProfile();
+    const density = 26 * fp.swingTrail;
+    const glowCol = fp.swingTrail < 1 ? c.main : c.hotH;
+    const glowSize = 0.22 * fp.swingTrail;
     this.push({
       until: t0 + dur + 0.1,
       tick: (t) => {
@@ -1223,8 +1245,8 @@ export class SpellFxEngine {
             for (let s = q0; s < q; s += 0.06) {
               at(s, a);
               at(Math.min(q, s + 0.06), b);
-              R.lineEmit(a, b, colors, 26, SWING);
-              glowPool.emit(b.x, b.y, b.z, 0, 0, 0, c.hotH, 0.09, 0.22, 0, 0, SHAPE_GLOW);
+              R.lineEmit(a, b, colors, density, SWING);
+              if (glowSize > 0.05) glowPool.emit(b.x, b.y, b.z, 0, 0, 0, glowCol, 0.09, glowSize, 0, 0, SHAPE_GLOW);
             }
           });
         }
@@ -1316,7 +1338,7 @@ export class SpellFxEngine {
     if (!def) return;
     let e = this.statuses.get(targetId);
     if (!e) {
-      e = { id: targetId, until: new Float64Array(16), shell: null };
+      e = { id: targetId, until: new Float64Array(16), shell: null, k: 0 };
       this.statuses.set(targetId, e);
     }
     const t = fxTime();
@@ -1332,6 +1354,7 @@ export class SpellFxEngine {
 
   private updateStatuses(t: number, dt: number): void {
     const max = budget.profile.statusTargets;
+    const fp = flashProfile();
     const shells = budget.tier !== 'low';
     let drawn = 0;
     for (const [id, e] of this.statuses) {
@@ -1346,7 +1369,11 @@ export class SpellFxEngine {
           break;
         }
       }
-      if (shells && top && v && v.healthPct > 0 && drawn < max) {
+      const want = shells && top && v && v.healthPct > 0 && drawn < max;
+      // Playtest 2 calm kills: a stream re-applies short statuses (shock) many times a second and a
+      // kill ends them: the shell eases in and out (~0.25 s) instead of switching on and off.
+      e.k = want ? Math.min(1, e.k + dt * 4) : Math.max(0, e.k - dt * 4);
+      if ((want || (e.k > 0 && e.shell)) && v && top) {
         if (!alive(e.shell)) e.shell = this.prims.holdShell();
         const info = enemyInfo(v);
         const sh = e.shell.s;
@@ -1355,7 +1382,10 @@ export class SpellFxEngine {
         sh.mat.uniforms.uHex.value = top === 'freeze' || top === 'petrify' ? 1 : 0;
         sh.mat.uniforms.uTime.value = t;
         // (a rim, not a wall: the enemy and its telegraph stay readable through it)
-        sh.mat.uniforms.uOpacity.value = (top === 'freeze' || top === 'petrify' ? 0.6 : 0.35) * (0.8 + 0.2 * Math.sin(t * 6 + id));
+        // (and it fades when your camera is at the body: a shell 1-2 m away filled half the view)
+        const camD = Math.hypot(v.x - camPos.x, v.y + info.height - camPos.y, v.z - camPos.z) - info.radius * 1.5;
+        const nearK = Math.min(1, Math.max(0, (camD - 0.5) / 3));
+        sh.mat.uniforms.uOpacity.value = (top === 'freeze' || top === 'petrify' ? 0.6 : 0.35) * (0.8 + 0.2 * Math.sin(t * 6 + id)) * e.k * (fp.name === 'calm' ? 0.55 : 0.8) * nearK;
         sh.mesh.position.set(v.x, v.y + info.height, v.z);
         sh.mesh.scale.set(info.radius * 1.5 + 0.1, info.height * 1.15 + 0.1, info.radius * 1.5 + 0.1);
       } else if (e.shell) {
@@ -1372,7 +1402,7 @@ export class SpellFxEngine {
         const key = statusById.get(s)?.key;
         if (!key) continue;
         budget.scale = l;
-        R.statusEmit(this.prims, key, v.x, v.y, v.z, info.height * 2, info.size, dt, t);
+        R.statusEmit(this.prims, key, v.x, v.y, v.z, info.height * 2, info.size, dt, t, fp.shockRate);
         budget.scale = 1;
       }
       if (v) drawn++;
@@ -1810,8 +1840,13 @@ export class SpellFxEngine {
       (u.uResolution.value as THREE.Vector2).set(viewport.width * viewport.dpr, h);
       pool.flush();
     }
-    glowPool.material.uniforms.uHdr.value = 1 + (budget.profile.hdr - 1) * 0.2;
-    this.prims.ribbons.material.uniforms.uHdr.value = budget.profile.hdr;
+    // playtest 2 calm kills: the flash profile caps the HDR and how white-hot a fresh particle starts
+    const fp = flashProfile();
+    const hdrNow = Math.min(budget.profile.hdr, fp.hdrMax);
+    glowPool.material.uniforms.uHdr.value = 1 + (hdrNow - 1) * 0.2;
+    glowPool.material.uniforms.uHotK.value = fp.particleHot;
+    smokePool.material.uniforms.uHotK.value = fp.particleHot;
+    this.prims.ribbons.material.uniforms.uHdr.value = hdrNow;
     screenTick(t, dt);
     this.counts.maxUpdateMs = Math.max(this.counts.maxUpdateMs, performance.now() - t0);
   }
@@ -1871,7 +1906,9 @@ export class SpellFxEngine {
   /** The off-hand glow: a pulse on every cast, a growing charge during windups. */
   private updateHand(t: number, dt: number): void {
     const hd = this.hand;
-    hd.pulse = Math.max(0, hd.pulse - dt * 3.5);
+    // playtest 2 calm kills: calm, the glow fades slowly so a wand at 4 shots a second (or a stream) holds it lit instead of blinking it
+    const calm = flashProfile().name === 'calm';
+    hd.pulse = Math.max(0, hd.pulse - dt * (calm ? 1.2 : 2.5));
     const charging = t < hd.chargeUntil;
     hd.charge = charging ? Math.min(1, hd.charge + dt * 2) : Math.max(0, hd.charge - dt * 4);
     const shield = this.selfShield && t < this.selfShield.until ? 0.25 : 0;
@@ -1880,7 +1917,7 @@ export class SpellFxEngine {
     if (!hd.sprite.visible) return;
     this.selfHand(this.handPos);
     hd.sprite.position.copy(this.handPos);
-    const s = (0.05 + 0.05 * k + (charging ? Math.sin(t * 25) * 0.008 : 0)) * (view.third ? 4 : 1);
+    const s = (0.05 + 0.05 * k + (charging ? Math.sin(t * (calm ? 8 : 12)) * 0.008 : 0)) * (view.third ? 4 : 1);
     hd.sprite.scale.set(s, s, 1);
     hd.mat.color.copy(hd.color);
     hd.mat.opacity = Math.min(1, k * 1.2);

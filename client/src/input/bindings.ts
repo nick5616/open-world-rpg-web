@@ -89,7 +89,9 @@ export const BINDINGS: Binding[] = [
   W('F10', 'ui/graphics/GraphicsPanel.tsx', 'graphics settings'),
   W('KeyO', 'social/ui/SocialOverlay.tsx', 'friends'),
   W('Enter', 'social/ui/ChatPanel.tsx', 'chat'),
-  W('KeyV', 'voice/runtime.ts', 'push to talk'),
+  // Playtest 2 voice settings: both voice keys are defaults the player can rebind (voice/keys.ts validates against this table).
+  W('KeyV', 'voice/keys.ts', 'push to talk'),
+  W('Digit0', 'voice/keys.ts', 'mute / unmute your microphone'),
   W('KeyH', 'ui/emotes/EmoteWheel.tsx', 'emote wheel (hold)'),
   W('KeyL', 'ui/photo/PhotoMode.tsx', 'photo mode'),
   W('KeyU', 'ui/music/InstrumentHud.tsx', 'play your instrument'),
@@ -150,5 +152,6 @@ export const NOT_HANDLERS: Record<string, string> = {
   'ui/devconsole/DevConsole.tsx#Escape': "the dev console's command line: close (a text field)",
   'social/ui/ChatPanel.tsx#Escape': "the chat box's Esc (a text field): close chat",
   'social/ui/ChatPanel.tsx#Tab': "the chat box's name completion (a text field)",
+  'voice/ui/VoiceSettings.tsx#Escape': "the voice key capture lets Esc through to the Esc menu, which cancels the capture (it is on the panel stack)",
   'ui/music/InstrumentHud.tsx#KeyY': "lets a pending duel's Y / U through to ui/pvp/PvpHud.tsx while you play",
 };

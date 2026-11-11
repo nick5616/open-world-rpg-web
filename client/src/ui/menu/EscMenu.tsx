@@ -21,6 +21,7 @@ import { CameraSettings } from '../../hud/ViewHud';
 import { openGraphicsPanel } from '../graphics/GraphicsPanel';
 import { DEBUG } from '../../config';
 import { useTips } from '../tips/store';
+import { useAutoLoot } from '../inventory/ground/autoLoot';
 import { controlGroups } from './controls';
 import { useDev } from '../devconsole/store';
 import { closeMenu, escAction, openMenu, unlockOpensMenu, useMenu, type MenuEntry } from './store';
@@ -163,6 +164,7 @@ function MenuButton({ id, onClick, children, hint }: { id: string; onClick: () =
 
 function Main({ entries }: { entries: MenuEntry[] }) {
   const tips = useTips();
+  const autoLoot = useAutoLoot();
   const name = useNetStore((s) => s.ready?.character.name);
   const [leaving, setLeaving] = useState(false);
   useEffect(() => {
@@ -205,6 +207,12 @@ function Main({ entries }: { entries: MenuEntry[] }) {
         </button>
         <button data-testid="menu-tips-reset" tabIndex={-1} onClick={() => tips.resetSeen()} style={SMALL} title="Show this character's tips again">
           Show again
+        </button>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '8px 0 4px' }} title="Walking over common materials, food, potions, arrows, ore and gems picks them up. Gold is always picked up; gear, tomes and anything rare or better wait for E.">
+        <span style={{ fontSize: 13 }}>Auto-collect common loot</span>
+        <button data-testid="menu-autoloot-toggle" tabIndex={-1} onClick={() => autoLoot.set(!autoLoot.on)} style={{ ...SMALL, background: autoLoot.on ? '#2b4f7a' : SMALL.background }}>
+          {autoLoot.on ? 'On' : 'Off'}
         </button>
       </div>
       <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', marginTop: 12, paddingTop: 4 }}>

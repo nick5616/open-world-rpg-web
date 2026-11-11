@@ -1,0 +1,188 @@
+{
+  "checks": {
+    "camp killed, loot on the ground": {
+      "ok": true,
+      "detail": {
+        "kills": 3,
+        "drops": [
+          "weapon:silver_spear(r0)",
+          "weapon:iron_spear(r0)",
+          "currency:gold(r0)",
+          "currency:gold(r0)",
+          "armor:iron_helm(r0)",
+          "meat:raw(r0)",
+          "weapon:iron_sword(r3)"
+        ]
+      }
+    },
+    "B does not see A's personal kill loot": {
+      "ok": true,
+      "detail": {
+        "aSees": 7,
+        "bSeesOfThem": 0
+      }
+    },
+    "A takes a drop with E": {
+      "ok": true,
+      "detail": {
+        "item": "weapon:silver_spear",
+        "prompt": "[E] Take Silver Spear"
+      }
+    },
+    "a chest drops its items on the ground": {
+      "ok": true,
+      "detail": {
+        "before": 11,
+        "after": 13
+      }
+    },
+    "both players see the same dropped items in the same places": {
+      "ok": true,
+      "detail": {
+        "A": [
+          "weapon:iron_sword:r0@256700,60000",
+          "potion:health:r0@256960,60000",
+          "weapon:oak_bow:r2@257220,60000",
+          "armor:sunsteel_helm:r3@257480,60000",
+          "weapon:sunsteel_blade:r4@257740,60000",
+          "weapon:starmetal_spear:r5@258000,60000",
+          "armor:sunsteel_mail:r6@258260,60000",
+          "weapon:voidglass_sword:r7@258520,60000"
+        ],
+        "B": 8
+      }
+    },
+    "from 127 m, B still sees the rare+ drops (beams) and not the commoner ones": {
+      "ok": true,
+      "detail": [
+        "weapon:oak_bow:r2",
+        "armor:sunsteel_helm:r3",
+        "weapon:sunsteel_blade:r4",
+        "weapon:starmetal_spear:r5",
+        "armor:sunsteel_mail:r6",
+        "weapon:voidglass_sword:r7"
+      ]
+    },
+    "A takes the legendary; it is gone for B too": {
+      "ok": true,
+      "detail": {
+        "goneA": true,
+        "goneB": true
+      }
+    }
+  },
+  "perf": {
+    "fortyDrops": {
+      "before": {
+        "frames": 227,
+        "p50": 16.7,
+        "p95": 33.4,
+        "p99": 50,
+        "max": 83.3,
+        "over33": 13,
+        "calls": 344,
+        "tris": 1558391
+      },
+      "drops": 40,
+      "after": {
+        "frames": 294,
+        "p50": 16.7,
+        "p95": 16.8,
+        "p99": 33.3,
+        "max": 50,
+        "over33": 1,
+        "calls": 378,
+        "tris": 1532781
+      }
+    },
+    "note": "vsync 60 Hz, 1280x720, High; same spot before and after dropping 40 items of mixed rarity in view; GPU shared with other agents' browsers",
+    "turnBenchHighUncapped": {
+      "pan": {
+        "p50": 16.1,
+        "p95": 34.6,
+        "p99": 41.8,
+        "max": 60.4
+      },
+      "flick": {
+        "p50": 19.1,
+        "p99": 38,
+        "max": 38
+      },
+      "longTasks": 0,
+      "note": "solo, no drops; machine heavily shared (earlier quiet-machine runs: pan p50 ~4.5 ms), so only the 0 long tasks is comparable"
+    }
+  },
+  "issues": [],
+  "perfChecks": {
+    "camp killed, loot on the ground": {
+      "ok": true,
+      "detail": {
+        "kills": 3,
+        "drops": [
+          "currency:gold(r0)",
+          "currency:gold(r0)",
+          "currency:gold(r0)",
+          "meat:raw(r0)",
+          "gem:sunstone:rough(r0)",
+          "blueprint:iron_cuirass(r0)",
+          "weapon:silver_wand(r0)"
+        ]
+      }
+    },
+    "B does not see A's personal kill loot": {
+      "ok": true,
+      "detail": {
+        "aSees": 7,
+        "bSeesOfThem": 0
+      }
+    },
+    "A takes a drop with E": {
+      "ok": true,
+      "detail": {
+        "item": "meat:raw",
+        "prompt": "[E] Take Blueprint: Iron Cuirass"
+      }
+    },
+    "a chest drops its items on the ground": {
+      "ok": true,
+      "detail": {
+        "before": 4,
+        "after": 5
+      }
+    },
+    "both players see the same dropped items in the same places": {
+      "ok": true,
+      "detail": {
+        "A": [
+          "weapon:iron_sword:r0@271400,45300",
+          "potion:health:r0@271660,45300",
+          "weapon:oak_bow:r2@271920,45300",
+          "armor:sunsteel_helm:r3@272180,45300",
+          "weapon:sunsteel_blade:r4@272440,45300",
+          "weapon:starmetal_spear:r5@272700,45300",
+          "armor:sunsteel_mail:r6@272960,45300",
+          "weapon:voidglass_sword:r7@273220,45300"
+        ],
+        "B": 8
+      }
+    },
+    "from 127 m, B still sees the rare+ drops (beams) and not the commoner ones": {
+      "ok": true,
+      "detail": [
+        "weapon:oak_bow:r2",
+        "armor:sunsteel_helm:r3",
+        "weapon:sunsteel_blade:r4",
+        "weapon:starmetal_spear:r5",
+        "armor:sunsteel_mail:r6",
+        "weapon:voidglass_sword:r7"
+      ]
+    },
+    "A takes the legendary; it is gone for B too": {
+      "ok": true,
+      "detail": {
+        "goneA": true,
+        "goneB": true
+      }
+    }
+  }
+}

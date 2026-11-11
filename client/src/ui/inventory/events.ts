@@ -29,7 +29,7 @@ export const LOOT_SOURCE = { kill: 1, container: 2, vein: 3, craft: 4, purchase:
 export const INTERACT = { container: 20, item: 21, craft: 22, pickup: 41 } as const;
 
 /** Interact 21 actions. */
-export const ITEM_ACT = { use: 1, drop: 2, equip: 3, unequip: 4, move: 5, socket: 6, unsocket: 7, combine: 8, quick: 9 } as const;
+export const ITEM_ACT = { use: 1, drop: 2, equip: 3, unequip: 4, move: 5, socket: 6, unsocket: 7, combine: 8, quick: 9, autoLoot: 10 } as const;
 /** Interact 22 actions. */
 export const CRAFT_ACT = { craft: 1, openCook: 2 } as const;
 
@@ -40,6 +40,8 @@ export interface Inventory {
   items: WireItem[];
   /** CR 034: your worn armor's appearance (the number your snapshot record carries for others: combat/armor). */
   ap: number;
+  /** Playtest 2 ground loot: the auto-collect setting the zone holds for you (Interact 21/10). */
+  auto?: boolean;
 }
 
 export interface LootEntry {
@@ -80,7 +82,7 @@ function json<T>(b: Uint8Array): T {
 
 /** Event 400: the whole inventory (full replace). */
 export function decodeInventory(data: Uint8Array): Inventory {
-  const j = json<{ v?: number; gold?: number; quick?: string; persist?: string; items?: WireItem[]; ap?: number }>(data);
+  const j = json<{ v?: number; gold?: number; quick?: string; persist?: string; items?: WireItem[]; ap?: number; auto?: boolean }>(data);
   if (typeof j !== 'object' || j === null) throw new Error('inventory: not an object');
   const items = Array.isArray(j.items) ? j.items.filter((it) => it && typeof it.b === 'string' && typeof it.s === 'string') : [];
   for (const it of items) {
@@ -89,7 +91,7 @@ export function decodeInventory(data: Uint8Array): Inventory {
     it.r = it.r ?? 0;
     it.p = it.p ?? 0;
   }
-  return { gold: j.gold ?? 0, quick: j.quick ?? '', persist: j.persist ?? 'memory', items, ap: typeof j.ap === 'number' ? j.ap : 0 };
+  return { gold: j.gold ?? 0, quick: j.quick ?? '', persist: j.persist ?? 'memory', items, ap: typeof j.ap === 'number' ? j.ap : 0, auto: j.auto === true };
 }
 
 /** Event 401: what was just added. */

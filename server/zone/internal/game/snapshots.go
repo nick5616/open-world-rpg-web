@@ -34,6 +34,7 @@ import (
 	"math/bits"
 	"runtime"
 
+	"lodestone/server/pkg/constants"
 	"lodestone/server/pkg/proto"
 	"lodestone/server/pkg/snapshot"
 	"lodestone/server/zone/internal/aoi"
@@ -126,6 +127,7 @@ type entView struct {
 	layer   int8  // CR 038: vertical layer (layerVisible only runs when it differs)
 	y       float64
 	due     aoi.DueMask // G5: which rings update it this tick (aoi.Due), once per entity instead of per client
+	beam    bool        // playtest 2 ground loot: a rare+ pickup whose light beam is seen across the mid ring
 }
 
 // buildViews fills s.views and s.qs for every grid index (after the grid
@@ -144,7 +146,8 @@ func (s *Server) buildViews(tick uint32) {
 		if e.q.Name != e.nameOf { // names rarely change: intern once per entity
 			e.nameOf, e.nameID = e.q.Name, snapshot.NameID(e.q.Name)
 		}
-		s.views[i] = entView{x: e.Move.Pos.X, z: e.Move.Pos.Z, id: e.ID, owner: e.Owner, partyID: e.PartyID, kind: e.Kind, caveSys: int32(e.caveSys), layer: e.layer, y: e.Move.Pos.Y, nameID: e.nameID, due: aoi.DueAll(tick, e.ID)}
+		s.views[i] = entView{x: e.Move.Pos.X, z: e.Move.Pos.Z, id: e.ID, owner: e.Owner, partyID: e.PartyID, kind: e.Kind, caveSys: int32(e.caveSys), layer: e.layer, y: e.Move.Pos.Y, nameID: e.nameID, due: aoi.DueAll(tick, e.ID),
+			beam: e.Kind == proto.EntityKindPickup && e.TypeID >= pickupBeamRarity}
 		s.qs[i] = e.q
 		// Unchanged since when (snapshot.History.Set): a break in the
 		// series (new entity, absent last tick) counts as a change.
@@ -283,6 +286,13 @@ func (s *Server) sendSnapshot(sc *snapScratch, sess *session, tick uint32, serve
 		// ring's edge (aoi.UsesKnown), so the newest frame is searched for
 		// those few instead of walked for everyone.
 		r := aoi.Classify(d, o.kind, aoi.UsesKnown(d, o.kind) && known.Has(o.id), sameParty)
+		if r == aoi.None && o.beam && d < constants.RingMidM {
+			// Playtest 2 ground loot: rare+ drops stand in a light beam meant
+			// to be seen from afar, so they ride the mid ring (pickups are
+			// otherwise near-ring only); static, so they cost almost nothing
+			// after first sight.
+			r = aoi.Mid
+		}
 		if r == aoi.None {
 			continue
 		}

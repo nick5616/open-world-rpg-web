@@ -28,7 +28,7 @@ Places are **world-global**, resolved once per zone from the towns, the atlas, t
 | --- | --- | --- | --- | --- |
 | Prologue | Slimes in the meadows; Ward against the night | | Draedmore (the Haven) | existing: slimes, the blacksmith, sunsteel ore, the blade, Light |
 | I | The Fading Hum | - | Draedmore, the Watchtower of Droraeth (the Last Keeper's stone), The Forgotten Spire (Forgotten Heights) | talk to Ulus the innkeeper · read the Last Keeper's stone · attune the nearest tower · back to Ulus (the **Keeper's Tuning Fork**) |
-| II | The Tuning Forks | level 5 | Craidath Spire (Gilded Fields), The Ironbound Spire (Burning Leas), The Forgotten Spire (Howling Crags) | wake three forks in three regions (nearest-neighbour route) · back to Ulus |
+| II | The Tuning Forks | level 5 | Craidath Spire (Gilded Fields), The Ironbound Spire (Burning Leas), The Hollow Spire (playtest 2 co-op: the Howling Crags' summit tower was dropped, no walkable approach) | wake three forks in three regions (nearest-neighbour route; only towers with a straight approach under 44 degrees) · back to Ulus |
 | III | Verses in the Deep | level 8 | The Undervault of The Moonlit Ruins (levers), The Vault beneath Baimteick Ruins (weighing stones: two players hold them easily) | open two sealed vaults, beat their Vault Keepers (**Verse of Dawn**, **Verse of Dusk**) · back to Ulus |
 | IV | The Night Unsung | level 10 | Teiraben (the vigil town; Gartha, its bounty keeper) | find the captain · "light the beacon": a town defense (3 waves) · the **Starless Sovereign** walks out of the dark (mid-boss; only sunsteel and Light) · report |
 | V | Dawnforged | level 12 | Steinmadun (Breus, master smith), Sanctum of Bukefoim (an Archon) | the smith · clear the sanctum (the **Archon's Lens**) · give the lens (the **Dawnheart**) |
@@ -67,13 +67,13 @@ A set piece at the Heartfall: a ring of broken obsidian pillars around a sigil, 
 
 | Phase | Health | What it does | What it asks of two players |
 | --- | --- | --- | --- |
-| 1 | 100-70 % | rend (a wide cone), toll (a ring around it), falling stars (ground circles); every ~26 s **the shroud**: a ward of 8 % of its health that only **sunsteel or Light** breaks; ordinary hits do nothing | one keeps its attention, the one with Light breaks the shroud in 10 s: broken, it staggers and takes 1.5x damage; unbroken, **the Long Quiet** hits everyone for 40 % and it heals 5 % |
+| 1 | 100-70 % | rend (a wide cone), toll (a ring around it), falling stars (ground circles); every ~26 s **the shroud**: a ward that only **sunsteel or Light** breaks: 4 + 4 hits per player in the arena (playtest 2 co-op; it was 8 % of its scaled health, out of reach for two level 30s); ordinary hits do nothing | one keeps its attention, the one with Light breaks the shroud in 10 s: broken, it staggers and takes 1.5x damage; unbroken, **the Long Quiet** hits everyone for 40 % and it heals 5 % |
 | 2 | 70-35 % | **the choir**: it is untouchable at the centre while its **Hollow Bells** (players + 1, 2-4, around the edge; Unsung: only sunsteel or Light cracks them) toll; the chorus falls under every player every 7 s | split up, each takes the bells on their side; the last bell shattered: it reels (6 s stagger, 2x damage for 8 s) |
 | 3 | 35-0 % | faster, a lance; the shroud again; every ~30 s **the endless night** (7 s warning, the sigil burns red): only those in a **well of dawn** (golden columns, one per player, 2-4) are spared; **two in one well and it fails them both** (75 % of their health) | find a well each, revive whoever the night caught |
 
 **Scaling 1-4**: health and damage by engaged players; bells and wells by players in the arena; adds (shades) at each phase change by party size. Solo, it is a long, careful fight; with two, a 5-8 minute one.
 
-**Hard mode, the Starless Vow** (post-game, toggled in the journal): the Hush rises 4 levels higher, the shroud every 20 s (10 % of its health), the chorus every 5.5 s, the night every 24 s; your nights carry 1.5x hunters.
+**Hard mode, the Starless Vow** (post-game, toggled in the journal): the Hush rises 4 levels higher, the shroud every 20 s (4 + 6 hits per player), the chorus every 5.5 s, the night every 24 s; your nights carry 1.5x hunters.
 
 **Victory**: Act VI ends (600 gold, 2000 XP, two rolled rare+ items); everyone in the fight sees **the ending**: lines over a sunrise ("They will sing of Nicole and Friend, who kept the last song together."), then **the credits** (the game's own lines, then every section of CREDITS.md). The arena glows gold for a minute.
 

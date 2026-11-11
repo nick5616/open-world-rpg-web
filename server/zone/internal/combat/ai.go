@@ -923,9 +923,9 @@ func (w *World) playerUpkeep() {
 		}
 		if p.drinkTick != 0 && tick >= p.drinkTick {
 			p.drinkTick = 0
-			heal := p.drinkHeal // WP14: the consumable's heal (combat.yaml's stand-in without items)
+			heal := p.drinkHeal * drinkScale(p.HPMax) // WP14: the consumable's heal (combat.yaml's stand-in without items)
 			p.HP = math.Min(p.HPMax, p.HP+heal)
-			w.toPlayer(p.ID, Out{Ev: ev(EvConsumable, p.ID, 0, int32(p.Charges), p.Pos, []byte{byte(heal)})})
+			w.toPlayer(p.ID, Out{Ev: ev(EvConsumable, p.ID, 0, int32(p.Charges), p.Pos, []byte{byte(min(255, math.Round(heal)))})})
 		}
 		// Mana for the HUD: on change, at most 5 Hz.
 		if math.Abs(p.Mana-p.manaSent) >= 1 && tick-p.manaSentTick >= 6 || (p.Mana == p.ManaMax && p.manaSent != p.ManaMax && tick-p.manaSentTick >= 6) {
@@ -933,6 +933,18 @@ func (w *World) playerUpkeep() {
 			w.toPlayer(p.ID, Out{Ev: ev(EvMana, p.ID, uint32(p.ManaMax*10), int32(math.Round(p.Mana*10)), p.Pos, nil)})
 		}
 	}
+}
+
+// drinkScale: a draught's heal is written for a level 1 character (100
+// health); it grows with your health pool. Playtest 2 co-op: at level 12
+// (247 health) a Healing Draught's flat 40 was a sixth of the bar, and the
+// pair burned eight of them in one vault yard to no effect.
+func drinkScale(hpMax float64) float64 {
+	base := D.Leveling.Health.Base
+	if base <= 0 {
+		return 1
+	}
+	return math.Max(1, hpMax/base)
 }
 
 // ---- enemy projectiles ----
