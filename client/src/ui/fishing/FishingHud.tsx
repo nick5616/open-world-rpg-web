@@ -14,6 +14,7 @@ import { useEffect, useState } from 'react';
 import { CONTENT } from '@lodestone/contracts';
 import { isTextTarget } from '../../input/useKeyboard';
 import { eFree } from '../../input/interact';
+import { heldBlocked, onHeldRelease } from '../../input/held';
 import { localPlayer } from '../../state/live';
 import { useInventory } from '../inventory/store';
 import { countOf } from '../inventory/items';
@@ -58,7 +59,15 @@ function onKey(e: KeyboardEvent): void {
     }
     return;
   }
-  if (ACTIVE.has(ph) && press()) {
+  if (!ACTIVE.has(ph)) return;
+  // Playtest 2 polish: under the Esc menu or a panel that freed the mouse the line waits (no reel,
+  // and no jump or other E either: the keys stay the line's while it is out).
+  if (heldBlocked()) {
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    return;
+  }
+  if (press()) {
     e.preventDefault();
     e.stopImmediatePropagation();
   }
@@ -70,7 +79,7 @@ function onMouse(e: MouseEvent): void {
     release();
     return;
   }
-  if ((e.target as HTMLElement | null)?.tagName !== 'CANVAS' || !document.pointerLockElement) return;
+  if ((e.target as HTMLElement | null)?.tagName !== 'CANVAS' || !document.pointerLockElement || heldBlocked()) return;
   const ph = useFishing.getState().phase;
   if (ACTIVE.has(ph) && press()) e.stopImmediatePropagation(); // no sword swing while you fish
 }
@@ -89,6 +98,11 @@ if (typeof window !== 'undefined') {
   window.addEventListener('mousedown', onMouse, true);
   window.addEventListener('mouseup', onMouse, true);
 }
+
+onHeldRelease(release); // focus, the mouse capture or the Esc menu: stop reeling (input/held.ts)
+
+/** The capture-phase handlers (tests). */
+export const fishingInput = { onKey, onMouse };
 
 const text = { font: '14px system-ui, sans-serif', color: '#f4efe2', textShadow: '0 1px 2px #000, 0 0 6px #000' } as const;
 
