@@ -64,13 +64,28 @@ export function envAt(seed: bigint, serverTimeMs: number): StepEnv {
   return { raining: forced ?? isRaining(seed, t), updraft: chemUpdraft() };
 }
 
-/** WP15: fire's updrafts (the live chemistry view) plus the debug columns. */
+let verticalUpdraft: UpdraftField | null = null;
+
+/**
+ * CR 038: the vertical world's static wind columns (sky lifts, wind columns,
+ * geysers, currents: worldgen VerticalUpdrafts over the descriptor's
+ * updrafts), max'ed into every step's updraft like the zone does
+ * (server/zone/internal/game/night.go withVerticalUpdraft). Set when the
+ * world loads, null to clear.
+ */
+export function setVerticalUpdrafts(field: UpdraftField | null): void {
+  verticalUpdraft = field;
+}
+
+/** WP15: fire's updrafts (the live chemistry view) plus the debug columns, plus CR 038's wind columns. */
 function chemUpdraft(): UpdraftField | null {
   const dbg = debugUpdraft();
   const view = chemRuntime.view;
-  if (!view) return dbg;
-  if (!dbg) return view;
-  return { liftAt: (x, y, z) => Math.max(view.liftAt(x, y, z), dbg.liftAt(x, y, z)) };
+  const v = verticalUpdraft;
+  const parts = [view, dbg, v].filter((f): f is UpdraftField => !!f);
+  if (parts.length === 0) return null;
+  if (parts.length === 1) return parts[0];
+  return { liftAt: (x, y, z) => parts.reduce((m, f) => Math.max(m, f.liftAt(x, y, z)), 0) };
 }
 
 /** Offline (solo) env: local clock, default seed. */

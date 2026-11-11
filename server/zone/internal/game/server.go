@@ -130,6 +130,7 @@ type Config struct {
 
 // Server is one zone process's simulation.
 type Server struct {
+	skyTowns []int8 // CR 038: per settlement, 0 unknown, 1 surface, 2 sky (vertical.go skyTown)
 	cfg   Config
 	log   *slog.Logger
 	sched *gameloop.Scheduler

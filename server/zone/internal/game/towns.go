@@ -134,9 +134,15 @@ func (s *Server) townsTick(tick uint32, now time.Time) {
 		for si := range w.T.Settlements {
 			st := &w.T.Settlements[si]
 			near := math.Inf(1)
+			// CR 038: a sky town wakes by 3D distance (not for the people below).
+			sky := w.SkySettlement(si, s.cfg.Ground.HeightAt)
 			for _, sess := range s.sessions {
 				if e := sess.ent; e != nil {
-					near = math.Min(near, math.Hypot(e.Move.Pos.X-st.X, e.Move.Pos.Z-st.Z)-st.Radius)
+					d := math.Hypot(e.Move.Pos.X-st.X, e.Move.Pos.Z-st.Z)
+					if sky {
+						d = math.Hypot(d, e.Move.Pos.Y-st.Y)
+					}
+					near = math.Min(near, d-st.Radius)
 				}
 			}
 			for i := st.NPCFirst; i < st.NPCFirst+st.NPCs; i++ {

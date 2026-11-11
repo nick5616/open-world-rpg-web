@@ -24,6 +24,16 @@ const (
 	POIWaypoint  = 2
 	POILandmark  = 3
 	POIEnemyCamp = 4
+	// genVersion 3 (CR 038, the vertical world): appended after every base site.
+	POITunnel      = 5
+	POICavern      = 6
+	POISkyLift     = 7
+	POIDepths      = 8
+	POIArchipelago = 9
+	POIDepthsGate  = 10
+	// Structure kinds 9 and 10 (layer 1).
+	StructSkyPalace = 9
+	StructSkyRuin   = 10
 )
 
 // Site is one atlas site record. Index is its dense, world-stable position
@@ -40,6 +50,24 @@ type Site struct {
 	Name     string // "" when unnamed
 	Yaw      float64
 	Link     int // linked site index, -1 none
+	// Layer (genVersion 3, byte 37): 0 surface, 1 sky, 2 Underground, 3 Depths.
+	Layer uint8
+}
+
+// IsBase: a site that predates the vertical world (genVersion 3 appends its
+// sites after these; story, content and quest picks read only these so they
+// stay where they were).
+func (s *Site) IsBase() bool {
+	if s.Layer != 0 {
+		return false
+	}
+	switch s.Category {
+	case CategoryPOI:
+		return s.Kind <= POIEnemyCamp
+	case CategoryStructure:
+		return s.Kind <= 8
+	}
+	return true
 }
 
 // IsTower reports whether the site is a tower POI.
@@ -123,9 +151,10 @@ func ParseAtlas(b []byte) (*Atlas, error) {
 		a.Sites[i] = Site{
 			Index: i, ID: le.Uint64(p), Category: p[8], Kind: p[9], Region: p[10], Size: p[11],
 			X: f32(p, 12), Y: f32(p, 16), Z: f32(p, 20), Radius: f32(p, 24),
-			Name: name(le.Uint16(p[32:])),
-			Yaw:  float64(le.Uint16(p[44:])) / 65536 * 2 * math.Pi,
-			Link: link,
+			Name:  name(le.Uint16(p[32:])),
+			Yaw:   float64(le.Uint16(p[44:])) / 65536 * 2 * math.Pi,
+			Link:  link,
+			Layer: p[37],
 		}
 	}
 

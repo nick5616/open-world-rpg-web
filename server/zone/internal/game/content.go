@@ -237,6 +237,9 @@ func (s *Server) contentWorld() *content.World {
 	}
 	if tw := s.cfg.Towns; tw != nil {
 		for si := range tw.T.Settlements {
+			if s.skyTown(si) { // CR 038: givers and deliveries stay on the ground (sequences unchanged)
+				continue
+			}
 			st := &tw.T.Settlements[si]
 			t := content.Town{Index: si, ID: st.ID, Name: s.settlementName(si), X: st.X, Z: st.Z, Radius: st.Radius, Region: region(st.X, st.Z)}
 			if atlas != nil {
@@ -720,7 +723,7 @@ func (s *Server) patchOK(x, z float64) bool {
 	if tw := s.cfg.Towns; tw != nil {
 		for i := range tw.T.Settlements {
 			st := &tw.T.Settlements[i]
-			if math.Hypot(st.X-x, st.Z-z) < st.Radius+18 {
+			if !s.skyTown(i) && math.Hypot(st.X-x, st.Z-z) < st.Radius+18 {
 				return false
 			}
 		}

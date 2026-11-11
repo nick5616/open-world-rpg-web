@@ -163,6 +163,15 @@ func (s *Server) AreaTier(x, z float64) (*combatdefs.DifficultyTier, int, bool) 
 	return t, l, true
 }
 
+// AreaTierLayer is AreaTier in a vertical layer (CR 038).
+func (s *Server) AreaTierLayer(x, z float64, layer int) (*combatdefs.DifficultyTier, int, bool) {
+	if !s.diff.on {
+		return nil, 0, false
+	}
+	l, t, ok := s.diff.m.AreaAtLayer(x, z, layer)
+	return t, l, ok
+}
+
 // lootLevelAt is the item level of world loot (containers) at (x, z): the
 // area's level, the same one its enemies spawn at (the Haven's 1 at the
 // spawn), so chests and kills agree. fallback (the worldgen record's
@@ -192,7 +201,7 @@ func (s *Server) difficultyTick(tick uint32) {
 		}
 		m.Set(st, tick)
 		for _, sess := range s.sessions {
-			if e := sess.ent; e != nil && m.Cell(e.Move.Pos.X, e.Move.Pos.Z) == st.Cell {
+			if e := sess.ent; e != nil && m.LayerCell(int(e.layer), e.Move.Pos.X, e.Move.Pos.Z) == st.Cell {
 				byYou := st.Won && st.By == e.CharacterID
 				s.sendArea(sess, st.Cell, byYou)
 			}
@@ -216,7 +225,7 @@ func (s *Server) difficultyTick(tick uint32) {
 		if e.x != nil {
 			level = e.x.prog.Level
 		}
-		d.near = m.Near(x, z, reach, d.near[:0])
+		d.near = m.NearLayer(int(e.layer), x, z, reach, d.near[:0]) // CR 038: the layer you are in
 		for _, c := range d.near {
 			if !m.NeedsClaim(c, tick) {
 				continue
@@ -233,7 +242,7 @@ func (s *Server) difficultyTick(tick uint32) {
 			default: // the worker is behind: ask again on the next pass
 			}
 		}
-		c := m.Cell(x, z)
+		c := m.LayerCell(int(e.layer), x, z)
 		sn := d.seen[sess]
 		if sn == nil {
 			sn = &areaSeen{cell: -1}
@@ -296,7 +305,9 @@ func (s *Server) sendArea(sess *session, c int, byYou bool) {
 	if byYou && sess.x != nil {
 		byLevel = sess.x.prog.Level
 	}
-	s.sendEvent(sess, &proto.Event{Kind: EventArea, EntityID: sess.ent.ID, TargetID: uint32(c), Value: int32(l), X: cm(x), Z: cm(z),
+	// CR 038: targetId stays the surface cell index; y = the layer (0 surface,
+	// 1 sky, 2 Underground, 3 Depths), not centimetres.
+	s.sendEvent(sess, &proto.Event{Kind: EventArea, EntityID: sess.ent.ID, TargetID: uint32(c % m.BaseCells()), Value: int32(l), X: cm(x), Y: int32(m.LayerOf(c)), Z: cm(z),
 		Data: EncodeArea(ti, flags, int(m.CellM), byLevel, by)})
 	if sn := d.seen[sess]; sn != nil && sn.cell == c {
 		sn.sent = true

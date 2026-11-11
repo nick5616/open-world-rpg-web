@@ -182,6 +182,9 @@ func (s *Server) resolveStory() *story.Places {
 	// Home: the settlement nearest the world spawn (every new character's).
 	home, hd := -1, math.Inf(1)
 	for i := range tw.T.Settlements {
+		if s.skyTown(i) { // CR 038: the story stays on the ground it was written for
+			continue
+		}
 		if d := math.Hypot(tw.T.Settlements[i].X-ca.SpawnX, tw.T.Settlements[i].Z-ca.SpawnZ); d < hd {
 			home, hd = i, d
 		}
@@ -329,7 +332,7 @@ func (s *Server) resolveStory() *story.Places {
 		st := &tw.T.Settlements[i]
 		r := ca.RegionAt(st.X, st.Z)
 		d := dist(st.X, st.Z)
-		if i == home || r == homeRegion || r == lastRegion || d < 700 || d > 1900 || st.NPCs < 6 {
+		if s.skyTown(i) || i == home || r == homeRegion || r == lastRegion || d < 700 || d > 1900 || st.NPCs < 6 {
 			continue
 		}
 		if !s.storyNPC(i, towns.RoleGuard, towns.RoleBounty).OK {
@@ -354,7 +357,7 @@ func (s *Server) resolveStory() *story.Places {
 	sm, smN := -1, -1
 	for i := range tw.T.Settlements {
 		st := &tw.T.Settlements[i]
-		if ca.RegionAt(st.X, st.Z) != lastRegion || !s.storyNPC(i, towns.RoleBlacksmith).OK {
+		if s.skyTown(i) || ca.RegionAt(st.X, st.Z) != lastRegion || !s.storyNPC(i, towns.RoleBlacksmith).OK {
 			continue
 		}
 		if st.NPCs > smN {
@@ -365,7 +368,7 @@ func (s *Server) resolveStory() *story.Places {
 		bd := math.Inf(1)
 		for i := range tw.T.Settlements {
 			st := &tw.T.Settlements[i]
-			if d := math.Hypot(st.X-p.LastFork.X, st.Z-p.LastFork.Z); d < bd && s.storyNPC(i, towns.RoleBlacksmith).OK {
+			if d := math.Hypot(st.X-p.LastFork.X, st.Z-p.LastFork.Z); d < bd && !s.skyTown(i) && s.storyNPC(i, towns.RoleBlacksmith).OK {
 				sm, bd = i, d
 			}
 		}
@@ -376,7 +379,7 @@ func (s *Server) resolveStory() *story.Places {
 		bs, bsc := -1, math.Inf(1)
 		for i := range ex.Atlas.Sites {
 			a := &ex.Atlas.Sites[i]
-			if a.Category != structures.CategoryStructure {
+			if a.Category != structures.CategoryStructure || !a.IsBase() {
 				continue
 			}
 			k := int(a.Kind)
@@ -415,6 +418,9 @@ func (s *Server) heartfallSpot(r int, tower story.Place) story.Place {
 	clear := func(x, z float64) bool {
 		for i := range ex.Atlas.Sites {
 			a := &ex.Atlas.Sites[i]
+			if !a.IsBase() { // CR 038: the Heartfall stays where it was
+				continue
+			}
 			min := 55.0
 			switch a.Category {
 			case structures.CategorySettlement:

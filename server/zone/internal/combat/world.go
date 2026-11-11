@@ -269,7 +269,7 @@ func (w *World) BuildFromAtlas(a *AtlasInfo) {
 	safe := func(x, z float64) bool {
 		for i := range a.Sites {
 			s := &a.Sites[i]
-			if s.Category == structures.CategorySettlement && math.Hypot(s.X-x, s.Z-z) < s.Radius+60 {
+			if s.Category == structures.CategorySettlement && s.Layer == 0 && math.Hypot(s.X-x, s.Z-z) < s.Radius+60 {
 				return false
 			}
 		}
