@@ -226,6 +226,38 @@ export function nearestEvent(s: Pick<ContentState, 'events'>, x: number, z: numb
   return best;
 }
 
+/** How long the full world event card shows after something worth a look. */
+export const EVENT_CARD_MS = 8000;
+/** Within the event's radius plus this you are "in it" (walking in shows the card again). */
+export const EVENT_NEAR_M = 40;
+/** Farther than this, no card and no chip. */
+export const EVENT_HIDE_M = 600;
+
+/** What the tracker remembers about the event it shows. */
+export interface EventCardMemo {
+  id: number;
+  phase: number;
+  inside: boolean;
+  fullUntil: number;
+}
+
+/**
+ * Playtest 2 (co-op): the nearest world event's card sat top centre over
+ * the clock for minutes, wherever the event was. The full card now shows
+ * for EVENT_CARD_MS when the event first comes within EVENT_HIDE_M, when it
+ * is won or over, and when you walk into it (radius + EVENT_NEAR_M);
+ * otherwise a one-line chip; nothing beyond EVENT_HIDE_M. Pure: feed the
+ * returned memo back in on the next tick.
+ */
+export function eventCardMode(e: Pick<WorldEventView, 'id' | 'phase' | 'r'>, d: number, now: number, memo: EventCardMemo | null): { mode: 'full' | 'chip' | 'hidden'; memo: EventCardMemo | null } {
+  if (d > EVENT_HIDE_M) return { mode: 'hidden', memo: memo && memo.id === e.id ? memo : null };
+  const phase = e.phase === EVENT_PHASE.updated ? EVENT_PHASE.active : e.phase;
+  const inside = d <= e.r + EVENT_NEAR_M;
+  let fullUntil = memo?.fullUntil ?? 0;
+  if (!memo || memo.id !== e.id || memo.phase !== phase || (inside && !memo.inside)) fullUntil = now + EVENT_CARD_MS;
+  return { mode: now < fullUntil ? 'full' : 'chip', memo: { id: e.id, phase, inside, fullUntil } };
+}
+
 /** A creature's codex view (the zone counts kills; the tables tell the rest). */
 export function codexEntries(sync: ContentSync) {
   return CONTENT.codex.map((c) => ({ ...c, kills: sync.kills[c.key] ?? 0, unlocked: (sync.kills[c.key] ?? 0) > 0 }));
