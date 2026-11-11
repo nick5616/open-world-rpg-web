@@ -177,7 +177,7 @@ func TestVerticalOK(t *testing.T) {
 	}{
 		{"standing", on, on, true},
 		{"jump step", on, movement.State{Pos: movement.Vec3{Y: 10 + jump}}, true},
-		{"rising faster than a jump", on, movement.State{Pos: movement.Vec3{Y: 10 + 3*jump}}, false},
+		{"rising faster than a jump or a sky lift", on, movement.State{Pos: movement.Vec3{Y: 10 + 4*jump}}, false}, // v8: an updraft may lift 20 - 2 = 18 m/s = 3 jumps
 		{"below ground", on, movement.State{Pos: movement.Vec3{Y: 9.5}}, false},
 		{"falling", movement.State{Pos: movement.Vec3{Y: 30}, Vel: movement.Vec3{Y: -5}}, movement.State{Pos: movement.Vec3{Y: 29.9}}, true},
 	}

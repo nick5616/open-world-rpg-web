@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* global localStorage, requestAnimationFrame */
+/* global localStorage, location, requestAnimationFrame */
 // CR 038 evidence: the vertical world in the real client (solo, one headless
 // Chromium on the GPU via ANGLE/D3D11): a tunnel entrance, the first view
 // into a crystal cavern with blue water, the Depths, a sky archipelago from
@@ -141,7 +141,6 @@ async function shot(page, errors, name, o) {
     const pl = window.__lodestone.player();
     const p = pl.pos;
     const g = window.__lodestoneVerticalGround;
-    const cam = window.__lodestoneCamera?.position;
     return { pos: { x: +p.x.toFixed(1), y: +p.y.toFixed(1), z: +p.z.toFixed(1) }, mode: pl.mode, floor: g ? +g.floorAt(p.x, p.y, p.z).toFixed(1) : null, layer: vm?.layer, chamber: vm?.chamber, under: window.__lodestoneWorld?.stats?.()?.caves?.underground, stats: vm?.stats };
   });
   const s = [...frames].sort((a, b) => a - b);

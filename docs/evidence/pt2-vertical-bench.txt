@@ -15,3 +15,7 @@ both sides, so read cpu-Mcycles and allocs, not the ms.
   (noise: per tick the head adds a nil check in verticalTick (no vertical world), payFalls' loop over entities with a zero
    landing, one int8 compare per interest candidate, and a struct copy + two compares per applied frame for landings.
    Re-measure on a quiet box before a deploy.)
+
+After merging main 41ec650 (ground loot, calm kills, co-op fixes) into the branch:
+  main 41ec650:                 p90_e600 944177c4d7f72c26ed0aceea9366f46a4b0ed2b001e0a772a4aa8763aad5fb42  p300_e2000 6dfd63912be3651a2ac5f1cc026366fece520c3fd893d094408c3d28f96fbe6e
+  pt2/vertical-world (merged):  p90_e600 944177c4d7f72c26ed0aceea9366f46a4b0ed2b001e0a772a4aa8763aad5fb42  p300_e2000 6dfd63912be3651a2ac5f1cc026366fece520c3fd893d094408c3d28f96fbe6e  (identical)

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* global localStorage */
 // CR 038 dev aid: open the solo client at a place and run a list of probes
 // (toggle groups, screenshot each) to find what draws wrong.
 //   node client/src/world/vertical/dev/vertical-debug.mjs x y z yaw pitch outDir
