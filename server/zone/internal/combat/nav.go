@@ -4,7 +4,7 @@ package combat
 //
 // A coarse walkability grid derived from what the zone already knows, the
 // same rules stepMove applies to every enemy step: the ground's height
-// (slopes: a step may not climb more than navRise), water (deeper than
+// (slopes: an edge may not climb more than navMaxRise), water (deeper than
 // 0.6 m) and World.Obstacles (town boxes, closed doors, solid camp pieces).
 // 0.5 m cells, built lazily per 16 m chunk the first time a search touches
 // it, cached (deterministic LRU) and dropped by NavInvalidate when a door
@@ -12,15 +12,18 @@ package combat
 // class (navClassR): "a body this wide, with its feet on the ground here,
 // overlaps no obstacle".
 //
-// Searches are A* (octile, 8-connected, no corner cutting, uphill-limited
-// directed edges) inside a 128 m window around start and goal, on a shared
-// arena: only one search is in flight at a time, the rest wait in a FIFO,
-// and a global per-tick budget of node expansions (navTickBudget; a chunk
-// build costs navChunkCost) slices long searches across ticks (navai.go).
-// The cell path is string-pulled with grid line of sight into a few
+// Searches are weighted A* (octile x navHeur, 8-connected, no corner
+// cutting, uphill-limited directed edges) inside a 128 m window around
+// start and goal, on a shared arena: only one search is in flight at a
+// time, the rest wait in a FIFO, and a global per-tick budget of node
+// expansions (navTickBudget; a chunk build costs navChunkCost) slices long
+// searches across ticks (navai.go). A search that has not arrived after
+// navFloodAfter expansions floods the goal's pocket once (navFlood): a
+// player in a shut house fails in a few hundred cells, not a window's
+// worth. The cell path is string-pulled with grid line of sight into a few
 // waypoints. Everything here runs on the tick goroutine (the serial nav
-// pass after the enemy loop); AI workers only read built chunks (navLOS's
-// peek variant), never build or evict them.
+// pass after the enemy loop); AI workers only read built chunks
+// (navPeekLOS, navshare.go), never build or evict them.
 
 import (
 	"math"

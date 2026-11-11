@@ -10,8 +10,9 @@ import (
 
 // Enemy AI: simple state machines on the zone tick (spec 8: idle, patrol,
 // alert, chase, attack, flee, return), moving over the overworld heightfield
-// (the "coarse overworld nav": straight steering with slope and water
-// avoidance; WP09's cave graph can replace steer() underground).
+// (straight steering with slope, water and building avoidance; when the
+// straight step keeps being refused, a path from the nav grid, navai.go;
+// allies follow the cave graph underground, navcave.go).
 //
 // Fight pacing is designed against the feel targets: every attack is
 // telegraphed 300-600 ms (combat.yaml, checked at build), melee enemies back
