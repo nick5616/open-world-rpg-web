@@ -315,6 +315,42 @@ func TestMiningBreakDropsEditsRespawn(t *testing.T) {
 	t.Logf("vein %x (%s, hp %d) broke after %d swings; drop %q; respawned", v.ID, v.MaterialName(), v.HP, swings, drops[0].Data)
 }
 
+// Playtest 2 co-op: a party member beside the vein when it breaks gets their
+// own drop without swinging (the Ward's sunsteel seam is gone for hours once
+// broken); someone outside the party does not.
+func TestMiningBreakSharesWithPartyBeside(t *testing.T) {
+	ct := testCaveTerrain(t)
+	h := newHarness(t, func(c *Config) { c.Ground = ct })
+	v, stand := pickVein(t, ct)
+	spawn := "?spawn=" + ftoa(stand.X) + "," + ftoa(stand.Y+0.3) + "," + ftoa(stand.Z)
+	a := h.dial(spawn)
+	a.join(h, "miner-a", "Miner")
+	b := h.dial(spawn)
+	b.join(h, "friend-b", "Friend")
+	c := h.dial(spawn)
+	c.join(h, "stranger-c", "Stranger")
+	h.do(func() {
+		h.srv.setParty(h.srv.byChar["miner-a"].ent, "party-1")
+		h.srv.setParty(h.srv.byChar["friend-b"].ent, "party-1")
+	})
+	a.pump(300 * time.Millisecond)
+	for swings := 0; len(a.eventsOf(EventVeinBreak)) == 0 && swings < 40; swings++ {
+		a.send(&proto.Interact{TargetKind: InteractVein, TargetID: v.ID, Action: ActionUse})
+		a.pump(320 * time.Millisecond)
+	}
+	b.pump(300 * time.Millisecond)
+	c.pump(100 * time.Millisecond)
+	if len(a.eventsOf(EventDropSpawned)) != 1 {
+		t.Fatalf("miner drops %v", a.eventsOf(EventDropSpawned))
+	}
+	if len(b.eventsOf(EventDropSpawned)) != 1 || len(b.eventsOf(EventVeinBreak)) != 1 {
+		t.Fatalf("the party member beside the vein got no drop: %v", b.eventsOf(EventDropSpawned))
+	}
+	if len(c.eventsOf(EventDropSpawned)) != 0 {
+		t.Fatalf("a stranger got a drop: %v", c.eventsOf(EventDropSpawned))
+	}
+}
+
 func TestMiningRestoresPersistedEdits(t *testing.T) {
 	ct := testCaveTerrain(t)
 	v := ct.CaveGraph().Veins[3]

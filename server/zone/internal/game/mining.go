@@ -98,6 +98,9 @@ const (
 	// contribution window: players who hit the vein this recently share
 	// in its drops.
 	contributionWindow = 2 * time.Minute
+	// veinPartyM: party members this close to a breaking vein get their
+	// own drop as well (playtest 2 co-op).
+	veinPartyM = 30.0
 )
 
 // Granter receives items from pickups (WP14 replaces the default, which
@@ -236,6 +239,9 @@ func (s *Server) interact(e *Entity, in *proto.Interact, now time.Time) {
 		for _, p := range s.ents {
 			if p.ID == uint32(in.TargetID) && p.Kind == proto.EntityKindPickup && p.Owner == e.ID {
 				if dist3(p.Move.Pos, e.Move.Pos) <= pickupTakeReachM+constants.PlayerHeight {
+					if p.drop != nil {
+						p.drop.refused = time.Time{} // an explicit E always tries (and says why not)
+					}
 					s.takePickup(e, p)
 				}
 				return
@@ -354,6 +360,23 @@ func (s *Server) breakVein(cw caveWorld, v caves.Vein, st *veinState, breaker *E
 		for _, e := range s.ents {
 			if e.ID == id && e.Kind == proto.EntityKindPlayer {
 				owners = append(owners, e)
+			}
+		}
+	}
+	// Playtest 2 co-op: party members beside the vein get their own drop too
+	// (as kill XP is shared). A sunsteel seam the Ward quest sends both of
+	// you to is gone for 6-24 h once one of you breaks it; the friend who
+	// was a step behind used to get nothing and had to find another cave.
+	for _, o := range append([]*Entity(nil), owners...) {
+		if o.PartyID == 0 {
+			continue
+		}
+		for _, m := range s.parties[o.PartyID] {
+			if m == nil || m.Kind != proto.EntityKindPlayer || slices.Contains(owners, m) {
+				continue
+			}
+			if math.Hypot(m.Move.Pos.X-v.X, m.Move.Pos.Z-v.Z) <= veinPartyM && math.Abs(m.Move.Pos.Y-v.Y) <= veinPartyM {
+				owners = append(owners, m)
 			}
 		}
 	}
@@ -483,7 +506,7 @@ func (s *Server) miningTick(tick uint32, now time.Time) {
 			if o := sess.ent; o != nil && o.ID == p.Owner {
 				feet := o.Move.Pos
 				mid := movement.Vec3{X: feet.X, Y: feet.Y + 0.9, Z: feet.Z}
-				if dist3(mid, p.Move.Pos) <= pickupReachM+0.9 {
+				if dist3(mid, p.Move.Pos) <= pickupReachM+0.9 && s.autoTake(sess, p, now) { // playtest 2 ground loot: what walking over takes (loot_ground.go)
 					s.takePickup(o, p)
 				}
 			}

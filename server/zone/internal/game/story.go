@@ -22,6 +22,7 @@ import (
 	"math"
 	"sort"
 	"strconv"
+	"strings"
 
 	"lodestone/server/pkg/combatdefs"
 	"lodestone/server/pkg/contentdefs"
@@ -75,6 +76,7 @@ const (
 	storyShareM     = 200 // party members this close share a step
 	storyEveryTicks = 30  // party progress and vigil checks at 1 Hz
 	vigilLeaveS     = 60  // nobody near the vigil town this long: it fails
+	vigilSovereignM = 28  // the Sovereign walks out of the dark this far from a defender
 )
 
 type storyGlue struct {
@@ -219,6 +221,11 @@ func (s *Server) resolveStory() *story.Places {
 	}
 	if best >= 0 {
 		p.Tablet = s.storySite(best)
+		// Playtest 2 co-op: mark the stone itself, not the ruin's centre (it
+		// stands 7 m off it, out of the prompt's 3 m reach).
+		if tp, ok := s.tabletPos(best); ok {
+			p.Tablet.X, p.Tablet.Z = tp.X, tp.Z
+		}
 	}
 	_ = cw
 
@@ -231,6 +238,9 @@ func (s *Server) resolveStory() *story.Places {
 	var ts []tw2
 	for _, t := range ex.Towers {
 		a := &ex.Atlas.Sites[t.Site]
+		if t.Shape != nil && !s.towerApproachable(t.Shape.CX, t.Shape.CZ, t.Shape.MaxR) {
+			continue // playtest 2 co-op: a summit you can't walk up to
+		}
 		ts = append(ts, tw2{t.Site, int(a.Region), dist(a.X, a.Z)})
 	}
 	sort.Slice(ts, func(i, j int) bool {
@@ -396,6 +406,8 @@ func (s *Server) resolveStory() *story.Places {
 		}
 	}
 
+	p.SanctumBoss = s.sanctumHasGuardian(p)
+
 	// Act VI: the Heartfall.
 	p.Heartfall = s.heartfallSpot(lastRegion, p.LastFork)
 	s.log.Info("main story places", "home", p.Home, "keeper", p.Keeper.Name, "tablet", p.Tablet.Name, "fork1", p.Forks[0].Name,
@@ -403,6 +415,39 @@ func (s *Server) resolveStory() *story.Places {
 		"vigil", p.Vigil.Name, "captain", p.Captain.Name, "smith", p.Smith.Name+" of "+p.Smith.Town, "sanctum", p.Sanctum.Name,
 		"lastFork", p.LastFork.Name, "heartfall", strconv.Itoa(int(p.Heartfall.X))+","+strconv.Itoa(int(p.Heartfall.Z)))
 	return p
+}
+
+// towerApproachMaxDeg: a story tower needs one way to its foot no steeper
+// than this (walking stops at 50; a margin for players who don't find the
+// exact line).
+const towerApproachMaxDeg = 44.0
+
+// towerApproachable: some straight line from 150 m out to the tower's wall
+// climbs no slope steeper than towerApproachMaxDeg (2 m steps). Playtest 2
+// co-op: Act II sent a pair to The Forgotten Spire of the Howling Crags,
+// a summit tower walkable only up one 46 degree ridge; they fell off its
+// cliffs, were downed at its foot and spent half an hour on one step.
+func (s *Server) towerApproachable(cx, cz, maxR float64) bool {
+	g := s.cfg.Ground
+	if g == nil {
+		return true
+	}
+	lim := math.Tan(towerApproachMaxDeg * math.Pi / 180)
+	for k := 0; k < 32; k++ {
+		a := float64(k) / 32 * 2 * math.Pi
+		ux, uz := math.Cos(a), math.Sin(a)
+		ok := true
+		prev := g.HeightAt(cx+ux*(maxR+2), cz+uz*(maxR+2))
+		for d := maxR + 4; d <= maxR+150 && ok; d += 2 {
+			h := g.HeightAt(cx+ux*d, cz+uz*d)
+			ok = math.Abs(h-prev)/2 <= lim
+			prev = h
+		}
+		if ok {
+			return true
+		}
+	}
+	return false
 }
 
 // heartfallSpot finds open, level, dry ground in region r, 250-900 m from
@@ -533,13 +578,25 @@ func (s *Server) storyAfter(sess *session, hs []quests.Happening) {
 	if s.storyPlaces() == nil || len(hs) == 0 {
 		return
 	}
-	var main []quests.Happening
+	var main, prologue []quests.Happening
 	for _, h := range hs {
 		if story.ActOf(h.Quest.Key) > 0 {
 			main = append(main, h)
-		} else if h.Finished && h.Quest.Key == quests.WardKey {
-			s.storyMaybeStart(sess)
+		} else {
+			if prologueShared(h) {
+				prologue = append(prologue, h)
+			}
+			if h.Finished && h.Quest.Key == quests.WardKey {
+				s.storyMaybeStart(sess)
+			}
 		}
+	}
+	if len(prologue) > 0 && !s.sty.sharing {
+		s.sty.sharing = true
+		for _, h := range prologue {
+			s.storyShare(sess, h)
+		}
+		s.sty.sharing = false
 	}
 	if len(main) == 0 {
 		return
@@ -584,6 +641,15 @@ func (s *Server) storyActDone(sess *session, n int) {
 	s.sendStorySync(sess)
 }
 
+// prologueShared: the prologue's talk steps ("Slimes in the meadows" and
+// "Ward against the night": the farmer, the blacksmith) are shared like the
+// acts' (playtest 2 co-op: two friends stood in a queue to hear the same
+// lines). Their item steps stay personal: each mines, buys and forges.
+func prologueShared(h quests.Happening) bool {
+	k := h.Quest.Key
+	return (k == quests.MeadowsKey || k == quests.WardKey) && h.Step < len(h.Quest.Steps) && h.Quest.Steps[h.Step].Obj.Kind == quests.ObjTalk
+}
+
 // storyShare completes the same step for every party member beside the
 // one who did it (same zone, within storyShareM, at the same act and step).
 func (s *Server) storyShare(sess *session, h quests.Happening) {
@@ -607,7 +673,14 @@ func (s *Server) storyShare(sess *session, h quests.Happening) {
 		for _, oh := range hs {
 			s.questHappened(os, oh)
 			if st := &oh.Quest.Steps[oh.Step]; st.Say != "" && (st.Obj.Kind == quests.ObjTalk || st.Obj.Kind == quests.ObjGive) {
-				s.storySay(os, s.storyNPCName(st.Obj.NPC), st.Say) // what the NPC said to your friend, you heard too
+				who := s.storyNPCName(st.Obj.NPC)
+				if who == "" { // the prologue's talks name a role, not a townsperson: the giver
+					who, _, _ = strings.Cut(oh.Quest.Giver, ",")
+				}
+				s.storySay(os, who, st.Say) // what the NPC said to your friend, you heard too
+			}
+			if oh.Finished && oh.Quest.Key == quests.MeadowsKey {
+				s.questsWardHandoff(os) // the farmer sends you both to the blacksmith
 			}
 		}
 		os.quests.recheck = true
@@ -615,6 +688,22 @@ func (s *Server) storyShare(sess *session, h quests.Happening) {
 		s.saveQuests(os)
 		s.storyAfter(os, hs)
 	}
+}
+
+// storyNeedsNPC: the active act still has a talk (or give) step with this
+// townsperson (towns-buffer index).
+func (s *Server) storyNeedsNPC(l *quests.Log, npcIndex int) bool {
+	for _, q := range l.Active {
+		if story.ActOf(q.Key) == 0 {
+			continue
+		}
+		for i := q.Step; i < len(q.Steps); i++ {
+			if o := q.Steps[i].Obj; (o.Kind == quests.ObjTalk || o.Kind == quests.ObjGive) && o.NPC == npcIndex+1 {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // storyNPCName is the name of the townsperson an objective names (NPC is
@@ -977,6 +1066,7 @@ func (s *Server) vigilSovereign(v *vigilRun) {
 	}
 	level := 10
 	dx, dz := 1.0, 0.0
+	var near *Entity // the participant it comes for
 	for id := range v.part {
 		if pe := s.entityByID(id); pe != nil && pe.Kind == proto.EntityKindPlayer {
 			if sess := s.byChar[pe.CharacterID]; sess != nil {
@@ -985,9 +1075,17 @@ func (s *Server) vigilSovereign(v *vigilRun) {
 			if d := math.Hypot(pe.Move.Pos.X-p.Vigil.X, pe.Move.Pos.Z-p.Vigil.Z); d > 1 {
 				dx, dz = (pe.Move.Pos.X-p.Vigil.X)/d, (pe.Move.Pos.Z-p.Vigil.Z)/d
 			}
+			near = pe
 		}
 	}
 	x, z := p.Vigil.X+dx*(p.Vigil.R+30), p.Vigil.Z+dz*(p.Vigil.R+30)
+	// Playtest 2 co-op: it walks out of the dark within its aggro (50 m) of
+	// the defenders. Spawned at the town's edge it stood 80 m from the pair
+	// at the ward garden, outside its aggro and the marker, and they looked
+	// for it for eight minutes.
+	if near != nil {
+		x, z = near.Move.Pos.X+dx*vigilSovereignM, near.Move.Pos.Z+dz*vigilSovereignM
+	}
 	x, z = s.cbt.w.WalkableNear(x, z, 40, 4)
 	g := s.cbt.w.SpawnDemons(movement.Vec3{X: x, Z: z}, []string{combatdefs.D.Demons.Lord}, level)
 	for _, e := range g.Members {
@@ -1074,7 +1172,51 @@ func (s *Server) storyOnKill(k combat.KillInfo) {
 		s.log.Info("story vigil: the Sovereign fell", "players", len(ids))
 		return
 	}
+	s.sanctumOnKill(k)
 	s.finaleOnKill(k)
+}
+
+// sanctumOnKill: the sanctum's guardian (its boss) fell: the lens step for
+// everyone who fought it and their party beside them. Playtest 2 co-op:
+// the step was "the place falls quiet", and a pack of adds dying (or the
+// boss resetting after a wipe) handed over the lens with the Archon at
+// 99 %.
+func (s *Server) sanctumOnKill(k combat.KillInfo) {
+	en, p := k.Enemy, s.storyPlaces()
+	if en == nil || p == nil || !p.Sanctum.OK || en.Group == nil || en.Group.Kind != combat.GroupBoss {
+		return
+	}
+	if en.Group.Site != p.Sanctum.Site && math.Hypot(en.Group.Anchor.X-p.Sanctum.X, en.Group.Anchor.Z-p.Sanctum.Z) > math.Max(p.Sanctum.R, 30) {
+		return
+	}
+	for _, m := range en.Group.Members {
+		if m.Alive() {
+			return
+		}
+	}
+	ids := map[uint32]bool{}
+	for _, id := range k.Eligible {
+		ids[id] = true
+	}
+	for _, e := range s.playersNear(en.Pos.X, en.Pos.Z, 120) {
+		ids[e.ID] = true
+	}
+	s.storySignal(ids, story.TagSanctum)
+	s.log.Info("story sanctum: the guardian fell", "players", len(ids))
+}
+
+// sanctumHasGuardian: the sanctum site has a boss to fall (else the act
+// keeps the old "place falls quiet" step).
+func (s *Server) sanctumHasGuardian(p *story.Places) bool {
+	if s.cbt.w == nil || !p.Sanctum.OK {
+		return false
+	}
+	for _, g := range s.cbt.w.Groups {
+		if g.Kind == combat.GroupBoss && (g.Site == p.Sanctum.Site || math.Hypot(g.Anchor.X-p.Sanctum.X, g.Anchor.Z-p.Sanctum.Z) <= math.Max(p.Sanctum.R, 30)) {
+			return true
+		}
+	}
+	return false
 }
 
 // storyHunters scales a player's night hunters by their story: a beaten

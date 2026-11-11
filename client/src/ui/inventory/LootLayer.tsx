@@ -1,29 +1,42 @@
-// The 3D half of loot (WP14), mounted inside the world canvas by NetPlay:
-//   - item pickups (snapshot entities of kind 4: name = item key, level =
-//     qty, typeId = rarity) that are not ores or gems (WP09's caveManager
-//     draws those) as small bobbing, turning shapes coloured by rarity; rare
-//     and above get a vertical light beam, Bitchin' a colour-cycling one;
+// The 3D half of loot (WP14; playtest 2 ground loot), mounted inside the
+// world canvas by NetPlay:
+//   - item pickups: snapshot entities of kind 4 (name = item key, level =
+//     qty, typeId = rarity; the server's y is the ground + 0.3), the same for
+//     every client that sees them (shared server state; rolled loot is only
+//     sent to its owner). Each is its real model (ground/models.ts: the
+//     weapon, the armor piece, or a small prop), lying on the ground at a
+//     slight angle (common, uncommon) or floating in its beam, slowly turning
+//     (rare and better); a light beam streaming down from the sky into it, a
+//     splash ring and falling motes (ground/beam.ts, uncommon and better);
+//     a few twinkling sparkles (every drop); and its hum (ground/hum.ts,
+//     through the audio engine's positional loop pool). Ores and gems keep
+//     WP09's caveManager models; this layer adds their light and hum.
+//     A drop that appears near you just now (its id is newer than anything
+//     seen before) pops out of the corpse or chest in a short arc, its beam
+//     striking down from the sky as it lands; one taken near you flies to you.
 //   - loot containers from Event 406 (chest, buried cache, urn, crate);
 //     opened ones are dimmed and the chest lid stands open.
-// Imperative three.js in one useFrame with shared geometries and a handful of
-// shared materials: a few objects in view, far inside the draw-call budget.
+// Imperative three.js in one useFrame: each model is one mesh on the shared
+// weapon or armor material; every drop's beam, splash, motes and sparkles
+// are four draw calls in all (ground/beam.ts LootLights).
 
 import { useEffect, useMemo } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { netRuntime } from '../../net/netStore';
-import { isHolo, itemDef, rarityColor } from './items';
+import { localPlayer } from '../../state/live';
+import { loopSources } from '../../audio/bridge';
+import { useQualityStore, type QualityTier } from '../../stores/qualityStore';
+import { liveWeather } from '../../systems/weather/runtime';
+import { weaponMaterial } from '../../combat/weapons/material';
+import { armorMaterial } from '../../combat/armor/material';
 import type { Container } from './events';
 import { useInventory } from './store';
+import { LootLights, type LightDrop } from './ground/beam';
+import { dropGeometry, dropModelOf, type DropModel } from './ground/models';
+import { humEmitters, type HumDrop } from './ground/hum';
 
 const geo = {
-  blade: new THREE.BoxGeometry(0.07, 0.7, 0.025),
-  armor: new THREE.BoxGeometry(0.38, 0.34, 0.14),
-  flask: new THREE.CylinderGeometry(0.07, 0.1, 0.22, 10),
-  coin: new THREE.CylinderGeometry(0.13, 0.13, 0.035, 16),
-  flat: new THREE.BoxGeometry(0.28, 0.04, 0.22),
-  gemish: new THREE.OctahedronGeometry(0.15, 0),
-  beam: new THREE.CylinderGeometry(0.05, 0.09, 7, 10, 1, true).translate(0, 3.5, 0),
   chest: new THREE.BoxGeometry(0.9, 0.48, 0.56).translate(0, 0.24, 0),
   lid: new THREE.BoxGeometry(0.92, 0.16, 0.58).translate(0, 0.08, 0.29),
   crate: new THREE.BoxGeometry(0.7, 0.7, 0.7).translate(0, 0.35, 0),
@@ -32,101 +45,50 @@ const geo = {
   marker: new THREE.BoxGeometry(0.08, 0.5, 0.08).translate(0, 0.25, 0),
 };
 
-function itemGeometry(key: string): THREE.BufferGeometry {
-  const d = itemDef(key);
-  switch (d?.kind) {
-    case 'weapon':
-      return geo.blade;
-    case 'armor':
-      return geo.armor;
-    case 'consumable':
-      return geo.flask;
-    case 'currency':
-      return geo.coin;
-    case 'blueprint':
-    case 'tome':
-      return geo.flat;
-    default:
-      return geo.gemish;
-  }
-}
+/** The server puts a drop 0.3 m above the ground (loot_ground.go groundSpot). */
+const DROP_LIFT = 0.3;
+/** A new drop's pop-out arc and its beam's strike (s). */
+const ARC_S = 0.55;
+const STRIKE_S = 0.45;
+/** A drop taken within this of you flies to you (m). */
+const FLY_M = 4;
+const FLY_S = 0.28;
+/** Props are small: drawn a little larger so they read on the ground. */
+const PROP_SCALE = 1.3;
+/** Lying items rest on top of the grass, not under it (m). */
+const LIE_LIFT = 0.1;
+/** Beyond this the model is not drawn (m; the beam carries on, sparkles and motes fade in their shaders). */
+const MODEL_M = 75;
 
 interface PickupView {
-  group: THREE.Group;
-  mesh: THREE.Mesh;
+  id: number;
+  key: string;
   rarity: number;
+  group: THREE.Group;
+  /** Turns (hover) or holds the tilt (lie). */
+  pivot: THREE.Group;
+  model: THREE.Object3D | null;
+  /** Sparkle spread (the item's size). */
+  size: number;
+  dm: DropModel;
+  /** Where it rests (ground point). */
+  rest: THREE.Vector3;
+  /** Hover centre height above the ground (m). */
+  hoverY: number;
   t: number;
+  /** Arc: from (s since start, -1 none). */
+  arc: number;
+  from: THREE.Vector3;
+  /** Beam strike: s since landing (-1: done; -2: not yet landed). */
+  strike: number;
+  /** Taken: flying to the player (s, -1 no). */
+  fly: number;
 }
 
-// ---- sparkles (Nicole: "dropped loot should sparkle") ----
-// A few tiny four-point glints around each dropped item, twinkling one at a
-// time (each its own phase and rate, short and soft: a glitter, never a
-// flash), more and brighter with rarity, in the rarity's colour.
-const SPARKLE_N = [3, 4, 5, 6, 7, 8, 8, 9];
-const sparkleGeos = new Map<number, THREE.BufferGeometry>();
-function sparkleGeometry(n: number): THREE.BufferGeometry {
-  let g = sparkleGeos.get(n);
-  if (g) return g;
-  const pos = new Float32Array(n * 3);
-  const ph = new Float32Array(n * 2);
-  for (let i = 0; i < n; i++) {
-    const a = (i / n) * Math.PI * 2 + i * 1.7;
-    const r = 0.18 + ((i * 0.618) % 1) * 0.22;
-    pos[i * 3] = Math.cos(a) * r;
-    pos[i * 3 + 1] = 0.3 + ((i * 0.381) % 1) * 0.45;
-    pos[i * 3 + 2] = Math.sin(a) * r;
-    ph[i * 2] = i * 2.399; // phase
-    ph[i * 2 + 1] = 0.7 + ((i * 0.737) % 1) * 0.9; // rate
-  }
-  g = new THREE.BufferGeometry();
-  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  g.setAttribute('aPhase', new THREE.BufferAttribute(ph, 2));
-  sparkleGeos.set(n, g);
-  return g;
-}
-function sparkleMaterial(color: THREE.Color, size: number): THREE.ShaderMaterial {
-  return new THREE.ShaderMaterial({
-    uniforms: { uTime: { value: 0 }, uColor: { value: color }, uSize: { value: size } },
-    vertexShader: `
-      attribute vec2 aPhase;
-      uniform float uTime;
-      uniform float uSize;
-      varying float vA;
-      void main() {
-        vec4 mv = modelViewMatrix * vec4(position, 1.0);
-        float s = sin(uTime * aPhase.y * 3.0 + aPhase.x);
-        float tw = pow(max(0.0, s), 4.0); // a short glint, then a soft rest
-        vA = tw;
-        gl_PointSize = uSize * (0.45 + 1.2 * tw) * (420.0 / max(1.0, -mv.z));
-        gl_Position = projectionMatrix * mv;
-      }`,
-    fragmentShader: `
-      uniform vec3 uColor;
-      varying float vA;
-      void main() {
-        vec2 p = gl_PointCoord * 2.0 - 1.0;
-        float cross = max(1.0 - abs(p.x) * 7.0, 0.0) * (1.0 - abs(p.y)) + max(1.0 - abs(p.y) * 7.0, 0.0) * (1.0 - abs(p.x));
-        float core = max(0.0, 1.0 - length(p) * 2.2);
-        float a = clamp(cross + core, 0.0, 1.0) * (0.45 + 0.55 * vA);
-        if (a < 0.02) discard;
-        gl_FragColor = vec4(mix(uColor, vec3(1.0), 0.55 * core) * a, a);
-      }`,
-    transparent: true,
-    depthWrite: false,
-    blending: THREE.AdditiveBlending,
-  });
-}
-
-const HOLO_HUES = 0.18; // hue turns per second
-const tmpHolo = new THREE.Color();
+const tmpV = new THREE.Vector3();
+const tmpBox = new THREE.Box3();
 
 function makeMaterials() {
-  const item = Array.from({ length: 8 }, (_, r) => {
-    const c = new THREE.Color(rarityColor(r));
-    return new THREE.MeshStandardMaterial({ color: c, emissive: c, emissiveIntensity: r >= 2 ? 0.55 : 0.25, roughness: 0.4, metalness: 0.3 });
-  });
-  const sparkle = Array.from({ length: 8 }, (_, r) => sparkleMaterial(new THREE.Color(rarityColor(r)), r >= 2 ? 0.2 : 0.16));
-  const beam = Array.from({ length: 8 }, (_, r) => new THREE.MeshBasicMaterial({ color: new THREE.Color(rarityColor(r)), transparent: true, opacity: 0.32, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
   const box = (color: string) => new THREE.MeshStandardMaterial({ color, roughness: 0.85 });
   const wood = box('#7a5230');
   const lid = box('#8d6238');
@@ -138,7 +100,7 @@ function makeMaterials() {
     c.color.multiplyScalar(0.45);
     return c;
   };
-  return { item, sparkle, beam, wood, lid, clay, crate, dirt, woodDim: dim(wood), lidDim: dim(lid), clayDim: dim(clay), crateDim: dim(crate), dirtDim: dim(dirt), trim: box('#c9a650') };
+  return { wood, lid, clay, crate, dirt, woodDim: dim(wood), lidDim: dim(lid), clayDim: dim(clay), crateDim: dim(crate), dirtDim: dim(dirt), trim: box('#c9a650') };
 }
 
 type Mats = ReturnType<typeof makeMaterials>;
@@ -180,85 +142,235 @@ function makeContainer(c: Container, m: Mats): THREE.Group {
   return g;
 }
 
+/** Stable per-drop jitter in [0, 1). */
+function jitter(id: number, k: number): number {
+  const x = Math.sin(id * 12.9898 + k * 78.233) * 43758.5453;
+  return x - Math.floor(x);
+}
+
+/**
+ * The model of a drop, posed in `pivot`: lying flat at a slight angle, or
+ * upright for hovering (swords and spears point down). Returns the hover
+ * centre height above the ground.
+ */
+function poseModel(v: PickupView, qty: number): number {
+  const { dm, pivot, id } = v;
+  const g = dropGeometry(v.key, v.rarity, qty);
+  if (!g) return 0.5;
+  const mat = dm.kind === 'armor' || dm.holo ? armorMaterial() : weaponMaterial();
+  const mesh = new THREE.Mesh(g, mat);
+  mesh.castShadow = false; // small and often many: the beam and splash ground it (a shadow pass per drop is not worth it)
+  mesh.name = `drop-model ${v.key}`;
+  const lay = new THREE.Group();
+  lay.add(mesh);
+  pivot.add(lay);
+  v.model = lay;
+  const bb = g.boundingBox ?? tmpBox.setFromBufferAttribute(g.getAttribute('position') as THREE.BufferAttribute);
+  const c = bb.getCenter(new THREE.Vector3());
+  const size = bb.getSize(new THREE.Vector3());
+  const hover = dm.pose === 'hover';
+  pivot.rotation.y = jitter(id, 1) * Math.PI * 2;
+  if (dm.kind === 'prop') {
+    lay.scale.setScalar(PROP_SCALE);
+    if (hover) {
+      mesh.position.set(-c.x, -c.y, -c.z); // centred to turn about its middle
+      return 0.45 + size.y * PROP_SCALE * 0.5;
+    }
+    pivot.rotation.z = (jitter(id, 2) - 0.5) * 0.12;
+    pivot.position.y = LIE_LIFT;
+    return 0;
+  }
+  mesh.position.set(-c.x, -c.y, -c.z);
+  if (dm.kind === 'weapon') {
+    if (hover) {
+      // Upright in the beam; blades point down into the ground's light.
+      if (dm.shape === 'sword' || dm.shape === 'spear') lay.rotation.x = Math.PI;
+      return 0.3 + size.y * 0.5;
+    }
+    // Flat on the ground, flats up (+Z -> +Y), a little tilted.
+    lay.rotation.x = -Math.PI / 2;
+    pivot.rotation.z = (jitter(id, 2) - 0.5) * 0.18;
+    pivot.position.y = size.z * 0.5 + LIE_LIFT;
+    return 0;
+  }
+  // armor
+  if (hover) return 0.35 + size.y * 0.5;
+  if (dm.shape === 'head') {
+    pivot.position.y = size.y * 0.5 + LIE_LIFT;
+    pivot.rotation.z = (jitter(id, 2) - 0.5) * 0.3;
+    return 0;
+  }
+  lay.rotation.x = Math.PI / 2; // on its back, its front to the sky
+  pivot.position.y = size.z * 0.5 + LIE_LIFT;
+  pivot.rotation.z = (jitter(id, 2) - 0.5) * 0.1;
+  return 0;
+}
+
 export function LootLayer() {
   const scene = useThree((s) => s.scene);
   const root = useMemo(() => new THREE.Group(), []);
   const mats = useMemo(makeMaterials, []);
   const pickups = useMemo(() => new Map<number, PickupView>(), []);
   const containers = useMemo(() => ({ list: null as Container[] | null, groups: new Map<string, THREE.Group>() }), []);
+  const st = useMemo(() => ({ tier: '' as QualityTier | '', lights: null as LootLights | null, maxId: 0, session: null as unknown, humDrops: [] as HumDrop[], lit: [] as LightDrop[] }), []);
 
   useEffect(() => {
     root.name = 'loot';
     scene.add(root);
+    const hums = (x: number, z: number) => humEmitters(st.humDrops, x, z);
+    loopSources.add(hums);
     return () => {
+      loopSources.delete(hums);
       scene.remove(root);
       root.clear();
       pickups.clear();
       containers.groups.clear();
       containers.list = null;
-      for (const v of Object.values(mats)) {
-        if (Array.isArray(v)) v.forEach((x) => x.dispose());
-        else v.dispose();
-      }
+      st.lights?.dispose();
+      st.lights = null;
+      st.tier = '';
+      for (const v of Object.values(mats)) v.dispose();
     };
-  }, [scene, root, mats, pickups, containers]);
+  }, [scene, root, mats, pickups, containers, st]);
 
-  useFrame((_, dt) => {
+  useFrame((state, dtRaw) => {
+    const dt = Math.min(0.1, dtRaw);
     const now = performance.now() / 1000;
-    // Bitchin': cycle the hue of its item and beam materials.
-    const holo = tmpHolo.setHSL((now * HOLO_HUES) % 1, 0.9, 0.62);
-    for (let r = 0; r < 8; r++)
-      if (isHolo(r)) {
-        mats.item[r].color.copy(holo);
-        mats.item[r].emissive.copy(holo);
-        mats.beam[r].color.copy(holo);
-        mats.sparkle[r].uniforms.uColor.value.copy(holo);
+    // Quality tier: the lights' programs per tier (Low: no motes, one noise octave).
+    const tier = useQualityStore.getState().tier;
+    if (tier !== st.tier || !st.lights) {
+      if (st.lights) {
+        root.remove(st.lights.group);
+        st.lights.dispose();
       }
-    for (const m of mats.sparkle) m.uniforms.uTime.value = now;
+      st.lights = new LootLights(tier);
+      root.add(st.lights.group);
+      st.tier = tier;
+    }
 
     // Pickups from the latest snapshot.
     const s = netRuntime.session;
     const seen = new Set<number>();
+    const me = localPlayer.pos;
+    if (s !== st.session) {
+      st.session = s;
+      st.maxId = Number.MAX_SAFE_INTEGER; // the first frame of a session: nothing in it is "new"
+    }
+    let frameMax = 0;
+    const fresh: PickupView[] = [];
     if (s && s.phase === 'playing' && s.latestFrame) {
       for (const e of s.latestFrame.ents) {
-        if (e.kind !== 4 || e.name.startsWith('ore:') || e.name.startsWith('gem:')) continue;
+        if (e.id > frameMax) frameMax = e.id;
+        if (e.kind !== 4) continue;
         seen.add(e.id);
         let v = pickups.get(e.id);
+        const ex = e.x / 100;
+        const ez = e.z / 100;
         if (!v) {
           const r = Math.max(0, Math.min(7, e.typeId));
+          const dm = dropModelOf(e.name, r);
+          const cave = dm.kind === 'cave';
           const group = new THREE.Group();
           group.name = `pickup ${e.name}`;
-          const mesh = new THREE.Mesh(itemGeometry(e.name), mats.item[r]);
-          mesh.castShadow = true;
-          mesh.rotation.order = 'YXZ';
-          if (itemDef(e.name)?.kind === 'weapon') mesh.rotation.z = 0.5; // a tilted blade reads better than an upright stick
-          group.add(mesh);
-          const glints = new THREE.Points(sparkleGeometry(SPARKLE_N[r]), mats.sparkle[r]);
-          glints.frustumCulled = false;
-          glints.renderOrder = 3;
-          group.add(glints);
-          if (r >= 2) {
-            const beam = new THREE.Mesh(geo.beam, mats.beam[r]);
-            beam.renderOrder = 2;
-            group.add(beam);
-          }
+          const pivot = new THREE.Group();
+          group.add(pivot);
+          v = { id: e.id, key: e.name, rarity: r, group, pivot, model: null, size: 1, dm, rest: new THREE.Vector3(), hoverY: 0, t: jitter(e.id, 3) * 10, arc: -1, from: new THREE.Vector3(), strike: -1, fly: -1 };
+          if (!cave) v.hoverY = poseModel(v, e.level);
+          if (v.model) v.size = Math.max(1, new THREE.Box3().setFromObject(v.model).getSize(tmpV).length() / 0.7);
           root.add(group);
-          v = { group, mesh, rarity: r, t: (e.id % 100) / 10 };
           pickups.set(e.id, v);
+          if (e.id > st.maxId && Math.hypot(ex - me.x, ez - me.z) < 45) fresh.push(v);
         }
-        v.group.position.set(e.x / 100, e.y / 100, e.z / 100);
+        v.rest.set(ex, e.y / 100 - (v.dm.kind === 'cave' ? 0 : DROP_LIFT), ez);
+        if (v.arc < 0 && v.fly < 0) v.group.position.copy(v.rest);
       }
     }
+    if (frameMax > 0) st.maxId = st.maxId === Number.MAX_SAFE_INTEGER ? frameMax : Math.max(st.maxId, frameMax);
+    // New drops pop out of where they came from: the centre of the batch
+    // (the corpse), or the container they surround.
+    if (fresh.length) {
+      const c = new THREE.Vector3();
+      for (const v of fresh) c.add(v.rest);
+      c.divideScalar(fresh.length);
+      let best = 3.5;
+      for (const k of useInventory.getState().containers) {
+        const d = Math.hypot(k.x - c.x, k.z - c.z);
+        if (d < best) {
+          best = d;
+          c.set(k.x, k.y, k.z);
+        }
+      }
+      for (const v of fresh) {
+        v.from.copy(c);
+        v.from.y += 0.4;
+        v.arc = jitter(v.id, 4) * -0.12; // a ragged burst, not a single pop
+        v.group.position.copy(v.from);
+        v.strike = -2; // its beam strikes down when it lands
+      }
+    }
+
+    const cam = state.camera.position;
+    const humDrops: HumDrop[] = [];
+    const lit = st.lit;
+    lit.length = 0;
     for (const [id, v] of pickups) {
-      if (!seen.has(id)) {
-        root.remove(v.group);
-        pickups.delete(id);
-        continue;
+      if (!seen.has(id) && v.fly < 0) {
+        // Gone: taken near you -> fly to you; else just vanish.
+        if (v.group.position.distanceTo(tmpV.set(me.x, me.y + 0.9, me.z)) < FLY_M && v.model) {
+          v.fly = 0;
+        } else {
+          root.remove(v.group);
+          pickups.delete(id);
+          continue;
+        }
       }
       v.t += dt;
-      v.mesh.position.y = 0.45 + Math.sin(v.t * 2.2) * 0.08;
-      v.mesh.rotation.y += dt * 1.6;
+      if (v.fly >= 0) {
+        v.fly += dt;
+        const k = Math.min(1, v.fly / FLY_S);
+        v.group.position.lerp(tmpV.set(me.x, me.y + 1.1, me.z), Math.min(1, dt * 14));
+        v.group.scale.setScalar(Math.max(0.05, 1 - k));
+        if (k >= 1) {
+          root.remove(v.group);
+          pickups.delete(id);
+        }
+        continue;
+      }
+      if (v.arc !== -1) {
+        // The pop-out arc (a negative start is a small delay: a ragged burst).
+        v.arc += dt;
+        const k = Math.max(0, Math.min(1, v.arc / ARC_S));
+        if (k >= 1) {
+          v.arc = -1;
+          v.group.position.copy(v.rest);
+          v.pivot.rotation.x = 0;
+          if (v.strike === -2) v.strike = 0;
+        } else {
+          v.group.position.lerpVectors(v.from, v.rest, k);
+          v.group.position.y += Math.sin(Math.PI * k) * (1.1 + jitter(v.id, 5) * 0.4);
+          v.pivot.rotation.x = (1 - k) * 6.0;
+        }
+      }
+      // The beam strikes down from the sky (ease-out) once the drop has landed.
+      let strike = 1;
+      if (v.strike >= 0) {
+        v.strike += dt;
+        const k = Math.min(1, v.strike / STRIKE_S);
+        strike = 1 - (1 - k) * (1 - k) * (1 - k);
+        if (k >= 1) v.strike = -1;
+      }
+      if (v.model) v.model.visible = v.group.position.distanceTo(cam) < MODEL_M;
+      if (v.dm.pose === 'hover' && v.model && v.arc === -1) {
+        v.pivot.position.y = v.hoverY + Math.sin(v.t * 1.6) * 0.06;
+        v.pivot.rotation.y += dt * 0.7;
+      }
+      if (v.arc === -1) {
+        humDrops.push({ id, key: v.key, rarity: v.rarity, x: v.rest.x, y: v.rest.y, z: v.rest.z });
+        lit.push({ id, rarity: v.rarity, x: v.rest.x, y: v.rest.y, z: v.rest.z, strike, sparkleY: v.dm.pose === 'hover' ? Math.max(0, v.hoverY - 0.5) : 0, sparkleScale: v.size, noRing: v.dm.kind === 'cave' });
+      }
     }
+    st.humDrops = humDrops;
+    st.lights.update(lit, now, liveWeather.mix.wind ?? 0);
 
     // Containers (Event 406 list; rebuilt when the list changes).
     const list = useInventory.getState().containers;

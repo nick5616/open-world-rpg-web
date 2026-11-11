@@ -116,12 +116,11 @@ func (s *Server) lootOnKill(k combat.KillInfo) {
 		for i, it := range loot {
 			it.Seed = int64(seed)
 			it.Prov = []items.Prov{{Ev: "rolled", Char: ent.CharacterID, Name: ent.Name, Src: "kill:" + en.Def.Key, At: now.UnixMilli(), Local: ci.persist == persistLocal}}
-			a := float64(i)*2.4 + float64(seed%628)/100
-			r := 0.6 + 0.25*float64(i%3)
-			pos := movement.Vec3{X: en.Pos.X + r*math.Cos(a), Z: en.Pos.Z + r*math.Sin(a)}
-			pos.Y = movement.GroundAt(s.cfg.Ground, pos.X, ground+1.5, pos.Z) + 0.3
+			// Playtest 2 ground loot: scattered around the corpse (loot_ground.go).
+			dx, dz := scatterOffset(i, len(loot), seed, 0.9, 2.1, 0, true)
+			pos := s.groundSpot(en.Pos.X+dx, en.Pos.Z+dz, ground)
 			key := fmt.Sprintf("kill:%x:%d:%d:%d", s.itm.boot, en.ID, k.Tick, i)
-			s.spawnDrop(ent.ID, it, pos, &itemDrop{key: key, source: SourceKill}, now.Add(constants.PickupDespawnS*time.Second))
+			s.spawnDrop(ent.ID, it, pos, &itemDrop{key: key, source: SourceKill, readyAt: now.Add(groundSettle)}, now.Add(constants.PickupDespawnS*time.Second))
 			bases = append(bases, fmt.Sprintf("%s x%d (%s)", it.Base, it.Qty, items.D.Rarities[it.Rarity].Key))
 			s.announceIfBitchin(sess, it)
 		}
@@ -213,7 +212,15 @@ func (s *Server) takeDrop(owner, p *Entity) {
 // takeWorldPickup: Interact 41 on a public pickup (a dropped item).
 func (s *Server) takeWorldPickup(sess *session, id uint32, now time.Time) {
 	p := s.entityByID(id)
-	if p == nil || p.Kind != proto.EntityKindPickup || p.drop == nil || !p.drop.world {
+	if p == nil {
+		// Playtest 2: two players pressed E on the same dropped item in
+		// the same tick (or nearly): the first took it, tell the other.
+		if t, ok := s.itm.taken[id]; ok && t.by != sess.ent.ID && now.Sub(t.at) <= takenMemory {
+			s.refuseItem(sess, InteractPickup, ActionUse, ItemRefuseNoItem)
+		}
+		return
+	}
+	if p.Kind != proto.EntityKindPickup || p.drop == nil || !p.drop.world {
 		return // WP09 handles personal pickups (owner-only)
 	}
 	e := sess.ent
@@ -370,6 +377,7 @@ func (s *Server) flushLocalDrops(char string, ok bool) {
 func (s *Server) deferredTake(p *Entity, sess *session, reason string) (*items.Item, error) {
 	it := p.drop.item
 	s.removeEntity(p) // nobody else can take it meanwhile
+	s.noteTaken(p.ID, sess.ent.ID, s.cfg.Now())
 	char := sess.ent.CharacterID
 	s.enqueueItems(nil, &ItemOp{Take: []string{it.ID}, Delete: []string{it.ID}, Note: "deferred take " + it.Base, Done: func() {
 		cur := s.byChar[char]
@@ -408,6 +416,7 @@ func (s *Server) transferFromWorld(p *Entity, sess *session, reason string, now 
 		return nil, items.ErrFull // CanFit said yes; cannot happen
 	}
 	s.removeEntity(p)
+	s.noteTaken(p.ID, e.ID, now)
 	ci.version++
 	persisted := p.drop.persisted && s.itm.j != nil
 	switch ci.persist {
@@ -600,10 +609,18 @@ func (s *Server) openContainer(sess *session, id uint64, now time.Time) {
 	loot := items.ContainerLoot(items.NewRNG(seed), items.ContainerContext{Kind: c.Kind, Theme: c.Theme, Level: level, Element: c.Element, Luck: luck})
 	var d items.Delta
 	var got []*items.Item
-	spill := 0
+	// Playtest 2 ground loot (loot_ground.go): gold into the purse with the
+	// open marker; everything else pops out of the container onto the
+	// ground around it, toward the opener, as personal pickups.
+	var ground []*items.Item
 	for _, it := range loot {
 		it.Seed = int64(seed)
 		it.Prov = []items.Prov{{Ev: "rolled", Char: e.CharacterID, Name: e.Name, Src: key, At: now.UnixMilli(), Local: ci.persist == persistLocal}}
+		if def := it.Def(); def == nil || def.Kind != "currency" {
+			ground = append(ground, it)
+			s.announceIfBitchin(sess, it)
+			continue
+		}
 		q := it.Qty
 		left := ci.inv.Add(it, &d)
 		if left < q {
@@ -611,22 +628,26 @@ func (s *Server) openContainer(sess *session, id uint64, now time.Time) {
 			g.Qty = q - left
 			got = append(got, g)
 		}
-		if left > 0 {
+		if left > 0 { // the purse has no cap today; kept for safety
 			rest := it.Clone()
 			rest.ID, rest.H, rest.Slot, rest.Qty = "", 0, "", left
-			pos := movement.Vec3{X: c.X, Y: c.Y + 0.6, Z: c.Z}
-			s.spawnDrop(e.ID, rest, pos, &itemDrop{key: key + ":spill:" + strconv.Itoa(spill), source: SourceContainer}, now.Add(constants.PickupDespawnS*time.Second))
-			spill++
+			ground = append(ground, rest)
 		}
-		s.announceIfBitchin(sess, it)
 	}
+	toward := math.Atan2(e.Move.Pos.Z-c.Z, e.Move.Pos.X-c.X)
+	for i, it := range ground {
+		dx, dz := scatterOffset(i, len(ground), seed, 1.1, 1.9, toward, false)
+		pos := s.groundSpot(c.X+dx, c.Z+dz, c.Y)
+		s.spawnDrop(e.ID, it, pos, &itemDrop{key: key + ":" + strconv.Itoa(i), source: SourceContainer, readyAt: now.Add(groundSettle)}, now.Add(constants.PickupDespawnS*time.Second))
+	}
+	spill := len(ground)
 	ci.markers[key] = true
 	s.commitItems(sess, &d, &GrantMark{Key: key, Seed: int64(seed)}, "container")
 	bases := make([]string, 0, len(loot))
 	for _, it := range loot {
 		bases = append(bases, fmt.Sprintf("%s x%d (%s)", it.Base, it.Qty, items.D.Rarities[it.Rarity].Key))
 	}
-	s.log.Info("container opened", "character", e.CharacterID, "container", id, "kind", items.ContainerKinds[min(max(c.Kind, 0), 3)], "level", level, "rollSeed", seed, "items", bases, "spilled", spill)
+	s.log.Info("container opened", "character", e.CharacterID, "container", id, "kind", items.ContainerKinds[min(max(c.Kind, 0), 3)], "level", level, "rollSeed", seed, "items", bases, "onGround", spill)
 	s.sendEvent(sess, &proto.Event{Kind: EventContainerOpened, EntityID: e.ID, Value: int32(len(loot)), Data: binary.LittleEndian.AppendUint64(nil, id)})
 	s.sendGranted(sess, SourceContainer, got)
 	s.sendContainers(sess, true)

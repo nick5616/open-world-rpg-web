@@ -8,6 +8,7 @@ import { create } from 'zustand';
 import type { AtlasData } from '@lodestone/worldgen';
 import type { RadialStructure } from '../../world/structures/overlay';
 import { renderTerrain } from './mapRender';
+import { setTowerShelters } from '../../sim/shelter';
 
 export const MAP_PX = 1024;
 
@@ -26,6 +27,7 @@ export const useMapWorld = create<MapWorldState>(() => ({ data: null, towers: []
 
 export function setMapWorld(data: AtlasData | null, towers: MapTower[] = []): void {
   useMapWorld.setState({ data, towers, terrain: null });
+  setTowerShelters(towers.map((t) => t.shape)); // playtest 2 co-op: dry tower walls (sim/shelter.ts)
 }
 
 /** The terrain picture for the current world (rendered on first use). */

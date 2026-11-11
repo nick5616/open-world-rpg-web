@@ -73,11 +73,14 @@ export function occlusion(listenerSpace: number, sourceSpace: number, leak = 1):
 }
 
 /** Kinds of positional loops (loops.ts renders one buffer per family). */
-export type LoopKind = 'torch' | 'brazier' | 'campfire' | 'hearth' | 'forge' | 'wildfire' | 'river' | 'shore';
+export type LoopKind = 'torch' | 'brazier' | 'campfire' | 'hearth' | 'forge' | 'wildfire' | 'river' | 'shore' | LootHumKind;
+
+/** Playtest 2 ground loot: an item's hum by type (ui/inventory/ground/hum.ts; the rarity scales level, reach and pitch per emitter). */
+export type LootHumKind = 'lootHum' | 'lootMetal' | 'lootChime' | 'lootWhisper' | 'lootHolo';
 
 export interface LoopProfile extends Falloff {
   /** Which rendered loop buffer. */
-  family: 'fire' | 'flow' | 'lap';
+  family: 'fire' | 'flow' | 'lap' | 'humPlain' | 'humMetal' | 'humChime' | 'humWhisper' | 'humHolo';
   /** Linear mix level at full volume. */
   level: number;
   /** Playback rate (a small fire is quicker and brighter, a forge deeper). */
@@ -94,4 +97,10 @@ export const LOOP_PROFILES: Record<LoopKind, LoopProfile> = {
   wildfire: { family: 'fire', ref: 5, max: 60, level: 0.8, rate: 0.9 },
   river: { family: 'flow', ref: 6, max: 55, level: 0.5, rate: 1 },
   shore: { family: 'lap', ref: 4, max: 34, level: 0.32, rate: 1 },
+  // Playtest 2 ground loot: a legendary item's hum (reach 1) carries ~34 m; rarer reaches further, commoner less (hum.ts).
+  lootHum: { family: 'humPlain', ref: 1.5, max: 34, level: 1, rate: 1 },
+  lootMetal: { family: 'humMetal', ref: 1.5, max: 34, level: 1, rate: 1 },
+  lootChime: { family: 'humChime', ref: 1.5, max: 34, level: 1, rate: 1 },
+  lootWhisper: { family: 'humWhisper', ref: 1.2, max: 30, level: 1.1, rate: 1 },
+  lootHolo: { family: 'humHolo', ref: 2, max: 40, level: 1, rate: 1 },
 };

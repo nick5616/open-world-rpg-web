@@ -36,6 +36,10 @@ const (
 	ItemVerseDusk = "quest:verse_dusk"
 	ItemLens      = "quest:archon_lens"
 	ItemDawnheart = "quest:dawnheart"
+	// ItemWhistle (playtest 2 co-op): Act I hands each player a spirit
+	// whistle. Act II is three towers in three regions, kilometres apart;
+	// nothing told a new player a steed could be bought.
+	ItemWhistle = "tool:spirit_whistle"
 )
 
 // Story happenings (quests.ObjStory tags) the glue signals.
@@ -43,6 +47,7 @@ const (
 	TagVigil     = "vigil"     // the vigil's waves broken (Act IV)
 	TagSovereign = "sovereign" // the Starless Sovereign fell (Act IV)
 	TagHush      = "hush"      // the Hush fell (Act VI: the ending)
+	TagSanctum   = "sanctum"   // the sanctum's guardian fell (Act V)
 )
 
 // ActInfo is an act's fixed data.
@@ -119,6 +124,7 @@ type Places struct {
 	Vigil        Place // the vigil town (Site: settlement index)
 	Smith        NPC   // Act V: the master smith of the far town
 	Sanctum      Place // Act V: a guarded boss site near the smith
+	SanctumBoss  bool  // the sanctum has a boss: its fall hands over the lens (else the place falling quiet)
 	LastFork     Place // Act VI: the tower of the last region
 	Heartfall    Place // Act VI: the arena
 }
@@ -154,7 +160,7 @@ func attune(p *Places, t Place, text string) quests.Step {
 	}
 	return quests.Step{
 		Text:    fmt.Sprintf(text, name),
-		Note:    fmt.Sprintf("%s, %s. Climb to the top and lay your hand on the crystal (E). A crystal you attuned before answers again.", t.Name, p.where(t.X, t.Z)),
+		Note:    fmt.Sprintf("%s, %s. Climb to the top and lay your hand on the crystal (E). A crystal you attuned before answers again. Far? Call your steed (5); an attuned crystal is a fast travel point (M).", t.Name, p.where(t.X, t.Z)),
 		Obj:     quests.Objective{Kind: quests.ObjAttune, Site: t.Site, Settlement: -1},
 		Markers: siteMarker(t, "Tower crystal: "+t.Name),
 	}
@@ -196,10 +202,10 @@ func Act(n int, p *Places, nowMs int64) *quests.Quest {
 			attune(p, p.Forks[0], "Lay your hand on the crystal of %s"),
 			quests.Step{
 				Text:    fmt.Sprintf("Tell %s what the crystal answered", k.Name),
-				Say:     "It hummed back at you? Then the song isn't dead, only quiet. The keepers tuned the world with those towers; they called them forks. Here: my grandmother's tuning fork. It shivers near a crystal. Find the other forks and wake them, and maybe the night will remember its manners.",
+				Say:     "It hummed back at you? Then the song isn't dead, only quiet. The keepers tuned the world with those towers; they called them forks. Here: my grandmother's tuning fork. It shivers near a crystal. Find the other forks and wake them, and maybe the night will remember its manners. And take this whistle; the forks are far apart, and a spirit steed answers it. Blow it (5) on open ground.",
 				Obj:     talk(k),
 				Markers: npcMarker(k),
-				Grant:   []quests.ItemQty{{Item: ItemFork, Qty: 1}},
+				Grant:   []quests.ItemQty{{Item: ItemFork, Qty: 1}, {Item: ItemWhistle, Qty: 1}},
 			})
 	case 2:
 		if !k.OK || !p.Forks[1].OK || !p.Forks[2].OK || !p.Forks[3].OK {
@@ -295,7 +301,7 @@ func Act(n int, p *Places, nowMs int64) *quests.Quest {
 			quests.Step{
 				Text:    "Take the lens from " + p.Sanctum.Name,
 				Note:    fmt.Sprintf("%s, %s. Defeat its guardian; the lens is yours when the place falls quiet.", p.Sanctum.Name, p.where(p.Sanctum.X, p.Sanctum.Z)),
-				Obj:     quests.Objective{Kind: quests.ObjClear, Site: p.Sanctum.Site, X: p.Sanctum.X, Z: p.Sanctum.Z, R: math.Max(p.Sanctum.R, 30), Settlement: -1},
+				Obj:     sanctumObj(p),
 				Markers: siteMarker(Place{X: p.Sanctum.X, Z: p.Sanctum.Z, R: math.Max(p.Sanctum.R, 30)}, p.Sanctum.Name),
 				Grant:   []quests.ItemQty{{Item: ItemLens, Qty: 1}},
 			},
@@ -329,6 +335,16 @@ func Act(n int, p *Places, nowMs int64) *quests.Quest {
 	}
 	q.Steps = steps
 	return q
+}
+
+// sanctumObj: the guardian's fall (playtest 2 co-op: "the place falls
+// quiet" was met by a pack of adds dying, or by the boss resetting after a
+// wipe, with the Archon at 99 %); a sanctum with no boss keeps the clear.
+func sanctumObj(p *Places) quests.Objective {
+	if p.SanctumBoss {
+		return quests.Objective{Kind: quests.ObjStory, Family: TagSanctum, Settlement: -1, Site: -1}
+	}
+	return quests.Objective{Kind: quests.ObjClear, Site: p.Sanctum.Site, X: p.Sanctum.X, Z: p.Sanctum.Z, R: math.Max(p.Sanctum.R, 30), Settlement: -1}
 }
 
 // Roman numerals for act numbers.
