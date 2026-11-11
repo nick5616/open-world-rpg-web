@@ -26,6 +26,8 @@ import { GRAPHICS_BUTTON_RIGHT, GRAPHICS_BUTTON_W, TOP_BUTTON_TOP } from '../../
 import { useAudioSettings } from '../../audio/settings';
 // Spell FX quality: the FX layer's own resolver (graphics High = FX Ultra, GPU cap on auto); the setting lives in the quality store.
 import { currentFxTier } from '../../combat/fx/quality';
+import { useAccessibility } from '../../stores/accessibility';
+import { prefersReducedMotion } from '../../combat/flashSafety';
 
 export const useGraphicsUi = create<{ open: boolean; setOpen: (v: boolean) => void }>((set) => ({ open: false, setOpen: (open) => set({ open }) }));
 
@@ -124,6 +126,8 @@ export function GraphicsPanel() {
   const open = useGraphicsUi((s) => s.open);
   const q = useQualityStore();
   const g = useGraphics();
+  const a11y = useAccessibility(); // playtest 2 calm kills: Reduce flashing (stores/accessibility.ts)
+  const reducedMotion = prefersReducedMotion();
 
   // F10 toggles; Esc closes it when it is the top panel (input/panelStack.ts).
   useEffect(() => {
@@ -211,6 +215,16 @@ export function GraphicsPanel() {
       </Row>
       <Row name="Spell effects" hint="Particles, lights, shake and flashes of spells">
         <Seg testid="graphics-effects" value={q.effects} options={EFFECTS_SETTINGS} label={(v) => (v === 'auto' && q.effects === 'auto' ? `Auto (${FX_LABEL[currentFxTier()]})` : FX_LABEL[v])} onChange={(v) => q.setEffects(v)} />
+      </Row>
+      <Row
+        name="Reduce flashing"
+        hint={
+          reducedMotion
+            ? 'Accessibility. On: your system asks for reduced motion, so hits, kills and spells stay calm either way'
+            : 'Accessibility. On: hits are a soft tint, kills a calm fade, spell flashes dim and never faster than twice a second. Off: punchier hits, still photosensitivity-safe'
+        }
+      >
+        <Seg testid="graphics-reduce-flashing" value={a11y.reduceFlashing ? 'on' : 'off'} options={['on', 'off'] as const} label={(v) => (v === 'on' ? 'On' : 'Off')} onChange={(v) => a11y.setReduceFlashing(v === 'on')} />
       </Row>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, fontSize: 11, opacity: 0.75 }}>

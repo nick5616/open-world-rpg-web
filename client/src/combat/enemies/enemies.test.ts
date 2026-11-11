@@ -10,6 +10,7 @@ import { modelFor } from './models';
 import { EnemyAnimator, attackAnim, attackAnimByKey, attackKindFor, type AnimInput } from './anim';
 import { writePose, kindsByRig } from './pose';
 import { JOINT_COUNT, MAX_JOINTS, POSE_STRIDE } from './rigs';
+import { CALM } from '../flashSafety';
 import { EnemyRenderer } from './renderer';
 import type { RemoteView } from '../../net/interpolation';
 
@@ -175,17 +176,40 @@ describe('animation state machine', () => {
     expect(a.state).toBe('idle');
   });
 
-  it('hits flash (in real time, through hitstop) and flinch', () => {
+  it('hits tint (in real time, through hitstop) and flinch', () => {
     const a = new EnemyAnimator(opts());
     a.update(input(), 0.016);
     a.hit();
-    a.update(input(), 0.016, true); // hitstop: the pose freezes, the flash runs
-    expect(a.flash).toBeGreaterThan(0.5);
+    a.update(input(), 0.016, true); // hitstop: the pose freezes, the tint runs
+    expect(a.flash).toBeGreaterThan(0);
+    expect(a.struck).toBe(true);
     a.update(input(), 0.08);
     expect(a.flinch).toBeGreaterThan(0.3);
+    expect(a.flash).toBeLessThanOrEqual(CALM.hitPeak); // a capped tint, never the old full white
     for (let i = 0; i < 30; i++) a.update(input(), 0.02);
     expect(a.flash).toBe(0);
+    expect(a.struck).toBe(false);
     expect(a.flinch).toBe(0);
+  });
+
+  it('a stream of hits holds the tint instead of strobing it, and a kill fades it out', () => {
+    // playtest 2 calm kills: arc sparks at 15 Hz into one enemy used to restart a 130 ms white flash every hit
+    const a = new EnemyAnimator(opts());
+    a.update(input(), 0.016);
+    const levels: number[] = [];
+    for (let i = 0; i < 180; i++) {
+      if (i % 4 === 0 && i < 150) a.hit();
+      a.update(input(), 1 / 60);
+      levels.push(a.flash);
+    }
+    expect(a.tint.pulses).toBeLessThanOrEqual(Math.ceil(2500 / CALM.hitMinIntervalMs) + 1);
+    const held = levels.slice(30, 140);
+    expect(Math.min(...held)).toBeGreaterThan(CALM.hitPeak * 0.5);
+    a.hit();
+    a.die();
+    const atDeath = a.flash;
+    for (let i = 0; i < 40; i++) a.update(input({ healthPct: 0 }), 1 / 60);
+    expect(a.flash).toBeLessThan(atDeath + 1e-9); // the killing blow does not re-flash a dying body
   });
 
   it('freeze holds the pose; health 0 or Event 201 dies, dissolving at the end', () => {

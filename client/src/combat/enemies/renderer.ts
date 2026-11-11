@@ -25,6 +25,7 @@ import { MAX_JOINTS, POSE_STRIDE } from './rigs';
 import { writePose, type PoseCtx } from './pose';
 import { auraMaterials, barMaterials, enemyMat, enemyUniforms } from './material';
 import { PartBuilder, rng } from './geometry';
+import { flashProfile } from '../flashSafety';
 
 export const FULL_M = 38;
 export const MID_M = 95;
@@ -149,6 +150,9 @@ export class EnemyRenderer {
   private dKind = new Uint8Array(MAX_DEBRIS); // 0 chunk, 1 jelly, 2 glow, 3 puff (rises, grows)
   private dCol = new Float32Array(MAX_DEBRIS * 3);
   private dNext = 0;
+  /** iFx.w of glowing death motes (-1 none .. 0 full glow) and the debris count multiplier: the flash profile. */
+  private debrisGlow = -0.8;
+  private debrisCount = 0.6;
   private lastStats: EnemyRenderStats = { enemies: 0, drawn: 0, full: 0, mid: 0, far: 0, culled: 0, batches: 0, drawCalls: 0, instances: 0, debris: 0, fullRadius: FULL_M, updateMs: 0 };
   /** Where the head tracking looks (the local player's chest), set by the layer each frame. */
   readonly target = new THREE.Vector3();
@@ -264,6 +268,13 @@ export class EnemyRenderer {
     const t0 = performance.now();
     this.frame++;
     enemyUniforms.uTime.value = nowMs / 1000;
+    // Playtest 2 calm kills: the tell's pulse, the death edge and the motes' glow follow the flash profile.
+    const fp = flashProfile();
+    enemyUniforms.uTellW.value = fp.tellHz * Math.PI * 2;
+    enemyUniforms.uTellDepth.value = fp.tellDepth;
+    enemyUniforms.uEdge.value = fp.deathEdge;
+    this.debrisGlow = fp.debrisGlow - 1;
+    this.debrisCount = fp.debrisCount;
     for (const b of this.batchList) b.n = 0;
     camera.updateMatrixWorld();
     _pv.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
@@ -295,7 +306,7 @@ export class EnemyRenderer {
       }
       e.seen = this.frame;
       e.gone = false;
-      if (!(frozen && e.anim.flash > 0)) {
+      if (!(frozen && e.anim.struck)) {
         e.x = v.x;
         e.y = v.y;
         e.z = v.z;
@@ -308,7 +319,7 @@ export class EnemyRenderer {
       _input.y = v.y;
       _input.healthPct = ally ? Math.max(1, v.healthPct) : v.healthPct;
       _input.winding = (v.activity & 8) !== 0;
-      e.anim.update(_input, dt, frozen && e.anim.flash > 0);
+      e.anim.update(_input, dt, frozen && e.anim.struck);
     }
     // vanished views: dying ones finish their animation in place, the rest go
     for (const e of this.enemies.values()) {
@@ -368,7 +379,7 @@ export class EnemyRenderer {
       if (!a.alive && sp.deathFx !== 'smoke' && sp.deathFx !== 'shatter') _fx[3] = -1;
       if (e.ally) {
         _fx[1] = 0;
-        if (e.health < 15 && a.alive && !e.pet) _fx[2] = 0.25 * Math.abs(Math.sin(nowMs / 120)); // flickers out at the end
+        if (e.health < 15 && a.alive && !e.pet) _fx[2] = 0.125 * (1 - Math.cos((nowMs / 1000) * fp.allyFadeHz * Math.PI * 2)); // fades in and out at the end (<= 2 Hz; it flickered at 2.7 Hz)
       }
       _q.setFromAxisAngle(_yAxis, e.yaw);
       const lift = sp.flyer ? m.flyLift * s : 0;
@@ -719,7 +730,7 @@ export class EnemyRenderer {
     // flyers come down from their hover: dust and splats land on the ground
     const gy = e.y - (sp.flyer ? FLY_M : 0);
     const cy = e.y - (sp.flyer ? e.model.flyLift * s : 0) + h * 0.45;
-    const n = Math.round(Math.min(18, 8 + 5 * s));
+    const n = Math.max(3, Math.round(Math.min(18, 8 + 5 * s) * this.debrisCount));
     for (let i = 0; i < n; i++) {
       const a = r() * Math.PI * 2;
       const sp2 = 1.5 + r() * 2.5;
@@ -787,7 +798,7 @@ export class EnemyRenderer {
       mesh.setColorAt(n, _col);
       const fx = mesh.geometry.getAttribute('iFx') as THREE.InstancedBufferAttribute;
       (fx.array as Float32Array)[n * 4 + 2] = 0;
-      (fx.array as Float32Array)[n * 4 + 3] = puff ? -1 : 0; // no hot edge on dust and smoke
+      (fx.array as Float32Array)[n * 4 + 3] = puff ? -1 : k === 2 ? this.debrisGlow : 0; // no hot edge on dust and smoke; motes glow softly (calm kills)
     }
     for (let mi = 0; mi < 3; mi++) {
       const mesh = meshes[mi];
