@@ -1,0 +1,54 @@
+Playtest 2 enemy pathfinding: benchmarks (i7-11700K, Windows, -cpu 4). Other agents shared the
+machine in the afternoon runs; compare runs of the same hour. main = 0cdfa1b, branch = pt2/pathfinding.
+
+## BenchmarkScale/p300_e2000, 600 ticks
+go test -c ./internal/game; <bin> -test.bench Scale/p300_e2000 -test.benchtime 600x -test.cpu 4
+(flat ground: the wire-digest world; terrain: LODESTONE_BENCH_TERRAIN=1, the official world around the soak disc)
+
+### Quieter hour, 3 runs each (main first, then branch)
+                  combat-ms  combat-p99  cpu-Mcycles  p50-ms  p99-ms  kbps/client
+main   run 1      0.786      2.00        59.8         4.79    7.11    131.3
+main   run 2      0.741      1.69        58.6         4.67    7.21    131.3
+main   run 3      0.742      2.02        58.4         4.66    6.79    131.3
+branch run 1      0.710      1.67        57.8         4.57    6.70    131.3
+branch run 2      0.790      2.05        59.5         4.73    7.50    131.3
+branch run 3      (machine stall: p99 250.8 ms, max 905 ms; discarded, repeated below)
+
+### Busier hour, alternated main / branch
+flat    main   1  0.936      2.15        67.9         5.52    8.96    131.3
+flat    branch 1  0.903      2.11        66.0         5.35    9.17    131.3
+flat    main   2  0.947      2.24        69.0         5.53    8.99    131.3
+flat    branch 2  1.088      3.51        72.8         5.88    13.79   131.3
+flat    main   3  1.118      2.72        75.9         6.33    11.07   131.3
+flat    branch 3  0.956      2.20        69.6         5.66    8.95    131.3
+terrain main   1  1.158      2.76        76.2         6.34    11.19   136.1
+terrain branch 1  1.287      2.81        74.0         6.20    11.06   135.8
+terrain main   2  1.225      2.98        78.5         6.48    13.55   136.1
+terrain branch 2  1.269      2.86        72.0         5.90    10.42   135.8
+
+Flat: the nav pass never runs (no step is refused on flat ground without towns): within noise.
+Terrain: enemies meeting cliffs and water now path (downlink 136.1 -> 135.8 kbps: different, as
+enemy behaviour changed); combat phase mean +0.04..+0.13 ms, tick p50/p99 not worse.
+
+## LODESTONE_WIRE_DIGEST=1 TestWireDigest: identical on main and the branch
+DIGEST p90_e600 400 ticks: 21071668 bytes a21b9b94c56e0d4372d785f40f5544116a37f7736238fb048ed5604fd01ce949
+DIGEST p300_e2000 300 ticks: 55563662 bytes c34d60a43fa2d8a9675669c073eac5fdf727e1a5207a44c68d01a94fcdc5015c
+
+## Combat package: go test ./internal/combat -run XXX -bench 'TownCrowd|NavSaturated' -benchtime 900x -cpu 4 -count 3
+(a combat Step only: AI on 4 workers + the serial nav pass; "off" = the same scene without pathfinding)
+BenchmarkTownCrowd/nav-4     900  68390 ns/op  1.460 asks/tick  27.10 expanded/tick  25 following  1240 max-units  29.76 shared-%
+BenchmarkTownCrowd/nav-4     900  66597 ns/op
+BenchmarkTownCrowd/nav-4     900  65476 ns/op
+BenchmarkTownCrowd/off-4     900  59463 ns/op
+BenchmarkTownCrowd/off-4     900  60488 ns/op
+BenchmarkTownCrowd/off-4     900  65089 ns/op
+BenchmarkNavSaturated/nav-4  900 243316 ns/op  96.67 busy-%  1317 max-units
+BenchmarkNavSaturated/nav-4  900 224987 ns/op
+BenchmarkNavSaturated/nav-4  900 231116 ns/op
+BenchmarkNavSaturated/off-4  900  93463 ns/op
+BenchmarkNavSaturated/off-4  900  96085 ns/op
+BenchmarkNavSaturated/off-4  900  95934 ns/op
+
+Town crowd (200 enemies chasing 20 players round a 6 x 6 town): +6 us a tick on average.
+Saturated (500 asks queued, the full 1,200-unit budget spent every tick): +~135 us a tick, the
+ceiling the budget puts on the nav pass (it is serial: it adds to the tick as is).

@@ -125,6 +125,9 @@ type Enemy struct {
 	lastPetHit uint32
 	calmUntil  uint32
 	calmAgain  uint32 // a calm that ended: not again before this tick
+	// Playtest 2 pathfinding (navai.go): the path and its asks; nil until
+	// the straight step was first refused.
+	nav *navState
 }
 
 // Typeid is the wire typeId (combatdefs.TypeID).

@@ -165,9 +165,10 @@ type campState struct {
 	pieces    map[uint64]*campPiece
 	byOwner   map[string][]*campPiece
 	byArea    map[int32][]*campPiece
-	set       *camps.Set // solid boxes, rebuilt on change (read-only once built)
-	fires     []fireSpot // burning campfires (rebuilt each second and on change)
-	nowW      float64    // world clock when fires was built
+	set       *camps.Set         // solid boxes, rebuilt on change (read-only once built)
+	solid     []camps.SolidPiece // what set was built from (pathfinding sees the changes)
+	fires     []fireSpot         // burning campfires (rebuilt each second and on change)
+	nowW      float64            // world clock when fires was built
 	lastDecay time.Time
 	restored  bool
 	handed    map[string]campHanded
@@ -314,6 +315,8 @@ func (s *Server) campRebuild() {
 			solid = append(solid, camps.SolidPiece{ID: p.ID, Kind: p.Kind, Rot: p.Rot, X: p.X, Y: p.Y, Z: p.Z})
 		}
 	}
+	s.navCampsChanged(c.solid, solid)
+	c.solid = solid
 	c.set = camps.NewSet(solid)
 	s.campFires()
 }

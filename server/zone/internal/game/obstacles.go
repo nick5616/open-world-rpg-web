@@ -17,6 +17,7 @@ package game
 // (door state changes on the tick goroutine, in townsTick, after it).
 
 import (
+	"lodestone/server/pkg/camps"
 	"lodestone/server/pkg/constants"
 	"lodestone/server/pkg/towns"
 )
@@ -49,6 +50,45 @@ func (s *Server) initObstacles() {
 	s.doorsInit()
 	s.cbt.w.Obstacles = s.enemyBlocked
 	s.log.Info("enemies respect buildings", "boxes", c.B.Len(), "maskCells", s.obst.b.Marked())
+}
+
+// navDoorChanged tells enemy pathfinding (combat nav.go) that door d opened
+// or closed: the grid around its doorway is sampled again. Tick goroutine,
+// where the settled state changes (outside the combat phase).
+func (s *Server) navDoorChanged(d int) {
+	w := s.town.doors
+	if s.cbt.w == nil || w == nil || d < 0 || d >= len(w.s.D) {
+		return
+	}
+	dr := &w.s.D[d]
+	r := dr.Width/2 + dr.Thick + 0.5
+	s.cbt.w.NavInvalidate(dr.X-r, dr.Z-r, dr.X+r, dr.Z+r)
+}
+
+// navCampsChanged: the solid camp pieces were rebuilt (CR 025); the grid
+// around every piece placed or picked up since the last set is sampled
+// again.
+func (s *Server) navCampsChanged(old, now []camps.SolidPiece) {
+	if s.cbt.w == nil {
+		return
+	}
+	const r = 3.0 // m: the largest solid piece's half extent with margin
+	was := make(map[camps.SolidPiece]bool, len(old))
+	for _, p := range old {
+		was[p] = true
+	}
+	is := make(map[camps.SolidPiece]bool, len(now))
+	for _, p := range now {
+		is[p] = true
+		if !was[p] {
+			s.cbt.w.NavInvalidate(p.X-r, p.Z-r, p.X+r, p.Z+r)
+		}
+	}
+	for _, p := range old {
+		if !is[p] {
+			s.cbt.w.NavInvalidate(p.X-r, p.Z-r, p.X+r, p.Z+r)
+		}
+	}
 }
 
 // enemyBlocked is combat World.Obstacles: a town box or a closed door.

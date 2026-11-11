@@ -210,6 +210,7 @@ func (s *Server) RestoreDoors(ctx context.Context) (int, error) {
 		}
 		was := !w.settledOpen(d)
 		w.open[d] = r.Open
+		s.navDoorChanged(d) // enemy pathfinding (obstacles.go)
 		w.recount(d, was)
 		si := w.s.D[d].Settlement
 		w.epoch[si]++

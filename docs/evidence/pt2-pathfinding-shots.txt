@@ -1,0 +1,17 @@
+house 153 of "Draedmore" at (1887.1, 2253.0): 7.9 x 6.3 m, door on its -v wall
+1. ran round the house from the back to its door with 3 wolves after me: 3 wolves seen, 0 came along its side wall after me; shot pt2-pathfinding-run.png
+2. shot pt2-pathfinding-round-corner.png after 2.5 s: a wolf round the back corner, coming along the side wall toward me off the front corner
+   shot pt2-pathfinding-arrived.png after 6.4 s: the wolves round the house, at me
+   wolves seen 3, along the side wall 3, came round to the front 2; rounding the corner seen: true; at me: true
+wolf samples 297, inside the house's walls: 0
+PASS: the wolves went round the house, never through it
+
+zone log (dev commands, errors):
+{"time":"2026-11-10T16:32:27.6040994-08:00","level":"INFO","msg":"dev command","svc":"zone","character":"pt2-path-1794357135815","action":"flags","target":0,"arg":1,"code":0,"result":"on: god"}
+{"time":"2026-11-10T16:32:29.8038762-08:00","level":"INFO","msg":"dev command","svc":"zone","character":"pt2-path-1794357135815","action":"flags","target":0,"arg":5,"code":0,"result":"on: god, infinite stamina"}
+{"time":"2026-11-10T16:32:30.7020883-08:00","level":"INFO","msg":"dev command","svc":"zone","character":"pt2-path-1794357135815","action":"spawn","target":2,"arg":3,"code":0,"result":"3 x wolf (level 2) at 1871 2243"}
+{"time":"2026-11-10T16:32:42.6377973-08:00","level":"INFO","msg":"dev command","svc":"zone","character":"pt2-path-1794357135815","action":"despawn","target":0,"arg":0,"code":0,"result":"removed the console's spawns (3 alive)"}
+{"time":"2026-11-10T16:32:43.0042541-08:00","level":"INFO","msg":"dev command","svc":"zone","character":"pt2-path-1794357135815","action":"teleport","target":965680447020560,"arg":0,"code":0,"result":"teleported to 1879 83 2248"}
+{"time":"2026-11-10T16:32:45.2707461-08:00","level":"INFO","msg":"dev command","svc":"zone","character":"pt2-path-1794357135815","action":"spawn","target":2,"arg":3,"code":0,"result":"3 x wolf (level 2) at 1871 2243"}
+{"time":"2026-11-10T16:32:46.5374109-08:00","level":"INFO","msg":"dev command","svc":"zone","character":"pt2-path-1794357135815","action":"teleport","target":971951099273760,"arg":0,"code":0,"result":"teleported to 1890 83 2263"}
+{"time":"2026-11-10T16:32:53.6373688-08:00","level":"INFO","msg":"dev command","svc":"zone","character":"pt2-path-1794357135815","action":"despawn","target":0,"arg":0,"code":0,"result":"removed the console's spawns (3 alive)"}

@@ -165,6 +165,7 @@ func (w *World) thinkAll(tick uint32) {
 		wk.Spawned, wk.Removed, wk.XP, wk.Respawn, wk.Synced = nil, nil, nil, nil, nil
 		wk.Stats = Stats{}
 		wk.aiPar = true
+		wk.navWanted = false
 		wk.aiw = nil
 	}
 	run := func(worker, pi int) {
@@ -198,6 +199,7 @@ func (w *World) thinkAll(tick uint32) {
 		w.XP = append(w.XP, wk.XP...)
 		w.Respawn = append(w.Respawn, wk.Respawn...)
 		w.Synced = append(w.Synced, wk.Synced...)
+		w.navWanted = w.navWanted || wk.navWanted // pathfinding asks (navai.go)
 	}
 
 	// Pass 3: merge in spawn order; serial groups think in place.
