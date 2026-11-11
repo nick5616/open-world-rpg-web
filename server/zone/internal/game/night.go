@@ -520,6 +520,7 @@ func (s *Server) huntTopUp(idx int64) {
 		if !ok {
 			continue
 		}
+		want = s.storyHunters(e, want) // CR 035: a beaten game calms your nights, the Starless Vow does not (story.go)
 		p := e.Move.Pos
 		have := s.demonsNear(p, 80, "lesser")
 		if have < want {
@@ -769,6 +770,7 @@ func (s *Server) endDefense(d *defense, result int, msg string) {
 		}
 	}
 	s.log.Info("defense ended", "town", tw.Index, "result", result, "wave", d.wave, "ward", math.Round(d.ward), "participants", len(ids))
+	s.storyDefenseEnded(tw.Index, result, ids) // CR 035: the vigil of Act IV (story.go)
 }
 
 // DefenseInfo is a defense event for tests and /debug/night.

@@ -457,6 +457,7 @@ func (s *Server) combatTick(tick uint32) {
 	s.deliverCombatAll(events) // WP19b: per session on the workers, each session's events in order
 	for _, o := range events {
 		s.nightCombatEvent(o) // WP15: burning enemies set the grass alight (night.go)
+		s.storyCombatEvent(o) // CR 035: a player downed with a friend near waits for a revive (revive.go)
 	}
 	for _, g := range xp {
 		s.grantCombatXP(g)

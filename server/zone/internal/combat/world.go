@@ -180,6 +180,9 @@ type World struct {
 	petOut        PetOutputs
 	quietClear    bool // Tame: the group is cleared without the "camp cleared" Event
 
+	// CR 035: story strikes waiting out their wind-up (story.go).
+	story []storyStrike
+
 	// Stats for metrics and evidence.
 	Stats Stats
 	// quietDamage: the hit being applied is a stream shot (no observer damage Event; CR 020).

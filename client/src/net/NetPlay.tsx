@@ -41,6 +41,8 @@ import { ensureMountHook } from '../ui/mounts/link'; // CR 027 mounts
 import { SteedLayer } from '../ui/mounts/SteedLayer';
 import { ensurePetHook } from '../ui/pets/link'; // CR 029 pets
 import { PetLayer } from '../ui/pets/PetLayer';
+import { ensureStoryHook } from '../ui/story/link'; // CR 035 main story
+import { FinaleLayer } from '../ui/story/FinaleLayer';
 import { NightHud } from '../systems/NightHud';
 // Playtest 1: character stats, area difficulty, tower attunement (Events 900-903).
 import { attachProgression } from '../ui/progression';
@@ -126,6 +128,7 @@ export function NetPlay({ ready }: { ready: ReadySession }) {
     ensureCampHook(); // CR 025: camp pieces near you and your camp (ui/camps), before Hello too
     ensureMountHook(); // CR 027: your steed and steeds near you (ui/mounts), before Hello too
     ensurePetHook(); // CR 029: your pets, calm creatures, taming (ui/pets), before Hello too
+    ensureStoryHook(); // CR 035: the main story, the finale, revives (ui/story), before Hello too
     let live = true;
     s.onEnd = (end) => live && setPhase({ kind: 'ended', end });
     s.start().then(
@@ -221,6 +224,7 @@ export function NetPlay({ ready }: { ready: ReadySession }) {
           <CampLayer />
           <SteedLayer />
           <PetLayer />
+          <FinaleLayer />
           <DuelRing />
         </WorldCanvas>
       )}

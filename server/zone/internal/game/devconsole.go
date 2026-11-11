@@ -64,6 +64,7 @@ const (
 	DevActAttune      = 25 // every tower crystal (boons, XP)
 	DevActPlaces      = 26 // send 1402: towers, towns, vaults (teleport targets)
 	DevActAchieve     = 27 // targetId: achievement id (0 = every one): unlocked, rewards paid
+	DevActStory       = 28 // CR 035 main story: arg = DevStory*; targetId: act | step << 8 (jump), percent (hush)
 )
 
 // Event kinds 1400-1419 (contracts/events.md, playtest 2 dev console).
@@ -139,7 +140,7 @@ func devName(a uint8) string {
 	names := map[uint8]string{DevActStatus: "status", DevActGive: "give", DevActLearn: "learn", DevActUnlearn: "unlearn", DevActLevel: "level", DevActXP: "xp",
 		DevActGold: "gold", DevActSkillPoints: "skillpoints", DevActWeaponSkill: "weaponskill", DevActRefill: "refill", DevActFlags: "flags", DevActSpeed: "speed",
 		DevActReset: "reset", DevActTeleport: "teleport", DevActTime: "time", DevActWeather: "weather", DevActSpawn: "spawn", DevActDespawn: "despawn",
-		DevActEvent: "event", DevActTameable: "tameable", DevActPet: "pet", DevActSteed: "steed", DevActQuest: "quest", DevActReveal: "reveal", DevActAttune: "attune", DevActPlaces: "places", DevActAchieve: "achieve"}
+		DevActEvent: "event", DevActTameable: "tameable", DevActPet: "pet", DevActSteed: "steed", DevActQuest: "quest", DevActReveal: "reveal", DevActAttune: "attune", DevActPlaces: "places", DevActAchieve: "achieve", DevActStory: "story"}
 	if n, ok := names[a]; ok {
 		return n
 	}
@@ -338,6 +339,8 @@ func (s *Server) devApply(sess *session, m *proto.Interact) (int32, string) {
 		return s.devQuest(sess, uint32(m.TargetID), int(m.Arg))
 	case DevActAchieve:
 		return s.devAchieve(sess, int(m.TargetID))
+	case DevActStory:
+		return s.devStory(sess, int(m.Arg), int(m.TargetID)) // CR 035 (story_dev.go)
 	case DevActReveal, DevActAttune:
 		return s.devMap(sess, m.Action == DevActAttune)
 	}
@@ -603,7 +606,7 @@ func (s *Server) devMap(sess *session, attune bool) (int32, string) {
 	s.sendStats(sess, StatsAttuned, before)
 	s.sendProgress(sess)
 	s.saveProgressSoon(sess, false)
-	s.contentAttuned(sess)
+	s.contentAttuned(sess, -1)
 	return devOK("attuned %d tower crystals (%d in all)", n, attunedCount(x.prog))
 }
 

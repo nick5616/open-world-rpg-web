@@ -362,6 +362,8 @@ codex:
   hunt_master: {habitat: "The Wild Hunt, at night", lore: "The Huntsman. Antlered, silent, and patient. He hurls his spear at whoever runs."}
   starfall_sentinel: {habitat: "Where stars fall", lore: "It rises from the crater with the shard, built of starmetal and old light, and tests anyone who comes for the prize."}
   thornhide_behemoth: {habitat: "Wanders between regions", lore: "Older than the towns. Briars grow wherever it has walked. It shakes the earth when it is angry, and it is easily angered."}
+  the_hush: {habitat: "The Heartfall", lore: "The silence at the heart of everything, given a shape. The keepers called it the Hush: mother of the Unsung, born where the Lodestone's song first went quiet."}
+  hollow_bell: {habitat: "The Heartfall", lore: "A bell with no clapper that tolls anyway. Its choir keeps the Hush untouchable. Only sunsteel or Light will crack one."}
   vault_keeper: {habitat: "Sealed vaults beneath ruins", lore: "The last guardian of a sealed vault. When it raises its staff, a sigil burns on the ground: do not be standing in it."}
 
 # ---- feats: moved to contracts/achievements.yaml (CR 031), keys and counters unchanged ----

@@ -180,6 +180,8 @@ export function controlGroups(debug: boolean, dev = false): ControlGroup[] {
         { keys: ['O'], action: 'Friends', src: [['social/ui/SocialOverlay.tsx', "'KeyO'"]] },
         { keys: ['V'], action: 'Push to talk (hold)', note: 'when voice is on push-to-talk', src: [['voice/runtime.ts', "'KeyV'"]] },
         { keys: ['Y', 'U'], action: 'Accept / decline a duel', note: 'while a challenge waits, even with an instrument out', src: [['ui/pvp/PvpHud.tsx', "'KeyY'"], ['ui/pvp/PvpHud.tsx', "'KeyU'"]] },
+        { keys: ['E'], action: 'Raise a fallen friend (hold)', note: 'beside them, while they wait for you (CR 035)', src: [['ui/story/StoryHud.tsx', "'KeyE'"]] },
+        { keys: ['Space'], action: 'While down: respawn now', note: 'instead of waiting for a friend to raise you', src: [['ui/story/StoryHud.tsx', "'Space'"]] },
       ],
     },
     {

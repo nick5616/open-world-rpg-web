@@ -190,6 +190,9 @@ func (s *Server) attune(sess *session, site int) {
 	}
 	if reason != explore.AttuneOK {
 		s.sendEvent(sess, &proto.Event{Kind: EventAttuneRefused, EntityID: e.ID, TargetID: uint32(max(0, site)), Value: int32(reason)})
+		if reason == explore.AttuneAlready {
+			s.contentAttuned(sess, site) // CR 035: an attuned crystal answers the main story again
+		}
 		if len(s.hap) > 0 {
 			s.levelChanged(sess, before)
 			s.sendProgress(sess)
@@ -222,5 +225,5 @@ func (s *Server) attune(sess *session, site int) {
 	s.sendProgress(sess)
 	s.saveProgressSoon(sess, false)
 	s.log.Info("tower attuned", "character", e.CharacterID, "site", site, "region", name, "attuned", attunedCount(x.prog))
-	s.contentAttuned(sess) // CR 023: story steps, feats (content.go)
+	s.contentAttuned(sess, site) // CR 023: story steps, feats (content.go)
 }

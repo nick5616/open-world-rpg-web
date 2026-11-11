@@ -182,6 +182,7 @@ type Server struct {
 	wx         weatherState  // playtest 2 weather (CR 030): weather.go
 	petsG      petGlue       // playtest 2 pets (CR 029): pets.go
 	dev        devGlue       // playtest 2 dev console (CR 032): devconsole.go
+	sty        storyGlue     // playtest 2 main story (CR 035): story.go, finale.go, revive.go
 	// WP11: next earshot hand-off (earshot.go).
 	earshotNext time.Time
 	phases      tickPhases // WP19: per-phase tick timing (phases.go)
@@ -247,6 +248,7 @@ func New(cfg Config) *Server {
 	s.initDifficulty() // playtest 1 (difficulty.go): after combat (World.Areas)
 	s.initQuests()     // quests.go: after combat (kill hook)
 	s.initContent()    // content.go: after quests (kill hook)
+	s.storyInit()      // story.go: after content (kill hook: the Sovereign, the Hush)
 	s.initPets()       // pets.go: after content (taming needs the content gate)
 	s.loop = &gameloop.Loop{Interval: interval, Stats: s.stats, OnTick: s.onTick}
 	return s
@@ -377,6 +379,7 @@ func (s *Server) onTick() {
 	s.musicTick(tick)       // playtest 2: songs, the fireside, playing poses that ended (music.go)
 	s.weatherTick(tick)     // CR 030 weather: lightning, cold (weather.go)
 	s.devTick(tick)         // CR 032 dev console: god mode, infinite mana, no cooldowns, frozen time (devconsole.go)
+	s.storyTick(tick)       // CR 035 main story: party progress, the vigil, the finale, revives (story.go)
 	s.phases.mark(phNight)
 
 	// Quantize once per entity and rebuild the grid; every client's snapshot
@@ -511,6 +514,7 @@ func (s *Server) join(sess *session) {
 	s.campJoin(sess)        // CR 025: camp pieces near you, your camp, Rested (camps.go)
 	s.steedJoin(sess)       // CR 027: your steed, steeds near you (mounts.go)
 	s.petJoin(sess)         // CR 029: your pets, the one out with you (pets.go)
+	s.storyJoin(sess)       // CR 035: the main story's next act, its state (story.go)
 	s.clusterJoined(sess)   // WP16: owner record, arrival checkpoint
 	s.log.Info("join", "entity", e.ID, "character", e.CharacterID, "name", e.Name, "remote", sess.conn.RemoteAddr(),
 		"x", math.Round(e.Move.Pos.X*100)/100, "z", math.Round(e.Move.Pos.Z*100)/100)
@@ -563,6 +567,7 @@ func (s *Server) leave(sess *session) {
 	s.steedLeave(sess)   // CR 027 (mounts.go)
 	s.emotesLeave(sess)  // playtest 2: emotes, fishing (emotes.go)
 	s.musicLeave(sess)   // playtest 2: instruments (music.go)
+	s.storyLeave(sess)   // CR 035 (story.go)
 	if s.cfg.Queue != nil {
 		s.checkpoint(e)
 	}

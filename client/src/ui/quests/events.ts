@@ -22,12 +22,13 @@ export const QUEST_REFUSAL: Record<number, string> = {
   4: 'Your quest log is full',
   5: 'You already have that quest',
   6: 'You already completed that quest',
+  7: 'The main story stays in your journal',
 };
 
-export const QUEST_KIND = { bounty: 0, story: 1, side: 2 } as const;
+export const QUEST_KIND = { bounty: 0, story: 1, side: 2, main: 3 } as const;
 
 /** The journal's word for a quest kind. */
-export const QUEST_KIND_LABEL: Record<number, string> = { 0: 'Bounty', 1: 'Story', 2: 'Request' };
+export const QUEST_KIND_LABEL: Record<number, string> = { 0: 'Bounty', 1: 'Story', 2: 'Request', 3: 'Main story' };
 
 /** A place a quest step points at (meters). r > 0: an area circle. */
 export interface QuestMarker {

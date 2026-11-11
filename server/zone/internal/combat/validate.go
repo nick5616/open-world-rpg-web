@@ -761,6 +761,11 @@ func (w *World) applyDamage(e *Enemy, src uint32, dmg float64, element int, at m
 	if p := w.players[src]; p != nil && !e.engaged[src] {
 		w.engage(e, p)
 	}
+	if e.Guard != nil { // CR 035: the Hush's shroud, choir and stagger (story.go)
+		if dmg = e.Guard(e, src, dmg, killing); dmg <= 0 {
+			return 0, false
+		}
+	}
 	var dealt float64
 	var shielded bool
 	if e.Demon != nil {

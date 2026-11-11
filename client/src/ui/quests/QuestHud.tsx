@@ -12,10 +12,11 @@ import { setMapOpen, useExploration } from '../map/store';
 import { headingOf } from '../map/Compass';
 import { ensureQuestHook } from './link';
 import { netRuntime } from '../../net/netStore';
-import { distanceText, whereText, QUEST_KIND_LABEL, type QuestMarker, type QuestView } from './events';
+import { distanceText, whereText, QUEST_KIND, QUEST_KIND_LABEL, type QuestMarker, type QuestView } from './events';
 import { ITEMS } from '@lodestone/contracts';
 import { JournalContentTab, JournalTabBar, type JournalTab } from '../content/JournalTabs';
 import { liveMarkers } from './live';
+import { StoryJournalBar, StoryPartyLine } from '../story/StoryHud'; // CR 035
 import { dismissOffer, offerMarkers, pruneNotes, setJournalOpen, setQuestPreview, trackedQuest, useQuests } from './store';
 
 const GOLD = '#ffd166';
@@ -69,6 +70,7 @@ function Tracker() {
         </div>
       )}
       <div style={{ fontSize: 11, opacity: 0.55, marginTop: 2 }}>J journal{count > 1 ? ` · ${count} quests` : ''} · M map</div>
+      <StoryPartyLine />
     </div>
   );
 }
@@ -285,6 +287,7 @@ function Journal() {
       <div style={{ borderRight: '1px solid rgba(255,209,102,0.25)', overflowY: 'auto', padding: 10 }}>
         <div style={{ font: '600 18px Georgia, serif', color: GOLD, marginBottom: 6 }}>Journal</div>
         <JournalTabBar tab={tab} setTab={setTab} />
+        <StoryJournalBar />
         {log.quests.length === 0 && <div style={{ opacity: 0.7, fontSize: 13 }}>No quests. Bounty boards and townsfolk have work.</div>}
         {log.quests.map((x) => (
           <div key={x.id} onClick={() => setSel(x.id)} style={{ padding: '6px 8px', borderRadius: 4, cursor: 'pointer', background: x.id === q?.id ? 'rgba(255,209,102,0.15)' : 'transparent', marginBottom: 2 }}>
@@ -323,7 +326,7 @@ function Journal() {
               <button disabled={!actions || q.id === log.tracked} onClick={() => actions?.track(q.id)} style={btn(true)}>{q.id === log.tracked ? 'Tracked' : 'Track'}</button>
               {q.markers.length > 0 && <button onClick={() => { setQuestPreview({ title: q.title, markers: q.markers, from: 'quest' }); setJournalOpen(false); setMapOpen(true); }} style={btn(false)}>Show on map</button>}
               {q.turnIn && <button disabled={!actions} onClick={() => actions?.turnIn(q.id)} style={btn(false)}>Hand in</button>}
-              <button disabled={!actions} onClick={() => { if (window.confirm(`Abandon "${q.title}"?`)) actions?.abandon(q.id); }} style={btn(false)}>Abandon</button>
+              {q.kind !== QUEST_KIND.main && <button disabled={!actions} onClick={() => { if (window.confirm(`Abandon "${q.title}"?`)) actions?.abandon(q.id); }} style={btn(false)}>Abandon</button>}
             </div>
           </>
         )}

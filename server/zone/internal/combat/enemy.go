@@ -125,6 +125,9 @@ type Enemy struct {
 	lastPetHit uint32
 	calmUntil  uint32
 	calmAgain  uint32 // a calm that ended: not again before this tick
+	// CR 035 main story (story.go): a hit guard (the Hush) and a stagger.
+	Guard     Guard
+	HeldUntil uint32
 }
 
 // Typeid is the wire typeId (combatdefs.TypeID).
@@ -276,7 +279,7 @@ func (e *Enemy) has(key string, tick uint32) bool {
 // disabled reports a status that stops all action (stun, freeze, petrify,
 // airborne) or a boss phase transition.
 func (e *Enemy) disabled(tick uint32) bool {
-	if e.Boss != nil && e.Boss.transitionUntil > tick {
+	if e.Boss != nil && e.Boss.transitionUntil > tick || e.HeldUntil > tick {
 		return true
 	}
 	return e.has("stun", tick) || e.has("freeze", tick) || e.has("petrify", tick) || e.has("airborne", tick)
