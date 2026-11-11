@@ -114,7 +114,7 @@ type devGlue struct {
 	byHash  map[uint32]string // fnv1a32(item key) -> key
 	groups  []*combat.Group   // what the console spawned
 	frozen  bool
-	frozenS float64 // the time of day it holds (seconds into the day)
+	frozenS float64  // the time of day it holds (seconds into the day)
 	vibe    vibeGlue // playtest 2 vibe explorer (vibe.go)
 }
 

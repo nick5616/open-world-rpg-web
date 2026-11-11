@@ -45,6 +45,8 @@ import { wildlifeTargets } from './wildlife';
 import { FINALE } from '../ui/story/events';
 // Playtest 2 weather (CR 030): rain level, wind, storm, sand, thunder from real strikes.
 import { liveWeather, weatherOn } from '../systems/weather/runtime';
+// Playtest 2 vibe explorer: the composer aids' seam (dev builds; nothing registers otherwise).
+import { composerHook } from './composer/hook';
 
 /** What the Heartfall asks of the music (playtest 2 immersion pass; director.ts `finale`). */
 function finaleMusic(): 'intro' | 'fight' | 'won' | null {
@@ -305,7 +307,7 @@ export class AudioEngine {
     audioWorld.inTown = this.inTown();
     const hud = useCombatHud.getState();
     const hour = worldClock.timeOfDayS / HOUR_S;
-    const inputs: MusicInputs = {
+    let inputs: MusicInputs = {
       playing: worldDebug.firstPlayableMs !== null,
       hour,
       underground: audioWorld.underground,
@@ -316,10 +318,14 @@ export class AudioEngine {
       finale: finaleMusic(),
       ...this.forced,
     };
+    const ch = composerHook.current;
+    if (ch) inputs = ch.inputs(inputs); // a forced music state (vibe explorer)
     this.lastInputs = inputs;
     const decision = this.director.update(inputs, nowMs / 1000);
     this.director.introSeconds = this.music.introSeconds;
-    this.music.apply(decision);
+    // The composer's deck (a forced track, a loaded file mapped to this vibe) takes over: the game's music fades out.
+    const takeover = ch ? ch.tick(this, decision, inputs, nowMs) : false;
+    this.music.apply(takeover ? { ...decision, state: 'silence', timedPhase: null } : decision);
 
     this.applyDucks(nowMs);
   }

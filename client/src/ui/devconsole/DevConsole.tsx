@@ -6,7 +6,7 @@
 // zone as Interact 250 (events.ts); the zone applies it through the normal
 // item, combat and progression paths and answers in the log below.
 
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { WORLD_SIZE_M } from '@lodestone/contracts';
 import { localPlayer } from '../../state/live';
 import { useInventory } from '../inventory/store';
@@ -25,6 +25,10 @@ import { DEV_ACT, DEV_FLAG, DEV_FLAG_LABEL, giveSend, petSend, send, spawnSend, 
 import { ensureDevHook } from './link';
 import { devLog, sendDev, setDevOpen, useDev, type DevTab } from './store';
 import { trackPanel } from '../../input/panelStack';
+// Playtest 2 vibe explorer (docs/cr/036-vibe-explorer.md): the Vibe tab and the composer load on first use.
+import { useVibe } from './vibe/store';
+const VibeTab = lazy(() => import('./vibe/VibeTab'));
+const NowPlayingPin = lazy(() => import('./vibe/VibeTab').then((m) => ({ default: m.NowPlayingPin })));
 
 // Esc closes the console when it is the top panel (input/panelStack.ts); its command line keeps its own Esc.
 trackPanel(useDev, (s) => s.open && s.dev, 'dev-console', () => setDevOpen(false));
@@ -531,12 +535,13 @@ const TABS: { key: DevTab; label: string }[] = [
   { key: 'spells', label: 'Spells' },
   { key: 'character', label: 'Character' },
   { key: 'world', label: 'World' },
+  { key: 'vibe', label: 'Vibe' },
 ];
 
 function cmdCtx(): CmdCtx {
   const d = useDev.getState();
   const pl: CmdPlace[] = [...d.places.towers.map((p) => ({ kind: 'tower', name: p.n, x: p.x, z: p.z })), ...d.places.towns.map((p) => ({ kind: 'town', name: p.n, x: p.x, z: p.z })), ...d.places.vaults.map((p) => ({ kind: 'vault', name: p.n, x: p.x, z: p.z }))];
-  return { flags: d.status.flags, places: pl, quests: useQuests.getState().log.quests.map((q) => ({ id: q.id, title: q.title })) };
+  return { flags: d.status.flags, places: pl, quests: useQuests.getState().log.quests.map((q) => ({ id: q.id, title: q.title })), vibe: useVibe.getState() };
 }
 
 /** Run one command line (the box, and window.__lodestoneDev.run for headless runs). */
@@ -560,6 +565,13 @@ export function runDevCommand(line: string): void {
     return;
   }
   if (r.note) devLog('info', r.note);
+  if (r.vibe?.filter) useVibe.setState({ filter: { ...r.vibe.filter, go: false, random: false }, cursor: -1 });
+  if (r.vibe?.cursor !== undefined) useVibe.setState({ cursor: r.vibe.cursor });
+  if (r.music) {
+    const cmd = r.music;
+    useVibe.setState({ composer: true });
+    void import('./vibe/runMusic').then((m) => m.runMusic(cmd, devLog));
+  }
   for (const s of r.sends) sendDev(s);
 }
 
@@ -660,7 +672,13 @@ export function DevConsole() {
       window.removeEventListener('keydown', onKey);
     };
   }, []);
-  if (!dev || !open) return null;
+  const composer = useVibe((s) => s.composer);
+  const pin = composer ? (
+    <Suspense fallback={null}>
+      <NowPlayingPin />
+    </Suspense>
+  ) : null;
+  if (!dev || !open) return pin;
   return (
     <div data-ui-panel data-testid="dev-console" style={S.panel}>
       <div style={S.head}>
@@ -679,6 +697,11 @@ export function DevConsole() {
         {tab === 'spells' && <SpellsTab />}
         {tab === 'character' && <CharacterTab />}
         {tab === 'world' && <WorldTab />}
+        {tab === 'vibe' && (
+          <Suspense fallback={<div style={{ color: TEXT_3 }}>Loading the vibe explorer...</div>}>
+            <VibeTab />
+          </Suspense>
+        )}
       </div>
       <Log />
       <CommandLine />
