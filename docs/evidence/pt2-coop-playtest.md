@@ -134,4 +134,4 @@ Times are wall clock from the first character. They include my tooling time (a l
 
 ## Verification
 
-See docs/STATUS.md "Playtest 2: co-op playthrough" for the suite results after merging main.
+See docs/STATUS.md "Playtest 2: co-op playthrough" for the suite results after merging main (gen:check, go vet, go test, typecheck, eslint, client vitest 1241 tests; test:golden: every hash matches in every host, the Chromium chunk-time budget missed under machine load).
