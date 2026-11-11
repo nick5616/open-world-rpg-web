@@ -73,6 +73,8 @@ const ROLE_SHIRT: Record<number, number[]> = {
   5: [0xb09a6a, 0x9a8a5a],
   6: [0x8a9098, 0x7a8088],
 };
+/** Eyes, brows and mouth (immersion pass). */
+const FACE = new THREE.Color(0x2a1c14);
 const TROUSERS = [0x4a3a2a, 0x3a3a44, 0x5a4a34, 0x2e2a26].map((c) => new THREE.Color(c));
 
 function part(geo: THREE.BufferGeometry, name: string, shadow: boolean): THREE.InstancedMesh {
@@ -101,6 +103,19 @@ export class NpcRenderer {
   private readonly torso = part(merge([box(0.27, 0.62, 0.42, 0, 1.15, 0), box(0.2, 0.08, 0.2, 0, 1.49, 0)]), 'torso', true);
   private readonly arms = part(box(0.11, 0.62, 0.12, 0, -0.29, 0), 'arms', false);
   private readonly head = part(merge([box(0.24, 0.27, 0.22, 0, 1.66, 0), box(0.05, 0.06, 0.05, 0.13, 1.64, 0)]), 'head', false);
+  // Playtest 2 immersion pass: townsfolk had blank box faces. Eyes, brows and a mouth on the
+  // head's front (+x), one more instanced draw for every NPC in view.
+  private readonly face = part(
+    merge([
+      box(0.02, 0.036, 0.034, 0.121, 1.695, 0.052),
+      box(0.02, 0.036, 0.034, 0.121, 1.695, -0.052),
+      box(0.016, 0.014, 0.056, 0.123, 1.738, 0.054),
+      box(0.016, 0.014, 0.056, 0.123, 1.738, -0.054),
+      box(0.016, 0.012, 0.062, 0.122, 1.592, 0),
+    ]),
+    'face',
+    false,
+  );
   private readonly hair = part(merge([box(0.27, 0.07, 0.25, -0.01, 1.81, 0), box(0.06, 0.22, 0.25, -0.12, 1.7, 0)]), 'hair', false);
   private readonly hat = part(merge([cyl(0.33, 0.33, 0.03, 12, 0, 1.79, 0), cyl(0.14, 0.16, 0.16, 8, 0, 1.87, 0)]), 'hat', false);
   private readonly helmet = part(merge([cyl(0.15, 0.16, 0.14, 8, 0, 1.77, 0), cyl(0.0, 0.15, 0.12, 8, 0, 1.9, 0), box(0.04, 0.12, 0.04, 0.15, 1.69, 0)]), 'helmet', false);
@@ -116,7 +131,7 @@ export class NpcRenderer {
     private readonly ground: GroundQuery & { floorAt?: (x: number, y: number, z: number) => number },
   ) {
     this.group.name = 'townsfolk';
-    this.group.add(this.legs, this.torso, this.arms, this.head, this.hair, this.hat, this.helmet, this.apron, this.spear);
+    this.group.add(this.legs, this.torso, this.arms, this.head, this.face, this.hair, this.hat, this.helmet, this.apron, this.spear);
   }
 
   /** Online when a zone session is playing (NPC entities come from it). */
@@ -216,6 +231,8 @@ export class NpcRenderer {
       this.torso.setColorAt(i, shirt);
       this.head.setMatrixAt(i, base);
       this.head.setColorAt(i, SKIN[v.variant & 3]);
+      this.face.setMatrixAt(i, base);
+      this.face.setColorAt(i, FACE);
       // Legs and arms swing about the hip / shoulder (local z axis: the model faces +x).
       for (const side of [-1, 1]) {
         tmp.makeRotationAxis(zAxis, side * swing);
@@ -263,6 +280,7 @@ export class NpcRenderer {
     };
     set(this.torso, n);
     set(this.head, n);
+    set(this.face, n);
     set(this.legs, nl);
     set(this.arms, na);
     set(this.hat, nHat);
