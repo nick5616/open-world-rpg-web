@@ -86,6 +86,9 @@ type exploreState struct {
 	partyKey   string
 	lastIssue  time.Time
 	issued     bool // a blob issue is queued since the last change
+	// Event 609 (party_travel.go): the lent towers last sent.
+	partySent     explore.Bitset
+	partySentOnce bool
 }
 
 // localSaveState is what a local profile's next blob is built from.
@@ -254,6 +257,7 @@ func (s *Server) sendProgress(sess *session) {
 // publishes the character list the party poller reads.
 func (s *Server) exploreTick(tick uint32) {
 	s.partyTick(tick)
+	s.partyTowersTick(tick) // co-op polish: Event 609 (party_travel.go)
 	w := s.cfg.Explore
 	if w == nil {
 		return
@@ -336,6 +340,9 @@ func (s *Server) fastTravel(sess *session, site int, now time.Time) {
 	w := s.cfg.Explore
 	x := sess.x
 	reason := w.CanTravel(x.prog, site)
+	if reason == explore.TravelLocked && s.partyLends(sess.ent, site) {
+		reason = explore.TravelOK // co-op polish: a party member's tower (party_travel.go)
+	}
 	if reason == explore.TravelOK && now.Sub(x.lastTravel) < fastTravelCooldown {
 		reason = explore.TravelCooldown
 	}
@@ -396,6 +403,9 @@ func (s *Server) Teleport(e *Entity, pos movement.Vec3) {
 func (s *Server) RespawnPoint(e *Entity) movement.Vec3 {
 	if p, ok := s.campSpawn(e); ok {
 		return p // CR 025: your bedroll (camps.go)
+	}
+	if p, ok := s.partyRespawn(e); ok {
+		return p // co-op polish: near your friend (party_travel.go)
 	}
 	if w := s.cfg.Explore; w != nil && e.x != nil {
 		if p, ok := w.RespawnPoint(e.x.prog); ok {

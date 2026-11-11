@@ -14,7 +14,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { Site } from '@lodestone/worldgen';
 import { localPlayer } from '../../state/live';
 import { drawnRemotes } from '../../net/netStore';
-import { hasBit, MAX_PERSONAL_PINS, PIN_COLORS, type Pin } from './events';
+import { hasBit, MAX_PERSONAL_PINS, orBits, PIN_COLORS, type Pin } from './events';
 import { setMapOpen, useExploration } from './store';
 import { mapTerrain, useMapWorld } from './world';
 import { anyExploredIn, currentExplored, exploredMask } from './explored';
@@ -49,8 +49,9 @@ export function siteVisibility(s: Site, revealed: number, towers: Uint8Array, wa
   return 'hidden';
 }
 
-export function canFastTravel(s: Site, towers: Uint8Array, waypoints: Uint8Array): boolean {
-  return (s.kind === 'tower' && hasBit(towers, s.index)) || (s.kind === 'waypoint' && hasBit(waypoints, s.index));
+/** lent: towers a party member unlocked (Event 609): the zone lets you travel there too. */
+export function canFastTravel(s: Site, towers: Uint8Array, waypoints: Uint8Array, lent: Uint8Array = new Uint8Array(0)): boolean {
+  return (s.kind === 'tower' && (hasBit(towers, s.index) || hasBit(lent, s.index))) || (s.kind === 'waypoint' && hasBit(waypoints, s.index));
 }
 
 export function MapScreen() {
@@ -137,7 +138,8 @@ function MapView() {
       if (!ctx) return;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       const st = useExploration.getState();
-      const { revealed, towers, waypoints, discoveries } = st.progress;
+      const { revealed, waypoints, discoveries } = st.progress;
+      const towers = orBits(st.progress.towers, st.partyTowers); // co-op polish: lent towers draw unlocked
       const v = view.current;
       const side = Math.min(w, h);
       const k = (side / data.worldSize) * v.zoom;
@@ -379,7 +381,9 @@ function MapView() {
 
   const progress = useExploration((s) => s.progress);
   const personal = pins.filter((p) => !p.party).length;
-  const travel = selected && canFastTravel(selected, progress.towers, progress.waypoints);
+  const lent = useExploration((s) => s.partyTowers);
+  const travel = selected && canFastTravel(selected, progress.towers, progress.waypoints, lent);
+  const lentOnly = !!selected && selected.kind === 'tower' && !hasBit(progress.towers, selected.index) && hasBit(lent, selected.index);
 
   return (
     <div data-testid="map-screen" data-ui-panel style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(10,8,6,0.82)', display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 260px', font: '14px system-ui, sans-serif', color: '#2b2116' }}>
@@ -434,7 +438,7 @@ function MapView() {
             <div style={{ fontSize: 12, opacity: 0.8, marginBottom: 8 }}>{selected.kind.replace('_', ' ')} · {data?.regions[selected.region]?.name}</div>
             {travel ? (
               <button data-testid="map-travel" onClick={() => { actions?.fastTravel(selected.index); setMapOpen(false); }} disabled={!actions}>
-                Fast travel here
+                {lentOnly ? 'Fast travel here (your party climbed it)' : 'Fast travel here'}
               </button>
             ) : (
               <div style={{ fontSize: 12 }}>{selected.kind === 'tower' ? 'Climb this tower to unlock fast travel.' : selected.kind === 'waypoint' ? 'Touch this waypoint stone to unlock it.' : ''}</div>
