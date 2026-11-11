@@ -50,6 +50,8 @@ export function installDevHandle(): void {
     netDebug,
     /** WP11: voice mixer (who is subscribed, positions, panner gains, output L/R levels). */
     voiceDebug: () => voiceDebugHook.fn?.() ?? null,
+    voiceDiagnostics: () => voiceDebugHook.diag?.() ?? Promise.resolve(null), // playtest 2 voice settings
+
     screen: (s: Screen) => useAppStore.getState().setScreen(s),
     teleport: (t: TeleportTarget) => useDebugStore.getState().teleport(t),
     /** Radians; pass null to give look back to the mouse. */

@@ -123,8 +123,11 @@ export function parseAudioStats(report: Iterable<StatLike> | { forEach: (cb: (v:
       out.packetsLost = Math.max(0, num(back.packetsLost) ?? 0);
       const j = num(back.jitter);
       out.jitterMs = j !== null ? j * 1000 : null;
+      // The ICE pair's STUN round trip is the reliable one; RTCP's (from the
+      // SFU's receiver reports) can be garbage (10 s against a local LiveKit),
+      // so it is only a fallback, and only when plausible.
       const rtt = num(back.roundTripTime);
-      if (rtt !== null) out.rttMs = rtt * 1000;
+      if (out.rttMs === null && rtt !== null && rtt < 5) out.rttMs = rtt * 1000;
     }
     const src = typeof rtp.mediaSourceId === 'string' ? m.get(rtp.mediaSourceId) : [...m.values()].find((s) => s.type === 'media-source' && isAudio(s));
     out.audioLevel = num(src?.audioLevel);

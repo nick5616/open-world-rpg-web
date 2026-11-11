@@ -46,9 +46,51 @@ G3 integration fix: underground, samples in open cave air (`GroundQuery.caveAir`
   token's `video.canPublish`): the HUD says "Listen-only" and V does
   nothing. Local profiles talk like accounts since playtest 2, unless the
   server sets `LODESTONE_VOICE_LOCAL_LISTEN_ONLY=1` (WP11's original rule).
-- Settings (Voice button): talk mode, master volume, per-player volume and
-  mute (voice only, this device; `/mute Name` mutes everywhere, server-side).
-  Saved in localStorage `lodestone.voice.v1`.
+- Settings: see "Voice settings" below. Saved in localStorage
+  `lodestone.voice.v1` (one validated blob; WP11 blobs still load).
+
+## Voice settings (playtest 2)
+
+`ui/VoiceSettings.tsx`, opened from the HUD's Voice button, the Sound panel
+("Voice settings") and the Esc menu's Voice row. A panel on the panel stack
+(`'voice'`, Esc closes it), `data-ui-panel`. Every change applies live:
+`runtime.ts` subscribes to the store.
+
+- **Microphone**: input device (`devices.ts pickDevice`: saved id, else the
+  same label under a new id, else the default while it is unplugged, and
+  back when it returns; `devicechange` is followed), speakers
+  (`AudioContext.setSinkId`, game sound and voice share it; hidden where
+  unsupported), input boost -20..+20 dB (`micChain.ts`: a LiveKit audio
+  processor in the send path; the meter / gate listen to a clone, because
+  LiveKit's mute disables the raw track), push to talk (key rebindable,
+  hold or toggle, mouse side buttons) or open mic (`vad.ts VadGate`:
+  threshold dBFS on a live meter with the line, open-after, hold-open), mic
+  mute + key (default 0), echo cancellation / noise suppression / auto gain
+  (`restartTrack` with new constraints; the meter's clone is released first,
+  because Chrome gives a new capture the processing of any capture still
+  open on the same device: the same holds while the mic test runs), incoming volume.
+- **Voice keys** (`keys.ts`): validated against `input/bindings.ts`: a key
+  another feature binds in the world or the menu, the other voice key, or a
+  reserved key (Esc, Enter, Tab, Space, modifiers, arrows) is refused with
+  the reason; a stored key that became invalid falls back to the default.
+- **Test** (`micTest.ts`, its own capture, works offline): RMS / peak dBFS
+  meter with a clip light, hear yourself through the voice bus with 0-2 s
+  delay, record 5 s (MediaRecorder) and play it back on the chosen speakers.
+- **Players**: everyone subscribed now, level, volume 0-200 %, mute; saved
+  by character id (`store.ts peerPref/withPeer`; WP11 by-name entries are
+  read until replaced).
+- **Diagnostics** (`diag.ts`, 1 Hz while open): room state, server URL,
+  region, version, reconnects / attempts / failures, the token's grant
+  (never the token), listen-only reason, microphone permission, device
+  and pick status, capture settings (sample rate, channels, processing,
+  latency), boost, level; sending: codec, bitrate, loss, jitter, RTT, path
+  (UDP/TCP/TURN relay), level sent (`stats.ts` parses `getRTCStatsReport()`
+  of the mic sender and each remote receiver); each speaker's distance,
+  level, codec, bitrate, loss, jitter, concealment; recent errors.
+  Copy diagnostics (JSON, no token, URL without query), Reconnect voice.
+- **Guidance** (`guidance.ts`): permission denied, no / busy / unplugged
+  device, listen-only (why), muted, server unreachable vs UDP blocked,
+  TURN relay / TCP fallback, loss, delay, flapping, suspended audio, silent mic.
 
 ## Files
 
@@ -61,7 +103,18 @@ G3 integration fix: underground, samples in open cave air (`GroundQuery.caveAir`
 | `levels.ts` | the-circle `audio.ts` port: analyser levels → `--lvl` / `data-speaking` on bound DOM nodes, `isSpeaking(name)` |
 | `store.ts` | zustand UI state and saved prefs |
 | `token.ts` | `voice_token` request over the social socket |
-| `ui/VoiceHud.tsx` | PTT indicator, who you hear (level bars), settings |
+| `ui/VoiceHud.tsx` | PTT indicator, who you hear (level bars), the Voice button, the Esc menu row |
+| `ui/VoiceSettings.tsx` | The voice settings panel (four tabs) |
+| `ui/LevelMeter.tsx` | Live dBFS meter (rAF, writes the DOM), threshold line, clip light, gate |
+| `ui/micTestStore.ts` | The running mic test, record / play back |
+| `keys.ts` | Voice keys: defaults, validation against `input/bindings.ts`, event reading |
+| `vad.ts` | dBFS levels, `VadGate` (threshold, open-after, hold-open) |
+| `devices.ts` | Device lists, `pickDevice` fallback, `applySink`, mic error kinds, permission |
+| `micChain.ts` | The input boost processor + meter tap |
+| `micTest.ts` | Standalone mic test: meter, loopback with delay, recorder |
+| `stats.ts` | getStats parsing, rates, formatting |
+| `diag.ts` | Diagnostics shape, error ring, JSON, clipboard |
+| `guidance.ts` | Friendly help from a diagnostics snapshot |
 | `debugHook.ts` | lets `window.__lodestone.voiceDebug()` exist without pulling livekit-client into the title bundle |
 | `dev/walkapart.mjs` | The two-browser acceptance test (below) |
 
@@ -71,7 +124,8 @@ LiveKit 1.8 server in `infra/` (0011).
 ## Test
 
 ```
-npx vitest run --root client src/voice                 # spatial math, prefs, push-to-talk rules
+npx vitest run --root client src/voice                 # spatial math, prefs, push-to-talk rules, voice settings
+node tools/playtest/stack.mjs  +  LODESTONE_CLIENT_URL=<url> node tools/playtest/voice-settings-shots.mjs   # the settings panel, two players
 node client/src/voice/dev/walkapart.mjs [--livekit ws://localhost:7880]
 ```
 

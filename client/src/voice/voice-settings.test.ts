@@ -179,7 +179,12 @@ describe('WebRTC stats', () => {
     expect(s.codec).toBe('opus');
     expect(s.clockRate).toBe(48000);
     expect(s.jitterMs).toBeCloseTo(4);
-    expect(s.rttMs).toBeCloseTo(42); // RTCP beats the candidate pair
+    expect(s.rttMs).toBeCloseTo(50); // the ICE pair's round trip first
+    // RTCP's only when there is no pair, and only when plausible
+    const noPair = outReport(1000, 10000, 100, 2).filter((x) => !['transport', 'candidate-pair'].includes(x.type));
+    expect(parseAudioStats(noPair, 'out')!.rttMs).toBeCloseTo(42);
+    const bogus = noPair.map((x) => (x.type === 'remote-inbound-rtp' ? { ...x, roundTripTime: 10.5 } : x));
+    expect(parseAudioStats(bogus, 'out')!.rttMs).toBeNull();
     expect(s.audioLevel).toBe(0.1);
     expect(s.packetsLost).toBe(2);
     expect(s.transport).toMatchObject({ localType: 'srflx', remoteType: 'host', protocol: 'udp', availableOutKbps: 300 });

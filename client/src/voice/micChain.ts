@@ -99,6 +99,28 @@ export class MicChain implements TrackProcessor<Track.Kind.Audio, AudioProcessor
     this.meterTrack = null;
   }
 
+  /**
+   * Lets go of the meter's clone before the microphone is re-acquired: a
+   * live clone keeps the capture source open, and Chrome then hands the new
+   * capture the old processing (noise suppression stayed on). restart()
+   * builds a new clone; reattach() restores it if the restart failed.
+   */
+  releaseClone(): void {
+    try {
+      this.meterSrc?.disconnect();
+    } catch {
+      /* already */
+    }
+    this.meterTrack?.stop();
+    this.meterSrc = null;
+    this.meterTrack = null;
+  }
+
+  reattach(): void {
+    if (this.meterTrack || !this.raw || this.raw.readyState === 'ended') return;
+    this.attach(this.raw, this.sending);
+  }
+
   setGainDb(db: number): void {
     const g = dbToGain(db);
     const t = this.ctx.currentTime;

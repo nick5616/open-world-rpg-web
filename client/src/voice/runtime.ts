@@ -274,6 +274,7 @@ class VoiceRuntime {
     if (this.retryTimer) clearTimeout(this.retryTimer);
     this.retryTimer = null;
     this.retryMs = RETRY_MIN_MS;
+    this.reconnects++;
     const old = this.room;
     if (old) {
       this.dropRoom();
@@ -364,13 +365,16 @@ class VoiceRuntime {
     this.micPick = pickDevice(inputs, useVoiceStore.getState().inputDevice);
     const opts = this.captureOptions(this.micPick.deviceId);
     this.room.options.audioCaptureDefaults = opts;
+    this.chain?.releaseClone(); // (micChain.ts: else Chrome keeps the old processing)
     try {
       await track.restartTrack(opts);
+      if (!this.chain?.sending && track.mediaStreamTrack) this.chain?.meterOnly(track.mediaStreamTrack);
       this.lastMicProblem = null;
     } catch (e) {
       this.lastMicProblem = micProblem(e);
       recordVoiceError('microphone restart', e);
       this.micPick = before;
+      this.chain?.reattach();
     }
   }
 
@@ -731,3 +735,4 @@ export function voiceDebug() {
   return runtime?.debug() ?? null;
 }
 voiceDebugHook.fn = voiceDebug;
+voiceDebugHook.diag = voiceDiagnostics;
