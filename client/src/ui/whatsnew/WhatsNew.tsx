@@ -9,7 +9,7 @@ import { useNetStore } from '../../net/netStore';
 import { registerMenuEntry, useMenu } from '../menu/store';
 import { useIntro } from '../intro/queue';
 import { useCombatHud } from '../../combat/store';
-import { isTextTarget } from '../../input/useKeyboard';
+import { usePanelEsc } from '../../input/panelStack';
 import { uiPanelUp } from '../../input/interact';
 import raw from './changelog.json';
 import { RETURNING_AT_LOAD, readSeen, validEntries, whatsNew, writeSeen, type ChangelogEntry, type WhatsNew as Shown } from './news';
@@ -50,15 +50,8 @@ export function EntryList({ entries }: { entries: readonly ChangelogEntry[] }) {
 }
 
 function Panel({ shown, onClose }: { shown: Exclude<Shown, { kind: 'none' }>; onClose: () => void }) {
+  usePanelEsc('whatsnew', true, onClose); // Esc closes it when it is the top panel (input/panelStack.ts)
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.code === 'Escape' && !isTextTarget(e.target)) {
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        onClose();
-      }
-    };
-    window.addEventListener('keydown', onKey);
     // Never trap a player in a fight behind it (playtest: a slime pack
     // downed a new character while the welcome card ate every click).
     let hp = useCombatHud.getState().health;
@@ -66,10 +59,7 @@ function Panel({ shown, onClose }: { shown: Exclude<Shown, { kind: 'none' }>; on
       if (st.health < hp) onClose();
       hp = st.health;
     });
-    return () => {
-      window.removeEventListener('keydown', onKey);
-      unsub();
-    };
+    return unsub;
   }, [onClose]);
   const welcome = shown.kind === 'welcome';
   return (

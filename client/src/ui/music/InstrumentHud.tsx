@@ -10,7 +10,8 @@
 // panel's own capture listener, like photo mode) and, while playing,
 // swallows every key so no spell, prompt or panel reacts; key-ups of the
 // movement keys still pass (a held W is let go). The overlay is a
-// data-ui-panel, so the Esc menu stands aside.
+// data-ui-panel and on the panel stack (input/panelStack.ts): Esc puts
+// the instrument away.
 
 import { useEffect, useState, type CSSProperties } from 'react';
 import { CONTENT } from '@lodestone/contracts';
@@ -19,6 +20,10 @@ import { DEBUG } from '../../config';
 import { usePvp } from '../pvp/store';
 import { carriedInstruments, cycleInstrument, devInstruments, ensureMusicHook, enterPlay, exitPlay, loadMusicAudio, noteDown, noteOfKey, noteUp, setClick, setTempo } from './link';
 import { instrumentDef, musicToast, useMusic } from './store';
+import { trackPanel } from '../../input/panelStack';
+
+// Esc puts the instrument away when play mode is the top thing open (input/panelStack.ts).
+trackPanel(useMusic, (s) => !!s.active, 'instrument', () => exitPlay());
 import { clampOctave, DYNAMICS, isNoteKey, KEY_ROWS, noteName, pitchClassName, ROOT_NAMES, scaleByKey, SCALES } from './theory';
 
 export const PLAY_KEY = 'KeyU'; // U: the one letter free outside a duel challenge (Y/U answer one; a pending challenge keeps U)
@@ -58,14 +63,12 @@ function onKey(e: KeyboardEvent): void {
     return;
   }
   if (/^F\d+$/.test(e.code)) return; // F-keys (debug, graphics) stay
+  if (e.code === 'Escape') return; // the Esc menu's listener closes the top thing: this mode, or a panel over it (input/panelStack.ts)
   e.preventDefault();
   e.stopImmediatePropagation();
   if (e.repeat) return;
   const s = useMusic.getState();
   switch (e.code) {
-    case 'Escape':
-      exitPlay();
-      return;
     case 'ArrowLeft':
     case 'ArrowRight':
       useMusic.setState({ root: (s.root + (e.code === 'ArrowRight' ? 1 : 11)) % 12 });

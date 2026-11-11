@@ -28,6 +28,10 @@ import { useContent } from '../content/store';
 import { AchievementsScreen } from './AchievementsScreen';
 import { openAchievements, setAchievementsOpen, tickAchievementToasts, toggleAchievements, useAchievements } from './store';
 import { moreCount } from './toasts';
+import { trackPanel } from '../../input/panelStack';
+
+// Esc closes the screen when it is the top panel (input/panelStack.ts).
+trackPanel(useAchievements, (s) => s.open, 'achievements', () => setAchievementsOpen(false));
 
 const TICK_MS = 250;
 
@@ -45,7 +49,7 @@ function useAchievementKeys(): void {
       if (e.code === 'KeyY') {
         if (usePvp.getState().challenge) return; // the duel's "accept" wins (ui/pvp/PvpHud.tsx)
         toggleAchievements();
-      } else if (e.code === 'Escape' && useAchievements.getState().open) setAchievementsOpen(false);
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);

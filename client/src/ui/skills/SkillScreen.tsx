@@ -21,6 +21,10 @@ import { SlotCard, SpellDetail, SpellTooltip } from '../spellcards/SpellCards';
 import { TEXT_3 } from '../spellcards/theme';
 import { castable, cap, ELEMENT_COLOR, layoutTree, learnedCounts, nodeState, SKILL_EFFECT, SKILL_NAMES, spellByKey, spellName, TECHNIQUE_INFO, TREE_ORDER, treeByKey, type NodeState, type TreeLayout } from './tree';
 import { closeSkillScreen, setSkillTab, toggleSkillScreen, useSkillScreen } from './store';
+import { trackPanel } from '../../input/panelStack';
+
+// Esc closes the skill screen when it is the top panel (input/panelStack.ts).
+trackPanel(useSkillScreen, (s) => s.open, 'skills', () => closeSkillScreen());
 import { installSkillsDebug } from './dev';
 
 const GOLD = '#ffd166';
@@ -722,8 +726,8 @@ function useSkillKeys() {
       if (e.code === 'KeyN' || e.code === 'KeyB') {
         toggleSkillScreen(e.code === 'KeyB' ? 'build' : undefined);
         if (useSkillScreen.getState().open) setPanelOpen(false);
-      } else if (useSkillScreen.getState().open && (e.code === 'Escape' || e.code === 'KeyC' || e.code === 'KeyI' || e.code === 'KeyM' || e.code === 'KeyJ')) {
-        closeSkillScreen(); // another screen takes over (or Esc)
+      } else if (useSkillScreen.getState().open && (e.code === 'KeyC' || e.code === 'KeyI' || e.code === 'KeyM' || e.code === 'KeyJ')) {
+        closeSkillScreen(); // another screen takes over
       }
     };
     window.addEventListener('keydown', onKey);

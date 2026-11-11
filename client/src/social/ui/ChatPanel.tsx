@@ -10,6 +10,14 @@ import { FIXED_TABS, nameCandidates, useSocialStore, type Line } from '../store'
 import { NameMenu, type NameMenuTarget } from './NameMenu';
 import { button, channelColor, glass, nameColor, tabLabel } from './style';
 import { CHAT_WIDTH, CORNER_BOTTOM } from '../../hud/layout'; // playtest 1: shared bottom layout
+import { trackPanel } from '../../input/panelStack';
+
+// Open chat is on the panel stack (input/panelStack.ts): Esc in the box closes it (below), and so
+// does Esc with the focus elsewhere while chat is the top thing open.
+trackPanel(useSocialStore, (s) => s.open, 'chat', () => {
+  (document.activeElement as HTMLElement | null)?.blur?.();
+  useSocialStore.getState().setOpen(false);
+});
 
 const WIDTH = 400;
 

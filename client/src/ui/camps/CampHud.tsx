@@ -32,6 +32,13 @@ import { campGhost, kitCount, updateGhost } from './ghost';
 import { ensureCampHook } from './link';
 import { distTo, facingRot, footprint } from './placement';
 import { pruneCampNotes, pushCampNote, safeByFire, useCamps } from './store';
+import { trackPanel } from '../../input/panelStack';
+
+// Esc closes the top one (input/panelStack.ts): placing a piece, the camp menu, a chest, the signpost name box.
+trackPanel(useCamps, (s) => !!s.placing, 'camp-placing', () => stopPlacing());
+trackPanel(useCamps, (s) => !!s.menu, 'camp-menu', () => useCamps.setState({ menu: false }));
+trackPanel(useCamps, (s) => !!s.chest, 'camp-chest', () => useCamps.setState({ chest: null }));
+trackPanel(useCamps, (s) => !!s.labeling, 'camp-label', () => useCamps.setState({ labeling: null }));
 
 const USE_M = 2.4; // from the footprint's edge
 const HOLD_MS = 800;
@@ -458,22 +465,12 @@ function useCampKeys(): void {
       if (isTextTarget(e.target) || e.repeat) return;
       const s = useCamps.getState();
       if (s.placing) {
-        if (e.code === 'Escape') {
-          e.preventDefault();
-          e.stopImmediatePropagation();
-          stopPlacing();
-          return;
-        }
         if (e.code === 'KeyR') {
           e.stopImmediatePropagation(); // not the drink key while placing
           turnGhost(1);
           emitSound('ui_click');
           return;
         }
-      }
-      if (e.code === 'Escape' && (s.chest || s.menu)) {
-        useCamps.setState({ chest: null, menu: false });
-        return;
       }
       if (e.code === 'KeyP' && !e.ctrlKey && !e.metaKey) {
         if (s.placing) stopPlacing();

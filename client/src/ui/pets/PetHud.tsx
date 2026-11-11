@@ -28,6 +28,10 @@ import { useMusic } from '../music/store';
 import { abilityOf, clock, foodName, foodsText, likedFood, meterFill, MODE, pickAlong, PET_CMD, species, speciesName, speciesOfId, TAMING, variantLabel, WHEEL, type PetInfo, type WheelKey } from './events';
 import { ensurePetHook } from './link';
 import { petOut, usePets } from './store';
+import { hidePanel, showPanel, trackPanel } from '../../input/panelStack';
+
+// Esc closes the pet panel when it is the top panel (input/panelStack.ts).
+trackPanel(usePets, (s) => !!s.panel, 'pets', () => openPetPanel(false));
 
 export const PET_KEY = 'Digit6';
 export const STAY_KEY = 'Digit7';
@@ -172,6 +176,7 @@ export function PetHud() {
       w.sel = -1;
       setSel(-1);
       setWheel(true);
+      showPanel('pet-wheel', () => closeWheel(false)); // Esc cancels the wheel (input/panelStack.ts)
       lookRouter.sink = move;
     };
     const closeWheel = (act: boolean) => {
@@ -180,6 +185,7 @@ export function PetHud() {
       const wasOpen = w.open;
       w.down = false;
       w.open = false;
+      hidePanel('pet-wheel');
       if (lookRouter.sink === move) lookRouter.sink = null;
       setWheel(false);
       if (!act) return;
@@ -190,16 +196,6 @@ export function PetHud() {
     const onDown = (e: KeyboardEvent) => {
       if (e.repeat || isTextTarget(e.target) || e.ctrlKey || e.metaKey) return;
       const ps = usePets.getState();
-      if (e.code === 'Escape') {
-        if (w.open) {
-          closeWheel(false);
-          e.stopPropagation();
-        } else if (ps.panel) {
-          e.stopPropagation();
-          openPetPanel(false);
-        }
-        return;
-      }
       if (panelOpen() || photoActive() || useMusic.getState().active) return; // CR 028: the keyboard plays notes
       if (e.code === PET_KEY) {
         if (!petOut(ps)) {

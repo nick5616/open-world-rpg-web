@@ -21,6 +21,10 @@ import { ItemIcon } from './ItemIcon';
 import { affixLine, baseLine, baseName, defaultWeapon, displayName, EQ_LABEL, EQ_SLOTS, trainingWeaponName, gemEffect, INV_COLS, INV_SLOTS, isArmor, isConsumable, isEquipped, isGem, isHolo, isWeapon, itemDef, kindLabel, parseSlot, rarityColor, rarityDef, uniqueInfo, type EqSlot, type WireItem } from './items';
 import { installInventoryDebug } from './dev';
 import { pushToast, setInventoryOpen, useInventory } from './store';
+import { trackPanel } from '../../input/panelStack';
+
+// Esc closes the inventory when it is the top panel (input/panelStack.ts).
+trackPanel(useInventory, (s) => s.invOpen, 'inventory', () => setInventoryOpen(false));
 import { ensureInventoryStyles, GOLD, PANEL_BG, PANEL_BORDER, TEXT } from './styles';
 import { isTextTarget } from '../../input/useKeyboard';
 import { useCombatHud } from '../../combat/store';
@@ -193,8 +197,7 @@ export function InventoryScreen() {
         return;
       }
       if (!s.invOpen) return;
-      if (e.code === 'Escape') setInventoryOpen(false);
-      else if (e.code === 'KeyG' || e.code === 'Delete') {
+      if (e.code === 'KeyG' || e.code === 'Delete') {
         e.stopImmediatePropagation();
         const it = s.inv?.items.find((x) => x.h === s.selected);
         if (!it) return;

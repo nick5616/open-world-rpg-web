@@ -20,6 +20,10 @@ import { STYLE_ORDER, STYLES } from '../../world/style/styles';
 import { PHOTO_DEFAULTS, PHOTO_KEYS, photoKeys, photoLive, usePhoto } from './store';
 import { DEBUG } from '../../config';
 import { photoDebug } from './PhotoRig';
+import { trackPanel } from '../../input/panelStack';
+
+// Esc leaves photo mode when it is the top thing open (input/panelStack.ts).
+trackPanel(usePhoto, (s) => !!s.active, 'photo', () => exitPhoto());
 
 export const PHOTO_KEY = 'KeyL'; // L for lens (P is the camp menu, CR 025)
 const SHOT_KEY = 'Enter';
@@ -94,10 +98,11 @@ function onKey(e: KeyboardEvent): void {
   }
   if (isTextTarget(e.target)) return; // the panel's own inputs
   if (KEY_MAP[e.code]) return; // movement keys fly the camera (useKeyboard)
+  if (e.code === 'Escape') return; // the Esc menu's listener closes the top thing: photo mode, or a panel over it (input/panelStack.ts)
   const k = PHOTO_KEYS[e.code];
   if (k) photoKeys[k] = e.type === 'keydown';
   if (e.type === 'keydown' && !e.repeat) {
-    if (e.code === 'Escape' || e.code === PHOTO_KEY) {
+    if (e.code === PHOTO_KEY) {
       e.preventDefault();
       exitPhoto();
     } else if (e.code === SHOT_KEY) {

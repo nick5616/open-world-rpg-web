@@ -129,7 +129,7 @@ export function controlGroups(debug: boolean, dev = false): ControlGroup[] {
         { keys: ['←', '→', '↑', '↓'], action: 'Key (left / right), scale (up / down)', src: [['ui/music/InstrumentHud.tsx', "'ArrowLeft'"], ['ui/music/InstrumentHud.tsx', "'ArrowUp'"]] },
         { keys: ['Enter'], action: 'Metronome click', note: 'shared with players playing near you', src: [['ui/music/InstrumentHud.tsx', "'Enter'"]] },
         { keys: ['Tab'], action: 'Next instrument you carry', src: [['ui/music/InstrumentHud.tsx', "'Tab'"]] },
-        { keys: ['Esc'], action: 'Put the instrument away', src: [['ui/music/InstrumentHud.tsx', "'Escape'"]] },
+        { keys: ['Esc'], action: 'Put the instrument away', src: [['ui/music/InstrumentHud.tsx', "'instrument', () => exitPlay()"]] },
       ],
     },
     {
@@ -138,7 +138,7 @@ export function controlGroups(debug: boolean, dev = false): ControlGroup[] {
         { keys: ['P'], action: 'Camp menu: craft kits, place pieces', note: 'campfire, bedroll, chest, workbench, signpost', src: [['ui/camps/CampHud.tsx', "'KeyP'"]] },
         { keys: ['Mouse wheel', 'R'], action: 'Turn the piece you are placing', src: [['ui/camps/CampHud.tsx', 'onWheel'], ['ui/camps/CampHud.tsx', "'KeyR'"]] },
         { keys: ['Left mouse'], action: 'Place it (green only)', src: [['ui/camps/CampHud.tsx', 'e.button === 0']] },
-        { keys: ['Right mouse', 'Esc'], action: 'Stop placing', src: [['ui/camps/CampHud.tsx', 'e.button === 2'], ['ui/camps/CampHud.tsx', "'Escape'"]] },
+        { keys: ['Right mouse', 'Esc'], action: 'Stop placing', src: [['ui/camps/CampHud.tsx', 'e.button === 2'], ['ui/camps/CampHud.tsx', "'camp-placing'"]] },
         { keys: ['E'], action: 'Use a piece: cook, rest, open, name', note: 'hold E on your own piece to pick it up', src: [['ui/camps/CampHud.tsx', "'KeyE'"]] },
       ],
     },
@@ -185,7 +185,7 @@ export function controlGroups(debug: boolean, dev = false): ControlGroup[] {
     {
       title: 'Menus',
       rows: [
-        { keys: ['Esc'], action: 'Close the open panel, else this menu', src: [['ui/menu/EscMenu.tsx', "'Escape'"]] },
+        { keys: ['Esc'], action: 'Close the top panel, else this menu', note: 'one at a time: the newest panel, wheel or mode first', src: [['ui/menu/EscMenu.tsx', "'Escape'"], ['input/panelStack.ts', 'closeTopPanel']] },
         { keys: ['K'], action: 'Sound settings', src: [['audio/ui/AudioRoot.tsx', "'KeyK'"]] },
         { keys: ['F10'], action: 'Graphics settings', note: 'quality, style', src: [['ui/graphics/GraphicsPanel.tsx', "'F10'"]] },
       ],

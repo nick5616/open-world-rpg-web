@@ -20,6 +20,7 @@ import { openStationOffline } from '../../ui/inventory/store'; // WP14
 import { localPlayer } from '../../state/live';
 import { isTextTarget } from '../../input/useKeyboard';
 import { eFree } from '../../input/interact';
+import { hidePanel, syncPanel } from '../../input/panelStack';
 import { useMapWorld } from '../../ui/map/world';
 import { setMapOpen } from '../../ui/map/store';
 import { setQuestPreview } from '../../ui/quests/store';
@@ -94,11 +95,7 @@ export class TownHud {
   doorAct: ((door: number) => void) | null = null;
 
   private readonly onKey = (e: KeyboardEvent) => {
-    if (e.repeat || isTextTarget(e.target)) return; // typing in chat: Esc and E are the text box's
-    if (e.code === 'Escape' && this.panel) {
-      this.close();
-      return;
-    }
+    if (e.repeat || isTextTarget(e.target)) return; // typing in chat: E is the text box's
     if (e.code !== 'KeyE') return;
     const el = document.activeElement;
     if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) return;
@@ -272,12 +269,14 @@ export class TownHud {
 
   private open(p: PanelState): void {
     this.panel = p;
+    syncPanel('town', true, () => this.close()); // Esc closes it when it is the top panel (input/panelStack.ts)
     if (document.pointerLockElement) document.exitPointerLock();
     this.render();
   }
 
   close(): void {
     this.panel = null;
+    hidePanel('town');
     this.pending = null;
     this.panelEl.style.display = 'none';
   }
@@ -382,6 +381,7 @@ export class TownHud {
   }
 
   dispose(): void {
+    hidePanel('town');
     window.removeEventListener('keydown', this.onKey);
     this.hooked?.eventListeners.delete(this.listener);
     this.prompt.remove();

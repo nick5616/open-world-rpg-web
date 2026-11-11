@@ -10,6 +10,10 @@ import { localPlayer } from '../../state/live';
 import { Compass, compassMarks } from './Compass';
 import { MapScreen, mapView } from './MapScreen';
 import { pruneToasts, setMapOpen, useExploration, type Toast } from './store';
+import { trackPanel } from '../../input/panelStack';
+
+// Esc closes the map when it is the top panel (input/panelStack.ts).
+trackPanel(useExploration, (s) => s.mapOpen, 'map', () => setMapOpen(false));
 import { useMapWorld } from './world';
 import { hasBit } from './events';
 // Grand discovery intros (replace the discovery/tower/waypoint toasts): client/src/ui/intro/README.md.
@@ -58,7 +62,6 @@ function useMapHotkeys() {
       const t = e.target as HTMLElement | null;
       if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return; // typing in chat
       if (e.code === 'KeyM' && !e.repeat) setMapOpen(!useExploration.getState().mapOpen);
-      else if (e.code === 'Escape' && useExploration.getState().mapOpen) setMapOpen(false);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);

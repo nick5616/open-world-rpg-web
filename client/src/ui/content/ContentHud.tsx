@@ -21,6 +21,10 @@ import { distanceText, compassWord } from '../quests/events';
 import { ensureContentHook } from './link';
 import { EVENT_PHASE, GLYPHS, eventStatus, type VaultPart, type VaultView } from './events';
 import { closeTablet, nearestEvent, pruneContentNotes, useContent } from './store';
+import { trackPanel } from '../../input/panelStack';
+
+// Esc closes the tablet when it is the top panel (input/panelStack.ts).
+trackPanel(useContent, (s) => !!s.reading, 'tablet', () => closeTablet());
 
 const GOLD = '#ffd166';
 const PANEL: React.CSSProperties = { background: 'rgba(14,12,10,0.88)', border: '1px solid rgba(255,209,102,0.45)', borderRadius: 8, color: '#f1ead8', boxShadow: '0 8px 28px rgba(0,0,0,0.5)', font: '14px/1.4 system-ui, sans-serif' };
@@ -217,10 +221,6 @@ function Prompt() {
     const onKey = (e: KeyboardEvent) => {
       if (e.repeat || isTextTarget(e.target)) return;
       const s = useContent.getState();
-      if (e.code === 'Escape' && s.reading) {
-        closeTablet();
-        return;
-      }
       if (e.code !== 'KeyE') return;
       if (s.reading) {
         closeTablet();

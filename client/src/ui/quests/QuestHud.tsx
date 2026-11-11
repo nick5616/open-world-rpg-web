@@ -17,6 +17,11 @@ import { ITEMS } from '@lodestone/contracts';
 import { JournalContentTab, JournalTabBar, type JournalTab } from '../content/JournalTabs';
 import { liveMarkers } from './live';
 import { dismissOffer, offerMarkers, pruneNotes, setJournalOpen, setQuestPreview, trackedQuest, useQuests } from './store';
+import { trackPanel } from '../../input/panelStack';
+
+// Esc closes the top one (input/panelStack.ts): the journal or a quest offer, not both at once.
+trackPanel(useQuests, (s) => s.journalOpen, 'journal', () => setJournalOpen(false));
+trackPanel(useQuests, (s) => !!s.offer, 'quest-offer', () => dismissOffer());
 
 const GOLD = '#ffd166';
 const PANEL: React.CSSProperties = { background: 'rgba(14,12,10,0.9)', border: '1px solid rgba(255,209,102,0.45)', borderRadius: 8, color: '#f1ead8', boxShadow: '0 8px 28px rgba(0,0,0,0.5)', font: '14px/1.4 system-ui, sans-serif' };
@@ -355,10 +360,6 @@ export function QuestHud() {
     const onKey = (e: KeyboardEvent) => {
       if (isTextTarget(e.target) || e.repeat) return;
       if (e.code === 'KeyJ') setJournalOpen(!useQuests.getState().journalOpen);
-      else if (e.code === 'Escape') {
-        if (useQuests.getState().journalOpen) setJournalOpen(false);
-        if (useQuests.getState().offer) dismissOffer();
-      }
     };
     window.addEventListener('keydown', onKey);
     // A map preview lasts while the map is open.

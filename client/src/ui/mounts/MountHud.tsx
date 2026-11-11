@@ -14,6 +14,10 @@ import { localPlayer } from '../../state/live';
 import { PHASE, STEED_COLOURS, steedPose } from './events';
 import { ensureMountHook } from './link';
 import { useMounts } from './store';
+import { trackPanel } from '../../input/panelStack';
+
+// Esc closes the steed panel when it is the top panel (input/panelStack.ts).
+trackPanel(useMounts, (s) => !!s.panel, 'steed', () => openSteedPanel(false));
 import { countOf } from '../inventory/items';
 import { useInventory } from '../inventory/store';
 
@@ -65,11 +69,6 @@ export function MountHud() {
       if (e.ctrlKey || e.metaKey) return;
       if (e.code === WHISTLE_KEY) {
         if (!localPlayer.mounted) st.actions?.summon();
-        return;
-      }
-      if (e.code === 'Escape' && st.panel) {
-        e.stopPropagation();
-        openSteedPanel(false);
         return;
       }
       if (e.code !== 'KeyE' || panelOpen()) return;
