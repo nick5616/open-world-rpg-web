@@ -15,6 +15,7 @@ import { create } from 'zustand';
 import { CONTENT, type Event as ZoneEvent } from '@lodestone/contracts';
 import { Fight, type FightEnd } from './minigame';
 import { FEV, FISH_ACT, FISH_INTERACT, FISH_LOST_TEXT, FISH_REFUSAL_TEXT, LOST, packCast } from './fish';
+import { emitSound } from '../../audio/bridge';
 
 export type FishPhase = 'idle' | 'casting' | 'waiting' | 'hooking' | 'fight' | 'landing' | 'result';
 
@@ -59,6 +60,29 @@ export interface FishSend {
 const initial = (): FishingState => ({ phase: 'idle', seq: 0, bobber: { x: 0, y: 0, z: 0 }, water: '', castAt: 0, biteMs: 0, windowMs: 0, nibbles: [], from: { x: 0, z: 0 }, rarity: 0, caught: null, lostText: '', resultAt: 0, notice: '', noticeAt: 0 });
 
 export const useFishing = create<FishingState>(() => initial());
+
+/**
+ * Playtest 2 immersion pass: fishing was silent. The cast whooshes, the
+ * bobber plops onto the water, nibbles tap it, the bite splashes (at the
+ * moment the bobber dips), the hook and the catch splash, a catch chimes
+ * by its rarity, a lost fish slips away with a plop.
+ */
+export function fishingSounds(s: FishingState, p: FishingState, later: (fn: () => void, ms: number) => void = (fn, ms) => void setTimeout(fn, ms)): void {
+  if (s.phase === p.phase) return;
+  const at = { x: s.bobber.x, y: s.bobber.y, z: s.bobber.z };
+  const still = (seq: number) => {
+    const c = useFishing.getState();
+    return c.phase === 'waiting' && c.seq === seq;
+  };
+  if (s.phase === 'casting') emitSound('fish_cast');
+  else if (s.phase === 'waiting') {
+    emitSound('fish_plop', { at });
+    for (const n of s.nibbles) later(() => still(s.seq) && emitSound('fish_nibble', { at }), n);
+    later(() => still(s.seq) && emitSound('fish_bite', { at }), s.biteMs);
+  } else if (s.phase === 'fight') emitSound('fish_hooked', { at });
+  else if (s.phase === 'result') emitSound(s.caught ? 'fish_caught' : 'fish_lost', { at, rarity: s.caught?.rarity ?? 0 });
+}
+useFishing.subscribe((s, p) => fishingSounds(s, p));
 
 /** Per-frame values (no React): the fight, the reel, the cast target. */
 export const fishLive = {

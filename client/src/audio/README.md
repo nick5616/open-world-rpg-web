@@ -155,6 +155,8 @@ take a world position.
 | `step_snow` | 3 | D1 Acoustic Drums: Acoustic Drums5; D1 Acoustic Drums: Acoustic Drums15; D1 Acoustic Drums: Acoustic Drums12; D1 Acoustic Drums: Acoustic Drums13 | Footsteps in the snowpeak biome |
 | `step_wood` | (4) | `step_hard`'s files at 0.8x | Footsteps on building floors, decks, bridges, ramps |
 | `step_water` | (2) | `swim_stroke`'s files at 1.35x, quiet | Wading in shallow water |
+| `hoof_soft` / `hoof_hard` | (4) | `step_soft` / `step_hard`'s files at 0.66x / 0.6x | Playtest 2 immersion pass: in the saddle, hoofbeats instead of footsteps (movement.ts `mounted`): one beat a stride walking, two trotting, three galloping |
+| `fish_cast`, `fish_plop`, `fish_bite` | (1-2) | `swing_staff` at 1.25x, `swim_stroke` at 1.7x, `splash` at 1.3x | Fishing (ui/fishing/store.ts `fishingSounds`): the cast, the bobber landing and nibbles, the bite on time; the hook and the catch splash (`splash`), a catch chimes by rarity (`loot_*`) |
 | `jump` | 2 | D1 FX: Fast FX | Leaving the ground / double jump |
 | `land` | 2 | D1 Acoustic Drums: Acoustic Drums13; D1 Acoustic Drums: Acoustic Drums5; D1 Acoustic Drums: Acoustic Drums16; D1 Acoustic Drums: Acoustic Drums15; D1 Acoustic Drums: Acoustic Drums2; D1 Acoustic Drums: Acoustic Drums14 | Landing from a fall over 3 m/s (louder with speed) |
 | `dash` | 2 | D1 FX: Fast FX | Dodge/dash (trigger `dodge`) |

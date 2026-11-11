@@ -263,3 +263,25 @@ describe('the main story and the Heartfall (playtest 2 immersion pass)', () => {
     expect(synthName('hit_1')).toBeNull();
   });
 });
+
+describe('hooves and fishing (playtest 2 immersion pass)', () => {
+  it('a gallop is three beats, a trot two, a walk one; stone sounds harder', () => {
+    const { a, played } = api();
+    runTrigger('hoof', { kind: 'gallop', surface: 'soft' }, a);
+    expect(played.map((p) => p.cue)).toEqual(['hoof_soft', 'hoof_soft', 'hoof_soft']);
+    expect(played.map((p) => p.delay)).toEqual([0, 0.075, 0.16]);
+    runTrigger('hoof', { kind: 'trot', surface: 'hard' }, a);
+    runTrigger('hoof', { kind: 'walk', surface: 'wood' }, a);
+    expect(played.slice(3).map((p) => p.cue)).toEqual(['hoof_hard', 'hoof_hard', 'hoof_hard']);
+    // the hooves reuse the step knocks, deeper
+    expect(CUES.hoof_hard.files).toEqual(CUES.step_hard.files);
+    expect(CUES.hoof_hard.rate).toBeLessThan(CUES.step_wood.rate ?? 1);
+  });
+
+  it('a cast, the plop, nibbles, the bite, the hook, a catch by its rarity', () => {
+    const { a, played } = api();
+    for (const t of ['fish_cast', 'fish_plop', 'fish_nibble', 'fish_bite', 'fish_hooked'] as const) runTrigger(t, { at: { x: 1, y: 2, z: 3 } }, a);
+    runTrigger('fish_caught', { rarity: 3 }, a);
+    expect(played.map((p) => p.cue)).toEqual(['fish_cast', 'fish_plop', 'fish_plop', 'fish_bite', 'splash', 'splash', lootCue(3)]);
+  });
+});

@@ -405,6 +405,22 @@ export const TRIGGERS = {
   },
   // Movement
   step: (p, a) => a.play(stepCue(p.surface)),
+  // playtest 2 immersion pass: a trot is two beats, a gallop three, a walk one
+  hoof: (p, a) => {
+    const cue: CueId = p.surface === 'hard' || p.surface === 'wood' ? 'hoof_hard' : 'hoof_soft';
+    const beats = p.kind === 'gallop' ? [0, 0.075, 0.16] : p.kind === 'trot' ? [0, 0.12] : [0];
+    beats.forEach((d, i) => a.play(cue, { delay: d, volume: 1 - i * 0.18 }));
+  },
+  fish_cast: (_p, a) => a.play('fish_cast'),
+  fish_plop: (p, a) => a.play('fish_plop', at(p)),
+  fish_nibble: (p, a) => a.play('fish_plop', { ...at(p), volume: 0.45 }),
+  fish_bite: (p, a) => a.play('fish_bite', at(p)),
+  fish_hooked: (p, a) => a.play('splash', { ...at(p), volume: 0.7 }),
+  fish_caught: (p, a) => {
+    a.play('splash', { volume: 0.8 });
+    a.play(lootCue(p.rarity ?? 0), { delay: 0.25 });
+  },
+  fish_lost: (p, a) => a.play('fish_plop', { ...at(p), volume: 0.7 }),
   jump: (_p, a) => a.play('jump'),
   land: (p, a) => a.play('land', { volume: Math.min(1, 0.4 + (p.speed ?? 6) / 20) }),
   splash: (_p, a) => a.play('splash'),

@@ -21,12 +21,18 @@ export interface MoveSnapshot {
   inTown: boolean;
   /** What is underfoot (surface.ts classifySurface, sampled by the engine); else stone in towns and caves, soft ground elsewhere. */
   surface?: StepSurface;
+  /** CR 027: in the saddle (hoofbeats instead of footsteps; playtest 2 immersion pass), and the steed's gait (sim/ride.ts GAIT). */
+  mounted?: boolean;
+  gait?: number;
 }
 
 export type Fired = [TriggerName, TriggerPayload];
 
 export const STEP_WALK_M = 1.7;
 export const STEP_SPRINT_M = 2.3;
+/** Hoofbeats (playtest 2 immersion pass): metres per footfall group by gait (trot 0: two beats, walk 1: one, gallop 2: three). */
+export const HOOF_M = [1.9, 1.15, 3.4];
+export const HOOF_KIND = ['trot', 'walk', 'gallop'] as const;
 export const CLIMB_GRAB_M = 0.55;
 export const SWIM_STROKE_S = 1.1;
 /** Falls slower than this land silently (stairs, small bumps). */
@@ -35,6 +41,7 @@ export const LAND_MIN_SPEED = 3;
 export class MovementSounds {
   private prev: MoveSnapshot | null = null;
   private stepAcc = 0;
+  private hoofAcc = 0;
   private climbAcc = 0;
   private swimAcc = 0;
   private fallSpeed = 0;
@@ -56,8 +63,18 @@ export class MovementSounds {
     const surface: StepSurface = s.surface ?? (s.underground > 0.5 || s.inTown ? 'hard' : 'soft');
     if (!s.grounded && s.mode !== 'swim' && s.mode !== 'climb') this.fallSpeed = Math.max(this.fallSpeed, -s.vel.y);
 
-    // Footsteps
-    if (s.grounded && (s.mode === 'walk' || s.mode === 'sprint')) {
+    // Hoofbeats in the saddle (the rider's feet are in the stirrups)
+    if (s.mounted) {
+      if (s.grounded && horiz > 0.004) {
+        this.hoofAcc += horiz;
+        const g = Math.max(0, Math.min(2, s.gait ?? 0));
+        if (this.hoofAcc >= HOOF_M[g]) {
+          this.hoofAcc -= HOOF_M[g];
+          out.push(['hoof', { surface, kind: HOOF_KIND[g] }]);
+        }
+      }
+      this.stepAcc = 0;
+    } else if (s.grounded && (s.mode === 'walk' || s.mode === 'sprint')) {
       this.stepAcc += horiz;
       const stride = s.mode === 'sprint' ? STEP_SPRINT_M : STEP_WALK_M;
       if (this.stepAcc >= stride) {

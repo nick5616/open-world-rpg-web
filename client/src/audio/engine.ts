@@ -208,7 +208,7 @@ export class AudioEngine {
     this.lastFrame = t;
     this.updateListener();
     if (dt > 0) {
-      for (const [name, payload] of this.movement.update({ mode: localPlayer.mode, grounded: localPlayer.grounded, pos: localPlayer.pos, vel: localPlayer.vel, airJumps: localPlayer.airJumps, underground: audioWorld.underground, inTown: audioWorld.inTown, surface: this.surface }, dt)) this.trigger(name, payload);
+      for (const [name, payload] of this.movement.update({ mode: localPlayer.mode, grounded: localPlayer.grounded, pos: localPlayer.pos, vel: localPlayer.vel, airJumps: localPlayer.airJumps, underground: audioWorld.underground, inTown: audioWorld.inTown, surface: this.surface, mounted: localPlayer.mounted, gait: localPlayer.gait }, dt)) this.trigger(name, payload);
     }
     this.ambience.tick(t);
     if (t - this.lastEnv >= ENV_MS) {
