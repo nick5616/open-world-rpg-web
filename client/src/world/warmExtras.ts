@@ -21,6 +21,7 @@ import { weaponMaterial } from '../combat/weapons/material';
 import { spellFxWarmObjects } from '../combat/fx/warm';
 import { enemyWarmObjects } from '../combat/enemies/warm';
 import { armorMaterial } from '../combat/armor/material';
+import { ambientLifeWarmObjects } from './life/ambientLife';
 
 let kept: THREE.Object3D[] | null = null;
 
@@ -85,6 +86,10 @@ export function warmExtras(): THREE.Object3D[] {
   skinned.bind(new THREE.Skeleton([bone], [new THREE.Matrix4()]), new THREE.Matrix4());
   skinned.castShadow = true;
   out.push(skinned);
+  // Playtest 2 immersion pass (world/life): birds, butterflies, leaves (instanced
+  // wing shader), fireflies and motes (points): drawn only when the biome and hour
+  // call for them, so possibly first seen long after load.
+  out.push(...ambientLifeWarmObjects());
   for (const o of out) o.frustumCulled = false;
   kept = out;
   return out;
