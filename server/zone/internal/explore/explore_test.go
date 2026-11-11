@@ -119,8 +119,18 @@ func TestTowerTopRevealsRegion(t *testing.T) {
 		t.Fatalf("ground at the top is the platform: %v vs %v", pos.Y, tw.TopY)
 	}
 	h = w.Check(p, pos, nil)
-	if len(h) != 1 || h[0].Kind != TowerUnlocked || h[0].Region != 0 || h[0].XP != TowerClimbXP || !p.Towers.Has(0) {
+	if len(h) != 2 || h[0].Kind != TowerUnlocked || h[0].Region != 0 || h[0].XP != TowerClimbXP || !p.Towers.Has(0) {
 		t.Fatalf("top: %+v", h)
+	}
+	// Playtest 2 co-op: the top is a respawn point (once).
+	if h[1].Kind != RespawnPointSet || p.LastWaypoint != 0 {
+		t.Fatalf("the tower top is not a respawn point: %+v (last %d)", h, p.LastWaypoint)
+	}
+	if again := w.Check(p, pos, nil); len(again) != 0 {
+		t.Fatalf("standing on: %+v", again)
+	}
+	if rp, ok := w.RespawnPoint(p); !ok || rp.Y != tw.TopY {
+		t.Fatalf("respawn %+v %v", rp, ok)
 	}
 	if w.RevealedRegions(p) != 1 {
 		t.Fatalf("revealed %b", w.RevealedRegions(p))
