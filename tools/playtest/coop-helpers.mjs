@@ -295,7 +295,7 @@ export async function fight(page, { x, z, r = 30, ms = 90000, spells = ['Digit1'
     const dy = e.y - myY;
     if (Math.abs(dy) > 1.4 && e.d < 6) {
       // On a ledge above (or below) it: step off toward it, casting meanwhile.
-      if (s.mana > 15) await page.keyboard.press(spells[swings % spells.length]);
+      if (spells.length && s.mana > 15) await page.keyboard.press(spells[swings % spells.length]);
       await page.keyboard.down('KeyW');
       if (dy > 1.4) await page.keyboard.press('Space');
       await sleep(450);

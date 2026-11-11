@@ -11,7 +11,8 @@ package game
 //     again on the request).
 //   - Respawning in a party: the respawn point (waypoint stone or tower top)
 //     that you or a party member on this zone unlocked, nearest the friend
-//     who is still up; if nobody is up (a wipe), nearest where you fell. A
+//     who is still up (none within 250 m of them: 45 m from them, outside the
+//     Heartfall's arena); if nobody is up (a wipe), nearest where you fell. A
 //     camp bedroll still wins. Alone: your last waypoint, as before.
 
 import (
@@ -115,14 +116,14 @@ func (s *Server) partyRespawn(e *Entity) (movement.Vec3, bool) {
 	if w == nil || e.x == nil || len(mates) == 0 {
 		return movement.Vec3{}, false
 	}
-	anchor := e.Move.Pos
+	anchor, up := e.Move.Pos, false
 	best := math.Inf(1)
 	for _, o := range mates {
 		if o.cbt != nil && o.cbt.Downed {
 			continue
 		}
 		if d := math.Hypot(o.Move.Pos.X-e.Move.Pos.X, o.Move.Pos.Z-e.Move.Pos.Z); d < best {
-			best, anchor = d, o.Move.Pos
+			best, anchor, up = d, o.Move.Pos, true
 		}
 	}
 	sets := []*explore.Progress{e.x.prog}
@@ -150,5 +151,42 @@ func (s *Server) partyRespawn(e *Entity) (movement.Vec3, bool) {
 			bestD, at, found = d, p, true
 		}
 	}
+	// No point near the friend who is up (new characters who have touched
+	// no stone, a fight far from any): wake within sight of them instead,
+	// partyNearM away (outside a story arena), not half a map off. Second
+	// two-player run: a fresh pair downed at the sanctum woke 2.1 km away
+	// at the world spawn.
+	if up && (!found || bestD > partyPointM) {
+		if p, ok := s.besideFriend(anchor, e.Move.Pos); ok {
+			return p, true
+		}
+	}
 	return at, found
+}
+
+const (
+	partyPointM = 250.0 // a respawn point this near the friend will do
+	partyNearM  = 45.0  // else this far from them
+)
+
+// besideFriend: dry walkable ground partyNearM from the friend at f, on the
+// side you fell (or away from the Heartfall's arena when they are in it).
+func (s *Server) besideFriend(f, fell movement.Vec3) (movement.Vec3, bool) {
+	if s.cbt.w == nil {
+		return movement.Vec3{}, false
+	}
+	cx, cz, dist := f.X, f.Z, partyNearM // around the friend, toward where you fell
+	dx, dz := fell.X-f.X, fell.Z-f.Z
+	if p := s.storyPlaces(); p != nil && p.Heartfall.OK && s.storyArenaAt(f.X, f.Z) {
+		// Just outside the Hush's arena, on the friend's side of it.
+		cx, cz, dist = p.Heartfall.X, p.Heartfall.Z, p.Heartfall.R+storyArenaMarginM+5
+		dx, dz = f.X-cx, f.Z-cz
+	}
+	if l := math.Hypot(dx, dz); l > 1e-6 {
+		dx, dz = dx/l, dz/l
+	} else {
+		dx, dz = 1, 0
+	}
+	x, z := s.cbt.w.WalkableNear(cx+dx*dist, cz+dz*dist, 24, 2)
+	return movement.Vec3{X: x, Y: s.cfg.Ground.HeightAt(x, z), Z: z}, true
 }

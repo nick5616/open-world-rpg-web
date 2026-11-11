@@ -72,4 +72,24 @@ func TestPartyLendsTowersAndRespawnsNearFriend(t *testing.T) {
 	if math.Hypot(lent[0]-wp.X, lent[1]-wp.Z) > 0.01 {
 		t.Fatalf("wipe respawn %v, want the stone nearest where he fell %v", lent, wp)
 	}
+	// Nobody has touched a stone: wake within sight of the friend who is up,
+	// not at the world spawn.
+	var friend [2]float64
+	var hasCombat bool
+	h.do(func() {
+		ea, eb := h.srv.byChar["pa"].ent, h.srv.byChar["pb"].ent
+		hasCombat = h.srv.cbt.w != nil
+		for _, e := range []*Entity{ea, eb} {
+			clear(e.x.prog.Towers)
+			clear(e.x.prog.Waypoints)
+			e.x.prog.LastWaypoint = -1
+		}
+		friend = [2]float64{ea.Move.Pos.X, ea.Move.Pos.Z}
+		p := h.srv.RespawnPoint(eb)
+		lent = [2]float64{p.X, p.Z}
+	})
+	t.Logf("no stones: woke %.0f m from the friend (combat world %v)", math.Hypot(lent[0]-friend[0], lent[1]-friend[1]), hasCombat)
+	if d := math.Hypot(lent[0]-friend[0], lent[1]-friend[1]); hasCombat && (d < 20 || d > 80) {
+		t.Fatalf("no stones: woke %.0f m from the friend at %v (%v)", d, friend, lent)
+	}
 }
