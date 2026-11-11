@@ -54,6 +54,9 @@ export type Style =
   | 'shade'
   | 'rime_wraith'
   | 'archon'
+  // CR 035 main story (playtest 2 immersion pass: their own models)
+  | 'the_hush'
+  | 'hollow_bell'
   // winged
   | 'gale_harpy'
   | 'gloom_bat'
@@ -138,6 +141,8 @@ const STYLE_RIG: Record<Style, Rig> = {
   shade: 'floater',
   rime_wraith: 'floater',
   archon: 'floater',
+  the_hush: 'floater',
+  hollow_bell: 'floater',
   gale_harpy: 'winged',
   gloom_bat: 'winged',
   lumen_moth: 'winged',
@@ -151,9 +156,6 @@ export const ALL_STYLES = Object.keys(STYLE_RIG) as Style[];
 const KEY_STYLE: Record<string, Style> = {
   starless_sovereign: 'sovereign',
   thornhide_behemoth: 'behemoth',
-  // CR 035 main story: the Hush floats like an archon in the dark of the Heartfall; its Hollow Bells are dark motes
-  the_hush: 'archon',
-  hollow_bell: 'shade',
 };
 
 /** Fallback by family (an enemy added to combat.yaml without a model of its own). */
@@ -216,7 +218,7 @@ export function modelSpec(info: Pick<EnemyInfo, 'key' | 'family' | 'behavior' | 
   const accent = el < 8 ? ELEMENT_COLORS[el] : lighten(info.color);
   const glowEyes = demon || boss || style === 'gloamhound' || info.family === 'elemental' || info.family === 'guardian' || style === 'crystal_golem' || style === 'gloom_bat' || style === 'cave_crawler';
   const eye = demon ? (el < 8 ? ELEMENT_COLORS[el] : '#ff3b2a') : glowEyes ? (el < 8 ? ELEMENT_COLORS[el] : style === 'cave_crawler' ? '#c8ff6a' : '#bfe8ff') : '#1a1410';
-  const deathFx: DeathFx = demon ? 'smoke' : style === 'crystal_golem' || style === 'sentinel' || style === 'mud_golem' || style === 'starfall_sentinel' || style === 'vault_keeper' ? 'shatter' : (DEATH[rig] ?? 'dust');
+  const deathFx: DeathFx = style === 'hollow_bell' ? 'shatter' : demon ? 'smoke' : style === 'crystal_golem' || style === 'sentinel' || style === 'mud_golem' || style === 'starfall_sentinel' || style === 'vault_keeper' ? 'shatter' : (DEATH[rig] ?? 'dust');
   const spec: ModelSpec = {
     key: info.key,
     variant: `${style}|${el}`,

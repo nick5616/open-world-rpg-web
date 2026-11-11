@@ -64,6 +64,12 @@ export const CUES = {
   step_soft: sfx('step_soft', { volume: 0.32, pitch: 0.08, maxVoices: 2, priority: 1 }),
   step_hard: sfx('step_hard', { volume: 0.32, pitch: 0.08, maxVoices: 2, priority: 1 }),
   step_snow: sfx('step_snow', { volume: 0.3, pitch: 0.08, maxVoices: 2, priority: 1 }),
+  // playtest 2 immersion pass: the steed's hooves (the knocks, deeper and heavier) and fishing
+  hoof_soft: sfx('step_soft', { volume: 0.5, rate: 0.66, pitch: 0.07, maxVoices: 4, priority: 1 }),
+  hoof_hard: sfx('step_hard', { volume: 0.46, rate: 0.6, pitch: 0.07, maxVoices: 4, priority: 1 }),
+  fish_cast: sfx('swing_staff', { volume: 0.4, rate: 1.25, pitch: 0.06, maxVoices: 1, cooldownMs: 300 }),
+  fish_plop: world('swim_stroke', { volume: 0.4, rate: 1.7, pitch: 0.1, maxVoices: 2, cooldownMs: 80, refDistance: 4, maxDistance: 40 }),
+  fish_bite: world('splash', { volume: 0.55, rate: 1.3, pitch: 0.08, maxVoices: 1, cooldownMs: 300, refDistance: 4, maxDistance: 45 }),
   // Audio QoL: the same knocks lower and duller on planks and decks; wading is a small stroke.
   step_wood: sfx('step_hard', { volume: 0.34, pitch: 0.07, rate: 0.8, maxVoices: 2, priority: 1 }),
   step_water: sfx('swim_stroke', { volume: 0.2, pitch: 0.12, rate: 1.35, maxVoices: 2, priority: 1 }),
@@ -182,6 +188,10 @@ export const CUES = {
   level_up_big: sting('level_up_big', { volume: 0.9 }),
   skill_up: ui('skill_up', { volume: 0.55 }),
   camp_cleared: sting('camp_cleared', { volume: 0.7 }),
+
+  // Playtest 2 immersion pass: the Heartfall's bells (bells.ts: synthesized, rendered once)
+  bell_toll: { files: ['synth:hollow_bell'], bus: 'sfx', spatial: true, refDistance: 6, maxDistance: 110, volume: 0.75, pitch: 0.035, maxVoices: 4, cooldownMs: 150, reverb: 0.7, priority: 4, duckMusic: false },
+  hush_toll: { files: ['synth:hush_toll'], bus: 'sfx', spatial: true, refDistance: 12, maxDistance: 160, volume: 0.95, pitch: 0.02, maxVoices: 2, cooldownMs: 400, reverb: 0.8, priority: 5, duckMusic: true },
 } satisfies Record<string, CueDef>;
 
 export type CueId = keyof typeof CUES;

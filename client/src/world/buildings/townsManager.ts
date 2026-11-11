@@ -26,6 +26,7 @@
 //    "[E] Open door" / "[E] Close door" targets.
 
 import * as THREE from 'three';
+import { DAY_LENGTH_S } from '@lodestone/contracts';
 import { liveStyle } from '../style/styles';
 import type { Towns } from '@lodestone/worldgen';
 import type { WorldRuntime } from '../core/runtime';
@@ -44,6 +45,8 @@ import { netRuntime } from '../../net/netStore';
 import { localPlayer, view } from '../../state/live';
 import { DoorSync } from './doors';
 import { DoorRenderer } from './doorsMesh';
+import { ChimneySmoke } from './chimneySmoke';
+import { liveWeather } from '../../systems/weather/runtime';
 
 export const SETTLEMENT_LOAD_M = 1500;
 export const SETTLEMENT_DROP_M = 1800;
@@ -57,11 +60,15 @@ interface Built {
   meshes: THREE.Mesh[];
   interior: THREE.Mesh | null;
   lights: Float32Array;
+  /** Chimney tops (settlements; playtest 2 immersion pass). */
+  smoke?: Float32Array;
   ms: number;
 }
 
 export class TownsManager {
   readonly group = new THREE.Group();
+  /** Playtest 2 immersion pass: chimney smoke over the loaded settlements. */
+  readonly smoke = new ChimneySmoke();
   readonly towns: Towns;
   readonly npcs: NpcRenderer;
   readonly hud: TownHud;
@@ -103,6 +110,7 @@ export class TownsManager {
     this.group.name = 'towns';
     this.npcs = new NpcRenderer(this.towns, runtime.ground as never);
     this.group.add(this.npcs.group);
+    this.group.add(this.smoke.mesh);
     this.hud = new TownHud();
     if (runtime.doors && runtime.doorStates) {
       const sync = new DoorSync(runtime.doors, runtime.doorStates);
@@ -225,7 +233,7 @@ export class TownsManager {
             interior.visible = false;
             this.group.add(interior);
           }
-          (m.type === 'settlement' ? this.settlements : this.structures).set(m.index, { meshes: [shell], interior, lights: m.mesh.lights, ms: m.ms });
+          (m.type === 'settlement' ? this.settlements : this.structures).set(m.index, { meshes: [shell], interior, lights: m.mesh.lights, smoke: m.type === 'settlement' ? m.mesh.smoke : undefined, ms: m.ms });
         });
         break;
       }
@@ -338,7 +346,10 @@ export class TownsManager {
     const L = skyLighting(worldClock.timeOfDayS, this.sky);
     const target = 1 - THREE.MathUtils.smoothstep(L.day, 0.15, 0.7);
     this.night += (target - this.night) * Math.min(1, dt * 2);
-    if (this.mats) this.mats.uniforms.uNight.value = this.night;
+    if (this.mats) {
+      this.mats.uniforms.uNight.value = this.night;
+      this.mats.uniforms.uTownTime.value = (this.mats.uniforms.uTownTime.value + dt) % 1000; // flames (wrapped: float precision)
+    }
     this.stream(cam);
     // Time-sliced uploads: one new mesh per frame (its GPU upload happens in
     // this frame's render, so one at a time keeps the frame flat).
@@ -361,6 +372,8 @@ export class TownsManager {
       this.pendingHides = [];
     }
     this.updateLights(cam, now);
+    // Playtest 2 immersion pass: smoke from the chimneys (busiest at breakfast and supper).
+    this.smoke.update(camera, dt, (worldClock.timeOfDayS / DAY_LENGTH_S) * 24, L.day, Math.min(1, liveWeather.mix.rain), 0, this.smokeList);
     this.npcs.update(camera, dt, (now - this.t0) / 1000);
     // Interaction target.
     const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
@@ -446,6 +459,12 @@ export class TownsManager {
     return this.stats.ready && this.atWorker === 0 && this.inflight.size === this.failed.size && this.uploads.length === 0;
   }
 
+  /** The chimney tops of every loaded settlement (the smoke picks the nearest; asked 4x a second). */
+  private readonly smokeList = () => this.smokeSources();
+  private *smokeSources(): Iterable<Float32Array> {
+    for (const b of this.settlements.values()) if (b.smoke && b.smoke.length) yield b.smoke;
+  }
+
   dispose(): void {
     this.disposed = true;
     this.worker.terminate();
@@ -454,6 +473,7 @@ export class TownsManager {
     for (const b of this.cells.values()) for (const m of b.meshes) m.geometry.dispose();
     this.cells.clear();
     this.npcs.dispose();
+    this.smoke.dispose();
     this.hud.dispose();
     this.doorSync?.follow(null);
     this.doorLeaves?.dispose();

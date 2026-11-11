@@ -106,6 +106,9 @@ let shared: {
   shin: THREE.BufferGeometry;
   bodyMid: THREE.BufferGeometry;
   headMid: THREE.BufferGeometry;
+  /** Playtest 2 immersion pass: eyes, brows and mouth (drawn in the visor's slot and material). */
+  face: THREE.BufferGeometry;
+  hair: THREE.BufferGeometry;
   low: THREE.BufferGeometry;
   visorMat: THREE.Material;
   legMat: THREE.Material;
@@ -250,8 +253,10 @@ function res() {
   if (!shared) {
     shared = {
       chest: torsoGeometry(),
-      head: new THREE.SphereGeometry(0.2, 16, 12),
+      head: headGeometry(),
       visor: new THREE.BoxGeometry(0.26, 0.08, 0.06),
+      face: faceGeometry(),
+      hair: hairGeometry(),
       upperArm: segment(ARM_R * 2, UPPER_ARM),
       forearm: segment(0.11, FOREARM - 0.05), // to the wrist; the fist hangs below it
       thigh: segment(0.16, THIGH),
@@ -259,7 +264,8 @@ function res() {
       bodyMid: new THREE.CapsuleGeometry(0.3, 0.75, 2, 4),
       headMid: new THREE.SphereGeometry(0.2, 6, 4),
       low: new THREE.BoxGeometry(0.6, 1.8, 0.4),
-      visorMat: new THREE.MeshStandardMaterial({ color: 0x1b1f2a, roughness: 0.3, metalness: 0.4 }),
+      // playtest 2 immersion pass: the eyes and brows (and the mid figure's eye band), matte dark brown, not a glossy visor
+      visorMat: new THREE.MeshStandardMaterial({ color: 0x2a1d17, roughness: 0.6, metalness: 0 }),
       // playtest 2: legs and head read apart from the coloured tunic (same draw calls)
       legMat: new THREE.MeshStandardMaterial({ color: 0x3a4152, roughness: 0.85 }),
       // playtest 2: the same skin and shirt as your first-person arms (FirstPersonArms SKIN / SLEEVE)
@@ -281,6 +287,80 @@ function res() {
     shared.fishGeo.scale(0.9, 0.55, 3.2);
   }
   return shared;
+}
+
+/** Merge pieces (indexed or not) into one non-indexed geometry. */
+function mergeParts(parts: THREE.BufferGeometry[]): THREE.BufferGeometry {
+  const flat = parts.map((g) => {
+    const n = g.index ? g.toNonIndexed() : g;
+    for (const k of Object.keys(n.attributes)) if (k !== 'position' && k !== 'normal') n.deleteAttribute(k);
+    return n;
+  });
+  const out = mergeGeometries(flat, false)!;
+  for (const g of [...parts, ...flat]) if (g !== out) g.dispose();
+  return out;
+}
+
+/**
+ * Playtest 2 immersion pass ("the avatar is a mannequin with sunglasses"):
+ * the head (centre at the neck + 0.12, facing -Z) gets a nose and ears in
+ * the skin; eyes, brows and a mouth take the visor's place (one dark
+ * matte mesh, so the draw count and the armor's `hides.visor` are as
+ * before); hair is one more mesh, in a per-player colour.
+ */
+function headGeometry(): THREE.BufferGeometry {
+  const skull = new THREE.SphereGeometry(0.2, 16, 12);
+  skull.scale(0.95, 1.04, 1);
+  const nose = new THREE.ConeGeometry(0.03, 0.075, 5);
+  nose.rotateX(-Math.PI / 2 - 0.35);
+  nose.translate(0, -0.015, -0.205);
+  const ear = (side: number) => {
+    const g = new THREE.SphereGeometry(0.045, 6, 5);
+    g.scale(0.45, 1, 0.8);
+    g.translate(side * 0.19, 0.0, 0.01);
+    return g;
+  };
+  return mergeParts([skull, nose, ear(1), ear(-1)]);
+}
+
+function faceGeometry(): THREE.BufferGeometry {
+  const parts: THREE.BufferGeometry[] = [];
+  for (const side of [1, -1]) {
+    const eye = new THREE.SphereGeometry(0.024, 8, 6);
+    eye.scale(1, 1.25, 0.55);
+    eye.translate(side * 0.068, 0.035, -0.178);
+    const brow = new THREE.BoxGeometry(0.07, 0.016, 0.02);
+    brow.rotateZ(side * -0.12);
+    brow.translate(side * 0.07, 0.085, -0.178);
+    parts.push(eye, brow);
+  }
+  const mouth = new THREE.BoxGeometry(0.07, 0.012, 0.02);
+  mouth.translate(0, -0.085, -0.182);
+  parts.push(mouth);
+  return mergeParts(parts);
+}
+
+function hairGeometry(): THREE.BufferGeometry {
+  // a cap down to the hairline in front, longer at the back and sides (to the nape)
+  const cap = new THREE.SphereGeometry(0.212, 16, 8, 0, Math.PI * 2, 0, Math.PI * 0.36);
+  const back = new THREE.SphereGeometry(0.216, 14, 9, Math.PI * 0.02, Math.PI * 0.96, Math.PI * 0.1, Math.PI * 0.56);
+  const g = mergeParts([cap, back]);
+  g.scale(0.97, 1.05, 1.02);
+  g.translate(0, 0.01, 0);
+  return g;
+}
+
+const HAIR_COLORS = [0x3b2a1e, 0x1f1915, 0x6b4428, 0xa8743c, 0xd4b06a, 0x8a3a1e, 0x4a3a30, 0xbdb3a6];
+const hairMats = new Map<number, THREE.MeshStandardMaterial>();
+/** A player's hair colour (stable per entity id, like the shirt's shade). */
+function hairMat(id: number): THREE.MeshStandardMaterial {
+  const slot = Math.floor(((Math.abs(id) * 0.7548776662466927 + 0.31) % 1) * HAIR_COLORS.length);
+  let m = hairMats.get(slot);
+  if (!m) {
+    m = new THREE.MeshStandardMaterial({ color: HAIR_COLORS[slot], roughness: 0.9 });
+    hairMats.set(slot, m);
+  }
+  return m;
 }
 
 /**
@@ -423,7 +503,7 @@ export class Avatar {
   private armor: ArmorMeshes | null = null;
   private armorRig: THREE.SkinnedMesh | null = null;
   private armorMid: THREE.Mesh | null = null;
-  private bare!: { head: THREE.Mesh; visor: THREE.Mesh; torso: THREE.Mesh; visorMid: THREE.Mesh; low: THREE.Mesh; lowMat: THREE.Material };
+  private bare!: { head: THREE.Mesh; visor: THREE.Mesh; hair: THREE.Mesh; hairMid: THREE.Mesh; torso: THREE.Mesh; visorMid: THREE.Mesh; low: THREE.Mesh; lowMat: THREE.Material };
   /** Distance band chosen this frame: 0 full, 1 simplified, 2 none. */
   animLevel = 0;
   private readonly input: AnimInput = { x: 0, y: 0, z: 0, yaw: 0, pitch: 0, speed: 0, activity: 0, healthPct: 100 };
@@ -517,9 +597,15 @@ export class Avatar {
     this.torso.add(this.neck);
     const head = mesh(r.head, r.skinMat);
     head.position.y = 0.12;
-    const visor = mesh(r.visor, r.visorMat);
-    visor.position.set(0, 0.15, -0.18); // yaw 0 faces -Z (camera convention)
-    this.neck.add(head, visor);
+    // playtest 2 immersion pass: a face (eyes, brows, mouth) where the visor band was, and hair
+    const visor = mesh(r.face, r.visorMat);
+    visor.position.y = 0.12; // the face geometry is placed about the head's centre, facing -Z (camera convention)
+    visor.castShadow = false;
+    visor.name = 'avatar-face';
+    const hair = mesh(r.hair, hairMat(id));
+    hair.name = 'avatar-hair';
+    hair.position.y = 0.12;
+    this.neck.add(head, visor, hair);
     const arm = (side: number): Arm => {
       const shoulder = new THREE.Group();
       shoulder.position.set(side * SHOULDER.x, SHOULDER.y, 0);
@@ -574,13 +660,15 @@ export class Avatar {
     const bodyMid = new THREE.Mesh(r.bodyMid, mat);
     bodyMid.position.y = 0.85 - HIP_Y;
     bodyMid.castShadow = true;
-    const headMid = new THREE.Mesh(r.headMid, mat);
+    const headMid = new THREE.Mesh(r.headMid, r.skinMat); // playtest 2 immersion pass: skin, not the shirt's navy
     headMid.position.y = 1.62 - HIP_Y;
+    const hairMid = new THREE.Mesh(r.hair, hairMat(id));
+    hairMid.position.y = 1.62 - HIP_Y;
     const visorMid = new THREE.Mesh(r.visor, r.visorMat);
     visorMid.position.set(0, 1.65 - HIP_Y, -0.18);
     this.midArmR.position.set(0.38, 1.38 - HIP_Y, 0);
     this.midArmL.position.set(-0.38, 1.38 - HIP_Y, 0);
-    this.midBody.add(bodyMid, headMid, visorMid, this.midArmR, this.midArmL);
+    this.midBody.add(bodyMid, headMid, hairMid, visorMid, this.midArmR, this.midArmL);
 
     this.weaponHi = new THREE.Mesh(undefined, weaponMaterial());
     this.weaponHi.castShadow = true;
@@ -600,7 +688,7 @@ export class Avatar {
     this.buildInstruments(r.inst);
 
     const low = new THREE.Mesh(r.low, mat);
-    this.bare = { head, visor, torso: chest, visorMid, low, lowMat: mat };
+    this.bare = { head, visor, hair, hairMid, torso: chest, visorMid, low, lowMat: mat };
 
     // Manual LOD (not THREE.LOD): the figures not in use stay out of the
     // graph, so neither the world-matrix pass nor the renderer walks them.
@@ -688,6 +776,10 @@ export class Avatar {
     const b = this.bare;
     b.head.visible = !hide?.head;
     b.visor.visible = !hide?.visor;
+    // hair under a helm, hood or cap would poke through it: only bare heads and circlets show it
+    const bareHead = !spec || spec.midHead === 'none' || spec.midHead === 'circlet';
+    b.hair.visible = bareHead && !hide?.head;
+    b.hairMid.visible = bareHead;
     b.torso.visible = !hide?.torso;
     b.visorMid.visible = !hide?.visor;
     for (const a of [this.armL, this.armR]) {

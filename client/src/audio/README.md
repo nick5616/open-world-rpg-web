@@ -26,6 +26,7 @@ included.
 | `emitters.ts` | Pure: fire props and camp campfires -> loop emitters, forges -> smiths, a point grid, the smith's rhythm. |
 | `loops.ts` | The positional loop voices (fade in, glide, fade out and stop). |
 | `synth.ts` | Noise buffers and the loop textures rendered once through an OfflineAudioContext: fire, river flow, shore lapping, rain on a roof. |
+| `bells.ts` | Playtest 2 immersion pass: the Heartfall's bells, synthesized (inharmonic bell partials, each a beating pair, high ones dying first, a metallic strike, a long fade) and rendered once through an OfflineAudioContext; `synth:<bell>` files in a cue are rendered by `sfx.ts` instead of fetched. |
 | `worldProbe.ts` | The engine's view of the loaded world (towns, terrain, water, atlas biome, chemistry fire) feeding the pure modules. |
 | `music/director.ts` | Pure state machine: which musical state the world asks for (unit-tested). |
 | `music/player.ts`, `music/tracks.ts` | Crossfading playback: long tracks streamed through media elements, short loops (combat, time crunch) decoded and looped sample-exact. |
@@ -117,6 +118,8 @@ the results, so nothing clicks or zippers.
 | void | A Void domain (6 s) | **void realm**, open |
 | cave | Underground (latched in at 0.55, out at 0.35) | **void realm**, low-passed at 6 kHz |
 | combat | Hit or hurt in the last seconds, a telegraph within 18 m, a boss bar | **combat**: 16 bars of the Novation Analog Synthwave pack (134 bpm), gapless |
+| silence | The Hush's entrance (CR 035: it is the silence; its toll and the lord's sting carry the moment) | nothing |
+| void (the Heartfall) | The Hush's fight and its choir (finale phases 2 and 4) | **void realm**; the endless night's countdown is a timed objective (the time crunch, "5 sec left" before it falls); the dawn after the victory switches to the day at once |
 | night | 18:30-06:00 (in towns too) | **night**: see "Gaps"; plays the nocturne cut of future land 2 for now |
 | town | Inside a settlement by day | **future land**, warmer (3.2 kHz low-pass) and softer |
 | day | Otherwise | **future land 1** and **future land 2**, alternating each time day music comes back and at every track end |
@@ -152,6 +155,8 @@ take a world position.
 | `step_snow` | 3 | D1 Acoustic Drums: Acoustic Drums5; D1 Acoustic Drums: Acoustic Drums15; D1 Acoustic Drums: Acoustic Drums12; D1 Acoustic Drums: Acoustic Drums13 | Footsteps in the snowpeak biome |
 | `step_wood` | (4) | `step_hard`'s files at 0.8x | Footsteps on building floors, decks, bridges, ramps |
 | `step_water` | (2) | `swim_stroke`'s files at 1.35x, quiet | Wading in shallow water |
+| `hoof_soft` / `hoof_hard` | (4) | `step_soft` / `step_hard`'s files at 0.66x / 0.6x | Playtest 2 immersion pass: in the saddle, hoofbeats instead of footsteps (movement.ts `mounted`): one beat a stride walking, two trotting, three galloping |
+| `fish_cast`, `fish_plop`, `fish_bite` | (1-2) | `swing_staff` at 1.25x, `swim_stroke` at 1.7x, `splash` at 1.3x | Fishing (ui/fishing/store.ts `fishingSounds`): the cast, the bobber landing and nibbles, the bite on time; the hook and the catch splash (`splash`), a catch chimes by rarity (`loot_*`) |
 | `jump` | 2 | D1 FX: Fast FX | Leaving the ground / double jump |
 | `land` | 2 | D1 Acoustic Drums: Acoustic Drums13; D1 Acoustic Drums: Acoustic Drums5; D1 Acoustic Drums: Acoustic Drums16; D1 Acoustic Drums: Acoustic Drums15; D1 Acoustic Drums: Acoustic Drums2; D1 Acoustic Drums: Acoustic Drums14 | Landing from a fall over 3 m/s (louder with speed) |
 | `dash` | 2 | D1 FX: Fast FX | Dodge/dash (trigger `dodge`) |
@@ -249,12 +254,30 @@ take a world position.
 | `level_up_big` | 1 | **Nicole: level up sound 3** | Level-up on a multiple of 10, or 3+ levels at once |
 | `skill_up` | 1 | D1 Hyperpop: FX_Gm_150bpm_11 | Event 216 skill_up |
 | `camp_cleared` | 1 | D1 FX: Cymbal Hit FX; D2 East Coast Hip Hop: One-Shot 6 | Event 211 camp_cleared |
+| `bell_toll` | 1 | synthesized (`bells.ts`, a cracked bronze bell about G3, flat) | Event 204 for `bell_toll` (a Hollow Bell), on the strike (delayed by the wind-up); the choir starting (1603 phase 4: three bells) |
+| `hush_toll` | 1 | synthesized (an octave and a fourth lower, longer) | Event 204 for `hush_toll`; the Hush rising (1604) |
+
+Story moments (playtest 2 immersion pass; Events 1600-1612 were silent):
+an act's title card (1602) plays `discovery`; the Hush rising (1604) its
+toll then `lord_risen`; the finale's phases (1603) the choir's bells
+(`bell_toll` x3), the endless night (`ward_falter`), the dawn (`dawn`); the
+ending (1605) `defense_held`; a friend down near you (1610) `notify`, a
+revive's hold (1612) `heal`, a revived player (1611) `respawn`.
 
 Ambience (synthesized, `ambience.ts`): wind (louder up high, in rain and
 with speed while gliding or falling), rain (seeded weather or the zone's
 override, at the rain intensity), rain on the roof (under cover), thunder
 (heavy rain), night insects (dry nights outside towns), underwater hush
-(swimming), cave drips (underground, through the cave reverb). Fires and
+(swimming), cave drips (underground, through the cave reverb). Playtest 2
+immersion pass, wildlife by the biome under you (`wildlife.ts`, pure and
+tested; voices synthesized per call in `ambience.ts`, through the weather
+submix so walls muffle them): songbirds by day (five phrase shapes: a
+warble, a falling trill, two whistles, chip-chip-cheee, a dove's coo; the
+dawn chorus loudest, a quieter midday, an evening song) in meadows, woods
+and wetlands, a hawk's descending cry over the highlands and badlands, a
+chorus of frogs on wetland nights (rain does not stop them), an owl's
+"hoo ... hoo-hoo" in the woods at night; rain, snow and gales hush the
+birds, towns halve them, caves silence them all. Fires and
 water are positional loops (`loops.ts`, rendered by `synth.ts`), not beds:
 see "Space and distance".
 
@@ -306,8 +329,6 @@ and rebuild with `--only night`.
   open doorway muffles like a wall); occlusion is by space (building,
   cave, outdoors), not ray-cast; the water probe hears a river or a shore,
   not waterfalls (worldgen has no waterfall feature to find).
-- No biome-specific day ambience beyond wind/insects (birds, water
-  bodies): the noise beds stand in.
 - The Gentleman Library (Kontakt piano, encrypted .nkx/.nkc) cannot be
   used as raw audio and was skipped.
 

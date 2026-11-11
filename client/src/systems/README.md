@@ -20,8 +20,8 @@ docs/decisions/0015-night-chemistry.md; contract: docs/cr/011-wp15-night-chemist
   and the HUD store; `nightWorld(runtime)` once the terrain is loaded;
   `window.__lodestoneNight` dev handle (ignite, freeze, pillar, setTime,
   raiseDemons, defense, sunsteel).
-- `NightLayer.tsx`: fire cards, scorch, ice, pillars, rain, demon horns and
-  eyes, rise and burn flashes. `NightHud.tsx`: clock chip, notices, the
+- `NightLayer.tsx`: fire cards, scorch, ice, pillars, rise and burn flashes
+  (rain moved to the world scene; demons' horns and eyes are their models'). `NightHud.tsx`: clock chip, notices, the
   defense panel with the ward garden's health.
 
 Offline (`dev:solo`) nothing here runs: the sky keeps its local clock.

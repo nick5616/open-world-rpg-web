@@ -37,6 +37,13 @@ export interface MusicInputs {
   /** Void magic moment (a Void domain, a void lord, the void realm). */
   voidMoment: boolean;
   timed: TimedInput | null;
+  /**
+   * Playtest 2 immersion pass: the Heartfall (CR 035). 'intro': the Hush's
+   * entrance silences the music (it is the silence); 'fight': the void realm;
+   * 'won': back to the day at once (the dawn). The endless night comes in as
+   * `timed` (its countdown).
+   */
+  finale?: 'intro' | 'fight' | 'won' | null;
 }
 
 export type TimedPhase = 'intro' | 'loop' | 'final';
@@ -78,7 +85,10 @@ export class MusicDirector {
   /** The state the world asks for right now (before dwell). */
   wanted(i: MusicInputs): MusicState {
     if (!i.playing) return 'silence';
+    if (i.finale === 'intro') return 'silence';
     if (i.timed) return 'timed';
+    if (i.finale === 'fight') return 'void';
+    if (i.finale === 'won') return 'day';
     if (i.voidMoment) return 'void';
     if (this.caveLatched ? i.underground > CAVE_EXIT : i.underground >= CAVE_ENTER) return 'cave';
     if (i.combat) return 'combat';
@@ -96,7 +106,7 @@ export class MusicDirector {
     }
     // Rising priority (a fight starts, a countdown begins, you step into a
     // cave) follows at once; falling back waits out the dwell time.
-    const immediate = this.state === 'silence' || want === 'silence' || PRIORITY[want] > PRIORITY[this.state];
+    const immediate = this.state === 'silence' || want === 'silence' || PRIORITY[want] > PRIORITY[this.state] || i.finale === 'won';
     let changed = false;
     if (want !== this.state && (immediate || nowS - this.candidateSince >= DWELL_S)) {
       // Day comes back as the other day track each time (rotation).

@@ -10,6 +10,10 @@
 
 import * as THREE from 'three';
 import type { MeshData } from './meshBuilder';
+import { TEX } from './textures';
+
+/** The fire picture's layer (props.ts flame): its always-on quads sway and flicker (playtest 2 immersion pass). */
+const FIRE_LAYER = TEX.fire.toFixed(1);
 
 export interface TownMaterials {
   /** Buildings, interiors, structures, bridges: lit, casts and receives shadows. */
@@ -17,7 +21,7 @@ export interface TownMaterials {
   /** Roads, plazas, paving: same shader, polygon offset over the terrain. */
   decal: THREE.MeshStandardMaterial;
   texture: THREE.DataArrayTexture;
-  uniforms: { uNight: { value: number }; uGlow: { value: number } };
+  uniforms: { uNight: { value: number }; uGlow: { value: number }; uTownTime: { value: number } };
   dispose(): void;
 }
 
@@ -40,21 +44,41 @@ function patch(m: THREE.MeshStandardMaterial, tex: THREE.DataArrayTexture, u: To
     shader.uniforms.tTown = { value: tex };
     shader.uniforms.uNight = u.uNight;
     shader.uniforms.uGlow = u.uGlow;
+    shader.uniforms.uTownTime = u.uTownTime;
     shader.vertexShader = shader.vertexShader
-      .replace('#include <common>', '#include <common>\nattribute vec2 aTexUv;\nattribute vec2 aLG;\nvarying vec2 vTexUv;\nvarying vec3 vTexAff;\nflat varying float vLayer;\nvarying float vGlowV;')
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvTexUv = aTexUv;\nvLayer = aLG.x;\nvGlowV = aLG.y;')
+      .replace('#include <common>', '#include <common>\nattribute vec2 aTexUv;\nattribute vec2 aLG;\nuniform float uTownTime;\nvarying vec2 vTexUv;\nvarying vec3 vTexAff;\nflat varying float vLayer;\nvarying float vGlowV;\nvarying float vFirePh;')
+      .replace(
+        '#include <begin_vertex>',
+        `#include <begin_vertex>
+vTexUv = aTexUv;
+vLayer = aLG.x;
+vGlowV = aLG.y;
+vFirePh = -1.0;
+// Playtest 2 immersion pass: town flames (hearths, braziers, campfires, torches) lick and sway
+// instead of standing still; the tips move most, the base stays on the logs.
+if (aLG.y > 127.5 && abs(aLG.x - ${FIRE_LAYER}) < 0.5) {
+  float top = clamp(aTexUv.y, 0.0, 1.0);
+  float ph = dot(floor(position.xz * 2.0), vec2(1.73, 2.31));
+  vFirePh = fract(ph * 0.1) * 6.2831;
+  transformed.x += sin(uTownTime * 5.7 + ph) * 0.05 * top;
+  transformed.z += cos(uTownTime * 4.9 + ph * 1.37) * 0.05 * top;
+  transformed.y += (0.07 * sin(uTownTime * 7.3 + ph * 0.7) + 0.02) * top;
+}`,
+      )
       // Playtest 2 Retro style: uv * w and w, so the fragment can undo the
       // perspective correction (affine texture wobble, styleShader.ts lsRetro.z).
       .replace('#include <project_vertex>', '#include <project_vertex>\nvTexAff = vec3(aTexUv * gl_Position.w, gl_Position.w);');
     shader.fragmentShader = shader.fragmentShader
       .replace(
         '#include <common>',
-        '#include <common>\nuniform highp sampler2DArray tTown;\nuniform float uNight;\nuniform float uGlow;\nvarying vec2 vTexUv;\nvarying vec3 vTexAff;\nflat varying float vLayer;\nvarying float vGlowV;\nvec4 townTexel;',
+        '#include <common>\nuniform highp sampler2DArray tTown;\nuniform float uNight;\nuniform float uGlow;\nuniform float uTownTime;\nvarying vec2 vTexUv;\nvarying vec3 vTexAff;\nflat varying float vLayer;\nvarying float vGlowV;\nvarying float vFirePh;\nvec4 townTexel;',
       )
       .replace(
         '#include <map_fragment>',
         `{
   vec2 tuv = vTexUv;
+  // a flame's picture wavers sideways, more toward the tips
+  if (vFirePh >= 0.0) tuv.x += sin(tuv.y * 7.0 - uTownTime * 6.0 + vFirePh) * 0.04 * tuv.y;
   // Retro: affine interpolation (faded in past 2 m, where a big floor quad
   // would otherwise swim wildly) and texel-snapped sampling (nearest look,
   // with the smooth uv's gradients so mip selection stays put).
@@ -78,16 +102,18 @@ diffuseColor.rgb *= townTexel.rgb;`,
     float k = (g - 128.0 * always) / 16.0;
     vec3 warm = vec3(1.0, 0.62, 0.3);
     vec3 col = mix(warm, townTexel.rgb * vColor.rgb, always);
-    totalEmissiveRadiance += col * k * townTexel.a * mix(uNight, 1.0, always) * uGlow;
+    // flames breathe a little (±8 %, 1-2 Hz: a flicker, never a strobe)
+    float fl = vFirePh >= 0.0 ? 0.94 + 0.05 * sin(uTownTime * 8.3 + vFirePh) + 0.03 * sin(uTownTime * 13.1 + vFirePh * 2.0) : 1.0;
+    totalEmissiveRadiance += col * k * townTexel.a * mix(uNight, 1.0, always) * uGlow * fl;
   }
 }`,
       );
   };
-  m.customProgramCacheKey = () => 'lodestone-town-v2';
+  m.customProgramCacheKey = () => 'lodestone-town-v3';
 }
 
 export function makeTownMaterials(tex: THREE.DataArrayTexture): TownMaterials {
-  const uniforms = { uNight: { value: 0 }, uGlow: { value: 1 } };
+  const uniforms = { uNight: { value: 0 }, uGlow: { value: 1 }, uTownTime: { value: 0 } };
   const solid = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.88, metalness: 0, color: 0xffffff });
   solid.name = 'town-solid';
   patch(solid, tex, uniforms);

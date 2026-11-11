@@ -224,3 +224,13 @@ records changed meaning, not layout, so everything above holds:
 - Evidence: `docs/evidence/pt-towns-*` (before/after shots from
   `dev/townsTerrainShots.mjs`, sloped-lot walk/door agreement from
   `dev/sloped-acceptance.ts`).
+
+## Chimney smoke (playtest 2 immersion pass)
+
+`kit.ts drawChimney` reports each stack's top into the settlement mesh
+(`SettlementMesh.smoke`, 3 floats per chimney, transferred with the mesh);
+`chimneySmoke.ts` draws a plume over the 40 nearest within 260 m: one
+instanced quad draw, 16 puffs per chimney animated on the GPU (rise, widen,
+drift downwind with the shared wind, fade), busiest at breakfast and
+supper (`hearthActivity`), thinner in rain, dim and faint at night. The CPU
+only re-picks the chimneys 4x a second.

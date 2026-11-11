@@ -1,7 +1,7 @@
 // The 3D half of night and chemistry (WP15): fire (instanced flame cards
 // that lean with the shared wind, a small pool of flickering lights),
-// scorched ground, ice sheets, earth pillars, and the demons' look on top
-// of WP13's enemy bodies (horns, burning eyes) plus rise/burn flashes. (Rain
+// scorched ground, ice sheets, earth pillars, and the rise/burn flashes
+// (the demons' horns and eyes are their models', combat/enemies). (Rain
 // streaks moved to world/sky/rainStreaks.ts in playtest 2.) Mounted inside the world canvas by
 // NetPlay. Imperative three.js in one useFrame: a big fire is 3 instanced
 // draws and 4 lights, far inside the budget.
@@ -10,8 +10,6 @@ import { useEffect, useMemo } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { FIRE_UPDRAFT_TOP_M } from '@lodestone/contracts';
-import { drawnRemotes } from '../net/netStore';
-import { enemyInfo } from '../combat/events';
 import { windState } from '../world/wind';
 import { liveStyle } from '../world/style/styles';
 import { localPlayer } from '../state/live';
@@ -106,33 +104,6 @@ function pillarGeometry(half: number, run: number, height: number): THREE.Buffer
   return g;
 }
 
-interface DemonDecor {
-  root: THREE.Group;
-  eyes: THREE.MeshBasicMaterial;
-}
-
-const hornGeo = new THREE.ConeGeometry(0.08, 0.5, 6);
-const eyeGeo = new THREE.SphereGeometry(0.065, 6, 5);
-const hornMat = new THREE.MeshStandardMaterial({ color: '#b8a888', roughness: 0.45, emissive: '#2a1008', emissiveIntensity: 0.4 });
-
-function makeDecor(size: number, lord: boolean): DemonDecor {
-  const root = new THREE.Group();
-  const eyes = new THREE.MeshBasicMaterial({ color: lord ? '#ff3020' : '#ff6a20' });
-  const s = size * (lord ? 1.3 : 1);
-  for (const side of [-1, 1]) {
-    const h = new THREE.Mesh(hornGeo, hornMat);
-    h.position.set(0.14 * side * s, 1.78 * size, 0);
-    h.rotation.z = -0.5 * side;
-    h.scale.setScalar(s);
-    root.add(h);
-    const e = new THREE.Mesh(eyeGeo, eyes);
-    e.position.set(0.1 * side * size, 1.58 * size, -0.24 * size);
-    e.scale.setScalar(size);
-    root.add(e);
-  }
-  return { root, eyes };
-}
-
 export function NightLayer() {
   const scene = useThree((s) => s.scene);
   const camera = useThree((s) => s.camera);
@@ -162,7 +133,7 @@ export function NightLayer() {
     });
     const pillarMat = new THREE.MeshStandardMaterial({ color: '#7a6a55', roughness: 0.95, flatShading: true });
     root.add(flames, scorch, ice);
-    return { root, flames, scorch, ice, lights, pillarMat, pillars: new Map<number, THREE.Mesh>(), decor: new Map<number, DemonDecor>(), fx: [] as { obj: THREE.Mesh; at: number; dur: number; grow: number }[], version: -1 };
+    return { root, flames, scorch, ice, lights, pillarMat, pillars: new Map<number, THREE.Mesh>(), fx: [] as { obj: THREE.Mesh; at: number; dur: number; grow: number }[], version: -1 };
   }, []);
 
   useEffect(() => {
@@ -265,30 +236,9 @@ export function NightLayer() {
     // Pillars rise out of the ground over 0.4 s.
     for (const mesh of parts.pillars.values()) mesh.scale.y = Math.min(1, (now - (mesh.userData.at as number)) / 400);
 
-    // Demons: horns and burning eyes on WP13's enemy bodies.
-    const seen = new Set<number>();
-    for (const v of drawnRemotes.views) {
-      if (v.kind !== 2) continue;
-      const info = enemyInfo(v);
-      if (info.family !== 'demon') continue;
-      seen.add(v.id);
-      let d = parts.decor.get(v.id);
-      if (!d) {
-        d = makeDecor(info.size, info.key === 'starless_sovereign');
-        parts.decor.set(v.id, d);
-        parts.root.add(d.root);
-      }
-      d.root.position.set(v.x, v.y, v.z);
-      d.root.rotation.y = v.yaw;
-      d.root.visible = v.healthPct > 0;
-      d.eyes.color.setRGB(1, 0.25 + 0.2 * Math.sin(now / 90 + v.id), 0.05);
-    }
-    for (const [id, d] of parts.decor) {
-      if (!seen.has(id)) {
-        parts.root.remove(d.root);
-        parts.decor.delete(id);
-      }
-    }
+    // (Demons' horns and burning eyes are part of their models now, combat/enemies:
+    // the WP15 cones and balls floated beside the hunched playtest 2 bodies; removed
+    // in the playtest 2 immersion pass.)
 
     // Rise and burn flashes.
     while (nightFx.length) {

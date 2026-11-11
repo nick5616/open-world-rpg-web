@@ -60,6 +60,7 @@ takes the beauty shots).
 | `water/water.ts` | Water shader (sky reflection, depth fade, gentle normals, glints, foam) for tile water and the camera-following sea plane. |
 | `scatter/` | `archetypes.ts` procedural trees/rocks/bushes/grass, `impostors.ts` impostor atlas, `scatterMaterials.ts` (wind, LOD dither fades, foliage tint), `scatterManager.ts` (global InstancedMeshes re-binned by distance, stable ids, hide by id), `grassGen.ts` (worker grass clumps). |
 | `sky/` | `atmosphere.ts` analytic scattering (CPU + GLSL twins), `skyDome.ts` (stars, sun, moon, clouds), `sunShadows.ts` (CSM, patched so non-CSM materials use cascade 0 only). |
+| `life/ambientLife.ts` | Playtest 2 immersion pass: ambient life around the camera by biome, hour and weather: flocks of birds (hawks over the highlands and badlands), butterflies, fireflies on warm dry nights (slow glows, no blinking), falling leaves in woods, pollen motes. Anchored at world positions in a box that wraps around the camera (ground sampled once per wrap), 5 draws, half the counts on Low, nothing underground, over water (insects) or in rain; `__lodestoneLife` (debug). Purely visual. |
 | `post/postfx.ts` | Composer: fog from depth, god rays (half res), bloom, ACES, grade. |
 | `structures/` | (WP12) Structure overlay on the ground (`WorldRuntime.ground` = terrain + towers), towers from the atlas, tower and waypoint-stone visuals. README there (how WP20 adds structures). |
 | `debug/` | `worldDebug.ts` (stats + window handle), `lodOverlay.ts`, `WorldDebugSection.tsx` (debug panel). |

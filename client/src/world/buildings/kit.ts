@@ -100,6 +100,8 @@ export interface SettlementMesh {
   interior: MeshData;
   /** Emitters, 7 floats each: x, y, z, r, g, b, range. */
   lights: Float32Array;
+  /** Playtest 2 immersion pass: chimney tops (3 floats each: x, y, z), where the smoke rises (chimneySmoke.ts). */
+  smoke: Float32Array;
   /** Bounding sphere (x, y, z, r). */
   bounds: [number, number, number, number];
 }
@@ -509,6 +511,9 @@ function drawVigas(mb: MeshBuilder, F: Frame, b: Building, wallTop: number): voi
   }
 }
 
+/** Chimney tops collected while a settlement mesh is built (buildSettlementMesh), else null. */
+let smokeSink: number[] | null = null;
+
 /** A chimney stack straddling the back wall behind the hearth or forge, above the roof. */
 function drawChimney(mb: MeshBuilder, t: Towns, b: Building, F: Frame, wallTop: number): void {
   let u = b.hx * 0.35;
@@ -528,6 +533,7 @@ function drawChimney(mb: MeshBuilder, t: Towns, b: Building, F: Frame, wallTop: 
     if (y > roofY) roofY = y;
   }
   const top = roofY + 1.1;
+  smokeSink?.push(w[0], top + 0.14, w[2]);
   P(mb, b.style === STYLE.stone ? 'stone' : 'fieldstone', [0.9, 0.88, 0.85]);
   mb.box(F, u - 0.45, u + 0.45, b.baseY, top, v - 0.35, v + 0.45, { top: true });
   P(mb, 'stone', [0.7, 0.68, 0.66]);
@@ -609,9 +615,15 @@ export function buildSettlementMesh(t: Towns, si: number, heightAt: (x: number, 
   const light = (e: Emitter) => lights.push(e.x, e.y, e.z, e.r, e.g, e.b, e.range);
   const boxByPos = boxIndexByPos(t, s.boxFirst, s.boxCount);
   let maxY = s.y;
+  const smoke: number[] = [];
   for (let bi = s.buildingFirst; bi < s.buildingFirst + s.buildingCount; bi++) {
     const b = t.buildings[bi];
-    drawBuildingShell(shell, t, b, heightAt);
+    smokeSink = smoke;
+    try {
+      drawBuildingShell(shell, t, b, heightAt);
+    } finally {
+      smokeSink = null;
+    }
     maxY = Math.max(maxY, b.floorY + b.floors * b.storey + b.roofH + 1.5);
     const ctx: PropCtx = { wt: wallThickness(b.style), openFront: (b.flags & BUILDING_FLAG.openFront) !== 0, heightAt, light };
     for (let pi = b.propFirst; pi < b.propFirst + b.propCount; pi++) {
@@ -642,5 +654,5 @@ export function buildSettlementMesh(t: Towns, si: number, heightAt: (x: number, 
     if (p.building >= 0 || p.structure >= 0) continue;
     drawProp(shell, p, propDims(t, p, boxByPos), tctx);
   }
-  return { shell: shell.data(), interior: interior.data(), lights: new Float32Array(lights), bounds: [s.x, (s.y + maxY) / 2, s.z, Math.hypot(s.radius + 4, (maxY - s.y) / 2 + 10)] };
+  return { shell: shell.data(), interior: interior.data(), lights: new Float32Array(lights), smoke: new Float32Array(smoke), bounds: [s.x, (s.y + maxY) / 2, s.z, Math.hypot(s.radius + 4, (maxY - s.y) / 2 + 10)] };
 }

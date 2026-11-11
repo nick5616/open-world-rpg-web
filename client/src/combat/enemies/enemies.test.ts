@@ -33,7 +33,7 @@ describe('family -> model spec', () => {
       const s = modelSpec(info(e));
       expect(ALL_STYLES, e.key).toContain(s.style);
       // no enemy falls back to a generic look: a style named after it (or an explicit alias)
-      expect(s.style === e.key || ['sovereign', 'behemoth'].includes(s.style) || (e.key === 'the_hush' && s.style === 'archon') || (e.key === 'hollow_bell' && s.style === 'shade'), e.key).toBe(true); // CR 035: the Hush and its bells borrow looks
+      expect(s.style === e.key || ['sovereign', 'behemoth'].includes(s.style), e.key).toBe(true);
       expect(famRig[e.family], `${e.key} (${e.family})`).toContain(s.rig);
       if (e.behavior === 'flyer') expect(['floater', 'winged'], e.key).toContain(s.rig);
     }
@@ -242,6 +242,35 @@ describe('poses', () => {
     let diff = 0;
     for (let i = 0; i < idle.length; i++) diff += Math.abs(idle[i] - wind[i]);
     expect(diff).toBeGreaterThan(1.5);
+  });
+
+  it('the Hush and its Hollow Bells have their own models and poses (playtest 2 immersion pass)', () => {
+    const hush = modelSpec(info(contractEnemies().find((e) => e.key === 'the_hush')!, 7));
+    const bell = modelSpec(info(contractEnemies().find((e) => e.key === 'hollow_bell')!));
+    expect([hush.style, hush.rig, hush.boss]).toEqual(['the_hush', 'floater', true]);
+    expect([bell.style, bell.rig, bell.deathFx]).toEqual(['hollow_bell', 'floater', 'shatter']);
+    expect(modelFor(hush).variant).not.toBe(modelFor(modelSpec(info(contractEnemies().find((e) => e.key === 'archon')!, 7))).variant);
+    // the bell swings back through its wind-up and spreads its rings on the toll; the Hush draws its hands up before its toll
+    for (const [spec, key] of [
+      [bell, 'bell_toll'],
+      [hush, 'hush_toll'],
+      [hush, 'hush_rend'],
+    ] as const) {
+      const idle = new Float32Array(MAX_JOINTS * POSE_STRIDE);
+      const wind = new Float32Array(MAX_JOINTS * POSE_STRIDE);
+      const a = new EnemyAnimator(opts());
+      a.update(input(), 0.016);
+      writePose('floater', { a, spec, look: 0, lookPitch: 0, phase: 0, side: 1, drop: 0.8 }, idle);
+      a.telegraph(attackAnimByKey(key));
+      for (let i = 0; i < 8; i++) a.update(input({ winding: true }), 0.05);
+      writePose('floater', { a, spec, look: 0, lookPitch: 0, phase: 0, side: 1, drop: 0.8 }, wind);
+      let diff = 0;
+      for (let i = 0; i < idle.length; i++) {
+        expect(Number.isFinite(wind[i]), key).toBe(true);
+        diff += Math.abs(idle[i] - wind[i]);
+      }
+      expect(diff, key).toBeGreaterThan(0.4);
+    }
   });
 });
 

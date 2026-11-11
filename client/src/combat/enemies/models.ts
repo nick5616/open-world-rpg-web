@@ -943,6 +943,169 @@ function buildFloater(k: Kit, p: Pal): Joint[] {
     }
     return floaterJoints(d);
   }
+  if (st === 'the_hush') {
+    // CR 035's final boss, its own figure: a towering mourning veil with no
+    // body under it, a featureless porcelain mask split by one glowing crack,
+    // a crown of broken tuning-fork tines, a ribcage opening in the veil over
+    // the stolen songs (a dim violet heart), long sleeves and long pale
+    // fingers, a broken halo of silence and ribbons that trail into nothing.
+    const d = { coreY: 1.25, handX: 0.62, handY: 0.42, headY: 0.82 };
+    const veil = p.body;
+    const lining = mixHex(p.body, '#5a3a7a', 0.45);
+    const bone = '#e6e1ee';
+    const silver = '#b9b3cc';
+    const glow = '#c9a8ff';
+    const core = k.at(F.core);
+    // the veil: a tall narrow column that flares into a long hem
+    core.lathe(
+      [
+        [0.06, 0.78],
+        [0.2, 0.7],
+        [0.3, 0.6],
+        [0.26, 0.35],
+        [0.24, 0.1],
+        [0.3, -0.2],
+        [0.4, -0.5],
+        [0.5, -0.78],
+        [0.01, -0.8],
+      ],
+      9,
+      veil,
+      { jitter: 0.08, shade: 0.35 },
+    );
+    // high draped shoulders
+    core.pair((b, o) => b.cone(0.16, 0.42, 5, shadeHex(veil, 0.04), { ...o, jitter: 0.08 }), { pos: [0.26, 0.6, 0.02], rot: [0, 0, -1.1] });
+    // the opening in the veil: a lining, ribs of bone and the stolen songs
+    core.sphere(0.17, 7, 5, lining, { pos: [0, 0.38, -0.17], scale: [1, 1.25, 0.45] });
+    core.ball(0.085, glow, { pos: [0, 0.38, -0.2], glow: 1, detail: 1 });
+    core.ball(0.05, '#ffffff', { pos: [0, 0.38, -0.25], glow: 1, detail: 0 });
+    for (let i = 0; i < 3; i++) {
+      const y = 0.29 + i * 0.08;
+      core.pair((b, o) => b.box(0.12 - Math.abs(i - 1) * 0.02, 0.016, 0.022, shadeHex(bone, -0.18), { ...o, rot: [0, 0.5, 0.3] }), { pos: [0.07, y, -0.235] });
+    }
+    // a hem of faint motes where the veil stops being cloth
+    for (let i = 0; i < 9; i++) {
+      const a = (i / 9) * PI * 2;
+      core.ball(0.03, glow, { pos: [Math.cos(a) * 0.46, -0.74, Math.sin(a) * 0.46], glow: 0.8, detail: 0 });
+    }
+    // ribbons that trail into nothing (the tail joint sways them)
+    const tl = k.at(F.tail);
+    for (let i = 0; i < 9; i++) {
+      const a = (i / 9) * PI * 2 + 0.2;
+      const len = 0.3 + (i % 3) * 0.08;
+      tl.cone(0.07, len, 3, i % 2 ? veil : shadeHex(veil, -0.05), { pos: [Math.cos(a) * 0.4, -0.74 - len * 0.5, Math.sin(a) * 0.4], rot: [PI + Math.sin(a) * 0.25, 0, Math.cos(a) * 0.25], scale: [1, 1, 0.35] });
+    }
+    // the head: a hood around a featureless mask with one glowing crack
+    const h = k.at(F.head);
+    // the hood, open at the front (-Z) so the mask shows
+    h.add(new THREE.SphereGeometry(0.21, 9, 6, PI * 1.5 + 0.85, PI * 2 - 1.7, 0, PI * 0.78), veil, { pos: [0, 0.02, 0.03] });
+    h.sphere(0.2, 8, 5, '#07050c', { pos: [0, 0.0, 0.06], scale: [0.95, 1, 0.8] }); // the dark inside of the hood
+    h.cone(0.2, 0.34, 8, veil, { pos: [0, 0.2, 0.08], rot: [0.28, 0, 0] });
+    h.sphere(0.13, 8, 6, bone, { pos: [0, 0, -0.07], scale: [0.85, 1.15, 0.75], jitter: 0.03, shade: 0.12 });
+    h.box(0.012, 0.2, 0.012, glow, { pos: [0.02, 0.0, -0.165], rot: [0, 0, 0.12], glow: 1 });
+    h.box(0.01, 0.07, 0.01, glow, { pos: [0.045, -0.07, -0.16], rot: [0, 0, -0.5], glow: 1 });
+    // the crown of broken tines (a tuning fork's two prongs, snapped at different heights)
+    for (let i = 0; i < 7; i++) {
+      const a = (i - 3) * 0.32;
+      const len = 0.26 + (i % 2 ? 0.12 : 0.24) * (1 - Math.abs(i - 3) / 4);
+      h.box(0.022, len, 0.022, i % 3 === 0 ? silver : bone, { pos: [Math.sin(a) * 0.17, 0.2 + len / 2, 0.04 + Math.cos(a) * 0.06 - 0.04], rot: [0.1, 0, -a * 0.55], jitter: 0.03 });
+      if (i % 2 === 0) h.box(0.03, 0.03, 0.03, glow, { pos: [Math.sin(a) * 0.17 - Math.sin(a * 0.55) * len, 0.2 + len, 0.0], glow: 0.9 });
+    }
+    // the broken halo of silence and the songs it keeps (ring joint: turns slowly)
+    const ring = k.at(F.ring);
+    for (let i = 0; i < 5; i++) {
+      const a0 = (i / 5) * PI * 2;
+      ring.add(new THREE.TorusGeometry(0.62, 0.02, 3, 6, PI * 0.28), silver, { pos: [0, 1.08, 0.24], rot: [HALF - 0.2, 0, a0], glow: 0.25 });
+    }
+    for (let i = 0; i < 4; i++) {
+      const a = (i / 4) * PI * 2 + 0.4;
+      ring.add(new THREE.OctahedronGeometry(0.06, 0), glow, { pos: [Math.cos(a) * 0.9, -0.1 + (i % 2) * 0.18, Math.sin(a) * 0.9], scale: [0.6, 1.4, 0.6], glow: 1 });
+    }
+    // long sleeves and long pale fingers
+    for (const hand of [F.handL, F.handR]) {
+      const b = k.at(hand);
+      const side = hand === F.handL ? -1 : 1;
+      // a long sleeve: narrow at the wrist, draping down into a ragged open end
+      b.cone(0.14, 0.62, 6, veil, { pos: [0, -0.2, 0.09], rot: [0.25, 0, 0], jitter: 0.08, shade: 0.3 });
+      b.cone(0.05, 0.26, 3, shadeHex(veil, -0.05), { pos: [side * 0.06, -0.58, 0.16], rot: [PI + 0.2, 0, side * 0.2], scale: [1, 1, 0.4] });
+      b.ball(0.06, bone, { detail: 0, scale: [1, 1.3, 0.7] });
+      for (let i = 0; i < 4; i++) horn(b, [(i - 1.5) * 0.028, -0.05, -0.02], [(i - 1.5) * 0.18, -1, -0.35], 0.34, 0.014, bone, 0.22, [1, 0, 0], 3);
+      horn(b, [0.05, -0.02, -0.03], [0.6, -0.6, -0.4], 0.16, 0.012, bone, 0.25, [1, 0, 0], 2);
+    }
+    return floaterJoints(d);
+  }
+  if (st === 'hollow_bell') {
+    // "A bell with no clapper that tolls anyway": an old bronze bell gone
+    // dark, hung from nothing by a broken chain, cracks of violet light, a
+    // hollow mouth that glows where the clapper should be, and rings of
+    // sound around its lip (ring joint: they spread when it tolls).
+    const d = { coreY: 0.95, handX: 0, handY: 0, headY: 0.42 };
+    const bronze = mixHex(p.body, '#8a6a3e', 0.62);
+    const verd = mixHex(bronze, '#4f7a6a', 0.35);
+    const glow = '#b98cff';
+    const core = k.at(F.core);
+    // outer wall: crown, shoulder, waist, the flared lip (top to bottom: faces out)
+    const outer: [number, number][] = [
+      [0.02, 0.42],
+      [0.17, 0.4],
+      [0.22, 0.34],
+      [0.23, 0.18],
+      [0.25, 0.0],
+      [0.3, -0.18],
+      [0.4, -0.32],
+      [0.42, -0.38],
+    ];
+    core.lathe(outer, 12, bronze, { jitter: 0.06, shade: 0.3 });
+    // inner wall, bottom to top (faces in): the hollow you see under the lip
+    core.lathe(
+      [
+        [0.385, -0.37],
+        [0.34, -0.28],
+        [0.25, -0.12],
+        [0.2, 0.08],
+        [0.17, 0.3],
+        [0.02, 0.33],
+      ],
+      12,
+      '#120c18',
+      { jitter: 0.02, shade: 0 },
+    );
+    // the lip's bead and a band of verdigris at the shoulder
+    core.add(new THREE.TorusGeometry(0.405, 0.025, 4, 16), verd, { pos: [0, -0.37, 0], rot: [HALF, 0, 0] });
+    core.add(new THREE.TorusGeometry(0.225, 0.018, 4, 14), verd, { pos: [0, 0.3, 0], rot: [HALF, 0, 0] });
+    core.add(new THREE.TorusGeometry(0.255, 0.014, 4, 14), verd, { pos: [0, 0.02, 0], rot: [HALF, 0, 0] });
+    // the glow where the clapper should be, and inside the lip
+    core.ball(0.09, glow, { pos: [0, -0.12, 0], glow: 1, detail: 1 });
+    core.add(new THREE.TorusGeometry(0.37, 0.012, 3, 16), glow, { pos: [0, -0.355, 0], rot: [HALF, 0, 0], glow: 1 });
+    // cracks of light (a jagged line of short glowing slivers down the side)
+    const crack = (a: number, y0: number, n: number) => {
+      let y = y0;
+      let aa = a;
+      for (let i = 0; i < n; i++) {
+        const r = 0.235 + Math.max(0, -y) * 0.38 + 0.008;
+        core.box(0.016, 0.085, 0.012, glow, { pos: [Math.sin(aa) * r, y - 0.04, -Math.cos(aa) * r], rot: [0, -aa, (i % 2 ? 0.45 : -0.45)], glow: 1 });
+        y -= 0.075;
+        aa += i % 2 ? 0.05 : -0.04;
+      }
+    };
+    crack(0.2, 0.26, 7);
+    crack(2.4, 0.12, 5);
+    crack(4.3, 0.2, 6);
+    // the crown loop and a broken chain up into nothing (head joint)
+    const h = k.at(F.head);
+    h.add(new THREE.TorusGeometry(0.075, 0.025, 4, 10), bronze, { pos: [0, 0.06, 0] });
+    for (let i = 0; i < 3; i++) h.add(new THREE.TorusGeometry(0.05, 0.016, 4, 8), '#2a2430', { pos: [0, 0.2 + i * 0.085, 0], rot: [0, (i % 2) * HALF, 0], jitter: 0.03 });
+    h.box(0.02, 0.05, 0.02, glow, { pos: [0, 0.45, 0], rot: [0.3, 0, 0.4], glow: 0.9 });
+    // rings of sound (they spread on the toll)
+    const ring = k.at(F.ring);
+    ring.add(new THREE.TorusGeometry(0.55, 0.012, 3, 20), glow, { pos: [0, -0.3, 0], rot: [HALF, 0, 0], glow: 0.9 });
+    ring.add(new THREE.TorusGeometry(0.7, 0.008, 3, 22), glow, { pos: [0, -0.24, 0], rot: [HALF, 0, 0], glow: 0.6 });
+    for (let i = 0; i < 3; i++) {
+      const a = (i / 3) * PI * 2;
+      ring.add(new THREE.OctahedronGeometry(0.035, 0), bronze, { pos: [Math.cos(a) * 0.62, 0.05, Math.sin(a) * 0.62], scale: [0.7, 1.6, 0.7] });
+    }
+    return floaterJoints(d);
+  }
   if (st === 'sunlit_sentinel') {
     // the light summon's turret: a faceted crystal over a turning ring
     const d = { coreY: 1.2, handX: 0, handY: 0, headY: 0 };

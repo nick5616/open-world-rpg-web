@@ -140,6 +140,9 @@ describe('the avatar wearing it', () => {
     a.update(view(0), cam, 0.016);
     expect(a.lodLevel).toBe(0);
     const bare = drawCalls(a.root);
+    // playtest 2 immersion pass: a bare head shows its hair and face
+    expect(a.root.getObjectByName('avatar-hair')!.visible).toBe(true);
+    expect(a.root.getObjectByName('avatar-face')!.visible).toBe(true);
 
     const built = armorBuilds.count;
     a.update(view(full), cam, 0.016);
@@ -148,6 +151,7 @@ describe('the avatar wearing it', () => {
     expect(armorBuilds.count).toBe(built + 1); // nothing rebuilt while it stays the same
     const dressed = drawCalls(a.root);
     expect(dressed).toBeLessThan(bare); // one outfit mesh replaces head, visor, chest, arms and legs
+    expect(a.root.getObjectByName('avatar-hair')!.visible).toBe(false); // no hair through the helm
 
     const rig = a.root.getObjectByName('avatar-armor') as THREE.SkinnedMesh;
     expect(rig.isSkinnedMesh).toBe(true);
@@ -181,6 +185,7 @@ describe('the avatar wearing it', () => {
     a.update(view(0), cam, 0.016);
     expect(drawCalls(a.root)).toBe(bare);
     expect(a.root.getObjectByName('avatar-chest')!.visible).toBe(true);
+    expect(a.root.getObjectByName('avatar-hair')!.visible).toBe(true);
     expect(cachedArmor()).toContain(full);
     b.dispose();
     expect(cachedArmor()).not.toContain(full);

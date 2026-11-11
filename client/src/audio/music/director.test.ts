@@ -99,3 +99,16 @@ describe('music director', () => {
     expect(d.update(at({ timed: { key: 'w3', secondsLeft: null, urgent: false, intro: true } }), 2 + 28.8).timedPhase).toBe('loop');
   });
 });
+
+describe('the Heartfall (playtest 2 immersion pass)', () => {
+  it('the Hush silences the music for its entrance, the fight plays the void, the dawn brings the day at once', () => {
+    const d = new MusicDirector();
+    d.update(at({ hour: 22 }), 0);
+    expect(d.update(at({ hour: 22, combat: true, finale: 'intro' }), 1).state).toBe('silence');
+    expect(d.update(at({ hour: 22, combat: true, finale: 'fight' }), 2).state).toBe('void');
+    // the endless night's countdown outranks it
+    expect(d.update(at({ hour: 22, finale: 'fight', timed: { key: 'n', secondsLeft: 20, urgent: false, intro: false } }), 3).state).toBe('timed');
+    // won: day at once, not after the dwell (and not night, though it is 22:00)
+    expect(d.update(at({ hour: 22, finale: 'won' }), 4).state).toBe('day');
+  });
+});

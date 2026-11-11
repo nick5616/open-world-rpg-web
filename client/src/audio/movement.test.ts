@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { LAND_MIN_SPEED, MovementSounds, STEP_SPRINT_M, STEP_WALK_M, type MoveSnapshot } from './movement';
+import { HOOF_M, LAND_MIN_SPEED, MovementSounds, STEP_SPRINT_M, STEP_WALK_M, type MoveSnapshot } from './movement';
 
 const snap = (p: Partial<MoveSnapshot> = {}): MoveSnapshot => ({ mode: 'idle', grounded: true, pos: { x: 0, y: 0, z: 0 }, vel: { x: 0, y: 0, z: 0 }, airJumps: 0, underground: 0, inTown: false, ...p });
 
@@ -23,6 +23,16 @@ describe('movement sounds', () => {
     expect(w.length).toBe(Math.floor(17 / STEP_WALK_M));
     expect(s.length).toBe(Math.floor(17 / STEP_SPRINT_M));
     expect(w.every((x) => x === 'step:soft')).toBe(true);
+  });
+
+  it('in the saddle: hoofbeats by gait instead of footsteps (playtest 2 immersion pass)', () => {
+    const gallop = walk(new MovementSounds(), 'sprint', 34, { mounted: true, gait: 2 });
+    expect(gallop.length).toBe(Math.floor(34 / HOOF_M[2]));
+    expect(gallop.every((x) => x === 'hoof:soft')).toBe(true);
+    const trot = walk(new MovementSounds(), 'walk', 19, { mounted: true, gait: 0, inTown: true });
+    expect(trot.length).toBe(Math.floor(19 / HOOF_M[0]));
+    expect(trot[0]).toBe('hoof:hard');
+    expect(walk(new MovementSounds(), 'walk', 10, { mounted: true, gait: 1 }).every((x) => x.startsWith('hoof'))).toBe(true);
   });
 
   it('stone underfoot in towns and caves', () => {
