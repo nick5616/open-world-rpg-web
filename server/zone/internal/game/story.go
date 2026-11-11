@@ -22,6 +22,7 @@ import (
 	"math"
 	"sort"
 	"strconv"
+	"strings"
 
 	"lodestone/server/pkg/combatdefs"
 	"lodestone/server/pkg/contentdefs"
@@ -533,13 +534,25 @@ func (s *Server) storyAfter(sess *session, hs []quests.Happening) {
 	if s.storyPlaces() == nil || len(hs) == 0 {
 		return
 	}
-	var main []quests.Happening
+	var main, prologue []quests.Happening
 	for _, h := range hs {
 		if story.ActOf(h.Quest.Key) > 0 {
 			main = append(main, h)
-		} else if h.Finished && h.Quest.Key == quests.WardKey {
-			s.storyMaybeStart(sess)
+		} else {
+			if prologueShared(h) {
+				prologue = append(prologue, h)
+			}
+			if h.Finished && h.Quest.Key == quests.WardKey {
+				s.storyMaybeStart(sess)
+			}
 		}
+	}
+	if len(prologue) > 0 && !s.sty.sharing {
+		s.sty.sharing = true
+		for _, h := range prologue {
+			s.storyShare(sess, h)
+		}
+		s.sty.sharing = false
 	}
 	if len(main) == 0 {
 		return
@@ -584,6 +597,15 @@ func (s *Server) storyActDone(sess *session, n int) {
 	s.sendStorySync(sess)
 }
 
+// prologueShared: the prologue's talk steps ("Slimes in the meadows" and
+// "Ward against the night": the farmer, the blacksmith) are shared like the
+// acts' (playtest 2 co-op: two friends stood in a queue to hear the same
+// lines). Their item steps stay personal: each mines, buys and forges.
+func prologueShared(h quests.Happening) bool {
+	k := h.Quest.Key
+	return (k == quests.MeadowsKey || k == quests.WardKey) && h.Step < len(h.Quest.Steps) && h.Quest.Steps[h.Step].Obj.Kind == quests.ObjTalk
+}
+
 // storyShare completes the same step for every party member beside the
 // one who did it (same zone, within storyShareM, at the same act and step).
 func (s *Server) storyShare(sess *session, h quests.Happening) {
@@ -607,7 +629,14 @@ func (s *Server) storyShare(sess *session, h quests.Happening) {
 		for _, oh := range hs {
 			s.questHappened(os, oh)
 			if st := &oh.Quest.Steps[oh.Step]; st.Say != "" && (st.Obj.Kind == quests.ObjTalk || st.Obj.Kind == quests.ObjGive) {
-				s.storySay(os, s.storyNPCName(st.Obj.NPC), st.Say) // what the NPC said to your friend, you heard too
+				who := s.storyNPCName(st.Obj.NPC)
+				if who == "" { // the prologue's talks name a role, not a townsperson: the giver
+					who, _, _ = strings.Cut(oh.Quest.Giver, ",")
+				}
+				s.storySay(os, who, st.Say) // what the NPC said to your friend, you heard too
+			}
+			if oh.Finished && oh.Quest.Key == quests.MeadowsKey {
+				s.questsWardHandoff(os) // the farmer sends you both to the blacksmith
 			}
 		}
 		os.quests.recheck = true
