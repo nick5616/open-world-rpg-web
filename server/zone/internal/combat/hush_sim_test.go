@@ -441,6 +441,7 @@ func (m botMode) apply(b *combatbot.Brain, seed int64) {
 
 // duoStats runs n fights and summarises them.
 func duoStats(t *testing.T, name string, n int, run func(seed int64) duoResult) (wins int, meanWin, reach float64) {
+	clear(simMech)
 	var secs, hp float64
 	downs, revives, respawns, in, up := 0, 0, 0, 0, 0
 	for i := 0; i < n; i++ {
