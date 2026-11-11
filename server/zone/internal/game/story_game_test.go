@@ -336,6 +336,28 @@ func TestMainStoryTwoPlayersEndToEnd(t *testing.T) {
 	talk(p.Smith)
 	waitStory(t, h, B, 5, 2, both...)
 	near(p.Sanctum.X+6, p.Sanctum.Z+6)
+	if !p.SanctumBoss {
+		t.Fatal("the official world's sanctum should have a guardian")
+	}
+	// Playtest 2 co-op: the packs around it falling is not the guardian.
+	deadline = time.Now().Add(6 * time.Second)
+	for adds := false; !adds && time.Now().Before(deadline); {
+		h.do(func() {
+			for _, g := range h.srv.cbt.w.Groups {
+				if g.Kind != combat.GroupBoss && g.Spawned && math.Hypot(g.Anchor.X-p.Sanctum.X, g.Anchor.Z-p.Sanctum.Z) < 60 {
+					for _, m := range g.Members {
+						h.srv.cbt.w.Slay(m, ea.ID)
+						adds = true
+					}
+				}
+			}
+		})
+		a.pump(100 * time.Millisecond)
+	}
+	a.pump(500 * time.Millisecond)
+	if _, st := h.storyAt(A); st != 2 {
+		t.Fatalf("the lens step finished without its guardian (step %d)", st)
+	}
 	deadline = time.Now().Add(6 * time.Second)
 	for slain := false; !slain; {
 		h.do(func() {

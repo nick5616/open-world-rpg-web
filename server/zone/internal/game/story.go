@@ -406,6 +406,8 @@ func (s *Server) resolveStory() *story.Places {
 		}
 	}
 
+	p.SanctumBoss = s.sanctumHasGuardian(p)
+
 	// Act VI: the Heartfall.
 	p.Heartfall = s.heartfallSpot(lastRegion, p.LastFork)
 	s.log.Info("main story places", "home", p.Home, "keeper", p.Keeper.Name, "tablet", p.Tablet.Name, "fork1", p.Forks[0].Name,
@@ -1170,7 +1172,51 @@ func (s *Server) storyOnKill(k combat.KillInfo) {
 		s.log.Info("story vigil: the Sovereign fell", "players", len(ids))
 		return
 	}
+	s.sanctumOnKill(k)
 	s.finaleOnKill(k)
+}
+
+// sanctumOnKill: the sanctum's guardian (its boss) fell: the lens step for
+// everyone who fought it and their party beside them. Playtest 2 co-op:
+// the step was "the place falls quiet", and a pack of adds dying (or the
+// boss resetting after a wipe) handed over the lens with the Archon at
+// 99 %.
+func (s *Server) sanctumOnKill(k combat.KillInfo) {
+	en, p := k.Enemy, s.storyPlaces()
+	if en == nil || p == nil || !p.Sanctum.OK || en.Group == nil || en.Group.Kind != combat.GroupBoss {
+		return
+	}
+	if en.Group.Site != p.Sanctum.Site && math.Hypot(en.Group.Anchor.X-p.Sanctum.X, en.Group.Anchor.Z-p.Sanctum.Z) > math.Max(p.Sanctum.R, 30) {
+		return
+	}
+	for _, m := range en.Group.Members {
+		if m.Alive() {
+			return
+		}
+	}
+	ids := map[uint32]bool{}
+	for _, id := range k.Eligible {
+		ids[id] = true
+	}
+	for _, e := range s.playersNear(en.Pos.X, en.Pos.Z, 120) {
+		ids[e.ID] = true
+	}
+	s.storySignal(ids, story.TagSanctum)
+	s.log.Info("story sanctum: the guardian fell", "players", len(ids))
+}
+
+// sanctumHasGuardian: the sanctum site has a boss to fall (else the act
+// keeps the old "place falls quiet" step).
+func (s *Server) sanctumHasGuardian(p *story.Places) bool {
+	if s.cbt.w == nil || !p.Sanctum.OK {
+		return false
+	}
+	for _, g := range s.cbt.w.Groups {
+		if g.Kind == combat.GroupBoss && (g.Site == p.Sanctum.Site || math.Hypot(g.Anchor.X-p.Sanctum.X, g.Anchor.Z-p.Sanctum.Z) <= math.Max(p.Sanctum.R, 30)) {
+			return true
+		}
+	}
+	return false
 }
 
 // storyHunters scales a player's night hunters by their story: a beaten

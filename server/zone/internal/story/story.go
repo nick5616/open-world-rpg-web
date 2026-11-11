@@ -47,6 +47,7 @@ const (
 	TagVigil     = "vigil"     // the vigil's waves broken (Act IV)
 	TagSovereign = "sovereign" // the Starless Sovereign fell (Act IV)
 	TagHush      = "hush"      // the Hush fell (Act VI: the ending)
+	TagSanctum   = "sanctum"   // the sanctum's guardian fell (Act V)
 )
 
 // ActInfo is an act's fixed data.
@@ -123,6 +124,7 @@ type Places struct {
 	Vigil        Place // the vigil town (Site: settlement index)
 	Smith        NPC   // Act V: the master smith of the far town
 	Sanctum      Place // Act V: a guarded boss site near the smith
+	SanctumBoss  bool  // the sanctum has a boss: its fall hands over the lens (else the place falling quiet)
 	LastFork     Place // Act VI: the tower of the last region
 	Heartfall    Place // Act VI: the arena
 }
@@ -299,7 +301,7 @@ func Act(n int, p *Places, nowMs int64) *quests.Quest {
 			quests.Step{
 				Text:    "Take the lens from " + p.Sanctum.Name,
 				Note:    fmt.Sprintf("%s, %s. Defeat its guardian; the lens is yours when the place falls quiet.", p.Sanctum.Name, p.where(p.Sanctum.X, p.Sanctum.Z)),
-				Obj:     quests.Objective{Kind: quests.ObjClear, Site: p.Sanctum.Site, X: p.Sanctum.X, Z: p.Sanctum.Z, R: math.Max(p.Sanctum.R, 30), Settlement: -1},
+				Obj:     sanctumObj(p),
 				Markers: siteMarker(Place{X: p.Sanctum.X, Z: p.Sanctum.Z, R: math.Max(p.Sanctum.R, 30)}, p.Sanctum.Name),
 				Grant:   []quests.ItemQty{{Item: ItemLens, Qty: 1}},
 			},
@@ -333,6 +335,16 @@ func Act(n int, p *Places, nowMs int64) *quests.Quest {
 	}
 	q.Steps = steps
 	return q
+}
+
+// sanctumObj: the guardian's fall (playtest 2 co-op: "the place falls
+// quiet" was met by a pack of adds dying, or by the boss resetting after a
+// wipe, with the Archon at 99 %); a sanctum with no boss keeps the clear.
+func sanctumObj(p *Places) quests.Objective {
+	if p.SanctumBoss {
+		return quests.Objective{Kind: quests.ObjStory, Family: TagSanctum, Settlement: -1, Site: -1}
+	}
+	return quests.Objective{Kind: quests.ObjClear, Site: p.Sanctum.Site, X: p.Sanctum.X, Z: p.Sanctum.Z, R: math.Max(p.Sanctum.R, 30), Settlement: -1}
 }
 
 // Roman numerals for act numbers.
