@@ -314,6 +314,16 @@ func TestMainStoryTwoPlayersEndToEnd(t *testing.T) {
 	if sov.Demon == nil || sov.Def.Key != "starless_sovereign" || sov.Name != "The Starless Sovereign" {
 		t.Fatalf("sovereign %+v", sov.Def.Key)
 	}
+	// Playtest 2 co-op: it comes out within its aggro of the defenders.
+	var nearest float64 = math.Inf(1)
+	h.do(func() {
+		for _, e := range []*Entity{ea, eb} {
+			nearest = math.Min(nearest, math.Hypot(e.Move.Pos.X-sov.Pos.X, e.Move.Pos.Z-sov.Pos.Z))
+		}
+	})
+	if nearest > sov.Def.Aggro {
+		t.Fatalf("the Sovereign walked out %.0f m from the nearest defender (aggro %.0f)", nearest, sov.Def.Aggro)
+	}
 	h.do(func() { h.srv.cbt.w.Slay(sov, ea.ID) })
 	waitStory(t, h, B, 4, 5, both...)
 	talk(p.Captain)

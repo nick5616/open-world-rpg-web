@@ -76,6 +76,7 @@ const (
 	storyShareM     = 200 // party members this close share a step
 	storyEveryTicks = 30  // party progress and vigil checks at 1 Hz
 	vigilLeaveS     = 60  // nobody near the vigil town this long: it fails
+	vigilSovereignM = 28  // the Sovereign walks out of the dark this far from a defender
 )
 
 type storyGlue struct {
@@ -1063,6 +1064,7 @@ func (s *Server) vigilSovereign(v *vigilRun) {
 	}
 	level := 10
 	dx, dz := 1.0, 0.0
+	var near *Entity // the participant it comes for
 	for id := range v.part {
 		if pe := s.entityByID(id); pe != nil && pe.Kind == proto.EntityKindPlayer {
 			if sess := s.byChar[pe.CharacterID]; sess != nil {
@@ -1071,9 +1073,17 @@ func (s *Server) vigilSovereign(v *vigilRun) {
 			if d := math.Hypot(pe.Move.Pos.X-p.Vigil.X, pe.Move.Pos.Z-p.Vigil.Z); d > 1 {
 				dx, dz = (pe.Move.Pos.X-p.Vigil.X)/d, (pe.Move.Pos.Z-p.Vigil.Z)/d
 			}
+			near = pe
 		}
 	}
 	x, z := p.Vigil.X+dx*(p.Vigil.R+30), p.Vigil.Z+dz*(p.Vigil.R+30)
+	// Playtest 2 co-op: it walks out of the dark within its aggro (50 m) of
+	// the defenders. Spawned at the town's edge it stood 80 m from the pair
+	// at the ward garden, outside its aggro and the marker, and they looked
+	// for it for eight minutes.
+	if near != nil {
+		x, z = near.Move.Pos.X+dx*vigilSovereignM, near.Move.Pos.Z+dz*vigilSovereignM
+	}
 	x, z = s.cbt.w.WalkableNear(x, z, 40, 4)
 	g := s.cbt.w.SpawnDemons(movement.Vec3{X: x, Z: z}, []string{combatdefs.D.Demons.Lord}, level)
 	for _, e := range g.Members {
