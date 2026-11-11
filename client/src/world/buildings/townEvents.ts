@@ -136,4 +136,17 @@ export function itemName(id: string): string {
   return (i >= 0 ? id.slice(i + 1) : id).replace(/_/g, ' ');
 }
 
+/**
+ * The small grey note under a shop ware. Playtest 2 (co-op): the shop said
+ * "1 in stock" for the only Sunsteel blueprint, which read as if the friend
+ * would miss out, but the zone does not track stock per buyer: every
+ * traveller buys their own. So no count; "Sold out" only when the merchant
+ * truly has none (the Buy button is disabled then).
+ */
+export function shopNote(it: Pick<ShopItem, 'item' | 'stock'>): string {
+  if (it.stock === 0) return 'Sold out';
+  if (it.item.startsWith('blueprint:')) return 'Teaches you the forge recipe · each traveller buys their own';
+  return '';
+}
+
 export const utf8 = (b: Uint8Array) => dec.decode(b);

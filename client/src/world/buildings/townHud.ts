@@ -25,7 +25,7 @@ import { useMapWorld } from '../../ui/map/world';
 import { setMapOpen } from '../../ui/map/store';
 import { setQuestPreview } from '../../ui/quests/store';
 import { whereText, type QuestMarker } from '../../ui/quests/events';
-import { ACT, BOUNTY_KIND_LABEL, decodeBounties, decodeShop, EV, INTERACT, itemName, MERCHANT_LABEL, NPC_ROLE_LABEL, REFUSAL, utf8, type Bounty, type ShopItem } from './townEvents';
+import { ACT, BOUNTY_KIND_LABEL, decodeBounties, decodeShop, EV, INTERACT, itemName, MERCHANT_LABEL, NPC_ROLE_LABEL, REFUSAL, shopNote, utf8, type Bounty, type ShopItem } from './townEvents';
 
 interface PanelState {
   title: string;
@@ -290,7 +290,7 @@ export class TownHud {
     if (p.shop) {
       h += `<div style="margin-top:8px;font-weight:600;color:#f3d48a">Wares</div>`;
       if (!p.shop.length) h += '<div style="opacity:.7">Nothing for sale today.</div>';
-      for (const it of p.shop) h += `<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid #ffffff14"><span>${escapeHtml(itemName(it.item))} <span style="opacity:.6">${it.stock} in stock</span>${it.item.startsWith('blueprint:') ? '<div style="opacity:.6;font-size:11px">Teaches the forge recipe; not the item itself</div>' : ''}</span><span>${it.price} g ${btn('buy', it.index, 'Buy', it.stock === 0)}</span></div>`;
+      for (const it of p.shop) h += `<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid #ffffff14"><span>${escapeHtml(itemName(it.item))}${shopNote(it) ? `<div style="opacity:.6;font-size:11px">${escapeHtml(shopNote(it))}</div>` : ''}</span><span>${it.price} g ${btn('buy', it.index, 'Buy', it.stock === 0)}</span></div>`;
     }
     if (p.bounties) {
       h += `<div style="margin-top:8px;font-weight:600;color:#f3d48a">Bounties</div>`;

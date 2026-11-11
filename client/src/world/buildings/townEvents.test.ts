@@ -2,7 +2,7 @@
 // station) decoded from hand-built little-endian byte vectors.
 
 import { describe, expect, it } from 'vitest';
-import { decodeBounties, decodeShop, decodeStation, itemName, REFUSAL } from './townEvents';
+import { decodeBounties, decodeShop, decodeStation, itemName, REFUSAL, shopNote } from './townEvents';
 
 class W {
   b: number[] = [];
@@ -77,5 +77,14 @@ describe('805 station and helpers', () => {
     expect(itemName('blueprint:iron_sword')).not.toBe(itemName('weapon:iron_sword'));
     expect(itemName('rope')).toBe('rope');
     for (let r = 1; r <= 8; r++) expect(REFUSAL[r]).toBeTruthy();
+  });
+  it('never shows a stock count that reads as exclusive (playtest 2 co-op)', () => {
+    const bp = shopNote({ item: 'blueprint:sunsteel_blade', stock: 1 });
+    expect(bp).toContain('each traveller buys their own');
+    expect(bp).toContain('forge recipe');
+    expect(bp).not.toMatch(/stock|\d/);
+    expect(shopNote({ item: 'food:smoked_fish', stock: 7 })).toBe('');
+    expect(shopNote({ item: 'blueprint:sunsteel_blade', stock: 0 })).toBe('Sold out');
+    expect(shopNote({ item: 'food:smoked_fish', stock: 0 })).toBe('Sold out');
   });
 });
