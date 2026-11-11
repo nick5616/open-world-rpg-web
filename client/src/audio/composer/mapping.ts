@@ -29,6 +29,8 @@ export interface MappingWhen {
   /** Intensity range 0..1, inclusive. */
   intensityMin?: number;
   intensityMax?: number;
+  /** CR 038: the vertical layer ('surface' | 'sky' | 'underground' | 'depths'). */
+  layer?: string;
 }
 
 export interface MusicMapping {
@@ -72,6 +74,7 @@ export function mappingMatches(m: MusicMapping, c: VibeContext): boolean {
   if (w.combat !== undefined && w.combat !== c.combat) return false;
   if (w.intensityMin !== undefined && c.intensity < w.intensityMin) return false;
   if (w.intensityMax !== undefined && c.intensity > w.intensityMax) return false;
+  if (w.layer !== undefined && w.layer !== c.layer) return false;
   return true;
 }
 
@@ -79,7 +82,7 @@ export function mappingMatches(m: MusicMapping, c: VibeContext): boolean {
 export function specificity(m: MusicMapping): number {
   const w = m.when;
   let n = 0;
-  for (const k of ['state', 'biome', 'time', 'weather', 'act', 'combat'] as const) if (w[k] !== undefined) n++;
+  for (const k of ['state', 'biome', 'time', 'weather', 'act', 'combat', 'layer'] as const) if (w[k] !== undefined) n++;
   if (w.tierMin !== undefined || w.tierMax !== undefined) n++;
   if (w.intensityMin !== undefined || w.intensityMax !== undefined) n++;
   return n;

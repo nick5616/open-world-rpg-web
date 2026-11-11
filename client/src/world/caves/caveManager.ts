@@ -133,6 +133,8 @@ export class CaveManager {
   private readonly fungi: THREE.InstancedMesh;
   private readonly lights: THREE.PointLight[] = [];
   private emitters: Emitter[] = [];
+  /** CR 038: light emitters of the vertical world near the camera (VerticalManager), sharing the pool. */
+  extraEmitters: readonly Emitter[] = [];
   private visualsDirty = true;
   private activeVeins: CaveVein[] = [];
   private target: CaveVein | null = null;
@@ -417,9 +419,9 @@ export class CaveManager {
     lantern.color.set(0xffd9a8);
     lantern.distance = 26;
     lantern.intensity = 18 * this.underground;
-    const near = this.emitters
+    const near = [...this.emitters, ...this.extraEmitters]
       .map((e) => ({ e, d: (e.x - cam.x) ** 2 + (e.y - cam.y) ** 2 + (e.z - cam.z) ** 2 }))
-      .filter((x) => x.d < 32 * 32)
+      .filter((x) => x.d < Math.max(32, x.e.distance) ** 2)
       .sort((a, b) => a.d - b.d);
     let used = 1;
     for (let i = 1; i < this.lights.length; i++) {
@@ -433,7 +435,8 @@ export class CaveManager {
       l.color.copy(n.e.color);
       l.distance = n.e.distance;
       // Fade lights in by distance so reassignments don't pop.
-      l.intensity = n.e.intensity * Math.min(1, (32 * 32 - n.d) / (12 * 12)) * Math.max(0.35, this.underground);
+      const reach = Math.max(32, n.e.distance);
+      l.intensity = n.e.intensity * Math.min(1, (reach * reach - n.d) / (12 * 12)) * Math.max(0.35, this.underground);
       used++;
     }
     this.stats.lights = used;

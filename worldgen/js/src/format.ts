@@ -88,8 +88,8 @@ export interface Site {
   yaw: number;
   /** Linked site index (a settlement's waypoint), or -1. */
   link: number;
-  /** genVersion 3 (byte 37): 0 surface, 1 sky, 2 Underground, 3 Depths. */
-  layer: number;
+  /** genVersion 3 (byte 37): 0 surface, 1 sky, 2 Underground, 3 Depths (absent = 0). */
+  layer?: number;
 }
 
 export interface AtlasData {

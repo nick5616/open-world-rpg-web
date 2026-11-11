@@ -44,6 +44,8 @@ export interface MusicInputs {
    * `timed` (its countdown).
    */
   finale?: 'intro' | 'fight' | 'won' | null;
+  /** CR 038: the vertical layer (0 surface, 1 sky, 2 the Underground, 3 the Depths); the Depths play the void realm. */
+  layer?: number;
 }
 
 export type TimedPhase = 'intro' | 'loop' | 'final';
@@ -89,7 +91,7 @@ export class MusicDirector {
     if (i.timed) return 'timed';
     if (i.finale === 'fight') return 'void';
     if (i.finale === 'won') return 'day';
-    if (i.voidMoment) return 'void';
+    if (i.voidMoment || i.layer === 3) return 'void';
     if (this.caveLatched ? i.underground > CAVE_EXIT : i.underground >= CAVE_ENTER) return 'cave';
     if (i.combat) return 'combat';
     // Night is night in town too (the town voicing is a daytime thing).

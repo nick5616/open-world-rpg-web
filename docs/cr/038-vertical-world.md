@@ -1,0 +1,28 @@
+# CR 038: The vertical world (playtest 2)
+
+Branch `pt2/vertical-world`. Nicole: "ok new pivot for the game: make it vertical. there are tunnels you can take to underground vast, lit-by-crystal cave networks that are huge and breathtaking with glowing blue waters like a cave in south america or something, and also hellish areas in the depths too, and also you can fly up and go to sky islands, and sky towns, and specifically put in the legend of zelda skyward sword bamboo island minigame in here. lots of stuff like that in the sky. sky palaces too, which rightfully are their own domain when youre inside. they are large and have elaborate twists and turns and ambience."
+
+This CR is the **foundation**: the three new layers, generated from the seed, walkable on both sides of the wire, drawn, heard and mapped. Sky palaces (instanced interiors) and sky activities (an original bamboo-slicing challenge and the like) are separate follow-ups that build on the hooks listed at the end.
+
+## Summary
+
+- **Sky** (layer 1): 3-5 archipelagos per world, islands at 330-800 m (each clear of the ground under it by 120 m+), lobed outlines, a rolling grassy top, an inverted-mountain underside (layered earth and stone, hanging rocks), waterfalls pouring off the rims into a bank of clouds under the archipelago. Anchor islands carry a **sky town** (2-3 per world: hamlet or village, inn, forge, stall, board, well, ward garden, townsfolk, a waypoint) or a **sky palace** site (1-2 per world, a huge white-and-gold palace visible from far below); smaller islands are groves, meadows, crags and **sky ruins**. **Wind**: a **sky lift** crystal at the edge of the surface town nearest an archipelago (an 18 m/s column up past the islands), wind columns and geysers rising from the ground under each archipelago, and currents beside every island carrying you to the next higher one. You ride them gliding (the movement step's updraft hook).
+- **The Underground** (layer 2): 4-8 **tunnel entrances** on hillsides (a portal of standing stones with glowing runes over a hole in the terrain, on the map), each a long tunnel (300-1100 m) winding down into a **vast cavern** (100-420 m across, domed roofs 70-150 m up) and coming out on a **balcony high on the wall**, then a ledge ramp down to the floor. Caverns: **crystal halls** (blue, teal and violet crystal clusters and spires that cast real light), **cenotes** (a glowing turquoise lake under daylight shafts from the surface: holes in the land you can jump into), **river halls** (underground rivers, waterfalls), **fungal halls** (giant glowing mushrooms, ferns). Stalactites, stalagmites, great columns, ore and gem veins, **safe camps** (a waypoint, a campfire, tents, lanterns) in every other cavern. Caverns are joined by passages and rivers.
+- **The Depths** (layer 3): under the deepest caverns a **gate** in the floor (a ring of black spikes and embers) opens on a steep descent to halls of basalt and ash around **lava lakes** joined by **lava rivers**, lava falls, sulphur vents, obsidian, drifting embers and a demon shrine in each hall.
+
+## Generator (genVersion 3)
+
+`worldgen/src/vertical/` (README "Vertical world"): every layer is a pair of heightfields over the terrain's 1 m lattice (sky: island top over island bottom; Underground/Depths: floor under ceiling) plus a water/lava lattice, so collision is the terrain's triangle rule on f32 lattice values (`ground::tri_interp`), bit-identical in every host. The plan (islands, archipelagos, updrafts, chambers, corridors, openings, shafts, columns, decorations, veins) is a pure function of the base atlas; the atlas pass builds it once to append its sites. New exports: `vertical_build` (descriptor `LDVT`), `layer_tile` (`LDLT`, 65 x 65 lattices at LOD 0-6), `layer_height` (one surface at a point). Openings cut holes into the layer above with the cave mouths' triangle-centroid rule. Every genVersion 2 site keeps its index and id; the vertical sites (tunnel, cavern, sky_lift, depths, archipelago, depths_gate POIs; sky_palace and sky_ruin structures; sky town settlements and their waypoints; underground camp waypoints) are appended, with a layer byte (site record byte 37). The terrain's heights are unchanged everywhere (golden review: 0 chunks changed height); scatter is cleared at tunnel mouths; sky towns are appended to the towns buffer (laid out on their island by the same layout code; every surface settlement, structure and prop keeps its index). The genVersion 2 build is archived (`worldgen/archive/worldgen-1dcd2ffc09618d97.wasm`, table `golden-v2.json`).
+
+## Contract changes
+
+- Atlas: site byte 37 = layer; new POI kinds 5-10, structure kinds 9-10 (worldgen/README.md, `format.ts`).
+- Towns buffer: prop kind 31 `activity` (sky-town squares).
+- Exports `vertical_build`, `layer_tile`, `layer_height` (ABI version unchanged: additive).
+
+(Server, movement constants, Events and Interact: see "Server" below, filled in with the zone work.)
+
+## Hooks for the follow-ups
+
+- **Sky palaces**: each palace is an atlas structure site (category 2, kind 9 `sky_palace`, layer 1) on a big island; the descriptor's `palace` decoration (kind 16) sits at the island top with the site in `aux` and the gate facing local +z of its yaw. The palace exterior is drawn by `client/src/world/vertical/decoMeshes.ts palaceGeometry` (a unit-radius model scaled by the decoration's size). The entrance (Interact and Events below) is a stub that answers "the doors are sealed".
+- **Sky activities**: every sky-town square has an `activity` prop (towns buffer prop kind 31, interactable, a stable prop id like any town prop) at the square's edge. The Interact for it is a stub.

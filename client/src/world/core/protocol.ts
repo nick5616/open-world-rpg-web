@@ -2,6 +2,7 @@
 // carries its job id; big payloads travel as transferred ArrayBuffers.
 
 import type { TileMeshData } from '../terrain/tileMesh';
+import type { LayerMeshData } from '../vertical/layerMesh';
 
 export interface InitMsg {
   type: 'init';
@@ -22,7 +23,9 @@ export type JobMsg =
   | { type: 'hash'; id: number; cx: number; cz: number; lod: number }
   | { type: 'evict'; id: number; cap: number }
   /** WP09: one cave cell, built with these encoded edits (32-byte records, may be empty). */
-  | { type: 'cave'; id: number; cx: number; cy: number; cz: number; edits: Uint8Array };
+  | { type: 'cave'; id: number; cx: number; cy: number; cz: number; edits: Uint8Array }
+  /** CR 038: one vertical layer tile (1 sky, 2 Underground, 3 Depths), meshed. */
+  | { type: 'layer'; id: number; layer: number; cx: number; cz: number; lod: number };
 
 export type JobType = JobMsg['type'];
 
@@ -53,4 +56,5 @@ export type ResultMsg =
   | { type: 'hash'; id: number; hash: string; ms: number }
   | { type: 'evict'; id: number; bytes: number; deleted: number }
   | { type: 'cave'; id: number; cx: number; cy: number; cz: number; bytes: Uint8Array; genMs: number }
+  | { type: 'layer'; id: number; layer: number; cx: number; cz: number; lod: number; mesh: LayerMeshData; raw: Uint8Array | null; genMs: number; meshMs: number }
   | { type: 'error'; id: number; message: string };

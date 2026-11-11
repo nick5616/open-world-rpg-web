@@ -59,7 +59,7 @@ describe('music override state machine', () => {
 
   it('time of day, intensity, explanations', () => {
     expect([3, 6.5, 12, 17.8, 19].map(timeOfDay)).toEqual(['night', 'dawn', 'day', 'dusk', 'night']);
-    const c = { state: 'day' as const, biome: 'forest', hour: 12, weather: 'clear', tier: 'quiet', tierIndex: 1, areaLevel: 2, act: null, combat: false, boss: false, underground: 0, inTown: false, timedPhase: null };
+    const c = { state: 'day' as const, biome: 'forest', hour: 12, weather: 'clear', tier: 'quiet', tierIndex: 1, areaLevel: 2, act: null, combat: false, boss: false, underground: 0, inTown: false, layer: 'surface', timedPhase: null };
     expect(computeIntensity(c)).toBe(0.29);
     expect(computeIntensity({ ...c, state: 'combat', tierIndex: 5, weather: 'thunderstorm', boss: true })).toBe(1);
     expect(computeIntensity({ ...c, state: 'timed', timedPhase: 'final' })).toBe(1);

@@ -7,9 +7,10 @@ rule 6 and "keeping old worlds working"; decision 0007: a world row pins
 | genVersion | File | Golden table | Source |
 | --- | --- | --- | --- |
 | 1 | `worldgen-42a66cc191bee49d.wasm` (579,496 B) | `worldgen/golden/golden-v1.json` | git `56a0d36`, rustc 1.99.1 |
+| 2 | `worldgen-1dcd2ffc09618d97.wasm` (617,354 B) | `worldgen/golden/golden-v2.json` | git `73f436c`, rustc 1.99.1 (rebuilt from that commit, bit-identical to the dev build) |
 
 The current build (`worldgen/pkg/worldgen.wasm`, `npm run build:wasm`) is
-genVersion 2 (`docs/cr/014-towns-terrain-density.md`).
+genVersion 3 (`docs/cr/038-vertical-world.md`, the vertical world).
 
 ## Who loads it
 

@@ -12,6 +12,7 @@
 // audio files and the mappings that wire them to a vibe. Loaded lazily (the
 // composer's code downloads when this tab first opens).
 
+import { LAYER_TAGS } from '../../../audio/bridge';
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import { BORDER, BTN_BG, CARD_BG, GOLD, GREEN, RED, SLOT_BG, TEXT, TEXT_2, TEXT_3 } from '../../spellcards/theme';
 import { WEATHER, WORLD_EVENTS } from '../catalog';
@@ -371,7 +372,7 @@ export function NowPlayingCard({ n, compact }: { n: NowPlaying | null; compact?:
   );
 }
 
-const EMPTY_WHEN: Record<keyof MappingWhen, boolean> = { state: false, biome: true, time: true, weather: false, tierMin: false, tierMax: false, act: false, combat: false, intensityMin: false, intensityMax: false };
+const EMPTY_WHEN: Record<keyof MappingWhen, boolean> = { state: false, biome: true, time: true, weather: false, tierMin: false, tierMax: false, act: false, combat: false, intensityMin: false, intensityMax: false, layer: false };
 
 function MappingEditor({ now }: { now: NowPlaying | null }) {
   const files = useComposer((s) => s.files);
@@ -387,7 +388,7 @@ function MappingEditor({ now }: { now: NowPlaying | null }) {
   const fillHere = () => {
     const c = now?.context;
     if (!c) return;
-    setW({ state: c.state, biome: c.biome ?? undefined, time: c.time, weather: c.weather, tierMin: Math.max(0, c.tierIndex), tierMax: Math.max(0, c.tierIndex), act: c.act ?? undefined, combat: c.combat });
+    setW({ state: c.state, biome: c.biome ?? undefined, time: c.time, weather: c.weather, tierMin: Math.max(0, c.tierIndex), tierMax: Math.max(0, c.tierIndex), act: c.act ?? undefined, combat: c.combat, layer: c.layer });
   };
   const ready = now !== null;
   useEffect(() => {
@@ -405,6 +406,7 @@ function MappingEditor({ now }: { now: NowPlaying | null }) {
     }
     if (use.act && w.act) out.act = w.act;
     if (use.combat) out.combat = !!w.combat;
+    if (use.layer && w.layer) out.layer = w.layer;
     return out;
   };
   const tick = (k: keyof MappingWhen, label: ReactNode) => (
@@ -432,6 +434,14 @@ function MappingEditor({ now }: { now: NowPlaying | null }) {
           <Sel label="state" value={w.state ?? 'day'} onChange={(v) => setW({ ...w, state: v as MusicState })}>
             {MUSIC_STATES.map((s) => (
               <option key={s}>{s}</option>
+            ))}
+          </Sel>,
+        )}
+        {tick(
+          'layer',
+          <Sel label="layer" value={w.layer ?? 'surface'} onChange={(v) => setW({ ...w, layer: v })}>
+            {LAYER_TAGS.map((t) => (
+              <option key={t}>{t}</option>
             ))}
           </Sel>,
         )}

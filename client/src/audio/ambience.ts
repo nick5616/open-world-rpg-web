@@ -95,6 +95,11 @@ export interface AmbienceTargets {
   syncedThunder?: boolean;
   /** Playtest 2 immersion pass (wildlife.ts): songbirds, a hawk's cry, frogs, an owl (0..1 densities). */
   wild?: WildlifeTargets;
+  /** CR 038: a vast cavern's crystal hum (0..1) and lapping water (0..1); the Depths' deep rumble and lava bubbling (0..1). */
+  hum?: number;
+  lap?: number;
+  rumble?: number;
+  lava?: number;
 }
 
 const ZERO: AmbienceTargets = { wind: 0, windSpeed: 0, rain: 0, roofRain: 0, insects: 0, water: 0, drips: 0, weatherGain: 1, weatherLowpassHz: 16000 };
@@ -128,6 +133,12 @@ export class Ambience {
   private owlAt = 0;
   /** Thunder rumbles started (debug). */
   thunders = 0;
+  // CR 038: vertical world beds.
+  private hum: GainNode;
+  private lap: GainNode;
+  private rumble: GainNode;
+  private lavaAt = 0;
+  private lapAt = 0;
 
   constructor(
     private readonly ctx: AudioContext,
@@ -222,6 +233,50 @@ export class Ambience {
     this.water = ctx.createGain();
     this.water.gain.value = 0;
     loop(brown).connect(wl).connect(this.water).connect(out);
+    // CR 038: the crystal hum of a vast cavern: a soft chord of slowly
+    // beating sines (a glass harmonica far off), into the cave reverb.
+    this.hum = ctx.createGain();
+    this.hum.gain.value = 0;
+    this.hum.connect(out);
+    if (wet) this.hum.connect(wet);
+    for (const [f, detune] of [
+      [196, 0],
+      [293.7, 3],
+      [392, -4],
+      [587.3, 2],
+    ] as const) {
+      const o = ctx.createOscillator();
+      o.type = 'sine';
+      o.frequency.value = f;
+      o.detune.value = detune;
+      const g = ctx.createGain();
+      g.gain.value = f > 400 ? 0.05 : 0.09;
+      const lfo = ctx.createOscillator();
+      lfo.frequency.value = 0.05 + (f % 7) * 0.013;
+      const lg = ctx.createGain();
+      lg.gain.value = g.gain.value * 0.8;
+      lfo.connect(lg).connect(g.gain);
+      o.connect(g).connect(this.hum);
+      o.start();
+      lfo.start();
+      this.sources.push(o, lfo);
+    }
+    // Lapping water in a cavern lake (noise swells, through the reverb).
+    const lb = ctx.createBiquadFilter();
+    lb.type = 'bandpass';
+    lb.frequency.value = 620;
+    lb.Q.value = 0.8;
+    this.lap = ctx.createGain();
+    this.lap.gain.value = 0;
+    loop(white).connect(lb).connect(this.lap).connect(out);
+    if (wet) this.lap.connect(wet);
+    // The Depths: a rumble you feel more than hear.
+    const rl = ctx.createBiquadFilter();
+    rl.type = 'lowpass';
+    rl.frequency.value = 75;
+    this.rumble = ctx.createGain();
+    this.rumble.gain.value = 0;
+    loop(brown).connect(rl).connect(this.rumble).connect(out);
   }
 
   setTargets(t: AmbienceTargets): void {
@@ -236,6 +291,9 @@ export class Ambience {
     this.insects.gain.setTargetAtTime(t.insects * 0.05, now, 2);
     this.water.gain.setTargetAtTime(t.water * 0.7, now, 0.2);
     this.storm.gain.setTargetAtTime((t.storm ?? 0) * 0.35, now, 1.2);
+    this.hum.gain.setTargetAtTime((t.hum ?? 0) * 0.5, now, 1.5);
+    this.rumble.gain.setTargetAtTime((t.rumble ?? 0) * 0.9, now, 1.5);
+    if (!(t.lap && t.lap > 0)) this.lap.gain.setTargetAtTime(0, now, 1);
     this.sand.gain.setTargetAtTime((t.sand ?? 0) * 0.16, now, 0.8);
     // Shelter: quick enough to follow a doorway (~0.3 s), slow enough not to zipper.
     this.weather.gain.setTargetAtTime(t.weatherGain, now, 0.25);
@@ -272,6 +330,18 @@ export class Ambience {
         if (this.owlAt) this.owl();
         this.owlAt = nowMs + (9000 + Math.random() * 22000) / w.owls;
       }
+    }
+    // CR 038: lapping water swells; lava bubbles and pops.
+    if ((t.lap ?? 0) > 0.05 && nowMs > this.lapAt) {
+      const now = this.ctx.currentTime;
+      const k = (t.lap ?? 0) * (0.05 + Math.random() * 0.06);
+      this.lap.gain.setTargetAtTime(k, now, 0.4);
+      this.lap.gain.setTargetAtTime(k * 0.2, now + 0.9 + Math.random() * 0.8, 0.6);
+      this.lapAt = nowMs + 1800 + Math.random() * 2600;
+    }
+    if ((t.lava ?? 0) > 0.1 && nowMs > this.lavaAt) {
+      this.bubble(t.lava ?? 0);
+      this.lavaAt = nowMs + 220 + Math.random() * (1400 / (t.lava ?? 1));
     }
     if (t.drips > 0.5 && nowMs > this.dripAt) {
       this.drip();
@@ -344,6 +414,27 @@ export class Ambience {
   }
 
   /** A water drop in a cave (from WP09's caveAudio.ts): a falling sine blip, mostly reverb. */
+  /** CR 038: a thick bubble bursting on lava (a low, wet pop). */
+  private bubble(level: number): void {
+    const ctx = this.ctx;
+    const t = ctx.currentTime;
+    const o = ctx.createOscillator();
+    o.type = 'sine';
+    const f0 = 60 + Math.random() * 90;
+    o.frequency.setValueAtTime(f0, t);
+    o.frequency.exponentialRampToValueAtTime(f0 * 2.6, t + 0.12);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.18 * Math.min(1, level), t + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
+    const p = ctx.createStereoPanner();
+    p.pan.value = Math.random() * 1.6 - 0.8;
+    o.connect(g).connect(p).connect(this.out);
+    if (this.wet) g.connect(this.wet);
+    o.start(t);
+    o.stop(t + 0.25);
+  }
+
   private drip(): void {
     const ctx = this.ctx;
     const t = ctx.currentTime;

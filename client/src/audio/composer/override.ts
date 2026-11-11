@@ -123,6 +123,8 @@ export interface VibeContext {
   boss: boolean;
   underground: number;
   inTown: boolean;
+  /** CR 038: 'surface' | 'sky' | 'underground' | 'depths'. */
+  layer: string;
   /** Timed objective: its phase. */
   timedPhase: 'intro' | 'loop' | 'final' | null;
   /** 0..1 */

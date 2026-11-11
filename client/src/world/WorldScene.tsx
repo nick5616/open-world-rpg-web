@@ -41,6 +41,9 @@ import { lsRetro, lsStyle } from './style/styleShader';
 import { worldDebug, frameInfo } from './debug/worldDebug';
 import { LodOverlay } from './debug/lodOverlay';
 import { CaveManager } from './caves/caveManager';
+import { audioWorld } from '../audio/bridge';
+// CR 038: sky archipelagos, the Underground and the Depths.
+import { VerticalManager } from './vertical/verticalManager';
 import { warmShaders } from './warmup';
 import { warmExtras } from './warmExtras';
 import { AmbientLife } from './life/ambientLife';
@@ -135,10 +138,14 @@ export function WorldScene({ runtime }: Props) {
     // WP09: caves (streamed near mouths and underground; the light pool lives in it).
     const caves = runtime.caveGraph ? new CaveManager(runtime, g0.maxLights) : null;
     if (caves) root.add(caves.group);
+    const vertical = runtime.vertical ? new VerticalManager(runtime) : null;
+    if (vertical) root.add(vertical.group);
+    vertical?.setLow(g0.tier === 'low');
+    if (DEBUG && vertical && typeof window !== 'undefined') Object.assign(window, { __lodestoneVertical: vertical, __lodestoneVerticalWorld: runtime.vertical, __lodestoneVerticalGround: runtime.verticalGround });
     const windBase = 3 + (runtime.data.params[PARAM.stormFrequency] ?? 0.3) * 4;
     setPrevailingWind(runtime.data.params[PARAM.windDirDeg] ?? 0, windBase);
     setWeatherWorld(runtime.data, runtime.data.params[PARAM.windDirDeg] ?? 0); // CR 030: the climate per weather cell
-    return { shared, waterU, terrain, sea, sky, hemi, scatter, caves, root, lighting: makeSkyLighting(), horizon: null as THREE.Mesh | null, rain: 0, capAcc: 0, rainStreaks, snow, sand, bolts, life, windBase, drift: new THREE.Vector2() };
+    return { shared, waterU, terrain, sea, sky, hemi, scatter, caves, vertical, root, lighting: makeSkyLighting(), horizon: null as THREE.Mesh | null, rain: 0, capAcc: 0, rainStreaks, snow, sand, bolts, life, windBase, drift: new THREE.Vector2() };
     // Built once per runtime; tier changes go through setParams/applyTier below.
   }, [runtime, gl]);
 
@@ -210,6 +217,7 @@ export function WorldScene({ runtime }: Props) {
     world.scatter.onMaterial = (m) => sun.setupMaterial(m);
     for (const m of world.scatter.allMaterials()) if (m instanceof THREE.MeshStandardMaterial) sun.setupMaterial(m);
     for (const m of world.caves?.sunMaterials() ?? []) if (m instanceof THREE.MeshStandardMaterial) sun.setupMaterial(m);
+    for (const m of world.vertical?.sunMaterials() ?? []) if (m instanceof THREE.MeshStandardMaterial) sun.setupMaterial(m);
     world.terrain.group.traverse((o) => {
       if (o instanceof THREE.Mesh && o.material instanceof THREE.MeshStandardMaterial) {
         sun.setupMaterial(o.material);
@@ -262,6 +270,7 @@ export function WorldScene({ runtime }: Props) {
       // outlived a remount (leave the play screen and come back): a frozen
       // "Vein broken" toast stayed on screen and E still swung at the old vein.
       world.caves?.dispose();
+      world.vertical?.dispose();
       world.rainStreaks.dispose();
       world.snow.dispose();
       world.sand.dispose();
@@ -293,6 +302,20 @@ export function WorldScene({ runtime }: Props) {
     if (!useDebugStore.getState().freezeTime) worldClock.timeOfDayS = worldClock.source ? worldClock.source() : (worldClock.timeOfDayS + Math.min(delta, 0.25)) % DAY_LENGTH_S; // WP15: the world clock online
     advanceWind(dt);
 
+    // CR 038: the vertical world first (it lends the cave light pool its emitters).
+    world.vertical?.update(camera, dt, now, localPlayer.pos);
+    if (world.caves && world.vertical) world.caves.extraEmitters = world.vertical.lightEmitters() as never;
+    if (world.vertical) {
+      // CR 038: where the listener is, for the ambience, the reverb and the music.
+      const vm = world.vertical;
+      audioWorld.layer = vm.layer;
+      audioWorld.sky = vm.sky;
+      audioWorld.cavern = vm.cavern;
+      audioWorld.depths = vm.depths;
+      audioWorld.chamberKind = vm.chamber ? vm.chamber.kind : -1;
+      // A vast cavern rings for seconds; its tunnels are tight.
+      if (vm.layer === 2 || vm.layer === 3) audioWorld.chamberRadius = vm.chamber ? Math.min(60, vm.chamber.radius * 0.35) : 5;
+    }
     // WP09: caves first, so this frame's light knows how far underground we are.
     world.caves?.update(camera, dt, now);
     const under = world.caves?.underground ?? 0;
@@ -301,6 +324,7 @@ export function WorldScene({ runtime }: Props) {
     const ph = usePhoto.getState();
     const tod = ph.active && ph.hour !== null ? (ph.hour / 24) * DAY_LENGTH_S : worldClock.timeOfDayS;
     const L = skyLighting(tod, world.lighting);
+    world.vertical?.setLight(L.skyColor, L.hemiIntensity * L.day + 0.05, L.lightColor, L.skyColor);
     // Playtest 2 weather (CR 030, systems/weather): the blended weather at the
     // camera, eased so a front rolls in: cloud, rain, snow, fog banks, sand,
     // heat shimmer, storm darkness, wet ground and settled snow that linger,
@@ -413,7 +437,15 @@ export function WorldScene({ runtime }: Props) {
       // own darkness, never the sky's fog colour); a fog bank pulls it in.
       if (st.fogRange && above > 0.02) fr.set(st.fogRange[0] / above, (st.fogRange[1] * (1 - 0.3 * rain - 0.55 * Math.min(1, wm.fog + wm.dust))) / above, above, 0);
       else fr.set(0, 0, 0, 0);
-      fogU.u('uExposure').value = (1.0 + (1 - L.day) * 1.6 * st.nightExposure) * (1 - under) + 1.6 * under;
+      fogU.u('uExposure').value = (1.0 + (1 - L.day) * 1.6 * st.nightExposure) * (1 - under) + (world.vertical && world.vertical.cavern + world.vertical.depths > 0.2 ? 1.2 : 1.6) * under;
+      // CR 038: the air of the vast caverns (teal haze) and the Depths (ember red).
+      const vm = world.vertical;
+      const cf = fogU.u('uCaveFog').value as THREE.Vector4;
+      if (vm && (vm.cavern > 0.01 || vm.depths > 0.01)) {
+        const k = Math.max(vm.cavern, vm.depths);
+        const d = vm.depths;
+        cf.set(0.006 * (1 - d) + 0.07 * d, 0.03 * (1 - d) + 0.016 * d, 0.038 * (1 - d) + 0.006 * d, (0.0024 * (1 - d) + 0.0045 * d) * k);
+      } else cf.set(0, 0, 0, 0);
       // Bloom and god rays per style (built per quality; tuned per style without a rebuild).
       if (f.post.bloom) {
         // Underground the cave's own glow (mushrooms, gems, lantern) keeps the stock bloom.

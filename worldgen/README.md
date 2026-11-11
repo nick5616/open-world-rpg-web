@@ -54,7 +54,7 @@ below. `ptr`/`len` are i32 offsets into linear memory.
 
 | Export | Wasm signature | Returns / effect |
 | --- | --- | --- |
-| `gen_version()` | `() -> i32` | Generator major version (output-defining, currently 2; genVersion 1 is archived in `archive/`) |
+| `gen_version()` | `() -> i32` | Generator major version (output-defining, currently 3; genVersions 1 and 2 are archived in `archive/`) |
 | `abi_version()` | `() -> i32` | 1; loaders refuse other values |
 | `alloc(len)` | `(i32) -> i32` | 8-aligned block for the host; 0 on failure |
 | `free(ptr, len)` | `(i32, i32) -> ()` | Release a block from `alloc` or `atlas_build` (same `len`) |
@@ -626,6 +626,114 @@ Constants: MAX_STEP_UP_M 0.6, PLAYER_CAPSULE_RADIUS 0.4, head 1.9 m.
   open; the golden collide vectors above never include them. Vectors:
   `server/pkg/towns/testdata/doors.json`.
 
+## Vertical world (genVersion 3, CR 038)
+
+Sky archipelagos above the land, a vast cavern layer under the caves ("the
+Underground") and the Depths under it. Code: `src/vertical/` (module table
+in `src/vertical/mod.rs`). Docs: `docs/cr/038-vertical-world.md`.
+
+### Model
+
+Every layer is a pair of heightfields over the terrain's 1 m lattice, plus
+a water lattice; hosts collide with each exactly like with the terrain (f32
+lattice values, the same diagonal split, `ground::tri_interp` in f64):
+
+| Layer | A | B | W | Solid / air |
+| --- | --- | --- | --- | --- |
+| 1 sky | island top T | island bottom B | (unused) | solid between B and T where T > B (+0.01) |
+| 2 Underground | floor F | ceiling C | lakes and rivers | air between F and C where C > F (+0.01); C = 10000 in an opening (open sky) |
+| 3 Depths | floor F | ceiling C | lava | as the Underground |
+
+Rock is C = F. Where two surfaces meet (a chamber wall against its roof, an
+island's rim) their lattice values are equal, so meshes close and a wall is
+a steep floor (climbable, like a terrain cliff). No-water is -10000.
+
+- **Chambers**: rotated ellipses (rx, rz), a floor with gentle noise, a wall
+  that rises over ellipse radius e in [0.80, 1.02] by height + 30 m, a domed
+  roof `floor + h (1 - 0.28 e^2) - drips`, open where the roof clears the
+  floor by 8 m; a lake basin (depth 7-12 m) inside e < lakeE with its level.
+- **Corridors**: polylines of (x, floor y, z), half width hw, height; walls
+  outside 0.62 hw, an arched roof; rivers carve a channel (depth `water`,
+  surface 0.25 m under the bank); the walkway (q < 0.8 hw) holds its floor
+  even where a chamber's ground is lower, so ledge ramps and causeways never
+  have gaps.
+- **Union**: F = smooth min of every feature's floor (k 8 m) then the
+  walkways; C = smooth max (k 10 m) of the roofs of the features open there
+  (none: rock); W = max.
+- **Openings**: a tunnel mouth caps F by the terrain inside r + 1.5 m and
+  opens the roof (C = 10000); within r + 48 m the rock stays at or under the
+  terrain and the roof 3 m under it. A cenote shaft opens the roof inside its
+  radius. A Depths gate opens the Depths into the Underground chamber above
+  (F = min, C = max with the Underground's) inside r + 1.5 m and keeps the
+  Depths roof 6 m under the Underground floor within r + 40 m.
+- **Islands**: a lobed outline (up to 4 discs, boundary warped 5 m), sd =
+  max over lobes of (r - distance); top = base + relief - a 3 m rim
+  round-off; bottom = top - cliff - depth(sd) - hanging spikes, at least 3 m
+  under the top; T = B = top - 3 - cliff/2 within 3 m outside.
+
+### Exports (same rules as the ABI above)
+
+| Export | Wasm signature | Returns |
+| --- | --- | --- |
+| `vertical_build(atlas_ptr)` | `(i32) -> i32` | The descriptor `LDVT` (scratch). The first vertical call builds the plan (~35 ms native), cached per instance like the caves. |
+| `layer_tile(atlas_ptr, layer, cx, cz, lod)` | `(i32 x 5) -> i32` | Layer tile `LDLT` (scratch): layer 1-3, cx, cz 0..63 multiples of 2^lod, lod 0..6. |
+| `layer_height(atlas_ptr, surf, x, z)` | `(i32, i32, f64, f64) -> f64` | Collision value of surface `surf` (0 U floor, 1 U ceiling, 2 U water, 3 D floor, 4 D ceiling, 5 D lava, 6 island top, 7 island bottom); -1e9 on bad input. |
+
+### Layer tile (`LDLT`, format 1)
+
+Header 64 bytes: 0 magic, 4 u16 format, 6 u16 genVersion, 8 u32 length,
+12 u8 layer, 13 u8 lod, 14 u16 S (65), 16 i32 cx, 20 i32 cz, 24 f32 step,
+28 u32 flags (1 some air / solid, 2 some water above the floor), 32-44 f32
+min/max of A and B, 48/52/56 u32 offsets of A, B, W (S*S f32 each, index
+j*S + i, sample (cx*64 + i*step, cz*64 + j*step)). LOD 0 values are the
+collision lattice.
+
+### Descriptor (`LDVT`, format 1)
+
+Header 128 bytes: 0 magic, 4 u16 format, 6 u16 genVersion, 8 u32 length,
+12-52 u32 counts and 56-96 u32 offsets of 11 sections (archs, islands,
+updrafts, chambers, corridors, points, openings, shafts, columns,
+decorations, veins), 100 u32 offset of the domain bitmaps (3 x 512 bytes:
+sky, Underground, Depths; bit cz*64+cx = some feature reaches that chunk),
+104 u32 base site count, 108 f32 Underground floor min (-260), 112 f32
+Depths ceiling max (-330).
+
+| Section | Record | Fields |
+| --- | --- | --- |
+| archs | 40 B | u64 id, f32 x, z, r, base, cloud y, u16 site, first island, islands, town (surface settlement whose sky lift serves it) |
+| islands | 104 B | u64 id, f32 x, z, r, reach, top, thick, cliff, amp, u8 kind (grove, meadow, crag, town, palace, ruin), u8 lobes, u16 arch, u16 site, u8 biome, pad, u32 seed, 4 x (f32 dx, dz, r) |
+| updrafts | 32 B | f32 x, z, r, bottom, top, lift (m/s), u8 kind (column, lift, current, geyser), pad, u16 arch |
+| chambers | 72 B | u64 id, f32 x, z, rx, rz, cos, sin, floor, height, lake (-10000 none), lakeE, lake depth, reach, u8 layer, kind (crystal, cenote, river, fungal, inferno, ashen), tint, pad, u32 seed, u16 site |
+| corridors | 32 B | u8 layer, kind (tunnel, river, descent, passage), lava, pad, u16 from, to (chambers), f32 hw, height, water, u32 first point, count |
+| points | 12 B | f32 x, floor y, z |
+| openings | 32 B | f32 x, z, r, rim y, u8 into (2 Underground: a hole in the terrain; 3 Depths: a hole in the Underground floor), kind (tunnel, cenote, gate), u16 yaw (out of the hill), site, target |
+| shafts | 32 B | f32 x, z, r, bottom, top, u16 chamber |
+| columns | 32 B | f32 x, z, r, y0, y1, u8 layer, pad, u16 chamber |
+| decorations | 24 B | f32 x, y, z, size, u8 kind (`mod.rs dk`), tint (0-7 elements, 8 turquoise, 9 white), layer, flags (1 casts light, 2 hangs), u16 yaw, aux |
+| veins | 32 B | the cave vein record (band 3 Underground, 4 Depths; stable ids `stable_id(0x33, layer, chamber, i)`) |
+
+### Collision and ground dispatch (TS `vertical.ts`, Go `server/pkg/vertical`)
+
+The vertical ground wraps the cave ground; at feet height y and (x, z):
+1. **Sky** (sky domain chunk, T - B > 0.01): y >= T - 3 stands on T (a
+   ledge within 3 m pops you up); else with the head over B (y + 1.8 > B)
+   you are inside the island: floor = y and `collide` pushes you out.
+2. **Underground** (in a tunnel / cenote hole, or 2 m under the surface):
+   the Underground (not in a Depths-gate hole) then the Depths, the first
+   whose [F - 0.5, max(C, F) + 1] holds y; else the nearest floor within 40 m
+   above the feet.
+3. Else the base ground at that level (terrain, structures, caves).
+
+`collide` after the base's: under an island with the head in it, y = B -
+1.8 (ceiling); inside an island's side, out along the direction from the
+island's centre in 0.5 m steps (up to 24) to the first non-solid point +
+0.4 m; in a layer, the ceiling (C < 5000) clamps the head; columns push
+the 0.4 m body out radially; under the surface beside a cenote shaft
+(radius - 0.4 to radius + 2.5) above the Underground ceiling, back into the
+shaft. Water underground is the layer's (lava in the Depths); none on an
+island. Updrafts: lift where inside a column's radius between its bottom and
+top (the strongest).
+
 ## How the world is made
 
 **spec_from_seed** picks every field inside tasteful sub-ranges of the schema
@@ -715,7 +823,7 @@ rust-toolchain.toml so builds are reproducible). genVersion 1 is minted
 (the official world) and frozen: its build lives in `archive/` with
 `golden/golden-v1.json`, checked by `npm run test:golden` in Node and
 Go/wazero, and loaded by hosts for worlds pinned to it
-(`archive/README.md`). genVersion 2 is current. Before a `golden:update`
+(`archive/README.md`). genVersion 2 (playtest 1 towns) is archived the same way (`golden/golden-v2.json`); genVersion 3 (the vertical world) is current. Before a `golden:update`
 for a new version, review the diff with `npx vite-node worldgen/golden/review.ts`
 (sites kept / added, chunk height changes by neighbourhood).
 

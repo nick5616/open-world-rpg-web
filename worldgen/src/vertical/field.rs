@@ -55,8 +55,12 @@ pub fn corridor_reach(r: &Corridor) -> f64 {
     r.hw * 2.8 + 6.0
 }
 
+/// What one feature says at a point: floor, roof, water, open there, and
+/// (corridors only) the floor of its walkway with how much it holds there.
+type Feat = (f64, f64, f64, bool, f64, f64);
+
 /// (F, C, W, open) of a chamber at (x, z), None outside its influence.
-fn chamber_at(c: &Chamber, x: f64, z: f64) -> Option<(f64, f64, f64, bool)> {
+fn chamber_at(c: &Chamber, x: f64, z: f64) -> Option<Feat> {
     let (dx, dz) = (x - c.x, z - c.z);
     if dx * dx + dz * dz > c.reach * c.reach {
         return None;
@@ -68,7 +72,7 @@ fn chamber_at(c: &Chamber, x: f64, z: f64) -> Option<(f64, f64, f64, bool)> {
         return None;
     }
     let sd = c.seed;
-    let e = e0 * (1.0 + 0.04 * noise(sd, x / 38.0, z / 38.0));
+    let e = e0 * (1.0 + 0.03 * noise(sd, x / 38.0, z / 38.0));
     let sw = smoothstep(WALL_E0, WALL_E1, e);
     let wall = (c.height + WALL_EXTRA) * libm::pow(sw, WALL_POW) + 3.0 * sw * noise(sd ^ 5, x / 9.0, z / 9.0);
     let ground = 1.6 * fbm(sd ^ 1, x, z, 34.0, 3, 0.5);
@@ -79,11 +83,11 @@ fn chamber_at(c: &Chamber, x: f64, z: f64) -> Option<(f64, f64, f64, bool)> {
     let drip = 5.0 * (ridged(sd ^ 2, x, z, 22.0, 2, 0.5) - 0.45).max(0.0) + 2.5 * fbm(sd ^ 3, x, z, 50.0, 2, 0.5);
     let roof = c.floor + c.height * (1.0 - 0.28 * e * e) - drip;
     let w = if c.lake_e > 0.0 && e < c.lake_e + 0.3 { c.lake } else { NO_WATER };
-    Some((f, roof, w, roof > f + OPEN_GAP))
+    Some((f, roof, w, roof > f + OPEN_GAP, 0.0, 0.0))
 }
 
 /// (F, C, W, open) of a corridor at (x, z), None outside its influence.
-fn corridor_at(r: &Corridor, x: f64, z: f64) -> Option<(f64, f64, f64, bool)> {
+fn corridor_at(r: &Corridor, x: f64, z: f64) -> Option<Feat> {
     let reach = corridor_reach(r);
     let mut best = (f64::MAX, 0usize, 0.0);
     for k in 0..r.pts.len().saturating_sub(1) {
@@ -106,12 +110,17 @@ fn corridor_at(r: &Corridor, x: f64, z: f64) -> Option<(f64, f64, f64, bool)> {
     let q = d / r.hw;
     let floor = fy + 0.5 * noise(0x51 ^ (best.1 as u32), x / 7.0, z / 7.0) * (1.0 - smoothstep(0.0, 0.6, q)).max(0.3);
     let mut f = floor + (r.height + 18.0) * libm::pow(smoothstep(0.62, 1.25, q), 1.3);
+    let mut core = floor;
     if r.water > 0.0 {
-        f -= r.water * (1.0 - smoothstep(0.0, 0.62, q));
+        let dip = r.water * (1.0 - smoothstep(0.0, 0.62, q));
+        f -= dip;
+        core -= dip;
     }
     let roof = fy + r.height * libm::sqrt((1.0 - 0.85 * q * q).max(0.0));
     let w = if r.water > 0.0 && q < 0.75 { fy - 0.25 } else { NO_WATER };
-    Some((f, roof, w, roof > f + 1.0))
+    // The walkway holds its floor even where a chamber's ground is lower: a
+    // ledge on a cavern wall, a causeway (never a gap you fall through).
+    Some((f, roof, w, roof > f + 1.0, core, 1.0 - smoothstep(0.5, 0.8, q)))
 }
 
 /// Underground (layer 2) or Depths (layer 3) values at (x, z). `terrain`
@@ -122,9 +131,15 @@ pub fn under_at(p: &Plan, layer: u8, x: f64, z: f64, terrain: &mut dyn FnMut(f64
     let mut f: Option<f64> = None;
     let mut c: Option<f64> = None;
     let mut w = NO_WATER;
+    let mut walks = [(0.0f64, 0.0f64); 8];
+    let mut nw = 0usize;
     for &r in p.refs(layer, cx, cz) {
         let v = if r & CHAMBER_REF != 0 { chamber_at(&p.chambers[(r & !CHAMBER_REF) as usize], x, z) } else { corridor_at(&p.corridors[r as usize], x, z) };
-        let Some((ff, cc, ww, open)) = v else { continue };
+        let Some((ff, cc, ww, open, core, cw)) = v else { continue };
+        if cw > 0.0 && nw < walks.len() {
+            walks[nw] = (core, cw);
+            nw += 1;
+        }
         f = Some(match f {
             None => ff,
             Some(v) => smin(v, ff, K_FLOOR),
@@ -141,6 +156,11 @@ pub fn under_at(p: &Plan, layer: u8, x: f64, z: f64, terrain: &mut dyn FnMut(f64
     }
     let rock = if layer == LAYER_UNDER { ROCK_U } else { ROCK_D };
     let mut fa = f.unwrap_or(rock);
+    for &(core, cw) in &walks[..nw] {
+        if core > fa {
+            fa += cw * (core - fa);
+        }
+    }
     let mut cb = c.unwrap_or(fa);
     for o in &p.openings {
         if o.into != layer {
@@ -154,7 +174,12 @@ pub fn under_at(p: &Plan, layer: u8, x: f64, z: f64, terrain: &mut dyn FnMut(f64
                     fa = fa.min(terrain(x, z));
                     cb = OPEN_C;
                 } else if d2 < (o.r + MOUTH_CAP) * (o.r + MOUTH_CAP) {
-                    cb = cb.min(terrain(x, z) - 3.0);
+                    // Around the hole the rock reaches the terrain, never past it
+                    // (the hole's rim triangles meet the terrain edge), and the
+                    // tunnel's roof stays 3 m under it.
+                    let t = terrain(x, z);
+                    fa = fa.min(t);
+                    cb = cb.min(t - 3.0);
                 }
             }
             ok::CENOTE => {

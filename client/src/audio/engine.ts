@@ -312,6 +312,7 @@ export class AudioEngine {
       hour,
       underground: audioWorld.underground,
       inTown: audioWorld.inTown,
+      layer: audioWorld.layer,
       combat: audioWorld.combatUntil > nowMs || !!hud.boss,
       voidMoment: this.voidUntil > nowMs,
       timed: this.timed(nowMs),
@@ -391,11 +392,21 @@ export class AudioEngine {
     const altitude = Math.min(1, Math.max(0, (feet.y - 60) / 160));
     const hour = worldClock.timeOfDayS / HOUR_S;
     const isNight = hour >= 18.5 || hour < 6;
+    // CR 038: the sky over an archipelago is all wind; the vast caverns hum
+    // and lap; the Depths rumble and bubble.
+    const skyAir = audioWorld.sky;
+    const cav = audioWorld.cavern;
+    const deep = audioWorld.depths;
+    const crystal = audioWorld.chamberKind === 0 || audioWorld.chamberKind === 3 ? 1 : 0.55;
     this.ambience.setTargets({
-      wind: Math.min(1, 0.18 + altitude * 0.4 + rain * 0.25 + wm.wind * 0.45 + (gliding ? Math.min(0.6, speed / 30) : 0)),
-      windSpeed: gliding ? Math.min(1, speed / 25) : Math.min(1, altitude * 0.4 + wm.wind * 0.5),
+      wind: Math.min(1, 0.18 + altitude * 0.4 + rain * 0.25 + wm.wind * 0.45 + (gliding ? Math.min(0.6, speed / 30) : 0) + skyAir * 0.45),
+      windSpeed: gliding ? Math.min(1, speed / 25) : Math.min(1, altitude * 0.4 + wm.wind * 0.5 + skyAir * 0.3),
       storm: Math.min(1, wm.storm * 0.9 + wm.wind * 0.15 * wm.cloud),
-      gust: Math.max(0, wm.wind - 0.5) * 2,
+      gust: Math.max(Math.max(0, wm.wind - 0.5) * 2, skyAir * 0.8),
+      hum: cav * crystal * (1 - deep),
+      lap: audioWorld.chamberKind === 1 || audioWorld.chamberKind === 2 ? cav : cav * 0.4,
+      rumble: deep,
+      lava: deep,
       sand: wm.dust,
       syncedThunder: dyn,
       rain: w.rain,

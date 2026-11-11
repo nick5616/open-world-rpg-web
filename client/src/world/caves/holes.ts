@@ -11,8 +11,9 @@ import type { CaveOpening } from '@lodestone/worldgen';
 import { CELLS, tileIndex } from '../terrain/tileMesh';
 
 /** The tile's index without masked triangles, or null if no mouth touches the tile. */
-export function holeIndex(openings: readonly CaveOpening[], cx: number, cz: number, lod: number): Uint16Array | null {
-  if (lod > 1 || openings.length === 0) return null;
+export function holeIndex(openings: readonly Pick<CaveOpening, 'x' | 'z' | 'rMask'>[], cx: number, cz: number, lod: number): Uint16Array | null {
+  // CR 038: lod 2 too (tunnel mouths and cenotes are wide: a hole still reads 280 m out).
+  if (lod > 2 || openings.length === 0) return null;
   const step = 1 << lod;
   const x0 = cx * 64;
   const z0 = cz * 64;
