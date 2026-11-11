@@ -639,6 +639,8 @@ export function NowPlayingPin() {
   );
 }
 
+let listed = false;
+
 export default function VibeTab() {
   useEffect(() => {
     setComposerLog(devLog);
@@ -647,7 +649,10 @@ export default function VibeTab() {
     const ask = () => sendDev(send(VIBE_ACT.here));
     ask();
     // The first visit lists what is around the spawn (and brings the region names).
-    if (useVibe.getState().answers === 0) find({ ...useVibe.getState().filter, n: 20, offset: 0 });
+    if (!listed && useVibe.getState().answers === 0) {
+      listed = true; // once (StrictMode runs effects twice in dev)
+      find({ ...useVibe.getState().filter, n: 20, offset: 0 });
+    }
     const id = setInterval(ask, 3000);
     return () => clearInterval(id);
   }, []);

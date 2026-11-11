@@ -666,7 +666,7 @@ export function DevConsole() {
       }
     };
     window.addEventListener('keydown', onKey);
-    if (typeof window !== 'undefined') (window as unknown as { __lodestoneDev?: unknown }).__lodestoneDev = { run: runDevCommand, open: setDevOpen, state: () => useDev.getState() };
+    if (typeof window !== 'undefined') (window as unknown as { __lodestoneDev?: unknown }).__lodestoneDev = { run: runDevCommand, open: setDevOpen, state: () => useDev.getState(), vibe: () => useVibe.getState() };
     return () => {
       clearInterval(id);
       window.removeEventListener('keydown', onKey);

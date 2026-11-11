@@ -138,14 +138,22 @@ class Composer implements ComposerHook {
   private doneKey: string | null = null;
   private lastWant: string | null = null;
   private lastSnap = 0;
+  private eng: AudioEngine | null = null;
+  /** A forced state was just chosen: the director switches at once (no dwell). */
+  jump = false;
 
   inputs(i: MusicInputs): MusicInputs {
     const o = useComposer.getState().override;
+    if (this.jump && this.eng) {
+      this.jump = false;
+      this.eng.director.state = 'silence'; // from silence every state follows immediately
+    }
     return o.mode === 'state' && o.state ? inputsForState(o.state, o.intensity, i) : i;
   }
 
   tick(engine: unknown, d: MusicDecision, i: MusicInputs, nowMs: number): boolean {
     const eng = engine as AudioEngine;
+    this.eng = eng;
     const st = useComposer.getState();
     const c = this.context(eng, d, i, st.override);
     const want = this.want(st, c);
@@ -396,6 +404,7 @@ export function getComposer(): Composer {
     composer = new Composer();
     composerHook.current = composer;
     void composer.restoreFiles();
+    if (typeof window !== 'undefined') (window as unknown as { __lodestoneComposer?: unknown }).__lodestoneComposer = { state: () => useComposer.getState(), set: (p: Partial<ComposerState>) => useComposer.setState(p) };
   }
   return composer;
 }
@@ -406,8 +415,10 @@ export function overrideMusic(cmd: OverrideCmd): string | null {
   getComposer();
   const r = reduceOverride(useComposer.getState().override, cmd);
   if ('error' in r) return r.error;
+  const prev = useComposer.getState().override;
   useComposer.setState({ override: r });
   if (r.mode === 'track' && r.track) getComposer().preload(r.track);
+  if ((r.mode === 'state' && (prev.mode !== 'state' || prev.state !== r.state)) || (r.mode === 'auto' && prev.mode !== 'auto')) getComposer().jump = true;
   return null;
 }
 
