@@ -147,6 +147,9 @@ func TestForceStepSharesOneStep(t *testing.T) {
 	if hs[0].Quest.Steps[hs[0].Step].Grant[0].Item != ItemFork {
 		t.Fatal("the last step of act 1 hands over the fork")
 	}
+	if g := hs[0].Quest.Steps[hs[0].Step].Grant; len(g) != 2 || g[1].Item != ItemWhistle {
+		t.Fatalf("act 1 hands over a spirit whistle for the long roads of act 2: %+v", g)
+	}
 }
 
 func TestCatchUpSkipsWithRelicsAndHalfXP(t *testing.T) {

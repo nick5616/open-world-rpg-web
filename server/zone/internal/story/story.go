@@ -36,6 +36,10 @@ const (
 	ItemVerseDusk = "quest:verse_dusk"
 	ItemLens      = "quest:archon_lens"
 	ItemDawnheart = "quest:dawnheart"
+	// ItemWhistle (playtest 2 co-op): Act I hands each player a spirit
+	// whistle. Act II is three towers in three regions, kilometres apart;
+	// nothing told a new player a steed could be bought.
+	ItemWhistle = "tool:spirit_whistle"
 )
 
 // Story happenings (quests.ObjStory tags) the glue signals.
@@ -154,7 +158,7 @@ func attune(p *Places, t Place, text string) quests.Step {
 	}
 	return quests.Step{
 		Text:    fmt.Sprintf(text, name),
-		Note:    fmt.Sprintf("%s, %s. Climb to the top and lay your hand on the crystal (E). A crystal you attuned before answers again.", t.Name, p.where(t.X, t.Z)),
+		Note:    fmt.Sprintf("%s, %s. Climb to the top and lay your hand on the crystal (E). A crystal you attuned before answers again. Far? Call your steed (5); an attuned crystal is a fast travel point (M).", t.Name, p.where(t.X, t.Z)),
 		Obj:     quests.Objective{Kind: quests.ObjAttune, Site: t.Site, Settlement: -1},
 		Markers: siteMarker(t, "Tower crystal: "+t.Name),
 	}
@@ -196,10 +200,10 @@ func Act(n int, p *Places, nowMs int64) *quests.Quest {
 			attune(p, p.Forks[0], "Lay your hand on the crystal of %s"),
 			quests.Step{
 				Text:    fmt.Sprintf("Tell %s what the crystal answered", k.Name),
-				Say:     "It hummed back at you? Then the song isn't dead, only quiet. The keepers tuned the world with those towers; they called them forks. Here: my grandmother's tuning fork. It shivers near a crystal. Find the other forks and wake them, and maybe the night will remember its manners.",
+				Say:     "It hummed back at you? Then the song isn't dead, only quiet. The keepers tuned the world with those towers; they called them forks. Here: my grandmother's tuning fork. It shivers near a crystal. Find the other forks and wake them, and maybe the night will remember its manners. And take this whistle; the forks are far apart, and a spirit steed answers it. Blow it (5) on open ground.",
 				Obj:     talk(k),
 				Markers: npcMarker(k),
-				Grant:   []quests.ItemQty{{Item: ItemFork, Qty: 1}},
+				Grant:   []quests.ItemQty{{Item: ItemFork, Qty: 1}, {Item: ItemWhistle, Qty: 1}},
 			})
 	case 2:
 		if !k.OK || !p.Forks[1].OK || !p.Forks[2].OK || !p.Forks[3].OK {
