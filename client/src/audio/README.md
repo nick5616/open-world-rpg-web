@@ -266,7 +266,16 @@ Ambience (synthesized, `ambience.ts`): wind (louder up high, in rain and
 with speed while gliding or falling), rain (seeded weather or the zone's
 override, at the rain intensity), rain on the roof (under cover), thunder
 (heavy rain), night insects (dry nights outside towns), underwater hush
-(swimming), cave drips (underground, through the cave reverb). Fires and
+(swimming), cave drips (underground, through the cave reverb). Playtest 2
+immersion pass, wildlife by the biome under you (`wildlife.ts`, pure and
+tested; voices synthesized per call in `ambience.ts`, through the weather
+submix so walls muffle them): songbirds by day (five phrase shapes: a
+warble, a falling trill, two whistles, chip-chip-cheee, a dove's coo; the
+dawn chorus loudest, a quieter midday, an evening song) in meadows, woods
+and wetlands, a hawk's descending cry over the highlands and badlands, a
+chorus of frogs on wetland nights (rain does not stop them), an owl's
+"hoo ... hoo-hoo" in the woods at night; rain, snow and gales hush the
+birds, towns halve them, caves silence them all. Fires and
 water are positional loops (`loops.ts`, rendered by `synth.ts`), not beds:
 see "Space and distance".
 
@@ -318,8 +327,6 @@ and rebuild with `--only night`.
   open doorway muffles like a wall); occlusion is by space (building,
   cave, outdoors), not ray-cast; the water probe hears a river or a shore,
   not waterfalls (worldgen has no waterfall feature to find).
-- No biome-specific day ambience beyond wind/insects (birds, water
-  bodies): the noise beds stand in.
 - The Gentleman Library (Kontakt piano, encrypted .nkx/.nkc) cannot be
   used as raw audio and was skipped.
 

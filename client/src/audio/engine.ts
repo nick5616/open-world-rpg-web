@@ -41,6 +41,7 @@ import { SPACE_CAVE } from './spatial';
 import type { StepSurface } from './surface';
 import { WorldProbe } from './worldProbe';
 import { useStory } from '../ui/story/store';
+import { wildlifeTargets } from './wildlife';
 import { FINALE } from '../ui/story/events';
 // Playtest 2 weather (CR 030): rain level, wind, storm, sand, thunder from real strikes.
 import { liveWeather, weatherOn } from '../systems/weather/runtime';
@@ -389,6 +390,8 @@ export class AudioEngine {
       rain: w.rain,
       roofRain: w.roofRain,
       insects: isNight && rain < 0.2 && wm.snow < 0.2 && wm.wind < 0.6 && !audioWorld.inTown ? 1 : 0,
+      // playtest 2 immersion pass: birdsong by day, a hawk over the heights, frogs and owls at night, by biome
+      wild: wildlifeTargets({ biome: cave ? null : this.probe.biomeAt(feet.x, feet.z), hour, rain, snow: wm.snow, wind: wm.wind, inTown: audioWorld.inTown, underground: u }),
       water: localPlayer.mode === 'swim' ? 1 : 0,
       drips: u,
       weatherGain: w.gain,
