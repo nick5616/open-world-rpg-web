@@ -83,6 +83,8 @@ try {
 
   // ---- first person: hold the left button ~1 s ----
   await page.mouse.move(W / 2, H / 2);
+  await page.mouse.click(W / 2, H / 2); // playtest 2 polish: the first click only captures the mouse
+  await sleep(400);
   const before = await state(page);
   await page.mouse.down();
   await sleep(380);
