@@ -1,5 +1,17 @@
 [
   {
+    "id": "pt2-ground-loot",
+    "date": "2026-11-11",
+    "title": "Loot you can see from the sky",
+    "items": [
+      "Loot lands on the ground now: chests spill their treasure around them and kills scatter their drops around the body.",
+      "Every good find stands in a beam of light pouring down from the sky in its rarity's colour. Legendaries tower over the trees and you can spot them from far away.",
+      "Dropped swords, bows and armor are the real thing, lying in the grass or floating in their light.",
+      "Listen for it: good drops hum, each rarity its own note, louder and farther the rarer it is. Gems chime and tomes whisper.",
+      "Walk over gold to scoop it up; gear and rare finds wait for E. Auto-collect for common loot is in the Esc menu."
+    ]
+  },
+  {
     "id": "pt2-voice-settings",
     "date": "2026-11-11",
     "title": "Voice settings you can tune",

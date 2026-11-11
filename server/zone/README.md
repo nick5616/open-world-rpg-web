@@ -611,6 +611,15 @@ container/vein loot, pickups, TransferItem), `items_journal.go` (the
 ordered item transaction queue), `items_store.go` (Postgres),
 `items_handoff.go` (WP16), `items.go` in this directory (wiring, debug).
 
+Playtest 2 ground loot (CR 037, `loot_ground.go`): chest items (all but
+the gold) pop out onto the ground as personal pickups, kill loot scatters
+0.9-2.1 m; walking over takes gold, vein drops and (auto-collect setting,
+Interact 21/10, echoed as Event 400 `auto`) common/uncommon materials,
+everything else needs E; a full bag stays quiet; a lost race on a public
+drop gets 403/2; rare+ pickups ride the snapshot mid ring (200 m) so their
+beams are seen from afar. Rolled loot stays personal (owner-only), dropped
+items stay public.
+
 - **Inventory** in zone memory, loaded at connect (Postgres for accounts,
   the signed blob for local profiles, memory only without a row); 40 slots,
   gem pouch, ore pouch, purse (`currency:gold`), equipment (two loadout

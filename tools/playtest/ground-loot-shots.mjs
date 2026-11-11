@@ -175,7 +175,7 @@ try {
   await A.waitForFunction(() => window.__lodestoneWorld?.biomeSpot, null, { timeout: 60000 }).catch(() => {});
   const spot = await A.evaluate(() => window.__lodestoneWorld?.biomeSpot?.(0) ?? null);
   if (!spot) throw new Error('no world debug handle (biomeSpot)');
-  const jit = (Date.now() % 7) * 60 - 180; // a fresh patch each run: drops from an earlier run lie for 10 minutes
+  const jit = Math.round((Math.random() - 0.5) * 400); // a fresh patch each run: drops from an earlier run lie for 10 minutes
   const X0 = spot.x + jit;
   const Z0 = spot.z - jit;
   await tp(A, X0, Z0, 2500);
@@ -196,7 +196,10 @@ try {
   check('camp killed, loot on the ground', kills >= 1 && pa.length > 0, { kills, drops: pa.map((x) => `${x.name}(r${x.r})`) });
   check("B does not see A's personal kill loot", aOnly.length === pa.length, { aSees: pa.length, bSeesOfThem: pa.length - aOnly.length });
   if (pa.length) {
-    const c = pa.reduce((s, x) => ({ x: s.x + x.x / 100 / pa.length, y: s.y + x.y / 100 / pa.length, z: s.z + x.z / 100 / pa.length }), { x: 0, y: 0, z: 0 });
+    const best = [...pa].sort((p, q) => q.r - p.r)[0];
+    const avg = pa.reduce((s, x) => ({ x: s.x + x.x / 100 / pa.length, y: s.y + x.y / 100 / pa.length, z: s.z + x.z / 100 / pa.length }), { x: 0, y: 0, z: 0 });
+    // frame the rarest drop (its beam) with the rest of the scatter around it
+    const c = best.r >= 2 ? { x: (best.x / 100 + avg.x) / 2, y: (best.y / 100 + avg.y) / 2, z: (best.z / 100 + avg.z) / 2 } : avg;
     const m = await me(A);
     const dx = m.x - c.x;
     const dz = m.z - c.z;
@@ -208,8 +211,8 @@ try {
     await shot(A, 'kill-day');
     await view(A, 'third', 4);
     // A takes one item with E (walk-over took the gold and commons already).
-    const left = await pickups(A);
-    const target = left.find((x) => !x.name.startsWith('currency:'));
+    const left = (await pickups(A)).filter((x) => !old.has(x.id));
+    const target = left.find((x) => /^(weapon|armor|tome|blueprint):/.test(x.name)) ?? left.find((x) => !x.name.startsWith('currency:')); // gear waits for E
     if (target) {
       await tp(A, target.x / 100 + 0.8, target.z / 100, 500);
       await lookAt(A, target.x / 100, target.y / 100, target.z / 100);
@@ -258,6 +261,7 @@ try {
     ['weapon:voidglass_sword', 'bitchin'],
   ];
   const LX = a0.x + 30;
+  const oldLine = new Set((await pickups(A)).map((x) => x.id)); // only this run's drops
   const LZ = a0.z;
   for (let i = 0; i < LINE.length; i++) {
     await tp(A, LX + i * 2.6, LZ, i === 0 ? 1500 : 250);
@@ -269,8 +273,8 @@ try {
   await tp(A, mid.x - 3, mid.z + 9, 800);
   await tp(B, mid.x + 4, mid.z + 10, 800);
   await sleep(1500);
-  const sa = (await pickups(A)).filter((x) => Math.abs(x.z / 100 - mid.z) < 3 && Math.abs(x.x / 100 - mid.x) < 14);
-  const sb = (await pickups(B)).filter((x) => Math.abs(x.z / 100 - mid.z) < 3 && Math.abs(x.x / 100 - mid.x) < 14);
+  const sa = (await pickups(A)).filter((x) => !oldLine.has(x.id) && Math.abs(x.z / 100 - mid.z) < 3 && Math.abs(x.x / 100 - mid.x) < 14);
+  const sb = (await pickups(B)).filter((x) => !oldLine.has(x.id) && Math.abs(x.z / 100 - mid.z) < 3 && Math.abs(x.x / 100 - mid.x) < 14);
   const same = sa.length === LINE.length && sa.every((x) => sb.some((y) => y.id === x.id && y.name === x.name && y.r === x.r && y.x === x.x && y.y === x.y && y.z === x.z));
   check('both players see the same dropped items in the same places', same, { A: sa.map((x) => `${x.name}:r${x.r}@${x.x},${x.z}`), B: sb.length });
   for (const p of [A, B]) await lookAt(p, mid.x, 0.9 + (await me(p)).y - 0.2, mid.z);
