@@ -60,11 +60,35 @@ export class TalkController {
     this.apply();
   }
 
+  /** The talk key is down (or, in toggle mode, latched on). */
+  get isHeld(): boolean {
+    return this.held;
+  }
+
+  /**
+   * Re-evaluates after something canPublish reads changed (the player muted
+   * or unmuted their microphone): stops a live mic at once, and in open-mic
+   * mode starts the microphone on unmute.
+   */
+  refresh(): void {
+    if (!this.canPublish()) this.held = false;
+    else if (this.mode === 'vad') this.ensureMic();
+    this.apply();
+  }
+
   /** Voice-activation gate from the local level meter. */
   setGate(open: boolean): void {
     if (open === this.gateOpen) return;
     this.gateOpen = open;
     this.apply();
+  }
+
+  /** Asks for the microphone now (the settings' Retry button: the click is the consent). */
+  retryMic(): boolean {
+    if (!this.canPublish()) return false;
+    this.ensureMic();
+    this.apply();
+    return true;
   }
 
   setMode(mode: TalkMode): void {
