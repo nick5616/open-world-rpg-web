@@ -406,3 +406,14 @@ func (w *World) ChamberAt(layer int, x, z, pad float64) *Chamber {
 	}
 	return nil
 }
+
+// Wind is the vertical world's whole effect on gliders (the zone's updraft
+// field): its wind columns' lift (Updrafts) and free gliding in the sky
+// over an archipelago (movement.FreeGlider). TS: client/src/sim/verticalWind.ts.
+type Wind struct{ W *World }
+
+// LiftAt implements movement.UpdraftField.
+func (w Wind) LiftAt(x, y, z float64) float64 { return Updrafts(w.W.Updrafts).LiftAt(x, y, z) }
+
+// FreeGlideAt implements movement.FreeGlider: the sky band over an archipelago.
+func (w Wind) FreeGlideAt(x, y, z float64) bool { return w.W.InSkyBand(x, y, z) }

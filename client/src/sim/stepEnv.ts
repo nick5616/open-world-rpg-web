@@ -71,7 +71,8 @@ let verticalUpdraft: UpdraftField | null = null;
  * geysers, currents: worldgen VerticalUpdrafts over the descriptor's
  * updrafts), max'ed into every step's updraft like the zone does
  * (server/zone/internal/game/night.go withVerticalUpdraft). Set when the
- * world loads, null to clear.
+ * world loads (`new VerticalWind(descriptor)`, ./verticalWind.ts: it also
+ * makes gliding in the sky over an archipelago free), null to clear.
  */
 export function setVerticalUpdrafts(field: UpdraftField | null): void {
   verticalUpdraft = field;
@@ -85,7 +86,10 @@ function chemUpdraft(): UpdraftField | null {
   const parts = [view, dbg, v].filter((f): f is UpdraftField => !!f);
   if (parts.length === 0) return null;
   if (parts.length === 1) return parts[0];
-  return { liftAt: (x, y, z) => parts.reduce((m, f) => Math.max(m, f.liftAt(x, y, z)), 0) };
+  return {
+    liftAt: (x, y, z) => parts.reduce((m, f) => Math.max(m, f.liftAt(x, y, z)), 0),
+    freeGlideAt: (x, y, z) => parts.some((f) => f.freeGlideAt?.(x, y, z) ?? false),
+  };
 }
 
 /** Offline (solo) env: local clock, default seed. */

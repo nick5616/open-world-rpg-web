@@ -1160,6 +1160,16 @@ func (m maxUpdraft) LiftAt(x, y, z float64) float64 {
 	return math.Max(m.a.LiftAt(x, y, z), m.b.LiftAt(x, y, z))
 }
 
+// FreeGlideAt forwards movement.FreeGlider (CR 038: the sky air).
+func (m maxUpdraft) FreeGlideAt(x, y, z float64) bool {
+	for _, f := range []movement.UpdraftField{m.a, m.b} {
+		if fg, ok := f.(movement.FreeGlider); ok && fg.FreeGlideAt(x, y, z) {
+			return true
+		}
+	}
+	return false
+}
+
 // ---- Interacts ----
 
 func (s *Server) nightInteract(sess *session, m *proto.Interact) {

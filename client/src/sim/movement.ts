@@ -72,6 +72,7 @@ import {
   SWIM_FLOAT_DEPTH_M,
   SWIM_SPEED,
   TERMINAL_FALL_SPEED,
+  UPDRAFT_FREE_LIFT,
   UPDRAFT_MAX_LIFT,
   WALKABLE_TAN_SQ,
   WIND_GLIDE_PUSH_MS,
@@ -156,6 +157,12 @@ export interface MoveInput {
  */
 export interface UpdraftField {
   liftAt(x: number, y: number, z: number): number;
+  /**
+   * CR 038 (optional): gliding here costs no stamina (the sky air over an
+   * archipelago: worldgen's inSkyBand). With it, a strong updraft
+   * (UPDRAFT_FREE_LIFT) is free too. Go: movement.FreeGlider.
+   */
+  freeGlideAt?(x: number, y: number, z: number): boolean;
 }
 
 /**
@@ -719,7 +726,7 @@ function stepGlide(s: MoveState, flags: number, wish: Vec2xz, ground: GroundQuer
       mode = MoveMode.swim;
     }
   }
-  return { pos: { x, y, z }, vel: { x: vel.x, y: vy, z: vel.z }, airJumps, mode, stamina: s.stamina - DRAIN_GLIDE, staminaMax: s.staminaMax, timer: 0, lunge: 0, flags: s.flags & MoveFlag.exhausted };
+  return { pos: { x, y, z }, vel: { x: vel.x, y: vy, z: vel.z }, airJumps, mode, stamina: s.stamina - (lift >= UPDRAFT_FREE_LIFT || (env.updraft?.freeGlideAt?.(s.pos.x, s.pos.y, s.pos.z) ?? false) ? 0 : DRAIN_GLIDE), staminaMax: s.staminaMax, timer: 0, lunge: 0, flags: s.flags & MoveFlag.exhausted }; // CR 038: strong updrafts carry you for free
 }
 
 /**

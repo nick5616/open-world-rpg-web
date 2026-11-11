@@ -85,7 +85,7 @@ func (s *Server) verticalUpdraft() movement.UpdraftField {
 	if vw == nil || len(vw.Vertical().Updrafts) == 0 {
 		return nil
 	}
-	return vertical.Updrafts(vw.Vertical().Updrafts)
+	return vertical.Wind{W: vw.Vertical()}
 }
 
 // Entity.layer values.

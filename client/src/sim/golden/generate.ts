@@ -9,6 +9,7 @@ import { runWp10, scenarioGround, summarize, WP10_SCENARIOS, WP10_SEED } from '.
 import { runWp13, WP13_SCENARIOS } from './wp13';
 import { RIDE_SCENARIOS, rideRun, rideSummary } from './ride';
 import { WEATHER_SCENARIOS, weatherRun, weatherSummary } from './weather';
+import { runVertical, VERTICAL_SCENARIOS, verticalGround } from './vertical';
 
 for (const sc of SCENARIOS) {
   const g = runScenario(sc);
@@ -47,5 +48,13 @@ if (!existsSync(wasmPath)) {
     writeFileSync(p, serializeGolden(g));
     console.log(`wrote ${p}
   ${summarize(g)}`);
+  }
+  // CR 038: the vertical world (sky islands, lifts, the Underground).
+  const vw = verticalGround(ground);
+  for (const name of VERTICAL_SCENARIOS) {
+    const g = runVertical(name, vw, ground.wg.genVersion);
+    const p = goldenPath(`pt2_vertical_${name}`);
+    writeFileSync(p, serializeGolden(g));
+    console.log(`wrote ${p} (${g.states.length} steps)`);
   }
 }

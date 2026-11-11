@@ -133,6 +133,8 @@ pub const GLIDE_ACCEL: f64 = 6.0;
 pub const GLIDE_VERTICAL_ACCEL: f64 = 20.0;
 /// Upper bound of an updraft column's lift (m/s); the step clamps to it and the zone's vertical validation relies on it. v8: 20 (the vertical world's sky lifts lift 18 m/s; wind columns and fire stay at 10 and 7).
 pub const UPDRAFT_MAX_LIFT: f64 = 20.0;
+/// v8 (CR 038): gliding in an updraft at least this strong costs no stamina (the vertical world's wind columns at 10 and sky lifts at 18 carry you all the way up; fire's 7 still drains).
+pub const UPDRAFT_FREE_LIFT: f64 = 8.0;
 /// v8 (CR 038): a falling body (walk/air step, not dashing) never sinks faster than this, m/s (~150 m of free fall to reach it; landing faster than 18 m/s hurts, zone side).
 pub const TERMINAL_FALL_SPEED: f64 = 54.0;
 /// Horizontal acceleration toward the swim velocity, m/s^2.
