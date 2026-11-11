@@ -347,9 +347,9 @@ func (s *Server) addLayerGroups(w *combat.World) {
 		c := &v.Chambers[i]
 		want := min(5, 1+int(c.Rx*c.Rz/9000))
 		got := 0
-		for k := 0; k < want*6 && got < want; k++ {
+		for k := 0; k < want*12 && got < want; k++ {
 			h := content.Mix(c.ID ^ uint64(k+1)*0x9E3779B97F4A7C15)
-			e := 0.2 + 0.5*float64(h>>11)/float64(1<<53)
+			e := 0.22 + 0.58*float64(h>>11)/float64(1<<53)
 			th := 2 * math.Pi * float64(content.Mix(h)>>11) / float64(1<<53)
 			u, vv := c.Rx*e*math.Cos(th), c.Rz*e*math.Sin(th)
 			x, z := c.X+u*c.C-vv*c.S, c.Z+u*c.S+vv*c.C
@@ -396,3 +396,46 @@ func (s *Server) layerVein(id uint64) (caves.Vein, bool) {
 
 // isLayerVein: a vein of the vertical world (bands 3 and 4).
 func isLayerVein(v caves.Vein) bool { return v.Band >= 3 }
+
+// safeSaved (CR 038) moves a saved position the vertical world made unsafe:
+// standing on terrain that is now a hole (a tunnel mouth, a cenote shaft:
+// onto its rim, outside the hole), inside a sky island's rock (onto its
+// top), or deep underground in rock with no floor under it (the spawn).
+// Everything else is left alone (join() lifts a position below the ground).
+func (s *Server) safeSaved(characterID string, p movement.Vec3) movement.Vec3 {
+	vw := s.vertical()
+	if vw == nil {
+		return p
+	}
+	v := vw.Vertical()
+	g := s.cfg.Ground
+	surf := g.HeightAt(p.X, p.Z)
+	if v.SurfaceMasked(p.X, p.Z) && p.Y >= surf-vertical.Under {
+		for _, o := range v.SurfaceOpenings {
+			dx, dz := p.X-o.X, p.Z-o.Z
+			d := math.Hypot(dx, dz)
+			if d > o.R+vertical.Under+2 {
+				continue
+			}
+			if d < 1e-6 {
+				dx, dz, d = 1, 0, 1
+			}
+			r := o.R + 4
+			x, z := o.X+dx/d*r, o.Z+dz/d*r
+			return movement.Vec3{X: x, Y: g.HeightAt(x, z), Z: z}
+		}
+	}
+	switch vw.LayerAt(p.X, p.Y, p.Z) {
+	case vertical.LayerSky:
+		if f := movement.GroundAt(g, p.X, p.Y, p.Z); f == p.Y { // inside the island: onto its top
+			return movement.Vec3{X: p.X, Y: movement.GroundAt(g, p.X, 1e4, p.Z), Z: p.Z}
+		}
+	case vertical.LayerSurface:
+		if p.Y < surf-vertical.Under {
+			if cw := s.caves(); cw != nil && cw.SystemAt(p.X, p.Y, p.Z) < 0 && movement.GroundAt(g, p.X, p.Y, p.Z) < p.Y-30 {
+				return s.newCharacterSpawn(characterID) // in rock, nothing under it
+			}
+		}
+	}
+	return p
+}
