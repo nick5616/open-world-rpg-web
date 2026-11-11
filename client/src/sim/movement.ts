@@ -80,7 +80,7 @@ import {
 } from '@lodestone/contracts';
 import type { GroundQuery } from './ground';
 import { beginDash, SUSTAIN, skateGround } from './dash';
-import { atLevel, collideStep } from './caves';
+import { atLevel, collideStep, surfaceGuard } from './caves';
 import { collideHead, MOUNTED, stepRide } from './ride';
 
 export interface Vec3 {
@@ -476,6 +476,7 @@ export function stepMovement(state: MoveState, input: MoveInput, groundIn: Groun
     default:
       out = riding ? stepRide(st, input.flags, wishDirFromFlags(input.flags & (InputFlag.forward | InputFlag.left | InputFlag.right), yaw), yaw, gm, dt) : stepWalk(st, input.flags, wish, gm, dt, dashed.dashing, env.mw);
   }
+  out = surfaceGuard(groundIn, ground, state, out, GROUND_EPS); // playtest 2 co-op polish: never into the hill (caves.ts)
   out = collideStep(ground, out); // WP09: cave walls and ceilings (caves.ts)
   out = collideHead(ground, out); // CR 027: the steed's chest (ride.ts)
   out.dash = st.dash ?? 0;
