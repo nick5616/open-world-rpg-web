@@ -1,5 +1,19 @@
 [
   {
+    "id": "pt2-coop",
+    "date": "2026-11-11",
+    "title": "Better together, all the way to the Hush",
+    "items": [
+      "Playing the story with a friend: the farmer's and the blacksmith's talks count for you both, and a friend beside a sunsteel seam gets their own ore when it breaks.",
+      "The sunlit shaft really is a shaft now: jump in to reach the sunsteel seam.",
+      "Crystal towers stay dry to climb in the rain, and a tower's top is a respawn point.",
+      "Ulus hands you a spirit whistle for the long roads of Act II (press 5), the Act II towers can all be walked up to, and the Last Keeper's stone marker sits on the stone.",
+      "Healing draughts heal a share of your health (40%), so they stay worth drinking at any level.",
+      "No side quest offers pop up from the story's own townsfolk while you still need them.",
+      "The Starless Sovereign comes to you after the vigil, the sanctum's lens waits for its guardian to fall, and the Hush's shroud breaks after a dozen sunsteel or Light hits."
+    ]
+  },
+  {
     "id": "pt2-ground-loot",
     "date": "2026-11-11",
     "title": "Loot you can see from the sky",

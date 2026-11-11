@@ -45,16 +45,24 @@ const PANEL: CSSProperties = { background: 'rgba(12,14,20,0.94)', border: '1px s
 /** The welcome / What's new card is up (ui/whatsnew). */
 const whatsNewUp = () => typeof document !== 'undefined' && !!document.querySelector('[data-testid="whatsnew"]');
 
+/**
+ * A boss fight is on: the fanfare waits for it (playtest 2 co-op: "Level 33"
+ * covered the Hush's bar and "The endless night falls on those without a well
+ * of their own" at the one moment you must read it).
+ */
+const bossUp = () => !!useCombatHud.getState().boss;
+
 function LevelUpFanfare() {
   const f = useProgression((s) => s.fanfare);
   // A discovery card owns the screen; the fanfare waits for it to finish
   // (playtest 2: a new character's first town gave both at once, stacked).
   const introUp = useIntro((s) => !!s.current);
+  const inBoss = useCombatHud((s) => !!s.boss);
   const id = f?.id;
   useEffect(() => {
     // The level-up sound comes from the audio system (Event 604 -> level up sound 1-3).
   }, [id]);
-  if (!f || introUp || whatsNewUp()) return null; // shown after the discovery card and the welcome (the store holds it meanwhile)
+  if (!f || introUp || inBoss || whatsNewUp()) return null; // shown after the discovery card and the welcome (the store holds it meanwhile)
   return (
     <div key={f.id} data-testid="levelup-fanfare" className="pt-fanfare" style={{ position: 'fixed', top: '15%', left: '50%', transform: 'translateX(-50%)', zIndex: 20, pointerEvents: 'none', textAlign: 'center', ['--pt-ms' as string]: `${FANFARE_MS}ms` }}>
       <div style={{ font: '600 15px Georgia, serif', letterSpacing: 6, color: GOLD, textShadow: '0 0 12px rgba(255,209,102,0.7)' }}>LEVEL UP</div>
@@ -360,7 +368,7 @@ export function ProgressionHud() {
   useProgressionKeys(prompt);
   useEffect(() => {
     // The level-up also waits for the welcome / What's new card (integration QA: it opened on top of it).
-    const id = setInterval(() => pruneProgression(performance.now(), !!useIntro.getState().current || whatsNewUp()), 500);
+    const id = setInterval(() => pruneProgression(performance.now(), !!useIntro.getState().current || whatsNewUp() || bossUp()), 500);
     return () => clearInterval(id);
   }, []);
   useEffect(() => {

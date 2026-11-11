@@ -18,6 +18,7 @@ import (
 	"lodestone/server/zone/internal/content"
 	"lodestone/server/zone/internal/items"
 	"lodestone/server/zone/internal/quests"
+	"lodestone/server/zone/internal/story"
 )
 
 const (
@@ -54,6 +55,13 @@ func (s *Server) contentTalk(sess *session, npcIndex int, npcEnt uint32, done in
 	}
 	l := sess.quests.log
 	now := s.cfg.Now().UnixMilli()
+	// Playtest 2 co-op: the main story's townsfolk (Ulus, the captain, the
+	// smith) keep to the story while it needs them; a side offer card popped
+	// up over the fight a second after the second player's talk with Ulus.
+	if s.storyNeedsNPC(l, npcIndex) {
+		return
+	}
+	mainStarted := l.HasStarted(story.Key(1)) || l.IsDone(story.Key(1))
 	var offer *content.Offer
 	giver := content.IsGiver(cw.Seed, t, npcIndex)
 	if giver {
@@ -75,6 +83,9 @@ func (s *Server) contentTalk(sess *session, npcIndex int, npcEnt uint32, done in
 		key := content.StoryKey(def.Key)
 		if l.HasStarted(key) || l.IsDone(key) || l.ByKey(key) != nil {
 			continue
+		}
+		if mainStarted && def.Key == "lodestone_hum" {
+			continue // "The Last Song" tells this story now (same innkeeper, same grandmother)
 		}
 		if q := content.Story(cw, def, t, npcIndex, now); q != nil {
 			offer = &content.Offer{Quest: q, Say: def.Offer, Kind: "story"}

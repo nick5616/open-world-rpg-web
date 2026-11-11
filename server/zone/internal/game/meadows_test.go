@@ -250,3 +250,66 @@ func TestMeadowsDroppedStartsWardAndOldCharactersSkipIt(t *testing.T) {
 		t.Fatalf("an old character got %+v", evs[0])
 	}
 }
+
+// Playtest 2 co-op: in a party, the prologue's talk steps are shared like
+// the acts': one friend talks to the farmer and the other, beside them, is
+// on the slimes too (and hears the farmer's line); handing in for one hands
+// in for both, with each one's own reward, and both move on to the Ward.
+func TestMeadowsTalksSharedInParty(t *testing.T) {
+	h, store, w, g, gi := meadowsHarness(t)
+	gd := w.T.NPCs[gi]
+	const ca, cb = "66666666-4444-5555-6666-777777777777", "77777777-4444-5555-6666-777777777777"
+	sx, sz := gd.WorkX+1.5*math.Cos(gd.WorkYaw), gd.WorkZ+1.5*math.Sin(gd.WorkYaw)
+	store.rows[ca] = movement.Vec3{X: sx, Y: g.HeightAt(sx, sz) + 0.3, Z: sz}
+	store.rows[cb] = movement.Vec3{X: sx + 1, Y: g.HeightAt(sx+1, sz) + 0.3, Z: sz}
+	a := h.dial("")
+	a.join(h, ca, "Nell")
+	b := h.dial("")
+	b.join(h, cb, "Rook")
+	for _, c := range []*client{a, b} {
+		if s := c.take(EventQuestStarted, 3*time.Second); s.TargetID != quests.MeadowsID {
+			t.Fatalf("first quest %+v", s)
+		}
+	}
+	h.do(func() {
+		h.srv.setParty(h.srv.byChar[ca].ent, "party-1")
+		h.srv.setParty(h.srv.byChar[cb].ent, "party-1")
+	})
+	gid := a.npcEntityID(h, gi)
+	a.send(&proto.Interact{TargetKind: InteractNPC, TargetID: uint64(gid), Action: ActionTalk})
+	if s := b.takeFor(EventQuestStep, quests.MeadowsID, 3*time.Second); s.Value != 1 {
+		t.Fatalf("the friend's step %+v", s)
+	}
+	if q := b.questLog(t).find(quests.MeadowsID); q == nil || q.Step != 1 {
+		t.Fatalf("the friend is not on the slimes: %+v", q)
+	}
+	heard := false
+	for _, ev := range b.eventsOf(EventStorySay) {
+		heard = heard || strings.Contains(string(ev.Data), "slimes")
+	}
+	if !heard {
+		t.Fatal("the friend did not hear the farmer")
+	}
+	// The slimes (in play a kill counts for the party beside it): both done.
+	h.do(func() {
+		for _, c := range []string{ca, cb} {
+			sess := h.srv.byChar[c]
+			sess.quests.log.SetStep(quests.MeadowsKey, 2)
+			sess.quests.recheck = true
+		}
+	})
+	gold0 := b.inventory(t).Gold
+	a.send(&proto.Interact{TargetKind: InteractNPC, TargetID: uint64(gid), Action: ActionTalk})
+	if d := b.takeFor(EventQuestCompleted, quests.MeadowsID, 3*time.Second); d.Value != quests.MeadowsGold {
+		t.Fatalf("the friend's hand-in %+v", d)
+	}
+	b.takeFor(EventQuestStarted, quests.WardID, 3*time.Second)
+	time.Sleep(200 * time.Millisecond)
+	inv := b.inventory(t)
+	if inv.Gold < gold0+quests.MeadowsGold || findItem(inv, "armor:leather_cap") == nil {
+		t.Fatalf("the friend's reward: gold %d -> %d, cap %v", gold0, inv.Gold, findItem(inv, "armor:leather_cap"))
+	}
+	if l := b.questLog(t); l.find(quests.MeadowsID) != nil || l.find(quests.WardID) == nil {
+		t.Fatalf("the friend's log after the shared hand-in %+v", l)
+	}
+}
