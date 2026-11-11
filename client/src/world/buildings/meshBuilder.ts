@@ -14,7 +14,7 @@ export interface MeshData {
   position: Float32Array;
   normal: Int8Array;
   uv: Float32Array;
-  /** Per vertex: texture layer, glow (0 none, 1-127 night-only window light, 128-255 always-on fire). */
+  /** Per vertex: texture layer, glow (0 none, 1-126 night-only window light, 127 daylight pane, 128-255 always-on fire). */
   lg: Uint8Array;
   color: Uint8Array;
   index: Uint32Array;
@@ -23,6 +23,13 @@ export interface MeshData {
 }
 
 export type V3 = [number, number, number];
+
+/**
+ * Glow class 127: a window's inner pane, which shows the bright sky outside
+ * by day and goes dark at night (townMaterial.ts). Night-lit windows use
+ * 1..126, always-on light 128..255.
+ */
+export const GLOW_DAYLIGHT = 127;
 
 /** A local building/prop frame: x = cx + u c - v s, z = cz + u s + v c (worldgen geom.rs Obb). */
 export interface Frame {

@@ -15,7 +15,7 @@
 // avoid z-fighting.
 
 import { BOX_FLAG, BUILDING_FLAG, PROP_KINDS, type Building, type Settlement, type TownProp, type Towns } from '@lodestone/worldgen';
-import { MeshBuilder, at, dirOf, local, turned, type Frame, type MeshData, type V3 } from './meshBuilder';
+import { GLOW_DAYLIGHT, MeshBuilder, at, dirOf, local, turned, type Frame, type MeshData, type V3 } from './meshBuilder';
 import { DEFAULT_DIMS, drawProp, P, PK, type Emitter, type PropCtx, type PropDims } from './props';
 import { TEX, type TexName } from './textures';
 
@@ -106,8 +106,8 @@ export interface SettlementMesh {
   bounds: [number, number, number, number];
 }
 
-const SKY_GLOW_INN = 70;
-const SKY_GLOW_HOUSE = 46;
+export const SKY_GLOW_INN = 70;
+export const SKY_GLOW_HOUSE = 46;
 
 /** Prop dims from its furniture / town-prop box (exact collision extents), else the kit defaults. */
 export function propDims(t: Towns, p: TownProp, boxByPos: Map<string, number>): PropDims {
@@ -410,7 +410,7 @@ function drawWall(mb: MeshBuilder, t: Towns, b: Building, bx: Box, look: Look, t
       ];
       mb.paint(TEX.window, 0, [1, 1, 1], glow);
       mb.poly([pt(-ww / 2, sill, 0.015), pt(ww / 2, sill, 0.015), pt(ww / 2, wtop, 0.015), pt(-ww / 2, wtop, 0.015)], out, uv);
-      mb.paint(TEX.window, 0, [1, 1, 1], 0);
+      mb.paint(TEX.window, 0, [1, 1, 1], GLOW_DAYLIGHT); // from inside, the window shows the day outside
       mb.poly([pti(-ww / 2, sill, 0.015), pti(ww / 2, sill, 0.015), pti(ww / 2, wtop, 0.015), pti(-ww / 2, wtop, 0.015)], inn, uv);
       // Sill.
       P(mb, look.wall === 'stone' || look.wall === 'adobe' ? look.wall : 'wood', [0.85, 0.8, 0.75]);
