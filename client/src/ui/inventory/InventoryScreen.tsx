@@ -29,6 +29,7 @@ import { ensureInventoryStyles, GOLD, PANEL_BG, PANEL_BORDER, TEXT } from './sty
 import { notGameKey } from '../../input/useKeyboard';
 import { useCombatHud } from '../../combat/store';
 import { enterPlay, instrumentItem } from '../music/link';
+import { CharacterPreview } from './CharacterPreview';
 
 const TILE = 52;
 const GAP = 6;
@@ -401,6 +402,10 @@ function InventoryPanel() {
               {shown ? <ItemCard item={shown} quick={inv?.quick} /> : <div style={{ opacity: 0.55, fontSize: 13 }}>Hover an item to inspect it; click to select it.</div>}
             </Section>
             {sel && <ItemActions item={sel} quick={inv?.quick ?? ''} />}
+          </div>
+          {/* Playtest 2: you, as other players see you (armor + weapon look), right-justified */}
+          <div style={{ marginLeft: 'auto', borderLeft: '1px solid #ffffff18', paddingLeft: 16 }}>
+            <CharacterPreview />
           </div>
         </div>
       </div>
