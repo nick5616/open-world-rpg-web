@@ -243,10 +243,19 @@ func TestPersonalKillLootAndBossLockout(t *testing.T) {
 		})
 	}
 	n0 := len(a.eventsOf(EventLootGranted))
+	pressed := map[uint32]bool{}
 	bossKill(990002)
 	deadline := time.Now().Add(3 * time.Second)
 	for len(a.eventsOf(EventLootGranted)) < n0+4 && time.Now().Before(deadline) { // gold, 3 equipment, gem, blueprint, potion, tome
 		a.pump(100 * time.Millisecond)
+		// Playtest 2 ground loot: walking over takes the gold; equipment,
+		// tomes and blueprints wait for E (Interact 41).
+		for _, id := range a.pickups() {
+			if !pressed[id] {
+				pressed[id] = true
+				a.interact(InteractPickup, uint64(id), ActionUse, 0)
+			}
+		}
 	}
 	if len(a.eventsOf(EventLootGranted)) < n0+4 {
 		t.Fatalf("boss loot: %d grants", len(a.eventsOf(EventLootGranted))-n0)

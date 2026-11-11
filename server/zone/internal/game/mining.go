@@ -236,6 +236,9 @@ func (s *Server) interact(e *Entity, in *proto.Interact, now time.Time) {
 		for _, p := range s.ents {
 			if p.ID == uint32(in.TargetID) && p.Kind == proto.EntityKindPickup && p.Owner == e.ID {
 				if dist3(p.Move.Pos, e.Move.Pos) <= pickupTakeReachM+constants.PlayerHeight {
+					if p.drop != nil {
+						p.drop.refused = time.Time{} // an explicit E always tries (and says why not)
+					}
 					s.takePickup(e, p)
 				}
 				return
@@ -483,7 +486,7 @@ func (s *Server) miningTick(tick uint32, now time.Time) {
 			if o := sess.ent; o != nil && o.ID == p.Owner {
 				feet := o.Move.Pos
 				mid := movement.Vec3{X: feet.X, Y: feet.Y + 0.9, Z: feet.Z}
-				if dist3(mid, p.Move.Pos) <= pickupReachM+0.9 {
+				if dist3(mid, p.Move.Pos) <= pickupReachM+0.9 && s.autoTake(sess, p, now) { // playtest 2 ground loot: what walking over takes (loot_ground.go)
 					s.takePickup(o, p)
 				}
 			}
