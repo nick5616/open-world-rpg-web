@@ -66,6 +66,18 @@ export function isCaptureClick(): boolean {
   return !document.pointerLockElement && pointerLockState.refusals < 2;
 }
 
+/**
+ * Playtest 2 polish: the browser's right-click menu is off over the game
+ * view only (the right button uses a spell or the weapon's move there, and
+ * with the mouse captured every click is the game's). Chat, text boxes and
+ * panels keep it (copy, paste, spelling); panels that use the right button
+ * themselves (the map's pins, chat names, the skill screen) stop it there.
+ */
+export function blocksContextMenu(target: EventTarget | null): boolean {
+  if (typeof document !== 'undefined' && document.pointerLockElement) return true;
+  return (target as HTMLElement | null)?.tagName === 'CANVAS';
+}
+
 export function useMouseLook() {
   const delta = useRef({ x: 0, y: 0 });
 
@@ -110,7 +122,9 @@ export function useMouseLook() {
     const onLockError = () => {
       pointerLockState.refusals++;
     };
-    const onContext = (e: Event) => e.preventDefault();
+    const onContext = (e: Event) => {
+      if (blocksContextMenu(e.target)) e.preventDefault();
+    };
     document.addEventListener('mousemove', onMove);
     document.addEventListener('pointerlockerror', onLockError);
     document.addEventListener('mousedown', onDown);
