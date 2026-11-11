@@ -39,7 +39,16 @@ export async function noiseBuffer(ctx: BaseAudioContext, seconds: number, brown:
   return b;
 }
 
-export type LoopFamily = 'fire' | 'flow' | 'lap' | 'roofRain';
+export type LoopFamily = 'fire' | 'flow' | 'lap' | 'roofRain' | HumFamily;
+
+/**
+ * Playtest 2 ground loot: the hum of an item lying on the ground (ui/
+ * inventory/ground/hum.ts picks one by item type; the rarity sets its
+ * pitch, level and reach). Tonal, 4 s loops whose every frequency is a
+ * multiple of 1/4 Hz, so the seam crossfade is phase-clean.
+ */
+export type HumFamily = 'humPlain' | 'humMetal' | 'humChime' | 'humWhisper' | 'humHolo';
+export const HUM_FAMILIES: readonly HumFamily[] = ['humPlain', 'humMetal', 'humChime', 'humWhisper', 'humHolo'];
 
 /** Render rate: everything here lives below 12 kHz. */
 const RATE = 32000;
@@ -87,11 +96,130 @@ function events(seconds: number, perS: number): number[] {
   return out;
 }
 
+/** A sine partial at `freq` and `level`, its amplitude breathing at `lfoHz` by `depth` (0..1). */
+function partial(ctx: Offline, out: AudioNode, freq: number, level: number, lfoHz = 0, depth = 0, type: OscillatorType = 'sine'): void {
+  const o = ctx.createOscillator();
+  o.type = type;
+  o.frequency.value = freq;
+  const g = ctx.createGain();
+  g.gain.value = level * (1 - depth / 2);
+  if (lfoHz > 0 && depth > 0) {
+    const lfo = ctx.createOscillator();
+    lfo.frequency.value = lfoHz;
+    const d = ctx.createGain();
+    d.gain.value = (level * depth) / 2;
+    lfo.connect(d).connect(g.gain);
+    lfo.start(0);
+  }
+  o.connect(g).connect(out);
+  o.start(0);
+}
+
+/** A struck partial set (a ting or a chime) at time t: each partial decays on its own. */
+function strike(ctx: Offline, out: AudioNode, t: number, freqs: readonly number[], peak: number, decay: number): void {
+  freqs.forEach((f, i) => {
+    const o = ctx.createOscillator();
+    o.frequency.value = f;
+    const g = ctx.createGain();
+    const p = peak / (1 + i * 0.8);
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(p, t + 0.004);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + decay / (1 + i * 0.6));
+    o.connect(g).connect(out);
+    o.start(t);
+    o.stop(t + decay + 0.05);
+  });
+}
+
+function buildHum(family: HumFamily, ctx: Offline, out: AudioNode, white: AudioBuffer, seconds: number): void {
+  const q = (hz: number) => Math.round(hz * 4) / 4; // a whole number of cycles per 4 s loop
+  switch (family) {
+    case 'humPlain': {
+      // A warm drone: fundamental, octave and fifth, slowly breathing, a breath of air on top.
+      partial(ctx, out, q(110), 0.42, 0.5, 0.35);
+      partial(ctx, out, q(220), 0.2, 0.75, 0.5);
+      partial(ctx, out, q(330), 0.08, 0.25, 0.6);
+      const air = ctx.createGain();
+      air.gain.value = 0.025;
+      src(ctx, white).connect(filter(ctx, 'bandpass', 1800, 2)).connect(air).connect(out);
+      break;
+    }
+    case 'humMetal': {
+      // A blade singing: inharmonic bar partials (1, 2.76, 5.40) beating slowly
+      // against detuned twins, and a soft ting now and then.
+      const f = 196;
+      for (const [r, l] of [
+        [1, 0.3],
+        [2.76, 0.16],
+        [5.4, 0.07],
+      ] as const) {
+        partial(ctx, out, q(f * r), l, 0.25, 0.4);
+        partial(ctx, out, q(f * r) + 0.75, l * 0.7, 0.5, 0.3);
+      }
+      for (let t = 0.6; t < seconds - 0.6; t += 1.9) strike(ctx, out, t, [q(f * 2.76 * 2), q(f * 5.4 * 2)], 0.12, 1.6);
+      break;
+    }
+    case 'humChime': {
+      // A gem: a faint glassy pad and soft chimes on a pentatonic.
+      partial(ctx, out, q(523.25), 0.07, 0.5, 0.6);
+      partial(ctx, out, q(784), 0.05, 0.75, 0.6);
+      const notes = [1046.5, 1174.7, 1568, 1318.5];
+      notes.forEach((n, i) => strike(ctx, out, 0.3 + i * 0.95, [q(n), q(n * 2.01), q(n * 3.03)], 0.2, 1.8));
+      break;
+    }
+    case 'humWhisper': {
+      // A tome: breathy noise through two drifting formants, a low murmur under it.
+      for (const [hz, lfo] of [
+        [700, 0.25],
+        [1500, 0.5],
+      ] as const) {
+        const g = ctx.createGain();
+        g.gain.value = 0.0;
+        const bp = filter(ctx, 'bandpass', hz, 5);
+        const sweep = ctx.createOscillator();
+        sweep.frequency.value = lfo;
+        const sd = ctx.createGain();
+        sd.gain.value = hz * 0.35;
+        sweep.connect(sd).connect(bp.frequency);
+        sweep.start(0);
+        const amp = ctx.createOscillator();
+        amp.frequency.value = lfo * 3;
+        const ad = ctx.createGain();
+        ad.gain.value = 0.11;
+        amp.connect(ad).connect(g.gain);
+        amp.start(0);
+        src(ctx, white, true, hz / 1000).connect(bp).connect(g).connect(out);
+      }
+      partial(ctx, out, q(98), 0.12, 0.25, 0.7);
+      break;
+    }
+    case 'humHolo': {
+      // Bitchin': a shimmering major chord with a slow sparkle arpeggio.
+      for (const [hz, l] of [
+        [261.5, 0.12],
+        [329.75, 0.1],
+        [392, 0.1],
+        [523.25, 0.07],
+      ] as const) {
+        partial(ctx, out, q(hz), l, 0.5, 0.5, 'triangle');
+        partial(ctx, out, q(hz) + 0.5, l * 0.6, 0.75, 0.5, 'triangle');
+      }
+      const arp = [1046.5, 1318.5, 1568, 2093];
+      for (let i = 0; i < 8; i++) strike(ctx, out, 0.2 + i * 0.47, [q(arp[i % 4])], 0.08, 0.9);
+      break;
+    }
+  }
+}
+
 async function build(family: LoopFamily, ctx: Offline, seconds: number): Promise<void> {
   const brown = await noiseBuffer(ctx, 4, true, 1);
   const white = await noiseBuffer(ctx, 3, false, 1);
   const out = ctx.createGain();
   out.connect(ctx.destination);
+  if ((HUM_FAMILIES as readonly string[]).includes(family)) {
+    buildHum(family as HumFamily, ctx, out, white, seconds);
+    return;
+  }
   switch (family) {
     case 'fire': {
       // Rumble (the body of the flames), a soft hiss, crackles and a few pops.
@@ -177,7 +305,7 @@ async function seamless(b: AudioBuffer, fadeS: number, make: (len: number) => Au
 }
 
 /** Render one loop texture into a buffer of `ctx` (null where offline rendering is unavailable). */
-export async function renderLoop(ctx: BaseAudioContext, family: LoopFamily, seconds = family === 'lap' ? 9 : 6): Promise<AudioBuffer | null> {
+export async function renderLoop(ctx: BaseAudioContext, family: LoopFamily, seconds = family === 'lap' ? 9 : family.startsWith('hum') ? 4 : 6): Promise<AudioBuffer | null> {
   const Ctor = offlineCtor();
   if (!Ctor) return null;
   try {
