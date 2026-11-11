@@ -14,6 +14,7 @@ import * as THREE from 'three';
 import { Effect } from 'postprocessing';
 import { budget } from './core';
 import { reducedMotion } from './quality';
+import { flashProfile } from '../flashSafety';
 
 const MAX_WAVES = 4;
 
@@ -62,7 +63,7 @@ export function screenKick(x: number, y: number, z: number, strength: number, ca
 
 export function screenShake(a: number): void {
   if (reducedMotion()) return;
-  state.shake = Math.min(1.2, Math.max(state.shake, a * budget.profile.shake));
+  state.shake = Math.min(1.2, Math.max(state.shake, a * budget.profile.shake * flashProfile().shake)); // calm kills: half when Reduce flashing is on
 }
 
 export function screenFlash(color: THREE.Color, a: number): void {

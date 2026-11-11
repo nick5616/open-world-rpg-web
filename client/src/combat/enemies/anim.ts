@@ -11,7 +11,8 @@
 //              event was missed (out of its 70 m range, joined mid-swing);
 //   strike     the active frames follow the wind-up (activeMs from the
 //              event), then recovery (combat.yaml recoveryMs);
-//   hit        HitResult (yours) / Event 200 (anyone's): flash + flinch;
+//   hit        HitResult (yours) / Event 200 (anyone's): tint + flinch (the
+//              tint is rate-limited and held, never a strobe: flashSafety.ts);
 //   stagger    a wind-up the zone interrupted (the casting bit dropped
 //              well before the wind-up could finish: demons' stagger,
 //              parries), knockback / stun statuses (206), parries (207);
@@ -23,6 +24,7 @@
 // builders (pose.ts) read the public fields.
 
 import { COMBAT, type EnemyAttackDef } from '@lodestone/contracts';
+import { HitTint, flashProfile } from '../flashSafety';
 
 export type AttackKind = 'bite' | 'swipe' | 'slam' | 'punch' | 'stomp' | 'charge' | 'leap' | 'shoot' | 'spit' | 'sting' | 'throw' | 'cast' | 'nova' | 'bump';
 
@@ -141,6 +143,7 @@ function angleDiff(a: number, b: number): number {
 }
 
 export const HURT_MS = 320;
+/** How long a struck enemy counts as "just hit" (hitstop holds it in place). */
 export const FLASH_MS = 130;
 export const STAGGER_MS = 520;
 const STRIKE_MIN_MS = 140;
@@ -170,8 +173,16 @@ export class EnemyAnimator {
   recover = 0;
   /** 0..1: how hard the wind-up pose shakes (the last half of the wind-up). */
   tremble = 0;
-  /** 0..1 hit flash (real time: it runs through hitstop). */
+  /**
+   * Hit tint strength, 0..the profile's peak (real time: it runs through
+   * hitstop). Playtest 2 calm kills: a soft tint of the body's colour that
+   * eases in, holds while hits keep coming and fades; a new pulse at most
+   * every hitMinIntervalMs (it was a 130 ms full-white flash per hit).
+   */
   flash = 0;
+  /** Struck within FLASH_MS (real time): hitstop holds this enemy in place. */
+  struck = false;
+  readonly tint = new HitTint();
   /** 0..1..0 hurt flinch envelope. */
   flinch = 0;
   /** 0..1..0 stagger envelope. */
@@ -190,7 +201,8 @@ export class EnemyAnimator {
   private everAlive = false;
   private diedByEvent = false;
   private hurtAt = -1e9;
-  private flashLeft = 0;
+  private realMs = 0;
+  private hitAtMs = -1e12;
   private bitSeen = false;
   private fromBit = false;
   private lastYaw = 0;
@@ -220,7 +232,8 @@ export class EnemyAnimator {
   /** A confirmed hit on this enemy. */
   hit(heavy = false): void {
     if (this.state === 'dying') return;
-    this.flashLeft = FLASH_MS;
+    this.tint.hit(this.realMs, flashProfile());
+    this.hitAtMs = this.realMs;
     this.hurtAt = this.time;
     this.heavy = heavy;
   }
@@ -254,8 +267,9 @@ export class EnemyAnimator {
    */
   update(inp: AnimInput, dt: number, frozen = false): this {
     dt = clamp(dt, 0, 0.1);
-    this.flashLeft = Math.max(0, this.flashLeft - dt * 1000);
-    this.flash = this.flashLeft / FLASH_MS;
+    this.realMs += dt * 1000;
+    this.flash = this.tint.update(this.realMs, dt * 1000, flashProfile());
+    this.struck = this.realMs - this.hitAtMs < FLASH_MS;
     if (inp.healthPct > 0) this.everAlive = true;
 
     if (!this.init) {

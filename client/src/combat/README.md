@@ -250,3 +250,27 @@ pose and theirs, beams and dashes drawn from the record).
 | `enemies/dev/` | `gallery.html` (lineups, crowds, numbers), `enemy-shots.ts` (evidence sheets + crowd bench), `legacy.ts` (the old dolls, for the bench) |
 
 Data flow: `CombatLayer` drains the FX queue (a spark with its target id -> `hit`, a telegraph -> `telegraph` with the attack id and active ms, `enemy` died / status / parried) and calls `renderer.update(drawnRemotes.views)` once a frame (kinds 2 and 7). Adding an enemy to combat.yaml needs no client change (it falls back to its family's look); a new look is a style in `spec.ts` plus a builder branch in `models.ts`. Tests: `enemies/enemies.test.ts`, `numbers/layout.test.ts`.
+
+## Calm kills: flash safety (playtest 2: "when the enemies die, it causes a horrible flashing")
+
+Every bright transient in combat goes through `flashSafety.ts` (one profile, `flashProfile()`):
+`CALM` when Reduce flashing is on (the default; Graphics screen, `stores/accessibility.ts`) or the
+system asks for reduced motion, else `PUNCHY`; both keep every source at <= 3 flashes a second
+(WCAG 2.3.1).
+
+| What | Where | Rule |
+|------|-------|------|
+| Enemy hit | `enemies/anim.ts` `HitTint`, `enemies/material.ts` | a tint of the body's own colour + a warm rim (peak 0.28 / 0.5, it was a 1.0 white flash), eases in, holds while hits keep coming, a new pulse at most every 480 / 340 ms per enemy |
+| Flash sprites, light pulses | `fx/transients.ts` `FlashGate` | one per 2.5 m cell per 480 / 340 ms (the duplicates of one hit merge), ease in, dimmer, calm colours < 1 (under the bloom threshold); a light never steals a bright slot |
+| Repeat impacts | `fx/recipes.ts` `impact`, `meleeHit` | a spot that already flashed gets a small burst: no flash, light, lightning bolts or kick |
+| Your own shot at the lens | `fx/engine.ts` `updateProjs` | the core and halo are gone within 0.7 m of the camera (a fireball's core filled a third of the view for two frames) |
+| Particles | `fx/particles.ts` `uHotK`, `fx/core.ts` `hdr()` | fresh particles barely white-hot, HDR capped at 1.35 (calm) |
+| Status shells, shock crackle | `fx/engine.ts` `updateStatuses`, `recipes.statusEmit` | shells ease in / out and fade at the camera; 2-3 crackles a second (was 16) |
+| Swing arcs | `fx/engine.ts` `swing` | thin, sparse, the steel colour (was a band of white-hot puffs across the view) |
+| Off-hand / wand glow | `fx/engine.ts` `updateHand` | fades slowly so repeated shots hold it lit |
+| Death | `enemies/renderer.ts`, `material.ts` | no hot break-up edge (calm), dim motes, fewer pieces |
+| Wind-up tell, summon fade-out | `material.ts` `uTellW`, `renderer.ts` | 1.2-2 Hz (were 3.2 and 2.7 Hz) |
+| Telegraph decals | `CombatLayer.tsx` | ease in from nothing, fade out over 200 ms |
+| Shake | `fx/screen.ts` | half with Reduce flashing, none with reduced motion |
+
+Measure with `tools/playtest/flash-audit.mjs` (screencast, per-pixel WCAG count, camera-compensated).

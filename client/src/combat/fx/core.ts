@@ -6,6 +6,7 @@
 
 import * as THREE from 'three';
 import { FX_PROFILES, type FxProfile, type FxTier } from './quality';
+import { flashProfile } from '../flashSafety';
 
 // ── Clock ───────────────────────────────────────────────────────────────────
 // Particle shaders evaluate motion from (now - spawnTime) on the GPU, so the
@@ -44,7 +45,8 @@ export function fxCount(n: number, min = 0, rnd: () => number = Math.random): nu
 }
 
 /** HDR multiplier for bright cores (bloom on medium and up). */
-export const hdr = (k = 1): number => 1 + (budget.profile.hdr - 1) * k;
+// Playtest 2 calm kills: capped by the flash profile (calm: bright cores stay near the bloom threshold).
+export const hdr = (k = 1): number => 1 + (Math.min(budget.profile.hdr, flashProfile().hdrMax) - 1) * k;
 
 // ── Colour ──────────────────────────────────────────────────────────────────
 const colorCache = new Map<string, THREE.Color>();

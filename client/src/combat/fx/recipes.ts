@@ -359,11 +359,13 @@ export function impact(fx: FxPrims, v: SpellVisual, x: number, y: number, z: num
     burst(x, y, z, c.k('ma'), 6, { speed: [0.3, 1.2], life: [0.2, 0.5], size: [0.06, 0.12], drag: 2 });
     return;
   }
-  fx.flash(x, y, z, c.mainH, { size: 0.8 + weight * 0.9, duration: 0.14 });
-  if (weight >= 0.9) fx.light(x, y + 0.3, z, c.main, 18 * weight, 7, 0.18);
+  // Playtest 2 calm kills: a spot that already flashed within the interval (a stream, a pack, the
+  // duplicate bursts of one hit) gets a small burst: no flash, light, bolts or kick.
+  const lit = fx.flash(x, y, z, c.mainH, { size: 0.8 + weight * 0.9, duration: 0.14 });
+  if (lit && weight >= 0.9) fx.light(x, y + 0.3, z, c.main, 18 * weight, 7, 0.18);
   if (kind === 'ground') fx.ring(x, y, z, c.main, { radius: 0.6 + weight * 0.5, duration: 0.3, width: 0.1 });
-  if (weight > 1.2) screenKick(x, y, z, 0.25 * weight, cam, 0.2, 0.35);
-  const n = Math.round(12 * weight);
+  if (lit && weight > 1.2) screenKick(x, y, z, 0.25 * weight, cam, 0.2, 0.35);
+  const n = Math.round(12 * weight * (lit ? 1 : 0.4));
   switch (v.family) {
     case 'fire':
       burst(x, y, z, c.k('hma'), n, { speed: [3, 8], life: [0.2, 0.5], size: [0.04, 0.08], gravity: -10, drag: 1.5, shape: SHAPE_SPARK, dir: back, bias: 0.45 });
@@ -381,7 +383,7 @@ export function impact(fx: FxPrims, v: SpellVisual, x: number, y: number, z: num
       break;
     case 'lightning':
       burst(x, y, z, c.k('hma'), n * 1.4, { speed: [4, 11], life: [0.12, 0.3], size: [0.03, 0.06], gravity: -8, drag: 1, shape: SHAPE_SPARK, dir: back, bias: 0.3 });
-      for (let i = 0; i < 2 + Math.round(weight * 2); i++) {
+      for (let i = 0; i < (lit ? 2 + Math.round(weight * 2) : 0); i++) {
         const a = Math.random() * TAU;
         const r = rand(0.6, 1.4) * weight;
         fx.bolt(x, y, z, x + Math.cos(a) * r, y + rand(-0.6, 0.6), z + Math.sin(a) * r, c.main, { width: 0.03, duration: 0.2, forks: 0, segs: 5, jitter: 0.35 });
@@ -414,7 +416,7 @@ export function impact(fx: FxPrims, v: SpellVisual, x: number, y: number, z: num
       burst(x, y, z, c.k('s'), 3, { speed: [1, 3], life: [0.4, 0.7], size: [0.4, 0.7], drag: 3, shape: SHAPE_PUFF });
       break;
     case 'light':
-      fx.flash(x, y, z, c.hotH, { size: 1.2 + weight, duration: 0.2, grow: 1.8 });
+      if (lit) fx.flash(x, y + 0.01, z, c.hotH, { size: 1.2 + weight, duration: 0.2, grow: 1.8 });
       burst(x, y, z, c.k('hma'), n * 1.2, { speed: [2, 6], life: [0.3, 0.7], size: [0.08, 0.16], drag: 2, shape: SHAPE_STAR });
       burst(x, y, z, c.k('h'), n * 0.6, { speed: [5, 10], life: [0.12, 0.25], size: [0.03, 0.05], shape: SHAPE_SPARK, drag: 1 });
       break;
@@ -435,8 +437,8 @@ const BITE_GLOW: BurstOpts = { speed: [0.3, 1], life: [0.15, 0.3], size: [0.2, 0
 /** Melee / weapon hit: steel sparks (with the gem's element tint when it has one). */
 export function meleeHit(fx: FxPrims, x: number, y: number, z: number, tint: THREE.Color | null, heavy: boolean): void {
   const s = cols(PALETTES.steel);
-  fx.flash(x, y, z, tint ?? s.hotH, { size: heavy ? 1.6 : 1.0, duration: 0.1 });
-  burst(x, y, z, s.k('haG'), heavy ? 26 : 14, { speed: [4, 11], life: [0.12, 0.35], size: [0.025, 0.05], gravity: -16, drag: 0.8, shape: SHAPE_SPARK, up: 0.3 });
+  const lit = fx.flash(x, y, z, tint ?? s.hotH, { size: heavy ? 1.6 : 1.0, duration: 0.1 });
+  burst(x, y, z, s.k('haG'), Math.round((heavy ? 26 : 14) * (lit ? 1 : 0.4)), { speed: [4, 11], life: [0.12, 0.35], size: [0.025, 0.05], gravity: -16, drag: 0.8, shape: SHAPE_SPARK, up: 0.3 });
   if (tint) burst(x, y, z, [tint], 8, { speed: [1, 3], life: [0.2, 0.4], size: [0.06, 0.12], drag: 3 });
 }
 
@@ -1150,7 +1152,7 @@ export function statusColor(status: string): THREE.Color | null {
 }
 
 /** Per-frame emission for one status on a target (feet x, y, z; height h; size s). */
-export function statusEmit(fx: FxPrims, status: string, x: number, y: number, z: number, h: number, s: number, dt: number, t: number): void {
+export function statusEmit(fx: FxPrims, status: string, x: number, y: number, z: number, h: number, s: number, dt: number, t: number, shockRate = 16): void {
   const p = STATUS_PAL[status];
   if (!p) return;
   const c = cols(p);
@@ -1181,7 +1183,8 @@ export function statusEmit(fx: FxPrims, status: string, x: number, y: number, z:
       return;
     }
     case 'shock':
-      if (Math.random() < rate(16)) {
+      // playtest 2 calm kills: crackles per second (flashSafety.ts shockRate; it was 16, a strobe on the body)
+      if (Math.random() < rate(shockRate)) {
         const a = Math.random() * TAU;
         fx.bolt(x + Math.cos(a) * r * 1.2, y + rand(0.2, h), z + Math.sin(a) * r * 1.2, x - Math.cos(a) * r * 1.2, y + rand(0.2, h), z - Math.sin(a) * r * 1.2, c.main, SHOCK_BOLT);
       }

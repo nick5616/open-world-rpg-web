@@ -1,0 +1,90 @@
+{
+  "label": "after-control",
+  "quality": "high",
+  "url": "http://127.0.0.1:40422",
+  "observer": false,
+  "when": "2026-11-11T07:12:18.809Z",
+  "scenarios": {
+    "sword-control": {
+      "frames": 359,
+      "seconds": 8.21,
+      "fps": 43.7,
+      "wcag": {
+        "generalFlashesPerSecondMax": 4,
+        "redFlashesPerSecondMax": 0,
+        "pass": false,
+        "worstAt": 3.16
+      },
+      "local": {
+        "flashesPerSecondMax": 8,
+        "at": 2.96,
+        "cellTransitions": 1823
+      },
+      "compensated": {
+        "generalFlashesPerSecondMax": 2,
+        "redFlashesPerSecondMax": 0,
+        "pass": true,
+        "worstAt": 5.83,
+        "localFlashesPerSecondMax": 7,
+        "localAt": 3.2,
+        "movingFrames": 0
+      },
+      "maxFullFrameJump": 0.0112,
+      "maxCellJump": 0.4027,
+      "maxCellJumpAt": 5.18,
+      "maxCellJumpFrame": 215,
+      "brightPops": 1101,
+      "frameGapP50": 0.021,
+      "frameGapMax": 0.083
+    },
+    "wand": {
+      "frames": 705,
+      "seconds": 18.22,
+      "fps": 38.7,
+      "wcag": {
+        "generalFlashesPerSecondMax": 1,
+        "redFlashesPerSecondMax": 0,
+        "pass": true,
+        "worstAt": 7.13
+      },
+      "local": {
+        "flashesPerSecondMax": 8,
+        "at": 5.61,
+        "cellTransitions": 1408
+      },
+      "compensated": {
+        "generalFlashesPerSecondMax": 0,
+        "redFlashesPerSecondMax": 0,
+        "pass": true,
+        "worstAt": -1,
+        "localFlashesPerSecondMax": 7,
+        "localAt": 13.7,
+        "movingFrames": 15
+      },
+      "maxFullFrameJump": 0.031,
+      "maxCellJump": 0.6353,
+      "maxCellJumpAt": 10.97,
+      "maxCellJumpFrame": 390,
+      "brightPops": 464,
+      "frameGapP50": 0.024,
+      "frameGapMax": 0.076,
+      "fight": {
+        "kills": 3,
+        "seen": 5,
+        "left": 2,
+        "ms": 16035
+      },
+      "probe": {
+        "rafP50": 23,
+        "rafMax": 73,
+        "rafOver50": 28,
+        "enemyFlashFrames": 0,
+        "enemyFlashOnsets": 6,
+        "maxFxFlashes": 2,
+        "maxLights": 0
+      }
+    }
+  },
+  "calm": null,
+  "issues": []
+}

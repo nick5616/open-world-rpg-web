@@ -16,6 +16,7 @@ import type { GroundQuery } from '../../sim/ground';
 import { budget, fxTime, GEO, glowTexture, scorchTexture } from './core';
 import { createBeamMaterial, createCircleMaterial, createDomeMaterial, createRingMaterial, createShellMaterial, createZoneMaterial, type BeamMat, type CircleMat, type DomeMat, type RingMat, type ShellMat, type ZoneMat } from './materials';
 import { newBoltSlot, RibbonBuffer, crackle, type BoltSlot } from './bolts';
+import { FlashGate, flashEnvelope, flashProfile, lightEnvelope } from '../flashSafety';
 import type { SpikeStyle } from './spellVisual';
 
 export const SPIKE_STYLES: SpikeStyle[] = ['ice', 'crystal', 'bramble', 'stone', 'void', 'light'];
@@ -58,6 +59,8 @@ interface FlashSlot extends Slot {
   s0: number;
   s1: number;
   op: number;
+  /** Share of its life spent easing in (flashSafety.ts). */
+  rise: number;
 }
 export interface DecalSlot<M extends THREE.Material = THREE.Material> extends Slot {
   mesh: THREE.Mesh;
@@ -67,6 +70,8 @@ export interface DecalSlot<M extends THREE.Material = THREE.Material> extends Sl
 interface LightSlot extends Slot {
   light: THREE.PointLight;
   i0: number;
+  /** Share of its life spent ramping up (flashSafety.ts). */
+  rise: number;
   /** Held by a projectile (moves with it; released by the holder). */
   held: boolean;
 }
@@ -195,6 +200,9 @@ export class FxPrims {
   readonly spikes = {} as Record<SpikeStyle, SpikeSet>;
   private readonly tpl = new Map<THREE.BufferGeometry, Float32Array>();
   private readonly disposables: { dispose(): void }[] = [];
+  /** Playtest 2 calm kills: one flash sprite / one light pulse per spot per interval (flashSafety.ts). */
+  private readonly flashGate = new FlashGate();
+  private readonly lightGate = new FlashGate();
 
   constructor(lightCount: number, spikeCap: number, boltSegments: number, grid: number) {
     this.group.name = 'spell-fx';
@@ -221,7 +229,7 @@ export class FxPrims {
       sprite.renderOrder = 21;
       this.disposables.push(mat);
       this.group.add(sprite);
-      this.flashes.push({ sprite, mat, on: false, start: 0, dur: 1, gen: 0, s0: 1, s1: 1, op: 1 });
+      this.flashes.push({ sprite, mat, on: false, start: 0, dur: 1, gen: 0, s0: 1, s1: 1, op: 1, rise: 0 });
     }
     for (let i = 0; i < POOL.scorches; i++) {
       const mat = new THREE.MeshBasicMaterial({ map: scorchTexture(), transparent: true, depthWrite: false, opacity: 0, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
@@ -265,7 +273,7 @@ export class FxPrims {
       const light = new THREE.PointLight(0xffffff, 0, 12, 2);
       light.name = 'fx-light';
       this.group.add(light);
-      this.lights.push({ light, on: false, start: 0, dur: 1, gen: 0, i0: 0, held: false });
+      this.lights.push({ light, on: false, start: 0, dur: 1, gen: 0, i0: 0, rise: 0, held: false });
     }
     for (const style of SPIKE_STYLES) {
       const mat = createSpikeMaterial(style);
@@ -346,24 +354,38 @@ export class FxPrims {
     s.mesh.visible = true;
   }
 
-  flash(x: number, y: number, z: number, color: THREE.Color, o: FlashOpts = {}): void {
+  /** A flash sprite; false when the spot already flashed within the interval (nothing drawn). */
+  flash(x: number, y: number, z: number, color: THREE.Color, o: FlashOpts = {}): boolean {
+    // Playtest 2 calm kills (combat/flashSafety.ts): one flash per spot per ~0.35-0.5 s (the
+    // shot's impact, the hit burst and an observer's Event 200 burst used to stack on one
+    // frame, 4-15 times a second under a wand or a stream), eased in, dimmer, under the bloom.
+    const p = flashProfile();
+    const t = fxTime();
+    if (!this.flashGate.allow(x, z, t * 1000, p)) return false;
     const s = take(this.flashes);
     s.on = true;
     s.gen++;
-    s.start = fxTime();
-    s.dur = o.duration ?? 0.22;
+    s.start = t;
+    s.dur = Math.max(p.fxFlashMinS, o.duration ?? 0.22);
     s.s0 = o.size ?? 3;
     s.s1 = s.s0 * (o.grow ?? 1.6);
-    s.op = o.opacity ?? 1;
+    s.op = (o.opacity ?? 1) * p.fxFlashOpacity;
+    s.rise = p.fxFlashRise;
     s.sprite.position.set(x, y, z);
     // Big flashes are dimmer per pixel (a wash of light, not a white wall).
     s.mat.color.copy(color).multiplyScalar(Math.min(1, 2.2 / Math.max(2.2, s.s0)));
+    const m = Math.max(s.mat.color.r, s.mat.color.g, s.mat.color.b);
+    if (m > p.fxFlashMaxChannel) s.mat.color.multiplyScalar(p.fxFlashMaxChannel / m);
+    s.mat.opacity = 0;
     s.sprite.visible = true;
+    return true;
   }
 
   light(x: number, y: number, z: number, color: THREE.Color, intensity = 30, distance = 12, duration = 0.3): void {
     if (this.lights.length === 0) return;
-    // Free one, else steal the dimmest unheld pulse.
+    const p = flashProfile();
+    const t = fxTime();
+    // Free one, else steal the dimmest unheld pulse (only one that has nearly faded: cutting a bright one is a flash too).
     let best: LightSlot | null = null;
     for (const l of this.lights) {
       if (l.held) continue;
@@ -371,17 +393,19 @@ export class FxPrims {
         best = l;
         break;
       }
+      if ((t - l.start) / l.dur < 0.65) continue;
       if (!best || l.light.intensity < best.light.intensity) best = l;
     }
-    if (!best) return;
+    if (!best || !this.lightGate.allow(x, z, t * 1000, p)) return;
     best.on = true;
     best.gen++;
-    best.start = fxTime();
-    best.dur = duration;
-    best.i0 = intensity;
+    best.start = t;
+    best.dur = Math.max(duration, 0.25);
+    best.i0 = intensity * p.lightGain;
+    best.rise = p.lightRise;
     best.light.color.copy(color);
     best.light.distance = distance;
-    best.light.intensity = intensity;
+    best.light.intensity = 0; // ramps up (update)
     best.light.position.set(x, y, z);
   }
 
@@ -587,7 +611,8 @@ export class FxPrims {
       // your chest every 2 m, ~15 a second) strobed it (playtest 2 integration QA: no flashing).
       const d = s.sprite.position.distanceTo(tmpCam);
       const near = Math.min(1, Math.max(0, (d - size * 0.5) / 4));
-      s.mat.opacity = s.op * (1 - k * k) * near;
+      // eases in, then out (playtest 2 calm kills: it was full strength on its first frame)
+      s.mat.opacity = s.op * flashEnvelope(k, s.rise) * near;
     }
     for (const l of this.lights) {
       if (!l.on || l.held) continue;
@@ -597,7 +622,7 @@ export class FxPrims {
         l.light.intensity = 0;
         continue;
       }
-      l.light.intensity = l.i0 * (1 - k) * (1 - k);
+      l.light.intensity = l.i0 * lightEnvelope(k, l.rise);
     }
     for (const s of this.scorches) {
       if (!s.on) continue;

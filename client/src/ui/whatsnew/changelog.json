@@ -1,5 +1,15 @@
 [
   {
+    "id": "pt2-calm-kills",
+    "date": "2026-11-11",
+    "title": "Calmer hits and kills",
+    "items": [
+      "Hits and kills no longer flash: struck enemies glow softly and fade calmly when they fall.",
+      "New in Graphics: Reduce flashing, on by default. Turn it off for punchier hits that still stay photosensitivity-safe.",
+      "Spell impacts, sparks and your own shots near the camera are gentler, and your system's reduced-motion setting is respected."
+    ]
+  },
+  {
     "id": "pt2-coop",
     "date": "2026-11-11",
     "title": "Better together, all the way to the Hush",

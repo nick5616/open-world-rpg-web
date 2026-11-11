@@ -1,0 +1,560 @@
+{
+  "label": "before",
+  "quality": "high",
+  "url": "http://127.0.0.1:40422",
+  "observer": false,
+  "when": "2026-11-11T07:14:06.016Z",
+  "scenarios": {
+    "sword-control": {
+      "frames": 415,
+      "seconds": 8.19,
+      "fps": 50.7,
+      "wcag": {
+        "generalFlashesPerSecondMax": 4,
+        "redFlashesPerSecondMax": 0,
+        "pass": false,
+        "worstAt": 1.45
+      },
+      "local": {
+        "flashesPerSecondMax": 8,
+        "at": 1.03,
+        "cellTransitions": 2303
+      },
+      "compensated": {
+        "generalFlashesPerSecondMax": 3,
+        "redFlashesPerSecondMax": 0,
+        "pass": true,
+        "worstAt": 7.45,
+        "localFlashesPerSecondMax": 7,
+        "localAt": 1.09,
+        "movingFrames": 0
+      },
+      "maxFullFrameJump": 0.0243,
+      "maxCellJump": 0.8029,
+      "maxCellJumpAt": 4.51,
+      "maxCellJumpFrame": 227,
+      "brightPops": 1374,
+      "frameGapP50": 0.019,
+      "frameGapMax": 0.044
+    },
+    "sword": {
+      "frames": 811,
+      "seconds": 18.23,
+      "fps": 44.5,
+      "wcag": {
+        "generalFlashesPerSecondMax": 6,
+        "redFlashesPerSecondMax": 0,
+        "pass": false,
+        "worstAt": 9.63
+      },
+      "local": {
+        "flashesPerSecondMax": 10,
+        "at": 12.07,
+        "cellTransitions": 7346
+      },
+      "compensated": {
+        "generalFlashesPerSecondMax": 4,
+        "redFlashesPerSecondMax": 0,
+        "pass": false,
+        "worstAt": 4.82,
+        "localFlashesPerSecondMax": 8,
+        "localAt": 10.65,
+        "movingFrames": 63
+      },
+      "maxFullFrameJump": 0.0431,
+      "maxCellJump": 0.7869,
+      "maxCellJumpAt": 3.18,
+      "maxCellJumpFrame": 152,
+      "brightPops": 2168,
+      "frameGapP50": 0.021,
+      "frameGapMax": 0.07,
+      "fight": {
+        "kills": 2,
+        "seen": 3,
+        "left": 1,
+        "ms": 16049
+      },
+      "probe": {
+        "rafP50": 21,
+        "rafMax": 73,
+        "rafOver50": 6,
+        "enemyFlashFrames": 0,
+        "enemyFlashOnsets": 0,
+        "maxFxFlashes": 1,
+        "maxLights": 0
+      }
+    },
+    "spear": {
+      "frames": 925,
+      "seconds": 18.22,
+      "fps": 50.8,
+      "wcag": {
+        "generalFlashesPerSecondMax": 6,
+        "redFlashesPerSecondMax": 0,
+        "pass": false,
+        "worstAt": 6.37
+      },
+      "local": {
+        "flashesPerSecondMax": 9,
+        "at": 10.1,
+        "cellTransitions": 8517
+      },
+      "compensated": {
+        "generalFlashesPerSecondMax": 3,
+        "redFlashesPerSecondMax": 0,
+        "pass": true,
+        "worstAt": 6.84,
+        "localFlashesPerSecondMax": 8,
+        "localAt": 6.2,
+        "movingFrames": 112
+      },
+      "maxFullFrameJump": 0.0365,
+      "maxCellJump": 0.8117,
+      "maxCellJumpAt": 6.4,
+      "maxCellJumpFrame": 314,
+      "brightPops": 2388,
+      "frameGapP50": 0.019,
+      "frameGapMax": 0.041,
+      "fight": {
+        "kills": 2,
+        "seen": 3,
+        "left": 1,
+        "ms": 16036
+      },
+      "probe": {
+        "rafP50": 18,
+        "rafMax": 42,
+        "rafOver50": 0,
+        "enemyFlashFrames": 0,
+        "enemyFlashOnsets": 0,
+        "maxFxFlashes": 1,
+        "maxLights": 0
+      }
+    },
+    "bow": {
+      "frames": 317,
+      "seconds": 6.51,
+      "fps": 48.7,
+      "wcag": {
+        "generalFlashesPerSecondMax": 1,
+        "redFlashesPerSecondMax": 0,
+        "pass": true,
+        "worstAt": 1.19
+      },
+      "local": {
+        "flashesPerSecondMax": 5,
+        "at": 4.39,
+        "cellTransitions": 574
+      },
+      "compensated": {
+        "generalFlashesPerSecondMax": 1,
+        "redFlashesPerSecondMax": 0,
+        "pass": true,
+        "worstAt": 1.19,
+        "localFlashesPerSecondMax": 5,
+        "localAt": 1.31,
+        "movingFrames": 7
+      },
+      "maxFullFrameJump": 0.0312,
+      "maxCellJump": 0.6439,
+      "maxCellJumpAt": 1,
+      "maxCellJumpFrame": 49,
+      "brightPops": 167,
+      "frameGapP50": 0.02,
+      "frameGapMax": 0.051,
+      "fight": {
+        "kills": 3,
+        "seen": 3,
+        "left": 0,
+        "ms": 4320
+      },
+      "probe": {
+        "rafP50": 20,
+        "rafMax": 55,
+        "rafOver50": 1,
+        "enemyFlashFrames": 0,
+        "enemyFlashOnsets": 0,
+        "maxFxFlashes": 3,
+        "maxLights": 0
+      }
+    },
+    "staff": {
+      "frames": 240,
+      "seconds": 5.36,
+      "fps": 44.8,
+      "wcag": {
+        "generalFlashesPerSecondMax": 3,
+        "redFlashesPerSecondMax": 0,
+        "pass": true,
+        "worstAt": 1.39
+      },
+      "local": {
+        "flashesPerSecondMax": 7,
+        "at": 1.39,
+        "cellTransitions": 636
+      },
+      "compensated": {
+        "generalFlashesPerSecondMax": 3,
+        "redFlashesPerSecondMax": 0,
+        "pass": true,
+        "worstAt": 1.39,
+        "localFlashesPerSecondMax": 8,
+        "localAt": 1.37,
+        "movingFrames": 10
+      },
+      "maxFullFrameJump": 0.0357,
+      "maxCellJump": 0.628,
+      "maxCellJumpAt": 2.32,
+      "maxCellJumpFrame": 118,
+      "brightPops": 297,
+      "frameGapP50": 0.021,
+      "frameGapMax": 0.068,
+      "fight": {
+        "kills": 3,
+        "seen": 3,
+        "left": 0,
+        "ms": 3184
+      },
+      "probe": {
+        "rafP50": 21,
+        "rafMax": 48,
+        "rafOver50": 0,
+        "enemyFlashFrames": 0,
+        "enemyFlashOnsets": 0,
+        "maxFxFlashes": 3,
+        "maxLights": 0
+      }
+    },
+    "wand": {
+      "frames": 280,
+      "seconds": 5.82,
+      "fps": 48.1,
+      "wcag": {
+        "generalFlashesPerSecondMax": 5,
+        "redFlashesPerSecondMax": 0,
+        "pass": false,
+        "worstAt": 1.35
+      },
+      "local": {
+        "flashesPerSecondMax": 8,
+        "at": 1.15,
+        "cellTransitions": 576
+      },
+      "compensated": {
+        "generalFlashesPerSecondMax": 2,
+        "redFlashesPerSecondMax": 0,
+        "pass": true,
+        "worstAt": 0.77,
+        "localFlashesPerSecondMax": 7,
+        "localAt": 0.99,
+        "movingFrames": 9
+      },
+      "maxFullFrameJump": 0.0339,
+      "maxCellJump": 0.8219,
+      "maxCellJumpAt": 0.77,
+      "maxCellJumpFrame": 36,
+      "brightPops": 253,
+      "frameGapP50": 0.02,
+      "frameGapMax": 0.041,
+      "fight": {
+        "kills": 3,
+        "seen": 3,
+        "left": 0,
+        "ms": 3636
+      },
+      "probe": {
+        "rafP50": 20,
+        "rafMax": 44,
+        "rafOver50": 0,
+        "enemyFlashFrames": 0,
+        "enemyFlashOnsets": 0,
+        "maxFxFlashes": 3,
+        "maxLights": 0
+      }
+    },
+    "wand-pack-night": {
+      "frames": 840,
+      "seconds": 18.32,
+      "fps": 45.8,
+      "wcag": {
+        "generalFlashesPerSecondMax": 6,
+        "redFlashesPerSecondMax": 0,
+        "pass": false,
+        "worstAt": 1.58
+      },
+      "local": {
+        "flashesPerSecondMax": 8,
+        "at": 12.02,
+        "cellTransitions": 2700
+      },
+      "compensated": {
+        "generalFlashesPerSecondMax": 4,
+        "redFlashesPerSecondMax": 0,
+        "pass": false,
+        "worstAt": 5.1,
+        "localFlashesPerSecondMax": 8,
+        "localAt": 9.59,
+        "movingFrames": 106
+      },
+      "maxFullFrameJump": 0.2214,
+      "maxCellJump": 0.9013,
+      "maxCellJumpAt": 11.4,
+      "maxCellJumpFrame": 508,
+      "brightPops": 1556,
+      "frameGapP50": 0.021,
+      "frameGapMax": 0.054,
+      "fight": {
+        "kills": 3,
+        "seen": 4,
+        "left": 1,
+        "ms": 16138
+      },
+      "probe": {
+        "rafP50": 21,
+        "rafMax": 59,
+        "rafOver50": 3,
+        "enemyFlashFrames": 0,
+        "enemyFlashOnsets": 0,
+        "maxFxFlashes": 3,
+        "maxLights": 0
+      }
+    },
+    "cinder-spray": {
+      "frames": 215,
+      "seconds": 4.7,
+      "fps": 45.7,
+      "wcag": {
+        "generalFlashesPerSecondMax": 12,
+        "redFlashesPerSecondMax": 0,
+        "pass": false,
+        "worstAt": 1.23
+      },
+      "local": {
+        "flashesPerSecondMax": 14,
+        "at": 1.48,
+        "cellTransitions": 718
+      },
+      "compensated": {
+        "generalFlashesPerSecondMax": 13,
+        "redFlashesPerSecondMax": 0,
+        "pass": false,
+        "worstAt": 1.23,
+        "localFlashesPerSecondMax": 14,
+        "localAt": 1.48,
+        "movingFrames": 7
+      },
+      "maxFullFrameJump": 0.0331,
+      "maxCellJump": 0.8524,
+      "maxCellJumpAt": 0.75,
+      "maxCellJumpFrame": 34,
+      "brightPops": 241,
+      "frameGapP50": 0.021,
+      "frameGapMax": 0.046,
+      "fight": {
+        "kills": 3,
+        "seen": 3,
+        "left": 0,
+        "ms": 2523
+      },
+      "probe": {
+        "rafP50": 21,
+        "rafMax": 46,
+        "rafOver50": 0,
+        "enemyFlashFrames": 0,
+        "enemyFlashOnsets": 0,
+        "maxFxFlashes": 8,
+        "maxLights": 0
+      }
+    },
+    "arc-sparks": {
+      "frames": 303,
+      "seconds": 6.65,
+      "fps": 45.5,
+      "wcag": {
+        "generalFlashesPerSecondMax": 14,
+        "redFlashesPerSecondMax": 1,
+        "pass": false,
+        "worstAt": 2.86
+      },
+      "local": {
+        "flashesPerSecondMax": 16,
+        "at": 4.28,
+        "cellTransitions": 2763
+      },
+      "compensated": {
+        "generalFlashesPerSecondMax": 14,
+        "redFlashesPerSecondMax": 0,
+        "pass": false,
+        "worstAt": 2.86,
+        "localFlashesPerSecondMax": 15,
+        "localAt": 3.05,
+        "movingFrames": 28
+      },
+      "maxFullFrameJump": 0.098,
+      "maxCellJump": 0.6991,
+      "maxCellJumpAt": 2.96,
+      "maxCellJumpFrame": 132,
+      "brightPops": 973,
+      "frameGapP50": 0.021,
+      "frameGapMax": 0.071,
+      "fight": {
+        "kills": 3,
+        "seen": 3,
+        "left": 0,
+        "ms": 4473
+      },
+      "probe": {
+        "rafP50": 21,
+        "rafMax": 51,
+        "rafOver50": 2,
+        "enemyFlashFrames": 0,
+        "enemyFlashOnsets": 0,
+        "maxFxFlashes": 10,
+        "maxLights": 0
+      }
+    },
+    "starfall-hail": {
+      "frames": 744,
+      "seconds": 18.23,
+      "fps": 40.8,
+      "wcag": {
+        "generalFlashesPerSecondMax": 1,
+        "redFlashesPerSecondMax": 0,
+        "pass": true,
+        "worstAt": 1.09
+      },
+      "local": {
+        "flashesPerSecondMax": 5,
+        "at": 1.23,
+        "cellTransitions": 350
+      },
+      "compensated": {
+        "generalFlashesPerSecondMax": 0,
+        "redFlashesPerSecondMax": 0,
+        "pass": true,
+        "worstAt": -1,
+        "localFlashesPerSecondMax": 3,
+        "localAt": 8.84,
+        "movingFrames": 7
+      },
+      "maxFullFrameJump": 0.0241,
+      "maxCellJump": 0.3413,
+      "maxCellJumpAt": 1.23,
+      "maxCellJumpFrame": 56,
+      "brightPops": 85,
+      "frameGapP50": 0.023,
+      "frameGapMax": 0.085,
+      "fight": {
+        "kills": 2,
+        "seen": 4,
+        "left": 2,
+        "ms": 16061
+      },
+      "probe": {
+        "rafP50": 23,
+        "rafMax": 99,
+        "rafOver50": 15,
+        "enemyFlashFrames": 0,
+        "enemyFlashOnsets": 0,
+        "maxFxFlashes": 7,
+        "maxLights": 0
+      }
+    },
+    "fireball": {
+      "frames": 411,
+      "seconds": 9.98,
+      "fps": 41.2,
+      "wcag": {
+        "generalFlashesPerSecondMax": 3,
+        "redFlashesPerSecondMax": 0,
+        "pass": true,
+        "worstAt": 0.54
+      },
+      "local": {
+        "flashesPerSecondMax": 4,
+        "at": 3.11,
+        "cellTransitions": 1189
+      },
+      "compensated": {
+        "generalFlashesPerSecondMax": 1,
+        "redFlashesPerSecondMax": 0,
+        "pass": true,
+        "worstAt": 0.25,
+        "localFlashesPerSecondMax": 4,
+        "localAt": 0.69,
+        "movingFrames": 14
+      },
+      "maxFullFrameJump": 0.28,
+      "maxCellJump": 0.9816,
+      "maxCellJumpAt": 4.87,
+      "maxCellJumpFrame": 196,
+      "brightPops": 495,
+      "frameGapP50": 0.023,
+      "frameGapMax": 0.07,
+      "fight": {
+        "kills": 4,
+        "seen": 4,
+        "left": 0,
+        "ms": 7805
+      },
+      "probe": {
+        "rafP50": 23,
+        "rafMax": 67,
+        "rafOver50": 3,
+        "enemyFlashFrames": 0,
+        "enemyFlashOnsets": 0,
+        "maxFxFlashes": 4,
+        "maxLights": 1
+      }
+    },
+    "pyre-brand": {
+      "frames": 374,
+      "seconds": 8.55,
+      "fps": 43.8,
+      "wcag": {
+        "generalFlashesPerSecondMax": 3,
+        "redFlashesPerSecondMax": 0,
+        "pass": true,
+        "worstAt": 3.39
+      },
+      "local": {
+        "flashesPerSecondMax": 5,
+        "at": 3.49,
+        "cellTransitions": 748
+      },
+      "compensated": {
+        "generalFlashesPerSecondMax": 2,
+        "redFlashesPerSecondMax": 0,
+        "pass": true,
+        "worstAt": 3.52,
+        "localFlashesPerSecondMax": 5,
+        "localAt": 3.44,
+        "movingFrames": 12
+      },
+      "maxFullFrameJump": 0.1012,
+      "maxCellJump": 0.8338,
+      "maxCellJumpAt": 1.72,
+      "maxCellJumpFrame": 79,
+      "brightPops": 266,
+      "frameGapP50": 0.022,
+      "frameGapMax": 0.059,
+      "fight": {
+        "kills": 5,
+        "seen": 5,
+        "left": 0,
+        "ms": 6372
+      },
+      "probe": {
+        "rafP50": 22,
+        "rafMax": 58,
+        "rafOver50": 3,
+        "enemyFlashFrames": 0,
+        "enemyFlashOnsets": 0,
+        "maxFxFlashes": 5,
+        "maxLights": 1
+      }
+    }
+  },
+  "calm": null,
+  "issues": []
+}
