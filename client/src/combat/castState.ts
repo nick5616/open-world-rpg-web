@@ -28,8 +28,16 @@
 // past, so an event waits that long (the drawn activity bits are already
 // delayed the same way). Without it a spell left a body ~100 ms before its
 // arm moved.
+//
+// Playtest 2 shared basic attacks: a player standing still sends no
+// position updates (delta snapshots), so the interpolation stretches their
+// delay toward its cap (~0.5 s measured): their wand bolts, arrows and
+// swings showed up half a second after they attacked, and a wand bolt (0.15 s
+// of flight) was easy to miss. A body that is not moving looks the same at
+// any delay, so a weapon move from a caster drawn standing still plays after
+// STILL_MOVE_DELAY_MS instead (eventDelayMs).
 
-import { COMBAT, i16ToPitch, u16ToYaw, type Event as ZoneEvent, type SpellDef } from '@lodestone/contracts';
+import { COMBAT, INTERP_DELAY_NEAR_MS, i16ToPitch, u16ToYaw, type Event as ZoneEvent, type SpellDef } from '@lodestone/contracts';
 import { angleDelta, unpackHeldAim } from './aim';
 import { streamSeed } from './spellsim';
 
@@ -99,6 +107,8 @@ export interface CasterState {
   actions: number;
   /** Replication: how far in the past this caster is drawn (ms). */
   delayMs: number;
+  /** Replication: their drawn horizontal speed (m/s; Infinity until seen). */
+  speed: number;
   /** The drawn look (replication; activity()). */
   lookYaw: number;
   lookPitch: number;
@@ -119,7 +129,7 @@ const states = new Map<CasterKey, CasterState>();
 const queue: { due: number; run: () => void }[] = [];
 
 function blank(key: CasterKey): CasterState {
-  return { key, aimYaw: 0, aimPitch: 0, aimAt: -1e9, aimPrecise: false, lookYaw0: 0, lookPitch0: 0, held: null, dash: null, action: null, actions: 0, delayMs: 0, lookYaw: 0, lookPitch: 0, lookMovedAt: -1e9 };
+  return { key, aimYaw: 0, aimPitch: 0, aimAt: -1e9, aimPrecise: false, lookYaw0: 0, lookPitch0: 0, held: null, dash: null, action: null, actions: 0, delayMs: 0, speed: Infinity, lookYaw: 0, lookPitch: 0, lookMovedAt: -1e9 };
 }
 
 function heldKindOf(id: number): HeldKind | null {
@@ -215,8 +225,9 @@ export const castState = {
    * and nothing else held, it is the dash's thrust), and how far back they
    * are drawn.
    */
-  activity(id: number, activity: number, lookYaw: number, lookPitch: number, delayMs: number, now: number, fx?: RemoteFx): void {
+  activity(id: number, activity: number, lookYaw: number, lookPitch: number, delayMs: number, now: number, fx?: RemoteFx, speed = Infinity): void {
     const s = castState.get(id);
+    s.speed = speed;
     if (Math.abs(angleDelta(lookYaw, s.lookYaw)) > 1e-4 || Math.abs(lookPitch - s.lookPitch) > 1e-4) s.lookMovedAt = now;
     s.lookYaw = lookYaw;
     s.lookPitch = lookPitch;
@@ -280,8 +291,19 @@ export const castState = {
 };
 
 /** Run `fn` when the caster's drawn body reaches now (their interpolation delay). */
-function atDrawnTime(id: number, now: number, fn: () => void): void {
-  const d = states.get(id)?.delayMs ?? 0;
+/** A weapon move from a caster drawn standing still waits at most this long (header). */
+export const STILL_MOVE_DELAY_MS = INTERP_DELAY_NEAR_MS + 50;
+const WEAPON_MOVES = new Set(COMBAT.moves.map((m) => m.id));
+
+/** How long a remote event waits (pure): their drawn delay, or for a weapon move by a body standing still, at most STILL_MOVE_DELAY_MS. */
+export function eventDelayMs(delayMs: number, speed: number, actionId: number | null): number {
+  if (actionId !== null && WEAPON_MOVES.has(actionId) && speed < 0.3) return Math.min(delayMs, STILL_MOVE_DELAY_MS);
+  return delayMs;
+}
+
+function atDrawnTime(id: number, now: number, fn: () => void, actionId: number | null = null): void {
+  const st = states.get(id);
+  const d = eventDelayMs(st?.delayMs ?? 0, st?.speed ?? Infinity, actionId);
   if (d <= 1) fn();
   else queue.push({ due: now + d, run: fn });
 }
@@ -307,12 +329,17 @@ export function remoteEvent(ev: ZoneEvent, selfId: number, now: number, fx: Remo
       const pitch = i16ToPitch(d.getInt16(2, true));
       const charge = ev.data.length >= 5 ? ev.data[4] / 255 : 0;
       const what = Number(ev.targetId);
-      atDrawnTime(id, now, () => {
-        const t = performance.now();
-        castState.aim(id, yaw, pitch, true, t);
-        castState.action(id, what, t, charge);
-        fx.remoteCast(id, what, x, y, z, yaw, pitch, charge);
-      });
+      atDrawnTime(
+        id,
+        now,
+        () => {
+          const t = performance.now();
+          castState.aim(id, yaw, pitch, true, t);
+          castState.action(id, what, t, charge);
+          fx.remoteCast(id, what, x, y, z, yaw, pitch, charge);
+        },
+        what,
+      );
       return true;
     }
     case EV_CHANNEL: {

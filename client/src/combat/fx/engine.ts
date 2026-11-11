@@ -35,6 +35,7 @@ import { glowPool, smokePool, SHAPE_GLOW, SHAPE_PUFF, SHAPE_SPARK } from './part
 import { FxPrims, alive, type Held, type DecalSlot, type BeamSlot, type ShellSlot, type DomeSlot } from './transients';
 import { currentFxTier, FX_PROFILES } from './quality';
 import { castHooks, casterHand, gemFor } from './castOrigin';
+import { weaponOfMove, weaponShotRadius, weaponShotVisual } from './weaponShot';
 import { flashProfile } from '../flashSafety';
 import { castState, type CasterKey } from '../castState';
 import { aimPoint as sharedAimPoint, beamEnd, lookDir, AIM_EYE, SHOT_Y } from '../aim';
@@ -507,7 +508,7 @@ export class SpellFxEngine {
    * the runtime (projectileEnd); remote and enemy shots test the ground and
    * bodies here. Returns a handle.
    */
-  projectile(sp: SpellDef | null, x: number, y: number, z: number, vx: number, vy: number, vz: number, gravity: number, radius: number, life: number, o: { local?: boolean; collide?: Proj['collide']; explode?: number; pierce?: boolean; spread?: boolean; family?: Family; kind?: 'enemy' | 'arrow'; homing?: boolean; hand?: V3 | null } = {}): number {
+  projectile(sp: SpellDef | null, x: number, y: number, z: number, vx: number, vy: number, vz: number, gravity: number, radius: number, life: number, o: { local?: boolean; collide?: Proj['collide']; explode?: number; pierce?: boolean; spread?: boolean; family?: Family; kind?: 'enemy' | 'arrow'; homing?: boolean; hand?: V3 | null; visual?: SpellVisual } = {}): number {
     this.counts.shots++;
     let s = this.projs.find((p) => !p.on);
     if (!s) {
@@ -515,7 +516,8 @@ export class SpellFxEngine {
       for (const p of this.projs) if (p.t0 < s.t0) s = p;
       this.endProj(s, 'expire');
     }
-    const v = sp ? spellVisual(sp) : enemyVisual(o.family ?? 'steel', o.kind ?? 'enemy');
+    // playtest 2 shared basic attacks: a weapon's shot brings its own visual (weaponShot.ts), the same for every viewer
+    const v = sp ? spellVisual(sp) : (o.visual ?? enemyVisual(o.family ?? 'steel', o.kind ?? 'enemy'));
     s.on = true;
     s.handle = handles++;
     s.v = v;
@@ -1229,10 +1231,13 @@ export class SpellFxEngine {
     const SWING = { life: [0.12, 0.24] as [number, number], size: [0.05, 0.1] as [number, number], speed: [0.2, 1.2] as [number, number], shape: SHAPE_SPARK, drag: 3 };
     // Playtest 2 calm kills: in first person your own arc sweeps right across the view 2-3 times a
     // second; it was a band of white-hot glow puffs. Calm: a thin, sparse streak in the steel's colour.
+    // Playtest 2 shared basic attacks: someone else's arc (or yours in third person) is seen from
+    // metres away and keeps more of its streak so it reads; still steel-coloured, never white-hot.
     const fp = flashProfile();
-    const density = 26 * fp.swingTrail;
+    const trail = caster === 'self' && !view.third ? fp.swingTrail : Math.max(fp.swingTrail, 0.7);
+    const density = 26 * trail;
     const glowCol = fp.swingTrail < 1 ? c.main : c.hotH;
-    const glowSize = 0.22 * fp.swingTrail;
+    const glowSize = 0.22 * trail;
     this.push({
       until: t0 + dur + 0.1,
       tick: (t) => {
@@ -1272,7 +1277,10 @@ export class SpellFxEngine {
         const d = lookDir(yaw, pt);
         const hand = { x: 0, y: 0, z: 0 };
         this.remoteHand(pos.x, pos.y, pos.z, yaw, hand, typeof caster === 'number' ? caster : 0, pitch);
-        this.projectile(null, pos.x, pos.y + SHOT_Y, pos.z, d.x * speed, d.y * speed, d.z * speed, m.gravity, m.radius, shotRange(m, charge) / Math.max(1, speed), { collide: 'enemies', kind: 'arrow', hand }); // CR 033: the draw sets speed and reach
+        // playtest 2 shared basic attacks: the bolt / arrow the attacker sees of their own shot (weaponShot.ts)
+        const wk = weaponOfMove(moveId) ?? 'other';
+        const visual = weaponShotVisual(wk, key !== null ? gemFor(key) : -1);
+        this.projectile(null, pos.x, pos.y + SHOT_Y, pos.z, d.x * speed, d.y * speed, d.z * speed, m.gravity, weaponShotRadius(wk, m.radius), shotRange(m, charge) / Math.max(1, speed), { collide: 'enemies', kind: 'arrow', hand, visual }); // CR 033: the draw sets speed and reach
         return;
       }
       const p = sharedAimPoint({ x: pos.x, y: pos.y + EYE, z: pos.z }, yaw, pitch, m.reach, (x, z, ny) => this.prims.heightAt(x, z, ny));

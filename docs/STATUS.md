@@ -1790,3 +1790,27 @@ Reading it: every ranged weapon and spell now passes WCAG 2.3.1 in the killer's 
 Gaps: the WCAG count is an approximation (64x36 raster, integer-pixel camera compensation, no zoom compensation, a 10-degree field taken as 1/3 x 1/3 of a 1280x720 view); melee is not separable from the view model by the harness (see the control); a second player's first sight of a remote Arc Sparks stream hitched 1-2.5 s in both runs (headless, before and after: a first draw, not a flash; not investigated); loot beams are another branch's.
 
 Shared files touched (small): `client/src/combat/{CombatLayer.tsx,README.md}`, `combat/enemies/{anim,material,renderer}.ts`, `combat/fx/{core,engine,particles,recipes,screen,transients}.ts`, `client/src/ui/graphics/GraphicsPanel.tsx`; new `combat/flashSafety{,.test}.ts`, `stores/accessibility.ts`, `tools/playtest/flash-audit.mjs`.
+
+## Playtest 2: shared basic attacks ✅ (branch `pt2/kill-flash`)
+
+Nicole: "make basic weapon attacks like wand attack viewable to everyone like the spell coming out of it". Client only: no contract, protocol, server or migration change, **nothing new on the wire** (Event 214 already names the move, and so the weapon, for every basic attack; CR 022), so the scale wire digest and the 150 kbps budget are untouched by construction.
+
+**What already replicated** (CR 022): the attacker's avatar swing / draw / bolt poses, Event 214 for every weapon move to players within 64 m, others' swing arcs, arrows and staff bolts from the weapon tip, slams.
+
+**The gaps** (two-browser check, `tools/playtest/shared-attacks-shots.mjs`, B ~7 m to A's side, both pages recorded with the DevTools screencast and an in-page probe of each FX engine):
+- **Every weapon shot was the same 10 cm steel needle**, yours and everyone else's: a wand bolt read as a white glint, nothing like a spell leaving the wand.
+- **Others saw your attack about half a second late**: B drew A's wand bolt 578 ms after A let go, the staff bolt 615 ms, the arrow 537 ms, the sword arc 565 ms (A: 25-103 ms), and the wand bolt was on B's screen for 52 ms. A player standing still sends no position updates (delta snapshots), so the interpolation stretches their delay toward its cap, and CR 022 plays their events at that delay.
+- Someone else's sword arc used the calm first-person density (calm kills), thin from metres away.
+
+**Fixes**:
+- `combat/fx/weaponShot.ts`: one mapping for both sides (`weaponShotVisual(weapon, gem)`): a **wand or staff bolt is a small magic bolt** (an orb core with a halo, trail, muzzle and impact) in the socketed gem's element, a soft arcane blue without one, the staff's bigger; **an arrow a needle with a steel (or gem) trail**. Your shot (`runtime.launch`) and another player's (`engine.remoteMove` from Event 214, the move id gives the weapon, their gem the colour) use the same call. Basic attacks stay quiet next to spells (no pooled light per shot) and go through the calm-kills flash rules.
+- `combat/castState.ts eventDelayMs`: **a weapon move from a caster drawn standing still plays after at most 150 ms** (`INTERP_DELAY_NEAR_MS` + 50) instead of their stretched delay; a moving caster keeps CR 022's drawn-moment timing so arm and shot stay in step, and spells, holds and dashes are unchanged.
+- Someone else's swing arc (and yours in third person) keeps 70 % of its streak (steel-coloured, never white-hot); your own first-person arc stays calm.
+
+**Measured** (`docs/evidence/pt2-shared-attacks-{before,after}.json`, the sheets `pt2-shared-attacks-{before,after}.jpg`: A's view | B's view per weapon): B now draws A's attack **254-301 ms after A's release (was 537-615 ms)**, Events 214 reached B for every attack in both runs, and B's frames show the bolt leaving A's wand / staff tip with its trail, the arrow in flight and the sword's arc (before: a white glint by the slime). Remaining delay: the event's trip (one snapshot interval), the move's startup steps and the 150 ms.
+
+**Tests**: vitest `combat/fx/weaponShot.test.ts` (every shooting move maps to its weapon from the id Event 214 carries; wand / staff -> magic orb in the gem's family, arcane without; bow -> needle; one cached visual per weapon and element; magic bolts drawn bigger, arrows thin; no light), `combat/castState.test.ts` (a still caster's weapon move plays after 150 ms, never later than their delay, a moving caster's and spells keep the drawn delay; through `remoteEvent` and `flush`).
+
+Gaps: the screenshots frame A small at 7 m with HUD cards on top (achievement toasts, tips); a wand bolt still flies only ~0.15 s at 9 m; melee hits on enemies are shown to others through Event 200 (steel sparks, the calm tint) as before.
+
+Shared files touched (small): `client/src/combat/{runtime,castState,castState.test}.ts`, `combat/fx/engine.ts`, `client/src/net/RemotePlayers.tsx` (passes the drawn speed); new `combat/fx/weaponShot{,.test}.ts`, `tools/playtest/shared-attacks-shots.mjs`.
