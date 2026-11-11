@@ -36,6 +36,7 @@ import { dashLive } from './dashes';
 import { castHooks, gemFor } from './fx/castOrigin';
 import type { WeaponKind } from './weapons/look';
 import { uiPanelUp } from '../input/interact';
+import { isCaptureClick } from '../input/useMouseLook';
 
 const STEP_MS = 1000 / MOVE_STEP_HZ;
 const EYE = 1.6;
@@ -132,6 +133,8 @@ export class CombatRuntime {
     };
     const onDown = (e: MouseEvent) => {
       if ((e.target as HTMLElement | null)?.tagName !== 'CANVAS') return;
+      // Playtest 2 polish: the click that captures the mouse (input/useMouseLook.ts) neither swings nor casts.
+      if (isCaptureClick()) return;
       if (e.button === 0) {
         this.buttons.attackDown = true;
         this.buttons.attackPress++;

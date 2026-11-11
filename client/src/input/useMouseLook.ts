@@ -51,6 +51,21 @@ export class LookSpikeFilter {
   }
 }
 
+/**
+ * Playtest 2 polish: the click that captures the mouse is the game's, not an
+ * attack or a cast (combat/runtime.ts asks before it swings). A click on the
+ * view with the mouse free requests the lock (below); the lock arrives after
+ * the click's listeners have run, so "not locked yet" marks that click. Where
+ * the browser keeps refusing the lock (some headless or embedded browsers),
+ * clicks fight unlocked after two refusals in a row instead of never.
+ */
+export const pointerLockState = { refusals: 0 };
+
+export function isCaptureClick(): boolean {
+  if (typeof document === 'undefined' || typeof document.exitPointerLock !== 'function') return false;
+  return !document.pointerLockElement && pointerLockState.refusals < 2;
+}
+
 export function useMouseLook() {
   const delta = useRef({ x: 0, y: 0 });
 
@@ -87,17 +102,23 @@ export function useMouseLook() {
       }
     };
     const onLock = () => {
+      if (document.pointerLockElement) pointerLockState.refusals = 0;
       delta.current.x = 0;
       delta.current.y = 0;
       useAppStore.getState().setPointerLocked(!!document.pointerLockElement);
     };
+    const onLockError = () => {
+      pointerLockState.refusals++;
+    };
     const onContext = (e: Event) => e.preventDefault();
     document.addEventListener('mousemove', onMove);
+    document.addEventListener('pointerlockerror', onLockError);
     document.addEventListener('mousedown', onDown);
     document.addEventListener('pointerlockchange', onLock);
     document.addEventListener('contextmenu', onContext);
     return () => {
       document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('pointerlockerror', onLockError);
       document.removeEventListener('mousedown', onDown);
       document.removeEventListener('pointerlockchange', onLock);
       document.removeEventListener('contextmenu', onContext);
