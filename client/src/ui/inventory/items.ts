@@ -40,9 +40,17 @@ export interface WireItem {
 
 export const INV_SLOTS = 40;
 export const INV_COLS = 8;
-/** Equipment slots in Interact 21/4 (unequip) argument order. */
-export const EQ_SLOTS = ['eq:main0', 'eq:main1', 'eq:head', 'eq:body', 'eq:legs'] as const;
+/** Equipment slots in Interact 21/4 (unequip) argument order (CR 039: the third loadout's main hand appended). */
+export const EQ_SLOTS = ['eq:main0', 'eq:main1', 'eq:head', 'eq:body', 'eq:legs', 'eq:main2'] as const;
 export type EqSlot = (typeof EQ_SLOTS)[number];
+/** The equipment panel's order: the main hands of the open loadouts, then armor. */
+export function eqDisplay(loadouts: number): EqSlot[] {
+  return (['eq:main0', 'eq:main1', 'eq:main2', 'eq:head', 'eq:body', 'eq:legs'] as EqSlot[]).filter((s) => !s.startsWith('eq:main') || Number(s.slice(7)) < loadouts);
+}
+/** The loadout whose main hand an equipment slot is (-1: armor). */
+export function mainLoadout(slot: string): number {
+  return /^eq:main[0-2]$/.test(slot) ? Number(slot.slice(7)) : -1;
+}
 
 /**
  * Playtest 2: an empty main hand wields the loadout's default training
@@ -63,7 +71,7 @@ export function trainingEquipArg(loadout: number, weapon: string): number {
   const w = COMBAT.weapons.find((x) => x.key === weapon);
   return w ? ((loadout & 0xff) | (w.id << 8)) >>> 0 : 0;
 }
-export const EQ_LABEL: Record<EqSlot, string> = { 'eq:main0': 'Main hand · Loadout 1', 'eq:main1': 'Main hand · Loadout 2', 'eq:head': 'Head', 'eq:body': 'Body', 'eq:legs': 'Legs' };
+export const EQ_LABEL: Record<EqSlot, string> = { 'eq:main0': 'Main hand · Loadout 1', 'eq:main1': 'Main hand · Loadout 2', 'eq:main2': 'Main hand · Loadout 3', 'eq:head': 'Head', 'eq:body': 'Body', 'eq:legs': 'Legs' };
 
 const defs = new Map<string, ItemDef>(ITEMS.items.map((d) => [d.key, d]));
 const affixDefs = new Map(ITEMS.affixes.map((a) => [a.key, a]));

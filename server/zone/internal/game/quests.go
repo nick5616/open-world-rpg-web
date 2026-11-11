@@ -1020,7 +1020,7 @@ func learnedSpellIntoSlot(p *combat.Player, key string) {
 	}
 	pr := p.Profile
 	lo := pr.Loadouts[pr.Active]
-	for i, k := range lo.Spells {
+	for i, k := range lo.Spells[:combatdefs.D.SpellSlots(p.Level)] { // CR 039: open slots only
 		if k == key {
 			return
 		}

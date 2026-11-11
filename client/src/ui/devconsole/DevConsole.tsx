@@ -25,6 +25,7 @@ import { DEV_ACT, DEV_FLAG, DEV_FLAG_LABEL, giveSend, petSend, send, spawnSend, 
 import { ensureDevHook } from './link';
 import { devLog, sendDev, setDevOpen, useDev, type DevTab } from './store';
 import { trackPanel } from '../../input/panelStack';
+import { spellSlots } from '../../combat/hotbar';
 // Playtest 2 vibe explorer (docs/cr/036-vibe-explorer.md): the Vibe tab and the composer load on first use.
 import { useVibe } from './vibe/store';
 const VibeTab = lazy(() => import('./vibe/VibeTab'));
@@ -121,6 +122,7 @@ function ItemsTab() {
         <select aria-label="loadout" value={loadout} onChange={(e) => setLoadout(Number(e.target.value))} style={S.input}>
           <option value={0}>Loadout 1</option>
           <option value={1}>Loadout 2</option>
+          <option value={2}>Loadout 3 (level 20)</option>
         </select>
       </div>
       <div style={{ color: TEXT_3, fontSize: 12 }}>{shown.length} shown</div>
@@ -197,13 +199,13 @@ function SpellsTab() {
       </div>
       <div style={S.row}>
         <span style={{ color: TEXT_2 }}>Equip into</span>
-        {[0, 1].map((l) => (
+        {[0, 1, 2].map((l) => (
           <Btn key={l} onClick={() => setLoadout(l)} active={loadout === l}>
             Loadout {l + 1}
           </Btn>
         ))}
         <span style={{ color: TEXT_3, fontSize: 12 }}>
-          now: {c.loadouts[loadout]?.spells.map((k, i) => `${i + 1} ${k ? (spellCardData(k)?.name ?? k) : '-'}`).join(' · ')}
+          now: {c.loadouts[loadout]?.spells.slice(0, spellSlots(c.level)).map((k, i) => `${i + 1} ${k ? (spellCardData(k)?.name ?? k) : '-'}`).join(' · ')}
         </span>
       </div>
       <div style={{ color: TEXT_3, fontSize: 12 }}>
@@ -219,7 +221,7 @@ function SpellsTab() {
               <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap', alignItems: 'center' }}>
                 {known ? <Btn onClick={() => go(send(DEV_ACT.unlearn, s.id))}>Unlearn</Btn> : <Btn onClick={() => go(send(DEV_ACT.learn, s.id))}>Learn</Btn>}
                 {!d?.passive &&
-                  [0, 1, 2, 3].map((slot) => (
+                  Array.from({ length: spellSlots(c.level) }, (_, i) => i).map((slot) => (
                     <Btn key={slot} onClick={() => equip(s.key, s.id, slot)} title={`Learn if needed and put in loadout ${loadout + 1} slot ${slot + 1}`}>
                       {slot + 1}
                     </Btn>

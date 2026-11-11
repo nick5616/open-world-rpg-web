@@ -14,6 +14,7 @@ import { COMBAT, ITEMS, STAMINA_MAX, type ItemStat, type SpellDef } from '@lodes
 import { skillLevel } from '../progression/gains';
 import { displayName, EQ_LABEL, ELEMENT_NAMES, formatStat, itemDef, rarityColor, STAT_LABEL, type EqSlot, type WireItem } from '../inventory/items';
 import { cap, ELEMENT_COLOR, passiveLines, SKILL_NAMES, spellByKey, spellName, statusLabel, TREE_ORDER, treeByKey, type EffectLine } from './tree';
+import { loadoutsOpen, spellSlots } from '../../combat/hotbar';
 
 /** Armor caps damage reduction from equipment (gear.go armorCap). */
 export const ARMOR_CAP = 60;
@@ -307,8 +308,9 @@ export function buildOverview(inp: BuildInput): BuildView {
   const lv = level - 1;
   const known = new Set(inp.known);
   const skills = Object.fromEntries(COMBAT.skills.list.map((s) => [s.key, skillLevel(inp.skillXp[s.key] ?? 0)]));
-  const active = Math.max(0, Math.min(1, inp.activeLoadout));
-  const gears = [0, 1].map((l) => gearFor(inp.items, l));
+  const nLoadouts = loadoutsOpen(level); // CR 039: the third loadout from level 20
+  const active = Math.max(0, Math.min(nLoadouts - 1, inp.activeLoadout));
+  const gears = Array.from({ length: nLoadouts }, (_, l) => gearFor(inp.items, l));
   const g = gears[active];
   const levelDmgMult = 1 + (LV.damagePctPerLevel / 100) * lv;
 
@@ -350,7 +352,7 @@ export function buildOverview(inp: BuildInput): BuildView {
   ];
 
   // Per loadout.
-  const loadouts: LoadoutView[] = [0, 1].map((l) => {
+  const loadouts: LoadoutView[] = Array.from({ length: nLoadouts }, (_, l) => l).map((l) => {
     const lo = inp.loadouts[l] ?? { weapon: COMBAT.start.loadouts[l]?.weapon ?? 'sword', spells: [null, null, null, null], gem: -1 };
     const gg = gears[l];
     const wdef = weaponByKey.get(lo.weapon);
@@ -415,7 +417,7 @@ export function buildOverview(inp: BuildInput): BuildView {
       weaponName: training ? `Training ${lo.weapon}` : displayName(gg.weapon!),
       training,
       main,
-      spells: [0, 1, 2, 3].map((i) => {
+      spells: Array.from({ length: spellSlots(level) }, (_, i) => i).map((i) => {
         const k = lo.spells[i] ?? null;
         return { slot: i, key: k, name: k ? spellName(k) : '', tree: k ? spellByKey.get(k)?.tree ?? '' : '' };
       }),

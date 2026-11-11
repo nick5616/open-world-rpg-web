@@ -9,7 +9,8 @@
 //   The tooltip and the skill tree's sidebar both render it.
 // - SlotCard: a loadout slot (a face, or an empty well); x clears it.
 // - SpellBoard: the character panel's spell section: a loadout toggle, the
-//   four slots and the grid of known castable spells. Assign by click (pick a
+//   slots the level opened (CR 039: four, one more every ten levels, the
+//   third loadout at 20; the next locked one shows when it opens) and the grid of known castable spells. Assign by click (pick a
 //   card, then a slot), by dragging a card onto a slot (pointer drag with a
 //   ghost card), or by keyboard (Enter picks, Enter on a slot places,
 //   Delete clears). Assignment is the existing equipSpell Interact.
@@ -19,6 +20,7 @@ import { spellHitWith } from '../skills/build';
 import { equipSpell, type Char } from '../skills/char';
 import { castable, namePending, needLine, nodeState, passiveLines, spellByKey, spellFacts, type NodeState } from '../skills/tree';
 import { knownCards, SCHOOL_ICON, slotsHolding, spellCardData, type SpellCardData } from './card';
+import { MAX_SPELL_SLOTS, hotbarKey, keyName, loadoutLevel, loadoutsOpen, slotLevel, spellSlots } from '../../combat/hotbar';
 import { BORDER, BORDER_GOLD, CARD_BG, CARD_BG_HOT, GOLD, GREEN, MANA, PANEL_BG, RED, SLOT_BG, TEXT, TEXT_2, TEXT_3, WARN } from './theme';
 
 // ---- pieces ----
@@ -213,7 +215,10 @@ export function SlotCard({ k, index, loadout, target, over, onClear, testid, sty
         ...style,
       }}
     >
-      <div style={{ position: 'absolute', top: 4, right: onClear && d ? 22 : 6, font: '700 11px system-ui, sans-serif', color: GOLD }}>{index + 1}</div>
+      <div title={`Slot ${index + 1}: ${keyName(hotbarKey(index))} casts it`} style={{ position: 'absolute', top: 4, right: onClear && d ? 22 : 6, font: '700 11px system-ui, sans-serif', color: GOLD }}>
+        {index + 1}
+        {keyName(hotbarKey(index)) !== String(index + 1) && <span style={{ color: TEXT_3, fontWeight: 400 }}> · {keyName(hotbarKey(index))}</span>}
+      </div>
       {d ? (
         <div style={{ paddingRight: 26 }}>
           <SpellCardFace d={d} compact />
@@ -239,6 +244,27 @@ export function SlotCard({ k, index, loadout, target, over, onClear, testid, sty
         </button>
       )}
     </div>
+  );
+}
+
+/** CR 039: a slot the level has not opened yet: when it opens. */
+export function LockedSlotCard({ index, loadout, level }: { index: number; loadout: number; level: number }) {
+  return (
+    <div data-testid={`spell-slot-locked-${loadout}-${index}`} aria-label={`Slot ${index + 1}: opens at level ${level}`} style={{ boxSizing: 'border-box', minHeight: 88, padding: '6px 8px', borderRadius: 6, border: `1px dashed ${BORDER}`, background: SLOT_BG, color: TEXT_3, fontSize: 12, position: 'relative' }}>
+      <div style={{ position: 'absolute', top: 4, right: 6, font: '700 11px system-ui, sans-serif', color: TEXT_3 }}>{index + 1}</div>
+      <LockGlyph />
+      <div style={{ marginTop: 4, color: TEXT_2 }}>Opens at level {level}</div>
+      <div style={{ fontSize: 11, marginTop: 2 }}>A new slot every ten levels</div>
+    </div>
+  );
+}
+
+function LockGlyph() {
+  return (
+    <svg width={14} height={14} viewBox="0 0 24 24" aria-hidden="true" style={{ display: 'block' }}>
+      <rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke={TEXT_3} strokeWidth="2" />
+      <path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke={TEXT_3} strokeWidth="2" />
+    </svg>
   );
 }
 
@@ -329,6 +355,7 @@ export function SpellBoard({ c }: { c: Char }) {
   };
 
   const lo = c.loadouts[shown];
+  const open = spellSlots(c.level); // CR 039
   const cards = knownCards(c.known);
   const passives = c.known.filter((k) => !castable(k) && spellByKey.has(k));
   const dragging = !!drag;
@@ -340,6 +367,14 @@ export function SpellBoard({ c }: { c: Char }) {
       <div role="tablist" aria-label="Loadouts" style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
         {c.loadouts.map((l, i) => {
           const on = i === shown;
+          if (i >= loadoutsOpen(c.level)) {
+            // CR 039: the third loadout, before level 20
+            return (
+              <div key={i} data-testid={`spell-loadout-locked-${i}`} title={`Loadout ${i + 1} opens at level ${loadoutLevel(i)}`} style={{ flex: 1, font: '12px system-ui, sans-serif', padding: '5px 8px', borderRadius: 4, background: SLOT_BG, color: TEXT_3, border: `1px dashed ${BORDER}` }}>
+                Loadout {i + 1} · level {loadoutLevel(i)}
+              </div>
+            );
+          }
           return (
             <button
               key={i}
@@ -356,7 +391,8 @@ export function SpellBoard({ c }: { c: Char }) {
         })}
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 6 }}>
-        {[0, 1, 2, 3].map((i) => {
+        {Array.from({ length: Math.min(MAX_SPELL_SLOTS, open + 1) }, (_, i) => i).map((i) => {
+          if (i >= open) return <LockedSlotCard key={i} index={i} loadout={shown} level={slotLevel(i)} />;
           const k = lo?.spells[i] ?? null;
           const id = `${shown}:${i}`;
           const target = online && ((!!picked && !dragging) || (dragging && drag.from !== id));
@@ -451,7 +487,7 @@ export function SpellBoard({ c }: { c: Char }) {
           Passives (always on, no slot): <span style={{ color: TEXT }}>{passives.map((k) => spellCardData(k)!.name).join(', ')}</span>
         </div>
       )}
-      <div style={{ fontSize: 11.5, color: TEXT_2, marginTop: 4 }}>New spells fill an empty slot by themselves. Cast with 1-4, or wheel to select and right-click. X swaps loadouts.</div>
+      <div style={{ fontSize: 11.5, color: TEXT_2, marginTop: 4 }}>New spells fill an empty slot by themselves. Cast with {Array.from({ length: open }, (_, i) => keyName(hotbarKey(i))).join(' ')} (Esc menu, Controls: change keys), or wheel to select and right-click. X swaps loadouts. A new slot every ten levels.</div>
       {hover && !drag && <SpellTooltip k={hover.k} c={c} anchor={hover.r} beside={hover.panel} />}
       {drag && <DragGhost d={spellCardData(drag.key)!} x={drag.x} y={drag.y} />}
     </div>

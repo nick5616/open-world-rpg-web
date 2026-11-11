@@ -4,6 +4,7 @@
 // can never promise something the server doesn't do.
 
 import { COMBAT, STAMINA_MAX } from '@lodestone/contracts';
+import { hotbarLines } from '../../combat/hotbar';
 
 const LV = COMBAT.leveling;
 
@@ -57,7 +58,7 @@ export function gainLines(from: number, to: number): string[] {
   if (to <= from) return [];
   const a = statsAt(from);
   const b = statsAt(to);
-  const out = [`+${b.health - a.health} health`];
+  const out = [...hotbarLines(from, to), `+${b.health - a.health} health`]; // CR 039: "New spell slot!" first
   if (b.stamina > a.stamina) out.push(`+${b.stamina - a.stamina} stamina`);
   out.push(`+${b.damagePct - a.damagePct}% damage`);
   if (b.mana > a.mana) out.push(`+${b.mana - a.mana} mana`);

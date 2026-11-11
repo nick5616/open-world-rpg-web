@@ -38,7 +38,7 @@ export interface CommandDef {
 
 export const COMMANDS: CommandDef[] = [
   { name: 'give', usage: '/give <item> [qty] [rarity] [lvl=N] [gem=ruby[:brilliant]] [affix=brutal]', does: 'put an item in your pack (gear rolled at that rarity)', arg: 'item' },
-  { name: 'equip', usage: '/equip <item> [rarity] [l1|l2] [lvl=N] [gem=..] [affix=..]', does: 'give and equip (weapons: main hand of that loadout; armor: its slot; tomes/arrows/draughts: used)', arg: 'item' },
+  { name: 'equip', usage: '/equip <item> [rarity] [l1|l2|l3] [lvl=N] [gem=..] [affix=..]', does: 'give and equip (weapons: main hand of that loadout; armor: its slot; tomes/arrows/draughts: used)', arg: 'item' },
   { name: 'learn', usage: '/learn <spell|all>', does: 'learn a spell, or every spell', arg: 'spell' },
   { name: 'unlearn', usage: '/unlearn <spell|all>', does: 'forget a spell, or all but the starting kit', arg: 'spell' },
   { name: 'level', usage: '/level <1-255>', does: 'set your character level' },
@@ -111,7 +111,7 @@ export function giveOptions(item: CatalogItem, rest: string[], equip: boolean): 
     if (n !== null) {
       if (numbers++ === 0) o.qty = n;
       else o.level = n;
-    } else if (/^l[12]$/.test(lw) || /^loadout[12]$/.test(lw)) o.loadout = Number(lw.at(-1)) - 1;
+    } else if (/^l[123]$/.test(lw) || /^loadout[123]$/.test(lw)) o.loadout = Number(lw.at(-1)) - 1; // CR 039: l3
     else if (lw.startsWith('lvl=') || lw.startsWith('level=')) o.level = Number(lw.split('=')[1]) || 0;
     else if (lw.startsWith('gem=')) {
       const [g, c] = lw.slice(4).split(':');

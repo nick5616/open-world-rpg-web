@@ -386,7 +386,7 @@ func (s *Server) devGive(sess *session, m *proto.Interact) (int32, string) {
 	affix := int(m.TargetID>>50&0xff) - 1
 	qty := max(1, int(m.Arg&0xffff))
 	equip := m.Arg>>16&1 != 0
-	loadout := int(m.Arg >> 17 & 1)
+	loadout := int(m.Arg >> 17 & 3) // CR 039: loadout 3 too
 	gear := def.Kind == "weapon" || def.Kind == "armor"
 	var d items.Delta
 	var got []*items.Item

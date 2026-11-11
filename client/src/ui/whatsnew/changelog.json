@@ -1,5 +1,16 @@
 [
   {
+    "id": "pt2-hotbar-slots",
+    "date": "2026-11-11",
+    "title": "More room on your hotbar",
+    "items": [
+      "Every ten levels opens another spell slot in all your loadouts: slot 5 at level 10, then 6, 7 and 8 at 20, 30 and 40.",
+      "Level 20 also opens a third weapon loadout (it starts with a training bow); X cycles through them.",
+      "Slots 5-8 cast with 8, 9, - and =. Change any slot key in the Esc menu under Controls (mouse side buttons work too).",
+      "Already past level 10? Your new slots are waiting the next time you log in."
+    ]
+  },
+  {
     "id": "pt2-ground-loot",
     "date": "2026-11-11",
     "title": "Loot you can see from the sky",

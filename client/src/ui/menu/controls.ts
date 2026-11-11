@@ -7,6 +7,7 @@
 
 import { KEY_MAP } from '../../input/useKeyboard';
 import type { HeldButtons } from '../../sim/inputFrame';
+import { hotbarKeys, keyName } from '../../combat/hotbar';
 
 export interface ControlRow {
   /** Keys as shown ("W", "Shift", "Left mouse"). */
@@ -36,6 +37,8 @@ const LABEL: Record<string, string> = {
   Escape: 'Esc',
   Enter: 'Enter',
   Delete: 'Delete',
+  Minus: '-', // CR 039: spell slot 7
+  Equal: '=', // CR 039: spell slot 8
 };
 
 /** "KeyW" -> "W", "Digit1" -> "1", "ShiftLeft" -> "Shift". */
@@ -58,6 +61,7 @@ export function movementKeys(button: keyof HeldButtons): string[] {
 }
 
 const C = 'combat/runtime.ts';
+const H = 'combat/hotbar.ts'; // CR 039: the spell slot keys
 
 /**
  * Every control in the game, grouped. `debug` adds the dev-build tools;
@@ -85,12 +89,13 @@ export function controlGroups(debug: boolean, dev = false): ControlGroup[] {
         { keys: ['Mouse wheel'], action: 'Pick what the right button uses', note: 'your weapon or a spell slot', src: [[C, 'onWheel']] },
         { keys: ['Right mouse'], action: 'Use the picked spell or weapon move', src: [[C, 'e.button === 2']] },
         { keys: ['Z'], action: 'Parry / charge / heavy (hold); a bow: lower the draw', note: "always your weapon's move, whatever the wheel picked; with a bow it lets the string down without shooting", src: [[C, "'KeyZ'"]] },
-        { keys: ['1', '2', '3', '4'], action: 'Cast the spell in that slot', note: 'also picks it for the right button; hold for streams and charges', src: [[C, "'Digit1'"], [C, "'Digit4'"]] },
+        { keys: hotbarKeys().slice(0, 4).map(keyName), action: 'Cast the spell in that slot', note: 'also picks it for the right button; hold for streams and charges; change the keys above', src: [[H, "'Digit1'"], [H, "'Digit4'"]] },
+        { keys: hotbarKeys().slice(4).map(keyName), action: 'Cast spell slots 5-8', note: 'a new slot every ten levels (5 at level 10, 6 at 20, 7 at 30, 8 at 40)', src: [[H, "'Digit8'"], [H, "'Digit9'"]] },
         { keys: ['F', 'Alt'], action: 'Dodge', note: 'a short moment nothing can hit you', src: [[C, "'KeyF'"], [C, "'AltLeft'"]] },
         { keys: ['Q'], action: 'Elemental form', note: 'with a gem socketed in your weapon', src: [[C, "'KeyQ'"]] },
         { keys: ['Tab'], action: 'Weapon technique', note: 'once your weapon skill has one (V is push to talk); with a panel open Tab moves between its buttons', src: [[C, "'Tab'"]] },
         { keys: ['R'], action: 'Drink a healing draught', src: [[C, "'KeyR'"]] },
-        { keys: ['X'], action: 'Swap loadout (weapon + 4 spells)', src: [[C, "'KeyX'"]] },
+        { keys: ['X'], action: 'Swap loadout (weapon + its spells)', note: 'cycles your loadouts: two, a third from level 20', src: [[C, "'KeyX'"]] },
       ],
     },
     {

@@ -98,7 +98,7 @@ export function giveSend(key: string, o: GiveOpts = {}): DevSend {
     (BigInt(Math.max(0, Math.min(15, (o.gem ?? -1) + 1))) << 44n) |
     (BigInt(Math.max(0, Math.min(3, o.cut ?? 0))) << 48n) |
     (BigInt(Math.max(0, Math.min(255, (o.affix ?? -1) + 1))) << 50n);
-  const arg = Math.max(1, Math.min(0xffff, o.qty ?? 1)) | (o.equip ? 1 << 16 : 0) | ((o.loadout ?? 0) & 1 ? 1 << 17 : 0);
+  const arg = Math.max(1, Math.min(0xffff, o.qty ?? 1)) | (o.equip ? 1 << 16 : 0) | (((o.loadout ?? 0) & 3) << 17); // CR 039: loadout 3 too
   return send(DEV_ACT.give, t, arg);
 }
 

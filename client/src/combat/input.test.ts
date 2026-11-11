@@ -79,7 +79,7 @@ describe('held actions and the Esc menu (input/held.ts)', () => {
     expect(b(r).altDown).toBe(true);
     expect(b(r).attackDown).toBe(true);
     useMenu.setState({ open: true });
-    expect(b(r).castHeld).toEqual([false, false, false, false]);
+    expect(b(r).castHeld).toEqual(new Array(8).fill(false)); // CR 039: eight slots
     expect(b(r).altDown).toBe(false);
     expect(b(r).attackDown).toBe(false);
     const presses = b(r).attackPress;

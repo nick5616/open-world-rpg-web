@@ -24,15 +24,16 @@ import (
 
 var D = combatdefs.D
 
-// Loadout is one of the two saved loadouts (spec 8): a weapon in the main
-// hand, up to four spells from the off hand, the socketed gem's element for
-// elemental forms and the arrows a bow fires (WP14 data hooks).
+// Loadout is one of the saved loadouts (spec 8; CR 039: two, a third from
+// level 20): a weapon in the main hand, spells from the off hand (four, one
+// more every ten levels up to MaxSpellSlots), the socketed gem's element
+// for elemental forms and the arrows a bow fires (WP14 data hooks).
 type Loadout struct {
-	Weapon   string    `json:"weapon"`
-	Spells   [4]string `json:"spells"` // "" = empty slot
-	Gem      int       `json:"gem"`    // combatdefs element of the socketed gem, -1 none
-	ArrowOre string    `json:"arrowOre,omitempty"`
-	ArrowGem int       `json:"arrowGem"` // gem tip element, -1 none
+	Weapon   string                          `json:"weapon"`
+	Spells   [constants.MaxSpellSlots]string `json:"spells"` // "" = empty slot; only the first D.SpellSlots(level) are open
+	Gem      int                             `json:"gem"`    // combatdefs element of the socketed gem, -1 none
+	ArrowOre string                          `json:"arrowOre,omitempty"`
+	ArrowGem int                             `json:"arrowGem"` // gem tip element, -1 none
 	// Material is the main-hand weapon's material key (combat.yaml
 	// materials; "" = ordinary). WP15: "sunsteel" kills demons. WP14 sets
 	// it from the equipped item with SetMaterial.
@@ -44,31 +45,44 @@ type Loadout struct {
 // spells_known / spells_equipped (spec 11) for accounts and in the same
 // fields of a local profile's signed save (decision 0013).
 type Profile struct {
-	Loadouts [2]Loadout       `json:"loadouts"`
-	Active   int              `json:"active"`
-	Known    []string         `json:"-"` // spells_known
-	SkillXP  map[string]int64 `json:"weaponSkills"`
-	dirty    bool
+	Loadouts [constants.MaxLoadouts]Loadout `json:"loadouts"`
+	Active   int                            `json:"active"`
+	Known    []string                       `json:"-"` // spells_known
+	SkillXP  map[string]int64               `json:"weaponSkills"`
+	// HotbarSeen (CR 039) is the character level whose hotbar unlocks (spell
+	// slots, loadouts) the player was last told about: a level-up tells
+	// them in the fanfare; a character saved before CR 039 above level 10
+	// (HotbarSeen 0) hears it once on the next join (game.hotbarJoin).
+	HotbarSeen int `json:"-"`
+	dirty      bool
 }
 
-// skillTreeJSON is what skill_tree holds.
+// skillTreeJSON is what skill_tree holds. v1 (before CR 039): two loadouts
+// of four spells; v2: MaxLoadouts loadouts of MaxSpellSlots spells and
+// hotbarSeen. A v1 row loads into the first slots and loadouts (Go arrays
+// take a shorter JSON array) and is written back as v2.
 type skillTreeJSON struct {
-	V        int              `json:"v"`
-	Loadouts [2]Loadout       `json:"loadouts"`
-	Active   int              `json:"active"`
-	SkillXP  map[string]int64 `json:"weaponSkills"`
+	V          int                            `json:"v"`
+	Loadouts   [constants.MaxLoadouts]Loadout `json:"loadouts"`
+	Active     int                            `json:"active"`
+	SkillXP    map[string]int64               `json:"weaponSkills"`
+	HotbarSeen int                            `json:"hotbarSeen,omitempty"`
 }
+
+// skillTreeVersion is the skill_tree layout written now (CR 039).
+const skillTreeVersion = 2
 
 // NewProfile is a new character's kit (combat.yaml `start`).
 func NewProfile() *Profile {
 	p := &Profile{SkillXP: map[string]int64{}, Known: slices.Clone(D.Start.Spells)}
+	p.HotbarSeen = 1
 	for i, l := range D.Start.Loadouts {
-		if i >= 2 {
+		if i >= constants.MaxLoadouts {
 			break
 		}
 		lo := Loadout{Weapon: l.Weapon, Gem: -1, ArrowGem: -1, ArrowOre: "copper"}
 		for k, s := range l.Spells {
-			if k < 4 && s != nil {
+			if k < constants.MaxSpellSlots && s != nil {
 				lo.Spells[k] = *s
 			}
 		}
@@ -79,29 +93,47 @@ func NewProfile() *Profile {
 
 // MarshalSkillTree is the skill_tree jsonb value.
 func (p *Profile) MarshalSkillTree() []byte {
-	b, _ := json.Marshal(skillTreeJSON{V: 1, Loadouts: p.Loadouts, Active: p.Active, SkillXP: p.SkillXP})
+	b, _ := json.Marshal(skillTreeJSON{V: skillTreeVersion, Loadouts: p.Loadouts, Active: p.Active, SkillXP: p.SkillXP, HotbarSeen: p.HotbarSeen})
 	return b
 }
 
-// Equipped is the active loadout's spells (spells_equipped).
+// Equipped is the active loadout's spells (spells_equipped): every slot,
+// open or not (a character levelled down by the dev console keeps them).
 func (p *Profile) Equipped() []string { return p.Loadouts[p.Active].Spells[:] }
+
+// SeeHotbar records that the player was told about level's hotbar unlocks;
+// true when that is news (the level is past the last one told).
+func (p *Profile) SeeHotbar(level int) bool {
+	if level <= p.HotbarSeen {
+		return false
+	}
+	p.HotbarSeen = level
+	p.dirty = true
+	return true
+}
 
 // LoadProfile rebuilds a profile from the stored columns; anything missing
 // or invalid falls back to the starting kit so a bad row never blocks play.
 func LoadProfile(skillTree []byte, known []string) *Profile {
 	p := NewProfile()
 	var st skillTreeJSON
-	if len(skillTree) > 0 && json.Unmarshal(skillTree, &st) == nil && st.V == 1 {
+	if len(skillTree) > 0 && json.Unmarshal(skillTree, &st) == nil && (st.V == 1 || st.V == skillTreeVersion) {
 		for i := range st.Loadouts {
 			if D.WeaponByKey(st.Loadouts[i].Weapon) != nil {
 				p.Loadouts[i] = st.Loadouts[i]
 			}
 		}
-		if st.Active == 0 || st.Active == 1 {
+		if st.Active >= 0 && st.Active < constants.MaxLoadouts {
 			p.Active = st.Active
 		}
 		if st.SkillXP != nil {
 			p.SkillXP = st.SkillXP
+		}
+		// CR 039 migration: a v1 row never heard about hotbar unlocks (0:
+		// the next join tells a character past level 10 once).
+		p.HotbarSeen = 0
+		if st.V == skillTreeVersion {
+			p.HotbarSeen = st.HotbarSeen
 		}
 	}
 	for _, k := range known {
@@ -203,9 +235,20 @@ func (p *Profile) Grant(key string) bool {
 	return true
 }
 
-// EquipSpell puts a known, equippable spell in a slot ("" clears it).
+// EquipSpellAt is EquipSpell for a character of level (CR 039): the slot
+// and the loadout must be open at that level. The zone's Interact path.
+func (p *Profile) EquipSpellAt(loadout, slot int, key string, level int) bool {
+	if slot >= D.SpellSlots(level) || loadout >= D.LoadoutsOpen(level) {
+		return false
+	}
+	return p.EquipSpell(loadout, slot, key)
+}
+
+// EquipSpell puts a known, equippable spell in a slot ("" clears it). It
+// checks the layout only (MaxLoadouts x MaxSpellSlots); EquipSpellAt also
+// checks what the character's level has opened.
 func (p *Profile) EquipSpell(loadout, slot int, key string) bool {
-	if loadout < 0 || loadout > 1 || slot < 0 || slot >= constants.MaxEquippedSpells {
+	if loadout < 0 || loadout >= constants.MaxLoadouts || slot < 0 || slot >= constants.MaxSpellSlots {
 		return false
 	}
 	if key != "" {
@@ -228,7 +271,7 @@ func (p *Profile) EquipSpell(loadout, slot int, key string) bool {
 // EquipWeapon sets a loadout's weapon. v1 has every weapon type available
 // (WP14's forged weapons will gate this through the inventory).
 func (p *Profile) EquipWeapon(loadout int, weapon string) bool {
-	if loadout < 0 || loadout > 1 || D.WeaponByKey(weapon) == nil {
+	if loadout < 0 || loadout >= constants.MaxLoadouts || D.WeaponByKey(weapon) == nil {
 		return false
 	}
 	p.Loadouts[loadout].Weapon = weapon
@@ -239,7 +282,7 @@ func (p *Profile) EquipWeapon(loadout int, weapon string) bool {
 // SetGem sets the element of the gem socketed in a loadout's weapon (WP14
 // sockets call this; -1 removes it).
 func (p *Profile) SetGem(loadout, element int) bool {
-	if loadout < 0 || loadout > 1 || element < -1 || element >= combatdefs.Physical {
+	if loadout < 0 || loadout >= constants.MaxLoadouts || element < -1 || element >= combatdefs.Physical {
 		return false
 	}
 	p.Loadouts[loadout].Gem = element
@@ -252,7 +295,7 @@ func (p *Profile) SetGem(loadout, element int) bool {
 // when a forged weapon is equipped (a sunsteel blade -> "sunsteel"); dev
 // builds also reach it through Interact 50 action 6.
 func (p *Profile) SetMaterial(loadout int, key string) bool {
-	if loadout < 0 || loadout > 1 || (key != "" && D.MaterialByKey(key) == nil) {
+	if loadout < 0 || loadout >= constants.MaxLoadouts || (key != "" && D.MaterialByKey(key) == nil) {
 		return false
 	}
 	p.Loadouts[loadout].Material = key
@@ -260,9 +303,18 @@ func (p *Profile) SetMaterial(loadout int, key string) bool {
 	return true
 }
 
+// SwapAt is Swap for a character of level (CR 039): the third loadout
+// opens at combat.yaml leveling.hotbar.loadoutLevels[2].
+func (p *Profile) SwapAt(i, level int) bool {
+	if i >= D.LoadoutsOpen(level) {
+		return false
+	}
+	return p.Swap(i)
+}
+
 // Swap switches the active loadout (instant, spec 8).
 func (p *Profile) Swap(i int) bool {
-	if i != 0 && i != 1 {
+	if i < 0 || i >= constants.MaxLoadouts {
 		return false
 	}
 	if p.Active != i {
