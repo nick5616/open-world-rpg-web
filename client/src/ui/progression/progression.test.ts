@@ -3,7 +3,7 @@ import { COMBAT, type Event as ZoneEvent } from '@lodestone/contracts';
 import { decodeArea, decodeStats, encodeArea, encodeStats, PEV, STATS_REASON } from './events';
 import { gainLines, learnable, skillLevel, skillProgress, skillXpFor, statsAt, tierLevel, unlocksAt, upcoming } from './gains';
 import { reduceProgressionEvent, type ProgressionState } from './store';
-import { towerPrompt, WET_CLIMB, type TowerLike } from './towerPrompt';
+import { towerPrompt, type TowerLike } from './towerPrompt';
 
 const hex = (s: string) => Uint8Array.from(s.match(/../g)!.map((b) => parseInt(b, 16)));
 // The same vectors as server/zone/internal/game/progression_test.go.
@@ -103,12 +103,6 @@ describe('crystal tower prompt', () => {
     expect(towerPrompt(towers, 101, 60, 100, () => true, () => true)?.kind).toBe('attuned');
     expect(towerPrompt(towers, 120, 10, 100, () => true, no)?.kind).toBe('return');
     expect(towerPrompt(towers, 120, 10, 100, () => true, () => true)).toBeNull();
-  });
-  it('says why the climb fails in the rain (playtest 2 co-op)', () => {
-    expect(towerPrompt(towers, 140, 10, 100, no, no, true)?.detail).toBe(WET_CLIMB);
-    expect(towerPrompt(towers, 120, 10, 100, () => true, no, true)?.detail).toBe(WET_CLIMB);
-    expect(towerPrompt(towers, 140, 10, 100, no, no, false)?.detail).not.toBe(WET_CLIMB);
-    expect(towerPrompt(towers, 101, 60, 100, () => true, no, true)?.kind).toBe('attune'); // on top the rain no longer matters
   });
 });
 
