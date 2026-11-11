@@ -423,11 +423,21 @@ func TestMainStoryTwoPlayersEndToEnd(t *testing.T) {
 	a.pump(200 * time.Millisecond)
 	var hp0, shroud float64
 	var blocked, depleted float64
+	var afterOne float64
 	h.do(func() {
 		hp0, shroud = r.hush.HP, r.shroud
 		blocked = h.srv.finaleGuard(r.hush, ea.ID, 200, false)
-		depleted = h.srv.finaleGuard(r.hush, ea.ID, r.shroud+1, true)
+		// Playtest 2 co-op: a count of sunsteel / Light hits, not 8 % of a
+		// level- and party-scaled health pool (12 for two in the arena).
+		depleted = h.srv.finaleGuard(r.hush, ea.ID, 1e6, true)
+		afterOne = r.shroud
+		for i := 0; i < 20 && r.shroud > 0; i++ {
+			depleted += h.srv.finaleGuard(r.hush, ea.ID, 50, true)
+		}
 	})
+	if shroud != finaleShroudHits(2, false) || afterOne != shroud-1 {
+		t.Fatalf("shroud %v hits, %v left after one huge hit", shroud, afterOne)
+	}
 	if shroud <= 0 || blocked != 0 || depleted != 0 || r.shroud != 0 || r.hush.HP != hp0 {
 		t.Fatalf("shroud %v blocked %v depleted %v left %v", shroud, blocked, depleted, r.shroud)
 	}
