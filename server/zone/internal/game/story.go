@@ -237,6 +237,9 @@ func (s *Server) resolveStory() *story.Places {
 	var ts []tw2
 	for _, t := range ex.Towers {
 		a := &ex.Atlas.Sites[t.Site]
+		if t.Shape != nil && !s.towerApproachable(t.Shape.CX, t.Shape.CZ, t.Shape.MaxR) {
+			continue // playtest 2 co-op: a summit you can't walk up to
+		}
 		ts = append(ts, tw2{t.Site, int(a.Region), dist(a.X, a.Z)})
 	}
 	sort.Slice(ts, func(i, j int) bool {
@@ -409,6 +412,39 @@ func (s *Server) resolveStory() *story.Places {
 		"vigil", p.Vigil.Name, "captain", p.Captain.Name, "smith", p.Smith.Name+" of "+p.Smith.Town, "sanctum", p.Sanctum.Name,
 		"lastFork", p.LastFork.Name, "heartfall", strconv.Itoa(int(p.Heartfall.X))+","+strconv.Itoa(int(p.Heartfall.Z)))
 	return p
+}
+
+// towerApproachMaxDeg: a story tower needs one way to its foot no steeper
+// than this (walking stops at 50; a margin for players who don't find the
+// exact line).
+const towerApproachMaxDeg = 44.0
+
+// towerApproachable: some straight line from 150 m out to the tower's wall
+// climbs no slope steeper than towerApproachMaxDeg (2 m steps). Playtest 2
+// co-op: Act II sent a pair to The Forgotten Spire of the Howling Crags,
+// a summit tower walkable only up one 46 degree ridge; they fell off its
+// cliffs, were downed at its foot and spent half an hour on one step.
+func (s *Server) towerApproachable(cx, cz, maxR float64) bool {
+	g := s.cfg.Ground
+	if g == nil {
+		return true
+	}
+	lim := math.Tan(towerApproachMaxDeg * math.Pi / 180)
+	for k := 0; k < 32; k++ {
+		a := float64(k) / 32 * 2 * math.Pi
+		ux, uz := math.Cos(a), math.Sin(a)
+		ok := true
+		prev := g.HeightAt(cx+ux*(maxR+2), cz+uz*(maxR+2))
+		for d := maxR + 4; d <= maxR+150 && ok; d += 2 {
+			h := g.HeightAt(cx+ux*d, cz+uz*d)
+			ok = math.Abs(h-prev)/2 <= lim
+			prev = h
+		}
+		if ok {
+			return true
+		}
+	}
+	return false
 }
 
 // heartfallSpot finds open, level, dry ground in region r, 250-900 m from

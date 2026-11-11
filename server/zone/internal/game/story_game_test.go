@@ -116,6 +116,21 @@ func TestMainStoryTwoPlayersEndToEnd(t *testing.T) {
 	t.Logf("places: keeper %s of %s; stone %s; forks %s / %s / %s / %s; vaults %s / %s; vigil %s (%s); smith %s of %s; sanctum %s; last fork %s; Heartfall (%.0f, %.0f) in %s",
 		p.Keeper.Name, p.Home, p.Tablet.Name, p.Forks[0].Name, p.Forks[1].Name, p.Forks[2].Name, p.Forks[3].Name, p.Vaults[0].Name, p.Vaults[1].Name,
 		p.Vigil.Name, p.Captain.Name, p.Smith.Name, p.Smith.Town, p.Sanctum.Name, p.LastFork.Name, p.Heartfall.X, p.Heartfall.Z, p.Heartfall.Region)
+	// Playtest 2 co-op: every story tower can be walked up to.
+	for _, f := range append(p.Forks[:], p.LastFork) {
+		if tw, ok := h.srv.cfg.Explore.TowerOfSite(f.Site); ok && !h.srv.towerApproachable(tw.Shape.CX, tw.Shape.CZ, tw.Shape.MaxR) {
+			t.Fatalf("story tower %s has no walkable approach", f.Name)
+		}
+	}
+	sawCrags := false
+	for _, tw := range h.srv.cfg.Explore.Towers {
+		if a := h.srv.cfg.Explore.Atlas.Sites[tw.Site]; a.Name == "The Forgotten Spire" && tw.Shape.TopY > 400 {
+			sawCrags = !h.srv.towerApproachable(tw.Shape.CX, tw.Shape.CZ, tw.Shape.MaxR)
+		}
+	}
+	if !sawCrags {
+		t.Fatal("the Howling Crags' summit tower (one 46 degree ridge) should count as unapproachable")
+	}
 
 	const A, B = "a1111111-2222-3333-4444-555555555555", "b1111111-2222-3333-4444-555555555555"
 	for i, c := range []string{A, B} {
