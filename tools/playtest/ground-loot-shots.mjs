@@ -1,3 +1,4 @@
+/* global requestAnimationFrame */
 // Playtest 2 ground loot: two players on a private dev stack (two browser
 // contexts in one headless Chromium). Player A kills a camp (its personal
 // loot scatters on the ground: real models, beams, sparkles; B does not see
