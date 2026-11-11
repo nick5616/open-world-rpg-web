@@ -114,7 +114,15 @@ type petState struct {
 	fightAt   uint32 // last tick it fought (regen waits)
 	charge    *petCharge
 	koed      bool
+	apartAt   uint32 // playtest 2: tick its owner went a level apart (a cave), 0 none
 }
+
+// petCaveWarpS: a pet a level apart from its owner (owner down a cave, up
+// a roof) is set down beside them if no path brought it there by then.
+const (
+	petCaveWarpS  = 15.0
+	petPathGraceS = 1.5 // a level apart and no path asked or found by then: warp
+)
 
 type petCharge struct {
 	target uint32
@@ -339,6 +347,28 @@ func (w *World) warpPet(e *Enemy, owner *Player) {
 	e.pet.stay = e.Pos
 }
 
+// petApart: the pet is a level apart from its owner (more than 24 m above
+// or below: a cave, a cliff top) and no path is bringing it (playtest 2:
+// it walks into a cave mouth when the cave graph has a way; the warp is
+// the fallback).
+func (w *World) petApart(e *Enemy, owner *Player) bool {
+	pt := e.pet
+	if math.Abs(owner.Pos.Y-e.Pos.Y) <= 24 {
+		pt.apartAt = 0
+		return false
+	}
+	if pt.apartAt == 0 {
+		pt.apartAt = w.tick
+	}
+	n, since := e.nav, w.tick-pt.apartAt
+	pathing := n != nil && n.fails < 2 && (n.queued || n.want || n.following())
+	if since > secondsToTicks(petCaveWarpS) || since > secondsToTicks(petPathGraceS) && !pathing {
+		pt.apartAt = 0
+		return true
+	}
+	return false
+}
+
 // stepPets runs every pet for one tick (after the summons).
 func (w *World) stepPets() {
 	if len(w.pets) == 0 {
@@ -351,7 +381,7 @@ func (w *World) stepPets() {
 			continue
 		}
 		pt := e.pet
-		if hdist(owner.Pos, e.Pos) > pt.spec.WarpM || math.Abs(owner.Pos.Y-e.Pos.Y) > 24 {
+		if hdist(owner.Pos, e.Pos) > pt.spec.WarpM || w.petApart(e, owner) {
 			w.warpPet(e, owner)
 		}
 		w.petThink(e, owner)
@@ -395,7 +425,7 @@ func (w *World) petThink(e *Enemy, owner *Player) {
 			if e.ID%2 == 0 {
 				side = -1.2
 			}
-			spot = movement.Vec3{X: owner.Pos.X - fx*pt.spec.FollowM + fz*side, Z: owner.Pos.Z - fz*pt.spec.FollowM - fx*side}
+			spot = movement.Vec3{X: owner.Pos.X - fx*pt.spec.FollowM + fz*side, Y: owner.Pos.Y, Z: owner.Pos.Z - fz*pt.spec.FollowM - fx*side}
 		}
 		if d := hdist(spot, e.Pos); d > 1.2 {
 			w.moveToward(e, spot, math.Min(1.4, 0.45+d/5))

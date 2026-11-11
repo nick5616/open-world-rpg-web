@@ -374,6 +374,7 @@ func (s *Server) doorsTick(tick uint32) {
 			}
 			was := !w.settledOpen(d)
 			w.open[d] = p.to
+			s.navDoorChanged(d) // enemy pathfinding (obstacles.go)
 			w.pend[d] = nil
 			w.recount(d, was)
 			settled = append(settled, d)

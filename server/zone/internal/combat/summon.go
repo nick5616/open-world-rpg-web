@@ -270,7 +270,7 @@ func (w *World) allyThink(e *Enemy, owner *Player) {
 			// Follow the caster, a little behind and to the side.
 			side := float64(st.slot%3-1) * 1.6
 			fx, fz := -math.Sin(owner.YawHint()), -math.Cos(owner.YawHint())
-			spot := movement.Vec3{X: owner.Pos.X - fx*2.2 + fz*side, Z: owner.Pos.Z - fz*2.2 - fx*side}
+			spot := movement.Vec3{X: owner.Pos.X - fx*2.2 + fz*side, Y: owner.Pos.Y, Z: owner.Pos.Z - fz*2.2 - fx*side}
 			if hdist(spot, e.Pos) > 1.2 {
 				w.moveToward(e, spot, math.Min(1.3, 0.5+hdist(spot, e.Pos)/6))
 			} else {

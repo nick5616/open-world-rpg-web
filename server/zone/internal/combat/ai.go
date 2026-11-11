@@ -195,13 +195,23 @@ func (w *World) think(e *Enemy) {
 		// A returning enemy turns on anyone who walks up to it near home,
 		// and never gets stuck on the way (crowded home point, a ledge):
 		// after 6 s it is simply home.
-		if t := w.acquire(e, 1); t != nil && hdist(e.Pos, e.Home) <= e.leash()*0.5 {
+		// (Not one that just gave up on a target it could not reach: it goes
+		// home first; pathfinding, navai.go.)
+		if t := w.acquire(e, 1); t != nil && hdist(e.Pos, e.Home) <= e.leash()*0.5 && (e.nav == nil || e.nav.fails < navGiveUp) {
 			e.Target = t.ID
 			w.engage(e, t)
 			e.State, e.stateAt = Chase, tick
 			return
 		}
-		if hdist(e.Pos, e.Home) < 2 || tick-e.stateAt > secondsToTicks(6) {
+		giveUp := secondsToTicks(6)
+		if e.nav.following() {
+			giveUp = secondsToTicks(navReturnS) // walking home round something (navai.go)
+		}
+		if hdist(e.Pos, e.Home) < 2 || tick-e.stateAt > giveUp {
+			if e.nav != nil {
+				e.nav.clear()
+				e.nav.fails, e.nav.blocked = 0, 0
+			}
 			e.Pos = w.place(e.Home.X, e.Home.Z, e.Def)
 			e.State, e.stateAt = Idle, tick
 			e.resetScale() // spec 8 "return": a reset enemy is a fresh fight
@@ -315,8 +325,11 @@ func (w *World) chase(e *Enemy) {
 		return // CR 029: a pet drew it off its owner (pets.go)
 	}
 	sheltered := p != nil && e.Demon != nil && w.DemonHooks.Sheltered != nil && w.DemonHooks.Sheltered(e, p) // WP15
-	if p == nil || p.Downed || p.Graced(tick) || sheltered || hdist(p.Pos, e.Home) > e.leash()+e.Def.Aggro*0.5 || hdist(e.Pos, e.Home) > e.leash() {
-		if np := w.acquire(e, 1.5); np != nil && hdist(e.Pos, e.Home) <= e.leash() {
+	// Playtest 2 pathfinding: a chaser on a path may stray further from home
+	// (a detour round a building), and one that finds no way to its target
+	// (a closed house) gives up instead of waiting at the wall.
+	if p == nil || p.Downed || p.Graced(tick) || sheltered || hdist(p.Pos, e.Home) > e.leash()+e.Def.Aggro*0.5 || hdist(e.Pos, e.Home) > e.leash()*e.navLeash() || e.navUnreachable() {
+		if np := w.acquire(e, 1.5); np != nil && hdist(e.Pos, e.Home) <= e.leash() && !e.navUnreachable() {
 			e.Target = np.ID
 			w.engage(e, np)
 			return
@@ -342,9 +355,13 @@ func (w *World) chase(e *Enemy) {
 			}
 			fx, fz := -math.Sin(e.Yaw), -math.Cos(e.Yaw)
 			away := movement.Vec3{X: e.Pos.X - fx*3 + fz*side*1.5, Z: e.Pos.Z - fz*3 - fx*side*1.5}
-			w.moveToward(e, away, 0.7)
+			w.moveAway(e, away, 0.7)
 			return
 		}
+	}
+	if e.nav != nil && e.navWalled(d) {
+		w.moveToward(e, p.Pos, 1) // a wall between: round it, not through it (navai.go)
+		return
 	}
 	if a := w.pickAttack(e, d); a != nil {
 		if w.aiPar { // WP19b: the merge pass admits it (par.go)
@@ -365,7 +382,7 @@ func (w *World) chase(e *Enemy) {
 		w.moveToward(e, p.Pos, 1)
 	case e.Def.KeepAway > 0 && d < want-3:
 		fx, fz := (e.Pos.X-p.Pos.X)/math.Max(d, 0.01), (e.Pos.Z-p.Pos.Z)/math.Max(d, 0.01)
-		w.moveToward(e, movement.Vec3{X: e.Pos.X + fx*4, Z: e.Pos.Z + fz*4}, 0.8)
+		w.moveAway(e, movement.Vec3{X: e.Pos.X + fx*4, Z: e.Pos.Z + fz*4}, 0.8)
 	default:
 		e.Vel = movement.Vec3{}
 	}
@@ -558,68 +575,74 @@ func (w *World) striking(e *Enemy) {
 	}
 }
 
-// moveToward walks an enemy toward t at speedFrac of its speed.
+// moveToward walks an enemy toward t at speedFrac of its speed, on a path
+// around what blocks the straight line when there is one (navai.go).
 func (w *World) moveToward(e *Enemy, t movement.Vec3, speedFrac float64) {
-	dx, dz := t.X-e.Pos.X, t.Z-e.Pos.Z
-	d := math.Hypot(dx, dz)
-	if d < 0.05 {
-		e.Vel = movement.Vec3{}
-		return
-	}
-	sp := e.Def.Speed * e.SpeedMult * speedFrac
-	if e.Boss != nil {
-		sp *= e.Boss.Def.Phases[e.Boss.Phase].SpeedMult
-	}
-	if e.has("slow", w.tick) {
-		sp *= D.StatusByKey("slow").SpeedMult
-	}
-	step := math.Min(d, sp*dt)
-	e.Yaw = yawTo(dx, dz)
-	w.stepMove(e, dx/d*step, dz/d*step, true)
+	w.walkToward(e, t, speedFrac, true)
+}
+
+// moveAway is moveToward without pathfinding: short repositioning moves
+// (back off, keep away, flee) whose goal moves with the walker.
+func (w *World) moveAway(e *Enemy, t movement.Vec3, speedFrac float64) {
+	w.walkToward(e, t, speedFrac, false)
 }
 
 // stepMove moves by (mx, mz) over the terrain, steering around water,
 // cliffs and buildings, separated from group mates, inside the arena for
-// bosses.
-func (w *World) stepMove(e *Enemy, mx, mz float64, steer bool) {
+// bosses. It reports what became of the straight step (stepDirect, or why
+// it was refused: navai.go). Allies (summons, pets) walk the level ground
+// (town floors, cave floors) and are kept out of cave walls; enemies walk
+// the surface heightfield.
+func (w *World) stepMove(e *Enemy, mx, mz float64, steer bool) uint8 {
 	lift := 0.0
 	if e.Def.Behavior == "flyer" {
 		lift = 1.5
 	}
-	try := func(ax, az float64) bool {
+	g, lvl := w.ground, e.ally != nil && w.levelGround
+	if lvl {
+		g = movement.AtLevel(w.ground, e.Pos.Y-lift)
+	}
+	try := func(ax, az float64) uint8 {
 		nx, nz := e.Pos.X+ax, e.Pos.Z+az
 		if nx < 1 || nz < 1 || nx > float64(constants.WorldSizeM)-1 || nz > float64(constants.WorldSizeM)-1 {
-			return false
+			return stepRefused
 		}
-		gy := w.ground.HeightAt(nx, nz)
-		if movement.WaterAt(w.ground, nx, nz) > gy+0.6 {
-			return false
+		gy := g.HeightAt(nx, nz)
+		if movement.WaterAt(g, nx, nz) > gy+0.6 {
+			return stepBlocked
 		}
-		cur := w.ground.HeightAt(e.Pos.X, e.Pos.Z)
+		cur := g.HeightAt(e.Pos.X, e.Pos.Z)
 		if gy-cur > math.Hypot(ax, az)*1.3+0.35 {
-			return false // too steep to walk up
+			return stepBlocked // too steep to walk up
 		}
 		if e.Boss != nil && e.Boss.Arena != nil && hdist(movement.Vec3{X: nx, Z: nz}, e.Boss.Arena.Center) > e.Boss.Arena.Radius {
-			return false
+			return stepRefused
 		}
 		if e.Demon != nil && w.DemonHooks.Blocked != nil && w.DemonHooks.Blocked(e, nx, nz) {
-			return false // WP15: wards and lanterns
+			return stepRefused // WP15: wards and lanterns
 		}
 		// Building walls and closed doors (the players' collision boxes).
 		// An enemy already inside one (spawned or knocked there) may move
 		// anywhere, so it is never frozen in place.
 		if w.Obstacles != nil && w.Obstacles(nx, gy+lift, nz, e.Radius(), e.Height()*2) && !w.Obstacles(e.Pos.X, cur+lift, e.Pos.Z, e.Radius(), e.Height()*2) {
-			return false
+			return stepBlocked
+		}
+		if lvl && w.caveWall(g, nx, gy, nz) && !w.caveWall(g, e.Pos.X, cur, e.Pos.Z) {
+			return stepBlocked // an ally in a cave: the rock wall
 		}
 		e.Pos.X, e.Pos.Z = nx, nz
-		return true
+		return stepDirect
 	}
-	ok := try(mx, mz)
+	res := try(mx, mz)
+	ok := res == stepDirect
 	if !ok && steer {
 		for _, ang := range []float64{0.6, -0.6, 1.2, -1.2} {
 			c, s := math.Cos(ang), math.Sin(ang)
-			if try(mx*c-mz*s, mx*s+mz*c) {
+			if try(mx*c-mz*s, mx*s+mz*c) == stepDirect {
 				ok = true
+				if res == stepBlocked {
+					res = stepSteered
+				}
 				break
 			}
 		}
@@ -639,7 +662,7 @@ func (w *World) stepMove(e *Enemy, mx, mz float64, steer bool) {
 			}
 		}
 	}
-	y := w.ground.HeightAt(e.Pos.X, e.Pos.Z)
+	y := g.HeightAt(e.Pos.X, e.Pos.Z)
 	if lift != 0 {
 		y += lift
 	}
@@ -649,6 +672,7 @@ func (w *World) stepMove(e *Enemy, mx, mz float64, steer bool) {
 	} else {
 		e.Vel = movement.Vec3{}
 	}
+	return res
 }
 
 // forcedMove applies pull and knockback (returns true while it controls the enemy).

@@ -7,9 +7,15 @@ import (
 	"lodestone/server/pkg/movement"
 )
 
-// wallAt510 is a 1 m thick wall along z 470..530 at x 509.5..510.5.
+// wallAt510 is a 1 m thick wall along z 470..530 at x 509.5..510.5 (60 m:
+// pathfinding goes round it, nav_test.go).
 func wallAt510(x, y, z, r, h float64) bool {
 	return math.Abs(x-510) < 0.5+r && z > 470-r && z < 530+r
+}
+
+// longWallAt510 is the same wall 600 m long (no way round within a search).
+func longWallAt510(x, y, z, r, h float64) bool {
+	return math.Abs(x-510) < 0.5+r && z > 200-r && z < 800+r
 }
 
 // chaseAcrossWall: a wolf at (503, 500) hunts a player at (525, 500) on the
@@ -40,13 +46,13 @@ func chaseAcrossWall(t *testing.T, obstacles func(x, y, z, r, h float64) bool) (
 }
 
 // Enemies respect World.Obstacles (the zone's building boxes): a wolf
-// chasing a player behind a wall stops at it instead of walking through;
-// without obstacles it walks straight across.
+// chasing a player behind a wall with no way round it stops at it instead
+// of walking through; without obstacles it walks straight across.
 func TestEnemyChaseStopsAtObstacle(t *testing.T) {
 	if maxX, _ := chaseAcrossWall(t, nil); maxX < 515 {
 		t.Fatalf("control: without obstacles the wolf should cross the wall line (max x %.2f)", maxX)
 	}
-	maxX, overlapped := chaseAcrossWall(t, wallAt510)
+	maxX, overlapped := chaseAcrossWall(t, longWallAt510)
 	if overlapped || maxX > 509.5-0.45 {
 		t.Fatalf("the wolf walked into the wall: max x %.2f, overlapped %v", maxX, overlapped)
 	}
