@@ -1,0 +1,71 @@
+{
+  "label": "after",
+  "weapons": {
+    "wand": {
+      "events214ToB": [
+        502
+      ],
+      "aDrawnByB": true,
+      "remoteCastsSeenByB": 1,
+      "shotsDrawnByB": 1,
+      "aDrawsItMsAfterRelease": 77,
+      "bDrawsItMsAfterRelease": 265,
+      "bProjectileVisibleMs": 79,
+      "pressToRelease": 14,
+      "targetDistance": 8.9
+    },
+    "staff": {
+      "events214ToB": [
+        402
+      ],
+      "aDrawnByB": true,
+      "remoteCastsSeenByB": 1,
+      "shotsDrawnByB": 1,
+      "aDrawsItMsAfterRelease": 87,
+      "bDrawsItMsAfterRelease": 301,
+      "bProjectileVisibleMs": 107,
+      "pressToRelease": 7,
+      "targetDistance": 9.4
+    },
+    "bow": {
+      "events214ToB": [
+        16385,
+        302
+      ],
+      "aDrawnByB": true,
+      "remoteCastsSeenByB": 2,
+      "shotsDrawnByB": 1,
+      "aDrawsItMsAfterRelease": 34,
+      "bDrawsItMsAfterRelease": 254,
+      "bProjectileVisibleMs": 57,
+      "pressToRelease": 720,
+      "targetDistance": 6.1
+    },
+    "sword": {
+      "events214ToB": [
+        101
+      ],
+      "aDrawnByB": true,
+      "remoteCastsSeenByB": 1,
+      "shotsDrawnByB": 0,
+      "aDrawsItMsAfterRelease": 124,
+      "bDrawsItMsAfterRelease": 277,
+      "bProjectileVisibleMs": 0,
+      "pressToRelease": 5,
+      "targetDistance": 9.4
+    }
+  },
+  "positions": {
+    "a": {
+      "x": 2012,
+      "y": 80.02339172363281,
+      "z": 2340
+    },
+    "b": {
+      "x": 2019,
+      "y": 79.65808868408203,
+      "z": 2342
+    }
+  },
+  "issues": []
+}

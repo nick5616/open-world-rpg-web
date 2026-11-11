@@ -7,7 +7,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
 import { COMBAT, i16ToPitch, pitchToI16, u16ToYaw, yawToU16, type Event as ZoneEvent } from '@lodestone/contracts';
-import { castState, remoteEvent, beamHoldMs, CAST_FX_DASH, CAST_FX_GUARD, CAST_FX_MINE, type RemoteFx } from './castState';
+import { castState, remoteEvent, beamHoldMs, eventDelayMs, STILL_MOVE_DELAY_MS, CAST_FX_DASH, CAST_FX_GUARD, CAST_FX_MINE, type RemoteFx } from './castState';
 import { aimPoint, beamEnd, unpackHeldAim, angleDelta } from './aim';
 import { streamSeed } from './spellsim';
 import { AvatarAnimator, followCaster, heldDashSpec, type ActionKind } from '../net/avatarAnim';
@@ -139,6 +139,28 @@ describe('replication decoders (castState.remoteEvent)', () => {
     castState.flush(1121);
     expect(calls.length).toBe(1);
     expect(castState.get(6).actions).toBe(1);
+  });
+
+  it('shared basic attacks: a weapon move by a caster standing still plays after ~150 ms, not their stretched delay', () => {
+    // a player standing still sends no position updates, so their drawn delay grows (~0.5 s measured)
+    const wandBolt = COMBAT.moves.find((m) => m.key === 'wand_bolt')!.id;
+    expect(eventDelayMs(520, 0, wandBolt)).toBe(STILL_MOVE_DELAY_MS);
+    expect(eventDelayMs(80, 0, wandBolt)).toBe(80); // never later than the drawn delay
+    expect(eventDelayMs(520, 4.5, wandBolt)).toBe(520); // a moving body: its arm and the shot stay in step
+    expect(eventDelayMs(520, 0, sp('fireball').id)).toBe(520); // spells keep CR 022's timing
+    expect(eventDelayMs(520, 0, null)).toBe(520);
+    const { fx, calls } = sink();
+    castState.activity(5, 0, 0, 0, 520, 1000, fx, 0);
+    remoteEvent(ev(214, { entityId: 5, targetId: wandBolt, data: aimData(0, 0) }), 1, 1000, fx);
+    castState.flush(1000 + STILL_MOVE_DELAY_MS + 1);
+    expect(calls.map((c) => c.k)).toEqual(['remoteCast']);
+    // the same bolt from a running caster waits for their drawn body
+    castState.activity(4, 0, 0, 0, 520, 2000, fx, 5);
+    remoteEvent(ev(214, { entityId: 4, targetId: wandBolt, data: aimData(0, 0) }), 1, 2000, fx);
+    castState.flush(2000 + STILL_MOVE_DELAY_MS + 1);
+    expect(calls.length).toBe(1);
+    castState.flush(2521);
+    expect(calls.length).toBe(2);
   });
 
   it('the casting bit: a drop ends a hold it was seen on (not one that just started); a dash thrusts while it is set', () => {
