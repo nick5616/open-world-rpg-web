@@ -18,7 +18,7 @@
 import { useEffect, useRef, useState, type DragEvent, type ReactNode } from 'react';
 import { ITEM_ACT } from './events';
 import { ItemIcon } from './ItemIcon';
-import { affixLine, baseLine, baseName, defaultWeapon, displayName, EQ_LABEL, EQ_SLOTS, trainingWeaponName, gemEffect, INV_COLS, INV_SLOTS, isArmor, isConsumable, isEquipped, isGem, isHolo, isWeapon, itemDef, kindLabel, parseSlot, rarityColor, rarityDef, uniqueInfo, type EqSlot, type WireItem } from './items';
+import { affixLine, baseLine, baseName, compareToEquipped, defaultWeapon, displayName, EQ_LABEL, EQ_SLOTS, trainingWeaponName, gemEffect, INV_COLS, INV_SLOTS, isArmor, isConsumable, isEquipped, isGem, isHolo, isWeapon, itemDef, kindLabel, parseSlot, rarityColor, rarityDef, uniqueInfo, type EqSlot, type WireItem } from './items';
 import { installInventoryDebug } from './dev';
 import { pushToast, setInventoryOpen, useInventory } from './store';
 import { trackPanel } from '../../input/panelStack';
@@ -43,7 +43,7 @@ function useActions() {
   };
 }
 
-function Tile({ item, selected, dropTarget, onPick, onHover, onDragStart, onDragEnd, onDrop, title }: { item: WireItem | null; selected?: boolean; dropTarget?: boolean; onPick?: () => void; onHover?: (h: number | null) => void; onDragStart?: () => void; onDragEnd?: () => void; onDrop?: () => void; title?: string }) {
+function Tile({ item, selected, better, dropTarget, onPick, onHover, onDragStart, onDragEnd, onDrop, title }: { item: WireItem | null; selected?: boolean; better?: boolean; dropTarget?: boolean; onPick?: () => void; onHover?: (h: number | null) => void; onDragStart?: () => void; onDragEnd?: () => void; onDrop?: () => void; title?: string }) {
   const [over, setOver] = useState(false);
   const holo = item ? isHolo(item.r) : false;
   const cls = ['ls-tile', item ? '' : 'ls-empty', selected ? 'ls-sel' : '', holo ? 'ls-holo-border' : '', over && dropTarget ? 'ls-drop' : ''].filter(Boolean).join(' ');
@@ -87,6 +87,11 @@ function Tile({ item, selected, dropTarget, onPick, onHover, onDragStart, onDrag
     >
       {item && <ItemIcon itemKey={item.b} />}
       {item && item.q > 1 && <span className="ls-qty">{item.q > 9999 ? `${Math.floor(item.q / 1000)}k` : item.q}</span>}
+      {better && (
+        <span className="ls-better" data-testid="inv-better" title="Better than what you wear">
+          ▲
+        </span>
+      )}
       {item?.k?.map((g, i) => <span key={i} className="ls-dot" style={{ left: 3 + i * 8, background: g ? '#fff' : 'transparent', borderColor: g ? '#000a' : '#fff8' }} />)}
     </div>
   );
@@ -111,6 +116,8 @@ export function ItemCard({ item, quick }: { item: WireItem; quick?: string }) {
   const holo = isHolo(item.r);
   const color = rarityColor(item.r);
   const line = baseLine(item.b);
+  const items = useInventory((s) => s.inv?.items);
+  const cmp = items ? compareToEquipped(item, items) : null;
   return (
     <div data-testid="inv-card" style={{ font: '13px/1.45 system-ui, sans-serif', color: TEXT }}>
       <div className={holo ? 'ls-holo-text' : undefined} style={{ font: '700 18px/1.2 system-ui, sans-serif', color }}>
@@ -126,6 +133,12 @@ export function ItemCard({ item, quick }: { item: WireItem; quick?: string }) {
         {item.q > 1 && <span style={{ opacity: 0.75 }}>x{item.q}</span>}
       </div>
       {line && <div style={{ marginTop: 6, opacity: 0.9 }}>{line}</div>}
+      {cmp && (
+        <div data-testid="inv-compare" style={{ marginTop: 4, color: cmp.verdict > 0 ? '#7ee07e' : cmp.verdict < 0 ? '#ff7a6b' : TEXT, opacity: cmp.verdict ? 1 : 0.7 }}>
+          {cmp.verdict > 0 ? '▲ ' : cmp.verdict < 0 ? '▼ ' : ''}
+          {cmp.text}
+        </div>
+      )}
       {quick === item.b && <div style={{ marginTop: 4, color: '#9fd38a' }}>Your drink key (R) uses this</div>}
       {!!item.a?.length && (
         <div style={{ marginTop: 8 }}>
@@ -291,6 +304,7 @@ function InventoryPanel() {
   const tileProps = (it: WireItem | null, onEmptyDrop?: () => void) => ({
     item: it,
     selected: !!it && it.h === selected,
+    better: !!it && compareToEquipped(it, items)?.verdict === 1, // playtest 2 co-op: flag bag gear that beats what you wear
     dropTarget: true,
     onPick: it ? () => pick(it) : undefined,
     onHover: setHover,

@@ -34,6 +34,7 @@ const CSS = `
 .ls-tile.ls-drop { box-shadow: 0 0 0 2px #9fe6ff; }
 .ls-qty { position: absolute; right: 3px; bottom: 1px; font: 700 11px system-ui, sans-serif; color: #fff; text-shadow: 0 1px 2px #000, 0 0 3px #000; }
 .ls-dot { position: absolute; top: 3px; width: 6px; height: 6px; border-radius: 50%; border: 1px solid #0008; }
+.ls-better { position: absolute; right: 3px; top: 1px; font: 700 12px system-ui, sans-serif; color: #5ee05e; text-shadow: 0 1px 2px #000, 0 0 3px #000; pointer-events: none; }
 `;
 
 export function ensureInventoryStyles(): void {
