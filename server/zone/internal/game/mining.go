@@ -98,6 +98,9 @@ const (
 	// contribution window: players who hit the vein this recently share
 	// in its drops.
 	contributionWindow = 2 * time.Minute
+	// veinPartyM: party members this close to a breaking vein get their
+	// own drop as well (playtest 2 co-op).
+	veinPartyM = 30.0
 )
 
 // Granter receives items from pickups (WP14 replaces the default, which
@@ -354,6 +357,23 @@ func (s *Server) breakVein(cw caveWorld, v caves.Vein, st *veinState, breaker *E
 		for _, e := range s.ents {
 			if e.ID == id && e.Kind == proto.EntityKindPlayer {
 				owners = append(owners, e)
+			}
+		}
+	}
+	// Playtest 2 co-op: party members beside the vein get their own drop too
+	// (as kill XP is shared). A sunsteel seam the Ward quest sends both of
+	// you to is gone for 6-24 h once one of you breaks it; the friend who
+	// was a step behind used to get nothing and had to find another cave.
+	for _, o := range append([]*Entity(nil), owners...) {
+		if o.PartyID == 0 {
+			continue
+		}
+		for _, m := range s.parties[o.PartyID] {
+			if m == nil || m.Kind != proto.EntityKindPlayer || slices.Contains(owners, m) {
+				continue
+			}
+			if math.Hypot(m.Move.Pos.X-v.X, m.Move.Pos.Z-v.Z) <= veinPartyM && math.Abs(m.Move.Pos.Y-v.Y) <= veinPartyM {
+				owners = append(owners, m)
 			}
 		}
 	}
