@@ -23,6 +23,10 @@ type AtlasInfo struct {
 	// (1 sea, 2 lake, 4 river) and the sea level, for the water kind.
 	nodep    []uint8
 	SeaLevel float64
+	// Playtest 2 vibe explorer (vibe.go): the macro HEIGHT and WATER grids
+	// (N*N f32 each, raw little-endian), for terrain features without
+	// touching chunks.
+	macroH, macroW []byte
 }
 
 // Atlas node flags (worldgen/README.md NODEP).
@@ -108,6 +112,7 @@ func ParseAtlas(raw []byte, a *structures.Atlas) *AtlasInfo {
 	if np := atlasSection(raw, 9); len(np) > 0 && len(np)%4 == 0 {
 		info.nodep = np
 	}
+	info.macroH, info.macroW = atlasSection(raw, 2), atlasSection(raw, 3)
 	if bs := atlasSection(raw, 6); len(bs) > 0 {
 		n := int(math.Round(math.Sqrt(float64(len(bs)))))
 		if n*n == len(bs) {

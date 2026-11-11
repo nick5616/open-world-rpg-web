@@ -7,8 +7,9 @@ import type { Event as ZoneEvent } from '@lodestone/contracts';
 import { devCombat } from '../../combat/timeline';
 import { devMove } from '../../sim/devStep';
 import { DEV_ACT, DEV_EV, DEV_FLAG, DEV_RESULT, type DevPlaces, type DevSend, type DevStatus } from './events';
+import { applyVibeEvent, VIBE_ACT, VIBE_EV } from './vibe/store';
 
-export type DevTab = 'items' | 'spells' | 'character' | 'world';
+export type DevTab = 'items' | 'spells' | 'character' | 'world' | 'vibe';
 
 export interface DevLine {
   id: number;
@@ -47,7 +48,7 @@ export function devLog(kind: DevLine['kind'], text: string): void {
   useDev.setState((s) => ({ log: [...s.log, { id: lineId++, kind, text }].slice(-MAX_LOG) }));
 }
 
-const ACT_NAME = Object.fromEntries(Object.entries(DEV_ACT).map(([k, v]) => [v, k])) as Record<number, string>;
+const ACT_NAME = { ...Object.fromEntries(Object.entries(DEV_ACT).map(([k, v]) => [v, k])), ...Object.fromEntries(Object.entries(VIBE_ACT).map(([k, v]) => [v, `vibe ${k}`])) } as Record<number, string>;
 
 /** Apply the flags to the local prediction (fly, stamina, mana, cooldowns). */
 export function applyDevFlags(st: DevStatus): void {
@@ -77,6 +78,10 @@ export function applyDevEvent(ev: ZoneEvent): void {
       devLog(ev.value === DEV_RESULT.ok ? 'ok' : 'err', `${ev.value === DEV_RESULT.ok ? '' : `${name}: `}${text()}`);
       return;
     }
+    case VIBE_EV.find:
+    case VIBE_EV.here:
+      applyVibeEvent(ev); // playtest 2 vibe explorer
+      return;
     case DEV_EV.places:
       try {
         useDev.setState({ places: JSON.parse(text()) as DevPlaces });
