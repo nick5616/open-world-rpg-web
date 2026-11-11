@@ -159,6 +159,11 @@ function lootEntries(data: Uint8Array): { b: string; q: number; r: number }[] {
 
 type EventHandler = (ev: ZoneEvent, api: TriggerApi) => void;
 
+/** Enemy attacks (combat.yaml ids) that toll a bell instead of the telegraph sting (playtest 2 immersion pass). */
+const BELL_ATTACKS: Record<number, CueId> = Object.fromEntries(
+  COMBAT.enemyAttacks.filter((x) => x.key === 'bell_toll' || x.key === 'hush_toll').map((x) => [x.id, x.key === 'hush_toll' ? 'hush_toll' : 'bell_toll']),
+);
+
 export const ZONE_EVENTS: Record<number, EventHandler> = {
   // WP10
   100: (_e, a) => a.play('splash'),
@@ -175,6 +180,13 @@ export const ZONE_EVENTS: Record<number, EventHandler> = {
   },
   204: (e, a) => {
     const at = cm(e);
+    // Playtest 2 immersion pass: the Heartfall's bells toll on the strike (the wind-up's end), not a generic sting
+    const bell = BELL_ATTACKS[e.targetId];
+    if (bell) {
+      a.play(bell, { at, delay: Math.max(0, e.value) / 1000 });
+      a.markCombat(8);
+      return;
+    }
     a.play('telegraph', { at });
     const p = a.selfPos();
     if (Math.hypot(at.x - p.x, at.z - p.z) < 18) a.markCombat(8);
@@ -333,6 +345,33 @@ export const ZONE_EVENTS: Record<number, EventHandler> = {
   // CR 031: someone near you or in your party earned a gold / platinum achievement (your own
   // unlocks sound with their toast: TRIGGERS.achievement, emitted by ui/achievements).
   1240: (_e, a) => a.play('notify'),
+  // Playtest 2 immersion pass: the main story (CR 035) had no sound at all
+  1602: (_e, a) => a.play('discovery'), // an act's title card
+  1603: (e, a) => {
+    // the finale's phase changes: the choir tolls, the endless night falters in, the dawn
+    const prev = a.mem.finalePhase ?? 0;
+    a.mem.finalePhase = e.value;
+    if (e.value === prev) return;
+    if (e.value === 4) {
+      a.play('bell_toll', { volume: 1 });
+      a.play('bell_toll', { volume: 0.8, delay: 0.7, rate: 0.94 });
+      a.play('bell_toll', { volume: 0.7, delay: 1.5, rate: 1.06 });
+    } else if (e.value === 5) a.play('ward_falter');
+    else if (e.value === 3) a.play('dawn');
+  },
+  1604: (e, a) => {
+    // the Hush rises: its toll, then its lord's sting (the music falls silent for the entrance: director)
+    a.play('hush_toll', { at: { x: e.x / 100, y: a.selfPos().y + 4, z: e.z / 100 } });
+    a.play('lord_risen', { delay: 0.6 });
+  },
+  1605: (_e, a) => a.play('defense_held'), // the ending: the song comes back
+  1610: (e, a) => {
+    if (e.entityId !== a.selfId()) a.play('notify'); // a friend is down near you
+  },
+  1611: (e, a) => a.play('respawn', { at: cm(e) }),
+  1612: (e, a) => {
+    if (e.value > 0) a.play('heal', { volume: 0.6 });
+  },
 };
 
 type TriggerFn = (p: TriggerPayload, api: TriggerApi) => void;

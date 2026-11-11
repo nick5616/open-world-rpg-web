@@ -40,8 +40,22 @@ import { nextStrike } from './emitters';
 import { SPACE_CAVE } from './spatial';
 import type { StepSurface } from './surface';
 import { WorldProbe } from './worldProbe';
+import { useStory } from '../ui/story/store';
+import { FINALE } from '../ui/story/events';
 // Playtest 2 weather (CR 030): rain level, wind, storm, sand, thunder from real strikes.
 import { liveWeather, weatherOn } from '../systems/weather/runtime';
+
+/** What the Heartfall asks of the music (playtest 2 immersion pass; director.ts `finale`). */
+function finaleMusic(): 'intro' | 'fight' | 'won' | null {
+  const s = useStory.getState();
+  if (s.cinematic) return 'intro';
+  const f = s.finale;
+  if (!f) return null;
+  if (f.phase === FINALE.intro) return 'intro';
+  if (f.phase === FINALE.fight || f.phase === FINALE.choir) return 'fight';
+  if (f.phase === FINALE.won) return performance.now() - f.at < 60000 ? 'won' : null;
+  return null;
+}
 
 const EYE = 1.6;
 const HOUR_S = DAY_LENGTH_S / 24;
@@ -269,6 +283,9 @@ export class AudioEngine {
       return { key: `defense:${d.town}`, secondsLeft: null, urgent: d.wardMax > 0 && d.ward / d.wardMax < 0.3, intro: false };
     }
     delete this.mem.warnAt;
+    // Playtest 2 immersion pass: the Heartfall's endless night is a countdown (the time crunch, "5 sec left" before it falls)
+    const fin = useStory.getState().finale;
+    if (fin && fin.phase === FINALE.night) return { key: `finale:night:${Math.round(fin.at / 1000)}`, secondsLeft: Math.max(0, (fin.nightMs - (nowMs - fin.at)) / 1000), urgent: false, intro: false };
     const boss = useCombatHud.getState().boss;
     // Boss enrage: the last phase of a multi-phase boss is a race.
     if (boss && boss.phases > 1 && boss.phase >= boss.phases) return { key: `boss:${boss.id}`, secondsLeft: null, urgent: boss.pct < 15, intro: false };
@@ -295,6 +312,7 @@ export class AudioEngine {
       combat: audioWorld.combatUntil > nowMs || !!hud.boss,
       voidMoment: this.voidUntil > nowMs,
       timed: this.timed(nowMs),
+      finale: finaleMusic(),
       ...this.forced,
     };
     this.lastInputs = inputs;

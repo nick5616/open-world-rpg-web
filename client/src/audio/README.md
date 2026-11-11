@@ -26,6 +26,7 @@ included.
 | `emitters.ts` | Pure: fire props and camp campfires -> loop emitters, forges -> smiths, a point grid, the smith's rhythm. |
 | `loops.ts` | The positional loop voices (fade in, glide, fade out and stop). |
 | `synth.ts` | Noise buffers and the loop textures rendered once through an OfflineAudioContext: fire, river flow, shore lapping, rain on a roof. |
+| `bells.ts` | Playtest 2 immersion pass: the Heartfall's bells, synthesized (inharmonic bell partials, each a beating pair, high ones dying first, a metallic strike, a long fade) and rendered once through an OfflineAudioContext; `synth:<bell>` files in a cue are rendered by `sfx.ts` instead of fetched. |
 | `worldProbe.ts` | The engine's view of the loaded world (towns, terrain, water, atlas biome, chemistry fire) feeding the pure modules. |
 | `music/director.ts` | Pure state machine: which musical state the world asks for (unit-tested). |
 | `music/player.ts`, `music/tracks.ts` | Crossfading playback: long tracks streamed through media elements, short loops (combat, time crunch) decoded and looped sample-exact. |
@@ -117,6 +118,8 @@ the results, so nothing clicks or zippers.
 | void | A Void domain (6 s) | **void realm**, open |
 | cave | Underground (latched in at 0.55, out at 0.35) | **void realm**, low-passed at 6 kHz |
 | combat | Hit or hurt in the last seconds, a telegraph within 18 m, a boss bar | **combat**: 16 bars of the Novation Analog Synthwave pack (134 bpm), gapless |
+| silence | The Hush's entrance (CR 035: it is the silence; its toll and the lord's sting carry the moment) | nothing |
+| void (the Heartfall) | The Hush's fight and its choir (finale phases 2 and 4) | **void realm**; the endless night's countdown is a timed objective (the time crunch, "5 sec left" before it falls); the dawn after the victory switches to the day at once |
 | night | 18:30-06:00 (in towns too) | **night**: see "Gaps"; plays the nocturne cut of future land 2 for now |
 | town | Inside a settlement by day | **future land**, warmer (3.2 kHz low-pass) and softer |
 | day | Otherwise | **future land 1** and **future land 2**, alternating each time day music comes back and at every track end |
@@ -249,6 +252,15 @@ take a world position.
 | `level_up_big` | 1 | **Nicole: level up sound 3** | Level-up on a multiple of 10, or 3+ levels at once |
 | `skill_up` | 1 | D1 Hyperpop: FX_Gm_150bpm_11 | Event 216 skill_up |
 | `camp_cleared` | 1 | D1 FX: Cymbal Hit FX; D2 East Coast Hip Hop: One-Shot 6 | Event 211 camp_cleared |
+| `bell_toll` | 1 | synthesized (`bells.ts`, a cracked bronze bell about G3, flat) | Event 204 for `bell_toll` (a Hollow Bell), on the strike (delayed by the wind-up); the choir starting (1603 phase 4: three bells) |
+| `hush_toll` | 1 | synthesized (an octave and a fourth lower, longer) | Event 204 for `hush_toll`; the Hush rising (1604) |
+
+Story moments (playtest 2 immersion pass; Events 1600-1612 were silent):
+an act's title card (1602) plays `discovery`; the Hush rising (1604) its
+toll then `lord_risen`; the finale's phases (1603) the choir's bells
+(`bell_toll` x3), the endless night (`ward_falter`), the dawn (`dawn`); the
+ending (1605) `defense_held`; a friend down near you (1610) `notify`, a
+revive's hold (1612) `heal`, a revived player (1611) `respawn`.
 
 Ambience (synthesized, `ambience.ts`): wind (louder up high, in rain and
 with speed while gliding or falling), rain (seeded weather or the zone's

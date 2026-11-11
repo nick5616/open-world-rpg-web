@@ -6,12 +6,14 @@ import { assetNames } from './assets';
 import { ELEMENTS, TRIGGERS, ZONE_EVENTS, achievementCue, castCue, impactCue, levelUpCue, lootCue, runTrigger, runZoneEvent, stepCue, swingCue, type TriggerApi, type TriggerName } from './triggers';
 import { loadAudioPrefs, DEFAULT_AUDIO_PREFS } from './settings';
 import { sliderToGain } from './context';
+import { BELLS, BELL_PARTIALS, partialDecay, partialLevel, synthName } from './bells';
+import { COMBAT } from '@lodestone/contracts';
 
 function api(selfId = 7) {
-  const played: { cue: CueId; at?: unknown; volume?: number }[] = [];
+  const played: { cue: CueId; at?: unknown; volume?: number; delay?: number }[] = [];
   let combat = 0;
   const a: TriggerApi = {
-    play: (cue, o) => played.push({ cue, at: o?.at, volume: o?.volume }),
+    play: (cue, o) => played.push({ cue, at: o?.at, volume: o?.volume, delay: o?.delay }),
     selfId: () => selfId,
     selfPos: () => ({ x: 0, y: 10, z: 0 }),
     markCombat: (s) => {
@@ -30,7 +32,8 @@ describe('trigger map', () => {
     const names = new Set(assetNames());
     for (const [id, def] of Object.entries(CUES)) {
       expect(def.files.length, `${id} has no files (run tools/audio/build-audio.mjs)`).toBeGreaterThan(0);
-      for (const f of def.files) expect(names.has(f), `${id}: ${f} missing`).toBe(true);
+      // synth:<bell> files are rendered at run time (bells.ts), not built
+      for (const f of def.files) expect(names.has(f) || !!BELLS[synthName(f) ?? ''], `${id}: ${f} missing`).toBe(true);
     }
     // and nothing built is orphaned
     for (const id of Object.keys(CUE_FILES)) expect(CUES[id as CueId], `cueFiles.gen has unknown cue ${id}`).toBeDefined();
@@ -190,7 +193,7 @@ describe('trigger map', () => {
   });
 
   it('every zone event handler is keyed by a registered kind', () => {
-    for (const k of Object.keys(ZONE_EVENTS).map(Number)) expect(k >= 100 && k < 1300, String(k)).toBe(true); // 100-899 WP ranges, 900-999 playtest 1, 1000-1299 playtest 2 (events.md)
+    for (const k of Object.keys(ZONE_EVENTS).map(Number)) expect((k >= 100 && k < 1300) || (k >= 1600 && k < 1630), String(k)).toBe(true); // 100-899 WP ranges, 900-999 playtest 1, 1000-1299 playtest 2, 1600-1629 the main story (events.md)
   });
 });
 
@@ -208,5 +211,55 @@ describe('sound settings', () => {
     expect(sliderToGain(1)).toBe(1);
     expect(sliderToGain(0.5)).toBeCloseTo(0.25);
     expect(sliderToGain(3)).toBe(1);
+  });
+});
+
+describe('the main story and the Heartfall (playtest 2 immersion pass)', () => {
+  const attack = (key: string) => COMBAT.enemyAttacks.find((x) => x.key === key)!;
+
+  it('a Hollow Bell and the Hush toll a bell on the strike, other wind-ups keep the sting', () => {
+    const { a, played } = api();
+    runZoneEvent(ev(204, { targetId: attack('bell_toll').id, value: 600, x: 300, z: 400 }), a);
+    expect(played[0]).toMatchObject({ cue: 'bell_toll', at: { x: 3, z: 4 }, delay: 0.6 });
+    runZoneEvent(ev(204, { targetId: attack('hush_toll').id, value: 600 }), a);
+    expect(played[1].cue).toBe('hush_toll');
+    runZoneEvent(ev(204, { targetId: attack('hush_rend').id, value: 550 }), a);
+    expect(played[2].cue).toBe('telegraph');
+  });
+
+  it('acts, the entrance, the choir, the endless night, the dawn and the ending are heard', () => {
+    const { a, played } = api();
+    runZoneEvent(ev(1602, { value: 3 }), a);
+    runZoneEvent(ev(1604, { value: 7000 }), a);
+    runZoneEvent(ev(1603, { value: 2 }), a);
+    runZoneEvent(ev(1603, { value: 2 }), a); // a repeat (countdown refresh) is silent
+    runZoneEvent(ev(1603, { value: 4 }), a);
+    runZoneEvent(ev(1603, { value: 5 }), a);
+    runZoneEvent(ev(1603, { value: 3 }), a);
+    runZoneEvent(ev(1605, { value: 2 }), a);
+    const cues = played.map((p) => p.cue);
+    expect(cues).toEqual(['discovery', 'hush_toll', 'lord_risen', 'bell_toll', 'bell_toll', 'bell_toll', 'ward_falter', 'dawn', 'defense_held']);
+  });
+
+  it('revives: a friend down, raised, the hold', () => {
+    const { a, played } = api(7);
+    runZoneEvent(ev(1610, { entityId: 7 }), a); // you are the one down: no ping
+    runZoneEvent(ev(1610, { entityId: 9 }), a);
+    runZoneEvent(ev(1612, { value: 3000 }), a);
+    runZoneEvent(ev(1612, { value: 0 }), a);
+    runZoneEvent(ev(1611, { entityId: 9, x: 100, z: 100 }), a);
+    expect(played.map((p) => p.cue)).toEqual(['notify', 'heal', 'respawn']);
+  });
+
+  it('a bell: the hum rings longest, high partials die first, the tierce is a minor third', () => {
+    expect(BELL_PARTIALS.find((p) => p[0] === 1.19)).toBeDefined();
+    const s = BELLS.hollow_bell;
+    expect(partialDecay(s, 0.5, 7.5)).toBeGreaterThan(partialDecay(s, 2, 2.6));
+    expect(partialDecay(BELLS.hush_toll, 1, 5)).toBeGreaterThan(partialDecay(s, 1, 5)); // the Hush's bell is bigger
+    expect(partialLevel(1, 2, 0)).toBe(0);
+    expect(partialLevel(1, 2, 0.004)).toBeCloseTo(Math.exp(-0.002), 5);
+    expect(partialLevel(1, 2, 4)).toBeLessThan(0.2);
+    expect(synthName('synth:hollow_bell')).toBe('hollow_bell');
+    expect(synthName('hit_1')).toBeNull();
   });
 });

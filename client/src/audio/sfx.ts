@@ -21,6 +21,7 @@ import { assetUrl } from './assets';
 import { SYNTH_SLICE, yieldToLoop } from './synth';
 import { CUES, type CueDef, type CueId } from './cues';
 import { airLowpassHz, distanceGain, LOWPASS_BYPASS_HZ, occlusion, SPACE_OUTDOORS, type Occlusion } from './spatial';
+import { renderBell, synthName } from './bells';
 import { pickVariant, variation, VoiceLimiter } from './voiceLimit';
 
 export interface PlayOpts {
@@ -153,6 +154,22 @@ export class SfxEngine {
     if (this.buffers.has(name)) return Promise.resolve(this.buffers.get(name) ?? null);
     const p = this.pending.get(name);
     if (p) return p;
+    // Playtest 2 immersion pass: `synth:<bell>` files are rendered (bells.ts), not fetched.
+    const synth = synthName(name);
+    if (synth) {
+      const q = renderBell(synth)
+        .then((b) => {
+          this.buffers.set(name, b);
+          return b;
+        })
+        .catch(() => {
+          this.buffers.set(name, null);
+          return null;
+        })
+        .finally(() => this.pending.delete(name));
+      this.pending.set(name, q);
+      return q;
+    }
     const url = assetUrl(name);
     if (!url) {
       this.buffers.set(name, null);
@@ -193,6 +210,7 @@ export class SfxEngine {
     return Promise.all(
       CUES[cue].files.map(async (f) => {
         if (this.buffers.has(f) || this.pending.has(f) || this.raw.has(f)) return;
+        if (synthName(f)) return void (await this.load(f)); // a bell: render it now (audio thread, a few ms)
         const url = assetUrl(f);
         if (!url) return;
         try {
