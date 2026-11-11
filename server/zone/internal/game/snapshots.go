@@ -124,6 +124,7 @@ type entView struct {
 	kind    proto.EntityKind
 	nameID  uint32
 	caveSys int32       // cave system this tick (-1 surface): caveVisible only runs when it differs from the viewer's
+	rift    uint32      // CR 040: the rift run it is in (0 = the world): only its run sees it
 	due     aoi.DueMask // G5: which rings update it this tick (aoi.Due), once per entity instead of per client
 	beam    bool        // playtest 2 ground loot: a rare+ pickup whose light beam is seen across the mid ring
 }
@@ -144,7 +145,7 @@ func (s *Server) buildViews(tick uint32) {
 		if e.q.Name != e.nameOf { // names rarely change: intern once per entity
 			e.nameOf, e.nameID = e.q.Name, snapshot.NameID(e.q.Name)
 		}
-		s.views[i] = entView{x: e.Move.Pos.X, z: e.Move.Pos.Z, id: e.ID, owner: e.Owner, partyID: e.PartyID, kind: e.Kind, caveSys: int32(e.caveSys), nameID: e.nameID, due: aoi.DueAll(tick, e.ID),
+		s.views[i] = entView{x: e.Move.Pos.X, z: e.Move.Pos.Z, id: e.ID, owner: e.Owner, partyID: e.PartyID, kind: e.Kind, caveSys: int32(e.caveSys), rift: e.riftID, nameID: e.nameID, due: aoi.DueAll(tick, e.ID),
 			beam: e.Kind == proto.EntityKindPickup && e.TypeID >= pickupBeamRarity}
 		s.qs[i] = e.q
 		// Unchanged since when (snapshot.History.Set): a break in the
@@ -262,9 +263,12 @@ func (s *Server) sendSnapshot(sc *snapScratch, sess *session, tick uint32, serve
 		cands = make([]snapshot.Candidate, 0, len(sc.idxs)+len(sc.idxs)/4)
 	}
 	cw := s.caves()
-	myParty, mySys := e.PartyID, int32(e.caveSys)
+	myParty, mySys, myRift := e.PartyID, int32(e.caveSys), e.riftID
 	for _, i := range sc.idxs {
 		o := &s.views[i]
+		if o.rift != myRift {
+			continue // CR 040: a rift run is its own instance (rift.go)
+		}
 		// Personal pickups: only their owner sees them (WP09).
 		if o.kind == proto.EntityKindPickup && o.owner != 0 && o.owner != e.ID { // WP14: owner 0 = a dropped item, public
 			continue

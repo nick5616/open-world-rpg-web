@@ -68,6 +68,8 @@ type Entity struct {
 
 	// Caves and mining (WP09).
 	caveSys   int       // cave system this tick (-1 surface), for interest clipping
+	riftID    uint32    // CR 040: the rift run it is in (rift.go; 0 = the world): seen only by its run
+	riftG     *riftGround // CR 040: its arena (players in a run), for the view's extrapolation
 	lastSwing time.Time // last accepted pickaxe swing
 	// Pickups: personal drops only their owner sees and can take.
 	Owner     uint32

@@ -190,6 +190,9 @@ func (s *Server) sessDoors(sess *session) *sessDoors {
 // ground, with the doors closed for that frame while any door is not open.
 func (s *Server) frameGround(sess *session, seq uint32) movement.Ground {
 	w := s.town.doors
+	if sess.riftG != nil {
+		return s.riftWrap(sess, s.cfg.Ground) // CR 040: the rift's arena (rift.go)
+	}
 	if w == nil || w.active == 0 {
 		return s.campWrap(sess, s.cfg.Ground) // CR 025: solid camp pieces near the player (camps.go)
 	}

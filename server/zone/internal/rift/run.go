@@ -163,6 +163,22 @@ func NewRun(id uint32, c *Chapter, level int, seed uint32, members []*Member, st
 	return r
 }
 
+// Join adds a player to a run still in its first room (a party member who
+// pressed E a moment after the others). False when it is too late.
+func (r *Run) Join(m *Member, h Host) bool {
+	if r.State == StateEnded || r.Stage != 1 || r.State == StatePerks || r.State == StateDoor || r.Member(m.ID) != nil {
+		return false
+	}
+	if m.Perks == nil {
+		m.Perks = map[string]int{}
+	}
+	m.Mods = ModsOf(m.Perks)
+	m.grazed = map[uint64]bool{}
+	m.hitUntil = r.Now + uint32(IntroS*TickHz)
+	r.Members = append(r.Members, m)
+	return true
+}
+
 // Depth is the run's current ramp (0..1).
 func (r *Run) Depth() float64 { return Depth(r.Chapter.N, r.Stage) }
 

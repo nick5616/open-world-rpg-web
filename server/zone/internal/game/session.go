@@ -74,6 +74,7 @@ type session struct {
 	gapSince         uint32             // tick a missing frame started holding the buffer, 0 = none
 	consumed         uint32             // newest frame seq applied or refused (LastSeq counts applied only)
 	editChunks       map[[2]int32]bool  // WP09: chunks whose WorldEdits this client has (mining.go)
+	riftG            *riftGround        // CR 040: the arena while in a rift run (rift.go)
 	doors            *sessDoors         // building doors: settlements known, frame ground (doors.go)
 	fish             *fishState         // playtest 2 fishing (fishing.go); nil until the first cast
 	emotes           *emoteState        // playtest 2 emotes (emotes.go); nil until the first emote
@@ -403,6 +404,10 @@ func (s *Server) drainTaken(sess *session, now time.Time) {
 				s.storyInteract(sess, it) // CR 035: sync, catch up, revive, respawn, the vow (story.go)
 				continue
 			}
+			if it.TargetKind == InteractRift {
+				s.handleRiftInteract(sess, it) // CR 040: enter a rift, pick a perk, leave, the leaderboard (rift.go)
+				continue
+			}
 			if it.TargetKind == InteractFishing {
 				s.fishInteract(sess, it, now) // playtest 2: cast, hook, land, lose (fishing.go)
 				continue
@@ -496,7 +501,7 @@ func (s *Server) fillGap(sess *session, next uint32, now time.Time) {
 		}
 		f = s.combatFrame(sess, f) // WP13 (combat.go)
 		// Building doors: the ground with the doors closed for this frame (doors.go).
-		e.applyFrame(f, s.frameGround(sess, f.Seq), s.env)
+		e.applyFrame(f, s.frameGround(sess, f.Seq), s.riftEnv(sess, s.env))
 		s.combatAfterFrame(sess, f)
 		s.m.framesSynthesized.Add(1)
 	}
@@ -536,7 +541,7 @@ func (s *Server) applyFrames(sess *session, now time.Time) {
 		f = s.combatFrame(sess, f) // WP13: log attacks/casts, refuse illegal dashes (combat.go)
 		// Building doors: the ground with the doors closed for this frame (doors.go).
 		// CR 032: dev fly and infinite stamina (devconsole.go) step first.
-		if !s.devFrame(sess, f) && !e.applyFrame(f, s.frameGround(sess, f.Seq), s.env) {
+		if !s.devFrame(sess, f) && !e.applyFrame(f, s.frameGround(sess, f.Seq), s.riftEnv(sess, s.env)) {
 			s.m.speedViolations.Add(1)
 		}
 		s.combatAfterFrame(sess, f)

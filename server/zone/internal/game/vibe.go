@@ -71,6 +71,7 @@ var VibeLandmarks = []string{
 	"ruin", "watchtower", "mineshaft", "shrine", "bandit_camp", "wizard_tower", "meteor_crater", "sunken_temple", "demon_lair",
 	"vault", "heartfall", "event", "lake", "river", "coast", "peak", "forest", "wilds",
 	"standing_stones", "great_tree", "stone_arch", "monolith", "giant_bones", "crystal_outcrop", "statue", "hot_spring",
+	"rift", // CR 040: an open rift portal
 }
 
 // VibeBiomes are the atlas biomes by id (worldgen/README.md BIOME).
@@ -373,6 +374,9 @@ func (s *Server) vibeSpots() []vibeSpot {
 		if !w.done {
 			out = append(out, vibeSpot{kind: "event", name: w.kind.Name, x: w.pos.X, z: w.pos.Z, near: true})
 		}
+	}
+	for _, p := range s.rift.portals { // CR 040
+		out = append(out, vibeSpot{kind: "rift", name: "Rift: " + p.Name, x: p.X, z: p.Z, near: true})
 	}
 	return out
 }

@@ -178,6 +178,7 @@ type Server struct {
 	pvp        pvpState      // playtest 2: PvP flags, safe zones, duels (pvp.go, duel.go)
 	cnt        contentGlue   // playtest 2 content (CR 023): content.go, content_quests.go, worldevents.go, dungeons.go
 	camp       campState     // playtest 2 camps (CR 025): camps.go, camps_chest.go, camps_store.go
+	rift       riftState     // CR 040 rift runs (rift.go)
 	steeds     steedGlue     // playtest 2 mounts (CR 027): mounts.go
 	wx         weatherState  // playtest 2 weather (CR 030): weather.go
 	petsG      petGlue       // playtest 2 pets (CR 029): pets.go
@@ -380,6 +381,7 @@ func (s *Server) onTick() {
 	s.weatherTick(tick)     // CR 030 weather: lightning, cold (weather.go)
 	s.devTick(tick)         // CR 032 dev console: god mode, infinite mana, no cooldowns, frozen time (devconsole.go)
 	s.storyTick(tick)       // CR 035 main story: party progress, the vigil, the finale, revives (story.go)
+	s.riftTick(tick)        // CR 040 rift runs: portals, rooms, volleys, hits (rift.go)
 	s.phases.mark(phNight)
 
 	// Quantize once per entity and rebuild the grid; every client's snapshot
@@ -389,7 +391,7 @@ func (s *Server) onTick() {
 	parallelFor(len(s.ents), s.phaseWorkers(len(s.ents)), viewChunk, func(_, i int) {
 		e := s.ents[i]
 		e.idx = int32(i)
-		e.updateView(s.cfg.Ground, s.env)
+		e.updateView(e.viewGround(s.cfg.Ground), s.env) // CR 040: a player in a rift extrapolates on its floor
 		e.quantize(s.cfg.Ground)
 	})
 	s.grid.Reset()
@@ -515,6 +517,7 @@ func (s *Server) join(sess *session) {
 	s.steedJoin(sess)       // CR 027: your steed, steeds near you (mounts.go)
 	s.petJoin(sess)         // CR 029: your pets, the one out with you (pets.go)
 	s.storyJoin(sess)       // CR 035: the main story's next act, its state (story.go)
+	s.riftJoin(sess)        // CR 040: the open rifts (rift.go)
 	s.clusterJoined(sess)   // WP16: owner record, arrival checkpoint
 	s.log.Info("join", "entity", e.ID, "character", e.CharacterID, "name", e.Name, "remote", sess.conn.RemoteAddr(),
 		"x", math.Round(e.Move.Pos.X*100)/100, "z", math.Round(e.Move.Pos.Z*100)/100)
@@ -568,6 +571,7 @@ func (s *Server) leave(sess *session) {
 	s.emotesLeave(sess)  // playtest 2: emotes, fishing (emotes.go)
 	s.musicLeave(sess)   // playtest 2: instruments (music.go)
 	s.storyLeave(sess)   // CR 035 (story.go)
+	s.riftLeave(sess)    // CR 040: out of a run, saved at its portal (rift.go)
 	if s.cfg.Queue != nil {
 		s.checkpoint(e)
 	}
@@ -581,7 +585,7 @@ func (s *Server) checkpoint(e *Entity) {
 	if s.cfg.Store == nil || s.cfg.Queue == nil {
 		return
 	}
-	id, pos, store, log := e.CharacterID, e.Move.Pos, s.cfg.Store, s.log
+	id, pos, store, log := e.CharacterID, s.riftSafePos(e), s.cfg.Store, s.log // CR 040: never saved inside a rift
 	epoch, fenced := e.epoch, &s.cl.stats.fenced // WP16: checkpoint fence (persist.go)
 	s.cfg.Queue.Enqueue(writebehind.Op{Key: "pos:" + id, Run: func(ctx context.Context) error {
 		err := savePosition(ctx, store, id, pos, epoch)

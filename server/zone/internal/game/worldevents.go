@@ -78,7 +78,10 @@ func (s *Server) eventsEnabled() bool {
 }
 
 // SetWorldEvents turns the scheduler on/off (tests, tools).
-func (s *Server) SetWorldEvents(on bool) { s.cnt.ev.disabled = !on }
+func (s *Server) SetWorldEvents(on bool) {
+	s.cnt.ev.disabled = !on
+	s.rift.disabled = !on // CR 040: rifts are world events too
+}
 
 func (s *Server) worldEventsTick(tick uint32) {
 	if !s.eventsEnabled() {

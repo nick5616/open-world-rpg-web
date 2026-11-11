@@ -12,6 +12,7 @@ export const VIBE_LANDMARKS = [
   'ruin', 'watchtower', 'mineshaft', 'shrine', 'bandit_camp', 'wizard_tower', 'meteor_crater', 'sunken_temple', 'demon_lair',
   'vault', 'heartfall', 'event', 'lake', 'river', 'coast', 'peak', 'forest', 'wilds',
   'standing_stones', 'great_tree', 'stone_arch', 'monolith', 'giant_bones', 'crystal_outcrop', 'statue', 'hot_spring',
+  'rift', // CR 040: an open rift portal
 ] as const;
 export type VibeLandmark = (typeof VIBE_LANDMARKS)[number];
 

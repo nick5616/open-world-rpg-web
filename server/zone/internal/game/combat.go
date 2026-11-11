@@ -435,7 +435,7 @@ func (s *Server) combatTick(tick uint32) {
 	s.achTick()         // CR 031: metres dashed, magma jet flight (achievements.go)
 	events, spawned, removed, xp, respawn, synced := w.Drain()
 	for _, en := range spawned {
-		ent := &Entity{ID: en.ID, Kind: proto.EntityKindEnemy, Name: en.Name, Level: uint8(min(255, en.Level)), npc: en, TypeID: en.TypeID()}
+		ent := &Entity{ID: en.ID, Kind: proto.EntityKindEnemy, Name: en.Name, Level: uint8(min(255, en.Level)), npc: en, TypeID: en.TypeID(), riftID: s.riftTagOf(en.ID)}
 		if en.Owner() != 0 {
 			ent.Kind, ent.Name = proto.EntityKindEffect, s.summonName(en) // CR 020: an ally (summons.go)
 			if en.IsPet() {

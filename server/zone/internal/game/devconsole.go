@@ -144,7 +144,7 @@ func devName(a uint8) string {
 		DevActGold: "gold", DevActSkillPoints: "skillpoints", DevActWeaponSkill: "weaponskill", DevActRefill: "refill", DevActFlags: "flags", DevActSpeed: "speed",
 		DevActReset: "reset", DevActTeleport: "teleport", DevActTime: "time", DevActWeather: "weather", DevActSpawn: "spawn", DevActDespawn: "despawn",
 		DevActEvent: "event", DevActTameable: "tameable", DevActPet: "pet", DevActSteed: "steed", DevActQuest: "quest", DevActReveal: "reveal", DevActAttune: "attune", DevActPlaces: "places", DevActAchieve: "achieve", DevActStory: "story",
-		DevActVibeFind: "vibe find", DevActVibeGo: "vibe go", DevActVibeLevel: "vibe level", DevActVibeSpawn: "vibe spawn", DevActVibeFreeze: "vibe freeze", DevActVibeDemons: "vibe demons", DevActVibeHere: "vibe here"}
+		DevActVibeFind: "vibe find", DevActVibeGo: "vibe go", DevActVibeLevel: "vibe level", DevActVibeSpawn: "vibe spawn", DevActVibeFreeze: "vibe freeze", DevActVibeDemons: "vibe demons", DevActVibeHere: "vibe here", DevActRift: "rift"}
 	if n, ok := names[a]; ok {
 		return n
 	}
@@ -358,6 +358,8 @@ func (s *Server) devApply(sess *session, m *proto.Interact) (int32, string) {
 		return s.vibeApply(sess, m) // playtest 2 vibe explorer (vibe.go)
 	case DevActReveal, DevActAttune:
 		return s.devMap(sess, m.Action == DevActAttune)
+	case DevActRift:
+		return s.devRift(sess, m) // CR 040 (rift_dev.go)
 	}
 	return DevUnknown, "unknown dev command"
 }
