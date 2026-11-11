@@ -855,6 +855,13 @@ export class CaveGroundCore {
   floorAt(x: number, y: number, z: number): number {
     const h = this.surface(x, z);
     if (!this.inCave(x, y, z)) return h;
+    // Under the ground where no cave is (no system, no triangles in the
+    // cell): the surface (playtest 2 co-op: a rider a metre under a
+    // mountainside fell 330 m through the world). Same as Go Ground.FloorAt.
+    if (!caveMasked(this.openings, x, z)) {
+      const c = this.cells.cell(Math.floor(x / CAVE_CELL_W), Math.floor(y / CAVE_CELL_H), Math.floor(z / CAVE_CELL_W));
+      if (c && c.system < 0 && c.triangleCount === 0) return h;
+    }
     const f = caveFloorAt(this.cells, x, y, z);
     if (f > -Infinity) return f;
     // A mouth hole whose cells are missing keeps the old surface; one whose

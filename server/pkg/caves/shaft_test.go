@@ -25,6 +25,13 @@ func TestShaftWithCellsDrops(t *testing.T) {
 	if f := missing.FloorAt(100.2, 50, 100.3); f != 50 {
 		t.Fatalf("cells missing: want the old surface 50, got %v", f)
 	}
+	// Under the ground where there is no cave at all: back to the surface,
+	// not a 330 m fall through the world.
+	solid := &Cell{OX: 64, OY: 32, OZ: 64, System: -1, Density: empty.Density}
+	under := &Ground{Height: surface, Openings: op, Cells: oneCell{solid}}
+	if f := under.FloorAt(130, 48.5, 130); f != 50 {
+		t.Fatalf("1.5 m under the ground with no cave: want the surface 50, got %v", f)
+	}
 	// Away from the opening nothing changes.
 	if f := g.FloorAt(130, 50, 130); f != 50 {
 		t.Fatalf("open ground: want 50, got %v", f)

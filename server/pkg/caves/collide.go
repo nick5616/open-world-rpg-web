@@ -421,6 +421,15 @@ func (g *Ground) FloorAt(x, y, z float64) float64 {
 	if !g.InCave(x, y, z) {
 		return h
 	}
+	// Under the ground where no cave is (no system, no triangles in the
+	// cell): the surface. Playtest 2 co-op: a gallop up a mountainside
+	// left a rider a metre under the terrain, the cave rules read open air
+	// and dropped her 330 m through the world.
+	if !Masked(g.Openings, x, z) && g.Cells != nil {
+		if c := g.Cells.Cell(int32(math.Floor(x/CellW)), int32(math.Floor(y/CellH)), int32(math.Floor(z/CellW))); c != nil && c.System < 0 && c.TriangleCount == 0 {
+			return h
+		}
+	}
 	if f := FloorAt(g.Cells, x, y, z); !math.IsInf(f, -1) {
 		return f
 	}
