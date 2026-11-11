@@ -75,6 +75,7 @@ const (
 	QuestRefuseFull    = 4
 	QuestRefuseHave    = 5
 	QuestRefuseDone    = 6
+	QuestRefuseMain    = 7 // CR 035: the main story can't be dropped
 )
 
 // SourceQuest is Event 401's source for quest rewards.
@@ -356,6 +357,9 @@ func (f questFacts) Escorted(qid uint32) bool { return f.s.contentEscorted(f.ses
 
 func (f questFacts) Pos() (float64, float64) { return f.sess.ent.Move.Pos.X, f.sess.ent.Move.Pos.Z }
 
+// Level implements quests.Leveler (CR 035: the main story's level gates).
+func (f questFacts) Level() int { return f.s.storyLevel(f.sess) }
+
 func (f questFacts) Quiet(site int, x, z, r float64) bool {
 	for _, en := range f.s.cbt.w.Enemies() {
 		if en.Alive() && en.Demon == nil && math.Hypot(en.Pos.X-x, en.Pos.Z-z) <= r {
@@ -390,6 +394,9 @@ func (s *Server) questsAdvance(sess *session, sig *quests.Signal) []quests.Happe
 	}
 	if handoff {
 		s.questsWardHandoff(sess)
+	}
+	if len(hs) > 0 {
+		s.storyAfter(sess, append([]quests.Happening(nil), hs...)) // CR 035: shared steps, the vigil, the next act (story.go)
 	}
 	if changed || q.log.Dirty() {
 		s.sendQuestLog(sess)
@@ -595,6 +602,10 @@ func (s *Server) questInteract(sess *session, m *proto.Interact) {
 		s.sendEvent(sess, &proto.Event{Kind: EventQuestStarted, EntityID: e.ID, TargetID: wq.ID, Data: startedJSON(wq)})
 		q.recheck = true
 	case QuestActAbandon:
+		if storyQuestKeep(q.log.Find(id)) {
+			refuse(QuestRefuseMain) // CR 035: the main story stays in the log
+			return
+		}
 		qq := q.log.Remove(id)
 		if qq == nil {
 			refuse(QuestRefuseUnknown)

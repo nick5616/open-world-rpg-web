@@ -33,7 +33,7 @@ describe('family -> model spec', () => {
       const s = modelSpec(info(e));
       expect(ALL_STYLES, e.key).toContain(s.style);
       // no enemy falls back to a generic look: a style named after it (or an explicit alias)
-      expect(s.style === e.key || ['sovereign', 'behemoth'].includes(s.style), e.key).toBe(true);
+      expect(s.style === e.key || ['sovereign', 'behemoth'].includes(s.style) || (e.key === 'the_hush' && s.style === 'archon') || (e.key === 'hollow_bell' && s.style === 'shade'), e.key).toBe(true); // CR 035: the Hush and its bells borrow looks
       expect(famRig[e.family], `${e.key} (${e.family})`).toContain(s.rig);
       if (e.behavior === 'flyer') expect(['floater', 'winged'], e.key).toContain(s.rig);
     }

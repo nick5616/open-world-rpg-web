@@ -219,6 +219,12 @@ items:
   # ---- quest items (playtest 2 content: carried for a quest, worthless to merchants) ----
   quest:parcel: {name: Sealed Parcel, value: 0}
   quest:watch_banner: {name: Banner of the Old Watch, value: 0}
+  # playtest 2 main story (CR 035): the relics of "The Last Song"
+  quest:keepers_fork: {name: Keeper's Tuning Fork, value: 0}
+  quest:verse_dawn: {name: The Verse of Dawn, value: 0}
+  quest:verse_dusk: {name: The Verse of Dusk, value: 0}
+  quest:archon_lens: {name: The Archon's Lens, value: 0}
+  quest:dawnheart: {name: The Dawnheart, value: 0}
   # ---- camps (playtest 2, CR 025: contracts/camps.yaml): firewood (deadfall, merchants) and camp kits ----
   wood:firewood: {name: Firewood, value: 2}
   camp:campfire: {name: Campfire Kit, value: 10}

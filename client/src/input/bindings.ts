@@ -28,6 +28,8 @@ export type BindContext =
   | 'wheel' // the emote or pet wheel is held open
   | 'debug' // debug builds only
   | 'focus' // a focused card or button in a panel (its own onKeyDown; chat and jump leave it alone)
+  | 'downed' // you are down and a friend could raise you (CR 035)
+  | 'ending' // the ending sequence and its credits (CR 035)
   | 'title'; // the title screen
 
 export interface Binding {
@@ -73,6 +75,7 @@ export const BINDINGS: Binding[] = [
   W('KeyE', 'ui/fishing/FishingHud.tsx', 'cast a line'),
   W('KeyE', 'ui/mounts/MountHud.tsx', 'ride / get off'),
   W('KeyE', 'ui/pets/PetHud.tsx', 'feed a calm creature, pet your pet'),
+  W('KeyE', 'ui/story/StoryHud.tsx', 'raise a fallen friend (hold)'), // CR 035
   // screens and the world
   W('KeyT', 'hud/ViewHud.tsx', 'first / third person'),
   W('KeyM', 'ui/map/ExplorationHud.tsx', 'map'),
@@ -124,6 +127,8 @@ export const BINDINGS: Binding[] = [
   { code: 'Delete', ctx: 'focus', file: 'ui/spellcards/SpellCards.tsx', does: 'clear the focused spell slot' },
   { code: 'Backspace', ctx: 'focus', file: 'ui/spellcards/SpellCards.tsx', does: 'clear the focused spell slot' },
   { code: 'Enter', ctx: 'title', file: 'screens/TitleScreen.tsx', does: 'start' },
+  { code: 'Space', ctx: 'downed', file: 'ui/story/StoryHud.tsx', does: 'respawn now instead of waiting for a friend' },
+  { code: 'Enter', ctx: 'ending', file: 'ui/story/StoryHud.tsx', does: 'skip the ending / leave the credits' },
   { code: 'Space', ctx: 'title', file: 'screens/TitleScreen.tsx', does: 'start' },
 ];
 

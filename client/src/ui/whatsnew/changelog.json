@@ -1,5 +1,16 @@
 [
   {
+    "id": "pt2-main-story",
+    "date": "2026-11-11",
+    "title": "The Last Song: you can beat Lodestone now",
+    "items": [
+      "A main story in six acts takes you from the Haven to the Heartfall: wake the tower crystals, recover the Verses from the sealed vaults, keep a vigil against the Starless Sovereign and have a Dawnheart forged. It starts after Ward against the night.",
+      "The final boss, the Hush: break its shroud with sunsteel or Light, shatter its choir of bells, and find a well of dawn each when the endless night falls. Then an ending, and the credits.",
+      "Better together: party members beside you share story steps, the one behind can catch up from the journal (J), and a fallen friend can be raised: hold E beside them (Space respawns instead).",
+      "After the dawn: calmer nights, new titles (the Dawnsinger, the Dawnsworn), and the Starless Vow in the journal for a harder rematch."
+    ]
+  },
+  {
     "id": "pt2-polish",
     "date": "2026-11-11",
     "title": "Smoother controls, shinier steel",

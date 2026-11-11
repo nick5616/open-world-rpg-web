@@ -590,9 +590,9 @@ func (s *Server) contentOnKill(k combat.KillInfo) {
 
 // contentAttuned: an attunement (progression.go) may finish a story step
 // and earn a feat.
-func (s *Server) contentAttuned(sess *session) {
+func (s *Server) contentAttuned(sess *session, site int) {
 	if sess.quests != nil && sess.quests.log.Needs(quests.ObjAttune) {
-		s.questsAdvance(sess, &quests.Signal{Kind: quests.ObjAttune, Site: -1})
+		s.questsAdvance(sess, &quests.Signal{Kind: quests.ObjAttune, Site: site}) // CR 035: main story steps name their tower
 	}
 	if sess.cnt != nil {
 		s.contentAchievements(sess)

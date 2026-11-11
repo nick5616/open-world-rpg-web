@@ -4,7 +4,7 @@
 // caller passes what it needs to know (current flags, places, quests).
 
 import { ACHIEVEMENTS, BOSSES, CUTS, ELEMENTS, ELITES, ENEMIES, GEAR_AFFIXES, GEMS, itemCatalog, RARITIES, resolve, SKILLS, SPECIES, SPELLS, suggest, WEATHER, WORLD_EVENTS, type CatalogItem } from './catalog';
-import { DEV_ACT, DEV_FLAG, giveSend, petSend, send, spawnSend, teleportSend, type DevFlagName, type DevSend, type GiveOpts } from './events';
+import { DEV_ACT, DEV_FLAG, DEV_STORY, giveSend, petSend, send, spawnSend, teleportSend, type DevFlagName, type DevSend, type GiveOpts } from './events';
 
 export interface CmdPlace {
   kind: string;
@@ -62,6 +62,7 @@ export const COMMANDS: CommandDef[] = [
   { name: 'reveal', usage: '/reveal', does: 'reveal the map: every tower and waypoint' },
   { name: 'attune', usage: '/attune', does: 'attune every tower crystal (boons)' },
   { name: 'achieve', usage: '/achieve <achievement|all>', does: 'unlock an achievement, or all of them (rewards paid)', arg: 'achievement' },
+  { name: 'story', usage: '/story <act N [step]|heartfall|hush PCT|bells|down|win|vigil|places|reset>', does: 'the main story (CR 035): jump to an act and step, go to the Heartfall, set the Hush\'s health, shatter its bells, be downed (try a revive), win the fight (or fell the Sovereign), end the vigil\'s waves' },
   { name: 'reset', usage: '/reset yes', does: 'a new character: level 1, starting kit, no spells, map or quests' },
   { name: 'help', usage: '/help [command]', does: 'list commands', arg: 'command' },
   { name: 'clear', usage: '/clear', does: 'clear the console log' },
@@ -281,6 +282,23 @@ export function parseCommand(line: string, ctx: CmdCtx): CmdResult {
       const ac = a0 ? leading(ACHIEVEMENTS, args) : null;
       if (!ac) return { error: a0 ? `no achievement "${args.join(' ')}"` : `usage: ${def.usage}` };
       return { sends: [send(DEV_ACT.achieve, ac.hit.id)] };
+    }
+    case 'story': {
+      const sub = (a0 ?? '').toLowerCase();
+      if (sub === 'act') {
+        const act = Number(args[1]);
+        const step = args[2] === undefined ? 0 : Number(args[2]);
+        if (!Number.isInteger(act) || act < 1 || act > 6 || !Number.isInteger(step) || step < 0 || step > 20) return { error: 'usage: /story act <1-6> [step]' };
+        return { sends: [send(DEV_ACT.story, BigInt(act | (step << 8)), DEV_STORY.jump)] };
+      }
+      if (sub === 'hush') {
+        const pct = Number(args[1]);
+        if (!Number.isInteger(pct) || pct < 1 || pct > 100) return { error: 'usage: /story hush <1-100>' };
+        return { sends: [send(DEV_ACT.story, BigInt(pct), DEV_STORY.hush)] };
+      }
+      const simple: Record<string, number> = { heartfall: DEV_STORY.heartfall, win: DEV_STORY.win, vigil: DEV_STORY.vigil, places: DEV_STORY.places, reset: DEV_STORY.reset, bells: DEV_STORY.bells, down: DEV_STORY.down };
+      if (simple[sub] === undefined) return { error: `usage: ${def.usage}` };
+      return { sends: [send(DEV_ACT.story, 0n, simple[sub])] };
     }
     case 'reset':
       if (a0 !== 'yes') return { error: 'this resets your character: type /reset yes' };

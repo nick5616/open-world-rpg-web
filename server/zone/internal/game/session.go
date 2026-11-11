@@ -399,6 +399,10 @@ func (s *Server) drainTaken(sess *session, now time.Time) {
 				s.questInteract(sess, it) // quests: accept, abandon, turn in, track (quests.go)
 				continue
 			}
+			if it.TargetKind == InteractStory {
+				s.storyInteract(sess, it) // CR 035: sync, catch up, revive, respawn, the vow (story.go)
+				continue
+			}
 			if it.TargetKind == InteractFishing {
 				s.fishInteract(sess, it, now) // playtest 2: cast, hook, land, lose (fishing.go)
 				continue

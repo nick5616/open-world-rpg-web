@@ -1677,6 +1677,61 @@
    "sockets": 0
   },
   {
+   "key": "quest:keepers_fork",
+   "name": "Keeper's Tuning Fork",
+   "category": "quest",
+   "kind": "material",
+   "stack": 10,
+   "pouch": "inv",
+   "level": 1,
+   "value": 0,
+   "sockets": 0
+  },
+  {
+   "key": "quest:verse_dawn",
+   "name": "The Verse of Dawn",
+   "category": "quest",
+   "kind": "material",
+   "stack": 10,
+   "pouch": "inv",
+   "level": 1,
+   "value": 0,
+   "sockets": 0
+  },
+  {
+   "key": "quest:verse_dusk",
+   "name": "The Verse of Dusk",
+   "category": "quest",
+   "kind": "material",
+   "stack": 10,
+   "pouch": "inv",
+   "level": 1,
+   "value": 0,
+   "sockets": 0
+  },
+  {
+   "key": "quest:archon_lens",
+   "name": "The Archon's Lens",
+   "category": "quest",
+   "kind": "material",
+   "stack": 10,
+   "pouch": "inv",
+   "level": 1,
+   "value": 0,
+   "sockets": 0
+  },
+  {
+   "key": "quest:dawnheart",
+   "name": "The Dawnheart",
+   "category": "quest",
+   "kind": "material",
+   "stack": 10,
+   "pouch": "inv",
+   "level": 1,
+   "value": 0,
+   "sockets": 0
+  },
+  {
    "key": "wood:firewood",
    "name": "Firewood",
    "category": "wood",

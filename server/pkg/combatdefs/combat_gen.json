@@ -9171,6 +9171,181 @@
    "element": 8
   },
   {
+   "key": "hush_rend",
+   "radius": 0,
+   "reach": 5,
+   "arc": 150,
+   "width": 0,
+   "speed": 0,
+   "minRange": 0,
+   "volley": 1,
+   "spreadDeg": 0,
+   "charge": false,
+   "everyone": false,
+   "id": 89,
+   "shape": "cone",
+   "windupMs": 550,
+   "windupSteps": 33,
+   "activeMs": 150,
+   "activeSteps": 9,
+   "recoveryMs": 700,
+   "recoverySteps": 42,
+   "cooldownMs": 3200,
+   "cooldownSteps": 192,
+   "damage": 24,
+   "element": 6
+  },
+  {
+   "key": "hush_toll",
+   "radius": 7.5,
+   "reach": 0,
+   "arc": 0,
+   "width": 0,
+   "speed": 0,
+   "minRange": 0,
+   "volley": 1,
+   "spreadDeg": 0,
+   "charge": false,
+   "everyone": false,
+   "id": 90,
+   "shape": "circle",
+   "windupMs": 600,
+   "windupSteps": 36,
+   "activeMs": 150,
+   "activeSteps": 9,
+   "recoveryMs": 900,
+   "recoverySteps": 54,
+   "cooldownMs": 8000,
+   "cooldownSteps": 480,
+   "damage": 22,
+   "element": 6
+  },
+  {
+   "key": "hush_lance",
+   "radius": 0,
+   "reach": 22,
+   "arc": 0,
+   "width": 2.4,
+   "speed": 0,
+   "minRange": 4,
+   "volley": 1,
+   "spreadDeg": 0,
+   "charge": false,
+   "everyone": false,
+   "id": 91,
+   "shape": "line",
+   "windupMs": 600,
+   "windupSteps": 36,
+   "activeMs": 300,
+   "activeSteps": 18,
+   "recoveryMs": 900,
+   "recoverySteps": 54,
+   "cooldownMs": 9000,
+   "cooldownSteps": 540,
+   "damage": 28,
+   "element": 7
+  },
+  {
+   "key": "hush_fall",
+   "radius": 3.2,
+   "reach": 40,
+   "arc": 0,
+   "width": 0,
+   "speed": 0,
+   "minRange": 0,
+   "volley": 1,
+   "spreadDeg": 0,
+   "charge": false,
+   "everyone": true,
+   "id": 92,
+   "shape": "ground",
+   "windupMs": 600,
+   "windupSteps": 36,
+   "activeMs": 117,
+   "activeSteps": 7,
+   "recoveryMs": 600,
+   "recoverySteps": 36,
+   "cooldownMs": 7000,
+   "cooldownSteps": 420,
+   "damage": 20,
+   "element": 7
+  },
+  {
+   "key": "hush_chorus",
+   "radius": 3,
+   "reach": 60,
+   "arc": 0,
+   "width": 0,
+   "speed": 0,
+   "minRange": 0,
+   "volley": 1,
+   "spreadDeg": 0,
+   "charge": false,
+   "everyone": false,
+   "id": 93,
+   "shape": "ground",
+   "windupMs": 600,
+   "windupSteps": 36,
+   "activeMs": 117,
+   "activeSteps": 7,
+   "recoveryMs": 600,
+   "recoverySteps": 36,
+   "cooldownMs": 60000,
+   "cooldownSteps": 3600,
+   "damage": 14,
+   "element": 6
+  },
+  {
+   "key": "hush_night",
+   "radius": 30,
+   "reach": 0,
+   "arc": 0,
+   "width": 0,
+   "speed": 0,
+   "minRange": 0,
+   "volley": 1,
+   "spreadDeg": 0,
+   "charge": false,
+   "everyone": false,
+   "id": 94,
+   "shape": "circle",
+   "windupMs": 600,
+   "windupSteps": 36,
+   "activeMs": 117,
+   "activeSteps": 7,
+   "recoveryMs": 600,
+   "recoverySteps": 36,
+   "cooldownMs": 60000,
+   "cooldownSteps": 3600,
+   "damage": 0,
+   "element": 6
+  },
+  {
+   "key": "bell_toll",
+   "radius": 5,
+   "reach": 0,
+   "arc": 0,
+   "width": 0,
+   "speed": 0,
+   "minRange": 0,
+   "volley": 1,
+   "spreadDeg": 0,
+   "charge": false,
+   "everyone": false,
+   "id": 95,
+   "shape": "circle",
+   "windupMs": 600,
+   "windupSteps": 36,
+   "activeMs": 117,
+   "activeSteps": 7,
+   "recoveryMs": 900,
+   "recoverySteps": 54,
+   "cooldownMs": 5000,
+   "cooldownSteps": 300,
+   "damage": 12,
+   "element": 6
+  },
+  {
    "key": "boss_cleave",
    "radius": 0,
    "reach": 4.5,
@@ -10167,6 +10342,47 @@
    "color": "#6a5aa8"
   },
   {
+   "key": "the_hush",
+   "name": "The Hush",
+   "keepAway": 0,
+   "id": 103,
+   "family": "boss",
+   "hp": 7600,
+   "speed": 4.6,
+   "aggro": 40,
+   "attacks": [
+    "hush_rend",
+    "hush_toll"
+   ],
+   "behavior": "melee",
+   "element": 6,
+   "xp": 1500,
+   "size": 3.2,
+   "color": "#1b1424"
+  },
+  {
+   "key": "hollow_bell",
+   "name": "Hollow Bell",
+   "keepAway": 0,
+   "id": 112,
+   "family": "demon",
+   "hp": 300,
+   "speed": 0.1,
+   "aggro": 9,
+   "attacks": [
+    "bell_toll"
+   ],
+   "behavior": "melee",
+   "xp": 60,
+   "size": 1.6,
+   "color": "#2b2140",
+   "demon": {
+    "regen": 0.35,
+    "rank": "lesser"
+   },
+   "element": 8
+  },
+  {
    "key": "thornhide_behemoth",
    "name": "Thornhide Behemoth",
    "keepAway": 0,
@@ -10297,6 +10513,48 @@
      ]
     }
    ]
+  },
+  {
+   "key": "the_hush",
+   "transitionMs": 3000,
+   "transitionSteps": 180,
+   "arenaRadius": 30,
+   "phases": [
+    {
+     "adds": 0,
+     "speedMult": 1,
+     "cooldownMult": 1,
+     "at": 1,
+     "attacks": [
+      "hush_rend",
+      "hush_toll",
+      "hush_fall"
+     ]
+    },
+    {
+     "adds": 2,
+     "speedMult": 1,
+     "cooldownMult": 1,
+     "at": 0.7,
+     "attacks": [
+      "hush_rend",
+      "hush_toll",
+      "hush_fall"
+     ]
+    },
+    {
+     "adds": 2,
+     "speedMult": 1.15,
+     "cooldownMult": 0.85,
+     "at": 0.35,
+     "attacks": [
+      "hush_rend",
+      "hush_toll",
+      "hush_fall",
+      "hush_lance"
+     ]
+    }
+   ]
   }
  ],
  "bossTitles": {
@@ -10313,7 +10571,8 @@
  "bossNames": {
   "warden": "Warden",
   "archon": "Archon",
-  "vault_keeper": "Vault Keeper"
+  "vault_keeper": "Vault Keeper",
+  "the_hush": "Hush"
  },
  "affixes": [
   {

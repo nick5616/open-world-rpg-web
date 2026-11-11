@@ -33,6 +33,7 @@ export const DEV_ACT = {
   attune: 25,
   places: 26,
   achieve: 27,
+  story: 28, // CR 035 main story: arg = DEV_STORY, target = act | step << 8 (jump) or percent (hush)
 } as const;
 
 export const DEV_EV = { status: 1400, result: 1401, places: 1402 } as const;
@@ -140,3 +141,6 @@ export interface DevPlaces {
   towns: DevPlace[];
   vaults: DevPlace[];
 }
+
+/** CR 035: /story sub-commands (Interact 250/28 arg; server/zone/internal/game/story_dev.go). */
+export const DEV_STORY = { jump: 1, heartfall: 2, win: 3, reset: 4, hush: 5, vigil: 6, places: 7, bells: 8, down: 9 } as const;

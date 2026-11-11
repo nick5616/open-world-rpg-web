@@ -20,12 +20,13 @@ const SITE_KINDS = ['shrine', 'ruin', 'watchtower', 'tower', 'banditcamp', 'land
 const TOWNS = ['home', 'next', 'far'];
 // Achievement stats (CR 031, contracts/achievements.yaml); <prefix>:<arg> ones in ACH_PREFIXED.
 const ACH_STATS = ['towers', 'kills', 'demons', 'regions', 'duels', 'quests', 'side', 'stories', 'events', 'dungeons', 'tablets', 'codex', 'forage', 'honored', 'level', 'bounties', 'fish', 'fishspecies', 'fishlegend', 'notes', 'ovations', 'firesongs', 'tamed', 'tamedspecies', 'shinytamed', 'petlevel',
-  'vaultsfound', 'nights', 'lightning', 'lightningmetal', 'deaths', 'pvpkills', 'casts', 'schools', 'dashes', 'flight', 'flighthigh', 'magmaflight', 'slams', 'mined', 'crafted', 'gold', 'emotes', 'petted', 'gallop', 'songs', 'eventkinds'];
+  'vaultsfound', 'acts', 'finale', 'finaleparty', 'finalehard', 'finalehardparty', 'shrouds', 'revives', 'nights', 'lightning', 'lightningmetal', 'deaths', 'pvpkills', 'casts', 'schools', 'dashes', 'flight', 'flighthigh', 'magmaflight', 'slams', 'mined', 'crafted', 'gold', 'emotes', 'petted', 'gallop', 'songs', 'eventkinds'];
 const ACH_PREFIXED = ['family', 'killel', 'cast', 'dashm', 'craft', 'fish', 'loot', 'event'];
 const CRAFT_STATIONS = ['forge', 'cook', 'workbench', 'camp'];
 export const ACH_CATS = [
   { key: 'exploration', name: 'Exploration' }, { key: 'combat', name: 'Combat' }, { key: 'magic', name: 'Magic' }, { key: 'crafting', name: 'Crafting & Gathering' },
   { key: 'social', name: 'Social' }, { key: 'companions', name: 'Companions' }, { key: 'music', name: 'Music' }, { key: 'events', name: 'World Events & Dungeons' }, { key: 'secrets', name: 'Secrets' },
+  { key: 'story', name: 'The Last Song' }, // CR 035: last, so the earlier category indexes stay put
 ];
 export const ACH_TIERS = [
   { key: 'bronze', name: 'Bronze', pts: 10, gold: 10, xp: 50, color: '#c8875a', announce: false },
@@ -72,7 +73,7 @@ function parseAchievements(table, ctx) {
       if (!ok()) ach(key, `unknown ${stat} ${arg}`);
     } else if (!ACH_STATS.includes(stat)) ach(key, `unknown stat ${a.stat}`);
     else {
-      reach = { fishspecies: ctx.species.length, tamedspecies: ctx.petSpecies.length, petlevel: ctx.levelMax, codex: ctx.codex.length, tablets: ctx.tablets.length, schools: elements.length, eventkinds: eventKeys.size, level: ctx.maxLevel, regions: 32 }[stat] ?? Infinity;
+      reach = { fishspecies: ctx.species.length, tamedspecies: ctx.petSpecies.length, petlevel: ctx.levelMax, codex: ctx.codex.length, tablets: ctx.tablets.length, schools: elements.length, eventkinds: eventKeys.size, level: ctx.maxLevel, regions: 32, acts: 6 }[stat] ?? Infinity;
     }
     if (!(Number.isInteger(a.n) && a.n > 0)) ach(key, 'n: a whole number > 0');
     if (a.n > reach) ach(key, `n ${a.n} is out of reach (${stat} tops out at ${reach})`);

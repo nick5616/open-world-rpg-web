@@ -677,6 +677,16 @@ enemyAttacks:
   # under every player in the fight, readable for the full 600 ms.
   keeper_sigil: {id: 87, shape: ground, radius: 4.5, reach: 24, windupMs: 600, activeMs: 150, recoveryMs: 800, cooldownMs: 7500, damage: 22, everyone: true, element: light}
   keeper_sweep: {id: 88, shape: cone, reach: 4.0, arc: 150, windupMs: 500, activeMs: 117, recoveryMs: 700, cooldownMs: 3200, damage: 16}
+  # playtest 2 main story (CR 035): the Hush (the final boss) and its Hollow
+  # Bells. hush_chorus and hush_night are only struck by the zone's finale
+  # mechanics (internal/game/finale.go), never picked by the AI.
+  hush_rend: {id: 89, shape: cone, reach: 5.0, arc: 150, windupMs: 550, activeMs: 150, recoveryMs: 700, cooldownMs: 3200, damage: 24, element: dark}
+  hush_toll: {id: 90, shape: circle, radius: 7.5, windupMs: 600, activeMs: 150, recoveryMs: 900, cooldownMs: 8000, damage: 22, element: dark}
+  hush_lance: {id: 91, shape: line, reach: 22, width: 2.4, windupMs: 600, activeMs: 300, recoveryMs: 900, cooldownMs: 9000, damage: 28, element: void, minRange: 4}
+  hush_fall: {id: 92, shape: ground, radius: 3.2, reach: 40, windupMs: 600, activeMs: 117, recoveryMs: 600, cooldownMs: 7000, damage: 20, everyone: true, element: void}
+  hush_chorus: {id: 93, shape: ground, radius: 3.0, reach: 60, windupMs: 600, activeMs: 117, recoveryMs: 600, cooldownMs: 60000, damage: 14, element: dark}
+  hush_night: {id: 94, shape: circle, radius: 30, windupMs: 600, activeMs: 117, recoveryMs: 600, cooldownMs: 60000, damage: 0, element: dark}
+  bell_toll: {id: 95, shape: circle, radius: 5.0, windupMs: 600, activeMs: 117, recoveryMs: 900, cooldownMs: 5000, damage: 12, element: dark}
   # bosses
   boss_cleave: {id: 40, shape: cone, reach: 4.5, arc: 120, windupMs: 500, activeMs: 150, recoveryMs: 700, cooldownMs: 3000, damage: 18}
   boss_slam: {id: 41, shape: ground, radius: 4.0, windupMs: 600, activeMs: 117, recoveryMs: 800, cooldownMs: 5000, damage: 22, reach: 12}
@@ -747,6 +757,11 @@ enemies:
   gloamhound: {id: 71, family: hunt, hp: 82, speed: 7.0, aggro: 40, attacks: [hound_bite, hound_lunge], behavior: melee, xp: 26, size: 0.95, color: '#3c4a5e'}
   hunt_master: {id: 72, family: hunt, hp: 92, speed: 5.4, aggro: 40, attacks: [hunt_spear, slash], behavior: ranged, keepAway: 10, xp: 60, size: 1.5, color: '#2c3a2a'}
   starfall_sentinel: {id: 73, family: guardian, hp: 94, speed: 3.6, aggro: 22, attacks: [star_slam, sentinel_sweep], behavior: melee, element: void, xp: 50, size: 1.6, color: '#6a5aa8'}
+  # playtest 2 main story (CR 035): the final boss at the Heartfall and the
+  # bells of its choir (Unsung things: only sunsteel and Light shatter them;
+  # they never move).
+  the_hush: {id: 103, family: boss, hp: 7600, speed: 4.6, aggro: 40, attacks: [hush_rend, hush_toll], behavior: melee, element: dark, xp: 1500, size: 3.2, color: '#1b1424'}
+  hollow_bell: {id: 112, family: demon, hp: 300, speed: 0.1, aggro: 9, attacks: [bell_toll], behavior: melee, xp: 60, size: 1.6, color: '#2b2140', demon: {rank: lesser}}
   thornhide_behemoth: {id: 74, family: beast, hp: 94, speed: 4.4, aggro: 24, attacks: [behemoth_gore, behemoth_quake], behavior: melee, element: earth, xp: 160, size: 2.4, color: '#4e5a2c'}
 
 bosses:
@@ -775,6 +790,16 @@ bosses:
     phases:
       - {at: 1.0, attacks: [keeper_sweep, keeper_sigil]}
       - {at: 0.5, attacks: [keeper_sweep, keeper_sigil, boss_slam], adds: 2, speedMult: 1.15, cooldownMult: 0.8}
+  the_hush:
+    # CR 035: the final boss. Phase 2 is the choir (the zone makes it
+    # untouchable until its Hollow Bells are shattered), phase 3 the endless
+    # night (wells of dawn); the shroud comes in phases 1 and 3.
+    transitionMs: 3000
+    arenaRadius: 30
+    phases:
+      - {at: 1.0, attacks: [hush_rend, hush_toll, hush_fall]}
+      - {at: 0.7, attacks: [hush_rend, hush_toll, hush_fall], adds: 2}
+      - {at: 0.35, attacks: [hush_rend, hush_toll, hush_fall, hush_lance], adds: 2, speedMult: 1.15, cooldownMult: 0.85}
   titles:
     # Boss display name = "<title by element> <name>" ("The Ashen Warden").
     fire: The Ashen
@@ -786,7 +811,7 @@ bosses:
     dark: The Hollow
     void: The Unmade
     none: The Ancient
-  names: {warden: Warden, archon: Archon, vault_keeper: Vault Keeper}
+  names: {warden: Warden, archon: Archon, vault_keeper: Vault Keeper, the_hush: Hush}
 
 affixes:
   # Spec 8 elites: an element and an affix. Wind-ups never leave 300-600 ms.
@@ -830,6 +855,8 @@ enemyNames:
   umbral_stalker: Umbral Stalker
   void_maw: Void Maw
   starless_sovereign: Starless Sovereign
+  the_hush: The Hush
+  hollow_bell: Hollow Bell
   vault_keeper: Vault Keeper
   glintfox: Glintfox
   gloamhound: Gloamhound

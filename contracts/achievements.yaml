@@ -184,3 +184,16 @@ achievements:
   lightning_rod: {name: Lightning Rod, desc: "Draw a bolt with your own metal weapon in a storm, and live", cat: secrets, tier: silver, stat: lightningmetal, n: 1, title: the Grounded, hidden: true, hint: "Raise a sword to the storm."}
   revolving_door: {name: Death Is a Revolving Door, desc: "Go down 100 times", cat: secrets, tier: silver, stat: deaths, n: 100, title: the Undeterred, hidden: true, hint: "Practice makes... practice."}
   totally_bitchin: {name: "Totally Bitchin'", desc: "Find a Bitchin' item", cat: secrets, tier: platinum, stat: "loot:bitchin", n: 1, title: the Bitchin', hidden: true, hint: "One in a million. Literally."}
+
+  # ---- The Last Song (playtest 2 main story, CR 035; added at the end so earlier ids stay put) ----
+  song_hum: {name: Thin as Thread, desc: "Finish Act I of The Last Song", cat: story, tier: bronze, stat: acts, n: 1, gold: 20, xp: 100, chain: acts}
+  song_verses: {name: Words in the Dark, desc: "Recover both Verses (Act III of The Last Song)", cat: story, tier: silver, stat: acts, n: 3, chain: acts}
+  song_vigil: {name: The Vigil Kept, desc: "Keep the vigil and fell the Starless Sovereign (Act IV)", cat: story, tier: gold, stat: acts, n: 4, title: the Vigilant, chain: acts}
+  song_dawnheart: {name: Dawnforged, desc: "Carry the Dawnheart out of the forge (Act V)", cat: story, tier: gold, stat: acts, n: 5, chain: acts}
+  last_song: {name: The Last Song, desc: "Silence the Hush and see the dawn: beat the game", cat: story, tier: platinum, stat: finale, n: 1, title: the Dawnsinger, item: "potion:dawnroot_elixir", qty: 3}
+  dawn_together: {name: "Dawn, Together", desc: "Beat the game together: silence the Hush with a friend in the fight", cat: story, tier: platinum, stat: finaleparty, n: 1, title: the Dawnsworn}
+  starless_unbroken: {name: Starless and Unbroken, desc: "Silence the Hush under the Starless Vow (hard mode)", cat: story, tier: platinum, stat: finalehard, n: 1, title: the Unbroken}
+  two_against_dark: {name: Two Against the Dark, desc: "Silence the Hush under the Starless Vow with a friend in the fight", cat: story, tier: platinum, stat: finalehardparty, n: 1, title: of the Long Night}
+  unshrouded: {name: Unshrouded, desc: "Break the Hush's shroud with sunsteel or Light", cat: story, tier: silver, stat: shrouds, n: 1}
+  not_today: {name: Not Today, desc: "Raise a fallen friend (hold E beside them)", cat: story, tier: bronze, stat: revives, n: 1, chain: revives}
+  second_wind: {name: Second Wind, desc: "Raise fallen friends 25 times", cat: story, tier: silver, stat: revives, n: 25, title: the Steadfast, chain: revives}

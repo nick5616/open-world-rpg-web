@@ -39,6 +39,9 @@ const (
 	ObjRead    = "read"    // read the lore tablet at atlas Site
 	ObjAttune  = "attune"  // attune to any tower crystal
 	ObjDungeon = "dungeon" // clear the sealed vault at atlas Site (its keeper falls with you near)
+	// Playtest 2 main story (CR 035).
+	ObjLevel = "level" // reach character level N (Leveler)
+	ObjStory = "story" // a story happening named Family (the vigil held, the Sovereign or the Hush fallen)
 )
 
 // Quest kinds (Event 950 `kind`).
@@ -46,6 +49,7 @@ const (
 	KindBounty = 0 // a settlement's bounty board / bounty keeper
 	KindStory  = 1 // the starter line and other authored quests
 	KindSide   = 2 // playtest 2 content: a townsperson's request (CR 022)
+	KindMain   = 3 // playtest 2 main story (CR 035): one quest per act, keys "story:main:<act>"
 )
 
 // Limits.
@@ -236,7 +240,7 @@ func (l *Log) Add(q *Quest) error {
 		return ErrTooMany
 	}
 	l.Active = append(l.Active, q)
-	if q.Kind == KindStory && !l.HasStarted(q.Key) {
+	if (q.Kind == KindStory || q.Kind == KindMain) && !l.HasStarted(q.Key) {
 		l.Started = append(l.Started, q.Key)
 	}
 	if l.Tracked == 0 || l.Find(l.Tracked) == nil {
@@ -318,6 +322,11 @@ type Escorter interface {
 	Escorted(questID uint32) bool
 }
 
+// Leveler is optional on Facts (CR 035): the character's level.
+type Leveler interface {
+	Level() int
+}
+
 // Signal is an event in the world a step may be waiting for.
 type Signal struct {
 	Kind       string // ObjTalk (also completes ObjGive), ObjClear, ObjSlay, ObjTurnIn, ObjKill, ObjRead, ObjAttune, ObjDungeon
@@ -326,7 +335,7 @@ type Signal struct {
 	NPC        int     // talk: the towns-buffer NPC index + 1 (0 unknown)
 	Site       int     // clear: the cleared group's site (-1 none); read/dungeon: the atlas site
 	X, Z       float64 // clear/slay/kill: where it happened
-	Family     string  // kill: the enemy's combat family
+	Family     string  // kill: the enemy's combat family; story: the happening's tag
 }
 
 // killCounts reports whether sig is a kill a kill step counts (R 0:
@@ -365,7 +374,14 @@ func met(qid uint32, s *Step, f Facts, sig *Signal) bool {
 	case ObjRead, ObjDungeon:
 		return sig != nil && sig.Kind == o.Kind && sig.Site == o.Site
 	case ObjAttune:
-		return sig != nil && sig.Kind == ObjAttune
+		// CR 035: a main story step names its tower (Site); an attunement
+		// of an already attuned crystal counts (the glue signals it too).
+		return sig != nil && sig.Kind == ObjAttune && (o.Site < 0 || o.Site == sig.Site)
+	case ObjLevel:
+		lv, ok := f.(Leveler)
+		return ok && lv.Level() >= o.N
+	case ObjStory:
+		return sig != nil && sig.Kind == ObjStory && sig.Family == o.Family
 	case ObjClear:
 		if sig != nil && sig.Kind == ObjClear && (sig.Site == o.Site && o.Site >= 0 || math.Hypot(sig.X-o.X, sig.Z-o.Z) <= o.R) {
 			return true
@@ -444,7 +460,7 @@ func (l *Log) Advance(f Facts, sig *Signal, out []Happening) []Happening {
 // (reach and clear objectives), so the glue skips players who don't.
 func (l *Log) Wants() bool {
 	for _, q := range l.Active {
-		if s := q.Current(); s != nil && (s.Obj.Kind == ObjReach || s.Obj.Kind == ObjClear || s.Obj.Kind == ObjEscort) {
+		if s := q.Current(); s != nil && (s.Obj.Kind == ObjReach || s.Obj.Kind == ObjClear || s.Obj.Kind == ObjEscort || s.Obj.Kind == ObjLevel) {
 			return true
 		}
 	}
@@ -459,4 +475,63 @@ func (l *Log) Needs(k string) bool {
 		}
 	}
 	return false
+}
+
+// ForceStep completes quest key's current step if it is step (a party
+// member did it beside you: CR 035) and returns what happened (nil when the
+// quest is not at that step). The step's own grants are the glue's to pay.
+func (l *Log) ForceStep(key string, step int, out []Happening) []Happening {
+	q := l.ByKey(key)
+	if q == nil || q.Step != step || q.Current() == nil {
+		return out
+	}
+	out = append(out, Happening{Quest: q, Step: q.Step})
+	q.Step++
+	q.Progress, q.Count = 0, 0
+	l.dirty = true
+	if q.Current() == nil {
+		l.Remove(q.ID)
+		l.markDone(q.Key)
+		out[len(out)-1].Finished = true
+	}
+	return out
+}
+
+// SetStep moves quest key to step (a failed story event rolls back; CR 035
+// catch-up moves forward without the steps' happenings). False when the
+// quest is not held or step is out of range.
+func (l *Log) SetStep(key string, step int) bool {
+	q := l.ByKey(key)
+	if q == nil || step < 0 || step >= len(q.Steps) {
+		return false
+	}
+	if q.Step != step {
+		q.Step = step
+		q.Progress, q.Count = 0, 0
+		l.dirty = true
+	}
+	return true
+}
+
+// MarkDone remembers key as completed without holding it (CR 035 catch-up:
+// acts a party member finished for you).
+func (l *Log) MarkDone(key string) {
+	if !l.IsDone(key) {
+		l.markDone(key)
+		l.dirty = true
+	}
+	if !l.HasStarted(key) {
+		l.Started = append(l.Started, key)
+	}
+}
+
+// Forget drops key from the completed and started lists (CR 035 dev
+// console: replaying the main story).
+func (l *Log) Forget(key string) {
+	n := len(l.Done) + len(l.Started)
+	l.Done = slices.DeleteFunc(l.Done, func(k string) bool { return k == key })
+	l.Started = slices.DeleteFunc(l.Started, func(k string) bool { return k == key })
+	if len(l.Done)+len(l.Started) != n {
+		l.dirty = true
+	}
 }
