@@ -97,7 +97,7 @@ export interface VibeFilter {
   /** -1 any, else VIBE_TIERS index. */
   tier: number;
   /** CR 038: 0 any, else VIBE_LAYERS index + 1. */
-  layer: number;
+  layer?: number;
   n: number;
   offset: number;
   go: boolean;
@@ -121,7 +121,7 @@ export function packVibe(f: VibeFilter): { target: bigint; arg: number } {
     (clampB(f.distMin / 64, 0, 127) << 36n) |
     (clampB(f.distMax / 64, 0, 127) << 43n) |
     (clampB(f.tier + 1, 0, 15) << 50n) |
-    (clampB(f.layer, 0, 7) << 54n);
+    (clampB(f.layer ?? 0, 0, 7) << 54n);
   const arg = (clampN(f.n, 0, 255) | (clampN(f.offset, 0, 4095) << 8) | (f.go ? 1 << 20 : 0) | (f.random ? 1 << 21 : 0)) >>> 0;
   return { target, arg };
 }
@@ -239,7 +239,7 @@ export function describeVibe(f: VibeFilter, regions: readonly string[] = []): st
   if (f.region >= 0) parts.push(`in ${regions[f.region] ?? `region ${f.region}`}`);
   if (f.levelMin || f.levelMax) parts.push(`level ${f.levelMin || 1}${f.levelMax !== f.levelMin ? `-${f.levelMax || '∞'}` : ''}`);
   if (f.tier >= 0) parts.push(VIBE_TIERS[f.tier]);
-  if (f.layer > 0) parts.push(VIBE_LAYERS[f.layer - 1]);
+  if (f.layer) parts.push(VIBE_LAYERS[f.layer - 1]);
   if (f.stamped) parts.push(f.stamped === 1 ? 'stamped' : 'unstamped');
   if (f.distMin || f.distMax) parts.push(`${f.distMin}-${f.distMax || '∞'} m out`);
   return parts.length ? parts.join(', ') : 'anywhere';
