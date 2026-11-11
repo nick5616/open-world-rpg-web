@@ -47,6 +47,10 @@ const (
 	takenMemory = 5 * time.Second
 	// ItemActAutoLoot: Interact 21/10, arg 1 = auto-collect on, 0 = off.
 	ItemActAutoLoot = 10
+	// pickupBeamRarity: rare (2) and above stand in a light beam the client
+	// draws tall, so those pickups are sent across the mid ring (200 m)
+	// instead of the near ring only (snapshots.go).
+	pickupBeamRarity = 2
 )
 
 // autoCollects says whether walking over a personal pickup takes it (no E).

@@ -447,3 +447,45 @@ func TestGroundLootDespawns(t *testing.T) {
 		t.Fatalf("%d drops still there after the timer", n)
 	}
 }
+
+// Rare+ drops ride the mid ring so their beam is seen from afar; common
+// ones stay near-ring only. Everyone sees a public drop in the same place
+// with the same item and rarity.
+func TestRareDropsSeenAcrossTheMidRing(t *testing.T) {
+	h := newHarness(t, nil)
+	a := h.dial(spawnAt(1000, 1000))
+	a.join(h, "beam-a", "Near")
+	b := h.dial(spawnAt(1000, 1120))
+	b.join(h, "beam-b", "Far")
+	a.pump(200 * time.Millisecond)
+	var rareID, plainID uint32
+	_ = h.srv.Do(context.Background(), func() {
+		now := h.srv.cfg.Now()
+		r := h.srv.spawnDrop(0, rare(items.Stack("weapon:iron_sword", 1), 4), h.srv.groundSpot(1001, 1000, 0), &itemDrop{world: true, source: SourceDropped}, now.Add(time.Minute))
+		c := h.srv.spawnDrop(0, items.Stack("meat:raw", 1), h.srv.groundSpot(999, 1000, 0), &itemDrop{world: true, source: SourceDropped}, now.Add(time.Minute))
+		rareID, plainID = r.ID, c.ID
+	})
+	deadline := time.Now().Add(3 * time.Second)
+	for {
+		a.pump(60 * time.Millisecond)
+		b.pump(60 * time.Millisecond)
+		okA, _, _ := a.seePickup(rareID)
+		okB, _, _ := b.seePickup(rareID)
+		if okA && okB {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("rare drop: near sees %v, 120 m away sees %v", okA, okB)
+		}
+	}
+	ea, eb := a.frame.Find(rareID), b.frame.Find(rareID)
+	if ea.Name != eb.Name || ea.TypeID != eb.TypeID || ea.X != eb.X || ea.Y != eb.Y || ea.Z != eb.Z || eb.TypeID != 4 || eb.Name != "weapon:iron_sword" {
+		t.Fatalf("the two clients disagree about the drop: %+v vs %+v", ea, eb)
+	}
+	if ok, _, _ := a.seePickup(plainID); !ok {
+		t.Fatal("near player does not see the common drop")
+	}
+	if ok, _, _ := b.seePickup(plainID); ok {
+		t.Fatal("a common drop 120 m away is sent (near ring only)")
+	}
+}
