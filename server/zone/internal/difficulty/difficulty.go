@@ -50,6 +50,7 @@ type Map struct {
 	haven   []bool
 	by      []string // discoverer names (display)
 	danger  func(x, z float64) float64
+	over    []int16 // playtest 2 vibe explorer: dev overrides (dev.go; nil until the first)
 }
 
 // New builds the map of a worldSize-metre world whose spawn is (sx, sz).
@@ -88,10 +89,15 @@ func (m *Map) Center(c int) (x, z float64) {
 }
 
 // Haven reports an area of the Haven.
-func (m *Map) Haven(c int) bool { return c >= 0 && c < len(m.haven) && m.haven[c] }
+func (m *Map) Haven(c int) bool {
+	return c >= 0 && c < len(m.haven) && m.haven[c] && m.DevOverridden(c) == 0
+}
 
 // Level is an area's level and whether it is known (the Haven always is).
 func (m *Map) Level(c int) (int, bool) {
+	if l := m.DevOverridden(c); l > 0 {
+		return l, true // a dev override (dev.go)
+	}
 	if c < 0 || c >= len(m.level) || m.level[c] <= 0 {
 		return 0, false
 	}

@@ -5,6 +5,10 @@
 
 import { ACHIEVEMENTS, BOSSES, CUTS, ELEMENTS, ELITES, ENEMIES, GEAR_AFFIXES, GEMS, itemCatalog, RARITIES, resolve, SKILLS, SPECIES, SPELLS, suggest, WEATHER, WORLD_EVENTS, type CatalogItem } from './catalog';
 import { DEV_ACT, DEV_FLAG, DEV_STORY, giveSend, petSend, send, spawnSend, teleportSend, type DevFlagName, type DevSend, type GiveOpts } from './events';
+// Playtest 2 vibe explorer (docs/cr/036-vibe-explorer.md): /vibe and /music.
+import { MUSIC_USAGE, parseMusic, parseVibe, VIBE_USAGE, type MusicCmd } from './vibe/commands';
+import type { VibeFilter } from './vibe/filters';
+import type { VibeState } from './vibe/store';
 
 export interface CmdPlace {
   kind: string;
@@ -17,16 +21,18 @@ export interface CmdCtx {
   flags: number;
   places: readonly CmdPlace[];
   quests: readonly { id: number; title: string }[];
+  /** The vibe explorer's results (go next/random, region names). */
+  vibe?: Pick<VibeState, 'results' | 'total' | 'offset' | 'cursor' | 'regions' | 'filter' | 'here'>;
 }
 
-export type CmdResult = { sends: DevSend[]; note?: string; local?: 'help' | 'clear' } | { error: string };
+export type CmdResult = { sends: DevSend[]; note?: string; local?: 'help' | 'clear'; vibe?: { filter?: VibeFilter; cursor?: number }; music?: MusicCmd } | { error: string };
 
 export interface CommandDef {
   name: string;
   usage: string;
   does: string;
   /** What the first argument completes from. */
-  arg?: 'item' | 'spell' | 'enemy' | 'species' | 'event' | 'weather' | 'place' | 'achievement' | 'skill' | 'command';
+  arg?: 'item' | 'spell' | 'enemy' | 'species' | 'event' | 'weather' | 'place' | 'achievement' | 'skill' | 'command' | 'vibe';
   aliases?: string[];
 }
 
@@ -63,6 +69,8 @@ export const COMMANDS: CommandDef[] = [
   { name: 'attune', usage: '/attune', does: 'attune every tower crystal (boons)' },
   { name: 'achieve', usage: '/achieve <achievement|all>', does: 'unlock an achievement, or all of them (rewards paid)', arg: 'achievement' },
   { name: 'story', usage: '/story <act N [step]|heartfall|hush PCT|bells|down|win|vigil|places|reset>', does: 'the main story (CR 035): jump to an act and step, go to the Heartfall, set the Hush\'s health, shatter its bells, be downed (try a revive), win the fight (or fell the Sovereign), end the vigil\'s waves' },
+  { name: 'vibe', usage: VIBE_USAGE, does: 'the vibe explorer: find places by biome, landmark, level, region; teleport there safely; set the area level; spawn its enemies; freeze the vibe; demons on/off', arg: 'vibe' },
+  { name: 'music', usage: MUSIC_USAGE, does: 'composer aids: what is playing and why, force a state/track/intensity, solo or mute buses, loop a section, load your own audio files, export mappings' },
   { name: 'reset', usage: '/reset yes', does: 'a new character: level 1, starting kit, no spells, map or quests' },
   { name: 'help', usage: '/help [command]', does: 'list commands', arg: 'command' },
   { name: 'clear', usage: '/clear', does: 'clear the console log' },
@@ -300,6 +308,16 @@ export function parseCommand(line: string, ctx: CmdCtx): CmdResult {
       if (simple[sub] === undefined) return { error: `usage: ${def.usage}` };
       return { sends: [send(DEV_ACT.story, 0n, simple[sub])] };
     }
+    case 'vibe': {
+      const v = parseVibe(args, ctx.vibe ?? { results: [], total: 0, offset: 0, cursor: -1, regions: [], filter: { biome: -1, landmark: 0, region: -1, levelMin: 0, levelMax: 0, stamped: 0, distMin: 0, distMax: 0, tier: -1, n: 0, offset: 0, go: false, random: false }, here: null });
+      if ('error' in v) return v;
+      return { sends: v.sends, note: v.note, vibe: { filter: v.filter, cursor: v.cursor } };
+    }
+    case 'music': {
+      const m = parseMusic(args);
+      if ('error' in m) return m;
+      return { sends: [], music: m };
+    }
     case 'reset':
       if (a0 !== 'yes') return { error: 'this resets your character: type /reset yes' };
       return { sends: [send(DEV_ACT.reset)] };
@@ -337,6 +355,8 @@ export function complete(line: string, ctx: CmdCtx): string[] {
       return keys(SKILLS, ['all']);
     case 'command':
       return keys(COMMANDS.map((c) => ({ key: c.name, name: c.name })));
+    case 'vibe':
+      return ['find ', 'go next', 'go random', 'level ', 'spawn', 'freeze', 'demons off', 'here'].filter((x) => x.startsWith(q.toLowerCase())).map((x) => pre + x);
     case 'place':
       return suggest(
         ctx.places.map((p) => ({ key: p.name, name: p.name })),

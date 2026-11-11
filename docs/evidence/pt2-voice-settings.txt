@@ -1,0 +1,38 @@
+Playtest 2 voice settings: two players (fake microphones) on a private stack with LiveKit, 2026-11-11T05:47:34.992Z
+35/35 checks pass
+
+PASS both connected to LiveKit
+PASS A hears B (subscribed in earshot): Vox42urb spatial 5.0 m
+PASS A transmits while V is held
+PASS panel is on the panel stack
+PASS microphones listed with names: Fake Default Audio Input | Fake Audio Input 1 | Fake Audio Input 2
+PASS live meter reads the microphone (post-boost): rms -43.2 dBFS, gate open: sending
+PASS threshold line shown in open-mic mode
+PASS open mic + threshold saved
+PASS input boost +12 dB raises the level live: -42.5 -> -30.5 dBFS
+PASS noise suppression off re-acquires the microphone: {"deviceId":"default","sampleRate":48000,"channelCount":1,"echoCancellation":true,"noiseSuppression":false,"autoGainControl":true,"latencyMs":10} errors []
+PASS the microphone still sends after the restart
+PASS switching microphone restarts the track on it (and saves id + name): Fake Audio Input 1; saved {"id":"92601d5192eda6f0a4f688f4b71f44bc5dd81c013a42f240c1423db02d16329a","label":"Fake Audio Input 1"}
+PASS rebinding to E is refused (talk, trade, doors...): E already does "talk, trade, doors, forge, anvil, shaft". Pick another key.
+PASS rebinding to 8 works
+PASS toggle mode: one tap of 8 starts talking
+PASS toggle mode: the next tap stops
+PASS reset to V
+PASS record 5 s and play back: This is how you sound to others (before the network).
+PASS B's volume 50 % applies to the mixer: gain 0.50
+PASS saved by character id: {"9920675b-f67d-4585-95f6-2bcceec5d12c":{"name":"Vox42urb","volume":0.5,"muted":false}}
+PASS room state connected
+PASS codec opus: opus 48 kHz stereo, FEC + DTX
+PASS bitrate measured: 98.8 kbps
+PASS round trip measured: 3.0 ms
+PASS token grant and permission shown
+PASS speaker row with level and stats: Vox42urb spatial 5 m -43 dB opus 98.8 kbps 0.0 % 4.0 ms 2.2 %
+PASS Copy diagnostics: JSON on the clipboard, no token: 3406 chars
+PASS Reconnect voice reconnects and counts it: reconnects 1 -> 2
+PASS hears B again after the reconnect
+PASS 0 mutes the microphone
+PASS V does not transmit while muted: Mic muted (0)
+PASS 0 unmutes
+PASS Esc menu > Voice opens the panel
+PASS Esc closes the panel (top of the stack)
+PASS Sound panel > Voice settings opens the panel

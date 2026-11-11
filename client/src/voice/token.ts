@@ -7,16 +7,22 @@
 import { onSocialMessage, sendSocial } from '../social';
 import type { VoiceToken } from './runtime';
 
-/** The LiveKit grant's video.canPublish (true when the payload can't be read: the SFU enforces it anyway). */
-export function tokenCanPublish(jwt: string): boolean {
+/** A LiveKit join token's claims (unverified: for showing the grant; the SFU enforces it). */
+export function tokenClaims(jwt: string): { canPublish?: boolean; canSubscribe?: boolean; room?: string; identity?: string; exp?: number } | null {
   try {
     const seg = jwt.split('.')[1] ?? '';
     const b64 = seg.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - (seg.length % 4)) % 4);
-    const claims = JSON.parse(atob(b64)) as { video?: { canPublish?: boolean } };
-    return claims.video?.canPublish !== false;
+    const claims = JSON.parse(atob(b64)) as { sub?: string; exp?: number; video?: { canPublish?: boolean; canSubscribe?: boolean; room?: string } };
+    if (!claims || typeof claims !== 'object') return null;
+    return { canPublish: claims.video?.canPublish, canSubscribe: claims.video?.canSubscribe, room: claims.video?.room, identity: claims.sub, exp: claims.exp };
   } catch {
-    return true;
+    return null;
   }
+}
+
+/** The LiveKit grant's video.canPublish (true when the payload can't be read: the SFU enforces it anyway). */
+export function tokenCanPublish(jwt: string): boolean {
+  return tokenClaims(jwt)?.canPublish !== false;
 }
 
 export function requestVoiceToken(timeoutMs = 8000): Promise<VoiceToken> {
