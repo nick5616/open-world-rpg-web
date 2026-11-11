@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import raw from './changelog.json';
-import { changelogProblems, hasOlderSettings, MAX_SHOWN, validEntries, whatsNew, type ChangelogEntry } from './news';
+import { cardMayShow, changelogProblems, hasOlderSettings, MAX_SHOWN, MAX_WAIT_MS, MOVING_MAX_WAIT_MS, STILL_MS, validEntries, whatsNew, type ChangelogEntry } from './news';
 
 const e = (id: string, date = '2026-11-01'): ChangelogEntry => ({ id, date, title: id, items: ['x'] });
 const list = [e('c', '2026-11-03'), e('b', '2026-11-02'), e('a', '2026-11-01')];
@@ -45,5 +45,24 @@ describe("what's new", () => {
     expect(validEntries(bad).map((x) => x.id)).toEqual(['ok', 'later']);
     expect(validEntries({ not: 'a list' })).toEqual([]);
     expect(changelogProblems('nope')).toEqual(['the changelog is not a list']);
+  });
+});
+
+describe('when the card comes up', () => {
+  const base = { sinceReadyMs: 5000, panelUp: false, busy: false, stillMs: 5000 };
+  it('comes up for a player standing in the world', () => {
+    expect(cardMayShow(base)).toBe(true);
+    expect(cardMayShow({ ...base, sinceReadyMs: 1000, stillMs: 1000 })).toBe(false); // the world just came up
+  });
+  it('never over a panel, and after the arrival cards (or their wait runs out)', () => {
+    expect(cardMayShow({ ...base, panelUp: true, sinceReadyMs: 1e9 })).toBe(false);
+    expect(cardMayShow({ ...base, busy: true })).toBe(false);
+    expect(cardMayShow({ ...base, busy: true, sinceReadyMs: MAX_WAIT_MS })).toBe(true);
+  });
+  it('playtest 2 polish: not in the middle of a walk (until the walk runs very long)', () => {
+    expect(cardMayShow({ ...base, stillMs: 0 })).toBe(false);
+    expect(cardMayShow({ ...base, stillMs: STILL_MS - 1 })).toBe(false);
+    expect(cardMayShow({ ...base, stillMs: STILL_MS })).toBe(true);
+    expect(cardMayShow({ ...base, stillMs: 0, sinceReadyMs: MOVING_MAX_WAIT_MS })).toBe(true);
   });
 });
