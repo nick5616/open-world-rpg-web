@@ -47,6 +47,19 @@ fn native_matches_golden() {
             let h = ground::collision_height(&a, p["x"].as_f64().unwrap(), p["z"].as_f64().unwrap());
             assert_eq!(format!("{:016x}", h.to_bits()), p["h"].as_str().unwrap(), "{label} collision");
         }
+        // genVersion 3: the vertical descriptor, layer tiles and heights.
+        if let Some(vt) = w.get("vertical") {
+            let c = worldgen::vertical::world(&a).unwrap();
+            assert_eq!(format!("{:016x}", hash_bytes(&c.desc)), vt["hash"].as_str().unwrap(), "{label} vertical");
+            for t in vt["tiles"].as_array().unwrap() {
+                let b = worldgen::vertical::tile::build(&a, &c.plan, t["layer"].as_u64().unwrap() as u8, t["cx"].as_i64().unwrap() as i32, t["cz"].as_i64().unwrap() as i32, t["lod"].as_u64().unwrap() as u32).unwrap();
+                assert_eq!(format!("{:016x}", hash_bytes(&b)), t["hash"].as_str().unwrap(), "{label} layer tile");
+            }
+            for p in vt["heights"].as_array().unwrap() {
+                let h = worldgen::vertical::tile::height(&a, &c.plan, p["surf"].as_u64().unwrap() as u32, p["x"].as_f64().unwrap(), p["z"].as_f64().unwrap());
+                assert_eq!(format!("{:016x}", h.to_bits()), p["h"].as_str().unwrap(), "{label} layer_height");
+            }
+        }
         // WP20: the towns buffer (settlements, buildings, roads, structures).
         if let Some(tw) = w.get("towns") {
             let c = worldgen::town::world(&a).unwrap();

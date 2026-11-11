@@ -404,7 +404,7 @@ export function caveSystemAtWasm(wg: Worldgen, atlas: AtlasHandle, x: number, y:
 // ---- queries on the serialized graph (mirrored in Go: server/pkg/caves)
 
 /** Is the heightfield triangle under (x, z) dropped by a mouth mask? (README "Mouth masks") */
-export function caveMasked(openings: readonly CaveOpening[], x: number, z: number): boolean {
+export function caveMasked(openings: readonly Pick<CaveOpening, 'x' | 'z' | 'rMask'>[], x: number, z: number): boolean {
   const x0 = Math.floor(x);
   const z0 = Math.floor(z);
   const lower = x - x0 + (z - z0) <= 1;
@@ -419,7 +419,7 @@ export function caveMasked(openings: readonly CaveOpening[], x: number, z: numbe
 }
 
 /** Is heightfield triangle `tri` of the 1 m cell (x0, z0) masked? (for tile builders) */
-export function caveTriMasked(openings: readonly CaveOpening[], x0: number, z0: number, tri: 0 | 1): boolean {
+export function caveTriMasked(openings: readonly Pick<CaveOpening, 'x' | 'z' | 'rMask'>[], x0: number, z0: number, tri: 0 | 1): boolean {
   const cx = tri === 0 ? x0 + 1 / 3 : x0 + 2 / 3;
   const cz = tri === 0 ? z0 + 1 / 3 : z0 + 2 / 3;
   for (const o of openings) {

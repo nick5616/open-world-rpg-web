@@ -35,8 +35,9 @@ type goldenFile struct {
 			X, Z float64
 			H    string
 		} `json:"collision"`
-		Caves *goldenCaves `json:"caves"` // WP09
-		Towns *goldenTowns `json:"towns"` // WP20
+		Caves    *goldenCaves    `json:"caves"`    // WP09
+		Towns    *goldenTowns    `json:"towns"`    // WP20
+		Vertical *goldenVertical `json:"vertical"` // genVersion 3
 	} `json:"worlds"`
 }
 
@@ -77,6 +78,7 @@ func load(t *testing.T) ([]byte, *goldenFile) {
 func check(t *testing.T, ctx context.Context, h *Host, g *goldenFile, maxChunks int) (fails []string, chunks, points int, ms []float64) {
 	lastCaves = caveCounters{}
 	lastTowns = townCounters{}
+	lastVertical = verticalCounters{}
 	if v := h.GenVersion(ctx); v != g.GenVersion {
 		fails = append(fails, fmt.Sprintf("genVersion %d != %d", v, g.GenVersion))
 	}
@@ -121,6 +123,10 @@ func check(t *testing.T, ctx context.Context, h *Host, g *goldenFile, maxChunks 
 		if w.Towns != nil && maxChunks == 0 {
 			fails = append(fails, checkTowns(ctx, h, w.Label, ap, w.Towns, &lastTowns)...)
 		}
+		// genVersion 3: the vertical world (compiler only, like the towns).
+		if w.Vertical != nil && maxChunks == 0 {
+			fails = append(fails, checkVertical(ctx, h, w.Label, ap, w.Vertical, &lastVertical)...)
+		}
 		for _, p := range w.Collision {
 			v := h.CollisionHeight(ctx, ap, p.X, p.Z)
 			if s := fmt.Sprintf("%016x", math.Float64bits(v)); s != p.H {
@@ -162,6 +168,12 @@ func TestGolden(t *testing.T) {
 	fmt.Printf("[golden:go] towns: %d worlds match; towns_build max %.0f ms\n", lastTowns.worlds, lastTowns.maxMs)
 	if lastTowns.worlds < len(g.Worlds) {
 		t.Errorf("only %d of %d town worlds matched", lastTowns.worlds, len(g.Worlds))
+	}
+	if g.GenVersion >= 3 {
+		fmt.Printf("[golden:go] vertical: %d worlds, %d tiles, %d heights match\n", lastVertical.worlds, lastVertical.tiles, lastVertical.heights)
+		if lastVertical.worlds < len(g.Worlds) {
+			t.Errorf("only %d of %d vertical worlds matched", lastVertical.worlds, len(g.Worlds))
+		}
 	}
 	if chunks < 200 {
 		t.Fatalf("only %d chunks checked", chunks)

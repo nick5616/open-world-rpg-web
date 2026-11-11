@@ -6,9 +6,11 @@ import { hex64 } from './format';
 import type { AtlasHandle, Worldgen } from './index';
 import { checkCaves, type GoldenCaves } from './caveGolden';
 import { checkTowns, type GoldenTowns } from './townGolden';
+import { checkVertical, type GoldenVertical } from './vertical';
 
 export type { GoldenCaves } from './caveGolden';
 export type { GoldenTowns } from './townGolden';
+export type { GoldenVertical } from './vertical';
 
 export interface GoldenChunk {
   cx: number;
@@ -31,6 +33,8 @@ export interface GoldenWorld {
   caves?: GoldenCaves;
   /** WP20: towns buffer, counts and building collision vectors (optional so older tables still load). */
   towns?: GoldenTowns;
+  /** genVersion 3: vertical descriptor, layer tiles, heights, floor/collide/updraft vectors (optional so older tables still load). */
+  vertical?: GoldenVertical;
 }
 
 export interface GoldenFile {
@@ -57,6 +61,9 @@ export interface GoldenResult {
   towns: number;
   townQueries: number;
   townMs: number[];
+  /** genVersion 3: vertical worlds and vectors checked. */
+  verticals: number;
+  verticalQueries: number;
 }
 
 export function f64Bits(v: number): string {
@@ -66,7 +73,7 @@ export function f64Bits(v: number): string {
 }
 
 export function runGolden(wg: Worldgen, golden: GoldenFile, now: () => number, host: string): GoldenResult {
-  const r: GoldenResult = { host, worlds: 0, chunks: 0, collisions: 0, failures: [], atlasMs: [], chunkMs: [], caveCells: 0, caveQueries: 0, caveMs: [], towns: 0, townQueries: 0, townMs: [] };
+  const r: GoldenResult = { host, worlds: 0, chunks: 0, collisions: 0, failures: [], atlasMs: [], chunkMs: [], caveCells: 0, caveQueries: 0, caveMs: [], towns: 0, townQueries: 0, townMs: [], verticals: 0, verticalQueries: 0 };
   if (wg.genVersion !== golden.genVersion) r.failures.push(`genVersion ${wg.genVersion} != golden ${golden.genVersion}`);
   for (const w of golden.worlds) {
     const t0 = now();
@@ -88,6 +95,10 @@ export function runGolden(wg: Worldgen, golden: GoldenFile, now: () => number, h
       if (w.towns) {
         checkTowns(wg, atlas as AtlasHandle, w.label, w.towns, now, r);
         r.towns++;
+      }
+      if (w.vertical) {
+        checkVertical(wg, atlas as AtlasHandle, w.label, w.vertical, r);
+        r.verticals++;
       }
       for (const p of w.collision) {
         const h = f64Bits(wg.collisionHeight(atlas, p.x, p.z));
