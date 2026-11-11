@@ -59,6 +59,7 @@ import { DevConsole } from '../ui/devconsole/DevConsole';
 import { WeatherHud } from '../systems/weather/WeatherHud';
 // Playtest 2 main story (CR 035): the story's lines, the finale, revives, the ending (ui/story).
 import { StoryHud } from '../ui/story/StoryHud';
+import { RiftHud } from '../rift/RiftHud'; // CR 040
 // Playtest 2: spell FX (online it is CombatLayer's; debug solo mounts it for the FX gallery and cast-spam bench).
 import { SpellFxLayer } from '../combat/fx/SpellFxLayer';
 // `?nofx`: solo without the FX layer (the A/B of the spell FX benchmark, combat/fx/dev/fx-bench.mjs).
@@ -120,6 +121,7 @@ export default function PlayScreen() {
       {DEBUG && <DevConsole />}
       <WeatherHud />
       <StoryHud />
+      <RiftHud />
     </>
   );
 }

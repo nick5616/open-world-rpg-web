@@ -4,7 +4,7 @@
 // caller passes what it needs to know (current flags, places, quests).
 
 import { ACHIEVEMENTS, BOSSES, CUTS, ELEMENTS, ELITES, ENEMIES, GEAR_AFFIXES, GEMS, itemCatalog, RARITIES, resolve, SKILLS, SPECIES, SPELLS, suggest, WEATHER, WORLD_EVENTS, type CatalogItem } from './catalog';
-import { DEV_ACT, DEV_FLAG, DEV_STORY, giveSend, petSend, send, spawnSend, teleportSend, type DevFlagName, type DevSend, type GiveOpts } from './events';
+import { DEV_ACT, DEV_FLAG, DEV_RIFT, DEV_STORY, giveSend, petSend, send, spawnSend, teleportSend, type DevFlagName, type DevSend, type GiveOpts } from './events';
 // Playtest 2 vibe explorer (docs/cr/036-vibe-explorer.md): /vibe and /music.
 import { MUSIC_USAGE, parseMusic, parseVibe, VIBE_USAGE, type MusicCmd } from './vibe/commands';
 import type { VibeFilter } from './vibe/filters';
@@ -68,6 +68,7 @@ export const COMMANDS: CommandDef[] = [
   { name: 'reveal', usage: '/reveal', does: 'reveal the map: every tower and waypoint' },
   { name: 'attune', usage: '/attune', does: 'attune every tower crystal (boons)' },
   { name: 'achieve', usage: '/achieve <achievement|all>', does: 'unlock an achievement, or all of them (rewards paid)', arg: 'achievement' },
+  { name: 'rift', usage: '/rift <spawn [chapter]|go <chapter> <stage>|win|leave|list>', does: 'rift runs (CR 040): open a rift at your feet, go straight into chapter 1-5 at room 1-50, clear the room you are in, walk out (spoils banked), list the open rifts' },
   { name: 'story', usage: '/story <act N [step]|heartfall|hush PCT|bells|down|win|vigil|places|reset>', does: 'the main story (CR 035): jump to an act and step, go to the Heartfall, set the Hush\'s health, shatter its bells, be downed (try a revive), win the fight (or fell the Sovereign), end the vigil\'s waves' },
   { name: 'vibe', usage: VIBE_USAGE, does: 'the vibe explorer: find places by biome, landmark, level, region; teleport there safely; set the area level; spawn its enemies; freeze the vibe; demons on/off', arg: 'vibe' },
   { name: 'music', usage: MUSIC_USAGE, does: 'composer aids: what is playing and why, force a state/track/intensity, solo or mute buses, loop a section, load your own audio files, export mappings' },
@@ -290,6 +291,22 @@ export function parseCommand(line: string, ctx: CmdCtx): CmdResult {
       const ac = a0 ? leading(ACHIEVEMENTS, args) : null;
       if (!ac) return { error: a0 ? `no achievement "${args.join(' ')}"` : `usage: ${def.usage}` };
       return { sends: [send(DEV_ACT.achieve, ac.hit.id)] };
+    }
+    case 'rift': {
+      const sub = (a0 ?? '').toLowerCase();
+      const ch = args[1] === undefined ? 0 : Number(args[1]);
+      const st = args[2] === undefined ? 1 : Number(args[2]);
+      if (sub === 'spawn') {
+        if (!Number.isInteger(ch) || ch < 0 || ch > 5) return { error: 'usage: /rift spawn [chapter 1-5]' };
+        return { sends: [send(DEV_ACT.rift, 0n, DEV_RIFT.spawn | (ch << 4))] };
+      }
+      if (sub === 'go') {
+        if (!Number.isInteger(ch) || ch < 1 || ch > 5 || !Number.isInteger(st) || st < 1 || st > 50) return { error: 'usage: /rift go <chapter 1-5> <room 1-50>' };
+        return { sends: [send(DEV_ACT.rift, 0n, DEV_RIFT.go | (ch << 4) | (st << 8))] };
+      }
+      const simple: Record<string, number> = { win: DEV_RIFT.win, leave: DEV_RIFT.leave, list: DEV_RIFT.list };
+      if (simple[sub] === undefined) return { error: `usage: ${def.usage}` };
+      return { sends: [send(DEV_ACT.rift, 0n, simple[sub])] };
     }
     case 'story': {
       const sub = (a0 ?? '').toLowerCase();

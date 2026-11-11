@@ -60,11 +60,20 @@ func (v *Volley) Quantize() {
 	if a < 0 {
 		a += 2 * math.Pi
 	}
-	v.Angle = float64(uint16(math.Round(a/(2*math.Pi)*65536))) * 2 * math.Pi / 65536
+	v.Angle = float64(AngleU16(a)) * 2 * math.Pi / 65536
 	v.Speed = math.Round(v.Speed*100) / 100
 	v.Radius = math.Round(v.Radius*100) / 100
 	v.Life = math.Round(v.Life*1000) / 1000
 	v.dead = nil
+}
+
+// AngleU16 is a yaw as a u16 turn (the wire).
+func AngleU16(a float64) uint16 {
+	n := int64(math.Round(a/(2*math.Pi)*65536)) % 65536
+	if n < 0 {
+		n += 65536
+	}
+	return uint16(n)
 }
 
 // Bullets is how many bullets the volley has (0 for a laser).
@@ -88,7 +97,7 @@ func (v *Volley) born(i int) (t, a float64) {
 	case KindSpiral:
 		arms := max(1, v.P3)
 		j, arm := i/arms, i%arms
-		return float64(j*v.P1) / 1000, v.Angle + float64(j)*float64(int16(v.P2))*math.Pi/180000 + 2*math.Pi*float64(arm)/float64(arms)
+		return float64(j*v.P1) / 1000, v.Angle + float64(j)*float64(v.P2)*math.Pi/180000 + 2*math.Pi*float64(arm)/float64(arms)
 	case KindFan:
 		n := max(1, v.Count)
 		w, k := i/n, i%n
@@ -240,7 +249,7 @@ func rayCircle(x0, z0, dx, dz, cx, cz, r float64) (float64, bool) {
 // first pillar or wall) and whether it is live (false during the wind-up
 // telegraph and after it ends).
 func (v *Volley) LaserAt(t float64, l *Layout) (a, length float64, live bool) {
-	a = v.Angle + float64(int16(v.P3))*math.Pi/180000*math.Max(0, t)
+	a = v.Angle + float64(v.P3)*math.Pi/180000*math.Max(0, t)
 	dx, dz := math.Cos(a), math.Sin(a)
 	length = 60
 	if dx > 1e-9 {

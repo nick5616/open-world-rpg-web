@@ -103,9 +103,9 @@ export function controlGroups(debug: boolean, dev = false): ControlGroup[] {
       rows: [
         {
           keys: ['E'],
-          action: 'Talk, trade, open doors, use forges, mine, take loot, cook, read tablets, gather herbs, attune',
+          action: 'Talk, trade, open doors, use forges, mine, take loot, cook, read tablets, gather herbs, attune, enter a rift',
           note: 'does what the [E] line under the crosshair says, one thing at a time; in the saddle E gets off',
-          src: [['world/buildings/townHud.ts', "'KeyE'"], ['ui/inventory/LootHud.tsx', "'KeyE'"], ['world/caves/caveManager.ts', "'KeyE'"], ['ui/content/ContentHud.tsx', "'KeyE'"], ['ui/progression/ProgressionHud.tsx', "'KeyE'"], ['input/interact.ts', 'E_ORDER']],
+          src: [['world/buildings/townHud.ts', "'KeyE'"], ['ui/inventory/LootHud.tsx', "'KeyE'"], ['world/caves/caveManager.ts', "'KeyE'"], ['ui/content/ContentHud.tsx', "'KeyE'"], ['ui/progression/ProgressionHud.tsx', "'KeyE'"], ['rift/RiftHud.tsx', "'KeyE'"], ['input/interact.ts', 'E_ORDER']],
         },
         { keys: ['M'], action: 'Map', note: 'drag to pan, wheel to zoom, right-click to pin (Shift: for your party)', src: [['ui/map/ExplorationHud.tsx', "'KeyM'"]] },
         { keys: ['J'], action: 'Quest journal', note: 'bestiary, fish, lore, achievements, renown', src: [['ui/quests/QuestHud.tsx', "'KeyJ'"]] },

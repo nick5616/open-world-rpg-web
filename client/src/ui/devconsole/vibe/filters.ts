@@ -59,6 +59,7 @@ export const LANDMARK_LABEL: Record<VibeLandmark, string> = {
   crystal_outcrop: 'Crystal outcrop',
   statue: 'Statue',
   hot_spring: 'Hot spring',
+  rift: 'An open rift (CR 040)',
 };
 
 export interface VibeFilter {

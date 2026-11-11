@@ -318,6 +318,7 @@ func (s *Server) handleRiftInteract(sess *session, m *proto.Interact) {
 		}
 	case RiftActBoard:
 		s.riftSendBoard(sess, int(m.Arg))
+		s.riftSendPortals(sess) // a client that hooked late asks this way too
 	}
 }
 
@@ -745,7 +746,7 @@ func encodeVolley(v *rift.Volley, src uint32) []byte {
 	b = binary.LittleEndian.AppendUint16(b, uint16(v.Windup))
 	b = binary.LittleEndian.AppendUint16(b, uint16(int16(math.Round(v.OX*100))))
 	b = binary.LittleEndian.AppendUint16(b, uint16(int16(math.Round(v.OZ*100))))
-	b = binary.LittleEndian.AppendUint16(b, uint16(math.Round(v.Angle/(2*math.Pi)*65536)))
+	b = binary.LittleEndian.AppendUint16(b, rift.AngleU16(v.Angle))
 	b = append(b, uint8(v.Count))
 	b = binary.LittleEndian.AppendUint16(b, uint16(math.Round(v.Speed*100)))
 	b = append(b, uint8(math.Round(v.Radius*100)))

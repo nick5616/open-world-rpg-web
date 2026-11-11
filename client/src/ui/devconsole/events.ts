@@ -34,7 +34,11 @@ export const DEV_ACT = {
   places: 26,
   achieve: 27,
   story: 28, // CR 035 main story: arg = DEV_STORY, target = act | step << 8 (jump) or percent (hush)
+  rift: 36, // CR 040 rift runs: arg = DEV_RIFT | chapter << 4 | stage << 8
 } as const;
+
+/** /rift sub-commands (Interact 250/36 arg low nibble; game/rift_dev.go). */
+export const DEV_RIFT = { spawn: 1, go: 2, win: 3, leave: 4, list: 5 } as const;
 
 export const DEV_EV = { status: 1400, result: 1401, places: 1402 } as const;
 

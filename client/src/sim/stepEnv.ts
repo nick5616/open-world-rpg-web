@@ -11,6 +11,7 @@
 import type { StepEnv, UpdraftField } from './movement';
 import { parseUpdrafts, UpdraftColumns } from './updraft';
 import { isRaining } from './weather';
+import { riftRuntime } from '../rift/store';
 // WP15: world time includes the world's clock offset; fire feeds the updrafts.
 import { chemStep, worldClockState, worldTime } from '../systems/clock';
 // CR 030: the weather where the player stands (snow, rain, the gale under the glider).
@@ -57,6 +58,7 @@ export function rainOverride(): boolean | null {
  * atlas-less zone), WP10's global rain.
  */
 export function envAt(seed: bigint, serverTimeMs: number): StepEnv {
+  if (riftRuntime.arena) return { raining: false, updraft: null }; // CR 040: no weather in a rift (the zone's riftEnv)
   const t = worldTime(serverTimeMs);
   const f = weatherField(seed, chemStep(t));
   if (f) return { raining: false, updraft: chemUpdraft(), weather: f };

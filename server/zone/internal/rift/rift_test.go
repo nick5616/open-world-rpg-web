@@ -603,7 +603,7 @@ func TestGoldenForTheClient(t *testing.T) {
 	l := StageLayout(2, 13)
 	for kind := KindRing; kind <= KindRain; kind++ {
 		v := Design(kind, 2.5, -9, Aim{-1, 8}, ChapterByN(2), 13, 0.6, 1000, uint32(kind), 1234, 0, 0)
-		gv := goldenVolley{Chapter: 2, Stage: 13, V: map[string]any{"kind": v.Kind, "fire": v.Fire, "windup": v.Windup, "ox": v.OX, "oz": v.OZ, "angleU16": uint16(math.Round(v.Angle / (2 * math.Pi) * 65536)), "count": v.Count, "speed": v.Speed, "radius": v.Radius, "p1": v.P1, "p2": v.P2, "p3": v.P3, "seed": v.Seed, "life": v.Life}}
+		gv := goldenVolley{Chapter: 2, Stage: 13, V: map[string]any{"kind": v.Kind, "fire": v.Fire, "windup": v.Windup, "ox": v.OX, "oz": v.OZ, "angleU16": AngleU16(v.Angle), "count": v.Count, "speed": v.Speed, "radius": v.Radius, "p1": v.P1, "p2": v.P2, "p3": v.P3, "seed": v.Seed, "life": v.Life}}
 		for i := 0; i < v.Bullets(); i++ {
 			for _, tt := range []float64{0, 0.37, 1.1, 2.6, 5.9} {
 				x, z, ok := v.Pos(i, tt, &l)

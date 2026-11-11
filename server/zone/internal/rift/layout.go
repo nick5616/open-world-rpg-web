@@ -148,7 +148,7 @@ func StageLayout(c, s int) Layout {
 
 func (l *Layout) blocked(x, z, m float64) bool {
 	for _, o := range l.Obstacles {
-		if o.Kind != Spikes && math.Hypot(x-o.X, z-o.Z) < o.R+m {
+		if dx, dz := x-o.X, z-o.Z; o.Kind != Spikes && math.Sqrt(dx*dx+dz*dz) < o.R+m {
 			return true
 		}
 	}
