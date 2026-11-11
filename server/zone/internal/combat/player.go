@@ -109,6 +109,7 @@ type Player struct {
 	// Boons are permanent rewards outside the level curve (playtest 1:
 	// tower attunements add health and skill points; CR 012).
 	Boons     Boons
+	Rift      RiftMods // CR 040: run perks (rift.go); zero = none
 	OnDrink   func() (heal float64, ok bool)
 	drinkHeal float64
 	// Playtest 2 camps (CR 025): the Rested buff multiplies health and mana
@@ -264,6 +265,9 @@ func (p *Player) SetLevel(level int) {
 		frac = p.HP / p.HPMax
 	}
 	p.HPMax = D.MaxHealth(p.Level) + p.Gear.Health + p.Boons.Health
+	if p.Rift.HealthMult > 0 {
+		p.HPMax *= p.Rift.HealthMult // CR 040: Deep Breath, Glass Fury
+	}
 	p.HP = math.Min(p.HPMax, p.HPMax*frac)
 	p.ManaMax = D.MaxMana(p.Level)
 	p.Mana = math.Min(p.Mana, p.ManaMax)

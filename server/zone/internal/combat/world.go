@@ -58,6 +58,7 @@ type Group struct {
 	Comp     []string // explicit composition (tests), else from tables
 	Elite    string   // forced elite affix (tests)
 	Dummy    bool     // CR 020: training dummies (dev evidence runs): its members never move or attack
+	Rift     bool     // CR 040: a rift body (rift.go): placed and fired by its run
 	// Retired (CR 022): a finished world event's or reset vault's group;
 	// it never spawns again (content.go RetireGroup).
 	Retired bool

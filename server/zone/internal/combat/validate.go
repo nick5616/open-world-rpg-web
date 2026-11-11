@@ -549,6 +549,7 @@ func (w *World) damageOf(p *Player, a *Action, e *Enemy) (dmg float64, element i
 		dmg *= orOne(p.Gear.WeaponMult) * (1 + p.Gear.DamagePct/100) * orOne(p.Gear.FormMult) // WP14: weapon + gem cut
 	}
 	dmg *= D.DamageMult(p.Level) // playtest 1: character level (combat.yaml leveling, CR 012)
+	dmg *= orOne(p.Rift.DamageMult) // CR 040: run perks (Keen Edge, Glass Fury)
 	if p.petBuffEnd > w.tick {
 		dmg *= p.petBuffMult // CR 029: a pet's howl (pets.go)
 	}
