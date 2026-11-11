@@ -8,7 +8,7 @@
 // (/tp, /level, /story ...). Writes docs/evidence/pt2-main-story-*.jpg and
 // tmp/story/result.json.
 //
-//   node tools/playtest/stack.mjs --zone-env LODESTONE_ZONE_DEV=1
+//   node tools/playtest/stack.mjs --zone-env LODESTONE_ZONE_DEV=1 --zone-env LODESTONE_ZONE_NO_WORLD_EVENTS=1
 //   LODESTONE_CLIENT_URL=<its url> node tools/playtest/story-shots.mjs [outDir]
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { launch, newCharacter, sleep, dismissCards, pl } from './lib.mjs';
@@ -69,6 +69,11 @@ async function talk(t, m) {
     }, [m.x, m.z]),
   );
   if (id) await t.page.evaluate((i) => window.__lodestoneQuests.send(30, i, 1), id);
+  await sleep(1500);
+  // Close the townsperson's panel (the panel stack, as Esc would).
+  await t.page.evaluate(() => {
+    for (let i = 0; i < 4 && window.__lodestonePanels?.top(); i++) window.__lodestonePanels.closeTop();
+  });
   return id;
 }
 const tp = (t, x, z) => run(t, `/tp ${Math.round(x)} ${Math.round(z)}`);
@@ -93,7 +98,8 @@ try {
   await A.page.evaluate(async (n) => (await import('/src/social/index.ts')).sendSocial({ type: 'party_invite', name: n }), nameB);
   const accept = B.page.getByTestId('party-accept');
   await accept.waitFor({ timeout: 15000 }).catch(() => issue('party', 'no invite on B'));
-  await accept.click().catch(() => {});
+  await dismissCards(B.page);
+  await B.page.evaluate(() => document.querySelector('[data-testid="party-accept"]')?.click()); // a card may sit over it
   const partied = await waitFor('the zone sees the party', async () => (await story(A)).party?.members?.length === 1, 30000);
   note(`party: ${partied ? 'yes' : 'no'}`);
 

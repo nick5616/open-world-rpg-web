@@ -34,8 +34,8 @@ var legacyFeats = map[string]struct {
 
 func TestAchievementsKeepEveryFeat(t *testing.T) {
 	d := contentdefs.D
-	if n := len(d.Achievements); n < 80 || n > 120 {
-		t.Fatalf("%d achievements, want 80-120", n)
+	if n := len(d.Achievements); n < 80 || n > 140 { // CR 035 appended 11 (The Last Song)
+		t.Fatalf("%d achievements, want 80-140", n)
 	}
 	for k, f := range legacyFeats {
 		a := d.Achievement(k)
@@ -50,7 +50,7 @@ func TestAchievementsKeepEveryFeat(t *testing.T) {
 		}
 		cats[a.Cat]++
 	}
-	if len(cats) != len(d.AchievementCats) || len(d.AchievementCats) != 9 || len(d.AchievementTiers) != 4 {
+	if len(cats) != len(d.AchievementCats) || len(d.AchievementCats) != 10 || len(d.AchievementTiers) != 4 {
 		t.Fatalf("categories %v of %d, tiers %d", cats, len(d.AchievementCats), len(d.AchievementTiers))
 	}
 	ts := d.Achievement("tony_stark")

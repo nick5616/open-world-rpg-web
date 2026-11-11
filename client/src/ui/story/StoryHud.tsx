@@ -90,7 +90,7 @@ function Lines() {
   const lines = useStory((s) => s.lines);
   if (!lines.length) return null;
   return (
-    <div data-testid="story-lines" style={{ position: 'fixed', left: '50%', bottom: `calc(${ABOVE_HOTBAR} + 64px)`, transform: 'translateX(-50%)', width: 'min(760px, 92vw)', textAlign: 'center', pointerEvents: 'none', zIndex: 16 }}>
+    <div data-testid="story-lines" style={{ position: 'fixed', left: '50%', bottom: `calc(${ABOVE_HOTBAR} + 150px)`, transform: 'translateX(-50%)', width: 'min(760px, 92vw)', textAlign: 'center', pointerEvents: 'none', zIndex: 16 }}>
       {lines.map((l) => (
         <div key={l.id} style={{ font: `${l.speaker ? 'italic 18px' : '15px'}/1.4 ${SERIF}`, color: l.speaker ? CREAM : '#e8d6a8', textShadow: '0 1px 3px #000, 0 0 10px rgba(0,0,0,0.8)', marginTop: 4, animation: 'lsStoryLine 0.4s ease-out' }}>
           {l.speaker ? <span style={{ color: l.speaker === 'The Hush' ? '#c9a6ff' : GOLD, fontStyle: 'normal', fontWeight: 600 }}>{l.speaker}: </span> : null}
@@ -159,10 +159,10 @@ function Cinematic() {
   const per = c.ms / Math.max(1, c.lines.length + 1);
   const shown = c.lines.filter((_, i) => t > per * (i + 0.8));
   return (
-    <div data-testid="finale-cinematic" style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 40 }}>
+    <div data-testid="finale-cinematic" style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 64 }}>
       <div style={{ position: 'absolute', left: 0, right: 0, top: 0, height: `${11 * k}vh`, background: '#000' }} />
       <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: `${11 * k}vh`, background: '#000' }} />
-      <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse at 50% 40%, rgba(40,10,60,${0.15 * k}) 0%, rgba(0,0,0,${0.45 * k}) 100%)` }} />
+      <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse at 50% 45%, rgba(40,10,60,${0.1 * k}) 0%, rgba(4,2,8,${0.5 * k}) 55%, rgba(0,0,0,${0.85 * k}) 100%)` }} />
       <div style={{ position: 'absolute', top: '20vh', left: 0, right: 0, textAlign: 'center', opacity: k, color: CREAM, textShadow: '0 2px 12px rgba(0,0,0,0.9), 0 0 30px rgba(120,60,200,0.5)' }}>
         <div style={{ font: `600 15px ${SERIF}`, letterSpacing: '0.24em', textTransform: 'lowercase', fontVariant: 'small-caps', opacity: 0.85 }}>{c.eyebrow}</div>
         <div style={{ font: `600 clamp(44px, 7vw, 82px)/1.05 ${SERIF}`, fontVariant: 'small-caps', letterSpacing: `${0.03 + 0.2 * (1 - inK)}em`, margin: '6px 0' }}>{c.title}</div>
