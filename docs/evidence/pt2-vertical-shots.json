@@ -1,0 +1,218 @@
+[
+  {
+    "file": "pt2-vertical-tunnel-entrance.jpg",
+    "pos": {
+      "x": 1964.4,
+      "y": 60.1,
+      "z": 2950.5
+    },
+    "mode": "idle",
+    "floor": 60.1,
+    "layer": 0,
+    "chamber": null,
+    "stats": {
+      "tiles": 103,
+      "pending": 0,
+      "built": 123,
+      "buildMs": 1441.3999999165535,
+      "maxMs": 73.19999998807907,
+      "tris": 309050
+    },
+    "frames": 73,
+    "p50": 16.7,
+    "p95": 16.7,
+    "errors": 0
+  },
+  {
+    "file": "pt2-vertical-cavern-first-view.jpg",
+    "pos": {
+      "x": 1473.9,
+      "y": -69.6,
+      "z": 2959.9
+    },
+    "mode": "idle",
+    "floor": -69.6,
+    "layer": 2,
+    "chamber": {
+      "kind": 1,
+      "radius": 163.44656372070312,
+      "site": 313,
+      "layer": 2
+    },
+    "stats": {
+      "tiles": 179,
+      "pending": 0,
+      "built": 281,
+      "buildMs": 2465.700000822544,
+      "maxMs": 73.19999998807907,
+      "tris": 466374
+    },
+    "frames": 73,
+    "p50": 16.7,
+    "p95": 16.8,
+    "errors": 0
+  },
+  {
+    "file": "pt2-vertical-crystal-cavern.jpg",
+    "pos": {
+      "x": 2456.6,
+      "y": -66.8,
+      "z": 3421.4
+    },
+    "mode": "fly",
+    "floor": -88.3,
+    "layer": 2,
+    "chamber": {
+      "kind": 0,
+      "radius": 82.12290954589844,
+      "site": 319,
+      "layer": 2
+    },
+    "stats": {
+      "tiles": 89,
+      "pending": 0,
+      "built": 362,
+      "buildMs": 2884.0000008940697,
+      "maxMs": 73.19999998807907,
+      "tris": 157114
+    },
+    "frames": 73,
+    "p50": 16.7,
+    "p95": 16.7,
+    "errors": 0
+  },
+  {
+    "file": "pt2-vertical-cenote.jpg",
+    "pos": {
+      "x": 1246.1,
+      "y": -78.9,
+      "z": 2949
+    },
+    "mode": "fly",
+    "floor": -108.5,
+    "layer": 2,
+    "chamber": {
+      "kind": 1,
+      "radius": 163.44656372070312,
+      "site": 313,
+      "layer": 2
+    },
+    "stats": {
+      "tiles": 184,
+      "pending": 0,
+      "built": 534,
+      "buildMs": 3684.9000009298325,
+      "maxMs": 73.19999998807907,
+      "tris": 549024
+    },
+    "frames": 73,
+    "p50": 16.7,
+    "p95": 16.7,
+    "errors": 0
+  },
+  {
+    "file": "pt2-vertical-depths.jpg",
+    "pos": {
+      "x": 1580.9,
+      "y": -428.3,
+      "z": 3624.2
+    },
+    "mode": "fly",
+    "floor": -446,
+    "layer": 3,
+    "chamber": {
+      "kind": 4,
+      "radius": 182.01730346679688,
+      "site": 324,
+      "layer": 3
+    },
+    "stats": {
+      "tiles": 120,
+      "pending": 0,
+      "built": 627,
+      "buildMs": 4101.100000739098,
+      "maxMs": 73.19999998807907,
+      "tris": 333337
+    },
+    "frames": 72,
+    "p50": 16.7,
+    "p95": 16.8,
+    "errors": 0
+  },
+  {
+    "file": "pt2-vertical-sky-from-ground.jpg",
+    "pos": {
+      "x": 2007,
+      "y": 78.7,
+      "z": 2434.7
+    },
+    "mode": "idle",
+    "floor": 78.7,
+    "layer": 0,
+    "chamber": null,
+    "stats": {
+      "tiles": 59,
+      "pending": 0,
+      "built": 681,
+      "buildMs": 4260.000000357628,
+      "maxMs": 73.19999998807907,
+      "tris": 196920
+    },
+    "frames": 73,
+    "p50": 16.7,
+    "p95": 16.8,
+    "errors": 0
+  },
+  {
+    "file": "pt2-vertical-sky-from-island.jpg",
+    "pos": {
+      "x": 1841.5,
+      "y": 453.1,
+      "z": 2828.3
+    },
+    "mode": "idle",
+    "floor": 453.1,
+    "layer": 1,
+    "chamber": null,
+    "stats": {
+      "tiles": 113,
+      "pending": 0,
+      "built": 758,
+      "buildMs": 4571.300000488758,
+      "maxMs": 73.19999998807907,
+      "tris": 348590
+    },
+    "frames": 67,
+    "p50": 16.7,
+    "p95": 33.3,
+    "errors": 0
+  },
+  {
+    "file": "pt2-vertical-sky-town.jpg",
+    "pos": {
+      "x": 2196.4,
+      "y": 567.2,
+      "z": 2723.3
+    },
+    "mode": "idle",
+    "floor": 567.2,
+    "layer": 1,
+    "chamber": null,
+    "stats": {
+      "tiles": 65,
+      "pending": 0,
+      "built": 796,
+      "buildMs": 4935.50000077486,
+      "maxMs": 73.19999998807907,
+      "tris": 242348
+    },
+    "frames": 73,
+    "p50": 16.7,
+    "p95": 16.7,
+    "errors": 0
+  },
+  {
+    "tier": "high",
+    "errors": []
+  }
+]

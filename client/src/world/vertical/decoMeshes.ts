@@ -126,13 +126,24 @@ function twoTone(g: THREE.BufferGeometry, split: number, a: THREE.Color, b: THRE
 /** An emissive-tinted material: instance colour = albedo and glow. */
 function glowMaterial(glow: number, opts: THREE.MeshStandardMaterialParameters = {}): THREE.MeshStandardMaterial {
   const m = new THREE.MeshStandardMaterial({ roughness: 0.25, metalness: 0.1, ...opts });
+  const vc = !!opts.vertexColors;
   m.onBeforeCompile = (sh) => {
     sh.uniforms.uGlowGain = verticalUniforms.uGlowGain;
+    // Our own tint varying: the instance colour (and the vertex colour) as glow.
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vGlowTint;').replace(
+      '#include <begin_vertex>',
+      `#include <begin_vertex>
+vGlowTint = vec3(1.0);
+#ifdef USE_INSTANCING_COLOR
+vGlowTint *= instanceColor.rgb;
+#endif
+${vc ? 'vGlowTint *= color.rgb;' : ''}`,
+    );
     sh.fragmentShader = sh.fragmentShader
-      .replace('#include <common>', '#include <common>\nuniform float uGlowGain;')
-      .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>\n#ifdef USE_INSTANCING_COLOR\ntotalEmissiveRadiance += vColor.rgb * ${glow.toFixed(2)} * uGlowGain;\n#endif`);
+      .replace('#include <common>', '#include <common>\nuniform float uGlowGain;\nvarying vec3 vGlowTint;')
+      .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>\ntotalEmissiveRadiance += vGlowTint * ${glow.toFixed(2)} * uGlowGain;`);
   };
-  m.customProgramCacheKey = () => `vt-glow-${glow}`;
+  m.customProgramCacheKey = () => `vt-glow2-${glow}-${vc ? 1 : 0}`;
   return m;
 }
 
@@ -170,7 +181,7 @@ function tintColor(t: number, k = 1): THREE.Color {
 function portalGeometry(): THREE.BufferGeometry {
   // Two leaning standing stones and a capstone, runes in a glowing band (vertex colour > 1 = glow).
   const stone = new THREE.Color(0.32, 0.31, 0.3);
-  const rune = new THREE.Color(0.2, 1.4, 1.4);
+  const rune = new THREE.Color(0.3, 2.4, 2.4);
   const parts: THREE.BufferGeometry[] = [];
   for (const s of [-1, 1]) {
     const p = new THREE.BoxGeometry(1.8, 9, 1.6, 1, 4, 1);
@@ -500,15 +511,15 @@ export function buildDecos(v: VerticalWorld): DecoSet & { clouds: ReturnType<typ
     }
   };
 
-  const crystalMat = glowMaterial(1.6, { roughness: 0.18, metalness: 0.05, transparent: false });
+  const crystalMat = glowMaterial(1.15, { color: 0x2a3040, roughness: 0.18, metalness: 0.05, transparent: false }); // dim albedo: the glow keeps its hue
   const clusterGeo = crystalCluster();
   const spireGeo = prism(0.16, 1, 6, 0.25);
   const mushGeo = mushroom();
   const fernGeo = fern();
   const softGlow = glowMaterial(0.9, { roughness: 0.6 });
   // A faint cold self-light: rock silhouettes read in the dark instead of holes.
-  const rockMat = new THREE.MeshStandardMaterial({ color: 0x4a4744, emissive: 0x0d1418, roughness: 0.92, flatShading: true });
-  const deepRockMat = new THREE.MeshStandardMaterial({ color: 0x120c0c, emissive: 0x1a0603, roughness: 0.35, metalness: 0.25, flatShading: true });
+  const rockMat = new THREE.MeshStandardMaterial({ color: 0x6a6660, emissive: 0x2c4450, roughness: 0.92, flatShading: true });
+  const deepRockMat = new THREE.MeshStandardMaterial({ color: 0x1a1110, emissive: 0x2a0b05, roughness: 0.35, metalness: 0.25, flatShading: true });
   const stalGeoDown = cone(true);
   const stalGeoUp = cone(false);
   for (const layer of [LAYER_UNDER, LAYER_DEPTHS]) {
@@ -609,7 +620,7 @@ export function buildDecos(v: VerticalWorld): DecoSet & { clouds: ReturnType<typ
   const portalMat = glowMaterial(1.0, { vertexColors: true, roughness: 0.85 });
   add(
     LAYER_SURFACE,
-    instanced(portalGeometry(), portalMat, byLayer(LAYER_SURFACE, [DECO.portal]), (d, m) => compose(m, d.x, d.y - 0.6, d.z, -yawOf(d) + Math.PI / 2, d.size / 12), () => new THREE.Color(1, 1, 1)),
+    instanced(portalGeometry(), portalMat, byLayer(LAYER_SURFACE, [DECO.portal]), (d, m) => compose(m, d.x, d.y - 0.6, d.z, -yawOf(d) + Math.PI / 2, d.size / 8.5), () => new THREE.Color(1, 1, 1)),
   );
   add(LAYER_SURFACE, instanced(liftGeometry(), glowMaterial(1.0, { vertexColors: true, roughness: 0.3 }), byLayer(LAYER_SURFACE, [DECO.lift]), (d, m) => compose(m, d.x, d.y - 0.3, d.z, 0, 1.4), () => new THREE.Color(1, 1, 1)));
   const geyserGeo = new THREE.TorusGeometry(1.6, 0.6, 6, 10);

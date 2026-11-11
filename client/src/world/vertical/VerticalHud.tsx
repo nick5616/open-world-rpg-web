@@ -5,6 +5,9 @@
 
 import { useEffect, useState } from 'react';
 import { create } from 'zustand';
+import { eFree } from '../../input/interact';
+import { notGameKey } from '../../input/useKeyboard';
+import { nightRuntime } from '../../systems/night';
 
 export interface VerticalHudState {
   /** 0 surface, 1 sky, 2 Underground, 3 Depths. */
@@ -19,9 +22,11 @@ export interface VerticalHudState {
   lift: boolean;
   /** Near lava in the Depths. */
   heat: boolean;
+  /** CR 038 hooks: at a sky palace's doors (Interact 150, the site index) or a sky town's activity spot (Interact 151, the prop id). */
+  use: { kind: 150 | 151; id: bigint; label: string } | null;
 }
 
-export const useVerticalHud = create<VerticalHudState>(() => ({ layer: 0, place: null, falling: false, dropM: 0, lift: false, heat: false }));
+export const useVerticalHud = create<VerticalHudState>(() => ({ layer: 0, place: null, falling: false, dropM: 0, lift: false, heat: false, use: null }));
 
 const LAYER_TITLE = ['', 'The Sky', 'The Underground', 'The Depths'];
 
@@ -60,6 +65,17 @@ export function VerticalHud() {
   const dropM = useVerticalHud((s) => s.dropM);
   const lift = useVerticalHud((s) => s.lift);
   const heat = useVerticalHud((s) => s.heat);
+  const use = useVerticalHud((s) => s.use);
+  const canUse = !!use && eFree('vertical');
+  useEffect(() => {
+    if (!use) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.code !== 'KeyE' || e.repeat || notGameKey(e) || !eFree('vertical')) return;
+      nightRuntime.session?.sendInteract(use.kind, use.id, 1, 0);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [use]);
   const [banner, setBanner] = useState<{ title: string; sub: string; at: number } | null>(null);
   const [, tick] = useState(0);
 
@@ -92,6 +108,11 @@ export function VerticalHud() {
       {falling && (
         <div style={{ ...hint, background: 'rgba(120,30,20,0.72)' }} data-testid="vertical-fall">
           Falling fast, {Math.round(dropM)} m to the ground: press Space to open your glider
+        </div>
+      )}
+      {!falling && canUse && use && (
+        <div style={{ ...hint, bottom: '30%' }} data-testid="vertical-prompt">
+          [E] {use.label}
         </div>
       )}
       {!falling && lift && (

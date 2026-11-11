@@ -57,10 +57,10 @@ pub fn place(a: &Atlas, p: &mut Plan) {
         let tint = ch.tint;
         let n_cry = match (deep, ch.kind) {
             (true, _) => (8.0 + 10.0 * area) as usize,
-            (_, ck::CRYSTAL) => (40.0 + 30.0 * area) as usize,
-            _ => (16.0 + 14.0 * area) as usize,
+            (_, ck::CRYSTAL) => (70.0 + 40.0 * area) as usize,
+            _ => (34.0 + 22.0 * area) as usize,
         }
-        .min(140);
+        .min(180);
         for k in 0..n_cry {
             let e = seq.range(0.55, 0.97);
             let (x, z) = ellipse_pt(&ch, e, seq.range(0.0, TAU));
@@ -68,11 +68,11 @@ pub fn place(a: &Atlas, p: &mut Plan) {
             if v.b < v.a + 2.0 || v.w > v.a {
                 continue;
             }
-            let big = k % 5 == 0;
+            let big = k % 4 == 0;
             let kind = if big && !deep { dk::SPIRE } else if deep { dk::OBSIDIAN } else { dk::CRYSTAL };
-            let size = if big { seq.range(5.0, 12.0) } else { seq.range(1.2, 4.0) };
+            let size = if big { seq.range(6.0, 15.0) } else { seq.range(1.8, 5.5) };
             let t = if deep { 0 } else if seq.unit() < 0.2 { [1u8, 7, 8][seq.below(3)] } else { tint };
-            decos.push(Deco { x, y: v.a, z, size, kind, tint: t, layer, flags: if big && (k / 5) % 2 == 0 { df::LIGHT } else { 0 }, yaw: yaw16(&mut seq), aux: ci as u16 });
+            decos.push(Deco { x, y: v.a, z, size, kind, tint: t, layer, flags: if big && (k / 4) % 2 == 0 { df::LIGHT } else { 0 }, yaw: yaw16(&mut seq), aux: ci as u16 });
         }
         // Ceiling: stalactites and hanging crystals.
         let n_hang = ((30.0 + 25.0 * area) as usize).min(110);

@@ -17,7 +17,7 @@
 import { localPlayer } from '../state/live';
 
 /** Who answers E, first wins. */
-export const E_ORDER = ['town', 'cave', 'tower', 'revive', 'loot', 'content', 'camp', 'fish', 'tame', 'pet', 'steed'] as const;
+export const E_ORDER = ['town', 'cave', 'tower', 'revive', 'loot', 'content', 'vertical', 'camp', 'fish', 'tame', 'pet', 'steed'] as const;
 export type EUser = (typeof E_ORDER)[number];
 
 const PROMPT: Record<EUser, string> = {
@@ -27,6 +27,7 @@ const PROMPT: Record<EUser, string> = {
   revive: 'revive-prompt', // CR 035: raise a fallen friend (ui/story)
   loot: 'loot-prompt',
   content: 'content-prompt',
+  vertical: 'vertical-prompt', // CR 038: the sky palace doors, a sky town's activity spot (world/vertical)
   camp: 'camp-prompt',
   fish: 'fish-prompt',
   tame: 'tame-prompt',

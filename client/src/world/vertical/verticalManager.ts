@@ -69,6 +69,8 @@ export class VerticalManager {
   /** Domain mips per layer: mip[l][lod] = Uint8Array over (64 >> lod)^2 cells, 1 if any domain chunk inside. */
   private readonly mips: Uint8Array[][] = [];
   private frame = 0;
+  private readonly palaces: { x: number; y: number; z: number; size: number; aux: number }[];
+  private readonly activities: { x: number; y: number; z: number; id: bigint }[];
   private emittersNear: LightEmitter[] = [];
 
   /** Low tier: shorter ranges, coarser tiles (Graphics "low" stays playable). */
@@ -82,6 +84,8 @@ export class VerticalManager {
     this.layerGroups = [0, 1, 2, 3].map(() => new THREE.Group());
     for (const g of this.layerGroups) this.group.add(g);
     this.decos = buildDecos(this.v);
+    this.palaces = this.v.decos.filter((d) => d.kind === 16);
+    this.activities = (runtime.towns?.props ?? []).filter((p) => p.kind === 31).map((p) => ({ x: p.x, y: p.y, z: p.z, id: p.id }));
     this.decos.groups.forEach((g, i) => this.layerGroups[i].add(g));
     for (let layer = 1; layer <= 3; layer++) {
       const levels: Uint8Array[] = [];
@@ -278,8 +282,19 @@ export class VerticalManager {
       if ((feet.x - u.x) ** 2 + (feet.z - u.z) ** 2 < 16 * 16 && feet.y < u.bottom + 30) lift = true;
     }
     const heat = this.layer === LAYER_DEPTHS && this.v.chambers.some((c) => c.layer === LAYER_DEPTHS && c.lake > -9000 && (feet.x - c.x) ** 2 + (feet.z - c.z) ** 2 < (Math.max(c.rx, c.rz) * c.lakeE + 25) ** 2);
+    // The follow-ups' doors: a sky palace's gate, a sky town's activity spot.
+    let use: { kind: 150 | 151; id: bigint; label: string } | null = null;
+    if (this.layer === LAYER_SKY) {
+      for (const d of this.palaces) {
+        if ((feet.x - d.x) ** 2 + (feet.z - d.z) ** 2 < (d.size + 30) ** 2 && Math.abs(feet.y - d.y) < 40) use = { kind: 150, id: BigInt(d.aux), label: 'The palace doors' };
+      }
+      for (const p of this.activities) {
+        if ((feet.x - p.x) ** 2 + (feet.z - p.z) ** 2 < 36 && Math.abs(feet.y - p.y) < 4) use = { kind: 151, id: p.id, label: 'The challenge stand' };
+      }
+    }
     const s = useVerticalHud.getState();
-    if (s.layer !== this.layer || s.place !== place || s.falling !== falling || s.lift !== lift || s.heat !== heat || Math.abs(s.dropM - dropM) > 5) useVerticalHud.setState({ layer: this.layer, place, falling, dropM, lift, heat });
+    const useSame = (s.use === null && use === null) || (s.use !== null && use !== null && s.use.kind === use.kind && s.use.id === use.id);
+    if (s.layer !== this.layer || s.place !== place || s.falling !== falling || s.lift !== lift || s.heat !== heat || Math.abs(s.dropM - dropM) > 5 || !useSame) useVerticalHud.setState({ layer: this.layer, place, falling, dropM, lift, heat, use });
   }
 
   /** Daylight and sky fill (WorldScene: from the time of day). */

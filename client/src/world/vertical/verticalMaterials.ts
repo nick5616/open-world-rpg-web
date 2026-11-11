@@ -60,6 +60,8 @@ export function layerRockMaterial(deep: boolean): THREE.MeshStandardMaterial {
 {
   vec3 g = vGlow.rgb * uGlowGain;
   totalEmissiveRadiance += diffuseColor.rgb * g * 2.0 + g * 0.035;
+  // The dark itself has a little light (rock reads as rock, never a hole).
+  totalEmissiveRadiance += diffuseColor.rgb * 0.45 + vec3(0.002, 0.004, 0.006);
   totalEmissiveRadiance += diffuseColor.rgb * uDayGlow * vGlow.a;
   ${deep ? `// Magma veins in the basalt: a few glowing cracks low on the walls that breathe.
   float c = vtNoise(vVtWorld * 0.06);
@@ -183,7 +185,7 @@ void main() {
   float flow = vtNoise(vec3(p * 0.07 + vec2(t * 0.05, t * 0.03), t * 0.05));
   float crust = vtNoise(vec3(p * 0.3 - vec2(t * 0.02, 0.0), t * 0.1));
   float cells = smoothstep(0.38, 0.62, crust);
-  vec3 hot = vec3(1.7, 0.42, 0.06);
+  vec3 hot = vec3(1.25, 0.3, 0.045);
   vec3 cool = vec3(0.05, 0.012, 0.008);
   // Black crust plates drifting on the melt; bright seams between them.
   float plates = smoothstep(0.3, 0.55, crust) * smoothstep(0.25, 0.6, vtNoise(vec3(p * 0.12 + 7.0, t * 0.03)));

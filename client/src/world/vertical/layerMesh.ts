@@ -144,7 +144,7 @@ export function buildLayerMesh(t: LayerTile, v: VerticalWorld): LayerMeshData {
       const [r, g, b] = TINT_RGB[d.tint] ?? TINT_RGB[9];
       const k = light ? 1.25 : 0.32;
       const hang = d.kind === DECO.stalactite ? -1 : 1;
-      emitters.push({ x: d.x, y: d.y + hang * Math.min(d.size, 8) * 0.5, z: d.z, r: r * k, g: g * k, b: b * k, range: light ? 26 + d.size * 3 : 6 + d.size * 1.5 });
+      emitters.push({ x: d.x, y: d.y + hang * Math.min(d.size, 8) * 0.5, z: d.z, r: r * k, g: g * k, b: b * k, range: light ? 28 + d.size * 3 : 9 + d.size * 2.2 });
     }
   }
   const shafts = sky ? [] : v.shafts.filter((s) => inBox(s.x, s.z, s.r * 4));
@@ -321,7 +321,7 @@ export function buildLayerMesh(t: LayerTile, v: VerticalWorld): LayerMeshData {
           for (const s of shafts) {
             const d = Math.hypot(x - s.x, z - s.z);
             const reach = s.r * 3.2;
-            if (d < reach) sun += (1 - d / reach) ** 2 * (down ? 0.5 : 1);
+            if (d < reach) sun += (1 - d / reach) ** (down ? 3 : 2) * (down ? 0.2 : 1);
           }
         }
         const go = (g * N + k) * 4;

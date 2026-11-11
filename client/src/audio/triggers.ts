@@ -178,6 +178,13 @@ export const ZONE_EVENTS: Record<number, EventHandler> = {
   203: (e, a) => {
     if (e.entityId === a.selfId()) a.play('player_downed');
   },
+  // CR 038: a hard landing, catching fire in the Depths' lava.
+  1700: (e, a) => {
+    if (e.entityId === a.selfId()) a.play('player_hurt');
+  },
+  1701: (e, a) => {
+    if (e.entityId === a.selfId() && e.value === 1) a.play('player_hurt');
+  },
   204: (e, a) => {
     const at = cm(e);
     // Playtest 2 immersion pass: the Heartfall's bells toll on the strike (the wind-up's end), not a generic sting
