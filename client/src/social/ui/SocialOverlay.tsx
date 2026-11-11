@@ -9,6 +9,8 @@ import { PartyFrame, type PartyFrameProps } from './PartyFrame';
 import { TravelOverlay } from './TravelOverlay';
 import { button, glass } from './style';
 import { FRIENDS_BUTTON_RIGHT, TOP_BUTTON_TOP } from '../../hud/layout';
+import { usePanelEsc } from '../../input/panelStack';
+import { isChatShortcut } from '../../input/useKeyboard';
 
 export type SocialOverlayProps = ChatPanelProps & PartyFrameProps;
 
@@ -21,13 +23,13 @@ export function SocialOverlay(props: SocialOverlayProps) {
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement | null;
       if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT')) return;
-      if (e.repeat || e.ctrlKey || e.metaKey) return; // a held O doesn't flicker the panel
+      if (e.repeat || e.ctrlKey || e.metaKey || isChatShortcut(e)) return; // a held O doesn't flicker the panel
       if (e.code === 'KeyO') setFriendsOpen((v) => !v);
-      else if (e.code === 'Escape') setFriendsOpen(false); // playtest 2: Esc closes it like every other panel
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, []);
+  usePanelEsc('friends', friendsOpen && status !== 'idle', () => setFriendsOpen(false)); // Esc: the top panel closes (input/panelStack.ts)
   if (status === 'idle') return null;
   return (
     <>

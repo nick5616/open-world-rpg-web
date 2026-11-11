@@ -8,7 +8,6 @@
 
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { WORLD_SIZE_M } from '@lodestone/contracts';
-import { isTextTarget } from '../../input/useKeyboard';
 import { localPlayer } from '../../state/live';
 import { useInventory } from '../inventory/store';
 import { countOf } from '../inventory/items';
@@ -25,6 +24,10 @@ import { COMMANDS, complete, parseCommand, type CmdCtx, type CmdPlace } from './
 import { DEV_ACT, DEV_FLAG, DEV_FLAG_LABEL, giveSend, petSend, send, spawnSend, teleportSend, type DevFlagName, type GiveOpts } from './events';
 import { ensureDevHook } from './link';
 import { devLog, sendDev, setDevOpen, useDev, type DevTab } from './store';
+import { trackPanel } from '../../input/panelStack';
+
+// Esc closes the console when it is the top panel (input/panelStack.ts); its command line keeps its own Esc.
+trackPanel(useDev, (s) => s.open && s.dev, 'dev-console', () => setDevOpen(false));
 
 /** The console's key (input/bindings.ts, Esc menu Controls "Dev"). */
 export const DEV_KEY = 'F2';
@@ -648,8 +651,6 @@ export function DevConsole() {
         if (!useDev.getState().dev) return;
         e.preventDefault();
         setDevOpen(!useDev.getState().open);
-      } else if (e.code === 'Escape' && useDev.getState().open && !isTextTarget(e.target)) {
-        setDevOpen(false);
       }
     };
     window.addEventListener('keydown', onKey);

@@ -12,6 +12,8 @@ import { DEBUG } from '../../config';
 import { localPlayer } from '../../state/live';
 import { ABOVE_HOTBAR, BELOW_CLOCK } from '../../hud/layout';
 import { eFree } from '../../input/interact';
+import { usePanelEsc } from '../../input/panelStack';
+import { notGameKey } from '../../input/useKeyboard';
 import { useCombatHud } from '../../combat/store';
 import { FINALE, memberLine, roman, secsLeft } from './events';
 import { closeEnding, endCinematic, pruneStory, reviveTarget, useStory } from './store';
@@ -22,11 +24,6 @@ import { skipCurrentIntro, useIntro } from '../intro/queue';
 const GOLD = '#ffd166';
 const SERIF = '"Fraunces", Georgia, serif';
 const CREAM = '#f3ead2';
-
-function isTextTarget(t: EventTarget | null): boolean {
-  const el = t as HTMLElement | null;
-  return !!el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
-}
 
 function useNow(ms: number, on = true): number {
   const [now, setNow] = useState(() => performance.now());
@@ -192,11 +189,12 @@ function Ending() {
   const e = useStory((s) => s.ending);
   const now = useNow(80, !!e);
   const roll = useRef<HTMLDivElement>(null);
+  usePanelEsc('story-ending', !!e, closeEnding); // Esc skips it (the panel stack: input/panelStack.ts)
   useEffect(() => {
     if (!e) return;
     if (document.pointerLockElement) document.exitPointerLock();
     const onKey = (ev: KeyboardEvent) => {
-      if (ev.code === 'Escape' || ev.code === 'Enter') {
+      if (ev.code === 'Enter') {
         ev.stopPropagation();
         closeEnding();
       }
@@ -270,7 +268,7 @@ function Revive() {
   const held = useRef(0);
   useEffect(() => {
     const down = (ev: KeyboardEvent) => {
-      if (ev.code !== 'KeyE' || ev.repeat || isTextTarget(ev.target)) return;
+      if (ev.code !== 'KeyE' || ev.repeat || notGameKey(ev)) return;
       const st = useStory.getState();
       const t = reviveTarget(st, localPlayer.pos.x, localPlayer.pos.z);
       if (!t || !st.actions || !eFree('revive')) return;
@@ -316,7 +314,7 @@ function ReviveSelf() {
   useNow(250, until > 0);
   useEffect(() => {
     const onKey = (ev: KeyboardEvent) => {
-      if (ev.code !== 'Space' || ev.repeat || isTextTarget(ev.target)) return;
+      if (ev.code !== 'Space' || ev.repeat || notGameKey(ev)) return;
       const st = useStory.getState();
       if (st.reviveUntil > performance.now() && useCombatHud.getState().downedUntil > 0) st.actions?.respawn();
     };

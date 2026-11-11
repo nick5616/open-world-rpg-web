@@ -10,15 +10,22 @@
 // panel's own capture listener, like photo mode) and, while playing,
 // swallows every key so no spell, prompt or panel reacts; key-ups of the
 // movement keys still pass (a held W is let go). The overlay is a
-// data-ui-panel, so the Esc menu stands aside.
+// data-ui-panel and on the panel stack (input/panelStack.ts): Esc puts
+// the instrument away.
 
 import { useEffect, useState, type CSSProperties } from 'react';
 import { CONTENT } from '@lodestone/contracts';
-import { isTextTarget } from '../../input/useKeyboard';
+import { isTextTarget, notGameKey } from '../../input/useKeyboard';
 import { DEBUG } from '../../config';
 import { usePvp } from '../pvp/store';
+import { useMenu } from '../menu/store';
+import { onHeldRelease } from '../../input/held';
 import { carriedInstruments, cycleInstrument, devInstruments, ensureMusicHook, enterPlay, exitPlay, loadMusicAudio, noteDown, noteOfKey, noteUp, setClick, setTempo } from './link';
 import { instrumentDef, musicToast, useMusic } from './store';
+import { trackPanel } from '../../input/panelStack';
+
+// Esc puts the instrument away when play mode is the top thing open (input/panelStack.ts).
+trackPanel(useMusic, (s) => !!s.active, 'instrument', () => exitPlay());
 import { clampOctave, DYNAMICS, isNoteKey, KEY_ROWS, noteName, pitchClassName, ROOT_NAMES, scaleByKey, SCALES } from './theory';
 
 export const PLAY_KEY = 'KeyU'; // U: the one letter free outside a duel challenge (Y/U answer one; a pending challenge keeps U)
@@ -39,7 +46,7 @@ let accent = false;
 function onKey(e: KeyboardEvent): void {
   const st = useMusic.getState();
   if (!st.active) {
-    if (e.type !== 'keydown' || e.code !== PLAY_KEY || e.repeat || e.ctrlKey || e.metaKey || e.altKey || isTextTarget(e.target) || panelUp()) return;
+    if (e.type !== 'keydown' || e.code !== PLAY_KEY || e.repeat || e.ctrlKey || e.metaKey || e.altKey || notGameKey(e) || panelUp()) return;
     if (!gameCanvas() || usePvp.getState().challenge) return; // not in the world; U declines a duel
     e.preventDefault();
     e.stopImmediatePropagation();
@@ -58,14 +65,18 @@ function onKey(e: KeyboardEvent): void {
     return;
   }
   if (/^F\d+$/.test(e.code)) return; // F-keys (debug, graphics) stay
+  if (e.code === 'Escape') return; // the Esc menu's listener closes the top thing: this mode, or a panel over it (input/panelStack.ts)
+  if (useMenu.getState().open) {
+    // Playtest 2 polish: the hands are off the instrument while the Esc menu is open (no notes, no moves).
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    return;
+  }
   e.preventDefault();
   e.stopImmediatePropagation();
   if (e.repeat) return;
   const s = useMusic.getState();
   switch (e.code) {
-    case 'Escape':
-      exitPlay();
-      return;
     case 'ArrowLeft':
     case 'ArrowRight':
       useMusic.setState({ root: (s.root + (e.code === 'ArrowRight' ? 1 : 11)) % 12 });
@@ -126,6 +137,7 @@ if (typeof window !== 'undefined') {
   window.addEventListener('wheel', onWheel, { capture: true, passive: true });
   window.addEventListener('blur', onBlur);
 }
+onHeldRelease(onBlur); // the Esc menu or the mouse capture lost: held notes stop (input/held.ts)
 
 // ---- the overlay
 

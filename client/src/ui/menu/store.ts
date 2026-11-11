@@ -54,15 +54,18 @@ export function closeMenu(): void {
 }
 
 /**
- * What an Esc press does, decided before any panel's own Esc handler runs
- * (capture phase): close the menu, leave it to the open panel, or open the
- * menu. `sinceUnlockMs` is the time since the browser dropped pointer lock:
- * the Esc that freed the mouse already opened the menu (Chrome may deliver
- * that key press too), so it must not close it again.
+ * What an Esc press does, decided before any other key listener runs
+ * (capture phase): close the menu, close the top panel on the stack
+ * (input/panelStack.ts: only that one), leave it alone, or open the menu.
+ * `sinceUnlockMs` is the time since the browser dropped pointer lock: the
+ * Esc that freed the mouse already opened the menu (Chrome may deliver that
+ * key press too), so it must not close it again. `panelOpen` is a panel
+ * that is not on the stack (none should be: left to its own handler).
  */
-export function escAction(s: { menuOpen: boolean; panelOpen: boolean; typing: boolean; sinceUnlockMs: number }): 'close' | 'open' | 'none' {
+export function escAction(s: { menuOpen: boolean; stacked: boolean; panelOpen: boolean; typing: boolean; sinceUnlockMs: number }): 'close' | 'pop' | 'open' | 'none' {
   if (s.typing) return 'none';
   if (s.menuOpen) return s.sinceUnlockMs < 400 ? 'none' : 'close';
+  if (s.stacked) return 'pop';
   if (s.panelOpen) return 'none';
   return 'open';
 }

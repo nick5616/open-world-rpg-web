@@ -43,7 +43,7 @@ export interface Binding {
 /** Keys several handlers in one context share on purpose, and the rule that picks one. */
 export const SHARED: Record<string, string> = {
   KeyE: 'one owner at a time: input/interact.ts E_ORDER (in the saddle E only gets off)',
-  Escape: 'closes the open panel or mode; with none open it opens the Esc menu (ui/menu/EscMenu.tsx)',
+  Escape: 'closes the top panel or mode on the stack (input/panelStack.ts); with none open it opens the Esc menu (ui/menu/EscMenu.tsx)',
 };
 
 const W = (code: string, file: string, does: string): Binding => ({ code, ctx: 'world', file, does });
@@ -97,47 +97,26 @@ export const BINDINGS: Binding[] = [
   W('Digit5', 'ui/mounts/MountHud.tsx', 'whistle for your steed'),
   W('Digit6', 'ui/pets/PetHud.tsx', 'send your pet (hold: pet wheel)'),
   W('Digit7', 'ui/pets/PetHud.tsx', 'pet: stay / follow'),
-  // Esc: SHARED (closes the top thing, else the menu)
-  ...[
-    'ui/menu/EscMenu.tsx',
-    'ui/devconsole/DevConsole.tsx',
-    'ui/achievements/AchievementsHud.tsx',
-    'audio/ui/AudioSettingsPanel.tsx',
-    'social/ui/ChatPanel.tsx',
-    'social/ui/SocialOverlay.tsx',
-    'ui/camps/CampHud.tsx',
-    'ui/content/ContentHud.tsx',
-    'ui/graphics/GraphicsPanel.tsx',
-    'ui/inventory/CraftPanel.tsx',
-    'ui/inventory/InventoryScreen.tsx',
-    'ui/map/ExplorationHud.tsx',
-    'ui/mounts/MountHud.tsx',
-    'ui/pets/PetHud.tsx',
-    'ui/progression/ProgressionHud.tsx',
-    'ui/quests/QuestHud.tsx',
-    'ui/skills/SkillScreen.tsx',
-    'ui/whatsnew/WhatsNew.tsx',
-    'world/buildings/townHud.ts',
-  ].map((file) => W('Escape', file, 'close this panel')),
+  // Esc: one listener (ui/menu/EscMenu.tsx, first in the capture phase) closes the top panel, mode or wheel on
+  // the stack (input/panelStack.ts), else opens the menu. Panels register there instead of listening for Esc.
+  W('Escape', 'ui/menu/EscMenu.tsx', 'close the top panel (one at a time), else the Esc menu'),
   // modes
   { code: 'KeyU', ctx: 'instrument', file: 'ui/music/InstrumentHud.tsx', does: 'every letter, digit and punctuation key is a note (ui/music/theory.ts)' },
-  ...['Space', 'Escape', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Tab', 'Enter'].map((code): Binding => ({ code, ctx: 'instrument', file: 'ui/music/InstrumentHud.tsx', does: 'instrument control' })),
+  { code: 'Escape', ctx: 'instrument', file: 'ui/music/InstrumentHud.tsx', does: 'passed to the Esc menu: put the instrument away (panel stack)' },
+  ...['Space', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Tab', 'Enter'].map((code): Binding => ({ code, ctx: 'instrument', file: 'ui/music/InstrumentHud.tsx', does: 'instrument control' })),
   ...Object.keys(PHOTO_KEYS).map((code): Binding => ({ code, ctx: 'photo', file: 'ui/photo/store.ts', does: `camera ${PHOTO_KEYS[code]}` })),
-  { code: 'Escape', ctx: 'photo', file: 'ui/photo/PhotoMode.tsx', does: 'leave photo mode' },
+  { code: 'Escape', ctx: 'photo', file: 'ui/photo/PhotoMode.tsx', does: 'passed to the Esc menu: leave photo mode (panel stack)' },
   { code: 'Enter', ctx: 'photo', file: 'ui/photo/PhotoMode.tsx', does: 'save a picture' },
   { code: 'KeyH', ctx: 'photo', file: 'ui/photo/PhotoMode.tsx', does: 'hide the photo panel' },
   { code: 'Tab', ctx: 'photo', file: 'ui/photo/PhotoMode.tsx', does: '(swallowed: no focus jumps)' },
   { code: 'KeyE', ctx: 'fishing', file: 'ui/fishing/FishingHud.tsx', does: 'strike, hold to reel' },
   { code: 'Space', ctx: 'fishing', file: 'ui/fishing/FishingHud.tsx', does: 'strike, hold to reel' },
   { code: 'KeyR', ctx: 'placing', file: 'ui/camps/CampHud.tsx', does: 'turn the piece' },
-  { code: 'Escape', ctx: 'placing', file: 'ui/camps/CampHud.tsx', does: 'stop placing' },
   { code: 'KeyY', ctx: 'duel', file: 'ui/pvp/PvpHud.tsx', does: 'accept the duel' },
   { code: 'KeyU', ctx: 'duel', file: 'ui/pvp/PvpHud.tsx', does: 'decline the duel' },
   { code: 'KeyG', ctx: 'inventory', file: 'ui/inventory/InventoryScreen.tsx', does: 'drop the selected item' },
   { code: 'Delete', ctx: 'inventory', file: 'ui/inventory/InventoryScreen.tsx', does: 'drop the selected item' },
   ...['KeyC', 'KeyI', 'KeyJ', 'KeyM'].map((code): Binding => ({ code, ctx: 'skills', file: 'ui/skills/SkillScreen.tsx', does: 'close the skill screen as that screen opens' })),
-  { code: 'Escape', ctx: 'wheel', file: 'ui/emotes/EmoteWheel.tsx', does: 'cancel the emote wheel' },
-  { code: 'Escape', ctx: 'wheel', file: 'ui/pets/PetHud.tsx', does: 'cancel the pet wheel' },
   { code: 'F3', ctx: 'debug', file: 'hud/useDebugHotkeys.ts', does: 'debug readout' },
   { code: 'F4', ctx: 'debug', file: 'hud/useDebugHotkeys.ts', does: 'chunk borders' },
   { code: 'Backquote', ctx: 'debug', file: 'hud/useDebugHotkeys.ts', does: 'debug panel' },
@@ -149,7 +128,6 @@ export const BINDINGS: Binding[] = [
   { code: 'Backspace', ctx: 'focus', file: 'ui/spellcards/SpellCards.tsx', does: 'clear the focused spell slot' },
   { code: 'Enter', ctx: 'title', file: 'screens/TitleScreen.tsx', does: 'start' },
   { code: 'Space', ctx: 'downed', file: 'ui/story/StoryHud.tsx', does: 'respawn now instead of waiting for a friend' },
-  { code: 'Escape', ctx: 'ending', file: 'ui/story/StoryHud.tsx', does: 'skip the ending / leave the credits' },
   { code: 'Enter', ctx: 'ending', file: 'ui/story/StoryHud.tsx', does: 'skip the ending / leave the credits' },
   { code: 'Space', ctx: 'title', file: 'screens/TitleScreen.tsx', does: 'start' },
 ];
@@ -168,6 +146,9 @@ export const NOT_HANDLERS: Record<string, string> = {
   'ui/devconsole/DevConsole.tsx#ArrowUp': "the dev console's command line: history",
   'ui/devconsole/DevConsole.tsx#ArrowDown': "the dev console's command line: history",
   'ui/camps/CampHud.tsx#Enter': "the signpost name box's Enter (a text field)",
+  'ui/camps/CampHud.tsx#Escape': "the signpost name box's Esc (a text field)",
+  'ui/devconsole/DevConsole.tsx#Escape': "the dev console's command line: close (a text field)",
+  'social/ui/ChatPanel.tsx#Escape': "the chat box's Esc (a text field): close chat",
   'social/ui/ChatPanel.tsx#Tab': "the chat box's name completion (a text field)",
   'ui/music/InstrumentHud.tsx#KeyY': "lets a pending duel's Y / U through to ui/pvp/PvpHud.tsx while you play",
 };

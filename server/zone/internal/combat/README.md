@@ -80,6 +80,27 @@ G4: a leashed `combatbot` (a `Goal` + `Leash`, e.g. the night bots at a ward gar
 
 `spawnTick` (once a second) marks a group "a player is within ENEMY_SPAWN_M" with a pass number on the group instead of a map rebuilt every pass, and skips the distance test for a group already marked this pass (no other player can change its marks). With 300 players among 500 camps it was ~150,000 `Hypot` calls and ~40,000 map writes in one tick: a +1.2 ms spike every 30th tick on two cores with SMT, i.e. inside the tick p99. Same marks, same spawns and despawns (all combat tests unchanged).
 
+## Pathfinding (playtest 2)
+
+| File | What |
+| --- | --- |
+| `nav.go` | The nav grid: 0.5 m cells sampled with stepMove's rules (height for slopes, water, `World.Obstacles`: town boxes, closed doors, solid camp pieces) for three body classes, built lazily per 16 m chunk, deterministic LRU (768 chunks), `NavInvalidate` (doors, camps). Weighted A* in a 128 m window on one shared arena, the goal-pocket flood, string pulling |
+| `navai.go` | Asks (after `navBlockTicks` refused straight steps), the serial nav pass `navTick` (spawn order, then summons, then pets; FIFO; `navTickBudget` units a tick), following (hysteresis re-plans, the "target in the open" shortcut, stuck re-plans), leash x1.5 on a path, a 20 s walk home, giving up on unreachable targets, melee not striking through walls |
+| `navshare.go` | The last 32 answers: an ask for the same goal joins a recent path it can see (a pack round one house costs one search), or gets its failure |
+| `navcave.go` | Allies (pets, summons) walk the level ground (town and cave floors) and are kept out of cave walls; cave routes on the cave graph (mouth, tunnel axis points, chambers); the pet warp is the fallback |
+
+Paths are asked for only when the straight step is refused, so enemies in
+open country never pay for them (the scale world has no towns:
+`TestWireDigest` is byte-identical). Flyers and bosses never path. Tests:
+`nav_test.go` (round a wall, a house, through a gate, up a ramp, never
+through a closed door and giving up, invalidation, flyers, 500 asks within
+the budget, determinism with and without workers, a pet round a wall),
+`navbench_test.go` (`BenchmarkTownCrowd`: 200 enemies chasing 20 players
+round a 6 x 6 town; `BenchmarkNavSaturated`: the budget's worst case;
+`TestTownCrowdChasesRoundHouses`), and on the official world
+`internal/game/nav_test.go` (a pet into a cave mouth and out) and
+`obstacles_test.go` (wolves round a house to the player).
+
 ## Spell mechanics (playtest 2, CR 020)
 
 | File | What |

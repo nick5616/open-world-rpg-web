@@ -29,6 +29,23 @@ export function isTextTarget(t: EventTarget | null): boolean {
   return !!el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable);
 }
 
+/**
+ * Playtest 2 polish: a key press that types the chat shortcut is chat's,
+ * never a game key. "/" opens chat with a command; on many layouts it is
+ * Shift+7 (German, Nordic, Spanish, Turkish...: code Digit7, the pet's
+ * stay), on Hebrew the Q key (elemental form). Handlers bind e.code (the
+ * key's place, so WASD stays put on AZERTY) and ask this with e.key (what
+ * the key types).
+ */
+export function isChatShortcut(e: KeyboardEvent): boolean {
+  return e.key === '/';
+}
+
+/** Not the game's key press: typed into a text field, or the chat shortcut. */
+export function notGameKey(e: KeyboardEvent): boolean {
+  return isTextTarget(e.target) || isChatShortcut(e);
+}
+
 export function useKeyboard() {
   const held = useRef<HeldButtons>({ ...NO_BUTTONS });
 

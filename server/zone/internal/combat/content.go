@@ -90,7 +90,7 @@ func (w *World) flee(e *Enemy) {
 	// Zig-zag a little so a sprinting player can catch it.
 	wob := math.Sin(float64(w.tick+e.ID*7) * 0.11)
 	tx, tz := dx*0.94-dz*0.34*wob, dz*0.94+dx*0.34*wob
-	w.moveToward(e, movement.Vec3{X: e.Pos.X + tx*8, Y: e.Pos.Y, Z: e.Pos.Z + tz*8}, 1)
+	w.moveAway(e, movement.Vec3{X: e.Pos.X + tx*8, Y: e.Pos.Y, Z: e.Pos.Z + tz*8}, 1)
 }
 
 // Slay kills e as if player by had struck it down (dev tools, evidence and

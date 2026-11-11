@@ -11,6 +11,20 @@
     ]
   },
   {
+    "id": "pt2-polish",
+    "date": "2026-11-11",
+    "title": "Smoother controls, shinier steel",
+    "items": [
+      "Steel looks like steel: swords, spears and armor shine in daylight, at dusk, at night and in caves instead of going dark blue.",
+      "Esc closes one window at a time, the newest first; with nothing open it brings up the menu.",
+      "The click that captures your mouse no longer swings your weapon.",
+      "Opening the menu or a window (or switching away) lets go of a bow draw, a held spell or a fishing reel.",
+      "Right-click works again in chat and text boxes.",
+      "On keyboards where / is Shift+7, typing it opens chat and nothing else (your pet no longer stays).",
+      "The welcome card waits until you stop walking."
+    ]
+  },
+  {
     "id": "pt2-armor",
     "date": "2026-11-10",
     "title": "Armor you can see",

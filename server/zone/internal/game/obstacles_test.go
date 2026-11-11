@@ -16,7 +16,8 @@ import (
 // towns layer): wolves behind a house of the spawn town hunt a player
 // standing at its front door. They must never overlap a wall (the same
 // boxes the player's movement collides with) nor get inside the house
-// (its door is closed); with the hook removed they walk straight through
+// (control). Playtest 2 pathfinding: they come up to the back wall, then
+// round the house to the player (they used to wait at the wall).
 // (control).
 func TestEnemiesDoNotWalkThroughBuildings(t *testing.T) {
 	w, g := testTowns(t)
@@ -48,7 +49,7 @@ func TestEnemiesDoNotWalkThroughBuildings(t *testing.T) {
 		u, v := dx*bd.C+dz*bd.S, dz*bd.C-dx*bd.S
 		return math.Abs(u) < bd.HX-0.3 && math.Abs(v) < bd.HZ-0.3
 	}
-	run := func(t *testing.T, hook bool) (crossed, overlapped, reachedWall bool) {
+	run := func(t *testing.T, hook bool) (crossed, overlapped, reachedWall, reachedBait bool) {
 		h := newHarness(t, func(c *Config) {
 			c.Ground = g
 			c.Towns = w
@@ -87,23 +88,29 @@ func TestEnemiesDoNotWalkThroughBuildings(t *testing.T) {
 					if v := dz*bd.C - dx*bd.S; v < bd.HZ+e.Radius()+0.8 && v > 0 {
 						reachedWall = true
 					}
+					if math.Hypot(e.Pos.X-fx, e.Pos.Z-fz) < 3.5 {
+						reachedBait = true // round the house to the player (pathfinding)
+					}
 				}
 			})
 		}
 		return
 	}
 	t.Run("control", func(t *testing.T) {
-		if crossed, _, _ := run(t, false); !crossed {
+		if crossed, _, _, _ := run(t, false); !crossed {
 			t.Fatal("without the hook the wolves should walk through the house (the test would prove nothing)")
 		}
 	})
 	t.Run("buildings", func(t *testing.T) {
-		crossed, overlapped, reached := run(t, true)
+		crossed, overlapped, reached, bait := run(t, true)
 		if crossed || overlapped {
 			t.Fatalf("wolves got into the house (%v) or overlapped its walls (%v)", crossed, overlapped)
 		}
 		if !reached {
 			t.Fatal("the wolves never came up to the back wall")
+		}
+		if !bait {
+			t.Fatal("the wolves never came round the house to the player at its door (pathfinding)")
 		}
 	})
 }

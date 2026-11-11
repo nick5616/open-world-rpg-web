@@ -8,6 +8,7 @@ import { describe, expect, it } from 'vitest';
 import { BINDINGS, NOT_HANDLERS, SHARED } from './bindings';
 import { controlGroups, keyLabel } from '../ui/menu/controls';
 import { E_ORDER, eTakenAbove } from './interact';
+import { isChatShortcut, notGameKey } from './useKeyboard';
 
 const SRC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CODE = /['"`](Key[A-Z]|Digit\d|Numpad\w+|F\d{1,2}|Escape|Enter|Tab|Space|Arrow(?:Up|Down|Left|Right)|Backquote|Delete|Backspace|AltLeft|AltRight|ShiftLeft|ShiftRight|ControlLeft|ControlRight)['"`]/g;
@@ -89,6 +90,27 @@ describe('key bindings', () => {
       .map((b) => keyLabel(b.code))
       .filter((k) => !listed.has(k));
     expect([...new Set(missing)]).toEqual([]);
+  });
+});
+
+describe('typing "/" for chat (playtest 2 polish)', () => {
+  const ev = (code: string, key: string, target: unknown = null) => ({ code, key, target }) as unknown as KeyboardEvent;
+
+  it('is never a game key, whatever key types it', () => {
+    expect(isChatShortcut(ev('Digit7', '/'))).toBe(true); // German, Nordic, Spanish: Shift+7
+    expect(isChatShortcut(ev('KeyQ', '/'))).toBe(true); // Hebrew
+    expect(isChatShortcut(ev('Slash', '/'))).toBe(true); // US
+    expect(isChatShortcut(ev('Digit7', '7'))).toBe(false);
+    expect(isChatShortcut(ev('Digit7', '&'))).toBe(false); // AZERTY: the key's place still counts (e.code)
+    expect(notGameKey(ev('KeyE', 'e', { tagName: 'INPUT' }))).toBe(true);
+    expect(notGameKey(ev('KeyE', 'e', { tagName: 'CANVAS' }))).toBe(false);
+  });
+
+  it('every world letter and digit handler leaves the chat shortcut alone', () => {
+    const files = new Set(BINDINGS.filter((b) => b.ctx === 'world' && /^(Key[A-Z]|Digit\d)$/.test(b.code) && b.file !== 'input/useKeyboard.ts').map((b) => b.file));
+    expect(files.size).toBeGreaterThan(15);
+    const missing = [...files].filter((f) => !/\b(notGameKey|isChatShortcut)\(/.test(readFileSync(path.join(SRC, f), 'utf8')));
+    expect(missing, 'guard these keydown handlers with notGameKey(e) (input/useKeyboard.ts)').toEqual([]);
   });
 });
 

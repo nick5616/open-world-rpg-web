@@ -128,6 +128,9 @@ type Enemy struct {
 	// CR 035 main story (story.go): a hit guard (the Hush) and a stagger.
 	Guard     Guard
 	HeldUntil uint32
+	// Playtest 2 pathfinding (navai.go): the path and its asks; nil until
+	// the straight step was first refused.
+	nav *navState
 }
 
 // Typeid is the wire typeId (combatdefs.TypeID).

@@ -6,7 +6,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { COMBAT } from '@lodestone/contracts';
-import { isTextTarget } from '../../input/useKeyboard';
+import { notGameKey } from '../../input/useKeyboard';
 import { emitSound } from '../../audio/bridge';
 import { DUEL_PHASE } from './events';
 import { prunePvp, usePvp, type Banner } from './store';
@@ -82,7 +82,7 @@ function ChallengePrompt() {
   useEffect(() => {
     if (!ch) return; // the challenge's sound is the zone event's (audio/triggers.ts 994)
     const onKey = (e: KeyboardEvent) => {
-      if (isTextTarget(e.target) || e.repeat) return;
+      if (notGameKey(e) || e.repeat) return;
       if (e.code === 'KeyY') actions?.answer(true, ch.fromId);
       else if (e.code === 'KeyU') actions?.answer(false, ch.fromId);
     };

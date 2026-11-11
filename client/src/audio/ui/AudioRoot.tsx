@@ -7,6 +7,7 @@ import { useEffect } from 'react';
 import { worldDebug } from '../../world/debug/worldDebug';
 import { emitSound } from '../bridge';
 import { useAudioSettings } from '../settings';
+import { isChatShortcut } from '../../input/useKeyboard';
 import { AudioSettingsPanel, SoundButton } from './AudioSettingsPanel';
 // Playtest 2: the Graphics button sits beside Sound (ui/graphics/GraphicsPanel.tsx).
 import { GraphicsButton, GraphicsPanel, useGraphicsUi } from '../../ui/graphics/GraphicsPanel';
@@ -38,7 +39,7 @@ export function AudioRoot() {
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement | null;
       if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
-      if (e.code !== 'KeyK' || e.repeat) return;
+      if (e.code !== 'KeyK' || e.repeat || isChatShortcut(e)) return;
       const s = useAudioSettings.getState();
       s.setPanelOpen(!s.panelOpen);
       if (!s.panelOpen) useGraphicsUi.getState().setOpen(false); // they share the corner

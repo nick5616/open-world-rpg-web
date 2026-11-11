@@ -187,6 +187,17 @@ type World struct {
 	Stats Stats
 	// quietDamage: the hit being applied is a stream shot (no observer damage Event; CR 020).
 	quietDamage bool
+
+	// Playtest 2 pathfinding (nav.go, navai.go, navcave.go): the grid, the
+	// search and its queue (nil until the first ask; shared with the AI
+	// workers' copies, which only read built chunks), whether a walker
+	// asked this tick (each worker copy has its own, merged after pass 2),
+	// the ground's cave side and whether it has levels (allies walk floors).
+	nav         *navWorld
+	navWanted   bool
+	navOff      bool // tests and benchmarks: no pathfinding (the old straight steering)
+	caveQ       caveQuery
+	levelGround bool
 }
 
 // Stats are cumulative counters.
@@ -207,7 +218,10 @@ func NewWorld(cfg Config, ground movement.Ground, alloc func() uint32) *World {
 	if cfg.BossRespawnS <= 0 {
 		cfg.BossRespawnS = constants.BossRespawnS
 	}
-	return &World{cfg: cfg, ground: ground, groupAt: map[[2]int][]*Group{}, enemies: map[uint32]*Enemy{}, players: map[uint32]*Player{}, alloc: alloc, rng: cfg.Seed | 1}
+	w := &World{cfg: cfg, ground: ground, groupAt: map[[2]int][]*Group{}, enemies: map[uint32]*Enemy{}, players: map[uint32]*Player{}, alloc: alloc, rng: cfg.Seed | 1}
+	w.caveQ, _ = ground.(caveQuery)
+	_, w.levelGround = ground.(movement.LevelGround)
+	return w
 }
 
 // Ground is the movement ground enemies walk on.
@@ -698,6 +712,7 @@ func (w *World) Step(tick uint32) {
 	w.thinkAll(tick) // WP19b: partitioned across workers (par.go)
 	w.stepSummons()  // CR 020: allies act after the enemies thought (summon.go)
 	w.stepPets()     // CR 029: tamed companions (pets.go)
+	w.navTick()      // playtest 2: path searches asked for this tick, within the budget (navai.go)
 	w.stepBursts()   // CR 020: delayed charges and brand chain reactions (detonate.go)
 	w.stepShots()
 	w.settleStrikes()

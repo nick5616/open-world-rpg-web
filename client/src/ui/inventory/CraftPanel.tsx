@@ -13,8 +13,11 @@ import type { RecipeDef } from '@lodestone/contracts';
 import { ItemIcon } from './ItemIcon';
 import { baseName, displayName, isHolo, rarityColor, recipeGroup, recipesFor, recipeStatus, smithingView, type SmithingView, type WireItem } from './items';
 import { closeStation, pushToast, useInventory } from './store';
+import { trackPanel } from '../../input/panelStack';
+
+// Esc closes the station when it is the top panel (input/panelStack.ts).
+trackPanel(useInventory, (s) => !!s.station, 'station', () => closeStation());
 import { ensureInventoryStyles, GOLD, PANEL_BG, PANEL_BORDER, TEXT } from './styles';
-import { isTextTarget } from '../../input/useKeyboard';
 import { useCombatHud } from '../../combat/store';
 
 const TITLE = { forge: 'The forge', anvil: 'The anvil', cook: 'Cooking fire', workbench: 'Workbench', camp: 'Camp kits' } as const;
@@ -24,11 +27,6 @@ export function CraftPanel() {
   const station = useInventory((s) => s.station);
   useEffect(() => {
     ensureInventoryStyles();
-    const onKey = (e: KeyboardEvent) => {
-      if (e.code === 'Escape' && !isTextTarget(e.target) && useInventory.getState().station) closeStation();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
   }, []);
   if (!station) return null;
   return <Panel />;

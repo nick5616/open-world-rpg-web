@@ -36,6 +36,9 @@ import { dashLive } from './dashes';
 import { castHooks, gemFor } from './fx/castOrigin';
 import type { WeaponKind } from './weapons/look';
 import { uiPanelUp } from '../input/interact';
+import { isCaptureClick } from '../input/useMouseLook';
+import { heldBlocked, onHeldRelease } from '../input/held';
+import { isChatShortcut } from '../input/useKeyboard';
 
 const STEP_MS = 1000 / MOVE_STEP_HZ;
 const EYE = 1.6;
@@ -132,6 +135,9 @@ export class CombatRuntime {
     };
     const onDown = (e: MouseEvent) => {
       if ((e.target as HTMLElement | null)?.tagName !== 'CANVAS') return;
+      // Playtest 2 polish: the click that captures the mouse (input/useMouseLook.ts) neither swings nor casts,
+      // and nothing is drawn, streamed or charged under the Esc menu or a panel (input/held.ts).
+      if (isCaptureClick() || heldBlocked()) return;
       if (e.button === 0) {
         this.buttons.attackDown = true;
         this.buttons.attackPress++;
@@ -170,7 +176,7 @@ export class CombatRuntime {
       if (/^Digit[1-4]$/.test(e.code)) this.buttons.castHeld[Number(e.code.slice(5)) - 1] = false; // CR 020
     };
     const onKey = (e: KeyboardEvent) => {
-      if (isText(e.target) || e.repeat) return;
+      if (isText(e.target) || isChatShortcut(e) || e.repeat) return; // "/" is chat's (Shift+7, Hebrew Q: input/useKeyboard.ts)
       const t = now();
       switch (e.code) {
         case 'KeyF':
@@ -184,13 +190,14 @@ export class CombatRuntime {
         case 'Digit3':
         case 'Digit4': {
           const slot = Number(e.code.slice(5)) - 1;
+          if (this.timeline.loadout.spells[slot]) useCombatHud.getState().set({ selected: slot });
+          if (heldBlocked()) break; // under the Esc menu or a panel 1-4 only pick the right button's slot
           this.buttons.castPress[slot] = t;
           this.buttons.castHeld[slot] = true; // CR 020: streams and charges run while held
-          if (this.timeline.loadout.spells[slot]) useCombatHud.getState().set({ selected: slot });
           break;
         }
         case 'KeyZ':
-          altDown();
+          if (!heldBlocked()) altDown();
           break;
         case 'KeyQ':
           this.buttons.formPress++;
@@ -221,6 +228,7 @@ export class CombatRuntime {
       this.buttons.attackDown = false;
       this.buttons.altDown = false;
       this.buttons.castHeld = [false, false, false, false];
+      rmbCast = false;
     };
     target.addEventListener('mousedown', onDown);
     target.addEventListener('mouseup', onUp);
@@ -229,7 +237,9 @@ export class CombatRuntime {
     target.addEventListener('wheel', onWheel, { passive: true });
     target.addEventListener('contextmenu', noMenu);
     target.addEventListener('blur', release);
+    const offHeld = onHeldRelease(release); // the mouse capture lost, the Esc menu opened, the page hidden
     this.detach = () => {
+      offHeld();
       target.removeEventListener('mousedown', onDown);
       target.removeEventListener('mouseup', onUp);
       target.removeEventListener('keydown', onKey);

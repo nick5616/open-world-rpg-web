@@ -6,6 +6,10 @@ import type { CSSProperties } from 'react';
 import { BUSES, useAudioSettings, type BusName } from '../settings';
 import { SOUND_BUTTON_W, TOP_BUTTON_TOP } from '../../hud/layout';
 import { useGraphicsUi } from '../../ui/graphics/GraphicsPanel';
+import { trackPanel } from '../../input/panelStack';
+
+// Esc closes it when it is the top panel (input/panelStack.ts).
+trackPanel(useAudioSettings, (s) => s.panelOpen, 'sound', () => useAudioSettings.getState().setPanelOpen(false));
 
 const glass: CSSProperties = {
   background: 'rgba(10,13,20,0.78)',
@@ -50,7 +54,7 @@ export function AudioSettingsPanel() {
   const s = useAudioSettings();
   if (!s.panelOpen) return null;
   return (
-    <div data-testid="sound-settings" data-ui-panel style={{ ...glass, position: 'fixed', right: 12, top: 46, zIndex: 31, padding: '10px 14px', width: 240 }} onKeyDown={(e) => e.code === 'Escape' && s.setPanelOpen(false)}>
+    <div data-testid="sound-settings" data-ui-panel style={{ ...glass, position: 'fixed', right: 12, top: 46, zIndex: 31, padding: '10px 14px', width: 240 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
         <strong>Sound</strong>
         <label style={{ display: 'flex', gap: 6, alignItems: 'center', cursor: 'pointer' }}>
