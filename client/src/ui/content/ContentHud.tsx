@@ -14,13 +14,17 @@ import { useEffect, useRef, useState } from 'react';
 import { BELOW_CLOCK, useHudHeight } from '../../hud/layout';
 import { CONTENT } from '@lodestone/contracts';
 import { DEBUG } from '../../config';
-import { isTextTarget } from '../../input/useKeyboard';
+import { notGameKey } from '../../input/useKeyboard';
 import { eFree } from '../../input/interact';
 import { localPlayer } from '../../state/live';
 import { distanceText, compassWord } from '../quests/events';
 import { ensureContentHook } from './link';
 import { EVENT_PHASE, GLYPHS, eventStatus, type VaultPart, type VaultView } from './events';
 import { closeTablet, nearestEvent, pruneContentNotes, useContent } from './store';
+import { trackPanel } from '../../input/panelStack';
+
+// Esc closes the tablet when it is the top panel (input/panelStack.ts).
+trackPanel(useContent, (s) => !!s.reading, 'tablet', () => closeTablet());
 
 const GOLD = '#ffd166';
 const PANEL: React.CSSProperties = { background: 'rgba(14,12,10,0.88)', border: '1px solid rgba(255,209,102,0.45)', borderRadius: 8, color: '#f1ead8', boxShadow: '0 8px 28px rgba(0,0,0,0.5)', font: '14px/1.4 system-ui, sans-serif' };
@@ -215,12 +219,8 @@ function Prompt() {
       }
     }, 120);
     const onKey = (e: KeyboardEvent) => {
-      if (e.repeat || isTextTarget(e.target)) return;
+      if (e.repeat || notGameKey(e)) return;
       const s = useContent.getState();
-      if (e.code === 'Escape' && s.reading) {
-        closeTablet();
-        return;
-      }
       if (e.code !== 'KeyE') return;
       if (s.reading) {
         closeTablet();

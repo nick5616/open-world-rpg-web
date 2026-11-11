@@ -7,6 +7,7 @@
 
 import { useEffect, type CSSProperties, type ReactNode } from 'react';
 import { create } from 'zustand';
+import { usePanelEsc } from '../../input/panelStack';
 import {
   AA_MODES,
   CONTROL_RANGES,
@@ -124,7 +125,7 @@ export function GraphicsPanel() {
   const q = useQualityStore();
   const g = useGraphics();
 
-  // F10 toggles; Escape closes (while open).
+  // F10 toggles; Esc closes it when it is the top panel (input/panelStack.ts).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement | null;
@@ -132,13 +133,12 @@ export function GraphicsPanel() {
       if (e.code === 'F10' && !e.repeat) {
         e.preventDefault();
         setGraphicsOpen(!useGraphicsUi.getState().open);
-      } else if (e.code === 'Escape' && useGraphicsUi.getState().open) {
-        setGraphicsOpen(false);
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, []);
+  usePanelEsc('graphics', open, () => setGraphicsOpen(false));
 
   if (!open) return null;
   const c = g.controls;

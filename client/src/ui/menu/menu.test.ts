@@ -51,15 +51,21 @@ describe('controls reference', () => {
 });
 
 describe('Esc', () => {
-  const base = { menuOpen: false, panelOpen: false, typing: false, sinceUnlockMs: 1e9 };
+  const base = { menuOpen: false, stacked: false, panelOpen: false, typing: false, sinceUnlockMs: 1e9 };
   it('opens the menu when nothing else is open', () => {
     expect(escAction(base)).toBe('open');
   });
-  it('leaves an open panel to its own Esc', () => {
+  it('closes the top panel on the stack (playtest 2 polish: one at a time)', () => {
+    expect(escAction({ ...base, stacked: true })).toBe('pop');
+    expect(escAction({ ...base, stacked: true, panelOpen: true })).toBe('pop');
+    expect(escAction({ ...base, stacked: true, menuOpen: true })).toBe('close'); // the menu is over everything
+  });
+  it('leaves a panel that is not on the stack to its own Esc', () => {
     expect(escAction({ ...base, panelOpen: true })).toBe('none');
   });
   it('never acts while typing (chat owns Esc)', () => {
     expect(escAction({ ...base, typing: true })).toBe('none');
+    expect(escAction({ ...base, stacked: true, typing: true })).toBe('none');
     expect(escAction({ ...base, menuOpen: true, typing: true })).toBe('none');
   });
   it('closes the open menu, but not with the press that just freed the mouse', () => {

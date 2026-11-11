@@ -5,7 +5,7 @@
 // panel. T is free: V is fly / push-to-talk, F dodge, G glider, Q form.
 
 import { useEffect, useState, type CSSProperties } from 'react';
-import { isTextTarget } from '../input/useKeyboard';
+import { notGameKey } from '../input/useKeyboard';
 import { useViewStore, VIEW_DISTANCE } from '../stores/viewStore';
 import { ABOVE_HOTBAR } from './layout';
 
@@ -17,7 +17,7 @@ export function ViewHud() {
   const [toastAt, setToastAt] = useState(0);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.code !== VIEW_KEY || e.repeat || e.ctrlKey || e.metaKey || e.altKey || isTextTarget(e.target)) return;
+      if (e.code !== VIEW_KEY || e.repeat || e.ctrlKey || e.metaKey || e.altKey || notGameKey(e)) return;
       useViewStore.getState().toggle();
       setToastAt(performance.now());
     };
