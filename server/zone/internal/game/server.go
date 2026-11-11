@@ -15,6 +15,7 @@ import (
 	"crypto/ed25519"
 	"errors"
 	"hash/fnv"
+	"lodestone/server/pkg/caves"
 	"log/slog"
 	"math"
 	"slices"
@@ -130,6 +131,9 @@ type Config struct {
 
 // Server is one zone process's simulation.
 type Server struct {
+	skyTowns   []int8                // CR 038: per settlement, 0 unknown, 1 surface, 2 sky (vertical.go skyTown)
+	layerVeins map[uint64]caves.Vein // CR 038: the vertical world's veins by id (vertical.go layerVein)
+
 	cfg   Config
 	log   *slog.Logger
 	sched *gameloop.Scheduler
@@ -358,6 +362,7 @@ func (s *Server) onTick() {
 	s.terrainTick(tick)             // WP07: chunk cache interest (terrain.go)
 	s.exploreTick(tick)             // WP12: towers, waypoints, discoveries, party ring (explore.go)
 	s.difficultyTick(tick)          // playtest 1: area stamps (difficulty.go)
+	s.verticalTick(tick)            // CR 038: each entity's vertical layer, layer tile interest (vertical.go)
 	s.caveTick(tick)                // WP09: cave cell interest + each entity's cave system (caves.go)
 	s.itemsTick(tick, s.cfg.Now())  // WP14: gear, dropped-item despawn, containers (items.go)
 	s.miningTick(tick, s.cfg.Now()) // WP09: pickups, respawns, WorldEdits interest (mining.go)

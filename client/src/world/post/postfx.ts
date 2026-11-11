@@ -44,6 +44,9 @@ uniform vec3 uMoonColor;
 // storm darkness (w: the air goes grey-blue under thunderheads).
 uniform vec4 uWeather;
 uniform vec4 uWeatherDrift;
+// CR 038: cavern / Depths air (rgb, density per m): teal haze in the blue
+// caves, ember-red in the Depths. 0 on the surface (no cost).
+uniform vec4 uCaveFog;
 ${SKY_GLSL}
 ${SKY_STYLE_GLSL}
 vec3 fogColour(vec3 d) {
@@ -115,6 +118,10 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
     float mm = dot(d, -uSunDir);
     inscatter += uMoonColor * (0.25 + (1.0 - g * g) / (4.0 * PI_ * pow(1.0 + g * g - 2.0 * g * mm, 1.5)));
     col = col * T + (sky + inscatter) * (1.0 - T);
+    if (uCaveFog.w > 0.0) {
+      float Tc = exp(-uCaveFog.w * L);
+      col = col * Tc + uCaveFog.rgb * (1.0 - Tc);
+    }
   } else if (uWeather.x > 0.0 || uWeather.y > 0.0) {
     // The sky itself is lost in a thick bank or a sandstorm.
     vec4 vp = uInvProj * vec4(uv * 2.0 - 1.0, 1.0, 1.0);
@@ -151,6 +158,7 @@ export class AtmosphereFogEffect extends Effect {
         ['uWeather', new THREE.Uniform(new THREE.Vector4(0, 0, 0, 0))],
         ['uWeatherDrift', new THREE.Uniform(new THREE.Vector4(0, 0, 0, 0))],
         ['uSkyStyle', new THREE.Uniform(new THREE.Vector4(1, 1, 0, 0))],
+        ['uCaveFog', new THREE.Uniform(new THREE.Vector4(0, 0, 0, 0))],
       ]),
     });
   }

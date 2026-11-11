@@ -83,7 +83,26 @@ pub mod site {
     pub const POI_WAYPOINT: u8 = 2;
     pub const POI_LANDMARK: u8 = 3;
     pub const POI_ENEMY_CAMP: u8 = 4;
-    pub const POI_NAMES: [&str; 5] = ["tower", "cave_mouth", "waypoint", "landmark", "enemy_camp"];
+    /// genVersion 3 (vertical world, docs/cr/038-vertical-world.md): appended after every base site.
+    pub const POI_TUNNEL: u8 = 5;
+    pub const POI_CAVERN: u8 = 6;
+    pub const POI_SKY_LIFT: u8 = 7;
+    pub const POI_DEPTHS: u8 = 8;
+    pub const POI_ARCHIPELAGO: u8 = 9;
+    pub const POI_DEPTHS_GATE: u8 = 10;
+    pub const POI_NAMES: [&str; 11] = [
+        "tower",
+        "cave_mouth",
+        "waypoint",
+        "landmark",
+        "enemy_camp",
+        "tunnel",
+        "cavern",
+        "sky_lift",
+        "depths",
+        "archipelago",
+        "depths_gate",
+    ];
 
     pub const SIZE_HAMLET: u8 = 0;
     pub const SIZE_VILLAGE: u8 = 1;
@@ -99,7 +118,10 @@ pub mod site {
     pub const ST_METEOR_CRATER: u8 = 6;
     pub const ST_SUNKEN_TEMPLE: u8 = 7;
     pub const ST_DEMON_LAIR: u8 = 8;
-    pub const STRUCTURE_NAMES: [&str; 9] = [
+    /// genVersion 3: sky palace entrance sites and sky ruins (layer 1).
+    pub const ST_SKY_PALACE: u8 = 9;
+    pub const ST_SKY_RUIN: u8 = 10;
+    pub const STRUCTURE_NAMES: [&str; 11] = [
         "ruin",
         "watchtower",
         "mineshaft",
@@ -109,6 +131,8 @@ pub mod site {
         "meteor_crater",
         "sunken_temple",
         "demon_lair",
+        "sky_palace",
+        "sky_ruin",
     ];
 }
 
@@ -235,6 +259,8 @@ pub struct SiteRec {
     pub z: f64,
     pub radius: f64,
     pub seed: u32,
+    /// genVersion 3: byte 37, the layer (0 surface, 1 sky, 2 Underground, 3 Depths).
+    pub layer: u8,
 }
 
 /// Zero-copy view over an atlas buffer.
@@ -367,6 +393,7 @@ impl<'a> Atlas<'a> {
             z: get_f32(b, o + 20) as f64,
             radius: get_f32(b, o + 24) as f64,
             seed: get_u32(b, o + 40),
+            layer: b[o + 37],
         }
     }
 }

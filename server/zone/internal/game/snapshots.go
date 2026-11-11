@@ -123,7 +123,9 @@ type entView struct {
 	partyID uint32
 	kind    proto.EntityKind
 	nameID  uint32
-	caveSys int32       // cave system this tick (-1 surface): caveVisible only runs when it differs from the viewer's
+	caveSys int32 // cave system this tick (-1 surface): caveVisible only runs when it differs from the viewer's
+	layer   int8  // CR 038: vertical layer (layerVisible only runs when it differs)
+	y       float64
 	due     aoi.DueMask // G5: which rings update it this tick (aoi.Due), once per entity instead of per client
 	beam    bool        // playtest 2 ground loot: a rare+ pickup whose light beam is seen across the mid ring
 }
@@ -144,7 +146,7 @@ func (s *Server) buildViews(tick uint32) {
 		if e.q.Name != e.nameOf { // names rarely change: intern once per entity
 			e.nameOf, e.nameID = e.q.Name, snapshot.NameID(e.q.Name)
 		}
-		s.views[i] = entView{x: e.Move.Pos.X, z: e.Move.Pos.Z, id: e.ID, owner: e.Owner, partyID: e.PartyID, kind: e.Kind, caveSys: int32(e.caveSys), nameID: e.nameID, due: aoi.DueAll(tick, e.ID),
+		s.views[i] = entView{x: e.Move.Pos.X, z: e.Move.Pos.Z, id: e.ID, owner: e.Owner, partyID: e.PartyID, kind: e.Kind, caveSys: int32(e.caveSys), layer: e.layer, y: e.Move.Pos.Y, nameID: e.nameID, due: aoi.DueAll(tick, e.ID),
 			beam: e.Kind == proto.EntityKindPickup && e.TypeID >= pickupBeamRarity}
 		s.qs[i] = e.q
 		// Unchanged since when (snapshot.History.Set): a break in the
@@ -272,6 +274,10 @@ func (s *Server) sendSnapshot(sc *snapScratch, sess *session, tick uint32, serve
 		sameParty := myParty != 0 && o.partyID == myParty
 		// Underground interest clipping (spec 9, WP09 caves.go).
 		if cw != nil && o.caveSys != mySys && !sameParty && !s.caveVisible(cw, e, s.entAt(i)) {
+			continue
+		}
+		// CR 038: between vertical layers, only within layerAOIDY.
+		if o.layer != e.layer && !sameParty && !layerVisible(e.layer, e.Move.Pos.Y, o) {
 			continue
 		}
 		dx, dz := o.x-px, o.z-pz

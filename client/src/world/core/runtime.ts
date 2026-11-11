@@ -29,6 +29,11 @@ import { DoorStates, TownDoors } from '@lodestone/worldgen';
 import { DoorGround } from '../buildings/doorGround';
 import type { TownsResult } from '../buildings/towns.worker';
 import { CaveCellStore } from '../caves/caveStore';
+// CR 038: the vertical world (sky islands, the Underground, the Depths) over and under the caves.
+import { hasVertical, parseVertical, verticalBytes, type VerticalWorld } from '@lodestone/worldgen';
+import { VerticalGround, VerticalTileStore } from '../vertical/verticalGround';
+import { setVerticalUpdrafts } from '../../sim/stepEnv';
+import { VerticalWind } from '../../sim/verticalWind';
 import type { GroundQuery } from '../../sim/ground';
 // WP15: ice sheets and earth pillars on top (client/src/systems/chem/ground.ts; pass-through when there are none).
 import { ChemGround } from '../../systems/chem/ground';
@@ -60,6 +65,10 @@ export class WorldRuntime {
   readonly caveStore: CaveCellStore | null = null;
   /** WP09's cave ground (inCave, floors, walls) under the towns layer; null without caves. */
   readonly caveGround: CaveGround | null = null;
+  /** CR 038: the vertical world (descriptor), its LOD 0 layer tiles (collision + rendering) and ground; null before genVersion 3. */
+  readonly vertical: VerticalWorld | null = null;
+  readonly verticalStore: VerticalTileStore | null = null;
+  readonly verticalGround: VerticalGround | null = null;
   /** WP20: the world's towns layer (settlements, buildings, roads, structures, NPCs) and its collision. */
   readonly towns: Towns | null = null;
   readonly townCollision: TownCollision | null = null;
@@ -94,6 +103,19 @@ export class WorldRuntime {
       ground = this.caveGround;
     } catch (err) {
       console.warn('[world] no caves (worldgen.wasm without cave exports?)', err);
+    }
+    // CR 038: sky islands over, the Underground and the Depths under (same core as the zone: server/pkg/vertical).
+    if (hasVertical(wg)) {
+      try {
+        this.vertical = parseVertical(verticalBytes(wg, atlas));
+        this.verticalStore = new VerticalTileStore(wg, atlas);
+        this.verticalGround = new VerticalGround(ground, this.vertical, this.verticalStore);
+        ground = this.verticalGround;
+        // The wind columns and the free sky glide join every step's updraft (as the zone's night.go does).
+        setVerticalUpdrafts(new VerticalWind(this.vertical));
+      } catch (err) {
+        console.warn('[world] no vertical world', err);
+      }
     }
     // WP20: buildings on top (floors within a step, walls, ceilings), same core as the zone.
     if (townsBytes) {
@@ -167,6 +189,7 @@ export class WorldRuntime {
   }
 
   dispose(): void {
+    if (this.vertical) setVerticalUpdrafts(null);
     this.pool.terminate();
     this.atlas.free();
   }

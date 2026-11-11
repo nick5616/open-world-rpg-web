@@ -746,6 +746,9 @@ func (s *Server) meadowsFor(x, z float64) *quests.Quest {
 	best, bd := -1, math.Inf(1)
 	for i := range w.T.Settlements {
 		st := &w.T.Settlements[i]
+		if s.skyTown(i) {
+			continue
+		}
 		if d := math.Hypot(st.X-x, st.Z-z); d < bd {
 			best, bd = i, d
 		}
@@ -830,6 +833,9 @@ func (s *Server) wardFor(x, z float64) *quests.Quest {
 	best, bd := -1, math.Inf(1)
 	for i := range w.T.Settlements {
 		st := &w.T.Settlements[i]
+		if s.skyTown(i) {
+			continue
+		}
 		if d := math.Hypot(st.X-x, st.Z-z); d < bd {
 			best, bd = i, d
 		}
@@ -885,7 +891,7 @@ func (s *Server) resolveWard(si int) *quests.WardPlaces {
 			bd := maxD
 			for i := range s.cfg.Explore.Atlas.Sites {
 				a := &s.cfg.Explore.Atlas.Sites[i]
-				if a.Category != structures.CategoryStructure || (kind >= 0 && int(a.Kind) != kind) || int(a.Kind) == 8 /* demon lair */ {
+				if !a.IsBase() || a.Category != structures.CategoryStructure || (kind >= 0 && int(a.Kind) != kind) || int(a.Kind) == 8 /* demon lair */ {
 					continue
 				}
 				if d := math.Hypot(a.X-st.X, a.Z-st.Z); d < bd {

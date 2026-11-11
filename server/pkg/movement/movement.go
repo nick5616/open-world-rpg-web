@@ -461,6 +461,9 @@ func stepWalk(s State, flags uint16, wx, wz float64, g Ground, dashing bool, env
 	if !grounded {
 		vy += constants.Gravity * dt
 	}
+	if !dashing && vy < -constants.TerminalFallSpeed { // CR 038: falls from the sky islands top out
+		vy = -constants.TerminalFallSpeed
+	}
 
 	// Held JUMP auto-hops off the ground (Source sv_autobunnyhop); the double
 	// jump fires only on JUMP_EDGE. A press with no double jump left opens
@@ -630,7 +633,7 @@ func stepGlide(s State, flags uint16, wx, wz float64, g Ground, env Env) State {
 			mode = ModeSwim
 		}
 	}
-	return State{Pos: Vec3{x, y, z}, Vel: Vec3{vx, vy, vz}, AirJumps: airJumps, Mode: mode, Stamina: s.Stamina - DrainGlide, StaminaMax: s.StaminaMax, Flags: s.Flags & FlagExhausted}
+	return State{Pos: Vec3{x, y, z}, Vel: Vec3{vx, vy, vz}, AirJumps: airJumps, Mode: mode, Stamina: s.Stamina - glideDrain(lift, env.Updraft, s.Pos), StaminaMax: s.StaminaMax, Flags: s.Flags & FlagExhausted}
 }
 
 // stepClimb: move over the surface at CLIMB_SPEED along it (halved in rain),
@@ -938,4 +941,23 @@ func normalizeWishDir(x, z float64) (float64, float64) {
 		return 0, 0
 	}
 	return x / l, z / l
+}
+
+// glideDrain is a glide step's stamina cost: none in an updraft of at
+// least UPDRAFT_FREE_LIFT or where the field says the air carries you
+// (CR 038: wind columns, sky lifts and the sky over an archipelago).
+func glideDrain(lift float64, f UpdraftField, p Vec3) int {
+	if lift >= constants.UpdraftFreeLift {
+		return 0
+	}
+	if fg, ok := f.(FreeGlider); ok && fg.FreeGlideAt(p.X, p.Y, p.Z) {
+		return 0
+	}
+	return DrainGlide
+}
+
+// FreeGlider is an optional UpdraftField extension (CR 038): gliding at a
+// point costs no stamina (the TS field's freeGlideAt).
+type FreeGlider interface {
+	FreeGlideAt(x, y, z float64) bool
 }

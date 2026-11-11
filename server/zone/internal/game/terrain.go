@@ -71,7 +71,7 @@ func (s *Server) savedSpawn(characterID string, p movement.Vec3) movement.Vec3 {
 	if wp4 := accountapi.SpawnPosition(); p.X == wp4.X && p.Y == wp4.Y && p.Z == wp4.Z {
 		return s.newCharacterSpawn(characterID)
 	}
-	return p // join() lifts it onto the ground if it is below
+	return s.safeSaved(characterID, p) // CR 038; join() lifts it onto the ground if it is below
 }
 
 // hintSpawn puts a dev spawn hint (bots' ?spawn=x,z) on the ground.

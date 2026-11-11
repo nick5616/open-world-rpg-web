@@ -1,5 +1,16 @@
 [
   {
+    "id": "pt2-vertical-world",
+    "date": "2026-11-11",
+    "title": "The world goes vertical",
+    "items": [
+      "Sky archipelagos float high above the land: ride a sky lift crystal or a wind column up, glide between islands for free, and visit the sky towns and their palaces (sealed, for now).",
+      "Marked tunnel entrances lead down to vast crystal-lit caverns with glowing turquoise lakes, waterfalls, sunlit shafts and safe camps.",
+      "Deeper still, gates open on the Depths: lava lakes, ash and the Starless host's demons, with the best loot in the world.",
+      "The map has Sky, Surface, Underground and Depths layers; hard landings now hurt, so open your glider."
+    ]
+  },
+  {
     "id": "pt2-shared-attacks",
     "date": "2026-11-11",
     "title": "Everyone sees your attacks",

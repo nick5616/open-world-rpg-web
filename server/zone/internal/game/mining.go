@@ -177,7 +177,9 @@ func unit(h uint64) float64 { return float64(h>>11) / float64(uint64(1)<<53) }
 func (s *Server) vein(cw caveWorld, id uint64) (caves.Vein, *veinState, bool) {
 	v, ok := cw.CaveGraph().Vein(id)
 	if !ok {
-		return v, nil, false
+		if v, ok = s.layerVein(id); !ok { // CR 038: the Underground's and the Depths' veins (vertical.go)
+			return v, nil, false
+		}
 	}
 	s.mine.init()
 	st := s.mine.veins[id]
@@ -339,6 +341,9 @@ func (s *Server) breakVein(cw caveWorld, v caves.Vein, st *veinState, breaker *E
 
 	// The edit: carve + mined flag, everywhere at once.
 	carve := caves.Edit{VeinID: v.ID, X: float32(v.X), Y: float32(v.Y), Z: float32(v.Z), R: CarveRadiusM}
+	if isLayerVein(v) {
+		carve.R = 0 // CR 038: a cavern floor is a heightfield: the vein just goes (no carve)
+	}
 	ed := s.addEdit(carve, st.editID, st.respawnAt)
 	cw.SetEdit(carve)
 	s.broadcastEdit(ed)

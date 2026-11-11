@@ -614,7 +614,8 @@ pub fn build_structures(a: &Atlas, t: &mut Towns) {
         let s = a.site(i);
         // genVersion 2: landmarks and enemy camps are built as structures too.
         let skind = match (s.category, s.kind) {
-            (site::CAT_STRUCTURE, k) => k,
+            // genVersion 3: sky palaces and sky ruins are the vertical world's (drawn from its descriptor).
+            (site::CAT_STRUCTURE, k) if k <= site::ST_DEMON_LAIR && s.layer == 0 => k,
             (site::CAT_POI, site::POI_LANDMARK) => SK_LANDMARK,
             (site::CAT_POI, site::POI_ENEMY_CAMP) => SK_ENEMY_CAMP,
             _ => continue,

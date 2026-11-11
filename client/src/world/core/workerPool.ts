@@ -50,6 +50,7 @@ export class WorkerPool {
     grass: { n: 0, ms: 0 },
     hash: { n: 0, ms: 0 },
     evict: { n: 0, ms: 0 },
+    layer: { n: 0, ms: 0 },
   };
 
   constructor(

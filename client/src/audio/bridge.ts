@@ -34,7 +34,18 @@ export const audioWorld = {
   combatUntil: 0,
   /** CR 028: an instrument sounded near the listener until then (performance ms; ui/music/audio.ts): the music ducks. */
   instrumentUntil: 0,
+  /** CR 038: the vertical layer the listener is in: 0 surface, 1 sky, 2 the Underground, 3 the Depths (VerticalManager). */
+  layer: 0,
+  /** CR 038, eased 0..1: high in the sky over an archipelago (wind), in a vast cavern (hum, lapping water), in the Depths (rumble, lava). */
+  sky: 0,
+  cavern: 0,
+  depths: 0,
+  /** CR 038: the cavern chamber kind (0 crystal, 1 cenote, 2 river, 3 fungal, 4 inferno, 5 ashen), -1 none. */
+  chamberKind: -1,
 };
+
+/** CR 038: layer names for HUD lines, the vibe explorer's tags and composer mappings. */
+export const LAYER_TAGS = ['surface', 'sky', 'underground', 'depths'] as const;
 
 /**
  * Positional loop sources outside the towns buffer, asked for the emitters

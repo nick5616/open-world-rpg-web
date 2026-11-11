@@ -10,6 +10,8 @@
 // Drawn imperatively into one canvas on rAF while open (the player marker
 // moves every frame; React would re-render 60 times a second for nothing).
 
+import { drawLayerOverlay, MAP_LAYER_NAMES, MAP_LAYER_ORDER, siteOnLayer, type MapLayer } from './layers';
+import { audioWorld } from '../../audio/bridge';
 import { useEffect, useRef, useState } from 'react';
 import type { Site } from '@lodestone/worldgen';
 import { localPlayer } from '../../state/live';
@@ -65,6 +67,11 @@ function MapView() {
   const actions = useExploration((s) => s.actions);
   const pins = useExploration((s) => s.pins);
   const [selected, setSelected] = useState<Site | null>(null);
+  // CR 038: which layer the map shows ('auto' follows where you are).
+  const [layerPick, setLayerPick] = useState<MapLayer | 'auto'>('auto');
+  const vertical = useMapWorld((s) => s.vertical);
+  const layerRef = useRef<MapLayer>(0);
+  layerRef.current = layerPick === 'auto' ? (audioWorld.layer as MapLayer) : layerPick;
   const [hover, setHover] = useState<string | null>(null);
   const [pinColor, setPinColor] = useState(0);
   // Playtest 2: open on you, zoomed to your surroundings (the wheel zooms out to the world).
@@ -215,9 +222,13 @@ function MapView() {
         ctx.fillText(reg.name, x, y);
       }
 
+      // CR 038: the layer shown (archipelagos over a veil; caverns under the darkened land).
+      const showLayer = layerPick === 'auto' ? (audioWorld.layer as MapLayer) : layerPick;
+      drawLayerOverlay(ctx, vertical, showLayer, sx, sy, k, w, h, (i) => (i >= 0 && i < data.sites.length && siteVisibility(data.sites[i], revealed, towers, waypoints, discoveries) !== 'hidden' ? data.sites[i].name : null));
+
       // Sites.
       const order = (s: Site) => (s.kind === 'tower' ? 3 : s.category === 'settlement' ? 2 : s.kind === 'waypoint' ? 1 : 0);
-      const sites = data.sites.slice().sort((a, b) => order(a) - order(b));
+      const sites = data.sites.filter((s) => siteOnLayer(s, showLayer)).sort((a, b) => order(a) - order(b));
       for (const s of sites) {
         const vis = siteVisibility(s, revealed, towers, waypoints, discoveries);
         if (vis === 'hidden') continue;
@@ -310,7 +321,7 @@ function MapView() {
       cancelAnimationFrame(raf);
       mapView.toScreen = null;
     };
-  }, [data, selected]);
+  }, [data, selected, layerPick, vertical]);
 
   const toWorld = (cx: number, cy: number) => {
     const canvas = canvasRef.current!;
@@ -385,6 +396,21 @@ function MapView() {
     <div data-testid="map-screen" data-ui-panel style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(10,8,6,0.82)', display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 260px', font: '14px system-ui, sans-serif', color: '#2b2116' }}>
       {/* The canvas sits absolutely in its cell: its pixel size must never feed back into the grid's column width. */}
       <div style={{ position: 'relative', minWidth: 0, overflow: 'hidden' }}>
+      {vertical && (
+        <div data-testid="map-layers" style={{ position: 'absolute', top: 12, left: 12, zIndex: 2, display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {(['auto', ...MAP_LAYER_ORDER] as const).map((l) => (
+            <button
+              key={String(l)}
+              data-testid={`map-layer-${l}`}
+              onClick={() => setLayerPick(l)}
+              onMouseDown={(e) => e.stopPropagation()}
+              style={{ padding: '4px 10px', borderRadius: 4, border: '1px solid #6b5537', cursor: 'pointer', font: '600 12px Georgia, serif', textAlign: 'left', background: layerPick === l ? '#f4ecd8' : 'rgba(40,30,20,0.75)', color: layerPick === l ? '#2b2116' : '#f4ecd8' }}
+            >
+              {l === 'auto' ? `Here (${MAP_LAYER_NAMES[audioWorld.layer] ?? 'Surface'})` : MAP_LAYER_NAMES[l]}
+            </button>
+          ))}
+        </div>
+      )}
       <canvas
         ref={canvasRef}
         data-testid="map-canvas"

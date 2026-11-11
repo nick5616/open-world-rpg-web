@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { cleanMapping, describeWhen, exportMappings, importMappings, loadStoredMappings, MAP_FORMAT, MAP_VERSION, mappingMatches, resolveMapping, specificity, type MusicMapping } from './mapping';
 import type { VibeContext } from './override';
 
-const ctx = (p: Partial<VibeContext> = {}): VibeContext => ({ state: 'night', biome: 'forest', hour: 22, time: 'night', weather: 'rain', tier: 'wilds', tierIndex: 2, areaLevel: 5, act: 3, combat: false, boss: false, underground: 0, inTown: false, timedPhase: null, intensity: 0.4, ...p });
+const ctx = (p: Partial<VibeContext> = {}): VibeContext => ({ state: 'night', biome: 'forest', hour: 22, time: 'night', weather: 'rain', tier: 'wilds', tierIndex: 2, areaLevel: 5, act: 3, combat: false, boss: false, underground: 0, inTown: false, layer: 'surface', timedPhase: null, intensity: 0.4, ...p });
 const map = (file: string, when: MusicMapping['when'], p: Partial<MusicMapping> = {}): MusicMapping => ({ id: file, file, when, gain: 1, loop: true, fadeIn: 3, enabled: true, ...p });
 
 describe('composer mappings', () => {

@@ -13,6 +13,7 @@ export * from './format';
 export * from './cave';
 export * from './town';
 export * from './doors';
+export * from './vertical';
 
 /** Raw exports of worldgen.wasm (README "Exports"). Pointers are i32 offsets. */
 export interface WorldgenExports {
@@ -36,6 +37,10 @@ export interface WorldgenExports {
   hash_buffer(ptr: number, len: number): bigint;
   /** WP20 towns layer. Absent in wasm builds before it. */
   towns_build?(atlasPtr: number): number;
+  /** genVersion 3 vertical world (CR 038). Absent before it. */
+  vertical_build?(atlasPtr: number): number;
+  layer_tile?(atlasPtr: number, layer: number, cx: number, cz: number, lod: number): number;
+  layer_height?(atlasPtr: number, surf: number, x: number, z: number): number;
 }
 
 /** The ABI this loader speaks; loading a wasm with another ABI fails fast. */

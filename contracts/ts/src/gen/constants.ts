@@ -130,8 +130,12 @@ export const SLIDE_MAX_SPEED = 12;
 export const GLIDE_ACCEL = 6;
 /** How fast vertical speed approaches -GLIDE_SINK_SPEED (+ updraft lift) once the glider opens, m/s^2: the canopy catch. */
 export const GLIDE_VERTICAL_ACCEL = 20;
-/** Upper bound of an updraft column's lift (m/s); the step clamps to it and the zone's vertical validation relies on it. */
-export const UPDRAFT_MAX_LIFT = 10;
+/** Upper bound of an updraft column's lift (m/s); the step clamps to it and the zone's vertical validation relies on it. v8: 20 (the vertical world's sky lifts lift 18 m/s; wind columns and fire stay at 10 and 7). */
+export const UPDRAFT_MAX_LIFT = 20;
+/** v8 (CR 038): gliding in an updraft at least this strong costs no stamina (the vertical world's wind columns at 10 and sky lifts at 18 carry you all the way up; fire's 7 still drains). */
+export const UPDRAFT_FREE_LIFT = 8;
+/** v8 (CR 038): a falling body (walk/air step, not dashing) never sinks faster than this, m/s (~150 m of free fall to reach it; landing faster than 18 m/s hurts, zone side). */
+export const TERMINAL_FALL_SPEED = 54;
 /** Horizontal acceleration toward the swim velocity, m/s^2. */
 export const SWIM_ACCEL = 6;
 /** Water deeper than this (surface minus ground) is swum, shallower is walked. */

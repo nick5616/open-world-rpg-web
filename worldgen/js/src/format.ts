@@ -12,9 +12,9 @@ export type Element = (typeof ELEMENTS)[number];
 export const MATERIALS = ['grass', 'dirt', 'rock', 'snow', 'sand', 'mud'] as const;
 
 export const SITE_CATEGORY = { poi: 0, settlement: 1, structure: 2 } as const;
-export const POI_KINDS = ['tower', 'cave_mouth', 'waypoint', 'landmark', 'enemy_camp'] as const;
+export const POI_KINDS = ['tower', 'cave_mouth', 'waypoint', 'landmark', 'enemy_camp', 'tunnel', 'cavern', 'sky_lift', 'depths', 'archipelago', 'depths_gate'] as const;
 export const SETTLEMENT_SIZES = ['hamlet', 'village', 'town'] as const;
-export const STRUCTURE_KINDS = ['ruin', 'watchtower', 'mineshaft', 'shrine', 'bandit_camp', 'wizard_tower', 'meteor_crater', 'sunken_temple', 'demon_lair'] as const;
+export const STRUCTURE_KINDS = ['ruin', 'watchtower', 'mineshaft', 'shrine', 'bandit_camp', 'wizard_tower', 'meteor_crater', 'sunken_temple', 'demon_lair', 'sky_palace', 'sky_ruin'] as const;
 export const LANDMARK_VARIANTS = ['standing_stones', 'great_tree', 'stone_arch', 'monolith', 'giant_bones', 'crystal_outcrop', 'statue', 'hot_spring'] as const;
 
 /** Record kinds per layer (record byte 20). */
@@ -88,6 +88,8 @@ export interface Site {
   yaw: number;
   /** Linked site index (a settlement's waypoint), or -1. */
   link: number;
+  /** genVersion 3 (byte 37): 0 surface, 1 sky, 2 Underground, 3 Depths (absent = 0). */
+  layer?: number;
 }
 
 export interface AtlasData {
@@ -194,6 +196,7 @@ export function parseAtlas(input: Uint8Array): AtlasData {
         seed: dv.getUint32(o + 40, true),
         yaw: (dv.getUint16(o + 44, true) / 65536) * Math.PI * 2,
         link: link === NONE16 ? -1 : link,
+        layer: dv.getUint8(o + 37),
       });
     }
   }

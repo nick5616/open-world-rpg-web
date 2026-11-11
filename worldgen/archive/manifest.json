@@ -8,6 +8,14 @@
       "bytes": 579496,
       "golden": "golden-v1.json",
       "source": "git 56a0d36 (main before playtest towns/density), rustc 1.99.1 (58cf8f9c3 2026-10-13)"
+    },
+    {
+      "genVersion": 2,
+      "file": "worldgen-1dcd2ffc09618d97.wasm",
+      "sha256": "1dcd2ffc09618d97a4174b9ce055bdaf53413433550e069d8c9ed839af183455",
+      "bytes": 617354,
+      "golden": "golden-v2.json",
+      "source": "git 73f436c (main before playtest 2 vertical world), rustc 1.99.1 (58cf8f9c3 2026-10-13); rebuilt from that commit bit-identical to the dev build"
     }
   ]
 }

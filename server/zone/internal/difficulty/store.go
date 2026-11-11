@@ -60,7 +60,7 @@ func (g *Geometry) Propose(c Claim, stamped map[int]int) int {
 			ns = append(ns, l)
 		}
 	}
-	return Propose(g.def.Def, c.PlayerLevel, ns, g.danger[c.Cell])
+	return max(LayerFloor[g.def.LayerOf(c.Cell)], Propose(g.def.Def, c.PlayerLevel, ns, g.danger[c.Cell]))
 }
 
 // ---- in memory (no database: dev, tests, two zones in one process) ----
@@ -138,7 +138,7 @@ func (s *PGStore) LoadAll(ctx context.Context, g *Geometry) ([]Stamp, error) {
 		if err := rows.Scan(&cx, &cz, &lvl, &st.By, &st.ByName, &byLvl, &st.At); err != nil {
 			return nil, err
 		}
-		if int(cx) >= g.PerEdge || int(cz) >= g.PerEdge || cx < 0 || cz < 0 {
+		if int(cx) >= g.PerEdge || int(cz) >= g.PerEdge*Layers || cx < 0 || cz < 0 { // CR 038: cell_z = layer * PerEdge + z
 			continue
 		}
 		st.Cell, st.Level, st.ByLevel = int(cz)*g.PerEdge+int(cx), int(lvl), int(byLvl)

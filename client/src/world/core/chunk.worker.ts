@@ -5,7 +5,8 @@
 // IndexedDB mesh cache, all off the main thread. Results go back as
 // transferred ArrayBuffers.
 
-import { caveCellBytes, caveGraphBytes, fnv1a64, hex64, loadWorldgen, parseCaveGraph, parseChunk, type AtlasHandle, type CaveOpening, type Worldgen } from '@lodestone/worldgen';
+import { caveCellBytes, caveGraphBytes, fnv1a64, hasVertical, hex64, layerTileBytes, loadWorldgen, parseCaveGraph, parseChunk, parseLayerTile, parseVertical, verticalBytes, type AtlasHandle, type CaveOpening, type VerticalWorld, type Worldgen } from '@lodestone/worldgen';
+import { buildLayerMesh, layerMeshTransferables } from '../vertical/layerMesh';
 import { holeIndex } from '../caves/holes';
 import { buildTileMesh, tileBytes, tileTransferables, type TileMeshData } from '../terrain/tileMesh';
 import { generateGrass } from '../scatter/grassGen';
@@ -47,15 +48,43 @@ async function init(m: InitMsg) {
 }
 
 /** Cave openings for mouth holes, built on first use (the first cave call builds the world's cave graph, ~40 ms, once per worker). */
-let openings: CaveOpening[] | null = null;
-function caveOpenings(): CaveOpening[] {
+let openings: Pick<CaveOpening, 'x' | 'z' | 'rMask'>[] | null = null;
+function caveOpenings(): Pick<CaveOpening, 'x' | 'z' | 'rMask'>[] {
   if (openings) return openings;
   try {
     openings = parseCaveGraph(caveGraphBytes(wg!, atlas!)).openings;
   } catch {
     openings = []; // a pre-WP09 wasm: no caves, no holes
   }
+  // CR 038: tunnel mouths and cenote shafts are holes in the terrain too.
+  const v = vertical();
+  if (v) openings = [...openings, ...v.surfaceOpenings];
   return openings;
+}
+
+/** CR 038: the vertical descriptor, built on first use (once per worker). */
+let vert: VerticalWorld | null | undefined;
+function vertical(): VerticalWorld | null {
+  if (vert !== undefined) return vert;
+  try {
+    vert = hasVertical(wg!) ? parseVertical(verticalBytes(wg!, atlas!)) : null;
+  } catch {
+    vert = null;
+  }
+  return vert;
+}
+
+/** CR 038: one layer tile, meshed (floor + ceiling or island top + bottom, water/lava), LOD 0 lattices returned for collision. */
+function layerJob(id: number, layer: number, cx: number, cz: number, lod: number) {
+  const t0 = performance.now();
+  const bytes = layerTileBytes(wg!, atlas!, layer, cx, cz, lod);
+  const tile = parseLayerTile(bytes);
+  const t1 = performance.now();
+  const mesh = buildLayerMesh(tile, vertical()!);
+  const raw = lod === 0 ? bytes : null;
+  const transfer = layerMeshTransferables(mesh);
+  if (raw) transfer.push(raw.buffer);
+  post({ type: 'layer', id, layer, cx, cz, lod, mesh, raw, genMs: t1 - t0, meshMs: performance.now() - t1 }, transfer);
 }
 
 async function tileJob(id: number, cx: number, cz: number, lod: number) {
@@ -144,6 +173,8 @@ async function handle(m: JobMsg) {
       post({ type: 'hash', id: m.id, hash: hex64(fnv1a64(bytes)), ms: performance.now() - t0 });
       return;
     }
+    case 'layer':
+      return layerJob(m.id, m.layer, m.cx, m.cz, m.lod);
     case 'cave': {
       const t0 = performance.now();
       const bytes = caveCellBytes(wg!, atlas!, m.cx, m.cy, m.cz, m.edits);

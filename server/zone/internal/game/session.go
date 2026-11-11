@@ -399,6 +399,10 @@ func (s *Server) drainTaken(sess *session, now time.Time) {
 				s.questInteract(sess, it) // quests: accept, abandon, turn in, track (quests.go)
 				continue
 			}
+			if it.TargetKind == InteractPalace || it.TargetKind == InteractActivity {
+				s.verticalInteract(sess, it) // CR 038: sky palace doors, sky town activity spots (vertical.go)
+				continue
+			}
 			if it.TargetKind == InteractStory {
 				s.storyInteract(sess, it) // CR 035: sync, catch up, revive, respawn, the vow (story.go)
 				continue
@@ -536,8 +540,12 @@ func (s *Server) applyFrames(sess *session, now time.Time) {
 		f = s.combatFrame(sess, f) // WP13: log attacks/casts, refuse illegal dashes (combat.go)
 		// Building doors: the ground with the doors closed for this frame (doors.go).
 		// CR 032: dev fly and infinite stamina (devconsole.go) step first.
-		if !s.devFrame(sess, f) && !e.applyFrame(f, s.frameGround(sess, f.Seq), s.env) {
-			s.m.speedViolations.Add(1)
+		if !s.devFrame(sess, f) {
+			prev := e.Move
+			if !e.applyFrame(f, s.frameGround(sess, f.Seq), s.env) {
+				s.m.speedViolations.Add(1)
+			}
+			e.noteLanding(prev) // CR 038: fall damage is paid in the vertical phase (vertical.go)
 		}
 		s.combatAfterFrame(sess, f)
 		applied++

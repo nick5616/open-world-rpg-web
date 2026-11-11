@@ -48,7 +48,8 @@ const DIRS: [(i32, i32); 8] = [(1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1
 pub fn plan(a: &Atlas) -> Net {
     let mut sites = Vec::new();
     for i in 0..a.site_count() {
-        if a.site(i).category == site::CAT_SETTLEMENT {
+        // genVersion 3: sky towns have no roads (built after everything, town/mod.rs).
+        if a.site(i).category == site::CAT_SETTLEMENT && a.site(i).layer == 0 {
             sites.push(i);
         }
     }

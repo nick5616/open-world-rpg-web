@@ -18,6 +18,8 @@ import type { ChemEvent } from './chem/codec';
 // Playtest 2 weather (CR 030): the zone's weather byte, Events 1220-1222, rain where you stand.
 import { liveWeather, onZoneWeatherByte, resetZoneWeather, setWeatherWorld, weatherClient, weatherOn, weatherOverride } from './weather/runtime';
 import { onWeatherEvent } from './weather/link';
+// CR 038: hard landings, the Depths' lava, the palace / activity hooks (Events 1700-1719).
+import { onVerticalEvent } from '../world/vertical/events';
 import { isWet } from './weather/weather';
 
 /** Event kinds (contracts/events.md 500-599). */
@@ -201,6 +203,10 @@ export function attachNight(session: SessionLike): () => void {
   const onEvent: Parameters<SessionLike['eventListeners']['add']>[0] = (e) => {
     if (e.kind >= 1220 && e.kind <= 1239) {
       onWeatherEvent(e, session.welcome?.entityId ?? 0); // CR 030
+      return;
+    }
+    if (e.kind >= 1700 && e.kind <= 1719) {
+      onVerticalEvent(e, session.welcome?.entityId ?? 0); // CR 038
       return;
     }
     if (e.kind >= 520 && e.kind <= 525) {

@@ -930,3 +930,89 @@ night hooks, WP16 `campset`), `camps_chest.go` (storage chests through the item 
 - Wire: pets are ordinary snapshot entities (one per player with one out); Events 1200-1205 go to pet owners, tamers and
   players within 48 m of a calm creature or a pet's act. The scale world has no content, so `LODESTONE_WIRE_DIGEST=1` is
   unchanged.
+
+## Vertical world (playtest 2, CR 038)
+
+genVersion 3 adds sky archipelagos, the Underground and the Depths
+(`worldgen/README.md` "Vertical world", `docs/cr/038-vertical-world.md`).
+The zone runs them when the wasm has the vertical exports;
+`LODESTONE_ZONE_NO_VERTICAL=1` turns them off, `_LAYER_CACHE` / `_LAYER_WORKERS`
+size the LOD 0 layer-tile cache (`worldhost.Layers`: pure Go collision from
+cached tiles, a wasm `layer_height` on a miss, background builds fed by
+interest). `GET /debug/vertical`: cache counters and descriptor counts.
+
+- **Ground** (`caves.go` `withVertical`): `worldhost.CaveTerrain.WithVertical`
+  wraps the cave ground in `server/pkg/vertical.Ground`, the line-for-line twin
+  of `VerticalGroundCore` (worldgen/js): island tops and undersides, the
+  Underground and Depths floors and ceilings, tunnel / cenote holes in the
+  terrain, Depths gates in the Underground floor, columns, shaft walls. The
+  towns layer stays on top (sky towns' buildings work like any town's).
+  `CaveTerrain.LayerAt(x, y, z)`: 0 surface (and caves), 1 sky (on an island
+  or in the sky band over an archipelago), 2 Underground, 3 Depths.
+- **Movement env**: the descriptor's wind columns (sky lifts 18 m/s, wind
+  columns and currents 10, geysers 10) join the updraft field
+  (`night.go nightUpdraft`, `vertical.Wind`); gliding is free in an updraft of
+  at least `UPDRAFT_FREE_LIFT` (8) and anywhere in the sky band over an
+  archipelago (`movement.FreeGlider`). Constants v8: `UPDRAFT_MAX_LIFT` 20,
+  `TERMINAL_FALL_SPEED` 54.
+- **Per-entity layer** (`internal/game/vertical.go verticalTick`, on the
+  workers like `caveSys`) and **3D interest**: entities in different layers
+  more than 80 m apart vertically are not in each other's snapshots (party
+  exempt). Flat and atlas-less worlds have no vertical world: the G5 wire
+  digests are unchanged.
+- **Fall damage** (server-authoritative): a step that lands from the air
+  faster than 18 m/s costs (v - 18) x 3.2 % of max health (no armor), none in
+  swimmable water, gliding, climbing, dashing or riding; Event 1700.
+  **Lava**: the Depths' water surface is lava: 35 %/s, Event 1701 on/off.
+- **Difficulty per layer** (`internal/difficulty`): the sky, the Underground
+  and the Depths have their own 256 m areas (index `layer * 256 + cell`; the
+  store row's `cell_z = layer * 16 + z`, no migration), stamped like the
+  surface's but never below sky 10, Underground 6, Depths 20 (the top tier).
+  A player stamps and is told (Event 901, `y` = layer) the areas of the layer
+  they stand in.
+- **Enemies** (`addLayerGroups`): packs on dry, walkable cavern and Depths
+  floors (1-5 per chamber, never within 45 m of an underground camp or by a
+  column) and on sky islands that are not a town or palace;
+  `combat.LayerTables` (caverns: crawlers, gloom bats, crystal golems,
+  shades, void mites; the Depths: gloamlings and greater demons of the
+  Starless host, CR 035; the sky: harpies, wisps, moths). Layered groups
+  spawn, wake and walk in 3D on their layer's floor and take the layer's
+  area level. Depths kills pay like elites with 2.5x luck.
+- **Mining**: the descriptor's veins (bands 3 and 4) are in the vein
+  registry (`layerVein`); a mined one vanishes (edit radius 0) and respawns.
+- **Sky towns**: townsfolk placed on the island (`npc.Place`) and woken by
+  3D distance (a player on the ground below never wakes them); shops, inns,
+  boards and forges work as anywhere. Story, content and quest picks keep to
+  base sites and surface towns (`skyTown`, `structures.Site.IsBase`), so
+  every existing sequence and the Heartfall stay where they were.
+- **Exploration**: discovery XP for the new sites (tunnel 50, cavern 70,
+  depths 90, gate 40, archipelago 40, sky lift 20, palace 100, sky ruin 50,
+  sky towns as towns) within a vertical reach (sky 45 m, archipelago 260,
+  underground 110); sky-town and camp waypoints touch and fast travel on
+  their layer's floor.
+- **Mounts**: the whistle is refused underground (4) and in the sky (11).
+- **Vibe explorer**: landmark filters tunnel, cavern (crystal / cenote /
+  river / fungal), depths, depths_gate, archipelago, sky_town, sky_palace,
+  sky_ruin, sky_lift; a layer filter (`layer=` / packed bits 54-56); results
+  carry `y` and `l` and the layer's area; landings on the layer's floor (dry,
+  walkable, off columns and buildings).
+- **Saved positions** (`safeSaved`): a character saved on terrain that is now
+  a hole lands on the opening's rim, one inside an island's rock on its top,
+  one in rock with nothing under it at the spawn. World renewal 2 -> 3
+  (`mintdb.RenewOfficial`) resets characters saved within an opening's
+  radius + 8 m to the spawn marker.
+- **Hooks for the follow-up agents**: the **sky palace** is an atlas
+  structure site of kind 9 (`sky_palace`, layer 1) on a big island, drawn
+  from its PALACE decoration (`aux` = the site index); Interact **150**
+  (target = that site index, action 1) answers Event **1702** (value 0: the
+  doors are sealed). The **sky activity** spot is a towns prop of kind 31
+  (`ACTIVITY`) in every sky-town square; Interact **151** (target = its
+  stable id, action 1) answers Event **1703** (value 0). Replace the stubs in
+  `internal/game/vertical.go verticalInteract`.
+
+Tests: `internal/game/vertical_test.go` (official world: layers, interest,
+safe saved positions, a sky town's townsfolk in 3D + a merchant + the
+activity hook, fall damage, lava, packs per layer and layered areas, vibe
+layer filters and landings), `server/pkg/vertical` (golden vectors),
+`server/pkg/movement/vertical_golden_test.go` (the TS movement goldens on the
+vertical ground), `mintdb` `TestRenewOfficialToVertical`.

@@ -71,7 +71,16 @@ var VibeLandmarks = []string{
 	"ruin", "watchtower", "mineshaft", "shrine", "bandit_camp", "wizard_tower", "meteor_crater", "sunken_temple", "demon_lair",
 	"vault", "heartfall", "event", "lake", "river", "coast", "peak", "forest", "wilds",
 	"standing_stones", "great_tree", "stone_arch", "monolith", "giant_bones", "crystal_outcrop", "statue", "hot_spring",
+	// CR 038, the vertical world.
+	"tunnel", "cavern", "crystal_cavern", "cenote", "river_cavern", "fungal_cavern", "depths", "depths_gate",
+	"archipelago", "sky_town", "sky_palace", "sky_ruin", "sky_lift",
 }
+
+// VibeLayers are the layer filter's keys (CR 038); a filter's id is index + 1 (0 any).
+var VibeLayers = []string{"surface", "sky", "underground", "depths"}
+
+// vibeCaverns: the cavern kinds by chamber kind (worldgen vertical ck).
+var vibeCaverns = []string{"crystal_cavern", "cenote", "river_cavern", "fungal_cavern"}
 
 // VibeBiomes are the atlas biomes by id (worldgen/README.md BIOME).
 var VibeBiomes = []string{"meadow", "forest", "highlands", "snowpeak", "badlands", "wetland"}
@@ -102,6 +111,7 @@ type VibeFilter struct {
 	DistMin  int // m from the spawn (64 m steps)
 	DistMax  int // 0 open
 	Tier     int // -1 any, else combat.yaml difficulty tier index
+	Layer    int // CR 038: 0 any, else VibeLayers index + 1
 	N        int // results (0 = 20, at most 60)
 	Offset   int // first match to list
 	Go       bool
@@ -114,11 +124,11 @@ func AnyVibe() VibeFilter { return VibeFilter{Biome: -1, Region: -1, Tier: -1} }
 // Pack is the filter as Interact 250/29's targetId and arg:
 // targetId = biome+1 | landmark << 4 | region+1 << 10 | levelMin << 18 |
 // levelMax << 26 | stamped << 34 | distMin/64 << 36 | distMax/64 << 43 |
-// tier+1 << 50; arg = n | offset << 8 | go << 20 | random << 21.
+// tier+1 << 50 | layer << 54 (CR 038: 0 any, else VibeLayers index + 1); arg = n | offset << 8 | go << 20 | random << 21.
 func (f VibeFilter) Pack() (uint64, uint32) {
 	c := func(v, lo, hi int) uint64 { return uint64(max(lo, min(hi, v))) }
 	t := c(f.Biome+1, 0, 15) | c(f.Landmark, 0, 63)<<4 | c(f.Region+1, 0, 255)<<10 | c(f.LevelMin, 0, 255)<<18 | c(f.LevelMax, 0, 255)<<26 |
-		c(f.Stamped, 0, 3)<<34 | c(f.DistMin/64, 0, 127)<<36 | c(f.DistMax/64, 0, 127)<<43 | c(f.Tier+1, 0, 15)<<50
+		c(f.Stamped, 0, 3)<<34 | c(f.DistMin/64, 0, 127)<<36 | c(f.DistMax/64, 0, 127)<<43 | c(f.Tier+1, 0, 15)<<50 | c(f.Layer, 0, 7)<<54
 	a := uint32(c(f.N, 0, 255)) | uint32(c(f.Offset, 0, 4095))<<8
 	if f.Go {
 		a |= 1 << 20
@@ -133,17 +143,19 @@ func (f VibeFilter) Pack() (uint64, uint32) {
 func UnpackVibeFilter(t uint64, a uint32) VibeFilter {
 	return VibeFilter{
 		Biome: int(t&0xf) - 1, Landmark: int(t >> 4 & 0x3f), Region: int(t>>10&0xff) - 1, LevelMin: int(t >> 18 & 0xff), LevelMax: int(t >> 26 & 0xff),
-		Stamped: int(t >> 34 & 0x3), DistMin: int(t>>36&0x7f) * 64, DistMax: int(t>>43&0x7f) * 64, Tier: int(t>>50&0xf) - 1,
+		Stamped: int(t >> 34 & 0x3), DistMin: int(t>>36&0x7f) * 64, DistMax: int(t>>43&0x7f) * 64, Tier: int(t>>50&0xf) - 1, Layer: int(t >> 54 & 0x7),
 		N: int(a & 0xff), Offset: int(a >> 8 & 0xfff), Go: a>>20&1 != 0, Random: a>>21&1 != 0,
 	}
 }
 
 // vibeSpot is one place the search can return.
 type vibeSpot struct {
-	kind string // a VibeLandmarks key
-	name string
-	x, z float64
-	near bool // shown in other spots' "what's there"
+	kind  string // a VibeLandmarks key
+	name  string
+	x, z  float64
+	near  bool    // shown in other spots' "what's there"
+	y     float64 // CR 038: a vertical layer spot's floor (island top, cavern floor); 0 on the surface
+	layer int     // CR 038: 0 surface, 1 sky, 2 Underground, 3 Depths
 }
 
 // vibeGlue is the zone's vibe explorer state (inside devGlue).
@@ -189,8 +201,15 @@ func (s *Server) vibeIndex() []vibeSpot {
 	add := func(kind, name string, x, z float64, near bool) {
 		v.spots = append(v.spots, vibeSpot{kind: kind, name: vibeName(name, kind), x: x, z: z, near: near})
 	}
+	addL := func(kind, name string, x, y, z float64, layer int) {
+		v.spots = append(v.spots, vibeSpot{kind: kind, name: vibeName(name, kind), x: x, z: z, near: true, y: y, layer: layer})
+	}
 	for i := range a.Sites {
 		st := &a.Sites[i].Site
+		if !st.IsBase() { // CR 038: the vertical world's sites
+			s.vibeLayerSite(st, addL)
+			continue
+		}
 		switch st.Category {
 		case structures.CategorySettlement:
 			add(vibeTownSizes[min(int(st.Size), 2)], st.Name, st.X, st.Z, true)
@@ -384,11 +403,16 @@ func (s *Server) vibeSpots() []vibeSpot {
 // then the level a player of playerLevel would stamp it at now; off: no
 // difficulty on this zone).
 func (s *Server) vibeArea(x, z float64, playerLevel int) (cell, level, tier int, state string) {
+	return s.vibeAreaLayer(x, z, 0, playerLevel)
+}
+
+// vibeAreaLayer is vibeArea in a vertical layer (CR 038: its own areas).
+func (s *Server) vibeAreaLayer(x, z float64, layer, playerLevel int) (cell, level, tier int, state string) {
 	if !s.diff.on {
 		return -1, 0, -1, "off"
 	}
 	m := s.diff.m
-	c := m.Cell(x, z)
+	c := m.LayerCell(layer, x, z)
 	def := &combatdefs.D.Difficulty
 	switch {
 	case m.DevOverridden(c) > 0:
@@ -422,8 +446,78 @@ func vibeKindMatches(want, kind string, biome int) bool {
 		return slices.Contains(vibeVariants, kind)
 	case "forest":
 		return kind == "wilds" && biome == 1
+	case "cavern":
+		return slices.Contains(vibeCaverns, kind)
 	}
 	return want == kind
+}
+
+// vibeLayerSite indexes one vertical-world site (CR 038).
+func (s *Server) vibeLayerSite(st *structures.Site, add func(kind, name string, x, y, z float64, layer int)) {
+	l := int(st.Layer)
+	switch {
+	case st.Category == structures.CategorySettlement:
+		add("sky_town", st.Name, st.X, st.Y, st.Z, l)
+	case st.Category == structures.CategoryStructure && st.Kind == structures.StructSkyPalace:
+		add("sky_palace", st.Name, st.X, st.Y, st.Z, l)
+	case st.Category == structures.CategoryStructure && st.Kind == structures.StructSkyRuin:
+		add("sky_ruin", st.Name, st.X, st.Y, st.Z, l)
+	case st.Category != structures.CategoryPOI:
+	case st.Kind == structures.POITunnel:
+		add("tunnel", st.Name, st.X, st.Y, st.Z, 0)
+	case st.Kind == structures.POICavern:
+		add(vibeCaverns[min(int(st.Size), len(vibeCaverns)-1)], st.Name, st.X, st.Y, st.Z, l)
+	case st.Kind == structures.POIDepths:
+		add("depths", st.Name, st.X, st.Y, st.Z, l)
+	case st.Kind == structures.POIDepthsGate:
+		add("depths_gate", st.Name, st.X, st.Y, st.Z, l)
+	case st.Kind == structures.POIArchipelago:
+		add("archipelago", st.Name, st.X, st.Y, st.Z, l)
+	case st.Kind == structures.POISkyLift:
+		add("sky_lift", st.Name, st.X, st.Y, st.Z, 0)
+	}
+}
+
+// vibeLayerLandingOK: a body can stand at (x, z) on layer's floor near
+// height y (CR 038): in that layer, dry (no lake, no lava), walkable, clear
+// of columns and town buildings.
+func (s *Server) vibeLayerLandingOK(x, y, z float64, layer int) (float64, bool) {
+	vw := s.vertical()
+	if vw == nil {
+		return 0, false
+	}
+	lv := movement.AtLevel(s.cfg.Ground, y+3)
+	h := lv.HeightAt(x, z)
+	if math.Abs(h-y) > 30 || vw.LayerAt(x, h, z) != layer {
+		return 0, false
+	}
+	if movement.WaterAt(lv, x, z) > h-0.3 || movement.SlopeAt(lv, x, z).T2 > constants.WalkableTanSq*0.6 {
+		return 0, false
+	}
+	for _, c := range vw.Vertical().Columns {
+		if c.Layer == layer && math.Hypot(c.X-x, c.Z-z) < c.R+2 {
+			return 0, false
+		}
+	}
+	if s.vibeInBuilding(x, z, 1.5) {
+		return 0, false
+	}
+	return h, true
+}
+
+// vibeLayerLanding is VibeLanding on a vertical layer's floor.
+func (s *Server) vibeLayerLanding(x, y, z float64, layer int) (movement.Vec3, bool) {
+	for r := 0.0; r <= vibeLandingM; r += 3 {
+		n := max(1, int(r*2*math.Pi/3))
+		for i := 0; i < n; i++ {
+			a := float64(i) / float64(n) * 2 * math.Pi
+			px, pz := x+r*math.Cos(a), z+r*math.Sin(a)
+			if h, ok := s.vibeLayerLandingOK(px, y, pz, layer); ok {
+				return movement.Vec3{X: px, Y: h, Z: pz}, true
+			}
+		}
+	}
+	return movement.Vec3{X: x, Y: y + 2, Z: z}, false
 }
 
 // VibeResult is one match (Event 1403/1404 JSON).
@@ -440,6 +534,8 @@ type VibeResult struct {
 	Level  int      `json:"lv"`
 	Tier   string   `json:"t"`
 	State  string   `json:"st"`
+	Y      float64  `json:"y"`  // CR 038: a layer spot's floor height (0 on the surface)
+	Layer  int      `json:"l"`  // CR 038: 0 surface, 1 sky, 2 Underground, 3 Depths
 	Dist   int      `json:"d"`  // m from the spawn
 	You    int      `json:"dy"` // m from you
 	Near   []string `json:"near"`
@@ -459,7 +555,7 @@ func (s *Server) vibeResult(sp vibeSpot, i int, from movement.Vec3, playerLevel 
 	a := s.vibeAtlas()
 	b := a.BiomeAt(sp.x, sp.z)
 	r := a.RegionAt(sp.x, sp.z)
-	c, lv, ti, st := s.vibeArea(sp.x, sp.z, playerLevel)
+	c, lv, ti, st := s.vibeAreaLayer(sp.x, sp.z, sp.layer, playerLevel)
 	tier := ""
 	if ti >= 0 && ti < len(combatdefs.D.Difficulty.Tiers) {
 		tier = combatdefs.D.Difficulty.Tiers[ti].Key
@@ -484,7 +580,7 @@ func (s *Server) vibeResult(sp vibeSpot, i int, from movement.Vec3, playerLevel 
 		return strings.Compare(p.s, q.s)
 	})
 	res := VibeResult{I: i, Name: sp.name, Kind: sp.kind, X: math.Round(sp.x*10) / 10, Z: math.Round(sp.z*10) / 10, Biome: VibeBiomes[min(5, max(0, b))], Region: s.regionName(r), RegI: r,
-		Cell: c, Level: lv, Tier: tier, State: st, Dist: int(math.Round(math.Hypot(sp.x-a.SpawnX, sp.z-a.SpawnZ))), You: int(math.Round(math.Hypot(sp.x-from.X, sp.z-from.Z)))}
+		Cell: c, Level: lv, Tier: tier, State: st, Y: math.Round(sp.y*10) / 10, Layer: sp.layer, Dist: int(math.Round(math.Hypot(sp.x-a.SpawnX, sp.z-a.SpawnZ))), You: int(math.Round(math.Hypot(sp.x-from.X, sp.z-from.Z)))}
 	for k := 0; k < len(near) && k < 4; k++ {
 		res.Near = append(res.Near, near[k].s)
 	}
@@ -530,12 +626,15 @@ func (s *Server) VibeSearch(f VibeFilter, from movement.Vec3, playerLevel int) [
 		if f.Region >= 0 && a.RegionAt(sp.x, sp.z) != f.Region {
 			continue
 		}
+		if f.Layer > 0 && sp.layer != f.Layer-1 {
+			continue
+		}
 		d := math.Hypot(sp.x-a.SpawnX, sp.z-a.SpawnZ)
 		if d < float64(f.DistMin) || (f.DistMax > 0 && d > float64(f.DistMax)) {
 			continue
 		}
 		if f.LevelMin > 0 || f.LevelMax > 0 || f.Stamped != 0 || f.Tier >= 0 {
-			_, lv, ti, st := s.vibeArea(sp.x, sp.z, playerLevel)
+			_, lv, ti, st := s.vibeAreaLayer(sp.x, sp.z, sp.layer, playerLevel)
 			if st == "off" {
 				continue
 			}
@@ -654,6 +753,25 @@ func (s *Server) vibeGo(sess *session, x, z float64, secs int) (movement.Vec3, b
 	return e.Move.Pos, ok
 }
 
+// vibeGoLayer is vibeGo onto a vertical layer's floor (CR 038); layer 0 =
+// the surface (a tunnel mouth: on the ground beside it).
+func (s *Server) vibeGoLayer(sess *session, x, y, z float64, layer, secs int) (movement.Vec3, bool) {
+	if layer == 0 {
+		return s.vibeGo(sess, x, z, secs)
+	}
+	e := sess.ent
+	pos, ok := s.vibeLayerLanding(x, y, z, layer)
+	s.Teleport(e, pos)
+	if secs <= 0 {
+		secs = vibeInvulnS
+	}
+	sess.dev.invulnUntil = s.tick + uint32(secs*constants.TickRateHz)
+	if e.cbt != nil {
+		e.cbt.DevGod = true
+	}
+	return e.Move.Pos, ok
+}
+
 // ---- the commands ----
 
 func (s *Server) vibeApply(sess *session, m *proto.Interact) (int32, string) {
@@ -717,7 +835,13 @@ func (s *Server) vibeFind(sess *session, f VibeFilter) (int32, string) {
 	}
 	msg := fmt.Sprintf("%d matches", total)
 	if f.Go && len(page) > 0 {
-		p, ok := s.vibeGo(sess, page[0].X, page[0].Z, 0)
+		var p movement.Vec3
+		var ok bool
+		if page[0].Layer > 0 {
+			p, ok = s.vibeGoLayer(sess, page[0].X, page[0].Y, page[0].Z, page[0].Layer, 0)
+		} else {
+			p, ok = s.vibeGo(sess, page[0].X, page[0].Z, 0)
+		}
 		out.Went, out.Landed = page[0].I, [3]float64{math.Round(p.X*10) / 10, math.Round(p.Y*10) / 10, math.Round(p.Z*10) / 10}
 		msg += fmt.Sprintf("; went to #%d %s (%s, %s, level %d %s)", page[0].I+1, page[0].Name, page[0].Kind, page[0].Biome, page[0].Level, page[0].State)
 		if !ok {

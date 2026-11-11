@@ -25,6 +25,7 @@ import (
 
 	"lodestone/server/pkg/caves"
 	"lodestone/server/pkg/movement"
+	"lodestone/server/pkg/vertical"
 )
 
 func (in *instance) caveCall(name string, args ...uint64) ([]byte, error) {
@@ -464,6 +465,10 @@ type CaveTerrain struct {
 	*Terrain
 	Caves *Caves
 	g     *caves.Ground
+	// V is the vertical world over and under the caves (genVersion 3,
+	// WithVertical); nil before it. Layers is its tile cache.
+	V      *vertical.Ground
+	Layers *Layers
 }
 
 // NewCaveTerrain puts caves under surface (nil = the plain terrain).
@@ -484,22 +489,79 @@ func (ct *CaveTerrain) HeightAt(x, z float64) float64 { return ct.g.HeightAt(x, 
 func (ct *CaveTerrain) WaterAt(x, z float64) float64 { return ct.g.WaterAt(x, z) }
 
 // AtLevel implements movement.LevelGround (the step's view at feet height y).
-func (ct *CaveTerrain) AtLevel(y float64) movement.Ground { return ct.g.AtLevel(y) }
+func (ct *CaveTerrain) AtLevel(y float64) movement.Ground {
+	if ct.V != nil {
+		return ct.V.AtLevel(y)
+	}
+	return ct.g.AtLevel(y)
+}
 
 // FloorAt is the ground under feet height y (same as AtLevel(y).HeightAt).
-func (ct *CaveTerrain) FloorAt(x, y, z float64) float64 { return ct.g.FloorAt(x, y, z) }
+func (ct *CaveTerrain) FloorAt(x, y, z float64) float64 {
+	if ct.V != nil {
+		return ct.V.FloorAt(x, y, z)
+	}
+	return ct.g.FloorAt(x, y, z)
+}
 
-// Collide is the cave wall/ceiling push-out.
-func (ct *CaveTerrain) Collide(x, y, z float64) movement.CollideResult { return ct.g.Collide(x, y, z) }
+// Collide is the cave wall/ceiling push-out (and the vertical world's).
+func (ct *CaveTerrain) Collide(x, y, z float64) movement.CollideResult {
+	if ct.V != nil {
+		return ct.V.Collide(x, y, z)
+	}
+	return ct.g.Collide(x, y, z)
+}
 
-// InCave reports whether a point is in a mouth hole or underground.
-func (ct *CaveTerrain) InCave(x, y, z float64) bool { return ct.g.InCave(x, y, z) }
+// InCave reports whether a point is in a mouth hole or underground (a cave,
+// the Underground or the Depths).
+func (ct *CaveTerrain) InCave(x, y, z float64) bool {
+	if ct.V != nil {
+		if l := ct.V.LayerAt(x, y, z); l == vertical.LayerUnder || l == vertical.LayerDepths {
+			return true
+		}
+	}
+	return ct.g.InCave(x, y, z)
+}
+
+// LayerAt is the vertical layer of a point: 0 surface (and caves), 1 sky
+// (on an island or in the sky over an archipelago), 2 Underground, 3 Depths.
+func (ct *CaveTerrain) LayerAt(x, y, z float64) int {
+	if ct.V == nil {
+		return vertical.LayerSurface
+	}
+	l := ct.V.LayerAt(x, y, z)
+	if l == vertical.LayerSurface && ct.V.W.InSkyBand(x, y, z) {
+		return vertical.LayerSky
+	}
+	return l
+}
+
+// Vertical is the vertical world (nil before genVersion 3).
+func (ct *CaveTerrain) Vertical() *vertical.World {
+	if ct.V == nil {
+		return nil
+	}
+	return ct.V.W
+}
+
+// WantVertical feeds the layer tile cache (no-op without the vertical world).
+func (ct *CaveTerrain) WantVertical(x, z, r float64) {
+	if ct.Layers != nil {
+		ct.Layers.Want(x, z, r)
+	}
+}
 
 // SystemAt is the cave-system index of an underground point, else -1:
-// points on the open surface (not in a cave) are never "in" a system.
+// points on the open surface (not in a cave) and in the vertical layers are
+// never "in" a system.
 func (ct *CaveTerrain) SystemAt(x, y, z float64) int {
 	if !ct.g.InCave(x, y, z) {
 		return -1
+	}
+	if ct.V != nil {
+		if l := ct.V.LayerAt(x, y, z); l != vertical.LayerSurface {
+			return -1
+		}
 	}
 	return ct.Caves.Graph.SystemAt(x, y+1, z)
 }

@@ -1128,6 +1128,10 @@ func (s *Server) nightCombatEvent(o combat.Out) {
 // nightUpdraft is the movement env's updraft: burning cells plus WP10's
 // debug columns.
 func (s *Server) nightUpdraft() movement.UpdraftField {
+	return withVerticalUpdraft(s.chemUpdraft(), s.verticalUpdraft())
+}
+
+func (s *Server) chemUpdraft() movement.UpdraftField {
 	c := s.night.cfg.Chem
 	if c == nil {
 		return s.cfg.Updraft
@@ -1138,10 +1142,32 @@ func (s *Server) nightUpdraft() movement.UpdraftField {
 	return maxUpdraft{c, s.cfg.Updraft}
 }
 
+// withVerticalUpdraft adds the vertical world's static wind columns (CR 038:
+// sky lifts, wind columns, geysers, currents) to an updraft field.
+func withVerticalUpdraft(f movement.UpdraftField, v movement.UpdraftField) movement.UpdraftField {
+	if v == nil {
+		return f
+	}
+	if f == nil {
+		return v
+	}
+	return maxUpdraft{f, v}
+}
+
 type maxUpdraft struct{ a, b movement.UpdraftField }
 
 func (m maxUpdraft) LiftAt(x, y, z float64) float64 {
 	return math.Max(m.a.LiftAt(x, y, z), m.b.LiftAt(x, y, z))
+}
+
+// FreeGlideAt forwards movement.FreeGlider (CR 038: the sky air).
+func (m maxUpdraft) FreeGlideAt(x, y, z float64) bool {
+	for _, f := range []movement.UpdraftField{m.a, m.b} {
+		if fg, ok := f.(movement.FreeGlider); ok && fg.FreeGlideAt(x, y, z) {
+			return true
+		}
+	}
+	return false
 }
 
 // ---- Interacts ----

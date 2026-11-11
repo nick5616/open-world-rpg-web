@@ -38,6 +38,17 @@ type Stamp struct {
 	Won bool
 }
 
+// Layers: CR 038 (the vertical world) gives the sky (1), the Underground
+// (2) and the Depths (3) their own areas over the same 256 m grid, stamped
+// like the surface's (0) but never below LayerFloor: the sky is moderately
+// hard, the caverns mid, the Depths the top tier. A layered area's index is
+// layer * PerEdge^2 + the surface index (its store row's cell_z is
+// layer * PerEdge + z, so no migration was needed). The Haven is surface only.
+const Layers = 4
+
+// LayerFloor is the lowest level an area of each layer is stamped at.
+var LayerFloor = [Layers]int{0, 10, 6, 20}
+
 // Map is a world's area levels as one zone knows them. Tick-owned.
 type Map struct {
 	Def     *combatdefs.Difficulty
@@ -57,9 +68,10 @@ type Map struct {
 // danger is the generator's region danger (0..1) at a position (nil: 0).
 func New(def *combatdefs.Difficulty, worldSize, sx, sz float64, danger func(x, z float64) float64) *Map {
 	per := max(1, int(math.Round(worldSize/def.CellM)))
-	m := &Map{Def: def, PerEdge: per, CellM: def.CellM, level: make([]int16, per*per), pending: make([]bool, per*per), prov: make([]bool, per*per),
-		retryAt: make([]uint32, per*per), haven: make([]bool, per*per), by: make([]string, per*per), danger: danger}
-	for c := range m.level {
+	n := per * per * Layers
+	m := &Map{Def: def, PerEdge: per, CellM: def.CellM, level: make([]int16, n), pending: make([]bool, n), prov: make([]bool, n),
+		retryAt: make([]uint32, n), haven: make([]bool, n), by: make([]string, n), danger: danger}
+	for c := range per * per {
 		x, z := m.Center(c)
 		if math.Hypot(x-sx, z-sz) <= def.HavenRadiusM {
 			m.haven[c] = true
@@ -69,8 +81,30 @@ func New(def *combatdefs.Difficulty, worldSize, sx, sz float64, danger func(x, z
 	return m
 }
 
-// Cells is the number of areas.
+// Cells is the number of areas (every layer).
 func (m *Map) Cells() int { return len(m.level) }
+
+// BaseCells is the number of areas of one layer.
+func (m *Map) BaseCells() int { return m.PerEdge * m.PerEdge }
+
+// LayerCell is the area index of a position in a layer (0 = Cell).
+func (m *Map) LayerCell(layer int, x, z float64) int {
+	return max(0, min(Layers-1, layer))*m.BaseCells() + m.Cell(x, z)
+}
+
+// LayerOf is an area index's layer.
+func (m *Map) LayerOf(c int) int { return c / m.BaseCells() }
+
+// AreaAtLayer is AreaAt in a layer (combat groups of the vertical world).
+func (m *Map) AreaAtLayer(x, z float64, layer int) (int, *combatdefs.DifficultyTier, bool) {
+	c := m.LayerCell(layer, x, z)
+	l, ok := m.Level(c)
+	if !ok {
+		return 0, nil, false
+	}
+	t, _, _ := m.Tier(c)
+	return l, t, true
+}
 
 // Cell is the area index of a position (clamped into the world).
 func (m *Map) Cell(x, z float64) int {
@@ -80,7 +114,10 @@ func (m *Map) Cell(x, z float64) int {
 }
 
 // XZ is an area's grid coordinates.
-func (m *Map) XZ(c int) (cx, cz int) { return c % m.PerEdge, c / m.PerEdge }
+func (m *Map) XZ(c int) (cx, cz int) {
+	b := c % m.BaseCells()
+	return b % m.PerEdge, b / m.PerEdge
+}
 
 // Center is an area's centre in metres.
 func (m *Map) Center(c int) (x, z float64) {
@@ -177,6 +214,17 @@ func (m *Map) NeedsClaim(c int, tick uint32) bool {
 	return m.prov[c] && tick >= m.retryAt[c]
 }
 
+// NearLayer is Near for a layer's areas.
+func (m *Map) NearLayer(layer int, x, z, r float64, out []int) []int {
+	n0 := len(out)
+	out = m.Near(x, z, r, out)
+	off := max(0, min(Layers-1, layer)) * m.BaseCells()
+	for i := n0; i < len(out); i++ {
+		out[i] += off
+	}
+	return out
+}
+
 // Near appends the areas whose square lies within r metres of (x, z),
 // nearest first (the player's own area first).
 func (m *Map) Near(x, z, r float64, out []int) []int {
@@ -220,6 +268,7 @@ func (m *Map) Near(x, z, r float64, out []int) []int {
 // Neighbours are the 8 areas around c.
 func (m *Map) Neighbours(c int) []int {
 	cx, cz := m.XZ(c)
+	off := m.LayerOf(c) * m.BaseCells()
 	out := make([]int, 0, 8)
 	for dz := -1; dz <= 1; dz++ {
 		for dx := -1; dx <= 1; dx++ {
@@ -227,7 +276,7 @@ func (m *Map) Neighbours(c int) []int {
 			if (dx == 0 && dz == 0) || x < 0 || z < 0 || x >= m.PerEdge || z >= m.PerEdge {
 				continue
 			}
-			out = append(out, z*m.PerEdge+x)
+			out = append(out, off+z*m.PerEdge+x)
 		}
 	}
 	return out

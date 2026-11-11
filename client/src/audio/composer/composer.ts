@@ -18,6 +18,7 @@
 // Registers itself as the engine's composer hook (hook.ts) on first use, so
 // a session that never opens the console runs exactly as before.
 
+import { LAYER_TAGS, audioWorld } from '../bridge';
 import { create } from 'zustand';
 import { localPlayer } from '../../state/live';
 import { useCombatHud } from '../../combat/store';
@@ -208,6 +209,7 @@ class Composer implements ComposerHook {
       boss: !!hud.boss,
       underground: i.underground,
       inTown: i.inTown,
+      layer: LAYER_TAGS[audioWorld.layer] ?? 'surface',
       timedPhase: d.timedPhase,
     };
     return { ...base, time: timeOfDay(i.hour), intensity: o.intensity ?? computeIntensity(base) };

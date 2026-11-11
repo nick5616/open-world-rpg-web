@@ -59,7 +59,7 @@ func testWorld(t testing.TB) *World {
 
 func TestModuleBasics(t *testing.T) {
 	m := testModule(t)
-	if m.GenVersion() != 2 { // playtest 1 towns/density (docs/cr/014); genVersion 1 is archived
+	if m.GenVersion() != 3 { // CR 038 vertical world; genVersion 1 and 2 are archived
 		t.Fatalf("genVersion %d", m.GenVersion())
 	}
 	if len(m.SHA256()) != 64 {

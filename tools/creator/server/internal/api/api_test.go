@@ -219,7 +219,7 @@ func TestMintFromSeedMatchesGoldenAtlas(t *testing.T) {
 	}
 	w := body["world"].(map[string]any)
 	// worldgen/golden/golden.json (genVersion 2), world "seed-7".
-	if w["atlasHash"] != "e0e3c0c797584a62" || w["genVersion"] != "2" || w["seed"] != "7" || w["name"] != "Shores of Sonaliassver" || body["source"] != "seed" {
+	if w["atlasHash"] != "74516190aeb805df" || w["genVersion"] != "3" || w["seed"] != "7" || w["name"] != "Shores of Sonaliassver" || body["source"] != "seed" {
 		t.Fatalf("world %v", w)
 	}
 	// Minting it again returns the same row.
@@ -243,7 +243,7 @@ func TestMintFromSlidersNormalizesFirst(t *testing.T) {
 	if stored["seaLevel"] != 1.0 || stored["name"] != "Slider Isles" || len(stored["lootThemes"].([]any)) != 1 {
 		t.Fatalf("stored spec %v", stored)
 	}
-	if body["world"].(map[string]any)["atlasHash"] == "e0e3c0c797584a62" {
+	if body["world"].(map[string]any)["atlasHash"] == "74516190aeb805df" {
 		t.Fatal("slider world hashed like the seed-only world")
 	}
 	if n := len(body["changes"].([]any)); n == 0 {

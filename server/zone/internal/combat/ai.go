@@ -599,7 +599,7 @@ func (w *World) stepMove(e *Enemy, mx, mz float64, steer bool) uint8 {
 	if e.Def.Behavior == "flyer" {
 		lift = 1.5
 	}
-	g, lvl := w.ground, e.ally != nil && w.levelGround
+	g, lvl := w.ground, (e.ally != nil || (e.Group != nil && e.Group.Layer > 0)) && w.levelGround // CR 038: layered groups walk their floor
 	if lvl {
 		g = movement.AtLevel(w.ground, e.Pos.Y-lift)
 	}

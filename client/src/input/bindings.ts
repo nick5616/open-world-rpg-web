@@ -71,6 +71,7 @@ export const BINDINGS: Binding[] = [
   W('KeyE', 'ui/progression/ProgressionHud.tsx', 'attune a tower crystal'),
   W('KeyE', 'ui/inventory/LootHud.tsx', 'take loot, open a container, cook'),
   W('KeyE', 'ui/content/ContentHud.tsx', 'lore tablet, herb, vault part'),
+  W('KeyE', 'world/vertical/VerticalHud.tsx', 'sky palace doors, a sky town challenge stand (CR 038)'),
   W('KeyE', 'ui/camps/CampHud.tsx', 'use a camp piece (hold: pick it up)'),
   W('KeyE', 'ui/fishing/FishingHud.tsx', 'cast a line'),
   W('KeyE', 'ui/mounts/MountHud.tsx', 'ride / get off'),

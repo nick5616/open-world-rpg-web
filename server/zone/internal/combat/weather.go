@@ -31,6 +31,26 @@ func (w *World) HurtByWeather(p *Player, dmg float64) float64 {
 	return dmg
 }
 
+// HurtByEnvironment lowers a player's health by a share of its max health
+// (CR 038: a hard landing, the Depths' lava). Armor and shields do not
+// apply; a respawn grace protects; nobody is credited. Returns the damage.
+func (w *World) HurtByEnvironment(p *Player, pctOfMax float64) float64 {
+	if p == nil || p.Downed || p.Graced(w.tick) || pctOfMax <= 0 {
+		return 0
+	}
+	dmg := math.Round(p.HPMax * pctOfMax / 100)
+	if dmg <= 0 {
+		return 0
+	}
+	p.HP -= dmg
+	p.lastHurtTick = w.tick
+	w.Stats.PlayerHits++
+	if p.HP <= 0 {
+		w.downPlayer(p, 0)
+	}
+	return dmg
+}
+
 // EnemiesNear lists living enemies within r of (x, z) (id order).
 func (w *World) EnemiesNear(x, z, r float64) []*Enemy {
 	var out []*Enemy

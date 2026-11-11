@@ -236,6 +236,10 @@ func main() {
 	if caveTerrain != nil {
 		defer caveTerrain.Caves.Close()
 		serveCaves(ctx, s, caveTerrain, zone)
+		serveVertical(s, caveTerrain) // CR 038 (caves.go)
+		if caveTerrain.Layers != nil {
+			defer caveTerrain.Layers.Close()
+		}
 	}
 	go zone.RunMetrics(ctx, queue.Depth, func(m *svc.Metrics) {
 		st := &queue.Stats

@@ -12,6 +12,7 @@ import { BIOMES, fnv1a64, hex64, loadWorldgen, type AtlasData } from '../js/src/
 import { f64Bits, type GoldenChunk, type GoldenFile, type GoldenWorld } from '../js/src/golden';
 import { generateCaves } from '../js/src/caveGolden';
 import { generateTowns } from '../js/src/townGolden';
+import { generateVertical } from '../js/src/vertical';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const wasmPath = path.join(here, '..', 'pkg', 'worldgen.wasm');
@@ -128,7 +129,11 @@ for (const { label, spec } of presets()) {
     caves: generateCaves(wg, atlas),
     // WP20: towns buffer, counts, building collision vectors.
     towns: generateTowns(wg, atlas, label),
+    // genVersion 3: the vertical world (descriptor, tiles, heights, collision, updrafts).
+    vertical: generateVertical(wg, atlas, label),
   });
+  const vt = worlds.at(-1)!.vertical!;
+  console.log(`  vertical: ${vt.bytes} B, ${JSON.stringify(vt.counts)}, ${vt.tiles.length} tiles, ${vt.heights.length} heights, ${vt.floors.length} floors, ${vt.collide.length} collide`);
   const tw = worlds.at(-1)!.towns!;
   console.log(`  towns: ${tw.bytes} B, ${JSON.stringify(tw.counts)}, ${tw.floors.length} floors, ${tw.collide.length} collide`);
   const cv = worlds.at(-1)!.caves!;

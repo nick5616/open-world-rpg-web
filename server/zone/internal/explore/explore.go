@@ -27,6 +27,9 @@ const (
 	WaypointTouchM = 3.0
 	// waypointTouchDY: same stone, not the cliff above it.
 	waypointTouchDY = 3.0
+	// layerWaypointDY (CR 038): a sky town's or an underground camp's stone
+	// stands on its island / cavern floor (the site's y, within the floor's relief).
+	layerWaypointDY = 12.0
 	// TowerTopSlackM: the top check accepts feet within the platform plus
 	// this much, and down to this far below the platform surface (ground
 	// snapping keeps feet on it; the slack covers the 1e-4 grounded epsilon
@@ -110,8 +113,34 @@ func DiscoverRadius(s *structures.Site) float64 {
 		return 20
 	case structures.POILandmark:
 		return 25
+	// CR 038, the vertical world (layer sites also need VerticalReach).
+	case structures.POITunnel:
+		return 25
+	case structures.POICavern, structures.POIDepths:
+		return math.Max(30, s.Radius*0.6)
+	case structures.POIDepthsGate:
+		return s.Radius + 10
+	case structures.POIArchipelago:
+		return s.Radius
+	case structures.POISkyLift:
+		return 15
 	}
 	return 0
+}
+
+// VerticalReach (CR 038): how far above or below a site of a vertical layer
+// (sky, Underground, Depths) a player may be to discover or touch it; +Inf
+// for surface sites (horizontal distance only, as before).
+func VerticalReach(s *structures.Site) float64 {
+	switch {
+	case s.Layer == 0:
+		return math.Inf(1)
+	case s.Category == structures.CategoryPOI && s.Kind == structures.POIArchipelago:
+		return 260 // anywhere up among its islands
+	case s.Layer == 1:
+		return 45
+	}
+	return 110 // a cavern's floor to its roof
 }
 
 // DiscoverXP is the one-time XP for discovering s. Scaled so a level-1
@@ -131,6 +160,18 @@ func DiscoverXP(s *structures.Site) int64 {
 		return 50
 	case structures.POILandmark:
 		return 30
+	case structures.POITunnel:
+		return 50
+	case structures.POICavern:
+		return 70
+	case structures.POIDepths:
+		return 90
+	case structures.POIDepthsGate:
+		return 40
+	case structures.POIArchipelago:
+		return 40
+	case structures.POISkyLift:
+		return 20
 	}
 	return 0
 }
@@ -213,13 +254,16 @@ func (w *World) Check(p *Progress, pos movement.Vec3, out []Happening) []Happeni
 	for _, si := range w.cells[[2]int32{cellOf(pos.X), cellOf(pos.Z)}] {
 		s := &w.Atlas.Sites[si]
 		d := math.Hypot(pos.X-s.X, pos.Z-s.Z)
+		if s.Layer != 0 && math.Abs(pos.Y-s.Y) > VerticalReach(s) {
+			continue // CR 038: under a sky town, over a cavern: not there yet
+		}
 		if r := w.discoverR[si]; r > 0 && d <= r && !p.Discoveries.Has(int(si)) {
 			p.Discoveries.Set(int(si))
 			xp := w.discoverXP[si]
 			p.AddXP(xp)
 			out = append(out, Happening{Kind: Discovered, Site: int(si), XP: xp, Region: int(s.Region)})
 		}
-		if s.IsWaypoint() && d <= WaypointTouchM && math.Abs(pos.Y-w.Ground.HeightAt(s.X, s.Z)) <= waypointTouchDY {
+		if s.IsWaypoint() && d <= WaypointTouchM && (s.Layer != 0 && math.Abs(pos.Y-s.Y) <= layerWaypointDY || s.Layer == 0 && math.Abs(pos.Y-w.Ground.HeightAt(s.X, s.Z)) <= waypointTouchDY) {
 			if !p.Waypoints.Has(int(si)) {
 				p.Waypoints.Set(int(si))
 				p.dirty = true
@@ -323,6 +367,11 @@ func (w *World) Destination(site int) (movement.Vec3, bool) {
 		return movement.Vec3{}, false
 	}
 	x, z := s.X+ArrivalOffsetM*math.Cos(s.Yaw), s.Z+ArrivalOffsetM*math.Sin(s.Yaw)
+	if s.Layer != 0 {
+		// CR 038: a sky town's / underground camp's stone: arrive just above
+		// its floor (the zone's Teleport lifts onto the layer's floor at that level).
+		return movement.Vec3{X: x, Y: s.Y + 2.5, Z: z}, true
+	}
 	return movement.Vec3{X: x, Y: w.Ground.HeightAt(x, z), Z: z}, true
 }
 

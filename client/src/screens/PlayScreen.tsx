@@ -27,6 +27,8 @@ import { DEBUG, SOLO } from '../config';
 import { SocialOverlay } from '../social';
 // WP12: compass, discovery toasts, map (M).
 import { ExplorationHud } from '../ui/map/ExplorationHud';
+// CR 038: arriving in a layer or a named cavern, fall warnings, sky lifts, the Depths' heat.
+import { VerticalHud } from '../world/vertical/VerticalHud';
 // WP13: health, mana, spell slots, boss bar, damage numbers (renders nothing offline).
 import { CombatHud } from '../combat/CombatHud';
 // WP11: renders nothing until NetPlay starts voice (client/src/voice/README.md).
@@ -90,6 +92,7 @@ export default function PlayScreen() {
       {DEBUG && <DebugLayer />}
       <SocialOverlay />
       <ExplorationHud />
+      <VerticalHud />
       <CombatHud />
       <VoiceHud />
       {/* WP14 */}

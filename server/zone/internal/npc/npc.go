@@ -198,6 +198,10 @@ func (w *World) Place(i int, todS float64, ground func(x, y, z float64) float64,
 	// 2.6 m (indoor floors on a downhill plinth, stilt floors, decks) but
 	// never a roof (wall tops are >= 2.8 m above any floor).
 	s.Y = surface(s.X, s.Z) + 2
+	// CR 038: a sky town stands on its island far above the surface.
+	if si := s.Def.Settlement; si >= 0 && si < len(w.T.Settlements) && w.T.Settlements[si].Y > s.Y+20 {
+		s.Y = w.T.Settlements[si].Y + 6
+	}
 	for k := 0; k < 3; k++ {
 		s.Y = ground(s.X, s.Y, s.Z)
 	}
@@ -509,4 +513,26 @@ func mix(z uint64) uint64 {
 	z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9
 	z = (z ^ (z >> 27)) * 0x94D049BB133111EB
 	return z ^ (z >> 31)
+}
+
+// PropAt is the position of the towns prop with stable id id and kind kind
+// (CR 038: a sky town activity spot), ok false when there is none.
+func (w *World) PropAt(id uint64, kind uint8) (x, y, z float64, ok bool) {
+	for i := range w.T.Props {
+		p := &w.T.Props[i]
+		if p.ID == id && p.Kind == kind {
+			return p.X, p.Y, p.Z, true
+		}
+	}
+	return 0, 0, 0, false
+}
+
+// SkySettlement: a settlement standing far above the terrain under it
+// (CR 038 sky towns); its townsfolk wake by 3D distance.
+func (w *World) SkySettlement(si int, surface func(x, z float64) float64) bool {
+	if si < 0 || si >= len(w.T.Settlements) {
+		return false
+	}
+	st := &w.T.Settlements[si]
+	return st.Y > surface(st.X, st.Z)+60
 }

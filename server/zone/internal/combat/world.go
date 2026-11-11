@@ -61,6 +61,10 @@ type Group struct {
 	// Retired (CR 022): a finished world event's or reset vault's group;
 	// it never spawns again (content.go RetireGroup).
 	Retired bool
+	// Layer (CR 038, the vertical world): 0 surface, 1 sky, 2 Underground,
+	// 3 Depths. A layered group spawns, wakes and walks by 3D distance on its
+	// layer's floor (the level view of the ground) and takes the layer's area.
+	Layer int
 	// AreaLevel: the group takes its level and tier from the area it stands
 	// in when it spawns (playtest 1, World.Areas); set for every atlas group.
 	AreaLevel bool
@@ -269,7 +273,7 @@ func (w *World) BuildFromAtlas(a *AtlasInfo) {
 	safe := func(x, z float64) bool {
 		for i := range a.Sites {
 			s := &a.Sites[i]
-			if s.Category == structures.CategorySettlement && math.Hypot(s.X-x, s.Z-z) < s.Radius+60 {
+			if s.Category == structures.CategorySettlement && s.Layer == 0 && math.Hypot(s.X-x, s.Z-z) < s.Radius+60 {
 				return false
 			}
 		}
@@ -376,6 +380,9 @@ func (w *World) areaReady(g *Group) bool {
 		return true
 	}
 	lvl, t, ok := w.Areas.AreaAt(g.Anchor.X, g.Anchor.Z)
+	if la, isLayered := w.Areas.(layeredAreas); isLayered && g.Layer > 0 {
+		lvl, t, ok = la.AreaAtLayer(g.Anchor.X, g.Anchor.Z, g.Layer)
+	}
 	if !ok || t == nil {
 		return false
 	}
@@ -384,6 +391,35 @@ func (w *World) areaReady(g *Group) bool {
 	}
 	g.Level, g.tier = max(1, lvl), t
 	return true
+}
+
+// Layer enemy tables (CR 038): what lives in the dark caverns, in the
+// Depths (demons: the Hush's kin from CR 035's lore, the Starless host that
+// never sees dawn) and on the sky islands; and each layer's elite chance.
+var (
+	LayerTables = [4][]string{
+		nil,
+		{"gale_harpy", "spark_wisp", "lumen_moth", "gale_harpy"},
+		{"cave_crawler", "gloom_bat", "crystal_golem", "shade", "void_mite", "gloom_bat"},
+		{"gloamling", "gloamling", "cinder_fiend", "umbral_stalker", "void_maw", "grave_brute"},
+	}
+	LayerEliteChance = [4]float64{0.15, 0.25, 0.2, 0.45}
+)
+
+// layeredAreas is an Areas with per-layer areas (difficulty.Map, CR 038).
+type layeredAreas interface {
+	AreaAtLayer(x, z float64, layer int) (int, *combatdefs.DifficultyTier, bool)
+}
+
+// groupDist is a player's distance to a group's anchor: horizontal, and 3D
+// for a group of a vertical layer (an Underground pack never wakes for the
+// people walking 200 m above it).
+func groupDist(g *Group, p movement.Vec3) float64 {
+	d := math.Hypot(g.Anchor.X-p.X, g.Anchor.Z-p.Z)
+	if g.Layer > 0 {
+		d = math.Hypot(d, g.Anchor.Y-p.Y)
+	}
+	return d
 }
 
 func (w *World) nearGroup(x, z, r float64) bool {
@@ -427,6 +463,21 @@ func (w *World) composition(g *Group) (keys []string, elite int, affix *combatde
 		keys = slices.Clone(t)
 		eliteChance += 0.1
 	case GroupPack:
+		if g.Layer > 0 && len(g.Comp) > 0 {
+			// CR 038: a vertical layer's pack draws from its own table
+			// (Comp): 2-4 of them, mostly one kind; the Depths' have more elites.
+			n := 2 + int(mix(h+5)%3)
+			first := pick(g.Comp, 0)
+			for i := 0; i < n; i++ {
+				if i < 2 {
+					keys = append(keys, first)
+				} else {
+					keys = append(keys, pick(g.Comp, i))
+				}
+			}
+			eliteChance = LayerEliteChance[min(3, g.Layer)]
+			break
+		}
 		n := 2 + int(mix(h+5)%3)
 		first := pick(biome, 0)
 		for i := 0; i < n; i++ {
@@ -483,6 +534,12 @@ func (w *World) spawnGroup(g *Group) {
 			r = math.Min(g.Radius*0.6, 2.5+float64(i))
 		}
 		pos := w.place(g.Anchor.X+r*math.Cos(a), g.Anchor.Z+r*math.Sin(a), def)
+		if g.Layer > 0 && w.levelGround { // CR 038: on the layer's floor
+			pos.Y = movement.GroundAt(w.ground, pos.X, g.Anchor.Y+1, pos.Z)
+			if def.Behavior == "flyer" {
+				pos.Y += 1.5
+			}
+		}
 		var af *combatdefs.Affix
 		el := def.Element
 		if def.Family == "boss" && g.Element < combatdefs.Physical {
@@ -741,7 +798,7 @@ func (w *World) spawnTick() {
 						// spike once a second).
 						continue
 					}
-					d := math.Hypot(g.Anchor.X-p.Pos.X, g.Anchor.Z-p.Pos.Z)
+					d := groupDist(g, p.Pos)
 					if d <= despawnR {
 						g.lastNear = w.tick
 						if d <= spawnR {
@@ -779,7 +836,7 @@ func (w *World) wakeTick() {
 		}
 		awake := false
 		w.eachPlayerNear(g.Anchor.X, g.Anchor.Z, constants.EnemyWakeM, func(p *Player) {
-			if !awake && math.Hypot(g.Anchor.X-p.Pos.X, g.Anchor.Z-p.Pos.Z) <= constants.EnemyWakeM {
+			if !awake && groupDist(g, p.Pos) <= constants.EnemyWakeM {
 				awake = true
 			}
 		})

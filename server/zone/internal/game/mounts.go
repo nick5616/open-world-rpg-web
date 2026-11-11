@@ -90,6 +90,7 @@ const (
 	SteedRefuseDowned   = 8  // you are down
 	SteedRefuseName     = 9  // a name of 1-16 letters, digits, spaces, ' or -
 	SteedRefuseRiding   = 10 // already riding
+	SteedRefuseSky      = 11 // CR 038: in the sky (steeds can't fly)
 )
 
 // Thrown causes (Event 1143 value).
@@ -625,8 +626,12 @@ func (s *Server) steedSummon(sess *session) {
 		s.steedRefuse(sess, SteedActSummon, SteedRefuseDowned, 0)
 		return
 	}
-	if e.caveSys >= 0 {
+	if e.caveSys >= 0 || e.layer == layerUnder || e.layer == layerDepths {
 		s.steedRefuse(sess, SteedActSummon, SteedRefuseHere, 0)
+		return
+	}
+	if e.layer == layerSky {
+		s.steedRefuse(sess, SteedActSummon, SteedRefuseSky, 0)
 		return
 	}
 	if e.Move.Mode == movement.ModeSwim || e.Move.Mode == movement.ModeClimb {
