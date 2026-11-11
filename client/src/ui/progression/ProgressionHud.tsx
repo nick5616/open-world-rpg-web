@@ -22,7 +22,9 @@ import { trackPanel } from '../../input/panelStack';
 
 // Esc closes the character panel when it is the top panel (input/panelStack.ts).
 trackPanel(useProgression, (s) => s.panelOpen, 'character', () => setPanelOpen(false));
-import { towerPrompt, type TowerPrompt, type TowerLike } from './towerPrompt';
+import { towerPrompt, WET_CLIMB, type TowerPrompt, type TowerLike } from './towerPrompt';
+import { liveWeather } from '../../systems/weather/runtime';
+import { isWet } from '../../systems/weather/weather';
 import { useIntro } from '../intro/queue';
 import { openSkillScreen } from '../skills/store';
 import { PvpPanelSection } from '../pvp/PvpHud';
@@ -102,8 +104,8 @@ function useTowerPrompt(): TowerPrompt | null {
       const towers: TowerLike[] = useMapWorld.getState().towers.map((t) => ({ site: t.site, cx: t.shape.cx, cz: t.shape.cz, topY: t.shape.topY, maxR: t.shape.maxR }));
       const unlockedSet = useExploration.getState().progress.towers;
       const pos = localPlayer.pos;
-      const next = towerPrompt(towers, pos.x, pos.y, pos.z, (s) => hasBit(unlockedSet, s), isAttuned);
-      const key = next ? `${next.kind}:${next.site}` : '';
+      const next = towerPrompt(towers, pos.x, pos.y, pos.z, (s) => hasBit(unlockedSet, s), isAttuned, isWet(liveWeather.state));
+      const key = next ? `${next.kind}:${next.site}:${next.detail === WET_CLIMB}` : '';
       if (key !== last) {
         last = key;
         setP(next);
