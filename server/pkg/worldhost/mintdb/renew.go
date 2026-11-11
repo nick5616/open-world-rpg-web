@@ -12,6 +12,7 @@ import (
 	"lodestone/server/pkg/accountapi"
 	"lodestone/server/pkg/structures"
 	"lodestone/server/pkg/towns"
+	"lodestone/server/pkg/vertical"
 	"lodestone/server/pkg/worldhost"
 )
 
@@ -44,9 +45,10 @@ var ErrRenewSites = errors.New("the new generator does not keep the old sites at
 // refused unless every site of the old atlas exists at the same index with
 // the same id in the new one (old, the archived module of the row's
 // gen_version, rebuilds the old site table to compare). Saved positions
-// within reach of a settlement whose ground changed (hamlets and villages:
-// their footprint is no longer levelled, buildings moved) are reset to the
-// never-checkpointed marker, so those characters start at the atlas spawn.
+// within reach of a settlement whose ground changed (from genVersion 1:
+// hamlets and villages, no longer levelled) or of a new hole in the terrain
+// (to genVersion 3, CR 038: a tunnel mouth or a cenote shaft) are reset to
+// the never-checkpointed marker, so those characters start at the atlas spawn.
 // One transaction; a row already on this genVersion is left alone.
 func RenewOfficial(ctx context.Context, db accountapi.DB, cur, old *worldhost.Module) (RenewResult, error) {
 	w, ok, err := Official(ctx, db)
@@ -88,6 +90,17 @@ func RenewOfficial(ctx context.Context, db accountapi.DB, cur, old *worldhost.Mo
 	if err != nil {
 		return RenewResult{}, err
 	}
+	oldGV, _ := worldhost.ParseGenVersion(w.GenVersion)
+	// genVersion 3 (CR 038): tunnel mouths and cenote shafts are new holes in
+	// the terrain; a character saved standing in one restarts at the spawn.
+	var holes []vertical.Opening
+	if oldGV < 3 && cur.GenVersion() >= 3 {
+		if vb, err := after.World.VerticalDesc(); err == nil {
+			if vw, err := vertical.Parse(vb); err == nil {
+				holes = vw.SurfaceOpenings
+			}
+		}
+	}
 
 	res := RenewResult{Action: Renewed, Before: w, KeptAll: true}
 	err = pgx.BeginFunc(ctx, db.Pool, func(tx pgx.Tx) error {
@@ -113,7 +126,7 @@ func RenewOfficial(ctx context.Context, db accountapi.DB, cur, old *worldhost.Mo
 				return err
 			}
 			var p struct{ X, Z float64 }
-			if json.Unmarshal(raw, &p) == nil && nearChangedGround(tw, p.X, p.Z) {
+			if json.Unmarshal(raw, &p) == nil && ((oldGV < 2 && nearChangedGround(tw, p.X, p.Z)) || nearHole(holes, p.X, p.Z)) {
 				reset = append(reset, id)
 			}
 		}
@@ -139,6 +152,20 @@ func nearChangedGround(t *towns.Towns, x, z float64) bool {
 	for i := range t.Settlements {
 		s := &t.Settlements[i]
 		if !s.Walled && math.Hypot(s.X-x, s.Z-z) < s.Radius+40 {
+			return true
+		}
+	}
+	return false
+}
+
+// HoleMarginM: characters saved within an opening's radius plus this are moved (CR 038).
+const HoleMarginM = 8.0
+
+// nearHole: within reach of a new hole in the terrain (genVersion 3: a
+// tunnel mouth or a cenote shaft opens there).
+func nearHole(holes []vertical.Opening, x, z float64) bool {
+	for _, o := range holes {
+		if math.Hypot(o.X-x, o.Z-z) < o.R+HoleMarginM {
 			return true
 		}
 	}

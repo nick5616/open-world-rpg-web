@@ -12,7 +12,13 @@ export const VIBE_LANDMARKS = [
   'ruin', 'watchtower', 'mineshaft', 'shrine', 'bandit_camp', 'wizard_tower', 'meteor_crater', 'sunken_temple', 'demon_lair',
   'vault', 'heartfall', 'event', 'lake', 'river', 'coast', 'peak', 'forest', 'wilds',
   'standing_stones', 'great_tree', 'stone_arch', 'monolith', 'giant_bones', 'crystal_outcrop', 'statue', 'hot_spring',
+  // CR 038, the vertical world.
+  'tunnel', 'cavern', 'crystal_cavern', 'cenote', 'river_cavern', 'fungal_cavern', 'depths', 'depths_gate',
+  'archipelago', 'sky_town', 'sky_palace', 'sky_ruin', 'sky_lift',
 ] as const;
+
+/** CR 038: the layer filter's keys (game.VibeLayers); the filter sends index + 1 (0 any). */
+export const VIBE_LAYERS = ['surface', 'sky', 'underground', 'depths'] as const;
 export type VibeLandmark = (typeof VIBE_LANDMARKS)[number];
 
 export const VIBE_BIOMES = ['meadow', 'forest', 'highlands', 'snowpeak', 'badlands', 'wetland'] as const;
@@ -58,6 +64,19 @@ export const LANDMARK_LABEL: Record<VibeLandmark, string> = {
   crystal_outcrop: 'Crystal outcrop',
   statue: 'Statue',
   hot_spring: 'Hot spring',
+  tunnel: 'Tunnel entrance (to the Underground)',
+  cavern: 'Any cavern (Underground)',
+  crystal_cavern: 'Crystal cavern',
+  cenote: 'Cenote lake (skylights)',
+  river_cavern: 'River cavern',
+  fungal_cavern: 'Fungal cavern',
+  depths: 'The Depths (hall)',
+  depths_gate: 'Gate to the Depths',
+  archipelago: 'Sky archipelago',
+  sky_town: 'Sky town',
+  sky_palace: 'Sky palace (entrance)',
+  sky_ruin: 'Sky ruin',
+  sky_lift: 'Sky lift (by a town)',
 };
 
 export interface VibeFilter {
@@ -77,13 +96,15 @@ export interface VibeFilter {
   distMax: number;
   /** -1 any, else VIBE_TIERS index. */
   tier: number;
+  /** CR 038: 0 any, else VIBE_LAYERS index + 1. */
+  layer: number;
   n: number;
   offset: number;
   go: boolean;
   random: boolean;
 }
 
-export const anyVibe = (): VibeFilter => ({ biome: -1, landmark: 0, region: -1, levelMin: 0, levelMax: 0, stamped: 0, distMin: 0, distMax: 0, tier: -1, n: 0, offset: 0, go: false, random: false });
+export const anyVibe = (): VibeFilter => ({ biome: -1, landmark: 0, region: -1, levelMin: 0, levelMax: 0, stamped: 0, distMin: 0, distMax: 0, tier: -1, layer: 0, n: 0, offset: 0, go: false, random: false });
 
 const clampB = (v: number, lo: number, hi: number) => BigInt(Math.max(lo, Math.min(hi, Math.trunc(v))));
 const clampN = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, Math.trunc(v)));
@@ -99,7 +120,8 @@ export function packVibe(f: VibeFilter): { target: bigint; arg: number } {
     (clampB(f.stamped, 0, 3) << 34n) |
     (clampB(f.distMin / 64, 0, 127) << 36n) |
     (clampB(f.distMax / 64, 0, 127) << 43n) |
-    (clampB(f.tier + 1, 0, 15) << 50n);
+    (clampB(f.tier + 1, 0, 15) << 50n) |
+    (clampB(f.layer, 0, 7) << 54n);
   const arg = (clampN(f.n, 0, 255) | (clampN(f.offset, 0, 4095) << 8) | (f.go ? 1 << 20 : 0) | (f.random ? 1 << 21 : 0)) >>> 0;
   return { target, arg };
 }
@@ -116,6 +138,7 @@ export function unpackVibe(target: bigint, arg: number): VibeFilter {
     distMin: t(36n, 0x7fn) * 64,
     distMax: t(43n, 0x7fn) * 64,
     tier: t(50n, 0xfn) - 1,
+    layer: t(54n, 0x7n),
     n: arg & 0xff,
     offset: (arg >>> 8) & 0xfff,
     go: ((arg >>> 20) & 1) === 1,
@@ -191,6 +214,10 @@ export function parseVibeFind(words: readonly string[], regions: readonly string
       const r = pick(VIBE_TIERS, v, 'tier');
       if ('error' in r) return r;
       f.tier = r.i;
+    } else if (['layer', 'lay', 'y'].includes(k)) {
+      const r = pick(VIBE_LAYERS, v, 'layer');
+      if ('error' in r) return r;
+      f.layer = r.i + 1;
     } else if (['region', 'r'].includes(k)) {
       if (/^\d+$/.test(v)) f.region = Number(v);
       else {
@@ -199,7 +226,7 @@ export function parseVibeFind(words: readonly string[], regions: readonly string
         if (hits.length !== 1) return { error: regions.length === 0 ? `region=${v}: open the Vibe tab once (it loads the region names) or give the index` : hits.length ? `region "${v}" could be ${hits.map((h) => regions[h.i]).join(', ')}` : `no region "${v}"` };
         f.region = hits[0].i;
       }
-    } else return { error: `don't know ${k}= (biome, landmark, level, region, tier, dist)` };
+    } else return { error: `don't know ${k}= (biome, landmark, level, region, tier, layer, dist)` };
   }
   return f;
 }
@@ -212,6 +239,7 @@ export function describeVibe(f: VibeFilter, regions: readonly string[] = []): st
   if (f.region >= 0) parts.push(`in ${regions[f.region] ?? `region ${f.region}`}`);
   if (f.levelMin || f.levelMax) parts.push(`level ${f.levelMin || 1}${f.levelMax !== f.levelMin ? `-${f.levelMax || '∞'}` : ''}`);
   if (f.tier >= 0) parts.push(VIBE_TIERS[f.tier]);
+  if (f.layer > 0) parts.push(VIBE_LAYERS[f.layer - 1]);
   if (f.stamped) parts.push(f.stamped === 1 ? 'stamped' : 'unstamped');
   if (f.distMin || f.distMax) parts.push(`${f.distMin}-${f.distMax || '∞'} m out`);
   return parts.length ? parts.join(', ') : 'anywhere';

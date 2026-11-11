@@ -8,7 +8,11 @@ const shrine = VIBE_LANDMARKS.indexOf('shrine') + 1;
 
 describe('vibe filters', () => {
   it('packs like the zone (game.VibeFilter.Pack, the same vector in vibe_test.go)', () => {
-    const f: VibeFilter = { biome: 1, landmark: shrine, region: 3, levelMin: 4, levelMax: 8, stamped: 1, distMin: 256, distMax: 2048, tier: 2, n: 12, offset: 5, go: true, random: false };
+    const f: VibeFilter = { biome: 1, landmark: shrine, region: 3, levelMin: 4, levelMax: 8, stamped: 1, distMin: 256, distMax: 2048, tier: 2, layer: 0, n: 12, offset: 5, go: true, random: false };
+    const deep = packVibe({ ...f, layer: 4 });
+    expect(deep.target).toBe(3659467292938450n | (4n << 54n));
+    expect(unpackVibe(deep.target, deep.arg).layer).toBe(4);
+    expect(parseVibeFind(['layer=depths', 'l=cenote'])).toMatchObject({ layer: 4, landmark: VIBE_LANDMARKS.indexOf('cenote') + 1 });
     const { target, arg } = packVibe(f);
     expect(target).toBe(3659467292938450n);
     expect(arg).toBe(1049868);
