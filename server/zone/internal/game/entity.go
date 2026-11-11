@@ -68,6 +68,7 @@ type Entity struct {
 
 	// Caves and mining (WP09).
 	caveSys   int       // cave system this tick (-1 surface), for interest clipping
+	layer     int8      // CR 038: vertical layer this tick (0 surface, 1 sky, 2 Underground, 3 Depths)
 	lastSwing time.Time // last accepted pickaxe swing
 	// Pickups: personal drops only their owner sees and can take.
 	Owner     uint32

@@ -71,6 +71,7 @@ import {
   SWIM_DEPTH_M,
   SWIM_FLOAT_DEPTH_M,
   SWIM_SPEED,
+  TERMINAL_FALL_SPEED,
   UPDRAFT_MAX_LIFT,
   WALKABLE_TAN_SQ,
   WIND_GLIDE_PUSH_MS,
@@ -533,6 +534,7 @@ function stepWalk(s: MoveState, flags: number, wish: Vec2xz, ground: GroundQuery
 
   let vy = s.vel.y;
   if (!grounded) vy += GRAVITY * dt;
+  if (!dashing && vy < -TERMINAL_FALL_SPEED) vy = -TERMINAL_FALL_SPEED; // CR 038: falls from the sky islands top out
 
   // Held `jump` on the ground jumps every time you land (auto-hop, as in
   // wizard-wars); the double jump needs a fresh press (`jump_edge`) so holding

@@ -40,6 +40,7 @@ func withCaves(ground movement.Ground, terrain *worldhost.Terrain, log *slog.Log
 	ct := worldhost.NewCaveTerrain(terrain, ground, cv) // caves under the surface (terrain + WP12 towers)
 	g := cv.Graph
 	log.Info("caves ready", "systems", len(g.Systems), "chambers", len(g.Chambers), "openings", len(g.OpeningsList), "veins", len(g.Veins), "ms", time.Since(start).Milliseconds())
+	withVertical(ct, terrain, log)
 	return ct, ct
 }
 
@@ -100,4 +101,44 @@ func serveCaves(ctx context.Context, s *svc.Server, ct *worldhost.CaveTerrain, z
 			}
 		}
 	}()
+}
+
+// withVertical puts the vertical world (genVersion 3, CR 038: sky islands,
+// the Underground, the Depths) on the cave terrain. LODESTONE_ZONE_NO_VERTICAL=1
+// turns it off; LODESTONE_ZONE_LAYER_CACHE / _LAYER_WORKERS tune the LOD 0
+// layer tile cache. A wasm before genVersion 3 has no vertical exports: the
+// zone logs NO VERTICAL and keeps the caves.
+func withVertical(ct *worldhost.CaveTerrain, terrain *worldhost.Terrain, log *slog.Logger) {
+	if env.Bool("LODESTONE_ZONE_NO_VERTICAL", false) {
+		log.Warn("vertical world off (LODESTONE_ZONE_NO_VERTICAL)")
+		return
+	}
+	start := time.Now()
+	l, err := ct.WithVertical(env.Int("LODESTONE_ZONE_LAYER_CACHE", 0), env.Int("LODESTONE_ZONE_LAYER_WORKERS", 0))
+	if err != nil {
+		log.Warn("NO VERTICAL: no sky islands, Underground or Depths on this world", "err", err)
+		return
+	}
+	h := terrain.World().Header
+	if err := l.Ensure(float64(h.SpawnX), float64(h.SpawnZ), 64); err != nil {
+		log.Warn("vertical warm-up failed", "err", err)
+	}
+	v := l.Vert
+	log.Info("vertical ready", "islands", len(v.Islands), "archipelagos", len(v.Archs), "chambers", len(v.Chambers), "corridors", len(v.Corridors),
+		"openings", len(v.Openings), "updrafts", len(v.Updrafts), "veins", len(v.Veins), "ms", time.Since(start).Milliseconds())
+}
+
+// serveVertical: GET /debug/vertical (layer tile cache + counts).
+func serveVertical(s *svc.Server, ct *worldhost.CaveTerrain) {
+	s.Mux.HandleFunc("GET /debug/vertical", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		out := map[string]any{"enabled": ct.Layers != nil}
+		if ct.Layers != nil {
+			v := ct.Layers.Vert
+			out["cache"] = ct.Layers.Stats()
+			out["counts"] = map[string]int{"islands": len(v.Islands), "archipelagos": len(v.Archs), "chambers": len(v.Chambers), "corridors": len(v.Corridors),
+				"openings": len(v.Openings), "shafts": len(v.Shafts), "columns": len(v.Columns), "updrafts": len(v.Updrafts), "veins": len(v.Veins), "decos": len(v.Decos)}
+		}
+		_ = json.NewEncoder(w).Encode(out)
+	})
 }

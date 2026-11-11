@@ -461,6 +461,9 @@ func stepWalk(s State, flags uint16, wx, wz float64, g Ground, dashing bool, env
 	if !grounded {
 		vy += constants.Gravity * dt
 	}
+	if !dashing && vy < -constants.TerminalFallSpeed { // CR 038: falls from the sky islands top out
+		vy = -constants.TerminalFallSpeed
+	}
 
 	// Held JUMP auto-hops off the ground (Source sv_autobunnyhop); the double
 	// jump fires only on JUMP_EDGE. A press with no double jump left opens

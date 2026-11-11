@@ -131,8 +131,10 @@ pub const SLIDE_MAX_SPEED: f64 = 12.0;
 pub const GLIDE_ACCEL: f64 = 6.0;
 /// How fast vertical speed approaches -GLIDE_SINK_SPEED (+ updraft lift) once the glider opens, m/s^2: the canopy catch.
 pub const GLIDE_VERTICAL_ACCEL: f64 = 20.0;
-/// Upper bound of an updraft column's lift (m/s); the step clamps to it and the zone's vertical validation relies on it.
-pub const UPDRAFT_MAX_LIFT: f64 = 10.0;
+/// Upper bound of an updraft column's lift (m/s); the step clamps to it and the zone's vertical validation relies on it. v8: 20 (the vertical world's sky lifts lift 18 m/s; wind columns and fire stay at 10 and 7).
+pub const UPDRAFT_MAX_LIFT: f64 = 20.0;
+/// v8 (CR 038): a falling body (walk/air step, not dashing) never sinks faster than this, m/s (~150 m of free fall to reach it; landing faster than 18 m/s hurts, zone side).
+pub const TERMINAL_FALL_SPEED: f64 = 54.0;
 /// Horizontal acceleration toward the swim velocity, m/s^2.
 pub const SWIM_ACCEL: f64 = 6.0;
 /// Water deeper than this (surface minus ground) is swum, shallower is walked.
