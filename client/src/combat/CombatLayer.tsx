@@ -58,7 +58,7 @@ interface Live {
 }
 
 function telegraphMesh(f: Extract<Fx, { t: 'telegraph' }>): THREE.Mesh {
-  const mat = new THREE.MeshBasicMaterial({ color: '#ff3020', transparent: true, opacity: 0.35, side: THREE.DoubleSide, depthWrite: false });
+  const mat = new THREE.MeshBasicMaterial({ color: '#ff3020', transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false });
   let m: THREE.Mesh;
   switch (f.shape) {
     case 0: {
@@ -91,6 +91,7 @@ const Weapon = FirstPersonWeapon;
 
 /** The enemy renderer of the mounted layer (headless captures, the bench). */
 export const enemyLayer: { renderer: EnemyRenderer | null; numbers: DamageNumberLayer | null } = { renderer: null, numbers: null };
+if (typeof window !== 'undefined') (window as unknown as { __lodestoneEnemyLayer?: unknown }).__lodestoneEnemyLayer = enemyLayer; // headless audits (tools/playtest/flash-audit.mjs)
 
 export function CombatLayer() {
   const scene = useThree((s) => s.scene);
@@ -193,7 +194,11 @@ export function CombatLayer() {
         continue;
       }
       const k = Math.min(1, (now - l.fx.at) / Math.max(1, l.fx.windupMs));
-      (l.obj.material as THREE.MeshBasicMaterial).opacity = 0.2 + 0.45 * k;
+      // Playtest 2 calm kills: eases in from nothing and fades out over its last 200 ms (it popped
+      // on at 20 % and vanished at 65 %: a big red patch at your feet switching on and off).
+      const out = Math.min(1, Math.max(0, (l.until - now) / 200));
+      const inK = Math.min(1, (now - l.fx.at) / 120);
+      (l.obj.material as THREE.MeshBasicMaterial).opacity = (0.2 * inK + 0.4 * k) * out;
     }
 
     numbers.update(camera, gl, now);
