@@ -6,7 +6,7 @@
 // this row like the others).
 
 import { useEffect, useRef, useState } from 'react';
-import { isTextTarget } from '../../input/useKeyboard';
+import { notGameKey } from '../../input/useKeyboard';
 import { lookRouter } from '../../input/lookRouter';
 import { hidePanel, showPanel } from '../../input/panelStack';
 import { clampCursor, pickSector, sectorCenter, WHEEL } from './emotes';
@@ -63,7 +63,7 @@ export function EmoteWheel() {
       }
     };
     const onDown = (e: KeyboardEvent) => {
-      if (e.code !== EMOTE_KEY || e.repeat || e.ctrlKey || e.metaKey || e.altKey || isTextTarget(e.target)) return;
+      if (e.code !== EMOTE_KEY || e.repeat || e.ctrlKey || e.metaKey || e.altKey || notGameKey(e)) return;
       if (s.open || panelOpen() || photoActive()) return;
       s.open = true;
       s.at = performance.now();

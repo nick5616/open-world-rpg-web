@@ -38,7 +38,7 @@ import type { WorldRuntime } from '../core/runtime';
 import type { ResultMsg } from '../core/protocol';
 import { localActions, localPlayer, view } from '../../state/live';
 import { netRuntime } from '../../net/netStore';
-import { isTextTarget } from '../../input/useKeyboard';
+import { notGameKey } from '../../input/useKeyboard';
 import { eFree } from '../../input/interact';
 import type { CaveGround } from './caveGround';
 import type { CaveCellStore, StoredCell } from './caveStore';
@@ -150,7 +150,7 @@ export class CaveManager {
   private active = false;
   private readonly onKey = (e: KeyboardEvent) => {
     // Not while typing in chat, under a panel or in the saddle (input/interact.ts).
-    if (e.code === 'KeyE' && !e.repeat && !isTextTarget(e.target) && eFree('cave')) this.swing();
+    if (e.code === 'KeyE' && !e.repeat && !notGameKey(e) && eFree('cave')) this.swing();
   };
   private readonly onMouse = (e: MouseEvent) => {
     if (e.button === 0 && document.pointerLockElement) this.swing();

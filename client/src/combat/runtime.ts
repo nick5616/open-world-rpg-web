@@ -38,6 +38,7 @@ import type { WeaponKind } from './weapons/look';
 import { uiPanelUp } from '../input/interact';
 import { isCaptureClick } from '../input/useMouseLook';
 import { heldBlocked, onHeldRelease } from '../input/held';
+import { isChatShortcut } from '../input/useKeyboard';
 
 const STEP_MS = 1000 / MOVE_STEP_HZ;
 const EYE = 1.6;
@@ -175,7 +176,7 @@ export class CombatRuntime {
       if (/^Digit[1-4]$/.test(e.code)) this.buttons.castHeld[Number(e.code.slice(5)) - 1] = false; // CR 020
     };
     const onKey = (e: KeyboardEvent) => {
-      if (isText(e.target) || e.repeat) return;
+      if (isText(e.target) || isChatShortcut(e) || e.repeat) return; // "/" is chat's (Shift+7, Hebrew Q: input/useKeyboard.ts)
       const t = now();
       switch (e.code) {
         case 'KeyF':

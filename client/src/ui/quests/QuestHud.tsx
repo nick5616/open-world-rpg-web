@@ -6,6 +6,7 @@
 // in / abandon. Everything authoritative comes from Events 950-955.
 
 import { useEffect, useRef, useState } from 'react';
+import { notGameKey } from '../../input/useKeyboard';
 import { DEBUG } from '../../config';
 import { localPlayer } from '../../state/live';
 import { setMapOpen, useExploration } from '../map/store';
@@ -25,11 +26,6 @@ trackPanel(useQuests, (s) => !!s.offer, 'quest-offer', () => dismissOffer());
 
 const GOLD = '#ffd166';
 const PANEL: React.CSSProperties = { background: 'rgba(14,12,10,0.9)', border: '1px solid rgba(255,209,102,0.45)', borderRadius: 8, color: '#f1ead8', boxShadow: '0 8px 28px rgba(0,0,0,0.5)', font: '14px/1.4 system-ui, sans-serif' };
-
-function isTextTarget(t: EventTarget | null): boolean {
-  const el = t as HTMLElement | null;
-  return !!el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
-}
 
 /** Nearest marker of a quest to the player. */
 function nearest(q: QuestView): QuestMarker | null {
@@ -358,7 +354,7 @@ export function QuestHud() {
     const id = setInterval(ensureQuestHook, 1000);
     if (DEBUG) installQuestHandle();
     const onKey = (e: KeyboardEvent) => {
-      if (isTextTarget(e.target) || e.repeat) return;
+      if (notGameKey(e) || e.repeat) return;
       if (e.code === 'KeyJ') setJournalOpen(!useQuests.getState().journalOpen);
     };
     window.addEventListener('keydown', onKey);

@@ -12,7 +12,7 @@
 
 import { useEffect, useState } from 'react';
 import { CONTENT } from '@lodestone/contracts';
-import { isTextTarget } from '../../input/useKeyboard';
+import { notGameKey } from '../../input/useKeyboard';
 import { eFree } from '../../input/interact';
 import { heldBlocked, onHeldRelease } from '../../input/held';
 import { localPlayer } from '../../state/live';
@@ -45,7 +45,7 @@ function castReady(): boolean {
 const ACTIVE = new Set(['casting', 'waiting', 'hooking', 'fight', 'landing']);
 
 function onKey(e: KeyboardEvent): void {
-  if (isTextTarget(e.target) || e.repeat || photoActive()) return;
+  if (notGameKey(e) || e.repeat || photoActive()) return;
   if (e.code !== 'KeyE' && e.code !== 'Space') return;
   const ph = useFishing.getState().phase;
   if (e.type === 'keyup') {

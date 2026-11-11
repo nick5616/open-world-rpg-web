@@ -13,7 +13,7 @@
 // debug builds (evidence runs).
 
 import { useEffect, useRef, useState } from 'react';
-import { isTextTarget } from '../../input/useKeyboard';
+import { notGameKey } from '../../input/useKeyboard';
 import { eFree } from '../../input/interact';
 import { lookRouter } from '../../input/lookRouter';
 import { localPlayer, view } from '../../state/live';
@@ -194,7 +194,7 @@ export function PetHud() {
       } else doWheel('attack'); // a tap: attack what you aim at (or heel)
     };
     const onDown = (e: KeyboardEvent) => {
-      if (e.repeat || isTextTarget(e.target) || e.ctrlKey || e.metaKey) return;
+      if (e.repeat || notGameKey(e) || e.ctrlKey || e.metaKey) return;
       const ps = usePets.getState();
       if (panelOpen() || photoActive() || useMusic.getState().active) return; // CR 028: the keyboard plays notes
       if (e.code === PET_KEY) {

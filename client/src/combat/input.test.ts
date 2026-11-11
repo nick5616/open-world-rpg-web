@@ -53,6 +53,19 @@ describe('the click that captures the mouse', () => {
   });
 });
 
+describe('typing "/" for chat', () => {
+  it('casts nothing and takes no form, on any layout', () => {
+    const { r, fire } = rig();
+    doc.pointerLockElement = {};
+    fire('keydown', { code: 'Digit1', key: '/' }); // a layout with "/" on a number row key
+    fire('keydown', { code: 'KeyQ', key: '/' }); // Hebrew
+    expect(b(r).castHeld[0]).toBe(false);
+    expect((r as unknown as { buttons: { formPress: number } }).buttons.formPress).toBe(0);
+    fire('keydown', { code: 'Digit1', key: '1' });
+    expect(b(r).castHeld[0]).toBe(true);
+  });
+});
+
 describe('held actions and the Esc menu (input/held.ts)', () => {
   afterEach(() => useMenu.setState({ open: false }));
 

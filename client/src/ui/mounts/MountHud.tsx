@@ -8,7 +8,7 @@
 
 import { useEffect, useState } from 'react';
 import { RIDE_SPUR_STAMINA, STEED_MOUNT_REACH_M } from '@lodestone/contracts';
-import { isTextTarget } from '../../input/useKeyboard';
+import { notGameKey } from '../../input/useKeyboard';
 import { eFree } from '../../input/interact';
 import { localPlayer } from '../../state/live';
 import { PHASE, STEED_COLOURS, steedPose } from './events';
@@ -64,7 +64,7 @@ export function MountHud() {
     ensureMountHook();
     const iv = setInterval(ensureMountHook, 1000);
     const onDown = (e: KeyboardEvent) => {
-      if (e.repeat || isTextTarget(e.target)) return;
+      if (e.repeat || notGameKey(e)) return;
       const st = useMounts.getState();
       if (e.ctrlKey || e.metaKey) return;
       if (e.code === WHISTLE_KEY) {

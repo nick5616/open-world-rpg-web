@@ -26,7 +26,7 @@ import { trackPanel } from '../../input/panelStack';
 // Esc closes the inventory when it is the top panel (input/panelStack.ts).
 trackPanel(useInventory, (s) => s.invOpen, 'inventory', () => setInventoryOpen(false));
 import { ensureInventoryStyles, GOLD, PANEL_BG, PANEL_BORDER, TEXT } from './styles';
-import { isTextTarget } from '../../input/useKeyboard';
+import { notGameKey } from '../../input/useKeyboard';
 import { useCombatHud } from '../../combat/store';
 import { enterPlay, instrumentItem } from '../music/link';
 
@@ -190,7 +190,7 @@ export function InventoryScreen() {
   useEffect(() => {
     // Capture phase: G (drop) must not reach the movement keys (glider) while the screen is open.
     const onKey = (e: KeyboardEvent) => {
-      if (isTextTarget(e.target) || e.repeat) return;
+      if (notGameKey(e) || e.repeat) return;
       const s = useInventory.getState();
       if (e.code === 'KeyI') {
         setInventoryOpen(!s.invOpen);

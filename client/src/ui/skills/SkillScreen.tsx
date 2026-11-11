@@ -11,7 +11,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type DragEvent, type ReactNode, type RefObject } from 'react';
 import { COMBAT } from '@lodestone/contracts';
 import { DEBUG } from '../../config';
-import { isTextTarget } from '../../input/useKeyboard';
+import { notGameKey } from '../../input/useKeyboard';
 import { useInventory } from '../inventory/store';
 import { setPanelOpen } from '../progression/store';
 import { skillProgress } from '../progression/gains';
@@ -722,7 +722,7 @@ function Screen() {
 function useSkillKeys() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (isTextTarget(e.target) || e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
+      if (notGameKey(e) || e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
       if (e.code === 'KeyN' || e.code === 'KeyB') {
         toggleSkillScreen(e.code === 'KeyB' ? 'build' : undefined);
         if (useSkillScreen.getState().open) setPanelOpen(false);

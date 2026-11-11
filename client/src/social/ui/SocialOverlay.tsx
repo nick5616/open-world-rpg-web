@@ -10,6 +10,7 @@ import { TravelOverlay } from './TravelOverlay';
 import { button, glass } from './style';
 import { FRIENDS_BUTTON_RIGHT, TOP_BUTTON_TOP } from '../../hud/layout';
 import { usePanelEsc } from '../../input/panelStack';
+import { isChatShortcut } from '../../input/useKeyboard';
 
 export type SocialOverlayProps = ChatPanelProps & PartyFrameProps;
 
@@ -22,7 +23,7 @@ export function SocialOverlay(props: SocialOverlayProps) {
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement | null;
       if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT')) return;
-      if (e.repeat || e.ctrlKey || e.metaKey) return; // a held O doesn't flicker the panel
+      if (e.repeat || e.ctrlKey || e.metaKey || isChatShortcut(e)) return; // a held O doesn't flicker the panel
       if (e.code === 'KeyO') setFriendsOpen((v) => !v);
     };
     window.addEventListener('keydown', onKey);

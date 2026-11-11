@@ -14,7 +14,7 @@
 // marker stays in the page meanwhile, so the Esc menu stands aside.
 
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
-import { isTextTarget, KEY_MAP } from '../../input/useKeyboard';
+import { isTextTarget, KEY_MAP, notGameKey } from '../../input/useKeyboard';
 import { useQualityStore } from '../../stores/qualityStore';
 import { STYLE_ORDER, STYLES } from '../../world/style/styles';
 import { PHOTO_DEFAULTS, PHOTO_KEYS, photoKeys, photoLive, usePhoto } from './store';
@@ -89,7 +89,7 @@ export function takeShot(): void {
 function onKey(e: KeyboardEvent): void {
   const s = usePhoto.getState();
   if (!s.active) {
-    if (e.type !== 'keydown' || e.code !== PHOTO_KEY || e.repeat || e.ctrlKey || e.metaKey || e.altKey || isTextTarget(e.target) || panelUp()) return;
+    if (e.type !== 'keydown' || e.code !== PHOTO_KEY || e.repeat || e.ctrlKey || e.metaKey || e.altKey || notGameKey(e) || panelUp()) return;
     if (!gameCanvas()) return; // not in the world
     e.preventDefault();
     e.stopImmediatePropagation();

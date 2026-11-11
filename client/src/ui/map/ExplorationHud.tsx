@@ -6,6 +6,7 @@
 
 import { useEffect } from 'react';
 import { DEBUG } from '../../config';
+import { isChatShortcut } from '../../input/useKeyboard';
 import { localPlayer } from '../../state/live';
 import { Compass, compassMarks } from './Compass';
 import { MapScreen, mapView } from './MapScreen';
@@ -61,6 +62,7 @@ function useMapHotkeys() {
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement | null;
       if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return; // typing in chat
+      if (isChatShortcut(e)) return;
       if (e.code === 'KeyM' && !e.repeat) setMapOpen(!useExploration.getState().mapOpen);
     };
     window.addEventListener('keydown', onKey);

@@ -14,7 +14,7 @@ import { useEffect, useRef, useState } from 'react';
 import { BELOW_CLOCK, useHudHeight } from '../../hud/layout';
 import { CONTENT } from '@lodestone/contracts';
 import { DEBUG } from '../../config';
-import { isTextTarget } from '../../input/useKeyboard';
+import { notGameKey } from '../../input/useKeyboard';
 import { eFree } from '../../input/interact';
 import { localPlayer } from '../../state/live';
 import { distanceText, compassWord } from '../quests/events';
@@ -219,7 +219,7 @@ function Prompt() {
       }
     }, 120);
     const onKey = (e: KeyboardEvent) => {
-      if (e.repeat || isTextTarget(e.target)) return;
+      if (e.repeat || notGameKey(e)) return;
       const s = useContent.getState();
       if (e.code !== 'KeyE') return;
       if (s.reading) {

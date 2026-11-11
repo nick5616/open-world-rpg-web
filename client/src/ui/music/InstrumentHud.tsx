@@ -15,7 +15,7 @@
 
 import { useEffect, useState, type CSSProperties } from 'react';
 import { CONTENT } from '@lodestone/contracts';
-import { isTextTarget } from '../../input/useKeyboard';
+import { isTextTarget, notGameKey } from '../../input/useKeyboard';
 import { DEBUG } from '../../config';
 import { usePvp } from '../pvp/store';
 import { useMenu } from '../menu/store';
@@ -46,7 +46,7 @@ let accent = false;
 function onKey(e: KeyboardEvent): void {
   const st = useMusic.getState();
   if (!st.active) {
-    if (e.type !== 'keydown' || e.code !== PLAY_KEY || e.repeat || e.ctrlKey || e.metaKey || e.altKey || isTextTarget(e.target) || panelUp()) return;
+    if (e.type !== 'keydown' || e.code !== PLAY_KEY || e.repeat || e.ctrlKey || e.metaKey || e.altKey || notGameKey(e) || panelUp()) return;
     if (!gameCanvas() || usePvp.getState().challenge) return; // not in the world; U declines a duel
     e.preventDefault();
     e.stopImmediatePropagation();

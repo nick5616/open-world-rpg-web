@@ -19,7 +19,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { CAMPS, DAY_LENGTH_S, ITEMS } from '@lodestone/contracts';
 import { DEBUG } from '../../config';
-import { isTextTarget } from '../../input/useKeyboard';
+import { notGameKey } from '../../input/useKeyboard';
 import { eFree } from '../../input/interact';
 import { localPlayer, worldClock } from '../../state/live';
 import { emitSound } from '../../audio/bridge';
@@ -389,7 +389,7 @@ function Prompt() {
       }
     }, 50);
     const onDown = (e: KeyboardEvent) => {
-      if (e.code !== 'KeyE' || e.repeat || isTextTarget(e.target)) return;
+      if (e.code !== 'KeyE' || e.repeat || notGameKey(e)) return;
       const target = current();
       // A piece you can't use (someone else's bedroll, a locked chest) shows a line, not an "[E]": E stays free.
       if (!target || !target.label.startsWith('[E]')) return;
@@ -462,7 +462,7 @@ function useCampKeys(): void {
   useEffect(() => {
     let lastWheel = 0;
     const onKey = (e: KeyboardEvent) => {
-      if (isTextTarget(e.target) || e.repeat) return;
+      if (notGameKey(e) || e.repeat) return;
       const s = useCamps.getState();
       if (s.placing) {
         if (e.code === 'KeyR') {

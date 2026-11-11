@@ -7,7 +7,7 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 import { COMBAT } from '@lodestone/contracts';
 import { DEBUG } from '../../config';
-import { isTextTarget } from '../../input/useKeyboard';
+import { notGameKey } from '../../input/useKeyboard';
 import { eFree } from '../../input/interact';
 import { localPlayer } from '../../state/live';
 import { useCombatHud } from '../../combat/store';
@@ -334,7 +334,7 @@ function CharacterPanel() {
 function useProgressionKeys(prompt: TowerPrompt | null) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (isTextTarget(e.target) || e.repeat) return;
+      if (notGameKey(e) || e.repeat) return;
       if (e.code === 'KeyC' && !e.ctrlKey && !e.metaKey) {
         setPanelOpen(!useProgression.getState().panelOpen);
         if (useProgression.getState().panelOpen && document.pointerLockElement) document.exitPointerLock();

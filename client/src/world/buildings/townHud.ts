@@ -18,7 +18,7 @@ import { escapeHtml } from './npcs';
 import { openStationOffline } from '../../ui/inventory/store'; // WP14
 // Playtest 1: bounty locations and map previews.
 import { localPlayer } from '../../state/live';
-import { isTextTarget } from '../../input/useKeyboard';
+import { notGameKey } from '../../input/useKeyboard';
 import { eFree } from '../../input/interact';
 import { hidePanel, syncPanel } from '../../input/panelStack';
 import { useMapWorld } from '../../ui/map/world';
@@ -95,7 +95,7 @@ export class TownHud {
   doorAct: ((door: number) => void) | null = null;
 
   private readonly onKey = (e: KeyboardEvent) => {
-    if (e.repeat || isTextTarget(e.target)) return; // typing in chat: E is the text box's
+    if (e.repeat || notGameKey(e)) return; // typing in chat: E is the text box's
     if (e.code !== 'KeyE') return;
     const el = document.activeElement;
     if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) return;
