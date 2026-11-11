@@ -58,6 +58,18 @@ export async function dismiss(page) {
     const b = page.getByTestId(id);
     if (await b.isVisible().catch(() => false)) await b.click().catch(() => {});
   }
+  const got = page.locator('button', { hasText: /^Got it$/ });
+  if (await got.first().isVisible().catch(() => false)) {
+    await got.first().click({ timeout: 2000 }).catch(() => {});
+    if (await got.first().isVisible().catch(() => false)) await page.keyboard.press('Escape');
+  }
+  // A quest offer card: "Not now" (a player reads it and declines side work mid-story).
+  const off = page.locator('[data-testid="quest-offer"] button', { hasText: 'Not now' });
+  if (await off.isVisible().catch(() => false)) {
+    const title = await page.evaluate(() => document.querySelector('[data-testid="quest-offer"]')?.innerText?.split('\n').slice(0, 2).join(' ') ?? '');
+    await off.click().catch(() => {});
+    (globalThis.__coopOffers ??= []).push(`${page.__who}: ${title}`);
+  }
 }
 
 /** Dev console line (logged by the caller as a dev shortcut). */
@@ -89,7 +101,7 @@ export async function snap(page) {
     return {
       pos: { x: Math.round(p.pos.x), y: Math.round(p.pos.y), z: Math.round(p.pos.z) },
       mode: p.mode,
-      hp: `${Math.round(c.health)}/${Math.round(c.healthMax)}`,
+      hp: (() => { const h = L.selfHealth(); return h ? `${h.health}/${h.healthMax}` : '?'; })(),
       mana: Math.round(c.mana),
       sta: Math.round(p.stamina),
       lvl: pr?.stats?.level ?? c.level,
@@ -209,7 +221,7 @@ const HOSTILE = (e) => (e.kind === 2 || e.kind === 6) && e.hp > 0;
  * health; dodge (F) now and then. Stops when nothing hostile is within r
  * of the anchor for 3 s, or after ms. Returns kills, hits, low health.
  */
-export async function fight(page, { x, z, r = 30, ms = 90000, spells = ['Digit1'], melee = 2.6, keepRange = 0, onlyIds = null } = {}) {
+export async function fight(page, { x, z, r = 30, ms = 90000, spells = ['Digit1'], melee = 2.6, keepRange = 0, onlyIds = null, partner = null, dodge = false } = {}) {
   const t0 = Date.now();
   let quiet = 0;
   let swings = 0;
@@ -217,22 +229,55 @@ export async function fight(page, { x, z, r = 30, ms = 90000, spells = ['Digit1'
   let lowHp = 1;
   let draughts = 0;
   let downs = 0;
+  let lastDraught = 0;
+  let lastTell = Date.now();
+  let dodges = 0;
+  let lastD = null;
   const seen = new Set();
   let lastId = -1;
   const anchor = async () => (x === undefined ? (await pl(page)).pos : { x, z });
   while (Date.now() - t0 < ms && !aborted()) {
+    if (swings % 10 === 0) await dismiss(page);
+    // A wind-up aimed at me (EvTelegraph 204): dodge back out of it, as a player reads the tell.
+    if (dodge) {
+      const tell = await page.evaluate((since) => { const me = window.__lodestoneStory?.state?.().self; const t = window.__lodestone.tapped([204], since); return me ? t.events.filter((e) => e.targetId === me).length : 0; }, lastTell);
+      lastTell = Date.now();
+      if (tell > 0) {
+        await page.keyboard.down('KeyS');
+        await page.keyboard.press('KeyF');
+        await sleep(350);
+        await page.keyboard.up('KeyS');
+        dodges++;
+      }
+    }
+    // A fallen friend nearby (waiting to be raised): go and hold E beside them.
+    if (partner && swings % 3 === 0) {
+      const down = await partner.evaluate(() => { const st = window.__lodestoneStory?.state?.(); const h = window.__lodestone.selfHealth(); return h && h.health <= 0 && st && st.reviveUntil > performance.now() ? window.__lodestone.player().pos : null; });
+      if (down) {
+        await walkTo(page, down.x + 0.8, down.z, { stopAt: 1.0, timeoutMs: 8000 });
+        const prompt = await page.evaluate(() => document.querySelector('[data-testid="revive-prompt"]')?.innerText ?? '');
+        await page.keyboard.down('KeyE');
+        await sleep(3500);
+        await page.keyboard.up('KeyE');
+        await sleep(500);
+        const ok = await partner.evaluate(() => (window.__lodestone.selfHealth()?.health ?? 0) > 0);
+        (globalThis.__coopRevives ??= []).push(`${new Date().toISOString().slice(11, 19)} ${page.__who} raised ${partner.__who}: ${ok} ("${prompt}")`);
+      }
+    }
     const s = await page.evaluate(() => {
       const c = window.__lodestoneCombat.hud();
-      return { hp: c.health / Math.max(1, c.healthMax), mana: c.mana, down: c.downedUntil > 0 };
+      const h = window.__lodestone.selfHealth() ?? { health: 1, healthMax: 1 }; // the HUD bar's source (SelfState)
+      return { hp: h.health / Math.max(1, h.healthMax), mana: c.mana, down: c.downedUntil > 0 || h.health <= 0 };
     });
     if (s.down) {
       downs++;
       return { kills, swings, lowHp: 0, draughts, downs, ms: Date.now() - t0, seen: seen.size, downed: true };
     }
     lowHp = Math.min(lowHp, s.hp);
-    if (s.hp < 0.35 && draughts < 6) {
+    if (s.hp < 0.45 && draughts < 8 && Date.now() - lastDraught > 2500) {
       await page.keyboard.press('KeyR');
       draughts++;
+      lastDraught = Date.now();
     }
     const a = await anchor();
     const es = (await drawn(page, 80)).filter((e) => HOSTILE(e) && Math.hypot(e.x - a.x, e.z - a.z) < r && (!onlyIds || onlyIds.includes(e.id)));
@@ -247,7 +292,23 @@ export async function fight(page, { x, z, r = 30, ms = 90000, spells = ['Digit1'
     lastId = e.id;
     seen.add(e.id);
     await faceAt(page, e);
-    if (e.d > melee + (keepRange || 0)) {
+    const myY = (await pl(page)).pos.y;
+    const dy = e.y - myY;
+    if (Math.abs(dy) > 1.4 && e.d < 6) {
+      // On a ledge above (or below) it: step off toward it, casting meanwhile.
+      if (s.mana > 15) await page.keyboard.press(spells[swings % spells.length]);
+      await page.keyboard.down('KeyW');
+      if (dy > 1.4) await page.keyboard.press('Space');
+      await sleep(450);
+      await page.keyboard.up('KeyW');
+      swings++;
+      continue;
+    }
+    // Big bodies (sentinels, golems, bosses) stop you before 2.6 m: when a step closer
+    // gains nothing, you are as close as you get, so swing.
+    const blocked = lastD !== null && lastId === e.id && lastD - e.d < 0.15 && e.d < 7;
+    lastD = e.d;
+    if (e.d > melee + (keepRange || 0) && !blocked) {
       await page.keyboard.down('KeyW');
       await sleep(Math.min(500, (e.d - melee) * 150));
       await page.keyboard.up('KeyW');
@@ -272,7 +333,7 @@ export async function fight(page, { x, z, r = 30, ms = 90000, spells = ['Digit1'
 
 /** Both fight around the same anchor. */
 export async function fightBoth(A, B, o = {}) {
-  const [a, b] = await Promise.all([fight(A, o), fight(B, o)]);
+  const [a, b] = await Promise.all([fight(A, { ...o, partner: B }), fight(B, { ...o, partner: A })]);
   return { A: a, B: b };
 }
 
@@ -304,6 +365,10 @@ export async function climb(page, tower, { maxMs = 240000 } = {}) {
   };
   const logs = [];
   for (let attempt = 1; attempt <= 3 && Date.now() - t0 < maxMs; attempt++) {
+    // Night hunters at the foot of a tower: deal with them before climbing.
+    const f = await fight(page, { r: 22, ms: 60000, spells: ['Digit1', 'Digit4'] });
+    if (f.seen) logs.push(`fought ${f.seen} at the foot (low ${f.lowHp}%)`);
+    if (f.downed) return { ok: false, logs: [...logs, 'downed at the foot'] };
     await aim();
     await until(() => window.__lodestone.player().stamina >= 99 && !window.__lodestone.player().exhausted, 0, 60000);
     await page.keyboard.down('KeyW');
@@ -441,8 +506,10 @@ function route(g, from, to) {
 }
 
 /** Follow points holding W (and Shift), aiming at the next point ~4 m ahead; jump/strafe when stuck. */
-export async function follow(page, pts, { stopAt = 2, timeoutMs = 180000, sprint = true } = {}) {
+export async function follow(page, pts, { stopAt = 2, timeoutMs = 180000, sprint = true, fightBack = true } = {}) {
   const t0 = Date.now();
+  let lastScan = 0;
+  const fights = [];
   let i = 0;
   let last = null;
   let stuck = 0;
@@ -454,8 +521,22 @@ export async function follow(page, pts, { stopAt = 2, timeoutMs = 180000, sprint
       const p = (await pl(page)).pos;
       const end = pts[pts.length - 1];
       const dEnd = Math.hypot(end.x - p.x, end.z - p.z);
-      if (dEnd <= stopAt) return { ok: true, d: dEnd, ms: Date.now() - t0, p };
+      if (dEnd <= stopAt) return { ok: true, d: dEnd, ms: Date.now() - t0, p, fights };
       if (Date.now() - t0 > timeoutMs || aborted()) return { ok: false, d: dEnd, ms: Date.now() - t0, p };
+      // Something attacking? Stop and fight it (a player would), then go on.
+      if (fightBack && Date.now() - lastScan > 1000) {
+        lastScan = Date.now();
+        const near = (await drawn(page, 14)).some((e) => (e.kind === 2 || e.kind === 6) && e.hp > 0);
+        if (near) {
+          await page.keyboard.up('KeyW');
+          if (sprint) await page.keyboard.up('ShiftLeft');
+          const f = await fight(page, { r: 18, ms: 90000, spells: ['Digit1', 'Digit4', 'Digit2'] });
+          fights.push(f.seen);
+          if (f.downed) return { ok: false, d: dEnd, ms: Date.now() - t0, p, downed: true, fights };
+          await page.keyboard.down('KeyW');
+          if (sprint) await page.keyboard.down('ShiftLeft');
+        }
+      }
       // advance past points already close
       while (i < pts.length - 1 && Math.hypot(pts[i].x - p.x, pts[i].z - p.z) < 4) i++;
       const tgt = pts[i];
@@ -695,11 +776,69 @@ export async function equip(page, base) {
   return { ok, actions: actions.slice(0, 200) };
 }
 
+/**
+ * Put on the best gear in the pack like a player sorting loot: the highest
+ * level melee weapon (sword or spear; `keep` a base to leave alone) in
+ * loadout `lo`, and per armor base type the highest level piece. Through
+ * the inventory screen (I, click, Equip).
+ */
+export async function gearUp(page, { lo = 1, weapons = /weapon:.*(sword|spear|blade)/, skipWeapon = false } = {}) {
+  const items = await page.evaluate(() => window.__lodestoneInventory.state().inv.items.map((i) => ({ h: i.h, b: i.b, l: i.l ?? 0, r: i.r ?? 0, s: String(i.s ?? '') })));
+  const score = (i) => i.l * 10 + i.r;
+  const picks = [];
+  if (!skipWeapon) {
+    const ws = items.filter((i) => weapons.test(i.b)).sort((a, b) => score(b) - score(a));
+    const cur = items.find((i) => i.s === `eq:main${lo - 1}`);
+    if (ws[0] && (!cur || score(ws[0]) > score(cur)) && !ws[0].s.startsWith('eq:')) picks.push({ ...ws[0], act: `equip${lo}` });
+  }
+  const slotOf = (b) => (/cap|helm|hood/.test(b) ? 'head' : /cuirass|robe|tunic|vest|chest|mail/.test(b) ? 'chest' : /leggings|greaves|trousers|legs/.test(b) ? 'legs' : /boots|shoes/.test(b) ? 'feet' : /gloves|gauntlet/.test(b) ? 'hands' : b);
+  const bySlot = {};
+  for (const i of items.filter((x) => x.b.startsWith('armor:'))) {
+    const k = slotOf(i.b);
+    if (!bySlot[k] || score(i) > score(bySlot[k])) bySlot[k] = i;
+  }
+  for (const i of Object.values(bySlot)) if (!i.s.startsWith('eq:')) picks.push({ ...i, act: 'equip' });
+  const done = [];
+  if (!picks.length) return done;
+  await page.keyboard.press('KeyI');
+  await sleep(700);
+  for (const p of picks) {
+    const el = page.getByTestId(`inv-item-${p.h}`).first();
+    if (!(await el.count().catch(() => 0))) continue;
+    await el.click().catch(() => {});
+    await sleep(250);
+    const b = page.locator(`[data-testid="inv-actions"] button[data-act="${p.act}"]`).first();
+    if (await b.count().catch(() => 0)) {
+      await b.click().catch(() => {});
+      done.push(`${p.b} L${p.l}`);
+      await sleep(400);
+    }
+  }
+  await page.keyboard.press('KeyI');
+  await sleep(300);
+  await closePanels(page);
+  return done;
+}
+
 /** Fast travel through the map handle (the map's "Travel" button sends the same). */
 export async function fastTravel(page, site) {
   await page.evaluate((s) => window.__lodestoneMap.fastTravel(s), site);
   await sleep(3000);
   return (await pl(page)).pos;
+}
+
+/** Read the lore tablet nearest (x, z): walk up to the glowing stone, face it, E. */
+export async function readTablet(page, x, z) {
+  const t = await page.evaluate(([qx, qz]) => Object.values(window.__lodestoneContent.state().tablets).map((k) => ({ site: k.site, x: k.x, y: k.y, z: k.z, d: Math.hypot(k.x - qx, k.z - qz) })).sort((a, b) => a.d - b.d)[0], [x, z]);
+  if (!t) return { ok: false };
+  await walk(page, t.x + 1.8, t.z, { stopAt: 0.6, straight: true, sprint: false, timeoutMs: 20000 });
+  await aimAt(page, t.x, t.y + 0.8, t.z);
+  await sleep(500);
+  const prompt = await page.evaluate(() => document.querySelector('[data-testid="content-prompt"]')?.innerText ?? '');
+  await page.keyboard.press('KeyE');
+  await sleep(2500);
+  const text = await page.evaluate(() => [...document.querySelectorAll('[data-testid]')].filter((e) => /tablet|reader/i.test(e.dataset.testid)).map((e) => e.innerText.slice(0, 500)).join(' | '));
+  return { ok: true, prompt, offset: Math.round(t.d), text };
 }
 
 /** Talk to a trader and click Buy on the ware row matching `ware` (regex source). */
