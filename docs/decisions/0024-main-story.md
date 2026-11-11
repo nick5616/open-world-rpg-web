@@ -28,11 +28,11 @@ Places are **world-global**, resolved once per zone from the towns, the atlas, t
 | --- | --- | --- | --- | --- |
 | Prologue | Slimes in the meadows; Ward against the night | | Draedmore (the Haven) | existing: slimes, the blacksmith, sunsteel ore, the blade, Light |
 | I | The Fading Hum | - | Draedmore, the Watchtower of Droraeth (the Last Keeper's stone), The Forgotten Spire (Forgotten Heights) | talk to Ulus the innkeeper · read the Last Keeper's stone · attune the nearest tower · back to Ulus (the **Keeper's Tuning Fork**) |
-| II | The Tuning Forks | level 5 | Craidath Spire (Gilded Fields), The Ironbound Spire (Burning Leas), The Hollow Spire (playtest 2 co-op: the Howling Crags' summit tower was dropped, no walkable approach) | wake three forks in three regions (nearest-neighbour route; only towers with a straight approach under 44 degrees) · back to Ulus |
-| III | Verses in the Deep | level 8 | The Undervault of The Moonlit Ruins (levers), The Vault beneath Baimteick Ruins (weighing stones: two players hold them easily) | open two sealed vaults, beat their Vault Keepers (**Verse of Dawn**, **Verse of Dusk**) · back to Ulus |
-| IV | The Night Unsung | level 10 | Teiraben (the vigil town; Gartha, its bounty keeper) | find the captain · "light the beacon": a town defense (3 waves) · the **Starless Sovereign** walks out of the dark (mid-boss; only sunsteel and Light) · report |
-| V | Dawnforged | level 12 | Steinmadun (Breus, master smith), Sanctum of Bukefoim (an Archon) | the smith · clear the sanctum (the **Archon's Lens**) · give the lens (the **Dawnheart**) |
-| VI | The Heartfall | level 14 | Bukae Spire (Verdant Downs, the most dangerous and remote region), the Heartfall (open ground ~400 m from it) | wake the last fork · follow the Dawnheart to the Heartfall · silence the Hush |
+| II | The Tuning Forks | level 6 (was 5) | Craidath Spire (Gilded Fields), The Ironbound Spire (Burning Leas), The Hollow Spire (playtest 2 co-op: the Howling Crags' summit tower was dropped, no walkable approach) | wake three forks in three regions (nearest-neighbour route; only towers with a straight approach under 44 degrees) · back to Ulus |
+| III | Verses in the Deep | level 9 (was 8) | The Undervault of The Moonlit Ruins (levers), The Vault beneath Baimteick Ruins (weighing stones: two players hold them easily) | open two sealed vaults, beat their Vault Keepers (**Verse of Dawn**, **Verse of Dusk**) · back to Ulus |
+| IV | The Night Unsung | level 13 (was 10) | Teiraben (the vigil town; Gartha, its bounty keeper) | find the captain · "light the beacon": a town defense (3 waves) · the **Starless Sovereign** walks out of the dark (mid-boss; only sunsteel and Light) · report |
+| V | Dawnforged | level 18 (was 12) | Steinmadun (Breus, master smith), Sanctum of Bukefoim (an Archon) | the smith · clear the sanctum (the **Archon's Lens**) · give the lens (the **Dawnheart**) |
+| VI | The Heartfall | level 22 (was 14) | Bukae Spire (Verdant Downs, the most dangerous and remote region), the Heartfall (open ground ~400 m from it) | wake the last fork · follow the Dawnheart to the Heartfall · silence the Hush |
 
 Each act is an ordinary quest (kind 3 "Main story", key `story:main:<n>`): markers on the map and compass, the tracker, the journal, saving, the WP16 handoff all come for free. It starts by itself when the previous act ends (Act I when the Ward is done, or for a level 4+ character who dropped it), with a title card in the discovery-intro style. The main story cannot be abandoned.
 
@@ -49,7 +49,7 @@ Each act is an ordinary quest (kind 3 "Main story", key `story:main:<n>`): marke
 | VI | 14+ | 25-35 min | the last climb, the finale (5-8 min with two) |
 | **Total** | | **~3.5-4 h** | |
 
-Gates rarely bind if you play the acts (their rewards plus discovery XP keep you near the curve); they stop a player who catches up or rushes from walking into the Heartfall at level 6. Areas are stamped by the first visitor's level (CR 012), so the regions meet you where you are.
+Gates rarely bind if you play the acts (their rewards plus discovery XP keep you near the curve); they stop a player who catches up or rushes from walking into the Heartfall at level 6. Areas are stamped by the first visitor's level (CR 012), so the regions meet you where you are. Playtest 2 co-op polish: the playthrough reached the acts at 8, 11, 18, 27 and 30, so the gates now sit at about two thirds of that and the act card names them.
 
 ## Two players
 

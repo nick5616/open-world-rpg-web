@@ -556,12 +556,16 @@ func (s *Server) storyMaybeStart(sess *session) {
 // storyIntro sends an act's title card (the discovery intro style).
 func (s *Server) storyIntro(sess *session, n int) {
 	info := story.ActList[n-1]
+	// Co-op polish: the card shows the act's gate (the level it asks for)
+	// and yours, so a gate is never a surprise step.
 	b, _ := json.Marshal(struct {
 		Act      int    `json:"act"`
 		Eyebrow  string `json:"eyebrow"`
 		Title    string `json:"title"`
 		Subtitle string `json:"subtitle"`
-	}{n, story.Title + " · Act " + story.Roman(n), info.Title, info.Subtitle})
+		Level    int    `json:"level"`
+		You      int    `json:"you"`
+	}{n, story.Title + " · Act " + story.Roman(n), info.Title, info.Subtitle, info.Level, s.storyLevel(sess)})
 	s.sendEvent(sess, &proto.Event{Kind: EventStoryIntro, EntityID: sess.ent.ID, Value: int32(n), Data: b})
 }
 

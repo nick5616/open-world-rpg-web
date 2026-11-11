@@ -90,20 +90,20 @@ func TestProgressNextAndGates(t *testing.T) {
 	if a, s := Progress(l); a != 1 || s != 0 || Next(l) != 0 {
 		t.Fatalf("act 1: %d %d", a, s)
 	}
-	// Act II's gate holds below level 5, opens at it.
+	// Act II's gate (level 6) holds below it, opens at it.
 	l2 := quests.NewLog()
 	l2.MarkDone(Key(1))
 	if Next(l2) != 2 {
 		t.Fatal("next after act 1")
 	}
 	_ = l2.Add(Act(2, p, 1))
-	f := facts{level: 4}
+	f := facts{level: 5}
 	if hs := l2.Advance(f, nil, nil); len(hs) != 0 {
-		t.Fatalf("gate opened at level 4: %+v", hs)
+		t.Fatalf("gate opened at level 5: %+v", hs)
 	}
-	f.level = 5
+	f.level = 6
 	if hs := l2.Advance(f, nil, nil); len(hs) != 1 || hs[0].Step != 0 {
-		t.Fatalf("gate at level 5: %+v", hs)
+		t.Fatalf("gate at level 6: %+v", hs)
 	}
 	// Attune steps name their tower: another tower's crystal does nothing.
 	if hs := l2.Advance(f, &quests.Signal{Kind: quests.ObjAttune, Site: 999}, nil); len(hs) != 0 {
