@@ -23,6 +23,7 @@ import { loadTerrainTextures, terrainManifest } from './terrain/terrainTextures'
 import { createHorizonMesh } from './terrain/horizon';
 import { atlasHeightTexture, createSeaPlane, createWaterMaterial, makeWaterUniforms } from './water/water';
 import { ScatterManager } from './scatter/scatterManager';
+import { scatterSnowUniforms } from './scatter/scatterMaterials';
 import { createSkyDome } from './sky/skyDome';
 import { makeSkyLighting, skyLighting, sunVisibility } from './sky/atmosphere';
 import { SunShadows } from './sky/sunShadows';
@@ -325,6 +326,7 @@ export function WorldScene({ runtime }: Props) {
     world.rain = rain;
     world.shared.uWet.value = liveWeather.wet * above;
     world.shared.uSnowCover.value = liveWeather.snowCover * above;
+    scatterSnowUniforms.uSnowCover.value = world.shared.uSnowCover.value; // grass and trees whiten with the ground
     world.rainStreaks.update(camera, dt, rain * above);
     world.snow.update(camera, dt, wm.snow * above, wm.wind, size.height, look.flake, look.square);
     world.sand.update(camera, dt, wm.dust * above, wm.wind, size.height);

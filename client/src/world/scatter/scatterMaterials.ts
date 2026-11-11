@@ -12,6 +12,9 @@
 //    the top (position.y is normalized height); foliage also flutters.
 //  - Tint: instanceColor only applies where aFoliage = 1, so trunks keep
 //    their bark colour while each tree kind gets its leaf colour.
+//  - Snow (playtest 2): under settled snow (liveWeather.snowCover, the same
+//    value that whitens the terrain) grass whitens toward its tips, leaves
+//    partly on their upward faces, bark and rock barely (snowMix).
 
 import * as THREE from 'three';
 import { WIND_GLSL, windUniforms } from '../wind';
@@ -22,6 +25,37 @@ float bayer4(vec2 p) {
   int idx = i.x + i.y * 4;
   float m[16] = float[16](0.0, 8.0, 2.0, 10.0, 12.0, 4.0, 14.0, 6.0, 3.0, 11.0, 1.0, 9.0, 15.0, 7.0, 13.0, 5.0);
   return (m[idx] + 0.5) / 16.0;
+}
+`;
+
+/** Settled snow for every scatter material; WorldScene sets it next to the terrain's uSnowCover. */
+export const scatterSnowUniforms = { uSnowCover: { value: 0 } };
+/** The snow colour the terrain uses (terrainMaterial.ts). */
+const SNOW_RGB = 'vec3(0.82, 0.86, 0.92)';
+
+/**
+ * How white a scatter vertex turns under snow cover 0..1. grass: 1 for the
+ * grass/tuft clumps (h = height up the blade 0..1, whitest at the tips);
+ * otherwise foliage 0..1 blends bark (barely) to leaves (partly, on faces
+ * that look up, up = normal.y). CPU twin of SNOW_MIX_GLSL.
+ */
+export function snowMix(cover: number, grass: number, foliage: number, h: number, up: number): number {
+  const ss = (a: number, b: number, x: number) => {
+    const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
+    return t * t * (3 - 2 * t);
+  };
+  const c = ss(0.1, 0.8, cover);
+  const blade = 0.2 + 0.65 * ss(0.15, 1.0, h);
+  const tree = (0.1 + (0.55 - 0.1) * foliage) * ss(0.2, 0.9, up);
+  return c * (blade + (tree - blade) * (1 - grass));
+}
+
+export const SNOW_MIX_GLSL = /* glsl */ `
+float lsSnowMix(float cover, float grass, float foliage, float h, float up) {
+  float c = smoothstep(0.1, 0.8, cover);
+  float blade = 0.2 + 0.65 * smoothstep(0.15, 1.0, h);
+  float tree = mix(0.1, 0.55, foliage) * smoothstep(0.2, 0.9, up);
+  return c * mix(tree, blade, grass);
 }
 `;
 
@@ -45,7 +79,7 @@ export function createScatterMaterial(o: ScatterMaterialOptions): ScatterMateria
   const m = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: o.roughness ?? 0.85, metalness: 0, side: o.doubleSided ? THREE.DoubleSide : THREE.FrontSide }) as ScatterMaterial;
   m.userData.fade = fade;
   m.onBeforeCompile = (shader) => {
-    Object.assign(shader.uniforms, windUniforms, { uFade: fade, uSway: { value: o.sway }, uFlutter: { value: o.flutter } });
+    Object.assign(shader.uniforms, windUniforms, scatterSnowUniforms, { uFade: fade, uSway: { value: o.sway }, uFlutter: { value: o.flutter } });
     shader.vertexShader = shader.vertexShader
       .replace(
         '#include <common>',
@@ -55,7 +89,10 @@ export function createScatterMaterial(o: ScatterMaterialOptions): ScatterMateria
         uniform float uSway;
         uniform float uFlutter;
         attribute float aFoliage;
-        varying float vFade;`,
+        varying float vFade;
+        uniform float uSnowCover;
+        varying float vSnow;
+        ${SNOW_MIX_GLSL}`,
       )
       .replace(
         '#include <color_vertex>',
@@ -69,7 +106,8 @@ export function createScatterMaterial(o: ScatterMaterialOptions): ScatterMateria
         #endif
         #ifdef USE_INSTANCING_COLOR
           vColor.rgb *= mix(vec3(1.0), instanceColor.rgb, aFoliage);
-        #endif`,
+        #endif
+        vSnow = lsSnowMix(uSnowCover, ${o.doubleSided ? '1.0' : '0.0'}, aFoliage, clamp(position.y, 0.0, 1.0), normalize(normal).y);`,
       )
       .replace(
         '#include <project_vertex>',
@@ -92,10 +130,11 @@ export function createScatterMaterial(o: ScatterMaterialOptions): ScatterMateria
         gl_Position = projectionMatrix * mvPosition;`,
       );
     shader.fragmentShader = shader.fragmentShader
-      .replace('#include <common>', `#include <common>\nvarying float vFade;\n${DITHER}`)
-      .replace('#include <clipping_planes_fragment>', `#include <clipping_planes_fragment>\nif (vFade < 0.999 && bayer4(gl_FragCoord.xy) >= vFade) discard;`);
+      .replace('#include <common>', `#include <common>\nvarying float vFade;\nvarying float vSnow;\n${DITHER}`)
+      .replace('#include <clipping_planes_fragment>', `#include <clipping_planes_fragment>\nif (vFade < 0.999 && bayer4(gl_FragCoord.xy) >= vFade) discard;`)
+      .replace('#include <color_fragment>', `#include <color_fragment>\ndiffuseColor.rgb = mix(diffuseColor.rgb, ${SNOW_RGB}, vSnow);`);
   };
-  m.customProgramCacheKey = () => `lodestone-scatter-2-${o.doubleSided ? 'ds' : 'fs'}`;
+  m.customProgramCacheKey = () => `lodestone-scatter-3-${o.doubleSided ? 'ds' : 'fs'}`;
   return m;
 }
 
@@ -107,7 +146,7 @@ export function createScatterMaterial(o: ScatterMaterialOptions): ScatterMateria
 export function createBillboardMaterial(atlas: THREE.Texture, tile: number, tiles: number, fade: THREE.Vector4, light: { uSunDir: { value: THREE.Vector3 }; uLightColor: { value: THREE.Color }; uAmbient: { value: THREE.Color } }): ScatterMaterial {
   const fadeU = { value: fade.clone() };
   const m = new THREE.ShaderMaterial({
-    uniforms: { ...windUniforms, ...light, uAtlas: { value: atlas }, uTile: { value: tile }, uTiles: { value: tiles }, uFade: fadeU },
+    uniforms: { ...windUniforms, ...light, ...scatterSnowUniforms, uAtlas: { value: atlas }, uTile: { value: tile }, uTiles: { value: tiles }, uFade: fadeU },
     vertexShader: /* glsl */ `
       ${WIND_GLSL}
       uniform vec4 uFade;
@@ -142,16 +181,20 @@ export function createBillboardMaterial(atlas: THREE.Texture, tile: number, tile
       uniform vec3 uSunDir;
       uniform vec3 uLightColor;
       uniform vec3 uAmbient;
+      uniform float uSnowCover;
       varying vec2 vUv;
       varying float vFade;
       varying vec3 vTint;
       ${DITHER}
+      ${SNOW_MIX_GLSL}
       void main() {
         vec4 c = texture2D(uAtlas, vec2((uTile + vUv.x) / uTiles, vUv.y));
         if (c.a < 0.5) discard;
         if (vFade < 0.999 && bayer4(gl_FragCoord.xy) >= vFade) discard;
         // At impostor distance the trunk is a few pixels: tinting the whole card is fine.
         vec3 albedo = c.rgb * mix(vec3(1.0), vTint, 0.85);
+        // Snow: the near meshes' leaves averaged over their faces, so the swap does not pop.
+        albedo = mix(albedo, ${SNOW_RGB}, lsSnowMix(uSnowCover, 0.0, 0.85, 1.0, 0.6));
         float sun = 0.55 + 0.45 * max(uSunDir.y, 0.0);
         // Matched by eye to the LOD1 meshes under the standard material at the 200 m swap.
         vec3 lit = albedo * (uAmbient * 0.42 + uLightColor * sun * 0.38);
