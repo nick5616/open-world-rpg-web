@@ -43,6 +43,7 @@ import { LodOverlay } from './debug/lodOverlay';
 import { CaveManager } from './caves/caveManager';
 import { warmShaders } from './warmup';
 import { warmExtras } from './warmExtras';
+import { AmbientLife } from './life/ambientLife';
 import { DEBUG } from '../config';
 
 // `?nowarmup` (debug builds): skip the shader warm-up, to measure without it.
@@ -66,6 +67,16 @@ const BIOME_GRADE: [THREE.Vector3, number][] = [
   [new THREE.Vector3(1.05, 0.99, 0.92), 0.02], // badlands: sun-baked
   [new THREE.Vector3(0.97, 1.02, 0.98), -0.06], // wetland: muted
 ];
+
+/** Inside a settlement's radius (ambient life thins out in streets). */
+function inSettlement(towns: { settlements: { x: number; z: number; radius: number }[] } | null, x: number, z: number): boolean {
+  if (!towns) return false;
+  for (const t of towns.settlements) {
+    const r = t.radius + 6;
+    if ((x - t.x) ** 2 + (z - t.z) ** 2 < r * r) return true;
+  }
+  return false;
+}
 
 export function WorldScene({ runtime }: Props) {
   const gl = useThree((s) => s.gl);
@@ -116,14 +127,18 @@ export function WorldScene({ runtime }: Props) {
     const snow = new WeatherParticles(SNOW, wp.snow, 'snow');
     const sand = new WeatherParticles(SAND, wp.sand, 'sand');
     const bolts = new LightningBolts();
-    root.add(terrain.group, scatter.group, sea, sky.mesh, hemi, rainStreaks.object, snow.object, sand.object, bolts.object);
+    // Playtest 2 immersion pass: birds, butterflies, fireflies, falling leaves and motes (Low: half as many).
+    const life = new AmbientLife();
+    life.setScale(g0.tier === 'low' ? 0.5 : 1);
+    if (DEBUG && typeof window !== 'undefined') (window as unknown as { __lodestoneLife?: AmbientLife }).__lodestoneLife = life;
+    root.add(terrain.group, scatter.group, sea, sky.mesh, hemi, rainStreaks.object, snow.object, sand.object, bolts.object, life.group);
     // WP09: caves (streamed near mouths and underground; the light pool lives in it).
     const caves = runtime.caveGraph ? new CaveManager(runtime, g0.maxLights) : null;
     if (caves) root.add(caves.group);
     const windBase = 3 + (runtime.data.params[PARAM.stormFrequency] ?? 0.3) * 4;
     setPrevailingWind(runtime.data.params[PARAM.windDirDeg] ?? 0, windBase);
     setWeatherWorld(runtime.data, runtime.data.params[PARAM.windDirDeg] ?? 0); // CR 030: the climate per weather cell
-    return { shared, waterU, terrain, sea, sky, hemi, scatter, caves, root, lighting: makeSkyLighting(), horizon: null as THREE.Mesh | null, rain: 0, capAcc: 0, rainStreaks, snow, sand, bolts, windBase, drift: new THREE.Vector2() };
+    return { shared, waterU, terrain, sea, sky, hemi, scatter, caves, root, lighting: makeSkyLighting(), horizon: null as THREE.Mesh | null, rain: 0, capAcc: 0, rainStreaks, snow, sand, bolts, life, windBase, drift: new THREE.Vector2() };
     // Built once per runtime; tier changes go through setParams/applyTier below.
   }, [runtime, gl]);
 
@@ -251,6 +266,7 @@ export function WorldScene({ runtime }: Props) {
       world.snow.dispose();
       world.sand.dispose();
       world.bolts.dispose();
+      world.life.dispose();
     },
     [world],
   );
@@ -313,6 +329,25 @@ export function WorldScene({ runtime }: Props) {
     world.snow.update(camera, dt, wm.snow * above, wm.wind, size.height, look.flake, look.square);
     world.sand.update(camera, dt, wm.dust * above, wm.wind, size.height);
     world.bolts.update(camera, liveWeather.bolts, now, look.boltWidth, look.boltIntensity);
+    world.life.update({
+      camera,
+      dt,
+      hour: (tod / DAY_LENGTH_S) * 24,
+      day: L.day,
+      rain,
+      snow: Math.min(1, wm.snow),
+      under,
+      inTown: inSettlement(runtime.towns, camera.position.x, camera.position.z),
+      biomeAt: (x, z) => {
+        const d = runtime.data;
+        const gi = Math.max(0, Math.min(d.gridN - 1, Math.round(x / d.macroRes)));
+        const gj = Math.max(0, Math.min(d.gridN - 1, Math.round(z / d.macroRes)));
+        return d.biome[gj * d.gridN + gi];
+      },
+      groundAt: (x, z) => (runtime.terrainGround ? runtime.terrainGround.heightAt(x, z) : null),
+      waterAt: (x, z) => (runtime.terrainGround ? runtime.terrainGround.waterAt(x, z) : Math.max(runtime.seaY, -Infinity)),
+      viewportH: size.height,
+    });
     world.sky.uniforms.uCloudCover.value = 0.42 + 0.5 * Math.min(1, wm.cloud);
     world.sky.uniforms.uWeatherSky.value.set(storm * above, liveWeather.rainbow * look.rainbow, flash, Math.min(1, wm.dust));
     // A gale bends the grass (online the chemistry wind reset it this frame; solo the WorldSpec's).
@@ -350,7 +385,8 @@ export function WorldScene({ runtime }: Props) {
 
     const f = fx.current;
     if (f) {
-      f.sun.update(camera, L.lightDir, L.lightColor, L.lightIntensity * (1 - under));
+      // Playtest 2 immersion pass: clouds soften the shadows (rain, snow, fog banks: faint, diffuse)
+      f.sun.update(camera, L.lightDir, L.lightColor, L.lightIntensity * (1 - under), 1 - 0.72 * overcast);
       // Valley fog: thick at dawn, thin by midday, a little back at dusk.
       const hour = (tod / DAY_LENGTH_S) * 24;
       const morning = Math.exp(-(((hour - 6.5) / 1.8) ** 2));

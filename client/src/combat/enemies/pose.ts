@@ -556,6 +556,8 @@ function biped(c: PoseCtx, out: Float32Array): void {
 // ── Floaters ───────────────────────────────────────────────────────────────
 
 function floater(c: PoseCtx, out: Float32Array): void {
+  if (c.spec.style === 'the_hush') return hush(c, out);
+  if (c.spec.style === 'hollow_bell') return hollowBell(c, out);
   const a = c.a;
   resetPose(out, 6);
   const t = a.time + c.phase;
@@ -623,6 +625,129 @@ function floater(c: PoseCtx, out: Float32Array): void {
   rot(out, F.handR, 0.4 * w - 0.6 * s, 0, 0.2);
   rot(out, F.tail, 0.35 * m + Math.sin(t * 5) * 0.06, t * 0.4, 0);
   rot(out, F.head, c.lookPitch * 0.5 - cx * 0.5, c.look * 0.7, 0);
+}
+
+// ── CR 035: the Hush and its Hollow Bells (playtest 2 immersion pass) ─────
+
+/**
+ * A Hollow Bell swings from a pivot above its crown like a bell on a beam:
+ * a slow idle sway, a swing back through the wind-up and through on the toll
+ * while its rings of sound spread; hit, it rocks; dying, it cracks, tips and
+ * drops. The core joint sits mid-bell, so the pivot (0.55 above it) is kept
+ * still by moving the core opposite to the swing.
+ */
+function hollowBell(c: PoseCtx, out: Float32Array): void {
+  const a = c.a;
+  resetPose(out, 6);
+  const t = a.time + c.phase;
+  const PIV = 0.55;
+  let swing = Math.sin(t * 1.15) * 0.07 + Math.sin(t * 0.43) * 0.03;
+  let roll = Math.sin(t * 0.8 + 1) * 0.03;
+  let ring = 1 + Math.sin(t * 2.2) * 0.04;
+  let ringY = 0;
+  if (a.state === 'dying') {
+    const k = ease(a.death);
+    swing = 0.5 * k;
+    roll = 0.35 * c.side * k;
+    off(out, F.core, 0, -Math.min(c.drop, 0.95) * k * k, 0);
+    scl(out, F.ring, 1 + 2 * k, 1, 1 + 2 * k);
+    scl(out, F.head, 1, 1 - 0.7 * k, 1);
+  } else {
+    const { w, s } = phaseWeights(a);
+    swing += -0.42 * w + 0.5 * s;
+    ring *= 1 - 0.25 * w + 1.6 * s;
+    ringY = -0.08 * s;
+    swing += a.tremble * Math.sin(t * 48) * 0.04;
+    swing += 0.3 * a.flinch;
+    roll += Math.sin(t * 9) * 0.2 * a.stagger;
+  }
+  rot(out, F.core, swing, 0, roll);
+  // keep the pivot above the crown where it is: the core swings about it
+  off(out, F.core, PIV * Math.sin(roll), PIV * (1 - Math.cos(swing)) + PIV * (1 - Math.cos(roll)), -PIV * Math.sin(swing));
+  rot(out, F.ring, -swing, a.spin * 0.5 + t * 0.3, -roll);
+  off(out, F.ring, 0, ringY, 0);
+  scl(out, F.ring, ring, 1, ring);
+  rot(out, F.head, -swing * 0.6, 0, -roll * 0.6); // the chain hangs straighter than the bell
+}
+
+/**
+ * The Hush drifts slower and taller than an archon: a long slow breath, the
+ * veil's ribbons streaming, the masked head tilting as if listening, the
+ * broken halo turning. Wind-ups open its arms wide (the rend) or draw them
+ * up over the head before the toll; the endless night lifts it.
+ */
+function hush(c: PoseCtx, out: Float32Array): void {
+  const a = c.a;
+  resetPose(out, 6);
+  const t = a.time + c.phase;
+  if (a.state === 'dying') {
+    const k = ease(a.death);
+    off(out, F.core, 0, -Math.min(c.drop, 0.7) * k, 0);
+    scl(out, F.core, 1 - 0.5 * k, 1 - 0.75 * k, 1 - 0.5 * k);
+    rot(out, F.core, -0.4 * k, 0, 0);
+    rot(out, F.ring, 0.6 * k, a.spin + k * 4, 0);
+    scl(out, F.ring, 1 + 1.4 * k, 1, 1 + 1.4 * k);
+    off(out, F.handL, -0.35 * k, 0.4 * k, 0);
+    off(out, F.handR, 0.35 * k, 0.4 * k, 0);
+    rot(out, F.head, -0.7 * k, 0, 0.3 * k);
+    rot(out, F.tail, 0.8 * k, 0, 0);
+    return;
+  }
+  const { w, s } = phaseWeights(a);
+  const m = Math.min(1.3, a.move);
+  const breath = Math.sin(t * 0.9);
+  let cx = 0.12 * m + Math.sin(t * 0.6) * 0.03;
+  let cy = breath * 0.06;
+  let cz = 0;
+  let lx = 0;
+  let ly = Math.sin(t * 0.9 + 1.2) * 0.05;
+  let lz = 0;
+  let rx = 0;
+  let ry = Math.sin(t * 0.9 + 2.1) * 0.05;
+  let rz = 0;
+  let ring = 1;
+  let hands = 0;
+  const kind = a.attack.kind;
+  if (kind === 'nova' || kind === 'slam' || kind === 'stomp') {
+    // the toll: hands drawn up together over the mask, then flung down and out
+    lx += 0.4 * w - 0.25 * s;
+    rx += -0.4 * w + 0.25 * s;
+    ly += 0.75 * w - 0.35 * s;
+    ry += 0.75 * w - 0.35 * s;
+    lz += -0.1 * w;
+    rz += -0.1 * w;
+    cy += 0.22 * w - 0.12 * s;
+    ring = 1 - 0.3 * w + 1.1 * s;
+    hands = -1.4 * w + 0.9 * s;
+  } else {
+    // the rend / lance: arms open wide and back, then a sweep through
+    lx += -0.35 * w + 0.5 * s;
+    rx += 0.35 * w - 0.5 * s;
+    ly += 0.2 * w - 0.1 * s;
+    ry += 0.2 * w - 0.1 * s;
+    lz += 0.3 * w - 0.55 * s;
+    rz += 0.3 * w - 0.55 * s;
+    cx += -0.2 * w + 0.3 * s;
+    cz += 0.15 * w - 0.3 * s;
+    hands = 0.5 * w - 0.9 * s;
+    ring = 1 + 0.15 * w;
+  }
+  const tr = a.tremble * Math.sin(t * 50) * 0.02;
+  cz += 0.12 * a.flinch;
+  cx += -0.2 * a.flinch;
+  rot(out, F.core, cx, 0, Math.sin(t * 0.5) * 0.03 + Math.sin(t * 10) * 0.25 * a.stagger);
+  off(out, F.core, tr, cy, cz);
+  scl(out, F.core, 1 + breath * 0.012, 1 + breath * 0.02, 1 + breath * 0.012);
+  rot(out, F.ring, 0.08 * Math.sin(t * 0.37), a.spin * 0.35 + t * 0.12, 0.08 * Math.cos(t * 0.29));
+  scl(out, F.ring, ring, ring, ring);
+  off(out, F.handL, lx, ly, lz);
+  off(out, F.handR, rx, ry, rz);
+  rot(out, F.handL, hands + Math.sin(t * 0.7) * 0.08, 0, -0.15);
+  rot(out, F.handR, hands + Math.sin(t * 0.7 + 1) * 0.08, 0, 0.15);
+  // the ribbons stream behind it and ripple
+  rot(out, F.tail, 0.3 * m + Math.sin(t * 1.6) * 0.07, t * 0.15, Math.sin(t * 1.1) * 0.05);
+  // a listening tilt, then the face turned on you
+  rot(out, F.head, c.lookPitch * 0.4 - cx * 0.4, c.look * 0.6, Math.sin(t * 0.33) * 0.16 * (1 - w));
 }
 
 // ── Winged ─────────────────────────────────────────────────────────────────

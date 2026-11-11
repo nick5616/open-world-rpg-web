@@ -158,3 +158,28 @@ describe('fishing state', () => {
     expect(sent.at(-1)).toBe(406); // lose, walked away
   });
 });
+
+describe('fishing is heard (playtest 2 immersion pass)', () => {
+  it('cast, plop, nibbles and the bite on time, the hook, the catch', async () => {
+    const { setTriggerSink } = await import('../../audio/bridge');
+    const { fishingSounds, useFishing } = await import('./store');
+    useFishing.setState({ phase: 'waiting', seq: 5 }); // the live state the timers check (before listening: the store's own subscription speaks too)
+    const heard: string[] = [];
+    setTriggerSink((n) => heard.push(n));
+    const timers: [() => void, number][] = [];
+    const later = (fn: () => void, ms: number) => void timers.push([fn, ms]);
+    const s0 = useFishing.getState();
+    const st = (o: Partial<typeof s0>) => ({ ...s0, ...o });
+    fishingSounds(st({ phase: 'casting' }), st({ phase: 'idle' }), later);
+    const waiting = st({ phase: 'waiting', seq: 5, nibbles: [800, 1900], biteMs: 3200 });
+    fishingSounds(waiting, st({ phase: 'casting' }), later);
+    expect(timers.map((t) => t[1])).toEqual([800, 1900, 3200]);
+    for (const [fn] of timers) fn();
+    fishingSounds(st({ phase: 'fight' }), waiting, later);
+    fishingSounds(st({ phase: 'result', caught: { key: 'k', name: 'n', item: 'fish:k', weightG: 1, rarity: 2, water: 'lake', first: false, record: false, count: 1, best: 1, id: 1 } }), st({ phase: 'landing' }), later);
+    fishingSounds(st({ phase: 'result' }), st({ phase: 'result' }), later); // no change: silent
+    expect(heard).toEqual(['fish_cast', 'fish_plop', 'fish_nibble', 'fish_nibble', 'fish_bite', 'fish_hooked', 'fish_caught']);
+    setTriggerSink(null);
+    useFishing.setState({ phase: 'idle', seq: 0 });
+  });
+});

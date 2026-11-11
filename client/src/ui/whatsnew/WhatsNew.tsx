@@ -13,6 +13,7 @@ import { usePanelEsc } from '../../input/panelStack';
 import { uiPanelUp } from '../../input/interact';
 import raw from './changelog.json';
 import { cardMayShow, RETURNING_AT_LOAD, readSeen, validEntries, whatsNew, writeSeen, type ChangelogEntry, type WhatsNew as Shown } from './news';
+import { cinematicActive } from '../story/cinematicMode';
 import { localPlayer } from '../../state/live';
 
 const ENTRIES = validEntries(raw as unknown);
@@ -118,7 +119,7 @@ function WhatsNewInner() {
       const now = performance.now();
       if (localPlayer.mode !== 'idle') stillSince = now; // playtest 2 polish: not in the middle of a walk
       const intro = useIntro.getState();
-      const busy = !!intro.current || intro.queue.length > 0 || useMenu.getState().open || useCombatHud.getState().downedUntil > 0;
+      const busy = !!intro.current || intro.queue.length > 0 || useMenu.getState().open || useCombatHud.getState().downedUntil > 0 || cinematicActive();
       // Never on top of a shop, the inventory or any other open panel (playtest 2 integration QA:
       // the welcome card covered a new player's first talk with the smith): wait for it to close.
       if (!cardMayShow({ sinceReadyMs: now - t0, panelUp: uiPanelUp(), busy, stillMs: now - stillSince })) return;

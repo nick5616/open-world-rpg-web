@@ -33,6 +33,8 @@ const GROUPS: [file: string, title: string, keys: string[]][] = [
   ['elementals', 'Elementals, wisps and flyers', ['wisp', 'ember_imp', 'frost_mote', 'spark_wisp', 'shade', 'gale_harpy', 'lumen_moth', 'gloom_bat']],
   ['demons', 'Demons (hunched, horned, glowing eyes; smoke on death)', ['gloamling', 'cinder_fiend', 'rime_wraith', 'storm_ghoul', 'grave_brute', 'gale_reaver', 'umbral_stalker', 'void_maw']],
   ['bosses', 'Bosses (set pieces)', ['warden', 'archon', 'vault_keeper', 'starless_sovereign']],
+  ['story', 'The Heartfall (CR 035, playtest 2 immersion pass): the Hush and a Hollow Bell, each its own model', ['the_hush', 'hollow_bell']],
+  ['story-before', 'Before the immersion pass: the Hush wore the Archon, its bells the Shade', ['archon', 'shade']],
   ['summons', 'Summoned allies (spectral, element colour)', ['summon:wraith_hound', 'summon:gale_phantom', 'summon:sunlit_sentinel']],
 ];
 

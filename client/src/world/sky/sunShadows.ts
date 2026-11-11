@@ -122,13 +122,18 @@ export class SunShadows {
     if (this.csm && this.materials.delete(m)) this.csm.shaders.delete(m);
   }
 
-  /** Per frame: light direction (toward the light), colour, intensity; camera-following cascades. */
-  update(camera: THREE.Camera, towardLight: THREE.Vector3, color: THREE.Color, intensity: number): void {
+  /**
+   * Per frame: light direction (toward the light), colour, intensity; camera-following cascades.
+   * `shadow` 0..1: how dark the shadows are (playtest 2 immersion pass: an overcast sky's
+   * diffuse light leaves only soft, faint shadows, not the crisp black ones of a clear noon).
+   */
+  update(camera: THREE.Camera, towardLight: THREE.Vector3, color: THREE.Color, intensity: number, shadow = 1): void {
     if (this.csm) {
       this.csm.lightDirection.copy(towardLight).negate();
       for (const l of this.lights) {
         l.color.copy(color);
         l.intensity = intensity;
+        l.shadow.intensity = shadow;
       }
       this.csm.update();
     } else if (this.light) {
@@ -137,6 +142,7 @@ export class SunShadows {
       this.light.target.position.copy(p);
       this.light.color.copy(color);
       this.light.intensity = intensity;
+      this.light.shadow.intensity = shadow;
     }
   }
 

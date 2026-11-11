@@ -31,6 +31,45 @@
 
 import { thunderFor } from './acoustics';
 import { noiseBuffer, renderLoop } from './synth';
+import type { WildlifeTargets } from './wildlife';
+
+/** A songbird's phrase: notes as [start Hz, end Hz, ms] (a few species, picked per call). */
+const SONGS: [number, number, number][][] = [
+  // a bright warble
+  [
+    [3200, 4200, 70],
+    [4300, 3600, 60],
+    [3400, 4400, 70],
+    [4500, 3800, 60],
+    [3600, 4800, 110],
+  ],
+  // a falling trill
+  [
+    [5200, 4900, 35],
+    [5000, 4700, 35],
+    [4800, 4500, 35],
+    [4600, 4300, 35],
+    [4400, 4100, 35],
+    [4200, 3800, 35],
+    [3900, 3300, 90],
+  ],
+  // two clear whistles, a question
+  [
+    [2600, 2700, 180],
+    [2400, 3300, 220],
+  ],
+  // chip-chip-cheee
+  [
+    [4200, 3600, 40],
+    [4200, 3600, 40],
+    [3200, 5200, 160],
+  ],
+  // a soft dove-like coo (low)
+  [
+    [600, 560, 260],
+    [640, 520, 420],
+  ],
+];
 
 export interface AmbienceTargets {
   /** 0..1 */
@@ -54,6 +93,8 @@ export interface AmbienceTargets {
   sand?: number;
   /** Thunder comes from real strikes (the weather runtime), not the random rumbles of a downpour. */
   syncedThunder?: boolean;
+  /** Playtest 2 immersion pass (wildlife.ts): songbirds, a hawk's cry, frogs, an owl (0..1 densities). */
+  wild?: WildlifeTargets;
 }
 
 const ZERO: AmbienceTargets = { wind: 0, windSpeed: 0, rain: 0, roofRain: 0, insects: 0, water: 0, drips: 0, weatherGain: 1, weatherLowpassHz: 16000 };
@@ -79,6 +120,12 @@ export class Ambience {
   private brown: AudioBuffer | null = null;
   private disposed = false;
   private dripAt = 0;
+  // playtest 2 immersion pass: wildlife voices (wildlife.ts)
+  private wild: GainNode;
+  private birdAt = 0;
+  private hawkAt = 0;
+  private frogAt = 0;
+  private owlAt = 0;
   /** Thunder rumbles started (debug). */
   thunders = 0;
 
@@ -161,6 +208,10 @@ export class Ambience {
     this.roof = ctx.createGain();
     this.roof.gain.value = 0;
     loop(renderLoop(ctx, 'roofRain')).connect(this.roof).connect(out);
+    // wildlife (birds, hawks, frogs, owls): through the weather submix, so a wall muffles them
+    this.wild = ctx.createGain();
+    this.wild.gain.value = 1;
+    this.wild.connect(this.weatherLp);
     // insects + water
     this.insects = ctx.createGain();
     this.insects.gain.value = 0;
@@ -201,6 +252,26 @@ export class Ambience {
     if (t.insects > 0.05 && nowMs > this.chirpAt) {
       this.chirp();
       this.chirpAt = nowMs + 380 + Math.random() * 2400;
+    }
+    const w = t.wild;
+    if (w) {
+      // each voice comes at its own rate, faster where the land is fuller of it
+      if (w.birds > 0.05 && nowMs > this.birdAt) {
+        if (this.birdAt) this.songbird(w.birds);
+        this.birdAt = nowMs + (700 + Math.random() * 3800) / Math.min(1, w.birds + 0.15);
+      }
+      if (w.hawks > 0.1 && nowMs > this.hawkAt) {
+        if (this.hawkAt) this.hawk();
+        this.hawkAt = nowMs + (12000 + Math.random() * 26000) / w.hawks;
+      }
+      if (w.frogs > 0.05 && nowMs > this.frogAt) {
+        if (this.frogAt) this.frog(w.frogs);
+        this.frogAt = nowMs + (250 + Math.random() * 1400) / Math.min(1, w.frogs + 0.1);
+      }
+      if (w.owls > 0.1 && nowMs > this.owlAt) {
+        if (this.owlAt) this.owl();
+        this.owlAt = nowMs + (9000 + Math.random() * 22000) / w.owls;
+      }
     }
     if (t.drips > 0.5 && nowMs > this.dripAt) {
       this.drip();
@@ -333,6 +404,130 @@ export class Ambience {
     o.connect(g).connect(p).connect(this.insects);
     o.start(t);
     o.stop(t + pulses * 0.055 + 0.05);
+  }
+
+  /** A whistled note: a sine gliding from f0 to f1, a quick attack, a little vibrato. */
+  private note(at: number, f0: number, f1: number, ms: number, level: number, out: AudioNode, vib = 0.02): void {
+    const ctx = this.ctx;
+    const o = ctx.createOscillator();
+    o.type = 'sine';
+    const d = ms / 1000;
+    o.frequency.setValueAtTime(f0, at);
+    o.frequency.exponentialRampToValueAtTime(Math.max(40, f1), at + d);
+    const v = ctx.createOscillator();
+    v.frequency.value = 22 + Math.random() * 12;
+    const vg = ctx.createGain();
+    vg.gain.value = f0 * vib;
+    v.connect(vg).connect(o.frequency);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0, at);
+    g.gain.linearRampToValueAtTime(level, at + Math.min(0.012, d * 0.25));
+    g.gain.setValueAtTime(level, at + d * 0.6);
+    g.gain.linearRampToValueAtTime(0, at + d);
+    o.connect(g).connect(out);
+    o.start(at);
+    v.start(at);
+    o.stop(at + d + 0.02);
+    v.stop(at + d + 0.02);
+  }
+
+  /** A songbird somewhere nearby: one phrase of a species, sometimes answered. */
+  private songbird(density: number): void {
+    const ctx = this.ctx;
+    const song = SONGS[Math.floor(Math.random() * SONGS.length)];
+    const p = ctx.createStereoPanner();
+    p.pan.value = Math.random() * 1.8 - 0.9;
+    // nearer or further (level and a touch of air on the far ones)
+    const near = 0.35 + Math.random() * 0.65;
+    const lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 3500 + 9000 * near;
+    p.connect(lp).connect(this.wild);
+    const pitch = 0.88 + Math.random() * 0.24;
+    let t = ctx.currentTime + 0.02;
+    const reps = Math.random() < 0.3 ? 2 : 1;
+    for (let r = 0; r < reps; r++) {
+      for (const [f0, f1, ms] of song) {
+        this.note(t, f0 * pitch, f1 * pitch, ms, 0.05 * near * (0.6 + 0.4 * density), p, f0 < 1000 ? 0.004 : 0.02);
+        t += ms / 1000 + 0.02 + Math.random() * 0.03;
+      }
+      t += 0.25 + Math.random() * 0.4;
+    }
+  }
+
+  /** A hawk's cry high overhead: a long, hoarse, descending "kee-eeer". */
+  private hawk(): void {
+    const ctx = this.ctx;
+    const at = ctx.currentTime + 0.02;
+    const p = ctx.createStereoPanner();
+    p.pan.value = Math.random() * 1.4 - 0.7;
+    const bp = ctx.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.frequency.value = 2600;
+    bp.Q.value = 1.2;
+    p.connect(bp).connect(this.wild);
+    for (const [k, f0, f1, ms] of [
+      [0, 3000, 2900, 120],
+      [0.16, 3100, 1900, 900],
+    ] as const) {
+      const o = ctx.createOscillator();
+      o.type = 'sawtooth';
+      o.frequency.setValueAtTime(f0, at + k);
+      o.frequency.exponentialRampToValueAtTime(f1, at + k + ms / 1000);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0, at + k);
+      g.gain.linearRampToValueAtTime(0.022, at + k + 0.03);
+      g.gain.setValueAtTime(0.022, at + k + (ms / 1000) * 0.5);
+      g.gain.linearRampToValueAtTime(0, at + k + ms / 1000);
+      o.connect(g).connect(p);
+      o.start(at + k);
+      o.stop(at + k + ms / 1000 + 0.02);
+    }
+  }
+
+  /** A frog in the chorus: two or three quick throaty pulses ("rib-bit"), each frog its own pitch. */
+  private frog(density: number): void {
+    const ctx = this.ctx;
+    const at = ctx.currentTime + 0.02;
+    const f = 180 + Math.random() * 260;
+    const p = ctx.createStereoPanner();
+    p.pan.value = Math.random() * 1.8 - 0.9;
+    const bp = ctx.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.frequency.value = f * 2.2;
+    bp.Q.value = 2.5;
+    p.connect(bp).connect(this.wild);
+    const pulses = 2 + Math.floor(Math.random() * 2);
+    const lvl = 0.05 * (0.4 + 0.6 * Math.random()) * (0.6 + 0.4 * density);
+    for (let i = 0; i < pulses; i++) {
+      const t = at + i * (0.07 + Math.random() * 0.03);
+      const o = ctx.createOscillator();
+      o.type = 'square';
+      o.frequency.setValueAtTime(f * 1.08, t);
+      o.frequency.exponentialRampToValueAtTime(f * 0.92, t + 0.05);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(lvl, t + 0.006);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.06);
+      o.connect(g).connect(p);
+      o.start(t);
+      o.stop(t + 0.07);
+    }
+  }
+
+  /** An owl in the trees: "hoo ... hoo-hoo", soft and low. */
+  private owl(): void {
+    const ctx = this.ctx;
+    const p = ctx.createStereoPanner();
+    p.pan.value = Math.random() * 1.6 - 0.8;
+    p.connect(this.wild);
+    const at = ctx.currentTime + 0.02;
+    const f = 360 + Math.random() * 60;
+    for (const [k, ms, f0] of [
+      [0, 380, f],
+      [0.75, 160, f * 1.04],
+      [1.0, 420, f * 0.97],
+    ] as const) this.note(at + k, f0, f0 * 0.92, ms, 0.05, p, 0.006);
   }
 
   /** Current targets (debug). */
