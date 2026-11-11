@@ -382,6 +382,7 @@ export function WorldScene({ runtime }: Props) {
     w.uLightColor.value.copy(L.lightColor).multiplyScalar(L.lightIntensity / 3);
     w.uAmbient.value.copy(L.skyColor).multiplyScalar(L.hemiIntensity * (1 - 0.9 * under));
     w.uTime.value += dt;
+    w.uRain.value = rain * above; // rain rings the water
     world.sea.position.set(Math.round(camera.position.x / 64) * 64, runtime.seaY, Math.round(camera.position.z / 64) * 64);
     world.sea.updateMatrixWorld();
 
