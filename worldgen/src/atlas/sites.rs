@@ -107,6 +107,7 @@ impl<'a> Placer<'a> {
             yaw: 0,
             link: super::format::NONE16,
             node: k,
+            layer: 0,
         });
         index
     }

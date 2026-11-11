@@ -390,8 +390,10 @@ fn nearby_sites(a: &Atlas, x0: f64, z0: f64) -> Vec<SiteRec> {
     (0..a.site_count())
         .map(|i| a.site(i))
         .filter(|s| {
+            // genVersion 3: only surface sites shape the ground's scatter and
+            // anchors (sky towns and caverns sit above or below it).
             let r = s.radius + 2.0;
-            s.x + r >= x0 && s.x - r <= x0 + span && s.z + r >= z0 && s.z - r <= z0 + span
+            s.layer == 0 && s.x + r >= x0 && s.x - r <= x0 + span && s.z + r >= z0 && s.z - r <= z0 + span
         })
         .collect()
 }
@@ -670,7 +672,7 @@ impl<'a, 'b> Ctx<'a, 'b> {
         (0..self.a.site_count()).any(|i| {
             let s = self.a.site(i);
             let r = s.radius + margin;
-            s.category == S::CAT_SETTLEMENT && (s.x - x) * (s.x - x) + (s.z - z) * (s.z - z) < r * r
+            s.category == S::CAT_SETTLEMENT && s.layer == 0 && (s.x - x) * (s.x - x) + (s.z - z) * (s.z - z) < r * r
         })
     }
 }

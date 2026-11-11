@@ -24,6 +24,7 @@ pub mod noise;
 pub mod rng;
 pub mod spec;
 pub mod town;
+pub mod vertical;
 
 /// Generator major version. Any change that alters output bytes for an
 /// existing (seed, spec) bumps this and gets a new golden table (spec 5,
@@ -33,7 +34,14 @@ pub mod town;
 /// on natural ground with foundations, footpaths, tighter towns, extra
 /// hamlets and minor points of interest, landmarks and enemy camps built.
 /// The genVersion 1 build is archived in worldgen/archive/.
-pub const GEN_VERSION: u16 = 2;
+///
+/// 3 (playtest 2, docs/cr/038-vertical-world.md): the vertical world. Sky
+/// archipelagos, the Underground caverns and the Depths (`vertical`),
+/// their sites appended to the atlas (tunnel entrances, caverns, sky towns,
+/// palaces...), sky towns in the towns buffer, scatter cleared at tunnel
+/// mouths. Every genVersion 2 site keeps its index and id. The genVersion 2
+/// build is archived in worldgen/archive/.
+pub const GEN_VERSION: u16 = 3;
 
 /// Version of the wasm export signatures and buffer layouts in README.md.
 pub const ABI_VERSION: u32 = 1;

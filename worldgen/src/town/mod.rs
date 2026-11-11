@@ -153,7 +153,9 @@ pub mod pk {
     pub const BONES: u8 = 28;
     pub const RUBBLE: u8 = 29;
     pub const TORCH: u8 = 30;
-    pub const COUNT: u8 = 31;
+    /// genVersion 3: a sky town plaza's activity spot (CR 038 hook for sky activities).
+    pub const ACTIVITY: u8 = 31;
+    pub const COUNT: u8 = 32;
 }
 
 /// Prop flags (byte 28).
@@ -382,6 +384,8 @@ pub fn build(a: &Atlas) -> Result<Towns, String> {
     roads::finish(a, net, &mut t);
     jigsaw::build_structures(a, &mut t);
     paths::to_sights(a, &mut t);
+    // genVersion 3: sky towns last (every surface array keeps its indices).
+    layout::build_sky_settlements(a, &mut t);
     Ok(t)
 }
 

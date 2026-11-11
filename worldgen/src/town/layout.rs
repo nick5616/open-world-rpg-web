@@ -96,6 +96,33 @@ pub fn build_settlements(a: &Atlas, net: &Net, t: &mut Towns) {
         // Lattice memo over the atlas footprint plus room for steps, walls
         // and gate towers (genVersion 2: every lot is measured on the ground).
         let ter = Terrain::around(a, s.x, s.z, s.radius + 16.0);
+        settle(a, site_i, si, net.entries[si].clone(), ter, t);
+    }
+}
+
+/// genVersion 3 (docs/cr/038-vertical-world.md): sky towns, laid out exactly
+/// like a surface settlement but on their island's top (no roads reach
+/// them), after everything else so every surface array keeps its indices.
+/// Their square holds an activity spot (prop ACTIVITY) for sky activities.
+pub fn build_sky_settlements(a: &Atlas, t: &mut Towns) {
+    let Ok(v) = crate::vertical::world(a) else { return };
+    for site_i in 0..a.site_count() {
+        let s = a.site(site_i);
+        if s.category != site::CAT_SETTLEMENT || s.layer != crate::vertical::LAYER_SKY {
+            continue;
+        }
+        let Some(isl) = v.plan.islands.iter().position(|i| i.site as usize == site_i) else { continue };
+        let ter = Terrain::sky(a, v.clone(), isl);
+        let si = t.settlements.len();
+        settle(a, site_i, si, Vec::new(), ter, t);
+    }
+}
+
+/// Lay out one settlement (site `site_i`, settlement index `si`, road
+/// entries `angles`) on `ter`.
+fn settle(a: &Atlas, site_i: usize, si: usize, angles_in: Vec<f64>, ter: Terrain, t: &mut Towns) {
+    {
+        let s = a.site(site_i);
         let biome = site_biome(a, site_i);
         let style = kit::style_of_biome(biome);
         let mut seq = Seq::new(a.seed ^ s.seed as u64, stream::LAYOUT);
@@ -123,7 +150,7 @@ pub fn build_settlements(a: &Atlas, net: &Net, t: &mut Towns) {
 
         // Streets: one per road entry, topped up to a minimum count by
         // splitting the widest gap between them.
-        let mut angles = net.entries[si].clone();
+        let mut angles = angles_in;
         let min_streets = [2usize, 3, 4][size as usize];
         if angles.is_empty() {
             angles.push(seq.range(0.0, TAU));
@@ -464,6 +491,9 @@ pub fn build_settlements(a: &Atlas, net: &Net, t: &mut Towns) {
         let mut items: Vec<u8> = vec![pk::BOARD];
         items.extend(std::iter::repeat_n(pk::STALL, n_stalls));
         items.push(pk::WELL);
+        if ter.is_sky() {
+            items.push(pk::ACTIVITY);
+        }
         const SQUARE_PASSES: [(f64, f64, f64); 3] = [(0.55, 1.0, 0.6), (0.4, 0.5, 0.45), (0.28, 0.0, 0.34)];
         for (i, &item) in items.iter().enumerate() {
             let mut found = None;
@@ -523,6 +553,7 @@ pub fn build_settlements(a: &Atlas, net: &Net, t: &mut Towns) {
                         Some((0.9, 0.15, 2.2)),
                     );
                 }
+                pk::ACTIVITY => town_prop(&mut ctx, t, &ter, x, z, ang + core::f64::consts::PI, pk::ACTIVITY, 0, pf::INTERACT, None),
                 _ => town_prop(&mut ctx, t, &ter, x, z, ang, pk::WELL, 0, 0, Some((0.8, 0.8, 0.9))),
             }
         }

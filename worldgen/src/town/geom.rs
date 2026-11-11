@@ -105,6 +105,8 @@ pub struct Span {
 pub struct Terrain<'a> {
     pub a: &'a Atlas<'a>,
     memo: Option<Memo<'a>>,
+    /// genVersion 3: a sky island's top instead of the terrain (sky towns).
+    sky: Option<(std::rc::Rc<crate::vertical::Cached>, usize)>,
 }
 
 /// Lattice samples of one area, computed on first use (a settlement's
@@ -123,7 +125,16 @@ struct Memo<'a> {
 
 impl<'a> Terrain<'a> {
     pub fn new(a: &'a Atlas<'a>) -> Terrain<'a> {
-        Terrain { a, memo: None }
+        Terrain { a, memo: None, sky: None }
+    }
+
+    /// The top of sky island `island` as the ground (no water).
+    pub fn sky(a: &'a Atlas<'a>, v: std::rc::Rc<crate::vertical::Cached>, island: usize) -> Terrain<'a> {
+        Terrain { a, memo: None, sky: Some((v, island)) }
+    }
+
+    pub fn is_sky(&self) -> bool {
+        self.sky.is_some()
     }
 
     /// A terrain that memoizes the lattice over the square of half size `r`
@@ -135,6 +146,7 @@ impl<'a> Terrain<'a> {
         let g = Ground::new(a, x0, z0, x0 + n as f64, z0 + n as f64);
         Terrain {
             a,
+            sky: None,
             memo: Some(Memo {
                 g,
                 x0: x0 as i64,
@@ -148,6 +160,9 @@ impl<'a> Terrain<'a> {
     /// (height, water) at an integer lattice point, rounded to f32 as the
     /// chunks store them.
     fn lattice(&self, x: f64, z: f64) -> (f32, f32) {
+        if let Some((v, _)) = &self.sky {
+            return (crate::vertical::field::sky_at(&v.plan, x, z).a as f32, -10000.0);
+        }
         if let Some(m) = &self.memo {
             let i = x as i64 - m.x0;
             let j = z as i64 - m.z0;
@@ -171,7 +186,7 @@ impl<'a> Terrain<'a> {
     /// Exact collision height (same as the `collision_height` export: the
     /// same lattice values through the same `tri_interp`).
     pub fn height(&self, x: f64, z: f64) -> f64 {
-        if self.memo.is_none() {
+        if self.memo.is_none() && self.sky.is_none() {
             return crate::ground::collision_height(self.a, x, z);
         }
         let x0 = libm::floor(x);
@@ -224,6 +239,9 @@ impl<'a> Terrain<'a> {
 
     /// Ground sample (height, water) at one point, not on the lattice.
     pub fn sample(&self, x: f64, z: f64) -> (f64, f64) {
+        if let Some((v, _)) = &self.sky {
+            return (crate::vertical::field::sky_at(&v.plan, x, z).a, -10000.0);
+        }
         if let Some(m) = &self.memo {
             let (fx, fz) = (x - m.x0 as f64, z - m.z0 as f64);
             if fx >= 0.0 && fz >= 0.0 && fx <= m.n as f64 && fz <= m.n as f64 {

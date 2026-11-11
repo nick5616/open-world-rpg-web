@@ -40,6 +40,8 @@ pub struct Site {
     pub yaw: u16,
     pub link: u16,
     pub node: usize,
+    /// genVersion 3: 0 surface, 1 sky, 2 Underground, 3 Depths.
+    pub layer: u8,
 }
 
 #[derive(Clone)]
@@ -205,7 +207,7 @@ fn node_params(w: &World) -> Vec<u8> {
             flags |= flag::RIVER;
         }
         for s in &w.sites {
-            if s.category == site::CAT_SETTLEMENT {
+            if s.category == site::CAT_SETTLEMENT && s.layer == 0 {
                 let d = libm::sqrt((s.x - x) * (s.x - x) + (s.z - z) * (s.z - z));
                 if d <= s.radius + RES {
                     flags |= flag::SETTLEMENT;
@@ -273,6 +275,47 @@ pub fn build(spec: &WorldSpec, seed: u64) -> Result<Vec<u8>, String> {
     hydro::run(&mut w);
     climate::run(&mut w);
     sites::place(&mut w);
+    // genVersion 3: the vertical world's sites go after every base site, so
+    // each base site keeps its index and id (renewal rule). The plan reads
+    // only base content, so the atlas it is built from here and the final
+    // atlas give the same plan.
+    let pre = serialize(&w);
+    let a = Atlas::parse(&pre)?;
+    let plan = crate::vertical::plan_sites(&a)?;
+    let base = w.sites.len();
+    for (k, ns) in plan.sites.iter().enumerate() {
+        let index = base + k;
+        let lay = 0x40 | (ns.category << 4) | ns.kind;
+        let id = crate::rng::stable_id(lay, 1 + ns.layer as i32, k as i32, index as u32);
+        let name = if ns.name.is_empty() {
+            NONE16
+        } else {
+            w.names.push(ns.name.clone());
+            (w.names.len() - 1) as u16
+        };
+        w.sites.push(Site {
+            id,
+            category: ns.category,
+            kind: ns.kind,
+            region: ns.region,
+            size: ns.size,
+            x: ns.x,
+            z: ns.z,
+            y: ns.y,
+            radius: ns.radius,
+            score: 0.0,
+            name,
+            biome: ns.biome,
+            element: ns.element,
+            vis_h: 0.0,
+            vis_count: 0,
+            seed: crate::rng::hash(seed, 0x5659_0010, id as i64, 1, 0) as u32,
+            yaw: ns.yaw,
+            link: if ns.link_local == NONE16 { NONE16 } else { (base + ns.link_local as usize) as u16 },
+            node: 0,
+            layer: ns.layer,
+        });
+    }
     Ok(serialize(&w))
 }
 
@@ -374,6 +417,7 @@ fn serialize(w: &World) -> Vec<u8> {
         put_u32(&mut sb, o + 40, st.seed);
         put_u16(&mut sb, o + 44, st.yaw);
         put_u16(&mut sb, o + 46, st.link);
+        sb[o + 37] = st.layer;
     }
     wr.section(sec::SITES, &sb);
 
