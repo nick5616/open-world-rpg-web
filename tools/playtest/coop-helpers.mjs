@@ -1,10 +1,10 @@
-/* global document, getComputedStyle */
+/* global getComputedStyle */
 // Helpers for coop-driver.mjs (re-imported on every command). Each takes a
 // Playwright page; the pages carry __who ('A' or 'B'). Honest play: keys,
 // mouse, the look handle (headless has no pointer lock). The dev console
 // (run) only for travel or retries, and every use is logged.
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
-import { walkTo, go, pl, look, yawTo, sleep, BASE } from './lib.mjs';
+import { walkTo, pl, look, yawTo, sleep, BASE } from './lib.mjs';
 
 export { sleep, pl, look, yawTo };
 export const OUT = 'tmp/coop';
@@ -271,7 +271,7 @@ export async function fight(page, { x, z, r = 30, ms = 90000, spells = ['Digit1'
     });
     if (s.down) {
       downs++;
-      return { kills, swings, lowHp: 0, draughts, downs, ms: Date.now() - t0, seen: seen.size, downed: true };
+      return { kills, swings, lowHp: 0, draughts, downs, dodges, ms: Date.now() - t0, seen: seen.size, downed: true };
     }
     lowHp = Math.min(lowHp, s.hp);
     if (s.hp < 0.45 && draughts < 8 && Date.now() - lastDraught > 2500) {
@@ -328,7 +328,7 @@ export async function fight(page, { x, z, r = 30, ms = 90000, spells = ['Digit1'
     }
     if (swings % 23 === 0) await page.keyboard.press('KeyF');
   }
-  return { kills, swings, lowHp: Math.round(lowHp * 100), draughts, downs, ms: Date.now() - t0, seen: seen.size };
+  return { kills, swings, lowHp: Math.round(lowHp * 100), draughts, downs, dodges, ms: Date.now() - t0, seen: seen.size };
 }
 
 /** Both fight around the same anchor. */
@@ -436,75 +436,7 @@ export async function hudText(page) {
   });
 }
 
-// ---- town-aware walking: the nearest town's street graph (cached per town), followed with a lookahead ----
-const GRAPHS = (globalThis.__coopGraphs ??= new Map());
-async function nearestTown(page, x, z) {
-  return page.evaluate(([qx, qz]) => {
-    const T = window.__lodestoneTowns;
-    if (!T) return null;
-    const s = T.settlements().map((t) => ({ ...t, d: Math.hypot(t.x - qx, t.z - qz) })).sort((a, b) => a.d - b.d)[0];
-    return s ? { index: s.index, name: s.name, x: s.x, z: s.z, radius: s.radius, square: s.square, d: s.d } : null;
-  }, [x, z]);
-}
-async function townGraph(page, town) {
-  if (GRAPHS.has(town.index)) return GRAPHS.get(town.index);
-  const streets = await page.evaluate((i) => window.__lodestoneTowns.streets(i), town.index);
-  const nodes = [{ x: town.x, z: town.z, s: -1 }];
-  const adj = [[]];
-  const link = (a, b) => {
-    if (a === b || adj[a].includes(b)) return;
-    adj[a].push(b);
-    adj[b].push(a);
-  };
-  for (const [si, st] of streets.entries()) {
-    const p = st.points;
-    let prev = -1;
-    for (let i = 0; i + 5 < p.length; i += 3) {
-      const [ax, az, bx, bz] = [p[i], p[i + 2], p[i + 3], p[i + 5]];
-      const n = Math.max(1, Math.ceil(Math.hypot(bx - ax, bz - az) / 3));
-      for (let k = i === 0 ? 0 : 1; k <= n; k++) {
-        nodes.push({ x: ax + ((bx - ax) * k) / n, z: az + ((bz - az) * k) / n, s: si });
-        adj.push([]);
-        const id = nodes.length - 1;
-        if (prev >= 0) link(prev, id);
-        prev = id;
-      }
-    }
-  }
-  for (let a = 1; a < nodes.length; a++) {
-    if (Math.hypot(nodes[a].x - town.x, nodes[a].z - town.z) < town.square + 4) link(0, a);
-    for (let b = a + 1; b < nodes.length; b++) if (nodes[a].s !== nodes[b].s && Math.hypot(nodes[a].x - nodes[b].x, nodes[a].z - nodes[b].z) < 3.5) link(a, b);
-  }
-  const g = { nodes, adj, town };
-  GRAPHS.set(town.index, g);
-  return g;
-}
-function route(g, from, to) {
-  const near = (p) => g.nodes.reduce((best, n, i) => (Math.hypot(n.x - p.x, n.z - p.z) < Math.hypot(g.nodes[best].x - p.x, g.nodes[best].z - p.z) ? i : best), 0);
-  const s = near(from);
-  const t = near(to);
-  const dist = new Array(g.nodes.length).fill(Infinity);
-  const prev = new Array(g.nodes.length).fill(-1);
-  dist[s] = 0;
-  const done = new Uint8Array(g.nodes.length);
-  for (;;) {
-    let u = -1;
-    for (let i = 0; i < dist.length; i++) if (!done[i] && dist[i] < Infinity && (u < 0 || dist[i] < dist[u])) u = i;
-    if (u < 0 || u === t) break;
-    done[u] = 1;
-    for (const v of g.adj[u]) {
-      const d = dist[u] + Math.hypot(g.nodes[u].x - g.nodes[v].x, g.nodes[u].z - g.nodes[v].z);
-      if (d < dist[v]) {
-        dist[v] = d;
-        prev[v] = u;
-      }
-    }
-  }
-  const path = [];
-  for (let v = t; v >= 0; v = prev[v]) path.unshift(g.nodes[v]);
-  return path;
-}
-
+// ---- walking: follow a path with a lookahead ----
 /** Follow points holding W (and Shift), aiming at the next point ~4 m ahead; jump/strafe when stuck. */
 export async function follow(page, pts, { stopAt = 2, timeoutMs = 180000, sprint = true, fightBack = true } = {}) {
   const t0 = Date.now();
