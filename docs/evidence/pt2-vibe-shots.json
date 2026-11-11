@@ -1,0 +1,136 @@
+{
+  "result": {
+    "first": {
+      "total": 617,
+      "regions": 16
+    },
+    "forestShrines": {
+      "total": 8,
+      "sample": [
+        "The Silent Shrine (shrine, forest, lvl 2 unstamped)",
+        "Maedaibrum Shrine (shrine, forest, lvl 3 unstamped)",
+        "Kabaistock Shrine (shrine, forest, lvl 3 unstamped)"
+      ]
+    },
+    "lakes": {
+      "total": 52,
+      "first": {
+        "n": "a lake shore in The Hollow Meadows",
+        "x": 2176,
+        "z": 2432,
+        "b": "meadow",
+        "lv": 1
+      }
+    },
+    "teleport": {
+      "target": [
+        1536,
+        1920
+      ],
+      "landed": [
+        1536,
+        1920,
+        128
+      ],
+      "mode": "idle"
+    },
+    "here": {
+      "biome": "forest",
+      "level": 14,
+      "tier": "dread",
+      "state": "override",
+      "weather": "drizzle",
+      "hour": 18.18,
+      "overrides": 1
+    },
+    "mapped": {
+      "files": [
+        "forest_dusk_sketch.wav 6.0 s"
+      ],
+      "mappings": [
+        {
+          "file": "forest_dusk_sketch.wav",
+          "when": {
+            "biome": "forest",
+            "time": "dusk"
+          }
+        }
+      ],
+      "source": "mapping",
+      "track": "file:forest_dusk_sketch.wav",
+      "why": [
+        "combat: hits or telegraphs in the last few seconds",
+        "biome forest · dusk · weather drizzle",
+        "area dread level 14 (tier 4)"
+      ],
+      "context": {
+        "state": "combat",
+        "biome": "forest",
+        "hour": 18.193196132977803,
+        "weather": "drizzle",
+        "tier": "dread",
+        "tierIndex": 4,
+        "areaLevel": 14,
+        "act": null,
+        "combat": true,
+        "boss": false,
+        "underground": 0,
+        "inTown": false,
+        "timedPhase": null,
+        "time": "dusk",
+        "intensity": 0.91
+      },
+      "loading": null
+    },
+    "forced": {
+      "state": "night",
+      "director": "night",
+      "source": "game",
+      "track": "music/night",
+      "intensity": 0.6
+    },
+    "log": [
+      "cmd /vibe find anywhere",
+      "ok 617 matches",
+      "cmd /vibe find forest, shrine",
+      "ok 8 matches",
+      "cmd /vibe find landmark=lake 12",
+      "info find: lake",
+      "ok 52 matches",
+      "cmd /vibe go 3  (a lake shore in The Forgotten Heights)",
+      "ok landed at 1536 128 1920, 0 m from the target, invulnerable 5s",
+      "cmd /god on",
+      "ok on: god",
+      "cmd /vibe level 10",
+      "ok area 118 (6,7) now level 10 (Perilous Lands) (was level 2 (stamped)); 2 group(s) respawn (0 enemies removed)",
+      "cmd /vibe level 14",
+      "cmd /time 18:10",
+      "ok area 118 (6,7) now level 14 (Dreadlands) (was level 10 (override)); 2 group(s) respawn (0 enemies removed)",
+      "cmd /weather drizzle",
+      "ok time 18:10",
+      "ok weather: drizzle (zone-wide)",
+      "ok loaded forest_dusk_sketch.wav (0.3 MB, 6.0 s), kept in this browser",
+      "ok mapped forest_dusk_sketch.wav to dusk, in forest",
+      "cmd /vibe spawn 3",
+      "cmd /music force night 0.6",
+      "ok 3 typical forest enemies (level 2, Quiet Lands): wolf, boar, boar",
+      "ok music forced to night at intensity 0.6",
+      "cmd /music now",
+      "cmd /music force auto",
+      "cmd /vibe level clear all",
+      "cmd /weather seeded",
+      "ok cleared 1 area override(s)",
+      "ok weather: the seeded weather (zone-wide)",
+      "info game: music/night 0:03 / 1:05 · director night · intensity 0.60",
+      "info forced: state night (/music force auto to let the game decide)",
+      "info night: 22:00 is after dusk (18.5) and before dawn (6)",
+      "info biome forest · night · weather drizzle",
+      "info area dread level 14 (tier 4)",
+      "info intensity 0.60 (forced)",
+      "info ambience: wind 0.55, rain 0.26, storm roll 0.21, songbirds 0.75; loops water:shore 0.059",
+      "info buses: music 0.55, sfx 0.80, ambience 0.70, ui 0.60, voice 1.00 · out -29.5 dBFS",
+      "ok music follows the game again"
+    ]
+  },
+  "issues": []
+}

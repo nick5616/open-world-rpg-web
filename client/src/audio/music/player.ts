@@ -39,6 +39,9 @@ export interface MusicPlayerStatus {
   timedPhase: TimedPhase | null;
   /** Deck positions (s), for the debug hook. */
   positions: number[];
+  /** The carrying deck's position and the track's length (s; the vibe explorer's readout). */
+  position: number;
+  duration: number | null;
 }
 
 export class MusicPlayer {
@@ -335,7 +338,9 @@ export class MusicPlayer {
   status(): MusicPlayerStatus {
     const d = this.active >= 0 ? this.decks[this.active] : null;
     const track = this.state === 'timed' ? TIMED_MUSIC.loop : this.loop ? this.loop.track : (d?.track ?? null);
-    return { state: this.state, track, timedPhase: this.timed?.phase ?? null, positions: this.decks.map((x) => x.el.currentTime) };
+    const position = this.timed ? 0 : this.loop ? this.ctx.currentTime % (this.loop.src.buffer?.duration || 1) : (d?.el.currentTime ?? 0);
+    const duration = this.loop ? (this.loop.src.buffer?.duration ?? null) : d && Number.isFinite(d.el.duration) ? d.el.duration : null;
+    return { state: this.state, track, timedPhase: this.timed?.phase ?? null, positions: this.decks.map((x) => x.el.currentTime), position, duration };
   }
 
   dispose(): void {

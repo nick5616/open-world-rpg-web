@@ -1,5 +1,21 @@
 [
   {
+    "id": "pt2-pickaxe-swing",
+    "date": "2026-11-11",
+    "title": "Swing a real pickaxe",
+    "items": [
+      "Mining shows a pickaxe in your hands: a full overhead chop in first person, and everyone nearby sees your character swing it into the vein."
+    ]
+  },
+  {
+    "id": "pt2-inventory-preview",
+    "date": "2026-11-11",
+    "title": "See yourself in your bag",
+    "items": [
+      "The inventory shows your character on the right exactly as other players see you, armor and weapon included. Drag to turn."
+    ]
+  },
+  {
     "id": "pt2-immersion",
     "date": "2026-11-11",
     "title": "A world that breathes",

@@ -105,6 +105,8 @@ type devSess struct {
 	flags      uint32
 	speed      float64 // fly speed multiplier
 	skillBonus int     // extra skill points (this session)
+	// invulnUntil: the vibe explorer's landing invulnerability (vibe.go).
+	invulnUntil uint32
 }
 
 // devGlue is the zone's dev state.
@@ -112,7 +114,8 @@ type devGlue struct {
 	byHash  map[uint32]string // fnv1a32(item key) -> key
 	groups  []*combat.Group   // what the console spawned
 	frozen  bool
-	frozenS float64 // the time of day it holds (seconds into the day)
+	frozenS float64  // the time of day it holds (seconds into the day)
+	vibe    vibeGlue // playtest 2 vibe explorer (vibe.go)
 }
 
 // DevHash is fnv1a32 of an item key (the client's devconsole/events.ts).
@@ -140,7 +143,8 @@ func devName(a uint8) string {
 	names := map[uint8]string{DevActStatus: "status", DevActGive: "give", DevActLearn: "learn", DevActUnlearn: "unlearn", DevActLevel: "level", DevActXP: "xp",
 		DevActGold: "gold", DevActSkillPoints: "skillpoints", DevActWeaponSkill: "weaponskill", DevActRefill: "refill", DevActFlags: "flags", DevActSpeed: "speed",
 		DevActReset: "reset", DevActTeleport: "teleport", DevActTime: "time", DevActWeather: "weather", DevActSpawn: "spawn", DevActDespawn: "despawn",
-		DevActEvent: "event", DevActTameable: "tameable", DevActPet: "pet", DevActSteed: "steed", DevActQuest: "quest", DevActReveal: "reveal", DevActAttune: "attune", DevActPlaces: "places", DevActAchieve: "achieve", DevActStory: "story"}
+		DevActEvent: "event", DevActTameable: "tameable", DevActPet: "pet", DevActSteed: "steed", DevActQuest: "quest", DevActReveal: "reveal", DevActAttune: "attune", DevActPlaces: "places", DevActAchieve: "achieve", DevActStory: "story",
+		DevActVibeFind: "vibe find", DevActVibeGo: "vibe go", DevActVibeLevel: "vibe level", DevActVibeSpawn: "vibe spawn", DevActVibeFreeze: "vibe freeze", DevActVibeDemons: "vibe demons", DevActVibeHere: "vibe here"}
 	if n, ok := names[a]; ok {
 		return n
 	}
@@ -172,12 +176,20 @@ func (s *Server) devInteract(sess *session, m *proto.Interact) {
 		s.sendDevPlaces(sess)
 		return
 	}
+	if m.Action == DevActVibeHere {
+		s.sendVibeHere(sess) // playtest 2 vibe explorer (vibe.go)
+		return
+	}
 	code, msg := s.devApply(sess, m)
 	s.log.Info("dev command", "character", e.CharacterID, "action", devName(m.Action), "target", m.TargetID, "arg", m.Arg, "code", code, "result", msg)
 	s.sendEvent(sess, &proto.Event{Kind: EventDevResult, EntityID: e.ID, TargetID: uint32(m.Action), Value: code, Data: []byte(msg)})
 	switch m.Action {
 	case DevActFlags, DevActSpeed, DevActSkillPoints, DevActReset, DevActWeather, DevActTime, DevActSpawn, DevActDespawn:
 		s.sendDevStatus(sess)
+	}
+	switch m.Action {
+	case DevActVibeGo, DevActVibeFind, DevActVibeLevel, DevActVibeSpawn, DevActVibeFreeze, DevActVibeDemons, DevActTeleport, DevActLevel, DevActWeather, DevActTime:
+		s.sendVibeHere(sess) // the vibe tab's "here" (vibe.go)
 	}
 }
 
@@ -190,11 +202,12 @@ type devStatusJSON struct {
 	Hour       float64 `json:"hour"`
 	Weather    int     `json:"weather"` // forced state, -1 seeded
 	Spawned    int     `json:"spawned"`
+	VibeFrozen bool    `json:"vibeFrozen"` // the vibe explorer's freeze (vibe.go)
 }
 
 func (s *Server) sendDevStatus(sess *session) {
 	d := sess.dev
-	j := devStatusJSON{Flags: d.flags, Speed: d.speed, SkillBonus: d.skillBonus, Frozen: s.dev.frozen, Hour: math.Round(weather.Hour(s.worldTimeS())*100) / 100, Weather: -1, Spawned: len(s.dev.groups)}
+	j := devStatusJSON{Flags: d.flags, Speed: d.speed, SkillBonus: d.skillBonus, Frozen: s.dev.frozen, Hour: math.Round(weather.Hour(s.worldTimeS())*100) / 100, Weather: -1, Spawned: len(s.dev.groups), VibeFrozen: s.dev.vibe.frozen}
 	if j.Frozen {
 		j.Flags |= DevFlagFreezeTime
 	} else {
@@ -341,6 +354,8 @@ func (s *Server) devApply(sess *session, m *proto.Interact) (int32, string) {
 		return s.devAchieve(sess, int(m.TargetID))
 	case DevActStory:
 		return s.devStory(sess, int(m.Arg), int(m.TargetID)) // CR 035 (story_dev.go)
+	case DevActVibeFind, DevActVibeGo, DevActVibeLevel, DevActVibeSpawn, DevActVibeFreeze, DevActVibeDemons:
+		return s.vibeApply(sess, m) // playtest 2 vibe explorer (vibe.go)
 	case DevActReveal, DevActAttune:
 		return s.devMap(sess, m.Action == DevActAttune)
 	}
@@ -671,7 +686,9 @@ func (s *Server) devTick(tick uint32) {
 		if d.flags&DevFlagGod != 0 && !p.DevGod {
 			p.DevGod = true // a respawn or handoff rebuilt the player
 		}
+		s.vibeTick(tick, sess) // landing invulnerability (vibe.go)
 	}
+	s.vibeZoneTick(tick)
 	if s.dev.frozen && tick%constants.TickRateHz == 0 {
 		// Hold the clock: pull it back whenever it drifted 20 s (a few
 		// in-game minutes at most; a SetClockOffset tells every client).
