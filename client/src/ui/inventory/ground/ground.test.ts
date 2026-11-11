@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ITEMS } from '@lodestone/contracts';
-import { beamParams } from './beam';
-import { allDropKeys, coinCount, dropGeometry, dropModelOf, HOVER_FROM_RARITY, PROP_SHAPES } from './models';
+import { beamParams, LootLights, SPARKLE_N, type LightDrop } from './beam';
+import { allDropKeys, coinCount, dropGeometry, dropModelOf, HOVER_FROM_RARITY, HOVER_GLOW, PROP_SHAPES } from './models';
 import { HUM_BY_RARITY, humEmitters, humFor, humKind } from './hum';
 import { RESEND_MS, shouldSendAutoLoot } from './autoLoot';
 import { loopTarget, MAX_LOOP_VOICES, selectLoops, type LoopEmitter, type LoopListener } from '../../../audio/loopPool';
@@ -83,7 +83,7 @@ describe('ground models for every item', () => {
   });
 
   it('weapons are the real weapon model (third-person detail)', () => {
-    const g = dropGeometry('weapon:sunsteel_blade', 3)!;
+    const g = dropGeometry('weapon:sunsteel_blade', 1)!;
     expect(g.name).toContain('weapon:sword|sunsteel');
     const bb = g.boundingBox!;
     expect(bb.max.y - bb.min.y).toBeGreaterThan(0.6); // a sword, not a stick
@@ -91,15 +91,24 @@ describe('ground models for every item', () => {
 
   it('armor pieces are their armor model, centred', () => {
     for (const key of ['armor:leather_cap', 'armor:leather_jerkin', 'armor:leather_leggings']) {
-      const g = dropGeometry(key, 2)!;
+      const g = dropGeometry(key, 1)!;
       expect(g.name, key).toContain('armor-piece');
       const c = g.boundingBox!.getCenter(g.boundingBox!.min.clone());
       expect(Math.hypot(c.x, c.y, c.z), key).toBeLessThan(1e-3);
     }
   });
 
-  it('rare and better hover in their beam, commoner lie on the ground', () => {
+  it('rare and better hover in their beam, lit by it; commoner lie on the ground', () => {
     for (let r = 0; r <= 7; r++) expect(dropModelOf('weapon:iron_sword', r).pose).toBe(r >= HOVER_FROM_RARITY ? 'hover' : 'lie');
+    for (const key of ['weapon:iron_sword', 'armor:leather_jerkin', 'potion:health']) {
+      const lie = dropGeometry(key, 1)!.getAttribute('surf');
+      const hover = dropGeometry(key, 3)!.getAttribute('surf');
+      let a = 0;
+      let b = 0;
+      for (let i = 0; i < lie.count; i++) a += lie.getZ(i);
+      for (let i = 0; i < hover.count; i++) b += hover.getZ(i);
+      expect(b / hover.count, key).toBeGreaterThan(a / lie.count + HOVER_GLOW * 0.5);
+    }
   });
 
   it('a coin pile grows with the amount, within bounds', () => {
@@ -198,5 +207,49 @@ describe('auto-collect setting sync', () => {
     expect(shouldSendAutoLoot(false, true, 0, RESEND_MS - 1)).toBe(false);
     expect(shouldSendAutoLoot(false, true, 0, RESEND_MS)).toBe(true);
     expect(shouldSendAutoLoot(undefined, false, -1e9, 0)).toBe(false);
+  });
+});
+
+describe('batched loot lights', () => {
+  const drops = (n: number): LightDrop[] => Array.from({ length: n }, (_, i) => ({ id: i + 1, rarity: i % 8, x: i, y: 0, z: 0, strike: 1, sparkleY: 0, sparkleScale: 1 }));
+
+  it('forty drops are four draw calls: beams, splashes, motes, sparkles', () => {
+    const l = new LootLights('high');
+    const d = drops(40);
+    l.update(d, 1, 0);
+    expect(l.group.children.length).toBe(4);
+    const lit = d.filter((x) => x.rarity >= 1);
+    expect(l.counts.beams).toBe(lit.length);
+    expect(l.counts.rings).toBe(lit.length);
+    expect(l.counts.motes).toBe(lit.reduce((s, x) => s + beamParams(x.rarity).motes, 0));
+    expect(l.counts.sparkles).toBe(d.reduce((s, x) => s + SPARKLE_N[x.rarity], 0));
+    l.dispose();
+  });
+
+  it('Low has no motes; a drop still striking has no motes or sparkles yet', () => {
+    const low = new LootLights('low');
+    low.update(drops(16), 1, 0);
+    expect(low.counts.motes).toBe(0);
+    expect(low.counts.beams).toBe(14);
+    const l = new LootLights('high');
+    l.update([{ id: 9, rarity: 4, x: 0, y: 0, z: 0, strike: 0.2, sparkleY: 0, sparkleScale: 1 }], 1, 0);
+    expect(l.counts.beams).toBe(1);
+    expect(l.counts.motes).toBe(0);
+    expect(l.counts.sparkles).toBe(0);
+    l.update([{ id: 9, rarity: 4, x: 0, y: 0, z: 0, strike: 1, sparkleY: 0, sparkleScale: 1 }], 1.1, 0);
+    expect(l.counts.motes).toBe(beamParams(4).motes);
+    expect(l.counts.sparkles).toBe(SPARKLE_N[4]);
+  });
+
+  it('rebuilds only when the set changes; a strike animates in place', () => {
+    const l = new LootLights('high');
+    const d: LightDrop[] = [{ id: 3, rarity: 5, x: 0, y: 0, z: 0, strike: 0.1, sparkleY: 0, sparkleScale: 1 }];
+    l.update(d, 0, 0);
+    const beam = l.group.getObjectByName('loot-beams') as unknown as { geometry: { getAttribute: (n: string) => { array: Float32Array } } };
+    const g0 = beam.geometry;
+    d[0].strike = 0.6;
+    l.update(d, 0.1, 0);
+    expect(beam.geometry).toBe(g0);
+    expect(beam.geometry.getAttribute('iStrike').array[0]).toBeCloseTo(0.6);
   });
 });

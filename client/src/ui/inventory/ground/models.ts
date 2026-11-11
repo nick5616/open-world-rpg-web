@@ -197,9 +197,11 @@ export function dropGeometry(key: string, rarity: number, qty = 1): THREE.Buffer
       g = weaponGeometry({ weapon: m.shape as WeaponKind, material: d?.material ?? '', gem: -1 }, 1);
       break;
     }
-    case 'armor':
+    case 'armor': {
       // Bitchin' armor is already holographic in its own finish (combat/armor/spec.ts).
-      return armorPieceGeometry(key, rarity);
+      const a = armorPieceGeometry(key, rarity);
+      return a && m.pose === 'hover' ? glowCopy(a, `armor:${key}|${rarity}`) : a;
+    }
     case 'prop': {
       const n = m.shape === 'coins' ? coinCount(qty) : 0;
       k = n ? `${key}#${n}` : key;
@@ -208,7 +210,23 @@ export function dropGeometry(key: string, rarity: number, qty = 1): THREE.Buffer
     }
   }
   if (!g) return null;
-  return m.holo ? holoCopy(g, k) : g;
+  if (m.holo) return holoCopy(g, k);
+  return m.pose === 'hover' ? glowCopy(g, k) : g;
+}
+
+/** Hovering in its beam, an item is lit by it: every surface gains a little glow (holographic ones keep theirs). */
+export const HOVER_GLOW = 0.2;
+function glowCopy(g: THREE.BufferGeometry, k: string): THREE.BufferGeometry {
+  return cached(`glow:${k}`, () => {
+    const c = g.clone();
+    const s = c.getAttribute('surf') as THREE.BufferAttribute;
+    for (let i = 0; i < s.count; i++) {
+      const z = s.getZ(i);
+      if (z >= 0) s.setZ(i, z + HOVER_GLOW);
+    }
+    s.needsUpdate = true;
+    return c;
+  });
 }
 
 // ---- props ----

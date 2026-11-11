@@ -16,8 +16,9 @@
 //     striking down from the sky as it lands; one taken near you flies to you.
 //   - loot containers from Event 406 (chest, buried cache, urn, crate);
 //     opened ones are dimmed and the chest lid stands open.
-// Imperative three.js in one useFrame with shared geometries and materials
-// (weapon + armor materials, 8 beam/mote/splash materials per quality tier).
+// Imperative three.js in one useFrame: each model is one mesh on the shared
+// weapon or armor material; every drop's beam, splash, motes and sparkles
+// are four draw calls in all (ground/beam.ts LootLights).
 
 import { useEffect, useMemo } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
@@ -29,10 +30,9 @@ import { useQualityStore, type QualityTier } from '../../stores/qualityStore';
 import { liveWeather } from '../../systems/weather/runtime';
 import { weaponMaterial } from '../../combat/weapons/material';
 import { armorMaterial } from '../../combat/armor/material';
-import { isHolo, rarityColor } from './items';
 import type { Container } from './events';
 import { useInventory } from './store';
-import { beamGeometry, beamParams, disposeBeamMaterials, makeBeamMaterials, moteGeometry, ringGeometry, SPARKLE_N, sparkleGeometry, sparkleMaterial, tickBeamMaterials, type BeamMaterials } from './ground/beam';
+import { LootLights, type LightDrop } from './ground/beam';
 import { dropGeometry, dropModelOf, type DropModel } from './ground/models';
 import { humEmitters, type HumDrop } from './ground/hum';
 
@@ -55,10 +55,10 @@ const FLY_M = 4;
 const FLY_S = 0.28;
 /** Props are small: drawn a little larger so they read on the ground. */
 const PROP_SCALE = 1.3;
-/** Beyond these the model / sparkles / motes are not drawn (m; the beam carries on). */
+/** Lying items rest on top of the grass, not under it (m). */
+const LIE_LIFT = 0.1;
+/** Beyond this the model is not drawn (m; the beam carries on, sparkles and motes fade in their shaders). */
 const MODEL_M = 75;
-const SPARKLE_M = 40;
-const MOTES_M = 130;
 
 interface PickupView {
   id: number;
@@ -68,10 +68,8 @@ interface PickupView {
   /** Turns (hover) or holds the tilt (lie). */
   pivot: THREE.Group;
   model: THREE.Object3D | null;
-  beam: THREE.Mesh | null;
-  motes: THREE.Points | null;
-  ring: THREE.Mesh | null;
-  glints: THREE.Points;
+  /** Sparkle spread (the item's size). */
+  size: number;
   dm: DropModel;
   /** Where it rests (ground point). */
   rest: THREE.Vector3;
@@ -81,19 +79,16 @@ interface PickupView {
   /** Arc: from (s since start, -1 none). */
   arc: number;
   from: THREE.Vector3;
-  /** Beam strike progress (s since landing, -1 done). */
+  /** Beam strike: s since landing (-1: done; -2: not yet landed). */
   strike: number;
   /** Taken: flying to the player (s, -1 no). */
   fly: number;
 }
 
-const HOLO_HUES = 0.18; // hue turns per second
-const tmpHolo = new THREE.Color();
 const tmpV = new THREE.Vector3();
 const tmpBox = new THREE.Box3();
 
 function makeMaterials() {
-  const sparkle = Array.from({ length: 8 }, (_, r) => sparkleMaterial(new THREE.Color(rarityColor(r)), r >= 2 ? 0.2 : 0.16));
   const box = (color: string) => new THREE.MeshStandardMaterial({ color, roughness: 0.85 });
   const wood = box('#7a5230');
   const lid = box('#8d6238');
@@ -105,7 +100,7 @@ function makeMaterials() {
     c.color.multiplyScalar(0.45);
     return c;
   };
-  return { sparkle, wood, lid, clay, crate, dirt, woodDim: dim(wood), lidDim: dim(lid), clayDim: dim(clay), crateDim: dim(crate), dirtDim: dim(dirt), trim: box('#c9a650') };
+  return { wood, lid, clay, crate, dirt, woodDim: dim(wood), lidDim: dim(lid), clayDim: dim(clay), crateDim: dim(crate), dirtDim: dim(dirt), trim: box('#c9a650') };
 }
 
 type Mats = ReturnType<typeof makeMaterials>;
@@ -164,7 +159,7 @@ function poseModel(v: PickupView, qty: number): number {
   if (!g) return 0.5;
   const mat = dm.kind === 'armor' || dm.holo ? armorMaterial() : weaponMaterial();
   const mesh = new THREE.Mesh(g, mat);
-  mesh.castShadow = true;
+  mesh.castShadow = false; // small and often many: the beam and splash ground it (a shadow pass per drop is not worth it)
   mesh.name = `drop-model ${v.key}`;
   const lay = new THREE.Group();
   lay.add(mesh);
@@ -182,6 +177,7 @@ function poseModel(v: PickupView, qty: number): number {
       return 0.45 + size.y * PROP_SCALE * 0.5;
     }
     pivot.rotation.z = (jitter(id, 2) - 0.5) * 0.12;
+    pivot.position.y = LIE_LIFT;
     return 0;
   }
   mesh.position.set(-c.x, -c.y, -c.z);
@@ -194,18 +190,18 @@ function poseModel(v: PickupView, qty: number): number {
     // Flat on the ground, flats up (+Z -> +Y), a little tilted.
     lay.rotation.x = -Math.PI / 2;
     pivot.rotation.z = (jitter(id, 2) - 0.5) * 0.18;
-    pivot.position.y = size.z * 0.5 + 0.01;
+    pivot.position.y = size.z * 0.5 + LIE_LIFT;
     return 0;
   }
   // armor
   if (hover) return 0.35 + size.y * 0.5;
   if (dm.shape === 'head') {
-    pivot.position.y = size.y * 0.5;
+    pivot.position.y = size.y * 0.5 + LIE_LIFT;
     pivot.rotation.z = (jitter(id, 2) - 0.5) * 0.3;
     return 0;
   }
   lay.rotation.x = Math.PI / 2; // on its back, its front to the sky
-  pivot.position.y = size.z * 0.5 + 0.01;
+  pivot.position.y = size.z * 0.5 + LIE_LIFT;
   pivot.rotation.z = (jitter(id, 2) - 0.5) * 0.1;
   return 0;
 }
@@ -216,7 +212,7 @@ export function LootLayer() {
   const mats = useMemo(makeMaterials, []);
   const pickups = useMemo(() => new Map<number, PickupView>(), []);
   const containers = useMemo(() => ({ list: null as Container[] | null, groups: new Map<string, THREE.Group>() }), []);
-  const st = useMemo(() => ({ tier: '' as QualityTier | '', beams: null as BeamMaterials | null, maxId: 0, session: null as unknown, humDrops: [] as HumDrop[] }), []);
+  const st = useMemo(() => ({ tier: '' as QualityTier | '', lights: null as LootLights | null, maxId: 0, session: null as unknown, humDrops: [] as HumDrop[], lit: [] as LightDrop[] }), []);
 
   useEffect(() => {
     root.name = 'loot';
@@ -230,36 +226,27 @@ export function LootLayer() {
       pickups.clear();
       containers.groups.clear();
       containers.list = null;
-      if (st.beams) disposeBeamMaterials(st.beams);
-      st.beams = null;
+      st.lights?.dispose();
+      st.lights = null;
       st.tier = '';
-      for (const v of Object.values(mats)) {
-        if (Array.isArray(v)) v.forEach((x) => x.dispose());
-        else v.dispose();
-      }
+      for (const v of Object.values(mats)) v.dispose();
     };
   }, [scene, root, mats, pickups, containers, st]);
 
   useFrame((state, dtRaw) => {
     const dt = Math.min(0.1, dtRaw);
     const now = performance.now() / 1000;
-    // Quality tier: beam materials per tier (Low: no motes, one noise octave).
+    // Quality tier: the lights' programs per tier (Low: no motes, one noise octave).
     const tier = useQualityStore.getState().tier;
-    if (tier !== st.tier || !st.beams) {
-      if (st.beams) disposeBeamMaterials(st.beams);
-      st.beams = makeBeamMaterials(tier);
+    if (tier !== st.tier || !st.lights) {
+      if (st.lights) {
+        root.remove(st.lights.group);
+        st.lights.dispose();
+      }
+      st.lights = new LootLights(tier);
+      root.add(st.lights.group);
       st.tier = tier;
-      for (const v of pickups.values()) root.remove(v.group);
-      pickups.clear(); // rebuilt below with the new materials
     }
-    const beams = st.beams;
-    tickBeamMaterials(beams, now);
-    // Bitchin': cycle the sparkles' hue (its beam shaders cycle their own).
-    const holo = tmpHolo.setHSL((now * HOLO_HUES) % 1, 0.9, 0.62);
-    for (let r = 0; r < 8; r++) if (isHolo(r)) mats.sparkle[r].uniforms.uColor.value.copy(holo);
-    for (const m of mats.sparkle) m.uniforms.uTime.value = now;
-    const wind = liveWeather.mix.wind ?? 0;
-    for (const m of beams.beam) m.uniforms.uSway.value = 0.25 + wind * 1.1 + m.uniforms.uHeight.value * 0.015;
 
     // Pickups from the latest snapshot.
     const s = netRuntime.session;
@@ -287,38 +274,9 @@ export function LootLayer() {
           group.name = `pickup ${e.name}`;
           const pivot = new THREE.Group();
           group.add(pivot);
-          const p = beamParams(r, tier);
-          v = { id: e.id, key: e.name, rarity: r, group, pivot, model: null, beam: null, motes: null, ring: null, glints: null!, dm, rest: new THREE.Vector3(), hoverY: 0, t: jitter(e.id, 3) * 10, arc: -1, from: new THREE.Vector3(), strike: -1, fly: -1 };
+          v = { id: e.id, key: e.name, rarity: r, group, pivot, model: null, size: 1, dm, rest: new THREE.Vector3(), hoverY: 0, t: jitter(e.id, 3) * 10, arc: -1, from: new THREE.Vector3(), strike: -1, fly: -1 };
           if (!cave) v.hoverY = poseModel(v, e.level);
-          const glints = new THREE.Points(sparkleGeometry(SPARKLE_N[r]), mats.sparkle[r]);
-          glints.frustumCulled = false;
-          glints.renderOrder = 3;
-          const msz = v.model ? new THREE.Box3().setFromObject(v.model).getSize(tmpV).length() : 0.5;
-          glints.scale.setScalar(Math.max(1, msz / 0.7));
-          if (v.dm.pose === 'hover') glints.position.y = Math.max(0, v.hoverY - 0.5);
-          group.add(glints);
-          v.glints = glints;
-          if (p.visible) {
-            const beam = new THREE.Mesh(beamGeometry(), beams.beam[r]);
-            beam.renderOrder = 2;
-            beam.name = 'loot-beam';
-            group.add(beam);
-            v.beam = beam;
-            if (!cave) {
-              const ring = new THREE.Mesh(ringGeometry(), beams.ring[r]);
-              ring.scale.set(p.ring * 2, 1, p.ring * 2);
-              ring.position.y = 0.04;
-              ring.renderOrder = 1;
-              group.add(ring);
-              v.ring = ring;
-            }
-            if (p.motes > 0) {
-              const motes = new THREE.Points(moteGeometry(p.motes), beams.motes[r]);
-              motes.renderOrder = 3;
-              group.add(motes);
-              v.motes = motes;
-            }
-          }
+          if (v.model) v.size = Math.max(1, new THREE.Box3().setFromObject(v.model).getSize(tmpV).length() / 0.7);
           root.add(group);
           pickups.set(e.id, v);
           if (e.id > st.maxId && Math.hypot(ex - me.x, ez - me.z) < 45) fresh.push(v);
@@ -347,21 +305,19 @@ export function LootLayer() {
         v.from.y += 0.4;
         v.arc = jitter(v.id, 4) * -0.12; // a ragged burst, not a single pop
         v.group.position.copy(v.from);
-        if (v.beam) {
-          v.strike = 0;
-          v.beam.visible = false;
-        }
+        v.strike = -2; // its beam strikes down when it lands
       }
     }
 
     const cam = state.camera.position;
     const humDrops: HumDrop[] = [];
+    const lit = st.lit;
+    lit.length = 0;
     for (const [id, v] of pickups) {
       if (!seen.has(id) && v.fly < 0) {
         // Gone: taken near you -> fly to you; else just vanish.
         if (v.group.position.distanceTo(tmpV.set(me.x, me.y + 0.9, me.z)) < FLY_M && v.model) {
           v.fly = 0;
-          for (const o of [v.beam, v.motes, v.ring, v.glints]) if (o) o.visible = false;
         } else {
           root.remove(v.group);
           pickups.delete(id);
@@ -388,38 +344,33 @@ export function LootLayer() {
           v.arc = -1;
           v.group.position.copy(v.rest);
           v.pivot.rotation.x = 0;
+          if (v.strike === -2) v.strike = 0;
         } else {
           v.group.position.lerpVectors(v.from, v.rest, k);
           v.group.position.y += Math.sin(Math.PI * k) * (1.1 + jitter(v.id, 5) * 0.4);
           v.pivot.rotation.x = (1 - k) * 6.0;
         }
       }
-      if (v.strike >= 0 && v.arc === -1 && v.beam) {
+      // The beam strikes down from the sky (ease-out) once the drop has landed.
+      let strike = 1;
+      if (v.strike >= 0) {
         v.strike += dt;
         const k = Math.min(1, v.strike / STRIKE_S);
-        const e = 1 - (1 - k) * (1 - k) * (1 - k);
-        v.beam.visible = true;
-        v.beam.scale.y = Math.max(0.02, e);
-        v.beam.position.y = beamParams(v.rarity).height * (1 - e);
-        if (v.ring) v.ring.scale.setScalar(beamParams(v.rarity).ring * 2 * (0.3 + 0.7 * e));
-        if (k >= 1) {
-          v.strike = -1;
-          v.beam.scale.y = 1;
-          v.beam.position.y = 0;
-        }
+        strike = 1 - (1 - k) * (1 - k) * (1 - k);
+        if (k >= 1) v.strike = -1;
       }
-      // Distance culling of the small parts (the beam has its own fade).
-      const d = v.group.position.distanceTo(cam);
-      if (v.model) v.model.visible = d < MODEL_M;
-      v.glints.visible = d < SPARKLE_M && v.fly < 0;
-      if (v.motes) v.motes.visible = d < MOTES_M && v.strike < 0;
+      if (v.model) v.model.visible = v.group.position.distanceTo(cam) < MODEL_M;
       if (v.dm.pose === 'hover' && v.model && v.arc === -1) {
         v.pivot.position.y = v.hoverY + Math.sin(v.t * 1.6) * 0.06;
         v.pivot.rotation.y += dt * 0.7;
       }
-      if (v.arc === -1) humDrops.push({ id, key: v.key, rarity: v.rarity, x: v.rest.x, y: v.rest.y, z: v.rest.z });
+      if (v.arc === -1) {
+        humDrops.push({ id, key: v.key, rarity: v.rarity, x: v.rest.x, y: v.rest.y, z: v.rest.z });
+        lit.push({ id, rarity: v.rarity, x: v.rest.x, y: v.rest.y, z: v.rest.z, strike, sparkleY: v.dm.pose === 'hover' ? Math.max(0, v.hoverY - 0.5) : 0, sparkleScale: v.size, noRing: v.dm.kind === 'cave' });
+      }
     }
     st.humDrops = humDrops;
+    st.lights.update(lit, now, liveWeather.mix.wind ?? 0);
 
     // Containers (Event 406 list; rebuilt when the list changes).
     const list = useInventory.getState().containers;
