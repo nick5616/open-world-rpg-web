@@ -385,7 +385,8 @@ export function WorldScene({ runtime }: Props) {
 
     const f = fx.current;
     if (f) {
-      f.sun.update(camera, L.lightDir, L.lightColor, L.lightIntensity * (1 - under));
+      // Playtest 2 immersion pass: clouds soften the shadows (rain, snow, fog banks: faint, diffuse)
+      f.sun.update(camera, L.lightDir, L.lightColor, L.lightIntensity * (1 - under), 1 - 0.72 * overcast);
       // Valley fog: thick at dawn, thin by midday, a little back at dusk.
       const hour = (tod / DAY_LENGTH_S) * 24;
       const morning = Math.exp(-(((hour - 6.5) / 1.8) ** 2));
