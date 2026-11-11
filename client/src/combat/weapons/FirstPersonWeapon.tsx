@@ -16,7 +16,8 @@
 import { useEffect, useMemo } from 'react';
 import { createPortal, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
-import { localPlayer, view } from '../../state/live';
+import { localActions, localPlayer, view } from '../../state/live';
+import { makePickaxe } from './pickaxe';
 import { combatRuntime } from '../link';
 import { useCombatHud } from '../store';
 import { moveOf } from '../timeline';
@@ -86,6 +87,8 @@ export const PIVOT = new THREE.Vector3(0.22, -0.45, -0.1);
 export const R_SHOULDER = new THREE.Vector3(0.3, -0.6, 0.12);
 export const L_SHOULDER = new THREE.Vector3(-0.3, -0.6, 0.12);
 const STRIDE_M = 2.4;
+/** A first-person pickaxe chop (the avatar's mine swing is 520 ms too). */
+const MINE_MS = 560;
 
 /**
  * Playtest 2 ("fix the view"): the field of view is vertical, so a wider
@@ -348,10 +351,17 @@ export function FirstPersonWeapon() {
   const camera = useThree((s) => s.camera);
   const scene = useThree((s) => s.scene);
   const rig = useMemo(makeRig, []);
+  const pick = useMemo(() => {
+    const p = makePickaxe();
+    rig.grip.add(p);
+    return p;
+  }, [rig]);
   const st = useMemo(
     () => ({
       key: '',
       kind: 'sword' as WeaponKind,
+      mines: -1,
+      mineAt: -1e9,
       swingT: 0,
       swingDur: 0,
       swinging: false,
@@ -394,7 +404,16 @@ export function FirstPersonWeapon() {
       st.kind = look.weapon!;
       setRigWeapon(rig, look);
     }
-    const pose = POSES[st.kind];
+    // Playtest 2: a mine swing (your own, the same count the third-person body uses) shows the pickaxe chop.
+    if (localActions.mineSwings !== st.mines) {
+      if (st.mines >= 0) st.mineAt = now;
+      st.mines = localActions.mineSwings;
+    }
+    const mineT = (now - st.mineAt) / MINE_MS;
+    const mining = mineT >= 0 && mineT < 1;
+    rig.weapon.visible = !mining;
+    pick.visible = mining && rig.root.visible;
+    const pose = POSES[mining ? 'sword' : st.kind];
     castHooks.selfWeapon = st.kind;
 
     // Swing: driven by the newest started melee move; hitstop freezes it.
@@ -434,13 +453,23 @@ export function FirstPersonWeapon() {
 
     // Pose + motion.
     rig.grip.position.set(pose.pos[0] - PIVOT.x, pose.pos[1] - PIVOT.y, pose.pos[2] - PIVOT.z);
-    rig.grip.quaternion.copy(QUATS[st.kind]);
+    rig.grip.quaternion.copy(QUATS[mining ? 'sword' : st.kind]);
     rig.pivot.rotation.set(0, 0, 0);
+    if (mining) {
+      // raise the head back over the shoulder, then drive it down and forward into the vein
+      const up = smooth(0, 0.35, mineT);
+      const strike = smooth(0.35, 0.55, mineT);
+      const back = 1 - smooth(0.62, 1, mineT);
+      rig.pivot.rotation.x = (0.9 * up - 1.7 * strike) * back;
+      rig.pivot.rotation.z = 0.15 * up * back;
+    }
     const fwd = v1.set(0, 1, 0).applyQuaternion(rig.grip.quaternion);
     const flick = now - st.flickAt < 260 ? Math.sin(Math.PI * Math.min(1, (now - st.flickAt) / 260)) : 0;
     const held = rt.timeline.heldSteps;
     let rElbow: THREE.Vector3 | undefined;
-    if (st.kind === 'sword' || st.kind === 'staff' || st.kind === 'wand') {
+    if (mining) {
+      // the chop above owns the motion
+    } else if (st.kind === 'sword' || st.kind === 'staff' || st.kind === 'wand') {
       if (st.swinging) {
         swingPose(st.kind, sw, st.dir, rig.grip.position, rig.grip.quaternion);
         rig.grip.position.sub(PIVOT);

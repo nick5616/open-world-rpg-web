@@ -1,5 +1,13 @@
 [
   {
+    "id": "pt2-pickaxe-swing",
+    "date": "2026-11-11",
+    "title": "Swing a real pickaxe",
+    "items": [
+      "Mining shows a pickaxe in your hands: a full overhead chop in first person, and everyone nearby sees your character swing it into the vein."
+    ]
+  },
+  {
     "id": "pt2-inventory-preview",
     "date": "2026-11-11",
     "title": "See yourself in your bag",

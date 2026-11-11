@@ -36,6 +36,7 @@ import { titleOf } from '../ui/content/titles'; // CR 023: feat titles under the
 import { acquireArmor, releaseArmor, type ArmorMeshes } from '../combat/armor/model';
 import { ARMOR_BONES, type ArmorBone } from '../combat/armor/spec';
 import { armorMaterial } from '../combat/armor/material';
+import { makePickaxe } from '../combat/weapons/pickaxe';
 
 export const LOD_MID_M = 25;
 export const LOD_LOW_M = 80;
@@ -465,6 +466,8 @@ export class Avatar {
   /** CR 033: this avatar's own copy of the bow (its string and arrow follow the draw; the cached model is shared). */
   private bowGeo: THREE.BufferGeometry | null = null;
   private rod: THREE.Mesh;
+  /** Playtest 2: the pickaxe while a mine swing plays (Event 707 for others, your own swings locally). */
+  private pickaxe: THREE.Mesh;
   private fishMesh: THREE.Mesh;
   /** Playtest 2 instruments: the props of each instrument id, shown while it is played. */
   private instrumentProps = new Map<number, THREE.Object3D[]>();
@@ -680,6 +683,9 @@ export class Avatar {
     this.rod.rotation.x = -2.3; // forward and up from the fist (the forearm points ahead)
     this.rod.visible = false;
     this.armR.hand.add(this.rod);
+    this.pickaxe = makePickaxe();
+    this.pickaxe.quaternion.copy(holdQuat('sword')); // held like a blade: haft out of the fist, head up at the swing's top
+    this.armR.hand.add(this.pickaxe);
     this.fishMesh = new THREE.Mesh(r.fishGeo, r.fishMat);
     this.fishMesh.position.set(-0.18, -0.05, -0.05);
     this.fishMesh.rotation.y = Math.PI / 2;
@@ -964,9 +970,11 @@ export class Avatar {
 
   private applyFull(p: Pose): void {
     this.rod.visible = p.rod;
+    const mining = this.anim.current === 'mine';
+    this.pickaxe.visible = mining;
     this.fishMesh.visible = p.fish > 0;
     for (const [id, props] of this.instrumentProps) for (const o of props) o.visible = id === p.instrument;
-    if (this.weaponType > 0) this.weaponHi.visible = !p.rod && p.fish === 0 && !p.instrument && this.weaponKind !== null;
+    if (this.weaponType > 0) this.weaponHi.visible = !mining && !p.rod && p.fish === 0 && !p.instrument && this.weaponKind !== null;
     // CR 033: the string comes back with the drawing hand, an arrow on it while drawing; the release snaps it
     if (this.bowGeo) setBowDraw(this.bowGeo, p.bowDraw * BOW_MAX_DRAW, this.anim.current === 'draw');
     this.body.position.y = HIP_Y + p.bodyY;
