@@ -346,7 +346,10 @@ export class TownsManager {
     const L = skyLighting(worldClock.timeOfDayS, this.sky);
     const target = 1 - THREE.MathUtils.smoothstep(L.day, 0.15, 0.7);
     this.night += (target - this.night) * Math.min(1, dt * 2);
-    if (this.mats) this.mats.uniforms.uNight.value = this.night;
+    if (this.mats) {
+      this.mats.uniforms.uNight.value = this.night;
+      this.mats.uniforms.uTownTime.value = (this.mats.uniforms.uTownTime.value + dt) % 1000; // flames (wrapped: float precision)
+    }
     this.stream(cam);
     // Time-sliced uploads: one new mesh per frame (its GPU upload happens in
     // this frame's render, so one at a time keeps the frame flat).
