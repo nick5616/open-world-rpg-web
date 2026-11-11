@@ -103,6 +103,8 @@ type weatherState struct {
 	fires   []fireSpot // town hearths and campfires (props), built once
 	built   bool
 	Stats   WeatherStats
+	dry     []weather.Disc // the crystal towers (shelter.go), built once
+	dryOK   bool
 }
 
 // WeatherStats counts what the weather did (GET /debug/night, tests).
@@ -111,6 +113,25 @@ type WeatherStats struct {
 }
 
 func (s *Server) weatherOn() bool { return s.cfg.Weather != nil && s.cfg.Weather.Climate != nil }
+
+// moveField is the weather the movement step reads: the field, with the
+// crystal towers' walls kept dry (playtest 2 co-op; weather/shelter.go).
+func (s *Server) moveField(f *weather.Field) weather.MoveField {
+	if !s.wx.dryOK {
+		s.wx.dryOK = true
+		if ex := s.cfg.Explore; ex != nil {
+			for _, t := range ex.Towers {
+				if t.Shape != nil {
+					s.wx.dry = append(s.wx.dry, weather.Disc{X: t.Shape.CX, Z: t.Shape.CZ, R: t.Shape.MaxR + weather.TowerShelterPad})
+				}
+			}
+		}
+	}
+	if len(s.wx.dry) == 0 {
+		return f
+	}
+	return weather.Sheltered{F: f, Discs: s.wx.dry}
+}
 
 // weatherFieldAt is the field of chemistry step k (one per step, shared).
 // Only stepEnv (the tick's start) calls it: everything else in the tick,
