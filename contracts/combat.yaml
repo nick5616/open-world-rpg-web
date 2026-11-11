@@ -680,8 +680,8 @@ enemyAttacks:
   # playtest 2 main story (CR 035): the Hush (the final boss) and its Hollow
   # Bells. hush_chorus and hush_night are only struck by the zone's finale
   # mechanics (internal/game/finale.go), never picked by the AI.
-  hush_rend: {id: 89, shape: cone, reach: 5.0, arc: 150, windupMs: 550, activeMs: 150, recoveryMs: 700, cooldownMs: 3200, damage: 24, element: dark}
-  hush_toll: {id: 90, shape: circle, radius: 7.5, windupMs: 600, activeMs: 150, recoveryMs: 900, cooldownMs: 8000, damage: 22, element: dark}
+  hush_rend: {id: 89, shape: cone, reach: 5.0, arc: 130, windupMs: 600, activeMs: 150, recoveryMs: 1000, cooldownMs: 3200, damage: 24, element: dark}
+  hush_toll: {id: 90, shape: circle, radius: 6.5, windupMs: 600, activeMs: 150, recoveryMs: 1300, cooldownMs: 8000, damage: 22, element: dark}
   hush_lance: {id: 91, shape: line, reach: 22, width: 2.4, windupMs: 600, activeMs: 300, recoveryMs: 900, cooldownMs: 9000, damage: 28, element: void, minRange: 4}
   hush_fall: {id: 92, shape: ground, radius: 3.2, reach: 40, windupMs: 600, activeMs: 117, recoveryMs: 600, cooldownMs: 7000, damage: 20, everyone: true, element: void}
   hush_chorus: {id: 93, shape: ground, radius: 3.0, reach: 60, windupMs: 600, activeMs: 117, recoveryMs: 600, cooldownMs: 60000, damage: 14, element: dark}
