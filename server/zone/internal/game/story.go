@@ -220,6 +220,11 @@ func (s *Server) resolveStory() *story.Places {
 	}
 	if best >= 0 {
 		p.Tablet = s.storySite(best)
+		// Playtest 2 co-op: mark the stone itself, not the ruin's centre (it
+		// stands 7 m off it, out of the prompt's 3 m reach).
+		if tp, ok := s.tabletPos(best); ok {
+			p.Tablet.X, p.Tablet.Z = tp.X, tp.Z
+		}
 	}
 	_ = cw
 

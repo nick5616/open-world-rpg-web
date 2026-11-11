@@ -179,6 +179,9 @@ func TestMainStoryTwoPlayersEndToEnd(t *testing.T) {
 	talk(p.Keeper)
 	waitStory(t, h, A, 1, 1, both...)
 	waitStory(t, h, B, 1, 1, both...) // shared: B stood beside A
+	if tp, ok := h.srv.tabletPos(p.Tablet.Site); !ok || math.Hypot(tp.X-p.Tablet.X, tp.Z-p.Tablet.Z) > 0.01 {
+		t.Fatalf("the stone's marker (%.1f, %.1f) is not on the stone %+v", p.Tablet.X, p.Tablet.Z, tp)
+	}
 	near(p.Tablet.X, p.Tablet.Z+8)
 	signal(quests.Signal{Kind: quests.ObjRead, Site: p.Tablet.Site})
 	waitStory(t, h, B, 1, 2, both...)
