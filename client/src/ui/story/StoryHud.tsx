@@ -19,6 +19,7 @@ import { FINALE, memberLine, roman, secsLeft } from './events';
 import { closeEnding, endCinematic, pruneStory, reviveTarget, useStory } from './store';
 import { ensureStoryHook } from './link';
 import { creditRoll } from './credits';
+import { holdCinematic } from './cinematicMode';
 import { skipCurrentIntro, useIntro } from '../intro/queue';
 
 const GOLD = '#ffd166';
@@ -146,9 +147,11 @@ function Cinematic() {
     skip();
     const iv = setInterval(skip, 150);
     const id = setTimeout(() => endCinematic(), c.ms + 600);
+    const release = holdCinematic(); // the world and the Hush, nothing else (immersion pass)
     return () => {
       clearTimeout(id);
       clearInterval(iv);
+      release();
     };
   }, [c]);
   if (!c) return null;
@@ -159,7 +162,7 @@ function Cinematic() {
   const per = c.ms / Math.max(1, c.lines.length + 1);
   const shown = c.lines.filter((_, i) => t > per * (i + 0.8));
   return (
-    <div data-testid="finale-cinematic" style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 64 }}>
+    <div data-testid="finale-cinematic" data-cinematic-keep style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 64 }}>
       <div style={{ position: 'absolute', left: 0, right: 0, top: 0, height: `${11 * k}vh`, background: '#000' }} />
       <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: `${11 * k}vh`, background: '#000' }} />
       <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse at 50% 45%, rgba(40,10,60,${0.1 * k}) 0%, rgba(4,2,8,${0.5 * k}) 55%, rgba(0,0,0,${0.85 * k}) 100%)` }} />
@@ -193,6 +196,7 @@ function Ending() {
   useEffect(() => {
     if (!e) return;
     if (document.pointerLockElement) document.exitPointerLock();
+    const release = holdCinematic(); // the sunrise and the credits alone on screen (immersion pass)
     const onKey = (ev: KeyboardEvent) => {
       if (ev.code === 'Enter') {
         ev.stopPropagation();
@@ -200,7 +204,10 @@ function Ending() {
       }
     };
     window.addEventListener('keydown', onKey, true);
-    return () => window.removeEventListener('keydown', onKey, true);
+    return () => {
+      window.removeEventListener('keydown', onKey, true);
+      release();
+    };
   }, [e]);
   if (!e) return null;
   const t = now - e.at;
@@ -211,7 +218,7 @@ function Ending() {
   const rollT = Math.max(0, t - linesEnd - 1500);
   const sky = `linear-gradient(180deg, ${mix('#070914', '#3d6fb0', sun)} 0%, ${mix('#120a1e', '#f39a4f', sun)} 62%, ${mix('#1b0e14', '#ffd27a', sun)} 100%)`;
   return (
-    <div data-testid="story-ending" data-ui-panel style={{ position: 'fixed', inset: 0, zIndex: 60, background: sky, overflow: 'hidden', color: CREAM, textAlign: 'center', cursor: 'default' }}>
+    <div data-testid="story-ending" data-ui-panel data-cinematic-keep style={{ position: 'fixed', inset: 0, zIndex: 60, background: sky, overflow: 'hidden', color: CREAM, textAlign: 'center', cursor: 'default' }}>
       <div style={{ position: 'absolute', left: '50%', bottom: `${-30 + 42 * sun}vh`, width: '46vh', height: '46vh', marginLeft: '-23vh', borderRadius: '50%', background: 'radial-gradient(circle, #fff6d8 0%, #ffd27a 45%, rgba(255,160,80,0) 70%)', opacity: 0.25 + 0.75 * sun }} />
       {t < linesEnd + 1200 && (
         <div style={{ position: 'absolute', top: '16vh', left: '50%', transform: 'translateX(-50%)', width: 'min(760px, 88vw)' }}>
