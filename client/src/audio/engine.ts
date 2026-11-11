@@ -324,7 +324,12 @@ export class AudioEngine {
     const decision = this.director.update(inputs, nowMs / 1000);
     this.director.introSeconds = this.music.introSeconds;
     // The composer's deck (a forced track, a loaded file mapped to this vibe) takes over: the game's music fades out.
-    const takeover = ch ? ch.tick(this, decision, inputs, nowMs) : false;
+    let takeover = false;
+    try {
+      takeover = ch ? ch.tick(this, decision, inputs, nowMs) : false;
+    } catch {
+      /* a dev tool must never stop the game's music */
+    }
     this.music.apply(takeover ? { ...decision, state: 'silence', timedPhase: null } : decision);
 
     this.applyDucks(nowMs);
