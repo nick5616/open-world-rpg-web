@@ -95,6 +95,9 @@ func (s *Server) initCombat() {
 	w := combat.NewWorld(setup.Config, s.cfg.Ground, alloc)
 	if setup.Atlas != nil {
 		w.BuildFromAtlas(setup.Atlas)
+		if !setup.Config.NoWildPacks {
+			s.addLayerGroups(w) // CR 038: packs in the caverns, the Depths and on sky islands (vertical.go)
+		}
 	}
 	for _, a := range setup.Arenas {
 		w.AddArena(a.Arena, a.Boss, a.Level, a.Element)

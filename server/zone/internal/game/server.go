@@ -15,6 +15,7 @@ import (
 	"crypto/ed25519"
 	"errors"
 	"hash/fnv"
+	"lodestone/server/pkg/caves"
 	"log/slog"
 	"math"
 	"slices"
@@ -130,7 +131,9 @@ type Config struct {
 
 // Server is one zone process's simulation.
 type Server struct {
-	skyTowns []int8 // CR 038: per settlement, 0 unknown, 1 surface, 2 sky (vertical.go skyTown)
+	skyTowns   []int8                // CR 038: per settlement, 0 unknown, 1 surface, 2 sky (vertical.go skyTown)
+	layerVeins map[uint64]caves.Vein // CR 038: the vertical world's veins by id (vertical.go layerVein)
+
 	cfg   Config
 	log   *slog.Logger
 	sched *gameloop.Scheduler

@@ -122,8 +122,8 @@ type entView struct {
 	partyID uint32
 	kind    proto.EntityKind
 	nameID  uint32
-	caveSys int32       // cave system this tick (-1 surface): caveVisible only runs when it differs from the viewer's
-	layer   int8        // CR 038: vertical layer (layerVisible only runs when it differs)
+	caveSys int32 // cave system this tick (-1 surface): caveVisible only runs when it differs from the viewer's
+	layer   int8  // CR 038: vertical layer (layerVisible only runs when it differs)
 	y       float64
 	due     aoi.DueMask // G5: which rings update it this tick (aoi.Due), once per entity instead of per client
 }

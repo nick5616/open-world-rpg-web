@@ -107,6 +107,11 @@ func (s *Server) lootOnKill(k combat.KillInfo) {
 		}
 		kc := items.KillContext{Family: en.Def.Family, Level: en.Level, Elite: en.Elite(), Boss: en.Boss != nil, Element: el,
 			Theme: s.themeFor(groupSeed), Luck: luck, Deep: deep}
+		if en.Group != nil && en.Group.Layer == 3 {
+			// CR 038: the Depths pay like elites, with depthsLootLuck on top (rare loot).
+			kc.Elite = true
+			kc.Luck *= depthsLootLuck
+		}
 		if en.Boss != nil {
 			kc.Tomes = tomesFor(ent.cbt)
 		}

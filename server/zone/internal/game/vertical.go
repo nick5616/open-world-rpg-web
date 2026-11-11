@@ -10,10 +10,14 @@ package game
 import (
 	"math"
 
+	"lodestone/server/pkg/caves"
 	"lodestone/server/pkg/constants"
 	"lodestone/server/pkg/movement"
 	"lodestone/server/pkg/proto"
+	"lodestone/server/pkg/structures"
 	"lodestone/server/pkg/vertical"
+	"lodestone/server/zone/internal/combat"
+	"lodestone/server/zone/internal/content"
 )
 
 // verticalWorld is a ground with the vertical world (worldhost.CaveTerrain
@@ -115,6 +119,9 @@ const (
 	fallPctPerMS  = 3.2
 	// lavaPctPerS: Depths lava burns this share of max health per second.
 	lavaPctPerS = 35.0
+	// depthsLootLuck multiplies the rarity luck of a Depths kill (on top of
+	// the deep-cave luck and an elite's).
+	depthsLootLuck = 2.5
 )
 
 // Event kinds and Interact targets of the vertical world (CR 038,
@@ -275,3 +282,117 @@ func (s *Server) skyTown(si int) bool {
 	}
 	return s.skyTowns[si] == 2
 }
+
+// layerSafeM: no pack within this of an underground camp (a layer waypoint).
+const layerSafeM = 45.0
+
+// addLayerGroups adds the vertical world's enemy packs to the combat world
+// (after the atlas groups, so every surface group keeps its id): on dry,
+// walkable cavern and Depths floors away from camps and columns (1-5 per
+// chamber by size), and on the sky islands that are not a town or a palace.
+// Their composition comes from combat.LayerTables, their level and tier
+// from the layer's area (internal/difficulty floors); they spawn, wake and
+// walk in 3D on their layer's floor.
+func (s *Server) addLayerGroups(w *combat.World) {
+	vw := s.vertical()
+	if vw == nil {
+		return
+	}
+	v := vw.Vertical()
+	g := s.cfg.Ground
+	var camps []movement.Vec3
+	if a := w.Atlas; a != nil {
+		for i := range a.Sites {
+			st := &a.Sites[i]
+			if st.Layer >= vertical.LayerUnder && st.Category == structures.CategoryPOI && st.Kind == structures.POIWaypoint {
+				camps = append(camps, movement.Vec3{X: st.X, Y: st.Y, Z: st.Z})
+			}
+		}
+	}
+	var placed []*combat.Group
+	clear := func(layer int, x, y, z float64) bool {
+		for _, c := range camps {
+			if math.Hypot(c.X-x, c.Z-z) < layerSafeM && math.Abs(c.Y-y) < 40 {
+				return false
+			}
+		}
+		for i := range v.Columns {
+			c := &v.Columns[i]
+			if c.Layer == layer && math.Hypot(c.X-x, c.Z-z) < c.R+4 {
+				return false
+			}
+		}
+		for _, o := range placed {
+			if math.Hypot(o.Anchor.X-x, o.Anchor.Z-z) < 40 && math.Abs(o.Anchor.Y-y) < 40 {
+				return false
+			}
+		}
+		return true
+	}
+	add := func(layer int, x, z, from float64, seed uint64) bool {
+		lv := movement.AtLevel(g, from)
+		y := lv.HeightAt(x, z)
+		if vw.LayerAt(x, y, z) != layer && layer != vertical.LayerSky {
+			return false
+		}
+		if movement.WaterAt(lv, x, z) > y-0.2 || movement.SlopeAt(lv, x, z).T2 > constants.WalkableTanSq || !clear(layer, x, y, z) {
+			return false
+		}
+		gr := w.AddGroup(&combat.Group{Kind: combat.GroupPack, Anchor: movement.Vec3{X: x, Y: y, Z: z}, Radius: 9, Element: 8, Level: 1, Site: -1,
+			Seed: seed, AreaLevel: true, Layer: layer, Comp: combat.LayerTables[layer]})
+		placed = append(placed, gr)
+		return true
+	}
+	for i := range v.Chambers {
+		c := &v.Chambers[i]
+		want := min(5, 1+int(c.Rx*c.Rz/9000))
+		got := 0
+		for k := 0; k < want*6 && got < want; k++ {
+			h := content.Mix(c.ID ^ uint64(k+1)*0x9E3779B97F4A7C15)
+			e := 0.2 + 0.5*float64(h>>11)/float64(1<<53)
+			th := 2 * math.Pi * float64(content.Mix(h)>>11) / float64(1<<53)
+			u, vv := c.Rx*e*math.Cos(th), c.Rz*e*math.Sin(th)
+			x, z := c.X+u*c.C-vv*c.S, c.Z+u*c.S+vv*c.C
+			if add(c.Layer, x, z, c.Floor+2, h) {
+				got++
+			}
+		}
+	}
+	for i := range v.Islands {
+		is := &v.Islands[i]
+		if is.Kind == vertical.IslandTown || is.Kind == vertical.IslandPalace || is.R < 30 {
+			continue
+		}
+		for k := 0; k < 6; k++ {
+			h := content.Mix(is.ID ^ uint64(k+1)*0xBF58476D1CE4E5B9)
+			d := is.R * (0.25 + 0.35*float64(h>>11)/float64(1<<53))
+			th := 2 * math.Pi * float64(content.Mix(h)>>11) / float64(1<<53)
+			if add(vertical.LayerSky, is.X+d*math.Cos(th), is.Z+d*math.Sin(th), is.Top+2, h) {
+				break
+			}
+		}
+	}
+	s.log.Info("vertical packs", "groups", len(placed))
+}
+
+// layerVein looks a vein up among the vertical world's (CR 038: the
+// descriptor's veins, cave record format, band 3 Underground / 4 Depths).
+// They mine like cave veins (Interact 40, drops, respawn, the vein_mined
+// edit with a zero carve radius: the mined flag only).
+func (s *Server) layerVein(id uint64) (caves.Vein, bool) {
+	if s.layerVeins == nil {
+		s.layerVeins = map[uint64]caves.Vein{}
+		if vw := s.vertical(); vw != nil {
+			for _, lv := range vw.Vertical().Veins {
+				s.layerVeins[lv.ID] = caves.Vein{ID: lv.ID, X: lv.X, Y: lv.Y, Z: lv.Z, NX: lv.N[0], NY: lv.N[1], NZ: lv.N[2],
+					Kind: uint8(lv.Kind), Material: uint8(lv.Material), Element: uint8(lv.Element), HP: uint16(lv.HP), Size: uint8(lv.Size),
+					Flags: uint8(lv.Flags), Band: uint8(lv.Band), Chamber: uint8(lv.Chamber)}
+			}
+		}
+	}
+	v, ok := s.layerVeins[id]
+	return v, ok
+}
+
+// isLayerVein: a vein of the vertical world (bands 3 and 4).
+func isLayerVein(v caves.Vein) bool { return v.Band >= 3 }
