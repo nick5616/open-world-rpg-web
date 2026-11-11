@@ -478,7 +478,7 @@ func (s *Server) spawnSpot(x, z float64) bool {
 		return false
 	}
 	w := s.night.cfg.World
-	if w.WardAt(x, z) >= 0 || w.NearLantern(x, z) || s.campSafeAt(x, z, campSafeMargin) { // CR 025: not near a burning campfire
+	if w.WardAt(x, z) >= 0 || w.NearLantern(x, z) || s.campSafeAt(x, z, campSafeMargin) || s.storyArenaAt(x, z) { // CR 025: not near a burning campfire; co-op polish: not in the Heartfall
 		return false
 	}
 	y := g.HeightAt(x, z)
@@ -510,7 +510,7 @@ func (s *Server) huntTopUp(idx int64) {
 		// caveSys is only maintained with a cave world (caves.go); without
 		// one every entity reads 0 and nobody was ever hunted (playtest 1 fix).
 		underground := e.caveSys >= 0 && s.caves() != nil
-		if underground || w.WardAt(e.Move.Pos.X, e.Move.Pos.Z) >= 0 || s.campSafeAt(e.Move.Pos.X, e.Move.Pos.Z, 0) { // CR 025: safe by a burning campfire
+		if underground || w.WardAt(e.Move.Pos.X, e.Move.Pos.Z) >= 0 || s.campSafeAt(e.Move.Pos.X, e.Move.Pos.Z, 0) || s.storyArenaAt(e.Move.Pos.X, e.Move.Pos.Z) { // CR 025: safe by a burning campfire; co-op polish: the Heartfall is the Hush's
 			continue
 		}
 		// Playtest 1 (difficulty.go): the area's tier scales the hunt (none

@@ -209,6 +209,9 @@ func (s *Server) finaleTick(tick uint32) {
 		s.finaleReset("The Hush sinks back into the silence. The Heartfall waits.")
 		return
 	}
+	if tick%15 == 7 {
+		s.finaleClearStrays(r) // co-op polish: the arena is the Hush's, from the entrance on
+	}
 	if now < r.introUntil {
 		return
 	}
@@ -297,6 +300,40 @@ func (s *Server) finaleTick(tick uint32) {
 	}
 }
 
+// storyArenaR: the Heartfall and this much around it belong to the Hush:
+// no night hunters rise there and none stand in it during the fight.
+const storyArenaMarginM = 40.0
+
+// storyArenaAt: (x, z) is in the Heartfall's arena (or its margin).
+func (s *Server) storyArenaAt(x, z float64) bool {
+	p := s.storyPlaces()
+	if p == nil || !p.Heartfall.OK {
+		return false
+	}
+	return math.Hypot(x-p.Heartfall.X, z-p.Heartfall.Z) <= p.Heartfall.R+storyArenaMarginM
+}
+
+// finaleClearStrays sends away every enemy in the arena that is not the
+// Hush's: the night's hunters, a wandering pack. Co-op polish: two
+// Gloamlings stood in the arena through the entrance (the title card, the
+// Hush's lines) and fought on into the first phase.
+func (s *Server) finaleClearStrays(r *finaleRun) {
+	hf := s.storyPlaces().Heartfall
+	w := s.cbt.w
+	for _, e := range w.EnemiesNear(hf.X, hf.Z, hf.R+10) {
+		if !e.Alive() || e == r.hush || e.Group == r.g {
+			continue
+		}
+		bell := false
+		for _, g := range r.bells {
+			bell = bell || e.Group == g
+		}
+		if !bell {
+			w.Despawn(e)
+		}
+	}
+}
+
 func (s *Server) finaleEvery(normal, hard float64) float64 {
 	if r := s.sty.fin.run; r != nil && r.hard {
 		return hard
@@ -332,6 +369,7 @@ func (s *Server) finaleArm(who []*session) {
 	w.Hold(hush, finaleIntroS)
 	hush.Guard = s.finaleGuard
 	s.sty.fin.run = r
+	s.finaleClearStrays(r) // nothing else stands in the arena for the entrance
 	s.sty.fin.dawnTil = 0
 	sub := "Mother of the Unsung"
 	if hard {
