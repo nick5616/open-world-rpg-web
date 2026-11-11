@@ -687,6 +687,22 @@ func (s *Server) storyShare(sess *session, h quests.Happening) {
 	}
 }
 
+// storyNeedsNPC: the active act still has a talk (or give) step with this
+// townsperson (towns-buffer index).
+func (s *Server) storyNeedsNPC(l *quests.Log, npcIndex int) bool {
+	for _, q := range l.Active {
+		if story.ActOf(q.Key) == 0 {
+			continue
+		}
+		for i := q.Step; i < len(q.Steps); i++ {
+			if o := q.Steps[i].Obj; (o.Kind == quests.ObjTalk || o.Kind == quests.ObjGive) && o.NPC == npcIndex+1 {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // storyNPCName is the name of the townsperson an objective names (NPC is
 // the towns-buffer index + 1).
 func (s *Server) storyNPCName(npc int) string {

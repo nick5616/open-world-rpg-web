@@ -194,6 +194,16 @@ func TestMainStoryTwoPlayersEndToEnd(t *testing.T) {
 	talk(p.Keeper)
 	waitStory(t, h, A, 1, 1, both...)
 	waitStory(t, h, B, 1, 1, both...) // shared: B stood beside A
+	// Playtest 2 co-op: B talks to the keeper too (nothing left to do with
+	// him now): no side quest card pops up ("The Lodestone's Hum" is this
+	// story told again, and the keeper keeps to the story he still needs).
+	if id := b.npcEntityID(h, p.Keeper.Index); id != 0 {
+		b.send(&proto.Interact{TargetKind: InteractNPC, TargetID: uint64(id), Action: ActionTalk})
+		b.pump(400 * time.Millisecond)
+		if offers := b.eventsOf(EventQuestOffer); len(offers) != 0 {
+			t.Fatalf("the keeper offered a side quest during the story: %s", offers[0].Data)
+		}
+	}
 	if tp, ok := h.srv.tabletPos(p.Tablet.Site); !ok || math.Hypot(tp.X-p.Tablet.X, tp.Z-p.Tablet.Z) > 0.01 {
 		t.Fatalf("the stone's marker (%.1f, %.1f) is not on the stone %+v", p.Tablet.X, p.Tablet.Z, tp)
 	}
