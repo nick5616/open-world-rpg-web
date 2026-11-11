@@ -401,12 +401,21 @@ func (g *Ground) WaterAt(x, z float64) float64 {
 	return g.Water(x, z)
 }
 
+// cellLoaded: the cave cell holding feet height y at (x, z) is there (a
+// mouth hole whose cells are missing keeps the old surface; one whose cells
+// are there but have no floor below is a sunlit shaft: you drop down it).
+func cellLoaded(src CellSource, x, y, z float64) bool {
+	return src != nil && src.Cell(int32(math.Floor(x/CellW)), int32(math.Floor(y/CellH)), int32(math.Floor(z/CellW))) != nil
+}
+
 // FloorAt is the ground under feet height y at (x, z): the surface outside
 // caves; in a cave the highest cave floor in [y - 34, y + MAX_STEP_UP_M];
 // with no floor there, the lowest ledge within LedgeM above (a real step),
 // else y itself inside rock (walls are Collide's job, never
 // a slope to climb) or y - 35 in open air (keep falling); the old surface in
-// a mouth hole whose cells are missing. Same as CaveGroundCore.floorAt.
+// a mouth hole whose cells are missing (playtest 2 co-op: only when they
+// are missing; a sinkhole's shaft has no floor for 140 m and was a lid you
+// could walk across). Same as CaveGroundCore.floorAt.
 func (g *Ground) FloorAt(x, y, z float64) float64 {
 	h := g.Height(x, z)
 	if !g.InCave(x, y, z) {
@@ -415,7 +424,7 @@ func (g *Ground) FloorAt(x, y, z float64) float64 {
 	if f := FloorAt(g.Cells, x, y, z); !math.IsInf(f, -1) {
 		return f
 	}
-	if Masked(g.Openings, x, z) {
+	if Masked(g.Openings, x, z) && !cellLoaded(g.Cells, x, y, z) {
 		return h
 	}
 	if l := FloorIn(g.Cells, x, z, y+constants.MaxStepUpM, y+LedgeM, true); !math.IsInf(l, 1) {
