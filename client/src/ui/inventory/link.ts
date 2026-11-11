@@ -10,13 +10,33 @@
 import type { Event as ZoneEvent } from '@lodestone/contracts';
 import { netRuntime } from '../../net/netStore';
 import type { ZoneSession } from '../../net/zoneSession';
-import { CRAFT_ACT, INTERACT, ITEM_ACT } from './events';
+import { CRAFT_ACT, EV, INTERACT, ITEM_ACT } from './events';
 import { socketTarget, trainingEquipArg } from './items';
 import { ACT, INTERACT_COMBAT } from '../../combat/events';
-import { applyItemEvent, resetInventory, setInventoryActions, type InventoryActions } from './store';
+import { applyItemEvent, resetInventory, setInventoryActions, useInventory, type InventoryActions } from './store';
+import { shouldSendAutoLoot, useAutoLoot } from './ground/autoLoot';
 
-const listener = (e: ZoneEvent) => applyItemEvent(e);
 let hooked: ZoneSession | null = null;
+let autoSentAt = -1e9;
+
+/** Playtest 2 ground loot: keep the zone's auto-collect setting in step with ours (ground/autoLoot.ts). */
+function syncAutoLoot(force = false): void {
+  const inv = useInventory.getState().inv;
+  const s = hooked;
+  if (!inv || !s) return;
+  const now = performance.now();
+  const want = useAutoLoot.getState().on;
+  if (force ? (inv.auto ?? false) !== want : shouldSendAutoLoot(inv.auto, want, autoSentAt, now)) {
+    autoSentAt = now;
+    s.sendInteract(INTERACT.item, 0n, ITEM_ACT.autoLoot, want ? 1 : 0);
+  }
+}
+useAutoLoot.subscribe(() => syncAutoLoot(true));
+
+const listener = (e: ZoneEvent) => {
+  applyItemEvent(e);
+  if (e.kind === EV.inventory) syncAutoLoot();
+};
 
 export function inventoryActionsFor(session: ZoneSession): InventoryActions {
   return {

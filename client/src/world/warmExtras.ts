@@ -23,6 +23,7 @@ import { enemyWarmObjects } from '../combat/enemies/warm';
 import { armorMaterial } from '../combat/armor/material';
 import { ambientLifeWarmObjects } from './life/ambientLife';
 import { smokeWarmObject } from './buildings/chimneySmoke';
+import { lootWarmObjects } from '../ui/inventory/ground/beam';
 
 let kept: THREE.Object3D[] | null = null;
 
@@ -93,6 +94,10 @@ export function warmExtras(): THREE.Object3D[] {
   out.push(...ambientLifeWarmObjects());
   // Chimney smoke (buildings/chimneySmoke.ts): appears with the first town in range.
   out.push(smokeWarmObject());
+  // Playtest 2 ground loot (ui/inventory/ground/beam.ts): the light beams, falling
+  // motes, splash rings and sparkles over dropped items (the item models use the
+  // weapon and armor materials above).
+  out.push(...lootWarmObjects());
   for (const o of out) o.frustumCulled = false;
   kept = out;
   return out;

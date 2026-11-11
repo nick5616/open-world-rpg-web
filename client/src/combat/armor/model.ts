@@ -26,8 +26,8 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { M, MeshBuilder, circle, lathe, polygon, shade, surf, sweep, type Surface, type SurfaceAt, type V3 } from '../weapons/builder';
-import { armorSpec, BONE_INDEX, helmKind, type ArmorPart, type ArmorSpec, type Finish } from './spec';
-import type { WornPiece } from './appearance';
+import { armorSpec, BONE_INDEX, helmKind, type ArmorBone, type ArmorPart, type ArmorSpec, type Finish } from './spec';
+import { ARMOR_ITEMS, armorVisualId, packAppearance, type WornPiece } from './appearance';
 
 /** The torso outline the shell follows (net/avatar.ts TORSO_PROFILE, kept here to avoid an import cycle). */
 const TORSO: readonly (readonly [number, number, number])[] = [
@@ -630,6 +630,66 @@ export function buildFpForearm(spec: ArmorSpec): THREE.BufferGeometry | null {
   }
   const g = b.build();
   g.name = `armor-fp:${spec.ap}`;
+  return g;
+}
+
+// ---- one piece on its own (playtest 2 ground loot: a dropped helm, cuirass or greaves) ----
+
+/** Rest-pose joint positions (net/avatar.ts AVATAR_RIG, feet at 0): the parts' frames when nobody wears them. */
+const REST: Readonly<Record<ArmorBone, V3>> = (() => {
+  const hip = 0.88;
+  const torso = hip + 0.04;
+  const sh = torso + 0.5;
+  const out: Record<string, V3> = { body: [0, hip, 0], torso: [0, torso, 0], neck: [0, torso + 0.62, 0] };
+  for (const [s, k] of [
+    [-1, 'L'],
+    [1, 'R'],
+  ] as const) {
+    out[`shoulder${k}`] = [s * 0.36, sh, 0];
+    out[`elbow${k}`] = [s * 0.36, sh - 0.32, 0];
+    out[`hand${k}`] = [s * 0.36, sh - 0.62, 0];
+    out[`hip${k}`] = [s * 0.13, hip, 0];
+    out[`knee${k}`] = [s * 0.13, hip - 0.44, 0];
+  }
+  return out as Record<ArmorBone, V3>;
+})();
+
+const pieceCache = new Map<string, THREE.BufferGeometry | null>();
+
+/**
+ * One armor piece (items.yaml key, rarity, gem inlay) as a static geometry
+ * for the armor material, every part placed at its rest-pose joint and the
+ * whole centred on its bounding box (origin = the piece's centre). Cached;
+ * null for a key that is not armor.
+ */
+export function armorPieceGeometry(key: string, rarity: number, gem = -1): THREE.BufferGeometry | null {
+  const ck = `${key}|${rarity}|${gem}`;
+  if (pieceCache.has(ck)) return pieceCache.get(ck)!;
+  const id = armorVisualId(key);
+  let g: THREE.BufferGeometry | null = null;
+  if (id) {
+    const slot = ARMOR_ITEMS[id - 1].armor;
+    const pieces: (Pick<WornPiece, 'key' | 'rarity' | 'gem'> | null)[] = [null, null, null];
+    pieces[slot === 'head' ? 0 : slot === 'body' ? 1 : 2] = { key, rarity: Math.max(0, Math.min(7, rarity)), gem };
+    const spec = armorSpec(packAppearance(pieces));
+    const b = new MeshBuilder();
+    for (const p of spec.parts) {
+      const c = partCtx(spec, p);
+      const fn = PARTS[p.id];
+      if (!c || !fn) continue;
+      const o = REST[p.bone];
+      b.with(M.t(o[0], o[1], o[2]), () => fn(b, c));
+    }
+    if (b.vertexCount > 0) {
+      g = b.build();
+      const c = g.boundingBox!.getCenter(new THREE.Vector3());
+      g.translate(-c.x, -c.y, -c.z);
+      g.computeBoundingBox();
+      g.computeBoundingSphere();
+      g.name = `armor-piece:${ck}`;
+    }
+  }
+  pieceCache.set(ck, g);
   return g;
 }
 

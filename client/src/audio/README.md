@@ -74,7 +74,11 @@ the results, so nothing clicks or zippers.
   street), campfire (26 m), forge (30 m, deeper) and camp campfire piece,
   burning grass (cells clustered on a 12 m grid, louder and carrying
   further the more burn), rivers (55 m, flowing) and lake/sea shores (34 m,
-  lapping; a ring probe of the water surface twice a second) is an emitter;
+  lapping; a ring probe of the water surface twice a second) and every
+  dropped item of uncommon or better (CR 037, `ui/inventory/ground/hum.ts`:
+  a metallic ring, a chime, a whisper, a drone or Bitchin's chord, one
+  note per rarity via `LoopEmitter.rate`, ~9 m for uncommon to ~56 m for
+  Bitchin'; synthesized on first use, `synth.ts` hum families) is an emitter;
   only the 8 loudest at the listener get a voice, a playing one keeps its
   slot unless a newcomer is 1.6x louder, and voices fade in (0.3 s) and
   out (0.25 s, then stop and disconnect). By day a smith hammers at every
@@ -129,6 +133,95 @@ a cave mouth or a town wall). Changes crossfade (1-5 s by state); a
 track crossfades into the next 6 s before it ends. Music ducks to 35 %
 while anyone in voice is speaking (voice keeps priority), and to 50 %
 under big stings (level-up, boss, discovery).
+
+## Composer aids (vibe explorer, dev builds)
+
+`composer/` (playtest 2 vibe explorer, docs/cr/036-vibe-explorer.md) is
+for composing new music in the game. It runs only once the dev console's
+**Vibe** tab or a `/music` command is used (a debug build on a
+`LODESTONE_ZONE_DEV=1` zone); until then the engine's one seam,
+`composer/hook.ts`, is empty and nothing changes.
+
+- `override.ts` (pure, tested): the manual override (auto / force a
+  **state** / force a **track** with a **loop section**, plus a forced
+  **intensity**), the inputs that land the director in a state at once,
+  the **vibe context** (state, biome, time of day, weather, area tier and
+  level, story act, combat, intensity) and the "why" lines.
+- **Intensity** (0..1, a readout and a mapping condition; the director has
+  no stems yet): the state's base (day 0.25, town 0.2, night 0.35, cave
+  0.45, combat and void 0.75, timed 0.9) + 0.04 per area tier above the
+  Haven + rough weather (storms 0.1; rain, wind, fog 0.05) + a boss 0.1; a
+  timed objective's last seconds are 1. For a forced `timed` state it picks
+  the time crunch's part: under 0.3 the intro, 0.85 and up "5 sec left".
+- `composer.ts`: the runtime. Its own deck (an `AudioBufferSourceNode` into
+  `busInput('music')`, so voice/sting/hidden-tab ducking applies) plays a
+  forced track or a mapped file; while it plays the game's player gets
+  `silence` and fades out (1.5 s), so it is a crossfade both ways. Built-in
+  tracks are fetched and decoded on demand (two kept: ~70 MB each decoded).
+  Solo/mute multiply the bus volume stage (`context.ts setDevBusGain`;
+  never saved; voice chat untouched).
+- `files.ts`: your loaded files live in this browser's IndexedDB
+  (`lodestone-composer`), so they survive a reload; nothing is uploaded.
+- `mapping.ts` (pure, tested): mappings "play file F when the vibe is
+  like this", saved in localStorage (`lodestone.composer.map.v1`), the
+  most specific match wins (earliest on ties), no match = the game's
+  music.
+
+### Composer mappings: the export format and wiring a file in
+
+**Export** (Vibe tab "Export JSON" or `/music export`: downloads
+`lodestone-music-map-<date>.json` and copies it):
+
+```json
+{
+  "format": "lodestone-music-map",
+  "version": 1,
+  "exportedAt": "2026-11-10T21:31:00.000Z",
+  "mappings": [
+    {
+      "id": "m1x2y3",
+      "file": "forest_dusk_v3.wav",
+      "when": { "biome": "forest", "time": "dusk" },
+      "gain": 0.9,
+      "loop": true,
+      "fadeIn": 3,
+      "enabled": true,
+      "note": "optional"
+    }
+  ]
+}
+```
+
+`when` fields (all optional; every one given must hold): `state` (day,
+night, town, cave, void, combat, timed, silence: the director's state),
+`biome` (meadow, forest, highlands, snowpeak, badlands, wetland), `time`
+(dawn = the 90 min after 06:00, day, dusk = the hour before 18:30, night =
+18:30-06:00), `weather` (clear, cloudy, windy, fog, drizzle, rain,
+thunderstorm, snow, snowstorm, heat_haze, sandstorm), `tierMin`/`tierMax`
+(0 Haven, 1 Quiet Lands, 2 The Wilds, 3 Perilous, 4 Dreadlands, 5 The
+Deadlands; an area not stamped yet has no tier), `act` (main story act
+1-6), `combat` (true/false), `intensityMin`/`intensityMax` (0..1). `gain`
+is linear (0..2), `loop` false plays the file once per visit to that vibe.
+Import accepts the export or a bare array; invalid entries are dropped.
+
+**Wiring a file in for good** (hand back the JSON and the audio files):
+
+1. Put the master in Nicole's source folder (`LODESTONE_AUDIO_RPG`) and add
+   it to `MUSIC` in `tools/audio/cues.config.mjs`, e.g.
+   `{ id: 'forest_dusk', src: RPG('forest dusk v3'), lufs: -16 }`; build it
+   with `node tools/audio/build-audio.mjs --only forest_dusk` (writes
+   `assets/music/forest_dusk.{ogg,m4a}` and the credits).
+2. A mapping whose `when` is only a `state` (or night = `state: night`) is
+   one line in `music/tracks.ts`: put `'music/forest_dusk'` in that
+   state's `tracks` (several rotate), its `gain` from the mapping's.
+3. A mapping that depends on biome, time of day, weather, tier, act or
+   intensity has no slot in the director yet (it picks by state only). The
+   plan for the first such mapping: a static list in
+   `music/contextMusic.ts` in this same JSON shape (with `file` =
+   `music/<id>`), resolved with `composer/mapping.ts resolveMapping` in the
+   engine's `slowTick` exactly as the composer does now, the player
+   crossfading to it like a state change. The composer's behaviour is the
+   reference for how it should sound.
 
 ## Sound effects: cue sheet
 

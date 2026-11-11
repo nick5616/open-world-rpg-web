@@ -70,14 +70,34 @@ function build(ctx: AudioContext): Graph {
   return { ctx, master, limiter, input, volume, env };
 }
 
+/** Playtest 2 vibe explorer: the composer's solo/mute per bus (dev only; never persisted, 1 = untouched). */
+const devGain: Partial<Record<BusName, number>> = {};
+
 function applySettings(): void {
   if (!graph) return;
   const s = useAudioSettings.getState();
   const t = graph.ctx.currentTime;
   for (const b of BUSES) {
     const g = b === 'master' ? (s.muted ? 0 : sliderToGain(s.volumes.master)) : sliderToGain(s.volumes[b]);
-    graph.volume[b].gain.setTargetAtTime(g, t, 0.03);
+    graph.volume[b].gain.setTargetAtTime(g * (devGain[b] ?? 1), t, 0.03);
   }
+}
+
+/** Solo/mute a bus for listening (null = back to the player's setting); not saved. */
+export function setDevBusGain(bus: BusName, g: number | null): void {
+  if (g === null) delete devGain[bus];
+  else devGain[bus] = Math.max(0, g);
+  applySettings();
+}
+
+/** The composer's bus multipliers now. */
+export function devBusGains(): Readonly<Partial<Record<BusName, number>>> {
+  return devGain;
+}
+
+/** A bus's duck stage gain (what ducking does to it now; the readout). */
+export function busDuck(bus: Exclude<BusName, 'master'>): number {
+  return graph?.input[bus].gain.value ?? 1;
 }
 
 /**

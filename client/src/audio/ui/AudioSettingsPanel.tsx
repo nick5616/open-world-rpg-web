@@ -7,6 +7,7 @@ import { BUSES, useAudioSettings, type BusName } from '../settings';
 import { SOUND_BUTTON_W, TOP_BUTTON_TOP } from '../../hud/layout';
 import { useGraphicsUi } from '../../ui/graphics/GraphicsPanel';
 import { trackPanel } from '../../input/panelStack';
+import { useVoiceStore } from '../../voice/store';
 
 // Esc closes it when it is the top panel (input/panelStack.ts).
 trackPanel(useAudioSettings, (s) => s.panelOpen, 'sound', () => useAudioSettings.getState().setPanelOpen(false));
@@ -69,6 +70,18 @@ export function AudioSettingsPanel() {
           <span style={{ textAlign: 'right', opacity: 0.7 }}>{Math.round(s.volumes[b] * 100)}</span>
         </label>
       ))}
+      {/* Playtest 2: the full voice settings (microphone, mic test, players, diagnostics: voice/ui/VoiceSettings.tsx). */}
+      <button
+        data-testid="sound-voice-settings"
+        tabIndex={-1}
+        onClick={() => {
+          s.setPanelOpen(false);
+          useVoiceStore.getState().set({ settingsOpen: true });
+        }}
+        style={{ ...glass, display: 'block', width: '100%', marginTop: 6, padding: '5px 8px', cursor: 'pointer', textAlign: 'left' }}
+      >
+        Voice settings: microphone, mic test, players…
+      </button>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontSize: 11, opacity: 0.7 }}>
         <span>K to close</span>
         <button data-silent onClick={() => s.reset()} style={{ ...glass, padding: '2px 8px', cursor: 'pointer', fontSize: 11 }}>

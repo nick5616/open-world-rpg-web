@@ -92,7 +92,8 @@ describe('voice prefs', () => {
     expect(loadPrefs(null).talkMode).toBe('ptt');
     expect(loadPrefs('not json').talkMode).toBe('ptt');
     const p = loadPrefs(JSON.stringify({ talkMode: 'vad', masterVolume: 9, volumes: { Bob: 1.5, Eve: -3, X: 'loud' }, muted: { Bob: true, Eve: 'yes' } }));
-    expect(p).toEqual({ talkMode: 'vad', masterVolume: 2, volumes: { Bob: 1.5, Eve: 0, X: 1 }, muted: { Bob: true } });
+    // A WP11 blob still loads (the playtest 2 fields take their defaults; voice-settings.test.ts covers them).
+    expect(p).toMatchObject({ talkMode: 'vad', masterVolume: 2, volumes: { Bob: 1.5, Eve: 0, X: 1 }, muted: { Bob: true }, peers: {}, pttKey: 'KeyV', micMuted: false });
     expect(loadPrefs(JSON.stringify({ talkMode: 'always-on' })).talkMode).toBe('ptt');
   });
 });

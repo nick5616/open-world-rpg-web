@@ -25,6 +25,8 @@ export interface LoopEmitter {
   level?: number;
   /** Range multiplier (a big wildfire carries further). */
   reach?: number;
+  /** Playback-rate multiplier (playtest 2: a loot hum's pitch by rarity); also narrows the voice's detune to +-1 %. */
+  rate?: number;
   /** SPACE_OUTDOORS, SPACE_CAVE or the building index it is in. */
   space: number;
 }
