@@ -93,6 +93,7 @@ type finaleRun struct {
 	nextNight  uint32
 	part       map[uint32]bool
 	engaged    bool
+	lastNear   uint32
 }
 
 func (s *Server) finaleSecs(sec float64) uint32 { return uint32(math.Round(sec * 30)) }
@@ -153,6 +154,13 @@ func (s *Server) finaleTick(tick uint32) {
 	inArena := s.playersNear(hf.X, hf.Z, hf.R+4)
 	for _, e := range inArena {
 		r.part[e.ID] = true
+	}
+	// Everyone walked away before the fight began: the Hush sinks back.
+	if len(s.playersNear(hf.X, hf.Z, hf.R+60)) > 0 {
+		r.lastNear = now
+	} else if now-r.lastNear > s.finaleSecs(30) {
+		s.finaleReset("The Heartfall falls quiet.")
+		return
 	}
 	// A wipe: combat resets a boss nobody stands near for 15 s.
 	if r.engaged && r.hush.Boss.FightSeconds(now) == 0 {
@@ -278,8 +286,8 @@ func (s *Server) finaleArm(who []*session) {
 	}
 	hush := g.Members[0]
 	hush.Name = "The Hush"
-	r := &finaleRun{g: g, hush: hush, hard: hard, level: level, part: map[uint32]bool{}, takenMult: 1}
 	now := s.tick
+	r := &finaleRun{g: g, hush: hush, hard: hard, level: level, part: map[uint32]bool{}, takenMult: 1, lastNear: now}
 	r.introUntil = now + s.finaleSecs(finaleIntroS)
 	r.nextShroud = r.introUntil + s.finaleSecs(14)
 	w.Hold(hush, finaleIntroS)
@@ -676,9 +684,6 @@ func (s *Server) finaleTell(sess *session) {
 	}
 	ph, b := s.finaleData()
 	msg := string(b)
-	if r := f.run; r != nil && r.shroud > 0 {
-		msg += "" // the shroud's percentage is in b: sent on change only
-	}
 	if f.told[sess.ent.ID] == msg {
 		return
 	}

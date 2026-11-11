@@ -605,8 +605,8 @@ func (s *Server) storyShare(sess *session, h quests.Happening) {
 		s.log.Info("story step shared", "from", e.CharacterID, "to", o.CharacterID, "quest", h.Quest.Key, "step", h.Step)
 		for _, oh := range hs {
 			s.questHappened(os, oh)
-			if say := oh.Quest.Steps[oh.Step].Say; say != "" && oh.Quest.Steps[oh.Step].Obj.Kind == quests.ObjTalk {
-				s.storySay(os, "", say)
+			if st := &oh.Quest.Steps[oh.Step]; st.Say != "" && (st.Obj.Kind == quests.ObjTalk || st.Obj.Kind == quests.ObjGive) {
+				s.storySay(os, s.storyNPCName(st.Obj.NPC), st.Say) // what the NPC said to your friend, you heard too
 			}
 		}
 		os.quests.recheck = true
@@ -614,6 +614,15 @@ func (s *Server) storyShare(sess *session, h quests.Happening) {
 		s.saveQuests(os)
 		s.storyAfter(os, hs)
 	}
+}
+
+// storyNPCName is the name of the townsperson an objective names (NPC is
+// the towns-buffer index + 1).
+func (s *Server) storyNPCName(npc int) string {
+	if w := s.cfg.Towns; w != nil && npc > 0 && npc <= len(w.T.NPCs) {
+		return w.T.NPCs[npc-1].Name
+	}
+	return ""
 }
 
 // storySignal sends a story happening to every listed player who waits

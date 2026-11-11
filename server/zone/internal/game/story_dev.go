@@ -10,6 +10,7 @@ import (
 	"math"
 
 	"lodestone/server/pkg/movement"
+	"lodestone/server/zone/internal/combat"
 	"lodestone/server/zone/internal/quests"
 	"lodestone/server/zone/internal/story"
 )
@@ -23,6 +24,8 @@ const (
 	DevStoryHush      = 5 // targetId: the Hush's health in percent (phases follow)
 	DevStoryVigil     = 6 // the vigil's waves end as held
 	DevStoryPlaces    = 7 // where everything is (the result line)
+	DevStoryBells     = 8 // shatter the Hush's bells (the choir ends)
+	DevStoryDown      = 9 // the Hush (or anything near) downs you: try a revive
 )
 
 func (s *Server) devStory(sess *session, sub, target int) (int32, string) {
@@ -67,6 +70,12 @@ func (s *Server) devStory(sess *session, sub, target int) (int32, string) {
 		s.Teleport(e, movement.Vec3{X: x, Y: s.cfg.Ground.HeightAt(x, z) + 0.5, Z: z})
 		return devOK("the Heartfall (%.0f, %.0f), %s", hf.X, hf.Z, hf.Region)
 	case DevStoryWin:
+		if v := s.sty.vigil; v != nil && v.sovereign != nil {
+			for _, m := range v.sovereign.Members {
+				s.cbt.w.Slay(m, e.ID)
+			}
+			return devOK("the Starless Sovereign falls")
+		}
 		r := s.sty.fin.run
 		if r == nil || !r.hush.Alive() {
 			return devFailed("the Hush is not awake")
@@ -128,6 +137,39 @@ func (s *Server) devStory(sess *session, sub, target int) (int32, string) {
 		return devOK("keeper %s (%s) · stone %s · forks %s, %s, %s, %s · vaults %s, %s · vigil %s (%s) · smith %s of %s · sanctum %s · last fork %s · heartfall %.0f,%.0f",
 			p.Keeper.Name, p.Home, p.Tablet.Name, p.Forks[0].Name, p.Forks[1].Name, p.Forks[2].Name, p.Forks[3].Name, p.Vaults[0].Name, p.Vaults[1].Name,
 			p.Vigil.Name, p.Captain.Name, p.Smith.Name, p.Smith.Town, p.Sanctum.Name, p.LastFork.Name, p.Heartfall.X, p.Heartfall.Z)
+	case DevStoryBells:
+		r := s.sty.fin.run
+		if r == nil || len(r.bells) == 0 {
+			return devFailed("no bells tolling")
+		}
+		for _, g := range r.bells {
+			for _, m := range g.Members {
+				s.cbt.w.Slay(m, e.ID)
+			}
+		}
+		return devOK("the bells shatter")
+	case DevStoryDown:
+		var src *combat.Enemy
+		if r := s.sty.fin.run; r != nil && r.hush.Alive() {
+			src = r.hush
+		}
+		if src == nil {
+			for _, en := range s.cbt.w.Enemies() {
+				if en.Alive() && math.Hypot(en.Pos.X-e.Move.Pos.X, en.Pos.Z-e.Move.Pos.Z) < 60 {
+					src = en
+					break
+				}
+			}
+		}
+		if src == nil || e.cbt == nil {
+			return devFailed("nothing near to down you")
+		}
+		if sess.dev != nil {
+			sess.dev.flags &^= DevFlagGod
+			e.cbt.DevGod = false
+		}
+		s.cbt.w.HurtPlayerBy(e.ID, src, "hush_night", 1e6)
+		return devOK("downed by %s", src.Name)
 	}
-	return devBad("story: jump, heartfall, win, hush, vigil, reset, places")
+	return devBad("story: jump, heartfall, win, hush, vigil, bells, down, reset, places")
 }

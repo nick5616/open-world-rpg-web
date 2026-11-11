@@ -151,6 +151,9 @@ export const ALL_STYLES = Object.keys(STYLE_RIG) as Style[];
 const KEY_STYLE: Record<string, Style> = {
   starless_sovereign: 'sovereign',
   thornhide_behemoth: 'behemoth',
+  // CR 035 main story: the Hush floats like an archon in the dark of the Heartfall; its Hollow Bells are dark motes
+  the_hush: 'archon',
+  hollow_bell: 'shade',
 };
 
 /** Fallback by family (an enemy added to combat.yaml without a model of its own). */

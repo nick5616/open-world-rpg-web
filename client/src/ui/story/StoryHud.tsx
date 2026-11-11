@@ -109,6 +109,7 @@ function FinalePanel() {
   const f = useStory((s) => s.finale);
   const now = useNow(200, !!f && f.phase !== FINALE.idle);
   if (!f || f.phase === FINALE.idle || f.phase === FINALE.intro || f.phase === FINALE.won) return null;
+  if (Math.hypot(localPlayer.pos.x - f.x, localPlayer.pos.z - f.z) > f.r + 300) return null; // walked away: the zone stopped telling us
   const left = (ms: number) => ms - (now - f.at);
   const rows: { key: string; text: string; color: string; bar?: number }[] = [];
   if (f.shroud > 0 && left(f.shroudMs) > 0) rows.push({ key: 'shroud', text: `The shroud: break it with sunsteel or Light · ${secsLeft(left(f.shroudMs))}`, color: '#c9a6ff', bar: f.shroud });

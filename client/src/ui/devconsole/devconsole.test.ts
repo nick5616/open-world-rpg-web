@@ -100,6 +100,10 @@ describe('dev console commands', () => {
     expect(one('/achieve all')[0]).toMatchObject({ action: DEV_ACT.achieve, target: 0n });
     expect(one(`/achieve ${ACHIEVEMENTS[3].key}`)[0]).toMatchObject({ action: DEV_ACT.achieve, target: BigInt(ACHIEVEMENTS[3].id) });
     expect(one('/reset yes')[0]).toMatchObject({ action: DEV_ACT.reset });
+    expect(one('/story act 4 2')[0]).toMatchObject({ action: DEV_ACT.story, target: BigInt(4 | (2 << 8)), arg: 1 }); // CR 035
+    expect(one('/story heartfall')[0]).toMatchObject({ action: DEV_ACT.story, arg: 2 });
+    expect(one('/story hush 34')[0]).toMatchObject({ action: DEV_ACT.story, target: 34n, arg: 5 });
+    expect(one('/story win')[0]).toMatchObject({ action: DEV_ACT.story, arg: 3 });
     expect(parseCommand('/help', ctx)).toMatchObject({ local: 'help' });
     expect(parseCommand('give potion:health', ctx)).not.toHaveProperty('error'); // the slash is optional
   });
