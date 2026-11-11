@@ -5,10 +5,11 @@
 // camera, tips on/off, Leave to title.
 // It is not a pause: the world is shared and keeps going (spec 8).
 //
-// Esc keeps its other jobs: a panel's own Esc handler still closes that
-// panel (this listener runs first, in the capture phase, sees the panel and
-// stands aside), chat keeps its Esc, and the sound panel (which only
-// handled Esc with focus inside it) now closes on Esc too.
+// Esc closes one thing at a time (playtest 2 polish): this listener runs
+// first, in the capture phase, and closes only the top panel on the stack
+// (input/panelStack.ts: every panel, mode and held wheel registers there
+// when it opens), then stops the event. With nothing open it opens this
+// menu. Text fields keep their own Esc (chat, the dev console's line).
 
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { isTextTarget, KEY_MAP } from '../../input/useKeyboard';
@@ -23,11 +24,13 @@ import { useTips } from '../tips/store';
 import { controlGroups } from './controls';
 import { useDev } from '../devconsole/store';
 import { closeMenu, escAction, openMenu, unlockOpensMenu, useMenu, type MenuEntry } from './store';
+import { closeTopPanel, openPanels } from '../../input/panelStack';
 
 const MENU_KEY = 'Escape';
 
-/** A panel that freed the mouse on purpose is up (not this menu), or a held emote / pet wheel (Esc cancels the wheel). */
+/** A panel on the stack, or one drawn without registering (none should be), or a held emote / pet wheel. */
 function panelUp(): boolean {
+  if (openPanels().length) return true;
   for (const el of document.querySelectorAll<HTMLElement>('[data-ui-panel]:not([style*="display: none"]), [data-testid="emote-wheel"], [data-testid="pet-wheel"]')) {
     if (el.dataset.testid !== 'esc-menu') return true;
   }
@@ -68,6 +71,16 @@ function relock(): void {
 // some panels listen in the capture phase too (the inventory's I and G).
 let keysActive = false;
 let unlockedAt = -1e9;
+let poppedAt = -1e9;
+
+/** A field the player types into (a slider or checkbox in a panel is not: Esc still closes the panel). */
+function typingIn(t: EventTarget | null): boolean {
+  const el = t as HTMLElement | null;
+  if (!el) return false;
+  if (el.tagName === 'INPUT') return !/^(range|checkbox|radio|button|submit|color|file)$/i.test((el as HTMLInputElement).type);
+  return el.tagName === 'TEXTAREA' || el.isContentEditable;
+}
+
 function onMenuKey(e: KeyboardEvent): void {
   if (!keysActive) return;
   const m = useMenu.getState();
@@ -77,13 +90,13 @@ function onMenuKey(e: KeyboardEvent): void {
     return;
   }
   if (e.repeat) return;
-  const sound = useAudioSettings.getState();
-  if (!m.open && sound.panelOpen && !isTextTarget(e.target)) {
-    sound.setPanelOpen(false);
-    return;
-  }
-  const act = escAction({ menuOpen: m.open, panelOpen: panelUp() || useSocialStore.getState().open, typing: isTextTarget(e.target), sinceUnlockMs: performance.now() - unlockedAt });
-  if (act === 'open') {
+  const act = escAction({ menuOpen: m.open, stacked: openPanels().length > 0, panelOpen: panelUp(), typing: typingIn(e.target), sinceUnlockMs: performance.now() - unlockedAt });
+  if (act === 'pop') {
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    poppedAt = performance.now();
+    closeTopPanel();
+  } else if (act === 'open') {
     e.preventDefault();
     openMenu();
   } else if (act === 'close') {
@@ -109,7 +122,7 @@ function useMenuKeys(): void {
       if (document.pointerLockElement) return;
       const now = performance.now();
       unlockedAt = now;
-      const requestedMs = now - exitRequestedAt;
+      const requestedMs = Math.min(now - exitRequestedAt, now - poppedAt); // an Esc that closed a panel is not a request for the menu
       clearTimeout(timer);
       // Let a panel that freed the mouse render first.
       timer = window.setTimeout(() => {

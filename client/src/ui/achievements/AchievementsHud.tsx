@@ -17,7 +17,7 @@ import { useEffect } from 'react';
 import { CONTENT } from '@lodestone/contracts';
 import { DEBUG } from '../../config';
 import { emitSound } from '../../audio/bridge';
-import { isTextTarget } from '../../input/useKeyboard';
+import { notGameKey } from '../../input/useKeyboard';
 import { uiPanelUp } from '../../input/interact';
 import { BELOW_CLOCK } from '../../hud/layout';
 import { useIntro } from '../intro/queue';
@@ -28,6 +28,10 @@ import { useContent } from '../content/store';
 import { AchievementsScreen } from './AchievementsScreen';
 import { openAchievements, setAchievementsOpen, tickAchievementToasts, toggleAchievements, useAchievements } from './store';
 import { moreCount } from './toasts';
+import { trackPanel } from '../../input/panelStack';
+
+// Esc closes the screen when it is the top panel (input/panelStack.ts).
+trackPanel(useAchievements, (s) => s.open, 'achievements', () => setAchievementsOpen(false));
 
 const TICK_MS = 250;
 
@@ -41,11 +45,11 @@ export function toastBlocked(): boolean {
 function useAchievementKeys(): void {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (isTextTarget(e.target) || e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
+      if (notGameKey(e) || e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
       if (e.code === 'KeyY') {
         if (usePvp.getState().challenge) return; // the duel's "accept" wins (ui/pvp/PvpHud.tsx)
         toggleAchievements();
-      } else if (e.code === 'Escape' && useAchievements.getState().open) setAchievementsOpen(false);
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);

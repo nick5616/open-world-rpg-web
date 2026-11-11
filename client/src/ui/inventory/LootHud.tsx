@@ -18,7 +18,7 @@
 import { useEffect, useState } from 'react';
 import { netRuntime } from '../../net/netStore';
 import { localPlayer } from '../../state/live';
-import { isTextTarget } from '../../input/useKeyboard';
+import { notGameKey } from '../../input/useKeyboard';
 import { eFree } from '../../input/interact';
 import { baseName, CONTAINER_LABEL, isHolo, rarityColor } from './items';
 import { ensureInventoryHook } from './link';
@@ -110,7 +110,7 @@ export function LootHud() {
       }
     }, 120);
     const onKey = (e: KeyboardEvent) => {
-      if (e.code !== 'KeyE' || e.repeat || isTextTarget(e.target)) return;
+      if (e.code !== 'KeyE' || e.repeat || notGameKey(e)) return;
       const s = useInventory.getState();
       if (s.invOpen || s.station || othersBusy()) return;
       const t = findLootTarget();

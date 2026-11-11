@@ -9,18 +9,16 @@ import { useNetStore } from '../../net/netStore';
 import { registerMenuEntry, useMenu } from '../menu/store';
 import { useIntro } from '../intro/queue';
 import { useCombatHud } from '../../combat/store';
-import { isTextTarget } from '../../input/useKeyboard';
+import { usePanelEsc } from '../../input/panelStack';
 import { uiPanelUp } from '../../input/interact';
 import raw from './changelog.json';
-import { RETURNING_AT_LOAD, readSeen, validEntries, whatsNew, writeSeen, type ChangelogEntry, type WhatsNew as Shown } from './news';
+import { cardMayShow, RETURNING_AT_LOAD, readSeen, validEntries, whatsNew, writeSeen, type ChangelogEntry, type WhatsNew as Shown } from './news';
+import { localPlayer } from '../../state/live';
 
 const ENTRIES = validEntries(raw as unknown);
 const GOLD = '#ffd166';
 const CARD: CSSProperties = { background: 'rgba(12,15,22,0.95)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, color: '#e9ecef', font: '14px/1.45 system-ui, sans-serif', boxShadow: '0 10px 40px rgba(0,0,0,0.6)' };
 const BTN: CSSProperties = { padding: '8px 18px', border: '1px solid rgba(255,209,102,0.6)', borderRadius: 6, background: 'rgba(255,209,102,0.14)', color: '#ffe7a8', font: '600 14px system-ui, sans-serif', cursor: 'pointer' };
-/** After the world is up, once the arrival cards are done (at most MAX_WAIT_MS). */
-const SHOW_AFTER_MS = 2500;
-const MAX_WAIT_MS = 25000;
 
 function fmtDate(d: string): string {
   const t = Date.parse(d + 'T12:00:00');
@@ -50,15 +48,8 @@ export function EntryList({ entries }: { entries: readonly ChangelogEntry[] }) {
 }
 
 function Panel({ shown, onClose }: { shown: Exclude<Shown, { kind: 'none' }>; onClose: () => void }) {
+  usePanelEsc('whatsnew', true, onClose); // Esc closes it when it is the top panel (input/panelStack.ts)
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.code === 'Escape' && !isTextTarget(e.target)) {
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        onClose();
-      }
-    };
-    window.addEventListener('keydown', onKey);
     // Never trap a player in a fight behind it (playtest: a slime pack
     // downed a new character while the welcome card ate every click).
     let hp = useCombatHud.getState().health;
@@ -66,10 +57,7 @@ function Panel({ shown, onClose }: { shown: Exclude<Shown, { kind: 'none' }>; on
       if (st.health < hp) onClose();
       hp = st.health;
     });
-    return () => {
-      window.removeEventListener('keydown', onKey);
-      unsub();
-    };
+    return unsub;
   }, [onClose]);
   const welcome = shown.kind === 'welcome';
   return (
@@ -125,15 +113,15 @@ function WhatsNewInner() {
     if (!ready) return;
     // Let the arrival card (town / region intro) and the menu go first; give up waiting after a while.
     const t0 = performance.now();
+    let stillSince = t0;
     const t = setInterval(() => {
       const now = performance.now();
-      if (now - t0 < SHOW_AFTER_MS) return;
-      // Never on top of a shop, the inventory or any other open panel (playtest 2 integration QA:
-      // the welcome card covered a new player's first talk with the smith): wait for it to close.
-      if (uiPanelUp()) return;
+      if (localPlayer.mode !== 'idle') stillSince = now; // playtest 2 polish: not in the middle of a walk
       const intro = useIntro.getState();
       const busy = !!intro.current || intro.queue.length > 0 || useMenu.getState().open || useCombatHud.getState().downedUntil > 0;
-      if (busy && now - t0 < MAX_WAIT_MS) return;
+      // Never on top of a shop, the inventory or any other open panel (playtest 2 integration QA:
+      // the welcome card covered a new player's first talk with the smith): wait for it to close.
+      if (!cardMayShow({ sinceReadyMs: now - t0, panelUp: uiPanelUp(), busy, stillMs: now - stillSince })) return;
       clearInterval(t);
       setShown(whatsNew(ENTRIES, readSeen(), RETURNING_AT_LOAD));
     }, 400);

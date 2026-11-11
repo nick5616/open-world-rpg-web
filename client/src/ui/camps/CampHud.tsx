@@ -19,7 +19,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { CAMPS, DAY_LENGTH_S, ITEMS } from '@lodestone/contracts';
 import { DEBUG } from '../../config';
-import { isTextTarget } from '../../input/useKeyboard';
+import { notGameKey } from '../../input/useKeyboard';
 import { eFree } from '../../input/interact';
 import { localPlayer, worldClock } from '../../state/live';
 import { emitSound } from '../../audio/bridge';
@@ -32,6 +32,13 @@ import { campGhost, kitCount, updateGhost } from './ghost';
 import { ensureCampHook } from './link';
 import { distTo, facingRot, footprint } from './placement';
 import { pruneCampNotes, pushCampNote, safeByFire, useCamps } from './store';
+import { trackPanel } from '../../input/panelStack';
+
+// Esc closes the top one (input/panelStack.ts): placing a piece, the camp menu, a chest, the signpost name box.
+trackPanel(useCamps, (s) => !!s.placing, 'camp-placing', () => stopPlacing());
+trackPanel(useCamps, (s) => !!s.menu, 'camp-menu', () => useCamps.setState({ menu: false }));
+trackPanel(useCamps, (s) => !!s.chest, 'camp-chest', () => useCamps.setState({ chest: null }));
+trackPanel(useCamps, (s) => !!s.labeling, 'camp-label', () => useCamps.setState({ labeling: null }));
 
 const USE_M = 2.4; // from the footprint's edge
 const HOLD_MS = 800;
@@ -382,7 +389,7 @@ function Prompt() {
       }
     }, 50);
     const onDown = (e: KeyboardEvent) => {
-      if (e.code !== 'KeyE' || e.repeat || isTextTarget(e.target)) return;
+      if (e.code !== 'KeyE' || e.repeat || notGameKey(e)) return;
       const target = current();
       // A piece you can't use (someone else's bedroll, a locked chest) shows a line, not an "[E]": E stays free.
       if (!target || !target.label.startsWith('[E]')) return;
@@ -455,25 +462,15 @@ function useCampKeys(): void {
   useEffect(() => {
     let lastWheel = 0;
     const onKey = (e: KeyboardEvent) => {
-      if (isTextTarget(e.target) || e.repeat) return;
+      if (notGameKey(e) || e.repeat) return;
       const s = useCamps.getState();
       if (s.placing) {
-        if (e.code === 'Escape') {
-          e.preventDefault();
-          e.stopImmediatePropagation();
-          stopPlacing();
-          return;
-        }
         if (e.code === 'KeyR') {
           e.stopImmediatePropagation(); // not the drink key while placing
           turnGhost(1);
           emitSound('ui_click');
           return;
         }
-      }
-      if (e.code === 'Escape' && (s.chest || s.menu)) {
-        useCamps.setState({ chest: null, menu: false });
-        return;
       }
       if (e.code === 'KeyP' && !e.ctrlKey && !e.metaKey) {
         if (s.placing) stopPlacing();

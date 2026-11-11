@@ -6,8 +6,9 @@
 // this row like the others).
 
 import { useEffect, useRef, useState } from 'react';
-import { isTextTarget } from '../../input/useKeyboard';
+import { notGameKey } from '../../input/useKeyboard';
 import { lookRouter } from '../../input/lookRouter';
+import { hidePanel, showPanel } from '../../input/panelStack';
 import { clampCursor, pickSector, sectorCenter, WHEEL } from './emotes';
 import { emoteById } from './emotes';
 import { ensureEmoteHook, lastEmoteId, playEmote, useEmoteToast } from './link';
@@ -51,6 +52,7 @@ export function EmoteWheel() {
     const close = (play: boolean) => {
       if (!s.open) return;
       s.open = false;
+      hidePanel('emote-wheel');
       if (lookRouter.sink === move) lookRouter.sink = null;
       setOpen(false);
       if (!play) return;
@@ -61,11 +63,7 @@ export function EmoteWheel() {
       }
     };
     const onDown = (e: KeyboardEvent) => {
-      if (e.code === 'Escape' && s.open && !isTextTarget(e.target)) {
-        close(false);
-        return;
-      }
-      if (e.code !== EMOTE_KEY || e.repeat || e.ctrlKey || e.metaKey || e.altKey || isTextTarget(e.target)) return;
+      if (e.code !== EMOTE_KEY || e.repeat || e.ctrlKey || e.metaKey || e.altKey || notGameKey(e)) return;
       if (s.open || panelOpen() || photoActive()) return;
       s.open = true;
       s.at = performance.now();
@@ -73,6 +71,7 @@ export function EmoteWheel() {
       s.sel = -1;
       setSel(-1);
       setOpen(true);
+      showPanel('emote-wheel', () => close(false)); // Esc cancels the wheel (input/panelStack.ts)
       lookRouter.sink = move;
     };
     const onUp = (e: KeyboardEvent) => {

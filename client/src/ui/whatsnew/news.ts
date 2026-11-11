@@ -24,6 +24,26 @@ export const SEEN_KEY = 'lodestone_whatsnew_seen';
 /** At most this many entries in the "since you last played" panel. */
 export const MAX_SHOWN = 8;
 
+/** After the world is up, once the arrival cards are done (at most MAX_WAIT_MS for those). */
+export const SHOW_AFTER_MS = 2500;
+export const MAX_WAIT_MS = 25000;
+/** Playtest 2 polish: the card waits until you have stood still this long (it came up mid-walk)... */
+export const STILL_MS = 1200;
+/** ...for at most this long after the world is up. */
+export const MOVING_MAX_WAIT_MS = 180000;
+
+/**
+ * Whether the welcome / What's new card may come up now: never over a
+ * panel; after the arrival cards, the menu and being downed (or after
+ * MAX_WAIT_MS of them); and only once you stand still (or after
+ * MOVING_MAX_WAIT_MS of walking), so it never stops a walk.
+ */
+export function cardMayShow(s: { sinceReadyMs: number; panelUp: boolean; busy: boolean; stillMs: number }): boolean {
+  if (s.sinceReadyMs < SHOW_AFTER_MS || s.panelUp) return false;
+  if (s.busy && s.sinceReadyMs < MAX_WAIT_MS) return false;
+  return s.stillMs >= STILL_MS || s.sinceReadyMs >= MOVING_MAX_WAIT_MS;
+}
+
 const ID = /^[a-z0-9][a-z0-9._-]{0,63}$/;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 

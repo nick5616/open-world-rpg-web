@@ -1,5 +1,18 @@
-import { describe, expect, it } from 'vitest';
-import { LookSpikeFilter } from './useMouseLook';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { blocksContextMenu, LookSpikeFilter } from './useMouseLook';
+
+describe('the right-click menu (playtest 2 polish)', () => {
+  afterEach(() => vi.unstubAllGlobals());
+  it('is off over the game view and while the mouse is captured, on in chat, text boxes and panels', () => {
+    vi.stubGlobal('document', { pointerLockElement: null });
+    expect(blocksContextMenu({ tagName: 'CANVAS' } as unknown as EventTarget)).toBe(true);
+    expect(blocksContextMenu({ tagName: 'INPUT' } as unknown as EventTarget)).toBe(false);
+    expect(blocksContextMenu({ tagName: 'DIV' } as unknown as EventTarget)).toBe(false);
+    expect(blocksContextMenu(null)).toBe(false);
+    vi.stubGlobal('document', { pointerLockElement: {} });
+    expect(blocksContextMenu({ tagName: 'DIV' } as unknown as EventTarget)).toBe(true);
+  });
+});
 
 const run = (deltas: [number, number][]) => {
   const f = new LookSpikeFilter();

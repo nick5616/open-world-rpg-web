@@ -7,7 +7,7 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 import { COMBAT } from '@lodestone/contracts';
 import { DEBUG } from '../../config';
-import { isTextTarget } from '../../input/useKeyboard';
+import { notGameKey } from '../../input/useKeyboard';
 import { eFree } from '../../input/interact';
 import { localPlayer } from '../../state/live';
 import { useCombatHud } from '../../combat/store';
@@ -18,6 +18,10 @@ import { useNetStore } from '../../net/netStore';
 import { learnable, nextTechnique, skillLevel, statsAt, upcoming } from './gains';
 import { installProgressionDebug } from './dev';
 import { FANFARE_MS, isAttuned, pruneProgression, setPanelOpen, useProgression, type Notice } from './store';
+import { trackPanel } from '../../input/panelStack';
+
+// Esc closes the character panel when it is the top panel (input/panelStack.ts).
+trackPanel(useProgression, (s) => s.panelOpen, 'character', () => setPanelOpen(false));
 import { towerPrompt, type TowerPrompt, type TowerLike } from './towerPrompt';
 import { useIntro } from '../intro/queue';
 import { openSkillScreen } from '../skills/store';
@@ -330,12 +334,10 @@ function CharacterPanel() {
 function useProgressionKeys(prompt: TowerPrompt | null) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (isTextTarget(e.target) || e.repeat) return;
+      if (notGameKey(e) || e.repeat) return;
       if (e.code === 'KeyC' && !e.ctrlKey && !e.metaKey) {
         setPanelOpen(!useProgression.getState().panelOpen);
         if (useProgression.getState().panelOpen && document.pointerLockElement) document.exitPointerLock();
-      } else if (e.code === 'Escape' && useProgression.getState().panelOpen) {
-        setPanelOpen(false);
       } else if (e.code === 'KeyE' && prompt?.kind === 'attune' && eFree('tower')) {
         useProgression.getState().actions?.attune(prompt.site);
       }
