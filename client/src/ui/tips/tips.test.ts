@@ -1,7 +1,7 @@
 // Playtest 2 onboarding: when tips show, once per character, and the cliff probe.
 
 import { describe, expect, it } from 'vitest';
-import { cliffAhead, clearSeen, forwardOf, IDLE_CONTEXT, loadSeen, nextTip, relevant, saveSeen, setTipsEnabled, settled, TIP_GAP_S, TIP_SHOW_S, TIPS, tipsEnabled, type KV, type TipContext, type TipId } from './tips';
+import { cliffAhead, clearSeen, forwardOf, IDLE_CONTEXT, loadSeen, nextTip, relevant, saveSeen, setTipsEnabled, settled, TIP_GAP_S, TIP_SHOW_S, TIP_WITHDRAW_S, TIPS, tipsEnabled, withdrawForCombat, type KV, type TipContext, type TipId } from './tips';
 
 class MemKV implements KV {
   m = new Map<string, string>();
@@ -53,6 +53,28 @@ describe('which tip', () => {
     expect(nextTip(ctx({ nearPerson: true }), seen, TIP_GAP_S - 1)).toBeNull();
     expect(nextTip(ctx({ enemyNear: true }), seen, 0.1)).toBe('fight');
     expect(nextTip(ctx({ health: 0.2, enemyNear: true }), seen, 0.1)).toBe('heal');
+  });
+
+  it('waits until out of combat, except the fight tip before you are hit (playtest 2 co-op)', () => {
+    const seen = new Set<TipId>(['look']);
+    // A boss bar is up (or you are downed), not yet hit: only the fight tip.
+    expect(nextTip(ctx({ inCombat: true, questTracked: true }), seen, 99)).toBeNull();
+    expect(nextTip(ctx({ inCombat: true, enemyNear: true }), seen, 99)).toBe('fight');
+    // Hit: nothing at all, not even the fight or heal tip.
+    expect(nextTip(ctx({ inCombat: true, hurt: true, enemyNear: true }), seen, 99)).toBeNull();
+    expect(nextTip(ctx({ inCombat: true, hurt: true, health: 0.2 }), seen, 99)).toBeNull();
+    expect(nextTip(ctx({ inCombat: true, hurt: true, night: true, nearPerson: true }), seen, 99)).toBeNull();
+    // Out of combat again: they come.
+    expect(nextTip(ctx({ health: 0.2 }), seen, 99)).toBe('heal');
+    expect(nextTip(ctx({ night: true }), seen, 99)).toBe('night');
+  });
+
+  it('a fresh non-urgent tip steps aside when a fight starts', () => {
+    expect(withdrawForCombat('night', ctx({ inCombat: true }), 1)).toBe(true);
+    expect(withdrawForCombat('night', ctx({ inCombat: true }), TIP_WITHDRAW_S + 0.5)).toBe(false); // already read
+    expect(withdrawForCombat('night', ctx(), 1)).toBe(false);
+    expect(withdrawForCombat('fight', ctx({ inCombat: true }), 1)).toBe(false);
+    expect(withdrawForCombat('heal', ctx({ inCombat: true }), 1)).toBe(false);
   });
 
   it('never while a panel, the menu or chat is up', () => {
