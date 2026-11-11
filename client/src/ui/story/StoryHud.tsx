@@ -17,6 +17,7 @@ import { FINALE, memberLine, roman, secsLeft } from './events';
 import { closeEnding, endCinematic, pruneStory, reviveTarget, useStory } from './store';
 import { ensureStoryHook } from './link';
 import { creditRoll } from './credits';
+import { skipCurrentIntro, useIntro } from '../intro/queue';
 
 const GOLD = '#ffd166';
 const SERIF = '"Fraunces", Georgia, serif';
@@ -141,8 +142,17 @@ function Cinematic() {
   const now = useNow(100, !!c);
   useEffect(() => {
     if (!c) return;
+    // A region card (arriving in the Verdant Downs) would sit on the Hush's own: none while it plays.
+    const skip = () => {
+      if (useIntro.getState().current) skipCurrentIntro();
+    };
+    skip();
+    const iv = setInterval(skip, 150);
     const id = setTimeout(() => endCinematic(), c.ms + 600);
-    return () => clearTimeout(id);
+    return () => {
+      clearTimeout(id);
+      clearInterval(iv);
+    };
   }, [c]);
   if (!c) return null;
   const t = now - c.at;
@@ -316,7 +326,7 @@ function ReviveSelf() {
   if (!until || !downed) return null;
   const being = reviving && reviving.target === self;
   return (
-    <div data-testid="revive-self" style={{ position: 'fixed', left: '50%', top: '64%', transform: 'translateX(-50%)', zIndex: 31, color: '#ffe9b0', font: '600 15px system-ui, sans-serif', textShadow: '0 1px 3px #000', textAlign: 'center', pointerEvents: 'none' }}>
+    <div data-testid="revive-self" style={{ position: 'fixed', left: '50%', top: '72%', transform: 'translateX(-50%)', zIndex: 31, color: '#ffe9b0', font: '600 15px system-ui, sans-serif', textShadow: '0 1px 3px #000', textAlign: 'center', pointerEvents: 'none' }}>
       {being ? 'A friend is raising you…' : `A friend can raise you: they hold E beside you (${secsLeft(until - performance.now())})`}
       <div style={{ fontWeight: 400, fontSize: 13, opacity: 0.8 }}>Space: respawn now</div>
     </div>

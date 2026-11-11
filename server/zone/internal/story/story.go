@@ -1,5 +1,5 @@
 // Package story is the main questline, "The Last Song" (playtest 2, CR 035;
-// docs/decisions/0034-main-story.md): six acts that take a character from the
+// docs/decisions/0024-main-story.md): six acts that take a character from the
 // Haven town to the Heartfall, where the Hush waits. Pure: no I/O, clocks or
 // goroutines. The places are world-global (resolved once per zone from the
 // towns buffer, the atlas, the vault plans and the terrain by

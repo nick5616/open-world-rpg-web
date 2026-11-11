@@ -27,6 +27,7 @@ export interface Downed {
 
 /** "a"/"an" + name. */
 function article(name: string): string {
+  if (/^the\s/i.test(name)) return name; // a named one: "The Hush", "The Starless Sovereign"
   return /^[aeiou]/i.test(name) ? `an ${name}` : `a ${name}`;
 }
 

@@ -505,6 +505,7 @@ func (s *Server) storyMaybeStart(sess *session) {
 	s.storyIntro(sess, n)
 	s.sendQuestLog(sess)
 	s.saveQuests(sess)
+	s.sendStorySync(sess)
 }
 
 // storyIntro sends an act's title card (the discovery intro style).

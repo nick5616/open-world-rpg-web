@@ -66,7 +66,7 @@ func (s *Server) devStory(sess *session, sub, target int) (int32, string) {
 		return devOK("act %d (%s), step %d: %s", act, story.ActList[act-1].Title, step, q.Steps[step].Text)
 	case DevStoryHeartfall:
 		hf := p.Heartfall
-		x, z := hf.X, hf.Z+hf.R+14
+		x, z := hf.X, hf.Z+hf.R-6 // inside the arena: the reach step and the arming
 		s.Teleport(e, movement.Vec3{X: x, Y: s.cfg.Ground.HeightAt(x, z) + 0.5, Z: z})
 		return devOK("the Heartfall (%.0f, %.0f), %s", hf.X, hf.Z, hf.Region)
 	case DevStoryWin:
