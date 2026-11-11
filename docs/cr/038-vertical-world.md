@@ -20,7 +20,28 @@ This CR is the **foundation**: the three new layers, generated from the seed, wa
 - Towns buffer: prop kind 31 `activity` (sky-town squares).
 - Exports `vertical_build`, `layer_tile`, `layer_height` (ABI version unchanged: additive).
 
-(Server, movement constants, Events and Interact: see "Server" below, filled in with the zone work.)
+- Constants v8 (`contracts/constants.yaml`): `UPDRAFT_MAX_LIFT` 10 -> 20 (sky lifts are 18 m/s), new `TERMINAL_FALL_SPEED` 54, new `UPDRAFT_FREE_LIFT` 8 (gliding costs no stamina in an updraft at least this strong, and anywhere in the sky band over an archipelago: `movement.FreeGlider` / `UpdraftField.freeGlideAt`). Movement goldens regenerated; the vertical ground has its own movement golden set (`client/src/sim/golden/vertical.ts`, `server/pkg/movement/vertical_golden_test.go`).
+- Events 1700 `fall_damage`, 1701 `lava`, 1702 `palace_door` (hook), 1703 `activity_spot` (hook); 1704-1719 reserved (`contracts/events.md`). Interact 150 `palace`, 151 `activity` (hooks). Event 901 (area level) `y` = the layer. Mount whistle refusal reasons 4 (underground) and 11 (sky).
+- Difficulty store: layered areas reuse the existing table (`cell_z = layer * 16 + z`): no migration.
+- No protocol or snapshot format change; no database migration.
+
+## Server
+
+`server/zone/README.md` "Vertical world (playtest 2, CR 038)" has the details. In short:
+
+- **Ground**: `server/pkg/vertical.Ground` is the line-for-line Go twin of the TS `VerticalGroundCore` (golden vectors from `worldgen/golden/golden.json`); `worldhost.CaveTerrain.WithVertical` wraps the cave ground with it (pure Go collision from cached LOD 0 layer tiles, a wasm `layer_height` on a cache miss, background tile builds fed by interest). `CaveTerrain.LayerAt` gives each entity's layer.
+- **Wind**: the descriptor's columns and the free sky glide join the step's updraft field in the zone (`night.go`) and in the client's prediction (`sim/stepEnv.setVerticalUpdrafts`, `sim/verticalWind.ts`).
+- **3D interest**: entities on different layers more than 80 m apart vertically are not in each other's snapshots (party exempt). Atlas-less worlds (the scale gate) have no vertical world: `LODESTONE_WIRE_DIGEST` unchanged (`docs/evidence/pt2-vertical-bench.txt`).
+- **Fall damage** (server-authoritative, none into swimmable water, gliding, climbing, dashing or riding: (v - 18) x 3.2 % of max health), **lava** (35 %/s).
+- **Difficulty per layer**: own 256 m areas per layer with floors sky 10, Underground 6, Depths 20 (top tier). **Enemies** per layer (`combat.LayerTables`: cavern crawlers, gloom bats, crystal golems, shades, void mites; the Depths' gloamlings and greater demons of the Starless host from CR 035; sky harpies, wisps, moths), Depths kills pay like elites with 2.5x luck. **Veins** of bands 3/4 mine like cave veins.
+- **Sky towns**: townsfolk on their island, woken by 3D distance; shops, inns, boards, forges as anywhere; story, quests and content keep to base sites and surface towns, so every existing sequence stays where it was. Steeds can't be summoned underground or in the sky.
+- **Vibe explorer**: landmark filters for every new site kind and a layer filter (also in the client's Vibe tab).
+
+## Renewal and saves
+
+- `mintdb.RenewOfficial` 2 -> 3 keeps every base site and id (the vertical ones are appended), so discoveries, waypoints, quests and story progress stay valid. Characters saved within an opening's radius + 8 m (a tunnel mouth or a cenote shaft cut into the terrain) are moved to the spawn marker (`TestRenewOfficialToVertical`).
+- On login, `safeSaved` also catches a character saved where the ground is now a hole (put on the opening's rim), inside an island's rock (put on its top) or in rock with nothing under it (the spawn).
+- Local-profile save blobs carry only positions and progress keyed by stable ids: no blob migration.
 
 ## Hooks for the follow-ups
 

@@ -70,8 +70,10 @@ fn check(seed: u64) {
         assert!(b.y0 < b.y1.max(b.y2), "seed {seed}: box {i} upside down");
     }
 
+    // Surface buildings (sky towns stand on their island, checked by the vertical unit tests).
+    let surface = |b: &&town::Building| b.floors > 0 && a.site(t.settlements[b.settlement as usize].site as usize).layer == 0;
     // Floors stand above the ground at the building's centre and corners.
-    for b in t.buildings.iter().filter(|b| b.floors > 0) {
+    for b in t.buildings.iter().filter(surface) {
         for (u, v) in [(0.0, 0.0), (-0.95, -0.95), (0.95, -0.95), (0.95, 0.95), (-0.95, 0.95)] {
             let (lu, lv) = (u * b.hx, v * b.hz);
             let x = b.x + lu * b.c - lv * b.s;
@@ -87,7 +89,7 @@ fn check(seed: u64) {
     }
     // genVersion 2 foundations: the foundation reaches below the ground
     // everywhere under the building (no gap under a house on a slope).
-    for b in t.buildings.iter().filter(|b| b.floors > 0) {
+    for b in t.buildings.iter().filter(surface) {
         for (u, v) in [(-1.0, -1.0), (1.0, -1.0), (1.0, 1.0), (-1.0, 1.0)] {
             let (lu, lv) = (u * b.hx, v * b.hz);
             let g = ground::collision_height(&a, b.x + lu * b.c - lv * b.s, b.z + lu * b.s + lv * b.c);

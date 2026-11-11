@@ -126,7 +126,7 @@ pub fn plan(a: &Atlas, p: &mut Plan) {
         } else {
             (seq.range(500.0, WORLD - 500.0), seq.range(500.0, WORLD - 500.0))
         };
-        if tries % 12 == 0 && town.is_some() {
+        if tries.is_multiple_of(12) && town.is_some() {
             ti += 1; // give up on this settlement
         }
         if cx < ar + 120.0 || cz < ar + 120.0 || cx > WORLD - ar - 120.0 || cz > WORLD - ar - 120.0 {
