@@ -34,6 +34,7 @@ import { castState, remoteEvent, CAST_FX_DASH, CAST_FX_GUARD } from './castState
 import { aimPoint as sharedAimPoint, aimTarget as sharedAimTarget } from './aim';
 import { dashLive } from './dashes';
 import { castHooks, gemFor } from './fx/castOrigin';
+import { weaponOfMove, weaponShotRadius, weaponShotVisual } from './fx/weaponShot';
 import type { WeaponKind } from './weapons/look';
 import { uiPanelUp } from '../input/interact';
 import { isCaptureClick } from '../input/useMouseLook';
@@ -659,7 +660,12 @@ export class CombatRuntime {
     void a;
     void color;
     // The visual starts at your off hand and is ended by update() below (hit, ground, range).
-    sh.fx = spellFx.projectile(s.spell ?? null, sh.x, sh.y, sh.z, sh.vx, sh.vy, sh.vz, gravity, Math.max(0.12, s.shot !== undefined ? Math.min(radius, 0.4) : radius), range / Math.max(1, speed), { local: true, explode: aoe, pierce, spread, kind: 'arrow', homing: !!hp });
+    // Playtest 2 shared basic attacks: a weapon's shot (wand / staff bolt, arrow) draws as weaponShot.ts
+    // says, exactly as everyone else draws it from Event 214 (engine.remoteMove).
+    const wk = !s.spell && s.move ? weaponOfMove(s.move.id) : null;
+    const visual = wk ? weaponShotVisual(wk, gemFor('self')) : undefined;
+    const drawR = wk ? weaponShotRadius(wk, radius) : radius;
+    sh.fx = spellFx.projectile(s.spell ?? null, sh.x, sh.y, sh.z, sh.vx, sh.vy, sh.vz, gravity, Math.max(0.12, s.shot !== undefined ? Math.min(drawR, 0.4) : drawR), range / Math.max(1, speed), { local: true, explode: aoe, pierce, spread, kind: 'arrow', homing: !!hp, visual });
   }
 
   /** CR 020: one shared 1/60 s homing step for a seeking shot (acquire, steer, move). */

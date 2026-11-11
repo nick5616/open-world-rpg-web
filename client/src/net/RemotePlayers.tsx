@@ -115,7 +115,7 @@ export function RemotePlayers({ session }: { session: ZoneSession }) {
         group.add(a.root);
       }
       // CR 022: their caster record (drawn look, casting bit, interpolation delay), then the pose from it.
-      castState.activity(v.id, v.activity, v.yaw, v.pitch, v.delayMs, now, spellFx);
+      castState.activity(v.id, v.activity, v.yaw, v.pitch, v.delayMs, now, spellFx, v.speed);
       followCaster(a.anim, castState.peek(v.id), a.weaponKind);
       followEmote(a.anim, emoteOf(v.id)); // playtest 2: emotes and the fishing pose (Event 1090, ui/emotes)
       followMusic(a.anim, takeNoteHits(v.id, now)); // CR 028: their notes strum, strike and blow (Event 1120, ui/music)
