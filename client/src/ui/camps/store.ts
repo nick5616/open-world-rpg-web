@@ -8,8 +8,9 @@
 import { create } from 'zustand';
 import type { Event as ZoneEvent } from '@lodestone/contracts';
 import { CAMPS } from '@lodestone/contracts';
+import { missingText } from '../build/defs';
 import { CampSet, campRuntime, isSolid, pieceDef } from './collide';
-import { CAMP_EV, CAMP_REFUSAL, decodeArea, decodeChest, decodeMine, decodePiece, decodeRemoved, decodeRested, noteText, PIECE, type CampMine, type CampPiece, type ChestView, type RestedInfo } from './events';
+import { BUILD_EV, CAMP_EV, CAMP_REFUSAL, decodeBuildInfo, decodeBuildMissing, decodeArea, decodeChest, decodeMine, decodePiece, decodeRemoved, decodeRested, noteText, PIECE, type BuildInfo, type BuildMissing, type CampMine, type CampPiece, type ChestView, type RestedInfo } from './events';
 
 export interface CampNote {
   id: number;
@@ -19,7 +20,12 @@ export interface CampNote {
 }
 
 export interface CampActions {
-  place(kind: number, rot: number, x: number, z: number): void;
+  /** `y`: a building piece's height (m) for the zone to check against its sockets; null for camp pieces and a first foundation. */
+  place(kind: number, rot: number, x: number, z: number, y?: number | null): void;
+  repair(id: number): void;
+  home(): void;
+  share(on: boolean): void;
+  buildSync(): void;
   pickup(id: number): void;
   use(id: number): void;
   fuel(id: number, n?: number): void;
@@ -38,7 +44,18 @@ export interface Placing {
   dist: number;
 }
 
+/** Build mode (CR 041, ui/build): the piece in hand and its turn (quarter turns: 0, 2, 4, 6). */
+export interface Building {
+  kind: number;
+  rot: number;
+}
+
 export interface CampState {
+  /** CR 041: your base summary (Event 1820), what the last refusal was missing (1821), build mode, the build menu. */
+  build: BuildInfo | null;
+  missing: BuildMissing | null;
+  building: Building | null;
+  buildMenu: boolean;
   pieces: Record<number, CampPiece>;
   mine: CampMine;
   chest: ChestView | null;
@@ -56,7 +73,7 @@ let noteId = 1;
 
 export const emptyMine = (): CampMine => ({ pieces: [], markers: [], spawn: null, max: CAMPS.limits.maxPieces, restedS: 0 });
 
-const initial = (): Omit<CampState, 'actions'> => ({ pieces: {}, mine: emptyMine(), chest: null, rested: null, notes: [], placing: null, menu: false, labeling: null, selfId: 0 });
+const initial = (): Omit<CampState, 'actions'> => ({ build: null, missing: null, building: null, buildMenu: false, pieces: {}, mine: emptyMine(), chest: null, rested: null, notes: [], placing: null, menu: false, labeling: null, selfId: 0 });
 
 export const useCamps = create<CampState>(() => ({ ...initial(), actions: null }));
 
@@ -88,7 +105,14 @@ export function reduceCampEvent(s: Omit<CampState, 'actions'>, e: ZoneEvent, now
       if (e.value === 2 && p.mine) out.notes = [...s.notes, note('removed', `The wilds took your ${pieceDef(p.kind)?.name.toLowerCase() ?? 'piece'}`, now)];
       return out;
     }
+    case BUILD_EV.info:
+      return { build: decodeBuildInfo(e) };
+    case BUILD_EV.missing: {
+      const m = decodeBuildMissing(e);
+      return { missing: m, notes: [...s.notes, note('refused', missingText(m.items.map((i) => ({ item: i.item, need: i.qty, have: i.have }))) || CAMP_REFUSAL[31], now)] };
+    }
     case CAMP_EV.refused:
+      if (e.value === 31) return { notes: s.notes }; // Event 1821 names what is missing
       return { notes: [...s.notes, note('refused', CAMP_REFUSAL[e.value] ?? `Refused (${e.value})`, now)] };
     case CAMP_EV.chest: {
       const c = decodeChest(e);
@@ -114,16 +138,16 @@ let lastSolidSig = '';
 export function syncSolid(pieces: Record<number, CampPiece>): void {
   const solid = Object.values(pieces).filter((p) => isSolid(p.kind));
   const sig = solid
-    .map((p) => p.id)
-    .sort((a, b) => a - b)
+    .map((p) => `${p.id}:${p.state}`)
+    .sort()
     .join(',');
   if (sig === lastSolidSig) return;
   lastSolidSig = sig;
-  campRuntime.set = new CampSet(solid.map((p) => ({ id: p.id, kind: p.kind, rot: p.rot, x: p.x, y: p.y, z: p.z })));
+  campRuntime.set = new CampSet(solid.map((p) => ({ id: p.id, kind: p.kind, rot: p.rot, x: p.x, y: p.y, z: p.z, state: p.state })));
 }
 
 export function applyCampEvent(e: ZoneEvent): void {
-  if (e.kind < 1100 || e.kind > 1119) return;
+  if ((e.kind < 1100 || e.kind > 1119) && (e.kind < 1820 || e.kind > 1839)) return;
   const s = useCamps.getState();
   const patch = reduceCampEvent(s, e);
   if (!patch) return;

@@ -17,8 +17,14 @@ export const CAMP_EV = {
   note: 1107,
 } as const;
 
+/** CR 041 base building: Events 1820-1839. */
+export const BUILD_EV = { info: 1820, missing: 1821 } as const;
+
 export const CAMP_INTERACT = 90;
-export const CAMP_ACT = { place: 1, pickup: 2, use: 3, fuel: 4, put: 5, take: 6, label: 7, lock: 8, dev: 9, sync: 10 } as const;
+export const CAMP_ACT = { place: 1, pickup: 2, use: 3, fuel: 4, put: 5, take: 6, label: 7, lock: 8, dev: 9, sync: 10, repair: 11, home: 12, share: 13, buildSync: 14 } as const;
+
+/** Interact 90/1 for a building kind: `arg` = height cm + this (0: the zone picks a foundation's height). */
+export const BUILD_Y_BIAS = 1048576;
 
 /** Refusal texts (Event 1103 value; server/pkg/camps Refuse*). */
 export const CAMP_REFUSAL: Record<number, string> = {
@@ -45,6 +51,18 @@ export const CAMP_REFUSAL: Record<number, string> = {
   21: 'You cannot rest right after a fight',
   22: 'No camps here',
   23: 'Sign in to keep items in a chest (local profiles keep them in the pack)',
+  // CR 041 base building
+  24: 'Not on the build grid',
+  25: 'Not inside a ruin, shrine or camp',
+  26: 'Not on a road',
+  27: 'Too high above the ground',
+  28: 'Nothing to rest on or hang from',
+  29: 'You have placed as many pieces as you may',
+  30: 'This stretch of land cannot carry any more pieces',
+  31: 'Missing materials',
+  32: 'Other pieces rest on it',
+  33: 'You have no bed to go home to (rest in one first)',
+  34: 'Too soon: wait a little',
 };
 
 export interface CampPiece {
@@ -67,10 +85,17 @@ export interface CampPiece {
   used: number;
   owner: string;
   label: string;
+  /** Building pieces: bit 0 open (doors, gates). */
+  state: number;
+  /** Building pieces: condition in percent (100: as new). */
+  cond: number;
+  /** You may modify it: yours, or shared by a party member (flags bit 16). */
+  modify: boolean;
 }
 
 /** Decode one piece record at offset o; returns the piece and the next offset. */
-export function decodePiece(b: Uint8Array, o: number, now = performance.now()): [CampPiece, number] {
+/** `version` 2 appends state and condition (CR 041; Event 1101 records are always version 2). */
+export function decodePiece(b: Uint8Array, o: number, now = performance.now(), version = 2): [CampPiece, number] {
   const dv = new DataView(b.buffer, b.byteOffset, b.byteLength);
   const lo = dv.getUint32(o, true);
   const hi = dv.getUint32(o + 4, true);
@@ -90,9 +115,15 @@ export function decodePiece(b: Uint8Array, o: number, now = performance.now()): 
   const nLabel = b[p++];
   const label = new TextDecoder().decode(b.subarray(p, p + nLabel));
   p += nLabel;
+  let state = 0;
+  let cond = 100;
+  if (version >= 2) {
+    state = b[p++];
+    cond = b[p++];
+  }
   const burning = (fl & 8) !== 0;
   return [
-    { id, kind, rot, xCm, yCm, zCm, x: xCm / 100, y: yCm / 100, z: zCm / 100, mine: (fl & 1) !== 0, shared: (fl & 2) !== 0, party: (fl & 4) !== 0, burning, burnEnd: burning ? now + left : 0, used, owner, label },
+    { id, kind, rot, xCm, yCm, zCm, x: xCm / 100, y: yCm / 100, z: zCm / 100, mine: (fl & 1) !== 0, shared: (fl & 2) !== 0, party: (fl & 4) !== 0, burning, burnEnd: burning ? now + left : 0, used, owner, label, state, cond, modify: (fl & 16) !== 0 },
     p,
   ];
 }
@@ -101,11 +132,12 @@ export function decodePiece(b: Uint8Array, o: number, now = performance.now()): 
 export function decodeArea(e: ZoneEvent, now = performance.now()): { area: number; pieces: CampPiece[] } {
   const b = e.data;
   const dv = new DataView(b.buffer, b.byteOffset, b.byteLength);
+  const version = b[0];
   const n = dv.getUint16(5, true);
   const pieces: CampPiece[] = [];
   let o = 7;
   for (let i = 0; i < n; i++) {
-    const [p, next] = decodePiece(b, o, now);
+    const [p, next] = decodePiece(b, o, now, version);
     pieces.push(p);
     o = next;
   }
@@ -141,11 +173,35 @@ export interface RestedInfo {
   regenMult: number;
   manaRegenMult: number;
   fire: boolean;
+  /** CR 041: the bed's comfort score and tier name. */
+  comfort?: number;
+  tier?: string;
+}
+
+/** Event 1820 (CR 041): your base at a glance. */
+export interface BuildInfo {
+  pieces: number;
+  budget: number;
+  share: boolean;
+  areaUsed: number;
+  areaBudget: number;
+  comfort: { score: number; max: number; tier: string; next: { score: number; name: string } | null };
+  home: { x: number; y: number; z: number } | null;
+  homeCdMs: number;
+  hearth: { x: number; z: number; r: number } | null;
+}
+
+/** Event 1821 (CR 041): what a refused piece was missing. */
+export interface BuildMissing {
+  kind: number;
+  items: { item: string; qty: number; have: number }[];
 }
 
 const json = <T>(e: ZoneEvent): T => JSON.parse(new TextDecoder().decode(e.data)) as T;
 export const decodeMine = (e: ZoneEvent) => json<CampMine>(e);
 export const decodeChest = (e: ZoneEvent) => json<ChestView>(e);
+export const decodeBuildInfo = (e: ZoneEvent) => json<BuildInfo>(e);
+export const decodeBuildMissing = (e: ZoneEvent): BuildMissing => ({ kind: e.targetId, items: json<BuildMissing['items']>(e) });
 export const decodeRested = (e: ZoneEvent): RestedInfo | null => (e.value > 0 && e.data.length ? json<RestedInfo>(e) : null);
 export const noteText = (e: ZoneEvent) => new TextDecoder().decode(e.data);
 
@@ -153,6 +209,9 @@ export const noteText = (e: ZoneEvent) => new TextDecoder().decode(e.data);
 export function placeTarget(kind: number, rot: number, xCm: number, zCm: number): bigint {
   return BigInt(kind & 0xff) | (BigInt(rot & 7) << 8n) | (BigInt(xCm & 0xffffff) << 16n) | (BigInt(zCm & 0xffffff) << 40n);
 }
+
+/** Interact 90/1 `arg` for a building piece at height `yCm` (0 for none). */
+export const buildArg = (yCm: number | null): number => (yCm === null ? 0 : yCm + BUILD_Y_BIAS);
 
 /** Piece kind ids by key (camps.yaml order). */
 export const PIECE = {
