@@ -1,0 +1,90 @@
+{
+  "tier": "high",
+  "label": "before",
+  "when": "2026-11-17T04:12:53.676Z",
+  "forest": {
+    "frames": 381,
+    "meanMs": 10.55,
+    "p50": 10.5,
+    "p95": 13.2,
+    "p99": 14.8,
+    "calls": 355,
+    "tris": 2377376,
+    "shadowTris": 1307769,
+    "instances": 13689,
+    "grassClumps": 2754
+  },
+  "forest-trunks": {
+    "frames": 505,
+    "meanMs": 7.93,
+    "p50": 7.9,
+    "p95": 10.9,
+    "p99": 12.7,
+    "calls": 346,
+    "tris": 2376891,
+    "shadowTris": 1278682,
+    "instances": 13748,
+    "grassClumps": 2719
+  },
+  "forest-stand": {
+    "frames": 581,
+    "meanMs": 6.93,
+    "p50": 6.8,
+    "p95": 9.3,
+    "p99": 12.3,
+    "calls": 356,
+    "tris": 2372984,
+    "shadowTris": 1247331,
+    "instances": 13654,
+    "grassClumps": 2701
+  },
+  "meadow": {
+    "frames": 512,
+    "meanMs": 7.83,
+    "p50": 7.2,
+    "p95": 12.1,
+    "p99": 14.3,
+    "calls": 353,
+    "tris": 2012042,
+    "shadowTris": 744378,
+    "instances": 13500,
+    "grassClumps": 8893
+  },
+  "rocks": {
+    "frames": 626,
+    "meanMs": 6.41,
+    "p50": 5.9,
+    "p95": 9.8,
+    "p99": 11.5,
+    "calls": 338,
+    "tris": 1968155,
+    "shadowTris": 663083,
+    "instances": 14965,
+    "grassClumps": 8631
+  },
+  "rocks-mossy": {
+    "frames": 404,
+    "meanMs": 10.01,
+    "p50": 9.7,
+    "p95": 13.1,
+    "p99": 14.8,
+    "calls": 343,
+    "tris": 2028374,
+    "shadowTris": 828801,
+    "instances": 13884,
+    "grassClumps": 3454
+  },
+  "bushes": {
+    "frames": 447,
+    "meanMs": 8.97,
+    "p50": 9,
+    "p95": 11.9,
+    "p99": 14,
+    "calls": 338,
+    "tris": 2078620,
+    "shadowTris": 790116,
+    "instances": 13728,
+    "grassClumps": 8493
+  },
+  "errors": []
+}

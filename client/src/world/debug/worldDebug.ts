@@ -145,6 +145,7 @@ const handle = {
     return at;
   },
   scatterNear: (layer: number, kind: number, x: number, z: number) => worldDebug.scatter?.findNear(layer, kind, x, z) ?? null,
+  scatterBins: () => worldDebug.scatter?.binReport() ?? [],
   biomeAt: (x: number, z: number) => {
     const d = worldDebug.runtime?.data;
     if (!d) return null;

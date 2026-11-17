@@ -16,7 +16,7 @@ import { useQualityStore } from '../stores/qualityStore';
 import { getGraphics, useGraphics } from '../stores/graphics';
 import { useNightHud } from '../systems/night';
 import type { WorldRuntime } from './core/runtime';
-import { CAMERA_FAR } from './config';
+import { CAMERA_FAR, WORLD_TIERS } from './config';
 import { TerrainManager } from './terrain/terrainManager';
 import { applyManifestMeans, makeTerrainShared } from './terrain/terrainMaterial';
 import { loadTerrainTextures, terrainManifest } from './terrain/terrainTextures';
@@ -206,9 +206,10 @@ export function WorldScene({ runtime }: Props) {
   const viewDistance = g.controls.viewDistance;
   useEffect(() => {
     world.terrain.setParams({ lodSplit: wt.lodSplit, viewDistance, uploadsPerFrame: wt.uploadsPerFrame, uploadBudgetMs: wt.uploadBudgetMs, normalMaps: g.normalMaps });
+    world.scatter.setVegetation(WORLD_TIERS[g.shaderTier].vegetation);
     world.scatter.applyTier(wt);
     world.waterU.uDetail.value = wt.waterDetail ? 1 : 0;
-  }, [world, wt, viewDistance, g.normalMaps]);
+  }, [world, wt, viewDistance, g.normalMaps, g.shaderTier]);
   const { shadowCascades, shadowDistance, shadowMapSize, bloom, godRays, msaa, fxaa, spellScreen } = g;
   useEffect(() => {
     const sun = new SunShadows(world.root, camera, { cascades: shadowCascades, distance: shadowDistance, mapSize: shadowMapSize });
