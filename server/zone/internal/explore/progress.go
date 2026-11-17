@@ -113,6 +113,16 @@ func LevelForXP(xp int64) int {
 	return level
 }
 
+// KeepLevel makes a loaded character never lose a level to a curve change
+// (CR 048 raised the early levels): when the stored level is above what the
+// XP reaches, the XP is raised to that level's start.
+func (p *Progress) KeepLevel() {
+	if p.Level > LevelForXP(p.XP) {
+		p.XP = XPForLevel(p.Level)
+		p.dirty = true
+	}
+}
+
 // AddXP adds XP and recomputes the level; returns true on a level-up.
 func (p *Progress) AddXP(xp int64) bool {
 	if xp <= 0 {

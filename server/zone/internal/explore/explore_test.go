@@ -166,6 +166,23 @@ func TestFastTravelValidation(t *testing.T) {
 	}
 }
 
+func TestKeepLevelNeverDemotes(t *testing.T) {
+	p := &Progress{Level: 3, XP: 150} // saved under the old curve (level 3 at 240)
+	p.KeepLevel()
+	if p.Level != 3 || p.XP != XPForLevel(3) || LevelForXP(p.XP) != 3 {
+		t.Fatalf("level %d xp %d", p.Level, p.XP)
+	}
+	p.AddXP(1)
+	if p.Level != 3 {
+		t.Fatal("demoted on the next XP gain")
+	}
+	q := &Progress{Level: 2, XP: 500}
+	q.KeepLevel()
+	if q.XP != 500 {
+		t.Fatal("XP above the level's start is kept")
+	}
+}
+
 func TestLevelCurve(t *testing.T) {
 	for _, c := range []struct {
 		xp    int64
