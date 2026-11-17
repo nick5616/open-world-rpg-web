@@ -22,6 +22,7 @@ import { emoteOf, SELF } from '../ui/emotes/store';
 import { takeNoteHits, SELF as MUSIC_SELF } from '../ui/music/store';
 import { castState, CAST_FX_MINE } from '../combat/castState';
 import type { RemoteView } from '../net/interpolation';
+import { ownLightBits } from '../world/lights/lightStore';
 import { localActions, localPlayer, view, type MoveMode } from '../state/live';
 import { combatRuntime } from '../combat/link';
 import { useCombatHud } from '../combat/store';
@@ -107,6 +108,7 @@ export function LocalAvatar() {
     v.speed = Math.hypot(localPlayer.vel.x, localPlayer.vel.z);
     v.activity = ACTIVITY[localPlayer.mode] ?? 0;
     v.appearance = ownAppearance();
+    v.light = ownLightBits(); // CR 042: your torch in your own hand (third person)
     const hud = useCombatHud.getState();
     if (rt && hud.active) {
       v.healthPct = rt.timeline.downed ? 0 : Math.max(1, Math.round((hud.health / Math.max(1, hud.healthMax)) * 100));

@@ -10,7 +10,8 @@ package game
 //	  bits 6-9   material code (1 + index in items.yaml materials; the weapon look's code)
 //	  bits 10-12 rarity (0 common .. 7 Bitchin')
 //	  bits 13-16 gem: 1 + index in items.yaml gems of the first socketed gem (0 none)
-//	bits 51-63 zero (the value stays below 2^53: exact in JSON and JS numbers)
+//	bits 51-56 the light (CR 042, lights.go): a torch bit and the familiar id; the armor part
+//	(bits 0-50) stays below 2^51, exact in JSON and JS numbers (Event 400 "ap" is armor only)
 //
 // It is recomputed from the inventory whenever items change (applyGear),
 // never per tick; the snapshot's delta coding sends it on change and on

@@ -192,6 +192,7 @@ export function parseCombat(doc, consts) {
 
   const SPELL_TYPES = ['projectile', 'arc', 'hitscan', 'beam', 'aoe', 'domain', 'direct', 'rune', 'mobility', 'defensive', 'passive', 'summon', 'orbit'];
   const treeKeys = new Set(Object.keys(doc.trees));
+  const familiarIds = new Set();
   const spells = Object.entries(doc.spells).map(([key, s]) => {
     if (!treeKeys.has(s.tree)) fail(`spell ${key}: unknown tree ${s.tree}`);
     if (!SPELL_TYPES.includes(s.type)) fail(`spell ${key}: unknown type ${s.type}`);
@@ -284,6 +285,17 @@ export function parseCombat(doc, consts) {
       if (!sp.durationMs) fail(`spell ${key}: a summon needs durationMs`);
       sp.summon = { key: s.summon.key, count: s.summon.count ?? 1, max: s.summon.max ?? 1 };
       if (sp.summon.max > C.SUMMONS_PER_PLAYER) fail(`spell ${key}: summon.max above SUMMONS_PER_PLAYER`);
+    }
+    if (s.familiar) {
+      // CR 042: a familiar light is a defensive toggle; `id` rides in the caster's snapshot record (5 bits, 1..31).
+      const f = s.familiar;
+      if (sp.type !== 'defensive') fail(`spell ${key}: a familiar block goes on a defensive spell`);
+      if (!Number.isInteger(f.id) || f.id < 1 || f.id > 31) fail(`spell ${key}: familiar.id 1..31`);
+      if (familiarIds.has(f.id)) fail(`spell ${key}: duplicate familiar.id ${f.id}`);
+      familiarIds.add(f.id);
+      if (typeof f.kind !== 'string' || !f.kind) fail(`spell ${key}: familiar.kind`);
+      for (const k of ['upkeepPerS', 'intensity', 'range']) pos(f[k], `spell ${key} familiar.${k}`);
+      sp.familiar = { id: f.id, kind: f.kind, upkeepPerS: f.upkeepPerS, intensity: f.intensity, range: f.range };
     }
     if (s.detonate) {
       const d = s.detonate;
@@ -529,6 +541,8 @@ export interface SpellDef {
   /** CR 020 mechanics (contracts/combat.yaml spells header). */
   homing?: HomingDef; auto?: AutoDef; rain?: { radius: number; height: number }; charge?: ChargeDef; orbit?: OrbitDef; detonate?: DetonateDef;
   summon?: { key: string; count: number; max: number };
+  /** CR 042: a familiar light (type defensive): the code other players see, its look, its upkeep and light. */
+  familiar?: { id: number; kind: string; upkeepPerS: number; intensity: number; range: number };
 }
 export interface HomingDef { turnDegS: number; acquireM: number; coneDeg: number; delayMs: number; delaySteps: number; loseDeg: number }
 export interface AutoDef { rateHz: number; intervalSteps: number; manaPerShot: number; jitterDeg: number }

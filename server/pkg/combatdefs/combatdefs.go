@@ -253,6 +253,16 @@ type Spell struct {
 	Orbit    *Orbit       `json:"orbit"`
 	Detonate *Detonate    `json:"detonate"`
 	Summon   *SummonSpell `json:"summon"`
+	Familiar *Familiar    `json:"familiar"` // CR 042: a familiar light (type defensive)
+}
+
+// Familiar: a familiar light spell's block (CR 042, contracts/combat.yaml).
+type Familiar struct {
+	ID         int     `json:"id"` // 1..31: the code in the caster's snapshot record
+	Kind       string  `json:"kind"`
+	UpkeepPerS float64 `json:"upkeepPerS"`
+	Intensity  float64 `json:"intensity"`
+	Range      float64 `json:"range"`
 }
 
 // Homing: a projectile that seeks (CR 020; spellsim in the zone and client).

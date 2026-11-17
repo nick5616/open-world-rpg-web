@@ -1874,3 +1874,20 @@ Nicole's playtest-3 notes, four independent fixes, one commit each (`docs/cr/048
 **Tests**: `go test` explore, combat, combatdefs, movement, plus the game packages' night / dash / achievement / progression / explore tests; client vitest for sim, combat, ui/skills, ui/spellcards, ui/progression; `tsc`, eslint.
 
 **Gaps**: `tools/acceptance/g4.mjs` and `server/zone/cmd/nightbots` (not re-run, 11 min) still assume a level-1 demon shrugs off the starting sword, true now only at demon level 15+; a character saved at level 2-4 re-levels one level lower from its kept XP; the dash tiers and demon thresholds are first guesses to tune in play.
+
+
+## Playtest 3: torches and familiar lights ✅ (branch `pt3/lights`, CR 042)
+
+Playtest: "Add stuff to light up dark areas like a torch, and a different spell for each class of magic, like a floating glowing icicle that follows you." Details: `docs/cr/042-lights.md`.
+
+Works:
+- **Torch**: the existing `tool:torch` (6 gold at general merchants, 2 firewood at a workbench) is in the starter kit and is lit with key **8** (Interact 160). First person: its own fist and forearm in the off hand; third person and every other player: in the avatar's left hand. A warm flickering pool of light (three slow sines, 8% swing, 3% with Reduce flashing; the largest per-frame step is under 1%, tested). Burns without fuel; the water (swimming), a fall, or losing the torch puts it out (zone-checked once a second; refused while swimming).
+- **Familiar lights**: one cheap toggle spell at the root of each of the eight trees (type `defensive` with a `familiar` block, so no new spell type; 4 mana to call, free to dismiss, 2.5-3 mana/s while it burns, it fades at 0 mana): Hearth Mote (ember mote), Rime Light (spinning icicle), Dusk Lantern (violet lantern), Firefly Drift (fireflies), Static Orb (soft crackling ball), Zephyr Mote (ribbons of air), Lumen Wisp (radiant wisp), Starless Lamp (void lamp). Floats over the right shoulder, trailing a little.
+- **Replication**: the light rides in the player's snapshot record (`EntityRecord.appearance` bits 51-56, next to CR 034's armor): other players see your torch and familiar and are lit by them; late joiners, range entry and ghosts get it on first sight; nothing is sent per tick. Events 1840/1841, Interact 160.
+- **Lighting tech**: a fixed pool of PointLights (2 low / 3 medium / 4 high+ultra), created before the shader warm-up and never added or removed (the scene held 34 lights before and after the lights were lit: `__lodestoneLights()`), ranked each frame (yours first, then nearest, nothing past 48 m), plus an emissive glow (additive halo) on every source. Terrain, caves, layers and towns are all `MeshStandardMaterial`s, so they take the pooled lights unchanged. Warm-up objects for the new programs are in `warmExtras.ts`.
+- Zone: `server/zone/internal/game/lights.go`, `lights_test.go` (torch lights, replicates to an observer and a late joiner, goes out in the water, cannot be lit while swimming; familiar called, replicated, upkeep state, dismissed free at 0 mana, fades when the mana runs dry). Client: `client/src/world/lights/*.test.ts` (flicker bounds, pool ranking and sizes, the eight familiars one per school and learnable at a tree root, Event 1840/1841 into the store).
+- Dev: `/tp x z y` teleports to an exact height (the Underground), used by the evidence harness `client/src/world/lights/dev/lights-shots.ts`.
+
+Evidence (`docs/evidence/pt3-lights-*`): `cave-dark`, `cave-torch`, `cave-torch-two-familiars` (a torch and two familiars in an Underground tunnel), `cave-frost-own-view`, `familiars` (all eight in third person), `pt3-lights-run.json` (pool intensities, light count, frame time).
+
+Gaps: no ground-placed torch and no Lumen Wisp demon effect (the brief's optional items); torch and familiar state does not survive a zone hand-off (press 8 / recast); older characters have no starter torch; the 80 m+ low-LOD figure shows only a halo; the eight spell names are proposals (`pending`).
