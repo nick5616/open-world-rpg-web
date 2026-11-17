@@ -403,6 +403,10 @@ func (s *Server) drainTaken(sess *session, now time.Time) {
 				s.verticalInteract(sess, it) // CR 038: sky palace doors, sky town activity spots (vertical.go)
 				continue
 			}
+			if it.TargetKind == InteractShrine {
+				s.shrineInteract(sess, it) // CR 044: Depths demon shrines (shrine.go)
+				continue
+			}
 			if it.TargetKind == InteractStory {
 				s.storyInteract(sess, it) // CR 035: sync, catch up, revive, respawn, the vow (story.go)
 				continue

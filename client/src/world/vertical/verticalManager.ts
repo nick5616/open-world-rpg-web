@@ -70,6 +70,7 @@ export class VerticalManager {
   private readonly mips: Uint8Array[][] = [];
   private frame = 0;
   private readonly palaces: { x: number; y: number; z: number; size: number; aux: number }[];
+  private readonly shrines: { x: number; y: number; z: number; size: number; aux: number }[]; // CR 044: Depths demon shrines (Interact 153)
   private readonly activities: { x: number; y: number; z: number; id: bigint }[];
   private emittersNear: LightEmitter[] = [];
 
@@ -85,6 +86,7 @@ export class VerticalManager {
     for (const g of this.layerGroups) this.group.add(g);
     this.decos = buildDecos(this.v);
     this.palaces = this.v.decos.filter((d) => d.kind === 16);
+    this.shrines = this.v.decos.filter((d) => d.kind === 24);
     this.activities = (runtime.towns?.props ?? []).filter((p) => p.kind === 31).map((p) => ({ x: p.x, y: p.y, z: p.z, id: p.id }));
     this.decos.groups.forEach((g, i) => this.layerGroups[i].add(g));
     for (let layer = 1; layer <= 3; layer++) {
@@ -283,13 +285,18 @@ export class VerticalManager {
     }
     const heat = this.layer === LAYER_DEPTHS && this.v.chambers.some((c) => c.layer === LAYER_DEPTHS && c.lake > -9000 && (feet.x - c.x) ** 2 + (feet.z - c.z) ** 2 < (Math.max(c.rx, c.rz) * c.lakeE + 25) ** 2);
     // The follow-ups' doors: a sky palace's gate, a sky town's activity spot.
-    let use: { kind: 150 | 151; id: bigint; label: string } | null = null;
+    let use: { kind: 150 | 151 | 153; id: bigint; label: string } | null = null;
     if (this.layer === LAYER_SKY) {
       for (const d of this.palaces) {
         if ((feet.x - d.x) ** 2 + (feet.z - d.z) ** 2 < (d.size + 30) ** 2 && Math.abs(feet.y - d.y) < 40) use = { kind: 150, id: BigInt(d.aux), label: 'The palace doors' };
       }
       for (const p of this.activities) {
         if ((feet.x - p.x) ** 2 + (feet.z - p.z) ** 2 < 36 && Math.abs(feet.y - p.y) < 4) use = { kind: 151, id: p.id, label: 'The challenge stand' };
+      }
+    }
+    if (this.layer === LAYER_DEPTHS) {
+      for (const d of this.shrines) {
+        if ((feet.x - d.x) ** 2 + (feet.z - d.z) ** 2 < (d.size + 9) ** 2 && Math.abs(feet.y - d.y) < 8) use = { kind: 153, id: BigInt(d.aux), label: 'Cleanse the demon shrine' };
       }
     }
     const s = useVerticalHud.getState();

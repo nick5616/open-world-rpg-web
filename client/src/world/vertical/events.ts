@@ -6,7 +6,7 @@
 import type { Event as ZoneEvent } from '@lodestone/contracts';
 import { useNightHud } from '../../systems/night';
 
-export const VERTICAL_EV = { fallDamage: 1700, lava: 1701, palaceDoor: 1702, activity: 1703 } as const;
+export const VERTICAL_EV = { fallDamage: 1700, lava: 1701, palaceDoor: 1702, activity: 1703, shrineState: 1890, shrineReward: 1891 } as const;
 
 /** When you last landed hard / burned (the HUD flashes them). */
 export const verticalFx = { landedAt: 0, burning: false };
@@ -26,8 +26,41 @@ export function onVerticalEvent(e: ZoneEvent, me: number): void {
     case VERTICAL_EV.palaceDoor:
       hud.notice('The palace doors are sealed. Something within is waiting.', 'night', 5000);
       break;
+    case VERTICAL_EV.shrineState:
+      shrineNotice(e, hud);
+      break;
+    case VERTICAL_EV.shrineReward: {
+      const names = new TextDecoder().decode(e.data ?? new Uint8Array(0));
+      hud.notice(`The shrine's fire goes out. ${e.value} gold${names ? ` and ${names.split(',').length} piece(s) of gear` : ''}.`, 'dawn', 6000);
+      break;
+    }
     case VERTICAL_EV.activity:
       hud.notice('A challenge will be held here. Come back soon.', 'dawn', 4000);
+      break;
+  }
+}
+
+/** CR 044: a Depths demon shrine's cleansing (Event 1890; data = [wave, waves]). */
+export const SHRINE_STATE = { busy: 0, started: 1, waveDone: 2, cleansed: 3, failed: 4 } as const;
+
+export function shrineNotice(e: ZoneEvent, hud: ReturnType<typeof useNightHud.getState>): void {
+  const wave = e.data?.[0] ?? 0;
+  const waves = e.data?.[1] ?? 0;
+  switch (e.value) {
+    case SHRINE_STATE.busy:
+      hud.notice('This shrine is quiet. You have cleansed it already; come back later.', 'night', 4500);
+      break;
+    case SHRINE_STATE.started:
+      hud.notice(`The shrine flares. Wave ${wave} of ${waves}: hold the circle!`, 'danger', 4500);
+      break;
+    case SHRINE_STATE.waveDone:
+      hud.notice(`Wave ${wave} of ${waves} wakes around you.`, 'danger', 4000);
+      break;
+    case SHRINE_STATE.cleansed:
+      hud.notice('The shrine is cleansed.', 'dawn', 5000);
+      break;
+    case SHRINE_STATE.failed:
+      hud.notice('The shrine grows dark again. Nobody held the circle.', 'night', 4000);
       break;
   }
 }
