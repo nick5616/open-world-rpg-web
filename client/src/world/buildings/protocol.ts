@@ -6,7 +6,7 @@ import type { StructureMesh } from './structures';
 
 export type BuildingsIn =
   /** wasmUrl: the world's generator (WorldRuntime.wasmUrl; archived builds for older genVersions). */
-  | { type: 'init'; atlas: Uint8Array; wasmUrl: string }
+  | { type: 'init'; atlas: Uint8Array; wasmUrl: string; /** Art detail 0-2 (detail.ts). */ detail: 0 | 1 | 2 }
   | { type: 'settlement'; id: number; index: number }
   | { type: 'structure'; id: number; index: number }
   /** Find scatter to hide in the not-yet-checked chunks within `radius` of (x, z), at most `max` chunks per reply. */

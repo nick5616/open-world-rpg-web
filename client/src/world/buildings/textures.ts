@@ -135,6 +135,7 @@ function fbm(n: number, base: number, oct: number, seed: number): Float32Array {
 
 /** Periodic jittered-grid cells (Voronoi): per pixel the nearest/second distance and cell id. */
 function cells(n: number, g: number, seed: number, jitter = 0.8): { d1: Float32Array; d2: Float32Array; id: Uint16Array } {
+  const scale = n / TEX_SIZE; // distances come back in 256 px units whatever the real size
   const pts: [number, number][] = [];
   let s = seed >>> 0;
   const r = () => ((s = (Math.imul(s, 1664525) + 1013904223) >>> 0) / 4294967296);
@@ -165,8 +166,8 @@ function cells(n: number, g: number, seed: number, jitter = 0.8): { d1: Float32A
             best = jj * g + ii;
           } else if (d < b) b = d;
         }
-      d1[y * n + x] = a;
-      d2[y * n + x] = b;
+      d1[y * n + x] = a / scale;
+      d2[y * n + x] = b / scale;
       id[y * n + x] = best;
     }
   }
@@ -193,20 +194,25 @@ const sstep = (a: number, b: number, x: number) => {
  * a DataArrayTexture takes).
  */
 export function paintTownTextures(size = TEX_SIZE): Uint8Array {
-  const n = size;
-  const out = new Uint8Array(TEX_LAYERS * n * n * 4);
-  const N1 = fbm(n, 8, 4, 11);
-  const N2 = fbm(n, 16, 3, 23);
-  const NF = fbm(n, 32, 2, 37); // fine grain
-  const cobble = cells(n, 8, 5);
-  const field = cells(n, 6, 9, 0.9);
-  const flag = cells(n, 4, 13, 0.7);
+  // Painters are written in 256 px units (n); `size` (256 or 512) only sets how finely they are sampled and
+  // the noise tables' resolution: a 512 px array has the same pictures with finer grain and crisper joints.
+  const N = size;
+  const S = N / TEX_SIZE;
+  const n = TEX_SIZE;
+  const out = new Uint8Array(TEX_LAYERS * N * N * 4);
+  const N1 = fbm(N, 8, 4, 11);
+  const N2 = fbm(N, 16, 3, 23);
+  const NF = fbm(N, 32, 2, 37); // fine grain
+  const NG = fbm(N, 64, 2, 53); // finer still
+  const cobble = cells(N, 8, 5);
+  const field = cells(N, 6, 9, 0.9);
+  const flag = cells(N, 4, 13, 0.7);
   const px = (L: number, fn: (x: number, y: number, i: number) => [number, number, number, number?]) => {
-    const base = L * n * n * 4;
-    for (let y = 0; y < n; y++)
-      for (let x = 0; x < n; x++) {
-        const i = y * n + x;
-        const c = fn(x, y, i);
+    const base = L * N * N * 4;
+    for (let y = 0; y < N; y++)
+      for (let x = 0; x < N; x++) {
+        const i = y * N + x;
+        const c = fn(x / S, y / S, i);
         const o = base + i * 4;
         out[o] = clamp(c[0]);
         out[o + 1] = clamp(c[1]);
@@ -216,9 +222,12 @@ export function paintTownTextures(size = TEX_SIZE): Uint8Array {
   };
   // Shared pieces.
   const plaster = (i: number): RGB => {
-    const k = 0.88 + 0.12 * N1[i] + 0.05 * (NF[i] - 0.5);
-    const stain = sstep(0.62, 0.8, N2[i]) * 0.08;
-    return shade([232, 222, 200], k - stain);
+    // Lime wash over lath: soft trowel mottling, a pitted grain, damp stains and hairline cracks.
+    const k = 0.9 + 0.09 * N1[i] + 0.04 * (NF[i] - 0.5) + 0.04 * (NG[i] - 0.5);
+    const stain = sstep(0.62, 0.82, N2[i]) * 0.07;
+    const crack = Math.abs(N1[i] - 0.5) < 0.004 ? 0.12 : 0;
+    const wash = mix([234, 224, 202], [222, 214, 196], sstep(0.35, 0.7, N2[i]));
+    return shade(wash, k - stain - crack);
   };
   /** Wood grain along y (vertical boards) or x. */
   const grain = (x: number, y: number, i: number, base: RGB, along: 'x' | 'y', board: number): RGB => {
@@ -229,6 +238,14 @@ export function paintTownTextures(size = TEX_SIZE): Uint8Array {
     const g = Math.sin((b / n) * Math.PI * 2 * 3 + hash(bi) * 6 + NF[i] * 4) * 0.5 + 0.5;
     let k = 0.82 + 0.18 * hash(bi, 3) + 0.1 * (g - 0.5) + 0.08 * (N2[i] - 0.5);
     if (t < 0.05 || t > 0.95) k *= 0.45; // the gap between boards
+    else {
+      // a knot or two and nail heads at the board ends
+      const kx = hash(bi, 11) * 0.5 + 0.25;
+      const ky = hash(bi, 12) * n;
+      const kd = Math.hypot((t - kx) * board, (((b - ky + n * 1.5) % n) - n / 2) * 0.5);
+      if (hash(bi, 13) > 0.55 && kd < board * 0.12) k *= 0.62 + 0.3 * (kd / (board * 0.12));
+      if ((b < 6 || b > n - 6) && Math.abs(t - 0.5) < 0.12 && ((b % n) < 3 || b > n - 4)) k *= 0.5;
+    }
     return shade(base, k);
   };
   const blocks = (x: number, y: number, i: number, rows: number, cols: number, base: RGB, mortar: RGB, moss = 0): RGB => {
@@ -245,6 +262,12 @@ export function paintTownTextures(size = TEX_SIZE): Uint8Array {
     let col = shade(base, 0.82 + 0.22 * hash(id, 7) + 0.1 * (N2[i] - 0.5));
     col = mix(col, shade(col, 1.12), sstep(0.8, 0.2, fy) * 0.25); // top highlight
     if (edge < 5) col = shade(col, 0.85 + edge * 0.03);
+    // chiselled faces: lit upper edge, shaded lower edge, tooling pits and a few chipped corners
+    const ly = fy * bh;
+    if (ly < 6 && edge > 2.2) col = shade(col, 1.0 + (6 - ly) * 0.018);
+    if (bh - ly < 6) col = shade(col, 0.9 + (bh - ly) * 0.017);
+    if (NG[i] < 0.3) col = shade(col, 0.9 + NG[i] * 0.3);
+    if (hash(id, 21) > 0.9 && Math.min(fx * bw, ly) < 7 && fx < 0.2 && fy < 0.2) col = shade(col, 0.8);
     if (moss > 0) col = mix(col, [70, 96, 48], sstep(0.55, 0.75, N1[i] * 0.7 + (1 - fy) * 0.2 + N2[i] * 0.3) * moss);
     return col;
   };
@@ -313,7 +336,10 @@ export function paintTownTextures(size = TEX_SIZE): Uint8Array {
     const curve = Math.sin(tx * Math.PI);
     let k = 0.62 + 0.4 * curve + 0.08 * (N2[i] - 0.5);
     if (ty > 0.82 + 0.12 * (1 - curve)) k *= 0.55; // shadow under the next row
-    return shade([176, 86, 56], k * (0.9 + 0.2 * hash(r * 17 + Math.floor(xo / tw), 3)));
+    const base = mix([176, 86, 56], [160, 98, 64], hash(r * 17 + Math.floor(xo / tw), 5));
+    let c = shade(base, k * (0.88 + 0.24 * hash(r * 17 + Math.floor(xo / tw), 3)) * (0.96 + 0.08 * NG[i]));
+    c = mix(c, [96, 112, 66], sstep(0.66, 0.84, N1[i] * 0.6 + N2[i] * 0.4) * 0.45 * (1 - curve * 0.5)); // lichen in the troughs
+    return c;
   });
   // 9 wood shingles: rows of random-width grey-brown shingles
   px(TEX.shingle, (x, y, i) => {
@@ -333,8 +359,11 @@ export function paintTownTextures(size = TEX_SIZE): Uint8Array {
     const fx = (x - x0) / w;
     if (fx < 0.05) k *= 0.5;
     if (ty > 0.85) k *= 0.6;
-    k *= 0.75 + 0.3 * hash(r * 97 + s, 6) + 0.12 * (NF[i] - 0.5);
-    return shade([118, 100, 84], k);
+    k *= 0.75 + 0.3 * hash(r * 97 + s, 6) + 0.12 * (NF[i] - 0.5) + 0.08 * (NG[i] - 0.5);
+    // weathered: some shingles silvered, damp moss creeping up from the lower rows
+    const silver = hash(r * 97 + s, 8) > 0.7 ? 1.12 : 1;
+    const c = shade(mix([118, 100, 84], [128, 122, 112], hash(r * 97 + s, 9) * 0.6), k * silver);
+    return mix(c, [88, 104, 62], sstep(0.68, 0.86, N1[i]) * 0.35);
   });
   // 10 cobble: rounded stones, dark gaps
   px(TEX.cobble, (_x, _y, i) => {
@@ -352,24 +381,34 @@ export function paintTownTextures(size = TEX_SIZE): Uint8Array {
     c = shade(c, 1 - 0.12 * rut);
     if (NF[i] > 0.86) c = mix(c, [176, 168, 150], 0.6);
     const edge = Math.min(v, 1 - v);
-    c = shade(c, 0.8 + 0.2 * sstep(0.0, 0.12 + 0.05 * N2[(x * 7) % (n * n)], edge));
+    c = shade(c, 0.8 + 0.2 * sstep(0.0, 0.12 + 0.05 * N2[(i * 7) % (N * N)], edge));
     return c;
   });
   // 12 fieldstone foundation: irregular rounded stones in mortar
   px(TEX.fieldstone, (_x, _y, i) => {
     const e = field.d2[i] - field.d1[i];
-    if (e < 3) return shade([96, 90, 80], 0.9 + 0.2 * NF[i]);
-    return shade(mix([120, 114, 104], [146, 134, 116], hash(field.id[i], 1)), (0.75 + 0.3 * Math.min(1, e / 16)) * (0.9 + 0.15 * N2[i]));
+    if (e < 3) return shade([112, 106, 96], 0.9 + 0.2 * NF[i]);
+    return shade(mix([156, 148, 134], [182, 168, 144], hash(field.id[i], 1)), (0.75 + 0.3 * Math.min(1, e / 16)) * (0.9 + 0.15 * N2[i]));
   });
   // 13 window: wooden frame and cross, glass panes (alpha = glow mask)
   px(TEX.window, (x, y, i) => {
     const fx = x / n;
     const fy = y / n;
-    const fr = 0.11;
-    const bar = 0.035;
-    if (fx < fr || fx > 1 - fr || fy < fr || fy > 1 - fr || Math.abs(fx - 0.5) < bar || Math.abs(fy - 0.5) < bar) return [...shade([98, 70, 46], 0.8 + 0.25 * NF[i]), 0] as [number, number, number, number];
+    const fr = 0.1;
+    const bar = 0.026;
+    // two columns x three rows of leaded panes; frame and lead never emit, each pane glows a little differently
+    const gx = (fx - fr) / (1 - 2 * fr);
+    const gy = (fy - fr) / (1 - 2 * fr);
+    const lead = Math.abs(gx * 2 - Math.round(gx * 2)) * 0.5 < bar * 0.8 || Math.abs(gy * 3 - Math.round(gy * 3)) / 3 < bar * 0.8;
+    if (fx < fr || fx > 1 - fr || fy < fr || fy > 1 - fr || (lead && gx > 0 && gx < 1 && gy > 0 && gy < 1)) {
+      const inner = Math.min(fx - fr, 1 - fr - fx, fy - fr, 1 - fr - fy);
+      const bevel = fx < fr || fx > 1 - fr || fy < fr || fy > 1 - fr ? 1 : 0.6;
+      return [...shade(bevel === 1 ? [104, 74, 48] : [70, 66, 62], (0.8 + 0.25 * NF[i]) * (inner > -0.02 && inner < 0.01 ? 0.7 : 1)), 0] as [number, number, number, number];
+    }
+    const pane = Math.floor(Math.max(0, Math.min(1.999, gx * 2))) + 2 * Math.floor(Math.max(0, Math.min(2.999, gy * 3)));
     const refl = sstep(0.0, 1.0, 1 - Math.abs(fx - fy - 0.1) * 3) * 0.3;
-    return [40 + 50 * refl, 52 + 60 * refl, 66 + 70 * refl, 255];
+    const wob = 0.85 + 0.3 * hash(pane, 31);
+    return [(72 + 70 * refl) * wob, (92 + 76 * refl) * wob, (118 + 84 * refl) * wob, 150 + 105 * hash(pane, 33) * (0.6 + 0.4 * (1 - Math.abs(gy - 0.5)))];
   });
   // 14 door: vertical planks with iron straps and a ring
   px(TEX.door, (x, y, i) => {
