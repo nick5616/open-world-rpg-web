@@ -131,7 +131,9 @@ prediction and the zone.
 | `clearance.ts` | Where scatter must not stand. |
 | `textures.ts` | The procedural texture array. |
 | `townMaterial.ts` | The patched material and `geometryOf`. |
-| `npcs.ts` | Townsfolk renderer and labels. |
+| `npcs.ts` | Townsfolk renderer and labels; since CR 050 also their behaviour (work poses, looking at you, greetings, chats, reactions, bubbles). |
+| `npcLife.ts`, `npcLines.ts`, `npcGear.ts`, `npcBubbles.ts`, `smithLink.ts` | CR 050: the pure half (looks, greeting limiter, chat pairs, bubble choice, work poses, dress; vitest), the lines townsfolk say, the one-draw gear meshes, the speech bubbles, the smith/audio hand-off. |
+| `townAnimals.ts`, `animalsPlan.ts` | CR 050: chickens, dogs and cats about the towns (planned from the settlement id, four draws). |
 | `interact.ts`, `townHud.ts`, `townEvents.ts` | Target selection, the HUD/panel, Event payload decoders. |
 | `doors.ts`, `doorGround.ts`, `doorsMesh.ts` | Doors: Events 970-972 and Interact 34 (`DoorSync`), the door overlay on the movement ground, the instanced swinging leaves. |
 | `dev/doorWalk.ts`, `dev/door-acceptance.ts`, `dev/door-shots.ts`, `doorWalk.integration.test.ts` | Door walk-through prediction check vs the zone binary, its evidence run, screenshots. |

@@ -26,6 +26,7 @@ const arg = (k, d) => {
   return i >= 0 ? process.argv[i + 1] : d;
 };
 const DEV = process.argv.includes('--dev');
+const NO_ANIMALS = process.argv.includes('--no-animals');
 const PREFIX = arg('--prefix', 'pt4-lively');
 const ONLY = arg('--only', '') ? new Set(arg('--only', '').split(',')) : null;
 const want = (n) => !ONLY || ONLY.has(n);
@@ -101,6 +102,7 @@ await T(() => {
   window.__lodestone.setWeather('clear');
   window.__lodestone.setTimeOfDay(3600 * 0.45);
 });
+if (NO_ANIMALS) await T(() => window.__lodestoneTowns.setAnimals(false));
 const largest = arg('--town', null) !== null ? +arg('--town', 0) : await T(() => window.__lodestoneTowns.largestTown());
 const allTowns = await T(() => window.__lodestoneTowns.settlements());
 if (process.argv.includes('--list')) say(JSON.stringify(allTowns.map((t) => [t.index, t.name, t.size, t.npcs, Math.round(t.y)])));
@@ -221,6 +223,14 @@ if (want('bench')) {
   await standAt({ x: best.x - Math.cos(dir) * 6.5, z: best.z - Math.sin(dir) * 6.5 }, { x: best.x, y: gy + 1.2, z: best.z }, 3500);
   bench = await measure();
   say(`NPC square: ${bench.calls} draw calls (${bench.shadowCalls} in shadow passes), frame ${bench.frameMsMean} ms mean / ${bench.frameMsP95} p95 over ${bench.frames} frames`);
+  // The same view with the townsfolk hidden: what they cost on their own.
+  await T(() => window.__lodestoneTowns.setNpcs(false));
+  await sleep(500);
+  bench.withoutNpcs = await measure();
+  await T(() => window.__lodestoneTowns.setNpcs(true));
+  const l = await T(() => window.__lodestoneTowns.visibleNpcs().length);
+  bench.npcsInView = l;
+  say(`  without the townsfolk: ${bench.withoutNpcs.calls} calls (${bench.withoutNpcs.shadowCalls} shadow), frame ${bench.withoutNpcs.frameMsMean} ms; ${l} NPCs in view => NPCs cost ${bench.calls - bench.withoutNpcs.calls} calls (${bench.shadowCalls - bench.withoutNpcs.shadowCalls} shadow)`);
   fs.writeFileSync(path.join(evidence, `${PREFIX}-bench.json`), JSON.stringify({ date: new Date().toISOString(), seed: '20261108', town: town.index, view: bench }, null, 2));
 }
 if (errors.length) say(`errors:\n${errors.slice(0, 8).join('\n')}`);
