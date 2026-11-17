@@ -10807,7 +10807,12 @@
    "umbral_stalker",
    "void_maw"
   ],
-  "lord": "starless_sovereign"
+  "lord": "starless_sovereign",
+  "ordinary": {
+   "halfFrom": 8,
+   "immuneFrom": 15,
+   "halfMult": 0.5
+  }
  },
  "leveling": {
   "health": {

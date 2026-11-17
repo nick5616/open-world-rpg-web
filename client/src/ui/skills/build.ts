@@ -405,7 +405,7 @@ export function buildOverview(inp: BuildInput): BuildView {
       };
     }
     const lightKnown = [...known].some((k) => spellByKey.get(k)?.tree === 'light' && spellByKey.get(k)?.type !== 'passive');
-    const demons = gg.killsDemons ? 'Weapon kills demons (sunsteel)' : gg.stagger ? 'Weapon staggers demons (silver)' : lightKnown ? 'Only Light spells kill demons with this loadout' : 'Nothing here kills demons: forge sunsteel or learn Light';
+    const demons = gg.killsDemons ? 'Weapon kills demons (sunsteel)' : gg.stagger ? 'Weapon staggers demons (silver)' : lightKnown ? 'Only Light spells kill the strongest demons with this loadout' : `Nothing here kills level ${COMBAT.demons.ordinary.immuneFrom}+ demons: forge sunsteel or learn Light`;
 
     const main = slotView(`eq:main${l}` as EqSlot, gg.weapon);
     return {

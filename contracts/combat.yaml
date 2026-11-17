@@ -881,6 +881,13 @@ demons:
   lesser: [gloamling]
   greater: {fire: cinder_fiend, ice: rime_wraith, lightning: storm_ghoul, earth: grave_brute, wind: gale_reaver, light: void_maw, dark: umbral_stalker, void: void_maw}
   lord: starless_sovereign
+  # CR 048 (playtest 3): the sunsteel-or-Light rule is for high-level demons only. By the
+  # demon's level (the area's, when it rose): below halfFrom ordinary damage (steel, any
+  # non-Light spell) hurts them like any enemy; from halfFrom to immuneFrom - 1 it does
+  # halfMult of its damage (hits show as resisted); from immuneFrom up (the Dreadlands,
+  # tier 13+, and lords at any level) ordinary damage only wounds and regenerates, as
+  # before. Sunsteel and Light always do full, lasting damage.
+  ordinary: {halfFrom: 8, immuneFrom: 15, halfMult: 0.5}
 
 tables:
   # Spec 8: each biome, depth band and region element has its own enemy

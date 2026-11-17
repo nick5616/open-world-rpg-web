@@ -543,6 +543,12 @@ type Defs struct {
 		Lesser  []string           `json:"lesser"`
 		Greater []string           `json:"greater"`
 		Lord    string             `json:"lord"`
+		// Ordinary (CR 048): how ordinary (non-sunsteel, non-Light) damage treats a demon by level.
+		Ordinary struct {
+			HalfFrom   int     `json:"halfFrom"`
+			ImmuneFrom int     `json:"immuneFrom"`
+			HalfMult   float64 `json:"halfMult"`
+		} `json:"ordinary"`
 	} `json:"demons"`
 	// Leveling and Difficulty are playtest 1's (CR 012, decision 0021).
 	Leveling   Leveling   `json:"leveling"`

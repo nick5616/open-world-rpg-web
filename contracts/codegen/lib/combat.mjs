@@ -353,7 +353,11 @@ export function parseCombat(doc, consts) {
   for (const k of dm.lesser) if (!isDemon(k, 'lesser')) fail(`demons.lesser: ${k} is not a lesser demon`);
   for (const el of elements) if (!isDemon(dm.greater[el], 'greater')) fail(`demons.greater.${el}: not a greater demon`);
   if (!isDemon(dm.lord, 'lord')) fail(`demons.lord: ${dm.lord} is not a demon lord`);
-  const demons = { regen: dm.regen, lesser: dm.lesser, greater: elements.map((el) => dm.greater[el]), lord: dm.lord };
+  // CR 048 (playtest 3): only high-level demons shrug off ordinary damage.
+  const od = dm.ordinary ?? { halfFrom: 8, immuneFrom: 15, halfMult: 0.5 };
+  if (!(Number.isInteger(od.halfFrom) && Number.isInteger(od.immuneFrom) && od.halfFrom >= 1 && od.halfFrom <= od.immuneFrom && od.immuneFrom <= 255)) fail('demons.ordinary: integer levels 1 <= halfFrom <= immuneFrom <= 255');
+  if (!(od.halfMult > 0 && od.halfMult <= 1)) fail('demons.ordinary.halfMult: 0 < m <= 1');
+  const demons = { regen: dm.regen, lesser: dm.lesser, greater: elements.map((el) => dm.greater[el]), lord: dm.lord, ordinary: { halfFrom: od.halfFrom, immuneFrom: od.immuneFrom, halfMult: od.halfMult } };
 
   const bossTitles = doc.bosses.titles;
   const bossNames = doc.bosses.names;
@@ -561,7 +565,7 @@ export interface CombatDefs {
   affixes: AffixDef[];
   tables: { biome: string[][]; element: string[]; site: Record<string, string[]>; depth: Record<string, { extra: string[]; levelBonus: number; eliteChance: number }>; beginner: string[] };
   /** WP15: night spawn tables (greater: indexed by element). */
-  demons: { regen: Record<string, number>; lesser: string[]; greater: string[]; lord: string };
+  demons: { regen: Record<string, number>; lesser: string[]; greater: string[]; lord: string; ordinary: { halfFrom: number; immuneFrom: number; halfMult: number } };
   /** Playtest 1 (CR 012): what a character level gives. */
   leveling: LevelingDef;
   /** Playtest 1 (CR 012): discovery-stamped area difficulty. */
