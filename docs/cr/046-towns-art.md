@@ -35,7 +35,7 @@ Yard items have **no collision** (the zone knows nothing about them, like porch 
 
 ## Cost (measured, `docs/evidence/pt3-towns-after-drawcalls.txt` and the numbers in the STATUS section)
 
-Draw calls do not change: the shell, the interior and the door leaves are the same meshes, the new geometry is merged into them. The largest town (Draedmore, 40 buildings): shell 21k triangles at low (as before), 40k at medium, 61k at high; interior 12.8k / 22.5k / 29.6k. The texture array goes from 8.6 MB to 34 MB (before mips) at high; low and medium keep 256 px. Worker build time of a settlement ~25 ms -> ~150 ms on high (still off the main thread); the 512 px textures take ~4 s in the worker at startup (high only).
+Draw calls do not change: the shell, the interior and the door leaves are the same meshes, the new geometry is merged into them. The largest town (Draedmore, 40 buildings): shell 21k triangles at low (as before), 42k at medium, 64k at high; interior 12.8k / 22.5k / 29.6k. The texture array goes from 8.6 MB to 34 MB (before mips) at high; low and medium keep 256 px. Worker build time of the largest settlement is ~0.1 s at every level (off the main thread); the 512 px textures take ~4 s in the worker at startup (high only).
 
 ## Files
 

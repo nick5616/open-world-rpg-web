@@ -29,12 +29,16 @@ describe.skipIf(!hasWasm)('towns art detail levels', () => {
   it('triangle budget per level: low is the old cost, each step adds, nothing is degenerate', () => {
     const si = largest();
     const tris = (d: Detail) => {
+      const t0 = performance.now();
       const m = build(d, si);
+      const ms = Math.round(performance.now() - t0);
       for (const part of [m.shell, m.interior]) {
-        for (let i = 0; i < part.position.length; i++) expect(Number.isFinite(part.position[i])).toBe(true);
-        for (let i = 0; i < part.indexCount; i++) expect(part.index[i]).toBeLessThan(part.vertexCount);
+        let bad = 0;
+        for (let i = 0; i < part.position.length; i++) if (!Number.isFinite(part.position[i])) bad++;
+        for (let i = 0; i < part.indexCount; i++) if (part.index[i] >= part.vertexCount) bad++;
+        expect(bad).toBe(0);
       }
-      return { shell: m.shell.indexCount / 3, interior: m.interior.indexCount / 3, smoke: m.smoke.length / 3 };
+      return { shell: m.shell.indexCount / 3, interior: m.interior.indexCount / 3, smoke: m.smoke.length / 3, ms };
     };
     const lo = tris(0);
     const mid = tris(1);
