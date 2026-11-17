@@ -63,6 +63,19 @@ func (p *PGStore) LoadPosition(ctx context.Context, id string) (movement.Vec3, b
 	return movement.Vec3{X: pj.X, Y: pj.Y, Z: pj.Z}, true, nil
 }
 
+// LoadAppearance implements LookStore (CR 047): the character's stored appearance JSON.
+func (p *PGStore) LoadAppearance(ctx context.Context, id string) ([]byte, error) {
+	if !uuidRe.MatchString(id) {
+		return nil, nil
+	}
+	var raw []byte
+	err := p.Pool.QueryRow(ctx, `SELECT appearance FROM characters WHERE id = $1::uuid`, id).Scan(&raw)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	return raw, err
+}
+
 // World is the subset of a `worlds` row the zone announces and sends in
 // Welcome.
 type World struct {
