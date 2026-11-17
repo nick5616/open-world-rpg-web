@@ -28,6 +28,7 @@
 import * as THREE from 'three';
 import { DAY_LENGTH_S } from '@lodestone/contracts';
 import { liveStyle } from '../style/styles';
+import { useVerticalHud } from '../vertical/VerticalHud';
 import type { Towns } from '@lodestone/worldgen';
 import type { WorldRuntime } from '../core/runtime';
 import { worldClock } from '../../state/live';
@@ -348,6 +349,9 @@ export class TownsManager {
     this.night += (target - this.night) * Math.min(1, dt * 2);
     if (this.mats) {
       this.mats.uniforms.uNight.value = this.night;
+      // CR 043: inside a dwarven hall (the Underground layer) the town stone gets a warm fill; the sun is not there.
+      const fill = useVerticalHud.getState().layer === 2 ? 0.42 : 0;
+      this.mats.uniforms.uCaveFill.value += (fill - this.mats.uniforms.uCaveFill.value) * Math.min(1, dt * 4);
       this.mats.uniforms.uTownTime.value = (this.mats.uniforms.uTownTime.value + dt) % 1000; // flames (wrapped: float precision)
     }
     this.stream(cam);

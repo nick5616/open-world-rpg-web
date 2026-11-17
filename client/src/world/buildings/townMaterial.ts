@@ -21,7 +21,7 @@ export interface TownMaterials {
   /** Roads, plazas, paving: same shader, polygon offset over the terrain. */
   decal: THREE.MeshStandardMaterial;
   texture: THREE.DataArrayTexture;
-  uniforms: { uNight: { value: number }; uGlow: { value: number }; uTownTime: { value: number } };
+  uniforms: { uNight: { value: number }; uGlow: { value: number }; uTownTime: { value: number }; uCaveFill: { value: number } };
   dispose(): void;
 }
 
@@ -45,6 +45,7 @@ function patch(m: THREE.MeshStandardMaterial, tex: THREE.DataArrayTexture, u: To
     shader.uniforms.uNight = u.uNight;
     shader.uniforms.uGlow = u.uGlow;
     shader.uniforms.uTownTime = u.uTownTime;
+    shader.uniforms.uCaveFill = u.uCaveFill;
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', '#include <common>\nattribute vec2 aTexUv;\nattribute vec2 aLG;\nuniform float uTownTime;\nvarying vec2 vTexUv;\nvarying vec3 vTexAff;\nflat varying float vLayer;\nvarying float vGlowV;\nvarying float vFirePh;')
       .replace(
@@ -71,7 +72,7 @@ if (aLG.y > 127.5 && abs(aLG.x - ${FIRE_LAYER}) < 0.5) {
     shader.fragmentShader = shader.fragmentShader
       .replace(
         '#include <common>',
-        '#include <common>\nuniform highp sampler2DArray tTown;\nuniform float uNight;\nuniform float uGlow;\nuniform float uTownTime;\nvarying vec2 vTexUv;\nvarying vec3 vTexAff;\nflat varying float vLayer;\nvarying float vGlowV;\nvarying float vFirePh;\nvec4 townTexel;',
+        '#include <common>\nuniform highp sampler2DArray tTown;\nuniform float uNight;\nuniform float uGlow;\nuniform float uTownTime;\nuniform float uCaveFill;\nvarying vec2 vTexUv;\nvarying vec3 vTexAff;\nflat varying float vLayer;\nvarying float vGlowV;\nvarying float vFirePh;\nvec4 townTexel;',
       )
       .replace(
         '#include <map_fragment>',
@@ -95,6 +96,8 @@ diffuseColor.rgb *= townTexel.rgb;`,
       .replace(
         '#include <emissivemap_fragment>',
         `#include <emissivemap_fragment>
+// CR 043: a dwarven hall has no sun; its stone carries a warm fill of its own (baked, no light).
+totalEmissiveRadiance += diffuseColor.rgb * vec3(1.0, 0.82, 0.62) * uCaveFill;
 {
   float g = floor(vGlowV + 0.5);
   if (g > 0.5) {
@@ -109,11 +112,11 @@ diffuseColor.rgb *= townTexel.rgb;`,
 }`,
       );
   };
-  m.customProgramCacheKey = () => 'lodestone-town-v3';
+  m.customProgramCacheKey = () => 'lodestone-town-v4';
 }
 
 export function makeTownMaterials(tex: THREE.DataArrayTexture): TownMaterials {
-  const uniforms = { uNight: { value: 0 }, uGlow: { value: 1 }, uTownTime: { value: 0 } };
+  const uniforms = { uNight: { value: 0 }, uGlow: { value: 1 }, uTownTime: { value: 0 }, uCaveFill: { value: 0 } };
   const solid = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.88, metalness: 0, color: 0xffffff });
   solid.name = 'town-solid';
   patch(solid, tex, uniforms);
