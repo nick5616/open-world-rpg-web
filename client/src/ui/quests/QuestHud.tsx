@@ -20,6 +20,7 @@ import { liveMarkers } from './live';
 import { StoryJournalBar, StoryPartyLine } from '../story/StoryHud'; // CR 035
 import { dismissOffer, offerMarkers, pruneNotes, setJournalOpen, setQuestPreview, trackedQuest, useQuests } from './store';
 import { trackPanel } from '../../input/panelStack';
+import { hudActivity, NOTES_MAX_IMMERSIVE, trackerExpanded, useHudSettings } from '../../hud/immersive';
 
 // Esc closes the top one (input/panelStack.ts): the journal or a quest offer, not both at once.
 trackPanel(useQuests, (s) => s.journalOpen, 'journal', () => setJournalOpen(false));
@@ -51,15 +52,28 @@ function useTicker(ms: number): number {
   return n;
 }
 
+/** CR 052: the tracked quest's step changed (or a quest began): the tracker opens for a few seconds. */
+let stepKey = '';
+useQuests.subscribe((s) => {
+  const q = trackedQuest(s);
+  const k = q ? `${q.id}:${q.step}` : '';
+  if (k && k !== stepKey) hudActivity.stepAt = performance.now();
+  stepKey = k;
+});
+
 function Tracker() {
-  useTicker(500);
+  useTicker(250);
   const q = useQuests((s) => trackedQuest(s));
   const count = useQuests((s) => s.log.quests.length);
+  const journalOpen = useQuests((s) => s.journalOpen);
+  const immersive = useHudSettings((s) => s.immersive);
   if (!q) return null;
   const m = nearest(q);
   const inside = m && Math.hypot(m.x - localPlayer.pos.x, m.z - localPlayer.pos.z) <= (m.r ?? 0);
+  // Immersive HUD (CR 052): the card collapses to the compass diamond (and the guiding wisp) unless the step just changed, Tab is held or J is open.
+  const open = trackerExpanded({ immersive, now: performance.now(), stepAt: hudActivity.stepAt, tabHeld: hudActivity.tabHeld, journalOpen });
   return (
-    <div data-testid="quest-tracker" className="ls-quest-tracker" style={{ position: 'fixed', top: 62, right: 14, width: 'min(300px, 34vw)', pointerEvents: 'none', zIndex: 12, color: '#f1ead8', textShadow: '0 1px 3px #000, 0 0 6px rgba(0,0,0,0.7)', font: '13px/1.35 system-ui, sans-serif' }}>
+    <div data-testid="quest-tracker" data-open={open ? 'true' : 'false'} className="ls-quest-tracker" style={{ position: 'fixed', top: 62, right: 14, width: 'min(300px, 34vw)', pointerEvents: 'none', zIndex: 12, color: '#f1ead8', textShadow: '0 1px 3px #000, 0 0 6px rgba(0,0,0,0.7)', font: '13px/1.35 system-ui, sans-serif', opacity: open ? 1 : 0, transition: 'opacity 500ms ease' }}>
       <div style={{ font: '600 14px Georgia, serif', color: GOLD, letterSpacing: 0.3 }}>◆ {q.title}</div>
       <div style={{ marginTop: 2 }}>
         {q.text}
@@ -70,18 +84,21 @@ function Tracker() {
           {inside ? `You are in the marked area: ${m.label}` : `${m.label}: ${whereText(localPlayer.pos.x, localPlayer.pos.z, m)}`}
         </div>
       )}
-      <div style={{ fontSize: 11, opacity: 0.55, marginTop: 2 }}>J journal{count > 1 ? ` · ${count} quests` : ''} · M map</div>
+      <div style={{ fontSize: 11, opacity: 0.55, marginTop: 2 }}>J journal{count > 1 ? ` · ${count} quests` : ''} · M map · . guide me</div>
       <StoryPartyLine />
     </div>
   );
 }
 
 function Notes() {
-  const notes = useQuests((s) => s.notes);
+  const all = useQuests((s) => s.notes);
+  const immersive = useHudSettings((s) => s.immersive);
   useEffect(() => {
     const id = setInterval(() => pruneNotes(), 500);
     return () => clearInterval(id);
   }, []);
+  // CR 052: fewer notices; a step's news is the tracker opening, so its note is dropped.
+  const notes = immersive ? all.filter((n) => n.kind !== 'step').slice(-NOTES_MAX_IMMERSIVE) : all;
   if (!notes.length) return null;
   return (
     <div style={{ position: 'fixed', top: 168, right: 14, width: 'min(300px, 34vw)', display: 'flex', flexDirection: 'column', gap: 6, pointerEvents: 'none', zIndex: 13 }}>

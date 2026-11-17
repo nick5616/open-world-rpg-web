@@ -40,6 +40,9 @@ export const BELLS: Record<string, BellSpec> = {
   // a cracked bronze bell somewhere about G3, flat; eerie, not churchly
   hollow_bell: { prime: 188, seconds: 7, sustain: 0.9, beat: 1.3, strike: 0.5, lowpass: 5200 },
   // the Hush's toll: an octave and a fourth lower, slower, bigger
+  // CR 052: the guiding wisp's chime (a small glass bell, short) and the heartbeat of low health (a soft low thud)
+  wisp_chime: { prime: 1175, seconds: 2.4, sustain: 0.32, beat: 0.9, strike: 0.04, lowpass: 7500 },
+  heartbeat: { prime: 58, seconds: 0.9, sustain: 0.07, beat: 0.15, strike: 0.12, lowpass: 380 },
   hush_toll: { prime: 70, seconds: 10, sustain: 1.6, beat: 0.6, strike: 0.35, lowpass: 2600 },
 };
 
@@ -78,7 +81,8 @@ export async function renderBell(name: string): Promise<AudioBuffer | null> {
   const master = ctx.createGain();
   // a long fade over the last 1.8 s: the buffer never ends on a ringing partial (no click)
   master.gain.setValueAtTime(0.32, 0);
-  master.gain.setValueAtTime(0.32, spec.seconds - 1.8);
+  const fade = Math.min(1.8, spec.seconds * 0.5);
+  master.gain.setValueAtTime(0.32, spec.seconds - fade);
   master.gain.linearRampToValueAtTime(0, spec.seconds - 0.02);
   lp.connect(master).connect(ctx.destination);
   for (const [ratio, level, decay] of BELL_PARTIALS) {

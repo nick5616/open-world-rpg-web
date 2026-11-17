@@ -6,6 +6,7 @@
 
 import { create } from 'zustand';
 import type { Event as ZoneEvent } from '@lodestone/contracts';
+import { isImmersive, NOTE_MS_IMMERSIVE } from '../../hud/immersive';
 import { decodeJSON, decodeQuest, decodeQuestLog, QEV, QUEST_REFUSAL, type QuestLogView, type QuestMarker, type QuestView } from './events';
 
 export interface QuestNote {
@@ -111,7 +112,8 @@ export function dismissOffer(): void {
 
 export function pruneNotes(now = performance.now()): void {
   const n = useQuests.getState().notes;
-  const keep = n.filter((x) => now - x.at < NOTE_MS);
+  const ttl = isImmersive() ? NOTE_MS_IMMERSIVE : NOTE_MS;
+  const keep = n.filter((x) => now - x.at < ttl);
   if (keep.length !== n.length) useQuests.setState({ notes: keep });
 }
 

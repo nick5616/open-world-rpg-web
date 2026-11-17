@@ -19,6 +19,7 @@ import { learnable, nextTechnique, skillLevel, statsAt, upcoming } from './gains
 import { installProgressionDebug } from './dev';
 import { FANFARE_MS, isAttuned, pruneProgression, setPanelOpen, useProgression, type Notice } from './store';
 import { trackPanel } from '../../input/panelStack';
+import { useHudSettings } from '../../hud/immersive';
 
 // Esc closes the character panel when it is the top panel (input/panelStack.ts).
 trackPanel(useProgression, (s) => s.panelOpen, 'character', () => setPanelOpen(false));
@@ -62,7 +63,17 @@ function LevelUpFanfare() {
   useEffect(() => {
     // The level-up sound comes from the audio system (Event 604 -> level up sound 1-3).
   }, [id]);
+  const quiet = useHudSettings((s) => s.immersive);
   if (!f || introUp || inBoss || whatsNewUp()) return null; // shown after the discovery card and the welcome (the store holds it meanwhile)
+  // CR 052 Immersive HUD: the glow rising around your character (world/feedback/LevelGlow) and the sound say it; the card is one small line.
+  if (quiet) {
+    return (
+      <div key={f.id} data-testid="levelup-fanfare" data-quiet="true" className="pt-fanfare" style={{ position: 'fixed', top: '22%', left: '50%', transform: 'translateX(-50%)', zIndex: 20, pointerEvents: 'none', textAlign: 'center', ["--pt-ms" as string]: "3500ms" }}>
+        <div style={{ font: '600 17px Georgia, serif', color: '#fff8e1', textShadow: '0 0 10px rgba(255,209,102,0.7), 0 1px 3px #000' }}>Level {f.level}</div>
+        {f.lines.length > 0 && <div style={{ font: '12px system-ui, sans-serif', color: f.lines[0].startsWith('Unlocked') ? GOLD : '#e9ecef', marginTop: 2, textShadow: '0 1px 3px #000' }}>{f.lines[0]}</div>}
+      </div>
+    );
+  }
   return (
     <div key={f.id} data-testid="levelup-fanfare" className="pt-fanfare" style={{ position: 'fixed', top: '15%', left: '50%', transform: 'translateX(-50%)', zIndex: 20, pointerEvents: 'none', textAlign: 'center', ['--pt-ms' as string]: `${FANFARE_MS}ms` }}>
       <div style={{ font: '600 15px Georgia, serif', letterSpacing: 6, color: GOLD, textShadow: '0 0 12px rgba(255,209,102,0.7)' }}>LEVEL UP</div>

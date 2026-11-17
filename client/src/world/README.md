@@ -82,3 +82,17 @@ takes the beauty shots).
 ## Dwarves (CR 043)
 
 `vertical/dwarfDecos.ts` draws the genVersion 4 decorations (kinds 28-45: cave dressing, chests and tablets, the dwarves' doors, pillars, statues, banners, rune circles, throne, forge glow) and the carved colonnades; `vertical/dwarfKinds.ts` holds their kind numbers, the Interact / Event numbers (160-161, 1860-1863) and the live chest / discovery state; `buildings/kit.ts` style 6 `dwarf`, `buildings/npcs.ts` dwarven townsfolk, `townMaterial.ts` `uCaveFill` (warm stone fill, no sun underground). Shots: `node client/src/world/vertical/dev/dwarf-shots.mjs`.
+
+## Diegetic layer (CR 052)
+
+Guidance and feedback in the picture instead of the HUD; one mount (`DiegeticLayer.tsx`, in `WorldCanvas` next to the towns layer), all client side, no worldgen change:
+
+| Path | What |
+| --- | --- |
+| `guide/` | The guiding wisp: `route.ts` (road graph from `Towns.roads`, A*, route planning, the wisp's lead/wait/fade step; pure, tested), `target.ts` (quest marker, else pin), `WispLayer.tsx` (one Points draw), `guideStore.ts` (the **.** key; G is the glider). |
+| `signposts/` | `placement.ts` (fork posts keep the towns buffer's arms and get names; new exit posts at each town road; the names a board chooses; pure, deterministic), `boards.ts` (lettered faces and arrows), `SignpostLayer.tsx` (exit post meshes per town, a pool of canvas label slots by quality tier), `boardPapers.ts` + `BoardPapersLayer.tsx` (papers on bounty boards). |
+| `landmarks/` | `landmarks.ts` (which sites signal what, plume/bird/glint motion; pure) and `LandmarkLayer.tsx` (three Points draws plus up to four pillar beams): smoke over camps, light pillars over unattuned towers at dusk, lanterns at dwarven doors, cave-mouth glows, birds over vaults and live events, glints on sky palaces. |
+| `feedback/LevelGlow.tsx` | The golden spiral around you on a level up. |
+| `diegeticDebug.ts` | `window.__lodestoneDiegetic` (debug builds). Shots: `npx vite-node src/world/guide/dev/diegetic-shots.ts` (from `client/`). |
+
+No lights are added or removed at run time; everything is emissive sprites or small meshes. Low drops the birds and glints and halves the plumes and label slots.

@@ -38,6 +38,8 @@ export interface TriggerPayload {
   surface?: string;
   /** CR 031: achievement tier index (0 bronze .. 3 platinum). */
   tier?: number;
+  /** CR 052: gain multiplier (heartbeat, wisp chime). */
+  volume?: number;
 }
 
 export interface TriggerApi {
@@ -475,6 +477,13 @@ export const TRIGGERS = {
   chest_open: (p, a) => a.play('chest_open', at(p)),
   // Playtest 2: the duel's 3-2-1 (client/src/ui/pvp)
   duel_count: (_p, a) => a.play('telegraph'),
+  // CR 052: the guiding wisp's chime, and the low-health heartbeat (lub-dub)
+  wisp_chime: (p, a) => a.play('wisp_chime', { volume: p.volume ?? 1 }),
+  heartbeat: (p, a) => {
+    const v = p.volume ?? 1;
+    a.play('heartbeat', { volume: v });
+    a.play('heartbeat', { volume: 0.7 * v, delay: 0.24, rate: 0.9 });
+  },
   // CR 031: an achievement toast appears (ui/achievements/AchievementsHud.tsx)
   achievement: (p, a) => a.play(achievementCue(p.tier ?? 0)),
 } satisfies Record<string, TriggerFn>;

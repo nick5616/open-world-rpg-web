@@ -1,0 +1,504 @@
+{
+  "tier": "high",
+  "when": "2026-11-17T18:13:57.954Z",
+  "url": "http://127.0.0.1:5188",
+  "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 3070 (0x00002488) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  },
+  "vsync": true,
+  "loadMs": 30743,
+  "firstPlayableMs": 27799.699999928474,
+  "programsAtPlayable": 143,
+  "load": {
+    "wasmMs": 46.60000002384186,
+    "atlasMs": 2678.5,
+    "atlasSource": "built",
+    "poolMs": 493.5,
+    "totalMs": 4187.100000023842,
+    "townsMs": 1210.8999999761581
+  },
+  "textures": {
+    "bytes": 0,
+    "ms": 0
+  },
+  "download": {
+    "files": 907,
+    "bytes": 57279626,
+    "gzipBytes": 16918525,
+    "byType": {
+      "other": {
+        "files": 4,
+        "bytes": 259121,
+        "gzip": 53352
+      },
+      "tsx": {
+        "files": 108,
+        "bytes": 4520439,
+        "gzip": 1468359
+      },
+      "mjs": {
+        "files": 14,
+        "bytes": 56294,
+        "gzip": 18382
+      },
+      "js": {
+        "files": 24,
+        "bytes": 9933678,
+        "gzip": 1973088
+      },
+      "ts": {
+        "files": 743,
+        "bytes": 36125500,
+        "gzip": 8797237
+      },
+      "json": {
+        "files": 3,
+        "bytes": 29330,
+        "gzip": 11669
+      },
+      "md": {
+        "files": 1,
+        "bytes": 144746,
+        "gzip": 14407
+      },
+      "wasm": {
+        "files": 7,
+        "bytes": 2481561,
+        "gzip": 853074
+      },
+      "ktx2": {
+        "files": 3,
+        "bytes": 3728957,
+        "gzip": 3720839
+      }
+    }
+  },
+  "route": [
+    {
+      "to": "forest",
+      "kind": "sky_lift",
+      "x": 1979,
+      "z": 2382
+    },
+    {
+      "to": "highlands",
+      "kind": "settlement",
+      "x": 2142,
+      "z": 2687
+    },
+    {
+      "to": "snowpeak",
+      "kind": "landmark",
+      "x": 1088,
+      "z": 2304
+    },
+    {
+      "to": "badlands",
+      "kind": "ruin",
+      "x": 1248,
+      "z": 2656
+    },
+    {
+      "to": "wetland",
+      "kind": "archipelago",
+      "x": 864,
+      "z": 3063
+    },
+    {
+      "to": "meadow",
+      "kind": "waypoint",
+      "x": 1269,
+      "z": 2941
+    }
+  ],
+  "phases": [
+    {
+      "name": "walk",
+      "seconds": 20.7,
+      "frames": 998,
+      "frameMs": {
+        "mean": 20.74,
+        "p50": 16.7,
+        "p95": 33.4,
+        "p99": 50.1,
+        "max": 1049.9
+      },
+      "framesOverBudget": 117,
+      "drawCalls": {
+        "mean": 305,
+        "max": 355
+      },
+      "triangles": {
+        "mean": 2078637,
+        "max": 2464516
+      },
+      "visibleTriangles": {
+        "max": 1521137
+      },
+      "shadowTriangles": {
+        "max": 956281
+      },
+      "heapMB": {
+        "max": 124.9
+      },
+      "longTasks": [
+        658,
+        119,
+        53,
+        51,
+        1030,
+        60
+      ],
+      "longTaskAt": [
+        {
+          "start": 34127,
+          "ms": 658
+        },
+        {
+          "start": 35004,
+          "ms": 119
+        },
+        {
+          "start": 35165,
+          "ms": 53
+        },
+        {
+          "start": 35222,
+          "ms": 51
+        },
+        {
+          "start": 36444,
+          "ms": 1030
+        },
+        {
+          "start": 37479,
+          "ms": 60
+        }
+      ],
+      "programsLinked": [
+        {
+          "t": 36515,
+          "name": "town-solid",
+          "key": "physical,STANDARD,,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,3,18,0,0,1,0,3,0,0,0,0,2,0,0,0,0,2051,132098,srgb,lodestone-town-v4",
+          "similar": [
+            "physical,STANDARD,,highp,srgb,false,,uv,false,false,false,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,0,6,0,0,0,0,0,0,0,0,0,2,4,0,0,0,1,131074,srgb,function lsStyleUniforms(shader) {\n    const u = shader.uniforms;\n    if (u && !u.lsRetro) {\n      u.lsStyle = STYLE_UNIFORMS.lsStyle;\n      u.lsRetro = STYLE_UNIFORMS.lsRetro;\n    }\n  }",
+            "physical,STANDARD,,highp,srgb,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,0,6,0,0,0,0,0,0,0,0,0,2,0,0,0,0,3,131074,srgb,function lsStyleUniforms(shader) {\n    const u = shader.uniforms;\n    if (u && !u.lsRetro) {\n      u.lsStyle = STYLE_UNIFORMS.lsStyle;\n      u.lsRetro = STYLE_UNIFORMS.lsRetro;\n    }\n  }",
+            "physical,STANDARD,,highp,srgb,false,,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,0,6,0,0,0,0,0,0,0,0,0,2,4,0,0,0,3,131074,srgb,function lsStyleUniforms(shader) {\n    const u = shader.uniforms;\n    if (u && !u.lsRetro) {\n      u.lsStyle = STYLE_UNIFORMS.lsStyle;\n      u.lsRetro = STYLE_UNIFORMS.lsRetro;\n    }\n  }",
+            "physical,STANDARD,,highp,srgb,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,0,6,0,0,0,0,0,0,0,0,0,2,4,0,0,0,7,131074,srgb,function lsStyleUniforms(shader) {\n    const u = shader.uniforms;\n    if (u && !u.lsRetro) {\n      u.lsStyle = STYLE_UNIFORMS.lsStyle;\n      u.lsRetro = STYLE_UNIFORMS.lsRetro;\n    }\n  }",
+            "physical,STANDARD,,highp,srgb,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,0,6,0,0,0,0,0,0,0,0,0,2,4,0,0,0,2049,131074,srgb,lodestone-weapon-v2",
+            "physical,STANDARD,,highp,srgb,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,0,6,0,0,0,0,0,0,0,0,0,2,4,0,0,0,1,131074,srgb,function lsStyleUniforms(shader) {\n    const u = shader.uniforms;\n    if (u && !u.lsRetro) {\n      u.lsStyle = STYLE_UNIFORMS.lsStyle;\n      u.lsRetro = STYLE_UNIFORMS.lsRetro;\n    }\n  }",
+            "physical,STANDARD,,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,3,18,0,0,1,0,3,0,0,0,0,2,0,0,0,0,3,132102,srgb,function lsStyleUniforms(shader) {\n    const u = shader.uniforms;\n    if (u && !u.lsRetro) {\n      u.lsStyle = STYLE_UNIFORMS.lsStyle;\n      u.lsRetro = STYLE_UNIFORMS.lsRetro;\n    }\n  }",
+            "physical,STANDARD,,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,3,18,0,0,1,0,3,0,0,0,0,2,0,0,0,0,7,132098,srgb,lodestone-cave-fungus-1",
+            "physical,STANDARD,,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,3,18,0,0,1,0,3,0,0,0,0,2,0,0,0,0,7,132098,srgb,function lsStyleUniforms(shader) {\n    const u = shader.uniforms;\n    if (u && !u.lsRetro) {\n      u.lsStyle = STYLE_UNIFORMS.lsStyle;\n      u.lsRetro = STYLE_UNIFORMS.lsRetro;\n    }\n  }",
+            "physical,STANDARD,,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,3,18,0,0,1,0,3,0,0,0,0,2,0,0,0,0,3,132098,srgb,function lsStyleUniforms(shader) {\n    const u = shader.uniforms;\n    if (u && !u.lsRetro) {\n      u.lsStyle = STYLE_UNIFORMS.lsStyle;\n      u.lsRetro = STYLE_UNIFORMS.lsRetro;\n    }\n  }",
+            "physical,STANDARD,,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,3,18,0,0,1,0,3,0,0,0,0,2,0,0,0,0,2055,132098,srgb,vt-glow2-1-1",
+            "physical,STANDARD,,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,3,18,0,0,1,0,3,0,0,0,0,2,0,0,0,0,2049,132098,srgb,vt-glow2-0.55-1",
+            "physical,STANDARD,,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,3,18,0,0,1,0,3,0,0,0,0,2,0,0,0,0,2049,132098,srgb,vt-glow2-0.8-1",
+            "physical,STANDARD,,highp,srgb-linear,false,,uv,false,false,false,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,3,18,0,0,1,0,3,0,0,0,0,2,0,0,0,0,1,132098,srgb,function lsStyleUniforms(shader) {\n    const u = shader.uniforms;\n    if (u && !u.lsRetro) {\n      u.lsStyle = STYLE_UNIFORMS.lsStyle;\n      u.lsRetro = STYLE_UNIFORMS.lsRetro;\n    }\n  }",
+            "physical,STANDARD,,highp,srgb-linear,false,,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,3,18,0,0,1,0,3,0,0,0,0,2,0,0,0,0,3,132098,srgb,function lsStyleUniforms(shader) {\n    const u = shader.uniforms;\n    if (u && !u.lsRetro) {\n      u.lsStyle = STYLE_UNIFORMS.lsStyle;\n      u.lsRetro = STYLE_UNIFORMS.lsRetro;\n    }\n  }",
+            "physical,STANDARD,,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,3,18,0,0,1,0,3,0,0,0,0,2,0,0,0,0,2049,132098,srgb,lodestone-weapon-v2",
+            "physical,STANDARD,,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,3,18,0,0,1,0,3,0,0,0,0,2,0,0,0,0,1,132098,srgb,function lsStyleUniforms(shader) {\n    const u = shader.uniforms;\n    if (u && !u.lsRetro) {\n      u.lsStyle = STYLE_UNIFORMS.lsStyle;\n      u.lsRetro = STYLE_UNIFORMS.lsRetro;\n    }\n  }",
+            "physical,STANDARD,,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,3,18,0,0,1,0,3,0,0,0,0,2,0,0,0,0,3,1030,srgb,function lsStyleUniforms(shader) {\n    const u = shader.uniforms;\n    if (u && !u.lsRetro) {\n      u.lsStyle = STYLE_UNIFORMS.lsStyle;\n      u.lsRetro = STYLE_UNIFORMS.lsRetro;\n    }\n  }",
+            "physical,STANDARD,,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,3,18,0,0,1,0,3,0,0,0,0,2,0,0,0,0,1,134146,srgb,function lsStyleUniforms(shader) {\n    const u = shader.uniforms;\n    if (u && !u.lsRetro) {\n      u.lsStyle = STYLE_UNIFORMS.lsStyle;\n      u.lsRetro = STYLE_UNIFORMS.lsRetro;\n    }\n  }",
+            "physical,STANDARD,,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,3,18,0,0,1,0,3,0,0,0,0,2,0,0,0,0,2049,134146,srgb,palace-banner",
+            "physical,STANDARD,,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,3,18,0,0,1,0,3,0,0,0,0,2,0,0,0,0,2049,132098,srgb,vt-glow2-0.5-1",
+            "physical,STANDARD,,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,3,18,0,0,1,0,3,0,0,0,0,2,0,0,0,0,7,132098,srgb,vt-glow2-0.8-0",
+            "physical,STANDARD,,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,3,18,0,0,1,0,3,0,0,0,0,2,0,0,0,0,7,132098,srgb,vt-glow2-0.9-0",
+            "physical,STANDARD,,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,3,18,0,0,1,0,3,0,0,0,0,2,0,0,0,0,7,132098,srgb,vt-glow2-2.5-0",
+            "physical,STANDARD,,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,3,18,0,0,1,0,3,0,0,0,0,2,0,0,0,0,7,132098,srgb,vt-glow2-2-0",
+            "physical,STANDARD,,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,3,18,0,0,1,0,3,0,0,0,0,2,0,0,0,0,2055,132098,srgb,vt-glow2-0.5-1",
+            "physical,STANDARD,,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,3,18,0,0,1,0,3,0,0,0,0,2,0,0,0,0,2055,132098,srgb,vt-glow2-0.2-1",
+            "physical,STANDARD,,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,3,18,0,0,1,0,3,0,0,0,0,2,0,0,0,0,2055,132098,srgb,dw-worm-sway-v1",
+            "physical,STANDARD,,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,3,18,0,0,1,0,3,0,0,0,0,2,0,0,0,0,7,132098,srgb,vt-glow2-2.2-0",
+            "physical,STANDARD,,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,3,18,0,0,1,0,3,0,0,0,0,2,0,0,0,0,7,132098,srgb,vt-glow2-1.2-0",
+            "physical,STANDARD,,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,3,18,0,0,1,0,3,0,0,0,0,2,0,0,0,0,2049,132098,srgb,lodestone-town-v4",
+            "physical,STANDARD,,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,3,18,0,0,1,0,3,0,0,0,0,2,0,0,0,0,1,132102,srgb,function lsStyleUniforms(shader) {\n    const u = shader.uniforms;\n    if (u && !u.lsRetro) {\n      u.lsStyle = STYLE_UNIFORMS.lsStyle;\n      u.lsRetro = STYLE_UNIFORMS.lsRetro;\n    }\n  }",
+            "physical,STANDARD,,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,3,18,0,0,1,0,3,0,0,0,0,2,0,0,0,0,2051,132102,srgb,lodestone-enemy-opaque-v2",
+            "physical,STANDARD,,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,3,18,0,0,1,0,3,0,0,0,0,2,0,0,0,0,2051,1030,srgb,lodestone-enemy-jelly-v2",
+            "physical,STANDARD,,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,3,18,0,0,1,0,3,0,0,0,0,2,0,0,0,0,2051,1030,srgb,lodestone-enemy-spectral-v2",
+            "physical,STANDARD,,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,3,18,0,0,1,0,3,0,0,0,0,2,0,0,0,0,2055,132102,srgb,lodestone-enemy-opaque-v2",
+            "physical,STANDARD,,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,3,18,0,0,1,0,3,0,0,0,0,2,0,0,0,0,2055,1030,srgb,lodestone-enemy-jelly-v2"
+          ]
+        }
+      ],
+      "chunkGenMs": {
+        "mean": 6.920863309352518,
+        "p95": 13.600000023841858,
+        "max": 25.5
+      },
+      "chunkMeshMs": {
+        "mean": 6.665467626756901,
+        "p95": 13.600000023841858,
+        "max": 53.39999997615814
+      },
+      "scatterGenMs": {
+        "mean": 7.282521846142601,
+        "p95": 13.5,
+        "max": 129.89999997615814
+      },
+      "tilesBuilt": 278,
+      "queueMax": 1071,
+      "uploadMsMax": 0.07,
+      "rebinMsMax": 24.7,
+      "terrainMsMax": {
+        "reselect": 19.74,
+        "upload": 0.96,
+        "resolve": 3.04
+      }
+    },
+    {
+      "name": "fly",
+      "seconds": 38.9,
+      "frames": 1392,
+      "frameMs": {
+        "mean": 27.97,
+        "p50": 16.7,
+        "p95": 50,
+        "p99": 133.3,
+        "max": 1450
+      },
+      "framesOverBudget": 536,
+      "drawCalls": {
+        "mean": 421,
+        "max": 498
+      },
+      "triangles": {
+        "mean": 2728714,
+        "max": 4159769
+      },
+      "visibleTriangles": {
+        "max": 2688515
+      },
+      "shadowTriangles": {
+        "max": 1654082
+      },
+      "heapMB": {
+        "max": 124.9
+      },
+      "longTasks": [
+        85,
+        180,
+        1443,
+        708,
+        503,
+        594,
+        202,
+        308,
+        139,
+        148,
+        60,
+        146,
+        63,
+        53,
+        59,
+        56,
+        90,
+        52,
+        52,
+        55
+      ],
+      "longTaskAt": [
+        {
+          "start": 55259,
+          "ms": 85
+        },
+        {
+          "start": 71466,
+          "ms": 180
+        },
+        {
+          "start": 71648,
+          "ms": 1443
+        },
+        {
+          "start": 76426,
+          "ms": 708
+        },
+        {
+          "start": 77138,
+          "ms": 503
+        },
+        {
+          "start": 77678,
+          "ms": 594
+        },
+        {
+          "start": 78287,
+          "ms": 202
+        },
+        {
+          "start": 78519,
+          "ms": 308
+        },
+        {
+          "start": 78830,
+          "ms": 139
+        },
+        {
+          "start": 78969,
+          "ms": 148
+        },
+        {
+          "start": 79163,
+          "ms": 60
+        },
+        {
+          "start": 79322,
+          "ms": 146
+        },
+        {
+          "start": 79485,
+          "ms": 63
+        },
+        {
+          "start": 79574,
+          "ms": 53
+        },
+        {
+          "start": 79629,
+          "ms": 59
+        },
+        {
+          "start": 79693,
+          "ms": 56
+        },
+        {
+          "start": 79754,
+          "ms": 90
+        },
+        {
+          "start": 80350,
+          "ms": 52
+        },
+        {
+          "start": 81330,
+          "ms": 52
+        },
+        {
+          "start": 93783,
+          "ms": 55
+        }
+      ],
+      "programsLinked": [
+        {
+          "t": 66671,
+          "name": "",
+          "key": "depth,highp,srgb-linear,false,,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,3,18,0,0,1,0,3,0,0,0,0,2,0,0,0,3201,1,144384,srgb,function lsStyleUniforms(shader) {\n    const u = shader.uniforms;\n    if (u && !u.lsRetro) {\n      u.lsStyle = STYLE_UNIFORMS.lsStyle;\n      u.lsRetro = STYLE_UNIFORMS.lsRetro;\n    }\n  }",
+          "similar": [
+            "depth,highp,srgb-linear,false,,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,0,6,0,0,0,0,0,0,0,0,0,2,0,0,0,3201,1,144384,srgb,function lsStyleUniforms(shader) {\n    const u = shader.uniforms;\n    if (u && !u.lsRetro) {\n      u.lsStyle = STYLE_UNIFORMS.lsStyle;\n      u.lsRetro = STYLE_UNIFORMS.lsRetro;\n    }\n  }",
+            "depth,highp,srgb-linear,false,,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,0,6,0,0,0,0,0,0,0,0,0,2,0,0,0,3201,3,144384,srgb,function lsStyleUniforms(shader) {\n    const u = shader.uniforms;\n    if (u && !u.lsRetro) {\n      u.lsStyle = STYLE_UNIFORMS.lsStyle;\n      u.lsRetro = STYLE_UNIFORMS.lsRetro;\n    }\n  }",
+            "depth,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,0,6,0,0,0,0,0,0,0,0,0,2,0,0,0,3201,7,144384,srgb,function lsStyleUniforms(shader) {\n    const u = shader.uniforms;\n    if (u && !u.lsRetro) {\n      u.lsStyle = STYLE_UNIFORMS.lsStyle;\n      u.lsRetro = STYLE_UNIFORMS.lsRetro;\n    }\n  }",
+            "depth,highp,srgb-linear,false,,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,0,6,0,0,0,0,0,0,0,0,0,2,0,0,0,3201,1031,142336,srgb,function lsStyleUniforms(shader) {\n    const u = shader.uniforms;\n    if (u && !u.lsRetro) {\n      u.lsStyle = STYLE_UNIFORMS.lsStyle;\n      u.lsRetro = STYLE_UNIFORMS.lsRetro;\n    }\n  }",
+            "depth,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,0,6,0,0,0,0,0,0,0,0,0,2,0,0,0,3201,3,144384,srgb,function lsStyleUniforms(shader) {\n    const u = shader.uniforms;\n    if (u && !u.lsRetro) {\n      u.lsStyle = STYLE_UNIFORMS.lsStyle;\n      u.lsRetro = STYLE_UNIFORMS.lsRetro;\n    }\n  }",
+            "depth,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,0,6,0,0,0,0,0,0,0,0,0,2,0,0,0,3201,1,144384,srgb,function lsStyleUniforms(shader) {\n    const u = shader.uniforms;\n    if (u && !u.lsRetro) {\n      u.lsStyle = STYLE_UNIFORMS.lsStyle;\n      u.lsRetro = STYLE_UNIFORMS.lsRetro;\n    }\n  }",
+            "depth,highp,srgb-linear,false,,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,3,18,0,0,1,0,3,0,0,0,0,2,0,0,0,3201,3,144384,srgb,function lsStyleUniforms(shader) {\n    const u = shader.uniforms;\n    if (u && !u.lsRetro) {\n      u.lsStyle = STYLE_UNIFORMS.lsStyle;\n      u.lsRetro = STYLE_UNIFORMS.lsRetro;\n    }\n  }",
+            "depth,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,3,18,0,0,1,0,3,0,0,0,0,2,0,0,0,3201,7,144384,srgb,function lsStyleUniforms(shader) {\n    const u = shader.uniforms;\n    if (u && !u.lsRetro) {\n      u.lsStyle = STYLE_UNIFORMS.lsStyle;\n      u.lsRetro = STYLE_UNIFORMS.lsRetro;\n    }\n  }",
+            "depth,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,3,18,0,0,1,0,3,0,0,0,0,2,0,0,0,3201,3,144384,srgb,function lsStyleUniforms(shader) {\n    const u = shader.uniforms;\n    if (u && !u.lsRetro) {\n      u.lsStyle = STYLE_UNIFORMS.lsStyle;\n      u.lsRetro = STYLE_UNIFORMS.lsRetro;\n    }\n  }",
+            "depth,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,3,18,0,0,1,0,3,0,0,0,0,2,0,0,0,3201,1,144384,srgb,function lsStyleUniforms(shader) {\n    const u = shader.uniforms;\n    if (u && !u.lsRetro) {\n      u.lsStyle = STYLE_UNIFORMS.lsStyle;\n      u.lsRetro = STYLE_UNIFORMS.lsRetro;\n    }\n  }"
+          ]
+        },
+        {
+          "t": 71487,
+          "name": "",
+          "key": "73,74,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,3,18,0,0,1,0,3,0,0,0,0,2,0,0,0,0,1,1024,srgb,function lsStyleUniforms(shader) {\n    const u = shader.uniforms;\n    if (u && !u.lsRetro) {\n      u.lsStyle = STYLE_UNIFORMS.lsStyle;\n      u.lsRetro = STYLE_UNIFORMS.lsRetro;\n    }\n  }",
+          "similar": []
+        },
+        {
+          "t": 71678,
+          "name": "",
+          "key": "physical,LS_NO_RIM,,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,3,18,0,0,1,0,3,0,0,0,0,2,0,0,0,0,2049,132098,srgb,vt-rock-0-v2",
+          "similar": [
+            "physical,LS_NO_RIM,,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,3,18,0,0,1,0,3,0,0,0,0,2,0,0,0,0,2049,132098,srgb,lodestone-horizon-1",
+            "physical,LS_NO_RIM,,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,3,18,0,0,1,0,3,0,0,0,0,2,0,0,0,0,1,132102,srgb,lodestone-cave-rock-1"
+          ]
+        }
+      ],
+      "chunkGenMs": {
+        "mean": 8.103168044372696,
+        "p95": 13.299999952316284,
+        "max": 1205
+      },
+      "chunkMeshMs": {
+        "mean": 7.125619833462823,
+        "p95": 10.100000023841858,
+        "max": 1240.5
+      },
+      "scatterGenMs": {
+        "mean": 7.61655992678514,
+        "p95": 10.699999928474426,
+        "max": 1841.1000000238419
+      },
+      "tilesBuilt": 726,
+      "queueMax": 111,
+      "uploadMsMax": 0.27,
+      "rebinMsMax": 180.5,
+      "terrainMsMax": {
+        "reselect": 16.49,
+        "upload": 1.63,
+        "resolve": 6.05
+      }
+    }
+  ],
+  "regen": {
+    "chunk": "(30, 35) lod 0",
+    "stored": "f523434b59b00ac9",
+    "worker": "f523434b59b00ac9",
+    "main": "f523434b59b00ac9",
+    "match": true,
+    "workerMs": 6.100000023841858
+  },
+  "errors": [],
+  "budgets": {
+    "drawCalls": {
+      "budget": 400,
+      "max": 498,
+      "pass": false
+    },
+    "triangles": {
+      "budget": 1500000,
+      "maxAllPasses": 4159769,
+      "maxVisible": 2688515,
+      "pass": false
+    },
+    "longTasks": {
+      "budget": "none over 50 ms",
+      "count": 26,
+      "maxMs": 1443,
+      "pass": false
+    },
+    "heap": {
+      "budgetMB": 600,
+      "maxMB": 124.9,
+      "pass": true
+    },
+    "chunkGen": {
+      "budgetMs": 8,
+      "p95": 13.600000023841858,
+      "max": 1205,
+      "mean": 7.51,
+      "pass": false
+    },
+    "download": {
+      "budgetMB": 15,
+      "gzipMB": 16.13,
+      "pass": false
+    },
+    "frameTime": {
+      "budgetMs": 16.6,
+      "p99": 133.3,
+      "pass": false,
+      "note": "measured on ANGLE (NVIDIA, NVIDIA GeForce RTX 3070 (0x00002488) Direct3D11 vs_5_0 ps_5_0, D3D11)"
+    }
+  },
+  "shots": [
+    "wp05-meadow.png",
+    "wp05-forest.png",
+    "wp05-snowpeak.png",
+    "wp05-valley-sunset.png",
+    "wp05-dawn-fog.png",
+    "wp05-lod-tiles.png",
+    "wp05-debug-panel.png"
+  ]
+}

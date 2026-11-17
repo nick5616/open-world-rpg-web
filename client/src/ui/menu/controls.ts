@@ -37,6 +37,7 @@ const LABEL: Record<string, string> = {
   Enter: 'Enter',
   Delete: 'Delete',
   Equal: '=',
+  Period: '.',
 };
 
 /** "KeyW" -> "W", "Digit1" -> "1", "ShiftLeft" -> "Shift". */
@@ -106,6 +107,7 @@ export function controlGroups(debug: boolean, dev = false): ControlGroup[] {
         { keys: ['8'], action: 'Light or douse your torch', note: 'a torch from a general merchant (6 gold) or a workbench; it burns until the water puts it out, others see it and are lit by it. Familiar light spells (one per school of magic, learned early) float over your shoulder instead', src: [['world/lights/LightRig.tsx', 'TORCH_KEY']] },
         { keys: ['M'], action: 'Map', note: 'drag to pan, wheel to zoom, right-click to pin (Shift: for your party)', src: [['ui/map/ExplorationHud.tsx', "'KeyM'"]] },
         { keys: ['J'], action: 'Quest journal', note: 'bestiary, fish, lore, achievements, renown', src: [['ui/quests/QuestHud.tsx', "'KeyJ'"]] },
+        { keys: ['.'], action: 'Guiding wisp', note: 'a glowing mote flies ahead toward your quest or map pin; press again to put it away (it also shows when a quest step begins)', src: [['world/guide/guideStore.ts', "'Period'"]] },
         { keys: ['Y'], action: 'Achievements', note: 'points, progress and the titles you can show; also in this menu and the character panel (with a duel challenge waiting, Y accepts it)', src: [['ui/achievements/AchievementsHud.tsx', "'KeyY'"]] },
         { keys: ['E', 'Space', 'Left mouse'], action: 'Fish: cast (E), strike, hold to reel', note: 'with a fishing rod, facing deep water; let go when the line strains', src: [['ui/fishing/FishingHud.tsx', "'KeyE'"], ['ui/fishing/FishingHud.tsx', "'Space'"]] },
       ],

@@ -2029,3 +2029,27 @@ Nicole: "I load the game and idk what to do. There's too much and nothing pullin
 - No marker for trees (no spatial scatter query); the ore and torch errands use the same nearest cave (490 m from Draedmore); no dwarven camp is marked; the stablehand and woodcutter are the merchant and the mentor (the town has no such roles).
 - The arrival happens at whatever hour the world clock shows; the HUD itself (hotbar, controls strip, debug panel) is pt4/diegetic's.
 - The errands' deeds are tested by signalling them (and the torch with the real key); mining, felling, smelting, building, fishing and mounting are signalled from one line in each system but not driven end to end here.
+
+## Playtest 4: in-world guidance and a quiet HUD (branch `pt4/diegetic`, CR 052)
+
+Nicole: "make more things directly in the game instead of text you see in the HUD." Client only: no protocol, Event (1950-1959 unused), Interact, migration or worldgen change. What's new `pt4-in-world`. HUD audit: `docs/evidence/pt4-diegetic-audit.md`.
+
+**Works**
+- **Immersive HUD** (default on; Esc menu > Interface switches it off): health/mana appear when not full or just changed, the hotbar when in combat, a boss fight, downed or after a hotbar key/wheel/attack click, the quest card collapses to the compass diamond unless the step just changed, Tab is held or J is open; fewer, shorter notices; level-up banner one small line; region cards smaller. Opacity only, so the layout variables are unchanged. Pure rules tested (`hud/immersive.test.ts`).
+- **Guiding wisp** on the **. (Period)** key (G is the glider, so the reserved key could not be used) and by itself 1.6 s after a quest step starts (20 s): keeps 8-15 m ahead, waits for you, follows roads you are on (A* over the road graph built from `Towns.roads`), else floats over the terrain, chimes, fades on arrival; leads to the tracked quest marker or your pin. One Points draw, no lights.
+- **Signposts**: the towns buffer's fork posts now have names and distances on every arm; new exit posts beside each town road name the town the road leads to and the nearest named landmarks ahead, with arrows as the reader of each face sees them. Placement is client side and deterministic.
+- **Landmarks from afar**: smoke over camps, light pillars over unattuned towers at dusk and night, lanterns at dwarven doors, cave-mouth glows, birds over vaults and live events, glints on sky palaces.
+- **Feedback in the world**: low-health vignette (no flashing, Reduce flashing respected) and a heartbeat; level-up glow rising around you; papers pinned on bounty boards.
+- Tests: `route`, `target`, `placement`, `boards`, `boardPapers`, `landmarks`, `immersive` (vitest), plus the bindings/controls/audio suites with the new key and cues.
+
+**Gaps**
+- Board papers: the zone only tells the client the count when a board is opened, so an unopened board shows 3 (the surface minimum) and the exact count after the first visit. A server push (Event 1950) would fix it; not done to keep the zone untouched.
+- Exit posts have no collision and no "[E] read" prompt (the lettering is just readable); only forks have the old interaction line.
+- The wisp does not know about walls or cliffs (it floats over terrain) and hides underground and in the sky; it does not lead through a building to an NPC inside.
+- Birds need a vault or event the zone has told the client about (range-limited sync). Tips such as "Low health" still exist (pt4/first-hour owns tips).
+- `Tab` also opens the quest card, so using the weapon technique briefly shows it.
+- Smoke plumes are faint from afar by day (see `pt4-diegetic-horizon.jpg`); the wisp is a small mote, easy to miss at 30 m.
+
+**Perf** (traversal bench, `client/src/world/bench/traversal.mjs high`, dev server, shared machine; A/B with `?nodiegetic`; results `docs/evidence/pt4-diegetic-{off,on}-traversal*`): draw calls max walk 337 -> 355 (+18), fly 485 -> 498 (+13) (the bench's own 400 budget was already exceeded in the flight); triangles max 2.459 M -> 2.465 M (walk), 4.174 M -> 4.160 M (fly); frame p50 16.7 ms both; shader programs linked before playable 136 -> 143. p99 and long tasks are run-to-run noise on a shared machine (walk p99 133 -> 50 ms, fly 50 -> 133 ms). The extra calls: three landmark Points draws, up to four pillar beams, the wisp, up to 8 sign label slots, the exit-post meshes of a town within 650 m, one papers mesh; all zero out of range.
+
+Evidence (`docs/evidence/`): `pt4-diegetic-hud.jpg` (Immersive HUD on, left, vs off, right), `pt4-diegetic-wisp.jpg`, `pt4-diegetic-signpost.jpg` (an exit post: names, arrows, distances), `pt4-diegetic-horizon.jpg` (smoke over a camp from the starting town), `pt4-diegetic-pillar.jpg` (the pillar over an unattuned tower at dusk).

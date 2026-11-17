@@ -26,6 +26,7 @@ import { setMapOpen } from '../../ui/map/store';
 import { setQuestPreview } from '../../ui/quests/store';
 import { whereText, type QuestMarker } from '../../ui/quests/events';
 import { dialogController, ensureDialogHook } from '../../ui/dialog/link'; // CR 049: conversations with townsfolk
+import { setBoardPapers } from '../signposts/boardPapers';
 import { ACT, BOUNTY_KIND_LABEL, decodeBounties, decodeShop, EV, INTERACT, itemName, MERCHANT_LABEL, NPC_ROLE_LABEL, REFUSAL, utf8, type Bounty, type ShopItem } from './townEvents';
 
 interface PanelState {
@@ -318,6 +319,7 @@ export class TownHud {
         }
         case EV.bounties: {
           const list = decodeBounties(e.data);
+          if (e.entityId === 0) setBoardPapers(e.targetId, list.filter((b) => !b.accepted).length); // CR 052: one paper pinned per untaken bounty
           const fromBoard = e.entityId === 0;
           const board = fromBoard && this.pending?.kind === 'board' ? this.pending.stableId : null;
           const state = { list, board: fromBoard ? (board ?? this.pending?.stableId ?? null) : null, keeper: fromBoard ? null : e.entityId };
