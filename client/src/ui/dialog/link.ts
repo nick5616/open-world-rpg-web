@@ -16,7 +16,7 @@ import { npcFocus } from '../../world/buildings/npcFocus';
 import type { Candidate } from '../../world/buildings/interact';
 import { localPlayer } from '../../state/live';
 import { lookRouter } from '../../input/lookRouter';
-import { syncPanel, hidePanel } from '../../input/panelStack';
+
 import { dialogCamBegin, dialogCamEnd } from './camera';
 import { DLG_ACT, DLG_EV, DLG_INTERACT, type DialogNode } from './events';
 import { offlineNode, offlineReply } from './offline';
@@ -64,11 +64,9 @@ function syncWorld(): void {
     dialogCamBegin(s.focus, localPlayer.yaw, localPlayer.pitch);
     lookRouter.blockMove = true;
     if (typeof document !== 'undefined' && document.pointerLockElement) document.exitPointerLock();
-    syncPanel('dialog', true, () => dialogController.close());
   } else {
     dialogCamEnd();
     lookRouter.blockMove = false;
-    hidePanel('dialog');
   }
   if (s.open && s.key !== null) npcFocus.setTalkingTo(s.key);
   else if (npcFocus.talkingTo !== null) npcFocus.setTalkingTo(null);
@@ -77,7 +75,6 @@ function syncWorld(): void {
 function finish(): void {
   dialogCamEnd();
   lookRouter.blockMove = false;
-  hidePanel('dialog');
   npcFocus.setTalkingTo(null);
 }
 

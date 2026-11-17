@@ -8,6 +8,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { npcFocus } from '../../world/buildings/npcFocus';
 import { notGameKey } from '../../input/useKeyboard';
+import { usePanelEsc } from '../../input/panelStack';
 import { dialogController } from './link';
 import { advanceAction, choiceForKey, typedChars, useDialog } from './store';
 import { blipsAt, speakBlip } from './voice';
@@ -54,6 +55,7 @@ export function DialogOverlay() {
 
   // The HUD dims while a conversation is up.
   const live = open && !parked && !!node;
+  usePanelEsc('dialog', live, () => dialogController.close()); // Esc closes it (the panel stack)
   useEffect(() => {
     if (live) document.body.dataset.dialog = '1';
     else delete document.body.dataset.dialog;
