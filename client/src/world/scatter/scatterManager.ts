@@ -298,6 +298,39 @@ export class ScatterManager {
     this.dirty = true;
   }
 
+  /** CR 040: bring a regrown object back. */
+  unhide(id: bigint): void {
+    if (this.hidden.delete(id)) this.dirty = true;
+  }
+
+  /** CR 040 world edits (targeting): visits the live trees, rocks and bushes within r m of (x, z). Kind and scale are the record's bytes. */
+  forEachObject(x: number, z: number, r: number, cb: (o: { id: bigint; layer: number; kind: number; scale: number; yaw: number; x: number; y: number; z: number }) => void): void {
+    for (const c of this.chunks.values()) {
+      if (Math.hypot(c.cx * 64 + 32 - x, c.cz * 64 + 32 - z) > r + 46) continue;
+      const rec = c.records;
+      const n = rec.length / SCATTER_STRIDE;
+      for (let i = 0; i < n; i++) {
+        const o = i * SCATTER_STRIDE;
+        const layer = rec[o];
+        if (layer > LAYER_BUSH) break; // records are ordered trees, rocks, bushes, tufts
+        if (Math.hypot(rec[o + 3] - x, rec[o + 5] - z) > r || this.hidden.has(c.ids[i])) continue;
+        cb({ id: c.ids[i], layer, kind: rec[o + 1], scale: rec[o + 7], yaw: rec[o + 6], x: rec[o + 3], y: rec[o + 4], z: rec[o + 5] });
+      }
+    }
+  }
+
+  /** CR 040: how an object is drawn: its LOD 0 geometry and material (a falling tree reuses them: no new shader program mid-game) and style. */
+  propOf(layer: number, kind: number): { geometry: THREE.BufferGeometry; material: THREE.Material; w: number; h: number; tint: THREE.Color } | null {
+    const pick = (b: Bin, st: KindStyle) => ({ geometry: b.mesh.geometry, material: b.mesh.material as THREE.Material, w: st.w, h: st.h, tint: st.tint });
+    if (layer === LAYER_TREE) {
+      const st = TREE_STYLE[kind] ?? TREE_STYLE[0];
+      return pick(this.treeBins[st.arch][0], st);
+    }
+    if (layer === LAYER_ROCK) return pick(this.rockBin, ROCK_STYLE[kind] ?? ROCK_STYLE[0]);
+    if (layer === LAYER_BUSH) return pick(this.bushBin, BUSH_STYLE[kind] ?? BUSH_STYLE[0]);
+    return null;
+  }
+
   update(camera: THREE.Camera, nowMs: number): void {
     if (this.disposed) return;
     const p = camera.position;

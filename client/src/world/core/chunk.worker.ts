@@ -8,6 +8,7 @@
 import { caveCellBytes, caveGraphBytes, fnv1a64, hasVertical, hex64, layerTileBytes, loadWorldgen, parseCaveGraph, parseChunk, parseLayerTile, parseVertical, verticalBytes, type AtlasHandle, type CaveOpening, type VerticalWorld, type Worldgen } from '@lodestone/worldgen';
 import { buildLayerMesh, layerMeshTransferables } from '../vertical/layerMesh';
 import { holeIndex } from '../caves/holes';
+import { applyTileEdits, editedOutside } from '../edits/tileEdits';
 import { buildTileMesh, tileBytes, tileTransferables, type TileMeshData } from '../terrain/tileMesh';
 import { generateGrass } from '../scatter/grassGen';
 import { evictMeshes, meshGet, meshKey, meshPut, worldDb } from './cacheDb';
@@ -87,9 +88,9 @@ function layerJob(id: number, layer: number, cx: number, cz: number, lod: number
   post({ type: 'layer', id, layer, cx, cz, lod, mesh, raw, genMs: t1 - t0, meshMs: performance.now() - t1 }, transfer);
 }
 
-async function tileJob(id: number, cx: number, cz: number, lod: number) {
+async function tileJob(id: number, cx: number, cz: number, lod: number, edits?: Int32Array) {
   const key = meshKey(atlasHash, wg!.genVersion, lod, cx, cz);
-  if (db) {
+  if (db && !edits) {
     try {
       const hit = await meshGet<TileMeshData>(db, key);
       if (hit) {
@@ -104,16 +105,19 @@ async function tileJob(id: number, cx: number, cz: number, lod: number) {
   const bytes = wg!.buildChunkBytes(atlas!, cx, cz, lod);
   const t1 = performance.now();
   const chunk = parseChunk(bytes);
-  const hash = hex64(fnv1a64(bytes));
+  const hash = hex64(fnv1a64(bytes)) + (edits ? '+e' : '');
   // Heights just outside the tile (edge normals): the same lattice function,
   // evaluated at integer meters where collision_height returns the f32
-  // lattice value itself.
-  const tile = buildTileMesh(chunk, (x, z) => wg!.collisionHeight(atlas!, x, z), hash, seaY);
+  // lattice value itself. CR 040: with terrain edits the lattice and the
+  // outside lookup are lifted by the deltas (a fresh build, never cached).
+  const baseH = (x: number, z: number) => wg!.collisionHeight(atlas!, x, z);
+  if (edits) applyTileEdits(chunk, edits);
+  const tile = buildTileMesh(chunk, edits ? editedOutside(baseH, edits) : baseH, hash, seaY);
   // WP09: drop the triangles a cave mouth replaces (lod 0-1 tiles near a mouth).
   const holes = holeIndex(caveOpenings(), cx, cz, lod);
   if (holes) tile.holes = holes;
   const t2 = performance.now();
-  if (db) {
+  if (db && !edits) {
     // Store before transferring (transfer detaches the buffers). The clone is
     // synchronous inside put(); the write completes in the background.
     meshPut(db, key, tile, tileBytes(tile)).catch(() => {});
@@ -162,7 +166,7 @@ async function handle(m: JobMsg) {
       return;
     }
     case 'tile':
-      return tileJob(m.id, m.cx, m.cz, m.lod);
+      return tileJob(m.id, m.cx, m.cz, m.lod, m.edits);
     case 'scatter':
       return scatterJob(m.id, m.cx, m.cz);
     case 'grass':

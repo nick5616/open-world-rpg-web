@@ -347,7 +347,12 @@ func TestEarthworkDigFillStreamsAndPersists(t *testing.T) {
 		a.pump(230 * time.Millisecond)
 	}
 	if got := tr.HeightAt(px, pz); got <= lowest+0.5 {
-		t.Fatalf("fill did not raise the ground: %v -> %v; refusals %v", lowest, got, func() (v []int32) { for _, e := range a.eventsOf(EventEarthRefused) { v = append(v, e.Value) }; return }())
+		t.Fatalf("fill did not raise the ground: %v -> %v; refusals %v", lowest, got, func() (v []int32) {
+			for _, e := range a.eventsOf(EventEarthRefused) {
+				v = append(v, e.Value)
+			}
+			return
+		}())
 	}
 	// A late joiner gets the chunk's edits on first interest.
 	b := h.dial(spawnXYZ(px-1.2, gy+0.2, pz))

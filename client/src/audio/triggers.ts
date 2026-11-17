@@ -437,6 +437,13 @@ export const TRIGGERS = {
   // Mining (CaveAudio shim)
   mine_hit: (p, a) => a.play(p.gem ? 'mine_gem' : 'mine_stone', at(p)),
   vein_break: (p, a) => a.play('vein_break', at(p)),
+  // World edits (CR 040, world/edits/worldEdits.ts)
+  work_chop: (p, a) => a.play('work_chop', at(p)),
+  work_tree_fall: (p, a) => a.play('work_tree_fall', at(p)),
+  work_tree_thud: (p, a) => a.play('work_tree_thud', at(p)),
+  work_rock_break: (p, a) => a.play('work_rock_break', at(p)),
+  work_dig: (p, a) => a.play('work_dig', at(p)),
+  work_fill: (p, a) => a.play('work_fill', at(p)),
   pickup: (_p, a) => a.play('loot_common'),
   // UI
   ui_click: (_p, a) => a.play('ui_click'),

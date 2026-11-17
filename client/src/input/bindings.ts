@@ -78,6 +78,7 @@ export const BINDINGS: Binding[] = [
   W('KeyE', 'ui/pets/PetHud.tsx', 'feed a calm creature, pet your pet'),
   W('KeyE', 'ui/story/StoryHud.tsx', 'raise a fallen friend (hold)'), // CR 035
   // screens and the world
+  W('Digit8', 'world/edits/worldEdits.ts', 'work tool: chop and break, dig, fill, away (cycles; CR 040)'),
   W('KeyT', 'hud/ViewHud.tsx', 'first / third person'),
   W('KeyM', 'ui/map/ExplorationHud.tsx', 'map'),
   W('KeyJ', 'ui/quests/QuestHud.tsx', 'journal'),

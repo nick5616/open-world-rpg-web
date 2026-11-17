@@ -7,7 +7,7 @@ import "math"
 //   - a brush of BrushR m around the strike: the middle takes 2 steps
 //     (0.5 m), the rim 1 step (0.25 m), per swing;
 //   - the surface keeps a walkable slope: neighbouring deltas differ by at
-//     most MaxSlope steps per metre (4 = 45 degrees), so a pit is a bowl you
+//     most MaxSlope steps per metre (3 = 37 degrees), so a pit is a bowl you
 //     can climb out of and a mound is a cone, never a spike. A dig that
 //     steepens a neighbour lowers it too, spreading outward (a cascade),
 //     bounded by MaxChanged vertices;
@@ -18,8 +18,8 @@ import "math"
 const (
 	BrushR     = 1.6
 	BrushCore  = 0.8
-	MaxSlope   = 4 // steps per metre between 4-neighbours; diagonals get MaxSlope*1.5
-	MaxChanged = 220
+	MaxSlope   = 3 // steps per metre between 4-neighbours (36.9 degrees); diagonals get 4. Any cell triangle then stays under 47 degrees, walkable (WALKABLE_SLOPE_DEG 50)
+	MaxChanged = 360
 	// WaterMargin: a dug vertex stays this far above the water surface.
 	WaterMargin = 0.3
 	// StepsPerItem: this many steps of volume are one dirt (or stone).
@@ -122,7 +122,7 @@ func (p *planner) floor(x, z int32) int8 {
 	return int8(lowest)
 }
 
-var nbrs = [8][3]int32{{1, 0, 4}, {-1, 0, 4}, {0, 1, 4}, {0, -1, 4}, {1, 1, 6}, {-1, 1, 6}, {1, -1, 6}, {-1, -1, 6}}
+var nbrs = [8][3]int32{{1, 0, 3}, {-1, 0, 3}, {0, 1, 3}, {0, -1, 3}, {1, 1, 4}, {-1, 1, 4}, {1, -1, 4}, {-1, -1, 4}}
 
 // Plan computes one swing at world point (px, pz). The Overlay is not
 // changed; apply the returned Changes.

@@ -55,6 +55,20 @@ func TestDigBowlIsWalkable(t *testing.T) {
 	if o.Blocks() == 0 || o.Vertices() == 0 {
 		t.Fatal("counters")
 	}
+	// Every cell triangle of the deepest pit is walkable (under 50 degrees: tan = 1.19), whatever the generated ground does.
+	worst := 0.0
+	for z := int32(380); z < 440; z++ {
+		for x := int32(270); x < 330; x++ {
+			d := func(dx, dz int32) float64 { return float64(o.Delta(x+dx, z+dz)) * StepM }
+			for _, g := range [][2]float64{{d(1, 0) - d(0, 0), d(0, 1) - d(0, 0)}, {d(1, 1) - d(0, 1), d(1, 1) - d(1, 0)}} {
+				worst = math.Max(worst, math.Hypot(g[0], g[1]))
+			}
+		}
+	}
+	if worst > 1.19 {
+		t.Fatalf("a pit triangle is %.0f degrees", math.Atan(worst)*180/math.Pi)
+	}
+	t.Logf("steepest pit triangle %.1f degrees", math.Atan(worst)*180/math.Pi)
 }
 
 func abs(a int) int {

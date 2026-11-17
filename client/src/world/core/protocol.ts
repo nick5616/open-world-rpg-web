@@ -17,7 +17,8 @@ export interface InitMsg {
 
 export type JobMsg =
   | { type: 'atlas'; id: number; seed: string }
-  | { type: 'tile'; id: number; cx: number; cz: number; lod: number }
+  /** `edits` (CR 040): terrain edit triples [x, z, d] in the tile's box plus a margin; the mesh cache is bypassed. */
+  | { type: 'tile'; id: number; cx: number; cz: number; lod: number; edits?: Int32Array }
   | { type: 'scatter'; id: number; cx: number; cz: number }
   | { type: 'grass'; id: number; cx: number; cz: number; density: number }
   | { type: 'hash'; id: number; cx: number; cz: number; lod: number }

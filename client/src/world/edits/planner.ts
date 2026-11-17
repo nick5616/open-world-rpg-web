@@ -6,8 +6,8 @@ import { MAX_DELTA, STEP_M } from './overlay';
 
 export const BRUSH_R = 1.6;
 export const BRUSH_CORE = 0.8;
-export const MAX_SLOPE = 4;
-export const MAX_CHANGED = 220;
+export const MAX_SLOPE = 3; // steps per metre; diagonals 4 (see worldedit/dig.go)
+export const MAX_CHANGED = 360;
 export const WATER_MARGIN = 0.3;
 export const STEPS_PER_ITEM = 6;
 
@@ -32,8 +32,8 @@ export interface Plan {
 }
 
 const NBRS: [number, number, number][] = [
-  [1, 0, 4], [-1, 0, 4], [0, 1, 4], [0, -1, 4],
-  [1, 1, 6], [-1, 1, 6], [1, -1, 6], [-1, -1, 6],
+  [1, 0, 3], [-1, 0, 3], [0, 1, 3], [0, -1, 3],
+  [1, 1, 4], [-1, 1, 4], [1, -1, 4], [-1, -1, 4],
 ];
 
 export function planSwing(w: PlanWorld, op: Op, px: number, pz: number): { plan: Plan | null; reason: Refusal } {

@@ -39,6 +39,7 @@ import type { WeaponKind } from './weapons/look';
 import { uiPanelUp } from '../input/interact';
 import { isCaptureClick } from '../input/useMouseLook';
 import { heldBlocked, onHeldRelease } from '../input/held';
+import { workToolActive } from '../world/edits/toolState'; // CR 040: with a work tool up the left button is the tool's
 import { isChatShortcut } from '../input/useKeyboard';
 
 const STEP_MS = 1000 / MOVE_STEP_HZ;
@@ -139,6 +140,7 @@ export class CombatRuntime {
       // Playtest 2 polish: the click that captures the mouse (input/useMouseLook.ts) neither swings nor casts,
       // and nothing is drawn, streamed or charged under the Esc menu or a panel (input/held.ts).
       if (isCaptureClick() || heldBlocked()) return;
+      if (e.button === 0 && workToolActive()) return;
       if (e.button === 0) {
         this.buttons.attackDown = true;
         this.buttons.attackPress++;

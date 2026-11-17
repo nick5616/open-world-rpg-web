@@ -1016,3 +1016,13 @@ activity hook, fall damage, lava, packs per layer and layered areas, vibe
 layer filters and landings), `server/pkg/vertical` (golden vectors),
 `server/pkg/movement/vertical_golden_test.go` (the TS movement goldens on the
 vertical ground), `mintdb` `TestRenewOfficialToVertical`.
+
+## World edits (playtest 3, CR 040)
+
+`internal/game/worldedit.go` (the zone), `server/pkg/worldedit` (the rules, pure Go), `worldedit.go` (main: the scatter lookup, the protected-ground mask, wiring).
+
+- **Interact 42 `harvest`** (a scatter record's stable id; trees need `tool:axe`, rocks `tool:pickaxe`, bushes anything) and **43 `earth`** (`x cm | z cm << 32`; action 1 dig, 2 fill, `tool:shovel`): Events 1800-1807 (contracts/events.md). A fallen object is a `world_edits` row (`object_destroyed`, regrows after 3-16 h, never inside a base: `WorldEditSetup.InBase`) and a `WorldEdits` record; its drops are the breaker's personal `veinDrop` pickups.
+- **Terrain deltas** live in a `worldedit.Overlay` installed on `worldhost.Terrain` (`SetEdits`), so every ground query (movement, enemies, spawns, the caves/towns/chem wrappers) sees the edited surface, bit-identical to the TS twin (`contracts/golden/world_edits.json`). `TerrainEdits` (message 73, protocol v7) streams them per chunk (13 x 13 chunks around each player, scanned twice a second); `terrain_edits` (migration 0031) stores one row per chunk through the write-behind queue.
+- **Env**: `LODESTONE_ZONE_NO_WORLD_EDITS=1` turns it off; `LODESTONE_ZONE_REGROW_SCALE` multiplies regrow times (evidence runs). `GET /debug/worldedits` shows the counters.
+- **Per-tick cost** is flat: edits are event-driven; the tick compares `now` with the earliest regrow time, flushes a tiny pending-grant map and runs the interest scan twice a second.
+- Multi-zone clusters: each zone loads every stored edit at start and applies its own players' edits live; an edit made on another zone reaches this one at its next restart (follow-up: a bus feed like the doors').

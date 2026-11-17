@@ -143,6 +143,13 @@ export function controlGroups(debug: boolean, dev = false): ControlGroup[] {
       ],
     },
     {
+      title: 'Chopping, breaking and digging',
+      rows: [
+        { keys: ['8'], action: 'Cycle the work tool: chop and break, dig, fill, away', note: 'an axe for trees, a pickaxe for rocks, a shovel for the ground (you start with all three); the left mouse button swings it while one is up', src: [['world/edits/worldEdits.ts', "'Digit8'"]] },
+        { keys: ['Left mouse'], action: 'Swing the work tool (hold to keep going)', note: 'trees fall, rocks shatter, the ground gives up to 6 m either way; towns, roads, caves and water stay as they are', src: [['world/edits/worldEdits.ts', 'e.button !== 0']] },
+      ],
+    },
+    {
       title: 'Riding',
       rows: [
         { keys: ['5'], action: 'Whistle for your spirit steed', note: 'needs a Spirit Whistle (general stores); C → Your steed: name, colour', src: [['ui/mounts/MountHud.tsx', "'Digit5'"]] },

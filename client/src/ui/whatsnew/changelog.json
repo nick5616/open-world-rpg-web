@@ -1,5 +1,16 @@
 [
   {
+    "id": "pt3-world-edits",
+    "date": "2026-11-17",
+    "title": "Break the world, build from it",
+    "items": [
+      "Trees can be chopped down and rocks and bushes broken: press 8 for the work tool, then hold the left mouse button. Trees fall over, rocks shatter, and you get logs, stone, resin and fibre.",
+      "The ground can be dug and filled too, up to 6 m up or down, with a shovel. Digging gives you dirt, filling uses it. Towns, roads, caves and water keep their shape.",
+      "Everything you change stays changed for everyone, and trees and rocks grow back after a long while.",
+      "You start with an axe, a pickaxe and a shovel (older characters get the axe and shovel once). Replacements can be crafted from logs, stone and fibre."
+    ]
+  },
+  {
     "id": "pt2-vertical-world",
     "date": "2026-11-11",
     "title": "The world goes vertical",

@@ -52,7 +52,7 @@ describe('dig planner (twin of server/pkg/worldedit/dig.go)', () => {
       applyPlan(o, plan.changes);
     }
     expect(o.delta(100, 100)).toBe(-24);
-    for (let z = 80; z < 120; z++) for (let x = 80; x < 120; x++) expect(Math.abs(o.delta(x, z) - o.delta(x + 1, z))).toBeLessThanOrEqual(4);
+    for (let z = 80; z < 120; z++) for (let x = 80; x < 120; x++) expect(Math.abs(o.delta(x, z) - o.delta(x + 1, z))).toBeLessThanOrEqual(3);
     expect(planSwing(w, 'dig', 505.5, 100.5).reason).toBe('forbidden');
     const wet = fake(new TerrainOverlay(), () => false, 49.9); // ground within 0.4 m of the water
     const r = planSwing(wet, 'dig', 20.5, 20.5);
