@@ -399,9 +399,9 @@ func (w *World) areaReady(g *Group) bool {
 var (
 	LayerTables = [4][]string{
 		nil,
-		{"gale_harpy", "spark_wisp", "lumen_moth", "gale_harpy"},
+		{"gale_harpy", "spark_wisp", "lumen_moth", "sky_wyvern", "gale_harpy"},
 		{"cave_crawler", "gloom_bat", "crystal_golem", "shade", "void_mite", "gloom_bat"},
-		{"gloamling", "gloamling", "cinder_fiend", "umbral_stalker", "void_maw", "grave_brute"},
+		{"ember_demon", "magma_hound", "gloamling", "obsidian_golem", "cinder_fiend", "ember_demon", "umbral_stalker", "magma_hound", "void_maw", "grave_brute"},
 	}
 	LayerEliteChance = [4]float64{0.15, 0.25, 0.2, 0.45}
 )

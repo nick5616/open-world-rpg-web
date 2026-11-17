@@ -10383,6 +10383,86 @@
    "element": 8
   },
   {
+   "key": "sky_wyvern",
+   "name": "Sky Wyvern",
+   "keepAway": 9,
+   "id": 120,
+   "family": "elemental",
+   "hp": 90,
+   "speed": 7.4,
+   "aggro": 28,
+   "attacks": [
+    "harpy_dive",
+    "elemental_bolt"
+   ],
+   "behavior": "flyer",
+   "element": 4,
+   "xp": 30,
+   "size": 1.6,
+   "color": "#7fa8c8"
+  },
+  {
+   "key": "magma_hound",
+   "name": "Magma Hound",
+   "keepAway": 0,
+   "id": 121,
+   "family": "cave",
+   "hp": 84,
+   "speed": 7.2,
+   "aggro": 30,
+   "attacks": [
+    "hound_bite",
+    "hound_lunge"
+   ],
+   "behavior": "melee",
+   "element": 0,
+   "xp": 28,
+   "size": 1.05,
+   "color": "#4a1c12"
+  },
+  {
+   "key": "obsidian_golem",
+   "name": "Obsidian Golem",
+   "keepAway": 0,
+   "id": 122,
+   "family": "cave",
+   "hp": 98,
+   "speed": 3.6,
+   "aggro": 16,
+   "attacks": [
+    "golem_punch",
+    "elemental_burst"
+   ],
+   "behavior": "melee",
+   "element": 0,
+   "xp": 36,
+   "size": 1.5,
+   "color": "#1c1822"
+  },
+  {
+   "key": "ember_demon",
+   "name": "Ember Demon",
+   "keepAway": 0,
+   "id": 123,
+   "family": "demon",
+   "hp": 90,
+   "speed": 6.4,
+   "aggro": 45,
+   "attacks": [
+    "demon_claw",
+    "demon_lunge"
+   ],
+   "behavior": "melee",
+   "element": 0,
+   "xp": 34,
+   "size": 1.1,
+   "color": "#5c1a0c",
+   "demon": {
+    "regen": 0.35,
+    "rank": "lesser"
+   }
+  },
+  {
    "key": "thornhide_behemoth",
    "name": "Thornhide Behemoth",
    "keepAway": 0,

@@ -762,6 +762,11 @@ enemies:
   # they never move).
   the_hush: {id: 103, family: boss, hp: 7600, speed: 4.6, aggro: 40, attacks: [hush_rend, hush_toll], behavior: melee, element: dark, xp: 1500, size: 3.2, color: '#1b1424'}
   hollow_bell: {id: 112, family: demon, hp: 300, speed: 0.1, aggro: 9, attacks: [bell_toll], behavior: melee, xp: 60, size: 1.6, color: '#2b2140', demon: {rank: lesser}}
+  # playtest 3 (CR 044): the sky's wyvern and the Depths' own creatures (their own models)
+  sky_wyvern: {id: 120, family: elemental, hp: 90, speed: 7.4, aggro: 28, attacks: [harpy_dive, elemental_bolt], behavior: flyer, keepAway: 9, element: wind, xp: 30, size: 1.6, color: '#7fa8c8'}
+  magma_hound: {id: 121, family: cave, hp: 84, speed: 7.2, aggro: 30, attacks: [hound_bite, hound_lunge], behavior: melee, element: fire, xp: 28, size: 1.05, color: '#4a1c12'}
+  obsidian_golem: {id: 122, family: cave, hp: 98, speed: 3.6, aggro: 16, attacks: [golem_punch, elemental_burst], behavior: melee, element: fire, xp: 36, size: 1.5, color: '#1c1822'}
+  ember_demon: {id: 123, family: demon, hp: 90, speed: 6.4, aggro: 45, attacks: [demon_claw, demon_lunge], behavior: melee, element: fire, xp: 34, size: 1.1, color: '#5c1a0c', demon: {rank: lesser}}
   thornhide_behemoth: {id: 74, family: beast, hp: 94, speed: 4.4, aggro: 24, attacks: [behemoth_gore, behemoth_quake], behavior: melee, element: earth, xp: 160, size: 2.4, color: '#4e5a2c'}
 
 bosses:
@@ -863,6 +868,10 @@ enemyNames:
   hunt_master: The Huntsman
   starfall_sentinel: Starfall Sentinel
   thornhide_behemoth: Thornhide Behemoth
+  sky_wyvern: Sky Wyvern
+  magma_hound: Magma Hound
+  obsidian_golem: Obsidian Golem
+  ember_demon: Ember Demon
 
 demons:
   # WP15 night spawning (server/zone/internal/night): lesser packs around

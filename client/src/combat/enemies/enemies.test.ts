@@ -24,7 +24,7 @@ describe('family -> model spec', () => {
       bandit: ['biped'],
       guardian: ['biped', 'floater'],
       elemental: ['biped', 'floater', 'winged', 'crawler'],
-      cave: ['crawler', 'winged', 'biped'],
+      cave: ['crawler', 'winged', 'biped', 'quadruped'],
       demon: ['biped', 'floater'],
       boss: ['biped', 'floater'],
       critter: ['quadruped'],

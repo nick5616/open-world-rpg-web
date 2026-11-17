@@ -22,6 +22,7 @@ export type Style =
   | 'lurker'
   | 'glintfox'
   | 'gloamhound'
+  | 'magma_hound'
   | 'behemoth'
   // many-legged
   | 'scuttler'
@@ -34,7 +35,9 @@ export type Style =
   | 'sentinel'
   | 'mud_golem'
   | 'crystal_golem'
+  | 'obsidian_golem'
   | 'ember_imp'
+  | 'ember_demon'
   | 'gloamling'
   | 'cinder_fiend'
   | 'storm_ghoul'
@@ -61,6 +64,7 @@ export type Style =
   | 'gale_harpy'
   | 'gloom_bat'
   | 'lumen_moth'
+  | 'sky_wyvern'
   // CR 020 summons (allies): spectral bodies in their element colour
   | 'wraith_hound'
   | 'gale_phantom'
@@ -112,6 +116,7 @@ const STYLE_RIG: Record<Style, Rig> = {
   lurker: 'quadruped',
   glintfox: 'quadruped',
   gloamhound: 'quadruped',
+  magma_hound: 'quadruped',
   behemoth: 'quadruped',
   hunt_master: 'biped',
   starfall_sentinel: 'biped',
@@ -125,6 +130,8 @@ const STYLE_RIG: Record<Style, Rig> = {
   sentinel: 'biped',
   mud_golem: 'biped',
   crystal_golem: 'biped',
+  obsidian_golem: 'biped',
+  ember_demon: 'biped',
   ember_imp: 'biped',
   gloamling: 'biped',
   cinder_fiend: 'biped',
@@ -146,6 +153,7 @@ const STYLE_RIG: Record<Style, Rig> = {
   gale_harpy: 'winged',
   gloom_bat: 'winged',
   lumen_moth: 'winged',
+  sky_wyvern: 'winged',
   wraith_hound: 'quadruped',
   gale_phantom: 'biped',
   sunlit_sentinel: 'floater',
@@ -216,9 +224,9 @@ export function modelSpec(info: Pick<EnemyInfo, 'key' | 'family' | 'behavior' | 
   const boss = info.affix === 7 || info.family === 'boss' || style === 'sovereign';
   const elite = info.affix >= 1 && info.affix <= 3;
   const accent = el < 8 ? ELEMENT_COLORS[el] : lighten(info.color);
-  const glowEyes = demon || boss || style === 'gloamhound' || info.family === 'elemental' || info.family === 'guardian' || style === 'crystal_golem' || style === 'gloom_bat' || style === 'cave_crawler';
+  const glowEyes = demon || boss || style === 'gloamhound' || style === 'magma_hound' || style === 'obsidian_golem' || style === 'sky_wyvern' || info.family === 'elemental' || info.family === 'guardian' || style === 'crystal_golem' || style === 'gloom_bat' || style === 'cave_crawler';
   const eye = demon ? (el < 8 ? ELEMENT_COLORS[el] : '#ff3b2a') : glowEyes ? (el < 8 ? ELEMENT_COLORS[el] : style === 'cave_crawler' ? '#c8ff6a' : '#bfe8ff') : '#1a1410';
-  const deathFx: DeathFx = style === 'hollow_bell' ? 'shatter' : demon ? 'smoke' : style === 'crystal_golem' || style === 'sentinel' || style === 'mud_golem' || style === 'starfall_sentinel' || style === 'vault_keeper' ? 'shatter' : (DEATH[rig] ?? 'dust');
+  const deathFx: DeathFx = style === 'hollow_bell' ? 'shatter' : demon ? 'smoke' : style === 'crystal_golem' || style === 'obsidian_golem' || style === 'sentinel' || style === 'mud_golem' || style === 'starfall_sentinel' || style === 'vault_keeper' ? 'shatter' : (DEATH[rig] ?? 'dust');
   const spec: ModelSpec = {
     key: info.key,
     variant: `${style}|${el}`,
@@ -237,7 +245,7 @@ export function modelSpec(info: Pick<EnemyInfo, 'key' | 'family' | 'behavior' | 
     deathFx,
     deathMs: rig === 'slime' ? 900 : boss ? 1450 : 1250,
     spectral: false,
-    hunch: demon ? (style === 'gloamling' ? 0.45 : style === 'grave_brute' ? 0.55 : 0.35) : style === 'brute' ? 0.12 : 0,
+    hunch: demon ? (style === 'gloamling' || style === 'ember_demon' ? 0.45 : style === 'grave_brute' ? 0.55 : 0.35) : style === 'brute' ? 0.12 : 0,
     collar: 0,
   };
   specCache.set(ck, spec);
