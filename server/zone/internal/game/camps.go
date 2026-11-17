@@ -395,7 +395,7 @@ type campFrameGround struct {
 func (g *campFrameGround) HeightAt(x, z float64) float64 { return g.inner.HeightAt(x, z) }
 func (g *campFrameGround) WaterAt(x, z float64) float64  { return movement.WaterAt(g.inner, x, z) }
 func (g *campFrameGround) AtLevel(y float64) movement.Ground {
-	return camps.With(movement.AtLevel(g.inner, y), g.s)
+	return camps.With(movement.AtLevel(g.inner, y), g.s, y)
 }
 
 // campWrap wraps a frame's ground with the solid pieces near the player.
@@ -933,11 +933,11 @@ func (s *Server) campPlace(sess *session, m *proto.Interact) {
 	seen := map[uint64]bool{}
 	for _, p := range s.piecesNear(x, z, reach) {
 		seen[p.ID] = true
-		near = append(near, camps.Placed{ID: p.ID, Kind: p.Kind, Rot: p.Rot, X: p.X, Z: p.Z, Owner: p.Owner})
+		near = append(near, camps.Placed{ID: p.ID, Kind: p.Kind, Rot: p.Rot, X: p.X, Z: p.Z, Owner: p.Owner, Build: camps.Builds(p.Kind)})
 	}
 	for _, p := range s.camp.byOwner[e.CharacterID] {
 		if !seen[p.ID] {
-			near = append(near, camps.Placed{ID: p.ID, Kind: p.Kind, Rot: p.Rot, X: p.X, Z: p.Z, Owner: p.Owner})
+			near = append(near, camps.Placed{ID: p.ID, Kind: p.Kind, Rot: p.Rot, X: p.X, Z: p.Z, Owner: p.Owner, Build: camps.Builds(p.Kind)})
 		}
 	}
 	y, why := camps.Check(camps.Want{Kind: kind, Rot: r, X: x, Z: z, Owner: e.CharacterID, FeetX: e.Move.Pos.X, FeetY: e.Move.Pos.Y, FeetZ: e.Move.Pos.Z}, near, campEnv{s})

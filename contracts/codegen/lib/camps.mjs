@@ -5,6 +5,7 @@
 // same object is emitted as a TS module (client: the build menu, the ghost,
 // the collision twin) and as JSON embedded by server/pkg/campdefs (zone).
 import { HEADER_NOTE } from './util.mjs';
+import { parseBuild } from './build.mjs'; // CR 041: base building appends its pieces
 
 function fail(msg) {
   throw new Error(`camps.yaml: ${msg}`);
@@ -16,7 +17,7 @@ const num = (v, what, min = 0) => {
 };
 
 /** Parse and validate; `items` is the normalized item table. */
-export function parseCamps(doc, items) {
+export function parseCamps(doc, items, buildDoc) {
   if (doc.version !== 1) fail('version must be 1');
   const itemKeys = new Set(items.items.map((i) => i.key));
   const item = (k, what) => {
@@ -81,7 +82,10 @@ export function parseCamps(doc, items) {
     };
   });
   if (pieces.length > 15) fail('pieces: at most 15');
-  return { version: doc.version, limits, placement, decay, fire, rested, chest, pieces };
+  // CR 041: the building pieces follow (ids 100+ and 200+; camps keep 1-5).
+  const built = parseBuild(buildDoc, itemKeys);
+  for (const b of built.pieces) if (pieces.some((q) => q.id === b.id)) fail(`build piece ${b.key}: id ${b.id} taken`);
+  return { version: doc.version, limits, placement, decay, fire, rested, chest, build: built.config, pieces: [...pieces, ...built.pieces] };
 }
 
 export function genCampsJson(d) {
@@ -89,7 +93,27 @@ export function genCampsJson(d) {
 }
 
 const TS_TYPES = `
-export interface CampPieceDef { key: string; id: number; name: string; kit: string; w: number; d: number; height: number; solid: boolean; max: number; desc: string }
+export type Pt3 = [number, number, number]; // x, z, y in cm (local frame)
+export type Box6 = [number, number, number, number, number, number]; // x0, x1, z0, z1, y0, y1 in cm (local frame)
+export interface BuildShape {
+  cat: 'structure' | 'furnish'; base: string; mat: number; // mat: index into build.materials, -1 none
+  par: [number, number] | null; // cm parity (0 even, 100 odd) of the position at rot 0; null: every 0.5 m
+  anchor: ('foundation' | 'ground' | 'sockets' | 'surface' | 'wall')[]; gpt: [number, number];
+  boxes: Box6[]; openBoxes: Box6[] | null; door: boolean; surface: Box6 | null; occ: Box6;
+  up: Pt3[]; down: Pt3[]; side: Pt3[]; face: Pt3[]; reach: number; coexist: string[];
+  cost: { item: string; qty: number }[]; comfort: number; use: '' | 'bed' | 'chest' | 'forge' | 'cook' | 'workbench' | 'hearth'; slots: number; light: number;
+}
+export interface CampPieceDef { key: string; id: number; name: string; kit: string; w: number; d: number; height: number; solid: boolean; max: number; desc: string; build?: BuildShape }
+export interface BuildConfig {
+  grid: { cellM: number; levelM: number; maxLevels: number };
+  budget: number; areaBudget: number; reachM: number; townMarginM: number; siteMarginM: number; roadMarginM: number; otherBuildM: number;
+  refundPct: number; repairPct: number; weatherFloor: number; mendPerDay: number; decayDays: number;
+  foundation: { maxSpreadM: number; maxBuriedM: number; skirtM: number; snapM: number }; maxHeightM: number;
+  hearth: { wardRadiusM: number; warmthM: number };
+  comfort: { radiusM: number; perKindCap: number; maxScore: number; tiers: { score: number; name: string }[]; durationPct: number; regenPct: number };
+  home: { cooldownS: number };
+  materials: { key: string; index: number; name: string; perUnit: { item: string; qty: number }[]; weather: number }[];
+}
 export interface CampDefs {
   version: number;
   limits: { maxPieces: number; campRadiusM: number; reachM: number };
@@ -98,6 +122,7 @@ export interface CampDefs {
   fire: { wood: string; kitHours: number; hoursPerWood: number; maxHours: number; safeRadiusM: number; warmthM: number };
   rested: { durationS: number; fireBonusS: number; staminaBonus: number; regenMult: number; manaRegenMult: number; combatLockS: number };
   chest: { slots: number };
+  build: BuildConfig;
   pieces: CampPieceDef[];
 }
 `;

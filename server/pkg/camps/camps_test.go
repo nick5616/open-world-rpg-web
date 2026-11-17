@@ -195,7 +195,7 @@ func TestCollisionBlocksSolidPieces(t *testing.T) {
 		t.Fatal("Near")
 	}
 	// The wrapper passes through without pieces or without a push-out.
-	if g := camps.With(movement.Flat{}, s); g != (movement.Ground)(movement.Flat{}) {
+	if g := camps.With(movement.Flat{}, s, 0); g != (movement.Ground)(movement.Flat{}) {
 		t.Fatal("With on a ground without a push-out should be the ground itself")
 	}
 }
