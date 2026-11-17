@@ -45,6 +45,7 @@ import (
 	"lodestone/server/pkg/structures"
 	"lodestone/server/zone/internal/combat"
 	"lodestone/server/zone/internal/items"
+	"lodestone/server/zone/internal/quests"
 )
 
 const buildNearM = 16.0 // pieces within this of a placement are the rules' neighbours
@@ -310,6 +311,7 @@ func (s *Server) buildPlace(sess *session, m *proto.Interact, def *campdefs.Piec
 		s.campFires()
 	}
 	s.sendBuildInfo(sess)
+	s.questsDeed(sess, quests.DeedBuild) // CR 051: the timber errand
 	s.log.Info("build piece placed", "piece", p.ID, "kind", def.Key, "owner", e.CharacterID, "x", p.X, "y", p.Y, "z", p.Z, "rot", rot)
 }
 

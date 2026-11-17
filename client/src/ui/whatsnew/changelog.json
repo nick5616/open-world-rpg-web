@@ -1,5 +1,15 @@
 [
   {
+    "id": "pt4-first-hour",
+    "date": "2026-11-17",
+    "title": "A proper first hour",
+    "items": [
+      "Someone will call you over by name when you arrive in town, and they have a real problem for you.",
+      "After the slimes, the people in town hand out short errands: ore and the forge, timber and the hammer, a torch and a cave, a fish for the pot, a steed, a tower.",
+      "Each one shows you one new thing, one at a time. The tips and this card wait until you have finished the first job."
+    ]
+  },
+  {
     "id": "pt4-dialog",
     "date": "2026-11-17",
     "title": "Talk to people",

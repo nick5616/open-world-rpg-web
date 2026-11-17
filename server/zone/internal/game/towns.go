@@ -268,7 +268,9 @@ func (s *Server) npcInteract(e *Entity, m *proto.Interact, now time.Time) {
 		s.townEvent(e, &proto.Event{Kind: EventNPCSay, EntityID: ne.ID, TargetID: uint32(d.Role), Value: ov, Data: []byte(w.Say(i, tod, open))})
 		if sess := s.byChar[e.CharacterID]; sess != nil {
 			done := s.questsTalk(sess, d.Role, d.Settlement, ne.ID, i) // quests.go: talk steps, the blacksmith's starter offer
-			s.contentTalk(sess, i, ne.ID, done)                        // CR 023: townsfolk side quests and stories (content_quests.go)
+			if !s.errandsTalk(sess, i, ne.ID, done) {                  // CR 051: the first-hour errands (errands.go)
+				s.contentTalk(sess, i, ne.ID, done) // CR 023: townsfolk side quests and stories (content_quests.go)
+			}
 		}
 		if !open {
 			return

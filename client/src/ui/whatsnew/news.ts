@@ -38,7 +38,8 @@ export const MOVING_MAX_WAIT_MS = 180000;
  * MAX_WAIT_MS of them); and only once you stand still (or after
  * MOVING_MAX_WAIT_MS of walking), so it never stops a walk.
  */
-export function cardMayShow(s: { sinceReadyMs: number; panelUp: boolean; busy: boolean; stillMs: number }): boolean {
+export function cardMayShow(s: { sinceReadyMs: number; panelUp: boolean; busy: boolean; stillMs: number; /** CR 051: a new character on the first quest (tips/firstHour.ts). */ held?: boolean }): boolean {
+  if (s.held) return false;
   if (s.sinceReadyMs < SHOW_AFTER_MS || s.panelUp) return false;
   if (s.busy && s.sinceReadyMs < MAX_WAIT_MS) return false;
   return s.stillMs >= STILL_MS || s.sinceReadyMs >= MOVING_MAX_WAIT_MS;

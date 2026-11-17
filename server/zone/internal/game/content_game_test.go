@@ -85,6 +85,7 @@ func contentHarness(t *testing.T, withCombat bool) (*harness, *contentStore) {
 		}
 	})
 	h.srv.SetWorldEvents(false) // tests start events themselves (dev Interact)
+	h.do(func() { h.srv.qst.noErrands = true }) // CR 051: the first-hour errands would offer over these side quests
 	return h, store
 }
 

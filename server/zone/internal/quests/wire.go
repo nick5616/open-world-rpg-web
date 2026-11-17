@@ -60,7 +60,7 @@ func view(q *Quest) WireQuest {
 		if (s.Obj.Kind == ObjHave || s.Obj.Kind == ObjTurnIn || s.Obj.Kind == ObjGive) && len(s.Obj.Items) > 0 && s.Obj.Items[0].Qty > 1 {
 			w.Need = s.Obj.Items[0].Qty
 		}
-		if s.Obj.Kind == ObjKill && s.Obj.N > 0 {
+		if (s.Obj.Kind == ObjKill && s.Obj.N > 0) || (s.Obj.Kind == ObjDo && s.Obj.N > 1) {
 			w.Need = s.Obj.N
 		}
 		w.TurnIn = s.Obj.Kind == ObjTurnIn

@@ -35,6 +35,8 @@ import (
 	"lodestone/server/pkg/movement"
 	"lodestone/server/pkg/proto"
 	"lodestone/server/pkg/writebehind"
+
+	"lodestone/server/zone/internal/quests"
 )
 
 // Interact target kinds and actions owned by mining.
@@ -339,7 +341,8 @@ func (s *Server) breakVein(cw caveWorld, v caves.Vein, st *veinState, breaker *E
 	s.mine.mined++
 	s.m.veinsMined.Add(1)
 	if breaker != nil {
-		s.achByChar(breaker.CharacterID, func(sess *session) { s.achAdd(sess, "mined", 1) }) // CR 031
+		s.achByChar(breaker.CharacterID, func(sess *session) { s.achAdd(sess, "mined", 1) })          // CR 031
+		s.achByChar(breaker.CharacterID, func(sess *session) { s.questsDeed(sess, quests.DeedMine) }) // CR 051: the ore errand
 	}
 
 	// The edit: carve + mined flag, everywhere at once.

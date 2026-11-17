@@ -10,7 +10,8 @@ import { drawnRemotes, netRuntime, useNetStore } from '../../net/netStore';
 import { combatRuntime } from '../../combat/link';
 import { useCombatHud } from '../../combat/store';
 import { useProgression } from '../progression/store';
-import { trackedQuest } from '../quests/store';
+import { trackedQuest, useQuests } from '../quests/store';
+import { firstHourHold, SAID_BY_PEOPLE } from './firstHour';
 import { useSocialStore } from '../../social/store';
 import { isNight } from '../../systems/clock';
 import { useMenu } from '../menu/store';
@@ -47,6 +48,7 @@ function sample(startedAt: number, hurtUntil: number): TipContext {
   const prompt = document.querySelector('[data-testid="town-prompt"]')?.textContent ?? '';
   return {
     ...IDLE_CONTEXT,
+    firstHour: firstHourHold(useQuests.getState().log.quests, (now - startedAt) / 1000),
     playingS: (now - startedAt) / 1000,
     busy: panelUp() || useMenu.getState().open || useSocialStore.getState().open || c.downedUntil > 0,
     questTracked: !!trackedQuest(),
@@ -87,6 +89,10 @@ export function TipsHud() {
       }
       if (!startedAt) startedAt = now;
       const ctx = sample(startedAt, hurtUntil);
+      if (ctx.firstHour && SAID_BY_PEOPLE.some((id) => !seen.has(id))) {
+        for (const id of SAID_BY_PEOPLE) seen.add(id); // the mentor says it (CR 051)
+        saveSeen(kv, character, seen);
+      }
       if (ctx.health < lastHealth - 0.001) hurtUntil = now + 5000;
       lastHealth = ctx.health;
       const cur = useTips.getState().current;

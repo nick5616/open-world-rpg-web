@@ -5,7 +5,13 @@
 // one at a time, and is remembered per character in localStorage. The Esc
 // menu turns tips off (globally) or shows them all again.
 //
+// Playtest 4 (CR 051): a brand-new character gets only the primary tips
+// until the first quest is handed in (firstHour.ts), the rest in the order
+// their thing first matters; "talk" is said by the mentor instead.
+//
 // Pure logic here (tips.test.ts); TipsHud.tsx samples the game and draws.
+
+import { PRIMARY_TIPS } from './firstHour';
 
 export type TipId = 'look' | 'quest' | 'talk' | 'fight' | 'heal' | 'night' | 'climb' | 'glide' | 'skills';
 
@@ -18,17 +24,21 @@ export interface Tip {
   keys: string[];
 }
 
-/** In priority order: when several are due, the first one shows. */
+/**
+ * In priority order: when several are due, the first one shows. The urgent
+ * ones come first, then the order a new player meets things: moving, the
+ * quest, a person, cliffs and falls, the first night, a free skill point.
+ */
 export const TIPS: Tip[] = [
   { id: 'heal', title: 'Low health', keys: ['R'], text: 'drinks a healing draught. Out of draughts? Back off: health comes back out of combat.' },
   { id: 'fight', title: 'Enemy nearby', keys: ['LMB', '1-4', 'F'], text: 'attack, cast a spell, dodge. The wheel picks what the right button uses.' },
   { id: 'look', title: 'Getting around', keys: ['WASD', 'Space', 'Shift'], text: 'walk, jump, sprint. Click the game to look with the mouse. Esc: menu and all controls.' },
   { id: 'quest', title: 'Your quest', keys: ['J', 'M'], text: 'journal and map. Follow the gold diamond on the compass and the beam of light.' },
   { id: 'talk', title: 'Townsfolk', keys: ['E'], text: 'talks to people: quests, shops and advice.' },
-  { id: 'night', title: 'Night falls', keys: [], text: 'Demons rise at night. Weak ones fall to any weapon, the stronger ones shrug off steel and fire ("Resisted"), and the strongest only die to sunsteel, Light magic or the sunrise. Stay near town until you have them.' },
   { id: 'climb', title: 'A cliff', keys: ['W'], text: 'hold it into the rock to climb (stamina wheel by the crosshair). Space leaps up.' },
   { id: 'glide', title: 'Falling', keys: ['Space', 'G'], text: 'Space again in the air double jumps, then glides. G opens the glider any time.' },
   { id: 'skills', title: 'Skill point to spend', keys: ['N'], text: 'opens the skill tree: learn a spell, then drag it onto a slot.' },
+  { id: 'night', title: 'Night falls', keys: [], text: 'Demons rise at night. Weak ones fall to any weapon, the stronger ones shrug off steel and fire ("Resisted"), and the strongest only die to sunsteel, Light magic or the sunrise. Stay near town until you have them.' },
 ];
 
 const BY_ID = new Map(TIPS.map((t) => [t.id, t]));
@@ -54,12 +64,15 @@ export interface TipContext {
   /** Falling fast (a ledge, a jump off a cliff) or already gliding. */
   falling: boolean;
   freePoints: number;
+  /** CR 051: a new character on the first quest: only the primary tips (firstHour.ts). */
+  firstHour: boolean;
 }
 
-export const IDLE_CONTEXT: TipContext = { playingS: 0, busy: false, questTracked: false, nearPerson: false, enemyNear: false, health: 1, draughts: 0, night: false, cliff: false, falling: false, freePoints: 0 };
+export const IDLE_CONTEXT: TipContext = { firstHour: false, playingS: 0, busy: false, questTracked: false, nearPerson: false, enemyNear: false, health: 1, draughts: 0, night: false, cliff: false, falling: false, freePoints: 0 };
 
 /** Whether a tip is relevant right now. */
 export function relevant(id: TipId, c: TipContext): boolean {
+  if (c.firstHour && !PRIMARY_TIPS.includes(id)) return false;
   switch (id) {
     case 'look':
       return c.playingS >= 2;

@@ -5,9 +5,10 @@ package game
 // enemies: it starts on the first login (the Ward waits), the giver is a
 // townsperson of the spawn town, the markers are Haven packs whose members
 // really are slimes, kills reach the quest through combat's OnKill hook,
-// the hand-in pays gold, XP, two draughts and a leather cap, and the Ward
-// starts and is tracked. Dropping the starter starts the Ward too, and a
-// character who already has the Ward never gets the starter.
+// the hand-in pays gold, XP, two draughts and a leather cap, and (playtest
+// 4, CR 051) the first errand starts and is tracked, the Ward waiting for
+// the errands. Dropping the starter starts the errand too, and a character
+// who already has the Ward never gets the starter.
 
 import (
 	"context"
@@ -187,7 +188,7 @@ func TestMeadowsFirstQuestToWard(t *testing.T) {
 	if done.Value != quests.MeadowsGold {
 		t.Fatalf("completed %+v", done)
 	}
-	ward := a.takeFor(EventQuestStarted, quests.WardID, 3*time.Second)
+	ward := a.takeFor(EventQuestStarted, quests.ErrandID(quests.ErrandOre), 3*time.Second)
 	var sj struct{ Title, Text string }
 	_ = json.Unmarshal(ward.Data, &sj)
 	t.Logf("handed off: %s: %s", sj.Title, sj.Text)
@@ -204,7 +205,7 @@ func TestMeadowsFirstQuestToWard(t *testing.T) {
 		t.Fatalf("draughts %d -> %+v", draughts0, it)
 	}
 	l = a.questLog(t)
-	if l.find(quests.MeadowsID) != nil || l.find(quests.WardID) == nil || l.Tracked != quests.WardID {
+	if l.find(quests.MeadowsID) != nil || l.find(quests.ErrandID(quests.ErrandOre)) == nil || l.Tracked != quests.ErrandID(quests.ErrandOre) || l.find(quests.WardID) != nil {
 		t.Fatalf("after the hand-in %+v", l)
 	}
 	saved := quests.Load(store.logs[char])
@@ -215,7 +216,7 @@ func TestMeadowsFirstQuestToWard(t *testing.T) {
 		saved = quests.Load(store.logs[char])
 		store.mu.Unlock()
 	}
-	if !saved.IsDone(quests.MeadowsKey) || saved.ByKey(quests.WardKey) == nil {
+	if !saved.IsDone(quests.MeadowsKey) || saved.ByKey(quests.ErrandKey(quests.ErrandOre)) == nil {
 		t.Fatalf("saved log: done %v active %d", saved.Done, len(saved.Active))
 	}
 }
@@ -229,8 +230,8 @@ func TestMeadowsDroppedStartsWardAndOldCharactersSkipIt(t *testing.T) {
 		t.Fatalf("first quest %+v", s)
 	}
 	a.send(&proto.Interact{TargetKind: InteractQuest, TargetID: quests.MeadowsID, Action: QuestActAbandon})
-	a.takeFor(EventQuestStarted, quests.WardID, 3*time.Second)
-	if l := a.questLog(t); l.find(quests.MeadowsID) != nil || l.Tracked != quests.WardID {
+	a.takeFor(EventQuestStarted, quests.ErrandID(quests.ErrandOre), 3*time.Second)
+	if l := a.questLog(t); l.find(quests.MeadowsID) != nil || l.Tracked != quests.ErrandID(quests.ErrandOre) {
 		t.Fatalf("after dropping %+v", l)
 	}
 
@@ -303,13 +304,13 @@ func TestMeadowsTalksSharedInParty(t *testing.T) {
 	if d := b.takeFor(EventQuestCompleted, quests.MeadowsID, 3*time.Second); d.Value != quests.MeadowsGold {
 		t.Fatalf("the friend's hand-in %+v", d)
 	}
-	b.takeFor(EventQuestStarted, quests.WardID, 3*time.Second)
+	b.takeFor(EventQuestStarted, quests.ErrandID(quests.ErrandOre), 3*time.Second)
 	time.Sleep(200 * time.Millisecond)
 	inv := b.inventory(t)
 	if inv.Gold < gold0+quests.MeadowsGold || findItem(inv, "armor:leather_cap") == nil {
 		t.Fatalf("the friend's reward: gold %d -> %d, cap %v", gold0, inv.Gold, findItem(inv, "armor:leather_cap"))
 	}
-	if l := b.questLog(t); l.find(quests.MeadowsID) != nil || l.find(quests.WardID) == nil {
+	if l := b.questLog(t); l.find(quests.MeadowsID) != nil || l.find(quests.ErrandID(quests.ErrandOre)) == nil {
 		t.Fatalf("the friend's log after the shared hand-in %+v", l)
 	}
 }

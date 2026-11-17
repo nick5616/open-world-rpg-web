@@ -114,6 +114,7 @@ func TestDialogStepLineAndTopicsInsideTheConversation(t *testing.T) {
 
 func TestDialogQuestOfferAcceptedThroughTheConversation(t *testing.T) {
 	h, a, _, char, _, _ := dialogStart(t)
+	h.do(func() { h.srv.qst.noErrands = true }) // CR 051 holds the Ward behind the errands; this is the pre-errand blacksmith offer
 	w := h.srv.cfg.Towns
 	si := spawnSettlement(t, w)
 	smith := npcOf(w, si, towns.RoleBlacksmith)

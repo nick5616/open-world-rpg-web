@@ -41,6 +41,7 @@ import (
 	"lodestone/server/zone/internal/combat"
 	"lodestone/server/zone/internal/content"
 	"lodestone/server/zone/internal/items"
+	"lodestone/server/zone/internal/quests"
 )
 
 // Interact 88 `fishing`.
@@ -347,6 +348,7 @@ func (s *Server) fishLanded(sess *session, fs *fishState, c *fishCast, f *conten
 		s.contentAchievements(sess)
 		s.saveContent(sess)
 	}
+	s.questsDeed(sess, quests.DeedFish) // CR 051: the pond errand
 	s.log.Info("fish landed", "character", e.CharacterID, "fish", f.Key, "g", c.catch.WeightG)
 }
 

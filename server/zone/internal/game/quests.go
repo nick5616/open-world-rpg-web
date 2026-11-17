@@ -108,6 +108,11 @@ type questsGlue struct {
 	clears  []pendingClear
 	hap     []quests.Happening
 	offered map[string]bool // characters offered the Ward this session by a blacksmith
+	// CR 051 (errands.go): resolved errand places and the new characters waiting for their mentor's call.
+	errands map[int]*errandCtx
+	arrive  map[string]*arrival
+	// noErrands switches the first-hour errands off (tests of side quests that predate CR 051).
+	noErrands bool
 }
 
 // QuestStore persists quest logs (PGStore implements it).
@@ -216,6 +221,7 @@ func (s *Server) questsJoin(sess *session) {
 		if q := s.meadowsFor(e.Move.Pos.X, e.Move.Pos.Z); q != nil && l.Add(q) == nil {
 			s.log.Info("quest started", "character", e.CharacterID, "quest", q.Key, "settlement", q.Settlement)
 			s.sendEvent(sess, &proto.Event{Kind: EventQuestStarted, EntityID: e.ID, TargetID: q.ID, Data: startedJSON(q)})
+			s.fhArrive(sess) // CR 051: the mentor calls the newcomer over by name
 		}
 	}
 	s.questsWardHandoff(sess)
@@ -230,6 +236,9 @@ func (s *Server) questsJoin(sess *session) {
 func (s *Server) questsWardHandoff(sess *session) {
 	e, l := sess.ent, sess.quests.log
 	if l.HasStarted(quests.WardKey) || l.IsDone(quests.WardKey) || l.ByKey(quests.MeadowsKey) != nil {
+		return
+	}
+	if s.errandChain(sess) { // CR 051: a new character does the first errands before the Ward
 		return
 	}
 	q := s.wardFor(e.Move.Pos.X, e.Move.Pos.Z)
@@ -312,6 +321,9 @@ func (s *Server) questsChanged(sess *session) {
 // questsTick: queued group clears, flagged rechecks and the 2 Hz position
 // checks (tick goroutine).
 func (s *Server) questsTick(tick uint32) {
+	if len(s.qst.arrive) > 0 {
+		s.errandsTick(tick) // CR 051: the mentor's call
+	}
 	if len(s.qst.clears) > 0 {
 		s.questsClears(tick)
 	}
@@ -392,7 +404,7 @@ func (s *Server) questsAdvance(sess *session, sig *quests.Signal) []quests.Happe
 	handoff := false
 	for _, h := range hs {
 		s.questHappened(sess, h)
-		handoff = handoff || h.Finished && h.Quest.Key == quests.MeadowsKey
+		handoff = handoff || h.Finished && (h.Quest.Key == quests.MeadowsKey || quests.IsErrand(h.Quest.Key))
 	}
 	if handoff {
 		s.questsWardHandoff(sess)
@@ -492,7 +504,7 @@ func (s *Server) questsTalk(sess *session, role uint8, settlement int, npcEnt ui
 			s.townEvent(sess.ent, &proto.Event{Kind: EventNPCSay, EntityID: npcEnt, TargetID: uint32(role), Value: 1, Data: []byte(say)})
 		}
 	}
-	if role == towns.RoleBlacksmith && q.log.ByKey(quests.WardKey) == nil && !q.log.IsDone(quests.WardKey) {
+	if role == towns.RoleBlacksmith && q.log.ByKey(quests.WardKey) == nil && !q.log.IsDone(quests.WardKey) && !s.wardWaitsForErrands(q.log) {
 		if wq := s.wardAt(settlement, 0); wq != nil {
 			s.qst.offered[sess.ent.CharacterID] = true
 			s.sendEvent(sess, &proto.Event{Kind: EventQuestOffer, EntityID: npcEnt, TargetID: wq.ID, Data: quests.OfferWire(wq)})
@@ -617,6 +629,7 @@ func (s *Server) questInteract(sess *session, m *proto.Interact) {
 		if qq.Key == quests.MeadowsKey {
 			s.questsWardHandoff(sess) // dropping the slimes moves the story on
 		}
+		s.errandAbandoned(sess, qq) // CR 051
 	case QuestActTurnIn:
 		qq := q.log.Find(id)
 		c := (*quests.Step)(nil)
