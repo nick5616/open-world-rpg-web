@@ -109,7 +109,8 @@ void mainUv(inout vec2 uv) {
     vec2 d = uv - w.xy;
     d.x *= uAspect;
     float r = length(d);
-    float band = exp(-pow((r - w.z) / 0.035, 2.0));
+    float q = (r - w.z) / 0.035;
+    float band = exp(-q * q); // squared by multiplication: the base is negative inside the ring and GLSL power of a negative is NaN on Mesa / NVIDIA GL (a black disc on Linux Chrome)
     if (band < 0.002) continue;
     uv -= (d / max(r, 1e-4)) * vec2(1.0 / uAspect, 1.0) * band * w.w * 0.02;
   }
