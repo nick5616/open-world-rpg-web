@@ -2012,3 +2012,8 @@ Nicole: "make more things directly in the game instead of text you see in the HU
 - The wisp does not know about walls or cliffs (it floats over terrain) and hides underground and in the sky; it does not lead through a building to an NPC inside.
 - Birds need a vault or event the zone has told the client about (range-limited sync). Tips such as "Low health" still exist (pt4/first-hour owns tips).
 - `Tab` also opens the quest card, so using the weapon technique briefly shows it.
+- Smoke plumes are faint from afar by day (see `pt4-diegetic-horizon.jpg`); the wisp is a small mote, easy to miss at 30 m.
+
+**Perf** (traversal bench, `client/src/world/bench/traversal.mjs high`, dev server, shared machine; A/B with `?nodiegetic`; results `docs/evidence/pt4-diegetic-{off,on}-traversal*`): draw calls max walk 337 -> 355 (+18), fly 485 -> 498 (+13) (the bench's own 400 budget was already exceeded in the flight); triangles max 2.459 M -> 2.465 M (walk), 4.174 M -> 4.160 M (fly); frame p50 16.7 ms both; shader programs linked before playable 136 -> 143. p99 and long tasks are run-to-run noise on a shared machine (walk p99 133 -> 50 ms, fly 50 -> 133 ms). The extra calls: three landmark Points draws, up to four pillar beams, the wisp, up to 8 sign label slots, the exit-post meshes of a town within 650 m, one papers mesh; all zero out of range.
+
+Evidence (`docs/evidence/`): `pt4-diegetic-hud.jpg` (Immersive HUD on, left, vs off, right), `pt4-diegetic-wisp.jpg`, `pt4-diegetic-signpost.jpg` (an exit post: names, arrows, distances), `pt4-diegetic-horizon.jpg` (smoke over a camp from the starting town), `pt4-diegetic-pillar.jpg` (the pillar over an unattuned tower at dusk).
