@@ -896,6 +896,24 @@ function drawTownWall(mb: MeshBuilder, bx: Box, s: Settlement): void {
       const v0 = out * (bx.hz - 0.35);
       mb.box(f, u - 0.4, u + 0.4, top, top + 0.75, Math.min(v0, out * bx.hz), Math.max(v0, out * bx.hz));
     }
+    if (detail() >= 1) {
+      // Arrow slits in the outer face and a buttress every fourth bay.
+      P(mb, 'plain', [0.05, 0.05, 0.06]);
+      for (let k = 0; k < n; k += 2) {
+        const u = -bx.hx + ((k + 0.5) * 2 * bx.hx) / n;
+        const v = out * (bx.hz + 0.012);
+        const slit: V3[] = [at(f, u - 0.07, top - 2.3, v), at(f, u + 0.07, top - 2.3, v), at(f, u + 0.07, top - 1.4, v), at(f, u - 0.07, top - 1.4, v)];
+        mb.poly(slit, dirOf(f, 0, 0, out));
+      }
+      P(mb, 'stone', [0.88, 0.86, 0.82]);
+      for (let k = 2; k < n; k += 5) {
+        const u = -bx.hx + (k * 2 * bx.hx) / n;
+        const v0 = out * bx.hz;
+        const v1 = out * (bx.hz + 0.4);
+        mb.box(f, u - 0.35, u + 0.35, bx.y0, top - 0.6, Math.min(v0, v1), Math.max(v0, v1), { bottom: false });
+        mb.box(f, u - 0.4, u + 0.4, top - 0.6, top - 0.5, Math.min(v0, v1 + out * 0.05), Math.max(v0, v1 + out * 0.05), { bottom: true });
+      }
+    }
   } else {
     for (const side of [0, 1, 2, 3]) {
       const g = turned(f, (side * Math.PI) / 2);
@@ -905,6 +923,16 @@ function drawTownWall(mb: MeshBuilder, bx: Box, s: Settlement): void {
         const u = -L + ((k + 0.5) * 2 * L) / 3;
         mb.box(g, u - 0.35, u + 0.35, top, top + 0.85, D - 0.35, D);
       }
+    }
+    if (detail() >= 1) {
+      // A pennant on a pole over the tower, in the town's colours (decoration, no collision).
+      const pc: V3 = hash(s.index, 55) > 0.5 ? [0.75, 0.2, 0.18] : [0.2, 0.36, 0.7];
+      P(mb, 'wood', [0.5, 0.4, 0.3]);
+      mb.cyl(f, 0, 0, top, top + 3.0, 0.045, 5);
+      P(mb, 'cloth', pc);
+      const q: V3[] = [at(f, 0.04, top + 2.9, 0), at(f, 1.1, top + 2.65, 0), at(f, 0.04, top + 2.2, 0)];
+      mb.poly(q, dirOf(f, 0, 0, 1));
+      mb.poly(q, dirOf(f, 0, 0, -1));
     }
   }
 }
