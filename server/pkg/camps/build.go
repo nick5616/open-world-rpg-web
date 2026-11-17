@@ -220,40 +220,63 @@ func rooted(n *node, env Env) bool {
 // terrain the client measured.
 const groundTol = 3
 
-// Supported reports whether n is held up by the stable nodes (and its depth).
-func supported(n *node, stable []*node) (bool, int) {
+// stableSet indexes the held-up pieces' sockets so a support test is a few
+// map lookups (a base of hundreds of pieces is checked in microseconds).
+type stableSet struct {
+	up    map[Pt3]struct{}
+	face  map[Pt3]struct{}
+	side  map[Pt3]int // lateral depth of the shallowest holder at that point
+	surfs []SurfaceOf
+}
+
+func newStableSet() *stableSet {
+	return &stableSet{up: map[Pt3]struct{}{}, face: map[Pt3]struct{}{}, side: map[Pt3]int{}}
+}
+
+func (st *stableSet) add(n *node) {
+	for _, p := range n.up {
+		st.up[p] = struct{}{}
+	}
+	for _, p := range n.f {
+		st.face[p] = struct{}{}
+	}
+	for _, p := range n.side {
+		if d, ok := st.side[p]; !ok || n.depth < d {
+			st.side[p] = n.depth
+		}
+	}
+	if sf, ok := SurfacesOf(n.bp); ok && sf.Ya == sf.Yb {
+		st.surfs = append(st.surfs, sf)
+	}
+}
+
+// supported reports whether n is held up by the stable set (and its depth).
+func supported(n *node, st *stableSet) (bool, int) {
 	sh := n.def.Build
 	if hasAnchor(sh, "wall") {
-		pt := Pt3{n.bp.X, n.bp.Z, n.bp.Y}
-		for _, q := range stable {
-			if ptIn(pt, q.f) {
-				return true, 0
-			}
-		}
-		return false, 0
+		_, ok := st.face[Pt3{n.bp.X, n.bp.Z, n.bp.Y}]
+		return ok, 0
 	}
 	if hasAnchor(sh, "surface") {
-		for _, q := range stable {
-			if s, ok := SurfacesOf(q.bp); ok && s.Ya == s.Yb && math.Abs(s.Ya*100-float64(n.bp.Y)) < 1 && onRect(s, float64(n.bp.X)/100, float64(n.bp.Z)/100) {
+		for _, s := range st.surfs {
+			if math.Abs(s.Ya*100-float64(n.bp.Y)) < 1 && onRect(s, float64(n.bp.X)/100, float64(n.bp.Z)/100) {
 				return true, 0
 			}
 		}
 	}
-	if !hasAnchor(sh, "sockets") || len(n.down) == 0 && len(n.side) == 0 {
+	if !hasAnchor(sh, "sockets") {
 		return false, 0
 	}
-	for _, q := range stable {
-		if sharesPt(n.down, q.up) {
+	for _, p := range n.down {
+		if _, ok := st.up[p]; ok {
 			return true, 0
 		}
 	}
 	if sh.Reach > 0 {
 		best := -1
-		for _, q := range stable {
-			if len(q.side) > 0 && sharesPt(n.side, q.side) && q.depth < sh.Reach {
-				if best < 0 || q.depth+1 < best {
-					best = q.depth + 1
-				}
+		for _, p := range n.side {
+			if d, ok := st.side[p]; ok && d < sh.Reach && (best < 0 || d+1 < best) {
+				best = d + 1
 			}
 		}
 		if best > 0 {
@@ -271,19 +294,21 @@ func onRect(s SurfaceOf, x, z float64) bool {
 }
 
 // stabilize returns the held-up nodes (rooted, or supported through sockets
-// from a rooted piece) with their lateral depth.
-func stabilize(ps []*BP, env Env) []*node {
+// from a rooted piece) with their lateral depth, and the index it built.
+func stabilize(ps []*BP, env Env) ([]*node, *stableSet) {
 	nodes := make([]*node, 0, len(ps))
 	for _, p := range ps {
 		if n := newNode(p); n != nil {
 			nodes = append(nodes, n)
 		}
 	}
+	st := newStableSet()
 	var stable []*node
 	for _, n := range nodes {
 		if rooted(n, env) {
 			n.stable = true
 			stable = append(stable, n)
+			st.add(n)
 		}
 	}
 	for changed := true; changed; {
@@ -292,21 +317,22 @@ func stabilize(ps []*BP, env Env) []*node {
 			if n.stable {
 				continue
 			}
-			if ok, d := supported(n, stable); ok {
+			if ok, d := supported(n, st); ok {
 				n.stable, n.depth = true, d
 				stable = append(stable, n)
+				st.add(n)
 				changed = true
 			}
 		}
 	}
-	return stable
+	return stable, st
 }
 
 // Stability returns the ids of the pieces that are held up.
 func Stability(ps []*BP, env Env) map[uint64]bool {
-	st := stabilize(ps, env)
-	out := make(map[uint64]bool, len(st))
-	for _, n := range st {
+	nodes, _ := stabilize(ps, env)
+	out := make(map[uint64]bool, len(nodes))
+	for _, n := range nodes {
 		out[n.bp.ID] = true
 	}
 	return out
@@ -550,6 +576,7 @@ func okSupport(bp *BP, all []*BP, env Env) bool {
 	if n == nil {
 		return false
 	}
-	ok, _ := supported(n, stabilize(all, env))
+	_, st := stabilize(all, env)
+	ok, _ := supported(n, st)
 	return ok
 }
