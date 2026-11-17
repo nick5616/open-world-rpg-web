@@ -199,6 +199,8 @@ export const CUES = {
 
   // Playtest 2 immersion pass: the Heartfall's bells (bells.ts: synthesized, rendered once)
   bell_toll: { files: ['synth:hollow_bell'], bus: 'sfx', spatial: true, refDistance: 6, maxDistance: 110, volume: 0.75, pitch: 0.035, maxVoices: 4, cooldownMs: 150, reverb: 0.7, priority: 4, duckMusic: false },
+  // CR 050: the town bell tolled at dusk (zone Event 1931), heard across the town
+  town_bell: { files: ['synth:town_bell'], bus: 'sfx', spatial: true, refDistance: 14, maxDistance: 140, volume: 0.7, pitch: 0.02, maxVoices: 4, cooldownMs: 300, reverb: 0.55, priority: 3, duckMusic: false },
   hush_toll: { files: ['synth:hush_toll'], bus: 'sfx', spatial: true, refDistance: 12, maxDistance: 160, volume: 0.95, pitch: 0.02, maxVoices: 2, cooldownMs: 400, reverb: 0.8, priority: 5, duckMusic: true },
 } satisfies Record<string, CueDef>;
 

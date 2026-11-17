@@ -40,6 +40,8 @@ export const BELLS: Record<string, BellSpec> = {
   // a cracked bronze bell somewhere about G3, flat; eerie, not churchly
   hollow_bell: { prime: 188, seconds: 7, sustain: 0.9, beat: 1.3, strike: 0.5, lowpass: 5200 },
   // the Hush's toll: an octave and a fourth lower, slower, bigger
+  // CR 050: the town bell at dusk: a bright bronze bell, higher and shorter than the Heartfall's
+  town_bell: { prime: 262, seconds: 6, sustain: 0.8, beat: 0.9, strike: 0.45, lowpass: 7600 },
   hush_toll: { prime: 70, seconds: 10, sustain: 1.6, beat: 0.6, strike: 0.35, lowpass: 2600 },
 };
 

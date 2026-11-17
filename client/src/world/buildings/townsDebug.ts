@@ -1,6 +1,7 @@
 // window.__lodestoneTowns: debug handle for headless scripts (townBench.mjs)
 // and the browser console. Debug builds only, like window.__lodestoneWorld.
 
+import { npcFocus } from './npcFocus';
 import { BUILDING_ROLES, BUILDING_STYLES, NPC_ROLES, SETTLEMENT_SIZES, TOWN_STRUCTURE_KINDS } from '@lodestone/worldgen';
 import { DEBUG } from '../../config';
 import { useDebugStore } from '../../stores/debugStore';
@@ -91,6 +92,9 @@ export function installTownsDebug(m: TownsManager): () => void {
     /** E on door d (Interact 34 online, local offline). */
     toggleDoor: (d: number) => m.doorSync?.toggle(d),
     doorStats: () => (m.doorSync ? { ...m.doorSync.stats, active: m.doorSync.states.active, leaves: m.doorLeaves?.mesh.count ?? 0, online: m.doorSync.online } : null),
+    // CR 050: lively townsfolk counters and what is being said (headless scripts).
+    lively: () => ({ ...m.npcs.stats, lines: npcFocus.live().map(([k, l]) => ({ key: k, text: l.text, toYou: l.toYou })) }),
+    sayNear: (key: number, text: string) => npcFocus.say(key, text, 6000, true),
     visibleNpcs: () => m.npcs.views.map((v) => ({ name: v.name, role: v.role, x: v.x, y: v.y, z: v.z, entityId: v.entityId })),
   };
   (window as unknown as { __lodestoneTowns: typeof handle }).__lodestoneTowns = handle;
