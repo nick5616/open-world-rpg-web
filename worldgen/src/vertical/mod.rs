@@ -37,6 +37,7 @@
 pub mod abi;
 pub mod decor;
 pub mod desc;
+pub mod dwarf;
 pub mod field;
 pub mod sky;
 pub mod tile;
@@ -77,6 +78,8 @@ pub mod stream {
     pub const DECOR: u64 = 0x5659_0006;
     pub const DEPTHS: u64 = 0x5659_0007;
     pub const NAMES: u64 = 0x5659_0008;
+    pub const DWARF: u64 = 0x5659_0009;
+    pub const DRESS: u64 = 0x5659_000A;
 }
 
 /// Island kinds.
@@ -98,7 +101,11 @@ pub mod ck {
     pub const FUNGAL: u8 = 3;
     pub const INFERNO: u8 = 4;
     pub const ASHEN: u8 = 5;
-    pub const NAMES: [&str; 6] = ["crystal", "cenote", "river", "fungal", "inferno", "ashen"];
+    /// genVersion 4 (docs/cr/043-dwarves.md): the dwarven camps, strongholds and lower halls.
+    pub const DWARF_CAMP: u8 = 6;
+    pub const STRONGHOLD: u8 = 7;
+    pub const LOWER_HALLS: u8 = 8;
+    pub const NAMES: [&str; 9] = ["crystal", "cenote", "river", "fungal", "inferno", "ashen", "dwarf_camp", "stronghold", "lower_halls"];
 }
 
 /// Corridor kinds.
@@ -107,6 +114,8 @@ pub mod rk {
     pub const RIVER: u8 = 1;
     pub const DESCENT: u8 = 2;
     pub const PASSAGE: u8 = 3;
+    /// genVersion 4: the side passages to dwarven camps and strongholds.
+    pub const SECRET: u8 = 4;
 }
 
 /// Opening kinds.
@@ -285,7 +294,26 @@ pub mod dk {
     pub const GATE: u8 = 25;
     pub const LIGHTSHAFT: u8 = 26;
     pub const LANTERN: u8 = 27;
-    pub const COUNT: u8 = 28;
+    // genVersion 4 (CR 043): cave dressing and dwarven architecture, appended.
+    pub const MINECART: u8 = 28;
+    pub const RAILS: u8 = 29;
+    pub const SUPPORT: u8 = 30;
+    pub const BONES: u8 = 31;
+    pub const GLOWWORMS: u8 = 32;
+    pub const CHEST: u8 = 33;
+    pub const TABLET: u8 = 34;
+    pub const BRAZIER: u8 = 35;
+    pub const DWARF_DOOR: u8 = 36;
+    pub const DWARF_PILLAR: u8 = 37;
+    pub const ORE_PILE: u8 = 38;
+    pub const RUNES: u8 = 39;
+    pub const STATUE: u8 = 40;
+    pub const BANNER: u8 = 41;
+    pub const SECRET_DOOR: u8 = 42;
+    pub const THRONE: u8 = 43;
+    pub const FORGEGLOW: u8 = 44;
+    pub const COLLAPSE: u8 = 45;
+    pub const COUNT: u8 = 46;
 }
 
 /// Decoration flags.
@@ -294,6 +322,8 @@ pub mod df {
     pub const LIGHT: u8 = 1;
     /// Hangs from the ceiling.
     pub const HANG: u8 = 2;
+    /// genVersion 4: the player can interact with it (Interact 160+, the descriptor index is the target).
+    pub const INTERACT: u8 = 4;
 }
 
 #[derive(Clone, Copy, Debug)]

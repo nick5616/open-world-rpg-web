@@ -12,7 +12,7 @@ export type Element = (typeof ELEMENTS)[number];
 export const MATERIALS = ['grass', 'dirt', 'rock', 'snow', 'sand', 'mud'] as const;
 
 export const SITE_CATEGORY = { poi: 0, settlement: 1, structure: 2 } as const;
-export const POI_KINDS = ['tower', 'cave_mouth', 'waypoint', 'landmark', 'enemy_camp', 'tunnel', 'cavern', 'sky_lift', 'depths', 'archipelago', 'depths_gate'] as const;
+export const POI_KINDS = ['tower', 'cave_mouth', 'waypoint', 'landmark', 'enemy_camp', 'tunnel', 'cavern', 'sky_lift', 'depths', 'archipelago', 'depths_gate', 'dwarf_door', 'lower_halls'] as const;
 export const SETTLEMENT_SIZES = ['hamlet', 'village', 'town'] as const;
 export const STRUCTURE_KINDS = ['ruin', 'watchtower', 'mineshaft', 'shrine', 'bandit_camp', 'wizard_tower', 'meteor_crater', 'sunken_temple', 'demon_lair', 'sky_palace', 'sky_ruin'] as const;
 export const LANDMARK_VARIANTS = ['standing_stones', 'great_tree', 'stone_arch', 'monolith', 'giant_bones', 'crystal_outcrop', 'statue', 'hot_spring'] as const;

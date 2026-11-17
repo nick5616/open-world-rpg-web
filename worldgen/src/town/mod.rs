@@ -155,7 +155,10 @@ pub mod pk {
     pub const TORCH: u8 = 30;
     /// genVersion 3: a sky town plaza's activity spot (CR 038 hook for sky activities).
     pub const ACTIVITY: u8 = 31;
-    pub const COUNT: u8 = 32;
+    /// genVersion 4 (CR 043): dwarven halls' ore cart and heaped ore.
+    pub const MINECART: u8 = 32;
+    pub const ORE_PILE: u8 = 33;
+    pub const COUNT: u8 = 34;
 }
 
 /// Prop flags (byte 28).
@@ -386,6 +389,8 @@ pub fn build(a: &Atlas) -> Result<Towns, String> {
     paths::to_sights(a, &mut t);
     // genVersion 3: sky towns last (every surface array keeps its indices).
     layout::build_sky_settlements(a, &mut t);
+    // genVersion 4: the dwarves' camps and strongholds after those.
+    layout::build_under_settlements(a, &mut t);
     Ok(t)
 }
 

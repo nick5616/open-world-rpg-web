@@ -21,6 +21,9 @@ const CHAMBER_FILL: Record<(typeof CHAMBER_KINDS)[number], string> = {
   fungal: 'rgba(90,200,120,0.8)',
   inferno: 'rgba(232,96,36,0.9)',
   ashen: 'rgba(150,138,128,0.85)',
+  dwarf_camp: 'rgba(214,150,70,0.9)',
+  stronghold: 'rgba(230,170,60,0.9)',
+  lower_halls: 'rgba(160,80,60,0.9)',
 };
 
 /** The layer a site belongs to (sites from before genVersion 3 are surface sites). */

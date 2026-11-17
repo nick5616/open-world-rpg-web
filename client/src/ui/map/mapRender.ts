@@ -108,6 +108,8 @@ export function siteGlyph(s: Site): { color: string; shape: 'tower' | 'waypoint'
   if (s.kind === 'tunnel') return { color: '#2fd6e0', shape: 'cave' };
   if (s.kind === 'cavern') return { color: '#5f8bff', shape: 'star' };
   if (s.kind === 'depths' || s.kind === 'depths_gate') return { color: '#ff5a1f', shape: 'cave' };
+  if (s.kind === 'dwarf_door') return { color: '#f0b050', shape: 'cave' };
+  if (s.kind === 'lower_halls') return { color: '#c0603c', shape: 'star' };
   if (s.kind === 'sky_lift') return { color: '#3fe0d0', shape: 'waypoint' };
   if (s.kind === 'archipelago') return { color: '#cfe0ff', shape: 'star' };
   if (s.kind === 'sky_palace') return { color: '#ffd77a', shape: 'tower' };

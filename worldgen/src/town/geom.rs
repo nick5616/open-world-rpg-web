@@ -107,6 +107,8 @@ pub struct Terrain<'a> {
     memo: Option<Memo<'a>>,
     /// genVersion 3: a sky island's top instead of the terrain (sky towns).
     sky: Option<(std::rc::Rc<crate::vertical::Cached>, usize)>,
+    /// genVersion 4: an Underground chamber's floor (dwarven camps and strongholds).
+    under: Option<std::rc::Rc<crate::vertical::Cached>>,
 }
 
 /// Lattice samples of one area, computed on first use (a settlement's
@@ -125,12 +127,25 @@ struct Memo<'a> {
 
 impl<'a> Terrain<'a> {
     pub fn new(a: &'a Atlas<'a>) -> Terrain<'a> {
-        Terrain { a, memo: None, sky: None }
+        Terrain { a, memo: None, sky: None, under: None }
     }
 
     /// The top of sky island `island` as the ground (no water).
     pub fn sky(a: &'a Atlas<'a>, v: std::rc::Rc<crate::vertical::Cached>, island: usize) -> Terrain<'a> {
-        Terrain { a, memo: None, sky: Some((v, island)) }
+        Terrain { a, memo: None, sky: Some((v, island)), under: None }
+    }
+
+    /// The floor of the Underground (a dwarven hall's ground; no water).
+    pub fn under(a: &'a Atlas<'a>, v: std::rc::Rc<crate::vertical::Cached>) -> Terrain<'a> {
+        Terrain { a, memo: None, sky: None, under: Some(v) }
+    }
+
+    pub fn is_under(&self) -> bool {
+        self.under.is_some()
+    }
+
+    fn under_floor(v: &crate::vertical::Cached, x: f64, z: f64) -> f64 {
+        crate::vertical::field::under_at(&v.plan, crate::vertical::LAYER_UNDER, x, z, &mut |_, _| 1.0e6).a
     }
 
     pub fn is_sky(&self) -> bool {
@@ -147,6 +162,7 @@ impl<'a> Terrain<'a> {
         Terrain {
             a,
             sky: None,
+            under: None,
             memo: Some(Memo {
                 g,
                 x0: x0 as i64,
@@ -162,6 +178,9 @@ impl<'a> Terrain<'a> {
     fn lattice(&self, x: f64, z: f64) -> (f32, f32) {
         if let Some((v, _)) = &self.sky {
             return (crate::vertical::field::sky_at(&v.plan, x, z).a as f32, -10000.0);
+        }
+        if let Some(v) = &self.under {
+            return (Self::under_floor(v, x, z) as f32, -10000.0);
         }
         if let Some(m) = &self.memo {
             let i = x as i64 - m.x0;
@@ -186,7 +205,7 @@ impl<'a> Terrain<'a> {
     /// Exact collision height (same as the `collision_height` export: the
     /// same lattice values through the same `tri_interp`).
     pub fn height(&self, x: f64, z: f64) -> f64 {
-        if self.memo.is_none() && self.sky.is_none() {
+        if self.memo.is_none() && self.sky.is_none() && self.under.is_none() {
             return crate::ground::collision_height(self.a, x, z);
         }
         let x0 = libm::floor(x);
@@ -241,6 +260,9 @@ impl<'a> Terrain<'a> {
     pub fn sample(&self, x: f64, z: f64) -> (f64, f64) {
         if let Some((v, _)) = &self.sky {
             return (crate::vertical::field::sky_at(&v.plan, x, z).a, -10000.0);
+        }
+        if let Some(v) = &self.under {
+            return (Self::under_floor(v, x, z), -10000.0);
         }
         if let Some(m) = &self.memo {
             let (fx, fz) = (x - m.x0 as f64, z - m.z0 as f64);

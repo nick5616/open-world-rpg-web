@@ -44,7 +44,9 @@ fn check(seed: u64) {
             assert!(npcs.iter().any(|p| p.role == r), "seed {seed} settlement {}: no npc role {r}", st.site);
         }
         let props = &t.props[st.prop_first as usize..(st.prop_first + st.prop_count) as usize];
-        for k in [pk::BOARD, pk::WELL, pk::FORGE, pk::ANVIL] {
+        // genVersion 4: a dwarven hall has a great brazier where a village has its well.
+        let well = if a.site(st.site as usize).layer == worldgen::vertical::LAYER_UNDER { pk::BRAZIER } else { pk::WELL };
+        for k in [pk::BOARD, well, pk::FORGE, pk::ANVIL] {
             assert!(props.iter().any(|p| p.kind == k), "seed {seed} settlement {}: no prop kind {k}", st.site);
         }
     }

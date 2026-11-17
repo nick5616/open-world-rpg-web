@@ -41,7 +41,15 @@ pub mod vertical;
 /// palaces...), sky towns in the towns buffer, scatter cleared at tunnel
 /// mouths. Every genVersion 2 site keeps its index and id. The genVersion 2
 /// build is archived in worldgen/archive/.
-pub const GEN_VERSION: u16 = 3;
+///
+/// 4 (playtest 3, docs/cr/043-dwarves.md): the dwarves. Camps, strongholds
+/// and lower halls carved into the Underground (appended chambers, side
+/// passages, settlements, waypoints and doors; stronghold terraces), cave
+/// dressing (supports, rails, carts, bones, glowworms, chests, tablets),
+/// dwarven towns in the towns buffer. Every genVersion 3 site, chamber,
+/// corridor, decoration and town keeps its index and id. The genVersion 3
+/// build is archived in worldgen/archive/.
+pub const GEN_VERSION: u16 = 4;
 
 /// Version of the wasm export signatures and buffer layouts in README.md.
 pub const ABI_VERSION: u32 = 1;
