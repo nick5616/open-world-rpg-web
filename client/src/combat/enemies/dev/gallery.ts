@@ -22,6 +22,7 @@ import { modelFor } from '../models';
 import { modelSpec, summonSpec, contractSummons } from '../spec';
 import { enemyInfo } from '../../events';
 import { enemyWarmObjects } from '../warm';
+import { warmShaders } from '../../../world/warmup';
 import { pushNumber, fxQueue, type DamageNumber } from '../../store';
 import { lsRetro, lsStyle } from '../../../world/style/styleShader';
 import { STYLES, isVisualStyle } from '../../../world/style/styles';
@@ -280,6 +281,8 @@ const gallery = {
     const a = sims[i] ? enemies.animator(sims[i].v.id) : null;
     return a ? { state: a.state, death: a.death, dissolve: a.dissolve, windup: a.windup, flash: a.flash } : null;
   },
+  /** Every linked program (name + cache key): a new one after the warm-up is a compile hitch at that moment. */
+  programs: () => (renderer.info.programs ?? []).map((p) => `${p.name}#${p.cacheKey}`),
   stats: () => ({ ...enemies.stats(), mode, programs: (renderer.info.programs ?? []).length, calls: frameCalls, triangles: frameTris }),
   async sample(ms: number): Promise<{ dt: number[]; update: number[] }> {
     const dt: number[] = [];
@@ -357,10 +360,8 @@ const frame = (t: number) => {
   requestAnimationFrame(frame);
 };
 
-// Warm the enemy programs (as the world's warm-up does) before the first frame.
-for (const o of enemyWarmObjects()) scene.add(o);
-renderer.compileAsync(scene, camera).then(() => {
-  for (const o of enemyWarmObjects()) scene.remove(o);
+// Warm the programs the way the world does (render-target variants, post chain), before the first frame.
+warmShaders(renderer, scene, camera, enemyWarmObjects(), 20000, post.warmObjects()).then(() => {
   requestAnimationFrame(frame);
   setTimeout(() => (gallery.ready = true), 300);
 });
