@@ -1,5 +1,14 @@
 [
   {
+    "id": "pt4-linux-gpu",
+    "date": "2026-11-17",
+    "title": "Fixed a blank screen outside town on some Linux setups",
+    "items": [
+      "If the world went dark the moment you left the starting town (Chrome on Linux), it now draws normally.",
+      "Rocks no longer break the picture, and one bad pixel can't spoil a whole frame."
+    ]
+  },
+  {
     "id": "pt4-lively-npcs",
     "date": "2026-11-17",
     "title": "Townsfolk come alive",

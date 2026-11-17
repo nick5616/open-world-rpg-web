@@ -241,6 +241,7 @@ export function WorldScene({ runtime }: Props) {
     const s = gl.getSize(new THREE.Vector2());
     post.setSize(s.x, s.y);
     fx.current = { sun, post };
+    if (DEBUG && typeof window !== 'undefined') (window as unknown as { __lodestonePost?: unknown }).__lodestonePost = { post, scene, camera, gl, world };
     return () => {
       fx.current = null;
       world.terrain.onMaterial = null;

@@ -121,7 +121,7 @@ export function createCircleMaterial(): CircleMat {
       #define PI 3.14159265
       float line(float d, float w) { float fw = fwidth(d) * 1.2; return 1.0 - smoothstep(w, w + fw, abs(d)); }
       float polyDist(vec2 p, float n, float rot) {
-        float a = atan(p.y, p.x) + rot;
+        float a = atan(p.y, p.x + 1e-6) + rot;
         float sector = 2.0 * PI / n;
         return cos(floor(0.5 + a / sector) * sector - a) * length(p);
       }
@@ -129,7 +129,7 @@ export function createCircleMaterial(): CircleMat {
         vec2 p = vUv * 2.0 - 1.0;
         float r = length(p);
         if (r > 1.02) discard;
-        float ang = atan(p.y, p.x);
+        float ang = atan(p.y, p.x + 1e-6);
         float rot = uTime * uSpin;
         float outer = line(r - 0.965, 0.022);
         float inner = line(r - 0.80, 0.010);
@@ -199,7 +199,7 @@ export function createZoneMaterial(): ZoneMat {
           rim = smoothstep(0.78, 0.96, r) * (1.0 - smoothstep(0.96, 1.0, r));
           if (uSector > 0.0) {
             // world yaw convention: forward (-z) at yaw 0; plane uv.y up = -z
-            float a = atan(-p.x, p.y) - uYaw;
+            float a = atan(-p.x, p.y + 1e-6) - uYaw;
             a = mod(a + 3.14159265, 6.2831853) - 3.14159265;
             float half_ = uSector * 0.5;
             if (abs(a) > half_) discard;
@@ -215,7 +215,7 @@ export function createZoneMaterial(): ZoneMat {
           float n = fbm(q * 1.6 + uTime * 0.05);
           v = smoothstep(0.55, 0.75, n) * 0.9 + 0.22;
         } else if (uStyle < 2.5) {
-          float a = atan(p.y, p.x) + r * 5.0 - uTime * 1.6;
+          float a = atan(p.y, p.x + 1e-6) + r * 5.0 - uTime * 1.6;
           float n = fbm(vec2(a * 1.3, r * 4.0 - uTime * 0.8));
           v = smoothstep(0.35, 0.85, n) * (1.2 - r * 0.4);
         } else if (uStyle < 3.5) {
@@ -236,11 +236,11 @@ export function createZoneMaterial(): ZoneMat {
           v = pow(max(1.0 - abs(n - 0.5) * 2.0, 0.0), 14.0) * 2.0 + 0.1;
         } else if (uStyle < 7.5) {
           // wind: spiral streaks sweeping round
-          float a = atan(p.y, p.x) - r * 3.0 + uTime * 3.0;
+          float a = atan(p.y, p.x + 1e-6) - r * 3.0 + uTime * 3.0;
           v = pow(0.5 + 0.5 * sin(a * 5.0 + vnoise(q) * 2.0), 6.0) * 0.9 + 0.08;
         } else {
           // radiance: slow rays turning from the centre
-          float a = atan(p.y, p.x) + uTime * 0.3;
+          float a = atan(p.y, p.x + 1e-6) + uTime * 0.3;
           v = pow(0.5 + 0.5 * sin(a * 12.0), 3.0) * (1.1 - r) + 0.25;
         }
         vec3 col = mix(uColor, uColor2, clamp(v, 0.0, 1.0));
@@ -291,7 +291,7 @@ export function createDomeMaterial(): DomeMat {
         vec3 dir = normalize(vLocal);
         float h = dir.y;
         if (h < -0.05) discard;
-        float ang = atan(dir.z, dir.x);
+        float ang = atan(dir.z, dir.x + 1e-6);
         vec2 uv = vec2(ang / (2.0 * PI) + 0.5, h);
         float fres = pow(max(1.0 - abs(dot(normalize(vN), normalize(vV))), 0.0), 2.0);
         float horizon = exp(-h * 5.0);
@@ -385,7 +385,7 @@ export function createShellMaterial(): ShellMat {
       void main() {
         float fres = pow(max(1.0 - abs(dot(normalize(vN), normalize(vV))), 0.0), 2.5);
         vec3 d = normalize(vLocal);
-        vec2 g = vec2(atan(d.z, d.x) * 4.0, d.y * 7.0);
+        vec2 g = vec2(atan(d.z, d.x + 1e-6) * 4.0, d.y * 7.0);
         g.x += mod(floor(g.y), 2.0) * 0.5;
         vec2 f = abs(fract(g) - 0.5);
         float hex = (1.0 - smoothstep(0.0, 0.07, min(0.5 - f.x, 0.5 - f.y))) * (0.5 + 0.5 * sin(uTime * 3.0 + g.y * 2.0));

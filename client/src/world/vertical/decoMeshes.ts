@@ -307,11 +307,11 @@ uniform float uTime; varying vec2 vUv; varying vec3 vW;
 float h1(float n){ return fract(sin(n) * 43758.5453); }
 void main(){
   float x = vUv.x;
-  float edge = smoothstep(0.0, 0.25, x) * smoothstep(1.0, 0.75, x);
+  float edge = smoothstep(0.0, 0.25, x) * (1.0 - smoothstep(0.75, 1.0, x));
   float col = floor(x * 14.0);
   float sp = 9.0 + h1(col) * 6.0;
   float s = fract(vUv.y * 0.08 - uTime * sp * 0.08 + h1(col * 3.1));
-  float streak = smoothstep(0.0, 0.25, s) * smoothstep(1.0, 0.55, s);
+  float streak = smoothstep(0.0, 0.25, s) * (1.0 - smoothstep(0.55, 1.0, s));
   float top = smoothstep(0.0, 2.0, vUv.y);
   // The fall frays into spray and mist as it drops (a long one into the clouds).
   float fray = 1.0 - smoothstep(30.0, 260.0, vUv.y) * 0.75;
@@ -401,8 +401,8 @@ void main(){
   float y = vUv.y * vLen;
   float sp = (lift > 0.5 ? 16.0 : 8.0) * (0.8 + 0.4 * h1(col));
   float s = fract((y - uTime * sp) / (14.0 + 10.0 * h1(col * 7.0)) + vUv.x * 3.0);
-  float streak = smoothstep(0.0, 0.15, s) * smoothstep(0.5, 0.2, s);
-  float fade = smoothstep(0.0, 0.05, vUv.y) * smoothstep(1.0, 0.85, vUv.y);
+  float streak = smoothstep(0.0, 0.15, s) * (1.0 - smoothstep(0.2, 0.5, s));
+  float fade = smoothstep(0.0, 0.05, vUv.y) * (1.0 - smoothstep(0.85, 1.0, vUv.y));
   vec3 c = mix(vec3(0.85, 0.95, 1.0), vec3(0.35, 1.3, 1.4), lift);
   float a = (0.03 + 0.22 * streak * (0.4 + rim)) * fade * (lift > 0.5 ? 1.3 : 1.0);
   gl_FragColor = vec4(c, a);
@@ -445,7 +445,7 @@ void main(){
   vec2 p = vUv - 0.5;
   float d = length(p * vec2(1.0, 1.6));
   float n = nn(vUv * 4.0 + vSeed * 17.0 + uTime * 0.01) * 0.6 + nn(vUv * 9.0 - vSeed * 5.0) * 0.4;
-  float a = smoothstep(0.5, 0.12, d + (n - 0.5) * 0.35);
+  float a = (1.0 - smoothstep(0.12, 0.5, d + (n - 0.5) * 0.35));
   float top = clamp(vUv.y * 1.3, 0.0, 1.0);
   vec3 c = uAmb * (0.75 + 0.25 * n) + uSun * (0.35 + 0.55 * top);
   gl_FragColor = vec4(c, a * 0.88);

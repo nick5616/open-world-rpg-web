@@ -46,7 +46,7 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
     }
   }
   if (uPhoto.z > 0.0) {
-    float v = smoothstep(0.95, 0.25, length((uv - 0.5) * vec2(1.0, 0.82)) * 1.4);
+    float v = (1.0 - smoothstep(0.25, 0.95, length((uv - 0.5) * vec2(1.0, 0.82)) * 1.4));
     c *= mix(1.0, v, uPhoto.z);
   }
   if (uPhoto.w > 0.0) {

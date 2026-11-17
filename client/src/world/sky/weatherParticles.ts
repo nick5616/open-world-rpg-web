@@ -29,7 +29,7 @@ varying float vSeed;
 void main() {
   vec2 c = gl_PointCoord - 0.5;
   float r = length(c);
-  float a = uSquare > 0.5 ? 1.0 : smoothstep(0.5, 0.25, r);
+  float a = uSquare > 0.5 ? 1.0 : (1.0 - smoothstep(0.25, 0.5, r));
   if (a < 0.35 && uSquare < 0.5 && uOpacity > 0.9) discard;
   gl_FragColor = vec4(uColor * (0.85 + 0.3 * vSeed), a * uOpacity);
 }

@@ -166,7 +166,7 @@ export function poolMaterial(): THREE.ShaderMaterial {
       uniform float uTime; varying vec2 vUv; varying vec3 vC;
       void main() {
         float d = length(vUv) * 2.0;
-        float ang = atan(vUv.y, vUv.x);
+        float ang = atan(vUv.y, vUv.x + 1e-6);
         float ripple = 0.9 + 0.1 * sin(ang * 3.0 + uTime * 0.3) * sin(ang * 5.0 - uTime * 0.2);
         float a = pow(clamp(1.0 - d * (1.0 / ripple), 0.0, 1.0), 1.8);
         gl_FragColor = vec4(vC * a, a);
