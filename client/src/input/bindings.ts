@@ -21,6 +21,7 @@ export type BindContext =
   | 'photo' // photo mode (L)
   | 'menu' // the Esc menu is open: only movement and Esc reach the game
   | 'fishing' // a line is out: E / Space strike and reel
+  | 'dialog' // a conversation with a townsperson is open (CR 049): 1-6 pick, E / Space / Enter skip and go on
   | 'placing' // placing a camp piece
   | 'building' // holding the hammer (CR 041): the build ghost is out
   | 'duel' // a duel challenge is waiting for your answer
@@ -140,6 +141,11 @@ export const BINDINGS: Binding[] = [
   { code: 'Enter', ctx: 'focus', file: 'ui/spellcards/SpellCards.tsx', does: 'pick the focused spell card (Space too)' },
   { code: 'Delete', ctx: 'focus', file: 'ui/spellcards/SpellCards.tsx', does: 'clear the focused spell slot' },
   { code: 'Backspace', ctx: 'focus', file: 'ui/spellcards/SpellCards.tsx', does: 'clear the focused spell slot' },
+  // CR 049: a conversation takes 1-6, E, Space and Enter while it is open (Esc closes it through the panel stack)
+  ...(['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Digit6'] as const).map((code): Binding => ({ code, ctx: 'dialog', file: 'ui/dialog/store.ts', does: 'pick that answer' })),
+  { code: 'KeyE', ctx: 'dialog', file: 'ui/dialog/DialogOverlay.tsx', does: 'skip the typing, then go on' },
+  { code: 'Space', ctx: 'dialog', file: 'ui/dialog/DialogOverlay.tsx', does: 'skip the typing, then go on' },
+  { code: 'Enter', ctx: 'dialog', file: 'ui/dialog/DialogOverlay.tsx', does: 'skip the typing, then go on' },
   { code: 'Enter', ctx: 'title', file: 'screens/TitleScreen.tsx', does: 'start' },
   { code: 'Space', ctx: 'downed', file: 'ui/story/StoryHud.tsx', does: 'respawn now instead of waiting for a friend' },
   { code: 'Enter', ctx: 'ending', file: 'ui/story/StoryHud.tsx', does: 'skip the ending / leave the credits' },
