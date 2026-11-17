@@ -15,6 +15,7 @@ import { useEffect, useMemo } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Activity } from '@lodestone/contracts';
 import { Avatar } from '../net/avatar';
+import { ownLook } from '../net/ownLook';
 import { followCaster, followEmote, followMusic } from '../net/avatarAnim';
 import { liveAvatars, SELF_AVATAR } from '../net/avatar';
 import { emoteOf, SELF } from '../ui/emotes/store';
@@ -72,7 +73,7 @@ export function LocalAvatar() {
         a.root.removeFromParent();
         a.dispose();
       }
-      a = st.avatar = new Avatar(id, { nameplate: false });
+      a = st.avatar = new Avatar(id, { nameplate: false, look: ownLook() ?? undefined });
       scene.add(a.root);
       liveAvatars.set(SELF_AVATAR, a); // playtest 2: the fishing line leaves your rod's tip
     }

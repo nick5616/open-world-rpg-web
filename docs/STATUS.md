@@ -1831,3 +1831,18 @@ Nicole: "ok new pivot for the game: make it vertical. there are tunnels you can 
 **Gates** (main `41ec650` merged): `gen:check` ok; `test:golden` PASS in every host (wp01 evidence restored); `cargo test` (worldgen) ok, clippy clean; `go vet` clean in every module; `go test` green in every module (`TestZoneProcessCavesMining` failed once under load and passed alone); door vectors regenerated (sky-town doors appended, every existing vector unchanged); typecheck ok; `eslint .` clean; client vitest 105 files / 1267 tests (after merging main `08d53b6`, shared basic attacks: client only, nothing on the wire); worldgen/js vitest 28; `node scripts/whatsnew.mjs check` (35 entries, `pt2-vertical-world` first).
 
 Gaps: crystals read pastel rather than deep blue / violet at a distance; the tunnel portal is modest from afar; the palace exterior is a placeholder model and its doors are sealed; sky activities are a stub stand; enemy models for the new creatures reuse existing families; no ambient occlusion in caverns; live world: renewing the official world to genVersion 3 regenerates towns (sky towns appended) and needs the usual deploy (not done here).
+
+## Playtest 3: title cavern and character creation (branch `pt3/title-creation`, CR 047)
+
+Nicole: "Make a landing page that looks like gems and all that in a cave, then have the character selection/creation screen be like Valheim instead of plain like ours." CR `docs/cr/047-title-creation.md`.
+
+Works:
+- **Title**: logotype over a live R3F gem cavern (procedural shader rock with ore veins and wet patches, clusters in the five gem colours, light pools, shafts, fog, motes, slow camera drift), lazy chunk over a CSS cavern painted at first paint; CSS-only fallback without WebGL / on a software renderer / `?cave=0`; lite tier on phones and weak GPUs; calm under Reduce flashing and prefers-reduced-motion.
+- **Character select / creation**: the same cavern with a campfire, your character (the game's own Avatar, idle animation) framed on a stage, drag to turn, list on the left with Play / Delete (confirmed) / New, creator on the right (build, skin, hair style and colour, beard, eyes, Randomise) with a live preview; phone layout (figure over one scrolling sheet). The sign-in panel and the waking screen sit over the cavern too.
+- **Look**: six options rendered by `Avatar.setLook` (skin tone, 6 hair styles, hair colour, 5 beards, eye colour, 3 builds); persisted with the character through the existing `appearance` field (account: `characters.appearance`, local: the save state), returned by the character list, drawn on your own body in third person. New `DELETE /v1/characters/{id}`. No migration (0035 unused).
+- Every harness testid kept; `client/scripts/title-flow.mjs` drives title -> local profile -> create (with a look) -> quick-play row -> delete against a mocked account service and checks them (10 PASS).
+
+Gaps:
+- Other players do not see your look yet (replication needs a protocol field; design in CR 047). First-person hands keep the default skin tone.
+- Not run here: the services-backed acceptance harnesses and `infra/smoke-live.mjs` (no Postgres/Redis in this box); their selectors were kept rather than changed. The Go account test (`TestAccountFlow` now covers appearance + delete) needs Postgres and Redis.
+- The campfire sits mostly behind the left panel at 16:9; the long hair style reads as a hood; no shadows on the stage (a blob under the figure).

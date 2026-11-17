@@ -32,6 +32,8 @@ import { ridingOf, TYPE_RIDING } from '../ui/mounts/events';
 import { SteedRig } from '../ui/mounts/model';
 import { steedLookOf } from '../ui/mounts/store';
 import { MARK_COLOR, drawSwords, pvpMark } from '../ui/pvp/plate';
+import { beardGeometry, buildScale, eyeMaterial, hairMaterial, hairStyleGeometry, irisGeometry, skinMaterial } from './avatarLook';
+import type { Look } from './look';
 import { titleOf } from '../ui/content/titles'; // CR 023: feat titles under the name
 import { acquireArmor, releaseArmor, type ArmorMeshes } from '../combat/armor/model';
 import { ARMOR_BONES, type ArmorBone } from '../combat/armor/spec';
@@ -455,6 +457,8 @@ const ARMOR_BOUNDS = new THREE.Sphere(new THREE.Vector3(0, 1.0, 0), 1.5);
 export interface AvatarOptions {
   /** Draw the floating name/level plate (off for your own body). */
   nameplate?: boolean;
+  /** CR 047: the creation look (skin, hair, beard, eyes, build); absent = the default figure with per-id hair. */
+  look?: Look;
 }
 
 export class Avatar {
@@ -503,6 +507,12 @@ export class Avatar {
   // CR 034: worn armor (combat/armor): the appearance shown, its shared meshes,
   // the skinned full-rig outfit, the mid silhouette, and the bare parts it covers
   appearance = 0;
+  /** CR 047: the creation look shown (null: the default figure) and the parts it restyles. */
+  look: Look | null = null;
+  private skinParts: THREE.Mesh[] = [];
+  private beard: THREE.Mesh | null = null;
+  private iris: THREE.Mesh | null = null;
+  private bareHead = true;
   private armor: ArmorMeshes | null = null;
   private armorRig: THREE.SkinnedMesh | null = null;
   private armorMid: THREE.Mesh | null = null;
@@ -599,6 +609,7 @@ export class Avatar {
     this.neck.position.y = NECK_Y;
     this.torso.add(this.neck);
     const head = mesh(r.head, r.skinMat);
+    this.skinParts.push(head);
     head.position.y = 0.12;
     // playtest 2 immersion pass: a face (eyes, brows, mouth) where the visor band was, and hair
     const visor = mesh(r.face, r.visorMat);
@@ -620,6 +631,7 @@ export class Avatar {
       hand.position.y = -FOREARM;
       // playtest 2: a fist (was a ball), mirrored for the left hand
       const palm = mesh(r.hand, r.skinMat);
+      this.skinParts.push(palm);
       palm.scale.set(side * HAND_SCALE, HAND_SCALE, HAND_SCALE);
       handQuat(EMPTY_GRIP, palm.quaternion);
       hand.add(palm);
@@ -665,6 +677,7 @@ export class Avatar {
     bodyMid.castShadow = true;
     const headMid = new THREE.Mesh(r.headMid, r.skinMat); // playtest 2 immersion pass: skin, not the shirt's navy
     headMid.position.y = 1.62 - HIP_Y;
+    this.skinParts.push(headMid);
     const hairMid = new THREE.Mesh(r.hair, hairMat(id));
     hairMid.position.y = 1.62 - HIP_Y;
     const visorMid = new THREE.Mesh(r.visor, r.visorMat);
@@ -700,6 +713,8 @@ export class Avatar {
     // graph, so neither the world-matrix pass nor the renderer walks them.
     this.levels = [high, mid, low];
 
+    if (opts.look) this.setLook(opts.look);
+
     if (opts.nameplate !== false) {
       this.plateCanvas = document.createElement('canvas');
       this.plateCanvas.width = 512;
@@ -711,6 +726,56 @@ export class Avatar {
       this.plate.position.y = NAMEPLATE_Y;
       this.root.add(this.plate);
     }
+  }
+
+  /**
+   * CR 047: restyle this avatar with a creation look: skin tone on the head,
+   * hands and mid figure; a hair style and colour; a beard; eye colour; the
+   * build as a whole-figure scale. Cheap (swaps shared geometry/materials),
+   * called when a look is first known or the creation screen changes it.
+   */
+  setLook(look: Look): void {
+    this.look = look;
+    const r = res();
+    const skin = skinMaterial(look.skin);
+    for (const p of this.skinParts) p.material = skin;
+    const hairGeo = hairStyleGeometry(look.hairStyle, r.hair);
+    const hm = hairMaterial(look.hairColor);
+    for (const h of [this.bare.hair, this.bare.hairMid]) {
+      if (hairGeo) h.geometry = hairGeo;
+      h.material = hm;
+    }
+    const bg = beardGeometry(look.beard);
+    if (bg && !this.beard) {
+      this.beard = new THREE.Mesh(bg, hm);
+      this.beard.position.y = 0.12;
+      this.beard.name = 'avatar-beard';
+      this.neck.add(this.beard);
+    }
+    if (this.beard) {
+      if (bg) this.beard.geometry = bg;
+      this.beard.material = hm;
+    }
+    if (!this.iris) {
+      this.iris = new THREE.Mesh(irisGeometry(), eyeMaterial(look.eyes));
+      this.iris.position.y = 0.12;
+      this.iris.name = 'avatar-iris';
+      this.neck.add(this.iris);
+    }
+    this.iris.material = eyeMaterial(look.eyes);
+    const { sx, sy } = buildScale(look);
+    for (const l of this.levels) l.scale.set(sx, sy, sx);
+    this.refreshLookVisibility();
+  }
+
+  /** Hair, beard and irises follow the helm: only bare heads show hair, and nothing pokes through a closed helm. */
+  private refreshLookVisibility(): void {
+    const hide = this.armor?.spec.hides;
+    const bald = this.look?.hairStyle === 0;
+    this.bare.hair.visible = this.bareHead && !hide?.head && !bald;
+    this.bare.hairMid.visible = this.bareHead && !bald;
+    if (this.beard) this.beard.visible = !hide?.head && (this.look?.beard ?? 0) > 0;
+    if (this.iris) this.iris.visible = !hide?.visor && !hide?.head;
   }
 
   /** CR 027: hide the rider's figure but keep their steed (your own body, first person in the saddle). */
@@ -786,6 +851,8 @@ export class Avatar {
     const bareHead = !spec || spec.midHead === 'none' || spec.midHead === 'circlet';
     b.hair.visible = bareHead && !hide?.head;
     b.hairMid.visible = bareHead;
+    this.bareHead = bareHead;
+    this.refreshLookVisibility();
     b.torso.visible = !hide?.torso;
     b.visorMid.visible = !hide?.visor;
     for (const a of [this.armL, this.armR]) {
