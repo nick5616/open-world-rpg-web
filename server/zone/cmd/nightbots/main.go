@@ -4,9 +4,11 @@
 //	go run ./server/zone/cmd/nightbots -url ws://127.0.0.1:PORT/ws -scenario demon   -out run.txt
 //	go run ./server/zone/cmd/nightbots -url ws://127.0.0.1:PORT/ws -scenario defense -out run.txt
 //
-// demon:   one bot raises a pack of lesser demons (dev Interact 52) and
+// demon:   one bot first raises a pack of LOW-level demons (dev Interact 52,
 //
-//	fights them with an ordinary sword for 30 s (they must all
+//	level 1) and kills them with the ordinary sword (CR 048: only
+//	high-level demons are immune), then raises a pack of level 20
+//	demons and fights them with the sword for 40 s (they must all
 //	survive: wounds regenerate), then takes a sunsteel blade (dev
 //	Interact 50 action 6, combat.yaml materials.sunsteel; WP14 sets
 //	the same loadout material from the forged item) and kills them,
@@ -197,11 +199,31 @@ func demonScenario(base string, info zoneInfo, g movement.Ground, priv []byte, u
 	}
 	logf("Sol stands %.0f m outside the ward of %s at (%.0f, %.0f)", math.Hypot(x-town.X, z-town.Z)-town.WardR, town.Name, x, z)
 
-	// 1. Ordinary steel: 30 s of fighting, nobody dies.
-	b.interact(game.InteractNight, 3, 0) // raise a lesser pack
+	// 0. CR 048: low-level demons are hurt by ordinary steel and die to it.
+	b.interact(game.InteractNight, 3, 1<<8) // raise a level 1 lesser pack
+	time.Sleep(1500 * time.Millisecond)
+	lowIDs := b.demonIDs()
+	logf("phase 0: %d level 1 demons rose (%v); fighting with an ordinary sword for up to 60 s", len(lowIDs), lowIDs)
+	if len(lowIDs) == 0 {
+		logf("no demons rose")
+		return false
+	}
+	b.resetCounters()
+	t0 := time.Now()
+	for time.Since(t0) < 60*time.Second && len(b.aliveDemons(lowIDs)) > 0 {
+		time.Sleep(500 * time.Millisecond)
+	}
+	p0 := b.snapshotCounters(lowIDs)
+	logf("phase 0 result: %d hits, %d damage, demons killed by the ordinary sword: %d/%d (%.1f s)", p0.hits, p0.damage, p0.killed, len(lowIDs), time.Since(t0).Seconds())
+	res["lowLevel"] = p0
+	lowDie := p0.killed == len(lowIDs) && len(b.aliveDemons(lowIDs)) == 0
+	logf("CHECK a low-level demon dies to ordinary damage: %v", lowDie)
+
+	// 1. Ordinary steel against level 20 demons: 40 s of fighting, nobody dies.
+	b.interact(game.InteractNight, 3, 20<<8) // raise a level 20 lesser pack
 	time.Sleep(1500 * time.Millisecond)
 	ids := b.demonIDs()
-	logf("phase 1: %d demons rose (%v); fighting with an ordinary sword for 40 s", len(ids), ids)
+	logf("phase 1: %d level 20 demons rose (%v); fighting with an ordinary sword for 40 s", len(ids), ids)
 	if len(ids) == 0 {
 		logf("no demons rose")
 		return false
@@ -219,7 +241,7 @@ func demonScenario(base string, info zoneInfo, g movement.Ground, priv []byte, u
 	b.interact(combat.InteractCombat, combat.ActSetMaterial, 0|3<<8) // material id 3 = sunsteel
 	logf("phase 2: Sol takes up a sunsteel blade (Interact 50 action 6, material sunsteel)")
 	b.resetCounters()
-	t0 := time.Now()
+	t0 = time.Now()
 	for time.Since(t0) < 90*time.Second && len(b.aliveDemons(ids)) > 0 {
 		time.Sleep(500 * time.Millisecond)
 	}
@@ -237,7 +259,7 @@ func demonScenario(base string, info zoneInfo, g movement.Ground, priv []byte, u
 
 	// 3. Sunrise: back to steel, raise a pack, skip the clock to dawn.
 	b.interact(combat.InteractCombat, combat.ActSetMaterial, 0)
-	b.interact(game.InteractNight, 3, 0)
+	b.interact(game.InteractNight, 3, 20<<8) // level 20: steel must not kill them before the sun does
 	time.Sleep(1500 * time.Millisecond)
 	ids3 := b.demonIDs()
 	fresh := []uint32{}
@@ -268,7 +290,7 @@ func demonScenario(base string, info zoneInfo, g movement.Ground, priv []byte, u
 	sunrise := len(fresh) > 0 && len(b.aliveDemons(fresh)) == 0 && burned == len(fresh)
 	logf("CHECK sunrise burns demons in the open: %v", sunrise)
 	res["bot"] = b.summary()
-	return survived && sunsteel && sunrise
+	return lowDie && survived && sunsteel && sunrise
 }
 
 func defenseScenario(base string, info zoneInfo, g movement.Ground, priv []byte, url string, town game.TownDebug, res map[string]any) bool {

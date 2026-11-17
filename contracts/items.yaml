@@ -90,7 +90,7 @@ ores:
   voidglass: {name: Voidglass, smelt: 3}
 
 # Stacks: how many fit in one stack per category (1 = never stacks).
-stacks: {ore: 99, ingot: 99, gem: 99, food: 20, potion: 20, meat: 20, herb: 40, hide: 20, ammo: 99, tool: 1, seed: 20, blueprint: 1, tome: 1, currency: 1000000, weapon: 1, armor: 1, key: 1, quest: 10, wood: 50, camp: 5, fish: 20, instrument: 1}
+stacks: {ore: 99, ingot: 99, gem: 99, food: 20, potion: 20, meat: 20, herb: 40, hide: 20, ammo: 99, tool: 1, seed: 20, blueprint: 1, tome: 1, currency: 1000000, weapon: 1, armor: 1, key: 1, quest: 10, wood: 50, stone: 99, earth: 99, camp: 5, fish: 20, instrument: 1}
 
 # Where a category lives (spec 8: 40 slots plus a gem pouch and an ore pouch;
 # coins in a purse that takes no slot).
@@ -227,6 +227,11 @@ items:
   quest:dawnheart: {name: The Dawnheart, value: 0}
   # ---- camps (playtest 2, CR 025: contracts/camps.yaml): firewood (deadfall, merchants) and camp kits ----
   wood:firewood: {name: Firewood, value: 2}
+  # ---- base building (playtest 3, CR 041: contracts/build.yaml): what the breakable world yields ----
+  wood:log: {name: Log, value: 3}
+  wood:resin: {name: Resin, value: 4}
+  stone:block: {name: Stone, value: 3}
+  earth:dirt: {name: Dirt, value: 1}
   camp:campfire: {name: Campfire Kit, value: 10}
   camp:bedroll: {name: Bedroll Kit, value: 18}
   camp:chest: {name: Storage Chest Kit, value: 24}
@@ -239,7 +244,7 @@ items:
   instrument:handbells: {name: Handbells, value: 80}
   # ---- tools (v1: carried, not yet required; spec 7's pickaxe is implicit; every character starts with one) ----
   tool:pickaxe: {name: Pickaxe, value: 40}
-  tool:torch: {name: Torch, value: 6}
+  tool:torch: {name: Torch, value: 6}  # playtest 3 (CR 042): lit and put out with Interact 160 (key 8); burns until doused or swum with; in the starter kit, sold by general merchants
   tool:rope: {name: Rope, value: 10}
   tool:whetstone: {name: Whetstone, value: 8}
   tool:fishing_rod: {name: Fishing Rod, value: 25}  # playtest 2 fishing: needed to cast (bought from general and tools merchants, or forged)
@@ -378,7 +383,7 @@ recipes:
 # stand-in draught; granted once per character, exactly once). Playtest 2:
 # a pickaxe, because the starter quest's second step is "mine sunsteel ore"
 # (characters made before it get one once on join, marker starter:pickaxe).
-starter: {potion:health: 3, currency:gold: 20, tool:pickaxe: 1}
+starter: {potion:health: 3, currency:gold: 20, tool:pickaxe: 1, tool:torch: 1}
 
 # Loot tables (rolled by the zone per eligible player, spec 8 personal loot).
 loot:

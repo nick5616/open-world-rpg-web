@@ -47,6 +47,7 @@ import { localPlayer, view } from '../../state/live';
 import { DoorSync } from './doors';
 import { DoorRenderer } from './doorsMesh';
 import { ChimneySmoke } from './chimneySmoke';
+import type { Detail } from './detail';
 import { liveWeather } from '../../systems/weather/runtime';
 
 export const SETTLEMENT_LOAD_M = 1500;
@@ -105,6 +106,7 @@ export class TownsManager {
   constructor(
     readonly runtime: WorldRuntime,
     lightCount: number,
+    art: Detail = 2,
   ) {
     if (!runtime.towns) throw new Error('no towns in this runtime');
     this.towns = runtime.towns;
@@ -131,7 +133,7 @@ export class TownsManager {
     this.worker.onmessage = (e: MessageEvent<BuildingsOut>) => this.onMessage(e.data);
     this.worker.onerror = (e) => console.warn('[towns] worker error', e.message);
     const atlas = runtime.atlas.bytes();
-    this.post({ type: 'init', atlas, wasmUrl: runtime.wasmUrl }, [atlas.buffer]);
+    this.post({ type: 'init', atlas, wasmUrl: runtime.wasmUrl, detail: art }, [atlas.buffer]);
   }
 
   private post(m: BuildingsIn, transfer: Transferable[] = []): void {

@@ -17,6 +17,7 @@ import (
 	"lodestone/server/pkg/movement"
 	"lodestone/server/pkg/proto"
 	"lodestone/server/zone/internal/content"
+	"lodestone/server/zone/internal/explore"
 )
 
 // jet sends a magma dash looking up at pitch: the start frame, then held
@@ -43,13 +44,14 @@ func equipMagma(t *testing.T, h *harness, char string) int {
 	t.Helper()
 	h.do(func() {
 		p := h.srv.byChar[char].ent.cbt
+		h.srv.devSetXP(h.srv.byChar[char], explore.XPForLevel(20)) // CR 048: the full magma dash is level 15+
 		p.Profile.Grant("magma_dash")
 		if !p.Profile.EquipSpell(p.Profile.Active, 0, "magma_dash") {
 			t.Error("equip magma_dash")
 		}
 		p.Mana, p.ManaMax = 1000, 1000
 	})
-	return combatdefs.D.SpellByKey("magma_dash").Dash
+	return combatdefs.D.ResolveDash(combatdefs.D.SpellByKey("magma_dash").Dash, 20)
 }
 
 func achID(key string) uint32 { return uint32(contentdefs.D.Achievement(key).ID) }

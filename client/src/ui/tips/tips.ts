@@ -25,7 +25,7 @@ export const TIPS: Tip[] = [
   { id: 'look', title: 'Getting around', keys: ['WASD', 'Space', 'Shift'], text: 'walk, jump, sprint. Click the game to look with the mouse. Esc: menu and all controls.' },
   { id: 'quest', title: 'Your quest', keys: ['J', 'M'], text: 'journal and map. Follow the gold diamond on the compass and the beam of light.' },
   { id: 'talk', title: 'Townsfolk', keys: ['E'], text: 'talks to people: quests, shops and advice.' },
-  { id: 'night', title: 'Night falls', keys: [], text: 'Demons rise at night. Only sunsteel, Light magic or the sunrise kills them. Stay near town until you have them.' },
+  { id: 'night', title: 'Night falls', keys: [], text: 'Demons rise at night. Weak ones fall to any weapon, the stronger ones shrug off steel and fire ("Resisted"), and the strongest only die to sunsteel, Light magic or the sunrise. Stay near town until you have them.' },
   { id: 'climb', title: 'A cliff', keys: ['W'], text: 'hold it into the rock to climb (stamina wheel by the crosshair). Space leaps up.' },
   { id: 'glide', title: 'Falling', keys: ['Space', 'G'], text: 'Space again in the air double jumps, then glides. G opens the glider any time.' },
   { id: 'skills', title: 'Skill point to spend', keys: ['N'], text: 'opens the skill tree: learn a spell, then drag it onto a slot.' },

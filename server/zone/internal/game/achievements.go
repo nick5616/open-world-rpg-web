@@ -217,17 +217,21 @@ func (s *Server) achTick() {
 			a.lastOK, a.jetHighS, a.flew = false, 0, false
 			continue
 		}
+		dk := d.Key
+		if d.TierOf != "" {
+			dk = d.TierOf // CR 048: a lesser magma dash counts as the magma dash
+		}
 		pos := e.Move.Pos
 		if a.lastOK {
 			if step := math.Sqrt(sq(pos.X-a.last.X) + sq(pos.Y-a.last.Y) + sq(pos.Z-a.last.Z)); step <= achStepJumpM {
 				if a.dashM == nil {
 					a.dashM = map[string]float64{}
 				}
-				a.dashM[d.Key] += step
+				a.dashM[dk] += step
 			}
 		}
 		a.last, a.lastOK = pos, true
-		if d.Key != achMagmaDashKey {
+		if dk != achMagmaDashKey {
 			continue
 		}
 		up := pos.Y - s.achSurface(pos.X, pos.Z)

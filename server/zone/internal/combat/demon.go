@@ -9,6 +9,12 @@ package combat
 //     and can never take the last point), hits that kill demons add Seared
 //     (which never heals). A demon dies only when Seared reaches HPMax, so
 //     softening one up with an ordinary blade does not help the sunsteel.
+//   - CR 048 (playtest 3): only HIGH-level demons are immune to ordinary
+//     damage. By the demon's level (combat.yaml demons.ordinary): below
+//     halfFrom ordinary hits hurt it like any enemy, from halfFrom to
+//     immuneFrom-1 they do halfMult of their damage (shown as resisted), from
+//     immuneFrom up (and lords, and story demons with a Guard) they only wound
+//     and regenerate as described above.
 //   - "Kills demons" is one rule (KillsDemons): a weapon whose material has
 //     killsDemons (sunsteel: WP14's equipped item gear, Player.Gear.KillsDemons,
 //     or the loadout's material key, Loadout.Material, set by dev builds), a sunsteel arrowhead, any spell of a killsDemons tree (Light)
@@ -152,11 +158,42 @@ func (w *World) Burn(e *Enemy) {
 	}
 }
 
+// Ordinary-damage tiers against a demon (CR 048).
+const (
+	DemonOrdinaryFull   = iota // below halfFrom: hurt like any enemy
+	DemonOrdinaryHalf          // halfFrom..immuneFrom-1: a fraction of the damage
+	DemonOrdinaryImmune        // immuneFrom and up: wounds that regenerate
+)
+
+// OrdinaryTier is how a demon takes damage that is neither sunsteel nor Light.
+func (e *Enemy) OrdinaryTier() int {
+	if e.Demon == nil {
+		return DemonOrdinaryFull
+	}
+	o := &D.Demons.Ordinary
+	switch {
+	case e.Demon.Rank == "lord" || e.Guard != nil || e.Level >= o.ImmuneFrom:
+		return DemonOrdinaryImmune
+	case e.Level >= o.HalfFrom:
+		return DemonOrdinaryHalf
+	}
+	return DemonOrdinaryFull
+}
+
 // demonDamage applies damage to a demon (instead of takeDamage). Returns
 // the health it took.
 func (w *World) demonDamage(e *Enemy, src uint32, dmg float64, killing bool) float64 {
 	d := e.Demon
 	var dealt float64
+	if !killing {
+		switch e.OrdinaryTier() {
+		case DemonOrdinaryFull:
+			killing = true // CR 048: a low-level demon is hurt for real (seared: it does not close again)
+		case DemonOrdinaryHalf:
+			dmg = math.Round(dmg * D.Demons.Ordinary.HalfMult)
+			killing = true
+		}
+	}
 	if killing {
 		dealt = math.Max(0, math.Min(dmg, e.HPMax-d.Seared))
 		d.Seared += dealt

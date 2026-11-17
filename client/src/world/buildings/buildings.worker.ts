@@ -17,7 +17,8 @@ import { buildSettlementMesh } from './kit';
 import { meshTransferables } from './meshBuilder';
 import { buildRoadCells } from './roads';
 import { buildStructureMesh } from './structures';
-import { paintTownTextures, TEX_LAYERS, TEX_SIZE } from './textures';
+import { paintTownTextures, TEX_LAYERS } from './textures';
+import { setDetail, textureSizeOf, type Detail } from './detail';
 import { Clearance } from './clearance';
 import type { BuildingsIn, BuildingsOut } from './protocol';
 
@@ -34,21 +35,22 @@ let ready = false;
 const post = (m: BuildingsOut, transfer: Transferable[] = []) => self.postMessage(m, transfer);
 const heightAt = (x: number, z: number) => wg!.collisionHeight(atlas!, x, z);
 
-async function init(atlasBytes: Uint8Array, wasmUrl: string): Promise<void> {
+async function init(atlasBytes: Uint8Array, wasmUrl: string, art: Detail): Promise<void> {
+  setDetail(art);
   const t0 = performance.now();
   const module = await WebAssembly.compileStreaming(fetch(wasmUrl)).catch(async () => WebAssembly.compile(await (await fetch(wasmUrl)).arrayBuffer()));
   wg = await loadWorldgen(module);
   atlas = wg.loadAtlas(atlasBytes);
   towns = parseTowns(townsBytes(wg, atlas));
   const t1 = performance.now();
-  const textures = paintTownTextures(TEX_SIZE);
+  const textures = paintTownTextures(textureSizeOf(art));
   const t2 = performance.now();
   const cells = buildRoadCells(towns, heightAt);
   clearance = new Clearance(towns);
   const t3 = performance.now();
   const transfer: Transferable[] = [textures.buffer];
   for (const c of cells) transfer.push(...meshTransferables(c.decal), ...meshTransferables(c.furniture), c.lights.buffer);
-  post({ type: 'ready', textures, size: TEX_SIZE, layers: TEX_LAYERS, cells, ms: { towns: t1 - t0, textures: t2 - t1, roads: t3 - t2 } }, transfer);
+  post({ type: 'ready', textures, size: textureSizeOf(art), layers: TEX_LAYERS, cells, ms: { towns: t1 - t0, textures: t2 - t1, roads: t3 - t2 } }, transfer);
   ready = true;
   const q = queue;
   queue = [];
@@ -94,7 +96,7 @@ function handle(m: BuildingsIn): void {
   try {
     switch (m.type) {
       case 'init':
-        void init(m.atlas, m.wasmUrl).catch((err) => post({ type: 'error', id: 0, message: `init: ${String(err)}` }));
+        void init(m.atlas, m.wasmUrl, m.detail).catch((err) => post({ type: 'error', id: 0, message: `init: ${String(err)}` }));
         break;
       case 'settlement': {
         const t0 = performance.now();

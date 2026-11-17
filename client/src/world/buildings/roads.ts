@@ -16,6 +16,7 @@ import { boxAt, boxFrame, BK, type Box } from './kit';
 import { drawProp, P, type Emitter, type PropCtx } from './props';
 import { PIECE, SK } from './structures';
 import { TEX } from './textures';
+import { detail } from './detail';
 
 export const CELL_M = 1024;
 /** Ribbon lift above the terrain (m): ring streets over radial streets over footpaths over roads, plazas on top. */
@@ -231,6 +232,13 @@ export function drawSign(mb: MeshBuilder, sg: { x: number; y: number; z: number;
   P(mb, 'wood', [0.5, 0.4, 0.3]);
   mb.box(f, -0.08, 0.08, sg.y - 0.4, sg.y + 2.75, -0.08, 0.08);
   mb.cyl(f, 0, 0, sg.y + 2.75, sg.y + 2.95, 0.12, 4, { r1: 0, a0: Math.PI / 4 });
+  if (detail() >= 1) {
+    // A small cairn at the foot (decoration; the post has no collision beyond its box).
+    P(mb, 'rock', [0.9, 0.88, 0.84]);
+    mb.cyl(f, 0, 0, sg.y - 0.45, sg.y + 0.3, 0.42, 7, { r1: 0.22 });
+    mb.cyl(f, 0.35, 0.18, sg.y - 0.45, sg.y + 0.1, 0.2, 5, { r1: 0.12 });
+    mb.cyl(f, -0.3, -0.25, sg.y - 0.45, sg.y + 0.14, 0.22, 5, { r1: 0.13 });
+  }
   sg.arms.forEach((a, k) => {
     if (a.settlement < 0) return;
     const g = frameOf(sg.x, sg.z, a.yaw);

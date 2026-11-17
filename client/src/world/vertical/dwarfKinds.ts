@@ -34,8 +34,8 @@ export const isWarmKind = (kind: number) =>
   kind === DW.brazier || kind === DW.dwarfDoor || kind === DW.secretDoor || kind === DW.throne || kind === DW.forgeglow;
 
 /** Interact targetKinds (server CR 043) and Event kinds 1860-1863. */
-export const INTERACT_CHEST = 160;
-export const INTERACT_TABLET = 161;
+export const INTERACT_CHEST = 170;
+export const INTERACT_TABLET = 171;
 export const EV_DWARF_DISCOVER = 1860;
 export const EV_CHEST_OPENED = 1861;
 export const EV_TABLET_READ = 1862;

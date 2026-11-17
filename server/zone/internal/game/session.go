@@ -77,6 +77,8 @@ type session struct {
 	doors            *sessDoors         // building doors: settlements known, frame ground (doors.go)
 	fish             *fishState         // playtest 2 fishing (fishing.go); nil until the first cast
 	emotes           *emoteState        // playtest 2 emotes (emotes.go); nil until the first emote
+	looks            *lookState         // CR 047: Interact 91 limiter (looks.go)
+	light            *lightState        // playtest 3 torch and familiar light (lights.go); nil until the first Interact 160 or familiar cast
 	music            *musicState        // playtest 2 instruments (music.go); nil until the first Interact 120
 	dev              *devSess           // CR 032 dev console (devconsole.go); nil until the first dev command
 
@@ -407,12 +409,20 @@ func (s *Server) drainTaken(sess *session, now time.Time) {
 				s.caveInteract(sess, it) // CR 043: cave chests and lore tablets (dwarves.go)
 				continue
 			}
+			if it.TargetKind == InteractLight {
+				s.lightInteract(sess, it, now) // CR 042: torch on / off, dismiss the familiar (lights.go)
+				continue
+			}
 			if it.TargetKind == InteractStory {
 				s.storyInteract(sess, it) // CR 035: sync, catch up, revive, respawn, the vow (story.go)
 				continue
 			}
 			if it.TargetKind == InteractFishing {
 				s.fishInteract(sess, it, now) // playtest 2: cast, hook, land, lose (fishing.go)
+				continue
+			}
+			if it.TargetKind == InteractLook {
+				s.lookInteract(sess, it, now) // CR 047: a client asks for a player's look (looks.go)
 				continue
 			}
 			if it.TargetKind == InteractEmote {

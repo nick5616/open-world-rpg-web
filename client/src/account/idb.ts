@@ -88,6 +88,16 @@ export async function idbPut(db: IDBDatabase, store: string, value: unknown): Pr
   });
 }
 
+export async function idbDelete(db: IDBDatabase, store: string, key: IDBValidKey): Promise<void> {
+  const tx = db.transaction(store, 'readwrite');
+  tx.objectStore(store).delete(key);
+  await new Promise<void>((resolve, reject) => {
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error);
+  });
+}
+
 /** Empties every cache store and nothing else. Saves are untouched by construction. */
 export async function clearCaches(db: IDBDatabase): Promise<string[]> {
   const caches = Array.from(db.objectStoreNames).filter((n) => n.startsWith(CACHE_STORE_PREFIX));

@@ -1234,7 +1234,7 @@ func (s *Server) nightInteract(sess *session, m *proto.Interact) {
 			}
 		case 2: // set the clock offset (arg = seconds, i32 bits)
 			s.SetClockOffset(float64(int32(m.Arg)))
-		case 3: // raise demons here: 0 lesser pack, 1 greater, 2 lord
+		case 3: // raise demons here: arg & 255 = 0 lesser pack, 1 greater, 2 lord; arg >> 8 = the demons' level (0: the area's; CR 048 acceptance forces 15+)
 			idx := weather.NightIndex(s.worldTimeS())
 			p := e.Move.Pos
 			n.spawnN[e.ID]++
@@ -1243,15 +1243,19 @@ func (s *Server) nightInteract(sess *session, m *proto.Interact) {
 				refuse(4)
 				return
 			}
-			switch m.Arg {
+			lvl := s.cbt.w.LevelAt(at.X, at.Z)
+			if o := int(m.Arg >> 8 & 255); o > 0 {
+				lvl = o
+			}
+			switch m.Arg & 255 {
 			case 1:
-				g := s.cbt.w.SpawnDemons(at, []string{night.GreaterFor(s.cbt.w.ElementAt(at.X, at.Z))}, s.cbt.w.LevelAt(at.X, at.Z))
+				g := s.cbt.w.SpawnDemons(at, []string{night.GreaterFor(s.cbt.w.ElementAt(at.X, at.Z))}, lvl)
 				s.trackDemons(g, e.ID, "greater", -1)
 			case 2:
-				g := s.cbt.w.SpawnDemons(at, []string{combatdefs.D.Demons.Lord}, s.cbt.w.LevelAt(at.X, at.Z))
+				g := s.cbt.w.SpawnDemons(at, []string{combatdefs.D.Demons.Lord}, lvl)
 				s.trackDemons(g, 0, "lord", -1)
 			default:
-				g := s.cbt.w.SpawnDemons(at, []string{"gloamling", "gloamling", "gloamling"}, s.cbt.w.LevelAt(at.X, at.Z))
+				g := s.cbt.w.SpawnDemons(at, []string{"gloamling", "gloamling", "gloamling"}, lvl)
 				s.trackDemons(g, e.ID, "lesser", -1)
 			}
 		default:

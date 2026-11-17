@@ -138,6 +138,16 @@ export function knownCards(known: readonly string[]): SpellCardData[] {
 }
 
 /**
+ * The spell bank: the castable spells NOT in the loadout being edited (playtest 3:
+ * equipped spells sit in their slots, not in the bank). Unequipping a slot puts the
+ * card back, in the same school/tier order.
+ */
+export function bankCards(known: readonly string[], equipped: readonly (string | null)[]): SpellCardData[] {
+  const out = new Set(equipped.filter((k): k is string => !!k));
+  return knownCards(known).filter((c) => !out.has(c.key));
+}
+
+/**
  * The school glyphs (24x24 SVG paths, drawn with stroke): a flame, a
  * snowflake, a bolt, a mountain, gusts, a sun, a crescent, a ring. Paths so
  * they look the same on every machine (no emoji fonts).

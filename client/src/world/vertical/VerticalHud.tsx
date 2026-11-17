@@ -23,7 +23,7 @@ export interface VerticalHudState {
   /** Near lava in the Depths. */
   heat: boolean;
   /** CR 038 hooks: at a sky palace's doors (Interact 150, the site index) or a sky town's activity spot (Interact 151, the prop id). */
-  use: { kind: 150 | 151 | 160 | 161; id: bigint; label: string } | null;
+  use: { kind: 150 | 151 | 170 | 171; id: bigint; label: string } | null;
 }
 
 export const useVerticalHud = create<VerticalHudState>(() => ({ layer: 0, place: null, falling: false, dropM: 0, lift: false, heat: false, use: null }));

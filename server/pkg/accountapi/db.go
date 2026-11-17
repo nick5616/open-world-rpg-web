@@ -71,6 +71,10 @@ type Character struct {
 	AccountID string         `json:"accountId,omitempty"`
 	ProfileID string         `json:"profileId,omitempty"`
 	CreatedAt time.Time      `json:"createdAt"`
+	// Appearance is the look picked at creation (pt3 title/creation, CR 047):
+	// a small JSON object. Account characters read it from characters.appearance;
+	// a local character's lives in its save state (the client reads it there).
+	Appearance json.RawMessage `json:"appearance,omitempty"`
 }
 
 // Owner is who a request acts for: an account or a local profile.
@@ -256,10 +260,10 @@ func (d DB) ListCharacters(ctx context.Context, o Owner, worldID string) ([]Char
 	var rows pgx.Rows
 	var err error
 	if o.Kind == KindAccount {
-		rows, err = d.Pool.Query(ctx, `SELECT id::text, world_id::text, name, level, xp, position, created_at FROM characters
+		rows, err = d.Pool.Query(ctx, `SELECT id::text, world_id::text, name, level, xp, position, created_at, appearance FROM characters
 			WHERE account_id = $1 AND ($2 = '' OR world_id::text = $2) ORDER BY created_at`, o.ID, worldID)
 	} else {
-		rows, err = d.Pool.Query(ctx, `SELECT id::text, world_id::text, name, 1, 0::bigint, NULL::jsonb, created_at FROM local_characters
+		rows, err = d.Pool.Query(ctx, `SELECT id::text, world_id::text, name, 1, 0::bigint, NULL::jsonb, created_at, NULL::jsonb FROM local_characters
 			WHERE profile_id = $1 AND ($2 = '' OR world_id::text = $2) ORDER BY created_at`, o.ID, worldID)
 	}
 	if err != nil {
@@ -269,9 +273,12 @@ func (d DB) ListCharacters(ctx context.Context, o Owner, worldID string) ([]Char
 	out := []Character{}
 	for rows.Next() {
 		var c Character
-		var pos []byte
-		if err := rows.Scan(&c.ID, &c.WorldID, &c.Name, &c.Level, &c.XP, &pos, &c.CreatedAt); err != nil {
+		var pos, ap []byte
+		if err := rows.Scan(&c.ID, &c.WorldID, &c.Name, &c.Level, &c.XP, &pos, &c.CreatedAt, &ap); err != nil {
 			return nil, err
+		}
+		if len(ap) > 2 { // skip the empty object
+			c.Appearance = json.RawMessage(ap)
 		}
 		c.Position = SpawnPosition()
 		if pos != nil {
@@ -307,6 +314,43 @@ func (d DB) GetCharacter(ctx context.Context, o Owner, id string) (Character, er
 func (d DB) DeleteLocalCharacter(ctx context.Context, profileID, id string) error {
 	_, err := d.Pool.Exec(ctx, `DELETE FROM local_characters WHERE id = $1 AND profile_id = $2`, id, profileID)
 	return err
+}
+
+// DeleteCharacter removes one of the owner's characters (pt3 character
+// select): an account character's rows go with it (progress, quests, ... all
+// cascade; items are released first because items.owner_character_id has no
+// cascade), a local character's name reservation is released (its save lives
+// in the browser, which drops it). Returns ErrNotFound for someone else's id.
+func (d DB) DeleteCharacter(ctx context.Context, o Owner, id string) error {
+	tx, err := d.Pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx) //nolint:errcheck
+	var n int64
+	switch o.Kind {
+	case KindAccount:
+		if _, err := tx.Exec(ctx, `DELETE FROM items WHERE owner_character_id::text = $1 AND EXISTS (SELECT 1 FROM characters WHERE id::text = $1 AND account_id = $2)`, id, o.ID); err != nil {
+			return err
+		}
+		tag, err := tx.Exec(ctx, `DELETE FROM characters WHERE id::text = $1 AND account_id = $2`, id, o.ID)
+		if err != nil {
+			return err
+		}
+		n = tag.RowsAffected()
+	case KindLocal:
+		tag, err := tx.Exec(ctx, `DELETE FROM local_characters WHERE id::text = $1 AND profile_id = $2`, id, o.ID)
+		if err != nil {
+			return err
+		}
+		n = tag.RowsAffected()
+	default:
+		return fmt.Errorf("unknown owner kind %q", o.Kind)
+	}
+	if n == 0 {
+		return ErrNotFound
+	}
+	return tx.Commit(ctx)
 }
 
 // UpgradeLocalProfile moves every character of a local profile into the

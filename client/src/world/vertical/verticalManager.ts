@@ -293,7 +293,7 @@ export class VerticalManager {
     }
     const heat = this.layer === LAYER_DEPTHS && this.v.chambers.some((c) => c.layer === LAYER_DEPTHS && c.lake > -9000 && (feet.x - c.x) ** 2 + (feet.z - c.z) ** 2 < (Math.max(c.rx, c.rz) * c.lakeE + 25) ** 2);
     // The follow-ups' doors: a sky palace's gate, a sky town's activity spot.
-    let use: { kind: 150 | 151 | 160 | 161; id: bigint; label: string } | null = null;
+    let use: { kind: 150 | 151 | 170 | 171; id: bigint; label: string } | null = null;
     if (this.layer === LAYER_UNDER) {
       // CR 043: chests and lore tablets in the Underground (the descriptor index is the target).
       for (const it of this.interactives) {

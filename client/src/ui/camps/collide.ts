@@ -15,8 +15,9 @@
 // solid piece exists; with none it hands out the inner views unchanged, so
 // every movement golden stays bit-identical.
 
-import { CAMPS, MAX_STEP_UP_M, PLAYER_CAPSULE_RADIUS } from '@lodestone/contracts';
+import { MAX_STEP_UP_M, PLAYER_CAPSULE_RADIUS } from '@lodestone/contracts';
 import type { CollideResult, GroundQuery } from '../../sim/ground';
+import { boxesOf, isBuild, pieceDef as defOf, shapeOf, surfaceOf } from '../build/geometry';
 
 const STEP = MAX_STEP_UP_M;
 const R = PLAYER_CAPSULE_RADIUS;
@@ -44,10 +45,13 @@ export function rotCS(k: number): readonly [number, number] {
 export const cm2m = (cm: number): number => cm / 100;
 
 export function pieceDef(kind: number) {
-  return CAMPS.pieces[kind - 1];
+  return defOf(kind)!;
 }
 
+/** Collides: a solid camp piece, or a building piece with boxes or a walkable surface (CR 041). */
 export function isSolid(kind: number): boolean {
+  const sh = shapeOf(kind);
+  if (sh) return sh.boxes.length > 0 || !!sh.surface;
   return !!pieceDef(kind)?.solid;
 }
 
@@ -66,6 +70,8 @@ export interface SolidPiece {
   x: number;
   y: number;
   z: number;
+  /** Building pieces: bit 0 open (doors and gates). */
+  state?: number;
 }
 
 const cellKey = (cx: number, cz: number) => (cx + 32768) * 65536 + (cz + 32768);
@@ -75,14 +81,16 @@ const cellOf = (v: number) => Math.floor(v / CELL);
 export class CampSet {
   readonly ids: number[] = [];
   readonly f: number[] = [];
+  /** Walkable surfaces (CR 041), 8 numbers each: x, z, cos, sin, hx, hz, y at u = -hx, y at u = +hx. */
+  readonly sf: number[] = [];
   private readonly cells = new Map<number, number[]>();
+  private readonly scells = new Map<number, number[]>();
 
   constructor(pieces: readonly SolidPiece[]) {
     const ps = pieces.filter((p) => isSolid(p.kind)).sort((a, b) => a.id - b.id);
-    for (const p of ps) {
-      const b = campBox(p.kind, p.rot, p.x, p.y, p.z);
+    const add = (id: number, b: number[]) => {
       const i = this.ids.length;
-      this.ids.push(p.id);
+      this.ids.push(id);
       this.f.push(...b);
       const r = Math.sqrt(b[4] * b[4] + b[5] * b[5]);
       for (let cz = cellOf(b[1] - r); cz <= cellOf(b[1] + r); cz++)
@@ -92,11 +100,70 @@ export class CampSet {
           if (l) l.push(i);
           else this.cells.set(k, [i]);
         }
+    };
+    for (const p of ps) {
+      if (isBuild(p.kind)) {
+        const bp = { kind: p.kind, rot: p.rot, x: Math.round(p.x * 100), y: Math.round(p.y * 100), z: Math.round(p.z * 100), state: p.state ?? 0 };
+        for (const b of boxesOf(bp)) add(p.id, b);
+        const sf = surfaceOf(bp);
+        if (sf) {
+          const i = this.sf.length / 8;
+          this.sf.push(sf.x, sf.z, sf.cs, sf.sn, sf.hx, sf.hz, sf.ya, sf.yb);
+          const r = Math.hypot(sf.hx, sf.hz);
+          for (let cz = cellOf(sf.z - r); cz <= cellOf(sf.z + r); cz++)
+            for (let cx = cellOf(sf.x - r); cx <= cellOf(sf.x + r); cx++) {
+              const k = cellKey(cx, cz);
+              const l = this.scells.get(k);
+              if (l) l.push(i);
+              else this.scells.set(k, [i]);
+            }
+        }
+        continue;
+      }
+      add(p.id, campBox(p.kind, p.rot, p.x, p.y, p.z));
     }
   }
 
   get size(): number {
     return this.ids.length;
+  }
+
+  get hasSurfaces(): boolean {
+    return this.sf.length > 0;
+  }
+
+  /** The highest walkable surface at (x, z) a body with feet at y can step onto (top <= y + step), else null (camps.go SurfaceAt). */
+  surfaceAt(x: number, z: number, y: number): number | null {
+    if (this.sf.length === 0) return null;
+    const l = this.scells.get(cellKey(cellOf(x), cellOf(z)));
+    if (!l) return null;
+    let best = 0;
+    let found = false;
+    for (const i of l) {
+      const o = i * 8;
+      const f = this.sf;
+      const dx = x - f[o];
+      const dz = z - f[o + 1];
+      const u = dx * f[o + 2] + dz * f[o + 3];
+      const v = dz * f[o + 2] - dx * f[o + 3];
+      if (u < -f[o + 4] || u > f[o + 4] || v < -f[o + 5] || v > f[o + 5]) continue;
+      const top = f[o + 6] + ((u + f[o + 4]) / (2 * f[o + 4])) * (f[o + 7] - f[o + 6]);
+      if (top <= y + STEP && (!found || top > best)) {
+        best = top;
+        found = true;
+      }
+    }
+    return found ? best : null;
+  }
+
+  /** Any box or surface indexed within m of (x, z) (camps.go Near). */
+  near(x: number, z: number, m: number): boolean {
+    for (let cz = cellOf(z - m); cz <= cellOf(z + m); cz++)
+      for (let cx = cellOf(x - m); cx <= cellOf(x + m); cx++) {
+        const k = cellKey(cx, cz);
+        if (this.cells.has(k) || this.scells.has(k)) return true;
+      }
+    return false;
   }
 
   /** Boxes indexed in [x-m, x+m] x [z-m, z+m], ascending, deduplicated. */
@@ -203,10 +270,17 @@ class CampLevel implements GroundQuery {
   constructor(
     readonly lv: GroundQuery,
     readonly set: CampSet,
+    /** The view's feet height: floors above y + the step are not stood on (camps.With). */
+    readonly y: number,
   ) {}
 
   heightAt(x: number, z: number): number {
-    return this.lv.heightAt(x, z);
+    const h = this.lv.heightAt(x, z);
+    if (this.set.hasSurfaces) {
+      const t = this.set.surfaceAt(x, z, this.y);
+      if (t !== null && t > h) return t;
+    }
+    return h;
   }
   normalAt(x: number, z: number): { x: number; y: number; z: number } {
     return this.lv.normalAt ? this.lv.normalAt(x, z) : { x: 0, y: 1, z: 0 };
@@ -240,8 +314,8 @@ export class CampGround implements GroundQuery {
   atLevel(y: number): GroundQuery {
     const lv = this.inner.atLevel ? this.inner.atLevel(y) : this.inner;
     const set = campRuntime.set;
-    if (set.size === 0 || !lv.collide) return lv;
-    return new CampLevel(lv, set);
+    if ((set.size === 0 && !set.hasSurfaces) || !lv.collide) return lv;
+    return new CampLevel(lv, set, y);
   }
   collide(x: number, y: number, z: number, out: CollideResult): CollideResult {
     return this.atLevel(y).collide!(x, y, z, out);

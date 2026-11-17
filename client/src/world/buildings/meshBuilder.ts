@@ -218,7 +218,7 @@ export class MeshBuilder {
    * Box in frame f: u in [u0, u1], v in [v0, v1], y in [y0, y1]. `top` /
    * `bottom` false skips those faces; `sides` false skips the four sides.
    */
-  box(f: Frame, u0: number, u1: number, y0: number, y1: number, v0: number, v1: number, opts: { top?: boolean; bottom?: boolean; sides?: boolean; topPaint?: Paint } = {}): void {
+  box(f: Frame, u0: number, u1: number, y0: number, y1: number, v0: number, v1: number, opts: { top?: boolean; bottom?: boolean; sides?: boolean; topPaint?: Paint; skip?: string[] } = {}): void {
     this.slopedBox(f, u0, u1, v0, v1, y0, y1, y1, opts);
   }
 

@@ -149,7 +149,7 @@ func VerticalReach(s *structures.Site) float64 {
 }
 
 // DiscoverXP is the one-time XP for discovering s. Scaled so a level-1
-// explorer levels after two or three discoveries (wizard-wars curve: 100 XP
+// explorer needs several discoveries plus some kills for level 2 (360 XP
 // to level 2), and bigger places are worth more.
 func DiscoverXP(s *structures.Site) int64 {
 	switch s.Category {

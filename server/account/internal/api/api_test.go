@@ -166,11 +166,25 @@ func TestAccountFlow(t *testing.T) {
 	if len(list.Characters) != 1 || list.Characters[0].ID != created.Character.ID {
 		t.Fatal(list)
 	}
-	// Another account sees none of Alice's characters.
+	// CR 047: the creation look comes back with the list.
+	if string(list.Characters[0].Appearance) != `{"hair": 3}` && string(list.Characters[0].Appearance) != `{"hair":3}` {
+		t.Fatal("appearance", string(list.Characters[0].Appearance))
+	}
+	// Another account sees none of Alice's characters, and cannot delete them.
 	bob := h.devSignIn("bob")
 	h.do("GET", "/v1/characters", bob.Session, nil, &list)
 	if len(list.Characters) != 0 {
 		t.Fatal("leak", list)
+	}
+	if st, code := h.errCode("DELETE", "/v1/characters/"+created.Character.ID, bob.Session, nil); st != 404 || code != "not_found" {
+		t.Fatal(st, code)
+	}
+	if st := h.do("DELETE", "/v1/characters/"+created.Character.ID, s.Session, nil, nil); st != 200 {
+		t.Fatal("delete", st)
+	}
+	h.do("GET", "/v1/characters", s.Session, nil, &list)
+	if len(list.Characters) != 0 {
+		t.Fatal("not deleted", list)
 	}
 }
 

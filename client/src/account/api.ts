@@ -94,6 +94,9 @@ export class LodestoneApi {
   createCharacter(token: string, worldId: string, name: string, appearance?: Record<string, unknown>) {
     return this.call<CreateCharacterResponse>(this.urls.account, 'POST', '/v1/characters', { token, body: { worldId, name, appearance } });
   }
+  deleteCharacter(token: string, id: string) {
+    return this.call<{ ok: true }>(this.urls.account, 'DELETE', '/v1/characters/' + encodeURIComponent(id), { token });
+  }
   verifySave(token: string, save: SaveBlob) {
     return this.call<{ ok: true; counter: number; characterId: string; name: string; level: number }>(this.urls.account, 'POST', '/v1/local/saves/verify', { token, body: { save } });
   }

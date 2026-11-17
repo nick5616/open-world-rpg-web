@@ -32,11 +32,14 @@ import { ridingOf, TYPE_RIDING } from '../ui/mounts/events';
 import { SteedRig } from '../ui/mounts/model';
 import { steedLookOf } from '../ui/mounts/store';
 import { MARK_COLOR, drawSwords, pvpMark } from '../ui/pvp/plate';
+import { beardGeometry, buildScale, eyeMaterial, hairMaterial, hairStyleGeometry, irisGeometry, skinMaterial } from './avatarLook';
+import type { Look } from './look';
 import { titleOf } from '../ui/content/titles'; // CR 023: feat titles under the name
 import { acquireArmor, releaseArmor, type ArmorMeshes } from '../combat/armor/model';
 import { ARMOR_BONES, type ArmorBone } from '../combat/armor/spec';
 import { armorMaterial } from '../combat/armor/material';
 import { makePickaxe } from '../combat/weapons/pickaxe';
+import { makeTorch, type TorchModel } from '../world/lights/torchModel';
 
 export const LOD_MID_M = 25;
 export const LOD_LOW_M = 80;
@@ -422,6 +425,8 @@ function holdQuat(kind: WeaponKind): THREE.Quaternion {
 }
 
 const BOW_HOLD = holdQuat('bow');
+/** CR 042: the torch held up and forward in the left fist. */
+const TORCH_HOLD = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0.1, 0.55, -1).normalize());
 
 interface Arm {
   shoulder: THREE.Group;
@@ -455,6 +460,8 @@ const ARMOR_BOUNDS = new THREE.Sphere(new THREE.Vector3(0, 1.0, 0), 1.5);
 export interface AvatarOptions {
   /** Draw the floating name/level plate (off for your own body). */
   nameplate?: boolean;
+  /** CR 047: the creation look (skin, hair, beard, eyes, build); absent = the default figure with per-id hair. */
+  look?: Look;
 }
 
 export class Avatar {
@@ -473,6 +480,11 @@ export class Avatar {
   private instrumentProps = new Map<number, THREE.Object3D[]>();
   /** The weapon look typeId shown (pt/ux packLook; CR 022: the gem tints its swing FX). */
   weaponType = -1;
+  /** CR 042: the light this player carries (snapshot appearance bits 51-56: bit 0 torch, bits 1-5 familiar id). */
+  light = 0;
+  /** CR 042: the torch in the off hand (full rig) and on the mid figure; shown while lit. */
+  private torchHi: TorchModel;
+  private torchMid: TorchModel;
   /** The weapon kind in hand (classifies Event 214 actions). */
   weaponKind: WeaponKind | null = null;
   /** The three figures (high, mid, low); only the one in use is in the scene graph. */
@@ -503,6 +515,12 @@ export class Avatar {
   // CR 034: worn armor (combat/armor): the appearance shown, its shared meshes,
   // the skinned full-rig outfit, the mid silhouette, and the bare parts it covers
   appearance = 0;
+  /** CR 047: the creation look shown (null: the default figure) and the parts it restyles. */
+  look: Look | null = null;
+  private skinParts: THREE.Mesh[] = [];
+  private beard: THREE.Mesh | null = null;
+  private iris: THREE.Mesh | null = null;
+  private bareHead = true;
   private armor: ArmorMeshes | null = null;
   private armorRig: THREE.SkinnedMesh | null = null;
   private armorMid: THREE.Mesh | null = null;
@@ -599,6 +617,7 @@ export class Avatar {
     this.neck.position.y = NECK_Y;
     this.torso.add(this.neck);
     const head = mesh(r.head, r.skinMat);
+    this.skinParts.push(head);
     head.position.y = 0.12;
     // playtest 2 immersion pass: a face (eyes, brows, mouth) where the visor band was, and hair
     const visor = mesh(r.face, r.visorMat);
@@ -620,6 +639,7 @@ export class Avatar {
       hand.position.y = -FOREARM;
       // playtest 2: a fist (was a ball), mirrored for the left hand
       const palm = mesh(r.hand, r.skinMat);
+      this.skinParts.push(palm);
       palm.scale.set(side * HAND_SCALE, HAND_SCALE, HAND_SCALE);
       handQuat(EMPTY_GRIP, palm.quaternion);
       hand.add(palm);
@@ -665,6 +685,7 @@ export class Avatar {
     bodyMid.castShadow = true;
     const headMid = new THREE.Mesh(r.headMid, r.skinMat); // playtest 2 immersion pass: skin, not the shirt's navy
     headMid.position.y = 1.62 - HIP_Y;
+    this.skinParts.push(headMid);
     const hairMid = new THREE.Mesh(r.hair, hairMat(id));
     hairMid.position.y = 1.62 - HIP_Y;
     const visorMid = new THREE.Mesh(r.visor, r.visorMat);
@@ -678,6 +699,14 @@ export class Avatar {
     this.weaponHi.visible = false;
     this.weaponMid = new THREE.Mesh(undefined, weaponMaterial());
     this.weaponMid.visible = false;
+    // CR 042: a torch in the left hand (shown while lit; the bow takes both hands)
+    this.torchHi = makeTorch();
+    this.torchHi.root.quaternion.copy(TORCH_HOLD);
+    this.armL.hand.add(this.torchHi.root);
+    this.torchMid = makeTorch();
+    this.torchMid.root.quaternion.copy(TORCH_HOLD);
+    this.torchMid.root.position.set(0, MID_HAND_Y, 0);
+    this.midArmL.add(this.torchMid.root);
     // playtest 2 fishing: the rod rises from the right hand, forward and up; the catch hangs across both hands
     this.rod = new THREE.Mesh(r.rod, r.rodMat);
     this.rod.rotation.x = -2.3; // forward and up from the fist (the forearm points ahead)
@@ -700,6 +729,8 @@ export class Avatar {
     // graph, so neither the world-matrix pass nor the renderer walks them.
     this.levels = [high, mid, low];
 
+    if (opts.look) this.setLook(opts.look);
+
     if (opts.nameplate !== false) {
       this.plateCanvas = document.createElement('canvas');
       this.plateCanvas.width = 512;
@@ -711,6 +742,56 @@ export class Avatar {
       this.plate.position.y = NAMEPLATE_Y;
       this.root.add(this.plate);
     }
+  }
+
+  /**
+   * CR 047: restyle this avatar with a creation look: skin tone on the head,
+   * hands and mid figure; a hair style and colour; a beard; eye colour; the
+   * build as a whole-figure scale. Cheap (swaps shared geometry/materials),
+   * called when a look is first known or the creation screen changes it.
+   */
+  setLook(look: Look): void {
+    this.look = look;
+    const r = res();
+    const skin = skinMaterial(look.skin);
+    for (const p of this.skinParts) p.material = skin;
+    const hairGeo = hairStyleGeometry(look.hairStyle, r.hair);
+    const hm = hairMaterial(look.hairColor);
+    for (const h of [this.bare.hair, this.bare.hairMid]) {
+      if (hairGeo) h.geometry = hairGeo;
+      h.material = hm;
+    }
+    const bg = beardGeometry(look.beard);
+    if (bg && !this.beard) {
+      this.beard = new THREE.Mesh(bg, hm);
+      this.beard.position.y = 0.12;
+      this.beard.name = 'avatar-beard';
+      this.neck.add(this.beard);
+    }
+    if (this.beard) {
+      if (bg) this.beard.geometry = bg;
+      this.beard.material = hm;
+    }
+    if (!this.iris) {
+      this.iris = new THREE.Mesh(irisGeometry(), eyeMaterial(look.eyes));
+      this.iris.position.y = 0.12;
+      this.iris.name = 'avatar-iris';
+      this.neck.add(this.iris);
+    }
+    this.iris.material = eyeMaterial(look.eyes);
+    const { sx, sy } = buildScale(look);
+    for (const l of this.levels) l.scale.set(sx, sy, sx);
+    this.refreshLookVisibility();
+  }
+
+  /** Hair, beard and irises follow the helm: only bare heads show hair, and nothing pokes through a closed helm. */
+  private refreshLookVisibility(): void {
+    const hide = this.armor?.spec.hides;
+    const bald = this.look?.hairStyle === 0;
+    this.bare.hair.visible = this.bareHead && !hide?.head && !bald;
+    this.bare.hairMid.visible = this.bareHead && !bald;
+    if (this.beard) this.beard.visible = !hide?.head && (this.look?.beard ?? 0) > 0;
+    if (this.iris) this.iris.visible = !hide?.visor && !hide?.head;
   }
 
   /** CR 027: hide the rider's figure but keep their steed (your own body, first person in the saddle). */
@@ -786,6 +867,8 @@ export class Avatar {
     const bareHead = !spec || spec.midHead === 'none' || spec.midHead === 'circlet';
     b.hair.visible = bareHead && !hide?.head;
     b.hairMid.visible = bareHead;
+    this.bareHead = bareHead;
+    this.refreshLookVisibility();
     b.torso.visible = !hide?.torso;
     b.visorMid.visible = !hide?.visor;
     for (const a of [this.armL, this.armR]) {
@@ -849,6 +932,11 @@ export class Avatar {
     return this.armor?.spec ?? null;
   }
 
+  /** CR 042: the torch model to light from at this distance band (null when none is drawn: the low figure). */
+  activeTorch(): TorchModel | null {
+    return this.animLevel === 0 ? this.torchHi : this.animLevel === 1 ? this.torchMid : null;
+  }
+
   /** The weapon in the hand, for tests and captures (null when none). */
   get weaponMesh(): THREE.Mesh | null {
     return this.weaponHi.visible ? this.weaponHi : null;
@@ -871,6 +959,8 @@ export class Avatar {
     this.root.rotation.y = riding ? this.steedHeading(v, dt) : v.yaw;
     if (((v.typeId ?? 0) & ~TYPE_RIDING) !== (this.weaponType & ~TYPE_RIDING) || this.weaponType < 0) this.setWeapon((v.typeId ?? 0) & ~TYPE_RIDING);
     if ((v.appearance ?? 0) !== this.appearance) this.setAppearance(v.appearance ?? 0); // CR 034: only when it changes
+    this.light = v.light ?? 0; // CR 042: a torch and a familiar light (world/lights)
+    this.torchHi.root.visible = this.torchMid.root.visible = (this.light & 1) !== 0 && this.weaponKind !== 'bow'; // the bow takes both hands
 
     const d = camera.position.distanceTo(this.root.position);
     // 1 m of hysteresis at each band edge: no flicker for someone standing on it

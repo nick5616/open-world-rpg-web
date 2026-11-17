@@ -1,8 +1,8 @@
 package game
 
 // The dwarves and the cave dressing (CR 043, genVersion 4): discovery of the
-// dwarven halls (Event 1860), cave chests (Interact 160, Event 1861) and
-// lore tablets (Interact 161, Event 1862). The halls themselves are
+// dwarven halls (Event 1860), cave chests (Interact 170, Event 1861) and
+// lore tablets (Interact 171, Event 1862). The halls themselves are
 // ordinary Underground settlements (towns buffer), so townsfolk, shops,
 // boards, forges, inns and waypoints are the towns machinery; the packs,
 // safe zones and warden are in vertical.go (addLayerGroups).
@@ -26,8 +26,8 @@ const (
 	EventLoreTablet    = 1862 // TargetID deco index, Value lore id, Data UTF-8 text
 	EventLowerHalls    = 1863 // TargetID lower_halls site, Value 0 the warden wakes / 1 the warden falls
 
-	InteractCaveChest  = 160
-	InteractLoreTablet = 161
+	InteractCaveChest  = 170
+	InteractLoreTablet = 171
 
 	chestCooldown = 20 * time.Minute
 	chestReachM   = 6.0
@@ -66,7 +66,7 @@ func nearDeco(p movement.Vec3, d *vertical.Deco) bool {
 	return math.Hypot(p.X-d.X, p.Z-d.Z) <= chestReachM && math.Abs(p.Y-d.Y) <= 4
 }
 
-// caveInteract handles Interact 160 (cave chest) and 161 (lore tablet).
+// caveInteract handles Interact 170 (cave chest) and 171 (lore tablet).
 func (s *Server) caveInteract(sess *session, m *proto.Interact) {
 	e := sess.ent
 	p := e.Move.Pos

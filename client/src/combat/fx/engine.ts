@@ -352,7 +352,7 @@ export class SpellFxEngine {
       }
     }
     if (sp.type === 'mobility') this.dash(v, sp, caster);
-    else if (sp.type === 'defensive') this.shieldUp(v, sp, caster);
+    else if (sp.type === 'defensive' && !sp.familiar) this.shieldUp(v, sp, caster); // CR 042: a familiar light is no shield (world/lights)
     void yaw;
   }
 
