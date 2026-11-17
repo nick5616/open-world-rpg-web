@@ -1,11 +1,11 @@
 # Playtest 3 world edits (CR 040): real client + zone binary, official world
-date 2026-11-17T04:53:09.049Z
+date 2026-11-17T05:06:03.709Z
 tree stand: 4 trees within 4.2 m of (2146.2, 2532.8)
 spawned at (2146.2, 75.9, 2532.8)
 4 trees within reach
 felled 4 of 4
 trees left within reach: 0
 dug at (2144.3, 2531.0): ground 76.35 -> 70.35 (5.99 m), 200 vertices edited
-walked in: feet y 75.13 at (2140.0, 2526.7) (prediction against the zone: terrainEdits.integration.test.ts)
+walked in: feet y 75.13 at (2140.0, 2526.7) (the pit bottom is 70.35; prediction against the zone is checked by terrainEdits.integration.test.ts)
 filled 8 swings at (2139.2, 2525.8): ground 76.26 -> 80.01
 PASS
