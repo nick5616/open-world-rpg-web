@@ -202,7 +202,7 @@ export function drawBuildingShell(mb: MeshBuilder, t: Towns, b: Building, height
         break;
       case BK.upper: {
         // Ceiling inside; on flat roofs (adobe) the walkable roof, with a lip.
-        if (detail() >= 1 && look.inner === 'plaster') P(mb, 'plaster', [0.92, 0.88, 0.82]); // plastered ceiling between dark beams (dress.ts)
+        if (detail() >= 1 && look.inner === 'plaster') P(mb, 'plaster', [0.88, 0.88, 0.9]); // plastered ceiling between dark beams (dress.ts)
         else P(mb, look.inner === 'logs' ? 'planks' : 'floor', [0.85, 0.78, 0.7]);
         mb.slopedBox(f, -bx.hx, bx.hx, -bx.hz, bx.hz, bx.y0, bx.y0 + 0.001, bx.y0 + 0.001, { top: false, sides: false, bottom: true });
         if (b.roof === 2 || b.roof === 3) {
