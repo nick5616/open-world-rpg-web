@@ -986,7 +986,7 @@ func (s *Server) devQuest(sess *session, id uint32, op int) (int32, string) {
 			s.questHappened(sess, h)
 			if h.Finished {
 				done++
-				handoff = handoff || h.Quest.Key == quests.MeadowsKey
+				handoff = handoff || h.Quest.Key == quests.MeadowsKey || quests.IsErrand(h.Quest.Key) // CR 051
 				break
 			}
 			if op == 1 {

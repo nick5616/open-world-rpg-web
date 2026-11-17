@@ -15,6 +15,8 @@ import raw from './changelog.json';
 import { cardMayShow, RETURNING_AT_LOAD, readSeen, validEntries, whatsNew, writeSeen, type ChangelogEntry, type WhatsNew as Shown } from './news';
 import { cinematicActive } from '../story/cinematicMode';
 import { localPlayer } from '../../state/live';
+import { useQuests } from '../quests/store';
+import { firstHourHold } from '../tips/firstHour';
 
 const ENTRIES = validEntries(raw as unknown);
 const GOLD = '#ffd166';
@@ -71,7 +73,7 @@ function Panel({ shown, onClose }: { shown: Exclude<Shown, { kind: 'none' }>; on
           {welcome ? (
             <ul style={{ margin: '4px 0 10px', paddingLeft: 18 }}>
               <li>One shared world: the people you meet out there are other players.</li>
-              <li>Someone in town has a first job for you: follow the gold marker on your compass.</li>
+              <li>The people in town hand out small jobs, each one showing you something new: follow the gold marker on your compass.</li>
               <li>Press Esc any time for the controls, sound and camera settings.</li>
             </ul>
           ) : (
@@ -122,7 +124,8 @@ function WhatsNewInner() {
       const busy = !!intro.current || intro.queue.length > 0 || useMenu.getState().open || useCombatHud.getState().downedUntil > 0 || cinematicActive();
       // Never on top of a shop, the inventory or any other open panel (playtest 2 integration QA:
       // the welcome card covered a new player's first talk with the smith): wait for it to close.
-      if (!cardMayShow({ sinceReadyMs: now - t0, panelUp: uiPanelUp(), busy, stillMs: now - stillSince })) return;
+      const held = firstHourHold(useQuests.getState().log.quests, (now - t0) / 1000); // CR 051: not over a new character's first quest
+      if (!cardMayShow({ sinceReadyMs: now - t0, panelUp: uiPanelUp(), busy, stillMs: now - stillSince, held })) return;
       clearInterval(t);
       setShown(whatsNew(ENTRIES, readSeen(), RETURNING_AT_LOAD));
     }, 400);

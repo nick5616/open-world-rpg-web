@@ -59,6 +59,11 @@ describe('when the card comes up', () => {
     expect(cardMayShow({ ...base, busy: true })).toBe(false);
     expect(cardMayShow({ ...base, busy: true, sinceReadyMs: MAX_WAIT_MS })).toBe(true);
   });
+  it('CR 051: held back for a new character on the first quest', () => {
+    expect(cardMayShow({ ...base, held: true })).toBe(false);
+    expect(cardMayShow({ ...base, held: true, sinceReadyMs: 1e9 })).toBe(false);
+    expect(cardMayShow({ ...base, held: false })).toBe(true);
+  });
   it('playtest 2 polish: not in the middle of a walk (until the walk runs very long)', () => {
     expect(cardMayShow({ ...base, stillMs: 0 })).toBe(false);
     expect(cardMayShow({ ...base, stillMs: STILL_MS - 1 })).toBe(false);

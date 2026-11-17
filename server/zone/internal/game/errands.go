@@ -390,7 +390,7 @@ func (s *Server) wardWaitsForErrands(l *quests.Log) bool {
 // arrivalLine is what the mentor calls across the road.
 func arrivalLine(name string, second bool) string {
 	if second {
-		return name + "! Over here! Yes, you. I won't bite, I only complain."
+		return name + "! Over here! Walk up close and press E to talk. I won't bite, I only complain."
 	}
 	return name + "! Over here! Yes, you, the one standing about looking lost. I have a job, and it's sort of an emergency."
 }
