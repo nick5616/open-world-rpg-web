@@ -31,12 +31,14 @@ import { attachInventory, LootLayer } from '../ui/inventory';
 // WP15: world clock, demons, town defense, chemistry (fire, ice, pillars, rain).
 import { attachNight, nightWorld } from '../systems/night';
 import { NightLayer } from '../systems/NightLayer';
+import { LightRig } from '../world/lights/LightRig';
 import { ensureQuestHook, unhookQuests } from '../ui/quests/link';
 import { QuestLayer } from '../ui/quests/QuestLayer';
 import { ensureContentHook } from '../ui/content/link'; // CR 023 content
 import { ContentLayer } from '../ui/content/ContentLayer';
 import { ensureCampHook } from '../ui/camps/link'; // CR 025 camps
 import { CampLayer } from '../ui/camps/CampLayer';
+import { BuildLayer } from '../ui/build/BuildLayer'; // CR 041 base building
 import { ensureMountHook } from '../ui/mounts/link'; // CR 027 mounts
 import { SteedLayer } from '../ui/mounts/SteedLayer';
 import { ensurePetHook } from '../ui/pets/link'; // CR 029 pets
@@ -219,9 +221,11 @@ export function NetPlay({ ready }: { ready: ReadySession }) {
           {/* WP14 */}
           <LootLayer />
           <NightLayer />
+          <LightRig session={session} />
           <QuestLayer />
           <ContentLayer />
           <CampLayer />
+          <BuildLayer />
           <SteedLayer />
           <PetLayer />
           <FinaleLayer />

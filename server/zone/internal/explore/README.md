@@ -10,7 +10,7 @@ The glue to sessions, Events, persistence and parties is in
 | Tower top | Ground under the player is the tower's top platform (overlay `StructureAt`), within the top radius + 0.6 m and no more than 0.6 m below its surface. Unlocks the tower (bitset by site index), reveals the tower's region (derived: a region is revealed by any unlocked tower in it), +150 XP once. |
 | Waypoint touch | Within 3 m horizontally and 3 m vertically of the stone: activates it once (fast travel) and makes it the respawn point (`LastWaypoint`) whenever it changes. |
 | Discovery | Entering a site's discovery radius once per character: settlements (their footprint radius; 60/80/100 XP by size), structures (max(r, 15) + 10 m; 50 + 25 x tier), towers (40 m; 40 XP), cave mouths (20 m; 50), landmarks (25 m; 30). Enemy camps and waypoints are not discoveries. |
-| Level | Wizard-wars curve: 60 + 40 x level XP per level (`shared/leveling.js`). |
+| Level | Wizard-wars curve 60 + 40 x level XP per level, plus an early surcharge (level 1 to 2 is 360 XP; CR 048). |
 | Fast travel | To an unlocked tower (arrive on the top's centre) or activated waypoint (2.5 m in front of the stone along its yaw); refused with a reason (unknown, locked, 2 s cooldown). |
 | Respawn | `RespawnPoint` = beside the last waypoint touched (WP13's death hook calls `Server.Teleport(e, Server.RespawnPoint(e))`). |
 | Pins | 10 personal pins (slots 0-9, x/z in cm, colour), JSON in `character_progress.pins`. |

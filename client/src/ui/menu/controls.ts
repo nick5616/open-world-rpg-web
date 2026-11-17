@@ -36,6 +36,7 @@ const LABEL: Record<string, string> = {
   Escape: 'Esc',
   Enter: 'Enter',
   Delete: 'Delete',
+  Equal: '=',
 };
 
 /** "KeyW" -> "W", "Digit1" -> "1", "ShiftLeft" -> "Shift". */
@@ -102,6 +103,7 @@ export function controlGroups(debug: boolean, dev = false): ControlGroup[] {
           note: 'does what the [E] line under the crosshair says, one thing at a time; in the saddle E gets off',
           src: [['world/buildings/townHud.ts', "'KeyE'"], ['ui/inventory/LootHud.tsx', "'KeyE'"], ['world/caves/caveManager.ts', "'KeyE'"], ['ui/content/ContentHud.tsx', "'KeyE'"], ['ui/progression/ProgressionHud.tsx', "'KeyE'"], ['input/interact.ts', 'E_ORDER']],
         },
+        { keys: ['8'], action: 'Light or douse your torch', note: 'a torch from a general merchant (6 gold) or a workbench; it burns until the water puts it out, others see it and are lit by it. Familiar light spells (one per school of magic, learned early) float over your shoulder instead', src: [['world/lights/LightRig.tsx', 'TORCH_KEY']] },
         { keys: ['M'], action: 'Map', note: 'drag to pan, wheel to zoom, right-click to pin (Shift: for your party)', src: [['ui/map/ExplorationHud.tsx', "'KeyM'"]] },
         { keys: ['J'], action: 'Quest journal', note: 'bestiary, fish, lore, achievements, renown', src: [['ui/quests/QuestHud.tsx', "'KeyJ'"]] },
         { keys: ['Y'], action: 'Achievements', note: 'points, progress and the titles you can show; also in this menu and the character panel (with a duel challenge waiting, Y accepts it)', src: [['ui/achievements/AchievementsHud.tsx', "'KeyY'"]] },
@@ -145,8 +147,21 @@ export function controlGroups(debug: boolean, dev = false): ControlGroup[] {
     {
       title: 'Chopping, breaking and digging',
       rows: [
-        { keys: ['8'], action: 'Cycle the work tool: chop and break, dig, fill, away', note: 'an axe for trees, a pickaxe for rocks, a shovel for the ground (you start with all three); the left mouse button swings it while one is up', src: [['world/edits/worldEdits.ts', "'Digit8'"]] },
+        { keys: ['='], action: 'Cycle the work tool: chop and break, dig, fill, away', note: 'an axe for trees, a pickaxe for rocks, a shovel for the ground (you start with all three); the left mouse button swings it while one is up', src: [['world/edits/worldEdits.ts', "'Equal'"]] },
         { keys: ['Left mouse'], action: 'Swing the work tool (hold to keep going)', note: 'trees fall, rocks shatter, the ground gives up to 6 m either way; towns, roads, caves and water stay as they are', src: [['world/edits/worldEdits.ts', 'e.button !== 0']] },
+      ],
+    },
+    {
+      title: 'Building',
+      rows: [
+        { keys: ['9'], action: 'Hammer: the build menu; in build mode, leave it', note: 'walls, floors, roofs, furniture, a bed and a hearth: build a base', src: [['ui/build/BuildHud.tsx', "'Digit9'"]] },
+        { keys: ['Left mouse'], action: 'Place the ghost piece (green only)', src: [['ui/build/BuildHud.tsx', 'e.button === 0']] },
+        { keys: ['R', 'Mouse wheel'], action: 'Turn the piece', src: [['ui/build/BuildHud.tsx', "'KeyR'"]] },
+        { keys: ['Tab'], action: 'Change the material (Shift: the category)', src: [['ui/build/BuildHud.tsx', "'Tab'"]] },
+        { keys: ['Q', 'E'], action: 'Previous / next piece (1-9 pick one)', src: [['ui/build/BuildHud.tsx', "'KeyQ'"]] },
+        { keys: ['X'], action: 'Hold on your piece: deconstruct it for most of its materials', src: [['ui/build/BuildHud.tsx', "'KeyX'"]] },
+        { keys: ['F'], action: 'Repair the piece you aim at', src: [['ui/build/BuildHud.tsx', "'KeyF'"]] },
+        { keys: ['Right mouse', 'Esc'], action: 'Leave build mode', src: [['ui/build/BuildHud.tsx', 'e.button === 2'], ['ui/build/BuildHud.tsx', "'build-mode'"]] },
       ],
     },
     {

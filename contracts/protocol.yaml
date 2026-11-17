@@ -108,7 +108,7 @@ structs:
       # v6 (docs/cr/034-visible-armor.md): what a player wears, per armor slot
       # (head, body, legs at bits 0, 17, 34): 6 bits visual id (1 + index of the
       # piece among items.yaml armor, 0 none) | 4 bits material code | 3 bits
-      # rarity | 4 bits gem (1 + index in items.yaml gems, 0 none); bits 51-63
+      # rarity | 4 bits gem (1 + index in items.yaml gems, 0 none); bit 51 a torch is lit and bits 52-56 the familiar light id (playtest 3, CR 042: server/zone/internal/game/lights.go; the client splits it with BigInt); bits 57-63
       # zero. Changes only on equip/unequip (sent then and on first sight, like
       # every field); 0 (nothing worn) costs nothing. Below 2^53: the inventory
       # event's JSON carries the same number for your own body.

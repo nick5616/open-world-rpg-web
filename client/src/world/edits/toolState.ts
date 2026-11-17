@@ -1,5 +1,5 @@
 // The work tool (CR 040): which of chopping and breaking, digging and filling
-// the left mouse button does right now. Key 8 cycles it. Kept in its own tiny
+// the left mouse button does right now. Key = (Equal) cycles it. Kept in its own tiny
 // module so the combat runtime can ask "is the left button the shovel's?"
 // without importing the world.
 

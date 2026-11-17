@@ -55,7 +55,7 @@ export function NightHud() {
           <div style={{ fontSize: 11, opacity: 0.75, marginTop: 2 }}>ward garden {Math.round(d.ward)} / {d.wardMax}{d.demons ? ` · ${d.demons} demons` : ''}</div>
         </div>
       )}
-      {now - s.shrugged < 2500 && <div style={{ color: '#ffb09a', textShadow: '0 1px 2px #000' }}>The demon regenerates: only sunsteel or Light can kill it.</div>}
+      {now - s.shrugged < 2500 && <div style={{ color: '#ffb09a', textShadow: '0 1px 2px #000' }}>This demon is too strong for ordinary weapons and heals: only sunsteel or Light can kill it.</div>}
       {s.notices
         .filter((n) => n.until > now)
         .map((n) => (

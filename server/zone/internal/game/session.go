@@ -78,6 +78,7 @@ type session struct {
 	doors            *sessDoors         // building doors: settlements known, frame ground (doors.go)
 	fish             *fishState         // playtest 2 fishing (fishing.go); nil until the first cast
 	emotes           *emoteState        // playtest 2 emotes (emotes.go); nil until the first emote
+	light            *lightState        // playtest 3 torch and familiar light (lights.go); nil until the first Interact 160 or familiar cast
 	music            *musicState        // playtest 2 instruments (music.go); nil until the first Interact 120
 	dev              *devSess           // CR 032 dev console (devconsole.go); nil until the first dev command
 
@@ -406,6 +407,10 @@ func (s *Server) drainTaken(sess *session, now time.Time) {
 			}
 			if it.TargetKind == InteractPalace || it.TargetKind == InteractActivity {
 				s.verticalInteract(sess, it) // CR 038: sky palace doors, sky town activity spots (vertical.go)
+				continue
+			}
+			if it.TargetKind == InteractLight {
+				s.lightInteract(sess, it, now) // CR 042: torch on / off, dismiss the familiar (lights.go)
 				continue
 			}
 			if it.TargetKind == InteractStory {

@@ -1757,17 +1757,6 @@
    "sockets": 0
   },
   {
-   "key": "wood:stick",
-   "name": "Stick",
-   "category": "wood",
-   "kind": "material",
-   "stack": 50,
-   "pouch": "inv",
-   "level": 1,
-   "value": 1,
-   "sockets": 0
-  },
-  {
    "key": "wood:resin",
    "name": "Resin",
    "category": "wood",
@@ -1779,25 +1768,14 @@
    "sockets": 0
   },
   {
-   "key": "stone:stone",
+   "key": "stone:block",
    "name": "Stone",
    "category": "stone",
    "kind": "material",
    "stack": 99,
    "pouch": "inv",
    "level": 1,
-   "value": 2,
-   "sockets": 0
-  },
-  {
-   "key": "stone:flint",
-   "name": "Flint",
-   "category": "stone",
-   "kind": "material",
-   "stack": 99,
-   "pouch": "inv",
-   "level": 1,
-   "value": 5,
+   "value": 3,
    "sockets": 0
   },
   {
@@ -1809,6 +1787,28 @@
    "pouch": "inv",
    "level": 1,
    "value": 1,
+   "sockets": 0
+  },
+  {
+   "key": "wood:stick",
+   "name": "Stick",
+   "category": "wood",
+   "kind": "material",
+   "stack": 50,
+   "pouch": "inv",
+   "level": 1,
+   "value": 1,
+   "sockets": 0
+  },
+  {
+   "key": "stone:flint",
+   "name": "Flint",
+   "category": "stone",
+   "kind": "material",
+   "stack": 99,
+   "pouch": "inv",
+   "level": 1,
+   "value": 5,
    "sockets": 0
   },
   {
@@ -3748,7 +3748,7 @@
      "qty": 2
     },
     {
-     "item": "stone:stone",
+     "item": "stone:block",
      "qty": 2
     },
     {
@@ -3772,7 +3772,7 @@
      "qty": 2
     },
     {
-     "item": "stone:stone",
+     "item": "stone:block",
      "qty": 2
     },
     {
@@ -3796,7 +3796,7 @@
      "qty": 2
     },
     {
-     "item": "stone:stone",
+     "item": "stone:block",
      "qty": 3
     },
     {
@@ -4342,6 +4342,10 @@
   },
   {
    "item": "tool:pickaxe",
+   "qty": 1
+  },
+  {
+   "item": "tool:torch",
    "qty": 1
   },
   {

@@ -4,6 +4,7 @@ import (
 	"math"
 	"testing"
 
+	"lodestone/server/pkg/combatdefs"
 	"lodestone/server/pkg/movement"
 	"lodestone/server/pkg/proto"
 )
@@ -11,12 +12,14 @@ import (
 // CR 021 (dash overhaul): the zone pays for held dash steps, strips holds it
 // did not allow or cannot charge, and applies dash trails, heals and slams.
 
-func dashVariantOf(key string) int { return D.DashByID(D.SpellByKey(key).Dash).ID }
+// dashVariantOf is the spell's dash at level 20 (CR 048: the full tier; dashHand levels the player to match).
+func dashVariantOf(key string) int { return D.ResolveDash(D.SpellByKey(key).Dash, 20) }
 
 // dashHand equips a mobility spell in slot 3 of the active loadout.
 func dashHand(t *testing.T, w *World, id uint32, at movement.Vec3, spell string) *handPlayer {
 	t.Helper()
 	h := newHand(w, id, at, "staff")
+	h.p.SetLevel(20)
 	h.p.Profile.Grant(spell)
 	if !h.p.Profile.EquipSpell(0, 3, spell) {
 		t.Fatalf("equip %s", spell)
@@ -177,5 +180,31 @@ func TestSunstepTrailHealsTheParty(t *testing.T) {
 	w.Step(1)
 	if mate.p.HP <= 50 {
 		t.Fatal("the radiant trail did not heal a party member nearby")
+	}
+}
+
+// CR 048: the magma dash tier is the caster's level; a frame naming another
+// tier's variant is refused (no dash starts), and the lesser hold costs more.
+func TestMagmaDashTiersFollowLevel(t *testing.T) {
+	base := D.SpellByKey("magma_dash").Dash
+	lesser, honed, full := D.ResolveDash(base, 1), D.ResolveDash(base, 8), D.ResolveDash(base, 15)
+	if lesser == honed || honed == full || full != base || D.ResolveDash(base, 7) != lesser || D.ResolveDash(base, 14) != honed || D.ResolveDash(base, 99) != full {
+		t.Fatalf("tiers %d %d %d (base %d)", lesser, honed, full, base)
+	}
+	if D.ResolveDash(D.SpellByKey("sunstep").Dash, 1) != D.SpellByKey("sunstep").Dash {
+		t.Fatal("an untiered dash resolves to itself")
+	}
+	if l, f := D.DashByID(lesser), D.DashByID(full); l.Sustain.ManaPerS <= f.Sustain.ManaPerS || l.Speed*float64(l.Steps) >= f.Speed*float64(f.Steps) || l.Sustain.KindID == combatdefs.SustainJet {
+		t.Fatal("the lesser dash is shorter, costs more to hold and does not thrust")
+	}
+	w, _ := newWorld()
+	h := dashHand(t, w, 1, movement.Vec3{X: 100, Z: 100}, "magma_dash")
+	h.p.SetLevel(1)
+	if r := h.step(proto.InputFlagDodge, full, 0, 0.4); r.Frame.CastSlot != 0 || h.state.Dash != 0 {
+		t.Fatal("a level 1 caster started the full dash")
+	}
+	h.step(proto.InputFlagDodge, lesser, 0, 0.4)
+	if h.state.Dash != D.DashByID(lesser).Steps {
+		t.Fatalf("lesser dash did not start: dash %d", h.state.Dash)
 	}
 }

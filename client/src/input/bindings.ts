@@ -22,6 +22,7 @@ export type BindContext =
   | 'menu' // the Esc menu is open: only movement and Esc reach the game
   | 'fishing' // a line is out: E / Space strike and reel
   | 'placing' // placing a camp piece
+  | 'building' // holding the hammer (CR 041): the build ghost is out
   | 'duel' // a duel challenge is waiting for your answer
   | 'inventory' // the inventory is open
   | 'skills' // the skill screen is open (other screens' keys close it)
@@ -78,7 +79,7 @@ export const BINDINGS: Binding[] = [
   W('KeyE', 'ui/pets/PetHud.tsx', 'feed a calm creature, pet your pet'),
   W('KeyE', 'ui/story/StoryHud.tsx', 'raise a fallen friend (hold)'), // CR 035
   // screens and the world
-  W('Digit8', 'world/edits/worldEdits.ts', 'work tool: chop and break, dig, fill, away (cycles; CR 040)'),
+  W('Equal', 'world/edits/worldEdits.ts', 'work tool: chop and break, dig, fill, away (cycles; CR 040)'),
   W('KeyT', 'hud/ViewHud.tsx', 'first / third person'),
   W('KeyM', 'ui/map/ExplorationHud.tsx', 'map'),
   W('KeyJ', 'ui/quests/QuestHud.tsx', 'journal'),
@@ -98,9 +99,11 @@ export const BINDINGS: Binding[] = [
   W('KeyL', 'ui/photo/PhotoMode.tsx', 'photo mode'),
   W('KeyU', 'ui/music/InstrumentHud.tsx', 'play your instrument'),
   W('KeyP', 'ui/camps/CampHud.tsx', 'camp menu'),
+  W('Digit9', 'ui/build/BuildHud.tsx', 'build menu (hammer); in build mode: leave it'), // CR 041 base building
   W('Digit5', 'ui/mounts/MountHud.tsx', 'whistle for your steed'),
   W('Digit6', 'ui/pets/PetHud.tsx', 'send your pet (hold: pet wheel)'),
   W('Digit7', 'ui/pets/PetHud.tsx', 'pet: stay / follow'),
+  W('Digit8', 'world/lights/LightRig.tsx', 'light or douse your torch (CR 042)'),
   // Esc: one listener (ui/menu/EscMenu.tsx, first in the capture phase) closes the top panel, mode or wheel on
   // the stack (input/panelStack.ts), else opens the menu. Panels register there instead of listening for Esc.
   W('Escape', 'ui/menu/EscMenu.tsx', 'close the top panel (one at a time), else the Esc menu'),
@@ -116,6 +119,13 @@ export const BINDINGS: Binding[] = [
   { code: 'KeyE', ctx: 'fishing', file: 'ui/fishing/FishingHud.tsx', does: 'strike, hold to reel' },
   { code: 'Space', ctx: 'fishing', file: 'ui/fishing/FishingHud.tsx', does: 'strike, hold to reel' },
   { code: 'KeyR', ctx: 'placing', file: 'ui/camps/CampHud.tsx', does: 'turn the piece' },
+  // CR 041 build mode: these keys are the hammer's while the ghost is out (the handler eats them first)
+  { code: 'KeyR', ctx: 'building', file: 'ui/build/BuildHud.tsx', does: 'turn the piece' },
+  { code: 'Tab', ctx: 'building', file: 'ui/build/BuildHud.tsx', does: 'change the material (Shift: the category)' },
+  { code: 'KeyQ', ctx: 'building', file: 'ui/build/BuildHud.tsx', does: 'previous piece' },
+  { code: 'KeyE', ctx: 'building', file: 'ui/build/BuildHud.tsx', does: 'next piece' },
+  { code: 'KeyX', ctx: 'building', file: 'ui/build/BuildHud.tsx', does: 'hold: deconstruct the piece you aim at' },
+  { code: 'KeyF', ctx: 'building', file: 'ui/build/BuildHud.tsx', does: 'repair the piece you aim at' },
   { code: 'KeyY', ctx: 'duel', file: 'ui/pvp/PvpHud.tsx', does: 'accept the duel' },
   { code: 'KeyU', ctx: 'duel', file: 'ui/pvp/PvpHud.tsx', does: 'decline the duel' },
   { code: 'KeyG', ctx: 'inventory', file: 'ui/inventory/InventoryScreen.tsx', does: 'drop the selected item' },

@@ -6,6 +6,7 @@
 // counts as activity, so the idle stopper doesn't put the world to sleep
 // under someone creating a character.
 
+import { CaveBackdrop } from '../screens/stage/CaveBackdrop';
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 import { defaultUrls } from '../account/api';
 import { waitAwake, wakeMessage, wakeOnce, type WakeReport } from './wake';
@@ -51,6 +52,7 @@ export function WakeGate({ children, directorUrl = defaultUrls().director }: { c
   if (elapsed < SHOW_AFTER_MS) return null;
   const state = report?.state ?? 'starting';
   return (
+    <CaveBackdrop variant="title">
     <div style={wrap}>
       <div style={panel} data-testid="waking-world" data-state={state}>
         <h1 style={{ margin: '0 0 6px' }}>Lodestone</h1>
@@ -65,13 +67,14 @@ export function WakeGate({ children, directorUrl = defaultUrls().director }: { c
           </button>
         )}
       </div>
-      <style>{'@keyframes lodestone-wake{0%,100%{opacity:.35;transform:scale(.9)}50%{opacity:1;transform:scale(1.05)}}'}</style>
+      <style>{'@keyframes lodestone-wake{0%,100%{opacity:.35;transform:scale(.9)}50%{opacity:1;transform:scale(1.05)}}@media (prefers-reduced-motion: reduce){[data-testid=waking-world] div{animation:none!important}}'}</style>
     </div>
+    </CaveBackdrop>
   );
 }
 
-const wrap: CSSProperties = { display: 'flex', justifyContent: 'center', alignItems: 'flex-start', padding: 32, minHeight: '100%', boxSizing: 'border-box' };
-const panel: CSSProperties = { width: 440, background: '#141b24', border: '1px solid #26313f', borderRadius: 10, padding: 24, fontSize: 14, textAlign: 'center' };
+const wrap: CSSProperties = { position: 'absolute', inset: 0, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: 16, boxSizing: 'border-box', color: '#e8eaff' };
+const panel: CSSProperties = { width: 'min(440px, 100%)', background: 'linear-gradient(180deg, rgba(16,16,44,.8), rgba(8,9,26,.86))', border: '1px solid rgba(150,150,255,.28)', borderRadius: 6, padding: 24, fontSize: 14, textAlign: 'center', backdropFilter: 'blur(7px)' };
 const muted: CSSProperties = { color: '#93a1b0', margin: '4px 0 12px' };
 const link: CSSProperties = { background: 'none', border: 0, color: '#8ab4f8', cursor: 'pointer', padding: 0, fontSize: 13 };
 const orb: CSSProperties = {

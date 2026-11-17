@@ -19,7 +19,7 @@ export function statsEvent(level: number, prevLevel: number, reason: number, att
   for (const i of sites) set[i >> 3] |= 1 << (i & 7);
   const xp = xpForLevel(level) + 37;
   return ev(PEV.characterStats, level, reason, encodeStats({
-    reason, level, prevLevel, xp: BigInt(xp), xpInto: 37, xpNext: 60 + 40 * level,
+    reason, level, prevLevel, xp: BigInt(xp), xpInto: 37, xpNext: 60 + 40 * level + (level === 1 ? 260 : 0),
     healthMax: s.health, manaMax: s.mana, staminaMax: s.stamina, damagePct: s.damagePct,
     skillFree: s.skillPoints - spent, skillTotal: s.skillPoints, attunedCount: attuned, attuned: set,
   }));

@@ -31,6 +31,7 @@ import { CAMP_REFUSAL, PIECE, type CampPiece } from './events';
 import { campGhost, kitCount, updateGhost } from './ghost';
 import { ensureCampHook } from './link';
 import { distTo, facingRot, footprint } from './placement';
+import { pieceDef, shapeOf } from '../build/geometry';
 import { pruneCampNotes, pushCampNote, safeByFire, useCamps } from './store';
 import { trackPanel } from '../../input/panelStack';
 
@@ -85,6 +86,7 @@ export function findCampTarget(pieces: Record<number, CampPiece>, px: number, py
   let bd = USE_M;
   for (const p of Object.values(pieces)) {
     if (Math.abs(p.y - py) > 3) continue;
+    if (!usable(p)) continue; // CR 041: walls, floors and decor have no prompt
     const d = distTo(footprint(p.kind, p.rot, p.x, p.z), px, pz);
     if (d < bd) {
       bd = d;
@@ -93,6 +95,8 @@ export function findCampTarget(pieces: Record<number, CampPiece>, px: number, py
   }
   if (!best) return null;
   const p = best;
+  const bs = shapeOf(p.kind);
+  if (bs) return { piece: p, label: buildLabel(p, bs.use, bs.door, now), hold: false };
   const hold = p.mine ? ' · hold E to pick up' : '';
   const lit = p.burning && p.burnEnd > now;
   let label = '';
@@ -102,6 +106,34 @@ export function findCampTarget(pieces: Record<number, CampPiece>, px: number, py
   else if (p.kind === PIECE.workbench) label = '[E] Use the workbench';
   else if (p.kind === PIECE.signpost) label = p.mine ? `[E] Name the signpost${p.label ? `: ${p.label}` : ''}` : `[E] Read: ${p.label || `${p.owner}'s camp`}`;
   return { piece: p, label: label + hold, hold: p.mine };
+}
+
+/** Building pieces with an E: doors and gates, and the working furnishings (CR 041). */
+function usable(p: CampPiece): boolean {
+  const sh = shapeOf(p.kind);
+  return !sh || sh.door || !!sh.use;
+}
+
+function buildLabel(p: CampPiece, use: string, door: boolean, now: number): string {
+  void now;
+  const name = pieceDef(p.kind)?.name ?? 'piece';
+  if (!p.modify && !p.mine) return door ? `${p.owner}'s ${name.toLowerCase()} (locked)` : `${p.owner}'s ${name.toLowerCase()}`;
+  if (door) return `[E] ${(p.state & 1) === 1 ? 'Close' : 'Open'} the ${name.toLowerCase()}`;
+  switch (use) {
+    case 'bed':
+      return '[E] Rest (sets your respawn point)';
+    case 'chest':
+      return `[E] Open the chest (${p.used}/${shapeOf(p.kind)?.slots ?? CAMPS.chest.slots})`;
+    case 'forge':
+      return '[E] Use the forge';
+    case 'cook':
+      return '[E] Cook';
+    case 'workbench':
+      return '[E] Use the bench';
+    case 'hearth':
+      return 'The warding hearth keeps demons away';
+  }
+  return '';
 }
 
 function hoursLeft(ms: number): string {
@@ -138,9 +170,14 @@ function CampMenu() {
             Your camp: {mine.pieces.length}/{mine.max} pieces within {CAMPS.limits.campRadiusM} m · gather firewood from fallen branches
           </div>
         </div>
-        <button onClick={() => useCamps.setState({ menu: false })}>Close (P)</button>
+        <div style={{ display: 'flex', gap: 6 }}>
+          <button data-testid="camp-open-build" onClick={() => useCamps.setState({ menu: false, buildMenu: true })} title="Walls, floors, roofs, furniture: build a base (8)">
+            Build a base (8)
+          </button>
+          <button onClick={() => useCamps.setState({ menu: false })}>Close (P)</button>
+        </div>
       </div>
-      {CAMPS.pieces.map((p) => {
+      {CAMPS.pieces.filter((q) => !q.build).map((p) => {
         const r = ITEMS.recipes.find((x) => x.output === p.kit);
         const st = r ? recipeStatus(r, items) : null;
         const kits = kitCount(p.id);
@@ -185,7 +222,7 @@ function PlacementBar() {
   useTicker(100);
   const placing = useCamps((s) => s.placing);
   if (!placing) return null;
-  const def = CAMPS.pieces[placing.kind - 1];
+  const def = pieceDef(placing.kind);
   const g = campGhost;
   const ok = g.active && g.reason === 0;
   return (
@@ -344,7 +381,7 @@ function Badges() {
     <div data-testid="camp-strips" style={{ position: 'fixed', left: 16, bottom: 150, display: 'flex', flexDirection: 'column', gap: 4, pointerEvents: 'none', zIndex: 12, font: '12px system-ui, sans-serif' }}>
       {left > 0 && rested && (
         <div data-testid="camp-rested" style={strip} title={`+${rested.info.staminaBonus} stamina, x${rested.info.regenMult} health regeneration`}>
-          <span style={{ color: '#ffd98a', fontWeight: 700 }}>Rested</span> {Math.floor(left / 60)}:{String(left % 60).padStart(2, '0')} · +{rested.info.staminaBonus} stamina · x{rested.info.regenMult} regen
+          <span style={{ color: '#ffd98a', fontWeight: 700 }}>Rested</span> {Math.floor(left / 60)}:{String(left % 60).padStart(2, '0')} · +{rested.info.staminaBonus} stamina · x{rested.info.regenMult} regen{rested.info.tier ? ` · ${rested.info.tier} home` : ''}
         </div>
       )}
       {fire && (
@@ -366,7 +403,7 @@ function Prompt() {
     let fired = false;
     const current = (): CampTarget | null => {
       const s = useCamps.getState();
-      if (s.placing || s.menu || s.chest || s.labeling || othersBusy()) return null;
+      if (s.placing || s.building || s.buildMenu || s.menu || s.chest || s.labeling || othersBusy()) return null;
       return findCampTarget(s.pieces, localPlayer.pos.x, localPlayer.pos.y, localPlayer.pos.z);
     };
     const iv = setInterval(() => {
@@ -435,7 +472,7 @@ export function use(p: CampPiece): void {
     useCamps.setState({ labeling: p.id });
     return;
   }
-  if (p.kind === PIECE.chest) emitSound('chest_open');
+  if (p.kind === PIECE.chest || shapeOf(p.kind)?.use === 'chest') emitSound('chest_open');
   s.actions?.use(p.id);
 }
 

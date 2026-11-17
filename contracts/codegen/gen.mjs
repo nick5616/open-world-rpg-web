@@ -25,7 +25,7 @@ const worldspec = parseWorldSpec(JSON.parse(rd('contracts', 'worldspec.schema.js
 const combat = parseCombat(YAML.parse(rd('contracts', 'combat.yaml')), constants);
 const items = parseItems(YAML.parse(rd('contracts', 'items.yaml')), combat);
 const content = parseContent(YAML.parse(rd('contracts', 'content.yaml')), combat, items, YAML.parse(rd('contracts', 'achievements.yaml'))); // CR 031: achievements
-const camps = parseCamps(YAML.parse(rd('contracts', 'camps.yaml')), items);
+const camps = parseCamps(YAML.parse(rd('contracts', 'camps.yaml')), items, YAML.parse(rd('contracts', 'build.yaml'))); // CR 041: base building
 
 const outputs = {
   'contracts/ts/src/gen/protocol.ts': genTs(protocol),

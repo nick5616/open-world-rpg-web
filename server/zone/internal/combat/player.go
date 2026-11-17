@@ -95,6 +95,7 @@ type Player struct {
 	Level   int
 	PartyID uint32
 
+	Familiar      int // CR 042: the spell id of the familiar light burning (the zone sets it, lights.go): casting it again is free
 	HP, HPMax     float64
 	Mana, ManaMax float64
 	Pos           movement.Vec3 // authoritative feet position (game updates per tick)
@@ -411,8 +412,8 @@ func (p *Player) allowDash(variant int, seq uint32, r *FrameResult) bool {
 	lo := p.Loadout()
 	for _, k := range lo.Spells {
 		s := D.SpellByKey(k)
-		if s == nil || s.Type != "mobility" || s.Dash != variant || !p.Profile.Knows(k) {
-			continue
+		if s == nil || s.Type != "mobility" || s.Dash == 0 || D.ResolveDash(s.Dash, p.Level) != variant || !p.Profile.Knows(k) {
+			continue // CR 048: the variant is the spell's dash at the caster's level
 		}
 		cd := p.cooldownSteps(s.CooldownSteps)
 		if seq < p.readyAt[s.ID] || p.Mana < s.Mana {
@@ -546,8 +547,10 @@ func (p *Player) startCast(f proto.InputFrame, before movement.State, w *combatd
 			return nil // mobility casts arrive as dodge + variant
 		case seq < p.readyAt[s.ID]:
 			a.Legal, a.Refusal = false, RefuseCooldown
-		case p.Mana < s.Mana:
+		case p.Mana < s.Mana && !(s.Familiar != nil && p.Familiar == s.ID): // CR 042: dismissing a familiar light is free
 			a.Legal, a.Refusal = false, RefuseMana
+		case s.Familiar != nil && p.Familiar == s.ID:
+			p.readyAt[s.ID] = seq + uint32(p.cooldownSteps(s.CooldownSteps)) // CR 042: dismissing costs nothing
 		case (s.Auto != nil || s.Charge != nil) && before.Dash > 0:
 			a.Legal, a.Refusal = false, RefuseIllegal // CR 020 x 021: its channel bit would hold the running dash (the client waits)
 		case s.Auto != nil:

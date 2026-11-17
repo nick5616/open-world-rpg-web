@@ -835,6 +835,7 @@ export class CombatRuntime {
         if (!s) return;
         hud.set({ active: true, activeLoadout: s.active, loadouts: s.loadouts, known: s.known, skillXp: s.skillXp, manaMax: s.manaMax, charges: s.charges, skillPoints: s.skillPoints, level: s.level });
         this.timeline.manaMax = s.manaMax;
+        this.timeline.charLevel = s.level;
         this.timeline.skills = {
           level: (k) => levelFor(s.skillXp[k] ?? 0),
           has: (k, t) => {

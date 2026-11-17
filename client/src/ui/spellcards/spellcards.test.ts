@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { COMBAT } from '@lodestone/contracts';
 import { ELEMENT_COLOR, spellName } from '../skills/tree';
 import { MOCK } from '../skills/dev';
-import { BASE_TYPE_LABEL, cardStat, knownCards, SCHOOL_ICON, slotsHolding, spellCardData, spellKind } from './card';
+import { BASE_TYPE_LABEL, bankCards, cardStat, knownCards, SCHOOL_ICON, slotsHolding, spellCardData, spellKind } from './card';
 
 const get = (k: string) => {
   const d = spellCardData(k);
@@ -110,5 +110,27 @@ describe('the grid and the slots', () => {
     expect(slotsHolding('fireball', MOCK.loadouts)).toEqual(['loadout 1 slot 1']);
     expect(slotsHolding('kindling', MOCK.loadouts)).toEqual([]);
     expect(slotsHolding('glint', [{ spells: ['glint', null, null, null] }, { spells: [null, null, 'glint', null] }])).toEqual(['loadout 1 slot 1', 'loadout 2 slot 3']);
+  });
+});
+
+describe('the spell bank (playtest 3)', () => {
+  it('hides what the edited loadout has equipped and gives it back when the slot clears', () => {
+    const all = knownCards(MOCK.known).map((c) => c.key);
+    const lo = MOCK.loadouts[0].spells;
+    const equipped = lo.filter((k): k is string => !!k);
+    expect(equipped.length).toBeGreaterThan(0);
+    const bank = bankCards(MOCK.known, lo).map((c) => c.key);
+    for (const k of equipped) expect(bank).not.toContain(k);
+    expect(bank.length).toBe(all.length - equipped.filter((k) => all.includes(k)).length);
+    // Unequip slot 1: it is back in the bank, in its usual order.
+    const first = lo.find((k) => !!k)!;
+    const after = bankCards(MOCK.known, lo.map((k) => (k === first ? null : k))).map((c) => c.key);
+    expect(after).toContain(first);
+    expect(after).toEqual(all.filter((k) => after.includes(k)));
+    // Another loadout's spells stay in the bank while this one is edited.
+    const other = MOCK.loadouts[1].spells.find((k) => !!k && !lo.includes(k));
+    if (other) expect(bankCards(MOCK.known, lo).map((c) => c.key)).toContain(other);
+    // Equipped passives or unknown keys do no harm.
+    expect(bankCards(MOCK.known, ['kindling', 'nope', null, null]).length).toBe(all.length);
   });
 });

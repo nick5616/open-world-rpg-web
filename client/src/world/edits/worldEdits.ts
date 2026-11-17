@@ -1,6 +1,6 @@
 // WorldEditManager (CR 040): breaking and reshaping the generated world.
 //
-// Key 8 cycles the work tool (chop and break, dig, fill); with one up the left
+// Key = (Equal) cycles the work tool (chop and break, dig, fill); with one up the left
 // mouse button swings it (hold to repeat). Online the zone decides everything
 // (Interact 42 harvest, 43 earthworks -> Events 1800-1807, WorldEdits kind
 // object_destroyed, TerrainEdits message 73); in solo the same rules run
@@ -167,7 +167,7 @@ export class WorldEditManager {
         if (e.button === 0) this.held = false;
       };
       const onKey = (e: KeyboardEvent) => {
-        if (e.code !== 'Digit8' || e.repeat || notGameKey(e) || heldBlocked()) return;
+        if (e.code !== 'Equal' || e.repeat || notGameKey(e) || heldBlocked()) return;
         const mode = cycleWorkTool();
         this.held = false;
         this.toast(mode === 'off' ? 'Tools away' : `${TOOL_LABEL[mode]} (${TOOL_ITEM[mode]})`);
@@ -658,9 +658,9 @@ export class WorldEditManager {
     let html = '';
     if (mode !== 'off') {
       const items = useInventory.getState().inv?.items;
-      const dirt = items ? countOf(items, 'earth:dirt') + countOf(items, 'stone:stone') : null;
+      const dirt = items ? countOf(items, 'earth:dirt') + countOf(items, 'stone:block') : null;
       const t = this.target;
-      let line = `<b>[8]</b> ${TOOL_LABEL[mode]}`;
+      let line = `<b>[=]</b> ${TOOL_LABEL[mode]}`;
       if (mode !== 'harvest' && dirt !== null) line += ` &middot; ${dirt} dirt and stone`;
       if (mode === 'harvest' && t?.kind === 'object') {
         const nm = t.layer === LAYER_TREE ? 'tree' : t.layer === LAYER_ROCK ? 'rock' : 'bush';

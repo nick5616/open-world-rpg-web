@@ -50,11 +50,11 @@ const deadDrops: Drop[] = [
   { item: 'wood:firewood', min: 2, max: 4 },
 ];
 const rockDrops: Drop[] = [
-  { item: 'stone:stone', min: 2, max: 4, perScale: 2 },
+  { item: 'stone:block', min: 2, max: 4, perScale: 2 },
   { item: 'stone:flint', min: 1, max: 1, chance: 0.18 },
 ];
 const spireDrops: Drop[] = [
-  { item: 'stone:stone', min: 3, max: 5, perScale: 2 },
+  { item: 'stone:block', min: 3, max: 5, perScale: 2 },
   { item: 'stone:flint', min: 1, max: 2, chance: 0.3 },
 ];
 const bushDrops: Drop[] = [
@@ -125,7 +125,7 @@ export const ITEM_NAMES: Record<string, string> = {
   'wood:stick': 'Stick',
   'wood:resin': 'Resin',
   'wood:firewood': 'Firewood',
-  'stone:stone': 'Stone',
+  'stone:block': 'Stone',
   'stone:flint': 'Flint',
   'earth:dirt': 'Dirt',
   'plant:fiber': 'Plant Fiber',

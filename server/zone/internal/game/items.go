@@ -673,7 +673,8 @@ func (s *Server) applyGear(sess *session) {
 	if ci.apVer != ci.version {
 		// CR 034: the armor everyone sees (appearance.go); snapshots carry it on change only
 		ci.apVer = ci.version
-		e.Appearance = AppearanceOf(&ci.inv)
+		e.armorAp = AppearanceOf(&ci.inv)
+		s.refreshLook(sess, 0, false) // armor + the light (lights.go)
 	}
 	if e.cbt == nil {
 		return

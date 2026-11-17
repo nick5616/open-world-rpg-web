@@ -470,7 +470,7 @@ func (s *Server) earthwork(sess *session, e *Entity, in *proto.Interact, now tim
 		cost = worldedit.CostFor(plan.Raised)
 		have := pend.dirt
 		if sess.items != nil {
-			have += sess.items.inv.Count("earth:dirt") + sess.items.inv.Count("stone:stone")
+			have += sess.items.inv.Count("earth:dirt") + sess.items.inv.Count("stone:block")
 		} else {
 			have = 1 << 20
 		}
@@ -538,13 +538,13 @@ func (s *Server) flushPend(sess *session, e *Entity, p *grantPend, now time.Time
 		take := min(need, ci.inv.Count("earth:dirt"))
 		ci.inv.Spend("earth:dirt", take, &d)
 		if rest := need - take; rest > 0 {
-			ci.inv.Spend("stone:stone", min(rest, ci.inv.Count("stone:stone")), &d)
+			ci.inv.Spend("stone:block", min(rest, ci.inv.Count("stone:block")), &d)
 		}
 	} else if dirt > 0 {
 		s.addOrDrop(sess, e, "earth:dirt", dirt, &d)
 	}
 	if stone > 0 {
-		s.addOrDrop(sess, e, "stone:stone", stone, &d)
+		s.addOrDrop(sess, e, "stone:block", stone, &d)
 	}
 	s.commitItems(sess, &d, nil, "earthworks")
 	if dirt > 0 || stone > 0 {

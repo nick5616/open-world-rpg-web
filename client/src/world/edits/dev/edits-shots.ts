@@ -44,6 +44,7 @@ interface Handle {
   setQuality(q: string): void;
   setView(mode: 'first' | 'third', shoulder?: 1 | -1, distance?: number): void;
   setTimeOfDay(s: number): void;
+  setFreezeTime(v: boolean): void;
   connectZone(r: { ticket: string; zoneEndpoint: string; zoneId: string; worldId: string; name?: string }): void;
   netDebug(): { phase: string } | null;
 }
@@ -140,6 +141,7 @@ async function main(): Promise<void> {
       const l = (window as unknown as W).__lodestone;
       l.setQuality('high');
       l.setTimeOfDay(10.5 * 3600);
+      l.setFreezeTime(true);
     });
     await page.getByRole('button', { name: "Let's go" }).click({ timeout: 8000 }).catch(() => {});
     await page.keyboard.press('F3'); // hide the debug HUD

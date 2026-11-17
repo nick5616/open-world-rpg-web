@@ -146,7 +146,7 @@ describe('placement preview (the zone rules, mirrored)', () => {
   });
 });
 
-function record(id: number, kind: number, rot: number, x: number, y: number, z: number, flags: number, leftMs: number, used: number, owner: string, label: string): number[] {
+function record(id: number, kind: number, rot: number, x: number, y: number, z: number, flags: number, leftMs: number, used: number, owner: string, label: string, state = 0, cond = 100, v1 = false): number[] {
   const b: number[] = [];
   const u32 = (v: number) => b.push(v & 0xff, (v >>> 8) & 0xff, (v >>> 16) & 0xff, (v >>> 24) & 0xff);
   u32(id % 4294967296);
@@ -158,6 +158,7 @@ function record(id: number, kind: number, rot: number, x: number, y: number, z: 
   b.push(flags);
   u32(leftMs);
   b.push(used, owner.length, ...[...owner].map((c) => c.charCodeAt(0)), label.length, ...[...label].map((c) => c.charCodeAt(0)));
+  if (!v1) b.push(state, cond); // record version 2 (CR 041)
   return b;
 }
 
@@ -170,7 +171,7 @@ describe('camp wire', () => {
     const [p, next] = decodePiece(new Uint8Array(r), 0, 1000);
     expect(next).toBe(r.length);
     expect(p).toMatchObject({ id: big, kind: PIECE.campfire, rot: 3, x: 1234.56, y: -2.5, z: 2345.67, mine: true, burning: true, burnEnd: 91000, owner: 'Ash', label: 'Home' });
-    const area = [1, 3, 0, 4, 0, 2, 0, ...r, ...record(7, PIECE.chest, 0, 1, 2, 3, 2 | 4, 0, 5, 'Bo', '')];
+    const area = [2, 3, 0, 4, 0, 2, 0, ...r, ...record(7, PIECE.chest, 0, 1, 2, 3, 2 | 4, 0, 5, 'Bo', '')];
     const a = decodeArea(ev(CAMP_EV.area, area, { targetId: 4 * 64 + 3 }), 0);
     expect(a.pieces.map((q) => q.id)).toEqual([big, 7]);
     expect(a.pieces[1]).toMatchObject({ shared: true, party: true, used: 5, burning: false });
@@ -195,7 +196,7 @@ describe('camp wire', () => {
 });
 
 describe('camp store', () => {
-  const base = (): Omit<CampState, 'actions'> => ({ pieces: {}, mine: emptyMine(), chest: null, rested: null, notes: [], placing: null, menu: false, labeling: null, selfId: 9 });
+  const base = (): Omit<CampState, 'actions'> => ({ build: null, missing: null, building: null, buildMenu: false, pieces: {}, mine: emptyMine(), chest: null, rested: null, notes: [], placing: null, menu: false, labeling: null, selfId: 9 });
   it('areas add pieces, placements note, removals drop them and close their chest', () => {
     let s = base();
     const fire = record(11, PIECE.campfire, 0, 100000, 1000, 100000, 1 | 8, 60000, 0, 'Ash', '');

@@ -39,6 +39,8 @@ export interface EntState {
   partyId: number;
   /** Protocol v6 (CR 034): what a player wears (combat/armor/appearance.ts); below 2^53, so a number. */
   appearance: number;
+  /** CR 042: the light a player carries (appearance bits 51-56: bit 0 a torch is lit, bits 1-5 the familiar light id). */
+  light: number;
 }
 
 /** SelfState with every field present (wire units). */
@@ -61,8 +63,10 @@ export const ZERO_SELF: Readonly<FullSelf> = Object.freeze({
   x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, health: 0, healthMax: 0, stamina: 0, staminaMax: 0, mode: 0, airJumps: 0, activity: 0, flags: 0, moveExt: 0,
 });
 
+const ARMOR_MASK = (1n << 51n) - 1n; // CR 042: bits 51 and up are the light
+
 function zeroEnt(id: number): EntState {
-  return { id, kind: 0, x: 0, y: 0, z: 0, yaw: 0, pitch: 0, vx: 0, vy: 0, vz: 0, healthPct: 0, activity: 0, typeId: 0, name: '', level: 0, partyId: 0, appearance: 0 };
+  return { id, kind: 0, x: 0, y: 0, z: 0, yaw: 0, pitch: 0, vx: 0, vy: 0, vz: 0, healthPct: 0, activity: 0, typeId: 0, name: '', level: 0, partyId: 0, appearance: 0, light: 0 };
 }
 
 /** base with r's present fields applied (base undefined = zero state). */
@@ -84,7 +88,10 @@ export function applyRecord(base: EntState | undefined, r: EntityRecord): EntSta
   if (r.name !== undefined) s.name = r.name;
   if (r.level !== undefined) s.level = r.level;
   if (r.partyId !== undefined) s.partyId = r.partyId;
-  if (r.appearance !== undefined) s.appearance = Number(r.appearance);
+  if (r.appearance !== undefined) {
+    s.appearance = Number(r.appearance & ARMOR_MASK); // CR 034: the armor, below 2^51, exact
+    s.light = Number(r.appearance >> 51n); // CR 042: the light above it
+  }
   return s;
 }
 

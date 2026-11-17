@@ -91,22 +91,22 @@ func TestToolsAndDirtEconomy(t *testing.T) {
 		a.pump(230 * time.Millisecond)
 	}
 	a.pump(1800 * time.Millisecond) // the batched grant lands
-	dirt := count("earth:dirt") + count("stone:stone")
+	dirt := count("earth:dirt") + count("stone:block")
 	if dirt < 6 || len(a.eventsOf(EventEarthGrant)) == 0 {
 		t.Fatalf("digging paid %d dirt+stone, grants %d", dirt, len(a.eventsOf(EventEarthGrant)))
 	}
 	// Filling spends it; with none left it is refused.
-	before := count("earth:dirt") + count("stone:stone")
+	before := count("earth:dirt") + count("stone:block")
 	for i := 0; i < 3; i++ {
 		a.send(&proto.Interact{TargetKind: InteractEarth, TargetID: target, Action: 2})
 		a.pump(230 * time.Millisecond)
 	}
 	a.pump(1800 * time.Millisecond)
-	if after := count("earth:dirt") + count("stone:stone"); after >= before {
+	if after := count("earth:dirt") + count("stone:block"); after >= before {
 		t.Fatalf("filling did not cost dirt: %d -> %d", before, after)
 	}
 	spend("earth:dirt")
-	spend("stone:stone")
+	spend("stone:block")
 	a.pump(1800 * time.Millisecond)
 	n := len(a.eventsOf(EventEarthRefused))
 	a.send(&proto.Interact{TargetKind: InteractEarth, TargetID: target, Action: 2})

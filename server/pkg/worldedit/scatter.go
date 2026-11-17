@@ -69,8 +69,8 @@ var (
 	treeDrops      = []Drop{{Item: "wood:log", Min: 2, Max: 3, PerScale: 1.5}, {Item: "wood:stick", Min: 1, Max: 2, Chance: 0.7}, {Item: "wood:resin", Min: 1, Max: 1, Chance: 0.2}}
 	coniferDrops   = []Drop{{Item: "wood:log", Min: 2, Max: 4, PerScale: 1.5}, {Item: "wood:stick", Min: 1, Max: 2, Chance: 0.6}, {Item: "wood:resin", Min: 1, Max: 2, Chance: 0.5}}
 	deadTreeDrops  = []Drop{{Item: "wood:log", Min: 1, Max: 2, PerScale: 1}, {Item: "wood:firewood", Min: 2, Max: 4}}
-	rockDrops      = []Drop{{Item: "stone:stone", Min: 2, Max: 4, PerScale: 2}, {Item: "stone:flint", Min: 1, Max: 1, Chance: 0.18}}
-	spireDrops     = []Drop{{Item: "stone:stone", Min: 3, Max: 5, PerScale: 2}, {Item: "stone:flint", Min: 1, Max: 2, Chance: 0.3}}
+	rockDrops      = []Drop{{Item: "stone:block", Min: 2, Max: 4, PerScale: 2}, {Item: "stone:flint", Min: 1, Max: 1, Chance: 0.18}}
+	spireDrops     = []Drop{{Item: "stone:block", Min: 3, Max: 5, PerScale: 2}, {Item: "stone:flint", Min: 1, Max: 2, Chance: 0.3}}
 	bushDrops      = []Drop{{Item: "plant:fiber", Min: 1, Max: 2}, {Item: "wood:stick", Min: 0, Max: 1, Chance: 0.5}}
 	berryBushDrops = []Drop{{Item: "plant:berries", Min: 2, Max: 4}, {Item: "plant:fiber", Min: 1, Max: 1}}
 	treeRegrow     = [2]time.Duration{3 * time.Hour, 6 * time.Hour}

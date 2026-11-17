@@ -79,8 +79,8 @@ describe('node state', () => {
   });
   it('counts learned nodes per tree', () => {
     const c = learnedCounts(MOCK.known);
-    expect(c.fire).toEqual({ learned: 6, total: 19 });
-    expect(c.light).toEqual({ learned: 3, total: 11 });
+    expect(c.fire).toEqual({ learned: 6, total: 20 }); // CR 042 added Hearth Mote
+    expect(c.light).toEqual({ learned: 3, total: 12 }); // CR 042 added Lumen Wisp
   });
 });
 
@@ -189,7 +189,7 @@ describe('build overview', () => {
     expect(l1.form).toMatchObject({ element: 'lightning', name: COMBAT.names.form_lightning, unlocked: true, damage: Math.round(45 * 1.34 * 1.224 * 1.084 * 1.25 * 2.1) });
     expect(l1.spells.map((s) => s.key)).toEqual(MOCK.loadouts[0].spells);
     expect(l2).toMatchObject({ active: false, weapon: 'staff', weaponName: 'Oak Staff', form: null });
-    expect(l2.demons).toBe('Only Light spells kill demons with this loadout');
+    expect(l2.demons).toBe('Only Light spells kill the strongest demons with this loadout');
     expect(v.armor.map((a) => a.name)).toEqual(['Iron Helm', 'Silver Cuirass', 'Leather Leggings']);
   });
   it('a training weapon (nothing equipped) still adds up', () => {

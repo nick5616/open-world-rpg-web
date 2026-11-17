@@ -15,7 +15,9 @@
 // avoid z-fighting.
 
 import { BOX_FLAG, BUILDING_FLAG, PROP_KINDS, type Building, type Settlement, type TownProp, type Towns } from '@lodestone/worldgen';
-import { MeshBuilder, at, dirOf, local, turned, type Frame, type MeshData, type V3 } from './meshBuilder';
+import { MeshBuilder, at, dirOf, local, moved, turned, type Frame, type MeshData, type V3 } from './meshBuilder';
+import { detail } from './detail';
+import { Yard, dressBuilding, drawInterior } from './dress';
 import { DEFAULT_DIMS, drawProp, P, PK, type Emitter, type PropCtx, type PropDims } from './props';
 import { TEX, type TexName } from './textures';
 
@@ -200,7 +202,8 @@ export function drawBuildingShell(mb: MeshBuilder, t: Towns, b: Building, height
         break;
       case BK.upper: {
         // Ceiling inside; on flat roofs (adobe) the walkable roof, with a lip.
-        P(mb, look.inner === 'logs' ? 'planks' : 'floor', [0.85, 0.78, 0.7]);
+        if (detail() >= 1 && look.inner === 'plaster') P(mb, 'plaster', [0.88, 0.88, 0.9]); // plastered ceiling between dark beams (dress.ts)
+        else P(mb, look.inner === 'logs' ? 'planks' : 'floor', [0.85, 0.78, 0.7]);
         mb.slopedBox(f, -bx.hx, bx.hx, -bx.hz, bx.hz, bx.y0, bx.y0 + 0.001, bx.y0 + 0.001, { top: false, sides: false, bottom: true });
         if (b.roof === 2 || b.roof === 3) {
           P(mb, 'adobe', [0.86, 0.8, 0.74]);
@@ -246,6 +249,61 @@ export function drawBuildingShell(mb: MeshBuilder, t: Towns, b: Building, height
     mb.box(F, b.hx - 0.02, b.hx + e, y - 0.12, y + 0.1, -b.hz, b.hz, { bottom: true });
   }
   if ((b.flags & BUILDING_FLAG.chimney) !== 0) drawChimney(mb, t, b, F, wallTop);
+  if (detail() >= 1) drawDoorDressing(mb, b, F, wt);
+}
+
+/**
+ * Door surround (detail 1+): jambs and a head board over the lintel, a wall lantern whose glass glows at night
+ * (emissive, no light), and on inns a hanging sign. The doorway itself, the leaf and every collision box are
+ * untouched; all of this stands outside the wall plane, above or beside the 1.2 m opening.
+ */
+function drawDoorDressing(mb: MeshBuilder, b: Building, F: Frame, wt: number): void {
+  if (b.floors === 0 || (b.flags & BUILDING_FLAG.openFront) !== 0) return;
+  void wt;
+  const timber = TIMBERS[Math.floor(hash(b.index, 78) * 4) & 3];
+  const dw = b.doorW;
+  const G = turned(moved(F, b.doorU, -b.hz), Math.PI);
+  const y0 = b.floorY;
+  mb.originY = y0;
+  P(mb, 'wood', timber);
+  gb(mb, G, -dw / 2 - 0.13, -dw / 2, y0, y0 + 2.36, 0, 0.07, { top: false });
+  gb(mb, G, dw / 2, dw / 2 + 0.13, y0, y0 + 2.36, 0, 0.07, { top: false });
+  gb(mb, G, -dw / 2 - 0.18, dw / 2 + 0.18, y0 + 2.53, y0 + 2.64, 0, 0.1, { bottom: true });
+  const porch = (b.flags & BUILDING_FLAG.porch) !== 0;
+  const side = hash(b.index, 41) > 0.5 ? 1 : -1;
+  if (b.role === ROLE.inn) {
+    // Hanging sign: from the awning's front edge on a porch, else on a bracket arm from the wall.
+    const u = -side * (dw / 2 + 1.35);
+    const sy = porch ? y0 + 2.3 : y0 + 2.45;
+    const vb = porch ? 2.15 : 0.95;
+    P(mb, 'wood', timber);
+    if (!porch) gb(mb, G, u - 0.03, u + 0.03, sy + 0.42, sy + 0.5, 0, vb + 0.05);
+    P(mb, 'metal');
+    for (const v of porch ? [vb - 0.3, vb + 0.08] : [vb - 0.5, vb - 0.06]) mb.box(G, u - 0.01, u + 0.01, sy + 0.1, sy + 0.44, v - 0.01, v + 0.01, { top: false });
+    P(mb, 'planks', [0.7, 0.55, 0.4]);
+    mb.box(G, u - 0.03, u + 0.03, sy - 0.32, sy + 0.12, vb - 0.6, vb + 0.02);
+    // A tankard on each face.
+    for (const s of [-1, 1]) {
+      P(mb, 'plain', [0.8, 0.62, 0.3]);
+      mb.cyl(G, u + s * 0.075, vb - 0.3, sy - 0.22, sy - 0.02, 0.085, 6, { r1: 0.075 });
+      P(mb, 'cloth', [1, 1, 0.95]);
+      mb.cyl(G, u + s * 0.075, vb - 0.3, sy - 0.02, sy + 0.01, 0.08, 6);
+      P(mb, 'metal');
+      mb.box(G, u + s * 0.075 - 0.01, u + s * 0.075 + 0.01, sy - 0.2, sy - 0.06, vb - 0.17, vb - 0.1);
+    }
+  }
+  if (b.role !== ROLE.inn || hash(b.index, 42) > 0.3) {
+    // Wall lantern: arm, cap, glowing glass (night-only warm glow like the windows).
+    const u = side * (dw / 2 + 0.55);
+    const ly = y0 + 1.95;
+    P(mb, 'wood', timber);
+    gb(mb, G, u - 0.025, u + 0.025, ly + 0.2, ly + 0.25, 0, 0.3);
+    P(mb, 'metal');
+    mb.box(G, u - 0.1, u + 0.1, ly + 0.2, ly + 0.25, 0.2, 0.4, { bottom: true });
+    mb.cyl(G, u, 0.3, ly + 0.25, ly + 0.36, 0.1, 4, { r1: 0.0, a0: Math.PI / 4 });
+    P(mb, 'glow', [1, 0.78, 0.45], 96);
+    mb.box(G, u - 0.07, u + 0.07, ly, ly + 0.2, 0.23, 0.37, { bottom: true });
+  }
 }
 
 /** Door rise (m) from which worldgen's door ramp is drawn as steps (worldgen town/kit.rs STEPS_RISE). */
@@ -340,8 +398,79 @@ function drawPosts(mb: MeshBuilder, f: Frame, bx: Box, floorY: number, heightAt:
   }
 }
 
+/** A box attached to a wall (frame G: v = outward from the wall plane): its back face is never seen. */
+function gb(mb: MeshBuilder, G: Frame, u0: number, u1: number, y0: number, y1: number, v0: number, v1: number, o: { top?: boolean; bottom?: boolean; sides?: boolean } = {}): void {
+  mb.box(G, u0, u1, y0, y1, v0, v1, { ...o, skip: ['-v'] });
+}
+
+/** A flat strip (batten, brace) standing `v` out from the wall plane of frame G: one face, two triangles. */
+function plate(mb: MeshBuilder, G: Frame, u0: number, u1: number, y0: number, y1: number, v: number): void {
+  mb.poly([at(G, u0, y0, v), at(G, u1, y0, v), at(G, u1, y1, v), at(G, u0, y1, v)], dirOf(G, 0, 0, 1));
+}
+
+/** Frame on a wall's outer face at along-position m: u along the wall, v outward (y stays world height). */
+function wallFrame(F: Frame, frontBack: boolean, sgn: number, plane: number, m: number): Frame {
+  const o = frontBack ? moved(F, m, plane) : moved(F, plane, m);
+  return turned(o, frontBack ? (sgn > 0 ? 0 : Math.PI) : sgn > 0 ? -Math.PI / 2 : Math.PI / 2);
+}
+
+const FLOWERS: V3[] = [
+  [0.95, 0.3, 0.22],
+  [0.97, 0.82, 0.28],
+  [0.96, 0.95, 0.9],
+  [0.72, 0.48, 0.92],
+  [0.97, 0.55, 0.72],
+];
+/** Oak, weathered grey-brown, dark walnut, tarred black-brown (per building). */
+const TIMBERS: V3[] = [
+  [0.4, 0.29, 0.2],
+  [0.46, 0.4, 0.34],
+  [0.3, 0.21, 0.15],
+  [0.24, 0.2, 0.17],
+];
+/** Lime wash over plaster walls: cream, ochre, rose, sage, white, pale blue-grey (per building; only above detail 0). */
+const WASHES: V3[] = [
+  [1, 0.98, 0.92],
+  [1.04, 0.92, 0.7],
+  [1.0, 0.84, 0.8],
+  [0.86, 0.92, 0.8],
+  [1.04, 1.04, 1.02],
+  [0.84, 0.9, 0.98],
+];
+
+/** Wash for a plaster-faced building (identity at detail 0 and for non-plaster walls). */
+function washOf(b: Building, wall: string): V3 {
+  if (detail() === 0 || (wall !== 'plaster' && wall !== 'timber')) return [1, 1, 1];
+  return WASHES[Math.floor(hash(b.index, 77) * WASHES.length) % WASHES.length];
+}
+const mul = (a: V3, c: V3): V3 => [a[0] * c[0], a[1] * c[1], a[2] * c[2]];
+
+/** Roof colour variation per building (both halves agree): brightness and a slight warm/cool shift. */
+function roofTint(b: Building): V3 {
+  if (detail() === 0) return [1, 1, 1];
+  const m = 0.84 + 0.3 * hash(b.index, 5);
+  const h = hash(b.index, 6) - 0.5;
+  return [m * (1 + 0.12 * h), m, m * (1 - 0.12 * h)];
+}
+
+/**
+ * Stone skirt at the foot of a wall box: a footing course of the building's
+ * foundation stone, 5 cm proud of the face, 0.55 m tall, with a cap ledge.
+ * Pure decoration (no collision).
+ */
+function drawSkirt(mb: MeshBuilder, wb: WallBox, b: Building, y0: number): void {
+  const [tex, tt]: [TexName, V3] = b.style === STYLE.stone ? ['mossStone', [0.95, 0.95, 0.92]] : b.style === STYLE.adobe ? ['adobe', [0.7, 0.62, 0.54]] : ['fieldstone', [1, 0.97, 0.92]];
+  P(mb, tex, tt);
+  wb(-1e9, 1e9, y0, y0 + 0.36, 0, 0.05, { top: false });
+  P(mb, b.style === STYLE.adobe ? 'adobe' : 'stone', mul(tt, [0.92, 0.92, 0.92]));
+  wb(-1e9, 1e9, y0 + 0.34, y0 + 0.42, 0, 0.08, { bottom: true });
+}
+
+type WallBox = (u0: number, u1: number, y0: number, y1: number, d0: number, d1: number, o?: { top?: boolean; bottom?: boolean; sides?: boolean }) => void;
+
 /** A wall box: style face outside, inner finish inside, windows on long enough walls. */
 function drawWall(mb: MeshBuilder, t: Towns, b: Building, bx: Box, look: Look, tint: V3, wt: number): void {
+  const D = detail();
   const F = buildingFrame(b);
   const [lu, lv] = local(F, bx.cx, bx.cz);
   const frontBack = Math.abs(lv) >= b.hz - wt * 0.5 - 0.02;
@@ -360,7 +489,10 @@ function drawWall(mb: MeshBuilder, t: Towns, b: Building, bx: Box, look: Look, t
     if (lv - bx.hz <= -b.hz + 0.02) skip.push('-v');
     if (lv + bx.hz >= b.hz - 0.02) skip.push('+v');
   }
-  const outer = P(mb, look.wall, tint).save();
+  const halfTimber = D >= 1 && b.style === STYLE.timber;
+  const wallTex: TexName = halfTimber ? 'plaster' : look.wall;
+  const wtint = mul(tint, washOf(b, wallTex));
+  const outer = P(mb, wallTex, wtint).save();
   const inner = P(mb, look.inner, [0.95, 0.93, 0.9]).save();
   mb.restore(outer);
   mb.slopedBox(f, -bx.hx, bx.hx, -bx.hz, bx.hz, y0, bx.y1, bx.y2, {
@@ -368,14 +500,30 @@ function drawWall(mb: MeshBuilder, t: Towns, b: Building, bx: Box, look: Look, t
     bottom: lintel,
     sidePaint: { [inName]: inner } as Record<string, typeof inner>,
   });
+  const timber = TIMBERS[Math.floor(hash(b.index, 78) * 4) & 3];
   if (lintel) {
     // A lintel beam over the doorway.
-    P(mb, 'wood', [0.5, 0.36, 0.25]);
+    P(mb, 'wood', D >= 1 ? timber : [0.5, 0.36, 0.25]);
     mb.slopedBox(f, -bx.hx - 0.1, bx.hx + 0.1, -bx.hz - 0.03, bx.hz + 0.03, bx.y0 - 0.001, bx.y0 + 0.18, bx.y0 + 0.18, { bottom: true });
     return;
   }
+  const plane = (frontBack ? lv : lu) + sgn * (frontBack ? bx.hz : bx.hx);
+  /** A box standing on this wall's outer face: along the wall [u0, u1] (clamped to the box), outward [d0, d1]. */
+  const wb: WallBox = (u0, u1, ya, yb, d0, d1, o) => {
+    const half = frontBack ? bx.hx : bx.hz;
+    const mid = frontBack ? lu : lv;
+    const a0 = Math.max(u0, mid - half);
+    const a1 = Math.min(u1, mid + half);
+    if (a1 - a0 < 1e-3) return;
+    const p0 = sgn > 0 ? plane + d0 : plane - d1;
+    const p1 = sgn > 0 ? plane + d1 : plane - d0;
+    const back = frontBack ? (sgn > 0 ? '-v' : '+v') : sgn > 0 ? '-u' : '+u';
+    if (frontBack) mb.box(F, a0, a1, ya, yb, p0, p1, { ...o, skip: [back] });
+    else mb.box(F, p0, p1, ya, yb, a0, a1, { ...o, skip: [back] });
+  };
+  if (D >= 1 && b.style !== STYLE.stilt) drawSkirt(mb, wb, b, y0);
   // Windows (none on the open front of a forge; storehouses keep their ground floor blind).
-  if (b.role === ROLE.forge && frontBack && sgn < 0) return;
+  const noWindows = b.role === ROLE.forge && frontBack && sgn < 0;
   const along = frontBack ? lu : lv;
   const half = frontBack ? bx.hx : bx.hz;
   const lim = (frontBack ? b.hx : b.hz) - wt - 0.35;
@@ -383,12 +531,19 @@ function drawWall(mb: MeshBuilder, t: Towns, b: Building, bx: Box, look: Look, t
   const c = Math.min(along + half - 0.3, lim);
   const ww = look.windowW;
   const len = c - a;
-  if (len < ww + 0.2) return;
+  const hasWin = !noWindows && len >= ww + 0.2;
   let n = Math.floor(len / 2.4);
   if (n === 0) n = 1;
-  const plane = (frontBack ? lv : lu) + sgn * (frontBack ? bx.hz : bx.hx);
+  const wpoly = (pts: [number, number][], d: number) =>
+    mb.poly(
+      pts.map(([s, y]) => (frontBack ? at(F, s, y, plane + sgn * d) : at(F, plane + sgn * d, y, s))),
+      frontBack ? dirOf(F, 0, 0, sgn) : dirOf(F, sgn, 0, 0),
+    );
+  if (halfTimber) drawTimbering(mb, wb, wpoly, b, timber, y0, top, hasWin ? a : along - half, hasWin ? len : 2 * half, hasWin ? n : Math.max(1, Math.round((2 * half) / 1.6)), hasWin);
+  if (!hasWin) return;
   const innerPlane = plane - sgn * wt;
   const shutter = SHUTTERS[(b.variant >> 1) & 3];
+  const curtain = CURTAINS[Math.floor(hash(b.index, 79) * CURTAINS.length) % CURTAINS.length];
   for (let k = 0; k < b.floors; k++) {
     if (b.role === ROLE.storehouse && k === 0 && !(frontBack && sgn < 0)) continue;
     const sill = b.floorY + k * b.storey + 0.95;
@@ -421,12 +576,83 @@ function drawWall(mb: MeshBuilder, t: Towns, b: Building, bx: Box, look: Look, t
       const up = (p: V3): V3 => [p[0], p[1] + 0.08, p[2]];
       mb.poly([up(s0), up(s1), up(s2), up(s3)], [0, 1, 0]);
       mb.poly([s3, s2, up(s2), up(s3)], out);
+      if (D === 0) {
+        if (look.shutters) {
+          P(mb, 'planks', shutter);
+          for (const side of [-1, 1]) {
+            const x0 = side * (ww / 2 + 0.04);
+            const x1 = side * (ww / 2 + 0.04 + ww * 0.45);
+            mb.poly([pt(x0, sill - 0.02, 0.03), pt(x1, sill - 0.02, 0.03), pt(x1, wtop + 0.02, 0.03), pt(x0, wtop + 0.02, 0.03)], out);
+          }
+        }
+        continue;
+      }
+      // Detail 1+: a real frame (jambs, head with a drip ledge, mullions), thick board-and-batten shutters,
+      // inner reveals with a window seat, and (detail 2) open shutters, flower boxes and curtains.
+      const G = wallFrame(F, frontBack, sgn, plane, m);
+      const frameT: V3 = look.wall === 'stone' || look.wall === 'adobe' ? [0.82, 0.78, 0.72] : timber;
+      P(mb, look.wall === 'stone' ? 'stone' : look.wall === 'adobe' ? 'adobe' : 'wood', frameT);
+      const fw = 0.09;
+      gb(mb, G, -ww / 2 - fw, -ww / 2, sill - 0.02, wtop + 0.02, 0, 0.06, { top: false });
+      gb(mb, G, ww / 2, ww / 2 + fw, sill - 0.02, wtop + 0.02, 0, 0.06, { top: false });
+      gb(mb, G, -ww / 2 - fw - 0.03, ww / 2 + fw + 0.03, wtop, wtop + 0.1, 0, 0.1, { bottom: true });
+      // Inner reveal and seat (the leaded panes and their cross are in the window picture).
+      const GI = wallFrame(F, frontBack, -sgn, innerPlane, m);
+      if (D >= 2) {
+        P(mb, 'wood', timber);
+        gb(mb, GI, -ww / 2 - 0.07, -ww / 2, sill - 0.02, wtop + 0.06, 0, 0.035, { top: false });
+        gb(mb, GI, ww / 2, ww / 2 + 0.07, sill - 0.02, wtop + 0.06, 0, 0.035, { top: false });
+        gb(mb, GI, -ww / 2 - 0.07, ww / 2 + 0.07, wtop, wtop + 0.06, 0, 0.035, { bottom: true });
+        P(mb, 'wood', mul(timber, [1.1, 1.1, 1.1]));
+        gb(mb, GI, -ww / 2 - 0.1, ww / 2 + 0.1, sill - 0.05, sill, 0, 0.16, { bottom: true });
+      }
       if (look.shutters) {
-        P(mb, 'planks', shutter);
+        const sw = ww * 0.45;
         for (const side of [-1, 1]) {
-          const x0 = side * (ww / 2 + 0.04);
-          const x1 = side * (ww / 2 + 0.04 + ww * 0.45);
-          mb.poly([pt(x0, sill - 0.02, 0.03), pt(x1, sill - 0.02, 0.03), pt(x1, wtop + 0.02, 0.03), pt(x0, wtop + 0.02, 0.03)], out);
+          const open = D >= 2 && hash(b.index * 17 + k * 3 + j, side + 5) > 0.5;
+          P(mb, 'planks', shutter);
+          if (!open) {
+            const u0 = side > 0 ? ww / 2 + 0.09 : -(ww / 2 + 0.09 + sw);
+            gb(mb, G, u0, u0 + sw, sill - 0.02, wtop + 0.02, 0.0, 0.04, { top: true, bottom: true });
+            P(mb, 'wood', mul(shutter, [0.62, 0.6, 0.6]));
+            // battens top and bottom with a diagonal brace between them
+            const x0 = u0 + 0.02;
+            const x1 = u0 + sw - 0.02;
+            for (const yy of [sill + 0.15, wtop - 0.2]) plate(mb, G, x0, x1, yy, yy + 0.08, 0.05);
+            mb.poly([at(G, x0, sill + 0.23, 0.052), at(G, x1, wtop - 0.2, 0.052), at(G, x1, wtop - 0.28, 0.052), at(G, x0, sill + 0.15, 0.052)], dirOf(G, 0, 0, 1));
+          } else {
+            const H = turned(moved(G, side * (ww / 2 + 0.07), 0.03), side > 0 ? 1.39 : Math.PI - 1.39);
+            mb.box(H, 0, sw, sill - 0.02, wtop + 0.02, 0, 0.04, { top: true, bottom: false, skip: ['-v'] });
+            P(mb, 'wood', mul(shutter, [0.62, 0.6, 0.6]));
+            plate(mb, H, 0.02, sw - 0.02, sill + 0.15, sill + 0.23, 0.045);
+          }
+        }
+      }
+      if (D >= 2) {
+        // Flower box under a ground-floor window of plaster / timber / log / stilt walls.
+        if (k === 0 && look.shutters && hash(b.index * 13 + j, 91) > 0.5) {
+          P(mb, 'planks', mul(timber, [1.3, 1.2, 1.1]));
+          gb(mb, G, -ww / 2 - 0.02, ww / 2 + 0.02, sill - 0.36, sill - 0.12, 0.02, 0.24, { top: false });
+          P(mb, 'soil');
+          gb(mb, G, -ww / 2 + 0.02, ww / 2 - 0.02, sill - 0.14, sill - 0.1, 0.04, 0.22, { bottom: false, sides: false });
+          const nf = 3;
+          for (let q = 0; q < nf; q++) {
+            const uu = -ww / 2 + 0.16 + (q * (ww - 0.32)) / (nf - 1);
+            P(mb, 'plain', [0.3, 0.5, 0.22]);
+            mb.cyl(G, uu, 0.13, sill - 0.12, sill + 0.05 + 0.04 * hash(b.index + q, 3), 0.13, 5, { r1: 0.1 });
+            P(mb, 'plain', FLOWERS[(Math.floor(hash(b.index, 92) * 5) + (q & 1)) % FLOWERS.length]);
+            mb.cyl(G, uu, 0.13, sill + 0.05, sill + 0.1, 0.085, 4, { r1: 0.06 });
+          }
+        }
+        // Curtains inside, drawn half way on some windows.
+        if (hash(b.index * 23 + k * 5 + j, 94) > 0.45) {
+          P(mb, 'cloth', curtain);
+          for (const side of [-1, 1]) {
+            const u0 = side > 0 ? ww / 2 - 0.2 : -ww / 2 - 0.02;
+            gb(mb, GI, u0, u0 + 0.22, sill + 0.1, wtop + 0.1, 0.04, 0.075, { top: false });
+          }
+          P(mb, 'wood', timber);
+          gb(mb, GI, -ww / 2 - 0.1, ww / 2 + 0.1, wtop + 0.1, wtop + 0.14, 0.04, 0.075);
         }
       }
     }
@@ -434,8 +660,52 @@ function drawWall(mb: MeshBuilder, t: Towns, b: Building, bx: Box, look: Look, t
   void t;
 }
 
+/** Curtain fabrics (per building). */
+const CURTAINS: V3[] = [
+  [0.82, 0.34, 0.3],
+  [0.35, 0.5, 0.72],
+  [0.8, 0.74, 0.5],
+  [0.88, 0.86, 0.8],
+  [0.42, 0.6, 0.4],
+];
+
+/**
+ * Half-timbering on a plaster wall (timber style, detail 1+): sill and head plates, a post in every bay
+ * boundary of the window layout (so no post crosses a window), mid-floor rails and knee braces under the head
+ * plate. Beams stand 6-7 cm proud of the plaster.
+ */
+function drawTimbering(mb: MeshBuilder, wb: WallBox, wpoly: (pts: [number, number][], d: number) => void, b: Building, timber: V3, y0: number, top: number, a: number, len: number, n: number, windows: boolean): void {
+  P(mb, 'wood', timber);
+  const e = 1e9;
+  wb(-e, e, y0 + 0.42, y0 + 0.58, 0.01, 0.07, { bottom: true }); // sill plate (over the stone skirt)
+  wb(-e, e, top - 0.24, top, 0.01, 0.075, { bottom: true }); // head plate
+  for (let k = 1; k < b.floors; k++) {
+    const y = b.floorY + k * b.storey;
+    wb(-e, e, y - 0.1, y + 0.1, 0.01, 0.07, { bottom: true });
+  }
+  for (let j = 0; j <= n; j++) {
+    const s = a + (j * len) / n;
+    if (windows || (j > 0 && j < n)) wb(s - 0.07, s + 0.07, y0 + 0.42, top, 0.01, 0.065, { top: false });
+    // Knee braces from the post up to the head plate, alternating direction.
+    if (j > 0 && j < n && top - y0 > 2.4) {
+      const dir = j & 1 ? 1 : -1;
+      const yb = top - 0.24;
+      wpoly(
+        [
+          [s, yb - 0.62],
+          [s + dir * 0.5, yb],
+          [s + dir * 0.64, yb],
+          [s, yb - 0.44],
+        ],
+        0.05,
+      );
+    }
+  }
+}
+
 /** One roof half on its box: sloped surface with overhangs, underside, trim, the gable triangle, a ridge cap. */
 function drawRoofHalf(mb: MeshBuilder, bx: Box, roofTex: TexName, look: Look, tint: V3, b: Building): void {
+  const D = detail();
   const f = boxFrame(bx);
   const ridgePos = bx.y2 > bx.y1; // ridge at +hx
   const r = ridgePos ? bx.hx : -bx.hx;
@@ -451,22 +721,54 @@ function drawRoofHalf(mb: MeshBuilder, bx: Box, roofTex: TexName, look: Look, ti
   const ye = eaveY - slope * oe;
   const V = bx.hz + og;
   const out = (du: number) => dirOf(f, du, 0, 0);
+  const rt = roofTint(b);
+  const timber = TIMBERS[Math.floor(hash(b.index, 78) * 4) & 3];
   // Surface (exactly on the walkable roof top over the box).
-  P(mb, roofTex);
+  P(mb, roofTex, rt);
   mb.poly([at(f, ue, ye, -V), at(f, r, topY, -V), at(f, r, topY, V), at(f, ue, ye, V)], [0, 1, 0]);
   // Underside and trim.
   P(mb, 'planks', [0.55, 0.45, 0.35]);
   mb.poly([at(f, ue, ye - th, -V), at(f, r, topY - th, -V), at(f, r, topY - th, V), at(f, ue, ye - th, V)], [0, -1, 0]);
-  P(mb, thatch ? 'thatch' : 'wood', thatch ? [0.85, 0.8, 0.7] : [0.5, 0.36, 0.25]);
+  P(mb, thatch ? 'thatch' : 'wood', thatch ? mul([0.85, 0.8, 0.7], rt) : D >= 1 ? timber : [0.5, 0.36, 0.25]);
   mb.poly([at(f, ue, ye - th, -V), at(f, ue, ye, -V), at(f, ue, ye, V), at(f, ue, ye - th, V)], out(Math.sign(e)));
   for (const sv of [-1, 1]) mb.poly([at(f, ue, ye - th, sv * V), at(f, r, topY - th, sv * V), at(f, r, topY, sv * V), at(f, ue, ye, sv * V)], dirOf(f, 0, 0, sv));
   // Gable triangle on the building's end walls.
-  P(mb, look.gable, tint);
+  const halfTimber = D >= 1 && b.style === STYLE.timber;
+  P(mb, halfTimber ? 'plaster' : look.gable, mul(tint, washOf(b, halfTimber ? 'plaster' : look.gable)));
   mb.originY = b.floorY;
   for (const sv of [-1, 1]) mb.poly([at(f, e, eaveY, sv * bx.hz), at(f, r, topY, sv * bx.hz), at(f, r, eaveY, sv * bx.hz)], dirOf(f, 0, 0, sv));
+  if (D >= 1 && !thatch) {
+    // Rafter tails under the eave line, and (detail 1+, half-timbered gables) the gable's framing.
+    if (D >= 2) {
+      P(mb, 'wood', timber);
+      for (let v = -bx.hz + 0.2; v <= bx.hz - 0.1; v += 0.8) mb.box(f, ue - Math.sign(e) * 0.3, ue, ye - th - 0.09, ye - th, v - 0.04, v + 0.04, { bottom: true, top: false });
+    }
+    if (halfTimber) {
+      P(mb, 'wood', timber);
+      for (const sv of [-1, 1]) {
+        const v0 = sv > 0 ? bx.hz : -bx.hz - 0.07;
+        const v1 = sv > 0 ? bx.hz + 0.07 : -bx.hz;
+        mb.box(f, Math.min(e, r), Math.max(e, r), eaveY - 0.02, eaveY + 0.16, v0, v1, { bottom: true });
+        const vo = sv * (bx.hz + 0.07);
+        mb.poly([at(f, e, eaveY + 0.16, vo), at(f, r, topY - 0.02, vo), at(f, r, topY - 0.28, vo), at(f, e + Math.sign(r) * 0.12, eaveY + 0.16, vo)], dirOf(f, 0, 0, sv));
+        if (ridgePos) mb.box(f, r - 0.08, r + 0.08, eaveY + 0.16, topY, v0, v1, { top: false });
+      }
+    }
+  }
   if (ridgePos) {
-    P(mb, thatch ? 'thatch' : 'wood', thatch ? [0.8, 0.72, 0.6] : [0.45, 0.33, 0.25]);
-    mb.hcyl(turned(f, Math.PI / 2), -V - 0.02, V + 0.02, topY, -r, 0.13, 4);
+    if (thatch) {
+      P(mb, 'thatch', mul([0.8, 0.72, 0.6], rt));
+      mb.hcyl(turned(f, Math.PI / 2), -V - 0.02, V + 0.02, topY, -r, D >= 1 ? 0.19 : 0.13, D >= 1 ? 6 : 4);
+    } else if (D >= 1 && roofTex === 'clayTile') {
+      P(mb, 'clayTile', mul([0.85, 0.72, 0.66], rt));
+      mb.hcyl(turned(f, Math.PI / 2), -V - 0.02, V + 0.02, topY + 0.02, -r, 0.17, 6);
+    } else if (D >= 1 && (roofTex === 'slate' || roofTex === 'shingle')) {
+      P(mb, 'wood', [0.62, 0.6, 0.58]);
+      mb.hcyl(turned(f, Math.PI / 2), -V - 0.02, V + 0.02, topY + 0.02, -r, 0.15, 6);
+    } else {
+      P(mb, 'wood', [0.45, 0.33, 0.25]);
+      mb.hcyl(turned(f, Math.PI / 2), -V - 0.02, V + 0.02, topY, -r, 0.13, 4);
+    }
   }
 }
 
@@ -533,11 +835,27 @@ function drawChimney(mb: MeshBuilder, t: Towns, b: Building, F: Frame, wallTop: 
     if (y > roofY) roofY = y;
   }
   const top = roofY + 1.1;
-  smokeSink?.push(w[0], top + 0.14, w[2]);
+  smokeSink?.push(w[0], top + (detail() === 0 ? 0.14 : 0.42), w[2]);
   P(mb, b.style === STYLE.stone ? 'stone' : 'fieldstone', [0.9, 0.88, 0.85]);
-  mb.box(F, u - 0.45, u + 0.45, b.baseY, top, v - 0.35, v + 0.45, { top: true });
-  P(mb, 'stone', [0.7, 0.68, 0.66]);
-  mb.box(F, u - 0.5, u + 0.5, top, top + 0.12, v - 0.4, v + 0.5, { bottom: true });
+  if (detail() === 0) {
+    mb.box(F, u - 0.45, u + 0.45, b.baseY, top, v - 0.35, v + 0.45, { top: true });
+    P(mb, 'stone', [0.7, 0.68, 0.66]);
+    mb.box(F, u - 0.5, u + 0.5, top, top + 0.12, v - 0.4, v + 0.5, { bottom: true });
+    return;
+  }
+  // Stack: a broad stone base up through the roof, a stepped shoulder, a slimmer shaft, a corbelled cap with
+  // a slab and two clay pots (the smoke rises from the cap).
+  const shoulder = roofY + 0.25;
+  mb.box(F, u - 0.5, u + 0.5, b.baseY, shoulder, v - 0.4, v + 0.5, { top: false });
+  P(mb, 'stone', [0.8, 0.78, 0.74]);
+  mb.box(F, u - 0.56, u + 0.56, shoulder, shoulder + 0.1, v - 0.46, v + 0.56, { bottom: true });
+  P(mb, b.style === STYLE.stone ? 'stone' : 'fieldstone', [0.88, 0.85, 0.82]);
+  mb.box(F, u - 0.4, u + 0.4, shoulder + 0.1, top - 0.1, v - 0.3, v + 0.4, { top: false });
+  P(mb, 'stone', [0.66, 0.64, 0.62]);
+  mb.box(F, u - 0.5, u + 0.5, top - 0.1, top, v - 0.4, v + 0.5, { bottom: true });
+  mb.box(F, u - 0.56, u + 0.56, top, top + 0.1, v - 0.46, v + 0.56, { bottom: true });
+  P(mb, 'clayTile', [0.9, 0.8, 0.72]);
+  for (const du of [-0.18, 0.18]) mb.cyl(F, u + du, v + 0.05, top + 0.1, top + 0.4, 0.12, 6, { r1: 0.1 });
 }
 
 /** Garden fence: posts and two rails inside the solid fence box. */
@@ -553,6 +871,8 @@ function drawFence(mb: MeshBuilder, bx: Box): void {
     const a = -L + (k * 2 * L) / n;
     if (long) mb.box(f, a - 0.05, a + 0.05, bx.y0, top, -0.06, 0.06);
     else mb.box(f, -0.06, 0.06, bx.y0, top, a - 0.05, a + 0.05);
+    // Pointed post caps (detail 1+).
+    if (detail() >= 1) mb.cyl(f, long ? a : 0, long ? 0 : a, top, top + 0.1, 0.075, 4, { r1: 0.0, a0: Math.PI / 4 });
   }
   for (const y of [g + 0.35, g + 0.72]) {
     if (long) mb.box(f, -L, L, y, y + 0.08, -0.03, 0.03, { bottom: true });
@@ -576,6 +896,24 @@ function drawTownWall(mb: MeshBuilder, bx: Box, s: Settlement): void {
       const v0 = out * (bx.hz - 0.35);
       mb.box(f, u - 0.4, u + 0.4, top, top + 0.75, Math.min(v0, out * bx.hz), Math.max(v0, out * bx.hz));
     }
+    if (detail() >= 1) {
+      // Arrow slits in the outer face and a buttress every fourth bay.
+      P(mb, 'plain', [0.05, 0.05, 0.06]);
+      for (let k = 0; k < n; k += 2) {
+        const u = -bx.hx + ((k + 0.5) * 2 * bx.hx) / n;
+        const v = out * (bx.hz + 0.012);
+        const slit: V3[] = [at(f, u - 0.07, top - 2.3, v), at(f, u + 0.07, top - 2.3, v), at(f, u + 0.07, top - 1.4, v), at(f, u - 0.07, top - 1.4, v)];
+        mb.poly(slit, dirOf(f, 0, 0, out));
+      }
+      P(mb, 'stone', [0.88, 0.86, 0.82]);
+      for (let k = 2; k < n; k += 5) {
+        const u = -bx.hx + (k * 2 * bx.hx) / n;
+        const v0 = out * bx.hz;
+        const v1 = out * (bx.hz + 0.4);
+        mb.box(f, u - 0.35, u + 0.35, bx.y0, top - 0.6, Math.min(v0, v1), Math.max(v0, v1), { bottom: false });
+        mb.box(f, u - 0.4, u + 0.4, top - 0.6, top - 0.5, Math.min(v0, v1 + out * 0.05), Math.max(v0, v1 + out * 0.05), { bottom: true });
+      }
+    }
   } else {
     for (const side of [0, 1, 2, 3]) {
       const g = turned(f, (side * Math.PI) / 2);
@@ -585,6 +923,16 @@ function drawTownWall(mb: MeshBuilder, bx: Box, s: Settlement): void {
         const u = -L + ((k + 0.5) * 2 * L) / 3;
         mb.box(g, u - 0.35, u + 0.35, top, top + 0.85, D - 0.35, D);
       }
+    }
+    if (detail() >= 1) {
+      // A pennant on a pole over the tower, in the town's colours (decoration, no collision).
+      const pc: V3 = hash(s.index, 55) > 0.5 ? [0.75, 0.2, 0.18] : [0.2, 0.36, 0.7];
+      P(mb, 'wood', [0.5, 0.4, 0.3]);
+      mb.cyl(f, 0, 0, top, top + 3.0, 0.045, 5);
+      P(mb, 'cloth', pc);
+      const q: V3[] = [at(f, 0.04, top + 2.9, 0), at(f, 1.1, top + 2.65, 0), at(f, 0.04, top + 2.2, 0)];
+      mb.poly(q, dirOf(f, 0, 0, 1));
+      mb.poly(q, dirOf(f, 0, 0, -1));
     }
   }
 }
@@ -616,6 +964,7 @@ export function buildSettlementMesh(t: Towns, si: number, heightAt: (x: number, 
   const boxByPos = boxIndexByPos(t, s.boxFirst, s.boxCount);
   let maxY = s.y;
   const smoke: number[] = [];
+  const yard = new Yard(t, s);
   for (let bi = s.buildingFirst; bi < s.buildingFirst + s.buildingCount; bi++) {
     const b = t.buildings[bi];
     smokeSink = smoke;
@@ -623,6 +972,11 @@ export function buildSettlementMesh(t: Towns, si: number, heightAt: (x: number, 
       drawBuildingShell(shell, t, b, heightAt);
     } finally {
       smokeSink = null;
+    }
+    if (detail() >= 1) {
+      const F = buildingFrame(b);
+      dressBuilding(shell, yard, b, F, heightAt);
+      drawInterior(interior, b, F, wallThickness(b.style), TIMBERS[Math.floor(hash(b.index, 78) * 4) & 3]);
     }
     maxY = Math.max(maxY, b.floorY + b.floors * b.storey + b.roofH + 1.5);
     const ctx: PropCtx = { wt: wallThickness(b.style), openFront: (b.flags & BUILDING_FLAG.openFront) !== 0, heightAt, light };
