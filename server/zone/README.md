@@ -1016,3 +1016,15 @@ activity hook, fall damage, lava, packs per layer and layered areas, vibe
 layer filters and landings), `server/pkg/vertical` (golden vectors),
 `server/pkg/movement/vertical_golden_test.go` (the TS movement goldens on the
 vertical ground), `mintdb` `TestRenewOfficialToVertical`.
+
+## Dwarves and cave dressing (playtest 3, CR 043)
+
+genVersion 4 appends the dwarven camps and strongholds (Underground settlements) and cave dressing to the vertical world (`docs/cr/043-dwarves.md`). The zone treats a hall as the towns machinery treats a sky town:
+
+- **Towns**: `npc.World.SkySettlement` is true for a settlement more than 60 m above *or below* the surface under it, so story, content and quest picks (`skyTown`) leave halls out and townsfolk wake by 3D distance; `Place` puts them on the hall floor. Dwarven townsfolk have their own lines (`npc.dwarfLines`); merchants 4 (miner outfitter) and 5 (ore broker) have their own stock (`npc/talk.go wares[5]`, `wares[6]`).
+- **Boards**: a hall's board (`npc.dwarfBounties`) offers two ore deliveries, and creatures to kill: a camp's tunnels (6 `cave` kills within 160 m), a stronghold's lower mines (8 kills in the lower halls) and the deep warden (the boss). On the wire these are clear jobs (kind 0); the job's `Item` is `kill:<n>:<family>` and `bountyQuest` turns it into a kill step around the site.
+- **Safe zone**: `addLayerGroups` places no pack inside a camp or stronghold chamber (reach + 12 m); nothing hunts at night anywhere in the Underground or the Depths (`night.go` hunters skip layered players). The lower halls are not safe.
+- **Packs**: chamber packs draw from `combat.UnderComp(floor)` (spiders and bats shallow, bone crawlers, shades and golems mid, rock trolls and void mites deep); one pack per ~140 m along tunnels and passages (not a tunnel's first 40 m, never inside a hall or by a camp waypoint); the lower halls get 7 dense packs (`LowerHallsComp`) and the **deep warden** boss (`boss deep_warden`, three phases, group arena at the chamber centre; respawns like any boss).
+- **Discovery**: the dwarf_door (secret/great door) and lower_halls POIs use the ordinary discovery rules (`explore.DiscoverRadius`); discovering a hall or its door sends Event 1860 once per session.
+- **Chests and tablets** (`dwarves.go`): Interact 160 opens a cave chest (descriptor deco 33 with the INTERACT flag; within 6 m): loot pops out as pickups (gold, ore, a gem, sometimes a potion; tier 1 cave, 2 camp road, 3 hall), Event 1861; the chest stays empty for 20 minutes (in memory, zone-wide). Interact 161 reads a lore tablet (deco 34): Event 1862 with the text.
+- **Vibe explorer**: filters `dwarf_camp`, `dwarf_stronghold`, `dwarf_door`, `lower_halls` (also in the client's list).

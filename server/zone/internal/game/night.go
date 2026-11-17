@@ -510,6 +510,7 @@ func (s *Server) huntTopUp(idx int64) {
 		// caveSys is only maintained with a cave world (caves.go); without
 		// one every entity reads 0 and nobody was ever hunted (playtest 1 fix).
 		underground := e.caveSys >= 0 && s.caves() != nil
+		underground = underground || e.layer == layerUnder || e.layer == layerDepths // CR 043: nothing hunts in the Underground (dwarven halls are safe at night)
 		if underground || w.WardAt(e.Move.Pos.X, e.Move.Pos.Z) >= 0 || s.campSafeAt(e.Move.Pos.X, e.Move.Pos.Z, 0) { // CR 025: safe by a burning campfire
 			continue
 		}

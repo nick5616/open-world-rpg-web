@@ -131,6 +131,8 @@ type Config struct {
 
 // Server is one zone process's simulation.
 type Server struct {
+	chestOpened map[uint32]time.Time // CR 043: cave chests opened (descriptor deco index), refill after chestCooldown (dwarves.go)
+	dwarfSeen   map[uint64]bool      // CR 043: Event 1860 sent (entity<<32 | hall site)
 	skyTowns   []int8                // CR 038: per settlement, 0 unknown, 1 surface, 2 sky (vertical.go skyTown)
 	layerVeins map[uint64]caves.Vein // CR 038: the vertical world's veins by id (vertical.go layerVein)
 

@@ -31,6 +31,9 @@ const (
 	POIDepths      = 8
 	POIArchipelago = 9
 	POIDepthsGate  = 10
+	// genVersion 4 (CR 043, the dwarves): the secret/great door of a dwarven hall, the lower halls.
+	POIDwarfDoor  = 11
+	POILowerHalls = 12
 	// Structure kinds 9 and 10 (layer 1).
 	StructSkyPalace = 9
 	StructSkyRuin   = 10

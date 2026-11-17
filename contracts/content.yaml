@@ -355,6 +355,11 @@ codex:
   umbral_stalker: {habitat: "Dark regions, at night", lore: "It leaps from shadow to shadow and lands where you were standing."}
   void_maw: {habitat: "Light and void regions, at night", lore: "A mouth that opens onto nothing. It gnashes in a wide circle around itself."}
   starless_sovereign: {habitat: "New-moon nights", lore: "A lord of the Unsung that walks only when the moon is dark. Its meteors fall on everyone who dares to stand against it."}
+  tunnel_spider: {habitat: "Tunnels and passages of the Underground", lore: "Pale and patient, it spins across a tunnel mouth and waits for a lantern's glow."}
+  cave_bat: {habitat: "Tunnels and caverns of the Underground", lore: "Blind as a stone and twice as angry. It hears your lantern swing from a hundred paces."}
+  bone_crawler: {habitat: "Old mines and the lower halls", lore: "What a crawler becomes when it nests among the dead and learns their bones are good armour."}
+  rock_troll: {habitat: "The lower halls of dwarven strongholds", lore: "It wandered in when the dwarves left the lower mines, and the stone has been growing on it since."}
+  deep_warden: {habitat: "The lower halls of dwarven strongholds", lore: "A smith who would not leave his anvil when the roof fell. The forge still burns for him, and so does his temper."}
   warden: {habitat: "Great ruins, sunken temples, demon lairs", lore: "The vault wardens' greatest work. A Warden still guards the heart of every great ruin."}
   archon: {habitat: "Wizard towers", lore: "The tower-wizards left behind more than books. An Archon still studies in each tower, and resents interruptions."}
   glintfox: {habitat: "Anywhere, rarely", lore: "A thief with a tail full of stolen gems. It never fights, only runs. Catch it and it drops its hoard."}

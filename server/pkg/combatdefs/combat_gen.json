@@ -9964,6 +9964,82 @@
    "element": 8
   },
   {
+   "key": "tunnel_spider",
+   "name": "Tunnel Spider",
+   "keepAway": 0,
+   "id": 43,
+   "family": "cave",
+   "hp": 84,
+   "speed": 6.2,
+   "aggro": 18,
+   "attacks": [
+    "crawler_bite",
+    "pounce"
+   ],
+   "behavior": "melee",
+   "xp": 24,
+   "size": 0.8,
+   "color": "#3b2f2a",
+   "element": 8
+  },
+  {
+   "key": "cave_bat",
+   "name": "Cave Bat",
+   "keepAway": 4,
+   "id": 44,
+   "family": "cave",
+   "hp": 78,
+   "speed": 7.5,
+   "aggro": 22,
+   "attacks": [
+    "bite",
+    "harpy_dive"
+   ],
+   "behavior": "flyer",
+   "xp": 20,
+   "size": 0.55,
+   "color": "#2f2a3a",
+   "element": 8
+  },
+  {
+   "key": "bone_crawler",
+   "name": "Bone Crawler",
+   "keepAway": 0,
+   "id": 45,
+   "family": "cave",
+   "hp": 98,
+   "speed": 5,
+   "aggro": 16,
+   "attacks": [
+    "crawler_bite",
+    "pounce"
+   ],
+   "behavior": "melee",
+   "xp": 30,
+   "size": 1,
+   "color": "#cfc8b0",
+   "element": 8
+  },
+  {
+   "key": "rock_troll",
+   "name": "Rock Troll",
+   "keepAway": 0,
+   "id": 46,
+   "family": "cave",
+   "hp": 130,
+   "speed": 3.4,
+   "aggro": 14,
+   "attacks": [
+    "golem_punch",
+    "stomp"
+   ],
+   "behavior": "melee",
+   "xp": 46,
+   "size": 1.7,
+   "color": "#6b6358",
+   "element": 8
+  },
+  {
    "key": "slime",
    "name": "Dewdrop Slime",
    "keepAway": 0,
@@ -10229,6 +10305,25 @@
    "element": 8
   },
   {
+   "key": "deep_warden",
+   "name": "Deep Warden",
+   "keepAway": 0,
+   "id": 104,
+   "family": "boss",
+   "hp": 5200,
+   "speed": 4.4,
+   "aggro": 30,
+   "attacks": [
+    "boss_cleave",
+    "boss_slam"
+   ],
+   "behavior": "melee",
+   "xp": 500,
+   "size": 2.8,
+   "color": "#8a5a2a",
+   "element": 8
+  },
+  {
    "key": "archon",
    "name": "Archon",
    "keepAway": 10,
@@ -10486,6 +10581,47 @@
    ]
   },
   {
+   "key": "deep_warden",
+   "transitionMs": 2200,
+   "transitionSteps": 132,
+   "arenaRadius": 30,
+   "phases": [
+    {
+     "adds": 0,
+     "speedMult": 1,
+     "cooldownMult": 1,
+     "at": 1,
+     "attacks": [
+      "boss_cleave",
+      "boss_slam"
+     ]
+    },
+    {
+     "adds": 2,
+     "speedMult": 1.1,
+     "cooldownMult": 1,
+     "at": 0.6,
+     "attacks": [
+      "boss_cleave",
+      "boss_slam",
+      "boss_shockwave"
+     ]
+    },
+    {
+     "adds": 3,
+     "speedMult": 1.2,
+     "cooldownMult": 0.9,
+     "at": 0.3,
+     "attacks": [
+      "boss_cleave",
+      "boss_slam",
+      "boss_shockwave",
+      "boss_charge"
+     ]
+    }
+   ]
+  },
+  {
    "key": "vault_keeper",
    "transitionMs": 2000,
    "transitionSteps": 120,
@@ -10569,6 +10705,7 @@
   "none": "The Ancient"
  },
  "bossNames": {
+  "deep_warden": "Deep Warden",
   "warden": "Warden",
   "archon": "Archon",
   "vault_keeper": "Vault Keeper",

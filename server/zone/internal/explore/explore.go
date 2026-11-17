@@ -124,6 +124,11 @@ func DiscoverRadius(s *structures.Site) float64 {
 		return s.Radius
 	case structures.POISkyLift:
 		return 15
+	// CR 043: the dwarves' doors and the lower halls.
+	case structures.POIDwarfDoor:
+		return s.Radius
+	case structures.POILowerHalls:
+		return math.Max(30, s.Radius*0.5)
 	}
 	return 0
 }
@@ -172,6 +177,10 @@ func DiscoverXP(s *structures.Site) int64 {
 		return 40
 	case structures.POISkyLift:
 		return 20
+	case structures.POIDwarfDoor:
+		return 60 + 40*int64(s.Size)
+	case structures.POILowerHalls:
+		return 90
 	}
 	return 0
 }

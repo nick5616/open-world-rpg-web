@@ -303,6 +303,7 @@ func (s *Server) announce(sess *session, h explore.Happening) {
 		ev.Kind = EventWaypoint
 	case explore.Discovered:
 		ev.Kind, ev.Value = EventDiscovery, int32(min(h.XP, math.MaxInt32))
+		s.announceDwarves(sess, h.Site) // CR 043
 	case explore.RespawnPointSet:
 		ev.Kind = EventRespawnPoint
 	}

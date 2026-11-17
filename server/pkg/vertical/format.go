@@ -51,6 +51,19 @@ const (
 	ChamberFungal  = 3
 	ChamberInferno = 4
 	ChamberAshen   = 5
+	// genVersion 4 (CR 043).
+	ChamberDwarfCamp  = 6
+	ChamberStronghold = 7
+	ChamberLowerHalls = 8
+
+	CorridorSecret = 4
+
+	FlagLight    = 1
+	FlagHang     = 2
+	FlagInteract = 4
+
+	DecoChest  = 33
+	DecoTablet = 34
 
 	UpdraftColumn  = 0
 	UpdraftLift    = 1

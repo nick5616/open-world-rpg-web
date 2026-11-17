@@ -32,7 +32,10 @@ Builds on CR 038 (the vertical world: the Underground is layer 2). This CR is th
 
 ## Server
 
-(filled in by the server slice)
+(Server slice.) Same machinery as sky towns: `npc.SkySettlement` also catches settlements under the rock (halls are layered towns: excluded from story/content/quest picks, townsfolk wake in 3D, placed on the hall floor), dwarven lines, shop stock for merchants 4 `miner` (pickaxe, torches, rope, whetstone, potion, stew) and 5 `broker` (copper/iron/silver ore, iron ingots, rough opal/ruby/topaz). Boards: ore deliveries, a camp's "thin out the tunnel creatures" (6 `cave` kills within 160 m), a stronghold's "clear the lower mines" (8 kills in the lower halls, 260 gold) and "the warden must fall" (520 gold); on the wire clear jobs, `Item` = `kill:<n>:<family>` turns into a kill step (`game/quests.go bountyQuest`).
+No packs in a hall (camp/stronghold chamber reach + 12 m) and nothing hunts at night anywhere underground; the lower halls are dangerous: 7 dense packs, the **deep warden** boss. Tunnels and passages get a pack per ~140 m, depth-scaled (`combat.UnderComp`). Enemy variants (family `cave`, same rigs as `cave_crawler` / `gloom_bat`; client falls back by family and behaviour): `tunnel_spider` (43), `cave_bat` (44, flyer), `bone_crawler` (45), `rock_troll` (46, golem-sized; a biped rig mapping is recommended), boss `deep_warden` (104, family boss, three phases, arena 30).
+Events 1860 `dwarf_discover` (once per session and hall, on discovering the hall or its door), 1861 `chest_opened`, 1862 `lore_tablet` (1863 reserved); Interact 160 `cave_chest`, 161 `lore_tablet` (target = descriptor decoration index; reach 6 m; payloads in `contracts/events.md`). Chests refill 20 minutes after anyone opened them (memory, no migration).
+Gaps: the "lost tablets" quest (read N tablets) is not built (tablet reads are events only); chest loot has no gear rolls; the warden's death does not send Event 1863.
 
 ## Client
 

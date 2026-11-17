@@ -105,6 +105,8 @@ type Site struct {
 	Kind     uint8
 	X, Z     float64
 	Name     string
+	Layer    uint8 // CR 043: 2 = Underground (the dwarven halls)
+	Size     uint8
 }
 
 // New builds the NPC world from a parsed towns buffer.
@@ -201,6 +203,8 @@ func (w *World) Place(i int, todS float64, ground func(x, y, z float64) float64,
 	// CR 038: a sky town stands on its island far above the surface.
 	if si := s.Def.Settlement; si >= 0 && si < len(w.T.Settlements) && w.T.Settlements[si].Y > s.Y+20 {
 		s.Y = w.T.Settlements[si].Y + 6
+	} else if si >= 0 && si < len(w.T.Settlements) && w.T.Settlements[si].Y < s.Y-60 {
+		s.Y = w.T.Settlements[si].Y + 6 // CR 043: a dwarven hall under the rock
 	}
 	for k := 0; k < 3; k++ {
 		s.Y = ground(s.X, s.Y, s.Z)
@@ -534,5 +538,6 @@ func (w *World) SkySettlement(si int, surface func(x, z float64) float64) bool {
 		return false
 	}
 	st := &w.T.Settlements[si]
-	return st.Y > surface(st.X, st.Z)+60
+	// CR 043: the dwarven halls are under the terrain (Underground), likewise layered.
+	return math.Abs(st.Y-surface(st.X, st.Z)) > 60
 }
