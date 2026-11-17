@@ -10013,6 +10013,131 @@
    "element": 8
   },
   {
+   "key": "guardian_sweep",
+   "radius": 0,
+   "reach": 5,
+   "arc": 140,
+   "width": 0,
+   "speed": 0,
+   "minRange": 0,
+   "volley": 1,
+   "spreadDeg": 0,
+   "charge": false,
+   "everyone": false,
+   "id": 130,
+   "shape": "cone",
+   "windupMs": 500,
+   "windupSteps": 30,
+   "activeMs": 117,
+   "activeSteps": 7,
+   "recoveryMs": 700,
+   "recoverySteps": 42,
+   "cooldownMs": 3200,
+   "cooldownSteps": 192,
+   "damage": 17,
+   "element": 4
+  },
+  {
+   "key": "guardian_lance",
+   "radius": 0,
+   "reach": 22,
+   "arc": 0,
+   "width": 2.2,
+   "speed": 0,
+   "minRange": 4,
+   "volley": 1,
+   "spreadDeg": 0,
+   "charge": false,
+   "everyone": false,
+   "id": 131,
+   "shape": "line",
+   "windupMs": 600,
+   "windupSteps": 36,
+   "activeMs": 300,
+   "activeSteps": 18,
+   "recoveryMs": 900,
+   "recoverySteps": 54,
+   "cooldownMs": 6500,
+   "cooldownSteps": 390,
+   "damage": 24,
+   "element": 5
+  },
+  {
+   "key": "guardian_sunfall",
+   "radius": 3.8,
+   "reach": 30,
+   "arc": 0,
+   "width": 0,
+   "speed": 0,
+   "minRange": 0,
+   "volley": 1,
+   "spreadDeg": 0,
+   "charge": false,
+   "everyone": true,
+   "id": 132,
+   "shape": "ground",
+   "windupMs": 600,
+   "windupSteps": 36,
+   "activeMs": 117,
+   "activeSteps": 7,
+   "recoveryMs": 700,
+   "recoverySteps": 42,
+   "cooldownMs": 8000,
+   "cooldownSteps": 480,
+   "damage": 20,
+   "element": 5
+  },
+  {
+   "key": "guardian_gale",
+   "radius": 7,
+   "reach": 0,
+   "arc": 0,
+   "width": 0,
+   "speed": 0,
+   "minRange": 0,
+   "volley": 1,
+   "spreadDeg": 0,
+   "charge": false,
+   "everyone": false,
+   "id": 133,
+   "shape": "circle",
+   "windupMs": 600,
+   "windupSteps": 36,
+   "activeMs": 150,
+   "activeSteps": 9,
+   "recoveryMs": 900,
+   "recoverySteps": 54,
+   "cooldownMs": 9000,
+   "cooldownSteps": 540,
+   "damage": 18,
+   "element": 4
+  },
+  {
+   "key": "guardian_dive",
+   "radius": 0,
+   "reach": 16,
+   "arc": 0,
+   "width": 2.6,
+   "speed": 0,
+   "minRange": 5,
+   "volley": 1,
+   "spreadDeg": 0,
+   "charge": true,
+   "everyone": false,
+   "id": 134,
+   "shape": "line",
+   "windupMs": 550,
+   "windupSteps": 33,
+   "activeMs": 450,
+   "activeSteps": 27,
+   "recoveryMs": 1000,
+   "recoverySteps": 60,
+   "cooldownMs": 8500,
+   "cooldownSteps": 510,
+   "damage": 26,
+   "element": 4
+  },
+  {
    "key": "boss_beam",
    "radius": 0,
    "reach": 20,
@@ -10854,6 +10979,25 @@
    "element": 8
   },
   {
+   "key": "sky_guardian",
+   "name": "Sky Guardian",
+   "keepAway": 0,
+   "id": 150,
+   "family": "boss",
+   "hp": 3600,
+   "speed": 4.6,
+   "aggro": 34,
+   "attacks": [
+    "guardian_sweep",
+    "guardian_lance"
+   ],
+   "behavior": "melee",
+   "element": 4,
+   "xp": 520,
+   "size": 2.7,
+   "color": "#e8d9a0"
+  },
+  {
    "key": "glintfox",
    "name": "Glintfox",
    "keepAway": 0,
@@ -10968,6 +11112,86 @@
     "rank": "lesser"
    },
    "element": 8
+  },
+  {
+   "key": "sky_wyvern",
+   "name": "Sky Wyvern",
+   "keepAway": 9,
+   "id": 120,
+   "family": "elemental",
+   "hp": 90,
+   "speed": 7.4,
+   "aggro": 28,
+   "attacks": [
+    "harpy_dive",
+    "elemental_bolt"
+   ],
+   "behavior": "flyer",
+   "element": 4,
+   "xp": 30,
+   "size": 1.6,
+   "color": "#7fa8c8"
+  },
+  {
+   "key": "magma_hound",
+   "name": "Magma Hound",
+   "keepAway": 0,
+   "id": 121,
+   "family": "cave",
+   "hp": 84,
+   "speed": 7.2,
+   "aggro": 30,
+   "attacks": [
+    "hound_bite",
+    "hound_lunge"
+   ],
+   "behavior": "melee",
+   "element": 0,
+   "xp": 28,
+   "size": 1.05,
+   "color": "#4a1c12"
+  },
+  {
+   "key": "obsidian_golem",
+   "name": "Obsidian Golem",
+   "keepAway": 0,
+   "id": 122,
+   "family": "cave",
+   "hp": 98,
+   "speed": 3.6,
+   "aggro": 16,
+   "attacks": [
+    "golem_punch",
+    "elemental_burst"
+   ],
+   "behavior": "melee",
+   "element": 0,
+   "xp": 36,
+   "size": 1.5,
+   "color": "#1c1822"
+  },
+  {
+   "key": "ember_demon",
+   "name": "Ember Demon",
+   "keepAway": 0,
+   "id": 123,
+   "family": "demon",
+   "hp": 90,
+   "speed": 6.4,
+   "aggro": 45,
+   "attacks": [
+    "demon_claw",
+    "demon_lunge"
+   ],
+   "behavior": "melee",
+   "element": 0,
+   "xp": 34,
+   "size": 1.1,
+   "color": "#5c1a0c",
+   "demon": {
+    "regen": 0.35,
+    "rank": "lesser"
+   }
   },
   {
    "key": "thornhide_behemoth",
@@ -11143,6 +11367,48 @@
    ]
   },
   {
+   "key": "sky_guardian",
+   "transitionMs": 2000,
+   "transitionSteps": 120,
+   "arenaRadius": 12,
+   "phases": [
+    {
+     "adds": 0,
+     "speedMult": 1,
+     "cooldownMult": 1,
+     "at": 1,
+     "attacks": [
+      "guardian_sweep",
+      "guardian_lance"
+     ]
+    },
+    {
+     "adds": 2,
+     "speedMult": 1,
+     "cooldownMult": 1,
+     "at": 0.65,
+     "attacks": [
+      "guardian_sweep",
+      "guardian_lance",
+      "guardian_sunfall"
+     ]
+    },
+    {
+     "adds": 2,
+     "speedMult": 1.15,
+     "cooldownMult": 0.85,
+     "at": 0.3,
+     "attacks": [
+      "guardian_sweep",
+      "guardian_lance",
+      "guardian_sunfall",
+      "guardian_gale",
+      "guardian_dive"
+     ]
+    }
+   ]
+  },
+  {
    "key": "the_hush",
    "transitionMs": 3000,
    "transitionSteps": 180,
@@ -11201,6 +11467,7 @@
   "warden": "Warden",
   "archon": "Archon",
   "vault_keeper": "Vault Keeper",
+  "sky_guardian": "Sky Guardian",
   "the_hush": "Hush"
  },
  "affixes": [

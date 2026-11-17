@@ -539,6 +539,7 @@ func (s *Server) contentTick(tick uint32) {
 	s.followersTick()       // content_quests.go
 	s.worldEventsTick(tick) // worldevents.go
 	s.vaultsTick(tick)      // dungeons.go
+	s.shrinesTick(tick)     // shrine.go (CR 044)
 }
 
 // contentPlayerSecond: regions walked, vault discoveries, places near, feats, saves.
@@ -572,6 +573,7 @@ func (s *Server) contentOnKill(k combat.KillInfo) {
 	}
 	s.eventsOnKill(k) // worldevents.go
 	s.vaultsOnKill(k) // dungeons.go
+	s.palacesOnKill(k) // palace.go (CR 044)
 	demon := en.Demon != nil
 	for _, id := range k.Eligible {
 		pe := s.entityByID(id)

@@ -65,6 +65,8 @@ func (s *Server) verticalTick(tick uint32) {
 		return
 	}
 	defer s.lavaTick()
+	s.palaceTick(tick) // CR 044: the sky palaces (palace.go)
+	s.raceTick(tick)   // CR 044: the glide ring race (activity.go)
 	parallelFor(len(s.ents), s.phaseWorkers(len(s.ents)), viewChunk, func(_, i int) {
 		e := s.ents[i]
 		p := e.Move.Pos
@@ -85,7 +87,11 @@ func (s *Server) verticalUpdraft() movement.UpdraftField {
 	if vw == nil || len(vw.Vertical().Updrafts) == 0 {
 		return nil
 	}
-	return vertical.Wind{W: vw.Vertical()}
+	w := vertical.Wind{W: vw.Vertical()}
+	if sites := s.palaceSites(); len(sites) > 0 {
+		return palaceWind{Wind: w, cols: s.pal.cols} // CR 044: the palace atriums' shafts
+	}
+	return w
 }
 
 // Entity.layer values.
@@ -225,17 +231,9 @@ func (s *Server) verticalInteract(sess *session, m *proto.Interact) {
 		if vw == nil {
 			return
 		}
-		site := int(m.TargetID)
-		for _, d := range vw.Vertical().Decos {
-			if d.Kind != decoPalace || d.Aux != site {
-				continue
-			}
-			if math.Hypot(p.X-d.X, p.Z-d.Z) > d.Size+30 || math.Abs(p.Y-d.Y) > 40 {
-				return
-			}
-			s.sendEvent(sess, &proto.Event{Kind: EventPalaceDoor, EntityID: e.ID, TargetID: uint32(site), Value: 0, X: cm(d.X), Y: cm(d.Y), Z: cm(d.Z)})
-			return
-		}
+		s.palaceDoorInteract(sess, int(m.TargetID))
+	case InteractPalacePart:
+		s.palacePartInteract(sess, m.TargetID)
 	case InteractActivity:
 		if s.cfg.Towns == nil {
 			return
@@ -244,7 +242,7 @@ func (s *Server) verticalInteract(sess *session, m *proto.Interact) {
 		if !ok || math.Hypot(p.X-x, p.Z-z) > 6 || math.Abs(p.Y-y) > 4 {
 			return
 		}
-		s.sendEvent(sess, &proto.Event{Kind: EventActivitySpot, EntityID: e.ID, TargetID: uint32(m.TargetID), Value: 0, X: cm(x), Y: cm(y), Z: cm(z), Data: binaryID(m.TargetID)})
+		s.raceInteract(sess, m.TargetID, x, y, z) // CR 044: the glide ring race (activity.go)
 	}
 }
 

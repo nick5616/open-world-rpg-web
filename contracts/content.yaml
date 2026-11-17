@@ -342,6 +342,10 @@ codex:
   shade: {habitat: "Dark-touched regions", lore: "A shadow that forgot what cast it. Shades are drawn to warmth, which they cannot hold."}
   void_mite: {habitat: "Void-touched regions", lore: "Small, fast and wrong. Void mites chew holes in the air itself."}
   cave_crawler: {habitat: "Caves", lore: "Pale, many-legged and blind. Cave crawlers find you by the sound of your heartbeat."}
+  sky_wyvern: {habitat: "Sky islands", lore: "Cloud-grey and long in the wing, wyverns ride the updrafts between the islands and drop on anything that glides."}
+  magma_hound: {habitat: "The Depths", lore: "Hounds of the lava halls. Their coats crack and glow when they run."}
+  obsidian_golem: {habitat: "The Depths", lore: "Black glass shaped by heat and patience. The fire in its seams never goes out."}
+  ember_demon: {habitat: "The Depths", lore: "A lesser demon of the Starless host, kept bright by the lava it was born beside."}
   gloom_bat: {habitat: "Caves", lore: "They hang in their thousands in the deep chambers and wake all at once."}
   crystal_golem: {habitat: "Deep caves", lore: "Grown, not made, from the crystal veins of the deep. Its fists ring like bells."}
   slime: {habitat: "The Haven and quiet lands", lore: "Morning dew that learned to wander. Mostly harmless. Mostly."}
@@ -370,6 +374,7 @@ codex:
   the_hush: {habitat: "The Heartfall", lore: "The silence at the heart of everything, given a shape. The keepers called it the Hush: mother of the Unsung, born where the Lodestone's song first went quiet."}
   hollow_bell: {habitat: "The Heartfall", lore: "A bell with no clapper that tolls anyway. Its choir keeps the Hush untouchable. Only sunsteel or Light will crack one."}
   vault_keeper: {habitat: "Sealed vaults beneath ruins", lore: "The last guardian of a sealed vault. When it raises its staff, a sigil burns on the ground: do not be standing in it."}
+  sky_guardian: {habitat: "The throne hall of a sky palace", lore: "A gilded warden that outlived its court. It draws a line of light across the floor and lets the wind do the rest: strike the three wards, and it wakes."}
 
 # ---- feats: moved to contracts/achievements.yaml (CR 031), keys and counters unchanged ----
 

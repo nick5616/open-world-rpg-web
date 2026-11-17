@@ -15,6 +15,12 @@
 //   the cave light pool.
 
 import * as THREE from 'three';
+import { PALACE } from '@lodestone/contracts';
+import { usePalace } from '../palace/palaceStore';
+import { PalaceViews } from '../palace/PalaceViews';
+import { RaceRings, useRace } from './race';
+import { SkyLife } from './skyLife';
+import { palaceLocal, palaceSites, type PalaceSite } from '../palace/palaceSites';
 import { chamberAt, inSkyBand, LAYER_DEPTHS, LAYER_SKY, LAYER_UNDER, type VerticalWorld } from '@lodestone/worldgen';
 import type { WorldRuntime } from '../core/runtime';
 import type { ResultMsg } from '../core/protocol';
@@ -71,7 +77,11 @@ export class VerticalManager {
   /** Domain mips per layer: mip[l][lod] = Uint8Array over (64 >> lod)^2 cells, 1 if any domain chunk inside. */
   private readonly mips: Uint8Array[][] = [];
   private frame = 0;
-  private readonly palaces: { x: number; y: number; z: number; size: number; aux: number }[];
+  private readonly palaces: PalaceSite[];
+  private readonly palaceViews: PalaceViews;
+  private readonly raceRings = new RaceRings();
+  private skyLife: SkyLife | null = null;
+  private readonly shrines: { x: number; y: number; z: number; size: number; aux: number }[]; // CR 044: Depths demon shrines (Interact 153)
   private readonly activities: { x: number; y: number; z: number; id: bigint }[];
   private readonly interactives: { i: number; x: number; y: number; z: number; kind: number }[] = [];
   private emittersNear: LightEmitter[] = [];
@@ -87,7 +97,13 @@ export class VerticalManager {
     this.layerGroups = [0, 1, 2, 3].map(() => new THREE.Group());
     for (const g of this.layerGroups) this.group.add(g);
     this.decos = buildDecos(this.v);
-    this.palaces = this.v.decos.filter((d) => d.kind === 16);
+    this.palaces = palaceSites(this.v);
+    this.palaceViews = new PalaceViews(this.palaces);
+    this.layerGroups[1].add(this.palaceViews.group, this.raceRings.group);
+    this.skyLife = new SkyLife(this.v, this.low);
+    this.layerGroups[1].add(this.skyLife.group);
+    this.decos.emitters.push(...this.palaceViews.emitters());
+    this.shrines = this.v.decos.filter((d) => d.kind === 24);
     this.v.decos.forEach((d, i) => {
       if ((d.flags & DECO_INTERACT) !== 0 && d.layer === LAYER_UNDER && (d.kind === DW.chest || d.kind === DW.tablet)) this.interactives.push({ i, x: d.x, y: d.y, z: d.z, kind: d.kind });
     });
@@ -118,7 +134,7 @@ export class VerticalManager {
 
   /** Materials the CSM should shadow (islands and their decorations). */
   sunMaterials(): THREE.Material[] {
-    return [this.island, ...this.decos.sunMaterials];
+    return [this.island, ...this.decos.sunMaterials, ...this.palaceViews.sunMaterials];
   }
 
   /** Programs to warm up (WorldScene's shader warm-up). */
@@ -182,6 +198,12 @@ export class VerticalManager {
   update(camera: THREE.Camera, dt: number, now: number, feet: { x: number; y: number; z: number }): void {
     this.frame++;
     verticalUniforms.uTime.value += dt;
+    this.palaceViews.update(camera, dt, feet);
+    this.raceRings.update(now / 1000);
+    if (this.skyLife) {
+      this.skyLife.group.visible = !this.low; // the low tier keeps the sky empty
+      if (!this.low) this.skyLife.update(now / 1000, camera.position);
+    }
     const vg = this.runtime.verticalGround!;
     const layer = vg.layerAt(feet.x, feet.y, feet.z);
     this.layer = layer === 0 && inSkyBand(this.v, feet.x, feet.y, feet.z) ? LAYER_SKY : layer;
@@ -293,7 +315,7 @@ export class VerticalManager {
     }
     const heat = this.layer === LAYER_DEPTHS && this.v.chambers.some((c) => c.layer === LAYER_DEPTHS && c.lake > -9000 && (feet.x - c.x) ** 2 + (feet.z - c.z) ** 2 < (Math.max(c.rx, c.rz) * c.lakeE + 25) ** 2);
     // The follow-ups' doors: a sky palace's gate, a sky town's activity spot.
-    let use: { kind: 150 | 151 | 170 | 171; id: bigint; label: string } | null = null;
+    let use: { kind: 150 | 151 | 152 | 153 | 170 | 171; id: bigint; label: string } | null = null;
     if (this.layer === LAYER_UNDER) {
       // CR 043: chests and lore tablets in the Underground (the descriptor index is the target).
       for (const it of this.interactives) {
@@ -305,16 +327,51 @@ export class VerticalManager {
       }
     }
     if (this.layer === LAYER_SKY) {
-      for (const d of this.palaces) {
-        if ((feet.x - d.x) ** 2 + (feet.z - d.z) ** 2 < (d.size + 30) ** 2 && Math.abs(feet.y - d.y) < 40) use = { kind: 150, id: BigInt(d.aux), label: 'The palace doors' };
-      }
+      use = this.palacePrompt(feet);
       for (const p of this.activities) {
-        if ((feet.x - p.x) ** 2 + (feet.z - p.z) ** 2 < 36 && Math.abs(feet.y - p.y) < 4) use = { kind: 151, id: p.id, label: 'The challenge stand' };
+        if ((feet.x - p.x) ** 2 + (feet.z - p.z) ** 2 < 36 && Math.abs(feet.y - p.y) < 4) use = { kind: 151, id: p.id, label: useRace.getState().phase === 'armed' || useRace.getState().phase === 'running' ? 'Stop the glide ring race' : 'Glide Ring Race: start' };
+      }
+    }
+    if (this.layer === LAYER_DEPTHS) {
+      for (const d of this.shrines) {
+        if ((feet.x - d.x) ** 2 + (feet.z - d.z) ** 2 < (d.size + 9) ** 2 && Math.abs(feet.y - d.y) < 8) use = { kind: 153, id: BigInt(d.aux), label: 'Cleanse the demon shrine' };
       }
     }
     const s = useVerticalHud.getState();
     const useSame = (s.use === null && use === null) || (s.use !== null && use !== null && s.use.kind === use.kind && s.use.id === use.id);
     if (s.layer !== this.layer || s.place !== place || s.falling !== falling || s.lift !== lift || s.heat !== heat || Math.abs(s.dropM - dropM) > 5 || !useSame) useVerticalHud.setState({ layer: this.layer, place, falling, dropM, lift, heat, use });
+  }
+
+  /** CR 044: the palace's doors (outside, in front of the gate), its wards and its chest. */
+  private palacePrompt(feet: { x: number; y: number; z: number }): { kind: 150 | 152; id: bigint; label: string } | null {
+    const st = usePalace.getState();
+    let inside = false;
+    try {
+      return this.palacePromptIn(feet, st, (v) => (inside = v));
+    } finally {
+      if (st.near !== inside) usePalace.setState({ near: inside });
+    }
+  }
+
+  private palacePromptIn(feet: { x: number; y: number; z: number }, st: ReturnType<typeof usePalace.getState>, setInside: (v: boolean) => void): { kind: 150 | 152; id: bigint; label: string } | null {
+    for (const s of this.palaces) {
+      const [lx, lz] = palaceLocal(s, feet.x, feet.z);
+      const dy = feet.y - s.floor;
+      if (Math.abs(lx) > 40 || lz < -44 || lz > 70 || dy < -6 || dy > PALACE.ringY + 10) continue;
+      setInside(true);
+      const mine = st.site === s.index;
+      for (let i = 0; i < 3; i++) {
+        const w = PALACE.wards[i];
+        if ((lx - w.x) ** 2 + (lz - w.z) ** 2 < 3.4 * 3.4 && Math.abs(dy - w.y) < 3) {
+          if (mine && st.wards[i]) return null;
+          return { kind: 152, id: BigInt((s.index << 4) | (i + 1)), label: `Strike the ${w.name}` };
+        }
+      }
+      const c = PALACE.chest;
+      if ((lx - c.x) ** 2 + (lz - c.z) ** 2 < 3.6 * 3.6 && Math.abs(dy - c.y) < 3) return { kind: 152, id: BigInt((s.index << 4) | 4), label: mine && st.phase === 3 ? (st.opened ? 'The chest (already taken)' : 'Open the treasure chest') : 'The chest (sealed with light)' };
+      if (lz > 33 && lz < 64 && Math.abs(lx) < 22 && dy < 6) return { kind: 150, id: BigInt(s.index), label: mine && st.phase >= 1 ? 'The great doors (open)' : 'Knock at the great doors' };
+    }
+    return null;
   }
 
   /** Daylight and sky fill (WorldScene: from the time of day). */

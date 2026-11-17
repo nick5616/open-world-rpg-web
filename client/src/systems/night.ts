@@ -205,7 +205,7 @@ export function attachNight(session: SessionLike): () => void {
       onWeatherEvent(e, session.welcome?.entityId ?? 0); // CR 030
       return;
     }
-    if (e.kind >= 1700 && e.kind <= 1719) {
+    if ((e.kind >= 1700 && e.kind <= 1719) || (e.kind >= 1880 && e.kind <= 1899)) {
       onVerticalEvent(e, session.welcome?.entityId ?? 0); // CR 038
       return;
     }

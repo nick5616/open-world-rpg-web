@@ -158,6 +158,7 @@ func main() {
 	withWorldEdits(&cfg, terrain, caveTerrain, pool, log) // playtest 3 (CR 040): chop, break, dig (worldedit.go)
 	miningConfig(&cfg, pool)
 	doorsConfig(&cfg, pool)                                                      // building doors persist (towns.go)
+	racesConfig(&cfg, pool)                                                      // CR 044: glide ring race times persist (towns.go)
 	campsConfig(&cfg, pool)                                                      // CR 025: camp pieces persist (towns.go)
 	cfg.Combat = combatSetup(terrain, world.Seed, world.Spec, devKey, log)       // WP13 (combat.go)
 	cfg.Items = itemsSetup(pool, terrain, cfg.Combat, world.Spec, world.ID, log) // WP14 (items.go)
@@ -178,6 +179,7 @@ func main() {
 	restoreWorldItems(ctx, zone, log) // WP14: dropped items survive a restart (until they despawn)
 	restoreDoors(ctx, zone, log)      // building doors stay as they were left (towns.go)
 	restoreCamps(ctx, zone, log)      // CR 025: placed camp pieces (towns.go)
+	restoreRaces(ctx, zone, log)      // CR 044: glide ring race best times (towns.go)
 
 	origins := strings.Split(env.Str("LODESTONE_CORS_ORIGIN", "*"), ",")
 	ws := &transport.WebSocket{OriginPatterns: origins}

@@ -406,8 +406,12 @@ func (s *Server) drainTaken(sess *session, now time.Time) {
 				s.worldEditInteract(sess, it, now) // playtest 3: chop, break, dig, fill (worldedit.go)
 				continue
 			}
-			if it.TargetKind == InteractPalace || it.TargetKind == InteractActivity {
+			if it.TargetKind == InteractPalace || it.TargetKind == InteractActivity || it.TargetKind == InteractPalacePart {
 				s.verticalInteract(sess, it) // CR 038: sky palace doors, sky town activity spots (vertical.go)
+				continue
+			}
+			if it.TargetKind == InteractShrine {
+				s.shrineInteract(sess, it) // CR 044: Depths demon shrines (shrine.go)
 				continue
 			}
 			if it.TargetKind == InteractCaveChest || it.TargetKind == InteractLoreTablet {

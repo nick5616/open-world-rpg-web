@@ -14,6 +14,7 @@ import (
 
 	"lodestone/server/pkg/env"
 	"lodestone/server/pkg/movement"
+	"lodestone/server/pkg/palace"
 	"lodestone/server/pkg/structures"
 	"lodestone/server/pkg/towns"
 	"lodestone/server/pkg/worldhost"
@@ -69,6 +70,9 @@ func withTowns(ground movement.Ground, terrain *worldhost.Terrain, cfg *game.Con
 		log.Error("NO TOWNS: towns buffer unreadable", "err", err)
 		return ground
 	}
+	if g, ok := ground.(*worldhost.CaveTerrain); ok {
+		palace.AppendBoxes(tw, palace.SitesOf(g.Vertical())) // CR 044: the sky palaces are buildings
+	}
 	var sites []npc.Site
 	if a, err := structures.ParseAtlas(terrain.World().Atlas); err == nil {
 		for _, s := range a.Sites {
@@ -95,6 +99,29 @@ func withTowns(ground movement.Ground, terrain *worldhost.Terrain, cfg *game.Con
 func doorsConfig(cfg *game.Config, pool *pgxpool.Pool) {
 	if pool != nil && cfg.Towns != nil {
 		cfg.DoorStore = &game.PGDoorStore{Pool: pool}
+	}
+}
+
+// racesConfig persists the sky towns' glide ring race best times in
+// Postgres (sky_race_times, migration 0034; CR 044) when the zone has a
+// database.
+func racesConfig(cfg *game.Config, pool *pgxpool.Pool) {
+	if pool != nil {
+		cfg.RaceStore = &game.PGRaceStore{Pool: pool}
+	}
+}
+
+// restoreRaces loads the stored best times before the zone ticks.
+func restoreRaces(ctx context.Context, zone *game.Server, log *slog.Logger) {
+	rctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	n, err := zone.RestoreRaces(rctx)
+	if err != nil {
+		log.Warn("race times not restored", "err", err)
+		return
+	}
+	if n > 0 {
+		log.Info("race times restored", "rows", n)
 	}
 }
 

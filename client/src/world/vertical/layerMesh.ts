@@ -45,14 +45,14 @@ export function layerMeshTransferables(m: LayerMeshData): ArrayBuffer[] {
 /** Light colours by tint (0..7 elements, 8 turquoise, 9 white). Linear. */
 export const TINT_RGB: [number, number, number][] = [
   [1.0, 0.42, 0.12], // fire
-  [0.35, 0.72, 1.0], // ice
+  [0.2, 0.45, 1.0], // ice
   [0.85, 0.85, 0.35], // lightning
   [0.4, 1.0, 0.5], // earth (green)
   [0.6, 0.95, 0.85], // wind
   [1.0, 0.88, 0.55], // light
-  [0.55, 0.25, 0.9], // dark
-  [0.7, 0.38, 1.0], // void
-  [0.2, 0.92, 0.88], // turquoise
+  [0.4, 0.14, 0.88], // dark
+  [0.5, 0.2, 1.0], // void
+  [0.06, 0.74, 0.92], // turquoise
   [0.9, 0.95, 1.0], // white
 ];
 
@@ -272,6 +272,21 @@ export function buildLayerMesh(t: LayerTile, v: VerticalWorld): LayerMeshData {
             gg *= band;
             b *= band;
           }
+          // Baked ambient occlusion (CR 044): crevices and the feet of walls read darker, the
+          // ceiling's hollows too. A ring of eight lattice samples round the vertex: the more of
+          // them stand above the floor (below the ceiling) the vertex, the more it is shut in.
+          // Free: it reads the heights the mesh already has.
+          let shut = 0;
+          const rad = 3;
+          for (const [di, dj] of [[rad, 0], [-rad, 0], [0, rad], [0, -rad], [rad, rad], [-rad, rad], [rad, -rad], [-rad, -rad]]) {
+            const hv = at(H, i + di, j + dj);
+            if (hv >= OPEN_C / 2) continue;
+            shut += down ? Math.max(0, y - hv) : Math.max(0, hv - y);
+          }
+          const ao = 1 - Math.min(0.5, (shut / 8) * 0.09);
+          r *= ao;
+          gg *= ao;
+          b *= ao;
         }
         colors[o] = r;
         colors[o + 1] = gg;

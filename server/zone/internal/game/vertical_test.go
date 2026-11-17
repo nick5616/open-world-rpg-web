@@ -16,6 +16,7 @@ import (
 
 	"lodestone/server/pkg/combatdefs"
 	"lodestone/server/pkg/movement"
+	"lodestone/server/pkg/palace"
 	"lodestone/server/pkg/proto"
 	"lodestone/server/pkg/structures"
 	"lodestone/server/pkg/towns"
@@ -46,6 +47,7 @@ func testVerticalTowns(t *testing.T) (*npc.World, movement.Ground, *worldhost.Ca
 	if err != nil {
 		t.Fatal(err)
 	}
+	palace.AppendBoxes(tw, palace.SitesOf(ct.Vertical())) // CR 044
 	var sites []npc.Site
 	if a, err := structures.ParseAtlas(w.Atlas); err == nil {
 		for _, s := range a.Sites {
@@ -233,7 +235,7 @@ func TestSkyTownTownsfolkWakeIn3DAndTrade(t *testing.T) {
 		c.join(h, "sky-player", "Player")
 		c.pump(300 * time.Millisecond)
 		c.send(&proto.Interact{TargetKind: InteractActivity, TargetID: pr.ID, Action: 1})
-		if ev := c.nextEvent(EventActivitySpot, 3*time.Second); ev.TargetID != uint32(pr.ID) {
+		if ev := c.nextEvent(EventRaceState, 3*time.Second); ev.Value != RaceArmed || ev.TargetID != uint32(pr.ID) {
 			t.Fatalf("activity event %+v", ev)
 		}
 	} else {

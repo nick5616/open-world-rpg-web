@@ -365,6 +365,7 @@ function buildQuad(k: Kit, p: Pal): Joint[] {
   const hound = st === 'wraith_hound';
   const fox = st === 'glintfox';
   const gloam = st === 'gloamhound';
+  const magma = st === 'magma_hound';
   const d = { hipH: 0.62, len: 0.82, halfW: 0.14, upper: 0.3, lower: 0.31, neckY: 0.14, jaw: [0, -0.06, -0.14] as V3 };
   const body = k.at(Q.body);
   body.sphere(0.29, 7, 5, p.body, { pos: [0, 0, 0.04], scale: [0.85, 0.95, 1.6], jitter: 0.07 });
@@ -380,8 +381,15 @@ function buildQuad(k: Kit, p: Pal): Joint[] {
     for (let i = 0; i < 6; i++) body.cone(0.02, 0.06, 3, '#b0b0b0', { pos: [Math.cos(i * 1.05) * 0.26, 0.1 + Math.sin(i * 1.05) * 0.2, -0.42], rot: [0, 0, i * 1.05 - HALF] });
     body.box(0.06, 0.03, 0.6, '#8a9ab0', { pos: [0, 0.27, 0.05] });
   }
+  if (magma) {
+    // cracked basalt hide: glowing seams along the flanks, a mane of flame, ember paws
+    for (let i = 0; i < 6; i++) body.box(0.02, 0.2, 0.02, '#ff8a2a', { pos: [i % 2 ? 0.22 : -0.22, (i % 3) * 0.05, -0.2 + i * 0.12], rot: [0, 0, i % 2 ? 0.5 : -0.5], glow: 1 });
+    for (let i = 0; i < 6; i++) body.cone(0.07, 0.32 - i * 0.02, 4, i % 2 ? '#ff6a1a' : '#ffc04a', { pos: [0, 0.26, -0.36 + i * 0.12], rot: [0.5, 0, 0], glow: 0.9 });
+    body.sphere(0.24, 6, 4, '#2a1410', { pos: [0, 0.1, -0.32], scale: [1.05, 0.9, 0.9], jitter: 0.12 });
+  }
   const head = k.at(Q.head);
   head.sphere(0.16, 6, 4, p.body, { pos: [0, 0.05, -0.1], scale: [1, 0.9, 1.1] });
+  if (magma) head.pair((b, o) => b.cone(0.03, 0.2, 4, '#2a1410', { ...o, rot: [-0.6, 0, -0.5] }), { pos: [0.1, 0.2, -0.12] }); // basalt horns
   head.cyl(0.05, 0.085, 0.22, 5, p.body, { pos: [0, 0.0, -0.27], rot: [-HALF + 0.1, 0, 0] });
   head.ball(0.035, '#1a1410', { pos: [0, 0.02, -0.38], detail: 0 });
   head.pair((b, o) => b.cone(0.06, 0.17, 4, p.dark, { ...o, scale: [1, 1, 0.6] }), { pos: [0.08, 0.22, -0.04], rot: [-0.15, 0, -0.18] });
@@ -389,7 +397,7 @@ function buildQuad(k: Kit, p: Pal): Joint[] {
     head.pair((b, o) => b.cone(0.07, 0.22, 4, p.body, { ...o, scale: [1, 1, 0.55] }), { pos: [0.08, 0.25, -0.04], rot: [-0.1, 0, -0.25] });
     head.pair((b, o) => b.ball(0.06, '#f6efe0', { ...o, detail: 0 }), { pos: [0.07, -0.02, -0.25] }); // white cheeks
   }
-  eyes(head, 0.07, 0.09, -0.19, 0.024, hound || gloam ? { ...s, glowEyes: true } : s);
+  eyes(head, 0.07, 0.09, -0.19, 0.024, hound || gloam || magma ? { ...s, glowEyes: true } : s);
   const jaw = k.at(Q.jaw);
   jaw.box(0.08, 0.04, 0.2, p.light, { pos: [0, -0.01, -0.1] });
   jaw.pair((b, o) => b.cone(0.012, 0.05, 3, '#ffffff', { ...o, rot: [PI, 0, 0] }), { pos: [0.03, 0.035, -0.17] });
@@ -400,7 +408,8 @@ function buildQuad(k: Kit, p: Pal): Joint[] {
     tail.ball(0.12, '#fff8e8', { pos: [0, 0.32, 0.46], detail: 0, scale: [1, 1, 1.3] });
     for (let i = 0; i < 4; i++) tail.ball(0.025, '#fff2a0', { pos: [Math.cos(i * 1.6) * 0.1, 0.2 + i * 0.05, 0.2 + i * 0.08], glow: 1, detail: 0 });
   } else horn(tail, [0, 0, 0], [0, -0.2, 1], 0.42, 0.09, p.dark, 0.3, [1, 0, 0], 3);
-  quadLegs(k, d.upper, d.lower, 0.06, 0.045, fox ? '#2a1a14' : p.dark, p.deep, { paw: true });
+  if (magma) tail.cone(0.07, 0.3, 4, '#ff8a2a', { pos: [0, 0.0, 0.5], rot: [1.3, 0, 0], glow: 1 });
+  quadLegs(k, d.upper, d.lower, 0.06, 0.045, fox ? '#2a1a14' : p.dark, magma ? '#ff6a1a' : p.deep, { paw: true });
   void glow;
   return quadJoints(d);
 }
@@ -695,9 +704,11 @@ function buildBiped(k: Kit, p: Pal): Joint[] {
     }
     case 'starfall_sentinel':
     case 'vault_keeper':
+    case 'sky_guardian':
     case 'sentinel':
     case 'mud_golem':
     case 'crystal_golem':
+    case 'obsidian_golem':
     case 'warden':
       return buildGolem(k, p);
     case 'ember_imp': {
@@ -720,6 +731,7 @@ function buildBiped(k: Kit, p: Pal): Joint[] {
       return bipedJoints(d);
     }
     case 'gloamling':
+    case 'ember_demon':
     case 'cinder_fiend':
     case 'storm_ghoul':
     case 'grave_brute':
@@ -736,12 +748,13 @@ function buildBiped(k: Kit, p: Pal): Joint[] {
 function buildGolem(k: Kit, p: Pal): Joint[] {
   const s = k.spec;
   const st = s.style;
-  const warden = st === 'warden' || st === 'vault_keeper';
-  const keeper = st === 'vault_keeper';
+  const guardian = st === 'sky_guardian';
+  const warden = st === 'warden' || st === 'vault_keeper' || guardian;
+  const keeper = st === 'vault_keeper' || guardian;
   const star = st === 'starfall_sentinel';
   const d = avatarDims({ wide: warden ? 1.35 : 1.55, arm: warden ? 1.05 : 1.2, leg: warden ? 0.95 : 0.78 });
   const stone = p.body;
-  const glowCol = keeper ? '#ffe08a' : s.element < 8 ? s.accent : st === 'crystal_golem' ? '#bfe8ff' : st === 'mud_golem' ? '#d0a050' : warden ? '#ffb040' : '#7fd8ff';
+  const glowCol = guardian ? '#fff0b8' : keeper ? '#ffe08a' : s.element < 8 ? s.accent : st === 'crystal_golem' ? '#bfe8ff' : st === 'obsidian_golem' ? '#ff7a22' : st === 'mud_golem' ? '#d0a050' : warden ? '#ffb040' : '#7fd8ff';
   const hips = k.at(B.hips);
   hips.box(0.5, 0.26, 0.34, p.dark, { pos: [0, -0.02, 0], jitter: 0.08 });
   const t = k.at(B.torso);
@@ -761,7 +774,12 @@ function buildGolem(k: Kit, p: Pal): Joint[] {
   for (const side of [-1, 1]) {
     if (star) for (let i = 0; i < 3; i++) t.add(new THREE.OctahedronGeometry(0.1 + i * 0.03, 0), i === 1 ? '#e8e0ff' : glowCol, { pos: [side * (0.3 + i * 0.07), d.shoulderY + 0.2 + i * 0.05, 0.04], scale: [0.6, 1.6, 0.6], rot: [0, 0, side * -0.5], glow: 0.9 });
     if (st === 'crystal_golem') for (let i = 0; i < 4; i++) t.cone(0.07 + i * 0.01, 0.34 + i * 0.06, 5, i % 2 ? glowCol : shadeHex(glowCol, -0.1), { pos: [side * (0.3 + i * 0.04), d.shoulderY + 0.1, -0.05 + i * 0.06], rot: [0.3 + i * 0.1, 0, side * -(0.4 + i * 0.15)], glow: 0.5 });
-    else t.box(0.3, 0.22, 0.34, warden ? '#5a5048' : stone, { pos: [side * (d.shoulderX + 0.02), d.shoulderY + 0.06, 0], rot: [0, 0, side * -0.3], jitter: 0.08 });
+    else if (st === 'obsidian_golem') {
+      // jagged glass shards, edged with lava
+      for (let i = 0; i < 3; i++) t.add(new THREE.OctahedronGeometry(0.12 + i * 0.03, 0), i === 1 ? '#3a3040' : '#15121a', { pos: [side * (0.3 + i * 0.06), d.shoulderY + 0.14 + i * 0.05, 0.0], scale: [0.6, 1.8, 0.6], rot: [0, 0, side * -0.4], jitter: 0.04 });
+      t.box(0.3, 0.2, 0.34, '#15121a', { pos: [side * (d.shoulderX + 0.02), d.shoulderY + 0.02, 0], rot: [0, 0, side * -0.3] });
+      t.box(0.32, 0.03, 0.36, glowCol, { pos: [side * (d.shoulderX + 0.02), d.shoulderY - 0.1, 0], rot: [0, 0, side * -0.3], glow: 0.9 });
+    } else t.box(0.3, 0.22, 0.34, warden ? '#5a5048' : stone, { pos: [side * (d.shoulderX + 0.02), d.shoulderY + 0.06, 0], rot: [0, 0, side * -0.3], jitter: 0.08 });
   }
   if (st === 'warden' || st === 'mud_golem') for (let i = 0; i < 6; i++) t.ball(0.07, '#5a7a30', { pos: [(i - 2.5) * 0.11, d.shoulderY + 0.12, 0.08 + (i % 2) * 0.06], scale: [1.2, 0.5, 1], detail: 0 }); // moss
   if (warden) {
@@ -816,9 +834,16 @@ function buildGolem(k: Kit, p: Pal): Joint[] {
     h.ball(0.15, stone, { pos: [0, 0.06, -0.04], detail: 0 });
     eyes(h, 0.06, 0.08, -0.16, 0.03, { ...s, glowEyes: true, eye: glowCol });
     if (st === 'crystal_golem') h.cone(0.05, 0.26, 4, glowCol, { pos: [0, 0.24, 0], glow: 0.6 });
+    if (st === 'obsidian_golem') for (let i = 0; i < 3; i++) h.cone(0.04, 0.22 + (i % 2) * 0.08, 4, '#15121a', { pos: [(i - 1) * 0.07, 0.2, 0.0], rot: [0, 0, (i - 1) * 0.3] });
   }
   if (st === 'warden') weapon(k, B.elR, d.fore, 'hammer', p);
   if (keeper) weapon(k, B.elR, d.fore, 'keystaff', p);
+  if (guardian) {
+    // CR 044: a gilded warden of the palace: a halo, and blades of light for wings
+    h.add(new THREE.TorusGeometry(0.3, 0.025, 5, 20), '#ffd870', { pos: [0, 0.5, 0.04], rot: [PI / 2.2, 0, 0], glow: 1 });
+    const bk = k.at(B.torso);
+    for (const side of [-1, 1]) for (let i = 0; i < 4; i++) bk.box(0.05, 0.9 - i * 0.12, 0.012, i % 2 ? '#fff0b8' : '#ffd870', { pos: [side * (0.34 + i * 0.12), 0.5 - i * 0.06, 0.3], rot: [0, side * 0.5, side * (-0.5 - i * 0.18)], glow: 0.85 });
+  }
   if (star) k.at(B.torso).add(new THREE.OctahedronGeometry(0.14, 0), '#f0e8ff', { pos: [0, 0.36, -0.24], glow: 1 }); // a fallen star in the chest
   return bipedJoints({ ...d, neckY: d.neckY - 0.08 });
 }
@@ -828,7 +853,7 @@ function buildDemon(k: Kit, p: Pal): Joint[] {
   const st = s.style;
   const el = s.element < 8 ? s.accent : '#ff3b2a';
   const big = st === 'grave_brute' || st === 'cinder_fiend' || st === 'void_maw' || st === 'sovereign';
-  const lean = st === 'gloamling' || st === 'umbral_stalker' || st === 'gale_reaver' || st === 'storm_ghoul';
+  const lean = st === 'gloamling' || st === 'ember_demon' || st === 'umbral_stalker' || st === 'gale_reaver' || st === 'storm_ghoul';
   const d = avatarDims({ wide: big ? 1.35 : 1.05, arm: lean ? 1.3 : 1.18, leg: st === 'umbral_stalker' ? 1.1 : 0.95 });
   const skin = p.body;
   humanoid(k, d, { skin, shirt: skin, pants: p.dark, boots: p.deep, chest: big ? 0.26 : 0.19, belly: st === 'void_maw' ? 0.3 : undefined, armR: big ? 0.085 : 0.055, legR: big ? 0.1 : 0.07 });
@@ -836,7 +861,7 @@ function buildDemon(k: Kit, p: Pal): Joint[] {
   // a spined back
   for (let i = 0; i < 4; i++) t.cone(0.04 + (big ? 0.02 : 0), 0.16 + i * 0.03, 4, p.deep, { pos: [0, 0.12 + i * 0.12, 0.14 + (big ? 0.05 : 0)], rot: [1.1, 0, 0] });
   // glowing cracks / runes on the chest
-  const cracks = st === 'cinder_fiend' || st === 'storm_ghoul' || st === 'sovereign' || st === 'grave_brute';
+  const cracks = st === 'ember_demon' || st === 'cinder_fiend' || st === 'storm_ghoul' || st === 'sovereign' || st === 'grave_brute';
   if (cracks) for (let i = 0; i < 5; i++) t.box(0.02, 0.22, 0.02, el, { pos: [-0.12 + i * 0.06, 0.18 + (i % 2) * 0.12, -(big ? 0.22 : 0.17)], rot: [0, 0, (i - 2) * 0.5], glow: 1 });
   if (st === 'void_maw') {
     // a maw in the belly: a ring of glowing teeth
@@ -859,6 +884,11 @@ function buildDemon(k: Kit, p: Pal): Joint[] {
     const tl = k.at(B.tail);
     horn(tl, [0, -0.05, 0], [0, -0.6, 1], lean ? 0.7 : 0.5, 0.045, skin, -0.3, [1, 0, 0], 4);
     tl.cone(0.05, 0.12, 3, el, { pos: [0, lean ? -0.12 : -0.08, lean ? 0.66 : 0.48], rot: [1.9, 0, 0], glow: 0.6 });
+  }
+  if (st === 'ember_demon') {
+    // a crown of flame, smouldering shoulders
+    for (const side of [-1, 1]) for (let i = 0; i < 3; i++) t.cone(0.05, 0.22 + i * 0.04, 4, i % 2 ? '#ffc04a' : '#ff6a1a', { pos: [side * (d.shoulderX + 0.02 + i * 0.03), d.shoulderY + 0.1 + i * 0.05, 0.02], rot: [0, 0, side * -(0.2 + i * 0.2)], glow: 0.9 });
+    for (let i = 0; i < 5; i++) k.at(B.head).cone(0.05, 0.28 - Math.abs(i - 2) * 0.05, 4, i % 2 ? '#ffc04a' : '#ff6a1a', { pos: [(i - 2) * 0.06, 0.34, 0.02], rot: [0, 0, (i - 2) * 0.22], glow: 1 });
   }
   if (st === 'gale_reaver') for (const e of [B.elL, B.elR]) k.at(e).cone(0.04, 0.6, 4, el, { pos: [0, -d.fore - 0.1, -0.24], rot: [-HALF - 0.4, 0, 0], scale: [0.5, 1, 1.4], glow: 0.35 }); // blade arms
   if (st === 'storm_ghoul') for (let i = 0; i < 3; i++) t.cone(0.03, 0.3, 3, el, { pos: [(i - 1) * 0.12, d.shoulderY + 0.12, 0.08], rot: [0.5, 0, (i - 1) * 0.4], glow: 0.8 });
@@ -1206,6 +1236,38 @@ function buildWinged(k: Kit, p: Pal): Joint[] {
     }
     return wingedJoints(d);
   }
+  if (st === 'sky_wyvern') {
+    // a long-necked sky drake: leathery spread wings on finger bones, a barbed tail, hind talons
+    const d = { bodyY: 0.95, wingX: 0.2, span: 1.5, headZ: -0.42 };
+    const body = k.at(W.body);
+    body.sphere(0.24, 7, 5, p.body, { scale: [0.85, 0.85, 1.7], jitter: 0.07 });
+    body.sphere(0.17, 6, 4, p.belly, { pos: [0, -0.1, -0.05], scale: [0.8, 0.7, 1.6] });
+    for (let i = 0; i < 5; i++) body.cone(0.04, 0.13, 4, p.dark, { pos: [0, 0.2 - i * 0.012, -0.28 + i * 0.14], rot: [0.2, 0, 0] });
+    const h = k.at(W.head);
+    h.cyl(0.07, 0.1, 0.3, 5, p.body, { pos: [0, 0.0, 0.12], rot: [HALF - 0.2, 0, 0] });
+    h.sphere(0.12, 6, 4, p.body, { pos: [0, 0.02, -0.08], scale: [0.9, 0.8, 1.3] });
+    h.cone(0.05, 0.16, 4, p.dark, { pos: [0, 0.0, -0.24], rot: [-HALF, 0, 0] });
+    eyes(h, 0.07, 0.06, -0.14, 0.03, { ...s, glowEyes: true });
+    h.pair((b, o) => b.cone(0.03, 0.26, 4, p.bone, o), { pos: [0.06, 0.08, 0.0], rot: [1.1, 0, -0.35] });
+    for (const [inner, outer, side] of [
+      [W.wingL, W.wingLo, -1],
+      [W.wingR, W.wingRo, 1],
+    ] as const) {
+      const a = k.at(inner);
+      a.cyl(0.03, 0.05, 0.6, 5, p.dark, { pos: [side * 0.3, 0.02, -0.02], rot: [0, 0, HALF] });
+      a.ball(0.34, shadeHex(s.accent, -0.2, -0.3), { pos: [side * 0.3, -0.02, 0.2], scale: [1, 0.04, 0.9], detail: 1 });
+      const o = k.at(outer);
+      for (let i = 0; i < 3; i++) o.cyl(0.012, 0.02, 0.6 - i * 0.1, 4, p.dark, { pos: [side * (0.28 - i * 0.04), 0.0, i * 0.16], rot: [0, -side * (0.3 + i * 0.35), HALF] });
+      o.ball(0.34, shadeHex(s.accent, -0.2, -0.3), { pos: [side * 0.2, -0.02, 0.2], scale: [1, 0.04, 0.9], detail: 1 });
+    }
+    const tl = k.at(W.tail);
+    horn(tl, [0, 0, 0], [0, -0.1, 1], 0.7, 0.08, p.body, 0.2, [1, 0, 0], 4);
+    tl.cone(0.08, 0.2, 4, p.bone, { pos: [0, -0.12, 0.72], rot: [1.9, 0, 0] });
+    const lg = k.at(W.legs);
+    lg.pair((b, o) => b.cyl(0.03, 0.05, 0.28, 4, p.dark, o), { pos: [0.1, -0.18, 0.08] });
+    hornPair(lg, [0.1, -0.34, 0.06], [0, -0.3, -1], 0.14, 0.02, p.bone, 0.6, [1, 0, 0], 2);
+    return wingedJoints(d);
+  }
   // gale harpy: a feathered bird-woman, wings of long feathers, talons
   const d = { bodyY: 0.95, wingX: 0.18, span: 1.1, headZ: -0.16 };
   const body = k.at(W.body);
@@ -1302,7 +1364,7 @@ export function modelFor(spec: ModelSpec): Model {
 // ── CR 029: a pet's collar ───────────────────────────────────────────────
 
 /** Neck ring radius per quadruped style (model space at size 1). */
-const NECK: Partial<Record<Style, number>> = { boar: 0.21, wolf: 0.15, ram: 0.17, stalker: 0.15, lurker: 0.19, glintfox: 0.1, gloamhound: 0.15, behemoth: 0.25 };
+const NECK: Partial<Record<Style, number>> = { boar: 0.21, wolf: 0.15, ram: 0.17, stalker: 0.15, lurker: 0.19, glintfox: 0.1, gloamhound: 0.15, magma_hound: 0.15, behemoth: 0.25 };
 
 /**
  * A tamed pet's collar: a leather band (gold for a shiny) around the neck

@@ -46,6 +46,8 @@ import { WorldEditManager } from './edits/worldEdits'; // CR 040: chopping, brea
 import { audioWorld } from '../audio/bridge';
 // CR 038: sky archipelagos, the Underground and the Depths.
 import { VerticalManager } from './vertical/verticalManager';
+import { usePalace } from './palace/palaceStore';
+import { useRace } from './vertical/race';
 import { warmShaders } from './warmup';
 import { warmExtras } from './warmExtras';
 import { AmbientLife } from './life/ambientLife';
@@ -147,7 +149,7 @@ export function WorldScene({ runtime }: Props) {
     const vertical = runtime.vertical ? new VerticalManager(runtime) : null;
     if (vertical) root.add(vertical.group);
     vertical?.setLow(g0.tier === 'low');
-    if (DEBUG && vertical && typeof window !== 'undefined') Object.assign(window, { __lodestoneVertical: vertical, __lodestoneVerticalWorld: runtime.vertical, __lodestoneVerticalGround: runtime.verticalGround });
+    if (DEBUG && vertical && typeof window !== 'undefined') Object.assign(window, { __lodestoneVertical: vertical, __lodestoneVerticalWorld: runtime.vertical, __lodestoneVerticalGround: runtime.verticalGround, __lodestonePalace: usePalace, __lodestoneRace: useRace });
     const windBase = 3 + (runtime.data.params[PARAM.stormFrequency] ?? 0.3) * 4;
     setPrevailingWind(runtime.data.params[PARAM.windDirDeg] ?? 0, windBase);
     setWeatherWorld(runtime.data, runtime.data.params[PARAM.windDirDeg] ?? 0); // CR 030: the climate per weather cell
