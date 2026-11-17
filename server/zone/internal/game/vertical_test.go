@@ -235,7 +235,7 @@ func TestSkyTownTownsfolkWakeIn3DAndTrade(t *testing.T) {
 		c.join(h, "sky-player", "Player")
 		c.pump(300 * time.Millisecond)
 		c.send(&proto.Interact{TargetKind: InteractActivity, TargetID: pr.ID, Action: 1})
-		if ev := c.nextEvent(EventActivitySpot, 3*time.Second); ev.TargetID != uint32(pr.ID) {
+		if ev := c.nextEvent(EventRaceState, 3*time.Second); ev.Value != RaceArmed || ev.TargetID != uint32(pr.ID) {
 			t.Fatalf("activity event %+v", ev)
 		}
 	} else {

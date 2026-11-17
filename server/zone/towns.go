@@ -102,6 +102,29 @@ func doorsConfig(cfg *game.Config, pool *pgxpool.Pool) {
 	}
 }
 
+// racesConfig persists the sky towns' glide ring race best times in
+// Postgres (sky_race_times, migration 0034; CR 044) when the zone has a
+// database.
+func racesConfig(cfg *game.Config, pool *pgxpool.Pool) {
+	if pool != nil {
+		cfg.RaceStore = &game.PGRaceStore{Pool: pool}
+	}
+}
+
+// restoreRaces loads the stored best times before the zone ticks.
+func restoreRaces(ctx context.Context, zone *game.Server, log *slog.Logger) {
+	rctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	n, err := zone.RestoreRaces(rctx)
+	if err != nil {
+		log.Warn("race times not restored", "err", err)
+		return
+	}
+	if n > 0 {
+		log.Info("race times restored", "rows", n)
+	}
+}
+
 // campsConfig persists camp pieces in Postgres (camp_pieces, migration
 // 0026; CR 025) when the zone has a database.
 func campsConfig(cfg *game.Config, pool *pgxpool.Pool) {

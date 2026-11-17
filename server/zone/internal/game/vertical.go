@@ -66,6 +66,7 @@ func (s *Server) verticalTick(tick uint32) {
 	}
 	defer s.lavaTick()
 	s.palaceTick(tick) // CR 044: the sky palaces (palace.go)
+	s.raceTick(tick)   // CR 044: the glide ring race (activity.go)
 	parallelFor(len(s.ents), s.phaseWorkers(len(s.ents)), viewChunk, func(_, i int) {
 		e := s.ents[i]
 		p := e.Move.Pos
@@ -241,7 +242,7 @@ func (s *Server) verticalInteract(sess *session, m *proto.Interact) {
 		if !ok || math.Hypot(p.X-x, p.Z-z) > 6 || math.Abs(p.Y-y) > 4 {
 			return
 		}
-		s.sendEvent(sess, &proto.Event{Kind: EventActivitySpot, EntityID: e.ID, TargetID: uint32(m.TargetID), Value: 0, X: cm(x), Y: cm(y), Z: cm(z), Data: binaryID(m.TargetID)})
+		s.raceInteract(sess, m.TargetID, x, y, z) // CR 044: the glide ring race (activity.go)
 	}
 }
 

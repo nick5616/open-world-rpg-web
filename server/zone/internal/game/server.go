@@ -106,6 +106,8 @@ type Config struct {
 	// Building door states (doors_sync.go): persisted by the zone owning
 	// each door's region; nil = zone memory only.
 	DoorStore DoorStore
+	// RaceStore persists the sky towns' glide ring race best times (migration 0034; nil: memory only).
+	RaceStore RaceStore
 	// Playtest 2 camps (CR 025, camps.go): placed pieces persisted by the
 	// zone owning each piece; nil = zone memory only.
 	CampStore CampStore
@@ -131,6 +133,7 @@ type Config struct {
 
 // Server is one zone process's simulation.
 type Server struct {
+	race       raceState             // CR 044: the glide ring race (activity.go)
 	pal        palaceState           // CR 044: the sky palaces (palace.go)
 	shrines    map[int]*liveShrine   // CR 044: live Depths shrine cleansings by chamber (shrine.go)
 	skyTowns   []int8                // CR 038: per settlement, 0 unknown, 1 surface, 2 sky (vertical.go skyTown)
