@@ -31,6 +31,9 @@ type CampRow struct {
 	Lock       int
 	Party      uint32
 	BurnUntil  float64
+	State      int     // building pieces: bit 0 open (migration 0032)
+	Cond       float64 // condition percent as of CondDay
+	CondDay    float64
 	PlacedAt   time.Time
 	SeenAt     time.Time
 	ChestItems []*items.Item // LoadCamps only: the chest's stored items
@@ -52,7 +55,7 @@ func (p *PGCampStore) LoadCamps(ctx context.Context, worldID string) ([]CampRow,
 	if !uuidRe.MatchString(worldID) {
 		return nil, nil
 	}
-	rows, err := p.Pool.Query(ctx, `SELECT piece_id, owner_character_id, owner_name, kind, x_cm, y_cm, z_cm, rot, label, lock, party_hash, burn_until, placed_at, owner_seen_at
+	rows, err := p.Pool.Query(ctx, `SELECT piece_id, owner_character_id, owner_name, kind, x_cm, y_cm, z_cm, rot, label, lock, party_hash, burn_until, placed_at, owner_seen_at, state, cond, cond_day
 		FROM camp_pieces WHERE world_id = $1::uuid ORDER BY piece_id`, worldID)
 	if err != nil {
 		return nil, err
@@ -62,12 +65,12 @@ func (p *PGCampStore) LoadCamps(ctx context.Context, worldID string) ([]CampRow,
 	for rows.Next() {
 		var r CampRow
 		var id, party int64
-		var kind, rot, lock int16
-		if err := rows.Scan(&id, &r.Owner, &r.OwnerName, &kind, &r.XCm, &r.YCm, &r.ZCm, &rot, &r.Label, &lock, &party, &r.BurnUntil, &r.PlacedAt, &r.SeenAt); err != nil {
+		var kind, rot, lock, state int16
+		if err := rows.Scan(&id, &r.Owner, &r.OwnerName, &kind, &r.XCm, &r.YCm, &r.ZCm, &rot, &r.Label, &lock, &party, &r.BurnUntil, &r.PlacedAt, &r.SeenAt, &state, &r.Cond, &r.CondDay); err != nil {
 			rows.Close()
 			return nil, err
 		}
-		r.ID, r.Kind, r.Rot, r.Lock, r.Party = uint64(id), int(kind), int(rot), int(lock), uint32(party)
+		r.ID, r.Kind, r.Rot, r.Lock, r.Party, r.State = uint64(id), int(kind), int(rot), int(lock), uint32(party), int(state)
 		byID[r.ID] = len(out)
 		out = append(out, r)
 	}
@@ -98,11 +101,11 @@ func (p *PGCampStore) SaveCamp(ctx context.Context, worldID, zoneID string, r Ca
 	if !uuidRe.MatchString(worldID) {
 		return nil
 	}
-	_, err := p.Pool.Exec(ctx, `INSERT INTO camp_pieces (world_id, piece_id, owner_character_id, owner_name, kind, x_cm, y_cm, z_cm, rot, label, lock, party_hash, burn_until, placed_at, owner_seen_at, zone_id, updated_at)
-		VALUES ($1::uuid, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, now())
+	_, err := p.Pool.Exec(ctx, `INSERT INTO camp_pieces (world_id, piece_id, owner_character_id, owner_name, kind, x_cm, y_cm, z_cm, rot, label, lock, party_hash, burn_until, placed_at, owner_seen_at, zone_id, state, cond, cond_day, updated_at)
+		VALUES ($1::uuid, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, now())
 		ON CONFLICT (world_id, piece_id) DO UPDATE SET owner_name = EXCLUDED.owner_name, label = EXCLUDED.label, lock = EXCLUDED.lock, party_hash = EXCLUDED.party_hash,
-			burn_until = EXCLUDED.burn_until, owner_seen_at = GREATEST(camp_pieces.owner_seen_at, EXCLUDED.owner_seen_at), zone_id = EXCLUDED.zone_id, updated_at = now()`,
-		worldID, int64(r.ID), r.Owner, r.OwnerName, int16(r.Kind), r.XCm, r.YCm, r.ZCm, int16(r.Rot), r.Label, int16(r.Lock), int64(r.Party), r.BurnUntil, r.PlacedAt, r.SeenAt, zoneID)
+			burn_until = EXCLUDED.burn_until, owner_seen_at = GREATEST(camp_pieces.owner_seen_at, EXCLUDED.owner_seen_at), zone_id = EXCLUDED.zone_id, state = EXCLUDED.state, cond = EXCLUDED.cond, cond_day = EXCLUDED.cond_day, updated_at = now()`,
+		worldID, int64(r.ID), r.Owner, r.OwnerName, int16(r.Kind), r.XCm, r.YCm, r.ZCm, int16(r.Rot), r.Label, int16(r.Lock), int64(r.Party), r.BurnUntil, r.PlacedAt, r.SeenAt, zoneID, int16(r.State), r.Cond, r.CondDay)
 	return err
 }
 
@@ -129,6 +132,9 @@ type campJSON struct {
 	Lock      int     `json:"lk,omitempty"`
 	Party     uint32  `json:"p,omitempty"`
 	BurnUntil float64 `json:"b,omitempty"`
+	State     int     `json:"st,omitempty"`
+	Cond      float64 `json:"cd,omitempty"`
+	CondDay   float64 `json:"cdd,omitempty"`
 	Gone      bool    `json:"g,omitempty"` // removed (picked up, decayed)
 	Reason    int     `json:"why,omitempty"`
 }

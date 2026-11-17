@@ -11,6 +11,7 @@ import { worldDebug } from '../../world/debug/worldDebug';
 import { useInventory } from '../inventory/store';
 import { checkPlacement, ghostSpot, overlaps, radius, type Footprint, type PlaceEnv, type Placed } from './placement';
 import { useCamps } from './store';
+import { isBuild, pieceDef } from '../build/geometry';
 
 const BOX_WALK = 1;
 const BOX_SOLID = 2;
@@ -55,7 +56,7 @@ export function runtimeEnv(): PlaceEnv | null {
 }
 
 export function kitCount(kind: number): number {
-  const kit = CAMPS.pieces[kind - 1]?.kit;
+  const kit = pieceDef(kind)?.kit;
   let n = 0;
   for (const it of useInventory.getState().inv?.items ?? []) if (it.b === kit) n += it.q;
   return n;
@@ -71,12 +72,12 @@ export function updateGhost(): Ghost {
     return campGhost;
   }
   const p = localPlayer.pos;
-  const def = CAMPS.pieces[pl.kind - 1];
+  const def = pieceDef(pl.kind)!;
   const dist = Math.max(pl.dist, Math.hypot(def.w, def.d) / 2 + 1);
   const { x, z } = ghostSpot(p.x, p.z, localPlayer.yaw, dist);
   const near: Placed[] = Object.values(s.pieces)
     .filter((q) => q.mine || Math.hypot(q.x - x, q.z - z) < CAMPS.limits.campRadiusM * 2 + CAMPS.placement.otherCampM + 4)
-    .map((q) => ({ id: q.id, kind: q.kind, rot: q.rot, x: q.x, z: q.z, mine: q.mine }));
+    .map((q) => ({ id: q.id, kind: q.kind, rot: q.rot, x: q.x, z: q.z, mine: q.mine, build: isBuild(q.kind) }));
   const r = checkPlacement({ kind: pl.kind, rot: pl.rot, x, z, feetX: p.x, feetY: p.y, feetZ: p.z, kits: kitCount(pl.kind) }, near, env);
   campGhost.active = true;
   campGhost.kind = pl.kind;

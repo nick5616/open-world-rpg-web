@@ -128,7 +128,7 @@ func Box(kind, r int, x, y, z float64) [9]float64 {
 // Solid reports a piece kind players collide with.
 func Solid(kind int) bool {
 	p := campdefs.D.ByID(kind)
-	return p != nil && p.Solid
+	return p != nil && (p.Solid || (p.Build != nil && (len(p.Build.Boxes) > 0 || p.Build.Surface != nil)))
 }
 
 // ---- collision (the Go half of the twin) ----
@@ -139,6 +139,7 @@ type SolidPiece struct {
 	Kind    int
 	Rot     int
 	X, Y, Z float64 // Cm2M of the wire values
+	State   int     // building pieces: bit 0 open (doors and gates)
 }
 
 // Set is the solid pieces' boxes in ascending id order with a grid index.
@@ -148,6 +149,10 @@ type Set struct {
 	IDs   []uint64
 	F     []float64
 	cells map[uint64][]int32
+	// CR 041: walkable surfaces (floors, stairs), 8 f64 each: x, z, cos, sin,
+	// hx, hz, y at u=-hx, y at u=+hx; indexed by cell like the boxes.
+	SF     []float64
+	scells map[uint64][]int32
 }
 
 func cellKey(cx, cz int64) uint64 { return uint64(cx+1<<31)<<32 | uint64(cz+1<<31)&0xFFFFFFFF }
@@ -166,14 +171,10 @@ func NewSet(ps []SolidPiece) *Set {
 		}
 		return 0
 	})
-	s := &Set{cells: map[uint64][]int32{}}
-	for _, p := range ps {
-		if !Solid(p.Kind) {
-			continue
-		}
-		b := Box(p.Kind, p.Rot, p.X, p.Y, p.Z)
+	s := &Set{cells: map[uint64][]int32{}, scells: map[uint64][]int32{}}
+	add := func(id uint64, b [9]float64) {
 		i := int32(len(s.IDs))
-		s.IDs = append(s.IDs, p.ID)
+		s.IDs = append(s.IDs, id)
 		s.F = append(s.F, b[:]...)
 		r := math.Sqrt(float64(b[4]*b[4]) + float64(b[5]*b[5]))
 		for cz := cellOf(b[1] - r); cz <= cellOf(b[1]+r); cz++ {
@@ -183,8 +184,58 @@ func NewSet(ps []SolidPiece) *Set {
 			}
 		}
 	}
+	for _, p := range ps {
+		if !Solid(p.Kind) {
+			continue
+		}
+		if Builds(p.Kind) {
+			bp := &BP{ID: p.ID, Kind: p.Kind, Rot: p.Rot, X: M2Cm(p.X), Y: M2Cm(p.Y), Z: M2Cm(p.Z), State: p.State}
+			for _, b := range BoxesOf(bp) {
+				add(p.ID, b)
+			}
+			if sf, ok := SurfacesOf(bp); ok {
+				i := int32(len(s.SF) / 8)
+				s.SF = append(s.SF, sf.X, sf.Z, sf.Cs, sf.Sn, sf.Hx, sf.Hz, sf.Ya, sf.Yb)
+				r := math.Hypot(sf.Hx, sf.Hz)
+				for cz := cellOf(sf.Z - r); cz <= cellOf(sf.Z+r); cz++ {
+					for cx := cellOf(sf.X - r); cx <= cellOf(sf.X+r); cx++ {
+						k := cellKey(cx, cz)
+						s.scells[k] = append(s.scells[k], i)
+					}
+				}
+			}
+			continue
+		}
+		add(p.ID, Box(p.Kind, p.Rot, p.X, p.Y, p.Z))
+	}
 	return s
 }
+
+// SurfaceAt is the highest walkable surface at (x, z) that a body whose feet
+// are at y can step onto (top <= y + the step-up), ok=false when none.
+func (s *Set) SurfaceAt(x, z, y float64) (float64, bool) {
+	if s == nil || len(s.SF) == 0 {
+		return 0, false
+	}
+	best, found := 0.0, false
+	for _, i := range s.scells[cellKey(cellOf(x), cellOf(z))] {
+		f := s.SF[int(i)*8 : int(i)*8+8]
+		dx, dz := x-f[0], z-f[1]
+		u := float64(dx*f[2]) + float64(dz*f[3])
+		v := float64(dz*f[2]) - float64(dx*f[3])
+		if u < -f[4] || u > f[4] || v < -f[5] || v > f[5] {
+			continue
+		}
+		top := f[6] + float64((u+f[4])/(2*f[4]))*float64(f[7]-f[6])
+		if top <= y+step && (!found || top > best) {
+			best, found = top, true
+		}
+	}
+	return best, found
+}
+
+// HasSurfaces reports walkable surfaces in the set.
+func (s *Set) HasSurfaces() bool { return s != nil && len(s.SF) > 0 }
 
 // Len is the number of boxes.
 func (s *Set) Len() int {
@@ -209,12 +260,13 @@ func (s *Set) Candidates(x, z, m float64, out []int32) []int32 {
 
 // Near reports any box indexed within m of (x, z) (a cheap "wrap the ground?").
 func (s *Set) Near(x, z, m float64) bool {
-	if s.Len() == 0 {
+	if s.Len() == 0 && !s.HasSurfaces() {
 		return false
 	}
 	for cz := cellOf(z - m); cz <= cellOf(z+m); cz++ {
 		for cx := cellOf(x - m); cx <= cellOf(x+m); cx++ {
-			if len(s.cells[cellKey(cx, cz)]) > 0 {
+			k := cellKey(cx, cz)
+			if len(s.cells[k]) > 0 || len(s.scells[k]) > 0 {
 				return true
 			}
 		}
@@ -351,10 +403,19 @@ func (s *Set) Blocked(x, y, z, rd, h float64) bool {
 type Level struct {
 	Inner movement.Ground
 	S     *Set
+	Y     float64 // feet height of the view (floors above y + step are not stood on)
 }
 
-// HeightAt is the inner view's.
-func (l Level) HeightAt(x, z float64) float64 { return l.Inner.HeightAt(x, z) }
+// HeightAt is the inner view's, or a floor or stair the body can step onto.
+func (l Level) HeightAt(x, z float64) float64 {
+	h := l.Inner.HeightAt(x, z)
+	if l.S.HasSurfaces() {
+		if t, ok := l.S.SurfaceAt(x, z, l.Y); ok && t > h {
+			return t
+		}
+	}
+	return h
+}
 
 // WaterAt is the inner view's.
 func (l Level) WaterAt(x, z float64) float64 { return movement.WaterAt(l.Inner, x, z) }
@@ -371,14 +432,14 @@ func (l Level) Collide(x, y, z float64) movement.CollideResult {
 // With wraps a level view with the pieces. A view without a push-out (no
 // town ground under it: the flat and scale worlds) is returned as is, like
 // towns.WithDoors: camps only exist over the town collision.
-func With(inner movement.Ground, s *Set) movement.Ground {
-	if s.Len() == 0 {
+func With(inner movement.Ground, s *Set, y float64) movement.Ground {
+	if s.Len() == 0 && !s.HasSurfaces() {
 		return inner
 	}
 	if _, ok := inner.(movement.Collider); !ok {
 		return inner
 	}
-	return Level{Inner: inner, S: s}
+	return Level{Inner: inner, S: s, Y: y}
 }
 
 // ---- placement ----
@@ -428,6 +489,7 @@ type Placed struct {
 	Rot   int
 	X, Z  float64
 	Owner string
+	Build bool // a building piece (CR 041): only its footprint counts, not the camp limits
 }
 
 // Want is one placement request.
@@ -461,7 +523,7 @@ func Check(w Want, near []Placed, env Env) (float64, int) {
 	var anchor *Placed
 	for i := range near {
 		q := &near[i]
-		if q.Owner != w.Owner {
+		if q.Owner != w.Owner || q.Build {
 			continue
 		}
 		own++
@@ -502,7 +564,7 @@ func Check(w Want, near []Placed, env Env) (float64, int) {
 	for i := range near {
 		q := &near[i]
 		qf := FootprintOf(q.Kind, q.Rot, q.X, q.Z)
-		if q.Owner != w.Owner && qf.Dist(w.X, w.Z) < d.Placement.OtherCampM+f.Radius() {
+		if !q.Build && q.Owner != w.Owner && qf.Dist(w.X, w.Z) < d.Placement.OtherCampM+f.Radius() {
 			return 0, RefuseOtherCamp
 		}
 		if f.Overlaps(qf, d.Placement.GapM/2) {
