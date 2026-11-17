@@ -101,11 +101,12 @@ export function giveSend(key: string, o: GiveOpts = {}): DevSend {
   const arg = Math.max(1, Math.min(0xffff, o.qty ?? 1)) | (o.equip ? 1 << 16 : 0) | ((o.loadout ?? 0) & 1 ? 1 << 17 : 0);
   return send(DEV_ACT.give, t, arg);
 }
-
 /** Interact 250/14: x, z in metres (cm, u32 each); y 0 = the ground. */
-export function teleportSend(x: number, z: number, y = 0): DevSend {
+/** y: undefined = the ground; a number = exactly that height, below the terrain too (the Underground; playtest 3): offset binary in the low 31 bits, bit 31 set (server devExactY). */
+export function teleportSend(x: number, z: number, y?: number): DevSend {
   const cm = (v: number) => BigInt(Math.max(0, Math.round(v * 100)) >>> 0);
-  return send(DEV_ACT.teleport, cm(x) | (cm(z) << 32n), y > 0 ? Math.round(y * 100) : 0);
+  const arg = y === undefined ? 0 : (0x80000000 | (Math.round(y * 100) + 0x40000000)) >>> 0;
+  return send(DEV_ACT.teleport, cm(x) | (cm(z) << 32n), arg);
 }
 
 /** Interact 250/17: count, level (0 = yours), a boss index or an enemy id, an elite affix id. */

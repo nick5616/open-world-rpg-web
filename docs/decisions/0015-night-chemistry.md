@@ -31,7 +31,9 @@ tick budgets; WP16 wants it identical across zones.
    AI, telegraphs, strikes, lenient validation, snapshots, the client's
    enemy drawing and the bots' targeting all work unchanged. The protocol's
    reserved `EntityKind demon` stays unused.
-4. **Regeneration model**: health = max − seared − wounds. Ordinary damage
+4. **Regeneration model** (since CR 048 this is the high-level demons' model:
+   level 15+, lords and story demons; weaker demons take lasting damage from
+   ordinary hits, 50 % from level 8): health = max − seared − wounds. Ordinary damage
    adds wounds, which close at the rank's regen rate (35 % / 25 % / 15 % of
    max per second) and can never take the last point; killing damage
    (sunsteel, sunsteel arrows, Light spells and form) adds seared health,

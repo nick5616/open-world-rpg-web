@@ -1831,3 +1831,85 @@ Nicole: "ok new pivot for the game: make it vertical. there are tunnels you can 
 **Gates** (main `41ec650` merged): `gen:check` ok; `test:golden` PASS in every host (wp01 evidence restored); `cargo test` (worldgen) ok, clippy clean; `go vet` clean in every module; `go test` green in every module (`TestZoneProcessCavesMining` failed once under load and passed alone); door vectors regenerated (sky-town doors appended, every existing vector unchanged); typecheck ok; `eslint .` clean; client vitest 105 files / 1267 tests (after merging main `08d53b6`, shared basic attacks: client only, nothing on the wire); worldgen/js vitest 28; `node scripts/whatsnew.mjs check` (35 entries, `pt2-vertical-world` first).
 
 Gaps: crystals read pastel rather than deep blue / violet at a distance; the tunnel portal is modest from afar; the palace exterior is a placeholder model and its doors are sealed; sky activities are a stub stand; enemy models for the new creatures reuse existing families; no ambient occlusion in caverns; live world: renewing the official world to genVersion 3 regenerates towns (sky towns appended) and needs the usual deploy (not done here).
+
+## Playtest 3: kill flash on Linux Chrome (branch `pt3/kill-flash`)
+
+Report: "a flashing every time myself or my friend gets a kill, on her screen (Chrome on Linux)". Client only.
+
+**Deployed build**: the live client (`lodestone-rpg-game.netlify.app`) already contains "Calm kills" (its bundle has `lodestone_accessibility`, the flash profile and `deathEdge`), so this is not the old build.
+
+**Found**: the spell screen effect (`combat/fx/screen.ts`, merged into the world's EffectPass at medium and up) warped the whole frame's UVs for every shockwave with `exp(-pow((r - w.z) / 0.035, 2.0))`. The base is negative inside the ring, and GLSL leaves `pow(x < 0, y)` undefined: Mesa and NVIDIA GL compile it to `exp2(y * log2(x))` = NaN, ANGLE/D3D (the Windows dev machines) gives `x * x`. NaN UVs sample garbage / black, so each kill-time shockwave (spell kills, heavy hits, explosions, deaths such as Shatter; yours and your friend's, since remote casts run the same recipes) would show a growing black / garbled disc on Linux only. Same pattern in the world-space shockwave ring (`fx/materials.ts`). **Fixed**: squared by multiplication; the other `pow()` bases in the FX materials clamped (`max(x, 0.0)`, a `1 - abs(dot)` can round below 0). `combat/glslSafety.test.ts` bans a possibly negative `pow()` base in the combat, post and loot shaders.
+
+**Checked and ruled out** (headless Chromium, `combat/dev/program-audit.mjs`; the enemy and FX galleries now warm up through the world's `warmShaders` and list linked programs): no shader program is linked after the warm-up at an enemy death (slimes, beasts, humanoids, golem) or at any of the 92 spells' casts and impacts; the pooled point-light counts are fixed (intensity to 0, never added or removed); no whole-frame DOM overlay or CSS animation is triggered by a kill.
+
+**Confidence**: the NaN is a real bug that fits "Linux only, every kill, both players' kills" and is fixed, but it could not be reproduced here (SwiftShader on Windows evaluates the same shader without NaN), so it is unconfirmed on her machine, roughly 60 %. If it persists: ask for the browser's `chrome://gpu` and whether Reduce flashing is still on (Graphics screen), and try Low graphics (no screen pass).
+
+Works: fix + guard test; program audit harness. Gaps: no Linux GPU available to verify; the first instanced shadow caster still links its depth program on first sight (not at kills; the warm-up does not cover shadow depth variants).
+
+## Playtest 3: title cavern and character creation (branch `pt3/title-creation`, CR 047)
+
+Nicole: "Make a landing page that looks like gems and all that in a cave, then have the character selection/creation screen be like Valheim instead of plain like ours." CR `docs/cr/047-title-creation.md`.
+
+Works:
+- **Title**: logotype over a live R3F gem cavern (procedural shader rock with ore veins and wet patches, clusters in the five gem colours, light pools, shafts, fog, motes, slow camera drift), lazy chunk over a CSS cavern painted at first paint; CSS-only fallback without WebGL / on a software renderer / `?cave=0`; lite tier on phones and weak GPUs; calm under Reduce flashing and prefers-reduced-motion.
+- **Character select / creation**: the same cavern with a campfire, your character (the game's own Avatar, idle animation) framed on a stage, drag to turn, list on the left with Play / Delete (confirmed) / New, creator on the right (build, skin, hair style and colour, beard, eyes, Randomise) with a live preview; phone layout (figure over one scrolling sheet). The sign-in panel and the waking screen sit over the cavern too.
+- **Look**: six options rendered by `Avatar.setLook` (skin tone, 6 hair styles, hair colour, 5 beards, eye colour, 3 builds); persisted with the character through the existing `appearance` field (account: `characters.appearance`, local: the save state), returned by the character list, drawn on your own body in third person. New `DELETE /v1/characters/{id}`. No migration (0035 unused).
+- Every harness testid kept; `client/scripts/title-flow.mjs` drives title -> local profile -> create (with a look) -> quick-play row -> delete against a mocked account service and checks them (10 PASS).
+
+Gaps:
+- Other players do not see your look yet (replication needs a protocol field; design in CR 047). First-person hands keep the default skin tone.
+- Not run here: the services-backed acceptance harnesses and `infra/smoke-live.mjs` (no Postgres/Redis in this box); their selectors were kept rather than changed. The Go account test (`TestAccountFlow` now covers appearance + delete) needs Postgres and Redis.
+- The campfire sits mostly behind the left panel at 16:9; the long hair style reads as a hood; no shadows on the stage (a blob under the figure).
+
+## Playtest 3: balance (branch `pt3/balance`, CR 048)
+
+Nicole's playtest-3 notes, four independent fixes, one commit each (`docs/cr/048-playtest-3-balance.md`).
+
+**Works**
+- **Levelling**: level 2 costs 360 XP (was 100): the early curve is 360 / 300 / 260 / 240, plain 60 + 40 x level from level 5, so no later level is slower. Server `explore.XPForNextLevel`, client twin `xpForLevel`; wire vectors and discovery / tower tests updated (a tower climb + its discovery, 190 XP, no longer levels).
+- **Magma dash tiers**: Lesser (L1-7: short, a steered run that falls, 40 mana/s hold), Honed (L8-14: weak thrust, 32 mana/s), Full (L15+, the old dash, 24 mana/s). Tiers are plain dash variants (ids 10, 11) chosen from the character level on both sides, so the shared movement twins are untouched; wp13 dash goldens regenerated, Go twin tests green; the zone refuses a tier above the caster's level; the spell card shows "Tier: Lesser (Honed at level 8)".
+- **Spell bank**: equipped spells of the edited loadout are hidden; clearing a slot (or dropping its card on the bank) returns them (`bankCards`, vitest).
+- **Demons**: `demons.ordinary {halfFrom 8, immuneFrom 15, halfMult 0.5}`: level < 8 takes full lasting damage from anything, 8-14 half (resisted flag), 15+ / lords / Guarded story demons keep the sunsteel-or-Light rule; HUD hint, tips and loadout lines no longer say all demons are immune.
+
+**Tests**: `go test` explore, combat, combatdefs, movement, plus the game packages' night / dash / achievement / progression / explore tests; client vitest for sim, combat, ui/skills, ui/spellcards, ui/progression; `tsc`, eslint.
+
+**Gaps**: `tools/acceptance/g4.mjs` and `server/zone/cmd/nightbots` (not re-run, 11 min) still assume a level-1 demon shrugs off the starting sword, true now only at demon level 15+; a character saved at level 2-4 re-levels one level lower from its kept XP; the dash tiers and demon thresholds are first guesses to tune in play.
+
+
+## Playtest 3: torches and familiar lights ✅ (branch `pt3/lights`, CR 042)
+
+Playtest: "Add stuff to light up dark areas like a torch, and a different spell for each class of magic, like a floating glowing icicle that follows you." Details: `docs/cr/042-lights.md`.
+
+Works:
+- **Torch**: the existing `tool:torch` (6 gold at general merchants, 2 firewood at a workbench) is in the starter kit and is lit with key **8** (Interact 160). First person: its own fist and forearm in the off hand; third person and every other player: in the avatar's left hand. A warm flickering pool of light (three slow sines, 8% swing, 3% with Reduce flashing; the largest per-frame step is under 1%, tested). Burns without fuel; the water (swimming), a fall, or losing the torch puts it out (zone-checked once a second; refused while swimming).
+- **Familiar lights**: one cheap toggle spell at the root of each of the eight trees (type `defensive` with a `familiar` block, so no new spell type; 4 mana to call, free to dismiss, 2.5-3 mana/s while it burns, it fades at 0 mana): Hearth Mote (ember mote), Rime Light (spinning icicle), Dusk Lantern (violet lantern), Firefly Drift (fireflies), Static Orb (soft crackling ball), Zephyr Mote (ribbons of air), Lumen Wisp (radiant wisp), Starless Lamp (void lamp). Floats over the right shoulder, trailing a little.
+- **Replication**: the light rides in the player's snapshot record (`EntityRecord.appearance` bits 51-56, next to CR 034's armor): other players see your torch and familiar and are lit by them; late joiners, range entry and ghosts get it on first sight; nothing is sent per tick. Events 1840/1841, Interact 160.
+- **Lighting tech**: a fixed pool of PointLights (2 low / 3 medium / 4 high+ultra), created before the shader warm-up and never added or removed (the scene held 34 lights before and after the lights were lit: `__lodestoneLights()`), ranked each frame (yours first, then nearest, nothing past 48 m), plus an emissive glow (additive halo) on every source. Terrain, caves, layers and towns are all `MeshStandardMaterial`s, so they take the pooled lights unchanged. Warm-up objects for the new programs are in `warmExtras.ts`.
+- Zone: `server/zone/internal/game/lights.go`, `lights_test.go` (torch lights, replicates to an observer and a late joiner, goes out in the water, cannot be lit while swimming; familiar called, replicated, upkeep state, dismissed free at 0 mana, fades when the mana runs dry). Client: `client/src/world/lights/*.test.ts` (flicker bounds, pool ranking and sizes, the eight familiars one per school and learnable at a tree root, Event 1840/1841 into the store).
+- Dev: `/tp x z y` teleports to an exact height (the Underground), used by the evidence harness `client/src/world/lights/dev/lights-shots.ts`.
+
+Evidence (`docs/evidence/pt3-lights-*`): `cave-dark`, `cave-torch`, `cave-torch-two-familiars` (a torch and two familiars in an Underground tunnel), `cave-frost-own-view`, `familiars` (all eight in third person), `pt3-lights-run.json` (pool intensities, light count, frame time).
+
+Gaps: no ground-placed torch and no Lumen Wisp demon effect (the brief's optional items); torch and familiar state does not survive a zone hand-off (press 8 / recast); older characters have no starter torch; the 80 m+ low-LOD figure shows only a halo; the eight spell names are proposals (`pending`).
+
+## Playtest 3: towns art (branch `pt3/towns-art`, CR 046)
+
+Playtest feedback: "Make the assets in the world better and higher fidelity, like it would make you want to live in this world, super immersive. Houses are just okay." Render-side only: no genVersion change, no collision or footprint change, no contract, migration or event change. Details in `docs/cr/046-towns-art.md` and `client/src/world/buildings/README.md` "Towns art".
+
+**Works**
+- **Detail levels** (`buildings/detail.ts`) follow the quality tier at startup: low = the old look and cost, medium adds frames / trim / dressing, high adds the rich pass and 512 px textures.
+- **Houses**: windows with frames, leaded panes (warm per-pane glow at night, emissive, no lights), board-and-batten shutters (some open), flower boxes, curtains; stone footing courses; lime wash per building; real half-timbering on the timber style (posts, plates, rails, knee braces, framed gables); per-building roof tint, ridge caps, rafter tails; stepped chimneys with pots (smoke from the pots); door surrounds, glowing wall lanterns, the inn's hanging sign.
+- **Settlement**: yard clutter (barrels, crates, sacks, wood piles, hay, carts, wash lines, ladders, rain barrels, benches, coal, doorstep pots) placed against side and back walls, clear of every collision box, road and the square (`dress.ts` `Yard`); stall valances and hanging produce, well bucket and windlass, pointed fence caps, town wall arrow slits and buttresses, gate pennants, signpost cairns.
+- **Interiors**: skirting, plastered ceilings between dark beams, wainscot, curtains, hanging herbs, an inn's candle wheel and table candles (flames are emissive and flicker), bed posts and footboards, table runners, hearth mantel with cauldron and logs.
+- **Textures**: painters are resolution independent (256 px low / medium, 512 px high): lime-wash plaster with damp and hairline cracks, chiselled stone with pits, board knots and nails, glazed tile lichen, silvered shingles, leaded window picture, lighter fieldstone.
+
+**Measured** (`docs/evidence/pt3-towns-after-drawcalls.{txt,json}`; headless Chromium, RTX 3070 via ANGLE/D3D11, 1600x900, vite dev server, Draedmore, 40 buildings, clear sky). Settlement shell / interior triangles (`art.test.ts`): low 21.2k / 12.8k, medium 42.2k / 22.5k, high 63.9k / 29.6k; build time ~0.1 s per large town at every level (worker). Draw calls are unchanged by the pass (the new geometry is merged into the same shell / interior meshes): high street view 358 calls (256 without the towns layer; before 354), overview 332, interior 353; medium street 263, low street 149 (no shadow passes; the old low cost). Whole-frame triangles on the street view: before 2050k, after 2439k at high (shadow passes included); medium 1522k, low 654k. Mean frame 8-11 ms uncapped on the 3070 at every tier (headless, noisy; before ~9-10 ms). 512 px textures: ~4.7 s to paint in the worker at startup on high (1.2-1.5 s at 256 px), 34 MB vs 8.6 MB of texture memory before mips; they are high-tier only. Screenshots (`pt3-towns-{before,after}-{street,street-dusk,interior,interior-house}.jpg`, plus `pt3-towns-after-{styles-timber,town-night}.jpg`): the same street by day and at dusk, an inn and a house interior.
+
+**Gates**: `npx tsc -p client --noEmit` clean; `eslint client/src/world/buildings` clean; vitest `src/world/buildings` 9 files all pass, including `kit.test.ts` (every wall / floor / roof face still drawn on its collision box), `doors.test.ts` (door vectors bit for bit) and both zone-process integration tests (walk into a building, walk through a door: 0 corrections); new `art.test.ts` (detail-level budgets, valid meshes, yard clearance query, determinism, seed 3 adobe).
+
+**Gaps**
+- Yard clutter and the new trim have no collision (like porch posts); the zone does not know about them, so a player can walk through a barrel against a wall.
+- Detail follows the tier the session started with; settlements already streamed in keep their level until they are rebuilt (auto tier changes do not rebuild).
+- Not touched: exploration / structure towers (collision overlay twins), bridges, docks, roads and plaza paving, NPC models, stall buildings beyond their props. Weather and wind do not move the new cloth (wash lines, pennants).
+- Interiors are still lit by the sky and the fixed light pool: candle flames and glass are emissive, nothing casts light.
+- 512 px textures add ~4 s of worker time at startup on high before towns appear.

@@ -34,7 +34,7 @@ func TestMagmaDashSetsGrassAlight(t *testing.T) {
 			return n
 		}
 		idle = count()
-		v := combatdefs.D.SpellByKey("magma_dash").Dash
+		v := combatdefs.D.ResolveDash(combatdefs.D.SpellByKey("magma_dash").Dash, sess.ent.cbt.Level)
 		h.srv.combatFrame(sess, proto.InputFrame{Seq: sess.ent.LastSeq + 1, Flags: proto.InputFlagDodge, CastSlot: uint8(v)})
 		dashing = count()
 	})

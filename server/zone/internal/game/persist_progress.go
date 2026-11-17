@@ -45,6 +45,7 @@ func (p *PGStore) LoadProgress(ctx context.Context, id string, sites []uint64) (
 	// The level column is derived data: recompute it from XP so a tuning
 	// change to the curve (WP13) can never leave the two inconsistent.
 	pr.Level = max(level, explore.LevelForXP(xp))
+	pr.KeepLevel() // CR 048: a curve change never demotes a saved character
 	pr.Towers, pr.Waypoints, pr.Discoveries, pr.Attuned = towers, waypoints, discovered, attuned
 	pr.LoadPinsJSON(pins)
 	if lastWP != nil {

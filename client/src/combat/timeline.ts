@@ -16,7 +16,7 @@
 
 import { COMBAT, INPUT_BUFFER_MS, InputFlag, MOVE_STEP_HZ, type MoveDef, type SpellDef, type WeaponDef, type FormDef } from '@lodestone/contracts';
 import type { MoveState } from '../sim/movement';
-import { dashStep, startDashHold, type DashHold } from './dashes';
+import { dashStep, resolveDash, startDashHold, type DashHold } from './dashes';
 
 /** CR 027: riding the spirit steed (sim/ride.ts MOUNTED, SelfState flags bit 3). */
 function riding(s: MoveState): boolean {
@@ -176,6 +176,8 @@ export class CombatTimeline {
   manaMax = 100;
   manaRegenPerStep = 11 / 60;
   skills: SkillView = { level: () => 1, has: () => false };
+  /** Character level (combat_sync): picks the magma dash tier (CR 048); the zone resolves it from the same level. */
+  charLevel = 1;
   downed = false;
 
   private nextSeq = 0;
@@ -420,9 +422,10 @@ export class CombatTimeline {
           }
           if ((before.dash ?? 0) > 0 || (before.iframes ?? 0) > 0 || before.mode === 2 || before.mode === 4) return 'wait';
           out.flags |= InputFlag.dodge;
-          out.castSlot = s.dash;
+          const variant = resolveDash(s.dash, this.charLevel); // CR 048: the tier this level has
+          out.castSlot = variant;
           this.dodgeSeq = seq;
-          this.dashHold = startDashHold(x.slot, s.dash, seq); // CR 021: hold the key to sustain it (dashes.ts)
+          this.dashHold = startDashHold(x.slot, variant, seq); // CR 021: hold the key to sustain it (dashes.ts)
         } else {
           out.flags |= InputFlag.cast;
           out.castSlot = x.slot;

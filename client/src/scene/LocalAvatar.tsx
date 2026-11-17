@@ -15,12 +15,14 @@ import { useEffect, useMemo } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Activity } from '@lodestone/contracts';
 import { Avatar } from '../net/avatar';
+import { ownLook } from '../net/ownLook';
 import { followCaster, followEmote, followMusic } from '../net/avatarAnim';
 import { liveAvatars, SELF_AVATAR } from '../net/avatar';
 import { emoteOf, SELF } from '../ui/emotes/store';
 import { takeNoteHits, SELF as MUSIC_SELF } from '../ui/music/store';
 import { castState, CAST_FX_MINE } from '../combat/castState';
 import type { RemoteView } from '../net/interpolation';
+import { ownLightBits } from '../world/lights/lightStore';
 import { localActions, localPlayer, view, type MoveMode } from '../state/live';
 import { combatRuntime } from '../combat/link';
 import { useCombatHud } from '../combat/store';
@@ -72,7 +74,7 @@ export function LocalAvatar() {
         a.root.removeFromParent();
         a.dispose();
       }
-      a = st.avatar = new Avatar(id, { nameplate: false });
+      a = st.avatar = new Avatar(id, { nameplate: false, look: ownLook() ?? undefined });
       scene.add(a.root);
       liveAvatars.set(SELF_AVATAR, a); // playtest 2: the fishing line leaves your rod's tip
     }
@@ -106,6 +108,7 @@ export function LocalAvatar() {
     v.speed = Math.hypot(localPlayer.vel.x, localPlayer.vel.z);
     v.activity = ACTIVITY[localPlayer.mode] ?? 0;
     v.appearance = ownAppearance();
+    v.light = ownLightBits(); // CR 042: your torch in your own hand (third person)
     const hud = useCombatHud.getState();
     if (rt && hud.active) {
       v.healthPct = rt.timeline.downed ? 0 : Math.max(1, Math.round((hud.health / Math.max(1, hud.healthMax)) * 100));

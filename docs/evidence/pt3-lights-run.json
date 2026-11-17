@@ -1,0 +1,72 @@
+{
+  "before": {
+    "slots": [
+      {
+        "key": "",
+        "intensity": 0
+      },
+      {
+        "key": "",
+        "intensity": 0
+      },
+      {
+        "key": "",
+        "intensity": 0
+      },
+      {
+        "key": "",
+        "intensity": 0
+      }
+    ],
+    "lights": 34,
+    "floaters": 0
+  },
+  "torch": {
+    "slots": [
+      {
+        "key": "self:torch",
+        "intensity": 10.42
+      },
+      {
+        "key": "",
+        "intensity": 0
+      },
+      {
+        "key": "",
+        "intensity": 0
+      },
+      {
+        "key": "",
+        "intensity": 0
+      }
+    ],
+    "lights": 34,
+    "floaters": 0
+  },
+  "all": {
+    "slots": [
+      {
+        "key": "self:torch",
+        "intensity": 10.15
+      },
+      {
+        "key": "2:familiar",
+        "intensity": 13.32
+      },
+      {
+        "key": "3:familiar",
+        "intensity": 15.61
+      },
+      {
+        "key": "",
+        "intensity": 0
+      }
+    ],
+    "lights": 34,
+    "floaters": 2
+  },
+  "frameMs": {
+    "p50": 16.7,
+    "p95": 33.4
+  }
+}

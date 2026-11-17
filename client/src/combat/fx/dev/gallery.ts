@@ -17,9 +17,12 @@ import type { RemoteView } from '../../../net/interpolation';
 import { localPlayer } from '../../../state/live';
 import type { GroundQuery } from '../../../sim/ground';
 import { SpellFxEngine } from '../engine';
+import { warmShaders } from '../../../world/warmup';
+import { spellFxWarmObjects } from '../warm';
 import { setSpellFxEngine } from '../api';
 import { fxLightCount, currentFxTier } from '../quality';
 import { spellByKey, statusById } from '../spellVisual';
+import { screenKick } from '../screen';
 
 const q = new URLSearchParams(location.search);
 const tier = (q.get('tier') ?? 'high') as QualityTier;
@@ -207,8 +210,17 @@ const gallery = {
     const s = COMBAT.statuses.find((x) => x.key === key);
     if (s) engine.status(dummies[target].id, s.id);
   },
+  /** A screen shockwave `d` m ahead of the camera (the spell screen pass: distortion + shake), for the NaN / black-frame check. */
+  kick(d = 4, strength = 1): void {
+    const f = camera.getWorldDirection(new THREE.Vector3());
+    const p = camera.getWorldPosition(new THREE.Vector3()).addScaledVector(f, d);
+    screenKick(p.x, p.y, p.z, strength, null, 0.4, 0.8);
+  },
+  spellKeys: () => [...spellByKey.keys()],
   statusIds: () => [...statusById.values()].map((s) => s.key),
   stats: () => engine.stats(),
+  /** Every linked program (name + cache key): a new one after the warm-up is a compile hitch at that moment. */
+  programs: () => (renderer.info.programs ?? []).map((p) => `${p.name}#${p.cacheKey}`),
   clear: () => {
     for (const t of timers.splice(0)) clearTimeout(t);
     engine.clear();
@@ -242,7 +254,7 @@ const frame = (t: number) => {
   requestAnimationFrame(frame);
 };
 // Warm the FX programs before the first cast (as the world's warm-up does).
-renderer.compileAsync(scene, camera).then(() => {
+warmShaders(renderer, scene, camera, spellFxWarmObjects(), 20000, post.warmObjects()).then(() => {
   engine.prewarm(); // and draw every FX variant once (engine.ts prewarm)
   requestAnimationFrame(frame);
   setTimeout(() => (gallery.ready = true), 300);

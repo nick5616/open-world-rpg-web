@@ -70,6 +70,7 @@ func (a *API) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/worlds", a.worlds)
 	mux.HandleFunc("GET /v1/characters", a.authed(a.listCharacters))
 	mux.HandleFunc("POST /v1/characters", a.authed(a.createCharacter))
+	mux.HandleFunc("DELETE /v1/characters/{id}", a.authed(a.deleteCharacter))
 	mux.HandleFunc("POST /v1/local/saves/verify", a.authed(a.verifySave))
 	mux.HandleFunc("POST /v1/local/upgrade", a.authed(a.upgrade))
 	if a.DevAuth {
@@ -334,6 +335,27 @@ func (a *API) listCharacters(w http.ResponseWriter, r *http.Request, s accountap
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"characters": cs})
+}
+
+func (a *API) deleteCharacter(w http.ResponseWriter, r *http.Request, s accountapi.Session) {
+	id := accountapi.NormalizeUUID(r.PathValue("id"))
+	if id == "" {
+		fail(w, http.StatusBadRequest, "bad_request", "id must be a UUID")
+		return
+	}
+	if s.Kind == accountapi.KindLocal && !a.localProfileActive(w, r, s.Subject) {
+		return
+	}
+	if err := a.DB.DeleteCharacter(r.Context(), accountapi.OwnerOf(s), id); err != nil {
+		if errors.Is(err, accountapi.ErrNotFound) {
+			fail(w, http.StatusNotFound, "not_found", "no such character")
+			return
+		}
+		a.internal(w, r, err)
+		return
+	}
+	a.Metrics.Add(fmt.Sprintf(`account_characters_deleted_total{kind=%q}`, s.Kind), 1)
+	writeJSON(w, http.StatusOK, map[string]any{"ok": true})
 }
 
 // CreateCharacterResponse carries the initial save blob for local profiles.

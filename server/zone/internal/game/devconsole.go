@@ -50,7 +50,7 @@ const (
 	DevActFlags       = 11 // arg: DevFlag* bits
 	DevActSpeed       = 12 // arg: fly speed x100
 	DevActReset       = 13 // a new character (level, map, spells, inventory, quests)
-	DevActTeleport    = 14 // targetId: x cm | z cm << 32 (u32 each); arg: y cm (0 = the ground)
+	DevActTeleport    = 14 // targetId: x cm | z cm << 32 (u32 each); arg: y cm (0 = the ground; never below it), or devExactY | (y cm + devExactYBias): exactly that height (the Underground)
 	DevActTime        = 15 // arg: hour x100
 	DevActWeather     = 16 // arg: state + 1 (0 = the seeded weather)
 	DevActSpawn       = 17 // targetId: enemy id, or boss index; arg: count | level << 8 | boss << 16 | elite affix id << 17
@@ -81,6 +81,12 @@ const (
 	DevBadArg  = 2
 	DevFailed  = 3
 	DevUnknown = 4
+)
+
+// devExactY marks a teleport arg that carries an exact height (playtest 3, CR 042 evidence runs): the low 31 bits are y cm + devExactYBias.
+const (
+	devExactY     = 1 << 31
+	devExactYBias = 1 << 30
 )
 
 // Dev flags (DevActFlags arg, Event 1400 value).
@@ -300,7 +306,10 @@ func (s *Server) devApply(sess *session, m *proto.Interact) (int32, string) {
 			return devBad("outside the world (0-%d m)", constants.WorldSizeM)
 		}
 		y := s.cfg.Ground.HeightAt(x, z)
-		if m.Arg != 0 {
+		if m.Arg&devExactY != 0 {
+			// Playtest 3: an exact height, below the terrain too (the Underground): offset binary in the low 31 bits.
+			y = proto.CmToMeters(int32(m.Arg&^devExactY) - devExactYBias)
+		} else if m.Arg != 0 {
 			y = math.Max(y, proto.CmToMeters(int32(m.Arg)))
 		}
 		s.Teleport(e, movement.Vec3{X: x, Y: y, Z: z})

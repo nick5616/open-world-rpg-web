@@ -19,7 +19,7 @@
 //   5. Inventory (I): socket the gem into the blade, equip it (loadout 2;
 //      loadout 1 keeps the ordinary starting sword).
 //   6. Night: fast-forward to dusk, step outside the ward, demons rise; the
-//      ordinary sword cannot kill them (they shrug and regenerate), the
+//      ordinary sword cannot kill the high-level ones (level 20: they shrug and regenerate; a level 1 pack dies to it, CR 048), the
 //      sunsteel blade does.
 //   7. Town defense: two night bots join at the ward garden and the ward
 //      falters (WP15's dev force, the same StartDefense a seeded night uses);
@@ -967,27 +967,53 @@ try {
     const edge = { x: W.x + Math.cos(ang) * (W.r + 14), z: W.z + Math.sin(ang) * (W.r + 14) };
     const toEdge = await go(page, edge.x, edge.z, { stopAt: 2, sprint: true, timeoutMs: 180000, label: 'out past the ward' });
     step(`  outside the ward (${(W.r + 14).toFixed(0)} m from the garden, ward r ${W.r.toFixed(0)}): ${toEdge.ok ? 'arrived' : 'timed out'}`);
+    // CR 048 (playtest 3): only high-level demons shrug off ordinary weapons. Both packs are raised
+    // with the dev Interact 52/3 at a forced level (arg = rank | level << 8): level 1 must die to
+    // the starting sword, level 20 must not.
+    const knownBefore = new Set((await night()).demonList.map((d) => d.id));
+    const tLow = Date.now();
+    await page.evaluate(() => window.__lodestoneNight.raiseDemons(0, 1));
+    await sleep(2000);
+    const nLow = await night();
+    const lowIds = new Set(nLow.demonList.filter((d) => !knownBefore.has(d.id) && Math.hypot(d.x - edge.x, d.z - edge.z) < 60 && d.hp > 0).map((d) => d.id));
+    check(lowIds.size > 0, `a pack of level 1 demons raised near ${NAME}: ${lowIds.size} demons`);
+    {
+      let h = await hud(page);
+      if (h.activeLoadout !== 0) {
+        await page.keyboard.press('KeyX');
+        await sleep(500);
+      }
+      const e0 = (await enemies(page))[0];
+      if (e0) await aimAt(page, e0.x, e0.y + 0.8, e0.z);
+    }
+    const fLow = await fight(page, {
+      radius: 45,
+      timeoutMs: 60000,
+      idleMs: 8000,
+      filter: (e) => lowIds.has(e.id),
+      stop: async () => (await night()).demonList.filter((d) => lowIds.has(d.id) && d.hp > 0).length === 0,
+      seek: async () => {
+        const me = (await pl(page)).pos;
+        return (await night()).demonList.filter((d) => lowIds.has(d.id) && d.hp > 0).sort((a, b) => Math.hypot(a.x - me.x, a.z - me.z) - Math.hypot(b.x - me.x, b.z - me.z))[0] ?? null;
+      },
+    });
+    const lowEv = await tapped(page, [201], tLow);
+    const lowKills = lowEv.events.filter((e) => e.kind === 201 && lowIds.has(e.entityId)).length;
+    result.lowLevel = { demons: lowIds.size, kills: lowKills, s: Math.round(fLow.ms / 1000) };
+    check(lowKills >= 1, `a low-level demon dies to the starting sword (CR 048): ${lowKills}/${lowIds.size} level 1 demons killed in ${result.lowLevel.s} s`);
     const tRise = Date.now();
     let risen = null;
-    let raised = false;
-    for (let i = 0; i < 90 && !risen; i++) {
-      const ev = (await tapped(page, [505], tRise)).events;
-      if (ev.length) risen = ev[0];
-      else if ((await enemies(page)).some((e) => e.d < 40)) risen = { kind: 'seen' };
-      else await sleep(1000);
-    }
-    if (!risen) {
-      step('  no demons rose here within 90 s; raising a pack with the dev Interact 52/3 (WP15 harness shortcut)');
-      await page.evaluate(() => window.__lodestoneNight.raiseDemons(0));
-      raised = true;
-      await page.waitForFunction((t) => window.__lodestone.tapped([505], t).events.length > 0, tRise, { timeout: 15000 }).catch(() => {});
-      risen = (await tapped(page, [505], tRise)).events[0] ?? null;
-    }
+    const raised = true;
+    const knownBeforeHigh = new Set((await night()).demonList.map((d) => d.id));
+    step('  raising a pack of level 20 demons with the dev Interact 52/3 (WP15 harness shortcut, forced level)');
+    await page.evaluate(() => window.__lodestoneNight.raiseDemons(0, 20));
+    await page.waitForFunction((t) => window.__lodestone.tapped([505], t).events.length > 0, tRise, { timeout: 15000 }).catch(() => {});
+    risen = (await tapped(page, [505], tRise)).events[0] ?? null;
     await sleep(1500);
     const nd1 = await night();
-    const demonIds = new Set(nd1.demonList.filter((d) => Math.hypot(d.x - edge.x, d.z - edge.z) < 60 && d.hp > 0).map((d) => d.id));
+    const demonIds = new Set(nd1.demonList.filter((d) => !knownBeforeHigh.has(d.id) && Math.hypot(d.x - edge.x, d.z - edge.z) < 60 && d.hp > 0).map((d) => d.id));
     result.demonsRose = { natural: !raised, event: risen, waitS: Math.round((Date.now() - tRise) / 1000), demons: nd1.demonList.filter((d) => demonIds.has(d.id)) };
-    check(demonIds.size > 0, `demons rose near ${NAME} ${raised ? '(raised by the dev Interact after 90 s without a natural spawn)' : `naturally after ${result.demonsRose.waitS} s`}: ${demonIds.size} demons (${[...new Set(nd1.demonList.filter((d) => demonIds.has(d.id)).map((d) => `${d.rank} ${d.key}`))].join(', ')})`);
+    check(demonIds.size > 0, `demons rose near ${NAME} ${raised ? '(raised at level 20 by the dev Interact)' : `naturally after ${result.demonsRose.waitS} s`}: ${demonIds.size} demons (${[...new Set(nd1.demonList.filter((d) => demonIds.has(d.id)).map((d) => `${d.rank} ${d.key}`))].join(', ')})`);
     {
       const e = (await enemies(page))[0];
       if (e) await aimAt(page, e.x, e.y + 0.8, e.z);

@@ -659,6 +659,9 @@ func (w *World) applyHit(p *Player, a *Action, e *Enemy, impact movement.Vec3, s
 	if e.Demon != nil && a.Form != nil && a.Form.DemonMult > 0 {
 		dmg *= a.Form.DemonMult
 	}
+	if e.Demon != nil && !killing && e.OrdinaryTier() != DemonOrdinaryFull {
+		flags |= FlagResisted // CR 048: reduced or shrugged off (demonDamage applies it)
+	}
 	if a.Spell != nil && a.Spell.StripShield {
 		e.Shield = 0
 	}

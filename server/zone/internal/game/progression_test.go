@@ -365,12 +365,12 @@ func TestWildsNightIsSurvivable(t *testing.T) {
 
 // Wire vectors shared with client/src/ui/progression/progression.test.ts.
 const (
-	statsVectorHex = "010104000100cc0100000000000028000000dc000000880079006a00f000050501010001"
+	statsVectorHex = "010104000100e80300000000000050000000f0000000880079006a00f000050501010001"
 	areaVectorHex  = "01040300010f005665746572616e"
 )
 
 func TestProgressionWireVectors(t *testing.T) {
-	got := hex.EncodeToString(EncodeStats(StatsLevelUp, 4, 1, 460, 136, 121, 106, 24, 5, 5, 1, []byte{1}))
+	got := hex.EncodeToString(EncodeStats(StatsLevelUp, 4, 1, 1000, 136, 121, 106, 24, 5, 5, 1, []byte{1}))
 	if got != statsVectorHex {
 		t.Fatalf("stats vector\n got %s\nwant %s", got, statsVectorHex)
 	}

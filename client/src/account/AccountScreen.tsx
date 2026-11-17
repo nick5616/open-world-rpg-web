@@ -7,6 +7,10 @@ import { ApiError, LodestoneApi, defaultUrls, type ApiUrls } from './api';
 import { buildExport, downloadExport, parseExport } from './exportFile';
 import { firebaseConfigFromEnv, signInWithGoogle } from './firebase';
 import { SaveStore, type LocalProfile } from './saveStore';
+import { CaveBackdrop } from '../screens/stage/CaveBackdrop';
+import { CharacterScreen, type CharacterRow } from './CharacterScreen';
+import { setOwnLook } from '../net/ownLook';
+import { hasLook, lookToAppearance, parseLook, DEFAULT_LOOK, type Look } from '../net/look';
 import type { AuthConfig, Character, ConnectResponse, ReadySession, SaveBlob, World } from './types';
 
 export interface AccountScreenProps {
@@ -20,6 +24,18 @@ type Mode =
   | { kind: 'local'; session: string; profile: LocalProfile };
 
 type Phase = 'boot' | 'choose' | 'characters' | 'upgrade' | 'connecting' | 'waking' | 'ready';
+
+/** The look a character was made with: account rows carry it, local ones keep it in the save state. */
+function lookOf(c: Character, save: SaveBlob | undefined): Look {
+  if (!c.local) return hasLook(c.appearance) ? parseLook(c.appearance) : DEFAULT_LOOK;
+  if (!save) return DEFAULT_LOOK;
+  try {
+    const ap = (JSON.parse(save.state) as { appearance?: unknown }).appearance;
+    return hasLook(ap) ? parseLook(ap) : DEFAULT_LOOK;
+  } catch {
+    return DEFAULT_LOOK;
+  }
+}
 
 /** A local character's real level lives in its save blob; the server row only reserves the name. */
 function levelOf(c: Character, save: SaveBlob | undefined): number {
@@ -51,6 +67,8 @@ export function AccountScreen({ onReady, urls }: AccountScreenProps) {
   const [error, setError] = useState('');
   const [existingProfile, setExistingProfile] = useState<LocalProfile | undefined>();
   const cancelWake = useRef(false);
+  const [stageLook, setStageLook] = useState<Look | null>(null);
+  const onStage = useCallback((l: Look) => setStageLook(l), []);
 
   useEffect(() => {
     let live = true;
@@ -189,19 +207,26 @@ export function AccountScreen({ onReady, urls }: AccountScreenProps) {
 
   // ---- characters ----
 
-  const onCreate = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const form = e.currentTarget;
-    const name = String(new FormData(form).get('name') ?? '');
-    void guard('Creating character…', async () => {
+  const onCreate = async (name: string, look: Look): Promise<boolean> => {
+    let made = false;
+    await guard('Creating character…', async () => {
       if (!mode) return;
-      const res = await api.createCharacter(mode.session, worldId, name);
+      const res = await api.createCharacter(mode.session, worldId, name, lookToAppearance(look));
       // Local profiles get their first signed save right away (counter 1).
       if (res.save && store) await store.putSave(res.save);
-      form.reset();
+      await refresh(mode, worldId);
+      made = true;
+    });
+    return made;
+  };
+
+  const onDelete = (id: string) =>
+    void guard('Deleting…', async () => {
+      if (!mode) return;
+      await api.deleteCharacter(mode.session, id);
+      if (mode.kind === 'local' && store) await store.deleteSave(id);
       await refresh(mode, worldId);
     });
-  };
 
   const connectOnce = useCallback(
     async (m: Mode, c: Character): Promise<{ resp: ConnectResponse; save?: SaveBlob }> => {
@@ -219,6 +244,7 @@ export function AccountScreen({ onReady, urls }: AccountScreenProps) {
     void guard('', async () => {
       if (!mode) return;
       const m = mode;
+      setOwnLook(lookOf(c, saves[c.id]));
       setPhase('connecting');
       cancelWake.current = false;
       for (;;) {
@@ -291,119 +317,154 @@ export function AccountScreen({ onReady, urls }: AccountScreenProps) {
     </>
   );
 
+
+  const inCharacters = (phase === 'characters' || phase === 'connecting' || phase === 'waking' || phase === 'ready') && !!mode;
+  const rows: CharacterRow[] = characters.map((c) => ({
+    id: c.id,
+    name: c.name,
+    level: levelOf(c, saves[c.id]),
+    look: lookOf(c, saves[c.id]),
+    note: c.local ? `save #${saves[c.id]?.counter ?? 'missing'}` : undefined,
+  }));
+  const playById = (id: string) => {
+    const c = characters.find((x) => x.id === id);
+    if (c) onPlay(c);
+  };
+
+  const messages = (
+    <div style={msgs}>
+      {phase === 'waking' && (
+        <p data-testid="waking" style={msg}>
+          Waking the world…{' '}
+          <button style={link} onClick={() => (cancelWake.current = true)}>
+            cancel
+          </button>
+        </p>
+      )}
+      {phase === 'connecting' && <p style={msg}>Asking the director for a zone…</p>}
+      {phase === 'ready' && (
+        <p data-testid="ready" style={msg}>
+          Ticket received. Entering the world…
+        </p>
+      )}
+      {status && (
+        <p style={msg} data-testid="status">
+          {status}
+        </p>
+      )}
+      {error && (
+        <p style={{ ...msg, color: '#ff9aa8' }} data-testid="error">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+
+  const worldPicker = (
+    <>
+      {worlds.length > 1 && (
+        <select style={input} value={worldId} onChange={(e) => onWorld(e.target.value)} data-testid="world-select">
+          {worlds.map((w) => (
+            <option key={w.id} value={w.id}>
+              {w.name}
+              {w.official ? ' (official)' : ''}
+            </option>
+          ))}
+        </select>
+      )}
+      {worlds.length === 1 && <p style={muted}>World: {worlds[0].name}</p>}
+    </>
+  );
+
+  const listFooter = mode && (
+    <div>
+      <p style={muted} data-testid="signed-in-as">
+        {mode.kind === 'account' ? `Account: ${mode.name || mode.accountId}` : `Local profile ${mode.profile.profileId.slice(0, 8)}`}{' '}
+        <button style={link} onClick={signOut}>
+          switch
+        </button>
+      </p>
+      {worldPicker}
+      {mode.kind === 'local' && (
+        <div style={row}>
+          <button style={btn} data-testid="export" onClick={onExport}>
+            Export profile
+          </button>
+          <button style={btn} data-testid="upgrade" onClick={() => setPhase('upgrade')} disabled={phase !== 'characters'}>
+            Upgrade to an account
+          </button>
+        </div>
+      )}
+    </div>
+  );
+
   return (
-    <div style={wrap}>
-      <div style={panel} data-testid="account-screen" data-phase={phase}>
-        <h1 style={{ margin: '0 0 4px' }}>Lodestone</h1>
-        {worlds.length > 1 && (
-          <select style={input} value={worldId} onChange={(e) => onWorld(e.target.value)} data-testid="world-select">
-            {worlds.map((w) => (
-              <option key={w.id} value={w.id}>
-                {w.name}
-                {w.official ? ' (official)' : ''}
-              </option>
-            ))}
-          </select>
-        )}
-        {worlds.length === 1 && <p style={muted}>World: {worlds[0].name}</p>}
+    <CaveBackdrop variant="stage" look={inCharacters ? stageLook : null}>
+      <div style={wrap} data-testid="account-screen" data-phase={phase}>
+        {inCharacters ? (
+          <CharacterScreen rows={rows} phase={phase} onPlay={playById} onDelete={onDelete} onCreate={onCreate} onStage={onStage} listFooter={listFooter} messages={messages} />
+        ) : (
+          <div style={panel}>
+            <h1 style={{ margin: '0 0 4px', font: '800 30px Georgia, serif', letterSpacing: '.16em', color: '#e6e4ff' }}>LODESTONE</h1>
+            {worldPicker}
 
-        {phase === 'boot' && !error && <p style={muted}>Loading…</p>}
+            {phase === 'boot' && !error && <p style={muted}>Loading…</p>}
 
-        {phase === 'choose' && (
-          <>
-            <h3 style={h3}>Keep your character with an account</h3>
-            <p style={muted}>Plays on any device. Full social features.</p>
-            {signInOptions}
-            <h3 style={h3}>…or with a local profile</h3>
-            <p style={muted}>Saved in this browser only. Export it to keep it safe. Proximity voice, no global chat.</p>
-            <div style={row}>
-              <button style={btn} data-testid="auth-local" onClick={onLocal}>
-                {existingProfile && !existingProfile.upgradedTo ? 'Continue local profile' : 'Play with a local profile'}
-              </button>
-              <label style={{ ...btn, display: 'inline-block' }}>
-                Import profile file
-                <input type="file" accept="application/json,.json" style={{ display: 'none' }} data-testid="import-file" onChange={(e) => onImport(e.target.files?.[0])} />
-              </label>
-            </div>
-          </>
-        )}
-
-        {(phase === 'characters' || phase === 'connecting' || phase === 'waking' || phase === 'ready') && mode && (
-          <>
-            <p style={muted} data-testid="signed-in-as">
-              {mode.kind === 'account' ? `Account: ${mode.name || mode.accountId}` : `Local profile ${mode.profile.profileId.slice(0, 8)}`}{' '}
-              <button style={link} onClick={signOut}>
-                switch
-              </button>
-            </p>
-            <ul style={{ listStyle: 'none', padding: 0 }} data-testid="character-list">
-              {characters.map((c) => (
-                <li key={c.id} style={charRow}>
-                  <span>
-                    <b>{c.name}</b> <span style={muted}>lv {levelOf(c, saves[c.id])}</span>
-                    {c.local && <span style={muted}> · save #{saves[c.id]?.counter ?? 'missing'}</span>}
-                  </span>
-                  <button style={btn} data-testid={`play-${c.name}`} disabled={phase !== 'characters'} onClick={() => onPlay(c)}>
-                    Play
+            {phase === 'choose' && (
+              <>
+                <h3 style={h3}>Keep your character with an account</h3>
+                <p style={muted}>Plays on any device. Full social features.</p>
+                {signInOptions}
+                <h3 style={h3}>…or with a local profile</h3>
+                <p style={muted}>Saved in this browser only. Export it to keep it safe. Proximity voice, no global chat.</p>
+                <div style={row}>
+                  <button style={btn} data-testid="auth-local" onClick={onLocal}>
+                    {existingProfile && !existingProfile.upgradedTo ? 'Continue local profile' : 'Play with a local profile'}
                   </button>
-                </li>
-              ))}
-              {characters.length === 0 && <li style={muted}>No characters in this world yet.</li>}
-            </ul>
-            <form onSubmit={onCreate} style={row}>
-              <input style={input} name="name" placeholder="character name" data-testid="char-name" autoComplete="off" />
-              <button style={btn} type="submit" data-testid="char-create">
-                Create
-              </button>
-            </form>
-            {mode.kind === 'local' && (
-              <div style={row}>
-                <button style={btn} data-testid="export" onClick={onExport}>
-                  Export profile
-                </button>
-                <button style={btn} data-testid="upgrade" onClick={() => setPhase('upgrade')} disabled={phase !== 'characters'}>
-                  Upgrade to an account
-                </button>
-              </div>
+                  <label style={{ ...btn, display: 'inline-block' }}>
+                    Import profile file
+                    <input type="file" accept="application/json,.json" style={{ display: 'none' }} data-testid="import-file" onChange={(e) => onImport(e.target.files?.[0])} />
+                  </label>
+                </div>
+              </>
             )}
-            {phase === 'waking' && (
-              <p data-testid="waking">
-                Waking the world… <button style={link} onClick={() => (cancelWake.current = true)}>cancel</button>
+
+            {phase === 'upgrade' && (
+              <>
+                <h3 style={h3}>Upgrade to an account</h3>
+                <p style={muted}>Sign in to the account that should own this profile’s characters. Their saves move to the server in one step.</p>
+                {signInOptions}
+                <button style={link} onClick={() => setPhase('characters')}>
+                  back
+                </button>
+              </>
+            )}
+
+            {status && (
+              <p style={muted} data-testid="status">
+                {status}
               </p>
             )}
-            {phase === 'connecting' && <p style={muted}>Asking the director for a zone…</p>}
-            {phase === 'ready' && <p data-testid="ready">Ticket received. Entering the world…</p>}
-          </>
-        )}
-
-        {phase === 'upgrade' && (
-          <>
-            <h3 style={h3}>Upgrade to an account</h3>
-            <p style={muted}>Sign in to the account that should own this profile’s characters. Their saves move to the server in one step.</p>
-            {signInOptions}
-            <button style={link} onClick={() => setPhase('characters')}>
-              back
-            </button>
-          </>
-        )}
-
-        {status && <p style={muted} data-testid="status">{status}</p>}
-        {error && (
-          <p style={{ color: '#ff8a80' }} data-testid="error">
-            {error}
-          </p>
+            {error && (
+              <p style={{ color: '#ff8a80' }} data-testid="error">
+                {error}
+              </p>
+            )}
+          </div>
         )}
       </div>
-    </div>
+    </CaveBackdrop>
   );
 }
 
-const wrap: CSSProperties = { display: 'flex', justifyContent: 'center', alignItems: 'flex-start', padding: 32, minHeight: '100%', boxSizing: 'border-box' };
-const panel: CSSProperties = { width: 440, background: '#141b24', border: '1px solid #26313f', borderRadius: 10, padding: 24, fontSize: 14 };
+// Sign-in panel: the same glass as the character panels, over the cavern.
+const wrap: CSSProperties = { position: 'absolute', inset: 0, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: 16, boxSizing: 'border-box', pointerEvents: 'none', color: '#e8eaff' };
+const panel: CSSProperties = { pointerEvents: 'auto', width: 'min(440px, 100%)', maxHeight: '100%', overflowY: 'auto', boxSizing: 'border-box', background: 'linear-gradient(180deg, rgba(16,16,44,.8), rgba(8,9,26,.86))', border: '1px solid rgba(150,150,255,.28)', borderRadius: 6, padding: 24, fontSize: 14, backdropFilter: 'blur(7px)', boxShadow: '0 10px 40px rgba(0,0,0,.55)' };
 const row: CSSProperties = { display: 'flex', gap: 8, margin: '8px 0', flexWrap: 'wrap' };
-const btn: CSSProperties = { background: '#2b5d8a', color: '#fff', border: 0, borderRadius: 6, padding: '7px 12px', cursor: 'pointer', fontSize: 14 };
-const link: CSSProperties = { background: 'none', border: 0, color: '#8ab4f8', cursor: 'pointer', padding: 0, fontSize: 13 };
-const input: CSSProperties = { flex: 1, minWidth: 0, background: '#0b0f14', color: '#e6e6e6', border: '1px solid #33404f', borderRadius: 6, padding: '7px 10px', fontSize: 14 };
-const muted: CSSProperties = { color: '#93a1b0', margin: '4px 0' };
+const btn: CSSProperties = { background: 'rgba(60,52,170,.85)', color: '#fff', border: '1px solid rgba(170,160,255,.5)', borderRadius: 4, padding: '8px 14px', cursor: 'pointer', fontSize: 14 };
+const link: CSSProperties = { background: 'none', border: 0, color: '#a9b8ff', cursor: 'pointer', padding: 0, fontSize: 13 };
+const input: CSSProperties = { flex: 1, minWidth: 0, background: 'rgba(4,5,18,.8)', color: '#e6e8ff', border: '1px solid rgba(150,150,255,.35)', borderRadius: 4, padding: '8px 10px', fontSize: 14 };
+const muted: CSSProperties = { color: '#a3acd8', margin: '4px 0' };
 const h3: CSSProperties = { margin: '18px 0 4px', fontSize: 15 };
-const charRow: CSSProperties = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid #222c38' };
+const msgs: CSSProperties = { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, pointerEvents: 'none' };
+const msg: CSSProperties = { margin: '2px 0', padding: '4px 12px', background: 'rgba(5,6,20,.7)', borderRadius: 4, fontSize: 13, color: '#d6dcff', pointerEvents: 'auto' };

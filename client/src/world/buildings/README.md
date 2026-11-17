@@ -234,3 +234,23 @@ instanced quad draw, 16 puffs per chimney animated on the GPU (rise, widen,
 drift downwind with the shared wind, fade), busiest at breakfast and
 supper (`hearthActivity`), thinner in rain, dim and faint at night. The CPU
 only re-picks the chimneys 4x a second.
+
+## Towns art (playtest 3, CR 046)
+
+Render-side only (no genVersion change, no collision change). `detail.ts`
+holds the **detail level** (0 low, 1 medium, 2 high / ultra), taken from the
+quality tier when the layer starts and sent to the worker in `init`; `kit.ts`,
+`props.ts` and `dress.ts` read it (`detail()`), and the texture array is 512 px
+at level 2.
+
+- `kit.ts`: windows with real frames, shutters (open or closed), flower boxes,
+  curtains; stone footing courses; half-timbered timber-style walls and gables;
+  per-building lime wash and roof tint; ridge caps; stepped chimneys; door
+  surrounds, wall lanterns (night-only glow) and the inn's hanging sign.
+- `dress.ts`: `Yard` (what clutter must stay clear of: collision boxes, roads,
+  the square), `dressBuilding` (barrels, crates, sacks, wood piles, hay, carts,
+  wash lines, ladders, pots, benches, coal), `drawInterior` (skirting,
+  wainscot, ceiling beams, hanging herbs, the inn's candle wheel). Yard items
+  are decoration without collision, placed against side and back walls.
+- Tests: `art.test.ts`. Bench: `dev/townBench.mjs --tier low|medium|high`,
+  views `street,dusk,interior` etc.; evidence `docs/evidence/pt3-towns-*`.

@@ -4,6 +4,7 @@
 import { describe, expect, it } from 'vitest';
 import { COMBAT, INPUT_BUFFER_MS, InputFlag, LIGHT_RECOVERY_MAX_MS, LIGHT_STARTUP_MAX_MS, MOVE_STEP_HZ, ENEMY_WINDUP_MAX_MS, ENEMY_WINDUP_MIN_MS } from '@lodestone/contracts';
 import { newMoveState } from '../sim/movement';
+import { resolveDash } from './dashes';
 import { BUFFER_STEPS, CombatTimeline, shotRange, shotSpeed, type CombatButtons } from './timeline';
 import { decodeSync, enemyInfo } from './events';
 import { inCone } from './runtime';
@@ -77,7 +78,7 @@ describe('timeline', () => {
     expect(out[1].started).toBeNull(); // cooldown: buffered
     const dash = out.find((o) => o.seq === 5)!;
     expect(dash.flags & InputFlag.dodge).toBeTruthy();
-    expect(dash.castSlot).toBe(COMBAT.spells.find((s) => s.key === 'magma_dash')!.dash);
+    expect(dash.castSlot).toBe(resolveDash(COMBAT.spells.find((s) => s.key === 'magma_dash')!.dash, 1)); // level 1: the lesser dash (CR 048)
   });
 
   // CR 033 (playtest 2 bow rework): the primary draws, letting go looses.

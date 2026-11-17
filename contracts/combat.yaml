@@ -213,7 +213,16 @@ dashes:
   # `lifesteal`), `heal` heals you and your party nearby every half second,
   # `chem` schedules ignite/freeze chemistry along the path, `slam` is a dive
   # into the ground (falling faster than minFall m/s) bursting there.
-  magma_dash: {id: 1, speed: 30, steps: 12, iframes: 6, lift: 0, aim: look, exitSpeed: 18, sustain: {kind: jet, speed: 36, steer: 0.09, carrySteps: 4, manaPerS: 24}, trail: {radius: 1.8, damage: 14, status: burn, chem: ignite, slam: {minFall: 14, radius: 4.5, damage: 45, status: knockback}}}
+  magma_dash: {id: 1, minLevel: 15, tierName: Full, speed: 30, steps: 12, iframes: 6, lift: 0, aim: look, exitSpeed: 18, sustain: {kind: jet, speed: 36, steer: 0.09, carrySteps: 4, manaPerS: 24}, trail: {radius: 1.8, damage: 14, status: burn, chem: ignite, slam: {minFall: 14, radius: 4.5, damage: 45, status: knockback}}}
+  # CR 048: the magma dash is level-tiered (playtest 3: it flew too well too soon). A row with
+  # `tierOf` is a lesser variant of that dash, usable from `minLevel`; the base dash carries the
+  # top tier's minLevel. The spell's dash is the variant with the highest minLevel the character
+  # level reaches (client timeline and zone resolve it from the same level, so the movement twins
+  # only ever see an ordinary variant id). Lesser: a short, low dash, no thrust (the hold is a
+  # steered run that falls), and a hold that drains mana at 1.7x. Honed: a thrust that barely
+  # holds you up, 1.3x drain.
+  magma_dash_lesser: {id: 10, tierOf: magma_dash, minLevel: 1, tierName: Lesser, speed: 22, steps: 8, iframes: 4, lift: 0, aim: look, exitSpeed: 14, sustain: {kind: dash, speed: 16, carrySteps: 4, manaPerS: 40}, trail: {radius: 1.4, damage: 8, status: burn, chem: ignite}}
+  magma_dash_honed: {id: 11, tierOf: magma_dash, minLevel: 8, tierName: Honed, speed: 27, steps: 10, iframes: 5, lift: 0, aim: look, exitSpeed: 16, sustain: {kind: jet, speed: 22, steer: 0.05, carrySteps: 4, manaPerS: 32}, trail: {radius: 1.6, damage: 11, status: burn, chem: ignite, slam: {minFall: 14, radius: 3.5, damage: 30, status: knockback}}}
   glacier_step: {id: 2, speed: 44, steps: 10, iframes: 8, lift: 0, exitSpeed: 16, sustain: {kind: skate, speed: 30, carrySteps: 4, manaPerS: 16}, trail: {radius: 1.6, damage: 8, status: slow, chem: freeze}}
   phase_slip: {id: 3, speed: 40, steps: 12, iframes: 12, lift: 0, exitSpeed: 16, sustain: {kind: dash, speed: 32, carrySteps: 4, manaPerS: 6, healthPerS: 14}, trail: {radius: 1.8, damage: 12, lifesteal: 0.6}}
   root_launch: {id: 4, speed: 30, steps: 8, iframes: 6, lift: 6, exitSpeed: 14, sustain: {kind: dash, speed: 26, carrySteps: 4, manaPerS: 18}, trail: {radius: 2.0, damage: 16, status: knockback}}
@@ -413,6 +422,21 @@ spells:
   guiding_motes: {id: 1610, tree: light, tier: 1, type: projectile, damage: 12, cooldownMs: 700, speed: 24, radius: 0.25, range: 36, spread: 2, spreadDeg: 24, homing: {turnDegS: 320, acquireM: 24, coneDeg: 110, delayMs: 80, loseDeg: 120}, color: '#fff2b0'}
   sunlit_sentinel: {id: 1611, tree: light, tier: 5, type: summon, cooldownMs: 12000, durationMs: 10000, range: 20, summon: {key: sunlit_sentinel, count: 1, max: 1}, color: '#ffd76a'}
   starfall_hail: {id: 1709, tree: void, tier: 3, type: projectile, damage: 9, cooldownMs: 400, speed: 30, radius: 1.2, range: 30, rain: {radius: 4.5, height: 14}, auto: {rateHz: 10, manaPerShot: 3, jitterDeg: 0}, color: '#c9a6ff'}
+  # --- Familiar lights (playtest 3, CR 042): a low-level toggle in every school. Casting one calls a light that floats over
+  #     your shoulder and follows you, lighting the dark (other players see it and are lit by it); casting it again, or running
+  #     dry of mana, puts it out. Type defensive with no absorb or heal, so it takes no new spell type. `familiar`:
+  #       id         1-31, the code other players' snapshots carry (EntityRecord.appearance bits 52-56)
+  #       kind       its look (client/src/world/lights/familiars.ts)
+  #       upkeepPerS mana per second while it burns (the cast cost, `mana`, is paid once; dismissing is free)
+  #       intensity, range   the pooled point light it takes (client/src/world/lights): candela (a camp fire is 9, a torch 14) and metres
+  hearth_mote: {id: 1020, tree: fire, tier: 1, type: defensive, mana: 4, cooldownMs: 1200, color: '#ff9a3c', familiar: {id: 1, kind: ember, upkeepPerS: 3, intensity: 16, range: 18}}
+  rime_light: {id: 1122, tree: ice, tier: 1, type: defensive, mana: 4, cooldownMs: 1200, color: '#a0e8ff', familiar: {id: 2, kind: icicle, upkeepPerS: 2.5, intensity: 13, range: 18}}
+  dusk_lantern: {id: 1226, tree: dark, tier: 1, type: defensive, mana: 4, cooldownMs: 1200, color: '#8a5cff', familiar: {id: 3, kind: lantern, upkeepPerS: 2.5, intensity: 9, range: 13}}
+  firefly_drift: {id: 1329, tree: earth, tier: 1, type: defensive, mana: 4, cooldownMs: 1200, color: '#c8ff6a', familiar: {id: 4, kind: fireflies, upkeepPerS: 2.5, intensity: 12, range: 17}}
+  static_orb: {id: 1413, tree: lightning, tier: 1, type: defensive, mana: 4, cooldownMs: 1200, color: '#ffe066', familiar: {id: 5, kind: orb, upkeepPerS: 3, intensity: 14, range: 18}}
+  zephyr_mote: {id: 1511, tree: wind, tier: 1, type: defensive, mana: 4, cooldownMs: 1200, color: '#9fe8d8', familiar: {id: 6, kind: zephyr, upkeepPerS: 2.5, intensity: 12, range: 17}}
+  lumen_wisp: {id: 1612, tree: light, tier: 1, type: defensive, mana: 4, cooldownMs: 1200, color: '#fff0b0', familiar: {id: 7, kind: wisp, upkeepPerS: 3, intensity: 17, range: 20}}
+  starless_lamp: {id: 1710, tree: void, tier: 1, type: defensive, mana: 4, cooldownMs: 1200, color: '#cbb8ff', familiar: {id: 8, kind: lamp, upkeepPerS: 3, intensity: 11, range: 15}}
 
 summons:
   # CR 020: allies a summon spell calls (server-side combat bodies owned by the caster, drawn as
@@ -430,14 +454,14 @@ trees:
   # Spell trees (spec 8 "learn spells from tomes and skill points; equip any
   # four, from any trees"). prereqs are OR'd (wizard-wars canUnlockNode).
   # One skill point per node; `start` nodes are known by every new character.
-  fire: {element: fire, nodes: {ember_flick: [], magma_dash: [], spark_shot: [ember_flick], kindling: [ember_flick], rune_ember: [ember_flick], cinder_spray: [ember_flick], fireball: [spark_shot, kindling], combustion: [fireball], pyre_brand: [fireball], cauterize: [combustion], immolate: [cauterize], backdraft: [immolate], eruption: [backdraft], amaterasu: [eruption], rune_magma: [amaterasu], solar_flare: [amaterasu], inferno_domain: [solar_flare], phoenix: [inferno_domain], god_ray: [phoenix]}}
-  ice: {element: ice, nodes: {frost_bite: [], glacier_step: [], frost_needle: [frost_bite], brittle: [frost_bite], rune_rime: [frost_bite], glacial_lob: [frost_bite], frost_bubbles: [frost_bite], glacial_spike: [frost_needle, brittle], flash_freeze: [glacial_spike], ice_wall: [flash_freeze], frost_nova: [ice_wall], permafrost: [frost_nova], blizzard: [permafrost], shatter: [ice_wall], glass_cannon: [shatter], cryo_lance: [glass_cannon], cryogenic: [blizzard, cryo_lance], rune_glacier: [cryogenic], absolute_zero: [cryogenic], hypothermia: [absolute_zero], divine_judgement: [hypothermia]}}
-  dark: {element: dark, nodes: {void_touch: [], phase_slip: [], void_tap: [void_touch], unnerving: [void_touch], rune_hex: [void_touch], hex_bomb: [void_touch], soul_drain: [void_tap, unnerving], hungering_souls: [void_tap, hex_bomb], wraith_hound: [hungering_souls], hollow: [soul_drain], obliterate: [hollow], blood_lance: [obliterate], crimson_hunger: [blood_lance], blood_nova: [crimson_hunger], crimson_veil: [blood_nova], void_bloom: [obliterate], entropy: [void_bloom], singularity: [entropy], unraveling: [singularity], event_horizon: [crimson_veil, unraveling], rune_soul: [event_horizon], undying: [event_horizon], null_gaze: [undying], the_abyss: [null_gaze], death_note: [the_abyss]}}
-  earth: {element: earth, nodes: {thorn_dart: [], crystal_shard: [], root_launch: [], seed_burst: [thorn_dart], thick_bark: [thorn_dart], rune_root: [thorn_dart], spore_pod: [thorn_dart], bramble_burst: [seed_burst, thick_bark], boulder_heave: [spore_pod, geode_bomb], burrowing_seed: [boulder_heave, bramble_burst], deep_roots: [bramble_burst], root_snare: [deep_roots], undergrowth: [root_snare], feral_focus: [undergrowth], avalanche: [feral_focus], fissure: [avalanche], wildwood_domain: [fissure], verdant_lance: [wildwood_domain], shard_burst: [crystal_shard], geode_bomb: [crystal_shard], gem_plop: [crystal_shard], crystal_spire: [shard_burst], crystal_wall: [crystal_spire], resonance: [crystal_wall], petrify: [resonance], shard_fracture: [petrify], prism_field: [shard_fracture], the_monolith: [prism_field]}}
-  lightning: {element: lightning, nodes: {spark_jab: [], static_step: [], lightning_strike: [spark_jab], arc_sparks: [spark_jab], storm_seekers: [lightning_strike, arc_sparks], static_charge: [lightning_strike], chain_lightning: [static_charge], ball_lightning: [chain_lightning], thunderclap: [chain_lightning], overcharge: [ball_lightning, thunderclap], eye_of_the_storm: [overcharge], act_of_god: [eye_of_the_storm]}}
-  wind: {element: wind, nodes: {gust: [], updraft: [], razor_wind: [gust], whirling_blades: [gust], gale_phantom: [whirling_blades, razor_wind], cyclone: [razor_wind], downburst: [razor_wind], crosswind: [cyclone, downburst], howling_expanse: [crosswind], heavens_exhale: [howling_expanse]}}
-  light: {element: light, killsDemons: true, nodes: {glint: [], sunstep: [], guiding_motes: [], radiant_lance: [glint], sunburst: [radiant_lance], sunlit_sentinel: [sunburst, guiding_motes], halo: [radiant_lance], dawnbreak: [sunburst, halo], sunlit: [dawnbreak], high_noon: [sunlit], let_there_be_light: [high_noon]}}
-  void: {element: void, nodes: {rift_shot: [], skip: [], collapse: [rift_shot], starfall_hail: [rift_shot], unmake: [collapse], null_field: [collapse], hollow_echo: [unmake, null_field], zero_point: [hollow_echo], unwritten: [zero_point]}}
+  fire: {element: fire, nodes: {ember_flick: [], hearth_mote: [], magma_dash: [], spark_shot: [ember_flick], kindling: [ember_flick], rune_ember: [ember_flick], cinder_spray: [ember_flick], fireball: [spark_shot, kindling], combustion: [fireball], pyre_brand: [fireball], cauterize: [combustion], immolate: [cauterize], backdraft: [immolate], eruption: [backdraft], amaterasu: [eruption], rune_magma: [amaterasu], solar_flare: [amaterasu], inferno_domain: [solar_flare], phoenix: [inferno_domain], god_ray: [phoenix]}}
+  ice: {element: ice, nodes: {frost_bite: [], rime_light: [], glacier_step: [], frost_needle: [frost_bite], brittle: [frost_bite], rune_rime: [frost_bite], glacial_lob: [frost_bite], frost_bubbles: [frost_bite], glacial_spike: [frost_needle, brittle], flash_freeze: [glacial_spike], ice_wall: [flash_freeze], frost_nova: [ice_wall], permafrost: [frost_nova], blizzard: [permafrost], shatter: [ice_wall], glass_cannon: [shatter], cryo_lance: [glass_cannon], cryogenic: [blizzard, cryo_lance], rune_glacier: [cryogenic], absolute_zero: [cryogenic], hypothermia: [absolute_zero], divine_judgement: [hypothermia]}}
+  dark: {element: dark, nodes: {void_touch: [], dusk_lantern: [], phase_slip: [], void_tap: [void_touch], unnerving: [void_touch], rune_hex: [void_touch], hex_bomb: [void_touch], soul_drain: [void_tap, unnerving], hungering_souls: [void_tap, hex_bomb], wraith_hound: [hungering_souls], hollow: [soul_drain], obliterate: [hollow], blood_lance: [obliterate], crimson_hunger: [blood_lance], blood_nova: [crimson_hunger], crimson_veil: [blood_nova], void_bloom: [obliterate], entropy: [void_bloom], singularity: [entropy], unraveling: [singularity], event_horizon: [crimson_veil, unraveling], rune_soul: [event_horizon], undying: [event_horizon], null_gaze: [undying], the_abyss: [null_gaze], death_note: [the_abyss]}}
+  earth: {element: earth, nodes: {thorn_dart: [], firefly_drift: [], crystal_shard: [], root_launch: [], seed_burst: [thorn_dart], thick_bark: [thorn_dart], rune_root: [thorn_dart], spore_pod: [thorn_dart], bramble_burst: [seed_burst, thick_bark], boulder_heave: [spore_pod, geode_bomb], burrowing_seed: [boulder_heave, bramble_burst], deep_roots: [bramble_burst], root_snare: [deep_roots], undergrowth: [root_snare], feral_focus: [undergrowth], avalanche: [feral_focus], fissure: [avalanche], wildwood_domain: [fissure], verdant_lance: [wildwood_domain], shard_burst: [crystal_shard], geode_bomb: [crystal_shard], gem_plop: [crystal_shard], crystal_spire: [shard_burst], crystal_wall: [crystal_spire], resonance: [crystal_wall], petrify: [resonance], shard_fracture: [petrify], prism_field: [shard_fracture], the_monolith: [prism_field]}}
+  lightning: {element: lightning, nodes: {spark_jab: [], static_orb: [], static_step: [], lightning_strike: [spark_jab], arc_sparks: [spark_jab], storm_seekers: [lightning_strike, arc_sparks], static_charge: [lightning_strike], chain_lightning: [static_charge], ball_lightning: [chain_lightning], thunderclap: [chain_lightning], overcharge: [ball_lightning, thunderclap], eye_of_the_storm: [overcharge], act_of_god: [eye_of_the_storm]}}
+  wind: {element: wind, nodes: {gust: [], zephyr_mote: [], updraft: [], razor_wind: [gust], whirling_blades: [gust], gale_phantom: [whirling_blades, razor_wind], cyclone: [razor_wind], downburst: [razor_wind], crosswind: [cyclone, downburst], howling_expanse: [crosswind], heavens_exhale: [howling_expanse]}}
+  light: {element: light, killsDemons: true, nodes: {glint: [], lumen_wisp: [], sunstep: [], guiding_motes: [], radiant_lance: [glint], sunburst: [radiant_lance], sunlit_sentinel: [sunburst, guiding_motes], halo: [radiant_lance], dawnbreak: [sunburst, halo], sunlit: [dawnbreak], high_noon: [sunlit], let_there_be_light: [high_noon]}}
+  void: {element: void, nodes: {rift_shot: [], starless_lamp: [], skip: [], collapse: [rift_shot], starfall_hail: [rift_shot], unmake: [collapse], null_field: [collapse], hollow_echo: [unmake, null_field], zero_point: [hollow_echo], unwritten: [zero_point]}}
 
 start:
   # What a new character knows and carries (spec 8: two loadouts, weapon in
@@ -587,6 +611,15 @@ names:
   guiding_motes: Guiding Motes
   sunlit_sentinel: Sunlit Sentinel
   starfall_hail: Starfall Hail
+  # playtest 3 familiar lights (CR 042)
+  hearth_mote: Hearth Mote
+  rime_light: Rime Light
+  dusk_lantern: Dusk Lantern
+  firefly_drift: Firefly Drift
+  static_orb: Static Orb
+  zephyr_mote: Zephyr Mote
+  lumen_wisp: Lumen Wisp
+  starless_lamp: Starless Lamp
   # techniques (spec 8 examples keep their spec names)
   parry_riposte: Parry Riposte
   dash_cut: Dash Cut
@@ -614,7 +647,7 @@ names:
   form_dark: Hungering Cut
   form_void: Severance
 
-pending: [cinder_spray, pyre_brand, frost_bubbles, hungering_souls, wraith_hound, boulder_heave, burrowing_seed, arc_sparks, storm_seekers, whirling_blades, gale_phantom, guiding_motes, sunlit_sentinel, starfall_hail]
+pending: [cinder_spray, pyre_brand, frost_bubbles, hungering_souls, wraith_hound, boulder_heave, burrowing_seed, arc_sparks, storm_seekers, whirling_blades, gale_phantom, guiding_motes, sunlit_sentinel, starfall_hail, hearth_mote, rime_light, dusk_lantern, firefly_drift, static_orb, zephyr_mote, lumen_wisp, starless_lamp]
   # All earlier proposed names approved by Nicole on 2026-11-08 (spec 16). New
   # proposals go here as keys until approved (CR 020: the playtest-2 mechanics spells).
 
@@ -872,6 +905,13 @@ demons:
   lesser: [gloamling]
   greater: {fire: cinder_fiend, ice: rime_wraith, lightning: storm_ghoul, earth: grave_brute, wind: gale_reaver, light: void_maw, dark: umbral_stalker, void: void_maw}
   lord: starless_sovereign
+  # CR 048 (playtest 3): the sunsteel-or-Light rule is for high-level demons only. By the
+  # demon's level (the area's, when it rose): below halfFrom ordinary damage (steel, any
+  # non-Light spell) hurts them like any enemy; from halfFrom to immuneFrom - 1 it does
+  # halfMult of its damage (hits show as resisted); from immuneFrom up (the Dreadlands,
+  # tier 13+, and lords at any level) ordinary damage only wounds and regenerates, as
+  # before. Sunsteel and Light always do full, lasting damage.
+  ordinary: {halfFrom: 8, immuneFrom: 15, halfMult: 0.5}
 
 tables:
   # Spec 8: each biome, depth band and region element has its own enemy

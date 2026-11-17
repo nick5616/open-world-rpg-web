@@ -281,7 +281,7 @@ export function attachNight(session: SessionLike): () => void {
         const off = Math.round(((((hour / 24) * 3600 - (now % 3600)) % 3600) + 3600) % 3600);
         session.sendInteract(52, 0n, 2, off >>> 0);
       },
-      raiseDemons: (rank = 0) => session.sendInteract(52, 0n, 3, rank),
+      raiseDemons: (rank = 0, level = 0) => session.sendInteract(52, 0n, 3, rank | (level << 8)), // dev: level 0 = the area's
       defense: () => session.sendInteract(52, 0n, 1, 0),
       sunsteel: (loadout = 0) => session.sendInteract(50, 0n, 6, loadout | (3 << 8)),
     };

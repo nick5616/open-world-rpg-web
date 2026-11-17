@@ -24,6 +24,8 @@ import { armorMaterial } from '../combat/armor/material';
 import { ambientLifeWarmObjects } from './life/ambientLife';
 import { smokeWarmObject } from './buildings/chimneySmoke';
 import { lootWarmObjects } from '../ui/inventory/ground/beam';
+import { torchWarmObjects } from './lights/torchModel';
+import { familiarWarmObjects } from './lights/familiarModels';
 
 let kept: THREE.Object3D[] | null = null;
 
@@ -98,6 +100,8 @@ export function warmExtras(): THREE.Object3D[] {
   // motes, splash rings and sparkles over dropped items (the item models use the
   // weapon and armor materials above).
   out.push(...lootWarmObjects());
+  // Playtest 3 (CR 042): torches and familiar lights (the pooled point lights are in the scene already: world/lights/LightRig.tsx)
+  out.push(...torchWarmObjects(), ...familiarWarmObjects());
   for (const o of out) o.frustumCulled = false;
   kept = out;
   return out;

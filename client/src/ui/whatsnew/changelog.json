@@ -10,6 +10,55 @@
     ]
   },
   {
+    "id": "pt3-towns-art",
+    "date": "2026-11-17",
+    "title": "Villages worth living in",
+    "items": [
+      "Houses now have framed, glowing windows, shutters, flower boxes and curtains, stone footings and half-timbered walls.",
+      "Barrels, carts, wood piles and washing lines sit by the walls; inns hang a sign and lanterns glow by the doors at night.",
+      "Inside, rooms have beams, wainscot, candles and a proper hearth.",
+      "Better graphics settings show more of it: Low keeps the old look, High adds the finest detail."
+    ]
+  },
+  {
+    "id": "pt3-lights",
+    "date": "2026-11-17",
+    "title": "Light for dark places",
+    "items": [
+      "Press 8 to light your torch: a warm, gently flickering pool of light in your off hand. Everyone nearby sees it, and it lights their surroundings too. Torches are in the starter kit and cost 6 gold at general merchants; water puts them out.",
+      "Every school of magic has a cheap light spell, learnable from the start of its tree: Hearth Mote (fire), Rime Light (a spinning icicle), Dusk Lantern (shadow), Firefly Drift (earth), Static Orb (lightning), Zephyr Mote (wind), Lumen Wisp (light) and Starless Lamp (void). Cast one to call a floating light that follows you over your shoulder; cast it again to dismiss it. It costs a little mana a second while it burns."
+    ]
+  },
+  {
+    "id": "pt3-balance",
+    "date": "2026-11-17",
+    "title": "Balance: slower first levels, a growing magma dash, tidier spell bank, weaker demons",
+    "items": [
+      "Level 2 now takes a real first session instead of one discovery.",
+      "The Magma Dash starts as a short Lesser dash and grows into the full flying dash by level 15 (Honed at level 8).",
+      "The spell bank no longer lists spells you already have in a slot.",
+      "Only high-level demons (15+) shrug off ordinary weapons; weaker ones can be fought with steel and fire, mid-level ones take half damage."
+    ]
+  },
+  {
+    "id": "pt3-title-creation",
+    "date": "2026-11-17",
+    "title": "A cave of gems, and a character that looks like you",
+    "items": [
+      "The title screen is now a living gem cavern: glowing crystals, veins of ore and drifting motes (a calm still picture on older graphics cards).",
+      "Choose your character from a list beside a campfire scene: drag to turn them, then Play, New or Delete.",
+      "Make a character your own: build, skin tone, hair style and colour, beard and eye colour, with a live preview and a Randomise button. You see your choices on your own body; other players will see them in a later update."
+    ]
+  },
+  {
+    "id": "pt3-kill-flash",
+    "date": "2026-11-17",
+    "title": "Kill flash fix (Linux)",
+    "items": [
+      "Fixed the screen flashing or going black around kills for players on Linux (a shockwave shader divided into NaN on Mesa / NVIDIA graphics drivers)."
+    ]
+  },
+  {
     "id": "pt2-vertical-world",
     "date": "2026-11-11",
     "title": "The world goes vertical",
