@@ -30,6 +30,7 @@ import (
 	"slices"
 	"time"
 
+	"lodestone/server/pkg/campdefs"
 	"lodestone/server/pkg/constants"
 	"lodestone/server/pkg/movement"
 	"lodestone/server/pkg/proto"
@@ -296,7 +297,7 @@ func (s *Server) harvest(sess *session, e *Entity, id uint64, now time.Time) {
 
 func (s *Server) regrowDelay(def worldedit.Def, id uint64, editID int64, x, z float64) time.Duration {
 	we := s.cfg.WorldEdit
-	if we.InBase != nil && we.InBase(x, z) {
+	if s.inBase(x, z) {
 		return 0
 	}
 	d := def.Regrow(s.cfg.Seed ^ mix64(id) ^ uint64(editID))
@@ -304,6 +305,36 @@ func (s *Server) regrowDelay(def worldedit.Def, id uint64, editID int64, x, z fl
 		d = time.Duration(float64(d) * we.RegrowScale)
 	}
 	return d
+}
+
+// baseRecheck: how long a due regrowth waits when a base now stands on it.
+const baseRecheck = 30 * time.Minute
+
+// baseNearM: a building piece this close makes the spot part of a base.
+const baseNearM = 6.0
+
+// inBase reports ground inside a player's base: within a warding hearth's
+// circle or a few metres of any building piece (CR 041), or whatever the
+// setup's InBase hook says. Spatially bucketed (piecesNear), evaluated only
+// when an object falls and when its regrowth is due, never per tick.
+func (s *Server) inBase(x, z float64) bool {
+	if we := s.cfg.WorldEdit; we != nil && we.InBase != nil && we.InBase(x, z) {
+		return true
+	}
+	for _, p := range s.piecesNear(x, z, max(baseNearM, campdefs.D.Build.Hearth.WardRadiusM)) {
+		d := campdefs.D.ByID(p.Kind)
+		if d == nil || d.Build == nil {
+			continue
+		}
+		r := baseNearM
+		if d.Build.Use == "hearth" {
+			r = max(r, campdefs.D.Build.Hearth.WardRadiusM)
+		}
+		if math.Hypot(p.X-x, p.Z-z) <= r {
+			return true
+		}
+	}
+	return false
 }
 
 func objectParams(x, y, z float64) []byte {
@@ -618,6 +649,13 @@ func (s *Server) worldEditTick(tick uint32, now time.Time) {
 	s.we.init()
 	for len(s.we.regrow) > 0 && !now.Before(s.we.regrow[0].at) {
 		o := s.we.regrow[0]
+		if s.inBase(o.x, o.z) {
+			// A base was built here since it fell (CR 041): look again later, cheaply, instead of growing back inside it.
+			s.we.drop(o)
+			o.at = now.Add(baseRecheck)
+			s.we.add(o)
+			continue
+		}
 		s.we.drop(o)
 		o.rec.ExpiresAt = s.serverTimeMs()
 		s.broadcastObjectEdit(o)
