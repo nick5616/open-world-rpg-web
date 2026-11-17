@@ -23,6 +23,7 @@ import { towersFromAtlas, type TowerSet } from '../structures/towers';
 import { CaveGround } from '../caves/caveGround';
 // WP20: buildings, bridges and structures as town collision boxes (client/src/world/buildings/README.md).
 import { parseTowns, TownCollision, type Towns } from '@lodestone/worldgen';
+import { appendPalaceBoxes, palaceColumns, palaceSites } from '../palace/palaceSites';
 import { TownGround } from '../buildings/townGround';
 // Playtest: building doors that open and close (client/src/world/buildings/README.md "Doors").
 import { DoorStates, TownDoors } from '@lodestone/worldgen';
@@ -112,7 +113,7 @@ export class WorldRuntime {
         this.verticalGround = new VerticalGround(ground, this.vertical, this.verticalStore);
         ground = this.verticalGround;
         // The wind columns and the free sky glide join every step's updraft (as the zone's night.go does).
-        setVerticalUpdrafts(new VerticalWind(this.vertical));
+        setVerticalUpdrafts(new VerticalWind(this.vertical, palaceColumns(palaceSites(this.vertical))));
       } catch (err) {
         console.warn('[world] no vertical world', err);
       }
@@ -121,6 +122,7 @@ export class WorldRuntime {
     if (townsBytes) {
       try {
         this.towns = parseTowns(townsBytes);
+        appendPalaceBoxes(this.towns, palaceSites(this.vertical)); // CR 044: the sky palaces are buildings (the zone does the same)
         this.townCollision = new TownCollision(this.towns.boxes);
         ground = new TownGround(ground, this.townCollision);
         this.doors = new TownDoors(this.towns);
