@@ -63,6 +63,7 @@ import (
 	"lodestone/server/pkg/weather"
 	"lodestone/server/pkg/writebehind"
 	"lodestone/server/zone/internal/items"
+	"lodestone/server/zone/internal/quests"
 )
 
 // Interact 90 `camp` and its actions (contracts/events.md).
@@ -1070,6 +1071,7 @@ func (s *Server) campPlace(sess *session, m *proto.Interact) {
 	s.campNotify(p, 1, e.ID)
 	s.campBroadcastCtl(p.json())
 	s.sendCampMine(sess)
+	s.questsDeed(sess, quests.DeedBuild) // CR 051
 	s.log.Info("camp piece placed", "piece", p.ID, "kind", def.Key, "owner", e.CharacterID, "x", p.X, "y", p.Y, "z", p.Z, "rot", r)
 }
 

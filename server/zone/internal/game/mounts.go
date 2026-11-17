@@ -44,6 +44,7 @@ import (
 	"lodestone/server/pkg/weather"
 	"lodestone/server/pkg/writebehind"
 	"lodestone/server/zone/internal/items"
+	"lodestone/server/zone/internal/quests"
 )
 
 // InteractSteed is contracts/events.md Interact 110 `steed`.
@@ -673,6 +674,7 @@ func (s *Server) steedSummon(sess *session) {
 	st.ver++
 	s.steedBroadcast(sess)
 	s.sendSteedSync(sess)
+	s.questsDeed(sess, quests.DeedSteed) // CR 051: the steed errand
 }
 
 // steedSpotOK: dry, not too steep for the steed, inside the world.
@@ -721,6 +723,7 @@ func (s *Server) steedMount(sess *session) {
 	s.steedRetype(e)
 	s.steedBroadcast(sess)
 	s.sendSteedSync(sess)
+	s.questsDeed(sess, quests.DeedRide) // CR 051
 }
 
 // steedDismounted: the rider left the saddle (cause): the steed stands

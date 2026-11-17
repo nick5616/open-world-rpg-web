@@ -49,6 +49,7 @@ import (
 	"lodestone/server/pkg/towns"
 	"lodestone/server/zone/internal/combat"
 	"lodestone/server/zone/internal/items"
+	"lodestone/server/zone/internal/quests"
 )
 
 // Interact target kinds owned by items (contracts/events.md 20-29).
@@ -1184,6 +1185,9 @@ func (s *Server) craft(sess *session, recipeID int, now time.Time) {
 		s.saveCombat(sess, false)
 	}
 	s.announceIfBitchin(sess, out)
+	if strings.HasPrefix(rc.Key, "smelt_") {
+		s.questsDeed(sess, quests.DeedSmelt) // CR 051: the ore errand
+	}
 	s.achAdd(sess, "crafted", 1) // CR 031 (achievements.go)
 	s.achAdd(sess, "craft:"+rc.Station, 1)
 }

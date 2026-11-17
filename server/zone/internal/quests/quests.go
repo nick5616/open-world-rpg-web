@@ -42,6 +42,8 @@ const (
 	// Playtest 2 main story (CR 035).
 	ObjLevel = "level" // reach character level N (Leveler)
 	ObjStory = "story" // a story happening named Family (the vigil held, the Sovereign or the Hush fallen)
+	// Playtest 4 first hour (CR 051).
+	ObjDo = "do" // do the deed named Family N times (mine, fell, smelt, build, torch, fish, steed); Quest.Count counts
 )
 
 // Quest kinds (Event 950 `kind`).
@@ -335,7 +337,7 @@ type Signal struct {
 	NPC        int     // talk: the towns-buffer NPC index + 1 (0 unknown)
 	Site       int     // clear: the cleared group's site (-1 none); read/dungeon: the atlas site
 	X, Z       float64 // clear/slay/kill: where it happened
-	Family     string  // kill: the enemy's combat family; story: the happening's tag
+	Family     string  // kill: the enemy's combat family; story: the happening's tag; do: the deed
 }
 
 // killCounts reports whether sig is a kill a kill step counts (R 0:
@@ -343,6 +345,24 @@ type Signal struct {
 func killCounts(o *Objective, sig *Signal) bool {
 	return sig != nil && sig.Kind == ObjKill && (o.R <= 0 || math.Hypot(sig.X-o.X, sig.Z-o.Z) <= o.R) && (o.Family == "" || o.Family == sig.Family)
 }
+
+// doCounts reports whether sig is a deed a do step counts (CR 051).
+func doCounts(o *Objective, sig *Signal) bool {
+	return sig != nil && sig.Kind == ObjDo && o.Family == sig.Family
+}
+
+// counts reports whether sig advances the counting step o (kill or do).
+func counts(o *Objective, sig *Signal) bool {
+	switch o.Kind {
+	case ObjKill:
+		return killCounts(o, sig)
+	case ObjDo:
+		return doCounts(o, sig)
+	}
+	return false
+}
+
+func isCounter(o *Objective) bool { return o.Kind == ObjKill || o.Kind == ObjDo }
 
 // met reports whether the step's objective holds now (state objectives) or
 // is satisfied by sig (event objectives).
@@ -365,7 +385,7 @@ func met(qid uint32, s *Step, f Facts, sig *Signal) bool {
 	case ObjGive:
 		return sig != nil && sig.Kind == ObjTalk && sig.Role == o.Role && sig.Settlement == o.Settlement && (o.NPC == 0 || o.NPC == sig.NPC) &&
 			len(o.Items) > 0 && f.Have(o.Items[0].Item) >= o.Items[0].Qty
-	case ObjKill:
+	case ObjKill, ObjDo:
 		return false // counted in Advance (Quest.Count)
 	case ObjEscort:
 		x, z := f.Pos()
@@ -401,7 +421,7 @@ func met(qid uint32, s *Step, f Facts, sig *Signal) bool {
 // progress is the HUD count for a step.
 func progress(q *Quest, s *Step, f Facts) int {
 	switch s.Obj.Kind {
-	case ObjKill:
+	case ObjKill, ObjDo:
 		return min(q.Count, s.Obj.N)
 	case ObjHave, ObjTurnIn, ObjGive:
 		if len(s.Obj.Items) > 0 {
@@ -423,14 +443,14 @@ func (l *Log) Advance(f Facts, sig *Signal, out []Happening) []Happening {
 			if s == nil {
 				break
 			}
-			if s.Obj.Kind == ObjKill && killCounts(&s.Obj, qs) {
+			if isCounter(&s.Obj) && counts(&s.Obj, qs) {
 				q.Count++
 				l.dirty = true
 				qs = nil
 				if q.Count < s.Obj.N {
 					break
 				}
-			} else if s.Obj.Kind == ObjKill && q.Count >= s.Obj.N && s.Obj.N > 0 {
+			} else if isCounter(&s.Obj) && q.Count >= s.Obj.N && s.Obj.N > 0 {
 				// already counted (a reloaded log)
 			} else if !met(q.ID, s, f, qs) {
 				break

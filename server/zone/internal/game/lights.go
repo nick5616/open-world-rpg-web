@@ -28,6 +28,8 @@ import (
 	"lodestone/server/pkg/combatdefs"
 	"lodestone/server/pkg/movement"
 	"lodestone/server/pkg/proto"
+
+	"lodestone/server/zone/internal/quests"
 )
 
 // Interact 160 `light` and Events 1840-1841 (contracts/events.md).
@@ -161,6 +163,7 @@ func (s *Server) lightInteract(sess *session, m *proto.Interact, now time.Time) 
 			l.last = now
 			l.torch = true
 			s.refreshLook(sess, LightWhyAsked, true)
+			s.questsDeed(sess, quests.DeedTorch) // CR 051: the torch errand
 		}
 	case LightActDismiss:
 		if l.fam != 0 {

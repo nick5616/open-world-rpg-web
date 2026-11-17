@@ -37,6 +37,7 @@ import (
 	"lodestone/server/pkg/worldedit"
 	"lodestone/server/pkg/writebehind"
 	"lodestone/server/zone/internal/items"
+	"lodestone/server/zone/internal/quests"
 )
 
 // Interact target kinds owned by world edits (contracts/events.md registry).
@@ -284,6 +285,9 @@ func (s *Server) harvest(sess *session, e *Entity, id uint64, now time.Time) {
 	if st.hp <= 0 {
 		delete(s.we.hp, id)
 		s.fell(sess, e, rec, def, now)
+		if def.Tool == worldedit.ToolAxe {
+			s.questsDeed(sess, quests.DeedFell) // CR 051: the timber errand
+		}
 	}
 	if now.Sub(s.we.hpSweep) > time.Minute {
 		s.we.hpSweep = now
