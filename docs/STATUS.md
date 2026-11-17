@@ -1860,3 +1860,17 @@ Gaps:
 - Other players do not see your look yet (replication needs a protocol field; design in CR 047). First-person hands keep the default skin tone.
 - Not run here: the services-backed acceptance harnesses and `infra/smoke-live.mjs` (no Postgres/Redis in this box); their selectors were kept rather than changed. The Go account test (`TestAccountFlow` now covers appearance + delete) needs Postgres and Redis.
 - The campfire sits mostly behind the left panel at 16:9; the long hair style reads as a hood; no shadows on the stage (a blob under the figure).
+
+## Playtest 3: balance (branch `pt3/balance`, CR 048)
+
+Nicole's playtest-3 notes, four independent fixes, one commit each (`docs/cr/048-playtest-3-balance.md`).
+
+**Works**
+- **Levelling**: level 2 costs 360 XP (was 100): the early curve is 360 / 300 / 260 / 240, plain 60 + 40 x level from level 5, so no later level is slower. Server `explore.XPForNextLevel`, client twin `xpForLevel`; wire vectors and discovery / tower tests updated (a tower climb + its discovery, 190 XP, no longer levels).
+- **Magma dash tiers**: Lesser (L1-7: short, a steered run that falls, 40 mana/s hold), Honed (L8-14: weak thrust, 32 mana/s), Full (L15+, the old dash, 24 mana/s). Tiers are plain dash variants (ids 10, 11) chosen from the character level on both sides, so the shared movement twins are untouched; wp13 dash goldens regenerated, Go twin tests green; the zone refuses a tier above the caster's level; the spell card shows "Tier: Lesser (Honed at level 8)".
+- **Spell bank**: equipped spells of the edited loadout are hidden; clearing a slot (or dropping its card on the bank) returns them (`bankCards`, vitest).
+- **Demons**: `demons.ordinary {halfFrom 8, immuneFrom 15, halfMult 0.5}`: level < 8 takes full lasting damage from anything, 8-14 half (resisted flag), 15+ / lords / Guarded story demons keep the sunsteel-or-Light rule; HUD hint, tips and loadout lines no longer say all demons are immune.
+
+**Tests**: `go test` explore, combat, combatdefs, movement, plus the game packages' night / dash / achievement / progression / explore tests; client vitest for sim, combat, ui/skills, ui/spellcards, ui/progression; `tsc`, eslint.
+
+**Gaps**: `tools/acceptance/g4.mjs` and `server/zone/cmd/nightbots` (not re-run, 11 min) still assume a level-1 demon shrugs off the starting sword, true now only at demon level 15+; a character saved at level 2-4 re-levels one level lower from its kept XP; the dash tiers and demon thresholds are first guesses to tune in play.

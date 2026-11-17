@@ -35,6 +35,35 @@ export function dashDef(variant: number): DashDef | undefined {
   return dashById.get(variant);
 }
 
+/**
+ * CR 048: the dash variant a spell whose base dash is `id` runs at a character
+ * level: the tier row with the highest minLevel <= level among the base and the
+ * rows naming it in tierOf (the lowest tier below every minLevel); an untiered
+ * dash is itself. Twin of Go combatdefs.Defs.ResolveDash (the zone resolves the
+ * same level from combat_sync / the character).
+ */
+export function resolveDash(id: number, level: number): number {
+  const base = dashById.get(id);
+  if (!base || !base.minLevel) return id;
+  const tiers = COMBAT.dashes.filter((t) => t.minLevel && (t.id === id || t.tierOf === base.key));
+  let best = -1;
+  let bestMin = -1;
+  let lowest = id;
+  let lowMin = Infinity;
+  for (const t of tiers) {
+    const m = t.minLevel!;
+    if (m <= level && m > bestMin) {
+      best = t.id;
+      bestMin = m;
+    }
+    if (m < lowMin) {
+      lowest = t.id;
+      lowMin = m;
+    }
+  }
+  return best < 0 ? lowest : best;
+}
+
 /** Mana a held step of this dash costs (the zone charges the same per step). */
 export function holdManaPerStep(d: DashDef): number {
   return (d.sustain?.manaPerS ?? 0) / 60;

@@ -61,6 +61,11 @@ Codegen (`contracts/codegen/lib/combat.mjs`): `materials`, `demons`,
 `killsDemons` on trees/spells/forms, `demon` on enemies, TS types.
 `server/pkg/combatdefs`: the same fields plus `MaterialByKey`/`ByID`.
 
+> **Amended by CR 048 (playtest 3):** the rule below applies in full only to
+> demons of level 15 and up (and lords, and story demons with a Guard). Below
+> level 8 ordinary damage hurts a demon like any enemy; from 8 to 14 it does
+> 50 % (`combat.yaml demons.ordinary`). Sunsteel and Light are never reduced.
+
 ### The sunsteel contract (for WP14)
 
 "Is sunsteel" is one key: **the material key `sunsteel`** in
