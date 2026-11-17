@@ -13,7 +13,7 @@ import (
 
 // officialTowns builds the official world's towns layer (seed 20261108)
 // through the real wasm; skipped when worldgen.wasm is not built.
-func officialTowns(t *testing.T) *towns.Towns {
+func officialTowns(t testing.TB) *towns.Towns {
 	t.Helper()
 	mod, err := worldhost.LoadFromEnv(context.Background())
 	if err != nil {
@@ -62,7 +62,7 @@ func TestScheduleDayAndNight(t *testing.T) {
 	for i := range w.NPCs {
 		d := w.NPCs[i].Def
 		w.Place(i, noon, flat, flatSurface)
-		if s := w.NPCs[i]; s.X != d.WorkX && d.Role != towns.RoleVillager {
+		if s := w.NPCs[i]; s.X != d.WorkX && d.Role != towns.RoleVillager && d.Role != towns.RoleGuard { // guards may be on their beat (life.go)
 			t.Fatalf("npc %d (%s) not at work at noon", i, towns.RoleNames[d.Role])
 		}
 		if !w.Open(i, noon) && d.Role != towns.RoleVillager && d.Role != towns.RoleFarmer {
@@ -95,12 +95,12 @@ func TestScheduleDayAndNight(t *testing.T) {
 func TestWalkHomeAlongStreets(t *testing.T) {
 	tw := officialTowns(t)
 	w := New(tw, 20261108, nil)
-	dusk := 19.05 / 24 * DayLengthS
-	before := 18.9 / 24 * DayLengthS
+	dusk := 20.55 / 24 * DayLengthS // the evening gathering (life.go) breaks up at 20:30
+	before := 20.4 / 24 * DayLengthS
 	walkers, arrived, samples, through := 0, 0, 0, 0
 	for i := range w.NPCs {
 		d := w.NPCs[i].Def
-		if d.Home < 0 || d.Role == towns.RoleInnkeeper || d.Role == towns.RoleGuard || d.Role == towns.RoleFarmer {
+		if d.Home < 0 || d.Role == towns.RoleInnkeeper || d.Role == towns.RoleGuard {
 			continue
 		}
 		w.Place(i, before, flat, flatSurface)

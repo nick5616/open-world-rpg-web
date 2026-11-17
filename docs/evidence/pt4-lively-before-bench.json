@@ -1,0 +1,22 @@
+{
+  "date": "2026-11-17T18:13:34.164Z",
+  "seed": "20261108",
+  "town": 9,
+  "view": {
+    "calls": 330,
+    "shadowCalls": 90,
+    "triangles": 2383644,
+    "frameMsMean": 16.13,
+    "frameMsP95": 33,
+    "frames": 127,
+    "withoutNpcs": {
+      "calls": 325,
+      "shadowCalls": 81,
+      "triangles": 2448880,
+      "frameMsMean": 17.05,
+      "frameMsP95": 34.7,
+      "frames": 147
+    },
+    "npcsInView": 22
+  }
+}

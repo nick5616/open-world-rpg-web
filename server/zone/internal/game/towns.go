@@ -85,6 +85,8 @@ type townsState struct {
 	props   map[uint64]int  // interactable prop id -> towns prop index
 	structs map[uint64]int  // structure id -> structure index
 	doors   *doorWorld      // building doors (doors.go)
+	// duskCalled: the night index each settlement's dusk call was made for (npc_life.go).
+	duskCalled map[int]int64
 }
 
 func (s *Server) timeOfDay(now time.Time) float64 {
@@ -130,6 +132,7 @@ func (s *Server) townsTick(tick uint32, now time.Time) {
 	s.townsInit()
 	t := &s.town
 	tod := s.timeOfDay(now)
+	w.Rain = s.env.Raining // CR 050: villagers and farmers go indoors in the rain (npc/life.go)
 	if tick%npcEveryTicks == 0 {
 		for si := range w.T.Settlements {
 			st := &w.T.Settlements[si]

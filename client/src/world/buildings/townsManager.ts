@@ -37,6 +37,8 @@ import { worldDebug } from '../debug/worldDebug';
 import { boxAt, BK } from './kit';
 import { geometryOf, makeTownMaterials, townTexture, type TownMaterials } from './townMaterial';
 import { NpcRenderer } from './npcs';
+import { TownAnimals } from './townAnimals';
+import { useQualityStore } from '../../stores/qualityStore';
 import { TownHud } from './townHud';
 import { pickTarget, type Candidate } from './interact';
 import { PK } from './props';
@@ -73,6 +75,8 @@ export class TownsManager {
   readonly smoke = new ChimneySmoke();
   readonly towns: Towns;
   readonly npcs: NpcRenderer;
+  /** CR 050: chickens, dogs and cats about the settlements. */
+  readonly animals: TownAnimals;
   readonly hud: TownHud;
   /** Building doors: wire sync and leaves (null without doors). */
   readonly doorSync: DoorSync | null = null;
@@ -113,6 +117,8 @@ export class TownsManager {
     this.group.name = 'towns';
     this.npcs = new NpcRenderer(this.towns, runtime.ground as never, (si) => runtime.data.sites[this.towns.settlements[si]?.site]?.layer === 2);
     this.group.add(this.npcs.group);
+    this.animals = new TownAnimals(this.towns, runtime.ground as never, (si) => runtime.data.sites[this.towns.settlements[si]?.site]?.layer === 2);
+    this.group.add(this.animals.group);
     this.group.add(this.smoke.mesh);
     this.hud = new TownHud();
     if (runtime.doors && runtime.doorStates) {
@@ -381,6 +387,7 @@ export class TownsManager {
     // Playtest 2 immersion pass: smoke from the chimneys (busiest at breakfast and supper).
     this.smoke.update(camera, dt, (worldClock.timeOfDayS / DAY_LENGTH_S) * 24, L.day, Math.min(1, liveWeather.mix.rain), 0, this.smokeList);
     this.npcs.update(camera, dt, (now - this.t0) / 1000);
+    this.animals.update(camera, dt, now, (worldClock.timeOfDayS / DAY_LENGTH_S) * 24, Math.min(1, liveWeather.mix.rain), useQualityStore.getState().tier === 'low', { x: localPlayer.pos.x, y: localPlayer.pos.y, z: localPlayer.pos.z, vx: localPlayer.vel.x, vz: localPlayer.vel.z });
     // Interaction target.
     const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
     const cands: Candidate[] = [];
@@ -479,6 +486,7 @@ export class TownsManager {
     for (const b of this.cells.values()) for (const m of b.meshes) m.geometry.dispose();
     this.cells.clear();
     this.npcs.dispose();
+    this.animals.dispose();
     this.smoke.dispose();
     this.hud.dispose();
     this.doorSync?.follow(null);

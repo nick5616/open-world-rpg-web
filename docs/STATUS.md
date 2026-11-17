@@ -2063,3 +2063,30 @@ Nicole: "Idk if any of it works because nothing pulled me to try anything." A pl
 **Fixed**: the build menu and camp menu named the wrong hammer key (8, it is 9); the combat toasts ("Dodged!", "Parried!") stayed on screen until another HUD value changed (they now hide after 1.5 s; verified live); the build ghost's refusal near a town read "Not inside a settlement" (now "Too close to a settlement", with a test).
 
 **Gaps**: not run: stronghold, cave chests, lore tablets and the Deep Warden (the dev console cannot teleport underground), the Sky Guardian kill and chest, the ring race flight, taming, ground loot, the main story, a full catch while fishing, and the kill-flash audit (a second GPU browser crashes the first on this host). Discoverability gaps (caves, sky, Depths, hammer, rod, instrument, whistle, wolf hide for the bed) and unfixed items with repro steps are listed in the evidence file. Host stalls drop the session with "bad ticket / connection lost"; one unreproduced client crash (`Cannot read properties of null (reading 'length')`).
+
+## Playtest 4: lively townsfolk (CR 050, `pt4/lively-npcs`)
+
+Nicole: "make NPCs more lively." CR: `docs/cr/050-lively-townsfolk.md`. Events 1930 (bark, wired to bubbles) and 1931 (town bell); no migration.
+
+**Works**
+- **Speech bubbles** over every live `npcFocus` line (zone barks, greetings, cries, chats, dialog lines): DOM cards, at most 4, within 25 m, nearest first, lines to you emphasised, eased in and out.
+- **They notice you**: head and torso follow the player within 6 m (limited, easing back, an occasional nod); a wave and a short line within 5 m, rate limited (a few a minute); the dialog's NPC faces you, plants its feet, gestures and moves its mouth while speaking; every barking NPC flaps its mouth.
+- **Work**: hammering smith with sparks and a clang on each blow (spatialised, quiet; replaces the forge's random strikes while he is in view), hoeing/scything farmers, merchants arranging wares or holding a crate and calling out, guards with spears scanning, innkeepers wiping and carrying a mug, villagers sweeping or carrying baskets/buckets, idle villagers on doorsteps. Breathing, weight shift, blinking, look-arounds, per-NPC height/build/gait, stooping elders.
+- **Looks**: 5 hair styles, bald, hats, caps, hoods, headscarves, beards, vests, aprons, tabards, skirts, sleeves long or rolled, in single-draw gear meshes.
+- **Each other**: idle neighbours within 3.4 m chat in alternating bubbles from 22 overheard conversations (regional gossip), deterministic from ids and the clock.
+- **Reactions**: rain (hand over head, villagers and farmers go indoors), dusk (a guard calls "Lanterns!" via `npcBark`, once per town per night; the town bell, Event 1931, synthesized cue), monsters nearby (villagers cower, guards face them), level-up (cheer and a line).
+- **Schedules** (`npc/life.go`, pure, tested on the official world): lunch at the inn, an evening gathering at the square and inn, merchant market hours, guard beats, strolls to neighbours, doorstep rests, rain shelter. Every goal is reached through streets and doors (walk tests).
+- **Town animals**: chickens, dogs (one tags along), cats; four draws, halved on Low.
+
+**Numbers** (largest-NPC square of Draedmore on the official seed, headless Chromium on the shared GPU, `client/src/world/buildings/dev/lively-shots.mjs --only bench`, `docs/evidence/pt4-lively-{before,after}-bench.json`; frame times swing 2x with the other agents' load, so read draw calls):
+- NPC meshes: 11 before, 8 in view now plus sparks only while a smith strikes. Draw calls in the same view with 22 NPCs: before 330 (325 with the townsfolk hidden), after 339 (325 hidden; 8 in the main pass plus 6 in the shadow passes). Run-to-run noise on the total is about +-5 calls.
+- Zone: `BenchmarkStepActiveTown` (every NPC of the largest settlement, one tick): about 15-20 ns per NPC per tick before, 19-28 after (400 active NPCs: about 3 us of a 33 ms tick). `go test ./internal/npc ./internal/game -run "Town|Dusk|Rain|NPC|Door"` pass.
+- Evidence: `docs/evidence/pt4-lively-{smith,chat,look,animals}.jpg`.
+
+**Gaps**
+- Greetings, chats, cries and reactions are client-side only: two players may see different chats in the same minute only if their NPC ids differ (towns-buffer records are used when the NPC matches one, so normally they agree), and the zone does not know NPCs are chatting (a walking NPC breaks off a chat; nothing makes them stop for it). The client cannot stop an NPC the zone is walking.
+- Cowering and "head for shelter" are visual or by the schedule only; NPCs do not path to the nearest doorway when it starts raining (they go home).
+- The blacksmith screenshot is taken from inside the forge (the open front puts the camera in the wall otherwise); props are blocky and their grips are tuned by eye.
+- Sitting is only for idle villagers found on a doorstep; there are no benches outdoors in towns (all town benches are indoors).
+- Animals are not drawn in dwarven halls or sky towns; dogs do not sit, cats have no tail swish, chickens do not flock.
+- The dusk call needs an active guard or innkeeper (a player within 200 m of the settlement).

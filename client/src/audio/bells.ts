@@ -43,6 +43,8 @@ export const BELLS: Record<string, BellSpec> = {
   // CR 052: the guiding wisp's chime (a small glass bell, short) and the heartbeat of low health (a soft low thud)
   wisp_chime: { prime: 1175, seconds: 2.4, sustain: 0.32, beat: 0.9, strike: 0.04, lowpass: 7500 },
   heartbeat: { prime: 58, seconds: 0.9, sustain: 0.07, beat: 0.15, strike: 0.12, lowpass: 380 },
+  // CR 050: the town bell at dusk: a bright bronze bell, higher and shorter than the Heartfall's
+  town_bell: { prime: 262, seconds: 6, sustain: 0.8, beat: 0.9, strike: 0.45, lowpass: 7600 },
   hush_toll: { prime: 70, seconds: 10, sustain: 1.6, beat: 0.6, strike: 0.35, lowpass: 2600 },
 };
 

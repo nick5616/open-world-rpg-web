@@ -9,10 +9,11 @@ what time and what they say, and may change freely with normal deploys.
 | File | What |
 | --- | --- |
 | `npc.go` | `World` (NPC states + one street graph per settlement), `TimeOfDay`, `Hour`, schedules (`Works`, `Want`, `Open`), `Place` (where an NPC is when its town wakes up), `Step` (walk along the route), `Route` (out of the door, along streets/ring/square, in through the target's door) |
+| `life.go` | CR 050 richer schedules: lunch at the inn, the evening gathering at the square and inn, merchant market hours, guard beats, strolls to neighbours, doorstep rests, villagers indoors in the rain (`World.Rain`); places chosen once in `New`; `DuskLine` (the guards' dusk call) |
 | `talk.go` | `Say` (lines by role and time, closed at night), `Wares` + `EncodeShop` (Event 801), `Bounties` (3-4 seeded jobs per settlement per in-game day: clear / slay / scout a nearby structure or camp, deliver items) + `EncodeBounties` (Event 802) |
 
-Schedules: work 07:00-19:00 (farmers 06-18); innkeepers and guards keep
-their posts round the clock (the inn is open at night). Villagers wander
+Schedules: work 07:00-19:00 (farmers 06-18, merchants 08-18); innkeepers and guards keep
+their posts round the clock (the inn is open at night); `life.go` adds lunch, the evening gathering, beats, visits and rain. Villagers wander
 within 5 m of their work spot by day. The zone glue
 (`internal/game/towns.go`) spawns a settlement's NPCs as snapshot entities
 while a player is within 200 m of its edge and steps them on the movement

@@ -1,5 +1,17 @@
 [
   {
+    "id": "pt4-lively-npcs",
+    "date": "2026-11-17",
+    "title": "Townsfolk come alive",
+    "items": [
+      "People work at their trades now: the smith hammers sparks off the anvil, farmers hoe, guards keep watch.",
+      "They notice you: heads turn as you pass, and a friendly wave and a word if you have not met lately.",
+      "Neighbours stop and chat. Listen in: there is gossip about lights in the hills, dwarves under the mountain and bandits on the north road.",
+      "In the rain folks hold a hand over their heads and head indoors; at dusk the guards call for lanterns and the town bell tolls.",
+      "Chickens, dogs and cats have moved in. One dog may follow you a few steps."
+    ]
+  },
+  {
     "id": "pt4-fixes",
     "date": "2026-11-17",
     "title": "Small fixes from a full play-through",

@@ -47,6 +47,7 @@ import { FINALE } from '../ui/story/events';
 import { liveWeather, weatherOn } from '../systems/weather/runtime';
 // Playtest 2 vibe explorer: the composer aids' seam (dev builds; nothing registers otherwise).
 import { composerHook } from './composer/hook';
+import { smithNear } from '../world/buildings/smithLink';
 
 /** What the Heartfall asks of the music (playtest 2 immersion pass; director.ts `finale`). */
 function finaleMusic(): 'intro' | 'fight' | 'won' | null {
@@ -458,6 +459,7 @@ export class AudioEngine {
     const seen = new Set<string>();
     for (const h of this.probe.forgesNear(feet.x, feet.z, HAMMER_M)) {
       if (Math.hypot(h.x - feet.x, h.z - feet.z) > HAMMER_M) continue;
+      if (smithNear(h.x, h.z, nowMs)) continue; // CR 050: a visible smith at his anvil strikes in step with his arm (npcs.ts)
       seen.add(h.id);
       let st = this.hammers.get(h.id);
       if (!st) this.hammers.set(h.id, (st = { next: nowMs + 400 + Math.random() * 2500, left: 0 }));

@@ -38,7 +38,7 @@ for your package; document each kind's use of `entityId`, `targetId`, `value`,
 | 1860-1879 | Playtest 3 dwarves (CR 043: discovering a dwarven hall, cave chests, lore tablets, the lower halls' warden) |
 | 1900-1909 | Playtest 3 character looks (CR 047: a player's creation look, to the client that asked). 1901-1909 reserved |
 | 1910-1929 | Playtest 4 dialog (CR 049: conversations with townsfolk, topics, choices, rumours) |
-| 1930-1939 | Playtest 4 lively townsfolk (CR 050: 1930 `npc_bark`, an NPC saying a line out loud; the rest reserved) |
+| 1930-1939 | Playtest 4 lively townsfolk (CR 050: 1930 `npc_bark`, an NPC saying a line out loud; 1931 `town_bell`; the rest reserved) |
 | 1940-1949 | Playtest 4 the first hour (CR 051: the arrival, the mentor, the guided introductions) |
 | 1950-1959 | Playtest 4 in-world guidance (CR 052: signposts, the guiding wisp, landmarks) |
 
@@ -245,6 +245,7 @@ for your package; document each kind's use of `entityId`, `targetId`, `value`,
 | 1912 | `dialog_refused` | CR 049. To you: an Interact 180 was refused. `targetId` = the NPC entity asked about (0 none), `value` = 1 no such person, 2 too far (`npcReachM` 6.5 m), 3 no conversation is open, 4 no such choice (the conversation stays open), 5 they are not here any more |
 | 1913 | `dialog_mark` | CR 049. To you: a rumour's place was put on your map as a personal pin (the pins list follows as Event 605). `targetId` = the pin slot, `x/z` = the place (cm), `data` = its name (UTF-8) |
 | 1930 | `npc_bark` | CR 050. A townsperson says a line out loud (a speech bubble over their head): to every player within 30 m, or to one player when the line is addressed to them. `entityId` = the NPC's entity id, `targetId` = the player addressed (0 nobody in particular), `value` = how long to show it (ms; 0 = the client's default), `data` = UTF-8 text. Sent by `server/zone/internal/game/npc_bark.go` `npcBark`; drawn via `client/src/world/buildings/npcFocus.ts` |
+| 1931 | `town_bell` | CR 050. A village or town tolls its bell at dusk (once per night, from `night.go` `dusk` via `npc_life.go` `townsDusk`), to every player within 160 m of the settlement. `x`/`y`/`z` = the settlement's square in cm, `value` = strokes (3). Client: `npcs.ts` plays the synthesized `town_bell` cue (audio/bells.ts) spaced 1.9 s apart at the square |
 | 1840 | `light_state` | CR 042. To you: your light changed (lit, doused, a familiar called or dismissed, or faded) and on request. `entityId` = you, `targetId` = the familiar light's spell id (the one that just ended when it went out; 0 none), `value` = the light bits (bit 0 a torch is lit, bits 1-5 the familiar id, combat.yaml `familiar.id`), `data` = [why]: 0 you asked, 1 the water put the torch out, 2 the familiar faded (out of mana), 3 you fell, 4 an answer to Interact 160 action 0, 5 the torch left your pack. Everyone else learns it from your snapshot record (EntityRecord.appearance bits 51-56), so there is no broadcast |
 | 1841 | `light_refused` | CR 042. To you: Interact 160 refused. `targetId` = 1 torch, `value` = reason: 1 no torch in the pack, 2 in the water, 3 downed, 4 too fast, 5 unknown action |
 | 1402 | `dev_places` | CR 032. To you, after Interact 250 action 26 (dev zones only): `data` = JSON `{towers, towns, vaults}`, each a list of `{n: name, x, z}` (m) for the console's teleport list |
