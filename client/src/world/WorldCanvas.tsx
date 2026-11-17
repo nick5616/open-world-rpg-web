@@ -21,6 +21,8 @@ import { tileSize } from './terrain/quadtree';
 import { StructuresLayer } from './structures/StructuresLayer';
 // WP20: towns, roads, structures and townsfolk (client/src/world/buildings/README.md).
 import { TownsLayer } from './buildings/TownsLayer';
+// Playtest 4 (CR 052): the guiding wisp, signposts, board papers, landmarks from afar, the level-up glow.
+import { DiegeticLayer } from './DiegeticLayer';
 
 type Props = Omit<ComponentProps<typeof GameCanvas>, 'ground' | 'terrain' | 'environment' | 'ownComposer'> & {
   /** Teleport to the atlas spawn once loaded. Default: in solo (online, the zone server places you). */
@@ -91,7 +93,7 @@ export function WorldCanvas({ spawnOnLand = SOLO, seed, genVersion, onRuntime, .
 
   return (
     <>
-      {runtime && <GameCanvas {...rest} ground={runtime.ground} terrain={<><WorldScene runtime={runtime} /><StructuresLayer runtime={runtime} /><TownsLayer runtime={runtime} /></>} environment={false} ownComposer />}
+      {runtime && <GameCanvas {...rest} ground={runtime.ground} terrain={<><WorldScene runtime={runtime} /><StructuresLayer runtime={runtime} /><TownsLayer runtime={runtime} /><DiegeticLayer runtime={runtime} /></>} environment={false} ownComposer />}
       {!playable && (
         <div data-testid="world-loading" style={{ position: 'fixed', inset: 0, zIndex: 40, display: 'grid', placeItems: 'center', background: runtime ? 'rgba(12,16,24,0.55)' : '#0c1018', color: '#e9ecef', font: '15px system-ui, sans-serif', pointerEvents: 'none', transition: 'background 0.4s' }}>
           <div style={{ textAlign: 'center' }}>

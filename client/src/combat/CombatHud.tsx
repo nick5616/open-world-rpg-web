@@ -15,6 +15,8 @@ import { netRuntime } from '../net/netStore';
 import { BELOW_CLOCK, useHudHeight } from '../hud/layout';
 import { useInventory } from '../ui/inventory/store';
 import { loadoutWeaponLabel } from '../ui/inventory/items';
+import { audioWorld } from '../audio/bridge';
+import { barsVisible, hotbarVisible, hudActivity, installHudActivity, isImmersive, sampleBars } from '../hud/immersive';
 
 const spellByKey = new Map(COMBAT.spells.map((s) => [s.key, s]));
 const KEYS = ['1', '2', '3', '4'];
@@ -52,10 +54,14 @@ export function CombatHud() {
   const invItems = useInventory((s) => s.inv?.items);
   const root = useRef<HTMLDivElement>(null);
   const stack = useRef<HTMLDivElement>(null);
+  const hotbarRow = useRef<HTMLDivElement>(null);
+  const barsRow = useRef<HTMLDivElement>(null);
+  const hintRow = useRef<HTMLDivElement>(null);
   useHudHeight(stack, '--ls-hotbar-h', active);
 
   useEffect(() => {
     if (!active) return;
+    installHudActivity();
     let raf = 0;
     const tick = () => {
       raf = requestAnimationFrame(tick);
@@ -83,7 +89,16 @@ export function CombatHud() {
         const total = sp ? Math.max(1, rt.timeline.cooldownSteps(sp.cooldownSteps)) : 1;
         cd.style.height = `${(left / total) * 100}%`;
       });
-      void localPlayer;
+      // CR 052 Immersive HUD: the bars and the hotbar fade in when they matter and out a few seconds later (opacity only: the stack keeps its measured height).
+      const now = performance.now();
+      const imm = isImmersive();
+      sampleBars(now, hp, mana, localPlayer.staminaMax ? localPlayer.stamina / localPlayer.staminaMax : 1);
+      const hud = useCombatHud.getState();
+      const barsOn = barsVisible({ immersive: imm, now, barsAt: hudActivity.barsAt, hp, mana });
+      const hotOn = hotbarVisible({ immersive: imm, now, hotbarAt: hudActivity.hotbarAt, inCombat: audioWorld.combatUntil > now, boss: !!hud.boss, downed: hud.downedUntil > now });
+      if (barsRow.current) barsRow.current.style.opacity = barsOn ? '1' : '0';
+      if (hotbarRow.current) hotbarRow.current.style.opacity = hotOn ? '1' : '0';
+      if (hintRow.current) hintRow.current.style.opacity = imm ? '0' : '0.6';
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
@@ -106,7 +121,7 @@ export function CombatHud() {
       )}
       {/* Playtest 1 layout (hud/layout.ts): one centre stack at the bottom, measured into --ls-hotbar-h so the lock hint, chat and voice stack around it. */}
       <div ref={stack} data-testid="combat-stack" style={{ position: 'absolute', bottom: 10, left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, maxWidth: 'calc(2 * var(--ls-center-half, 260px))', width: 'max-content', paddingTop: 10 }}>
-        <div style={{ display: 'flex', gap: 6 }}>
+        <div ref={hotbarRow} data-testid="hotbar" style={{ display: 'flex', gap: 6, transition: 'opacity 450ms ease' }}>
           <div data-testid="slot-weapon" data-selected={selected < 0 ? 'true' : 'false'} style={{ position: 'relative', padding: '6px 10px', background: 'rgba(8,10,16,0.6)', borderRadius: 4, minWidth: 74, textAlign: 'center', boxSizing: 'border-box', ...(selected < 0 ? SELECTED_STYLE : { border: '1px solid transparent' }) }} title="X swaps loadouts · Z (or right mouse while selected): parry / draw / charge / heavy">
             {selected < 0 && <RmbBadge />}
             <div data-testid="weapon-name" style={{ fontWeight: 600, maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{lo ? loadoutWeaponLabel(lo.weapon, activeLoadout, invItems) : '-'}</div>
@@ -131,11 +146,11 @@ export function CombatHud() {
             <div style={{ opacity: 0.6, fontSize: 11 }}>draught · R</div>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <div ref={barsRow} data-testid="vitals" style={{ display: 'flex', gap: 8, alignItems: 'center', transition: 'opacity 450ms ease' }}>
           <Bar id="hp" color="linear-gradient(#e05050, #a02020)" width={250} label={<span data-hp />} />
           <Bar id="mana" color="linear-gradient(#5aa0ff, #2050c0)" width={170} />
         </div>
-        <div data-testid="combat-hint" style={{ opacity: 0.6, fontSize: 11, lineHeight: '14px', textAlign: 'center', textShadow: '0 1px 2px #000' }}>{COMBAT_HINT}</div>
+        <div ref={hintRow} data-testid="combat-hint" style={{ opacity: 0.6, transition: 'opacity 450ms ease', fontSize: 11, lineHeight: '14px', textAlign: 'center', textShadow: '0 1px 2px #000' }}>{COMBAT_HINT}</div>
       </div>
       {toastMsg && now - toastMsg.at < 1500 && (
         <div key={toastMsg.at} style={{ position: 'absolute', top: '38%', left: '50%', transform: 'translateX(-50%)', fontSize: 20, fontWeight: 700, textShadow: '0 0 6px #000' }}>

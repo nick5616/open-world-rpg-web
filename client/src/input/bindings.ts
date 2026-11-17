@@ -97,6 +97,7 @@ export const BINDINGS: Binding[] = [
   W('Digit0', 'voice/keys.ts', 'mute / unmute your microphone'),
   W('KeyH', 'ui/emotes/EmoteWheel.tsx', 'emote wheel (hold)'),
   W('KeyL', 'ui/photo/PhotoMode.tsx', 'photo mode'),
+  W('Period', 'world/guide/guideStore.ts', 'a guiding wisp flies ahead toward your quest or map pin (CR 052; G is the glider)'),
   W('KeyU', 'ui/music/InstrumentHud.tsx', 'play your instrument'),
   W('KeyP', 'ui/camps/CampHud.tsx', 'camp menu'),
   W('Digit9', 'ui/build/BuildHud.tsx', 'build menu (hammer); in build mode: leave it'), // CR 041 base building

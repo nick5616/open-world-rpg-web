@@ -17,6 +17,9 @@ import { DebugPanel } from '../hud/DebugPanel';
 import { Crosshair, LockHint } from '../hud/Overlays';
 import { StaminaWheel } from '../hud/StaminaWheel';
 import { DrawMeter } from '../hud/DrawMeter';
+// Playtest 4 (CR 052): the Immersive HUD switch (Esc menu) and the low-health vignette.
+import { ImmersiveHud } from '../hud/ImmersiveHud';
+import { GuideHud } from '../world/guide/GuideHud';
 // Playtest 2: T toggles the third-person camera (hud/ViewHud.tsx, scene/thirdPerson.ts).
 import { ViewHud } from '../hud/ViewHud';
 import { useDebugHotkeys } from '../hud/useDebugHotkeys';
@@ -88,6 +91,8 @@ export default function PlayScreen() {
       <Crosshair />
       <StaminaWheel />
       <DrawMeter />
+      <ImmersiveHud />
+      <GuideHud />
       <LockHint />
       <ViewHud />
       {DEBUG && <DebugLayer />}

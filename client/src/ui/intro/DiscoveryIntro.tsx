@@ -27,6 +27,7 @@ import { INTRO_FOR_EVENT, INTRO_TOAST_KINDS, introForEvent, regionIndexAt, regio
 import { advanceIntro, introHistory, pushIntro, resetIntros, skipCurrentIntro, useIntro, type ActiveIntro, type IntroSpec, type IntroVariant } from './queue';
 import { installStingUnlock, setStingVolume, stingVolume, type StingKind } from './sting';
 import { emitSound } from '../../audio/bridge';
+import { useHudSettings } from '../../hud/immersive';
 
 const FONT_HREF = 'https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&display=swap';
 /** Fraunces from Google Fonts; offline (or blocked) it falls back to Georgia. */
@@ -106,10 +107,12 @@ function Rule({ width, accent, delay, ms }: { width: number; accent: string; del
 }
 
 function IntroCard({ intro, exiting }: { intro: ActiveIntro; exiting: boolean }) {
-  const sz = SIZE[intro.variant];
+  // CR 052 Immersive HUD: a place title is a quieter, smaller line (region and major cards use the small size, a softer backdrop), not a big card.
+  const quiet = useHudSettings((s) => s.immersive);
+  const sz = SIZE[quiet && (intro.variant === 'region' || intro.variant === 'major') ? 'minor' : intro.variant];
   const accent = intro.accent ?? '#4fdcff';
   const inMs = intro.inMs;
-  const grand = intro.variant === 'region' || intro.variant === 'major';
+  const grand = !quiet && (intro.variant === 'region' || intro.variant === 'major');
   return (
     <div
       className={exiting ? 'ld-intro ld-out' : 'ld-intro'}
@@ -123,7 +126,7 @@ function IntroCard({ intro, exiting }: { intro: ActiveIntro; exiting: boolean })
         maxWidth: 'min(92vw, 980px)',
         padding: grand ? '22px clamp(28px, 6vw, 96px) 26px' : '14px 56px 16px',
         // A soft shadow pool behind the text (reference .botw-prompt): legible on a bright sky.
-        background: 'radial-gradient(closest-side, rgba(4, 8, 14, 0.58), rgba(4, 8, 14, 0.3) 62%, rgba(4, 8, 14, 0))',
+        background: quiet ? 'radial-gradient(closest-side, rgba(4, 8, 14, 0.34), rgba(4, 8, 14, 0.16) 62%, rgba(4, 8, 14, 0))' : 'radial-gradient(closest-side, rgba(4, 8, 14, 0.58), rgba(4, 8, 14, 0.3) 62%, rgba(4, 8, 14, 0))',
         animation: exiting ? `ldIntroOut ${intro.outMs}ms ease-in-out both` : `ldIntroIn ${inMs}ms ease-out both`,
       }}
     >
