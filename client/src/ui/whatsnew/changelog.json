@@ -1,5 +1,15 @@
 [
   {
+    "id": "pt3-vegetation",
+    "date": "2026-11-17",
+    "title": "A forest worth walking through",
+    "items": [
+      "Trees now have real structure: tapering trunks with root flare and bark, branching limbs and canopies of thousands of leaves that sway in the wind and glow when the sun shines through them. Oak, birch, pine, fir, cypress, acacia, willow and dead snags are each their own shape, in several variants.",
+      "Meadows are thick with bent blades of grass, wildflowers, ferns, reeds, heather and leafy shrubs; boulders are fractured and layered with mossy tops and snowy caps.",
+      "On Medium and up (best on High and Ultra); Low keeps the lighter look."
+    ]
+  },
+  {
     "id": "pt2-vertical-world",
     "date": "2026-11-11",
     "title": "The world goes vertical",

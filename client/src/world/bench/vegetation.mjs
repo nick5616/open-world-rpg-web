@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* global requestAnimationFrame */
+/* global requestAnimationFrame, localStorage */
 // Vegetation evidence + frame-time harness (playtest 3, CR 045): forest,
 // meadow, rock and bush close-ups at one quality tier, plus frame time at each
 // spot, GPU-uncapped so the numbers are the true frame cost.
@@ -110,6 +110,8 @@ await shoot('forest-trunks', tp(forest.x + 6, forest.z - 4, Math.PI * 0.3, 0.32)
 // Stand a few metres off the nearest tree and look at it (needs the scatter tracker: after the first shots).
 const tree = (await near(1, -1, forest.x, forest.z)) ?? forest;
 await shoot('forest-stand', tp(tree.x + 9, tree.z + 9, Math.atan2(9, 9), 0.1));
+// From the air: mesh LODs, the impostor ring and the horizon (fly, 28 m up, looking over the forest).
+await shoot('forest-far', `(() => { const L = window.__lodestone; L.setFly(true); L.teleport({ x: ${forest.x - 60}, y: window.__lodestoneWorld.groundAt(${forest.x - 60}, ${forest.z - 60}) + 28, z: ${forest.z - 60} }); L.setLook(${-Math.PI * 0.75}, -0.12); })()`);
 await shoot('meadow', tp(spawn.x + 40, spawn.z + 30, Math.PI * 0.75, -0.04));
 for (const [name, kind] of [
   ['rocks', 0],

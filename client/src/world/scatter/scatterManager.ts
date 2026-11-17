@@ -34,6 +34,8 @@ const LAYER_ROCK = 2;
 const LAYER_BUSH = 3;
 const LAYER_TUFT = 4;
 const LOD0_M = 60;
+/** The rich trees' LOD0 is ~5x the triangles of the original, so it ends sooner (each cascade redraws every caster). */
+const LOD0_RICH_M = 45;
 /** Half-width of the dithered cross-fade between LODs (m): wide bands read as screen-door noise. */
 const BAND = 5;
 const REBIN_MOVE_M = 6;
@@ -380,8 +382,8 @@ export class ScatterManager {
     const quad = billboardQuad();
     const trees: Kit['trees'] = TREE_SPECIES.map((sp, si) => {
       const base = { light, mode: 'tree' as const, atlas, bark: barks[si], translucency: 0.55, bump: 1.4 };
-      const m0 = this.richMat({ ...base, fade: new THREE.Vector4(-1, 0, LOD0_M - BAND, LOD0_M + BAND), sway: 0.006, flutter: 0.004, branch: sp.habit === 'conifer' ? 0.006 : 0.012 }, mats);
-      const m1 = this.richMat({ ...base, bump: 0, translucency: 0.45, fade: new THREE.Vector4(LOD0_M - BAND, LOD0_M + BAND, 0, 0), sway: 0.006, flutter: 0.002, branch: 0.008 }, mats);
+      const m0 = this.richMat({ ...base, fade: new THREE.Vector4(-1, 0, LOD0_RICH_M - BAND, LOD0_RICH_M + BAND), sway: 0.006, flutter: 0.004, branch: sp.habit === 'conifer' ? 0.006 : 0.012 }, mats);
+      const m1 = this.richMat({ ...base, bump: 0, translucency: 0.45, fade: new THREE.Vector4(LOD0_RICH_M - BAND, LOD0_RICH_M + BAND, 0, 0), sway: 0.006, flutter: 0.002, branch: 0.008 }, mats);
       const bb = createBillboardMaterial(impostors.texture, si, TREE_SPECIES.length, new THREE.Vector4(0, 0, 0, 0), light);
       this.materials.push(bb);
       mats.push(bb);
@@ -401,13 +403,13 @@ export class ScatterManager {
       const farMat = this.richMat({ ...o, bump: 0, fade: new THREE.Vector4(ROCK_NEAR_M - BAND * 3, ROCK_NEAR_M + BAND * 3, 0, 0) }, mats);
       return { nearMat, farMat, near: this.bin(richRock(rk.shape, rk.seed, 3), nearMat, true, `rock ${i}`), far: this.bin(richRock(rk.shape, rk.seed, 1), farMat, false, `rock ${i} far`) };
     });
-    // Bushes by type: leaf-card shrubs, scrub, heather, fronds, reeds.
+    // Bushes by type: leaf-card shrubs, scrub, heather, fronds, reeds. Only shrubs cast shadows (each caster is redrawn per cascade).
     const bushes: Kit['bushes'] = BUSH_TYPES_ORDER.map((type) => {
       const reed = type === 'reeds';
       const o = { light, mode: 'tree' as const, atlas, translucency: 0.8, sway: reed ? 0.05 : type === 'fern' ? 0.015 : 0.02, flutter: 0.01, branch: reed ? 0 : 0.01, doubleSided: true };
       const nearMat = this.richMat({ ...o, fade: new THREE.Vector4(-1, 0, BUSH_NEAR_M - BAND * 2, BUSH_NEAR_M + BAND * 2) }, mats);
       const farMat = this.richMat({ ...o, fade: new THREE.Vector4(BUSH_NEAR_M - BAND * 2, BUSH_NEAR_M + BAND * 2, 0, 0) }, mats);
-      return { nearMat, farMat, near: this.bin(richBush(type, 0, scale), nearMat, true, `bush ${type}`), far: this.bin(richBush(type, 1, scale), farMat, false, `bush ${type} far`) };
+      return { nearMat, farMat, near: this.bin(richBush(type, 0, scale), nearMat, type === 'shrub', `bush ${type}`), far: this.bin(richBush(type, 1, scale), farMat, false, `bush ${type} far`) };
     });
     // Tufts and flower clumps (sparse scatter layer); fade like the legacy tufts.
     const tuftMats: ScatterMaterial[] = [];
@@ -428,7 +430,7 @@ export class ScatterManager {
     this.kitApplyTier = (t) => {
       const treeM = t.treeMeshDistance;
       for (const tk of trees) {
-        tk.lod1.userData.fade.value.set(LOD0_M - BAND, LOD0_M + BAND, treeM - BAND * 2, treeM + BAND * 2);
+        tk.lod1.userData.fade.value.set(LOD0_RICH_M - BAND, LOD0_RICH_M + BAND, treeM - BAND * 2, treeM + BAND * 2);
         tk.bb.userData.fade.value.set(treeM - BAND * 2, treeM + BAND * 2, t.scatterDistance * 0.88, t.scatterDistance);
       }
       const rockFar = Math.min(400, t.scatterDistance * 0.5);
@@ -648,8 +650,8 @@ export class ScatterManager {
             // Rich: per species, variant (grown from another seed) and LOD; the instance keeps its id in every bin.
             const tk = kit.trees[kind];
             const vb = tk.variants[rec[o + 2] % TREE_VARIANTS];
-            if (d < LOD0_M + BAND + 2) this.put(vb[0], c, i, st);
-            if (d > LOD0_M - BAND - 2 && d < treeM + BAND * 2 + 2) this.put(d < TREE_SHADOW_M ? vb[1] : vb[2], c, i, st);
+            if (d < LOD0_RICH_M + BAND + 2) this.put(vb[0], c, i, st);
+            if (d > LOD0_RICH_M - BAND - 2 && d < treeM + BAND * 2 + 2) this.put(d < TREE_SHADOW_M ? vb[1] : vb[2], c, i, st);
             if (d > treeM - BAND * 2 - 2) this.put(tk.imp, c, i, st);
           } else {
             const lods = this.treeBins[st.arch];

@@ -1,0 +1,19 @@
+{
+  "tier": "ultra",
+  "label": "wip",
+  "when": "2026-11-17T04:32:52.703Z",
+  "forest-far": {
+    "frames": 253,
+    "meanMs": 16.02,
+    "p50": 15.5,
+    "p95": 23.3,
+    "p99": 39.5,
+    "calls": 457,
+    "tris": 4093827,
+    "shadowTris": 1920917,
+    "instances": 16655,
+    "scatterTris": 1198902,
+    "grassClumps": 4810
+  },
+  "errors": []
+}

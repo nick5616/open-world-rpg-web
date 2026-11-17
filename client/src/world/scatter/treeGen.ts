@@ -35,14 +35,14 @@ export interface TreeSpecies {
 }
 
 export const TREE_SPECIES: TreeSpecies[] = [
-  { name: 'oak', habit: 'broad', bark: 'oak', leaf: 'broad', card: 0.17, cards: 320, leafCol: [0.78, 0.86, 0.6] },
-  { name: 'birch', habit: 'birch', bark: 'birch', leaf: 'small', card: 0.14, cards: 300, leafCol: [0.85, 0.95, 0.62] },
-  { name: 'broadleaf', habit: 'broad', bark: 'oak', leaf: 'broad', card: 0.16, cards: 320, leafCol: [0.7, 0.84, 0.58] },
+  { name: 'oak', habit: 'broad', bark: 'oak', leaf: 'broad', card: 0.18, cards: 260, leafCol: [0.78, 0.86, 0.6] },
+  { name: 'birch', habit: 'birch', bark: 'birch', leaf: 'small', card: 0.15, cards: 240, leafCol: [0.85, 0.95, 0.62] },
+  { name: 'broadleaf', habit: 'broad', bark: 'oak', leaf: 'broad', card: 0.17, cards: 260, leafCol: [0.7, 0.84, 0.58] },
   { name: 'pine', habit: 'conifer', bark: 'pine', leaf: 'needle', card: 0.2, cards: 200, leafCol: [0.6, 0.78, 0.6], cone: { len: 0.3, start: 0.2, whorls: 12, droop: 0.35 } },
   { name: 'snow fir', habit: 'conifer', bark: 'pine', leaf: 'needle', card: 0.2, cards: 200, leafCol: [0.6, 0.78, 0.62], cone: { len: 0.34, start: 0.08, whorls: 13, droop: 0.5 } },
   { name: 'dead', habit: 'dead', bark: 'dead', leaf: 'scrub', card: 0.1, cards: 0, leafCol: [0.7, 0.7, 0.6] },
-  { name: 'acacia', habit: 'umbrella', bark: 'oak', leaf: 'small', card: 0.17, cards: 300, leafCol: [0.85, 0.9, 0.55] },
-  { name: 'willow', habit: 'willow', bark: 'oak', leaf: 'willow', card: 0.34, cards: 260, leafCol: [0.8, 0.9, 0.58] },
+  { name: 'acacia', habit: 'umbrella', bark: 'oak', leaf: 'small', card: 0.18, cards: 240, leafCol: [0.85, 0.9, 0.55] },
+  { name: 'willow', habit: 'willow', bark: 'oak', leaf: 'willow', card: 0.34, cards: 210, leafCol: [0.8, 0.9, 0.58] },
   { name: 'cypress', habit: 'conifer', bark: 'pine', leaf: 'needle', card: 0.16, cards: 200, leafCol: [0.5, 0.68, 0.52], cone: { len: 0.13, start: 0.05, whorls: 15, droop: 0.2 } },
 ];
 export const TREE_VARIANTS = 2;
@@ -300,7 +300,7 @@ function buildConifer(c: Ctx): void {
       if (hi) b.tube(bp, br, { seg: 3, c0: WOOD_ROOT.clone().lerp(WOOD, 0.5), c1: WOOD, flex0: 0.2 + t * 0.2, flex1: 0.6 + t * 0.3, vScale: 10, uRep: 1 });
       // Needle sprays along the branch: each spans from its anchor to the tip,
       // a flat one (in the branch's own plane) and a vertical one crossed with it.
-      const pairs = hi ? 3 : 1;
+      const pairs = hi ? 2 : 1;
       for (let i = 0; i < pairs; i++) {
         const f = (i / pairs) * 0.62 + r() * 0.06;
         const at = p0.clone().lerp(p, f);

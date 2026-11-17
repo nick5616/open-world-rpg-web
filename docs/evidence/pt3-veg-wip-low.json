@@ -1,0 +1,32 @@
+{
+  "tier": "low",
+  "label": "wip",
+  "when": "2026-11-17T04:31:54.965Z",
+  "forest": {
+    "frames": 580,
+    "meanMs": 6.92,
+    "p50": 6.5,
+    "p95": 10.5,
+    "p99": 13.6,
+    "calls": 118,
+    "tris": 617173,
+    "shadowTris": 0,
+    "instances": 6241,
+    "scatterTris": 145388,
+    "grassClumps": 0
+  },
+  "meadow": {
+    "frames": 697,
+    "meanMs": 5.75,
+    "p50": 5.5,
+    "p95": 7.6,
+    "p99": 10.3,
+    "calls": 139,
+    "tris": 600159,
+    "shadowTris": 0,
+    "instances": 1431,
+    "scatterTris": 21126,
+    "grassClumps": 0
+  },
+  "errors": []
+}
