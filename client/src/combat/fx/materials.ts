@@ -210,7 +210,7 @@ export function createZoneMaterial(): ZoneMat {
         float v;
         if (uStyle < 0.5) {
           float n = fbm(q + vec2(0.0, -uTime * 0.25));
-          v = pow(1.0 - abs(n - 0.5) * 2.0, 6.0) * 1.4 + n * 0.35;
+          v = pow(max(1.0 - abs(n - 0.5) * 2.0, 0.0), 6.0) * 1.4 + n * 0.35;
         } else if (uStyle < 1.5) {
           float n = fbm(q * 1.6 + uTime * 0.05);
           v = smoothstep(0.55, 0.75, n) * 0.9 + 0.22;
@@ -233,7 +233,7 @@ export function createZoneMaterial(): ZoneMat {
           // storm: thin crackling veins that re-strike several times a second
           float t = floor(uTime * 9.0);
           float n = fbm(q * 1.4 + vec2(t * 3.1, t * 1.7));
-          v = pow(1.0 - abs(n - 0.5) * 2.0, 14.0) * 2.0 + 0.1;
+          v = pow(max(1.0 - abs(n - 0.5) * 2.0, 0.0), 14.0) * 2.0 + 0.1;
         } else if (uStyle < 7.5) {
           // wind: spiral streaks sweeping round
           float a = atan(p.y, p.x) - r * 3.0 + uTime * 3.0;
@@ -293,7 +293,7 @@ export function createDomeMaterial(): DomeMat {
         if (h < -0.05) discard;
         float ang = atan(dir.z, dir.x);
         vec2 uv = vec2(ang / (2.0 * PI) + 0.5, h);
-        float fres = pow(1.0 - abs(dot(normalize(vN), normalize(vV))), 2.0);
+        float fres = pow(max(1.0 - abs(dot(normalize(vN), normalize(vV))), 0.0), 2.0);
         float horizon = exp(-h * 5.0);
         float pat;
         if (uStyle < 0.5) {
@@ -320,7 +320,7 @@ export function createDomeMaterial(): DomeMat {
         } else if (uStyle < 6.5) {
           float t = floor(uTime * 8.0);
           float n = fbm(vec2(uv.x * 20.0 + t * 1.3, h * 6.0 + t * 0.7));
-          pat = pow(1.0 - abs(n - 0.5) * 2.0, 12.0) * 1.8;
+          pat = pow(max(1.0 - abs(n - 0.5) * 2.0, 0.0), 12.0) * 1.8;
         } else if (uStyle < 7.5) {
           pat = pow(0.5 + 0.5 * sin((uv.x * 20.0 + h * 4.0 - uTime * 1.5) * 3.14159), 8.0) * (1.1 - h);
         } else {
@@ -349,7 +349,8 @@ export function createRingMaterial(): RingMat {
       void main() {
         float r = length(vUv * 2.0 - 1.0);
         if (r > 1.0) discard;
-        float band = exp(-pow((r - uR) / uW, 2.0));
+        float bq = (r - uR) / uW;
+        float band = exp(-bq * bq); // squared by multiplication (power of a negative is NaN on Mesa / NVIDIA GL)
         float inner = smoothstep(0.0, uR, r) * step(r, uR) * 0.18;
         float a = (band + inner) * uOpacity;
         if (a < 0.003) discard;
@@ -382,7 +383,7 @@ export function createShellMaterial(): ShellMat {
       uniform vec3 uColor; uniform float uOpacity; uniform float uTime; uniform float uHex;
       varying vec3 vN; varying vec3 vV; varying vec3 vLocal;
       void main() {
-        float fres = pow(1.0 - abs(dot(normalize(vN), normalize(vV))), 2.5);
+        float fres = pow(max(1.0 - abs(dot(normalize(vN), normalize(vV))), 0.0), 2.5);
         vec3 d = normalize(vLocal);
         vec2 g = vec2(atan(d.z, d.x) * 4.0, d.y * 7.0);
         g.x += mod(floor(g.y), 2.0) * 0.5;
