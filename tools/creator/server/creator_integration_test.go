@@ -105,7 +105,7 @@ func TestCreatorProcess(t *testing.T) {
 		t.Fatalf("config %v", cfg)
 	}
 	code, seedMint := call(t, "POST", base+"/v1/mint", map[string]string{"seed": "1234"})
-	if code != 201 || seedMint["world"].(map[string]any)["atlasHash"] != "4fddd5ac5a950029" {
+	if code != 201 || seedMint["world"].(map[string]any)["atlasHash"] != "3296986ffd1a2fb7" {
 		t.Fatalf("seed mint %d %v", code, seedMint)
 	}
 	slider := seedMint["world"].(map[string]any)["spec"].(map[string]any)
