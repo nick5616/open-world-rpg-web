@@ -1994,3 +1994,20 @@ Nicole: "Continue with the underground content. Caves should have stuff and mons
 - The night safe rule is wider than halls: nothing hunts underground at night.
 - Evidence: the cave-monsters shot is weak (monsters far away), no close-up of a dwarf NPC, no stronghold market shot; the stronghold floor is a plain orange; glowworms do not sway; rails clip on slopes.
 - Postgres-backed tests time out when the shared database is slow (accountapi, some mintdb, zone game PG tests); the mintdb renewal tests pass when run alone.
+
+## Playtest 4: the first hour (branch `pt4/first-hour`, CR 051)
+
+Nicole: "I load the game and idk what to do. There's too much and nothing pulling me." Audit: `docs/evidence/pt4-first-hour-audit.md`. CR `docs/cr/051-first-hour.md`. No protocol/Event/Interact/migration change (1940-1949, Interact 181 and migration 0036 unused).
+
+**Works**
+- **The arrival**: a brand-new character is called over by name by the mentor (the slimes' giver) with an Event 1930 bark to that player only, 3 s after joining, again at 43 s if they are still near and have not come ("press E"). Old characters never (a Go test checks both).
+- **Six errands** (`server/zone/internal/quests/errands.go`, glue `internal/game/errands.go`): ore and the forge (blacksmith), timber and the hammer (mentor), the torch and a cave mouth (guard), a first fish (innkeeper, rod given), a steed (merchant, whistle given), a tower (bounty keeper, then "see the innkeeper" and rumours). Normal quests: markers, short lines in the person's voice, gold/XP tuned to CR 048's curve, rewards that matter (copper sword, bedroll, draughts). New objective kind `do` (named deed N times: mine, fell, smelt, build, torch, fish, steed, ride), signalled from the systems themselves.
+- **One at a time**: a new character's slimes hand-in starts the first errand, each of the first three starts the next (tracked, a talk step to the giver first), and the Ward follows them (the smith no longer offers it earlier). The rest are offered on a talk; everyone else gets offers from the people, in any order, on the existing offer card.
+- **Client** (`client/src/ui/tips/firstHour.ts`): while the slimes are in the log (or 10 minutes of play), only the moving, quest, fight and heal tips show, the Talk tip is the mentor's to say, the What's new welcome waits until the hand-in; held tips come in the order their thing matters (cliff, fall, skill point, night). Vitest in `tips.test.ts`, `news.test.ts`.
+- Tests: `go test ./internal/game -run FirstHour` (arrival, slimes, two errands to completion, a third with the real torch interact and the Ward after it; an old character), the meadows tests now expect the first errand (not the Ward) after the hand-in. Evidence: `docs/evidence/pt4-first-hour-{arrival,errand-start,errand-mine}.jpg` (`tools/playtest/pt4-first-hour-evidence.mjs`: arrival with no welcome card and the look tip; the first errand tracked after the slimes; the blacksmith's real talk, "Mine 3 veins 0/3").
+
+**Gaps**
+- Nobody consumes Event 1930 on this branch: the bubble over the mentor's head comes with pt4/lively-npcs (the arrival image shows the mentor, not the bubble). The mentor does not walk to the player.
+- No marker for trees (no spatial scatter query); the ore and torch errands use the same nearest cave (490 m from Draedmore); no dwarven camp is marked; the stablehand and woodcutter are the merchant and the mentor (the town has no such roles).
+- The arrival happens at whatever hour the world clock shows; the HUD itself (hotbar, controls strip, debug panel) is pt4/diegetic's.
+- The errands' deeds are tested by signalling them (and the torch with the real key); mining, felling, smelting, building, fishing and mounting are signalled from one line in each system but not driven end to end here.

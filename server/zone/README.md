@@ -590,6 +590,24 @@ starter line, bounties as quests, the wire JSON). Glue:
   jsonb, fenced by the WP16 epoch), through the write-behind queue on every
   change and at logout; local profiles in their save blob
   (`localsave.State.Quests`); across a handoff as the `quests` HandoffField.
+- **The first hour (playtest 4, CR 051, `internal/game/errands.go`,
+  `internal/quests/errands.go`)**: a brand-new character is called over by
+  name by their mentor (the slimes' giver) with an Event 1930 bark 3 s after
+  joining and again at 43 s if they have not come over (old characters never);
+  finishing or dropping the slimes starts a chain of errands by itself, one
+  at a time and tracked (`ore` with the blacksmith, `timber` with the mentor,
+  `torch` with the guard; the Ward follows them), and the later errands
+  (`pond` innkeeper, `steed` merchant, `tower` bounty keeper) and every one
+  for older characters are offered when you talk to that person (the same
+  Event 951 card as side quests; an errand offer goes before a side quest).
+  New objective `do` (`ObjDo`: a named deed N times, counted in `Count`):
+  `questsDeed` is signalled from the mining (`mine`), felling (`fell`),
+  craft (`smelt`), build and camp place (`build`), torch (`torch`), fishing
+  (`fish`) and steed (`steed`, `ride`) code, a no-op unless a step wants it.
+  Places (the nearest cave with copper or iron, the nearest cave mouth, the
+  nearest deep water, the nearest approachable tower, the givers) are resolved
+  once per settlement (`errandsAt`). `Server.qst.noErrands` turns the offers
+  off (the pre-CR 051 side quest tests).
 - Tests: `internal/quests` (every objective kind, limits, round trip, wire),
   `internal/game/meadows_test.go` (the slimes on the official world with the
   real atlas enemies and the Haven tier: the giver, packs that spawn slimes,
@@ -598,7 +616,13 @@ starter line, bounties as quests, the wire JSON). Glue:
   login to the Light tome incl. the blacksmith's line, the purchase and the
   slotted spell, saved and not restarted; every bounty kind on today's
   board accepted, persisted over a reconnect, deliveries handed in at the
-  board, explores completed on arrival, abandon; the handoff field).
+  board, explores completed on arrival, abandon; the handoff field),
+  `internal/game/errands_test.go` (CR 051 on the official world: the arrival
+  bark by name to the new player only, the talk, the slimes, the ore and
+  timber errands started by the chain, counted by their deeds and paid
+  (sword, bedroll), the torch lit with the real key and the cave mouth
+  reached, the Ward after the third; an old character gets no bark and no
+  chain, and the smith's offer starts the errand at its first deed).
 
 ## Items and loot (WP14)
 

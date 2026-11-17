@@ -1,4 +1,4 @@
-/* global getComputedStyle, document */
+/* global getComputedStyle */
 // Playtest 4 (first hour): the first minutes of a brand-new character, as
 // the player sees them. `audit` mode does nothing but watch (screenshot every
 // 20 s, log every card/tip/notice/bark as it appears); `arrival` takes the
