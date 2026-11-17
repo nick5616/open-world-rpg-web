@@ -1831,3 +1831,17 @@ Nicole: "ok new pivot for the game: make it vertical. there are tunnels you can 
 **Gates** (main `41ec650` merged): `gen:check` ok; `test:golden` PASS in every host (wp01 evidence restored); `cargo test` (worldgen) ok, clippy clean; `go vet` clean in every module; `go test` green in every module (`TestZoneProcessCavesMining` failed once under load and passed alone); door vectors regenerated (sky-town doors appended, every existing vector unchanged); typecheck ok; `eslint .` clean; client vitest 105 files / 1267 tests (after merging main `08d53b6`, shared basic attacks: client only, nothing on the wire); worldgen/js vitest 28; `node scripts/whatsnew.mjs check` (35 entries, `pt2-vertical-world` first).
 
 Gaps: crystals read pastel rather than deep blue / violet at a distance; the tunnel portal is modest from afar; the palace exterior is a placeholder model and its doors are sealed; sky activities are a stub stand; enemy models for the new creatures reuse existing families; no ambient occlusion in caverns; live world: renewing the official world to genVersion 3 regenerates towns (sky towns appended) and needs the usual deploy (not done here).
+
+## Playtest 3: sky palaces, sky activity, creatures (branch `pt3/sky-depths`)
+
+Playtest feedback: "Continue with the sky and underground content." CR `docs/cr/044-sky-depths.md`; Events 1704-1706 and 1890-1891, Interact 152 and 153, migration 0034; What's new `pt3-sky-depths`. No worldgen change (genVersion stays 3).
+
+**Works**
+- **Sky palace**: a real white-and-gold building (corner minarets, blue and gold domes, a great dome, floating rings, banners, doors that swing open as you come, a light column and halo to find it from far below, three LODs). Its walls and floors are collision boxes appended to the towns on both sides (bit-identical twin, golden test). Interior: portico, vestibule, annexes, colonnade, sun and moon galleries, an atrium with a wind shaft up to a gallery, a throne hall. Trial: strike three wards, the Sky Guardian (boss, three phases) wakes, its fall opens a chest (gold plus two relic-or-better, per character per 20 h). Co-op, server-authoritative, per-tick cost flat.
+- **Glide Ring Race** at every sky town stand: twelve-ring spiral, server-checked each tick only while racing, medals pay gold, XP and a gold-medal relic, best times per stand persisted (migration 0034) with a top five.
+- **Creatures** (fork, see CR): sky wyvern, ember demon, magma hound, obsidian golem with their own models; Depths shrines are a three-wave fight (Interact 153).
+- Deeper crystal tints, grander tunnel portal, baked cavern ambient occlusion, sky birds and wind chimes.
+
+**Gaps**: sky-town NPC variety and a bounty-board quest, a second activity (cloud harvest) and island props were not done; the palace's doors are visual (open as you approach; the doorway is never blocked); the palace renders its interior from one merged mesh (no occlusion culling inside); the ring race has no zone-wide announcement of records; the live world needs the usual genVersion 3 renewal and migration 0034.
+
+Evidence (`docs/evidence/`): `pt3-palace-{from-below,exterior,gate,inside,atrium,ring,throne}.jpg`, `pt3-race.jpg`, `pt3-depths-creature.jpg`.
