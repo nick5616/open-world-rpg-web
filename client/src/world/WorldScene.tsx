@@ -209,7 +209,9 @@ export function WorldScene({ runtime }: Props) {
   const viewDistance = g.controls.viewDistance;
   useEffect(() => {
     world.terrain.setParams({ lodSplit: wt.lodSplit, viewDistance, uploadsPerFrame: wt.uploadsPerFrame, uploadBudgetMs: wt.uploadBudgetMs, normalMaps: g.normalMaps });
-    world.scatter.setVegetation(WORLD_TIERS[g.shaderTier].vegetation);
+    // Dev: ?veg=0..3 forces the vegetation art (before/after benchmarks on one build).
+    const vegOverride = DEBUG && typeof location !== 'undefined' ? new URLSearchParams(location.search).get('veg') : null;
+    world.scatter.setVegetation(vegOverride !== null ? Number(vegOverride) : WORLD_TIERS[g.shaderTier].vegetation);
     world.scatter.applyTier(wt);
     world.waterU.uDetail.value = wt.waterDetail ? 1 : 0;
   }, [world, wt, viewDistance, g.normalMaps, g.shaderTier]);

@@ -50,7 +50,8 @@ page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
 page.on('console', (m) => {
   if (m.type() === 'error') errors.push(`console.error: ${m.text().slice(0, 300)}`);
 });
-await page.goto(`${base}/?autoplay=1&nocache=1`);
+// VEG_LEVEL=0 draws the original vegetation on the same build (dev ?veg= override): the fair "before".
+await page.goto(`${base}/?autoplay=1&nocache=1${process.env.VEG_LEVEL !== undefined ? `&veg=${process.env.VEG_LEVEL}` : ''}`);
 await page.waitForSelector('[data-testid="world-loading"]', { timeout: 60000 });
 await page.waitForSelector('[data-testid="world-loading"]', { state: 'detached', timeout: 120000 });
 await sleep(800);
