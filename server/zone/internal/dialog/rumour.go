@@ -143,10 +143,10 @@ func tell(p Person, ps Persona, s Site) Rumour {
 	t = strings.NewReplacer("{where}", where, "{named}", named, "{detail}", s.Detail).Replace(t)
 	t = strings.TrimSpace(t)
 	fr := tempFrame[ps.Temper]
-	t = fr[0] + t + fr[1]
-	if fr[0] == "" || strings.HasSuffix(strings.TrimSpace(fr[0]), ".") {
+	if fr[0] == "" || strings.HasSuffix(fr[0], ". ") {
 		t = upperFirst(t)
 	}
+	t = fr[0] + t + fr[1]
 	return Rumour{Key: s.Key, Kind: s.Kind, Text: upperFirst(t), Name: s.Name, X: s.X, Z: s.Z, Pos: !s.NoPos}
 }
 

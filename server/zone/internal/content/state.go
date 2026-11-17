@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"lodestone/server/pkg/contentdefs"
+	"lodestone/server/zone/internal/dialog"
 )
 
 // State is one character's content progress (CR 022; persisted as JSON in
@@ -38,7 +39,10 @@ type State struct {
 	Fish    map[string][2]int `json:"fish,omitempty"`    // playtest 2 fishing: species key -> [landed, best weight g]
 	// TamedKinds: playtest 2 pets (CR 029): pet species key -> creatures tamed.
 	TamedKinds map[string]int `json:"tamed,omitempty"`
-	dirty      bool
+	// Dlg: playtest 4 dialog (CR 049): what this character remembers of each
+	// townsperson (towns NPC stable id -> met, talks, affinity, topics heard).
+	Dlg   map[string]dialog.Memory `json:"dlg,omitempty"`
+	dirty bool
 }
 
 // StateVersion is the current saved form (2: CR 031 achievements).
@@ -257,5 +261,17 @@ func (s *State) Pick(id uint32, untilMs, nowMs int64) {
 		}
 	}
 	s.Forage[strconv.FormatUint(uint64(id), 10)] = untilMs
+	s.dirty = true
+}
+
+// DlgMem is what this character remembers of townsperson npc (a towns NPC id).
+func (s *State) DlgMem(npc uint64) dialog.Memory { return s.Dlg[strconv.FormatUint(npc, 10)] }
+
+// SetDlgMem stores that memory.
+func (s *State) SetDlgMem(npc uint64, m dialog.Memory) {
+	if s.Dlg == nil {
+		s.Dlg = map[string]dialog.Memory{}
+	}
+	s.Dlg[strconv.FormatUint(npc, 10)] = m
 	s.dirty = true
 }

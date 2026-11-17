@@ -227,6 +227,9 @@ func (s *Server) siteIndexOf(id uint64) int {
 
 // sendEvent queues one reliable Event for a session (never blocks).
 func (s *Server) sendEvent(sess *session, ev *proto.Event) {
+	if sess.dlg != nil && sess.dlg.cap != nil && sess.dlg.capture(ev) {
+		return // CR 049: a talk opening inside a conversation (dialog.go)
+	}
 	if err := sess.conn.SendReliable(proto.Encode(ev)); err != nil {
 		sess.closed.Store(true)
 	}
