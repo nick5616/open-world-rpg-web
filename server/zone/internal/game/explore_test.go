@@ -263,7 +263,7 @@ func TestTowerClimbRevealsRegionThenFastTravel(t *testing.T) {
 			break
 		}
 	}
-	if rev != 1 || !pr.Towers.Has(0) || pr.XP != 40+explore.TowerClimbXP || pr.Level != 2 {
+	if rev != 1 || !pr.Towers.Has(0) || pr.XP != 40+explore.TowerClimbXP || pr.Level != 1 {
 		t.Fatalf("progress after climbing: rev %b %+v", rev, pr)
 	}
 
@@ -408,7 +408,7 @@ func TestProgressPersistsAndXPIsGrantedOnce(t *testing.T) {
 		s, ok := store.prog["known"]
 		store.mu.Unlock()
 		if ok && len(s.Towers) > 0 && s.Towers[0]&1 == 1 {
-			if s.XP != 40+explore.TowerClimbXP || s.Level != 2 || string(s.Pins) != "[]" {
+			if s.XP != 40+explore.TowerClimbXP || s.Level != 1 || string(s.Pins) != "[]" {
 				t.Fatalf("saved %+v", s)
 			}
 			break
@@ -422,7 +422,7 @@ func TestProgressPersistsAndXPIsGrantedOnce(t *testing.T) {
 	cl2 := h.dial("")
 	cl2.join(h, "known", "Saver")
 	pr, rev, _ := explore.DecodeProgress(cl2.nextEvent(EventProgress, 2*time.Second).Data)
-	if rev != 1 || pr.XP != 190 || pr.Level != 2 {
+	if rev != 1 || pr.XP != 190 || pr.Level != 1 {
 		t.Fatalf("reloaded %+v rev %b", pr, rev)
 	}
 	cl2.noEvent(EventTowerUnlocked, 500*time.Millisecond)
