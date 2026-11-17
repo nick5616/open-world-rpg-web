@@ -347,7 +347,13 @@ export function buildLayerMesh(t: LayerTile, v: VerticalWorld): LayerMeshData {
         glow[go] = lr;
         glow[go + 1] = lg;
         glow[go + 2] = lb;
-        glow[go + 3] = Math.min(1.5, sun);
+        // A dwarven hall's level floor is flagstone: the shader reads a negative day weight as the stone weight.
+        let stone = 0;
+        if (!sky && !down) {
+          const dch = chamberAt(x, z);
+          if (dch && dch.c.kind >= 6 && dch.e < 0.84) stone = Math.max(0, Math.min(1, (ny / Math.hypot(nx, ny, nz) - 0.8) / 0.12));
+        }
+        glow[go + 3] = stone > 0 ? -stone : Math.min(1.5, sun);
       }
     }
   }

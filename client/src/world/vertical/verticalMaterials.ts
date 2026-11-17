@@ -49,6 +49,23 @@ export function layerRockMaterial(deep: boolean): THREE.MeshStandardMaterial {
 {
   float n = vtNoise(vVtWorld * 0.9) * 0.5 + vtNoise(vVtWorld * 3.7) * 0.32 + vtNoise(vVtWorld * 0.21) * 0.18;
   diffuseColor.rgb *= 0.55 + 0.8 * n;
+  // CR 043: carved flagstones on the dwarven halls' floors (the mesh marks them with a negative day weight):
+  // running-bond slabs, dark joints, a tone per stone, worn in the middle of the paths.
+  float stoneW = max(-vGlow.a, 0.0);
+  if (stoneW > 0.0) {
+    vec2 sp = vVtWorld.xz / vec2(1.9, 1.15);
+    float srow = floor(sp.y);
+    sp.x += srow * 0.5 + fract(sin(srow * 12.9898) * 43758.5453) * 0.37;
+    vec2 scell = floor(sp);
+    vec2 sf = fract(sp);
+    float sh = fract(sin(dot(scell, vec2(127.1, 311.7))) * 43758.5453);
+    float sedge = min(min(sf.x, 1.0 - sf.x) * 1.9, min(sf.y, 1.0 - sf.y) * 1.15);
+    float joint = smoothstep(0.015, 0.06, sedge);
+    float wear = vtNoise(vVtWorld * 0.55) * 0.5 + vtNoise(vVtWorld * 2.3) * 0.3;
+    vec3 tone = diffuseColor.rgb * (0.75 + 0.55 * sh) * (0.8 + 0.35 * wear);
+    tone *= 0.9 + 0.12 * smoothstep(0.0, 0.5, sedge);
+    diffuseColor.rgb = mix(diffuseColor.rgb, mix(tone * 0.3, tone, joint), stoneW);
+  }
   // Pale mineral streaks down the walls.
   float streak = smoothstep(0.66, 0.82, vtNoise(vec3(vVtWorld.x * 0.08, vVtWorld.y * 0.6, vVtWorld.z * 0.08)));
   diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * 1.35 + 0.01, streak * (1.0 - abs(vVtN.y)) * 0.5);
@@ -62,7 +79,7 @@ export function layerRockMaterial(deep: boolean): THREE.MeshStandardMaterial {
   totalEmissiveRadiance += diffuseColor.rgb * g * 2.0 + g * 0.035;
   // The dark itself has a little light (rock reads as rock, never a hole).
   totalEmissiveRadiance += diffuseColor.rgb * 0.45 + vec3(0.002, 0.004, 0.006);
-  totalEmissiveRadiance += diffuseColor.rgb * uDayGlow * vGlow.a;
+  totalEmissiveRadiance += diffuseColor.rgb * uDayGlow * max(vGlow.a, 0.0);
   ${deep ? `// Magma veins in the basalt: a few glowing cracks low on the walls that breathe.
   float c = vtNoise(vVtWorld * 0.06);
   float crack = smoothstep(0.485, 0.5, c) * (1.0 - smoothstep(0.5, 0.515, c));
@@ -71,7 +88,7 @@ export function layerRockMaterial(deep: boolean): THREE.MeshStandardMaterial {
 }`,
       );
   };
-  m.customProgramCacheKey = () => `vt-rock-${deep ? 1 : 0}-v1`;
+  m.customProgramCacheKey = () => `vt-rock-${deep ? 1 : 0}-v2`;
   return m;
 }
 

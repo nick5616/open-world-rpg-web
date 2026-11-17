@@ -543,6 +543,7 @@ func (s *Server) deliverCombatAll(events []combat.Out) {
 	if len(events) == 0 {
 		return
 	}
+	events = s.dwarfWardenEvents(events) // CR 043: Event 1863 beside the combat boss events
 	enc := s.cbtEnc[:0]
 	for i := range events {
 		enc = append(enc, proto.Encode(&events[i].Ev))

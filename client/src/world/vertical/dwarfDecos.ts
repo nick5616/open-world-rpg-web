@@ -10,6 +10,10 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import type { Deco } from '@lodestone/worldgen';
 import { DW, DECO_INTERACT } from './dwarfKinds';
+import { verticalUniforms } from './verticalMaterials';
+
+/** Glowworm sway strength: 1 normally, 0 under reduce flashing / prefers-reduced-motion (the manager sets it). */
+export const dwarfSway = { uSwayAmp: { value: 1 } };
 
 type Col = [number, number, number];
 
@@ -360,7 +364,25 @@ export function buildDwarfDecos(decos: Deco[], layerOf: (d: Deco) => number, h: 
   place(DW.rails, railsGeo(), woodMat, (d, m) => c(m, d.x, d.y, d.z, along(d), Math.max(0.2, d.size / 14), 1, 1));
   place(DW.support, supportGeo(), woodMat, (d, m) => c(m, d.x, d.y, d.z, along(d), Math.max(1, d.size * 0.7), Math.max(1, d.size * 0.7), d.size));
   place(DW.bones, bonesGeo(), stoneMat, (d, m) => c(m, d.x, d.y, d.z, bendY(d), d.size));
-  place(DW.glowworms, glowwormGeo(), stoneMat, (d, m) => c(m, d.x, d.y, d.z, bendY(d), d.size * 0.45, d.size * 0.5, d.size * 0.45));
+  // Glowworm strands sway gently (a vertex sway growing with the strand's length; steady when motion is reduced).
+  const wormMat = h.glowMaterial(0.5, { vertexColors: true, roughness: 0.85 });
+  const prevCompile = wormMat.onBeforeCompile;
+  wormMat.onBeforeCompile = (sh, rend) => {
+    prevCompile.call(wormMat, sh, rend);
+    sh.uniforms.uSwayAmp = dwarfSway.uSwayAmp;
+    sh.uniforms.uSwayT = verticalUniforms.uTime;
+    sh.vertexShader = sh.vertexShader
+      .replace('#include <common>', '#include <common>\nuniform float uSwayAmp;\nuniform float uSwayT;')
+      .replace('#include <begin_vertex>', `#include <begin_vertex>
+{
+  float hang = max(0.0, -position.y);
+  float ph = instanceMatrix[3].x * 0.37 + instanceMatrix[3].z * 0.53 + position.x * 7.0;
+  transformed.x += sin(uSwayT * 0.9 + ph) * 0.05 * hang * hang * uSwayAmp;
+  transformed.z += cos(uSwayT * 0.7 + ph * 1.3) * 0.05 * hang * hang * uSwayAmp;
+}`);
+  };
+  wormMat.customProgramCacheKey = () => 'dw-worm-sway-v1';
+  place(DW.glowworms, glowwormGeo(), wormMat, (d, m) => c(m, d.x, d.y, d.z, bendY(d), d.size * 0.45, d.size * 0.5, d.size * 0.45));
   place(DW.tablet, tabletGeo(), stoneMat, (d, m) => c(m, d.x, d.y, d.z, bendY(d), d.size));
   place(DW.brazier, brazierGeo(), stoneMat, (d, m) => c(m, d.x, d.y, d.z, 0, d.size / 1.4));
   place(DW.dwarfDoor, doorGeo(), stoneMat, (d, m) => {
