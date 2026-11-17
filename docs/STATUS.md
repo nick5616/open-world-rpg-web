@@ -1857,8 +1857,8 @@ Works:
 - Every harness testid kept; `client/scripts/title-flow.mjs` drives title -> local profile -> create (with a look) -> quick-play row -> delete against a mocked account service and checks them (10 PASS).
 
 Gaps:
-- Other players do not see your look yet (replication needs a protocol field; design in CR 047). First-person hands keep the default skin tone.
-- Not run here: the services-backed acceptance harnesses and `infra/smoke-live.mjs` (no Postgres/Redis in this box); their selectors were kept rather than changed. The Go account test (`TestAccountFlow` now covers appearance + delete) needs Postgres and Redis.
+- Replication (follow-up): other players see your look through Interact 91 / Event 1900 (the snapshot mask is full, so no protocol field; no version bump). First-person hands take your skin tone, but only recolour on a page reload after switching characters. Ghosts from another zone keep the default figure.
+- `TestAccountFlow` (appearance + delete) and the zone look tests ran against real Postgres/Redis. The services-backed acceptance harnesses and `infra/smoke-live.mjs` were not run; their selectors were kept rather than changed.
 - The campfire sits mostly behind the left panel at 16:9; the long hair style reads as a hood; no shadows on the stage (a blob under the figure).
 
 ## Playtest 3: balance (branch `pt3/balance`, CR 048)

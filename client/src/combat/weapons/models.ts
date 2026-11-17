@@ -22,7 +22,7 @@ import * as THREE from 'three';
 import { ELEMENT_COLORS } from '../events';
 import { MeshBuilder, M, circle, curve, hash, helix, lathe, polygon, shade, surf, sweep, type Surface, type V3 } from './builder';
 import { lookKey, type WeaponKind, type WeaponLook } from './look';
-import { buildFist, buildForearm, buildOpenHand } from './handMesh';
+import { buildFist, buildForearm, buildOpenHand, syncHandSkin } from './handMesh';
 
 export type Detail = 0 | 1 | 2;
 
@@ -494,6 +494,7 @@ export function fistGeometry(gripR = GRIP_R.sword, d: Detail = 2): THREE.BufferG
   const key = `${gripR.toFixed(4)}#${d}`;
   let g = fistGeos.get(key);
   if (!g) {
+    syncHandSkin(); // CR 047
     g = buildFist(gripR, d === 2 ? 2 : 1);
     g.name = `fist:${key}`;
     fistGeos.set(key, g);
@@ -503,11 +504,13 @@ export function fistGeometry(gripR = GRIP_R.sword, d: Detail = 2): THREE.BufferG
 
 /** An open right hand, palm forward (-Z), fingers up. */
 export function openHandGeometry(): THREE.BufferGeometry {
+  if (!openGeo) syncHandSkin(); // CR 047
   openGeo ??= buildOpenHand();
   return openGeo;
 }
 
 export function forearmGeometry(): THREE.BufferGeometry {
+  if (!armGeo) syncHandSkin(); // CR 047
   armGeo ??= buildForearm();
   return armGeo;
 }

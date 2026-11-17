@@ -9,6 +9,7 @@
 // combat (WP09+); this keeps the rig and the motion that sells movement:
 // walk bob scaled by speed, a lift while airborne, a dip on landing.
 
+import { ownSkinHex } from '../net/ownLook';
 import { useRef } from 'react';
 import { createPortal, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -21,7 +22,6 @@ import { tickWeaponMaterial, weaponMaterial } from '../combat/weapons/material';
 const wandGeo = weaponGeometry({ weapon: 'wand', material: '', gem: 1 }, 2);
 
 const REST_PITCH = 0.35; // wizard-wars rest pose: wand tipped up toward the crosshair
-const SKIN = '#c9a27e';
 const SLEEVE = '#3b4a6b';
 /** Meters of travel per full bob cycle (two footfalls). */
 const STRIDE_M = 2.4;
@@ -71,7 +71,7 @@ function Arms() {
         </mesh>
         <mesh position={[0, 0, -0.2]}>
           <sphereGeometry args={[0.05, 10, 8]} />
-          <meshStandardMaterial color={SKIN} roughness={0.7} />
+          <meshStandardMaterial color={ownSkinHex()} roughness={0.7} />
         </mesh>
         {/* pt/ux: the procedural wand (combat/weapons), grip in the hand, tip forward */}
         <mesh position={[0, 0, -0.21]} rotation={[-Math.PI / 2, 0, 0]} geometry={wandGeo} material={weaponMaterial()} />
@@ -84,7 +84,7 @@ function Arms() {
         </mesh>
         <mesh position={[0, 0, -0.2]} scale={[1, 0.45, 1.2]}>
           <sphereGeometry args={[0.06, 10, 8]} />
-          <meshStandardMaterial color={SKIN} roughness={0.7} />
+          <meshStandardMaterial color={ownSkinHex()} roughness={0.7} />
         </mesh>
       </group>
     </group>

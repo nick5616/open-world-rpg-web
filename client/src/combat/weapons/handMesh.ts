@@ -22,9 +22,15 @@
 
 import * as THREE from 'three';
 import { MeshBuilder, lathe, shade, surf, sweep, type V3 } from './builder';
+import { ownSkinHex } from '../../net/ownLook';
 
 /** The avatar's skin (net/avatar.ts skinMat) and the navy shirt. */
+// CR 047: your chosen skin tone (net/ownLook.ts, set when the character is played, before this chunk loads)
 const SKIN = surf('#c9a27e', 0, 0.62);
+/** Builds read the skin at build time (this module may load before a character is chosen): call before building a hand. */
+export function syncHandSkin(): void {
+  SKIN.color.set(ownSkinHex());
+}
 const SLEEVE = surf('#3b4a6b', 0, 0.85);
 /** Occluded skin drifts warmer and darker (blood under thin skin), not grey. */
 const SKIN_SHADOW = new THREE.Color('#6e4130');

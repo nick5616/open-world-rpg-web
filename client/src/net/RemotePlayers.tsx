@@ -24,6 +24,7 @@ import { takeNoteHits } from '../ui/music/store';
 import { drawnRemotes } from './netStore';
 import type { RemoteView } from './interpolation';
 import type { ZoneSession } from './zoneSession';
+import { INTERACT_LOOK, LOOK_ACT_ASK, LookBook } from './remoteLooks';
 import { EV } from '../combat/events';
 import { DEBUG } from '../config';
 import { castHooks } from '../combat/fx/castOrigin';
@@ -57,7 +58,16 @@ export function RemotePlayers({ session }: { session: ZoneSession }) {
   const views = useMemo<RemoteView[]>(() => [], []);
   const seen = useMemo(() => new Set<number>(), []);
   const hud = useMemo(() => ({ last: 0 }), []);
+  const looks = useMemo(() => new LookBook(), []); // CR 047: other players' creation looks
   const budget = useMemo(() => ({ rigs: new FullRigBudget(), full: 0 }), []);
+
+  useEffect(() => {
+    session.eventListeners.add(looks.onEvent);
+    return () => {
+      session.eventListeners.delete(looks.onEvent);
+      looks.clear();
+    };
+  }, [session, looks]);
 
   useEffect(() => {
     // Playtest 2: spells leave another player's staff/wand tip or off hand (combat/fx/castOrigin.ts).
@@ -114,6 +124,12 @@ export function RemotePlayers({ session }: { session: ZoneSession }) {
         liveAvatars.set(v.id, a);
         group.add(a.root);
       }
+      if (!a.look) {
+        // CR 047: apply their creation look once the zone has told us; ask (a few times) until then
+        const l = looks.get(v.id);
+        if (l) a.setLook(l);
+        else if (looks.due(v.id, now)) session.sendInteract(INTERACT_LOOK, BigInt(v.id), LOOK_ACT_ASK);
+      }
       // CR 022: their caster record (drawn look, casting bit, interpolation delay), then the pose from it.
       castState.activity(v.id, v.activity, v.yaw, v.pitch, v.delayMs, now, spellFx, v.speed);
       followCaster(a.anim, castState.peek(v.id), a.weaponKind);
@@ -129,6 +145,7 @@ export function RemotePlayers({ session }: { session: ZoneSession }) {
         avatars.delete(id);
         if (liveAvatars.get(id) === a) liveAvatars.delete(id);
         castState.forget(id);
+        looks.forget(id);
       }
     }
     drawnRemotes.views = views.map((v) => ({ ...v }));

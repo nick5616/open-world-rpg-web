@@ -93,3 +93,27 @@ export function randomLook(rand: () => number = Math.random): Look {
 export function sameLook(a: Look, b: Look): boolean {
   return LOOK_KEYS.every((k) => a[k] === b[k]);
 }
+
+// ---- the wire word (CR 047): the zone's PackLook twin (server/zone/internal/game/looks.go) ----
+
+const SHIFTS = [0, 2, 5, 8, 12, 15] as const;
+
+/** 19 bits: bit 18 = "a look", then build, skin, hairStyle, hairColor, beard, eyes. */
+export function packLook(l: Look): number {
+  let v = 1 << 18;
+  LOOK_KEYS.forEach((k, i) => {
+    v |= Math.min(LIMITS[k] - 1, Math.max(0, l[k] | 0)) << SHIFTS[i];
+  });
+  return v;
+}
+
+/** Inverse of packLook; null for 0 (no look stored) or a word without the marker bit. */
+export function unpackLook(v: number): Look | null {
+  if (!v || !(v & (1 << 18))) return null;
+  const l = { ...DEFAULT_LOOK };
+  const widths = [2, 3, 3, 4, 3, 3];
+  LOOK_KEYS.forEach((k, i) => {
+    l[k] = Math.min(LIMITS[k] - 1, (v >> SHIFTS[i]) & ((1 << widths[i]) - 1));
+  });
+  return l;
+}
