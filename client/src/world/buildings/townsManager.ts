@@ -108,7 +108,7 @@ export class TownsManager {
     if (!runtime.towns) throw new Error('no towns in this runtime');
     this.towns = runtime.towns;
     this.group.name = 'towns';
-    this.npcs = new NpcRenderer(this.towns, runtime.ground as never);
+    this.npcs = new NpcRenderer(this.towns, runtime.ground as never, (si) => runtime.data.sites[this.towns.settlements[si]?.site]?.layer === 2);
     this.group.add(this.npcs.group);
     this.group.add(this.smoke.mesh);
     this.hud = new TownHud();
