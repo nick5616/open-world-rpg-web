@@ -8,7 +8,9 @@ package game
 // safe zones and warden are in vertical.go (addLayerGroups).
 
 import (
+	"fmt"
 	"math"
+	"strconv"
 	"time"
 
 	"lodestone/server/pkg/caves"
@@ -17,6 +19,7 @@ import (
 	"lodestone/server/pkg/proto"
 	"lodestone/server/pkg/structures"
 	"lodestone/server/pkg/vertical"
+	"lodestone/server/zone/internal/items"
 )
 
 // Event kinds and Interact targets (contracts/events.md 1860-1879).
@@ -130,8 +133,35 @@ func (s *Server) chestLoot(e *Entity, d *vertical.Deco, id uint32, tier int, now
 		pk := s.spawnPickup(e, v, dr.item, dr.qty, sd, now)
 		s.sendEventTo(e, &proto.Event{Kind: EventDropSpawned, EntityID: pk.ID, TargetID: e.ID, Value: int32(dr.qty), Data: []byte(dr.item)})
 	}
+	if it := chestGear(seed, tier, d.Y); it != nil {
+		if sess := s.byChar[e.CharacterID]; sess != nil && sess.items != nil {
+			it.Seed = int64(seed)
+			it.Prov = []items.Prov{{Ev: "rolled", Char: e.CharacterID, Name: e.Name, Src: "chest:" + strconv.Itoa(int(id)), At: now.UnixMilli(), Local: sess.items.persist == persistLocal}}
+			pos := s.groundSpot(d.X+1.1, d.Z+0.4, d.Y)
+			key := fmt.Sprintf("chest:%x:%d:%d", s.itm.boot, id, now.UnixNano())
+			s.spawnDrop(e.ID, it, pos, &itemDrop{key: key, source: SourceContainer, readyAt: now.Add(groundSettle)}, now.Add(constants.PickupDespawnS*time.Second))
+			s.announceIfBitchin(sess, it)
+		}
+	}
 	s.log.Info("cave chest", "deco", id, "tier", tier, "character", e.CharacterID, "drops", len(drops))
 	_ = constants.PickupDespawnS
+}
+
+// chestGear rolls a chest's piece of gear (nil: none): tier 1 (cave) 15 %,
+// tier 2 (camp road) 45 %, tier 3 (hall) always, with rarity luck and item
+// level rising with depth (floor y); a hall's is at least Uncommon.
+func chestGear(seed uint64, tier int, floorY float64) *items.Item {
+	r := items.NewRNG(seed ^ 0xCE57)
+	if !r.Chance([]float64{0.15, 0.45, 1}[min(2, max(0, tier-1))]) {
+		return nil
+	}
+	depth := math.Max(0, -floorY)
+	luck := 1 + depth/120 + 0.25*float64(tier-1)
+	min0 := 0
+	if tier >= 3 {
+		min0 = 1
+	}
+	return items.RollEquipment(r, items.Rolled{Level: 6 + 3*tier + int(depth/25), Element: -1, Luck: luck, Deep: depth > 160, MinRarity: min0})
 }
 
 // dwarfHall: site i is a dwarven settlement or door; returns the settlement
