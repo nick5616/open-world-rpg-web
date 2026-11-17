@@ -172,7 +172,7 @@ function CampMenu() {
         </div>
         <div style={{ display: 'flex', gap: 6 }}>
           <button data-testid="camp-open-build" onClick={() => useCamps.setState({ menu: false, buildMenu: true })} title="Walls, floors, roofs, furniture: build a base (8)">
-            Build a base (8)
+            Build a base (9)
           </button>
           <button onClick={() => useCamps.setState({ menu: false })}>Close (P)</button>
         </div>

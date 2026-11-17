@@ -4,7 +4,7 @@
 // and cooldowns are read on the HUD's own rAF (refs, not React state), like
 // the debug HUD, so combat never re-renders React per frame.
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { COMBAT } from '@lodestone/contracts';
 import { localPlayer } from '../state/live';
 import { combatRuntime } from './link';
@@ -43,12 +43,24 @@ function Bar({ id, color, width, label }: { id: string; color: string; width: nu
   );
 }
 
+const TOAST_MS = 1500;
+
 export function CombatHud() {
   const active = useCombatHud((s) => s.active);
   const loadouts = useCombatHud((s) => s.loadouts);
   const activeLoadout = useCombatHud((s) => s.activeLoadout);
   const boss = useCombatHud((s) => s.boss);
   const toastMsg = useCombatHud((s) => s.toast);
+  // The toast hides 1.5 s after it was set, but nothing else re-renders this component: schedule the re-render
+  // (before, "Dodged!" stayed on screen until a slot, charge or loadout change happened to render it).
+  const [, expire] = useState(0);
+  useEffect(() => {
+    if (!toastMsg) return;
+    const left = TOAST_MS - (performance.now() - toastMsg.at);
+    if (left <= 0) return;
+    const t = setTimeout(() => expire((n) => n + 1), left + 20);
+    return () => clearTimeout(t);
+  }, [toastMsg]);
   const charges = useCombatHud((s) => s.charges);
   const selected = useCombatHud((s) => s.selected);
   const invItems = useInventory((s) => s.inv?.items);
@@ -152,7 +164,7 @@ export function CombatHud() {
         </div>
         <div ref={hintRow} data-testid="combat-hint" style={{ opacity: 0.6, transition: 'opacity 450ms ease', fontSize: 11, lineHeight: '14px', textAlign: 'center', textShadow: '0 1px 2px #000' }}>{COMBAT_HINT}</div>
       </div>
-      {toastMsg && now - toastMsg.at < 1500 && (
+      {toastMsg && now - toastMsg.at < TOAST_MS && (
         <div key={toastMsg.at} style={{ position: 'absolute', top: '38%', left: '50%', transform: 'translateX(-50%)', fontSize: 20, fontWeight: 700, textShadow: '0 0 6px #000' }}>
           {toastMsg.text}
         </div>

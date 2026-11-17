@@ -1,5 +1,15 @@
 [
   {
+    "id": "pt4-fixes",
+    "date": "2026-11-17",
+    "title": "Small fixes from a full play-through",
+    "items": [
+      "The build menu and camp menu now name the right key for the hammer (9).",
+      "The little combat messages (Dodged!, Parried!) fade after a moment instead of sticking on screen.",
+      "Trying to build too near a town now says it is too close, instead of the confusing 'Not inside a settlement'."
+    ]
+  },
+  {
     "id": "pt4-in-world",
     "date": "2026-11-17",
     "title": "Guidance in the world",
