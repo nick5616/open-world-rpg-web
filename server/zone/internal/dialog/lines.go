@@ -227,7 +227,7 @@ func Greeting(p Person, ps Persona, m Memory, ctx Context) string {
 	base := pick(pool, p.ID, uint64(m.Talks)*7+1)
 	line := fill(base, p, ctx.Player)
 	if rs := ctx.remarks(p, ps, m); len(rs) > 0 {
-		line += " " + fill(rs[int(mix(p.ID^uint64(m.Talks)*13))%len(rs)], p, ctx.Player)
+		line += " " + fill(rs[mix(p.ID^uint64(m.Talks)*13)%uint64(len(rs))], p, ctx.Player)
 	}
 	return line
 }

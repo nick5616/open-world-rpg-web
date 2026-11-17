@@ -257,3 +257,40 @@ func TestPlaceNamesTheNeighbours(t *testing.T) {
 		t.Fatal(s)
 	}
 }
+
+// Real ids have the high bit set about half the time: nothing may index a
+// list with a negative number (the dev zone's first conversation panicked on one).
+func TestNeverPanicsOnAnyIDOrContext(t *testing.T) {
+	ctxs := []Context{
+		{Player: "Nicole", Hour: 7, Level: 1},
+		{Player: "Nicole", Hour: 23, Night: true, Defense: true, Weather: "thunderstorm", Level: 20, Gear: 3, Act: 4, Event: "word is about a caravan", Deeds: []Deed{{Kind: "camp"}, {Kind: "tower"}, {Kind: "vault"}, {Kind: "warden"}, {Kind: "beaten"}}, Work: Work{Shop: true, Bounty: true, Rest: true, Forge: true}},
+		{Player: "", Hour: 13, Weather: "snow", Sites: sites()},
+	}
+	for i := uint64(0); i < 60; i++ {
+		id := mix(i) | uint64(i%2)<<63
+		for role := uint8(0); role < 7; role++ {
+			for _, dw := range []bool{false, true} {
+				for _, key := range []string{"", KeyKeeper, KeyMeadows, KeySmith, KeyBounty, KeyCaptain, KeyMasterSmith} {
+					p := person(id, role)
+					p.Dwarven, p.Key = dw, key
+					for _, ctx := range ctxs {
+						for talks := 0; talks < 6; talks++ {
+							m := Memory{Met: talks > 0, Talks: talks, Affinity: talks * 2}
+							n := Open(p, m, ctx)
+							if n.Line == "" || len(n.Choices) < 3 {
+								t.Fatalf("empty node for %d/%d", id, role)
+							}
+							for _, topic := range []string{"who", "place", "rumour", "family", "origin", "wants", "secret", "nope"} {
+								mm := m
+								if Reply(p, &mm, ctx, topic).Line == "" {
+									t.Fatalf("no reply to %s", topic)
+								}
+							}
+							_ = Farewell(p, PersonaOf(p), m, ctx.Player)
+						}
+					}
+				}
+			}
+		}
+	}
+}

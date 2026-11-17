@@ -368,7 +368,7 @@ func (s *Server) dialogChoose(sess *session, id int, now time.Time) {
 }
 
 func dialogMenuLine(p dialog.Person, m dialog.Memory) string {
-	return []string{"Anything else?", "What else is on your mind?", "Go on, ask."}[int(p.ID+uint64(m.Talks))%3]
+	return []string{"Anything else?", "What else is on your mind?", "Go on, ask."}[(p.ID+uint64(m.Talks))%3]
 }
 
 func dialogWorkLine(kind string, t dialog.Temper) string {
