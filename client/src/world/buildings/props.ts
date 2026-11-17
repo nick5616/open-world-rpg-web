@@ -376,6 +376,28 @@ export function drawProp(mb: MeshBuilder, p: TownProp, d: PropDims, ctx: PropCtx
       const e = at(f, -hu - 0.2, y + 2.6, 1.8);
       mb.quad(a, b, c, e, [0, 1, 0]);
       mb.quad(a, b, c, e, [0, -1, 0]);
+      if (detail() >= 1) {
+        // A scalloped valance along the awning's front edge, strings of onions / garlic hung from the ridge
+        // beam, and a crate of produce in front of the counter.
+        const nv = Math.max(4, Math.round((hu * 2 + 0.4) / 0.28));
+        for (let i = 0; i < nv; i++) {
+          const ua = -hu - 0.2 + (i * (2 * hu + 0.4)) / nv;
+          const ub = -hu - 0.2 + ((i + 1) * (2 * hu + 0.4)) / nv;
+          P(mb, 'stripes', i & 1 ? tints[v8 & 3] : [1, 1, 0.95]);
+          const tri: V3[] = [at(f, ua, y + 2.6, 1.8), at(f, ub, y + 2.6, 1.8), at(f, (ua + ub) / 2, y + 2.36, 1.8)];
+          mb.poly(tri, dirOf(f, 0, 0, 1));
+          mb.poly(tri, dirOf(f, 0, 0, -1));
+        }
+        P(mb, 'plain', [0.9, 0.85, 0.7]);
+        for (let i = 0; i < 3; i++) {
+          const uu = -hu * 0.6 + i * hu * 0.6;
+          mb.cyl(f, uu, -d.hv - 0.3, y + 1.7, y + 2.2, 0.01, 5, { r1: 0.07, top: false });
+        }
+        P(mb, 'planks', [0.9, 0.75, 0.55]);
+        mb.box(f, hu * 0.3, hu * 0.3 + 0.45, y, y + 0.35, d.hv + 0.12, d.hv + 0.5);
+        P(mb, 'plain', [0.85, 0.35, 0.22]);
+        for (let i = 0; i < 3; i++) mb.cyl(f, hu * 0.3 + 0.12 + i * 0.1, d.hv + 0.31, y + 0.35, y + 0.46, 0.07, 5, { r1: 0.04 });
+      }
       // Wares on the counter.
       const ware: V3[] = [
         [0.85, 0.3, 0.2],
@@ -426,6 +448,19 @@ export function drawProp(mb: MeshBuilder, p: TownProp, d: PropDims, ctx: PropCtx
       mb.slopedBox(turned(f, Math.PI / 2), 0, 0.8, -r - 0.2, r + 0.2, y + 2.25, y + 2.75, y + 2.25);
       P(mb, 'wood', W(0.6));
       mb.cyl(f, 0.2, 0, y + 1.2, y + 1.45, 0.14, 6, { r1: 0.17 });
+      if (detail() >= 1) {
+        // Rope from the windlass to a bucket hanging in the shaft, a crank handle on the axle, a mossy cap course on the ring.
+        P(mb, 'plain', [0.7, 0.6, 0.42]);
+        mb.box(f, -0.2 - 0.012, -0.2 + 0.012, y + 1.0, y + 1.7, -0.012, 0.012, { top: false });
+        P(mb, 'wood', W(0.7));
+        mb.cyl(f, -0.2, 0, y + 0.78, y + 1.0, 0.1, 6, { r1: 0.13, top: false });
+        P(mb, 'metal');
+        mb.cyl(f, -0.2, 0, y + 0.86, y + 0.9, 0.115, 6, { top: false });
+        mb.box(f, r - 0.1, r + 0.12, y + 1.62, y + 1.66, 0.0, 0.04);
+        mb.box(f, r + 0.08, r + 0.12, y + 1.4, y + 1.66, 0.0, 0.04);
+        P(mb, 'mossStone', W(0.95));
+        mb.cyl(f, 0, 0, y + d.h - 0.12, y + d.h + 0.04, r + 0.05, 8, { a0: Math.PI / 8, top: false });
+      }
       return;
     }
     case 'lantern': {

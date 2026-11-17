@@ -202,7 +202,8 @@ export function drawBuildingShell(mb: MeshBuilder, t: Towns, b: Building, height
         break;
       case BK.upper: {
         // Ceiling inside; on flat roofs (adobe) the walkable roof, with a lip.
-        P(mb, look.inner === 'logs' ? 'planks' : 'floor', [0.85, 0.78, 0.7]);
+        if (detail() >= 1 && look.inner === 'plaster') P(mb, 'plaster', [0.92, 0.88, 0.82]); // plastered ceiling between dark beams (dress.ts)
+        else P(mb, look.inner === 'logs' ? 'planks' : 'floor', [0.85, 0.78, 0.7]);
         mb.slopedBox(f, -bx.hx, bx.hx, -bx.hz, bx.hz, bx.y0, bx.y0 + 0.001, bx.y0 + 0.001, { top: false, sides: false, bottom: true });
         if (b.roof === 2 || b.roof === 3) {
           P(mb, 'adobe', [0.86, 0.8, 0.74]);
@@ -870,6 +871,8 @@ function drawFence(mb: MeshBuilder, bx: Box): void {
     const a = -L + (k * 2 * L) / n;
     if (long) mb.box(f, a - 0.05, a + 0.05, bx.y0, top, -0.06, 0.06);
     else mb.box(f, -0.06, 0.06, bx.y0, top, a - 0.05, a + 0.05);
+    // Pointed post caps (detail 1+).
+    if (detail() >= 1) mb.cyl(f, long ? a : 0, long ? 0 : a, top, top + 0.1, 0.075, 4, { r1: 0.0, a0: Math.PI / 4 });
   }
   for (const y of [g + 0.35, g + 0.72]) {
     if (long) mb.box(f, -L, L, y, y + 0.08, -0.03, 0.03, { bottom: true });

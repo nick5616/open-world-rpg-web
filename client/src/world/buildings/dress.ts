@@ -116,14 +116,6 @@ const CLOTHS: V3[] = [
 
 type Ground = (x: number, z: number) => number;
 
-/** Sits on the ground at (x, z) with a frame turned so local +v points away from its wall. */
-interface Spot {
-  f: Frame;
-  y: number;
-  x: number;
-  z: number;
-}
-
 function barrel(mb: MeshBuilder, f: Frame, u: number, v: number, y: number, h = 0.9, r = 0.3, water = false): void {
   P(mb, 'wood', WOOD[Math.floor(hash(u * 7 + 3, v * 5 + 1) * 3) % 3]);
   mb.cyl(f, u, v, y, y + h * 0.5, r * 0.88, 8, { r1: r, top: false });
