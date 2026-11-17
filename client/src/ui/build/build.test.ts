@@ -2,7 +2,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { CAMPS, type Event as ZoneEvent } from '@lodestone/contracts';
-import { BUILD_EV, buildArg, BUILD_Y_BIAS, CAMP_EV, CAMP_REFUSAL, decodeArea, decodePiece } from '../camps/events';
+import { BUILD_REFUSAL, BUILD_EV, buildArg, BUILD_Y_BIAS, CAMP_EV, CAMP_REFUSAL, decodeArea, decodePiece } from '../camps/events';
 import { emptyMine, reduceCampEvent, type CampState } from '../camps/store';
 import { CATALOGUE, CATEGORIES, costLines, cycleMaterial, cyclePiece, inCategory, missingText, refundLines, repairLines } from './defs';
 
@@ -60,6 +60,12 @@ describe('build wire', () => {
     patch = reduceCampEvent(s, ev(BUILD_EV.missing, json([{ item: 'wood:log', qty: 6, have: 2 }]), { targetId: 104 }), 0);
     expect(patch!.missing).toMatchObject({ kind: 104 });
     expect(patch!.notes![0].text).toBe('Needs 4 more Logs');
+  });
+
+  it('words refusal 3 for a base, not a camp (a green field near a town said "Not inside a settlement")', () => {
+    expect(BUILD_REFUSAL[3]).toMatch(/too close/i);
+    expect(CAMP_REFUSAL[3]).toBe('Not inside a settlement');
+    expect(BUILD_REFUSAL[6]).toBe(CAMP_REFUSAL[6]);
   });
 
   it('has friendly texts for refusals 24-34', () => {

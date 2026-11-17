@@ -8,7 +8,7 @@ import { CAMPS } from '@lodestone/contracts';
 import { localPlayer } from '../../state/live';
 import { campRuntime } from '../camps/collide';
 import { runtimeEnv } from '../camps/ghost';
-import { CAMP_REFUSAL, type CampPiece } from '../camps/events';
+import { BUILD_REFUSAL, type CampPiece } from '../camps/events';
 import { useCamps } from '../camps/store';
 import { useInventory } from '../inventory/store';
 import { costLines, missing, missingText, type CostLine } from './defs';
@@ -107,7 +107,7 @@ export function updateBuildGhost(): BuildGhost {
   buildGhost.active = true;
   buildGhost.lines = costLines(b.kind, haveItem);
   buildGhost.short = missing(buildGhost.lines);
-  buildGhost.text = buildGhost.reason !== 0 ? (CAMP_REFUSAL[buildGhost.reason] ?? 'Not there') : buildGhost.short.length ? missingText(buildGhost.lines) : '';
+  buildGhost.text = buildGhost.reason !== 0 ? (BUILD_REFUSAL[buildGhost.reason] ?? 'Not there') : buildGhost.short.length ? missingText(buildGhost.lines) : '';
   return buildGhost;
 }
 

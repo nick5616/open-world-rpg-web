@@ -24,7 +24,7 @@ import { emitSound } from '../../audio/bridge';
 import { localPlayer } from '../../state/live';
 import { ItemIcon } from '../inventory/ItemIcon';
 import { GOLD, PANEL_BG, PANEL_BORDER, TEXT } from '../inventory/styles';
-import { CAMP_REFUSAL } from '../camps/events';
+import { BUILD_REFUSAL, CAMP_REFUSAL } from '../camps/events';
 import { facingRot } from '../camps/placement';
 import { ensureCampHook } from '../camps/link';
 import { pushCampNote, useCamps } from '../camps/store';
@@ -87,7 +87,7 @@ export function confirmBuild(): boolean {
   const g = updateBuildGhost();
   if (!s.building || !g.active) return false;
   if (g.reason !== 0) {
-    pushCampNote('refused', CAMP_REFUSAL[g.reason] ?? 'Not there');
+    pushCampNote('refused', BUILD_REFUSAL[g.reason] ?? 'Not there');
     return false;
   }
   if (g.short.length) {

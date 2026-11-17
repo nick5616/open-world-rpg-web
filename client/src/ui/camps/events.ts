@@ -65,6 +65,9 @@ export const CAMP_REFUSAL: Record<number, string> = {
   34: 'Too soon: wait a little',
 };
 
+/** The hammer's wording: refusal 3 reads "Not inside a settlement" for a camp, which says the opposite for a base (playcheck: it showed on a green field 80 m from a town). */
+export const BUILD_REFUSAL: Record<number, string> = { ...CAMP_REFUSAL, 3: 'Too close to a settlement (build at least 24 m out)' };
+
 export interface CampPiece {
   id: number;
   kind: number;
