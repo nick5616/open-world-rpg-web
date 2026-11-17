@@ -33,6 +33,9 @@ const want = (name) => !ONLY || ONLY.has(name);
 // Output prefix (default wp20; playtest 1 towns/density runs use --prefix pt-towns-bench).
 const prefixArg = process.argv.indexOf('--prefix');
 const PREFIX = prefixArg >= 0 ? process.argv[prefixArg + 1] : 'wp20';
+// Quality tier (default high): --tier low|medium|high|ultra (playtest 3 towns art: detail levels follow the tier).
+const tierArg = process.argv.indexOf('--tier');
+const TIER = tierArg >= 0 ? process.argv[tierArg + 1] : 'high';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const log = [];
 const say = (s) => {
@@ -88,8 +91,8 @@ const gpuArgs = ['--use-angle=d3d11', '--enable-gpu', '--ignore-gpu-blocklist', 
 const browser = await chromium.launch({ headless: true, args: gpuArgs });
 const viewport = { width: 1600, height: 900 };
 const context = await browser.newContext({ viewport });
-await context.addInitScript(() => {
-  localStorage.setItem('lodestone_quality_settings', JSON.stringify({ state: { setting: 'high' }, version: 0 }));
+await context.addInitScript((tier) => {
+  localStorage.setItem('lodestone_quality_settings', JSON.stringify({ state: { setting: tier }, version: 0 }));
   const w = window;
   w.__wp20 = { frames: [], rec: false };
   let last = performance.now();
@@ -99,7 +102,7 @@ await context.addInitScript(() => {
     requestAnimationFrame(tick);
   };
   requestAnimationFrame(tick);
-});
+}, TIER);
 const page = await context.newPage();
 const errors = [];
 page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
@@ -116,7 +119,7 @@ const renderer = await page.evaluate(() => {
   const e = gl?.getExtension('WEBGL_debug_renderer_info');
   return e ? gl.getParameter(e.UNMASKED_RENDERER_WEBGL) : 'unknown';
 });
-say(`# WP20 towns bench (headless Chromium, ${renderer}, ${viewport.width}x${viewport.height}, high tier, uncapped, ${DEV ? 'vite dev' : 'production build'})`);
+say(`# WP20 towns bench (headless Chromium, ${renderer}, ${viewport.width}x${viewport.height}, ${TIER} tier, uncapped, ${DEV ? 'vite dev' : 'production build'})`);
 say(`date: ${new Date().toISOString()}; playable after ${Date.now() - t0} ms`);
 
 const T = (fn, arg) => page.evaluate(fn, arg);
@@ -128,6 +131,7 @@ await T(() => {
 });
 await T(() => {
   window.__lodestone.setFreezeTime(true);
+  window.__lodestone.setWeather('clear'); // same sky in every before / after run
   window.__lodestone.setTimeOfDay(3600 * 0.45);
 });
 const settlements = await T(() => window.__lodestoneTowns.settlements());
@@ -220,7 +224,7 @@ if (want('overview')) {
 
 // 2. Street level: on a street 60% of the way out, looking back to the square.
 const streets = await T((i) => window.__lodestoneTowns.streets(i), largest);
-if (want('street')) {
+if (want('street') || want('dusk')) {
   const st = streets.find((s) => s.points.length >= 6) ?? streets[0];
   const n = st.points.length / 3;
   const k = Math.floor(n * 0.62);
@@ -228,6 +232,13 @@ if (want('street')) {
   await walkAt(p, { x: C.x, y: C.y + 3, z: C.z });
   await record('street level (looking along a street to the square)', true);
   await shot('street');
+  if (want('dusk')) {
+    // Playtest 3 towns art: the same street at dusk (lit windows, lanterns, chimney smoke).
+    await T(() => window.__lodestone.setTimeOfDay(3600 * 0.8));
+    await sleep(1500);
+    await shot('street-dusk');
+    await T(() => window.__lodestone.setTimeOfDay(3600 * 0.45));
+  }
 }
 
 const buildings = await T((i) => window.__lodestoneTowns.buildings(i), largest);
@@ -386,7 +397,7 @@ const stats = await T(() => window.__lodestoneTowns.stats());
 say(`towns layer: worker ready after ${Math.round(stats.readyMs)} ms (towns_build ${Math.round(stats.worker.towns)} ms incl. wasm, textures ${Math.round(stats.worker.textures)} ms, roads ${Math.round(stats.worker.roads)} ms, all in the worker); max settlement/structure build ${stats.maxBuildMs.toFixed(1)} ms (worker); max main-thread upload step ${stats.maxUploadMs.toFixed(2)} ms; ${stats.hiddenScatter} scatter objects hidden`);
 say(errors.length ? `errors (${errors.length}):\n  ${errors.slice(0, 20).join('\n  ')}` : 'no page errors');
 if (!ONLY) {
-  fs.writeFileSync(path.join(evidence, `${PREFIX}-drawcalls.json`), JSON.stringify({ date: new Date().toISOString(), renderer, viewport, tier: 'high', build: DEV ? 'dev' : 'production', seed: '20261108', town: { index: largest, ...town }, budgetDrawCalls: 400, views, towns: stats, errors }, null, 2));
+  fs.writeFileSync(path.join(evidence, `${PREFIX}-drawcalls.json`), JSON.stringify({ date: new Date().toISOString(), renderer, viewport, tier: TIER, build: DEV ? 'dev' : 'production', seed: '20261108', town: { index: largest, ...town }, budgetDrawCalls: 400, views, towns: stats, errors }, null, 2));
   fs.writeFileSync(path.join(evidence, `${PREFIX}-drawcalls.txt`), log.join('\n') + '\n');
   say(`wrote docs/evidence/${PREFIX}-drawcalls.json and .txt`);
 }

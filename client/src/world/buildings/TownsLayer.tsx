@@ -9,6 +9,7 @@ import type { WorldRuntime } from '../core/runtime';
 import { QUALITY_PRESETS, useQualityStore } from '../../stores/qualityStore';
 import { TownsManager } from './townsManager';
 import { installTownsDebug } from './townsDebug';
+import { detailOfTier } from './detail';
 
 /** Night light pool by quality tier (fixed for the session: changing it would recompile every lit material). */
 export function townLightCount(maxLights: number): number {
@@ -20,7 +21,7 @@ export function TownsLayer({ runtime }: { runtime: WorldRuntime }) {
   const manager = useMemo(() => {
     if (!runtime.towns) return null;
     try {
-      return new TownsManager(runtime, townLightCount(QUALITY_PRESETS[useQualityStore.getState().shaderTier].maxLights));
+      return new TownsManager(runtime, townLightCount(QUALITY_PRESETS[useQualityStore.getState().shaderTier].maxLights), detailOfTier(useQualityStore.getState().tier));
     } catch (err) {
       console.warn('[towns] layer unavailable', err);
       return null;

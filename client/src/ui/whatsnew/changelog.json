@@ -1,5 +1,16 @@
 [
   {
+    "id": "pt3-towns-art",
+    "date": "2026-11-17",
+    "title": "Villages worth living in",
+    "items": [
+      "Houses now have framed, glowing windows, shutters, flower boxes and curtains, stone footings and half-timbered walls.",
+      "Barrels, carts, wood piles and washing lines sit by the walls; inns hang a sign and lanterns glow by the doors at night.",
+      "Inside, rooms have beams, wainscot, candles and a proper hearth.",
+      "Better graphics settings show more of it: Low keeps the old look, High adds the finest detail."
+    ]
+  },
+  {
     "id": "pt3-lights",
     "date": "2026-11-17",
     "title": "Light for dark places",

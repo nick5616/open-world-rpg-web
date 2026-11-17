@@ -1891,3 +1891,25 @@ Works:
 Evidence (`docs/evidence/pt3-lights-*`): `cave-dark`, `cave-torch`, `cave-torch-two-familiars` (a torch and two familiars in an Underground tunnel), `cave-frost-own-view`, `familiars` (all eight in third person), `pt3-lights-run.json` (pool intensities, light count, frame time).
 
 Gaps: no ground-placed torch and no Lumen Wisp demon effect (the brief's optional items); torch and familiar state does not survive a zone hand-off (press 8 / recast); older characters have no starter torch; the 80 m+ low-LOD figure shows only a halo; the eight spell names are proposals (`pending`).
+
+## Playtest 3: towns art (branch `pt3/towns-art`, CR 046)
+
+Playtest feedback: "Make the assets in the world better and higher fidelity, like it would make you want to live in this world, super immersive. Houses are just okay." Render-side only: no genVersion change, no collision or footprint change, no contract, migration or event change. Details in `docs/cr/046-towns-art.md` and `client/src/world/buildings/README.md` "Towns art".
+
+**Works**
+- **Detail levels** (`buildings/detail.ts`) follow the quality tier at startup: low = the old look and cost, medium adds frames / trim / dressing, high adds the rich pass and 512 px textures.
+- **Houses**: windows with frames, leaded panes (warm per-pane glow at night, emissive, no lights), board-and-batten shutters (some open), flower boxes, curtains; stone footing courses; lime wash per building; real half-timbering on the timber style (posts, plates, rails, knee braces, framed gables); per-building roof tint, ridge caps, rafter tails; stepped chimneys with pots (smoke from the pots); door surrounds, glowing wall lanterns, the inn's hanging sign.
+- **Settlement**: yard clutter (barrels, crates, sacks, wood piles, hay, carts, wash lines, ladders, rain barrels, benches, coal, doorstep pots) placed against side and back walls, clear of every collision box, road and the square (`dress.ts` `Yard`); stall valances and hanging produce, well bucket and windlass, pointed fence caps, town wall arrow slits and buttresses, gate pennants, signpost cairns.
+- **Interiors**: skirting, plastered ceilings between dark beams, wainscot, curtains, hanging herbs, an inn's candle wheel and table candles (flames are emissive and flicker), bed posts and footboards, table runners, hearth mantel with cauldron and logs.
+- **Textures**: painters are resolution independent (256 px low / medium, 512 px high): lime-wash plaster with damp and hairline cracks, chiselled stone with pits, board knots and nails, glazed tile lichen, silvered shingles, leaded window picture, lighter fieldstone.
+
+**Measured** (`docs/evidence/pt3-towns-after-drawcalls.{txt,json}`; headless Chromium, RTX 3070 via ANGLE/D3D11, 1600x900, vite dev server, Draedmore, 40 buildings, clear sky). Settlement shell / interior triangles (`art.test.ts`): low 21.2k / 12.8k, medium 42.2k / 22.5k, high 63.9k / 29.6k; build time ~0.1 s per large town at every level (worker). Draw calls are unchanged by the pass (the new geometry is merged into the same shell / interior meshes): high street view 358 calls (256 without the towns layer; before 354), overview 332, interior 353; medium street 263, low street 149 (no shadow passes; the old low cost). Whole-frame triangles on the street view: before 2050k, after 2439k at high (shadow passes included); medium 1522k, low 654k. Mean frame 8-11 ms uncapped on the 3070 at every tier (headless, noisy; before ~9-10 ms). 512 px textures: ~4.7 s to paint in the worker at startup on high (1.2-1.5 s at 256 px), 34 MB vs 8.6 MB of texture memory before mips; they are high-tier only. Screenshots (`pt3-towns-{before,after}-{street,street-dusk,interior,interior-house}.jpg`, plus `pt3-towns-after-{styles-timber,town-night}.jpg`): the same street by day and at dusk, an inn and a house interior.
+
+**Gates**: `npx tsc -p client --noEmit` clean; `eslint client/src/world/buildings` clean; vitest `src/world/buildings` 9 files all pass, including `kit.test.ts` (every wall / floor / roof face still drawn on its collision box), `doors.test.ts` (door vectors bit for bit) and both zone-process integration tests (walk into a building, walk through a door: 0 corrections); new `art.test.ts` (detail-level budgets, valid meshes, yard clearance query, determinism, seed 3 adobe).
+
+**Gaps**
+- Yard clutter and the new trim have no collision (like porch posts); the zone does not know about them, so a player can walk through a barrel against a wall.
+- Detail follows the tier the session started with; settlements already streamed in keep their level until they are rebuilt (auto tier changes do not rebuild).
+- Not touched: exploration / structure towers (collision overlay twins), bridges, docks, roads and plaza paving, NPC models, stall buildings beyond their props. Weather and wind do not move the new cloth (wash lines, pennants).
+- Interiors are still lit by the sky and the fixed light pool: candle flames and glass are emissive, nothing casts light.
+- 512 px textures add ~4 s of worker time at startup on high before towns appear.
