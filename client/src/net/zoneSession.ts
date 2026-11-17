@@ -36,6 +36,7 @@ import {
   type Snapshot,
   type Welcome,
   type WorldEdits,
+  type TerrainEdits,
   type ZoneTransfer,
 } from '@lodestone/contracts';
 import type { GroundQuery } from '../sim/ground';
@@ -135,6 +136,9 @@ export class ZoneSession {
   /** WP09: world edits (mined veins), and extra Event listeners (mining 700-799) next to onEvent. */
   onWorldEdits: ((m: WorldEdits) => void) | null = null;
   readonly eventListeners = new Set<(e: ZoneEvent) => void>();
+  /** CR 040: more WorldEdits listeners (removed trees and rocks) next to the cave manager's onWorldEdits, and the terrain deltas (message 73). */
+  readonly worldEditListeners = new Set<(m: WorldEdits) => void>();
+  readonly terrainEditListeners = new Set<(m: TerrainEdits) => void>();
 
   /** Counters for tests and the acceptance log. */
   readonly stats = { snapshots: 0, stale: 0, noBaseline: 0, inputPackets: 0, framesSent: 0, decodeErrors: 0, earlySnapshots: 0, preconnects: 0, handoffs: 0, failovers: 0, resent: 0 };
@@ -321,6 +325,10 @@ export class ZoneSession {
         break;
       case 'WorldEdits':
         this.onWorldEdits?.(m);
+        for (const l of this.worldEditListeners) l(m);
+        break;
+      case 'TerrainEdits':
+        for (const l of this.terrainEditListeners) l(m);
         break;
       default:
         break; // HitResult...: later packages

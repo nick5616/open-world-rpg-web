@@ -36,6 +36,7 @@ const LABEL: Record<string, string> = {
   Escape: 'Esc',
   Enter: 'Enter',
   Delete: 'Delete',
+  Equal: '=',
 };
 
 /** "KeyW" -> "W", "Digit1" -> "1", "ShiftLeft" -> "Shift". */
@@ -141,6 +142,13 @@ export function controlGroups(debug: boolean, dev = false): ControlGroup[] {
         { keys: ['Left mouse'], action: 'Place it (green only)', src: [['ui/camps/CampHud.tsx', 'e.button === 0']] },
         { keys: ['Right mouse', 'Esc'], action: 'Stop placing', src: [['ui/camps/CampHud.tsx', 'e.button === 2'], ['ui/camps/CampHud.tsx', "'camp-placing'"]] },
         { keys: ['E'], action: 'Use a piece: cook, rest, open, name', note: 'hold E on your own piece to pick it up', src: [['ui/camps/CampHud.tsx', "'KeyE'"]] },
+      ],
+    },
+    {
+      title: 'Chopping, breaking and digging',
+      rows: [
+        { keys: ['='], action: 'Cycle the work tool: chop and break, dig, fill, away', note: 'an axe for trees, a pickaxe for rocks, a shovel for the ground (you start with all three); the left mouse button swings it while one is up', src: [['world/edits/worldEdits.ts', "'Equal'"]] },
+        { keys: ['Left mouse'], action: 'Swing the work tool (hold to keep going)', note: 'trees fall, rocks shatter, the ground gives up to 6 m either way; towns, roads, caves and water stay as they are', src: [['world/edits/worldEdits.ts', 'e.button !== 0']] },
       ],
     },
     {

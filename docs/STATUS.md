@@ -1832,6 +1832,31 @@ Nicole: "ok new pivot for the game: make it vertical. there are tunnels you can 
 
 Gaps: crystals read pastel rather than deep blue / violet at a distance; the tunnel portal is modest from afar; the palace exterior is a placeholder model and its doors are sealed; sky activities are a stub stand; enemy models for the new creatures reuse existing families; no ambient occlusion in caverns; live world: renewing the official world to genVersion 3 regenerates towns (sky towns appended) and needs the usual deploy (not done here).
 
+## Playtest 3: world edits (branch `pt3/world-edits`, CR 040)
+
+Nicole's playtest: "Make it like the world is breakable like Minecraft, and building your own base is a lot more desirable." This branch breaks and reshapes the generated world and produces the materials building uses; placing pieces is `pt3/base-building` (CR 041).
+
+**Works**
+
+- **Chop, break, clear** (Interact 42, Events 1800-1803): axe for trees, pickaxe for rocks, anything for bushes; hit points scale with size (3-6 swings); the object is gone for everyone (a `world_edits` row, kind `object_destroyed`, plus a `WorldEdits` record), its drops land as the breaker's personal pickups (logs, sticks, resin, firewood from dead trees, stone, flint, plant fibre, wild berries), regrowth after 3-6 h (trees), 8-16 h (rocks), 1-2 h (bushes), never inside a base (`WorldEditSetup.InBase` hook for CR 041). A tree tips over on the mesh and material it was drawn with and sinks away; rocks shatter; chips, leaves and dust.
+- **Dig and fill** (Interact 43, Events 1805-1807, message 73 `TerrainEdits`, protocol v7): a 1.6 m brush in 0.25 m steps, slope cascade keeps pits and mounds walkable (3 steps per metre, no triangle over 47 degrees), +-6 m from the generated ground, never below water + 0.3 m, never in towns, roads, sites, structures, cave roofs or mouths; a dig pays dirt (stone from deep ground), a fill costs it (batched per player so digging is not an inventory write per swing). Edited tiles rebuild in place (only the touched, loaded ones; the closed-interval overlap covers seams at any LOD) and the dug ground turns to bare soil.
+- **One surface everywhere**: `worldedit.Overlay` is installed on `worldhost.Terrain`, so movement, enemies, spawns and every wrapper see the edited ground; `WorldGround.edits` in TS. **Golden** `contracts/golden/world_edits.json` (580 samples over 700 edits across two chunk borders, cached and cold wasm path) replays bit for bit in TS; `world_edits_plan.json` replays the planner swing for swing. Generated heights, the collision goldens and the mesh cache are untouched.
+- **Persistence**: removed objects in `world_edits`, terrain blocks in `terrain_edits` (migration 0031, one row per chunk, 3 bytes per edited vertex), restored before the zone ticks; bounded at 640 edited chunks and 30,000 cleared objects per zone.
+- **UX**: key = cycles chop and break / dig / fill / away; hold the left mouse button; a ring shows the strike, a hit bar the object's health, the HUD the depth and your dirt. New items `wood:log/stick/resin`, `stone:block/flint`, `earth:dirt`, `plant:fiber/berries`, tools `tool:axe` and `tool:shovel` (starter kit; older characters get them once), camp recipes for replacements.
+- **Per-tick cost is flat** (event-driven: one comparison against the earliest regrow time, a tiny pending-grant map, the half-second interest scan).
+
+**Evidence**: `client/src/world/edits/dev/edits-shots.ts` (real client + zone binary): `docs/evidence/pt3-world-edits-{before,clearing,digging,pit,pit-filled}.png`, `pt3-world-edits-shots.txt`.
+
+**Tests**: `go test ./pkg/worldedit ./pkg/worldhost` (server/pkg); `go test ./internal/game -run 'Harvest|Earthwork|Tools|Starter'` (server/zone: felling with drops, persistence and restart, regrowth, reach, tools, dirt economy, TerrainEdits mirrored to a client overlay, protected ground); vitest `src/world/edits` (overlay golden, planner golden, tile build equals the edited collision surface, codec).
+
+**Gaps**
+
+- Cluster zones: an edit made on one zone of a WP16 cluster reaches the others at their next restart (no bus feed yet); each zone only streams its own players' edits live.
+- The sounds reuse the mining and step recordings pitched down (new cues `work_*`); real chop, crash and dig recordings are a follow-up. The swing animation is the pickaxe's for every tool.
+- A felled tree leaves no stump or log; grass tufts and the dense grass blades around a chopped tree stay; no collision for trees or rocks exists in the game yet, so none was changed.
+- Protected ground is a coarse 4 m mask: an edit stops a few metres short of a road or a wall, and the sky islands' undersides are not checked (fills are capped at 6 m, far below any island).
+- Far (LOD 2+) tiles are rebuilt too, but terrain edits are only streamed within 6 chunks of a player, so a distant pit shows when you approach.
+- Digging and filling near a player's base is allowed on purpose (levelling the ground); CR 041 may add ownership.
 ## Playtest 3: kill flash on Linux Chrome (branch `pt3/kill-flash`)
 
 Report: "a flashing every time myself or my friend gets a kill, on her screen (Chrome on Linux)". Client only.

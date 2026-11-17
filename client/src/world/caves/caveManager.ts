@@ -105,7 +105,8 @@ const UP = new THREE.Vector3(0, 1, 0);
 /** "gem:ruby:cut" -> "ruby (cut)", "ore:iron" -> "iron ore" (item ids until WP14 defines items). */
 export function itemLabel(item: string): string {
   const [kind, name, cut] = item.split(':');
-  return kind === 'gem' ? `${name}${cut ? ` (${cut})` : ''}` : `${name} ore`;
+  if (kind === 'gem') return `${name}${cut ? ` (${cut})` : ''}`;
+  return kind === 'ore' ? `${name} ore` : name.replace(/_/g, ' '); // CR 040: logs, stone and dirt arrive through the same event
 }
 
 /** Deterministic per-vein random for cluster layout. */

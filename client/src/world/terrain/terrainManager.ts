@@ -25,6 +25,9 @@ import type { ResultMsg } from '../core/protocol';
 import { coarserEdges, DOMAIN_CHUNKS, DOMAIN_MIN, keyOf, MAX_LOD, parentOf, resolveDrawn, selectTiles, tileSize, distToTile, type HeightBounds, type TileId } from './quadtree';
 import { tileGrid, tileIndex, TILE_TRIS, type TileMeshData } from './tileMesh';
 import { createTerrainMaterial, type TerrainMaterial, type TerrainShared } from './terrainMaterial';
+// CR 040: terrain the players dug and filled: tiles are built with the edits and rebuilt in place when they change.
+import type { TerrainOverlay } from '../edits/overlay';
+import { EDIT_PAD_STEPS } from '../edits/tileEdits';
 
 const MORPH_SECONDS = 0.6;
 const RESELECT_MS = 100;
@@ -152,6 +155,13 @@ export class TerrainManager {
   onMaterial: ((m: THREE.Material) => void) | null = null;
   onMaterialDisposed: ((m: THREE.Material) => void) | null = null;
 
+  /** CR 040: the edit overlay tiles are built with (set by the scene; null = unedited world). */
+  private edits: TerrainOverlay | null = null;
+  private dirtyBoxes: [number, number, number, number][] = [];
+  /** The overlay version each queued tile job was built against: a tile that lands after a newer edit is rebuilt on arrival. */
+  private jobVersion = new Map<string, number>();
+  private remeshing = new Set<string>();
+  private remeshAgain = new Set<string>();
   private tiles = new Map<string, Tile>();
   private ready: TileMeshData[] = [];
   private requested = new Set<string>();
@@ -184,6 +194,82 @@ export class TerrainManager {
     this.coverage.magFilter = THREE.NearestFilter;
     this.coverage.minFilter = THREE.NearestFilter;
     this.coverage.needsUpdate = true;
+  }
+
+  /** CR 040: build tiles with these edits and rebuild the loaded ones that overlap a change. */
+  setEdits(o: TerrainOverlay | null): void {
+    this.edits = o;
+    o?.listeners.add((minX, minZ, maxX, maxZ) => this.dirtyBoxes.push([minX, minZ, maxX, maxZ]));
+  }
+
+  /** The edit triples a tile of this lod needs (its box plus the normal margin), or undefined. */
+  private editsFor(t: TileId): Int32Array | undefined {
+    const o = this.edits;
+    if (!o || !o.any) return undefined;
+    const size = tileSize(t.lod);
+    const pad = EDIT_PAD_STEPS * (1 << t.lod);
+    return o.collect(t.cx * 64 - pad, t.cz * 64 - pad, t.cx * 64 + size + pad, t.cz * 64 + size + pad) ?? undefined;
+  }
+
+  /** Rebuild every loaded tile whose box (plus margin) overlaps a changed vertex: the tiles under the player's shovel. */
+  private flushDirty(): void {
+    if (!this.dirtyBoxes.length) return;
+    const boxes = this.dirtyBoxes;
+    this.dirtyBoxes = [];
+    for (const t of this.tiles.values()) {
+      const size = tileSize(t.id.lod);
+      const pad = EDIT_PAD_STEPS * (1 << t.id.lod);
+      const x0 = t.id.cx * 64 - pad;
+      const z0 = t.id.cz * 64 - pad;
+      if (boxes.some(([a, b, c, d]) => c >= x0 && a <= x0 + size + 2 * pad && d >= z0 && b <= z0 + size + 2 * pad)) this.remesh(t.key, t.id);
+    }
+  }
+
+  private remesh(key: string, id: TileId): void {
+    if (this.remeshing.has(key)) {
+      this.remeshAgain.add(key);
+      return;
+    }
+    this.remeshing.add(key);
+    this.pool
+      .submit(`e:${key}`, { type: 'tile', cx: id.cx, cz: id.cz, lod: id.lod, edits: this.editsFor(id) }, -100)
+      .then((r) => {
+        this.remeshing.delete(key);
+        if (r && r.type === 'tile' && !this.disposed) this.swapTile(key, r.tile);
+        if (this.remeshAgain.delete(key)) {
+          const t = this.tiles.get(key);
+          if (t) this.remesh(key, t.id);
+        }
+      })
+      .catch((err) => {
+        this.remeshing.delete(key);
+        console.warn('[terrain] remesh failed', key, err);
+      });
+  }
+
+  /** Replace a loaded tile's geometry (and water) in place; the material, morph and edge state stay. */
+  private swapTile(key: string, d: TileMeshData): void {
+    const t = this.tiles.get(key);
+    if (!t) return;
+    const old = t.mesh.geometry;
+    t.mesh.geometry = this.tileGeometry(d);
+    old.dispose();
+    t.chunkHash = d.chunkHash;
+    if (t.water) {
+      this.group.remove(t.water);
+      t.water.geometry.dispose();
+      t.water = null;
+    }
+    if (d.water) {
+      const water = new THREE.Mesh(this.waterGeometry(d, t.mesh.geometry), this.waterMaterial);
+      water.matrixAutoUpdate = false;
+      water.visible = t.drawn;
+      water.renderOrder = 1;
+      water.name = `water ${key}`;
+      this.group.add(water);
+      t.water = water;
+    }
+    this.resolveDirty = true;
   }
 
   setParams(p: TerrainParams): void {
@@ -228,6 +314,7 @@ export class TerrainManager {
       this.lastSelectPos.copy(p);
     }
     const t1 = performance.now();
+    this.flushDirty();
     this.upload(nowMs);
     const t2 = performance.now();
     this.resolve(nowMs);
@@ -277,11 +364,13 @@ export class TerrainManager {
         return;
       }
       this.requested.add(k);
+      if (this.edits) this.jobVersion.set(k, this.edits.version);
       this.pool
-        .submit(k, { type: 'tile', cx: t.cx, cz: t.cz, lod: t.lod }, prio)
+        .submit(k, { type: 'tile', cx: t.cx, cz: t.cz, lod: t.lod, edits: this.editsFor(t) }, prio)
         .then((r) => this.onResult(k, r))
         .catch((err) => {
           this.requested.delete(k);
+          this.jobVersion.delete(k);
           console.warn('[terrain] tile failed', k, err);
         });
     };
@@ -321,7 +410,10 @@ export class TerrainManager {
 
   private onResult(key: string, r: ResultMsg | null): void {
     this.requested.delete(key);
-    if (!r || r.type !== 'tile' || this.disposed) return;
+    if (!r || r.type !== 'tile' || this.disposed) {
+      this.jobVersion.delete(key);
+      return;
+    }
     if (r.cached) this.stats.cacheHits++;
     else {
       this.stats.genMs.push(r.genMs);
@@ -343,6 +435,9 @@ export class TerrainManager {
       const key = keyOf(d);
       if (this.tiles.has(key)) continue;
       this.tiles.set(key, this.makeTile(d, nowMs));
+      const built = this.jobVersion.get(key);
+      this.jobVersion.delete(key);
+      if (this.edits && built !== undefined && built !== this.edits.version) this.remesh(key, { cx: d.cx, cz: d.cz, lod: d.lod }); // an edit landed while it was being built
       this.resolveDirty = true;
       n++;
     }
@@ -350,7 +445,24 @@ export class TerrainManager {
     this.stats.uploadMsMax = Math.max(this.stats.uploadMsMax * 0.995, performance.now() - t0);
   }
 
+  private waterGeometry(d: TileMeshData, ground: THREE.BufferGeometry): THREE.BufferGeometry {
+    const wg = new THREE.BufferGeometry();
+    wg.setIndex(new THREE.BufferAttribute(d.water!.index, 1));
+    wg.setAttribute('position', new THREE.InterleavedBufferAttribute(new THREE.InterleavedBuffer(d.water!.vertices, 4), 3, 0));
+    wg.setAttribute('aDepth', new THREE.InterleavedBufferAttribute(new THREE.InterleavedBuffer(d.water!.vertices, 4), 1, 3));
+    wg.boundingBox = ground.boundingBox!.clone();
+    wg.boundingSphere = ground.boundingSphere!.clone();
+    return wg;
+  }
+
   private makeTile(d: TileMeshData, nowMs: number): Tile {
+    const g = this.tileGeometry(d);
+    const material = createTerrainMaterial(this.shared, this.params.normalMaps);
+    this.onMaterial?.(material);
+    return this.finishTile(d, g, material, nowMs);
+  }
+
+  private tileGeometry(d: TileMeshData): THREE.BufferGeometry {
     const g = new THREE.BufferGeometry();
     g.setIndex(d.holes ? new THREE.BufferAttribute(d.holes, 1) : this.index); // WP09: mouth holes
     g.setAttribute('position', new THREE.BufferAttribute(d.position, 3));
@@ -366,8 +478,10 @@ export class TerrainManager {
     const z0 = d.cz * 64;
     g.boundingBox = new THREE.Box3(new THREE.Vector3(x0, d.minY, z0), new THREE.Vector3(x0 + s, d.maxY, z0 + s));
     g.boundingSphere = g.boundingBox.getBoundingSphere(new THREE.Sphere());
-    const material = createTerrainMaterial(this.shared, this.params.normalMaps);
-    this.onMaterial?.(material);
+    return g;
+  }
+
+  private finishTile(d: TileMeshData, g: THREE.BufferGeometry, material: TerrainMaterial, nowMs: number): Tile {
     const mesh = new THREE.Mesh(g, material);
     mesh.matrixAutoUpdate = false;
     mesh.visible = false;
@@ -377,13 +491,7 @@ export class TerrainManager {
     this.group.add(mesh);
     let water: THREE.Mesh | null = null;
     if (d.water) {
-      const wg = new THREE.BufferGeometry();
-      wg.setIndex(new THREE.BufferAttribute(d.water.index, 1));
-      wg.setAttribute('position', new THREE.InterleavedBufferAttribute(new THREE.InterleavedBuffer(d.water.vertices, 4), 3, 0));
-      wg.setAttribute('aDepth', new THREE.InterleavedBufferAttribute(new THREE.InterleavedBuffer(d.water.vertices, 4), 1, 3));
-      wg.boundingBox = g.boundingBox.clone();
-      wg.boundingSphere = g.boundingSphere.clone();
-      water = new THREE.Mesh(wg, this.waterMaterial);
+      water = new THREE.Mesh(this.waterGeometry(d, g), this.waterMaterial);
       water.matrixAutoUpdate = false;
       water.visible = false;
       water.renderOrder = 1;

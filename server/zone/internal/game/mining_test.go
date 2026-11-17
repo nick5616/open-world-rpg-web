@@ -135,6 +135,8 @@ func (cl *client) absorb(m proto.Message) {
 		}
 	case *proto.WorldEdits:
 		cl.edits = append(cl.edits, x)
+	case *proto.TerrainEdits:
+		cl.terr = append(cl.terr, x)
 	case *proto.Event:
 		cl.evs = append(cl.evs, x)
 	}

@@ -9,6 +9,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"lodestone/server/pkg/worldedit"
 )
 
 // Terrain is the server's ground: a chunk cache by interest in front of a
@@ -48,6 +50,10 @@ type Terrain struct {
 
 	stop chan struct{}
 	wg   sync.WaitGroup
+
+	// edits is the terrain edit overlay (CR 040, worldedit): nil or empty
+	// leaves every answer exactly the generated collision surface.
+	edits atomic.Pointer[worldedit.Overlay]
 
 	hits                                           hitCounter
 	misses, generated, evicted, genErrors, dropped atomic.Int64
@@ -154,12 +160,64 @@ func (t *Terrain) HeightAt(x, z float64) float64 {
 			if e := t.epoch.Load(); tl.used.Load() != e {
 				tl.used.Store(e)
 			}
+			if ov := t.edits.Load(); ov != nil && ov.Any() {
+				if h, ok := t.editedHeight(ov, tl.c, x, z); ok {
+					return h
+				}
+			}
 			return tl.c.Height(x, z)
 		}
 		t.request(key(cx, cz))
 	}
 	t.misses.Add(1)
+	if ok {
+		if ov := t.edits.Load(); ov != nil && ov.Any() {
+			if h, ok := t.editedHeight(ov, nil, x, z); ok {
+				return h
+			}
+		}
+	}
 	return t.w.CollisionHeight(x, z)
+}
+
+// SetEdits installs the terrain edit overlay (CR 040); nil removes it.
+func (t *Terrain) SetEdits(o *worldedit.Overlay) { t.edits.Store(o) }
+
+// Edits is the installed overlay (nil when none).
+func (t *Terrain) Edits() *worldedit.Overlay { return t.edits.Load() }
+
+// editedHeight is the collision surface of an edited cell: the generated f32
+// lattice corners (from the chunk, or from the wasm on a cache miss) lifted
+// by the overlay's deltas, interpolated by the collision formula. ok is false
+// when the cell has no edit (the caller answers from the generated surface).
+func (t *Terrain) editedHeight(ov *worldedit.Overlay, c *Chunk, x, z float64) (float64, bool) {
+	x0, z0 := math.Floor(x), math.Floor(z)
+	d00, d10, d01, d11, edited := ov.Cell(int32(x0), int32(z0))
+	if !edited {
+		return 0, false
+	}
+	var h00, h10, h01, h11 float32
+	if c != nil {
+		i := int(int64(x0) - int64(c.CX)*ChunkSize)
+		j := int(int64(z0) - int64(c.CZ)*ChunkSize)
+		k := j*ChunkSamples + i
+		h00, h10, h01, h11 = c.Heights[k], c.Heights[k+1], c.Heights[k+ChunkSamples], c.Heights[k+ChunkSamples+1]
+	} else {
+		h00, h10 = float32(t.w.CollisionHeight(x0, z0)), float32(t.w.CollisionHeight(x0+1, z0))
+		h01, h11 = float32(t.w.CollisionHeight(x0, z0+1)), float32(t.w.CollisionHeight(x0+1, z0+1))
+	}
+	return worldedit.Surface(worldedit.Lift(h00, d00), worldedit.Lift(h10, d10), worldedit.Lift(h01, d01), worldedit.Lift(h11, d11), x-x0, z-z0), true
+}
+
+// BaseLattice is the generated (unedited) f32 lattice height at integer
+// vertex (ix, iz): what the dig planner measures edits against.
+func (t *Terrain) BaseLattice(ix, iz int32) float32 {
+	if cx, cz, ok := chunkOf(float64(ix), float64(iz)); ok {
+		if tl := t.slot(cx, cz).Load(); tl != nil {
+			return tl.c.Heights[int(int64(iz)-int64(cz)*ChunkSize)*ChunkSamples+int(int64(ix)-int64(cx)*ChunkSize)]
+		}
+	}
+	return float32(t.w.CollisionHeight(float64(ix), float64(iz)))
 }
 
 // WaterAt implements movement.Water (WP10): the water surface at (x, z),

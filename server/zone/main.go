@@ -155,6 +155,7 @@ func main() {
 	ground, caveTerrain := withCaves(ground, terrain, log) // WP09 (caves.go)
 	ground = withTowns(ground, terrain, &cfg, log)         // WP20: buildings on the ground, townsfolk (towns.go)
 	cfg.Ground = ground
+	withWorldEdits(&cfg, terrain, caveTerrain, pool, log) // playtest 3 (CR 040): chop, break, dig (worldedit.go)
 	miningConfig(&cfg, pool)
 	doorsConfig(&cfg, pool)                                                      // building doors persist (towns.go)
 	campsConfig(&cfg, pool)                                                      // CR 025: camp pieces persist (towns.go)
@@ -172,6 +173,8 @@ func main() {
 	serveNightDebug(s.Mux, zone)                                            // WP15
 	serveDifficultyDebug(s.Mux, zone)                                       // playtest 1
 	restoreEdits(ctx, zone, log)
+	restoreWorldEdits(ctx, zone, log)
+	serveWorldEdits(s, zone)
 	restoreWorldItems(ctx, zone, log) // WP14: dropped items survive a restart (until they despawn)
 	restoreDoors(ctx, zone, log)      // building doors stay as they were left (towns.go)
 	restoreCamps(ctx, zone, log)      // CR 025: placed camp pieces (towns.go)

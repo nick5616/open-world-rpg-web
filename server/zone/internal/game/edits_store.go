@@ -79,9 +79,13 @@ func (p *PGEditStore) SaveEdit(ctx context.Context, worldID string, e StoredEdit
 		return errNotUUID
 	}
 	params, _ := json.Marshal(veinParams{X: e.X, Y: e.Y, Z: e.Z, R: e.R, RespawnAt: e.ExpiresAt.UTC().Format(time.RFC3339Nano)})
+	var exp any // a zero ExpiresAt is "never" (CR 040: a felled tree in a player's base): NULL
+	if !e.ExpiresAt.IsZero() {
+		exp = e.ExpiresAt
+	}
 	_, err := p.Pool.Exec(ctx, `INSERT INTO world_edits (world_id, chunk_x, chunk_z, edit_id, kind, target_id, params, tick, expires_at)
 		VALUES ($1::uuid, $2, $3, $4, $5, $6::numeric, $7::jsonb, $8, $9) ON CONFLICT (world_id, edit_id) DO NOTHING`,
-		worldID, e.ChunkX, e.ChunkZ, e.EditID, e.Kind, strconv.FormatUint(e.TargetID, 10), string(params), int64(e.Tick), e.ExpiresAt)
+		worldID, e.ChunkX, e.ChunkZ, e.EditID, e.Kind, strconv.FormatUint(e.TargetID, 10), string(params), int64(e.Tick), exp)
 	return err
 }
 
@@ -91,5 +95,51 @@ func (p *PGEditStore) DeleteEdit(ctx context.Context, worldID string, editID int
 		return errNotUUID
 	}
 	_, err := p.Pool.Exec(ctx, `DELETE FROM world_edits WHERE world_id = $1::uuid AND edit_id = $2`, worldID, editID)
+	return err
+}
+
+// ---- terrain edit blocks (CR 040, migration 0031) ----
+
+// LoadTerrainBlocks returns every stored terrain edit block of the world:
+// chunk -> packed entries (worldedit.EncodeEntries).
+func (p *PGEditStore) LoadTerrainBlocks(ctx context.Context, worldID string) (map[[2]int32][]byte, error) {
+	if !uuidRe.MatchString(worldID) {
+		return nil, nil
+	}
+	rows, err := p.Pool.Query(ctx, `SELECT chunk_x, chunk_z, entries FROM terrain_edits WHERE world_id = $1::uuid`, worldID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := map[[2]int32][]byte{}
+	for rows.Next() {
+		var cx, cz int32
+		var b []byte
+		if err := rows.Scan(&cx, &cz, &b); err != nil {
+			return nil, err
+		}
+		out[[2]int32{cx, cz}] = b
+	}
+	return out, rows.Err()
+}
+
+// SaveTerrainBlock upserts one chunk's whole block.
+func (p *PGEditStore) SaveTerrainBlock(ctx context.Context, worldID string, cx, cz int32, entries []byte, vertices int) error {
+	if !uuidRe.MatchString(worldID) {
+		return errNotUUID
+	}
+	_, err := p.Pool.Exec(ctx, `INSERT INTO terrain_edits (world_id, chunk_x, chunk_z, entries, vertices, updated_at)
+		VALUES ($1::uuid, $2, $3, $4, $5, now())
+		ON CONFLICT (world_id, chunk_x, chunk_z) DO UPDATE SET entries = EXCLUDED.entries, vertices = EXCLUDED.vertices, updated_at = now()`,
+		worldID, cx, cz, entries, vertices)
+	return err
+}
+
+// DeleteTerrainBlock removes a chunk whose edits were all undone.
+func (p *PGEditStore) DeleteTerrainBlock(ctx context.Context, worldID string, cx, cz int32) error {
+	if !uuidRe.MatchString(worldID) {
+		return errNotUUID
+	}
+	_, err := p.Pool.Exec(ctx, `DELETE FROM terrain_edits WHERE world_id = $1::uuid AND chunk_x = $2 AND chunk_z = $3`, worldID, cx, cz)
 	return err
 }

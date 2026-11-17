@@ -87,6 +87,7 @@ type client struct {
 	welc  *proto.Welcome
 	edits []*proto.WorldEdits // WP09 mining tests (absorb)
 	evs   []*proto.Event
+	terr  []*proto.TerrainEdits // CR 040 world edit tests (absorb)
 }
 
 func (h *harness) dial(query string) *client {
