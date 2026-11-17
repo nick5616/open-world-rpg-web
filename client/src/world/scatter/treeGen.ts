@@ -227,10 +227,10 @@ function buildUmbrella(c: Ctx): void {
     const az = a0 + (i / nl) * 6.283 + (r() - 0.5) * 0.5;
     const el = 1.05 + r() * 0.3; // near-horizontal sweep
     const dir = V(Math.sin(el) * Math.cos(az), Math.cos(el), Math.sin(el) * Math.sin(az));
-    limb(c, pts[pts.length - 1], dir, 0.23 + r() * 0.07, 0.02, 0.006, { n: hi ? 4 : 3, curl: 0.25, up: 0.25, depth: 0, maxDepth: hi ? 2 : 0, subs: 2, subLen: 0.55, flex: 0.3 });
+    limb(c, pts[pts.length - 1], dir, 0.2 + r() * 0.06, 0.02, 0.006, { n: hi ? 4 : 3, curl: 0.25, up: 0.25, depth: 0, maxDepth: hi ? 2 : 0, subs: 2, subLen: 0.55, flex: 0.3 });
   }
   const N = Math.round(c.sp.cards * d.scale * (hi ? 1 : 0.1));
-  leafCards(c, { count: N, size: c.sp.card * (hi ? 1 : 2.6), spread: 0.13, flat: 0.35, outward: 0.9, fill: 0.25 });
+  leafCards(c, { count: N, size: c.sp.card * (hi ? 1 : 2.6), spread: 0.1, flat: 0.35, outward: 0.9, fill: 0.25 });
 }
 
 function buildWillow(c: Ctx): void {
@@ -366,7 +366,7 @@ export function richTree(species: number, variant: number, d: TreeDetail): THREE
     birch: [0, 0.64, 0, 0.3, 0.25],
     conifer: [0, 0.52, 0, 0.3, 0.5],
     dead: [0, 0.6, 0, 0.3, 0.3],
-    umbrella: [0, 0.72, 0, 0.38, 0.2],
+    umbrella: [0, 0.72, 0, 0.34, 0.2],
     willow: [0, 0.52, 0, 0.46, 0.34],
   };
   const cw = crowns[sp.habit];

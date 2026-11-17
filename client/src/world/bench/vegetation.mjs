@@ -113,6 +113,9 @@ await shoot('forest-stand', tp(tree.x + 9, tree.z + 9, Math.atan2(9, 9), 0.1));
 // From the air: mesh LODs, the impostor ring and the horizon (fly, 28 m up, looking over the forest).
 await shoot('forest-far', `(() => { const L = window.__lodestone; L.setFly(true); L.teleport({ x: ${forest.x - 60}, y: window.__lodestoneWorld.groundAt(${forest.x - 60}, ${forest.z - 60}) + 28, z: ${forest.z - 60} }); L.setLook(${-Math.PI * 0.75}, -0.12); })()`);
 await shoot('meadow', tp(spawn.x + 40, spawn.z + 30, Math.PI * 0.75, -0.04));
+// A town street and square: dense grass must stay out of roads, plazas and floors.
+const towns = (await page.evaluate(() => window.__lodestoneWorld.sites())).filter((t) => t.category === 'settlement').sort((a, b) => Math.hypot(a.x - spawn.x, a.z - spawn.z) - Math.hypot(b.x - spawn.x, b.z - spawn.z));
+if (towns[0]) await shoot('town-street', tp(towns[0].x + 7, towns[0].z + 5, Math.atan2(7, 5), -0.28));
 for (const [name, kind] of [
   ['rocks', 0],
   ['rocks-mossy', 3],

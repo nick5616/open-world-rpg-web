@@ -1,0 +1,45 @@
+{
+  "tier": "low",
+  "label": "abA2",
+  "when": "2026-11-17T04:43:28.247Z",
+  "forest": {
+    "frames": 1237,
+    "meanMs": 3.24,
+    "p50": 3.1,
+    "p95": 5,
+    "p99": 6.1,
+    "calls": 118,
+    "tris": 617173,
+    "shadowTris": 0,
+    "instances": 6241,
+    "scatterTris": 145388,
+    "grassClumps": 0
+  },
+  "meadow": {
+    "frames": 1230,
+    "meanMs": 3.28,
+    "p50": 2.9,
+    "p95": 5.3,
+    "p99": 6.3,
+    "calls": 139,
+    "tris": 600159,
+    "shadowTris": 0,
+    "instances": 1431,
+    "scatterTris": 21126,
+    "grassClumps": 0
+  },
+  "rocks": {
+    "frames": 951,
+    "meanMs": 4.22,
+    "p50": 4.3,
+    "p95": 5.6,
+    "p99": 6.5,
+    "calls": 139,
+    "tris": 647191,
+    "shadowTris": 0,
+    "instances": 1698,
+    "scatterTris": 34157,
+    "grassClumps": 0
+  },
+  "errors": []
+}

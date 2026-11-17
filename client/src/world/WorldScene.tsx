@@ -16,6 +16,7 @@ import { useQualityStore } from '../stores/qualityStore';
 import { getGraphics, useGraphics } from '../stores/graphics';
 import { useNightHud } from '../systems/night';
 import type { WorldRuntime } from './core/runtime';
+import { Clearance } from './buildings/clearance';
 import { CAMERA_FAR, WORLD_TIERS } from './config';
 import { TerrainManager } from './terrain/terrainManager';
 import { applyManifestMeans, makeTerrainShared } from './terrain/terrainMaterial';
@@ -122,6 +123,8 @@ export function WorldScene({ runtime }: Props) {
     const hemi = new THREE.HemisphereLight(0xcfe3ff, 0x4a5a3a, 1);
     const lightU = { uSunDir: waterU.uSunDir, uLightColor: waterU.uLightColor, uAmbient: waterU.uAmbient };
     const scatter = new ScatterManager(runtime.pool, gl, g0.world, lightU);
+    // Dense grass must not grow through streets, plazas and floors (CR 045; the towns manager hides the sparse scatter).
+    if (runtime.towns) scatter.setClearance(new Clearance(runtime.towns));
     const root = new THREE.Group();
     root.name = 'world';
     const rainStreaks = new RainStreaks();

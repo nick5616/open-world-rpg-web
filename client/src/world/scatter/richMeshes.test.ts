@@ -34,7 +34,7 @@ describe('rich trees', () => {
       const g = richTree(s, 0, { lod: 0, scale: 1.3 });
       const bb = g.boundingBox!;
       expect(bb.min.y, TREE_SPECIES[s].name).toBeGreaterThan(-0.1);
-      expect(bb.max.y, TREE_SPECIES[s].name).toBeLessThan(1.12);
+      expect(bb.max.y, TREE_SPECIES[s].name).toBeLessThan(1.14);
       expect(Math.max(-bb.min.x, bb.max.x, -bb.min.z, bb.max.z), TREE_SPECIES[s].name).toBeLessThan(0.62);
     }
   });

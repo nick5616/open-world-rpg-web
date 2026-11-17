@@ -28,6 +28,7 @@ import { disposeTreeCache, richTree, TREE_SPECIES, TREE_VARIANTS } from './treeG
 import { disposeGroundcoverCache, richBush, richGrassClump, richRock, richTuft, type BushType, type RockShape } from './groundcoverGen';
 import { unpackGrass } from './grassGen';
 import type { WorldTier } from '../config';
+import type { Clearance } from '../buildings/clearance';
 
 const LAYER_TREE = 1;
 const LAYER_ROCK = 2;
@@ -162,6 +163,8 @@ export class ScatterManager {
   private rockFarBin!: Bin;
   private bushFarBin!: Bin;
   private tuftBin!: Bin;
+  /** Town footprints, plazas, streets and roads: no dense grass there (the sparse records are hidden by id by the towns manager). */
+  private clearance: Clearance | null = null;
   private legacyBins: Bin[] = [];
   private kit: Kit | null = null;
   private vegLevel = 0;
@@ -491,6 +494,27 @@ export class ScatterManager {
     disposeGroundcoverCache();
   }
 
+  /** Mask dense grass out of roads, plazas and building plots (and re-fetch what was already generated). */
+  setClearance(c: Clearance | null): void {
+    this.clearance = c;
+    this.grass.clear();
+    this.grassDirty = true;
+  }
+
+  private clearGrass(g: GrassData): GrassData {
+    const c = this.clearance;
+    if (!c || !c.touchesChunk(g.cx, g.cz)) return g;
+    const src = g.instances;
+    const out = new Float32Array(src.length);
+    let n = 0;
+    for (let i = 0; i < src.length; i += 4) {
+      if (c.blocked(src[i], src[i + 2])) continue;
+      out.set(src.subarray(i, i + 4), n);
+      n += 4;
+    }
+    return { cx: g.cx, cz: g.cz, instances: out.slice(0, n) };
+  }
+
   /** Stable id of an instance (raycast hit -> world object). */
   idAt(mesh: THREE.Object3D, instance: number): bigint | null {
     const b = this.bins.find((x) => x.mesh === mesh);
@@ -597,7 +621,7 @@ export class ScatterManager {
           if (this.stats.genMs.length > 4096) this.stats.genMs.splice(0, 2048);
           this.dirty = true;
         } else if (r.type === 'grass') {
-          this.grass.set(k, r.grass);
+          this.grass.set(k, this.clearance ? this.clearGrass(r.grass) : r.grass);
           this.grassDirty = true;
         }
       })
