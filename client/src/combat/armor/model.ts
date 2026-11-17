@@ -23,6 +23,7 @@
 // the fist at -0.30), hips at body (+-0.13, 0) (thigh r 0.08, 0.44 long),
 // knees below them (shin r 0.065, the sole at -0.46).
 
+import { ownSkinHex } from '../../net/ownLook';
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { M, MeshBuilder, circle, lathe, polygon, shade, surf, sweep, type Surface, type SurfaceAt, type V3 } from '../weapons/builder';
@@ -601,6 +602,7 @@ const SKIN = surf('#c9a27e', 0, 0.7);
 
 /** The view model's forearm: the wrist at the origin, the sleeve up +Y (null: no body armor, the plain sleeve). */
 export function buildFpForearm(spec: ArmorSpec): THREE.BufferGeometry | null {
+  SKIN.color.set(ownSkinHex()); // CR 047: your chosen skin tone
   const body = spec.pieces[1];
   const f = spec.finish.body;
   if (!body || !f) return null;

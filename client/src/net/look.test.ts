@@ -111,3 +111,41 @@ describe('avatar look rendering', () => {
     a.dispose();
   });
 });
+
+describe('wire word and remote looks (CR 047)', () => {
+  it('packs like the zone (the same vectors as looks_test.go)', async () => {
+    const { packLook, unpackLook } = await import('./look');
+    const a: Look = { build: 2, skin: 4, hairStyle: 5, hairColor: 8, beard: 3, eyes: 5 };
+    expect(packLook(a)).toBe((1 << 18) | 2 | (4 << 2) | (5 << 5) | (8 << 8) | (3 << 12) | (5 << 15));
+    expect(packLook(DEFAULT_LOOK)).toBe((1 << 18) | 1 | (2 << 2) | (2 << 5) | (1 << 8));
+    expect(unpackLook(packLook(a))).toEqual(a);
+    expect(unpackLook(0)).toBeNull();
+    expect(unpackLook(5)).toBeNull(); // no marker bit
+    let seed = 7;
+    const rand = () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;
+    for (let i = 0; i < 200; i++) {
+      const l = randomLook(rand);
+      expect(unpackLook(packLook(l))).toEqual(l);
+    }
+  });
+
+  it('asks once, retries a few times, stops when answered, and forgets leavers', async () => {
+    const { LookBook, EV_LOOK } = await import('./remoteLooks');
+    const { packLook } = await import('./look');
+    const b = new LookBook();
+    expect(b.due(5, 0)).toBe(true);
+    expect(b.due(5, 1000)).toBe(false);
+    expect(b.due(5, 4100)).toBe(true);
+    expect(b.due(5, 8300)).toBe(true);
+    expect(b.due(5, 20000)).toBe(false); // gave up after three asks
+    const look: Look = { build: 0, skin: 1, hairStyle: 3, hairColor: 2, beard: 1, eyes: 4 };
+    b.onEvent({ kind: EV_LOOK, entityId: 5, value: packLook(look) } as never);
+    b.onEvent({ kind: 1234, entityId: 6, value: packLook(look) } as never); // another kind
+    expect(b.get(5)).toEqual(look);
+    expect(b.get(6)).toBeUndefined();
+    expect(b.due(5, 99999)).toBe(false);
+    b.forget(5);
+    expect(b.get(5)).toBeUndefined();
+    expect(b.due(5, 100000)).toBe(true);
+  });
+});
