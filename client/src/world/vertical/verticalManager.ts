@@ -19,6 +19,7 @@ import { PALACE } from '@lodestone/contracts';
 import { usePalace } from '../palace/palaceStore';
 import { PalaceViews } from '../palace/PalaceViews';
 import { RaceRings, useRace } from './race';
+import { SkyLife } from './skyLife';
 import { palaceLocal, palaceSites, type PalaceSite } from '../palace/palaceSites';
 import { chamberAt, inSkyBand, LAYER_DEPTHS, LAYER_SKY, LAYER_UNDER, type VerticalWorld } from '@lodestone/worldgen';
 import type { WorldRuntime } from '../core/runtime';
@@ -77,6 +78,7 @@ export class VerticalManager {
   private readonly palaces: PalaceSite[];
   private readonly palaceViews: PalaceViews;
   private readonly raceRings = new RaceRings();
+  private skyLife: SkyLife | null = null;
   private readonly shrines: { x: number; y: number; z: number; size: number; aux: number }[]; // CR 044: Depths demon shrines (Interact 153)
   private readonly activities: { x: number; y: number; z: number; id: bigint }[];
   private emittersNear: LightEmitter[] = [];
@@ -95,6 +97,8 @@ export class VerticalManager {
     this.palaces = palaceSites(this.v);
     this.palaceViews = new PalaceViews(this.palaces);
     this.layerGroups[1].add(this.palaceViews.group, this.raceRings.group);
+    this.skyLife = new SkyLife(this.v, this.low);
+    this.layerGroups[1].add(this.skyLife.group);
     this.decos.emitters.push(...this.palaceViews.emitters());
     this.shrines = this.v.decos.filter((d) => d.kind === 24);
     this.activities = (runtime.towns?.props ?? []).filter((p) => p.kind === 31).map((p) => ({ x: p.x, y: p.y, z: p.z, id: p.id }));
@@ -186,6 +190,10 @@ export class VerticalManager {
     verticalUniforms.uTime.value += dt;
     this.palaceViews.update(camera, dt, feet);
     this.raceRings.update(now / 1000);
+    if (this.skyLife) {
+      this.skyLife.group.visible = !this.low; // the low tier keeps the sky empty
+      if (!this.low) this.skyLife.update(now / 1000, camera.position);
+    }
     const vg = this.runtime.verticalGround!;
     const layer = vg.layerAt(feet.x, feet.y, feet.z);
     this.layer = layer === 0 && inSkyBand(this.v, feet.x, feet.y, feet.z) ? LAYER_SKY : layer;

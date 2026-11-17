@@ -183,6 +183,31 @@ function portalGeometry(): THREE.BufferGeometry {
   const stone = new THREE.Color(0.32, 0.31, 0.3);
   const rune = new THREE.Color(0.3, 2.4, 2.4);
   const parts: THREE.BufferGeometry[] = [];
+  // CR 044: a grander portal: tall obelisks with glowing tips and braziers, a stepped plinth and a
+  // thin column of runelight that shows from far across the hills.
+  for (const s of [-1, 1]) {
+    const ob = new THREE.BoxGeometry(1.4, 20, 1.4, 1, 6, 1);
+    ob.translate(s * 10.5, 10, -1);
+    parts.push(twoTone(ob.toNonIndexed(), 0, stone, stone));
+    const tip = new THREE.OctahedronGeometry(1.1, 0);
+    tip.scale(1, 2.2, 1);
+    tip.translate(s * 10.5, 22.6, -1);
+    parts.push(twoTone(tip.toNonIndexed(), 0, rune, rune));
+    const br = new THREE.CylinderGeometry(0.9, 0.5, 1.1, 7);
+    br.translate(s * 6.6, 1.0, 2.6);
+    parts.push(twoTone(br.toNonIndexed(), 0, stone, stone));
+    const fl = new THREE.ConeGeometry(0.55, 1.6, 6);
+    fl.translate(s * 6.6, 2.4, 2.6);
+    parts.push(twoTone(fl.toNonIndexed(), 0, new THREE.Color(2.4, 1.3, 0.3), new THREE.Color(2.4, 1.3, 0.3)));
+  }
+  for (let i = 0; i < 3; i++) {
+    const st = new THREE.BoxGeometry(17 - i * 2.4, 0.45, 5 - i * 0.6);
+    st.translate(0, 0.22 + i * 0.4, 1.8);
+    parts.push(twoTone(st.toNonIndexed(), 0, stone, stone));
+  }
+  const beam = new THREE.BoxGeometry(0.5, 80, 0.5);
+  beam.translate(0, 52, -1);
+  parts.push(twoTone(beam.toNonIndexed(), 0, new THREE.Color(0.2, 1.6, 1.8), new THREE.Color(0.2, 1.6, 1.8)));
   for (const s of [-1, 1]) {
     const p = new THREE.BoxGeometry(1.8, 9, 1.6, 1, 4, 1);
     p.translate(s * 4.2, 4.5, 0);
@@ -451,7 +476,7 @@ export function buildDecos(v: VerticalWorld): DecoSet & { clouds: ReturnType<typ
     }
   };
 
-  const crystalMat = glowMaterial(1.15, { color: 0x2a3040, roughness: 0.18, metalness: 0.05, transparent: false }); // dim albedo: the glow keeps its hue
+  const crystalMat = glowMaterial(0.8, { color: 0x1c2250, roughness: 0.18, metalness: 0.05, transparent: false }); // dim albedo: the glow keeps its hue
   const clusterGeo = crystalCluster();
   const spireGeo = prism(0.16, 1, 6, 0.25);
   const mushGeo = mushroom();
