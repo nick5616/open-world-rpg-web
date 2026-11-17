@@ -15,6 +15,8 @@ export const VIBE_LANDMARKS = [
   // CR 038, the vertical world.
   'tunnel', 'cavern', 'crystal_cavern', 'cenote', 'river_cavern', 'fungal_cavern', 'depths', 'depths_gate',
   'archipelago', 'sky_town', 'sky_palace', 'sky_ruin', 'sky_lift',
+  // CR 043, the dwarves.
+  'dwarf_camp', 'dwarf_stronghold', 'dwarf_door', 'lower_halls',
 ] as const;
 
 /** CR 038: the layer filter's keys (game.VibeLayers); the filter sends index + 1 (0 any). */
@@ -77,6 +79,10 @@ export const LANDMARK_LABEL: Record<VibeLandmark, string> = {
   sky_palace: 'Sky palace (entrance)',
   sky_ruin: 'Sky ruin',
   sky_lift: 'Sky lift (by a town)',
+  dwarf_camp: 'Dwarven camp (Underground)',
+  dwarf_stronghold: 'Dwarven stronghold (Underground)',
+  dwarf_door: 'Dwarven door (secret or great)',
+  lower_halls: 'Lower halls (the warden)',
 };
 
 export interface VibeFilter {

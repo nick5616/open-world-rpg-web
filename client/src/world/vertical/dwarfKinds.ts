@@ -40,3 +40,16 @@ export const EV_DWARF_DISCOVER = 1860;
 export const EV_CHEST_OPENED = 1861;
 export const EV_TABLET_READ = 1862;
 export const EV_LOWER_HALLS = 1863;
+
+/** A chest the server has opened for you stays closed for others and empty for you for this long (ms). */
+export const CHEST_COOLDOWN_MS = 20 * 60 * 1000;
+
+/** Live state of the dwarven set, shared by the manager (draws, prompts) and the event handler. */
+export const dwarfRuntime: {
+  /** Opened chests by descriptor index -> performance.now() when. */
+  openedAt: Map<number, number>;
+  /** Halls found this session (settlement site index). */
+  found: Set<number>;
+  openChest: (deco: number) => void;
+  siteName: (site: number) => string | null;
+} = { openedAt: new Map(), found: new Set(), openChest: () => undefined, siteName: () => null };

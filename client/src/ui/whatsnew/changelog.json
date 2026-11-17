@@ -1,5 +1,16 @@
 [
   {
+    "id": "pt3-dwarves",
+    "date": "2026-11-17",
+    "title": "Under the mountain: dwarves",
+    "items": [
+      "Caves and tunnels are no longer empty: old mine rails and carts, timber supports, bones, glowworm ceilings, ore piles, chests and lore tablets, and packs of cave creatures.",
+      "Look for a rune-carved secret door in the tunnel walls: it leads to a hidden dwarven camp with a forge, shop, bounty board and a waypoint, safe even at night.",
+      "Deep in the Underground, great dwarven strongholds sit behind carved doors: terraced hall cities, a throne hall, and the dangerous lower halls where something old waits.",
+      "The world was regenerated (genVersion 4): every existing town, tower, waypoint and discovery stays where it was."
+    ]
+  },
+  {
     "id": "pt2-vertical-world",
     "date": "2026-11-11",
     "title": "The world goes vertical",

@@ -22,6 +22,8 @@ import type { LayerMeshData } from './layerMesh';
 import { buildDecos, type LightEmitter } from './decoMeshes';
 import { caveWaterMaterial, islandMaterial, lavaMaterial, layerRockMaterial, verticalUniforms } from './verticalMaterials';
 import { useVerticalHud } from './VerticalHud';
+import { DECO_INTERACT, DW, dwarfRuntime, INTERACT_CHEST, INTERACT_TABLET } from './dwarfKinds';
+import { chestCooling } from './events';
 import { localPlayer } from '../../state/live';
 
 interface Tile {
@@ -71,6 +73,7 @@ export class VerticalManager {
   private frame = 0;
   private readonly palaces: { x: number; y: number; z: number; size: number; aux: number }[];
   private readonly activities: { x: number; y: number; z: number; id: bigint }[];
+  private readonly interactives: { i: number; x: number; y: number; z: number; kind: number }[] = [];
   private emittersNear: LightEmitter[] = [];
 
   /** Low tier: shorter ranges, coarser tiles (Graphics "low" stays playable). */
@@ -85,6 +88,13 @@ export class VerticalManager {
     for (const g of this.layerGroups) this.group.add(g);
     this.decos = buildDecos(this.v);
     this.palaces = this.v.decos.filter((d) => d.kind === 16);
+    this.v.decos.forEach((d, i) => {
+      if ((d.flags & DECO_INTERACT) !== 0 && d.layer === LAYER_UNDER && (d.kind === DW.chest || d.kind === DW.tablet)) this.interactives.push({ i, x: d.x, y: d.y, z: d.z, kind: d.kind });
+    });
+    dwarfRuntime.openChest = (i) => this.decos.dwarf.openChest(i);
+    dwarfRuntime.siteName = (s) => runtime.data.sites[s]?.name ?? null;
+    dwarfRuntime.openedAt.clear();
+    dwarfRuntime.found.clear();
     this.activities = (runtime.towns?.props ?? []).filter((p) => p.kind === 31).map((p) => ({ x: p.x, y: p.y, z: p.z, id: p.id }));
     this.decos.groups.forEach((g, i) => this.layerGroups[i].add(g));
     for (let layer = 1; layer <= 3; layer++) {
@@ -283,7 +293,17 @@ export class VerticalManager {
     }
     const heat = this.layer === LAYER_DEPTHS && this.v.chambers.some((c) => c.layer === LAYER_DEPTHS && c.lake > -9000 && (feet.x - c.x) ** 2 + (feet.z - c.z) ** 2 < (Math.max(c.rx, c.rz) * c.lakeE + 25) ** 2);
     // The follow-ups' doors: a sky palace's gate, a sky town's activity spot.
-    let use: { kind: 150 | 151; id: bigint; label: string } | null = null;
+    let use: { kind: 150 | 151 | 160 | 161; id: bigint; label: string } | null = null;
+    if (this.layer === LAYER_UNDER) {
+      // CR 043: chests and lore tablets in the Underground (the descriptor index is the target).
+      for (const it of this.interactives) {
+        if ((feet.x - it.x) ** 2 + (feet.z - it.z) ** 2 < 6.25 && Math.abs(feet.y - it.y) < 3) {
+          if (it.kind === DW.chest) {
+            if (!chestCooling(it.i)) use = { kind: INTERACT_CHEST, id: BigInt(it.i), label: 'Open chest' };
+          } else use = { kind: INTERACT_TABLET, id: BigInt(it.i), label: 'Read tablet' };
+        }
+      }
+    }
     if (this.layer === LAYER_SKY) {
       for (const d of this.palaces) {
         if ((feet.x - d.x) ** 2 + (feet.z - d.z) ** 2 < (d.size + 30) ** 2 && Math.abs(feet.y - d.y) < 40) use = { kind: 150, id: BigInt(d.aux), label: 'The palace doors' };

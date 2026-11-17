@@ -193,7 +193,7 @@ describe('trigger map', () => {
   });
 
   it('every zone event handler is keyed by a registered kind', () => {
-    for (const k of Object.keys(ZONE_EVENTS).map(Number)) expect((k >= 100 && k < 1300) || (k >= 1600 && k < 1630) || (k >= 1700 && k < 1720), String(k)).toBe(true); // 100-899 WP ranges, 900-999 playtest 1, 1000-1299 playtest 2, 1600-1629 the main story, 1700-1719 the vertical world (events.md)
+    for (const k of Object.keys(ZONE_EVENTS).map(Number)) expect((k >= 100 && k < 1300) || (k >= 1600 && k < 1630) || (k >= 1700 && k < 1720) || (k >= 1860 && k < 1880), String(k)).toBe(true); // 100-899 WP ranges, 900-999 playtest 1, 1000-1299 playtest 2, 1600-1629 the main story, 1700-1719 the vertical world (events.md)
   });
 });
 
