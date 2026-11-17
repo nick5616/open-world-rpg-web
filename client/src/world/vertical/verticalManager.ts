@@ -18,6 +18,7 @@ import * as THREE from 'three';
 import { PALACE } from '@lodestone/contracts';
 import { usePalace } from '../palace/palaceStore';
 import { PalaceViews } from '../palace/PalaceViews';
+import { RaceRings, useRace } from './race';
 import { palaceLocal, palaceSites, type PalaceSite } from '../palace/palaceSites';
 import { chamberAt, inSkyBand, LAYER_DEPTHS, LAYER_SKY, LAYER_UNDER, type VerticalWorld } from '@lodestone/worldgen';
 import type { WorldRuntime } from '../core/runtime';
@@ -75,6 +76,7 @@ export class VerticalManager {
   private frame = 0;
   private readonly palaces: PalaceSite[];
   private readonly palaceViews: PalaceViews;
+  private readonly raceRings = new RaceRings();
   private readonly shrines: { x: number; y: number; z: number; size: number; aux: number }[]; // CR 044: Depths demon shrines (Interact 153)
   private readonly activities: { x: number; y: number; z: number; id: bigint }[];
   private emittersNear: LightEmitter[] = [];
@@ -92,7 +94,7 @@ export class VerticalManager {
     this.decos = buildDecos(this.v);
     this.palaces = palaceSites(this.v);
     this.palaceViews = new PalaceViews(this.palaces);
-    this.layerGroups[1].add(this.palaceViews.group);
+    this.layerGroups[1].add(this.palaceViews.group, this.raceRings.group);
     this.decos.emitters.push(...this.palaceViews.emitters());
     this.shrines = this.v.decos.filter((d) => d.kind === 24);
     this.activities = (runtime.towns?.props ?? []).filter((p) => p.kind === 31).map((p) => ({ x: p.x, y: p.y, z: p.z, id: p.id }));
@@ -183,6 +185,7 @@ export class VerticalManager {
     this.frame++;
     verticalUniforms.uTime.value += dt;
     this.palaceViews.update(camera, dt, feet);
+    this.raceRings.update(now / 1000);
     const vg = this.runtime.verticalGround!;
     const layer = vg.layerAt(feet.x, feet.y, feet.z);
     this.layer = layer === 0 && inSkyBand(this.v, feet.x, feet.y, feet.z) ? LAYER_SKY : layer;
@@ -298,7 +301,7 @@ export class VerticalManager {
     if (this.layer === LAYER_SKY) {
       use = this.palacePrompt(feet);
       for (const p of this.activities) {
-        if ((feet.x - p.x) ** 2 + (feet.z - p.z) ** 2 < 36 && Math.abs(feet.y - p.y) < 4) use = { kind: 151, id: p.id, label: 'The challenge stand' };
+        if ((feet.x - p.x) ** 2 + (feet.z - p.z) ** 2 < 36 && Math.abs(feet.y - p.y) < 4) use = { kind: 151, id: p.id, label: useRace.getState().phase === 'armed' || useRace.getState().phase === 'running' ? 'Stop the glide ring race' : 'Glide Ring Race: start' };
       }
     }
     if (this.layer === LAYER_DEPTHS) {

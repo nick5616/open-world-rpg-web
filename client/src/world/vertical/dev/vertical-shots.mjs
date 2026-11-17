@@ -311,6 +311,24 @@ try {
         }
       }
     }
+    // CR 044: the glide ring race (a course drawn like the zone's, shown mid-run).
+    if (only && only.has('race') && P.town) {
+      const isl = P.town;
+      const course = await L(page, ([i]) => {
+        const rho = i.r + 26;
+        const a0 = 0.6;
+        const rings = [];
+        for (let k = 0; k < 12; k++) {
+          const a = a0 + ((k + 1) * 34) / rho;
+          rings.push([i.x + rho * Math.cos(a), i.top + 4 - 5 * k, i.z + rho * Math.sin(a), -Math.sin(a), Math.cos(a)]);
+        }
+        window.__lodestoneRace.setState({ phase: 'running', next: 3, startedAt: performance.now() - 9400, result: null, at: performance.now(), course: { stand: 1, rings, r: 7.5, gold: 52000, silver: 66000, bronze: 85000, armS: 75, limitS: 110, best: 0, board: [{ n: 'Nimbus', ms: 47210 }, { n: 'Skyler', ms: 51980 }, { n: 'Pip', ms: 60440 }] } });
+        return rings;
+      }, [isl]);
+      const r0 = course[2];
+      const at = { x: r0[0] - r0[3] * 16, y: r0[1] + 0.5, z: r0[2] - r0[4] * 16 };
+      await shot(page, errors, 'race', { at, yaw: yawTo(at, { x: course[3][0], z: course[3][2] }), pitch: -0.05, hour: 16, wait: 8000, fly: true });
+    }
     if (errors.length) console.log(`errors:\n  ${errors.slice(0, 12).join('\n  ')}`);
     results.push({ tier, errors: errors.slice(0, 20) });
   } finally {

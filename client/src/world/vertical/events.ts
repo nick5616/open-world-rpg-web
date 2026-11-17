@@ -6,8 +6,9 @@
 import type { Event as ZoneEvent } from '@lodestone/contracts';
 import { useNightHud } from '../../systems/night';
 import { applyPalaceWire, type PalaceWire } from '../palace/palaceStore';
+import { onRaceEvent } from './race';
 
-export const VERTICAL_EV = { fallDamage: 1700, lava: 1701, palaceDoor: 1702, activity: 1703, palaceState: 1704, palaceNote: 1705, shrineState: 1890, shrineReward: 1891 } as const;
+export const VERTICAL_EV = { fallDamage: 1700, lava: 1701, palaceDoor: 1702, activity: 1703, palaceState: 1704, palaceNote: 1705, raceState: 1706, shrineState: 1890, shrineReward: 1891 } as const;
 
 /** When you last landed hard / burned (the HUD flashes them). */
 export const verticalFx = { landedAt: 0, burning: false };
@@ -46,6 +47,9 @@ export function onVerticalEvent(e: ZoneEvent, me: number): void {
       hud.notice(`The shrine's fire goes out. ${e.value} gold${names ? ` and ${names.split(',').length} piece(s) of gear` : ''}.`, 'dawn', 6000);
       break;
     }
+    case VERTICAL_EV.raceState:
+      onRaceEvent(e.value, e.data, (t, k, ms) => hud.notice(t, k, ms));
+      break;
     case VERTICAL_EV.activity:
       hud.notice('A challenge will be held here. Come back soon.', 'dawn', 4000);
       break;
