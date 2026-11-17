@@ -1939,3 +1939,19 @@ Playtest: "building your own base is a lot more desirable". Extends the camps (C
 - Logs, stone and resin come from CR 040 (world-edits); this branch adds the items (`wood:log`, `wood:resin`, `stone:block`, `earth:dirt`) and a dev grant (Interact 90/9). If CR 040 ships other keys, change them in `contracts/build.yaml` (the generator checks them against items.yaml).
 - Hotkey: the CR's "B" was taken (character build), so the hammer is 8 (voice's default key moved to 9).
 - `BuildLayer` adds two permanent point lights on top of the camp layer's three (constant count); stone/earth items have no custom icons.
+
+## Playtest 3: dwarves ✅ (branch `pt3/dwarves`, CR 043)
+
+Nicole: "Continue with the underground content. Caves should have stuff and monsters and lead to secret underground dwarven civilization camps, and larger strongholds too."
+
+**Works**
+- **Generator, genVersion 4** (`worldgen/src/vertical/dwarf.rs`): 3-5 secret dwarven camps and 1-2 strongholds (with lower halls) carved into the Underground, all appended after the genVersion 3 plan. The review (`docs/evidence/pt3-dwarves-golden-review.txt`) shows 0 sites moved and 0 chunk heights changed. Camps are hamlets reached by a secret passage and rune door; strongholds are walled towns on a terraced floor with a great door, a throne terrace and a mines' stair down to the lower halls. Dwarven building style, prop kinds 32 and 33, merchants 4 and 5, dwarf names. Cave dressing (supports, rails, carts, bones, glowworms, ore, chests, tablets) along tunnels and in the vast chambers. genVersion 3 archived (`worldgen/archive/`, `golden-v3.json`); golden regenerated (`npm run test:golden` PASS in every host and the archives).
+- **Server**: hall townsfolk, shops (miner outfitter, ore broker), boards (ore deliveries, tunnel creatures, clear the lower mines, the warden must fall), no packs in halls, no night hunters underground, tunnel packs by depth, lower halls with dense packs and the deep warden boss, cave chests and lore tablets (Interact 170/171, Events 1860-1862), cave enemy variants (`tunnel_spider`, `cave_bat`, `bone_crawler`, `rock_troll`, `deep_warden`), vibe filters. Renewal 3 -> 4 keeps every site and id (`TestRenewOfficialToDwarves`).
+- **Client**: dwarven architecture, cave props (kinds 28-45), dwarven townsfolk (short, stocky, bearded), chest and tablet prompts, discovery notice, map. Evidence: `docs/evidence/pt3-dwarves-{camp,stronghold-door,stronghold-throne,cave-rails,camp-folk,cave-monsters}.jpg`.
+- Cave chest and tablet interacts are 170/171 (160 is the lights'); migration 0033 is unused.
+
+**Gaps**
+- Event 1863 (warden wakes or falls) is never sent; the "lost tablets" quest is not built; chest loot has no gear rolls.
+- The night safe rule is wider than halls: nothing hunts underground at night.
+- Evidence: the cave-monsters shot is weak (monsters far away), no close-up of a dwarf NPC, no stronghold market shot; the stronghold floor is a plain orange; glowworms do not sway; rails clip on slopes.
+- Postgres-backed tests time out when the shared database is slow (accountapi, some mintdb, zone game PG tests); the mintdb renewal tests pass when run alone.
