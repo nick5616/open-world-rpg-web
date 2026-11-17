@@ -309,8 +309,8 @@ func TestBuildBudgetAndPersistence(t *testing.T) {
 	// No materials: refused with the list of what is missing.
 	campdefs.D.Build.Budget = old
 	const C = "c0000000-0000-0000-0000-0000000000c2"
-	c := r.join(t, C, "Poor", gx-3, gz+10)
-	tid, arg = bplace("foundation_wood", 0, gx-3, gz+9, 0)
+	c := r.join(t, C, "Poor", gx, gz+10)
+	tid, arg = bplace("foundation_wood", 0, gx, gz+12, 0)
 	c.interact(InteractCamp, tid, CampActPlace, arg)
 	var miss []map[string]any
 	if err := json.Unmarshal(c.take(EventBuildMissing, 3*time.Second).Data, &miss); err != nil || len(miss) != 1 || miss[0]["item"] != "wood:log" || miss[0]["qty"].(float64) != 6 {
