@@ -51,7 +51,7 @@ func testVerticalTowns(t *testing.T) (*npc.World, movement.Ground, *worldhost.Ca
 	var sites []npc.Site
 	if a, err := structures.ParseAtlas(w.Atlas); err == nil {
 		for _, s := range a.Sites {
-			sites = append(sites, npc.Site{Index: s.Index, Category: s.Category, Kind: s.Kind, X: s.X, Z: s.Z, Name: s.Name})
+			sites = append(sites, npc.Site{Index: s.Index, Category: s.Category, Kind: s.Kind, X: s.X, Z: s.Z, Name: s.Name, Layer: s.Layer, Size: s.Size})
 		}
 	}
 	return npc.New(tw, w.Seed, sites), townGround{CaveTerrain: ct, tg: towns.NewGround(ct, tw)}, ct

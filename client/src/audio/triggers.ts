@@ -185,6 +185,14 @@ export const ZONE_EVENTS: Record<number, EventHandler> = {
   1701: (e, a) => {
     if (e.entityId === a.selfId() && e.value === 1) a.play('player_hurt');
   },
+  // CR 043: a hall found, a chest opened, a tablet read, the lower halls' warden.
+  1860: (e, a) => {
+    if (e.entityId === a.selfId()) a.play('loot_rare');
+  },
+  1861: (e, a) => {
+    if (e.entityId === a.selfId() && e.value > 0) a.play('chest_open', { at: a.selfPos() });
+  },
+  1863: (e, a) => a.play(e.value === 1 ? 'loot_epic' : 'domain', { volume: 0.7 }),
   204: (e, a) => {
     const at = cm(e);
     // Playtest 2 immersion pass: the Heartfall's bells toll on the strike (the wind-up's end), not a generic sting
@@ -437,6 +445,13 @@ export const TRIGGERS = {
   // Mining (CaveAudio shim)
   mine_hit: (p, a) => a.play(p.gem ? 'mine_gem' : 'mine_stone', at(p)),
   vein_break: (p, a) => a.play('vein_break', at(p)),
+  // World edits (CR 040, world/edits/worldEdits.ts)
+  work_chop: (p, a) => a.play('work_chop', at(p)),
+  work_tree_fall: (p, a) => a.play('work_tree_fall', at(p)),
+  work_tree_thud: (p, a) => a.play('work_tree_thud', at(p)),
+  work_rock_break: (p, a) => a.play('work_rock_break', at(p)),
+  work_dig: (p, a) => a.play('work_dig', at(p)),
+  work_fill: (p, a) => a.play('work_fill', at(p)),
   pickup: (_p, a) => a.play('loot_common'),
   // UI
   ui_click: (_p, a) => a.play('ui_click'),

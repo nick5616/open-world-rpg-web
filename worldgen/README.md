@@ -734,6 +734,35 @@ shaft. Water underground is the layer's (lava in the Depths); none on an
 island. Updrafts: lift where inside a column's radius between its bottom and
 top (the strongest).
 
+## Dwarves (genVersion 4, CR 043)
+
+Dwarven camps, strongholds and lower halls carved into the Underground, and
+the cave dressing. Code: `src/vertical/dwarf.rs`; docs
+`docs/cr/043-dwarves.md`; report `cargo run -p worldgen --release --example
+dwarf_stats -- 20261108`. Everything is appended after the genVersion 3 plan
+(chambers, corridors, sites, decorations, columns, veins), so each v3 index
+and id stays.
+
+- **Chambers** `dwarf_camp` (6; rx 56-68, 26-32 m high), `stronghold` (7; rx
+  150-190, 80-100 m, two risers of 5.5 m over ~14 % of the radius: floor, +5.5,
+  +11 up to e 0.8), `lower_halls` (8; rx 105-125, 30-45 m under its
+  stronghold). Level floors (noise 0.35 m). Placed 130-230 m (camps) or 460 m+
+  (halls) from the network, clear of cave systems and each other (520 m), under
+  the rock (`floor + height <= lowest terrain - 49 m`, floor >= -260 m).
+- **Secret passages** (corridor kind 4): hw 3.4 (camps), 5 (the Deep Road to a
+  stronghold), 4.4 (the mines' stair); from a tunnel's centreline or a vast
+  chamber's wall (20 m clear of its ledge ramps) to the rim of the chamber.
+- **Sites** (layer 2, after every v3 site): settlement (hamlet r 45 / town r
+  130), its waypoint (linked), `dwarf_door` POI (size 1 for a stronghold's great
+  door), `lower_halls` POI.
+- **Towns**: `build_under_settlements` after the sky towns; style `dwarf`; props
+  `minecart` 32 and `ore_pile` 33; a brazier (27) takes the well's place; dwarf
+  names; merchants 4 and 5.
+- **Decorations** 28-45 and flag `INTERACT` (4): table in CR 043. Dwarven chambers
+  are decorated by `dwarf::decorate` (after every other decoration); tunnels,
+  passages and vast chambers get supports, rails, carts, bones, glowworms,
+  chests, tablets, ore.
+
 ## How the world is made
 
 **spec_from_seed** picks every field inside tasteful sub-ranges of the schema
@@ -823,7 +852,7 @@ rust-toolchain.toml so builds are reproducible). genVersion 1 is minted
 (the official world) and frozen: its build lives in `archive/` with
 `golden/golden-v1.json`, checked by `npm run test:golden` in Node and
 Go/wazero, and loaded by hosts for worlds pinned to it
-(`archive/README.md`). genVersion 2 (playtest 1 towns) is archived the same way (`golden/golden-v2.json`); genVersion 3 (the vertical world) is current. Before a `golden:update`
+(`archive/README.md`). genVersion 2 (playtest 1 towns) is archived the same way (`golden/golden-v2.json`); genVersion 3 (the vertical world) is archived too (`golden/golden-v3.json`); genVersion 4 (the dwarves) is current. Before a `golden:update`
 for a new version, review the diff with `npx vite-node worldgen/golden/review.ts`
 (sites kept / added, chunk height changes by neighbourhood).
 

@@ -101,11 +101,11 @@ func TestCreatorProcess(t *testing.T) {
 
 	// Flag on.
 	base, stop := start("1")
-	if _, cfg := call(t, "GET", base+"/v1/config", nil); cfg["llm"] != true || cfg["genVersion"] != "3" {
+	if _, cfg := call(t, "GET", base+"/v1/config", nil); cfg["llm"] != true || cfg["genVersion"] != "4" {
 		t.Fatalf("config %v", cfg)
 	}
 	code, seedMint := call(t, "POST", base+"/v1/mint", map[string]string{"seed": "1234"})
-	if code != 201 || seedMint["world"].(map[string]any)["atlasHash"] != "29570e29a86adbb1" {
+	if code != 201 || seedMint["world"].(map[string]any)["atlasHash"] != "4fddd5ac5a950029" {
 		t.Fatalf("seed mint %d %v", code, seedMint)
 	}
 	slider := seedMint["world"].(map[string]any)["spec"].(map[string]any)
@@ -143,7 +143,7 @@ func TestCreatorProcess(t *testing.T) {
 		if err := rows.Scan(&name, &seed, &gv, &ah, &official, &specSeed); err != nil {
 			t.Fatal(err)
 		}
-		if official || gv != "3" || len(ah) != 16 || specSeed != seed {
+		if official || gv != "4" || len(ah) != 16 || specSeed != seed {
 			t.Fatalf("row %s %s %s %s %v %s", name, seed, gv, ah, official, specSeed)
 		}
 		got = append(got, name+"/"+seed)

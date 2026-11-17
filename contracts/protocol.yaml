@@ -24,7 +24,7 @@
 # Versioning: adding a message or appending a field to a masked struct is a
 # compatible change (bump `version`, note it in docs/cr/). Changing the meaning
 # or order of an existing field is not; that needs a new message id.
-version: 6   # v6 (docs/cr/034-visible-armor.md): EntityRecord.appearance; v2: WP10 movement (docs/cr/004-wp10-movement.md); v3 (docs/cr/005-voice-speaking-and-earshot.md): InputFlag.speaking; v4 (docs/cr/009-wp13-combat.md): combat flag semantics, moveExt dash bits; v5 (docs/cr/008-zone-handoff.md): ZoneTransfer kind + wtEndpoint
+version: 7   # v7 (docs/cr/040-world-edits.md): TerrainEdits (73); v6 (docs/cr/034-visible-armor.md): EntityRecord.appearance; v2: WP10 movement (docs/cr/004-wp10-movement.md); v3 (docs/cr/005-voice-speaking-and-earshot.md): InputFlag.speaking; v4 (docs/cr/009-wp13-combat.md): combat flag semantics, moveExt dash bits; v5 (docs/cr/008-zone-handoff.md): ZoneTransfer kind + wtEndpoint
 
 enums:
   EntityKind:
@@ -324,3 +324,13 @@ messages:
       ticket: bytes         # single-use handoff token (opaque), valid 60 s
       kind: u8              # 0 pre-connect, 1 cancel (v4)
       wtEndpoint: string    # WebTransport URL (with #certHash=) when the zone offers it, else empty (v4)
+
+  TerrainEdits:
+    id: 73
+    dir: s2c
+    delivery: chunk
+    doc: "Playtest 3 world edits (CR 040): the terrain height edits of one chunk. data = n x (u16 LE local vertex index z*64 + x, i8 delta in 0.25 m steps, the vertex's NEW value, 0 clears it); on first interest every non-zero vertex of the chunk (an empty chunk sends nothing), then live deltas for the vertices a swing changed. A chunk owns the vertices x, z = 0..63 of its 64 m square (the +1 edge vertex belongs to the next chunk)."
+    fields:
+      cx: i32
+      cz: i32
+      data: bytes

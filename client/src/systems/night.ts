@@ -19,7 +19,7 @@ import type { ChemEvent } from './chem/codec';
 import { liveWeather, onZoneWeatherByte, resetZoneWeather, setWeatherWorld, weatherClient, weatherOn, weatherOverride } from './weather/runtime';
 import { onWeatherEvent } from './weather/link';
 // CR 038: hard landings, the Depths' lava, the palace / activity hooks (Events 1700-1719).
-import { onVerticalEvent } from '../world/vertical/events';
+import { onDwarfEvent, onVerticalEvent } from '../world/vertical/events';
 import { isWet } from './weather/weather';
 
 /** Event kinds (contracts/events.md 500-599). */
@@ -207,6 +207,10 @@ export function attachNight(session: SessionLike): () => void {
     }
     if ((e.kind >= 1700 && e.kind <= 1719) || (e.kind >= 1880 && e.kind <= 1899)) {
       onVerticalEvent(e, session.welcome?.entityId ?? 0); // CR 038
+      return;
+    }
+    if (e.kind >= 1860 && e.kind <= 1879) {
+      onDwarfEvent(e, session.welcome?.entityId ?? 0); // CR 043
       return;
     }
     if (e.kind >= 520 && e.kind <= 525) {

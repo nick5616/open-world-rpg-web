@@ -118,13 +118,33 @@ pub fn build_sky_settlements(a: &Atlas, t: &mut Towns) {
     }
 }
 
+/// genVersion 4 (docs/cr/043-dwarves.md): the dwarves' camps and strongholds,
+/// laid out like a surface settlement on their chamber's floor (dwarven
+/// style, no roads), after the sky towns so every earlier array keeps its
+/// indices.
+pub fn build_under_settlements(a: &Atlas, t: &mut Towns) {
+    let Ok(v) = crate::vertical::world(a) else { return };
+    for site_i in 0..a.site_count() {
+        let s = a.site(site_i);
+        if s.category != site::CAT_SETTLEMENT || s.layer != crate::vertical::LAYER_UNDER {
+            continue;
+        }
+        if !v.plan.chambers.iter().any(|c| c.site as usize == site_i) {
+            continue;
+        }
+        let ter = Terrain::under(a, v.clone());
+        let si = t.settlements.len();
+        settle(a, site_i, si, Vec::new(), ter, t);
+    }
+}
+
 /// Lay out one settlement (site `site_i`, settlement index `si`, road
 /// entries `angles`) on `ter`.
 fn settle(a: &Atlas, site_i: usize, si: usize, angles_in: Vec<f64>, ter: Terrain, t: &mut Towns) {
     {
         let s = a.site(site_i);
         let biome = site_biome(a, site_i);
-        let style = kit::style_of_biome(biome);
+        let style = if ter.is_under() { kit::STYLE_DWARF } else { kit::style_of_biome(biome) };
         let mut seq = Seq::new(a.seed ^ s.seed as u64, stream::LAYOUT);
         let size = s.size.min(2);
         let walled = size == site::SIZE_TOWN;
@@ -324,7 +344,7 @@ fn settle(a: &Atlas, site_i: usize, si: usize, angles_in: Vec<f64>, ter: Terrain
             } else if u < 0.62 {
                 role::HOUSE
             } else if u < 0.8 {
-                role::FARM
+                if ter.is_under() { role::WORKSHOP } else { role::FARM }
             } else if u < 0.92 {
                 role::WORKSHOP
             } else {
@@ -490,7 +510,10 @@ fn settle(a: &Atlas, site_i: usize, si: usize, angles_in: Vec<f64>, ter: Terrain
         let mut taken: Vec<f64> = Vec::new();
         let mut items: Vec<u8> = vec![pk::BOARD];
         items.extend(std::iter::repeat_n(pk::STALL, n_stalls));
-        items.push(pk::WELL);
+        items.push(if ter.is_under() { pk::BRAZIER } else { pk::WELL });
+        if ter.is_under() {
+            items.extend([pk::MINECART, pk::MINECART, pk::ORE_PILE]);
+        }
         if ter.is_sky() {
             items.push(pk::ACTIVITY);
         }
@@ -554,6 +577,9 @@ fn settle(a: &Atlas, site_i: usize, si: usize, angles_in: Vec<f64>, ter: Terrain
                     );
                 }
                 pk::ACTIVITY => town_prop(&mut ctx, t, &ter, x, z, ang + core::f64::consts::PI, pk::ACTIVITY, 0, pf::INTERACT, None),
+                pk::BRAZIER => town_prop(&mut ctx, t, &ter, x, z, ang, pk::BRAZIER, 0, pf::LIGHT, Some((0.7, 0.7, 1.0))),
+                pk::MINECART => town_prop(&mut ctx, t, &ter, x, z, ang, pk::MINECART, 0, 0, Some((1.0, 0.6, 0.9))),
+                pk::ORE_PILE => town_prop(&mut ctx, t, &ter, x, z, ang, pk::ORE_PILE, 0, 0, Some((0.8, 0.8, 0.8))),
                 _ => town_prop(&mut ctx, t, &ter, x, z, ang, pk::WELL, 0, 0, Some((0.8, 0.8, 0.9))),
             }
         }

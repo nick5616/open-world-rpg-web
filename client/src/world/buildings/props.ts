@@ -46,6 +46,8 @@ export const DEFAULT_DIMS: Partial<Record<(typeof PROP_KINDS)[number], PropDims>
   rug: { hu: 1.0, hv: 0.7, h: 0.02 },
   bookshelf: { hu: 0.25, hv: 0.6, h: 2.0 },
   statue: { hu: 0.5, hv: 0.5, h: 2.4 },
+  minecart: { hu: 1.0, hv: 0.6, h: 0.9 },
+  orePile: { hu: 0.8, hv: 0.8, h: 0.8 },
 };
 
 export interface Emitter {
@@ -574,6 +576,34 @@ export function drawProp(mb: MeshBuilder, p: TownProp, d: PropDims, ctx: PropCtx
         const a = i * 1.9 + v8;
         mb.box(turned(moved(f, Math.cos(a) * 0.5, Math.sin(a) * 0.5), a), -0.25, 0.25, y - 0.1, y + 0.2 + (i % 2) * 0.15, -0.2, 0.2);
       }
+      return;
+    }
+    case 'minecart': {
+      // Dwarven ore cart (CR 043): an iron-banded box on four small wheels, heaped with ore, a short length of rail under it.
+      P(mb, 'wood', [0.4, 0.3, 0.22]);
+      for (const sv of [-0.45, 0.45]) mb.box(f, -1.4, 1.4, y + 0.01, y + 0.05, sv - 0.04, sv + 0.04, {});
+      for (let k = -4; k <= 4; k++) mb.box(f, k * 0.33 - 0.05, k * 0.33 + 0.05, y, y + 0.03, -0.6, 0.6, { top: true });
+      P(mb, 'metal', [0.55, 0.52, 0.5]);
+      mb.box(f, -0.9, 0.9, y + 0.28, y + 0.85, -0.55, 0.55, {});
+      for (const su of [-0.55, 0.55]) mb.box(f, su - 0.05, su + 0.05, y + 0.25, y + 0.88, -0.58, 0.58, {});
+      for (const su of [-0.55, 0.55]) for (const sv of [-0.5, 0.5]) mb.cyl(moved(f, su, sv), 0, 0, y + 0.1, y + 0.3, 0.17, 7);
+      P(mb, 'rock', [0.62, 0.5, 0.42]);
+      for (let i = 0; i < 6; i++) mb.box(turned(moved(f, ((i % 3) - 1) * 0.4, (i < 3 ? -0.2 : 0.22)), i * 1.1), -0.17, 0.17, y + 0.8, y + 1.05 + (i % 2) * 0.1, -0.15, 0.15, {});
+      P(mb, 'glow', [1.0, 0.75, 0.3], 120);
+      mb.box(moved(f, 0.1, 0.1), -0.05, 0.05, y + 1.0, y + 1.1, -0.05, 0.05, {});
+      return;
+    }
+    case 'orePile': {
+      // Heaped raw ore with glints of metal.
+      P(mb, 'rock', [0.58, 0.5, 0.44]);
+      for (let i = 0; i < 9; i++) {
+        const a = i * 2.1 + v8;
+        const rr = i < 4 ? 0.2 : 0.55;
+        const hh = i < 4 ? 0.5 : 0.28;
+        mb.box(turned(moved(f, Math.cos(a) * rr, Math.sin(a) * rr), a), -0.3, 0.3, y - 0.05, y + hh, -0.25, 0.25, {});
+      }
+      P(mb, 'glow', [0.95, 0.7, 0.35], 110);
+      for (let i = 0; i < 3; i++) mb.box(turned(moved(f, i * 0.25 - 0.25, 0.1), i), -0.05, 0.05, y + 0.45, y + 0.52, -0.05, 0.05, {});
       return;
     }
     case 'torch': {

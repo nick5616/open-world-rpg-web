@@ -60,7 +60,7 @@ pub fn corridor_reach(r: &Corridor) -> f64 {
 type Feat = (f64, f64, f64, bool, f64, f64);
 
 /// (F, C, W, open) of a chamber at (x, z), None outside its influence.
-fn chamber_at(c: &Chamber, x: f64, z: f64) -> Option<Feat> {
+pub fn chamber_at(c: &Chamber, x: f64, z: f64) -> Option<Feat> {
     let (dx, dz) = (x - c.x, z - c.z);
     if dx * dx + dz * dz > c.reach * c.reach {
         return None;
@@ -75,8 +75,15 @@ fn chamber_at(c: &Chamber, x: f64, z: f64) -> Option<Feat> {
     let e = e0 * (1.0 + 0.03 * noise(sd, x / 38.0, z / 38.0));
     let sw = smoothstep(WALL_E0, WALL_E1, e);
     let wall = (c.height + WALL_EXTRA) * libm::pow(sw, WALL_POW) + 3.0 * sw * noise(sd ^ 5, x / 9.0, z / 9.0);
-    let ground = 1.6 * fbm(sd ^ 1, x, z, 34.0, 3, 0.5);
+    // genVersion 4: the dwarves' halls have level floors, and a stronghold
+    // climbs in two gentle risers (a market floor, a smiths' terrace, the
+    // top terrace of the throne) before the walls start.
+    let dwarf = c.kind >= ck::DWARF_CAMP;
+    let ground = if dwarf { 0.35 } else { 1.6 } * fbm(sd ^ 1, x, z, 34.0, 3, 0.5);
     let mut f = c.floor + ground * (1.0 - sw) + wall;
+    if c.kind == ck::STRONGHOLD {
+        f += 0.5 * super::dwarf::TERRACE_TOP * (smoothstep(0.26, 0.40, e) + smoothstep(0.50, 0.64, e)) * (1.0 - sw);
+    }
     if c.lake_e > 0.0 {
         f -= c.lake_depth * (1.0 - smoothstep(0.0, c.lake_e, e));
     }
@@ -87,7 +94,7 @@ fn chamber_at(c: &Chamber, x: f64, z: f64) -> Option<Feat> {
 }
 
 /// (F, C, W, open) of a corridor at (x, z), None outside its influence.
-fn corridor_at(r: &Corridor, x: f64, z: f64) -> Option<Feat> {
+pub fn corridor_at(r: &Corridor, x: f64, z: f64) -> Option<Feat> {
     let reach = corridor_reach(r);
     let mut best = (f64::MAX, 0usize, 0.0);
     for k in 0..r.pts.len().saturating_sub(1) {

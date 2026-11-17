@@ -5,6 +5,7 @@
 // passages, rivers and openings from the vertical descriptor, like a
 // surveyor's cave map. Sites show on their own layer only.
 
+import { dwarfRuntime } from '../../world/vertical/dwarfKinds';
 import { CHAMBER_KINDS, LAYER_DEPTHS, LAYER_SKY, LAYER_UNDER, type Site, type VerticalWorld } from '@lodestone/worldgen';
 
 export type MapLayer = 0 | 1 | 2 | 3;
@@ -21,6 +22,9 @@ const CHAMBER_FILL: Record<(typeof CHAMBER_KINDS)[number], string> = {
   fungal: 'rgba(90,200,120,0.8)',
   inferno: 'rgba(232,96,36,0.9)',
   ashen: 'rgba(150,138,128,0.85)',
+  dwarf_camp: 'rgba(214,150,70,0.9)',
+  stronghold: 'rgba(230,170,60,0.9)',
+  lower_halls: 'rgba(160,80,60,0.9)',
 };
 
 /** The layer a site belongs to (sites from before genVersion 3 are surface sites). */
@@ -81,8 +85,14 @@ export function drawLayerOverlay(ctx: Ctx, v: VerticalWorld | null, layer: MapLa
   // Underground / Depths: the land darkens, the caverns are drawn.
   ctx.fillStyle = layer === LAYER_DEPTHS ? 'rgba(24,8,6,0.86)' : 'rgba(8,12,22,0.84)';
   ctx.fillRect(0, 0, w, h);
+  // CR 043: the dwarves' halls and their secret passages are drawn once found (Event 1860).
+  const hallFound = (ci: number) => {
+    const ch = v.chambers[ci];
+    return !!ch && (ch.kind < 6 || dwarfRuntime.found.has(ch.site) || (ch.kind === 8 && v.chambers.some((o) => o.kind === 7 && dwarfRuntime.found.has(o.site))));
+  };
   for (const c of v.corridors) {
     if (c.layer !== layer) continue;
+    if (c.kind === 4 && !hallFound(c.to) && !hallFound(c.from)) continue;
     ctx.strokeStyle = c.lava ? 'rgba(240,110,40,0.9)' : c.water > 0 ? 'rgba(60,170,210,0.9)' : layer === LAYER_DEPTHS ? 'rgba(150,90,70,0.85)' : 'rgba(150,160,190,0.8)';
     ctx.lineWidth = Math.max(1.5, c.hw * 2 * k);
     ctx.lineCap = 'round';
@@ -98,6 +108,7 @@ export function drawLayerOverlay(ctx: Ctx, v: VerticalWorld | null, layer: MapLa
   }
   for (const c of v.chambers) {
     if (c.layer !== layer) continue;
+    if (c.kind >= 6 && !hallFound(c.index)) continue;
     ctx.save();
     ctx.translate(sx(c.x), sy(c.z));
     ctx.rotate(Math.atan2(c.s, c.c));

@@ -8,9 +8,10 @@ rule 6 and "keeping old worlds working"; decision 0007: a world row pins
 | --- | --- | --- | --- |
 | 1 | `worldgen-42a66cc191bee49d.wasm` (579,496 B) | `worldgen/golden/golden-v1.json` | git `56a0d36`, rustc 1.99.1 |
 | 2 | `worldgen-1dcd2ffc09618d97.wasm` (617,354 B) | `worldgen/golden/golden-v2.json` | git `73f436c`, rustc 1.99.1 (rebuilt from that commit, bit-identical to the dev build) |
+| 3 | `worldgen-7fbe0614976d388d.wasm` (756,376 B) | `worldgen/golden/golden-v3.json` | commit `073b724`, rustc 1.99.1 |
 
 The current build (`worldgen/pkg/worldgen.wasm`, `npm run build:wasm`) is
-genVersion 3 (`docs/cr/038-vertical-world.md`, the vertical world).
+genVersion 4 (`docs/cr/043-dwarves.md`, the dwarves).
 
 ## Who loads it
 

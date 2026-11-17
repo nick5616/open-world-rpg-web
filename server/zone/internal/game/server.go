@@ -129,6 +129,10 @@ type Config struct {
 	PartyChat func(characterIDs []string, text string)
 	// Now is the wall clock (tickets, server time); tests override it.
 	Now func() time.Time
+
+	// Playtest 3 world edits (CR 040, worldedit.go): chopping, breaking and
+	// digging; nil = off.
+	WorldEdit *WorldEditSetup
 }
 
 // Server is one zone process's simulation.
@@ -136,6 +140,8 @@ type Server struct {
 	race       raceState             // CR 044: the glide ring race (activity.go)
 	pal        palaceState           // CR 044: the sky palaces (palace.go)
 	shrines    map[int]*liveShrine   // CR 044: live Depths shrine cleansings by chamber (shrine.go)
+	chestOpened map[uint32]time.Time // CR 043: cave chests opened (descriptor deco index), refill after chestCooldown (dwarves.go)
+	dwarfSeen   map[uint64]bool      // CR 043: Event 1860 sent (entity<<32 | hall site)
 	skyTowns   []int8                // CR 038: per settlement, 0 unknown, 1 surface, 2 sky (vertical.go skyTown)
 	layerVeins map[uint64]caves.Vein // CR 038: the vertical world's veins by id (vertical.go layerVein)
 
@@ -173,6 +179,7 @@ type Server struct {
 	hist       snapshot.History // G5: the tick's states, shared by every client's encoder (snapshots.go)
 	saveDiv    uint32
 	mine       mining              // WP09 (mining.go)
+	we         worldEdits          // playtest 3 (worldedit.go)
 	calls      chan func()         // run on the tick goroutine (Do, caves.go)
 	env        movement.Env        // WP10: this tick's movement env (stepEnv)
 	hap        []explore.Happening // scratch for exploreTick

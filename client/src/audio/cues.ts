@@ -144,6 +144,14 @@ export const CUES = {
   mine_gem: world('mine_gem', { volume: 0.55, pitch: 0.05, maxVoices: 3, maxDistance: 30 }),
   vein_break: world('vein_break', { volume: 0.8, pitch: 0.05, maxVoices: 2, maxDistance: 40 }),
 
+  // World edits (CR 040): the mining and step files, pitched into wood and earth
+  work_chop: world('mine_stone', { volume: 0.75, rate: 0.62, pitch: 0.1, maxVoices: 3, maxDistance: 40, cooldownMs: 60 }),
+  work_tree_fall: world('vein_break', { volume: 0.8, rate: 0.55, maxVoices: 2, maxDistance: 90, refDistance: 6 }),
+  work_tree_thud: world('land', { volume: 0.95, rate: 0.5, maxVoices: 2, maxDistance: 90, refDistance: 6 }),
+  work_rock_break: world('vein_break', { volume: 0.85, rate: 0.9, pitch: 0.06, maxVoices: 2, maxDistance: 60 }),
+  work_dig: world('step_soft', { volume: 0.8, rate: 0.55, pitch: 0.12, maxVoices: 3, maxDistance: 35, cooldownMs: 60 }),
+  work_fill: world('step_soft', { volume: 0.7, rate: 0.78, pitch: 0.1, maxVoices: 3, maxDistance: 35, cooldownMs: 60 }),
+
   // Loot by rarity (items.yaml r 0..7)
   loot_common: ui('loot_common', { volume: 0.5, cooldownMs: 80 }),
   loot_uncommon: ui('loot_uncommon', { volume: 0.55, cooldownMs: 80 }),

@@ -76,7 +76,7 @@ func withTowns(ground movement.Ground, terrain *worldhost.Terrain, cfg *game.Con
 	var sites []npc.Site
 	if a, err := structures.ParseAtlas(terrain.World().Atlas); err == nil {
 		for _, s := range a.Sites {
-			sites = append(sites, npc.Site{Index: s.Index, Category: s.Category, Kind: s.Kind, X: s.X, Z: s.Z, Name: s.Name})
+			sites = append(sites, npc.Site{Index: s.Index, Category: s.Category, Kind: s.Kind, X: s.X, Z: s.Z, Name: s.Name, Layer: s.Layer, Size: s.Size})
 		}
 	}
 	cfg.Towns = npc.New(tw, terrain.World().Seed, sites)

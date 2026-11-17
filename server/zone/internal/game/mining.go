@@ -529,6 +529,7 @@ func (s *Server) miningTick(tick uint32, now time.Time) {
 			s.editInterest(sess)
 		}
 	}
+	s.worldEditTick(tick, now) // playtest 3: regrowth, batched grants, world edit interest (worldedit.go)
 }
 
 func (s *Server) respawnVein(id uint64, st *veinState, now time.Time) {

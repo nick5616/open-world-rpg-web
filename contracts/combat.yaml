@@ -764,6 +764,12 @@ enemies:
   cave_crawler: {id: 40, family: cave, hp: 82, speed: 5.5, aggro: 16, attacks: [crawler_bite, pounce], behavior: melee, xp: 22, size: 0.9, color: '#5a4a5a'}
   gloom_bat: {id: 41, family: cave, hp: 80, speed: 7.0, aggro: 20, attacks: [bite, harpy_dive], behavior: flyer, keepAway: 4, xp: 20, size: 0.6, color: '#3a3a4a'}
   crystal_golem: {id: 42, family: cave, hp: 94, speed: 3.5, aggro: 14, attacks: [golem_punch, elemental_burst], behavior: melee, xp: 34, size: 1.4, color: '#8fd4ff'}
+  # CR 043 (the dwarves): tunnel and mine creatures. Same cave family and rigs
+  # as above (crawlers, a flyer, a golem-sized biped), their own names and hues.
+  tunnel_spider: {id: 43, family: cave, hp: 84, speed: 6.2, aggro: 18, attacks: [crawler_bite, pounce], behavior: melee, xp: 24, size: 0.8, color: '#3b2f2a'}
+  cave_bat: {id: 44, family: cave, hp: 78, speed: 7.5, aggro: 22, attacks: [bite, harpy_dive], behavior: flyer, keepAway: 4, xp: 20, size: 0.55, color: '#2f2a3a'}
+  bone_crawler: {id: 45, family: cave, hp: 98, speed: 5.0, aggro: 16, attacks: [crawler_bite, pounce], behavior: melee, xp: 30, size: 1.0, color: '#cfc8b0'}
+  rock_troll: {id: 46, family: cave, hp: 130, speed: 3.4, aggro: 14, attacks: [golem_punch, stomp], behavior: melee, xp: 46, size: 1.7, color: '#6b6358'}
   # slimes (playtest 1, CR 012): beginner creatures. The Haven around the
   # world spawn holds nothing else; quiet lands (area level 1-3) mix them
   # with the biome's beasts. 3-4 hits with the starting sword, slower than a
@@ -786,6 +792,7 @@ enemies:
   starless_sovereign: {id: 110, family: demon, hp: 2600, speed: 5.2, aggro: 50, attacks: [lord_cleave, lord_nova, lord_meteor], behavior: melee, xp: 900, size: 2.4, color: '#14080e', demon: {rank: lord}}
   # bosses: hp is the solo value at level 1 (party scaling multiplies it)
   warden: {id: 100, family: boss, hp: 8400, speed: 4.5, aggro: 30, attacks: [boss_cleave, boss_slam], behavior: melee, xp: 600, size: 3.0, color: '#7a6a5a'}
+  deep_warden: {id: 104, family: boss, hp: 5200, speed: 4.4, aggro: 30, attacks: [boss_cleave, boss_slam], behavior: melee, xp: 500, size: 2.8, color: '#8a5a2a'}
   archon: {id: 101, family: boss, hp: 6800, speed: 4.0, aggro: 32, attacks: [boss_orbs, boss_nova], behavior: ranged, keepAway: 10, xp: 600, size: 2.6, color: '#5a4a8a'}
   # playtest 2 content (CR 022). The sealed vaults' mini-boss (a boss with
   # an arena: the vault yard), the world-event creatures. behavior flee:
@@ -827,6 +834,14 @@ bosses:
       - {at: 1.0, attacks: [boss_orbs, boss_nova]}
       - {at: 0.6, attacks: [boss_orbs, boss_nova, boss_meteor], adds: 3}
       - {at: 0.3, attacks: [boss_orbs, boss_nova, boss_meteor, boss_beam], adds: 3, cooldownMult: 0.8}
+  deep_warden:
+    # CR 043: the warden of a stronghold's lower halls (a smith who would not leave his anvil).
+    transitionMs: 2200
+    arenaRadius: 30
+    phases:
+      - {at: 1.0, attacks: [boss_cleave, boss_slam]}
+      - {at: 0.6, attacks: [boss_cleave, boss_slam, boss_shockwave], adds: 2, speedMult: 1.1}
+      - {at: 0.3, attacks: [boss_cleave, boss_slam, boss_shockwave, boss_charge], adds: 3, speedMult: 1.2, cooldownMult: 0.9}
   vault_keeper:
     # playtest 2 content (CR 022): the sealed vaults' keeper. Phase 2 burns
     # its sigil faster and calls two of the vault's guardians.
@@ -865,7 +880,7 @@ bosses:
     dark: The Hollow
     void: The Unmade
     none: The Ancient
-  names: {warden: Warden, archon: Archon, vault_keeper: Vault Keeper, sky_guardian: Sky Guardian, the_hush: Hush}
+  names: {deep_warden: Deep Warden, warden: Warden, archon: Archon, vault_keeper: Vault Keeper, sky_guardian: Sky Guardian, the_hush: Hush}
 
 affixes:
   # Spec 8 elites: an element and an affix. Wind-ups never leave 300-600 ms.
@@ -896,10 +911,15 @@ enemyNames:
   cave_crawler: Cave Crawler
   gloom_bat: Gloom Bat
   crystal_golem: Crystal Golem
+  tunnel_spider: Tunnel Spider
+  cave_bat: Cave Bat
+  bone_crawler: Bone Crawler
+  rock_troll: Rock Troll
   slime: Dewdrop Slime
   moss_slime: Mossback Slime
   warden: Warden
   archon: Archon
+  deep_warden: Deep Warden
   gloamling: Gloamling
   cinder_fiend: Cinder Fiend
   rime_wraith: Rime Wraith

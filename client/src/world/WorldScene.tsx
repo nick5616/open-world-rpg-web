@@ -42,6 +42,7 @@ import { lsRetro, lsStyle } from './style/styleShader';
 import { worldDebug, frameInfo } from './debug/worldDebug';
 import { LodOverlay } from './debug/lodOverlay';
 import { CaveManager } from './caves/caveManager';
+import { WorldEditManager } from './edits/worldEdits'; // CR 040: chopping, breaking, digging
 import { audioWorld } from '../audio/bridge';
 // CR 038: sky archipelagos, the Underground and the Depths.
 import { VerticalManager } from './vertical/verticalManager';
@@ -143,6 +144,8 @@ export function WorldScene({ runtime }: Props) {
     // WP09: caves (streamed near mouths and underground; the light pool lives in it).
     const caves = runtime.caveGraph ? new CaveManager(runtime, g0.maxLights) : null;
     if (caves) root.add(caves.group);
+    const edits = new WorldEditManager(runtime, scatter, terrain);
+    root.add(edits.group);
     const vertical = runtime.vertical ? new VerticalManager(runtime) : null;
     if (vertical) root.add(vertical.group);
     vertical?.setLow(g0.tier === 'low');
@@ -150,7 +153,7 @@ export function WorldScene({ runtime }: Props) {
     const windBase = 3 + (runtime.data.params[PARAM.stormFrequency] ?? 0.3) * 4;
     setPrevailingWind(runtime.data.params[PARAM.windDirDeg] ?? 0, windBase);
     setWeatherWorld(runtime.data, runtime.data.params[PARAM.windDirDeg] ?? 0); // CR 030: the climate per weather cell
-    return { shared, waterU, terrain, sea, sky, hemi, scatter, caves, vertical, root, lighting: makeSkyLighting(), horizon: null as THREE.Mesh | null, rain: 0, capAcc: 0, rainStreaks, snow, sand, bolts, life, windBase, drift: new THREE.Vector2() };
+    return { shared, waterU, terrain, sea, sky, hemi, scatter, caves, edits, vertical, root, lighting: makeSkyLighting(), horizon: null as THREE.Mesh | null, rain: 0, capAcc: 0, rainStreaks, snow, sand, bolts, life, windBase, drift: new THREE.Vector2() };
     // Built once per runtime; tier changes go through setParams/applyTier below.
   }, [runtime, gl]);
 
@@ -278,6 +281,7 @@ export function WorldScene({ runtime }: Props) {
       // outlived a remount (leave the play screen and come back): a frozen
       // "Vein broken" toast stayed on screen and E still swung at the old vein.
       world.caves?.dispose();
+      world.edits.dispose();
       world.vertical?.dispose();
       world.rainStreaks.dispose();
       world.snow.dispose();
@@ -499,6 +503,7 @@ export function WorldScene({ runtime }: Props) {
     vel.set(localPlayer.vel.x, localPlayer.vel.y, localPlayer.vel.z);
     world.terrain.update(camera, vel, dt, now);
     world.scatter.update(camera, now);
+    world.edits.update(camera, dt, now);
     netStats.chunkQueue = runtime.pool.queued + runtime.pool.inFlight;
     netStats.chunksLoaded = world.terrain.stats.loaded;
     overlay.update(showTiles, world.terrain.drawnTiles(), camera.position, now);

@@ -327,6 +327,7 @@
   "wood": 50,
   "stone": 99,
   "earth": 99,
+  "plant": 40,
   "camp": 5,
   "fish": 20,
   "instrument": 1
@@ -1789,6 +1790,50 @@
    "sockets": 0
   },
   {
+   "key": "wood:stick",
+   "name": "Stick",
+   "category": "wood",
+   "kind": "material",
+   "stack": 50,
+   "pouch": "inv",
+   "level": 1,
+   "value": 1,
+   "sockets": 0
+  },
+  {
+   "key": "stone:flint",
+   "name": "Flint",
+   "category": "stone",
+   "kind": "material",
+   "stack": 99,
+   "pouch": "inv",
+   "level": 1,
+   "value": 5,
+   "sockets": 0
+  },
+  {
+   "key": "plant:fiber",
+   "name": "Plant Fiber",
+   "category": "plant",
+   "kind": "material",
+   "stack": 40,
+   "pouch": "inv",
+   "level": 1,
+   "value": 1,
+   "sockets": 0
+  },
+  {
+   "key": "plant:berries",
+   "name": "Wild Berries",
+   "category": "plant",
+   "kind": "material",
+   "stack": 40,
+   "pouch": "inv",
+   "level": 1,
+   "value": 2,
+   "sockets": 0
+  },
+  {
    "key": "camp:campfire",
    "name": "Campfire Kit",
    "category": "camp",
@@ -1929,6 +1974,28 @@
    "pouch": "inv",
    "level": 1,
    "value": 8,
+   "sockets": 0
+  },
+  {
+   "key": "tool:axe",
+   "name": "Axe",
+   "category": "tool",
+   "kind": "tool",
+   "stack": 1,
+   "pouch": "inv",
+   "level": 1,
+   "value": 30,
+   "sockets": 0
+  },
+  {
+   "key": "tool:shovel",
+   "name": "Shovel",
+   "category": "tool",
+   "kind": "tool",
+   "stack": 1,
+   "pouch": "inv",
+   "level": 1,
+   "value": 28,
    "sockets": 0
   },
   {
@@ -3672,8 +3739,80 @@
    "xp": 3
   },
   {
-   "key": "bench_torch",
+   "key": "kit_axe",
    "id": 36,
+   "station": "camp",
+   "inputs": [
+    {
+     "item": "wood:log",
+     "qty": 2
+    },
+    {
+     "item": "stone:block",
+     "qty": 2
+    },
+    {
+     "item": "plant:fiber",
+     "qty": 1
+    }
+   ],
+   "output": "tool:axe",
+   "qty": 1,
+   "sockets": 0,
+   "blueprint": null,
+   "xp": 4
+  },
+  {
+   "key": "kit_shovel",
+   "id": 37,
+   "station": "camp",
+   "inputs": [
+    {
+     "item": "wood:log",
+     "qty": 2
+    },
+    {
+     "item": "stone:block",
+     "qty": 2
+    },
+    {
+     "item": "plant:fiber",
+     "qty": 1
+    }
+   ],
+   "output": "tool:shovel",
+   "qty": 1,
+   "sockets": 0,
+   "blueprint": null,
+   "xp": 4
+  },
+  {
+   "key": "kit_pickaxe",
+   "id": 38,
+   "station": "camp",
+   "inputs": [
+    {
+     "item": "wood:log",
+     "qty": 2
+    },
+    {
+     "item": "stone:block",
+     "qty": 3
+    },
+    {
+     "item": "plant:fiber",
+     "qty": 1
+    }
+   ],
+   "output": "tool:pickaxe",
+   "qty": 1,
+   "sockets": 0,
+   "blueprint": null,
+   "xp": 4
+  },
+  {
+   "key": "bench_torch",
+   "id": 39,
    "station": "workbench",
    "inputs": [
     {
@@ -3689,7 +3828,7 @@
   },
   {
    "key": "bench_rope",
-   "id": 37,
+   "id": 40,
    "station": "workbench",
    "inputs": [
     {
@@ -3705,7 +3844,7 @@
   },
   {
    "key": "bench_whetstone",
-   "id": 38,
+   "id": 41,
    "station": "workbench",
    "inputs": [
     {
@@ -3721,7 +3860,7 @@
   },
   {
    "key": "bench_copper_arrows",
-   "id": 39,
+   "id": 42,
    "station": "workbench",
    "inputs": [
     {
@@ -3741,7 +3880,7 @@
   },
   {
    "key": "bench_iron_arrows",
-   "id": 40,
+   "id": 43,
    "station": "workbench",
    "inputs": [
     {
@@ -3761,7 +3900,7 @@
   },
   {
    "key": "forge_fishing_rod",
-   "id": 41,
+   "id": 44,
    "station": "forge",
    "inputs": [
     {
@@ -3777,7 +3916,7 @@
   },
   {
    "key": "bench_fishing_rod",
-   "id": 42,
+   "id": 45,
    "station": "workbench",
    "inputs": [
     {
@@ -3797,7 +3936,7 @@
   },
   {
    "key": "cook_fish_skewer",
-   "id": 43,
+   "id": 46,
    "station": "cook",
    "inputs": [
     {
@@ -3813,7 +3952,7 @@
   },
   {
    "key": "cook_fried_perch",
-   "id": 44,
+   "id": 47,
    "station": "cook",
    "inputs": [
     {
@@ -3829,7 +3968,7 @@
   },
   {
    "key": "cook_grilled_trout",
-   "id": 45,
+   "id": 48,
    "station": "cook",
    "inputs": [
     {
@@ -3849,7 +3988,7 @@
   },
   {
    "key": "cook_fish_stew",
-   "id": 46,
+   "id": 49,
    "station": "cook",
    "inputs": [
     {
@@ -3873,7 +4012,7 @@
   },
   {
    "key": "cook_seafarer_pie",
-   "id": 47,
+   "id": 50,
    "station": "cook",
    "inputs": [
     {
@@ -3897,7 +4036,7 @@
   },
   {
    "key": "cook_pike_steak",
-   "id": 48,
+   "id": 51,
    "station": "cook",
    "inputs": [
     {
@@ -3917,7 +4056,7 @@
   },
   {
    "key": "cook_frostgill_chowder",
-   "id": 49,
+   "id": 52,
    "station": "cook",
    "inputs": [
     {
@@ -3937,7 +4076,7 @@
   },
   {
    "key": "cook_ember_curry",
-   "id": 50,
+   "id": 53,
    "station": "cook",
    "inputs": [
     {
@@ -3957,7 +4096,7 @@
   },
   {
    "key": "cook_smoked_eel",
-   "id": 51,
+   "id": 54,
    "station": "cook",
    "inputs": [
     {
@@ -3977,7 +4116,7 @@
   },
   {
    "key": "brew_moonlit_tonic",
-   "id": 52,
+   "id": 55,
    "station": "cook",
    "inputs": [
     {
@@ -3997,7 +4136,7 @@
   },
   {
    "key": "cook_storm_fillet",
-   "id": 53,
+   "id": 56,
    "station": "cook",
    "inputs": [
     {
@@ -4013,7 +4152,7 @@
   },
   {
    "key": "cook_sturgeon_feast",
-   "id": 54,
+   "id": 57,
    "station": "cook",
    "inputs": [
     {
@@ -4033,7 +4172,7 @@
   },
   {
    "key": "cook_deepmaw_banquet",
-   "id": 55,
+   "id": 58,
    "station": "cook",
    "inputs": [
     {
@@ -4053,7 +4192,7 @@
   },
   {
    "key": "bench_wooden_flute",
-   "id": 56,
+   "id": 59,
    "station": "workbench",
    "inputs": [
     {
@@ -4069,7 +4208,7 @@
   },
   {
    "key": "bench_hand_drum",
-   "id": 57,
+   "id": 60,
    "station": "workbench",
    "inputs": [
     {
@@ -4089,7 +4228,7 @@
   },
   {
    "key": "bench_lute",
-   "id": 58,
+   "id": 61,
    "station": "workbench",
    "inputs": [
     {
@@ -4113,7 +4252,7 @@
   },
   {
    "key": "forge_handbells",
-   "id": 59,
+   "id": 62,
    "station": "forge",
    "inputs": [
     {
@@ -4133,7 +4272,7 @@
   },
   {
    "key": "forge_sunsteel_helm",
-   "id": 60,
+   "id": 63,
    "station": "forge",
    "inputs": [
     {
@@ -4153,7 +4292,7 @@
   },
   {
    "key": "forge_sunsteel_mail",
-   "id": 61,
+   "id": 64,
    "station": "forge",
    "inputs": [
     {
@@ -4173,7 +4312,7 @@
   },
   {
    "key": "forge_sunsteel_greaves",
-   "id": 62,
+   "id": 65,
    "station": "forge",
    "inputs": [
     {
@@ -4207,6 +4346,14 @@
   },
   {
    "item": "tool:torch",
+   "qty": 1
+  },
+  {
+   "item": "tool:axe",
+   "qty": 1
+  },
+  {
+   "item": "tool:shovel",
    "qty": 1
   }
  ],

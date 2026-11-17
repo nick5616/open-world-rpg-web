@@ -19,7 +19,7 @@ export const LAYER_NAMES = ['surface', 'sky', 'underground', 'depths'] as const;
 export const SURF = { uFloor: 0, uCeil: 1, uWater: 2, dFloor: 3, dCeil: 4, dLava: 5, skyTop: 6, skyBottom: 7 } as const;
 
 export const ISLAND_KINDS = ['grove', 'meadow', 'crag', 'town', 'palace', 'ruin'] as const;
-export const CHAMBER_KINDS = ['crystal', 'cenote', 'river', 'fungal', 'inferno', 'ashen'] as const;
+export const CHAMBER_KINDS = ['crystal', 'cenote', 'river', 'fungal', 'inferno', 'ashen', 'dwarf_camp', 'stronghold', 'lower_halls'] as const;
 export const UPDRAFT_KINDS = ['column', 'lift', 'current', 'geyser'] as const;
 export const OPENING_KINDS = ['tunnel', 'cenote', 'gate'] as const;
 /** Decoration kinds (worldgen/src/vertical/mod.rs `dk`). */

@@ -9,6 +9,8 @@
 
 import type { AtlasHandle, Worldgen } from '@lodestone/worldgen';
 import type { GroundQuery } from '../../sim/ground';
+// CR 040: terrain the players dug and filled, added to the generated lattice (twin of server/pkg/worldedit).
+import { lift, surface, TerrainOverlay } from '../edits/overlay';
 
 /** Chunk ids -64..127 are valid (worldgen README); clamp so a fly-mode excursion past the sea can't hit -1e9. */
 const MIN = -4096;
@@ -16,6 +18,9 @@ const MAX = 8191.999;
 
 export class WorldGround implements GroundQuery {
   private readonly fn: (atlasPtr: number, x: number, z: number) => number;
+  /** CR 040: the edit overlay; empty means exactly the generated collision surface. */
+  readonly edits = new TerrainOverlay();
+  private readonly corner = new Int8Array(4);
 
   constructor(
     private readonly wg: Worldgen,
@@ -27,7 +32,23 @@ export class WorldGround implements GroundQuery {
   heightAt(x: number, z: number): number {
     const cx = x < MIN ? MIN : x > MAX ? MAX : x;
     const cz = z < MIN ? MIN : z > MAX ? MAX : z;
+    if (this.edits.any) {
+      const x0 = Math.floor(cx);
+      const z0 = Math.floor(cz);
+      const d = this.corner;
+      if (this.edits.cell(x0, z0, d)) {
+        // The generated f32 lattice corners (collision_height at an integer returns the lattice value), lifted by the deltas.
+        const f = this.fn;
+        const p = this.atlas.ptr;
+        return surface(lift(f(p, x0, z0), d[0]), lift(f(p, x0 + 1, z0), d[1]), lift(f(p, x0, z0 + 1), d[2]), lift(f(p, x0 + 1, z0 + 1), d[3]), cx - x0, cz - z0);
+      }
+    }
     return this.fn(this.atlas.ptr, cx, cz);
+  }
+
+  /** The generated lattice height at integer vertex (x, z), ignoring edits (the dig planner, tile builds). */
+  baseAt(x: number, z: number): number {
+    return this.fn(this.atlas.ptr, x, z);
   }
 
   /**

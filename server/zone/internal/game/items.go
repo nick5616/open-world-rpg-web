@@ -403,7 +403,8 @@ func (s *Server) grantStarter(sess *session) {
 		ci.inv.Add(it, &d)
 	}
 	ci.markers["starter"] = true
-	ci.markers[starterPickaxeMarker] = true // the kit has one (items.yaml starter)
+	ci.markers[starterPickaxeMarker] = true   // the kit has one (items.yaml starter)
+	ci.markers[starterWorkToolsMarker] = true // and the axe and shovel (CR 040)
 	if ci.persist == persistLocal {
 		// Rides the next save point (no blob issued at join just for this).
 		ci.version++
@@ -429,7 +430,45 @@ func (s *Server) topUpStarter(sess *session) {
 		s.grantStarter(sess)
 	case !ci.markers[starterPickaxeMarker]:
 		s.grantStarterPickaxe(sess)
+	case !ci.markers[starterWorkToolsMarker]:
+		s.grantStarterWorkTools(sess)
 	}
+}
+
+// starterWorkToolsMarker: the once-per-character axe and shovel for characters
+// created before world edits (playtest 3, CR 040): trees and the ground are
+// breakable now and everyone should be able to try it.
+const starterWorkToolsMarker = "starter:worktools"
+
+// grantStarterWorkTools gives an older character the axe and shovel once
+// (what they already carry is not doubled). Like the pickaxe, the stored
+// marker comes with an actual grant; nothing is written for a character who
+// has both.
+func (s *Server) grantStarterWorkTools(sess *session) {
+	ci := sess.items
+	ci.markers[starterWorkToolsMarker] = true
+	var d items.Delta
+	granted := false
+	for _, tool := range []string{"tool:axe", "tool:shovel"} {
+		if ci.inv.Count(tool) > 0 || !ci.inv.CanFit(tool, 1) {
+			continue
+		}
+		it := items.Stack(tool, 1)
+		it.Prov = []items.Prov{{Ev: "starter", Char: sess.ent.CharacterID, At: s.cfg.Now().UnixMilli()}}
+		ci.inv.Add(it, &d)
+		granted = true
+	}
+	if !granted {
+		return
+	}
+	if ci.persist == persistLocal {
+		ci.version++ // rides the next save point, like the starter kit
+		if sess.x != nil && sess.x.prog != nil {
+			sess.x.prog.MarkDirty()
+		}
+		return
+	}
+	s.commitItems(sess, &d, &GrantMark{Key: starterWorkToolsMarker}, "starter work tools")
 }
 
 // grantStarterPickaxe gives an older character the kit's pickaxe once,

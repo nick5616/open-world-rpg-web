@@ -74,6 +74,7 @@ type session struct {
 	gapSince         uint32             // tick a missing frame started holding the buffer, 0 = none
 	consumed         uint32             // newest frame seq applied or refused (LastSeq counts applied only)
 	editChunks       map[[2]int32]bool  // WP09: chunks whose WorldEdits this client has (mining.go)
+	weChunks         map[[2]int32]bool  // playtest 3: chunks whose removed objects and terrain edits this client has (worldedit.go)
 	doors            *sessDoors         // building doors: settlements known, frame ground (doors.go)
 	fish             *fishState         // playtest 2 fishing (fishing.go); nil until the first cast
 	emotes           *emoteState        // playtest 2 emotes (emotes.go); nil until the first emote
@@ -401,12 +402,20 @@ func (s *Server) drainTaken(sess *session, now time.Time) {
 				s.questInteract(sess, it) // quests: accept, abandon, turn in, track (quests.go)
 				continue
 			}
+			if it.TargetKind == InteractHarvest || it.TargetKind == InteractEarth {
+				s.worldEditInteract(sess, it, now) // playtest 3: chop, break, dig, fill (worldedit.go)
+				continue
+			}
 			if it.TargetKind == InteractPalace || it.TargetKind == InteractActivity || it.TargetKind == InteractPalacePart {
 				s.verticalInteract(sess, it) // CR 038: sky palace doors, sky town activity spots (vertical.go)
 				continue
 			}
 			if it.TargetKind == InteractShrine {
 				s.shrineInteract(sess, it) // CR 044: Depths demon shrines (shrine.go)
+				continue
+			}
+			if it.TargetKind == InteractCaveChest || it.TargetKind == InteractLoreTablet {
+				s.caveInteract(sess, it) // CR 043: cave chests and lore tablets (dwarves.go)
 				continue
 			}
 			if it.TargetKind == InteractLight {

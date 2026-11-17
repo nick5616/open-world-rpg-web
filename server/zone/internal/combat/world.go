@@ -406,6 +406,22 @@ var (
 	LayerEliteChance = [4]float64{0.15, 0.25, 0.2, 0.45}
 )
 
+// UnderComp (CR 043) is what lives in an Underground tunnel or cavern by the
+// depth of its floor: spiders and bats near the surface, bone crawlers,
+// shades and golems in the middle, trolls and void mites deep down.
+func UnderComp(floorY float64) []string {
+	switch {
+	case floorY > -70:
+		return []string{"cave_crawler", "tunnel_spider", "cave_bat", "gloom_bat", "tunnel_spider"}
+	case floorY > -150:
+		return []string{"tunnel_spider", "bone_crawler", "cave_bat", "crystal_golem", "shade", "cave_crawler"}
+	}
+	return []string{"bone_crawler", "rock_troll", "crystal_golem", "shade", "void_mite", "rock_troll"}
+}
+
+// LowerHallsComp is the pack table of a stronghold's lower halls.
+var LowerHallsComp = []string{"bone_crawler", "rock_troll", "bone_crawler", "tunnel_spider", "shade", "rock_troll"}
+
 // layeredAreas is an Areas with per-layer areas (difficulty.Map, CR 038).
 type layeredAreas interface {
 	AreaAtLayer(x, z float64, layer int) (int, *combatdefs.DifficultyTier, bool)
