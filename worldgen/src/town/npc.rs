@@ -23,6 +23,16 @@ fn name(seq: &mut Seq) -> String {
     s
 }
 
+/// Dwarven townsfolk (genVersion 4, Underground settlements).
+const D_FIRST: [&str; 14] = ["Bor", "Dag", "Thra", "Hild", "Gund", "Orm", "Brok", "Ysa", "Rag", "Kolm", "Torv", "Nid", "Falk", "Jarn"];
+const D_LAST: [&str; 12] = ["a", "in", "un", "ek", "ild", "rim", "dal", "mund", "ra", "vik", "gar", "ur"];
+
+fn dwarf_name(seq: &mut Seq) -> String {
+    let mut s = String::from(*seq.pick(&D_FIRST));
+    s.push_str(seq.pick(&D_LAST));
+    s
+}
+
 fn add_name(t: &mut Towns, n: String) -> u16 {
     t.names.push(n);
     (t.names.len() - 1) as u16
@@ -52,9 +62,12 @@ pub fn populate(a: &Atlas, si: usize, t: &mut Towns) {
     let mut people: Vec<Npc> = Vec::new();
     let mut k = 0usize;
     let site = st.site as i32;
+    // genVersion 4: Underground settlements are the dwarves' (names, and the
+    // merchants' stock indices 4 and 5: mining gear, ore broker).
+    let dwarf = a.site(st.site as usize).layer == crate::vertical::LAYER_UNDER;
     let push =
         |t: &mut Towns, seq: &mut Seq, people: &mut Vec<Npc>, rl: u8, work: u16, work_prop: u16, wx: f64, wz: f64, wyaw: u16, merchant: u8, home: usize| {
-            let nm = add_name(t, name(seq));
+            let nm = add_name(t, if dwarf { dwarf_name(seq) } else { name(seq) });
             let (hx, hz) = if home != NONE as usize {
                 let hb = &t.buildings[home];
                 let n = people.iter().filter(|p| p.home == home as u16).count() as f64;
@@ -109,6 +122,7 @@ pub fn populate(a: &Atlas, si: usize, t: &mut Towns) {
                 let wp = prop_of(t, pk::STALL);
                 let yaw = super::geom::yaw16(libm::atan2(-bd.c, bd.s));
                 let merchant = (people.iter().filter(|p| p.role == nrole::MERCHANT).count() % 4) as u8;
+                let merchant = if dwarf { 4 + merchant % 2 } else { merchant };
                 push(t, &mut seq, &mut people, nrole::MERCHANT, b as u16, wp, x, z, yaw, merchant, home_of(k));
                 k += 1;
             }

@@ -75,6 +75,8 @@ const ROLE_SHIRT: Record<number, number[]> = {
 };
 /** Eyes, brows and mouth (immersion pass). */
 const FACE = new THREE.Color(0x2a1c14);
+/** Dwarven beard and hair colours: red, black, grey, chestnut, white, sandy. */
+const DWARF_BEARD = [0x8a3a1a, 0x1c1612, 0x8c8a86, 0x5a3820, 0xd8d4cc, 0xb08a4a].map((c) => new THREE.Color(c));
 const TROUSERS = [0x4a3a2a, 0x3a3a44, 0x5a4a34, 0x2e2a26].map((c) => new THREE.Color(c));
 
 function part(geo: THREE.BufferGeometry, name: string, shadow: boolean): THREE.InstancedMesh {
@@ -120,6 +122,8 @@ export class NpcRenderer {
   private readonly hat = part(merge([cyl(0.33, 0.33, 0.03, 12, 0, 1.79, 0), cyl(0.14, 0.16, 0.16, 8, 0, 1.87, 0)]), 'hat', false);
   private readonly helmet = part(merge([cyl(0.15, 0.16, 0.14, 8, 0, 1.77, 0), cyl(0.0, 0.15, 0.12, 8, 0, 1.9, 0), box(0.04, 0.12, 0.04, 0.15, 1.69, 0)]), 'helmet', false);
   private readonly apron = part(box(0.03, 0.72, 0.32, 0.15, 1.02, 0), 'apron', false);
+  // CR 043: dwarves (townsfolk of the Underground halls) wear a big beard: a bib over the chest and a braided point.
+  private readonly beard = part(merge([box(0.1, 0.34, 0.26, 0.135, 1.5, 0), box(0.08, 0.2, 0.16, 0.14, 1.28, 0), box(0.07, 0.07, 0.05, 0.14, 1.15, 0.03), box(0.07, 0.07, 0.05, 0.14, 1.15, -0.03), box(0.09, 0.08, 0.3, 0.12, 1.62, 0)]), 'beard', false);
   private readonly spear = part(merge([cyl(0.025, 0.025, 2.3, 5, 0, 1.05, 0), cyl(0.0, 0.06, 0.25, 4, 0, 2.32, 0)]), 'spear', true);
   private readonly phase = new Map<number, number>();
   private readonly offlineY = new Map<number, number>();
@@ -129,9 +133,10 @@ export class NpcRenderer {
   constructor(
     private readonly towns: Towns,
     private readonly ground: GroundQuery & { floorAt?: (x: number, y: number, z: number) => number },
+    private readonly isDwarf: (settlement: number) => boolean = () => false,
   ) {
     this.group.name = 'townsfolk';
-    this.group.add(this.legs, this.torso, this.arms, this.head, this.face, this.hair, this.hat, this.helmet, this.apron, this.spear);
+    this.group.add(this.legs, this.torso, this.arms, this.head, this.face, this.hair, this.hat, this.helmet, this.apron, this.beard, this.spear);
   }
 
   /** Online when a zone session is playing (NPC entities come from it). */
@@ -209,6 +214,8 @@ export class NpcRenderer {
     let nApron = 0;
     let nSpear = 0;
     let nHair = 0;
+    let nBeard = 0;
+    const dwarfScale = new THREE.Vector3(1.1, 0.8, 1.25);
     const nowMs = performance.now();
     const xAxis = new THREE.Vector3(1, 0, 0);
     this.views.forEach((v, i) => {
@@ -221,7 +228,9 @@ export class NpcRenderer {
       const swing = Math.sin(ph) * 0.6 * walk;
       const sway = (1 - walk) * Math.sin(t * 1.3 + v.key) * 0.06;
       q.setFromAxisAngle(up, -v.yaw);
-      base.compose(new THREE.Vector3(v.x, v.y + Math.abs(Math.sin(ph)) * 0.04 * walk, v.z), q, one);
+      const dwarf = v.settlement >= 0 && this.isDwarf(v.settlement);
+      // Dwarves: a head shorter and a lot stockier (the model faces +x: x thickness, y height, z width).
+      base.compose(new THREE.Vector3(v.x, v.y + Math.abs(Math.sin(ph)) * 0.04 * walk, v.z), q, dwarf ? dwarfScale : one);
       const role = v.role;
       const shirtList = ROLE_SHIRT[role];
       const shirt = shirtList ? new THREE.Color(shirtList[(v.variant >> 2) % shirtList.length]) : VILLAGER[(v.variant >> 2) & 7];
@@ -248,8 +257,17 @@ export class NpcRenderer {
         this.arms.setMatrixAt(na, m);
         this.arms.setColorAt(na++, role === NPC_ROLE.blacksmith ? SKIN[v.variant & 3] : shirt);
       }
-      // Headgear by role; hair otherwise.
-      if (role === NPC_ROLE.guard) {
+      if (dwarf) {
+        this.beard.setMatrixAt(nBeard, base);
+        this.beard.setColorAt(nBeard++, DWARF_BEARD[(v.variant >> 3) % DWARF_BEARD.length]);
+      }
+      // Headgear by role (smiths and every other miner wear a helmet under the beard); hair otherwise.
+      if (dwarf && (role === NPC_ROLE.blacksmith || role === NPC_ROLE.villager) && (role === NPC_ROLE.blacksmith || (v.variant & 1) === 0)) {
+        this.helmet.setMatrixAt(nHelm, base);
+        this.helmet.setColorAt(nHelm++, c.set(role === NPC_ROLE.blacksmith ? 0x6a5a4a : 0x8a7a50));
+        this.hair.setMatrixAt(nHair, base);
+        this.hair.setColorAt(nHair++, DWARF_BEARD[(v.variant >> 3) % DWARF_BEARD.length]);
+      } else if (role === NPC_ROLE.guard) {
         this.helmet.setMatrixAt(nHelm, base);
         this.helmet.setColorAt(nHelm++, c.set(0x9aa0a8));
         m.copy(base).multiply(new THREE.Matrix4().makeTranslation(0.3, 0, 0.36));
@@ -287,6 +305,7 @@ export class NpcRenderer {
     set(this.helmet, nHelm);
     set(this.apron, nApron);
     set(this.spear, nSpear);
+    set(this.beard, nBeard);
     set(this.hair, nHair);
     this.updateLabels(camera);
   }

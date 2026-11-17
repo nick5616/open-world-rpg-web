@@ -90,7 +90,10 @@ pub mod site {
     pub const POI_DEPTHS: u8 = 8;
     pub const POI_ARCHIPELAGO: u8 = 9;
     pub const POI_DEPTHS_GATE: u8 = 10;
-    pub const POI_NAMES: [&str; 11] = [
+    /// genVersion 4 (docs/cr/043-dwarves.md): the secret door of a dwarven camp / the great door of a stronghold, and the lower halls.
+    pub const POI_DWARF_DOOR: u8 = 11;
+    pub const POI_LOWER_HALLS: u8 = 12;
+    pub const POI_NAMES: [&str; 13] = [
         "tower",
         "cave_mouth",
         "waypoint",
@@ -102,6 +105,8 @@ pub mod site {
         "depths",
         "archipelago",
         "depths_gate",
+        "dwarf_door",
+        "lower_halls",
     ];
 
     pub const SIZE_HAMLET: u8 = 0;

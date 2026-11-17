@@ -185,6 +185,14 @@ export const ZONE_EVENTS: Record<number, EventHandler> = {
   1701: (e, a) => {
     if (e.entityId === a.selfId() && e.value === 1) a.play('player_hurt');
   },
+  // CR 043: a hall found, a chest opened, a tablet read, the lower halls' warden.
+  1860: (e, a) => {
+    if (e.entityId === a.selfId()) a.play('loot_rare');
+  },
+  1861: (e, a) => {
+    if (e.entityId === a.selfId() && e.value > 0) a.play('chest_open', { at: a.selfPos() });
+  },
+  1863: (e, a) => a.play(e.value === 1 ? 'loot_epic' : 'domain', { volume: 0.7 }),
   204: (e, a) => {
     const at = cm(e);
     // Playtest 2 immersion pass: the Heartfall's bells toll on the strike (the wind-up's end), not a generic sting

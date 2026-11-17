@@ -30,6 +30,7 @@ import (
 	"math"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -44,6 +45,7 @@ import (
 	"lodestone/server/zone/internal/combat"
 	"lodestone/server/zone/internal/explore"
 	"lodestone/server/zone/internal/items"
+	"lodestone/server/zone/internal/npc"
 	"lodestone/server/zone/internal/quests"
 )
 
@@ -701,7 +703,34 @@ func (s *Server) bountyQuest(b bountyJob, nowMs int64) *quests.Quest {
 	if !info.Board.OK {
 		info.Board = quests.Place{OK: true, X: st.X, Z: st.Z}
 	}
-	return quests.FromBounty(info, nowMs)
+	q := quests.FromBounty(info, nowMs)
+	if strings.HasPrefix(b.Item, npc.KillPrefix) { // CR 043: dwarven kill jobs (npc.dwarfBounties)
+		var n int
+		var fam string
+		parts := strings.SplitN(strings.TrimPrefix(b.Item, npc.KillPrefix), ":", 2)
+		n, _ = strconv.Atoi(parts[0])
+		if len(parts) > 1 {
+			fam = parts[1]
+		}
+		o := quests.Objective{Kind: quests.ObjKill, N: max(1, n), Family: fam, X: info.Target.X, Z: info.Target.Z, R: 160, Settlement: -1, Site: -1}
+		if !info.Target.OK {
+			o.X, o.Z = st.X, st.Z
+			o.R = 260
+		}
+		var mk []quests.Marker
+		if info.Target.OK {
+			mk = []quests.Marker{{X: o.X, Z: o.Z, R: o.R, Label: nameOr0(info.SiteName, "The lower halls")}}
+		}
+		q.Steps = []quests.Step{{Text: b.Text, Note: "Kill them where they nest, then return to the board.", Obj: o, Markers: mk}}
+	}
+	return q
+}
+
+func nameOr0(s, d string) string {
+	if s == "" {
+		return d
+	}
+	return s
 }
 
 // bountyJob is the part of a board job the quest needs (npc.Bounty).

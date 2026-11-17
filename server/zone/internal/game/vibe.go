@@ -74,6 +74,8 @@ var VibeLandmarks = []string{
 	// CR 038, the vertical world.
 	"tunnel", "cavern", "crystal_cavern", "cenote", "river_cavern", "fungal_cavern", "depths", "depths_gate",
 	"archipelago", "sky_town", "sky_palace", "sky_ruin", "sky_lift",
+	// CR 043, the dwarves.
+	"dwarf_camp", "dwarf_stronghold", "dwarf_door", "lower_halls",
 }
 
 // VibeLayers are the layer filter's keys (CR 038); a filter's id is index + 1 (0 any).
@@ -456,6 +458,8 @@ func vibeKindMatches(want, kind string, biome int) bool {
 func (s *Server) vibeLayerSite(st *structures.Site, add func(kind, name string, x, y, z float64, layer int)) {
 	l := int(st.Layer)
 	switch {
+	case st.Category == structures.CategorySettlement && l == 2:
+		add(map[bool]string{true: "dwarf_stronghold", false: "dwarf_camp"}[st.Size >= 2], st.Name, st.X, st.Y, st.Z, l)
 	case st.Category == structures.CategorySettlement:
 		add("sky_town", st.Name, st.X, st.Y, st.Z, l)
 	case st.Category == structures.CategoryStructure && st.Kind == structures.StructSkyPalace:
@@ -475,6 +479,10 @@ func (s *Server) vibeLayerSite(st *structures.Site, add func(kind, name string, 
 		add("archipelago", st.Name, st.X, st.Y, st.Z, l)
 	case st.Kind == structures.POISkyLift:
 		add("sky_lift", st.Name, st.X, st.Y, st.Z, 0)
+	case st.Kind == structures.POIDwarfDoor:
+		add("dwarf_door", st.Name, st.X, st.Y, st.Z, l)
+	case st.Kind == structures.POILowerHalls:
+		add("lower_halls", st.Name, st.X, st.Y, st.Z, l)
 	}
 }
 

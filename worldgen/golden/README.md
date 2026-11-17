@@ -7,8 +7,11 @@ Every host must reproduce every hash bit for bit: Node
 native Rust (`worldgen/tests/golden_native.rs`). Run all with
 `npm run test:golden`.
 
-**Tables:** `golden.json` is the current generator (**genVersion 2**,
-playtest 1 towns/terrain/density, `docs/cr/014-towns-terrain-density.md`).
+**Tables:** `golden.json` is the current generator (**genVersion 4**, playtest 3
+dwarves, `docs/cr/043-dwarves.md`; reviewed: every v3 site at its index and id,
+0 chunk heights changed, `docs/evidence/pt3-dwarves-golden-review.txt`).
+`golden-v3.json` (the vertical world) and `golden-v2.json` (playtest 1 towns,
+`docs/cr/014-towns-terrain-density.md`) are archived like v1.
 `golden-v1.json` is genVersion 1, frozen with the official world minted on
 it; `npm run test:golden` checks it against the archived build
 `worldgen/archive/worldgen-42a66cc191bee49d.wasm` in Node and Go/wazero

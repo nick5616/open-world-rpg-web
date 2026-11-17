@@ -1026,6 +1026,19 @@ vertical ground), `mintdb` `TestRenewOfficialToVertical`.
 - **Env**: `LODESTONE_ZONE_NO_WORLD_EDITS=1` turns it off; `LODESTONE_ZONE_REGROW_SCALE` multiplies regrow times (evidence runs). `GET /debug/worldedits` shows the counters.
 - **Per-tick cost** is flat: edits are event-driven; the tick compares `now` with the earliest regrow time, flushes a tiny pending-grant map and runs the interest scan twice a second.
 - Multi-zone clusters: each zone loads every stored edit at start and applies its own players' edits live; an edit made on another zone reaches this one at its next restart (follow-up: a bus feed like the doors').
+
+## Dwarves and cave dressing (playtest 3, CR 043)
+
+genVersion 4 appends the dwarven camps and strongholds (Underground settlements) and cave dressing to the vertical world (`docs/cr/043-dwarves.md`). The zone treats a hall as the towns machinery treats a sky town:
+
+- **Towns**: `npc.World.SkySettlement` is true for a settlement more than 60 m above *or below* the surface under it, so story, content and quest picks (`skyTown`) leave halls out and townsfolk wake by 3D distance; `Place` puts them on the hall floor. Dwarven townsfolk have their own lines (`npc.dwarfLines`); merchants 4 (miner outfitter) and 5 (ore broker) have their own stock (`npc/talk.go wares[5]`, `wares[6]`).
+- **Boards**: a hall's board (`npc.dwarfBounties`) offers two ore deliveries, and creatures to kill: a camp's tunnels (6 `cave` kills within 160 m), a stronghold's lower mines (8 kills in the lower halls) and the deep warden (the boss). On the wire these are clear jobs (kind 0); the job's `Item` is `kill:<n>:<family>` and `bountyQuest` turns it into a kill step around the site.
+- **Safe zone**: `addLayerGroups` places no pack inside a camp or stronghold chamber (reach + 12 m); nothing hunts at night anywhere in the Underground or the Depths (`night.go` hunters skip layered players). The lower halls are not safe.
+- **Packs**: chamber packs draw from `combat.UnderComp(floor)` (spiders and bats shallow, bone crawlers, shades and golems mid, rock trolls and void mites deep); one pack per ~140 m along tunnels and passages (not a tunnel's first 40 m, never inside a hall or by a camp waypoint); the lower halls get 7 dense packs (`LowerHallsComp`) and the **deep warden** boss (`boss deep_warden`, three phases, group arena at the chamber centre; respawns like any boss).
+- **Discovery**: the dwarf_door (secret/great door) and lower_halls POIs use the ordinary discovery rules (`explore.DiscoverRadius`); discovering a hall or its door sends Event 1860 once per session.
+- **Chests and tablets** (`dwarves.go`): Interact 170 opens a cave chest (descriptor deco 33 with the INTERACT flag; within 6 m): loot pops out as pickups (gold, ore, a gem, sometimes a potion; tier 1 cave, 2 camp road, 3 hall), Event 1861; the chest stays empty for 20 minutes (in memory, zone-wide). Interact 171 reads a lore tablet (deco 34): Event 1862 with the text.
+- **Vibe explorer**: filters `dwarf_camp`, `dwarf_stronghold`, `dwarf_door`, `lower_halls` (also in the client's list).
+
 ## Base building (playtest 3, CR 041)
 
 `contracts/build.yaml` -> the camps tables (`campdefs`): a building piece is a camp piece (same `camp_pieces` table, Events 1100-1103, area streaming, WP16 ownership, chests, collision set), so `game/camps.go` has a few hooks and `game/builds.go` has the rest. Pure rules: `server/pkg/camps/build.go` (grid parity, sockets and support, occupancy overlap, other players' pieces, walkable surfaces, golden vectors `testdata/build.json`).

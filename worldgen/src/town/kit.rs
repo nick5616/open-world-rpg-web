@@ -18,12 +18,14 @@ use crate::rng::{stable_id, Seq};
 /// Styles: one per biome (meadow cottage, forest timber, highland stone,
 /// snowpeak log cabin, badlands adobe, wetland stilt house).
 pub const STYLE_COTTAGE: u8 = 5;
+/// genVersion 4 (CR 043): the dwarves' carved stone halls (Underground settlements only).
+pub const STYLE_DWARF: u8 = 6;
 pub const STYLE_TIMBER: u8 = 0;
 pub const STYLE_STONE: u8 = 1;
 pub const STYLE_ADOBE: u8 = 2;
 pub const STYLE_STILT: u8 = 3;
 pub const STYLE_LOG: u8 = 4;
-pub const STYLE_NAMES: [&str; 6] = ["timber", "stone", "adobe", "stilt", "log", "cottage"];
+pub const STYLE_NAMES: [&str; 7] = ["timber", "stone", "adobe", "stilt", "log", "cottage", "dwarf"];
 
 /// Biome id (atlas) -> style.
 pub fn style_of_biome(b: u8) -> u8 {
@@ -138,18 +140,19 @@ pub fn build(c: &mut Ctx, t: &mut Towns, o: &Obb, r: u8, style: u8, local: u32, 
     let variant = (seq.next_u64() >> 59) as u8;
     let storey = match style {
         STYLE_STONE => 3.2,
+        STYLE_DWARF => 2.8,
         STYLE_LOG => 2.8,
         _ => 3.0,
     };
     let floors: u8 = match r {
         role::INN => 2,
-        role::HOUSE if (style == STYLE_TIMBER || style == STYLE_STONE) && seq.unit() < 0.35 => 2,
+        role::HOUSE if (style == STYLE_TIMBER || style == STYLE_STONE || style == STYLE_DWARF) && seq.unit() < 0.35 => 2,
         role::STALL | role::GARDEN => 0,
         _ => 1,
     };
     let rk = match (r, style) {
         (role::STALL, _) | (role::GARDEN, _) => roof::NONE,
-        (_, STYLE_ADOBE) => roof::FLAT,
+        (_, STYLE_ADOBE) | (_, STYLE_DWARF) => roof::FLAT,
         (_, STYLE_STONE) => roof::HIP,
         _ => roof::GABLE,
     };
@@ -162,7 +165,7 @@ pub fn build(c: &mut Ctx, t: &mut Towns, o: &Obb, r: u8, style: u8, local: u32, 
     let span = o.hx.min(o.hz) * 2.0;
     let roof_h = if rk == roof::FLAT || rk == roof::NONE { 0.0 } else { span * 0.5 * pitch };
     let ridge_u = o.hx >= o.hz;
-    let wt = if style == STYLE_STONE || style == STYLE_ADOBE { 0.5 } else { 0.3 };
+    let wt = if style == STYLE_DWARF { 0.65 } else if style == STYLE_STONE || style == STYLE_ADOBE { 0.5 } else { 0.3 };
     if r == role::FORGE || r == role::STALL {
         flags |= bflag::OPEN_FRONT;
     }

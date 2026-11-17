@@ -24,6 +24,17 @@ var lines = map[uint8][]string{
 	towns.RoleGuard:      {"Move along.", "Gates close at dusk, not that it stops the dark.", "Trouble on the north road. Watch yourself."},
 }
 
+// dwarfLines are the dwarven halls' townsfolk (CR 043).
+var dwarfLines = map[uint8][]string{
+	towns.RoleVillager:   {"Mind your head on the low beams. Not that you'll need to.", "Stone remembers. Tread softly.", "Have you seen the Deep Road? Nine hundred paces, not one crooked.", "Surface-folk always look up. There's nothing up there but weather."},
+	towns.RoleMerchant:   {"Picks, ropes, lanterns. A dwarf in the dark is a short, angry rock.", "Good ore, good coin. Bad ore, bad manners.", "Weigh it yourself. We insist."},
+	towns.RoleBlacksmith: {"The forge never goes cold. Not in my lifetime, nor my father's.", "Bring starmetal and we'll talk. Bring iron and we'll talk less.", "Mind the sparks. The sparks mind nobody."},
+	towns.RoleInnkeeper:  {"Mushroom stew and a stone bed. Both will outlast you.", "Sit. Drink. Don't mention the lower halls over supper.", "The beer is dark because the cellar is."},
+	towns.RoleBounty:     {"The board is full of other people's problems. Pick one.", "Something is nesting below. We pay to be left alone.", "Ore for the forge, hammers for the warden. Take your pick."},
+	towns.RoleFarmer:     {"Mushrooms don't need rain. That's the whole point.", "Glowworms keep the crop warm. Don't tell them."},
+	towns.RoleGuard:      {"Halt. State your business, surface-folk.", "The great door stays open for friends. You seem like one.", "Something stirs below. Keep your blade handy."},
+}
+
 var closedLines = []string{"Come back in the morning, I'm done for the day.", "We're closed. Try the inn.", "Not now, it's late."}
 
 // Say is NPC i's line at time of day t (open: its service is available).
@@ -34,6 +45,11 @@ func (w *World) Say(i int, todS float64, open bool) string {
 		return closedLines[h%uint64(len(closedLines))]
 	}
 	l := lines[d.Role]
+	if d.Settlement >= 0 && d.Settlement < len(w.T.Settlements) {
+		if si := w.T.Settlements[d.Settlement].Site; si >= 0 && si < len(w.Sites) && w.Sites[si].Layer == 2 && len(dwarfLines[d.Role]) > 0 {
+			l = dwarfLines[d.Role]
+		}
+	}
 	return l[h%uint64(len(l))]
 }
 
@@ -46,13 +62,16 @@ type Ware struct {
 
 // Item ids are contracts/items.yaml keys (WP14; itemdefs tests check every
 // one exists). Prices are in gold (currency:gold, CR 010).
-var wares = [5][]Ware{
+var wares = [7][]Ware{
 	{{"food:bread", 4, 20}, {"tool:torch", 6, 12}, {"tool:rope", 10, 6}, {"tool:pickaxe", 40, 3}, {"wood:firewood", 2, 40}, {"tool:fishing_rod", 25, 4}, {"tool:spirit_whistle", 40, 5}}, // general (CR 025: firewood for camps; CR 026: a fishing rod; CR 027: the spirit steed's whistle)
 	{{"food:bread", 3, 30}, {"food:cheese", 6, 12}, {"food:apple", 2, 40}, {"food:stew", 9, 8}},                                                                                          // provisions
 	{{"herb:heartleaf", 5, 15}, {"potion:health", 25, 6}, {"potion:antidote", 18, 6}, {"seed:wardbloom", 30, 4}},                                                                         // herbalist
 	{{"tool:pickaxe", 35, 4}, {"ingot:copper", 12, 10}, {"ingot:iron", 20, 8}, {"tool:whetstone", 8, 10}, {"tool:fishing_rod", 22, 4}},                                                   // tools
 	{{"ingot:iron", 22, 10}, {"weapon:iron_sword", 90, 2}, {"weapon:iron_spear", 85, 2}, {"ammo:iron_arrow", 1, 99}, // blacksmith
 		{"blueprint:iron_sword", 30, 1}, {"blueprint:silver_sword", 80, 1}, {"blueprint:sunsteel_blade", 40, 1}, {"blueprint:sunsteel_arrow", 30, 1}}, // WP14: spec 7 blueprints "bought from blacksmiths"
+	// CR 043 dwarven halls: merchant 4 (miner outfitter), merchant 5 (ore broker)
+	{{"tool:pickaxe", 30, 6}, {"tool:torch", 4, 40}, {"tool:rope", 8, 20}, {"tool:whetstone", 6, 20}, {"potion:health", 24, 8}, {"food:stew", 8, 10}},
+	{{"ore:copper", 8, 30}, {"ore:iron", 14, 24}, {"ore:silver", 30, 10}, {"ingot:iron", 20, 12}, {"gem:opal:rough", 40, 3}, {"gem:ruby:rough", 40, 3}, {"gem:topaz:rough", 40, 3}},
 }
 
 // SmithWares is what every blacksmith sells (WP14 tests, tools).
@@ -64,6 +83,8 @@ func (w *World) Wares(i int) []Ware {
 	switch {
 	case d.Role == towns.RoleMerchant && d.Merchant < 4:
 		return wares[d.Merchant]
+	case d.Role == towns.RoleMerchant && (d.Merchant == 4 || d.Merchant == 5):
+		return wares[d.Merchant+1] // CR 043: wares[5] miner outfitter, wares[6] ore broker
 	case d.Role == towns.RoleBlacksmith:
 		return wares[4]
 	}
@@ -119,6 +140,9 @@ func compass(dx, dz float64) string {
 func (w *World) Bounties(si, day int) []Bounty {
 	st := &w.T.Settlements[si]
 	h := mix(w.Seed ^ st.ID ^ uint64(day)*0xD6E8FEB86659FD93)
+	if st.Site >= 0 && st.Site < len(w.Sites) && w.Sites[st.Site].Layer == 2 {
+		return w.dwarfBounties(si, h)
+	}
 	n := 3 + int(h%2)
 	// Nearby structure and camp sites, nearest first (within 1.6 km).
 	type cand struct {
@@ -179,6 +203,62 @@ func (w *World) Bounties(si, day int) []Bounty {
 			}
 		}
 		b.Kind = kind
+		out = append(out, b)
+	}
+	return out
+}
+
+// KillPrefix marks a bounty's Item as a kill job (CR 043): "kill:<n>:<family>"
+// (family may be empty); the quest glue turns it into a kill step around the
+// job's site. On the wire it is a clear job.
+const KillPrefix = "kill:"
+
+// dwarfBounties is the board of a dwarven hall (CR 043): ore for the forge,
+// and creatures to clear (a camp's tunnels; a stronghold's lower mines and the
+// deep warden).
+func (w *World) dwarfBounties(si int, h uint64) []Bounty {
+	st := &w.T.Settlements[si]
+	hold := w.Sites[st.Site].Size >= 2
+	var lower *Site // the stronghold's lower halls (the POI linked to it, nearest dwarf_lower_halls)
+	for i := range w.Sites {
+		s := &w.Sites[i]
+		if s.Category == 0 && s.Kind == 12 && math.Hypot(s.X-st.X, s.Z-st.Z) < 700 {
+			if lower == nil || math.Hypot(s.X-st.X, s.Z-st.Z) < math.Hypot(lower.X-st.X, lower.Z-st.Z) {
+				lower = s
+			}
+		}
+	}
+	ores := []struct{ id, name string }{{"ore:iron", "iron ore"}, {"ore:silver", "silver ore"}, {"ore:copper", "copper ore"}, {"ingot:iron", "iron ingots"}}
+	mk := func(k int, kind uint8) Bounty {
+		r := mix(h + uint64(k+1)*0x9E3779B97F4A7C15)
+		return Bounty{ID: uint32(r>>32) | 1, Site: -1, Settlement: si, Kind: kind}
+	}
+	var out []Bounty
+	for k := 0; k < 2; k++ {
+		b := mk(k, BountyDeliver)
+		r := mix(h + uint64(k+11))
+		it := ores[int(r%uint64(len(ores)))]
+		b.Item, b.Qty = it.id, uint16(6+r>>8%7)
+		b.Reward = uint32(b.Qty) * (10 + uint32(r>>20%8))
+		b.Text = fmt.Sprintf("The forges are hungry: bring %d %s.", b.Qty, it.name)
+		out = append(out, b)
+	}
+	if hold && lower != nil {
+		b := mk(5, BountyClear)
+		b.Site, b.Qty, b.Reward = lower.Index, 8, 260
+		b.Item = KillPrefix + "8:"
+		b.Text = "Clear the lower mines of the creatures that nest there."
+		out = append(out, b)
+		b = mk(6, BountyClear)
+		b.Site, b.Qty, b.Reward = lower.Index, 1, 520
+		b.Item = KillPrefix + "1:boss"
+		b.Text = "The warden of the lower halls must fall. End him."
+		out = append(out, b)
+	} else {
+		b := mk(5, BountyClear)
+		b.Qty, b.Reward = 6, 120
+		b.Item = KillPrefix + "6:cave"
+		b.Text = "Thin out the tunnel creatures around the camp."
 		out = append(out, b)
 	}
 	return out

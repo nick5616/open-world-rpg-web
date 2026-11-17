@@ -8,6 +8,7 @@ use super::tile::TerrainSampler;
 use super::under::ellipse_pt;
 use super::*;
 use crate::cave::veins::{Vein, KIND_GEM, KIND_ORE, ORE_IRON, ORE_SILVER, ORE_STARMETAL, ORE_VOIDGLASS};
+use crate::atlas::format::NONE16;
 use crate::rng::{stable_id, Seq};
 
 const TAU: f64 = core::f64::consts::TAU;
@@ -26,6 +27,9 @@ pub fn place(a: &Atlas, p: &mut Plan) {
     // ---- chambers (Underground and Depths)
     for ci in 0..p.chambers.len() {
         let ch = p.chambers[ci].clone();
+        if super::dwarf::is_dwarf(&ch) {
+            continue; // genVersion 4: decorated by `dwarf::decorate`, appended below
+        }
         let mut seq = Seq::new(seed ^ ch.id, stream::DECOR);
         let layer = ch.layer;
         let deep = layer == LAYER_DEPTHS;
@@ -231,7 +235,7 @@ pub fn place(a: &Atlas, p: &mut Plan) {
     // ---- camps (the underground waypoints): fire, tents, lanterns.
     for si in 0..p.sites.len() {
         let s = p.sites[si].clone();
-        if !(s.category == crate::atlas::format::site::CAT_POI && s.kind == crate::atlas::format::site::POI_WAYPOINT && (s.layer == LAYER_UNDER || s.layer == LAYER_DEPTHS)) {
+        if !(s.category == crate::atlas::format::site::CAT_POI && s.kind == crate::atlas::format::site::POI_WAYPOINT && s.link_local == NONE16 && (s.layer == LAYER_UNDER || s.layer == LAYER_DEPTHS)) {
             continue;
         }
         let layer = s.layer;
@@ -325,6 +329,9 @@ pub fn place(a: &Atlas, p: &mut Plan) {
         let y = ts.at(libm::round(u.x), libm::round(u.z));
         decos.push(Deco { x: u.x, y, z: u.z, size: u.r, kind, tint: 4, layer: LAYER_SURFACE, flags: if kind == dk::LIFT { df::LIGHT } else { 0 }, yaw: 0, aux: ui as u16 });
     }
+
+    // ---- genVersion 4 (CR 043): cave dressing and the dwarves' halls, appended.
+    super::dwarf::decorate(a, p, &mut ts, &mut decos, &mut columns, &mut veins);
 
     p.decos = decos;
     p.columns = columns;

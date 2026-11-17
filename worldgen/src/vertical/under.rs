@@ -30,7 +30,7 @@ const TAU: f64 = core::f64::consts::TAU;
 pub const UNDER_FLOOR_MIN: f64 = -260.0;
 pub const DEPTHS_CEIL_MAX: f64 = -330.0;
 /// Rock kept over Underground air (below the macro low point).
-const ROCK: f64 = 34.0;
+pub(super) const ROCK: f64 = 34.0;
 /// Opening radius of a tunnel mouth.
 pub const MOUTH_R: f64 = 12.0;
 pub const GATE_R: f64 = 15.0;
@@ -41,11 +41,11 @@ pub const WALL_EXTRA: f64 = 30.0;
 pub const WALL_POW: f64 = 1.6;
 
 #[inline]
-fn d2(ax: f64, az: f64, bx: f64, bz: f64) -> f64 {
+pub(super) fn d2(ax: f64, az: f64, bx: f64, bz: f64) -> f64 {
     (ax - bx) * (ax - bx) + (az - bz) * (az - bz)
 }
 
-fn deg(t: f64) -> f64 {
+pub(super) fn deg(t: f64) -> f64 {
     libm::tan(t * core::f64::consts::PI / 180.0)
 }
 
@@ -75,22 +75,22 @@ pub fn ellipse_pt(c: &Chamber, e: f64, th: f64) -> (f64, f64) {
 }
 
 /// Angle on chamber c toward world point (x, z).
-fn ellipse_angle(c: &Chamber, x: f64, z: f64) -> f64 {
+pub(super) fn ellipse_angle(c: &Chamber, x: f64, z: f64) -> f64 {
     let (dx, dz) = (x - c.x, z - c.z);
     let u = dx * c.c + dz * c.s;
     let v = -dx * c.s + dz * c.c;
     libm::atan2(v / c.rz, u / c.rx)
 }
 
-struct CaveBox {
-    b: [f64; 6],
+pub(super) struct CaveBox {
+    pub b: [f64; 6],
 }
 
-fn cave_boxes(cw: &CaveWorld) -> Vec<CaveBox> {
+pub(super) fn cave_boxes(cw: &CaveWorld) -> Vec<CaveBox> {
     cw.systems.iter().map(|s| CaveBox { b: s.bbox }).collect()
 }
 
-fn near_cave(boxes: &[CaveBox], x: f64, z: f64, m: f64) -> Option<f64> {
+pub(super) fn near_cave(boxes: &[CaveBox], x: f64, z: f64, m: f64) -> Option<f64> {
     let mut lowest: Option<f64> = None;
     for c in boxes {
         if x >= c.b[0] - m && x <= c.b[3] + m && z >= c.b[2] - m && z <= c.b[5] + m {
@@ -103,7 +103,7 @@ fn near_cave(boxes: &[CaveBox], x: f64, z: f64, m: f64) -> Option<f64> {
 /// Planar path from `from` to `to` about `len` long: a first leg along
 /// `dir` (into the hill), then legs that zig-zag (switchbacks) when the
 /// straight line is too short for the descent, wiggled by noise. Points ~14 m apart.
-fn route(seq: &mut Seq, from: (f64, f64), to: (f64, f64), len: f64, dir: Option<(f64, f64)>) -> Vec<(f64, f64)> {
+pub(super) fn route(seq: &mut Seq, from: (f64, f64), to: (f64, f64), len: f64, dir: Option<(f64, f64)>) -> Vec<(f64, f64)> {
     let mut pts = vec![from];
     let mut p = from;
     if let Some((dx, dz)) = dir {
@@ -146,7 +146,7 @@ fn route(seq: &mut Seq, from: (f64, f64), to: (f64, f64), len: f64, dir: Option<
     pts
 }
 
-fn path_len(p: &[(f64, f64)]) -> Vec<f64> {
+pub(super) fn path_len(p: &[(f64, f64)]) -> Vec<f64> {
     let mut s = vec![0.0];
     for w in p.windows(2) {
         let l = libm::sqrt(d2(w[0].0, w[0].1, w[1].0, w[1].1));
@@ -158,7 +158,7 @@ fn path_len(p: &[(f64, f64)]) -> Vec<f64> {
 /// Keep `floor + room` under the exact terrain (minus `rock`) along a path,
 /// lowering points (never raising), then limit slopes to `max_tan` by
 /// lowering neighbours. The first `skip` points (inside the mouth) are kept.
-fn keep_under(g: &Ground, pts: &mut [[f64; 3]], room: f64, rock: f64, skip: usize, max_tan: f64) {
+pub(super) fn keep_under(g: &Ground, pts: &mut [[f64; 3]], room: f64, rock: f64, skip: usize, max_tan: f64) {
     let n = pts.len();
     for i in skip..n {
         let mut lo = g.sample(pts[i][0], pts[i][2]).0;
@@ -674,13 +674,17 @@ pub fn plan(a: &Atlas, cw: &CaveWorld, p: &mut Plan) {
         });
         p.openings[oi].site = (p.base_sites + local) as u16;
     }
+
+    // ---- 8. genVersion 4 (CR 043): the dwarves' camps, strongholds and lower
+    // halls, appended after everything above (every index stays).
+    super::dwarf::plan(a, cw, p);
 }
 
 /// Join chambers of one layer: a minimum spanning tree over centre distance
 /// plus one extra edge for a loop; every passage runs rim to rim. In the
 /// Underground about half are rivers (from the higher chamber down), in the
 /// Depths every one is a lava river.
-fn connect(a: &Atlas, p: &mut Plan, ids: &[usize], boxes: &[CaveBox], seq: &mut Seq, layer: u8) {
+pub(super) fn connect(a: &Atlas, p: &mut Plan, ids: &[usize], boxes: &[CaveBox], seq: &mut Seq, layer: u8) {
     let n = ids.len();
     if n < 2 {
         return;

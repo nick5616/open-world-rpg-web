@@ -22,7 +22,7 @@ const DIR_ENTRIES = 16;
 export const TOWN_SEC = { settlements: 0, buildings: 1, boxes: 2, props: 3, npcs: 4, roads: 5, points: 6, bridges: 7, signs: 8, structures: 9, pieces: 10, veins: 11, names: 12 } as const;
 export const TOWN_REC = [64, 96, 40, 32, 40, 24, 12, 48, 32, 56, 40, 32, 0] as const;
 
-export const BUILDING_STYLES = ['timber', 'stone', 'adobe', 'stilt', 'log', 'cottage'] as const;
+export const BUILDING_STYLES = ['timber', 'stone', 'adobe', 'stilt', 'log', 'cottage', 'dwarf'] as const;
 export const BUILDING_ROLES = ['house', 'inn', 'forge', 'stall', 'garden', 'farm', 'workshop', 'storehouse', 'gatehouse'] as const;
 export const ROOF_KINDS = ['gable', 'hip', 'flat', 'none'] as const;
 /** Building flags; `stepped` and `posts` (foundations on natural ground) since genVersion 2. */
@@ -31,12 +31,12 @@ export const BOX_KINDS = ['floor', 'wall', 'upper', 'roof', 'ramp', 'furniture',
 export const BOX_FLAG = { walk: 1, solid: 2, ceil: 4 } as const;
 export const PROP_KINDS = [
   'door', 'bed', 'table', 'bench', 'hearth', 'chest', 'barrel', 'crate', 'shelf', 'counter', 'forge', 'anvil', 'quench', 'workbench', 'stall', 'board',
-  'well', 'lantern', 'wardBed', 'crops', 'rug', 'bookshelf', 'campfire', 'tent', 'starmetal', 'statue', 'crystal', 'brazier', 'bones', 'rubble', 'torch',
+  'well', 'lantern', 'wardBed', 'crops', 'rug', 'bookshelf', 'campfire', 'tent', 'starmetal', 'statue', 'crystal', 'brazier', 'bones', 'rubble', 'torch', 'activity', 'minecart', 'orePile',
 ] as const;
 export type PropKind = (typeof PROP_KINDS)[number];
 export const PROP_FLAG = { interact: 1, light: 2 } as const;
 export const NPC_ROLES = ['villager', 'merchant', 'blacksmith', 'innkeeper', 'bounty', 'farmer', 'guard'] as const;
-export const MERCHANT_KINDS = ['general', 'provisions', 'herbalist', 'tools'] as const;
+export const MERCHANT_KINDS = ['general', 'provisions', 'herbalist', 'tools', 'miner', 'broker'] as const;
 // Settlement sizes and structure kinds: SETTLEMENT_SIZES / STRUCTURE_KINDS in ./format (atlas site tables).
 /** Structure kinds in the towns buffer: the nine atlas structure kinds, then (genVersion 2) landmarks and enemy camps, which are built too. */
 export const TOWN_STRUCTURE_KINDS = [...STRUCTURE_KINDS, 'landmark', 'enemy_camp'] as const;

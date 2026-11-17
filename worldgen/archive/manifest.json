@@ -16,6 +16,14 @@
       "bytes": 617354,
       "golden": "golden-v2.json",
       "source": "git 73f436c (main before playtest 2 vertical world), rustc 1.99.1 (58cf8f9c3 2026-10-13); rebuilt from that commit bit-identical to the dev build"
+    },
+    {
+      "genVersion": 3,
+      "file": "worldgen-7fbe0614976d388d.wasm",
+      "sha256": "7fbe0614976d388d58c50e074a36aea83cfa198a8c57ea133b61c815443f57f8",
+      "bytes": 756376,
+      "golden": "golden-v3.json",
+      "source": "commit 073b724 (main before playtest 3 dwarves), rustc 1.99.1 (5f94df478 2026-08-27)"
     }
   ]
 }

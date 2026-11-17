@@ -410,6 +410,10 @@ func (s *Server) drainTaken(sess *session, now time.Time) {
 				s.verticalInteract(sess, it) // CR 038: sky palace doors, sky town activity spots (vertical.go)
 				continue
 			}
+			if it.TargetKind == InteractCaveChest || it.TargetKind == InteractLoreTablet {
+				s.caveInteract(sess, it) // CR 043: cave chests and lore tablets (dwarves.go)
+				continue
+			}
 			if it.TargetKind == InteractLight {
 				s.lightInteract(sess, it, now) // CR 042: torch on / off, dismiss the familiar (lights.go)
 				continue

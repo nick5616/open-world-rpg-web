@@ -329,23 +329,47 @@ func (s *Server) addLayerGroups(w *combat.World) {
 		}
 		return true
 	}
-	add := func(layer int, x, z, from float64, seed uint64) bool {
+	var halls []movement.Vec3 // dwarven halls (camps and strongholds): no packs, Z = reach
+	for i := range v.Chambers {
+		if c := &v.Chambers[i]; c.Kind == vertical.ChamberDwarfCamp || c.Kind == vertical.ChamberStronghold {
+			halls = append(halls, movement.Vec3{X: c.X, Y: c.Floor, Z: math.Max(c.Rx, c.Rz) + 12})
+		}
+	}
+	inHall := func(x, y, z float64) bool {
+		for _, h := range halls {
+			if math.Hypot(h.X-x, h.Z-z) < h.Z && math.Abs(h.Y-y) < 70 {
+				return true
+			}
+		}
+		return false
+	}
+	add := func(layer int, x, z, from float64, seed uint64, comp []string) bool {
 		lv := movement.AtLevel(g, from)
 		y := lv.HeightAt(x, z)
 		if vw.LayerAt(x, y, z) != layer && layer != vertical.LayerSky {
 			return false
 		}
-		if movement.WaterAt(lv, x, z) > y-0.2 || movement.SlopeAt(lv, x, z).T2 > constants.WalkableTanSq || !clear(layer, x, y, z) {
+		if movement.WaterAt(lv, x, z) > y-0.2 || movement.SlopeAt(lv, x, z).T2 > constants.WalkableTanSq || !clear(layer, x, y, z) || inHall(x, y, z) {
 			return false
 		}
 		gr := w.AddGroup(&combat.Group{Kind: combat.GroupPack, Anchor: movement.Vec3{X: x, Y: y, Z: z}, Radius: 9, Element: 8, Level: 1, Site: -1,
-			Seed: seed, AreaLevel: true, Layer: layer, Comp: combat.LayerTables[layer]})
+			Seed: seed, AreaLevel: true, Layer: layer, Comp: comp})
 		placed = append(placed, gr)
 		return true
 	}
 	for i := range v.Chambers {
 		c := &v.Chambers[i]
+		if c.Kind == vertical.ChamberDwarfCamp || c.Kind == vertical.ChamberStronghold {
+			continue // CR 043: the dwarves' halls are safe (no packs)
+		}
 		want := min(5, 1+int(c.Rx*c.Rz/9000))
+		comp := combat.LayerTables[c.Layer]
+		if c.Layer == vertical.LayerUnder {
+			comp = combat.UnderComp(c.Floor)
+		}
+		if c.Kind == vertical.ChamberLowerHalls {
+			want, comp = 7, combat.LowerHallsComp // the old mines: dense and dangerous
+		}
 		got := 0
 		for k := 0; k < want*12 && got < want; k++ {
 			h := content.Mix(c.ID ^ uint64(k+1)*0x9E3779B97F4A7C15)
@@ -353,9 +377,12 @@ func (s *Server) addLayerGroups(w *combat.World) {
 			th := 2 * math.Pi * float64(content.Mix(h)>>11) / float64(1<<53)
 			u, vv := c.Rx*e*math.Cos(th), c.Rz*e*math.Sin(th)
 			x, z := c.X+u*c.C-vv*c.S, c.Z+u*c.S+vv*c.C
-			if add(c.Layer, x, z, c.Floor+2, h) {
+			if add(c.Layer, x, z, c.Floor+2, h, comp) {
 				got++
 			}
+		}
+		if c.Kind == vertical.ChamberLowerHalls {
+			s.addWarden(w, c)
 		}
 	}
 	for i := range v.Islands {
@@ -367,9 +394,30 @@ func (s *Server) addLayerGroups(w *combat.World) {
 			h := content.Mix(is.ID ^ uint64(k+1)*0xBF58476D1CE4E5B9)
 			d := is.R * (0.25 + 0.35*float64(h>>11)/float64(1<<53))
 			th := 2 * math.Pi * float64(content.Mix(h)>>11) / float64(1<<53)
-			if add(vertical.LayerSky, is.X+d*math.Cos(th), is.Z+d*math.Sin(th), is.Top+2, h) {
+			if add(vertical.LayerSky, is.X+d*math.Cos(th), is.Z+d*math.Sin(th), is.Top+2, h, combat.LayerTables[vertical.LayerSky]) {
 				break
 			}
+		}
+	}
+	// CR 043: packs along the Underground's tunnels and passages, about one per
+	// 140 m (not in a tunnel's first 40 m), by the depth of the floor there.
+	for ci := range v.Corridors {
+		r := &v.Corridors[ci]
+		if r.Layer != vertical.LayerUnder || (r.Kind != 0 && r.Kind != 3) || len(r.Pts) < 3 {
+			continue
+		}
+		run, next := 0.0, 40.0
+		if r.Kind != 0 {
+			next = 70.0
+		}
+		for k := 1; k < len(r.Pts); k++ {
+			run += math.Hypot(r.Pts[k][0]-r.Pts[k-1][0], r.Pts[k][2]-r.Pts[k-1][2])
+			if run < next {
+				continue
+			}
+			next = run + 140
+			h := content.Mix(uint64(ci+1)<<24 ^ uint64(k)*0x9E3779B97F4A7C15 ^ 0xC0DE)
+			add(vertical.LayerUnder, r.Pts[k][0], r.Pts[k][2], r.Pts[k][1]+2, h, combat.UnderComp(r.Pts[k][1]))
 		}
 	}
 	s.log.Info("vertical packs", "groups", len(placed))
