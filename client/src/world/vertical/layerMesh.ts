@@ -15,6 +15,7 @@
 // vertex, so a 400 m cavern reads as lit by its crystals at any distance
 // with a handful of real lights near the player.
 
+import { isWarmKind } from './dwarfKinds';
 import { DECO, DECO_LIGHT, LAYER_DEPTHS, LAYER_SKY, NO_WATER, OPEN_C, TILE_S, type LayerTile, type VerticalWorld } from '@lodestone/worldgen';
 
 export interface LayerMeshData {
@@ -108,6 +109,9 @@ const CHAMBER_ROCK: { rock: [number, number, number]; floor: [number, number, nu
   { rock: [0.06, 0.052, 0.05], floor: [0.05, 0.085, 0.055] }, // fungal: dark earth, moss
   { rock: [0.045, 0.032, 0.03], floor: [0.07, 0.045, 0.035] }, // inferno: basalt
   { rock: [0.055, 0.05, 0.047], floor: [0.15, 0.14, 0.135] }, // ashen: ash plains
+  { rock: [0.1, 0.075, 0.055], floor: [0.2, 0.15, 0.11] }, // dwarf camp: warm brown stone, swept floor
+  { rock: [0.095, 0.08, 0.065], floor: [0.19, 0.16, 0.13] }, // stronghold: carved grey-brown halls
+  { rock: [0.07, 0.055, 0.05], floor: [0.12, 0.09, 0.075] }, // lower halls: soot and old ore
 ];
 
 export function buildLayerMesh(t: LayerTile, v: VerticalWorld): LayerMeshData {
@@ -141,7 +145,7 @@ export function buildLayerMesh(t: LayerTile, v: VerticalWorld): LayerMeshData {
       const light = (d.flags & DECO_LIGHT) !== 0;
       const crystal = d.kind === DECO.crystal || d.kind === DECO.spire || d.kind === DECO.mushroom;
       if (!light && (!crystal || coarse)) continue;
-      const [r, g, b] = TINT_RGB[d.tint] ?? TINT_RGB[9];
+      const [r, g, b] = isWarmKind(d.kind) ? ([1.0, 0.55, 0.2] as const) : (TINT_RGB[d.tint] ?? TINT_RGB[9]);
       const k = light ? 1.25 : 0.32;
       const hang = d.kind === DECO.stalactite ? -1 : 1;
       emitters.push({ x: d.x, y: d.y + hang * Math.min(d.size, 8) * 0.5, z: d.z, r: r * k, g: g * k, b: b * k, range: light ? 28 + d.size * 3 : 9 + d.size * 2.2 });

@@ -12,6 +12,8 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { DECO, DECO_HANG, DECO_LIGHT, LAYER_DEPTHS, LAYER_SKY, LAYER_SURFACE, LAYER_UNDER, UPDRAFT_KINDS, type Deco, type VerticalWorld } from '@lodestone/worldgen';
 import { TINT_RGB } from './layerMesh';
 import { verticalUniforms } from './verticalMaterials';
+import { buildDwarfDecos, type DwarfSet } from './dwarfDecos';
+import { isDwarfChamber, isWarmKind } from './dwarfKinds';
 
 export interface LightEmitter {
   x: number;
@@ -29,6 +31,8 @@ export interface DecoSet {
   emitters: LightEmitter[];
   /** Materials the CSM should shadow (islands' trees, rocks, palaces). */
   sunMaterials: THREE.Material[];
+  /** Chest lids by descriptor deco index (CR 043). */
+  dwarf: DwarfSet;
   dispose(): void;
 }
 
@@ -565,7 +569,7 @@ export function buildDecos(v: VerticalWorld): DecoSet & { clouds: ReturnType<typ
     colGeo.computeVertexNormals();
   }
   for (const layer of [LAYER_UNDER, LAYER_DEPTHS]) {
-    const cols = (globalThis as { __vtNoCols?: boolean }).__vtNoCols ? [] : v.columns.filter((c) => c.layer === layer);
+    const cols = (globalThis as { __vtNoCols?: boolean }).__vtNoCols ? [] : v.columns.filter((c) => c.layer === layer && !isDwarfChamber(v.chambers[c.chamber]?.kind ?? 0));
     if (!cols.length) continue;
     const im = new THREE.InstancedMesh(colGeo, layer === LAYER_DEPTHS ? deepRockMat : rockMat, cols.length);
     const mm = new THREE.Matrix4();
@@ -650,18 +654,24 @@ export function buildDecos(v: VerticalWorld): DecoSet & { clouds: ReturnType<typ
   const winds = windColumns(v);
   if (winds) add(LAYER_SURFACE, winds);
 
+  // CR 043: cave dressing and the dwarves' halls (kinds 28-45).
+  const dwarfCols = v.columns.filter((c) => isDwarfChamber(v.chambers[c.chamber]?.kind ?? 0));
+  const dwarf = buildDwarfDecos(v.decos, (d) => d.layer, { glowMaterial, instanced, compose, add }, dwarfCols);
+  // Carved pillars for the dwarven halls' columns (chambers of kind 6+): drawn over the rock column.
+  // (the rock column mesh above is skipped for them: see the filter on `cols`)
+
   // Real lights (the cave light pool picks the nearest).
   const emitters: LightEmitter[] = [];
   for (const d of v.decos) {
     if ((d.flags & DECO_LIGHT) === 0) continue;
-    const c = d.kind === DECO.campfire || d.kind === DECO.lantern ? new THREE.Color(1.0, 0.62, 0.3) : d.kind === DECO.lavafall || d.kind === DECO.vent || d.kind === DECO.embers || d.kind === DECO.gate ? new THREE.Color(1.0, 0.38, 0.1) : tintColor(d.tint);
+    const c = isWarmKind(d.kind) || d.kind === DECO.campfire || d.kind === DECO.lantern ? new THREE.Color(1.0, 0.62, 0.3) : d.kind === DECO.lavafall || d.kind === DECO.vent || d.kind === DECO.embers || d.kind === DECO.gate ? new THREE.Color(1.0, 0.38, 0.1) : tintColor(d.tint);
     const big = d.kind === DECO.spire || d.kind === DECO.palace || d.kind === DECO.lightshaft;
     emitters.push({
       x: d.x,
       y: d.y + (d.kind === DECO.spire ? d.size * 0.5 : 1.5),
       z: d.z,
       color: c,
-      intensity: big ? 60 : d.kind === DECO.campfire ? 30 : 22,
+      intensity: big ? 60 : d.kind === DECO.campfire || isWarmKind(d.kind) ? 30 : 22,
       distance: big ? 70 : 40,
       layer: d.layer,
     });
@@ -670,6 +680,7 @@ export function buildDecos(v: VerticalWorld): DecoSet & { clouds: ReturnType<typ
     groups,
     emitters,
     sunMaterials,
+    dwarf,
     clouds,
     winds,
     dispose() {
