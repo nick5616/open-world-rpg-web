@@ -783,7 +783,8 @@ export class NpcRenderer {
 
       // Legs and arms swing about the hip / shoulder (local z axis: the model faces +x).
       const sitAng = sit * 1.35 + crouch * 0.7;
-      for (const side of [-1, 1] as const) {
+      for (let sideI = 0; sideI < 2; sideI++) {
+        const side = sideI === 0 ? -1 : 1;
         mLeg.copy(mBase).multiply(this.setMatT(0, 0.85, side * 0.1)).multiply(mR.makeRotationZ(side * swing + sitAng));
         this.legs.setMatrixAt(nl, mLeg);
         this.legs.setColorAt(nl++, trousers);
