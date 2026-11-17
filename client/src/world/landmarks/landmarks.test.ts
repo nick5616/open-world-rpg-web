@@ -35,7 +35,7 @@ describe('motion', () => {
         expect(a.h).toBeGreaterThanOrEqual(2);
         expect(a.h).toBeLessThanOrEqual(PLUME_HEIGHT + 2.01);
         expect(a.alpha).toBeGreaterThanOrEqual(0);
-        expect(a.alpha).toBeLessThanOrEqual(0.31);
+        expect(a.alpha).toBeLessThanOrEqual(0.61);
         expect(Number.isFinite(a.x + a.z + a.size)).toBe(true);
         maxH = Math.max(maxH, a.h);
       }

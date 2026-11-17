@@ -96,7 +96,7 @@ export function duskK(day: number): number {
 // ── Smoke ─────────────────────────────────────────────────────────────────
 
 export const PLUME_PUFFS = 12;
-export const PLUME_HEIGHT = 95;
+export const PLUME_HEIGHT = 140;
 /** Seconds a puff takes to rise. */
 export const PLUME_LIFE = 16;
 
@@ -118,8 +118,8 @@ export function puffAt(seed: number, i: number, t: number, wx: number, wz: numbe
   out.x = wx * lean - wz * wob;
   out.z = wz * lean + wx * wob;
   out.h = 2 + k * PLUME_HEIGHT;
-  out.size = 4 + 20 * Math.sqrt(k);
-  out.alpha = 0.3 * smooth(0, 0.08, k) * (1 - smooth(0.55, 1, k));
+  out.size = 6 + 30 * Math.sqrt(k);
+  out.alpha = 0.6 * smooth(0, 0.08, k) * (1 - smooth(0.6, 1, k));
   return out;
 }
 

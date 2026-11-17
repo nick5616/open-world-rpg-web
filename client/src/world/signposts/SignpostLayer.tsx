@@ -15,6 +15,7 @@ import * as THREE from 'three';
 import type { WorldRuntime } from '../core/runtime';
 import { useQualityStore } from '../../stores/qualityStore';
 import { distanceLabel, placeSignposts, type Signpost } from './placement';
+import { diegeticDebug } from '../diegeticDebug';
 import { layoutBoards, PLANK_HT, ROW_PX, TEX_H, TEX_W, type BoardLayout } from './boards';
 
 /** Reading distance and the pool size by tier. */
@@ -256,6 +257,8 @@ export function SignpostLayer({ runtime }: { runtime: WorldRuntime }) {
   }, [posts, runtime]);
 
   useEffect(() => {
+    diegeticDebug.posts = posts;
+    diegeticDebug.foot = world.foot;
     scene.add(world.root);
     return () => {
       scene.remove(world.root);

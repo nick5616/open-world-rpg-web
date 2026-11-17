@@ -19,6 +19,7 @@ import { worldClock } from '../../state/live';
 import { useContent } from '../../ui/content/store';
 import { isAttuned } from '../../ui/progression/store';
 import { questBeamResources } from '../../ui/quests/QuestLayer';
+import { diegeticDebug } from '../diegeticDebug';
 import { useQualityStore } from '../../stores/qualityStore';
 import { birdAt, BIRDS_PER_SITE, duskK, glint, LANDMARK_RANGE, nearestSites, partitionLandmarks, PLUME_PUFFS, puffAt, type BirdPos, type LSite, type Puff } from './landmarks';
 
@@ -201,6 +202,7 @@ export function LandmarkLayer({ runtime }: { runtime: WorldRuntime }) {
       world.birdSpots = low ? [] : spots.filter((s) => s.d < R.birds.range).slice(0, R.birds.max);
     }
     const day = world.day;
+    diegeticDebug.landmarks = { smoke: world.near.smoke.length, pillar: world.near.pillar.length, lantern: world.near.lantern.length, glow: world.near.glow.length, glint: world.near.glint.length, birds: world.birdSpots.length, day };
     const night = 1 - day;
     const ground = runtime.terrainGround;
     const wl = Math.hypot(windState.dirX, windState.dirZ) || 1;
@@ -209,7 +211,7 @@ export function LandmarkLayer({ runtime }: { runtime: WorldRuntime }) {
 
     // Smoke.
     const sr = LANDMARK_RANGE.smoke.range;
-    const sc = [0.5 * day + 0.1 * night, 0.48 * day + 0.1 * night, 0.46 * day + 0.12 * night] as const;
+    const sc = [0.36 * day + 0.1 * night, 0.34 * day + 0.1 * night, 0.33 * day + 0.12 * night] as const;
     world.near.smoke.forEach((s, k) => {
       const d = Math.hypot(s.x - cam.x, s.z - cam.z);
       const f = rangeFade(d, sr);

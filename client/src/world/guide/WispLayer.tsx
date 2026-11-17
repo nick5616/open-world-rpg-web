@@ -21,6 +21,7 @@ import { useQualityStore } from '../../stores/qualityStore';
 import { AUTO_GUIDE_MS, guide, guideNote, installGuideKey } from './guideStore';
 import { buildRoadGraph, newWisp, nearestNode, planRoute, pointAt, SNAP_M, stepWisp, type Route, type RoadGraph, type WispState } from './route';
 import { pickGuideGoal, type GuideGoal } from './target';
+import { diegeticDebug } from '../diegeticDebug';
 
 const TRAIL = 11;
 const SPARKS = 4;
@@ -114,6 +115,8 @@ export function WispLayer({ runtime }: { runtime: WorldRuntime }) {
   const run = useMemo<Run>(() => ({ active: false, auto: false, endAt: 0, route: null, w: null, goal: null, planAt: 0, chimedEnd: false, trailAcc: 0, lastStepAt: hudActivity.stepAt, autoDueAt: 0 }), []);
 
   useEffect(() => {
+    diegeticDebug.graph = graph;
+    diegeticDebug.wisp = run;
     scene.add(obj.pts);
     const off = installGuideKey(() => useMenu.getState().open);
     return () => {
@@ -121,7 +124,7 @@ export function WispLayer({ runtime }: { runtime: WorldRuntime }) {
       scene.remove(obj.pts);
       obj.g.dispose();
     };
-  }, [scene, obj]);
+  }, [scene, obj, graph, run]);
 
   const tmp = useMemo(() => ({ x: 0, z: 0 }), []);
 
@@ -246,7 +249,7 @@ export function WispLayer({ runtime }: { runtime: WorldRuntime }) {
     pos[0] = hx;
     pos[1] = hy;
     pos[2] = hz;
-    size[0] = 0.62 * breathe;
+    size[0] = 1.05 * breathe;
     alpha[0] = A;
     for (let i = 0; i < TRAIL; i++) {
       const v = 1 + i;
@@ -259,7 +262,7 @@ export function WispLayer({ runtime }: { runtime: WorldRuntime }) {
       pos[v * 3] = obj.hist[i * 3];
       pos[v * 3 + 1] = obj.hist[i * 3 + 1] - 0.04 * i;
       pos[v * 3 + 2] = obj.hist[i * 3 + 2];
-      size[v] = 0.42 * f + 0.06;
+      size[v] = 0.7 * f + 0.08;
       alpha[v] = A * f * 0.55;
     }
     for (let k = 0; k < SPARKS; k++) {
@@ -274,7 +277,7 @@ export function WispLayer({ runtime }: { runtime: WorldRuntime }) {
       pos[v * 3] = hx + Math.cos(a) * r;
       pos[v * 3 + 1] = hy + Math.sin(a * 1.3) * 0.28;
       pos[v * 3 + 2] = hz + Math.sin(a) * r;
-      size[v] = 0.1 + 0.04 * Math.sin(t * 2.2 + k * 2);
+      size[v] = 0.18 + 0.07 * Math.sin(t * 2.2 + k * 2);
       alpha[v] = A * (0.6 + 0.3 * Math.sin(t * 1.4 + k));
     }
     obj.g.attributes.position.needsUpdate = true;
@@ -283,6 +286,10 @@ export function WispLayer({ runtime }: { runtime: WorldRuntime }) {
     const cam = state.camera as THREE.PerspectiveCamera;
     wispMaterial().uniforms.uScale.value = (state.size.height * 0.5) / Math.tan(((cam.fov ?? 70) * Math.PI) / 360);
     obj.pts.visible = A > 0.01;
+    diegeticDebug.head.x = hx;
+    diegeticDebug.head.y = hy;
+    diegeticDebug.head.z = hz;
+    diegeticDebug.head.visible = obj.pts.visible;
   });
 
   return null;

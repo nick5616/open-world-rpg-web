@@ -1,5 +1,17 @@
 [
   {
+    "id": "pt4-in-world",
+    "date": "2026-11-17",
+    "title": "Guidance in the world",
+    "items": [
+      "A quieter screen: health, mana and your hotbar appear when they matter, and the quest card tucks away behind the compass. Turn it back on in Esc, Interface.",
+      "Press . and a little wisp flies ahead of you toward your quest or pin. It also shows up when a quest step begins.",
+      "Signposts at crossroads and town gates now name the way, with distances. Bounty boards have papers pinned on them.",
+      "Smoke over bandit camps, lanterns at dwarven doors and a pale light over towers you have not climbed call you from afar.",
+      "Low health darkens the edges and you hear your heartbeat. Level ups glow around you."
+    ]
+  },
+  {
     "id": "pt3-sky-depths",
     "date": "2026-11-17",
     "title": "Sky palaces, glide races and new creatures",

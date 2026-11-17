@@ -1993,3 +1993,22 @@ Nicole: "Continue with the underground content. Caves should have stuff and mons
 - The night safe rule is wider than halls: nothing hunts underground at night.
 - Evidence: the cave-monsters shot is weak (monsters far away), no close-up of a dwarf NPC, no stronghold market shot; the stronghold floor is a plain orange; glowworms do not sway; rails clip on slopes.
 - Postgres-backed tests time out when the shared database is slow (accountapi, some mintdb, zone game PG tests); the mintdb renewal tests pass when run alone.
+
+## Playtest 4: in-world guidance and a quiet HUD (branch `pt4/diegetic`, CR 052)
+
+Nicole: "make more things directly in the game instead of text you see in the HUD." Client only: no protocol, Event (1950-1959 unused), Interact, migration or worldgen change. What's new `pt4-in-world`. HUD audit: `docs/evidence/pt4-diegetic-audit.md`.
+
+**Works**
+- **Immersive HUD** (default on; Esc menu > Interface switches it off): health/mana appear when not full or just changed, the hotbar when in combat, a boss fight, downed or after a hotbar key/wheel/attack click, the quest card collapses to the compass diamond unless the step just changed, Tab is held or J is open; fewer, shorter notices; level-up banner one small line; region cards smaller. Opacity only, so the layout variables are unchanged. Pure rules tested (`hud/immersive.test.ts`).
+- **Guiding wisp** on the **. (Period)** key (G is the glider, so the reserved key could not be used) and by itself 1.6 s after a quest step starts (20 s): keeps 8-15 m ahead, waits for you, follows roads you are on (A* over the road graph built from `Towns.roads`), else floats over the terrain, chimes, fades on arrival; leads to the tracked quest marker or your pin. One Points draw, no lights.
+- **Signposts**: the towns buffer's fork posts now have names and distances on every arm; new exit posts beside each town road name the town the road leads to and the nearest named landmarks ahead, with arrows as the reader of each face sees them. Placement is client side and deterministic.
+- **Landmarks from afar**: smoke over camps, light pillars over unattuned towers at dusk and night, lanterns at dwarven doors, cave-mouth glows, birds over vaults and live events, glints on sky palaces.
+- **Feedback in the world**: low-health vignette (no flashing, Reduce flashing respected) and a heartbeat; level-up glow rising around you; papers pinned on bounty boards.
+- Tests: `route`, `target`, `placement`, `boards`, `boardPapers`, `landmarks`, `immersive` (vitest), plus the bindings/controls/audio suites with the new key and cues.
+
+**Gaps**
+- Board papers: the zone only tells the client the count when a board is opened, so an unopened board shows 3 (the surface minimum) and the exact count after the first visit. A server push (Event 1950) would fix it; not done to keep the zone untouched.
+- Exit posts have no collision and no "[E] read" prompt (the lettering is just readable); only forks have the old interaction line.
+- The wisp does not know about walls or cliffs (it floats over terrain) and hides underground and in the sky; it does not lead through a building to an NPC inside.
+- Birds need a vault or event the zone has told the client about (range-limited sync). Tips such as "Low health" still exist (pt4/first-hour owns tips).
+- `Tab` also opens the quest card, so using the weapon technique briefly shows it.

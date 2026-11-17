@@ -7,14 +7,22 @@
 //   LevelGlow         the glow around you when you level up
 // See client/src/world/README.md "Diegetic layer".
 
+import { useEffect } from 'react';
+import { DEBUG } from '../config';
 import type { WorldRuntime } from './core/runtime';
+import { installDiegeticDebug } from './diegeticDebug';
 import { WispLayer } from './guide/WispLayer';
 import { SignpostLayer } from './signposts/SignpostLayer';
 import { BoardPapersLayer } from './signposts/BoardPapersLayer';
 import { LandmarkLayer } from './landmarks/LandmarkLayer';
 import { LevelGlow } from './feedback/LevelGlow';
 
+/** `?nodiegetic`: the A/B of the bench (world/bench/*.mjs): the world without these layers. */
+const OFF = typeof location !== 'undefined' && new URLSearchParams(location.search).has('nodiegetic');
+
 export function DiegeticLayer({ runtime }: { runtime: WorldRuntime }) {
+  useEffect(() => (DEBUG ? installDiegeticDebug() : undefined), []);
+  if (OFF) return null;
   return (
     <>
       <WispLayer runtime={runtime} />
