@@ -1831,3 +1831,17 @@ Nicole: "ok new pivot for the game: make it vertical. there are tunnels you can 
 **Gates** (main `41ec650` merged): `gen:check` ok; `test:golden` PASS in every host (wp01 evidence restored); `cargo test` (worldgen) ok, clippy clean; `go vet` clean in every module; `go test` green in every module (`TestZoneProcessCavesMining` failed once under load and passed alone); door vectors regenerated (sky-town doors appended, every existing vector unchanged); typecheck ok; `eslint .` clean; client vitest 105 files / 1267 tests (after merging main `08d53b6`, shared basic attacks: client only, nothing on the wire); worldgen/js vitest 28; `node scripts/whatsnew.mjs check` (35 entries, `pt2-vertical-world` first).
 
 Gaps: crystals read pastel rather than deep blue / violet at a distance; the tunnel portal is modest from afar; the palace exterior is a placeholder model and its doors are sealed; sky activities are a stub stand; enemy models for the new creatures reuse existing families; no ambient occlusion in caverns; live world: renewing the official world to genVersion 3 regenerates towns (sky towns appended) and needs the usual deploy (not done here).
+
+## Playtest 3: balance (branch `pt3/balance`, CR 048)
+
+Nicole's playtest-3 notes, four independent fixes, one commit each (`docs/cr/048-playtest-3-balance.md`).
+
+**Works**
+- **Levelling**: level 2 costs 360 XP (was 100): the early curve is 360 / 300 / 260 / 240, plain 60 + 40 x level from level 5, so no later level is slower. Server `explore.XPForNextLevel`, client twin `xpForLevel`; wire vectors and discovery / tower tests updated (a tower climb + its discovery, 190 XP, no longer levels).
+- **Magma dash tiers**: Lesser (L1-7: short, a steered run that falls, 40 mana/s hold), Honed (L8-14: weak thrust, 32 mana/s), Full (L15+, the old dash, 24 mana/s). Tiers are plain dash variants (ids 10, 11) chosen from the character level on both sides, so the shared movement twins are untouched; wp13 dash goldens regenerated, Go twin tests green; the zone refuses a tier above the caster's level; the spell card shows "Tier: Lesser (Honed at level 8)".
+- **Spell bank**: equipped spells of the edited loadout are hidden; clearing a slot (or dropping its card on the bank) returns them (`bankCards`, vitest).
+- **Demons**: `demons.ordinary {halfFrom 8, immuneFrom 15, halfMult 0.5}`: level < 8 takes full lasting damage from anything, 8-14 half (resisted flag), 15+ / lords / Guarded story demons keep the sunsteel-or-Light rule; HUD hint, tips and loadout lines no longer say all demons are immune.
+
+**Tests**: `go test` explore, combat, combatdefs, movement, plus the game packages' night / dash / achievement / progression / explore tests; client vitest for sim, combat, ui/skills, ui/spellcards, ui/progression; `tsc`, eslint.
+
+**Gaps**: `tools/acceptance/g4.mjs` and `server/zone/cmd/nightbots` (not re-run, 11 min) still assume a level-1 demon shrugs off the starting sword, true now only at demon level 15+; a character saved at level 2-4 re-levels one level lower from its kept XP; the dash tiers and demon thresholds are first guesses to tune in play.

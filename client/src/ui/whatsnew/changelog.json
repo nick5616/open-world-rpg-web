@@ -1,5 +1,16 @@
 [
   {
+    "id": "pt3-balance",
+    "date": "2026-11-17",
+    "title": "Balance: slower first levels, a growing magma dash, tidier spell bank, weaker demons",
+    "items": [
+      "Level 2 now takes a real first session instead of one discovery.",
+      "The Magma Dash starts as a short Lesser dash and grows into the full flying dash by level 15 (Honed at level 8).",
+      "The spell bank no longer lists spells you already have in a slot.",
+      "Only high-level demons (15+) shrug off ordinary weapons; weaker ones can be fought with steel and fire, mid-level ones take half damage."
+    ]
+  },
+  {
     "id": "pt2-vertical-world",
     "date": "2026-11-11",
     "title": "The world goes vertical",
