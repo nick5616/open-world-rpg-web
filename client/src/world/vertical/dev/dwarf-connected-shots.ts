@@ -2,11 +2,11 @@
 // server-side): the real client from Vite against the real zone binary on the
 // official world (seed 20261108, no DB/Redis, dev tickets, dev console). The
 
-// dwarven camp (it cannot teleport underground, so the script walks a tunnel and a camp passage like a player):
+// dwarven camp and stronghold (it cannot teleport underground, so the script walks a tunnel and a camp passage like a player):
 //
 //   cd client && npx vite-node src/world/vertical/dev/dwarf-connected-shots.ts
 //
-// Writes docs/evidence/pt3-dwarves-{cave-monsters,camp-folk}.jpg.
+// Writes docs/evidence/pt3-dwarves-{cave-monsters,dwarf-closeup,camp-folk,stronghold-market}.jpg.
 // Every process it starts is stopped at the end.
 
 import fs from 'node:fs';
@@ -146,53 +146,69 @@ async function main(): Promise<void> {
 
     // The dev console cannot teleport underground (it never lifts you under the terrain), so we walk in
     // like a player: to a tunnel mouth, then along the tunnel and a camp's secret passage.
-    type Route = { mouth: { x: number; z: number; yaw: number }; pts: { x: number; y: number; z: number }[]; tunnelPts: number; camp: { x: number; z: number; floor: number; rx: number } };
-    const route: Route | null = await page.evaluate(() => {
-      const v = (window as unknown as { __lodestoneVerticalWorld?: any }).__lodestoneVerticalWorld; // eslint-disable-line @typescript-eslint/no-explicit-any
-      if (!v) return null;
-      const P = (c: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
-        const o: { x: number; y: number; z: number }[] = [];
-        for (let k = 0; k < c.pts.length / 3; k++) o.push({ x: c.pts[k * 3], y: c.pts[k * 3 + 1], z: c.pts[k * 3 + 2] });
-        return o;
-      };
-      let best: Route | null = null;
-      let bestLen = Infinity;
-      v.corridors.forEach((sc: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
-        if (sc.kind !== 4 || sc.from !== 0xffff) return;
-        const camp = v.chambers[sc.to];
-        if (camp.kind !== 6) return;
-        const sp = P(sc);
-        v.corridors.forEach((tc: any, ti: number) => { // eslint-disable-line @typescript-eslint/no-explicit-any
-          if (tc.kind !== 0) return;
-          const tp = P(tc);
-          let bi = -1;
-          let bd = 3;
-          tp.forEach((q, i) => {
-            const d = Math.hypot(q.x - sp[0].x, q.z - sp[0].z);
-            if (d < bd) {
-              bd = d;
-              bi = i;
+    type Pt = { x: number; y: number; z: number };
+    type Route = { mouth: { x: number; z: number; yaw: number }; pts: Pt[]; tunnelPts: number; target: { x: number; z: number } };
+    // The dev console cannot teleport underground (it never lifts you under the terrain), so we walk in
+    // like a player: to a tunnel mouth, along the tunnel (and across its cavern for a stronghold), then the
+    // secret passage to the hall.
+    const planRoute = (hold: boolean): Promise<Route | null> =>
+      page.evaluate((hold) => {
+        const v = (window as unknown as { __lodestoneVerticalWorld?: any }).__lodestoneVerticalWorld; // eslint-disable-line @typescript-eslint/no-explicit-any
+        if (!v) return null;
+        const P = (c: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+          const o: { x: number; y: number; z: number }[] = [];
+          for (let k = 0; k < c.pts.length / 3; k++) o.push({ x: c.pts[k * 3], y: c.pts[k * 3 + 1], z: c.pts[k * 3 + 2] });
+          return o;
+        };
+        const len = (a: { x: number; z: number }[]) => a.reduce((s, q, i) => s + (i ? Math.hypot(q.x - a[i - 1].x, q.z - a[i - 1].z) : 0), 0);
+        let best: Route | null = null;
+        let bestLen = Infinity;
+        v.corridors.forEach((sc: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+          if (sc.kind !== 4) return;
+          const hall = v.chambers[sc.to];
+          if (hall.kind !== (hold ? 7 : 6) || (hold ? sc.from === 0xffff || v.chambers[sc.from].kind >= 6 : sc.from !== 0xffff)) return;
+          const sp = P(sc);
+          v.corridors.forEach((tc: any, ti: number) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+            if (tc.kind !== 0 || (hold && tc.to !== sc.from)) return;
+            const tp = P(tc);
+            let cut = tp.length - 1;
+            const mid: Pt[] = [];
+            if (hold) {
+              const a = tp[tp.length - 1];
+              const b = sp[0];
+              const n = Math.ceil(Math.hypot(b.x - a.x, b.z - a.z) / 8);
+              for (let k = 1; k < n; k++) mid.push({ x: a.x + ((b.x - a.x) * k) / n, y: a.y, z: a.z + ((b.z - a.z) * k) / n });
+            } else {
+              let bd = 3;
+              cut = -1;
+              tp.forEach((q, i) => {
+                const d = Math.hypot(q.x - sp[0].x, q.z - sp[0].z);
+                if (d < bd) {
+                  bd = d;
+                  cut = i;
+                }
+              });
+              if (cut < 0) return;
+            }
+            const op = v.openings.find((o: any) => o.kind === 0 && o.target === ti); // eslint-disable-line @typescript-eslint/no-explicit-any
+            if (!op) return;
+            const pts = [...tp.slice(0, cut + 1), ...mid, ...sp.slice(hold ? 0 : 1), { x: hall.x, y: hall.floor, z: hall.z }];
+            const l = len(pts);
+            if (l < bestLen) {
+              bestLen = l;
+              best = { mouth: { x: op.x, z: op.z, yaw: (op.yaw / 65536) * Math.PI * 2 }, pts, tunnelPts: cut + 1, target: { x: hall.x, z: hall.z } };
             }
           });
-          if (bi < 0) return;
-          const op = v.openings.find((o: any) => o.kind === 0 && o.target === ti); // eslint-disable-line @typescript-eslint/no-explicit-any
-          if (!op) return;
-          let len = 0;
-          for (let i = 1; i <= bi; i++) len += Math.hypot(tp[i].x - tp[i - 1].x, tp[i].z - tp[i - 1].z);
-          if (len < bestLen) {
-            bestLen = len;
-            best = { mouth: { x: op.x, z: op.z, yaw: (op.yaw / 65536) * Math.PI * 2 }, pts: [...tp.slice(0, bi + 1), ...sp.slice(1), { x: camp.x, y: camp.floor, z: camp.z }], tunnelPts: bi + 1, camp: { x: camp.x, z: camp.z, floor: camp.floor, rx: camp.rx } };
-          }
         });
-      });
-      return best as Route | null;
-    });
-    if (!route) throw new Error('no camp reachable from a tunnel in this world');
-    console.log(`route: mouth (${route.mouth.x.toFixed(0)}, ${route.mouth.z.toFixed(0)}), ${route.pts.length} points, camp at (${route.camp.x.toFixed(0)}, ${route.camp.z.toFixed(0)})`);
-    await dev(`/tp ${(route.mouth.x + Math.cos(route.mouth.yaw) * 30).toFixed(1)} ${(route.mouth.z + Math.sin(route.mouth.yaw) * 30).toFixed(1)}`, 4000);
-    await sleep(6000);
-
-    let shotCave = false;
+        return best as Route | null;
+      }, hold);
+    let route!: Route;
+    const enter = async (r: Route) => {
+      route = r;
+      console.log(`route: mouth (${r.mouth.x.toFixed(0)}, ${r.mouth.z.toFixed(0)}), ${r.pts.length} points, hall at (${r.target.x.toFixed(0)}, ${r.target.z.toFixed(0)})`);
+      await dev(`/tp ${(r.mouth.x + Math.cos(r.mouth.yaw) * 30).toFixed(1)} ${(r.mouth.z + Math.sin(r.mouth.yaw) * 30).toFixed(1)}`, 4000);
+      await sleep(6000);
+    };
     const walk = async (i0: number, i1: number, maxMs: number, onIndex?: (i: number) => Promise<void>) => {
       await page.keyboard.down('KeyW');
       await page.keyboard.down('ShiftLeft');
@@ -224,38 +240,83 @@ async function main(): Promise<void> {
         await page.keyboard.up('KeyW');
       }
     };
+    /** Walk toward a drawn entity until `d` m away (stops at walls), then face it. */
+    const approach = async (pick: (l: Drawn[]) => Drawn | undefined, d: number, pitch: number) => {
+      for (let k = 0; k < 60; k++) {
+        const p = await me();
+        const t = pick(await drawn(5));
+        if (!t) return null;
+        await look(lookAt(p, t), pitch);
+        if (Math.hypot(t.x - p.x, t.z - p.z) < d) return t;
+        await page.keyboard.down('KeyW');
+        await sleep(300);
+        await page.keyboard.up('KeyW');
+      }
+      return null;
+    };
+
+    // 1. A camp: monsters in the tunnel, then the folk.
+    const camp = await planRoute(false);
+    if (!camp) throw new Error('no camp reachable from a tunnel in this world');
+    await enter(camp);
+    let shotCave = false;
     const midTunnel = Math.floor(route.tunnelPts * 0.45);
     await walk(0, route.pts.length - 1, 600000, async (i) => {
       if (shotCave || i < midTunnel || (only && !only.has('cave-monsters'))) return;
       shotCave = true;
       await page.keyboard.up('KeyW');
       await dev('/despawn');
-      for (const e of ['cave_crawler 2', 'tunnel_spider 2', 'cave_bat 2', 'bone_crawler 1', 'rock_troll 1']) await dev(`/spawn ${e}`, 400);
-      await sleep(5500); // they come for us
+      for (const e of ['cave_crawler 2', 'tunnel_spider 2', 'cave_bat 1', 'bone_crawler 1']) await dev(`/spawn ${e}`, 400);
+      await sleep(2500);
+      // Close the distance: walk at them until the nearest is 8-12 m away.
+      for (let k = 0; k < 25; k++) {
+        const en = (await drawn(2)).filter((e) => e.healthPct > 0);
+        const p = await me();
+        if (!en.length) break;
+        en.sort((a, b) => Math.hypot(a.x - p.x, a.z - p.z) - Math.hypot(b.x - p.x, b.z - p.z));
+        await look(lookAt(p, en[0]), 0);
+        if (Math.hypot(en[0].x - p.x, en[0].z - p.z) < 11) break;
+        await page.keyboard.down('KeyW');
+        await sleep(250);
+        await page.keyboard.up('KeyW');
+      }
       const en = await drawn(2);
-      console.log(`enemies in view: ${en.length}`);
+      const p = await me();
+      console.log(`enemies in view: ${en.length}, nearest ${en.length ? Math.min(...en.map((e) => Math.hypot(e.x - p.x, e.z - p.z))).toFixed(1) : '-'} m`);
       await faceNearest(2, 0.0);
-      await sleep(900);
+      await sleep(700);
       await shot('cave-monsters');
       await dev('/despawn');
       await page.keyboard.down('KeyW');
     });
-    // In the camp: the townsfolk of the square.
-    if (!only || only.has('camp-folk')) {
+    if (!only || only.has('dwarf-closeup')) {
       await sleep(9000); // the level-up banner fades
-      let list = await faceNearest(5, -0.05);
-      for (let k = 0; k < 30 && list; k++) {
-        const p = await me();
-        if (Math.hypot(list[0].x - p.x, list[0].z - p.z) < 10) break;
-        await look(lookAt(p, list[0]), -0.05);
-        await page.keyboard.down('KeyW');
-        await sleep(250);
-        await page.keyboard.up('KeyW');
-        list = await faceNearest(5, -0.05);
-      }
-      console.log(`townsfolk in view: ${(await drawn(5)).length}`);
+      const t = await approach((l) => l.find((n) => n.name === 'Thramund') ?? l.sort((a, b) => a.x - b.x)[0], 3.6, 0.02);
+      console.log(`dwarf close-up: ${t ? `${t.name} at ${(await me()).x.toFixed(0)}` : 'no townsperson reachable'}`);
       await sleep(1200);
+      await shot('dwarf-closeup');
+      await dev('/despawn');
+    }
+    if (!only || only.has('camp-folk')) {
+      await faceNearest(5, -0.05);
+      await sleep(800);
       await shot('camp-folk');
+    }
+
+    // 2. A stronghold: across its cavern and down the Deep Road to the market.
+    if (!only || only.has('stronghold-market')) {
+      const hold = await planRoute(true);
+      if (!hold) console.log('no stronghold reachable from a tunnel through a vast cavern in this world');
+      else {
+        await enter(hold);
+        await walk(0, route.pts.length - 1, 900000);
+        await sleep(6000);
+        await faceNearest(5, -0.03);
+        const p = await me();
+        console.log(`stronghold folk in view: ${(await drawn(5)).length} at (${p.x.toFixed(0)}, ${p.y.toFixed(0)}, ${p.z.toFixed(0)})`);
+        await sleep(1000);
+        await shot('stronghold-market');
+      }
     }
   } finally {
     await browser?.close().catch(() => {});

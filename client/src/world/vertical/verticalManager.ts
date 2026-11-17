@@ -22,6 +22,8 @@ import type { LayerMeshData } from './layerMesh';
 import { buildDecos, type LightEmitter } from './decoMeshes';
 import { caveWaterMaterial, islandMaterial, lavaMaterial, layerRockMaterial, verticalUniforms } from './verticalMaterials';
 import { useVerticalHud } from './VerticalHud';
+import { dwarfSway } from './dwarfDecos';
+import { CALM, flashProfile, prefersReducedMotion } from '../../combat/flashSafety';
 import { DECO_INTERACT, DW, dwarfRuntime, INTERACT_CHEST, INTERACT_TABLET } from './dwarfKinds';
 import { chestCooling } from './events';
 import { localPlayer } from '../../state/live';
@@ -266,6 +268,7 @@ export class VerticalManager {
     this.layerGroups[3].visible = act.includes(LAYER_DEPTHS);
     // Emitters near the camera (refreshed a few times a second); the HUD store.
     if (this.frame % 10 === 0) {
+      dwarfSway.uSwayAmp.value = flashProfile() === CALM || prefersReducedMotion() ? 0 : 1; // steady under reduce flashing / reduced motion
       this.hud(feet);
       this.emittersNear = this.decos.emitters.filter((e) => (e.layer === this.layer || (e.layer === 0 && this.layer === 0)) && (e.x - cam.x) ** 2 + (e.y - cam.y) ** 2 + (e.z - cam.z) ** 2 < 90 * 90);
     }

@@ -5,6 +5,7 @@
 
 import type { Event as ZoneEvent } from '@lodestone/contracts';
 import { useNightHud } from '../../systems/night';
+import { useCombatHud } from '../../combat/store';
 import { CHEST_COOLDOWN_MS, dwarfRuntime, EV_CHEST_OPENED, EV_DWARF_DISCOVER, EV_LOWER_HALLS, EV_TABLET_READ } from './dwarfKinds';
 
 export const VERTICAL_EV = { fallDamage: 1700, lava: 1701, palaceDoor: 1702, activity: 1703 } as const;
@@ -40,9 +41,19 @@ export function onDwarfEvent(e: ZoneEvent, me: number): void {
       if (text) hud.notice(`The tablet reads: "${text}"`, 'night', 11000);
       break;
     }
-    case EV_LOWER_HALLS:
-      hud.notice(e.value === 1 ? 'The warden of the lower halls has fallen.' : 'Something vast stirs in the lower halls.', e.value === 1 ? 'dawn' : 'danger', 6000);
+    case EV_LOWER_HALLS: {
+      // The warden wakes (0) / falls (1); entityId is the boss. A calm banner (no flashing), and a boss bar
+      // through the combat HUD's own (the bar fills from the boss's health events as for every boss).
+      const combat = useCombatHud.getState();
+      if (e.value === 1) {
+        hud.notice('The Deep Warden has fallen', 'dawn', 7000);
+        if (combat.boss && combat.boss.id === e.entityId) combat.set({ boss: null });
+      } else {
+        hud.notice('The Deep Warden wakes', 'danger', 6000);
+        if (!combat.boss && e.entityId) combat.set({ boss: { id: e.entityId, name: 'The Deep Warden', phase: 1, phases: 1, pct: 100 } });
+      }
       break;
+    }
   }
 }
 
