@@ -139,8 +139,8 @@ async function shot(page, errors, name, o) {
   const info = await L(page, () => {
     const vm = window.__lodestoneVertical;
     const pl = window.__lodestone.player();
-    const p = pl.pos;
     const g = window.__lodestoneVerticalGround;
+    const p = pl.pos;
     return { pos: { x: +p.x.toFixed(1), y: +p.y.toFixed(1), z: +p.z.toFixed(1) }, mode: pl.mode, floor: g ? +g.floorAt(p.x, p.y, p.z).toFixed(1) : null, layer: vm?.layer, chamber: vm?.chamber, under: window.__lodestoneWorld?.stats?.()?.caves?.underground, stats: vm?.stats };
   });
   const s = [...frames].sort((a, b) => a - b);
@@ -155,7 +155,6 @@ try {
   try {
     const P = await L(page, () => {
       const v = window.__lodestoneVerticalWorld;
-      const g = window.__lodestoneVerticalGround;
       const pts = (c) => {
         const o = [];
         for (let k = 0; k < c.pts.length / 3; k++) o.push({ x: c.pts[k * 3], y: c.pts[k * 3 + 1], z: c.pts[k * 3 + 2] });

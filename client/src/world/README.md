@@ -77,3 +77,7 @@ takes the beauty shots).
 - Fog lives in post (from depth), so every material, including other packages', gets the same height fog for one pass.
 - Scatter uses a fixed set of world-wide InstancedMeshes re-binned by distance on the CPU, so draw calls don't grow with view distance.
 - Textures: 3dtextures.me CC0 sets, KTX2 arrays built with the `ktx2-encoder` npm package (Basis Universal); see `tools/textures/README.md`.
+
+## Dwarves (CR 043)
+
+`vertical/dwarfDecos.ts` draws the genVersion 4 decorations (kinds 28-45: cave dressing, chests and tablets, the dwarves' doors, pillars, statues, banners, rune circles, throne, forge glow) and the carved colonnades; `vertical/dwarfKinds.ts` holds their kind numbers, the Interact / Event numbers (160-161, 1860-1863) and the live chest / discovery state; `buildings/kit.ts` style 6 `dwarf`, `buildings/npcs.ts` dwarven townsfolk, `townMaterial.ts` `uCaveFill` (warm stone fill, no sun underground). Shots: `node client/src/world/vertical/dev/dwarf-shots.mjs`.
