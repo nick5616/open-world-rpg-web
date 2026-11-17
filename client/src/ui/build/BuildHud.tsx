@@ -230,7 +230,7 @@ function BuildMenu() {
         <div>
           <div style={{ font: '700 18px Georgia, serif', color: GOLD }}>Build</div>
           <div style={{ fontSize: 12, opacity: 0.75 }}>
-            {info ? `${info.pieces}/${info.budget} pieces` : 'Pick a piece'} · gather logs, stone and resin from the world · 8: build mode
+            {info ? `${info.pieces}/${info.budget} pieces` : 'Pick a piece'} · gather logs, stone and resin from the world · 9: build mode
           </div>
         </div>
         <button onClick={() => useCamps.setState({ buildMenu: false })}>Close (Esc)</button>
