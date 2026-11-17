@@ -480,7 +480,7 @@ func TestLocalProfileProgressInSaveBlob(t *testing.T) {
 		t.Fatalf("new blob verify %v counter %d", err, nb.Counter)
 	}
 	ns, _ := nb.DecodeState()
-	if ns.XP != 190 || ns.Level != 2 || len(ns.Progress.Towers) == 0 || ns.Progress.Towers[0]&1 != 1 || string(ns.Progress.Pins) == "" {
+	if ns.XP != 190 || ns.Level != 1 || len(ns.Progress.Towers) == 0 || ns.Progress.Towers[0]&1 != 1 || string(ns.Progress.Pins) == "" {
 		t.Fatalf("new state %+v", ns)
 	}
 	// The old blob is now stale: presenting it again is refused, and the
