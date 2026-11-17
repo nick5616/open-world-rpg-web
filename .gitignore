@@ -3,6 +3,7 @@ refs/
 target/
 dist/
 build/
+!client/src/ui/build/
 coverage/
 *.log
 .env

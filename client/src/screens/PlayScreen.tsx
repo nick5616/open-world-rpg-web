@@ -46,6 +46,7 @@ import { ContentHud } from '../ui/content/ContentHud';
 import { AchievementsHud } from '../ui/achievements/AchievementsHud'; // CR 031: the Achievements screen (Y) and unlock toasts
 // Playtest 2 camps (CR 025): P = camp menu, placement, chests, signposts, Rested (client/src/ui/camps/README.md).
 import { CampHud } from '../ui/camps/CampHud';
+import { BuildHud } from '../ui/build/BuildHud'; // CR 041 base building
 import { MountHud } from '../ui/mounts/MountHud'; // CR 027 mounts
 import { PetHud } from '../ui/pets/PetHud'; // CR 029 pets
 // Sound and music: boots the audio engine after the first playable frame; K = sound settings (client/src/audio/README.md).
@@ -108,6 +109,7 @@ export default function PlayScreen() {
       <ContentHud />
       <AchievementsHud />
       <CampHud />
+      <BuildHud />
       <MountHud />
       <PetHud />
       {/* Playtest 2: fishing (E at deep water with a rod), emotes (H), photo mode (L) */}

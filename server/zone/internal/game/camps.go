@@ -51,6 +51,7 @@ import (
 	"math"
 	"math/rand/v2"
 	"slices"
+	"strings"
 	"time"
 
 	"lodestone/server/pkg/campdefs"
@@ -77,7 +78,12 @@ const (
 	CampActLabel  = 7  // targetId = piece id | chunk << 40, arg = 4 bytes of the label (ASCII, 0-terminated)
 	CampActLock   = 8  // targetId = piece id, arg = 0 owner only, 1 party
 	CampActDev    = 9  // dev builds: kits and materials
-	CampActSync   = 10 // send 1106 again
+	CampActSync   = 10 // send 1106 again (and 1820)
+
+	// CR 041 (base building).
+	CampActRepair = 11 // targetId = piece id: restore a worn building piece for materials
+	CampActHome   = 12 // return to your bed
+	CampActShare  = 13 // arg 0 / 1: your building pieces are shared with your party
 )
 
 // Event kinds 1100-1119 (CR 025).
@@ -90,6 +96,9 @@ const (
 	EventCampRested  = 1105
 	EventCampMine    = 1106
 	EventCampNote    = 1107
+
+	EventBuildInfo    = 1820 // CR 041
+	EventBuildMissing = 1821
 )
 
 // Station kinds of Event 404 added by camps (items.go has 1-3).
@@ -118,6 +127,9 @@ type campPiece struct {
 	Lock          int
 	Party         uint32
 	BurnUntil     float64 // world clock seconds
+	State         int     // building pieces: bit 0 open (doors, gates)
+	Cond          float64 // condition percent as of CondDay (building pieces)
+	CondDay       float64 // world day (clock seconds / DayLengthS) of the stamp
 	PlacedAt      time.Time
 	SeenAt        time.Time
 	mine          bool // this zone is its authority (WP16)
@@ -139,11 +151,11 @@ func (p *campPiece) footprint() camps.Footprint { return camps.FootprintOf(p.Kin
 
 func (p *campPiece) row() CampRow {
 	return CampRow{ID: p.ID, Owner: p.Owner, OwnerName: p.OwnerName, Kind: p.Kind, XCm: p.XCm, YCm: p.YCm, ZCm: p.ZCm, Rot: p.Rot, Label: p.Label,
-		Lock: p.Lock, Party: p.Party, BurnUntil: p.BurnUntil, PlacedAt: p.PlacedAt, SeenAt: p.SeenAt}
+		Lock: p.Lock, Party: p.Party, BurnUntil: p.BurnUntil, State: p.State, Cond: p.Cond, CondDay: p.CondDay, PlacedAt: p.PlacedAt, SeenAt: p.SeenAt}
 }
 
 func (p *campPiece) json() campJSON {
-	return campJSON{ID: p.ID, Owner: p.Owner, OwnerName: p.OwnerName, Kind: p.Kind, XCm: p.XCm, YCm: p.YCm, ZCm: p.ZCm, Rot: p.Rot, Label: p.Label, Lock: p.Lock, Party: p.Party, BurnUntil: p.BurnUntil}
+	return campJSON{ID: p.ID, Owner: p.Owner, OwnerName: p.OwnerName, Kind: p.Kind, XCm: p.XCm, YCm: p.YCm, ZCm: p.ZCm, Rot: p.Rot, Label: p.Label, Lock: p.Lock, Party: p.Party, BurnUntil: p.BurnUntil, State: p.State, Cond: p.Cond, CondDay: p.CondDay}
 }
 
 func (p *campPiece) chestEmpty() bool {
@@ -158,6 +170,7 @@ func (p *campPiece) chestEmpty() bool {
 // fireSpot is a burning campfire for the night hooks (read on AI workers).
 type fireSpot struct {
 	x, z, until float64
+	r           float64 // the circle's radius; 0: fire.safeRadiusM (a warding hearth's is build.hearth.wardRadiusM)
 }
 
 // campState is the server-wide part.
@@ -172,6 +185,11 @@ type campState struct {
 	lastDecay time.Time
 	restored  bool
 	handed    map[string]campHanded
+	// CR 041: building bookkeeping (counts for the budgets) and the tick's
+	// coalesced rebuild.
+	nBuild map[string]int
+	nArea  map[int32]int
+	dirty  bool
 }
 
 // campSess is one session's camp state.
@@ -184,12 +202,15 @@ type campSess struct {
 	label       map[uint64][]byte
 	party       uint32
 	sentMine    bool
+	comfort     int       // CR 041: the bed's comfort score when you last rested
+	homeAt      time.Time // CR 041: when you last returned home
 	g           campFrameGround
 }
 
 type campHanded struct {
 	RestedUntil int64 `json:"restedUntil"` // unix ms
 	Fire        bool  `json:"fire,omitempty"`
+	Comfort     int   `json:"comfort,omitempty"` // CR 041
 }
 
 func init() {
@@ -200,7 +221,7 @@ func init() {
 			if sess == nil || sess.camp == nil || sess.camp.restedUntil.IsZero() {
 				return nil
 			}
-			b, _ := json.Marshal(campHanded{RestedUntil: sess.camp.restedUntil.UnixMilli(), Fire: sess.camp.restedFire})
+			b, _ := json.Marshal(campHanded{RestedUntil: sess.camp.restedUntil.UnixMilli(), Fire: sess.camp.restedFire, Comfort: sess.camp.comfort})
 			return b
 		},
 		Load: func(s *Server, e *Entity, data json.RawMessage) {
@@ -227,6 +248,8 @@ func (s *Server) campInit() {
 	c.pieces = map[uint64]*campPiece{}
 	c.byOwner = map[string][]*campPiece{}
 	c.byArea = map[int32][]*campPiece{}
+	c.nBuild = map[string]int{}
+	c.nArea = map[int32]int{}
 	c.set = camps.NewSet(nil)
 }
 
@@ -254,10 +277,10 @@ func (s *Server) RestoreCamps(ctx context.Context) (int, error) {
 			continue
 		}
 		p := &campPiece{ID: r.ID, Kind: r.Kind, Rot: r.Rot & 7, XCm: r.XCm, YCm: r.YCm, ZCm: r.ZCm, Owner: r.Owner, OwnerName: r.OwnerName, Label: r.Label,
-			Lock: r.Lock, Party: r.Party, BurnUntil: r.BurnUntil, PlacedAt: r.PlacedAt, SeenAt: r.SeenAt}
+			Lock: r.Lock, Party: r.Party, BurnUntil: r.BurnUntil, State: r.State, Cond: r.Cond, CondDay: r.CondDay, PlacedAt: r.PlacedAt, SeenAt: r.SeenAt}
 		p.X, p.Y, p.Z = camps.Cm2M(p.XCm), camps.Cm2M(p.YCm), camps.Cm2M(p.ZCm)
-		if p.Kind == campdefs.Chest {
-			p.chest = make([]*chestSlot, campdefs.D.Chest.Slots)
+		if n := chestSlotsOf(p.Kind); n > 0 {
+			p.chest = make([]*chestSlot, n)
 			for i, it := range r.ChestItems {
 				if i >= len(p.chest) {
 					break
@@ -282,11 +305,23 @@ func (s *Server) campIndex(p *campPiece) {
 	c.pieces[p.ID] = p
 	c.byOwner[p.Owner] = append(c.byOwner[p.Owner], p)
 	c.byArea[p.area()] = append(c.byArea[p.area()], p)
+	if camps.Builds(p.Kind) {
+		c.nBuild[p.Owner]++
+		c.nArea[p.area()]++
+	}
 }
 
 func (s *Server) campUnindex(p *campPiece) {
 	c := &s.camp
 	delete(c.pieces, p.ID)
+	if camps.Builds(p.Kind) {
+		if c.nBuild[p.Owner]--; c.nBuild[p.Owner] <= 0 {
+			delete(c.nBuild, p.Owner)
+		}
+		if c.nArea[p.area()]--; c.nArea[p.area()] <= 0 {
+			delete(c.nArea, p.area())
+		}
+	}
 	del := func(l []*campPiece) []*campPiece {
 		if i := slices.Index(l, p); i >= 0 {
 			return slices.Delete(l, i, i+1)
@@ -312,14 +347,19 @@ func (s *Server) campRebuild() {
 	var solid []camps.SolidPiece
 	for _, p := range c.pieces {
 		if camps.Solid(p.Kind) {
-			solid = append(solid, camps.SolidPiece{ID: p.ID, Kind: p.Kind, Rot: p.Rot, X: p.X, Y: p.Y, Z: p.Z})
+			solid = append(solid, camps.SolidPiece{ID: p.ID, Kind: p.Kind, Rot: p.Rot, X: p.X, Y: p.Y, Z: p.Z, State: p.State})
 		}
 	}
 	s.navCampsChanged(c.solid, solid)
 	c.solid = solid
 	c.set = camps.NewSet(solid)
+	c.dirty = false
 	s.campFires()
 }
+
+// campTouch asks for a rebuild of the solid set at the next tick: a burst of
+// building changes costs one rebuild (CR 041).
+func (s *Server) campTouch() { s.camp.dirty = true }
 
 func (s *Server) campFires() {
 	c := &s.camp
@@ -327,7 +367,9 @@ func (s *Server) campFires() {
 	var fires []fireSpot
 	for _, p := range c.pieces {
 		if p.Kind == campdefs.Campfire && p.BurnUntil > c.nowW {
-			fires = append(fires, fireSpot{p.X, p.Z, p.BurnUntil})
+			fires = append(fires, fireSpot{x: p.X, z: p.Z, until: p.BurnUntil})
+		} else if d := campdefs.D.ByID(p.Kind); d.Build != nil && d.Build.Use == "hearth" {
+			fires = append(fires, fireSpot{x: p.X, z: p.Z, until: math.Inf(1), r: campdefs.D.Build.Hearth.WardRadiusM})
 		}
 	}
 	c.fires = fires // a new slice: AI workers may hold the old one
@@ -360,9 +402,13 @@ func (s *Server) campSafeAt(x, z, margin float64) bool {
 	if len(fires) == 0 {
 		return false
 	}
-	r := campdefs.D.Fire.SafeRadiusM + margin
 	now := s.camp.nowW
 	for _, f := range fires {
+		r := f.r
+		if r == 0 {
+			r = campdefs.D.Fire.SafeRadiusM
+		}
+		r += margin
 		if f.until > now && (f.x-x)*(f.x-x)+(f.z-z)*(f.z-z) < r*r {
 			return true
 		}
@@ -373,6 +419,10 @@ func (s *Server) campSafeAt(x, z, margin float64) bool {
 // campSpawn is a character's bedroll respawn point (beside it), if any.
 func (s *Server) campSpawn(e *Entity) (movement.Vec3, bool) {
 	for _, p := range s.camp.byOwner[e.CharacterID] {
+		if isBed(p.Kind) {
+			// CR 041: a bed in a base: you wake on it (on its floor).
+			return movement.Vec3{X: p.X, Y: p.Y, Z: p.Z}, true
+		}
 		if p.Kind != campdefs.Bedroll {
 			continue
 		}
@@ -395,7 +445,7 @@ type campFrameGround struct {
 func (g *campFrameGround) HeightAt(x, z float64) float64 { return g.inner.HeightAt(x, z) }
 func (g *campFrameGround) WaterAt(x, z float64) float64  { return movement.WaterAt(g.inner, x, z) }
 func (g *campFrameGround) AtLevel(y float64) movement.Ground {
-	return camps.With(movement.AtLevel(g.inner, y), g.s)
+	return camps.With(movement.AtLevel(g.inner, y), g.s, y)
 }
 
 // campWrap wraps a frame's ground with the solid pieces near the player.
@@ -432,12 +482,13 @@ func (s *Server) campJoin(sess *session) {
 	if h, ok := s.camp.handed[sess.ent.CharacterID]; ok {
 		delete(s.camp.handed, sess.ent.CharacterID)
 		if until := time.UnixMilli(h.RestedUntil); until.After(s.cfg.Now()) {
-			cs.restedUntil, cs.restedFire = until, h.Fire
+			cs.restedUntil, cs.restedFire, cs.comfort = until, h.Fire, h.Comfort
 			s.campApplyRested(sess)
 		}
 	}
 	s.campSendAreas(sess)
 	s.sendCampMine(sess)
+	s.sendBuildInfo(sess)
 }
 
 func (s *Server) campLeave(sess *session) {
@@ -453,7 +504,9 @@ func (s *Server) campsTick(tick uint32) {
 	}
 	s.campInit()
 	now := s.cfg.Now()
-	if tick%constants.TickRateHz == 0 {
+	if s.camp.dirty {
+		s.campRebuild() // CR 041: one rebuild for every change this tick
+	} else if tick%constants.TickRateHz == 0 {
 		s.campFires()
 	}
 	for i, sess := range s.sessions {
@@ -526,7 +579,11 @@ func (s *Server) campDecay(now time.Time) {
 		if !p.mine || s.byChar[p.Owner] != nil {
 			continue
 		}
-		if camps.Decayed(p.SeenAt, now) {
+		if camps.Builds(p.Kind) {
+			if now.Sub(p.SeenAt) >= time.Duration(campdefs.D.Build.DecayDays*24*float64(time.Hour)) {
+				gone = append(gone, p)
+			}
+		} else if camps.Decayed(p.SeenAt, now) {
 			gone = append(gone, p)
 		}
 	}
@@ -611,18 +668,27 @@ func (s *Server) campCtl(m ctlMsg) {
 	}
 	if old != nil {
 		old.Label, old.Lock, old.Party, old.BurnUntil, old.OwnerName = c.Label, c.Lock, c.Party, c.BurnUntil, c.OwnerName
+		old.Cond, old.CondDay = c.Cond, c.CondDay
+		if old.State != c.State {
+			old.State = c.State
+			s.campTouch()
+		}
 		s.campFires()
 		s.campNotify(old, 2, 0)
 		return
 	}
 	p := &campPiece{ID: c.ID, Kind: c.Kind, Rot: c.Rot & 7, XCm: c.XCm, YCm: c.YCm, ZCm: c.ZCm, Owner: c.Owner, OwnerName: c.OwnerName, Label: c.Label, Lock: c.Lock,
-		Party: c.Party, BurnUntil: c.BurnUntil, PlacedAt: s.cfg.Now(), SeenAt: s.cfg.Now()}
+		Party: c.Party, BurnUntil: c.BurnUntil, State: c.State, Cond: c.Cond, CondDay: c.CondDay, PlacedAt: s.cfg.Now(), SeenAt: s.cfg.Now()}
 	p.X, p.Y, p.Z = camps.Cm2M(p.XCm), camps.Cm2M(p.YCm), camps.Cm2M(p.ZCm)
-	if p.Kind == campdefs.Chest {
-		p.chest = make([]*chestSlot, campdefs.D.Chest.Slots)
+	if n := chestSlotsOf(p.Kind); n > 0 {
+		p.chest = make([]*chestSlot, n)
 	}
 	s.campIndex(p)
-	s.campRebuild()
+	if camps.Builds(p.Kind) {
+		s.campTouch()
+	} else {
+		s.campRebuild()
+	}
 	s.campNotify(p, 1, 0)
 }
 
@@ -645,17 +711,22 @@ func (s *Server) campRecord(b []byte, p *campPiece, to *Entity) []byte {
 	if to != nil && p.Party != 0 && to.PartyID == p.Party {
 		fl |= 4
 	}
+	if to != nil && camps.Allows(to.CharacterID, to.PartyID, p.bp()) {
+		fl |= 16
+	}
 	left := uint32(0)
 	if p.Kind == campdefs.Campfire {
 		if l := p.BurnUntil - s.worldTimeS(); l > 0 {
 			left = uint32(math.Min(l*1000, math.MaxUint32))
 			fl |= 8
 		}
+	} else if isHearth(p.Kind) {
+		fl |= 8
 	}
 	b = append(b, fl)
 	b = binary.LittleEndian.AppendUint32(b, left)
 	used := 0
-	if p.Kind == campdefs.Chest {
+	if chestSlotsOf(p.Kind) > 0 {
 		for _, c := range p.chest {
 			if c != nil {
 				used++
@@ -670,7 +741,9 @@ func (s *Server) campRecord(b []byte, p *campPiece, to *Entity) []byte {
 	b = append(b, byte(len(name)))
 	b = append(b, name...)
 	b = append(b, byte(len(p.Label)))
-	return append(b, p.Label...)
+	b = append(b, p.Label...)
+	// Version 2 (CR 041): the piece's state and condition.
+	return append(b, byte(p.State), byte(s.buildCond(p)+0.5))
 }
 
 // campSendAreas sends the pieces of the 3 x 3 areas around a player that
@@ -694,7 +767,7 @@ func (s *Server) campSendAreas(sess *session) {
 			if len(ps) == 0 {
 				continue
 			}
-			b := []byte{1}
+			b := []byte{2}
 			b = binary.LittleEndian.AppendUint16(b, uint16(ax))
 			b = binary.LittleEndian.AppendUint16(b, uint16(az))
 			b = binary.LittleEndian.AppendUint16(b, uint16(len(ps)))
@@ -764,6 +837,9 @@ func (s *Server) sendCampMine(sess *session) {
 	cs.sentMine = true
 	out := campMineJSON{Pieces: []campMinePiece{}, Markers: []campMarker{}, Max: campdefs.D.Limits.MaxPieces}
 	for _, p := range s.camp.byOwner[e.CharacterID] {
+		if camps.Builds(p.Kind) {
+			continue // CR 041: building pieces are summarised by Event 1820
+		}
 		out.Pieces = append(out.Pieces, campMinePiece{ID: p.ID, Kind: p.Kind, X: p.X, Z: p.Z})
 	}
 	for _, p := range s.camp.pieces {
@@ -825,8 +901,13 @@ func (s *Server) campInteract(sess *session, m *proto.Interact) {
 		s.campPlace(sess, m)
 	case CampActSync:
 		s.sendCampMine(sess)
+		s.sendBuildInfo(sess)
 	case CampActDev:
 		s.campDevGrant(sess)
+	case CampActHome:
+		s.buildHome(sess)
+	case CampActShare:
+		s.buildShare(sess, int(m.Arg))
 	default:
 		id := m.TargetID & (1<<40 - 1)
 		p := s.camp.pieces[id]
@@ -857,6 +938,8 @@ func (s *Server) campInteract(sess *session, m *proto.Interact) {
 			s.campLabel(sess, p, int(m.TargetID>>40&0xff), m.Arg)
 		case CampActLock:
 			s.campLock(sess, p, int(m.Arg))
+		case CampActRepair:
+			s.buildRepair(sess, p)
 		default:
 			s.campRefuse(sess, m.Action, id, camps.RefuseUnknown)
 		}
@@ -924,6 +1007,10 @@ func (s *Server) campPlace(sess *session, m *proto.Interact) {
 		s.campRefuse(sess, m.Action, 0, camps.RefuseElsewhere)
 		return
 	}
+	if def.Build != nil {
+		s.buildPlace(sess, m, def, kind, r, xcm, zcm)
+		return
+	}
 	if ci.inv.Count(def.Kit) < 1 {
 		s.campRefuse(sess, m.Action, 0, camps.RefuseNoKit)
 		return
@@ -933,11 +1020,11 @@ func (s *Server) campPlace(sess *session, m *proto.Interact) {
 	seen := map[uint64]bool{}
 	for _, p := range s.piecesNear(x, z, reach) {
 		seen[p.ID] = true
-		near = append(near, camps.Placed{ID: p.ID, Kind: p.Kind, Rot: p.Rot, X: p.X, Z: p.Z, Owner: p.Owner})
+		near = append(near, camps.Placed{ID: p.ID, Kind: p.Kind, Rot: p.Rot, X: p.X, Z: p.Z, Owner: p.Owner, Build: camps.Builds(p.Kind)})
 	}
 	for _, p := range s.camp.byOwner[e.CharacterID] {
 		if !seen[p.ID] {
-			near = append(near, camps.Placed{ID: p.ID, Kind: p.Kind, Rot: p.Rot, X: p.X, Z: p.Z, Owner: p.Owner})
+			near = append(near, camps.Placed{ID: p.ID, Kind: p.Kind, Rot: p.Rot, X: p.X, Z: p.Z, Owner: p.Owner, Build: camps.Builds(p.Kind)})
 		}
 	}
 	y, why := camps.Check(camps.Want{Kind: kind, Rot: r, X: x, Z: z, Owner: e.CharacterID, FeetX: e.Move.Pos.X, FeetY: e.Move.Pos.Y, FeetZ: e.Move.Pos.Z}, near, campEnv{s})
@@ -961,8 +1048,8 @@ func (s *Server) campPlace(sess *session, m *proto.Interact) {
 	if kind == campdefs.Campfire {
 		p.BurnUntil = s.worldTimeS() + campdefs.D.Fire.KitHours*camps.HourS
 	}
-	if kind == campdefs.Chest {
-		p.chest = make([]*chestSlot, campdefs.D.Chest.Slots)
+	if n := chestSlotsOf(kind); n > 0 {
+		p.chest = make([]*chestSlot, n)
 	}
 	var d items.Delta
 	if !ci.inv.Spend(def.Kit, 1, &d) {
@@ -1028,7 +1115,11 @@ func (s *Server) campNewID() uint64 {
 // decayed); persist: this zone deletes its row and tells the others.
 func (s *Server) campRemove(p *campPiece, reason int, persist bool) {
 	s.campUnindex(p)
-	s.campRebuild()
+	if camps.Builds(p.Kind) {
+		s.campTouch()
+	} else {
+		s.campRebuild()
+	}
 	s.campNotifyRemoved(p, int32(reason))
 	if persist {
 		s.campDelete(p.ID)
@@ -1036,6 +1127,7 @@ func (s *Server) campRemove(p *campPiece, reason int, persist bool) {
 	}
 	if owner := s.byChar[p.Owner]; owner != nil {
 		s.sendCampMine(owner)
+		s.sendBuildInfo(owner)
 	}
 	for _, sess := range s.sessions {
 		if sess.camp != nil && sess.camp.openChest == p.ID {
@@ -1046,6 +1138,10 @@ func (s *Server) campRemove(p *campPiece, reason int, persist bool) {
 
 func (s *Server) campPickup(sess *session, p *campPiece) {
 	e, ci := sess.ent, sess.items
+	if camps.Builds(p.Kind) {
+		s.buildDeconstruct(sess, p)
+		return
+	}
 	if p.Owner != e.CharacterID {
 		s.campRefuse(sess, CampActPickup, p.ID, camps.RefuseNotYours)
 		return
@@ -1081,6 +1177,10 @@ func (s *Server) campCanUse(e *Entity, p *campPiece) bool {
 
 func (s *Server) campUse(sess *session, p *campPiece) {
 	e, ci := sess.ent, sess.items
+	if def := campdefs.D.ByID(p.Kind); def.Build != nil {
+		s.buildUse(sess, p, def)
+		return
+	}
 	switch p.Kind {
 	case campdefs.Campfire:
 		if p.BurnUntil <= s.worldTimeS() {
@@ -1200,8 +1300,12 @@ func (s *Server) campRest(sess *session, p *campPiece) {
 	}
 	fire := false
 	nowW := s.worldTimeS()
-	for _, q := range s.piecesNear(p.X, p.Z, campdefs.D.Fire.WarmthM+2) {
-		if q.Kind == campdefs.Campfire && q.BurnUntil > nowW && math.Hypot(q.X-p.X, q.Z-p.Z) <= campdefs.D.Fire.WarmthM {
+	for _, q := range s.piecesNear(p.X, p.Z, math.Max(campdefs.D.Fire.WarmthM, campdefs.D.Build.Hearth.WarmthM)+2) {
+		d := math.Hypot(q.X-p.X, q.Z-p.Z)
+		if q.Kind == campdefs.Campfire && q.BurnUntil > nowW && d <= campdefs.D.Fire.WarmthM {
+			fire = true
+		}
+		if isHearth(q.Kind) && d <= campdefs.D.Build.Hearth.WarmthM {
 			fire = true
 		}
 	}
@@ -1210,6 +1314,11 @@ func (s *Server) campRest(sess *session, p *campPiece) {
 		dur += rd.FireBonusS
 	}
 	cs := s.sessCamp(sess)
+	cs.comfort = 0
+	if isBed(p.Kind) {
+		cs.comfort = s.buildComfort(p)
+		dur *= 1 + float64(cs.comfort)*campdefs.D.Build.Comfort.DurationPct/100
+	}
 	cs.restedUntil, cs.restedFire = s.cfg.Now().Add(time.Duration(dur*float64(time.Second))), fire
 	s.campApplyRested(sess)
 	if e.cbt != nil && !e.cbt.Downed {
@@ -1225,7 +1334,10 @@ func (s *Server) campRest(sess *session, p *campPiece) {
 		text += " The fire's warmth lingers."
 	}
 	if p.Owner == e.CharacterID {
-		text += " Your bedroll is your respawn point."
+		text += " Your " + strings.ToLower(campdefs.D.ByID(p.Kind).Name) + " is your respawn point."
+		if cs.comfort > 0 {
+			text += " Your home is " + comfortTier(cs.comfort) + "."
+		}
 	}
 	s.campNote(sess, 2, text)
 	s.sendCampMine(sess)
@@ -1240,7 +1352,7 @@ func (s *Server) campApplyRested(sess *session) {
 	rd := &campdefs.D.Rested
 	if c := e.cbt; c != nil {
 		if on {
-			c.RegenMult, c.ManaRegenMult = rd.RegenMult, rd.ManaRegenMult
+			c.RegenMult, c.ManaRegenMult = rd.RegenMult*(1+float64(cs.comfort)*campdefs.D.Build.Comfort.RegenPct/100), rd.ManaRegenMult
 		} else {
 			c.RegenMult, c.ManaRegenMult = 0, 0
 		}
@@ -1248,7 +1360,7 @@ func (s *Server) campApplyRested(sess *session) {
 	s.applyProgression(e, false) // the stamina wheel follows (progression.go)
 	if on {
 		left := cs.restedUntil.Sub(s.cfg.Now()).Seconds()
-		b, _ := json.Marshal(map[string]any{"staminaBonus": rd.StaminaBonus, "regenMult": rd.RegenMult, "manaRegenMult": rd.ManaRegenMult, "fire": cs.restedFire})
+		b, _ := json.Marshal(map[string]any{"staminaBonus": rd.StaminaBonus, "regenMult": rd.RegenMult * (1 + float64(cs.comfort)*campdefs.D.Build.Comfort.RegenPct/100), "manaRegenMult": rd.ManaRegenMult, "fire": cs.restedFire, "comfort": cs.comfort, "tier": comfortTier(cs.comfort)})
 		s.sendEvent(sess, &proto.Event{Kind: EventCampRested, EntityID: e.ID, Value: int32(math.Ceil(left)), Data: b})
 	}
 }
@@ -1322,7 +1434,7 @@ func (s *Server) campLock(sess *session, p *campPiece, mode int) {
 	s.campSave(p)
 	s.campNotify(p, 2, sess.ent.ID)
 	s.campBroadcastCtl(p.json())
-	if p.Kind == campdefs.Chest {
+	if chestSlotsOf(p.Kind) > 0 {
 		for _, o := range s.sessions {
 			if o.camp != nil && o.camp.openChest == p.ID && o.ent != nil {
 				if !s.campCanUse(o.ent, p) {
@@ -1351,7 +1463,15 @@ func (s *Server) campDevGrant(sess *session) {
 		}
 	}
 	for _, p := range campdefs.D.Pieces {
-		add(p.Kit, min(2, p.Max))
+		if p.Kit != "" {
+			add(p.Kit, min(2, p.Max))
+		}
+	}
+	for _, m := range []struct {
+		item string
+		n    int
+	}{{"wood:log", 300}, {"stone:block", 300}, {"wood:resin", 40}, {"ingot:sunsteel", 12}, {"tool:rope", 2}} {
+		add(m.item, m.n)
 	}
 	add(campdefs.D.Fire.Wood, 30)
 	add("hide:wolf", 4)

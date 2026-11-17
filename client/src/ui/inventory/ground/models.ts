@@ -131,6 +131,10 @@ function propShape(key: string, kind: string | undefined): PropShape {
       return 'parcel';
     case 'wood':
       return 'logs';
+    case 'stone':
+      return 'ingot'; // CR 041: a dressed block
+    case 'earth':
+      return 'pouch';
   }
   if (kind === 'key') return 'key';
   if (kind === 'consumable') return 'flask';

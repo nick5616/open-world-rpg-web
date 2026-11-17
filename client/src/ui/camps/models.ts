@@ -7,8 +7,8 @@
 // cards), so the model is the ring, the logs and the embers.
 
 import * as THREE from 'three';
-import { CAMPS } from '@lodestone/contracts';
 import { PIECE } from './events';
+import { pieceDef } from '../build/geometry';
 
 const mat = (color: string, rough = 0.9, extra: THREE.MeshStandardMaterialParameters = {}) => new THREE.MeshStandardMaterial({ color, roughness: rough, flatShading: true, ...extra });
 
@@ -182,7 +182,7 @@ export function pieceModel(kind: number, id: number, label = ''): THREE.Group {
   else if (kind === PIECE.bedroll) g = bedroll();
   else if (kind === PIECE.chest) g = chest();
   else if (kind === PIECE.workbench) g = workbench();
-  else if (kind === PIECE.signpost) g = signpost(label || CAMPS.pieces[kind - 1]?.name || '');
+  else if (kind === PIECE.signpost) g = signpost(label || pieceDef(kind)?.name || '');
   else g = new THREE.Group();
   g.userData.kind = kind;
   return g;
