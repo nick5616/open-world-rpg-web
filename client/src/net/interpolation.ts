@@ -93,6 +93,8 @@ export interface RemoteView {
   typeId?: number;
   /** EntityRecord.appearance (protocol v6, CR 034): a player's worn armor (combat/armor). */
   appearance?: number;
+  /** CR 042: a torch (bit 0) and a familiar light id (bits 1-5) the player carries lit (appearance bits 51-56). */
+  light?: number;
   ring: Ring;
   delayMs: number;
   mode: 'interp' | 'extrap' | 'frozen' | 'waiting';
@@ -322,7 +324,7 @@ export class EntityInterpolation {
     const buf = tr.samples;
     if (buf.length === 0) return null;
     const st = tr.state;
-    const base = { id: tr.id, kind: st.kind, name: st.name, level: st.level, healthPct: st.healthPct, activity: st.activity, partyId: st.partyId, typeId: st.typeId, appearance: st.appearance, ring: tr.ring, delayMs: tr.delay };
+    const base = { id: tr.id, kind: st.kind, name: st.name, level: st.level, healthPct: st.healthPct, activity: st.activity, partyId: st.partyId, typeId: st.typeId, appearance: st.appearance, light: st.light, ring: tr.ring, delayMs: tr.delay };
     this.metrics.frames++;
 
     let i = buf.length - 1;

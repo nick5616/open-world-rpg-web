@@ -1,6 +1,7 @@
 package combat
 
 import (
+	"math"
 	"testing"
 
 	"lodestone/server/pkg/movement"
@@ -32,7 +33,7 @@ func swingAt(t *testing.T, w *World, h *handPlayer, e *Enemy) ClaimResult {
 func TestDemonSurvivesOrdinaryDamageAndDiesToSunsteel(t *testing.T) {
 	w, _ := newWorld()
 	h := newHand(w, 1, movement.Vec3{X: 300, Z: 300}, "sword")
-	g := w.SpawnDemons(movement.Vec3{X: 300, Z: 298}, []string{"gloamling"}, 1)
+	g := w.SpawnDemons(movement.Vec3{X: 300, Z: 298}, []string{"gloamling"}, demonHigh)
 	e := g.Members[0]
 	if !e.IsDemon() || e.Demon.Rank != "lesser" {
 		t.Fatal("gloamling is a lesser demon")
@@ -72,7 +73,7 @@ func TestDemonSurvivesOrdinaryDamageAndDiesToSunsteel(t *testing.T) {
 		}
 		hits++
 	}
-	if e.Alive() || hits > 6 {
+	if e.Alive() || hits > 14 { // a level 20 demon has more health than a level 1
 		t.Fatalf("sunsteel: alive=%v after %d hits", e.Alive(), hits)
 	}
 	t.Logf("ordinary: 40 hits, %d damage, min hp %.0f/%.0f, alive; sunsteel: dead in %d hits", dealt, minHP, e.HPMax, hits)
@@ -81,7 +82,7 @@ func TestDemonSurvivesOrdinaryDamageAndDiesToSunsteel(t *testing.T) {
 func TestSofteningWithSteelDoesNotHelpTheSunsteel(t *testing.T) {
 	w, _ := newWorld()
 	h := newHand(w, 1, movement.Vec3{X: 300, Z: 300}, "sword")
-	e := w.SpawnDemons(movement.Vec3{X: 300, Z: 298}, []string{"gloamling"}, 1).Members[0]
+	e := w.SpawnDemons(movement.Vec3{X: 300, Z: 298}, []string{"gloamling"}, demonHigh).Members[0]
 	for i := 0; i < 8; i++ {
 		swingAt(t, w, h, e)
 	}
@@ -235,5 +236,77 @@ func TestStuckDemonShadowStepsAcrossARiver(t *testing.T) {
 	}
 	if e.Pos.X < 322 || e.Demon.Steps == 0 {
 		t.Fatalf("demon stuck at x %.1f (steps %d)", e.Pos.X, e.Demon.Steps)
+	}
+}
+
+// CR 048 (playtest 3): the sunsteel-or-Light rule is for high-level demons only.
+const demonHigh = 20 // at or above demons.ordinary.immuneFrom
+
+func TestOnlyHighLevelDemonsShrugOffOrdinaryDamage(t *testing.T) {
+	o := D.Demons.Ordinary
+	if !(o.HalfFrom > 1 && o.HalfFrom < o.ImmuneFrom && o.ImmuneFrom <= demonHigh && o.HalfMult > 0 && o.HalfMult < 1) {
+		t.Fatalf("tier numbers %+v", o)
+	}
+	// A low-level demon takes full damage and dies to the starting sword.
+	w, _ := newWorld()
+	h := newHand(w, 1, movement.Vec3{X: 300, Z: 300}, "sword")
+	low := w.SpawnDemons(movement.Vec3{X: 300, Z: 298}, []string{"gloamling"}, 1).Members[0]
+	if low.OrdinaryTier() != DemonOrdinaryFull {
+		t.Fatal("level 1 demon should take full ordinary damage")
+	}
+	hits := 0
+	for low.Alive() && hits < 40 {
+		r := swingAt(t, w, h, low)
+		if !r.Accepted || r.Flags&FlagResisted != 0 {
+			t.Fatalf("hit %d: %+v (no resist flag on a low-level demon)", hits, r)
+		}
+		hits++
+	}
+	if low.Alive() || low.Demon.Seared < low.HPMax-1e-9 {
+		t.Fatalf("a level 1 demon survived %d sword hits (seared %v of %v)", hits, low.Demon.Seared, low.HPMax)
+	}
+
+	// A mid-level demon takes halfMult of the damage, flagged resisted, and the damage lasts.
+	w2, _ := newWorld()
+	h2 := newHand(w2, 1, movement.Vec3{X: 300, Z: 300}, "sword")
+	mid := w2.SpawnDemons(movement.Vec3{X: 300, Z: 298}, []string{"gloamling"}, o.HalfFrom).Members[0]
+	if mid.OrdinaryTier() != DemonOrdinaryHalf {
+		t.Fatalf("level %d demon tier %d", o.HalfFrom, mid.OrdinaryTier())
+	}
+	r := swingAt(t, w2, h2, mid)
+	if !r.Accepted || r.Flags&FlagResisted == 0 {
+		t.Fatalf("mid-level hit not flagged resisted: %+v", r)
+	}
+	if want := math.Round(float64(r.Damage) * o.HalfMult); math.Abs(mid.Demon.Seared-want) > 1.01 {
+		t.Fatalf("mid-level seared %v, want about %v of a %v hit", mid.Demon.Seared, want, r.Damage)
+	}
+	for i := 0; i < 90; i++ {
+		w2.Step(w2.tick + 1)
+	}
+	if mid.HP > mid.HPMax-mid.Demon.Seared+1e-6 || mid.Demon.Seared <= 0 {
+		t.Fatal("mid-level damage must not regenerate")
+	}
+	hits = 0
+	for mid.Alive() && hits < 80 {
+		swingAt(t, w2, h2, mid)
+		hits++
+	}
+	if mid.Alive() {
+		t.Fatalf("a level %d demon should fall to enough ordinary hits", o.HalfFrom)
+	}
+
+	// High level (and lords at any level): flagged resisted, regenerates, never dies to steel.
+	w3, _ := newWorld()
+	h3 := newHand(w3, 1, movement.Vec3{X: 300, Z: 300}, "sword")
+	hi := w3.SpawnDemons(movement.Vec3{X: 300, Z: 298}, []string{"gloamling"}, o.ImmuneFrom).Members[0]
+	if hi.OrdinaryTier() != DemonOrdinaryImmune {
+		t.Fatal("immuneFrom level demon should be immune")
+	}
+	if r := swingAt(t, w3, h3, hi); r.Flags&FlagResisted == 0 {
+		t.Fatalf("high-level hit not flagged resisted: %+v", r)
+	}
+	lord := w3.SpawnDemons(movement.Vec3{X: 300, Z: 290}, []string{D.Demons.Lord}, 1).Members[0]
+	if lord.OrdinaryTier() != DemonOrdinaryImmune {
+		t.Fatal("a lord is immune at any level")
 	}
 }

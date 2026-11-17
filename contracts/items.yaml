@@ -239,7 +239,7 @@ items:
   instrument:handbells: {name: Handbells, value: 80}
   # ---- tools (v1: carried, not yet required; spec 7's pickaxe is implicit; every character starts with one) ----
   tool:pickaxe: {name: Pickaxe, value: 40}
-  tool:torch: {name: Torch, value: 6}
+  tool:torch: {name: Torch, value: 6}  # playtest 3 (CR 042): lit and put out with Interact 160 (key 8); burns until doused or swum with; in the starter kit, sold by general merchants
   tool:rope: {name: Rope, value: 10}
   tool:whetstone: {name: Whetstone, value: 8}
   tool:fishing_rod: {name: Fishing Rod, value: 25}  # playtest 2 fishing: needed to cast (bought from general and tools merchants, or forged)
@@ -378,7 +378,7 @@ recipes:
 # stand-in draught; granted once per character, exactly once). Playtest 2:
 # a pickaxe, because the starter quest's second step is "mine sunsteel ore"
 # (characters made before it get one once on join, marker starter:pickaxe).
-starter: {potion:health: 3, currency:gold: 20, tool:pickaxe: 1}
+starter: {potion:health: 3, currency:gold: 20, tool:pickaxe: 1, tool:torch: 1}
 
 # Loot tables (rolled by the zone per eligible player, spec 8 personal loot).
 loot:

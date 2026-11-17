@@ -145,6 +145,11 @@ type Dash struct {
 	ExitSpeed float64      `json:"exitSpeed"`
 	Sustain   *DashSustain `json:"sustain"`
 	Trail     *DashTrail   `json:"trail"`
+	// CR 048 level tiers: the base dash and each row with TierOf = its key
+	// carry MinLevel and a TierName (see ResolveDash).
+	MinLevel int    `json:"minLevel"`
+	TierName string `json:"tierName"`
+	TierOf   string `json:"tierOf"`
 }
 
 // Sustain kinds (DashSustain.KindID; the movement twins switch on them).
@@ -248,6 +253,16 @@ type Spell struct {
 	Orbit    *Orbit       `json:"orbit"`
 	Detonate *Detonate    `json:"detonate"`
 	Summon   *SummonSpell `json:"summon"`
+	Familiar *Familiar    `json:"familiar"` // CR 042: a familiar light (type defensive)
+}
+
+// Familiar: a familiar light spell's block (CR 042, contracts/combat.yaml).
+type Familiar struct {
+	ID         int     `json:"id"` // 1..31: the code in the caster's snapshot record
+	Kind       string  `json:"kind"`
+	UpkeepPerS float64 `json:"upkeepPerS"`
+	Intensity  float64 `json:"intensity"`
+	Range      float64 `json:"range"`
 }
 
 // Homing: a projectile that seeks (CR 020; spellsim in the zone and client).
@@ -538,6 +553,12 @@ type Defs struct {
 		Lesser  []string           `json:"lesser"`
 		Greater []string           `json:"greater"`
 		Lord    string             `json:"lord"`
+		// Ordinary (CR 048): how ordinary (non-sunsteel, non-Light) damage treats a demon by level.
+		Ordinary struct {
+			HalfFrom   int     `json:"halfFrom"`
+			ImmuneFrom int     `json:"immuneFrom"`
+			HalfMult   float64 `json:"halfMult"`
+		} `json:"ordinary"`
 	} `json:"demons"`
 	// Leveling and Difficulty are playtest 1's (CR 012, decision 0021).
 	Leveling   Leveling   `json:"leveling"`
@@ -669,6 +690,36 @@ func (d *Defs) AffixByID(id int) *Affix           { return d.affixByID[id] }
 func (d *Defs) FormByElement(el int) *Form        { return d.formByEl[el] }
 func (d *Defs) FormByID(id int) *Form             { return d.formByID[id] }
 func (d *Defs) DashByID(id int) *Dash             { return d.dashByID[id] }
+
+// ResolveDash is the dash variant a spell whose base dash is id runs at a
+// character level (CR 048): the tier row with the highest MinLevel <= level
+// among the base and the rows that name it; the lowest tier below every
+// MinLevel. An untiered dash resolves to itself. The client twin is
+// resolveDash in client/src/combat/dashes.ts.
+func (d *Defs) ResolveDash(id, level int) int {
+	base := d.dashByID[id]
+	if base == nil || base.MinLevel == 0 {
+		return id
+	}
+	best, lowest := id, id
+	bestMin, lowMin := -1, 1<<30
+	for i := range d.Dashes {
+		t := &d.Dashes[i]
+		if t.MinLevel == 0 || (t.ID != id && t.TierOf != base.Key) {
+			continue
+		}
+		if t.MinLevel <= level && t.MinLevel > bestMin {
+			best, bestMin = t.ID, t.MinLevel
+		}
+		if t.MinLevel < lowMin {
+			lowest, lowMin = t.ID, t.MinLevel
+		}
+	}
+	if bestMin < 0 {
+		return lowest
+	}
+	return best
+}
 func (d *Defs) TreeByKey(k string) *Tree          { return d.treeByKey[k] }
 func (d *Defs) SkillByKey(k string) *Skill        { return d.skillByKey[k] }
 

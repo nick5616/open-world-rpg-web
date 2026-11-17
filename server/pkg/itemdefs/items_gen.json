@@ -4158,6 +4158,10 @@
   {
    "item": "tool:pickaxe",
    "qty": 1
+  },
+  {
+   "item": "tool:torch",
+   "qty": 1
   }
  ],
  "loot": {

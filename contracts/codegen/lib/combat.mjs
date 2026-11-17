@@ -88,6 +88,17 @@ export function parseCombat(doc, consts) {
   const walkBound = C.BASE_MOVE_SPEED * C.SPRINT_MULTIPLIER * 2; // movement.MaxLegitHorizontalSpeed
   const dashes = Object.entries(doc.dashes).map(([key, d]) => {
     const out = { key, id: d.id, speed: d.speed, steps: d.steps, iframes: d.iframes, lift: d.lift ?? 0, aim: d.aim ?? 'move', exitSpeed: d.exitSpeed ?? C.DASH_EXIT_SPEED };
+    // CR 048: level tiers. A tiered spell's dash is the variant with the highest minLevel <= the character level among the base dash and the rows naming it in tierOf.
+    if (d.minLevel !== undefined) {
+      if (!(Number.isInteger(d.minLevel) && d.minLevel >= 1 && d.minLevel <= 255)) fail(`dash ${key}: minLevel 1..255`);
+      out.minLevel = d.minLevel;
+      out.tierName = d.tierName ?? '';
+    }
+    if (d.tierOf !== undefined) {
+      if (d.minLevel === undefined) fail(`dash ${key}: tierOf needs minLevel`);
+      if (!(d.tierOf in doc.dashes) || doc.dashes[d.tierOf].tierOf !== undefined) fail(`dash ${key}: tierOf names an untiered base dash`);
+      out.tierOf = d.tierOf;
+    }
     if (!['move', 'look'].includes(out.aim)) fail(`dash ${key}: aim move | look`);
     if (!(out.exitSpeed > 0 && out.exitSpeed <= walkBound)) fail(`dash ${key}: exitSpeed 0 < v <= ${walkBound} (the zone's walk bound once the dash ends)`);
     if (d.sustain) {
@@ -181,6 +192,7 @@ export function parseCombat(doc, consts) {
 
   const SPELL_TYPES = ['projectile', 'arc', 'hitscan', 'beam', 'aoe', 'domain', 'direct', 'rune', 'mobility', 'defensive', 'passive', 'summon', 'orbit'];
   const treeKeys = new Set(Object.keys(doc.trees));
+  const familiarIds = new Set();
   const spells = Object.entries(doc.spells).map(([key, s]) => {
     if (!treeKeys.has(s.tree)) fail(`spell ${key}: unknown tree ${s.tree}`);
     if (!SPELL_TYPES.includes(s.type)) fail(`spell ${key}: unknown type ${s.type}`);
@@ -274,6 +286,17 @@ export function parseCombat(doc, consts) {
       sp.summon = { key: s.summon.key, count: s.summon.count ?? 1, max: s.summon.max ?? 1 };
       if (sp.summon.max > C.SUMMONS_PER_PLAYER) fail(`spell ${key}: summon.max above SUMMONS_PER_PLAYER`);
     }
+    if (s.familiar) {
+      // CR 042: a familiar light is a defensive toggle; `id` rides in the caster's snapshot record (5 bits, 1..31).
+      const f = s.familiar;
+      if (sp.type !== 'defensive') fail(`spell ${key}: a familiar block goes on a defensive spell`);
+      if (!Number.isInteger(f.id) || f.id < 1 || f.id > 31) fail(`spell ${key}: familiar.id 1..31`);
+      if (familiarIds.has(f.id)) fail(`spell ${key}: duplicate familiar.id ${f.id}`);
+      familiarIds.add(f.id);
+      if (typeof f.kind !== 'string' || !f.kind) fail(`spell ${key}: familiar.kind`);
+      for (const k of ['upkeepPerS', 'intensity', 'range']) pos(f[k], `spell ${key} familiar.${k}`);
+      sp.familiar = { id: f.id, kind: f.kind, upkeepPerS: f.upkeepPerS, intensity: f.intensity, range: f.range };
+    }
     if (s.detonate) {
       const d = s.detonate;
       checkStatus(d.status, `spell ${key} detonate`);
@@ -342,7 +365,11 @@ export function parseCombat(doc, consts) {
   for (const k of dm.lesser) if (!isDemon(k, 'lesser')) fail(`demons.lesser: ${k} is not a lesser demon`);
   for (const el of elements) if (!isDemon(dm.greater[el], 'greater')) fail(`demons.greater.${el}: not a greater demon`);
   if (!isDemon(dm.lord, 'lord')) fail(`demons.lord: ${dm.lord} is not a demon lord`);
-  const demons = { regen: dm.regen, lesser: dm.lesser, greater: elements.map((el) => dm.greater[el]), lord: dm.lord };
+  // CR 048 (playtest 3): only high-level demons shrug off ordinary damage.
+  const od = dm.ordinary ?? { halfFrom: 8, immuneFrom: 15, halfMult: 0.5 };
+  if (!(Number.isInteger(od.halfFrom) && Number.isInteger(od.immuneFrom) && od.halfFrom >= 1 && od.halfFrom <= od.immuneFrom && od.immuneFrom <= 255)) fail('demons.ordinary: integer levels 1 <= halfFrom <= immuneFrom <= 255');
+  if (!(od.halfMult > 0 && od.halfMult <= 1)) fail('demons.ordinary.halfMult: 0 < m <= 1');
+  const demons = { regen: dm.regen, lesser: dm.lesser, greater: elements.map((el) => dm.greater[el]), lord: dm.lord, ordinary: { halfFrom: od.halfFrom, immuneFrom: od.immuneFrom, halfMult: od.halfMult } };
 
   const bossTitles = doc.bosses.titles;
   const bossNames = doc.bosses.names;
@@ -499,6 +526,8 @@ export interface DashDef {
   /** CR 021: start along the 3D look direction (look) or the held keys (move); the carry speed when it ends. */
   aim: 'move' | 'look'; exitSpeed: number;
   sustain?: DashSustainDef; trail?: DashTrailDef;
+  /** CR 048: level tiers (see combat.yaml dashes): the base dash and each row with tierOf = its key carry minLevel and a tierName. */
+  minLevel?: number; tierName?: string; tierOf?: string;
 }
 export interface DashSustainDef { kind: 'jet' | 'dash' | 'skate' | 'blink' | 'glide' | 'phase'; kindId: number; speed: number; steer: number; carrySteps: number; blinkSpeed: number; blinkEvery: number; sink: number; manaPerS: number; healthPerS: number }
 export interface DashTrailDef { radius: number; damage: number; lifesteal: number; heal: number; healRadius: number; status?: string; chem?: 'ignite' | 'freeze'; slam?: { minFall: number; radius: number; damage: number; status?: string } }
@@ -512,6 +541,8 @@ export interface SpellDef {
   /** CR 020 mechanics (contracts/combat.yaml spells header). */
   homing?: HomingDef; auto?: AutoDef; rain?: { radius: number; height: number }; charge?: ChargeDef; orbit?: OrbitDef; detonate?: DetonateDef;
   summon?: { key: string; count: number; max: number };
+  /** CR 042: a familiar light (type defensive): the code other players see, its look, its upkeep and light. */
+  familiar?: { id: number; kind: string; upkeepPerS: number; intensity: number; range: number };
 }
 export interface HomingDef { turnDegS: number; acquireM: number; coneDeg: number; delayMs: number; delaySteps: number; loseDeg: number }
 export interface AutoDef { rateHz: number; intervalSteps: number; manaPerShot: number; jitterDeg: number }
@@ -548,7 +579,7 @@ export interface CombatDefs {
   affixes: AffixDef[];
   tables: { biome: string[][]; element: string[]; site: Record<string, string[]>; depth: Record<string, { extra: string[]; levelBonus: number; eliteChance: number }>; beginner: string[] };
   /** WP15: night spawn tables (greater: indexed by element). */
-  demons: { regen: Record<string, number>; lesser: string[]; greater: string[]; lord: string };
+  demons: { regen: Record<string, number>; lesser: string[]; greater: string[]; lord: string; ordinary: { halfFrom: number; immuneFrom: number; halfMult: number } };
   /** Playtest 1 (CR 012): what a character level gives. */
   leveling: LevelingDef;
   /** Playtest 1 (CR 012): discovery-stamped area difficulty. */

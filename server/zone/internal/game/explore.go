@@ -198,6 +198,7 @@ func (s *Server) loadLocalSave(ctx context.Context, c ticket.Claims, raw []byte,
 	}
 	p := explore.NewProgress()
 	p.Level, p.XP = max(1, st.Level), st.XP
+	p.KeepLevel() // CR 048: a curve change never demotes a saved character
 	p.Towers, p.Waypoints, p.Discoveries = st.Progress.Towers, st.Progress.Waypoints, st.Progress.Discoveries
 	p.Attuned = st.Progress.Attuned // playtest 1
 	p.LoadPinsJSON(st.Progress.Pins)

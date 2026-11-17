@@ -156,10 +156,13 @@ export function learnable(known: readonly string[], level: number): LearnableSpe
   return out.sort((a, b) => Number(b.ready) - Number(a.ready) || Number(b.killsDemons) - Number(a.killsDemons) || a.tier - b.tier || a.tree.localeCompare(b.tree));
 }
 
-/** Total XP that reaches `level` (WP12 curve 60 + 40 x level). */
+/** Early-game surcharge for levels 1..4 (twin of explore.XPForNextLevel). */
+const EARLY_XP_EXTRA = [260, 160, 80, 20];
+
+/** Total XP that reaches `level` (curve 60 + 40 x level, plus the early surcharge). */
 export function xpForLevel(level: number): number {
   let xp = 0;
-  for (let l = 1; l < level; l++) xp += 60 + 40 * l;
+  for (let l = 1; l < level; l++) xp += 60 + 40 * l + (EARLY_XP_EXTRA[l - 1] ?? 0);
   return xp;
 }
 

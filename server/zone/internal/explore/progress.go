@@ -87,10 +87,22 @@ func (p *Progress) MarkSaved() { p.dirty = false }
 // MarkDirty flags a change made outside this package.
 func (p *Progress) MarkDirty() { p.dirty = true }
 
-// XPForNextLevel is the XP from level to level+1, ported from wizard-wars
-// shared/leveling.js (60 + 40 * level): the curve the reference repo tuned.
-// WP13 may retune it for combat XP; discovery XP values assume it.
-func XPForNextLevel(level int) int64 { return 60 + 40*int64(level) }
+// XPForNextLevel is the XP from level to level+1: wizard-wars' 60 + 40 * level
+// plus a decaying early-game surcharge (playtest 3: level 2 came after the
+// first discovery). Level 1 needs 360 (a first session: the spawn town, the
+// meadows quest and a handful of kills), 300, 260, 240, then the plain curve
+// from level 5 on, so nothing past the opening is slower than before.
+func XPForNextLevel(level int) int64 {
+	base := 60 + 40*int64(level)
+	if level >= 1 && level <= len(earlyXPExtra) {
+		base += earlyXPExtra[level-1]
+	}
+	return base
+}
+
+// earlyXPExtra is the surcharge for levels 1..4 (twinned in the client's
+// progression/gains.ts xpForLevel).
+var earlyXPExtra = [...]int64{260, 160, 80, 20}
 
 // LevelForXP is the character level for a total XP (wizard-wars xpProgress).
 func LevelForXP(xp int64) int {
@@ -99,6 +111,16 @@ func LevelForXP(xp int64) int {
 		rem -= XPForNextLevel(level)
 	}
 	return level
+}
+
+// KeepLevel makes a loaded character never lose a level to a curve change
+// (CR 048 raised the early levels): when the stored level is above what the
+// XP reaches, the XP is raised to that level's start.
+func (p *Progress) KeepLevel() {
+	if p.Level > LevelForXP(p.XP) {
+		p.XP = XPForLevel(p.Level)
+		p.dirty = true
+	}
 }
 
 // AddXP adds XP and recomputes the level; returns true on a level-up.

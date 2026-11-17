@@ -37,7 +37,7 @@ describe('ClockSync', () => {
 
 // ---------------------------------------------------------------- decoder
 function ent(id: number, x: number): EntState {
-  return { id, kind: 1, x, y: 0, z: 500, yaw: 0, pitch: 0, vx: 0, vy: 0, vz: 0, healthPct: 100, activity: 0, typeId: 0, name: 'p', level: 1, partyId: 0, appearance: 0 };
+  return { id, kind: 1, x, y: 0, z: 500, yaw: 0, pitch: 0, vx: 0, vy: 0, vz: 0, healthPct: 100, activity: 0, typeId: 0, name: 'p', level: 1, partyId: 0, appearance: 0, light: 0 };
 }
 
 /** Reference delta encoder mirroring server/pkg/snapshot Diff (presence = mask bit). */

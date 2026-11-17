@@ -52,11 +52,11 @@ func TestDiscoveryOncePerCharacter(t *testing.T) {
 	if h := w.Check(p, at(w, 500, 500), nil); len(h) != 0 {
 		t.Fatalf("second visit must grant nothing: %+v", h)
 	}
-	// Structure: max(radius 12, 15) + 10 = 25 m; tier 2 = 100 XP -> level 2 (100 to level 2).
+	// Structure: max(radius 12, 15) + 10 = 25 m; tier 2 = 100 XP: two discoveries (180) are still level 1 (360 to level 2).
 	if h := w.Check(p, at(w, 700+26, 100), nil); len(h) != 0 {
 		t.Fatalf("outside 25 m: %+v", h)
 	}
-	if h := w.Check(p, at(w, 700+24, 100), nil); len(h) != 1 || h[0].XP != 100 || p.Level != 2 {
+	if h := w.Check(p, at(w, 700+24, 100), nil); len(h) != 1 || h[0].XP != 100 || p.Level != 1 {
 		t.Fatalf("ruin discovery: %+v level %d", h, p.Level)
 	}
 	// Cave mouth 20 m; enemy camps are not discoveries.
@@ -166,17 +166,34 @@ func TestFastTravelValidation(t *testing.T) {
 	}
 }
 
+func TestKeepLevelNeverDemotes(t *testing.T) {
+	p := &Progress{Level: 3, XP: 150} // saved under the old curve (level 3 at 240)
+	p.KeepLevel()
+	if p.Level != 3 || p.XP != XPForLevel(3) || LevelForXP(p.XP) != 3 {
+		t.Fatalf("level %d xp %d", p.Level, p.XP)
+	}
+	p.AddXP(1)
+	if p.Level != 3 {
+		t.Fatal("demoted on the next XP gain")
+	}
+	q := &Progress{Level: 2, XP: 500}
+	q.KeepLevel()
+	if q.XP != 500 {
+		t.Fatal("XP above the level's start is kept")
+	}
+}
+
 func TestLevelCurve(t *testing.T) {
 	for _, c := range []struct {
 		xp    int64
 		level int
-	}{{0, 1}, {99, 1}, {100, 2}, {239, 2}, {240, 3}, {420, 4}} {
+	}{{0, 1}, {100, 1}, {359, 1}, {360, 2}, {659, 2}, {660, 3}, {919, 3}, {920, 4}, {1160, 5}} {
 		if got := LevelForXP(c.xp); got != c.level {
 			t.Errorf("LevelForXP(%d) = %d, want %d", c.xp, got, c.level)
 		}
 	}
 	p := NewProgress()
-	if !p.AddXP(100) || p.Level != 2 || p.AddXP(0) {
+	if !p.AddXP(360) || p.Level != 2 || p.AddXP(0) {
 		t.Fatal("level up")
 	}
 }
