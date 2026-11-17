@@ -21,7 +21,7 @@ import { TEX, type TexName } from './textures';
 
 /** Box kinds (worldgen bk). */
 export const BK = { floor: 0, wall: 1, upper: 2, roof: 3, ramp: 4, furniture: 5, fence: 6, townWall: 7, gate: 8, deck: 9, bridgeRamp: 10, piece: 11, townProp: 12, railing: 13 } as const;
-export const STYLE = { timber: 0, stone: 1, adobe: 2, stilt: 3, log: 4, cottage: 5 } as const;
+export const STYLE = { timber: 0, stone: 1, adobe: 2, stilt: 3, log: 4, cottage: 5, dwarf: 6 } as const;
 export const ROLE = { house: 0, inn: 1, forge: 2, stall: 3, garden: 4, farm: 5, workshop: 6, storehouse: 7 } as const;
 
 export interface Box {
@@ -48,7 +48,7 @@ export function boxAt(t: Towns, i: number): Box {
 
 export const boxFrame = (b: Box): Frame => ({ cx: b.cx, cz: b.cz, c: b.c, s: b.s });
 export const buildingFrame = (b: Building): Frame => ({ cx: b.x, cz: b.z, c: b.c, s: b.s });
-export const wallThickness = (style: number) => (style === STYLE.stone || style === STYLE.adobe ? 0.5 : 0.3);
+export const wallThickness = (style: number) => (style === STYLE.dwarf ? 0.65 : style === STYLE.stone || style === STYLE.adobe ? 0.5 : 0.3);
 
 interface Look {
   wall: TexName;
@@ -70,6 +70,8 @@ const LOOKS: Look[] = [
   { wall: 'reed', inner: 'reed', roofs: ['thatch'], gable: 'reed', found: 'planks', windowW: 0.8, shutters: true, corners: true, tints: [[1, 1, 1], [0.92, 0.95, 0.85], [1.05, 0.98, 0.88], [0.9, 0.88, 0.8]] },
   { wall: 'logs', inner: 'logs', roofs: ['shingle', 'planks'], gable: 'planks', found: 'fieldstone', windowW: 0.8, shutters: true, corners: false, tints: [[1, 1, 1], [0.9, 0.85, 0.82], [1.05, 0.98, 0.9], [0.85, 0.8, 0.75]] },
   { wall: 'plaster', inner: 'plaster', roofs: ['thatch', 'clayTile'], gable: 'plaster', found: 'fieldstone', windowW: 0.9, shutters: true, corners: true, tints: [[1, 1, 1], [1, 0.95, 0.85], [1, 0.9, 0.88], [0.96, 0.98, 1]] },
+  // 6 dwarf (CR 043): carved dark stone, small deep windows, flat slab roofs with a parapet, rune lintels.
+  { wall: 'stone', inner: 'stone', roofs: [], gable: 'stone', found: 'stone', windowW: 0.5, shutters: false, corners: false, tints: [[0.78, 0.7, 0.62], [0.72, 0.66, 0.6], [0.82, 0.72, 0.62], [0.7, 0.66, 0.64]] },
 ];
 const SHUTTERS: V3[] = [
   [0.45, 0.62, 0.45],
@@ -202,7 +204,12 @@ export function drawBuildingShell(mb: MeshBuilder, t: Towns, b: Building, height
         // Ceiling inside; on flat roofs (adobe) the walkable roof, with a lip.
         P(mb, look.inner === 'logs' ? 'planks' : 'floor', [0.85, 0.78, 0.7]);
         mb.slopedBox(f, -bx.hx, bx.hx, -bx.hz, bx.hz, bx.y0, bx.y0 + 0.001, bx.y0 + 0.001, { top: false, sides: false, bottom: true });
-        if (b.roof === 2 || b.roof === 3) {
+        if (b.style === STYLE.dwarf) {
+          // A flagstone slab with a low parapet and a band of rune glow round the eaves.
+          P(mb, 'flagstone', [0.7, 0.64, 0.58]);
+          mb.slopedBox(f, -bx.hx, bx.hx, -bx.hz, bx.hz, bx.y0, bx.y1, bx.y2, { bottom: false });
+          drawParapet(mb, F, b, wallTop);
+        } else if (b.roof === 2 || b.roof === 3) {
           P(mb, 'adobe', [0.86, 0.8, 0.74]);
           mb.slopedBox(f, -bx.hx, bx.hx, -bx.hz, bx.hz, bx.y0, bx.y1, bx.y2, { bottom: false });
           drawVigas(mb, F, b, wallTop);
@@ -213,7 +220,7 @@ export function drawBuildingShell(mb: MeshBuilder, t: Towns, b: Building, height
         drawRoofHalf(mb, bx, roofTex, look, tint, b);
         break;
       case BK.ramp: {
-        const tex: TexName = b.style === STYLE.stone || b.style === STYLE.adobe ? (b.style === STYLE.adobe ? 'adobe' : 'stone') : 'planks';
+        const tex: TexName = b.style === STYLE.stone || b.style === STYLE.adobe || b.style === STYLE.dwarf ? (b.style === STYLE.adobe ? 'adobe' : 'stone') : 'planks';
         if (Math.abs(bx.y2 - bx.y1) > STEPS_RISE) drawSteps(mb, f, bx, tex);
         else {
           P(mb, tex, [0.9, 0.85, 0.78]);
@@ -370,6 +377,14 @@ function drawWall(mb: MeshBuilder, t: Towns, b: Building, bx: Box, look: Look, t
   });
   if (lintel) {
     // A lintel beam over the doorway.
+    if (b.style === STYLE.dwarf) {
+      // A stone lintel with a glowing rune band (emissive: reads in the dark, no light needed).
+      P(mb, 'stone', [0.6, 0.55, 0.5]);
+      mb.slopedBox(f, -bx.hx - 0.12, bx.hx + 0.12, -bx.hz - 0.06, bx.hz + 0.06, bx.y0 - 0.001, bx.y0 + 0.3, bx.y0 + 0.3, { bottom: true });
+      mb.paint(TEX.glow, 0, [1.0, 0.55, 0.2], 90);
+      mb.slopedBox(f, -bx.hx - 0.06, bx.hx + 0.06, -bx.hz - 0.075, bx.hz + 0.075, bx.y0 + 0.1, bx.y0 + 0.2, bx.y0 + 0.2, { top: false, bottom: false });
+      return;
+    }
     P(mb, 'wood', [0.5, 0.36, 0.25]);
     mb.slopedBox(f, -bx.hx - 0.1, bx.hx + 0.1, -bx.hz - 0.03, bx.hz + 0.03, bx.y0 - 0.001, bx.y0 + 0.18, bx.y0 + 0.18, { bottom: true });
     return;
@@ -509,6 +524,20 @@ function drawVigas(mb: MeshBuilder, F: Frame, b: Building, wallTop: number): voi
     mb.box(F, u - 0.07, u + 0.07, y - 0.07, y + 0.07, -b.hz - 0.35, -b.hz + 0.01, { bottom: true });
     mb.box(F, u - 0.07, u + 0.07, y - 0.07, y + 0.07, b.hz - 0.01, b.hz + 0.35, { bottom: true });
   }
+}
+
+/** A low stone parapet round a flat roof, with a rune band (dwarven style). */
+function drawParapet(mb: MeshBuilder, F: Frame, b: Building, wallTop: number): void {
+  const y = wallTop;
+  P(mb, 'stone', [0.62, 0.57, 0.52]);
+  const t = 0.3;
+  mb.box(F, -b.hx - 0.05, b.hx + 0.05, y, y + 0.5, -b.hz - 0.05, -b.hz + t, {});
+  mb.box(F, -b.hx - 0.05, b.hx + 0.05, y, y + 0.5, b.hz - t, b.hz + 0.05, {});
+  mb.box(F, -b.hx - 0.05, -b.hx + t, y, y + 0.5, -b.hz, b.hz, {});
+  mb.box(F, b.hx - t, b.hx + 0.05, y, y + 0.5, -b.hz, b.hz, {});
+  mb.paint(TEX.glow, 0, [1.0, 0.5, 0.18], 70);
+  mb.box(F, -b.hx + 0.2, b.hx - 0.2, y + 0.18, y + 0.26, -b.hz - 0.06, -b.hz - 0.04, { top: false, bottom: false });
+  mb.box(F, -b.hx + 0.2, b.hx - 0.2, y + 0.18, y + 0.26, b.hz + 0.04, b.hz + 0.06, { top: false, bottom: false });
 }
 
 /** Chimney tops collected while a settlement mesh is built (buildSettlementMesh), else null. */
