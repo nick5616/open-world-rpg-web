@@ -48,6 +48,18 @@ const HARVEST_REACH_M = 4.8;
 const DEBRIS_MAX = 384;
 const TREE_FALL_S = 1.35;
 const UP = new THREE.Vector3(0, 1, 0);
+const STUMP_MAX = 512;
+
+/** Inverse of worldgen's SplitMix64 finalizer: the layer of a scatter id (1 tree). */
+function layerOfId(z: bigint): number {
+  const M = (1n << 64n) - 1n;
+  z ^= (z >> 31n) ^ (z >> 62n);
+  z = (z * 0x319642b2d24d8ec3n) & M;
+  z ^= (z >> 27n) ^ (z >> 54n);
+  z = (z * 0x96de1b173f119089n) & M;
+  z ^= (z >> 30n) ^ (z >> 60n);
+  return Number(z >> 56n);
+}
 
 const u64 = (d: Uint8Array): bigint => new DataView(d.buffer, d.byteOffset, 8).getBigUint64(0, true);
 
@@ -109,6 +121,9 @@ export class WorldEditManager {
   private readonly dSpin = new Float32Array(DEBRIS_MAX);
   private readonly dColor = new Float32Array(DEBRIS_MAX * 3);
   private dCount = 0;
+  // stumps: where a tree stood, until it regrows (client-only; the zone only knows it is removed)
+  private readonly stumps: THREE.InstancedMesh;
+  private readonly stumpIds: bigint[] = [];
   // targeting ring
   private readonly ring: THREE.LineLoop;
   private readonly ringPos: THREE.BufferAttribute;
@@ -141,6 +156,14 @@ export class WorldEditManager {
     this.debris.frustumCulled = false;
     this.debris.name = 'work debris';
     this.group.add(this.debris);
+
+    const sm = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.28, 0.42, 0.5, 7).translate(0, 0.2, 0), new THREE.MeshStandardMaterial({ color: 0x6b4a2c, roughness: 1 }), STUMP_MAX);
+    sm.count = 0;
+    sm.frustumCulled = false;
+    sm.receiveShadow = true;
+    sm.name = 'stumps';
+    this.stumps = sm;
+    this.group.add(sm);
 
     // The targeting ring (a unit circle scaled to the brush or the object).
     const N = 48;
@@ -209,9 +232,42 @@ export class WorldEditManager {
     const now = s.clock.serverNow();
     for (const e of m.edits) {
       if (e.kind !== 4) continue; // object_destroyed
-      if (e.expiresAt !== 0 && e.expiresAt <= now + 50) this.scatter.unhide(e.targetId);
-      else this.scatter.hide(e.targetId);
+      if (e.expiresAt !== 0 && e.expiresAt <= now + 50) {
+        this.scatter.unhide(e.targetId);
+        this.removeStump(e.targetId);
+      } else {
+        this.scatter.hide(e.targetId);
+        if (e.params.length >= 12) {
+          const dv = new DataView(e.params.buffer, e.params.byteOffset, 12);
+          this.addStump(e.targetId, dv.getFloat32(0, true), dv.getFloat32(4, true), dv.getFloat32(8, true));
+        }
+      }
     }
+  }
+
+  private addStump(id: bigint, x: number, y: number, z: number): void {
+    if (layerOfId(id) !== LAYER_TREE || this.stumpIds.includes(id) || this.stumpIds.length >= STUMP_MAX) return;
+    const k = this.stumpIds.length;
+    this.stumpIds.push(id);
+    this.tmpQ.setFromAxisAngle(UP, (Number(id & 255n) / 255) * Math.PI * 2);
+    this.tmpM.compose(this.tmpV.set(x, y - 0.05, z), this.tmpQ, this.tmpS.set(1, 1, 1));
+    this.stumps.setMatrixAt(k, this.tmpM);
+    this.stumps.count = this.stumpIds.length;
+    this.stumps.instanceMatrix.needsUpdate = true;
+  }
+
+  private removeStump(id: bigint): void {
+    const k = this.stumpIds.indexOf(id);
+    if (k < 0) return;
+    const last = this.stumpIds.length - 1;
+    if (k !== last) {
+      this.stumps.getMatrixAt(last, this.tmpM);
+      this.stumps.setMatrixAt(k, this.tmpM);
+      this.stumpIds[k] = this.stumpIds[last];
+    }
+    this.stumpIds.pop();
+    this.stumps.count = this.stumpIds.length;
+    this.stumps.instanceMatrix.needsUpdate = true;
   }
 
   private onTerrainEdits(m: TerrainEdits): void {
@@ -417,6 +473,7 @@ export class WorldEditManager {
     this.soloHp.delete(id);
     this.hp.delete(id);
     this.scatter.hide(id);
+    this.addStump(id, t.x, t.y, t.z);
     const dir = Math.atan2(t.z - localPlayer.pos.z, t.x - localPlayer.pos.x);
     this.felled(t.layer!, t.objKind!, t.x, t.y, t.z, t.scale!, t.yaw!, dir);
     this.soloRemoved.set(id, nowMs + (def.regrowS[0] + (def.regrowS[1] - def.regrowS[0]) * Math.random()) * 1000);
@@ -432,6 +489,7 @@ export class WorldEditManager {
       if (nowMs >= at) {
         this.soloRemoved.delete(id);
         this.scatter.unhide(id);
+        this.removeStump(id);
       }
     }
   }
@@ -748,6 +806,9 @@ export class WorldEditManager {
     this.detach = [];
     this.hud?.remove();
     this.toastEl?.remove();
+    this.stumps.geometry.dispose();
+    (this.stumps.material as THREE.Material).dispose();
+    this.stumps.dispose();
     this.debris.geometry.dispose();
     (this.debris.material as THREE.Material).dispose();
     this.debris.dispose();
