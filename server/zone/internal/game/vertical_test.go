@@ -16,6 +16,7 @@ import (
 
 	"lodestone/server/pkg/combatdefs"
 	"lodestone/server/pkg/movement"
+	"lodestone/server/pkg/palace"
 	"lodestone/server/pkg/proto"
 	"lodestone/server/pkg/structures"
 	"lodestone/server/pkg/towns"
@@ -46,6 +47,7 @@ func testVerticalTowns(t *testing.T) (*npc.World, movement.Ground, *worldhost.Ca
 	if err != nil {
 		t.Fatal(err)
 	}
+	palace.AppendBoxes(tw, palace.SitesOf(ct.Vertical())) // CR 044
 	var sites []npc.Site
 	if a, err := structures.ParseAtlas(w.Atlas); err == nil {
 		for _, s := range a.Sites {

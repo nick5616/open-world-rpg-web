@@ -573,6 +573,7 @@ func (s *Server) contentOnKill(k combat.KillInfo) {
 	}
 	s.eventsOnKill(k) // worldevents.go
 	s.vaultsOnKill(k) // dungeons.go
+	s.palacesOnKill(k) // palace.go (CR 044)
 	demon := en.Demon != nil
 	for _, id := range k.Eligible {
 		pe := s.entityByID(id)

@@ -131,6 +131,7 @@ type Config struct {
 
 // Server is one zone process's simulation.
 type Server struct {
+	pal        palaceState           // CR 044: the sky palaces (palace.go)
 	shrines    map[int]*liveShrine   // CR 044: live Depths shrine cleansings by chamber (shrine.go)
 	skyTowns   []int8                // CR 038: per settlement, 0 unknown, 1 surface, 2 sky (vertical.go skyTown)
 	layerVeins map[uint64]caves.Vein // CR 038: the vertical world's veins by id (vertical.go layerVein)

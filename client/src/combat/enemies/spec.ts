@@ -50,6 +50,7 @@ export type Style =
   | 'hunt_master'
   | 'starfall_sentinel'
   | 'vault_keeper'
+  | 'sky_guardian'
   // floaters
   | 'wisp'
   | 'frost_mote'
@@ -121,6 +122,7 @@ const STYLE_RIG: Record<Style, Rig> = {
   hunt_master: 'biped',
   starfall_sentinel: 'biped',
   vault_keeper: 'biped',
+  sky_guardian: 'biped',
   scuttler: 'crawler',
   cave_crawler: 'crawler',
   void_mite: 'crawler',
@@ -188,6 +190,7 @@ const WEAPON: Partial<Record<Style, Weapon>> = {
   warden: 'hammer',
   hunt_master: 'spear',
   vault_keeper: 'keystaff',
+  sky_guardian: 'keystaff',
   sovereign: 'cleaver',
 };
 
@@ -226,7 +229,7 @@ export function modelSpec(info: Pick<EnemyInfo, 'key' | 'family' | 'behavior' | 
   const accent = el < 8 ? ELEMENT_COLORS[el] : lighten(info.color);
   const glowEyes = demon || boss || style === 'gloamhound' || style === 'magma_hound' || style === 'obsidian_golem' || style === 'sky_wyvern' || info.family === 'elemental' || info.family === 'guardian' || style === 'crystal_golem' || style === 'gloom_bat' || style === 'cave_crawler';
   const eye = demon ? (el < 8 ? ELEMENT_COLORS[el] : '#ff3b2a') : glowEyes ? (el < 8 ? ELEMENT_COLORS[el] : style === 'cave_crawler' ? '#c8ff6a' : '#bfe8ff') : '#1a1410';
-  const deathFx: DeathFx = style === 'hollow_bell' ? 'shatter' : demon ? 'smoke' : style === 'crystal_golem' || style === 'obsidian_golem' || style === 'sentinel' || style === 'mud_golem' || style === 'starfall_sentinel' || style === 'vault_keeper' ? 'shatter' : (DEATH[rig] ?? 'dust');
+  const deathFx: DeathFx = style === 'hollow_bell' ? 'shatter' : demon ? 'smoke' : style === 'crystal_golem' || style === 'obsidian_golem' || style === 'sentinel' || style === 'mud_golem' || style === 'starfall_sentinel' || style === 'vault_keeper' || style === 'sky_guardian' ? 'shatter' : (DEATH[rig] ?? 'dust');
   const spec: ModelSpec = {
     key: info.key,
     variant: `${style}|${el}`,

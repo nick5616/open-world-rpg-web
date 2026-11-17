@@ -1318,6 +1318,12 @@
    "lore": "The last guardian of a sealed vault. When it raises its staff, a sigil burns on the ground: do not be standing in it."
   },
   {
+   "key": "sky_guardian",
+   "enemyId": 150,
+   "habitat": "The throne hall of a sky palace",
+   "lore": "A gilded warden that outlived its court. It draws a line of light across the floor and lets the wind do the rest: strike the three wards, and it wakes."
+  },
+  {
    "key": "glintfox",
    "enemyId": 70,
    "habitat": "Anywhere, rarely",

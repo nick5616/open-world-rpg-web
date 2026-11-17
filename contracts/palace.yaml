@@ -1,0 +1,25 @@
+# The sky palaces (playtest 3, CR 044): the interior of the white-and-gold
+# palace on a sky island (atlas structure kind 9, the PALACE decoration of the
+# vertical world). The palace is a real building on the island: its walls,
+# floors, ceilings and columns are collision boxes appended to the towns' box
+# list on both sides of the wire (zone: server/pkg/palace; client:
+# client/src/world/palace). The layout (contracts/codegen/lib/palace.mjs) is
+# expanded at `npm run gen` into one explicit box list in the palace's local
+# frame (x right, z toward the gate, y up from the floor), so Go and TS read
+# the same numbers. The palace turns by quarter turns only (exact cos and
+# sin), so the twins agree to the bit with no trigonometry.
+version: 1
+# The floor sits this far above the island's top at the palace's centre (the
+# island is flat there: +-0.5 m over the footprint).
+floorAboveTopM: 1.2
+# Players within activeM (3D) wake it; nobody near for resetS puts it back.
+activeM: 150
+resetS: 600
+reachM: 5
+# Each ward is struck once per awakening; the third wakes the guardian.
+wards:
+  - {key: sun, name: Ward of the Sun, hint: "A gold disc, warm to the touch."}
+  - {key: moon, name: Ward of the Moon, hint: "A pale disc, cold as the high air."}
+  - {key: wind, name: Ward of the Wind, hint: "A ring of chimes above the atrium. The wind pulls at it."}
+boss: sky_guardian
+chest: {gold: [220, 380], minRarity: relic, items: 2, luck: 3.5, cooldownH: 20}

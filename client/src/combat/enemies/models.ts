@@ -704,6 +704,7 @@ function buildBiped(k: Kit, p: Pal): Joint[] {
     }
     case 'starfall_sentinel':
     case 'vault_keeper':
+    case 'sky_guardian':
     case 'sentinel':
     case 'mud_golem':
     case 'crystal_golem':
@@ -747,12 +748,13 @@ function buildBiped(k: Kit, p: Pal): Joint[] {
 function buildGolem(k: Kit, p: Pal): Joint[] {
   const s = k.spec;
   const st = s.style;
-  const warden = st === 'warden' || st === 'vault_keeper';
-  const keeper = st === 'vault_keeper';
+  const guardian = st === 'sky_guardian';
+  const warden = st === 'warden' || st === 'vault_keeper' || guardian;
+  const keeper = st === 'vault_keeper' || guardian;
   const star = st === 'starfall_sentinel';
   const d = avatarDims({ wide: warden ? 1.35 : 1.55, arm: warden ? 1.05 : 1.2, leg: warden ? 0.95 : 0.78 });
   const stone = p.body;
-  const glowCol = keeper ? '#ffe08a' : s.element < 8 ? s.accent : st === 'crystal_golem' ? '#bfe8ff' : st === 'obsidian_golem' ? '#ff7a22' : st === 'mud_golem' ? '#d0a050' : warden ? '#ffb040' : '#7fd8ff';
+  const glowCol = guardian ? '#fff0b8' : keeper ? '#ffe08a' : s.element < 8 ? s.accent : st === 'crystal_golem' ? '#bfe8ff' : st === 'obsidian_golem' ? '#ff7a22' : st === 'mud_golem' ? '#d0a050' : warden ? '#ffb040' : '#7fd8ff';
   const hips = k.at(B.hips);
   hips.box(0.5, 0.26, 0.34, p.dark, { pos: [0, -0.02, 0], jitter: 0.08 });
   const t = k.at(B.torso);
@@ -836,6 +838,12 @@ function buildGolem(k: Kit, p: Pal): Joint[] {
   }
   if (st === 'warden') weapon(k, B.elR, d.fore, 'hammer', p);
   if (keeper) weapon(k, B.elR, d.fore, 'keystaff', p);
+  if (guardian) {
+    // CR 044: a gilded warden of the palace: a halo, and blades of light for wings
+    h.add(new THREE.TorusGeometry(0.3, 0.025, 5, 20), '#ffd870', { pos: [0, 0.5, 0.04], rot: [PI / 2.2, 0, 0], glow: 1 });
+    const bk = k.at(B.torso);
+    for (const side of [-1, 1]) for (let i = 0; i < 4; i++) bk.box(0.05, 0.9 - i * 0.12, 0.012, i % 2 ? '#fff0b8' : '#ffd870', { pos: [side * (0.34 + i * 0.12), 0.5 - i * 0.06, 0.3], rot: [0, side * 0.5, side * (-0.5 - i * 0.18)], glow: 0.85 });
+  }
   if (star) k.at(B.torso).add(new THREE.OctahedronGeometry(0.14, 0), '#f0e8ff', { pos: [0, 0.36, -0.24], glow: 1 }); // a fallen star in the chest
   return bipedJoints({ ...d, neckY: d.neckY - 0.08 });
 }

@@ -399,7 +399,7 @@ func (s *Server) drainTaken(sess *session, now time.Time) {
 				s.questInteract(sess, it) // quests: accept, abandon, turn in, track (quests.go)
 				continue
 			}
-			if it.TargetKind == InteractPalace || it.TargetKind == InteractActivity {
+			if it.TargetKind == InteractPalace || it.TargetKind == InteractActivity || it.TargetKind == InteractPalacePart {
 				s.verticalInteract(sess, it) // CR 038: sky palace doors, sky town activity spots (vertical.go)
 				continue
 			}

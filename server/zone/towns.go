@@ -14,6 +14,7 @@ import (
 
 	"lodestone/server/pkg/env"
 	"lodestone/server/pkg/movement"
+	"lodestone/server/pkg/palace"
 	"lodestone/server/pkg/structures"
 	"lodestone/server/pkg/towns"
 	"lodestone/server/pkg/worldhost"
@@ -68,6 +69,9 @@ func withTowns(ground movement.Ground, terrain *worldhost.Terrain, cfg *game.Con
 	if err != nil {
 		log.Error("NO TOWNS: towns buffer unreadable", "err", err)
 		return ground
+	}
+	if g, ok := ground.(*worldhost.CaveTerrain); ok {
+		palace.AppendBoxes(tw, palace.SitesOf(g.Vertical())) // CR 044: the sky palaces are buildings
 	}
 	var sites []npc.Site
 	if a, err := structures.ParseAtlas(terrain.World().Atlas); err == nil {

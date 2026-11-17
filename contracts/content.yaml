@@ -369,6 +369,7 @@ codex:
   the_hush: {habitat: "The Heartfall", lore: "The silence at the heart of everything, given a shape. The keepers called it the Hush: mother of the Unsung, born where the Lodestone's song first went quiet."}
   hollow_bell: {habitat: "The Heartfall", lore: "A bell with no clapper that tolls anyway. Its choir keeps the Hush untouchable. Only sunsteel or Light will crack one."}
   vault_keeper: {habitat: "Sealed vaults beneath ruins", lore: "The last guardian of a sealed vault. When it raises its staff, a sigil burns on the ground: do not be standing in it."}
+  sky_guardian: {habitat: "The throne hall of a sky palace", lore: "A gilded warden that outlived its court. It draws a line of light across the floor and lets the wind do the rest: strike the three wards, and it wakes."}
 
 # ---- feats: moved to contracts/achievements.yaml (CR 031), keys and counters unchanged ----
 
