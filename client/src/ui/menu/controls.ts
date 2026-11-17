@@ -143,6 +143,19 @@ export function controlGroups(debug: boolean, dev = false): ControlGroup[] {
       ],
     },
     {
+      title: 'Building',
+      rows: [
+        { keys: ['8'], action: 'Hammer: the build menu; in build mode, leave it', note: 'walls, floors, roofs, furniture, a bed and a hearth: build a base', src: [['ui/build/BuildHud.tsx', "'Digit8'"]] },
+        { keys: ['Left mouse'], action: 'Place the ghost piece (green only)', src: [['ui/build/BuildHud.tsx', 'e.button === 0']] },
+        { keys: ['R', 'Mouse wheel'], action: 'Turn the piece', src: [['ui/build/BuildHud.tsx', "'KeyR'"]] },
+        { keys: ['Tab'], action: 'Change the material (Shift: the category)', src: [['ui/build/BuildHud.tsx', "'Tab'"]] },
+        { keys: ['Q', 'E'], action: 'Previous / next piece (1-9 pick one)', src: [['ui/build/BuildHud.tsx', "'KeyQ'"]] },
+        { keys: ['X'], action: 'Hold on your piece: deconstruct it for most of its materials', src: [['ui/build/BuildHud.tsx', "'KeyX'"]] },
+        { keys: ['F'], action: 'Repair the piece you aim at', src: [['ui/build/BuildHud.tsx', "'KeyF'"]] },
+        { keys: ['Right mouse', 'Esc'], action: 'Leave build mode', src: [['ui/build/BuildHud.tsx', 'e.button === 2'], ['ui/build/BuildHud.tsx', "'build-mode'"]] },
+      ],
+    },
+    {
       title: 'Riding',
       rows: [
         { keys: ['5'], action: 'Whistle for your spirit steed', note: 'needs a Spirit Whistle (general stores); C → Your steed: name, colour', src: [['ui/mounts/MountHud.tsx', "'Digit5'"]] },

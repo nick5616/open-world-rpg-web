@@ -106,7 +106,7 @@ export function reduceCampEvent(s: Omit<CampState, 'actions'>, e: ZoneEvent, now
       return out;
     }
     case BUILD_EV.info:
-      return { build: decodeBuildInfo(e) };
+      return { build: { ...decodeBuildInfo(e), at: now } };
     case BUILD_EV.missing: {
       const m = decodeBuildMissing(e);
       return { missing: m, notes: [...s.notes, note('refused', missingText(m.items.map((i) => ({ item: i.item, need: i.qty, have: i.have }))) || CAMP_REFUSAL[31], now)] };

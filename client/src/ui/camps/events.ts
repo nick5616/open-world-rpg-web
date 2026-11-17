@@ -189,6 +189,8 @@ export interface BuildInfo {
   home: { x: number; y: number; z: number } | null;
   homeCdMs: number;
   hearth: { x: number; z: number; r: number } | null;
+  /** performance.now() when it arrived (homeCdMs counts down from it). */
+  at?: number;
 }
 
 /** Event 1821 (CR 041): what a refused piece was missing. */

@@ -95,6 +95,8 @@ export interface Placed {
   x: number;
   z: number;
   mine: boolean;
+  /** A building piece (CR 041): only its footprint counts, not the camp limits. */
+  build?: boolean;
 }
 
 export interface Want {
@@ -140,7 +142,7 @@ export function checkPlacement(w: Want, near: readonly Placed[], env: PlaceEnv):
   let ofKind = 0;
   let anchor: Placed | null = null;
   for (const q of near) {
-    if (!q.mine) continue;
+    if (!q.mine || q.build) continue;
     own++;
     if (q.kind === w.kind) ofKind++;
     if (!anchor || q.id < anchor.id) anchor = q;
@@ -156,7 +158,7 @@ export function checkPlacement(w: Want, near: readonly Placed[], env: PlaceEnv):
   for (const [x, z] of [...corners(f), [w.x, w.z]]) if (env.waterAt(x, z) > env.heightAt(x, z) - 0.05) return no(5);
   for (const q of near) {
     const qf = footprint(q.kind, q.rot, q.x, q.z);
-    if (!q.mine && distTo(qf, w.x, w.z) < d.placement.otherCampM + radius(f)) return no(7);
+    if (!q.mine && !q.build && distTo(qf, w.x, w.z) < d.placement.otherCampM + radius(f)) return no(7);
     if (overlaps(f, qf, d.placement.gapM / 2)) return no(6);
   }
   if (env.structure(f)) return no(6);

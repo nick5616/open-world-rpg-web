@@ -1,5 +1,17 @@
 [
   {
+    "id": "pt3-base-building",
+    "date": "2026-11-17",
+    "title": "Build your own home",
+    "items": [
+      "Press B to pick up the hammer: build foundations, walls, doors, windows, stairs, roofs and fences in wood, stone or sunsteel-reinforced stone.",
+      "Pieces snap to a grid and to each other; the ghost shows green or red and tells you why.",
+      "Make it a home: a bed that sets your respawn point and lets you Return home, big chests, a forge, a kitchen hearth and a carpenter's bench that work at home.",
+      "Furnish it (benches, tables, rugs, banners, lanterns, trophies) for a higher comfort score and a longer Rested.",
+      "A warding hearth keeps demons away at night and slowly mends your pieces. Share your base with your party if you like."
+    ]
+  },
+  {
     "id": "pt2-vertical-world",
     "date": "2026-11-11",
     "title": "The world goes vertical",

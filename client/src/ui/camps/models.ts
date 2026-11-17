@@ -7,7 +7,6 @@
 // cards), so the model is the ring, the logs and the embers.
 
 import * as THREE from 'three';
-import { CAMPS } from '@lodestone/contracts';
 import { PIECE } from './events';
 import { pieceDef } from '../build/geometry';
 
