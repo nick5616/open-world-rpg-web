@@ -20,7 +20,7 @@ slot. A toggle shows either loadout. Assignment is the existing
 | --- | --- |
 | `card.ts` | Pure: `spellCardData` (school, type: the CR 020 mechanic when there is one (Stream, Homing, Charge, Brand, Orbit, Summon, Volley...) else the delivery, tier, mana, headline number, cooldown), `knownCards`, `slotsHolding`, the school glyphs |
 | `theme.ts` | Colour tokens for the panel and cards (no opacity-dimmed text) and the WCAG contrast maths |
-| `SpellCards.tsx` | `SpellCardFace`, `SpellDetail` (deep info), `SpellTooltip`, `SlotCard`, `SpellBoard` (the panel's section) |
+| `SpellCards.tsx` | `SpellCardFace`, `SpellDetail` (deep info), `SpellTooltip`, `SlotCard`, `SpellBoard` (the panel's section); the grid is the spell bank: `bankCards` hides what the edited loadout has equipped |
 | `dev/shots.mjs` | Solo headless run: clicks, drags, keyboard, both loadouts; `docs/evidence/pt2-spell-cards-*.png` at 1920x1080 and 1280x720 |
 
 Tests: `spellcards.test.ts` (card data for every spell in combat.yaml, the

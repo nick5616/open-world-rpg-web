@@ -18,7 +18,7 @@ import { useEffect, useRef, useState, type CSSProperties, type HTMLAttributes, t
 import { spellHitWith } from '../skills/build';
 import { equipSpell, type Char } from '../skills/char';
 import { castable, namePending, needLine, nodeState, passiveLines, spellByKey, spellFacts, type NodeState } from '../skills/tree';
-import { knownCards, SCHOOL_ICON, slotsHolding, spellCardData, type SpellCardData } from './card';
+import { bankCards, knownCards, SCHOOL_ICON, slotsHolding, spellCardData, type SpellCardData } from './card';
 import { BORDER, BORDER_GOLD, CARD_BG, CARD_BG_HOT, GOLD, GREEN, MANA, PANEL_BG, RED, SLOT_BG, TEXT, TEXT_2, TEXT_3, WARN } from './theme';
 
 // ---- pieces ----
@@ -288,7 +288,7 @@ export function SpellBoard({ c }: { c: Char }) {
       setDrag(next);
       setHover(null);
     };
-    const up = () => {
+    const up = (e: PointerEvent) => {
       const d = dragRef.current;
       press.current = null;
       dragRef.current = null;
@@ -299,6 +299,11 @@ export function SpellBoard({ c }: { c: Char }) {
       if (d.over && d.over !== d.from) {
         const [l, i] = d.over.split(':').map(Number);
         equipSpell(l, i, d.key);
+        setPicked(null);
+      }
+      else if (!d.over && d.from && document.elementFromPoint(e.clientX, e.clientY)?.closest('[data-testid="spell-grid"]')) {
+        const [l, i] = d.from.split(':').map(Number); // dropped back on the bank: unequip
+        equipSpell(l, i, null);
         setPicked(null);
       }
     };
@@ -329,7 +334,8 @@ export function SpellBoard({ c }: { c: Char }) {
   };
 
   const lo = c.loadouts[shown];
-  const cards = knownCards(c.known);
+  const cards = bankCards(c.known, lo?.spells ?? []);
+  const equippedCount = knownCards(c.known).length - cards.length;
   const passives = c.known.filter((k) => !castable(k) && spellByKey.has(k));
   const dragging = !!drag;
   const inShown = new Map<string, number>();
@@ -392,7 +398,7 @@ export function SpellBoard({ c }: { c: Char }) {
         })}
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', margin: '10px 0 4px', fontSize: 11.5, color: TEXT_2 }}>
-        <span style={{ color: TEXT, fontWeight: 600 }}>Your spells ({cards.length})</span>
+        <span style={{ color: TEXT, fontWeight: 600 }}>Spell bank ({cards.length})</span>
         <span>{online ? (picked ? <span style={{ color: GOLD }}>Now click a slot above · click the card again to cancel</span> : 'Click a card then a slot, or drag it onto a slot') : <span style={{ color: WARN }}>Offline: connect to a zone to change slots</span>}</span>
       </div>
       <div data-testid="spell-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 6, maxHeight: 'min(360px, 44vh)', overflowY: 'auto', padding: 2 }}>
@@ -444,7 +450,7 @@ export function SpellBoard({ c }: { c: Char }) {
             </div>
           );
         })}
-        {cards.length === 0 && <div style={{ gridColumn: '1 / -1', color: TEXT_3 }}>No castable spells yet.</div>}
+        {cards.length === 0 && <div style={{ gridColumn: '1 / -1', color: TEXT_3 }}>{equippedCount > 0 ? 'Every castable spell is in a slot.' : 'No castable spells yet.'}</div>}
       </div>
       {passives.length > 0 && (
         <div style={{ fontSize: 11.5, color: TEXT_2, marginTop: 6 }}>
