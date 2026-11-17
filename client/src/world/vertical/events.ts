@@ -5,8 +5,9 @@
 
 import type { Event as ZoneEvent } from '@lodestone/contracts';
 import { useNightHud } from '../../systems/night';
+import { applyPalaceWire, type PalaceWire } from '../palace/palaceStore';
 
-export const VERTICAL_EV = { fallDamage: 1700, lava: 1701, palaceDoor: 1702, activity: 1703, shrineState: 1890, shrineReward: 1891 } as const;
+export const VERTICAL_EV = { fallDamage: 1700, lava: 1701, palaceDoor: 1702, activity: 1703, palaceState: 1704, palaceNote: 1705, shrineState: 1890, shrineReward: 1891 } as const;
 
 /** When you last landed hard / burned (the HUD flashes them). */
 export const verticalFx = { landedAt: 0, burning: false };
@@ -24,7 +25,18 @@ export function onVerticalEvent(e: ZoneEvent, me: number): void {
       if (e.value === 1) hud.notice('Lava! Get out of it!', 'danger', 3000);
       break;
     case VERTICAL_EV.palaceDoor:
-      hud.notice('The palace doors are sealed. Something within is waiting.', 'night', 5000);
+      // CR 044: the doors answer with the palace's phase (0 it was asleep: it wakes now).
+      hud.notice(e.value === 0 ? 'The great doors swing wide. The halls are waking.' : e.value === 3 ? 'The doors stand open. The Sky Guardian has fallen.' : 'The great doors stand open. Strike the three wards.', 'night', 5000);
+      break;
+    case VERTICAL_EV.palaceState:
+      try {
+        applyPalaceWire(JSON.parse(new TextDecoder().decode(e.data ?? new Uint8Array(0))) as PalaceWire);
+      } catch {
+        /* a malformed state is ignored */
+      }
+      break;
+    case VERTICAL_EV.palaceNote:
+      hud.notice(new TextDecoder().decode(e.data ?? new Uint8Array(0)), e.value === 2 ? 'danger' : e.value >= 3 ? 'dawn' : 'night', 6000);
       break;
     case VERTICAL_EV.shrineState:
       shrineNotice(e, hud);

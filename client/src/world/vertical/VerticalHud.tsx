@@ -8,6 +8,7 @@ import { create } from 'zustand';
 import { eFree } from '../../input/interact';
 import { notGameKey } from '../../input/useKeyboard';
 import { nightRuntime } from '../../systems/night';
+import { usePalace } from '../palace/palaceStore';
 
 export interface VerticalHudState {
   /** 0 surface, 1 sky, 2 Underground, 3 Depths. */
@@ -23,7 +24,7 @@ export interface VerticalHudState {
   /** Near lava in the Depths. */
   heat: boolean;
   /** CR 038 hooks: at a sky palace's doors (Interact 150, the site index) or a sky town's activity spot (Interact 151, the prop id). */
-  use: { kind: 150 | 151 | 153; id: bigint; label: string } | null;
+  use: { kind: 150 | 151 | 152 | 153; id: bigint; label: string } | null;
 }
 
 export const useVerticalHud = create<VerticalHudState>(() => ({ layer: 0, place: null, falling: false, dropM: 0, lift: false, heat: false, use: null }));
@@ -57,6 +58,36 @@ const hint: React.CSSProperties = {
   pointerEvents: 'none',
   zIndex: 30,
 };
+
+/** CR 044: the palace's trial: the three wards and the Sky Guardian's health. */
+function PalacePanel() {
+  const st = usePalace();
+  if (!st.near || st.phase < 1) return null;
+  const names = ['Sun', 'Moon', 'Wind'];
+  return (
+    <div style={{ ...card, top: '9%', fontSize: 14 }} data-testid="palace-panel">
+      <div style={{ fontSize: 16, letterSpacing: 3, textTransform: 'uppercase', opacity: 0.9 }}>{st.name || 'The Sky Palace'}</div>
+      {st.phase === 1 && (
+        <div style={{ marginTop: 6, display: 'flex', gap: 14, justifyContent: 'center' }}>
+          {names.map((n, i) => (
+            <span key={n} style={{ color: st.wards[i] ? '#ffd870' : '#9aa0b0' }}>
+              {st.wards[i] ? '\u25C9' : '\u25CB'} {n}
+            </span>
+          ))}
+        </div>
+      )}
+      {st.phase === 2 && (
+        <div style={{ marginTop: 6, width: 280 }}>
+          <div style={{ opacity: 0.85, marginBottom: 3 }}>The Sky Guardian</div>
+          <div style={{ height: 8, borderRadius: 4, background: 'rgba(0,0,0,0.5)', overflow: 'hidden' }}>
+            <div style={{ width: `${Math.max(0, st.boss)}%`, height: '100%', background: 'linear-gradient(90deg,#c88a2a,#ffe08a)' }} />
+          </div>
+        </div>
+      )}
+      {st.phase === 3 && <div style={{ marginTop: 6, color: '#ffd870' }}>{st.opened ? 'The guardian has fallen. You have taken your treasure.' : 'The guardian has fallen: open the chest behind the throne.'}</div>}
+    </div>
+  );
+}
 
 export function VerticalHud() {
   const layer = useVerticalHud((s) => s.layer);
@@ -105,6 +136,7 @@ export function VerticalHud() {
           {banner.sub && <div style={{ fontSize: 15, opacity: 0.8, marginTop: 4, letterSpacing: 4, textTransform: 'uppercase' }}>{banner.sub}</div>}
         </div>
       )}
+      <PalacePanel />
       {falling && (
         <div style={{ ...hint, background: 'rgba(120,30,20,0.72)' }} data-testid="vertical-fall">
           Falling fast, {Math.round(dropM)} m to the ground: press Space to open your glider

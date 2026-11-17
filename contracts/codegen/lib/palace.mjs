@@ -60,7 +60,7 @@ function layout() {
   // Outer walls (12 m, a parapet over the 10 m ceilings), the gate in the front.
   wallZ(-HX, -HZ - T, HZ + T, [], 12);
   wallZ(HX, -HZ - T, HZ + T, [], 12);
-  wallX(-HZ, -HX + T, HX - T, [], 12);
+  wallX(-HZ, -HX + T, HX - T, [], ATRIUM_TOP); // the throne hall's back wall
   wallX(HZ, -HX + T, HX - T, [[-4, 4]], 12);
   // Inner wall lines (x = +-14), doorways to the annexes, the galleries and the wings.
   for (const sx of [-1, 1]) {

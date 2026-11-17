@@ -124,7 +124,7 @@ function twoTone(g: THREE.BufferGeometry, split: number, a: THREE.Color, b: THRE
 }
 
 /** An emissive-tinted material: instance colour = albedo and glow. */
-function glowMaterial(glow: number, opts: THREE.MeshStandardMaterialParameters = {}): THREE.MeshStandardMaterial {
+export function glowMaterial(glow: number, opts: THREE.MeshStandardMaterialParameters = {}): THREE.MeshStandardMaterial {
   const m = new THREE.MeshStandardMaterial({ roughness: 0.25, metalness: 0.1, ...opts });
   const vc = !!opts.vertexColors;
   m.onBeforeCompile = (sh) => {
@@ -205,66 +205,6 @@ function portalGeometry(): THREE.BufferGeometry {
     r.translate(Math.cos(a) * 7.5, 0.3, Math.sin(a) * 4 - 2);
     parts.push(twoTone(r.toNonIndexed(), 0, stone, stone));
   }
-  const g = mergeGeometries(parts)!;
-  g.computeVertexNormals();
-  return g;
-}
-
-function palaceGeometry(): THREE.BufferGeometry {
-  // Unit radius 1: a stepped platform, a keep with a great dome, four towers
-  // with spires, connecting walls, a grand gate (the entrance site faces +z).
-  const marble = new THREE.Color(0.86, 0.85, 0.8);
-  const gold = new THREE.Color(1.0, 0.78, 0.35);
-  const deep = new THREE.Color(0.25, 0.32, 0.5);
-  const glowc = new THREE.Color(1.6, 1.3, 0.7);
-  const parts: THREE.BufferGeometry[] = [];
-  const add = (g: THREE.BufferGeometry, c: THREE.Color) => parts.push(twoTone(g.toNonIndexed(), 0, c, c));
-  for (let s = 0; s < 3; s++) {
-    const p = new THREE.CylinderGeometry(0.95 - s * 0.12, 1.0 - s * 0.12, 0.05, 32);
-    p.translate(0, 0.025 + s * 0.05, 0);
-    add(p, marble);
-  }
-  const keep = new THREE.CylinderGeometry(0.32, 0.36, 0.55, 16);
-  keep.translate(0, 0.42, 0);
-  add(keep, marble);
-  const drum = new THREE.CylinderGeometry(0.27, 0.27, 0.12, 16);
-  drum.translate(0, 0.75, 0);
-  add(drum, marble);
-  const dome = new THREE.SphereGeometry(0.28, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2);
-  dome.translate(0, 0.81, 0);
-  add(dome, gold);
-  const lantern = new THREE.CylinderGeometry(0.03, 0.04, 0.16, 8);
-  lantern.translate(0, 1.16, 0);
-  add(lantern, glowc);
-  for (let i = 0; i < 4; i++) {
-    const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
-    const x = Math.cos(a) * 0.68;
-    const z = Math.sin(a) * 0.68;
-    const tw = new THREE.CylinderGeometry(0.09, 0.11, 0.78, 10);
-    tw.translate(x, 0.54, z);
-    add(tw, marble);
-    const sp = new THREE.ConeGeometry(0.12, 0.42, 10);
-    sp.translate(x, 1.14, z);
-    add(sp, deep);
-    const ring = new THREE.TorusGeometry(0.105, 0.012, 4, 12);
-    ring.rotateX(Math.PI / 2);
-    ring.translate(x, 0.9, z);
-    add(ring, gold);
-  }
-  for (let i = 0; i < 4; i++) {
-    const a = (i / 4) * Math.PI * 2;
-    const w = new THREE.BoxGeometry(0.06, 0.26, 0.92);
-    w.rotateY(-a);
-    w.translate(Math.cos(a + Math.PI / 4) * 0.48 * Math.SQRT2 * 0.68, 0.28, Math.sin(a + Math.PI / 4) * 0.48 * Math.SQRT2 * 0.68);
-    add(w, marble);
-  }
-  // The gate: an arch toward +z.
-  const gate = new THREE.BoxGeometry(0.34, 0.36, 0.1);
-  gate.translate(0, 0.3, 0.42);
-  add(gate, marble);
-  const door = new THREE.BoxGeometry(0.16, 0.24, 0.02);
-  door.translate(0, 0.25, 0.48);
-  add(door, glowc);
   const g = mergeGeometries(parts)!;
   g.computeVertexNormals();
   return g;
@@ -641,9 +581,7 @@ export function buildDecos(v: VerticalWorld): DecoSet & { clouds: ReturnType<typ
   const marbleMat = new THREE.MeshStandardMaterial({ color: 0xd8d4c8, roughness: 0.7 });
   sunMaterials.push(marbleMat);
   add(LAYER_SKY, instanced(pillarGeo, marbleMat, byLayer(LAYER_SKY, [DECO.pillar]), (d, m) => compose(m, d.x, d.y - 0.3, d.z, yawOf(d), 1.6, d.size, 1.6)));
-  const palaceMat = glowMaterial(0.6, { vertexColors: true, roughness: 0.55, metalness: 0.15 });
-  sunMaterials.push(palaceMat);
-  add(LAYER_SKY, instanced(palaceGeometry(), palaceMat, byLayer(LAYER_SKY, [DECO.palace]), (d, m) => compose(m, d.x, d.y - 1, d.z, yawOf(d), d.size), () => new THREE.Color(1, 1, 1)));
+  // The palaces are drawn by world/palace/PalaceViews (CR 044).
   add(LAYER_SKY, waterfalls(byLayer(LAYER_SKY, [DECO.skyfall]), false));
   const clouds = cloudBanks(byLayer(LAYER_SKY, [DECO.cloud]));
   if (clouds) add(LAYER_SKY, clouds.mesh);

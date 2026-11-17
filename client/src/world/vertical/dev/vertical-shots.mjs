@@ -241,6 +241,76 @@ try {
       const at = { x: isl.x + isl.r * 0.45, y: isl.top + 3, z: isl.z + isl.r * 0.3 };
       await shot(page, errors, 'sky-town', { at, yaw: yawTo(at, isl), pitch: -0.02, hour: 15, wait: 10000, view: 'first' });
     }
+    // CR 044: the sky palace, from far below, from the gate, inside the colonnade, the atrium, the throne hall.
+    if (only && [...only].some((n) => n.startsWith('palace'))) {
+      const pal = await L(page, () => {
+        const v = window.__lodestoneVerticalWorld;
+        const d = v.decos.find((x) => x.kind === 16);
+        if (!d) return null;
+        const q = Math.round(d.yaw / 16384) & 3;
+        return { x: d.x, y: d.y, z: d.z, q, floor: d.y + 1.2, size: d.size };
+      });
+      if (pal) {
+        const cs = [1, 0, -1, 0][pal.q];
+        const sn = [0, -1, 0, 1][pal.q];
+        const W = (lx, lz) => ({ x: pal.x + lx * cs + lz * -sn, z: pal.z + lx * sn + lz * cs });
+        const look = (from, to) => yawTo(from, to);
+        // From the ground below, 520 m out, looking up at the palace's island.
+        {
+          // Flying 330 m under the island, 600 m out: its underside, the spires and rings over the rim, the light column.
+          const at = { x: pal.x + 430, y: pal.y - 330, z: pal.z + 420 };
+          await shot(page, errors, 'palace-from-below', { at, yaw: look(at, pal), pitch: Math.atan2(330 + 45, Math.hypot(at.x - pal.x, at.z - pal.z)), hour: 15.5, wait: 9000, fly: true });
+        }
+        // Mid distance on the same height, to see the whole palace.
+        {
+          const a = W(-55, 150);
+          const at = { x: a.x, y: pal.y + 20, z: a.z };
+          await shot(page, errors, 'palace-exterior', { at, yaw: look(at, pal), pitch: 0.2, hour: 16.5, wait: 9000, fly: true });
+        }
+        // Across the sky at the palace's height: 700 m (the hull) and 1900 m (the horizon silhouette).
+        for (const [name, dx, dz] of [
+          ['palace-far', 500, 460],
+          ['palace-horizon', 1300, 1250],
+        ]) {
+          const at = { x: pal.x + dx, y: pal.y + 25, z: pal.z + dz };
+          await shot(page, errors, name, { at, yaw: look(at, pal), pitch: 0.02, hour: 16.8, wait: 9000, fly: true });
+        }
+        // The gate: doors open as you come.
+        {
+          const a = W(0, 68);
+          const at = { x: a.x, y: pal.floor - 1.8, z: a.z };
+          await shot(page, errors, 'palace-gate', { at, yaw: look(at, pal), pitch: 0.12, hour: 16, wait: 8000 });
+        }
+        // Inside: the vestibule's carpet toward the colonnade.
+        {
+          const a = W(0, 36);
+          const at = { x: a.x, y: pal.floor + 0.2, z: a.z };
+          const t = W(0, 4);
+          await shot(page, errors, 'palace-inside', { at, yaw: look(at, t), pitch: 0.02, hour: 14, wait: 8000 });
+        }
+        // The atrium: the wind shaft, the upper gallery and the dome above.
+        {
+          const a = W(0, 2);
+          const at = { x: a.x, y: pal.floor + 0.2, z: a.z };
+          const t = W(0, -12);
+          await shot(page, errors, 'palace-atrium', { at, yaw: look(at, t), pitch: 0.3, hour: 14, wait: 8000 });
+        }
+        // The upper gallery over the shaft, looking across to the wind ward.
+        {
+          const a = W(10, -11.5);
+          const at = { x: a.x, y: pal.floor + 14.2, z: a.z };
+          const t = W(-12, -4.5);
+          await shot(page, errors, 'palace-ring', { at, yaw: look(at, t), pitch: -0.05, hour: 14, wait: 8000 });
+        }
+        // The throne hall, on the upper floor.
+        {
+          const a = W(0, -17);
+          const at = { x: a.x, y: pal.floor + 14.2, z: a.z };
+          const t = W(0, -37);
+          await shot(page, errors, 'palace-throne', { at, yaw: look(at, t), pitch: 0.05, hour: 14, wait: 8000 });
+        }
+      }
+    }
     if (errors.length) console.log(`errors:\n  ${errors.slice(0, 12).join('\n  ')}`);
     results.push({ tier, errors: errors.slice(0, 20) });
   } finally {
