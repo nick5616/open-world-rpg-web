@@ -31,6 +31,7 @@ import { CAMP_REFUSAL, PIECE, type CampPiece } from './events';
 import { campGhost, kitCount, updateGhost } from './ghost';
 import { ensureCampHook } from './link';
 import { distTo, facingRot, footprint } from './placement';
+import { pieceDef } from '../build/geometry';
 import { pruneCampNotes, pushCampNote, safeByFire, useCamps } from './store';
 import { trackPanel } from '../../input/panelStack';
 
@@ -185,7 +186,7 @@ function PlacementBar() {
   useTicker(100);
   const placing = useCamps((s) => s.placing);
   if (!placing) return null;
-  const def = CAMPS.pieces[placing.kind - 1];
+  const def = pieceDef(placing.kind);
   const g = campGhost;
   const ok = g.active && g.reason === 0;
   return (

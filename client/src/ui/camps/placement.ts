@@ -7,6 +7,7 @@
 
 import { CAMPS, WORLD_SIZE_M } from '@lodestone/contracts';
 import { rotCS } from './collide';
+import { pieceDef } from '../build/geometry';
 
 export interface Footprint {
   x: number;
@@ -18,7 +19,7 @@ export interface Footprint {
 }
 
 export function footprint(kind: number, rot: number, x: number, z: number): Footprint {
-  const p = CAMPS.pieces[kind - 1];
+  const p = pieceDef(kind);
   const [c, s] = rotCS(rot);
   return { x, z, c, s, hx: (p?.w ?? 1) / 2, hz: (p?.d ?? 1) / 2 };
 }

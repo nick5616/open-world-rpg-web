@@ -8,7 +8,7 @@
 import { create } from 'zustand';
 import type { Event as ZoneEvent } from '@lodestone/contracts';
 import { CAMPS } from '@lodestone/contracts';
-import { CampSet, campRuntime } from './collide';
+import { CampSet, campRuntime, isSolid, pieceDef } from './collide';
 import { CAMP_EV, CAMP_REFUSAL, decodeArea, decodeChest, decodeMine, decodePiece, decodeRemoved, decodeRested, noteText, PIECE, type CampMine, type CampPiece, type ChestView, type RestedInfo } from './events';
 
 export interface CampNote {
@@ -74,7 +74,7 @@ export function reduceCampEvent(s: Omit<CampState, 'actions'>, e: ZoneEvent, now
     case CAMP_EV.piece: {
       const [p] = decodePiece(e.data, 0, now);
       const out: Partial<CampState> = { pieces: { ...s.pieces, [p.id]: p } };
-      if (e.value === 1 && p.mine && e.entityId === s.selfId) out.notes = [...s.notes, note('placed', `${CAMPS.pieces[p.kind - 1]?.name ?? 'Piece'} placed`, now)];
+      if (e.value === 1 && p.mine && e.entityId === s.selfId) out.notes = [...s.notes, note('placed', `${pieceDef(p.kind)?.name ?? 'Piece'} placed`, now)];
       return out;
     }
     case CAMP_EV.removed: {
@@ -85,7 +85,7 @@ export function reduceCampEvent(s: Omit<CampState, 'actions'>, e: ZoneEvent, now
       delete next[id];
       const out: Partial<CampState> = { pieces: next };
       if (s.chest?.piece === id) out.chest = null;
-      if (e.value === 2 && p.mine) out.notes = [...s.notes, note('removed', `The wilds took your ${CAMPS.pieces[p.kind - 1]?.name.toLowerCase() ?? 'piece'}`, now)];
+      if (e.value === 2 && p.mine) out.notes = [...s.notes, note('removed', `The wilds took your ${pieceDef(p.kind)?.name.toLowerCase() ?? 'piece'}`, now)];
       return out;
     }
     case CAMP_EV.refused:
@@ -112,7 +112,7 @@ let lastSolidSig = '';
 
 /** Rebuild the movement ground's solid set when the solid pieces changed. */
 export function syncSolid(pieces: Record<number, CampPiece>): void {
-  const solid = Object.values(pieces).filter((p) => CAMPS.pieces[p.kind - 1]?.solid);
+  const solid = Object.values(pieces).filter((p) => isSolid(p.kind));
   const sig = solid
     .map((p) => p.id)
     .sort((a, b) => a - b)
