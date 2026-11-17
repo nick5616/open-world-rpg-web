@@ -99,6 +99,186 @@ export function createScatterMaterial(o: ScatterMaterialOptions): ScatterMateria
   return m;
 }
 
+// ---------------------------------------------------------------------------
+// Rich vegetation (playtest 3, CR 045). The same family, plus: an alpha-tested
+// leaf atlas, bark (aFoliage 0 vertices sample a tiling bark texture and get a
+// derivative bump), leaf translucency (sun shining through leaves toward the
+// camera; the sun and sky come from the same uniforms as the impostors),
+// soft crown normals lit from both sides, branch-level wind (aCard.y), and a
+// triplanar stone with moss/snow caps for rocks. No lights are added: the
+// translucency is an emissive term from the one sun direction.
+
+export interface RichLight {
+  uSunDir: { value: THREE.Vector3 };
+  uLightColor: { value: THREE.Color };
+  uAmbient: { value: THREE.Color };
+}
+
+export interface RichOptions extends ScatterMaterialOptions {
+  light: RichLight;
+  mode: 'tree' | 'rock' | 'grass';
+  atlas?: THREE.Texture;
+  bark?: THREE.Texture;
+  stone?: THREE.Texture;
+  /** Leaf translucency strength (0 off). */
+  translucency?: number;
+  /** Branch sway (fraction of instance height per m/s of wind, scaled by aCard.y^2). */
+  branch?: number;
+  bump?: number;
+  moss?: number;
+  snow?: number;
+}
+
+/** Shared by the instanced rich materials and the dense-grass material (which has no instanceMatrix). */
+export function applyRichShader(shader: { uniforms: Record<string, THREE.IUniform>; vertexShader: string; fragmentShader: string }, o: RichOptions): void {
+  const tree = o.mode === 'tree';
+  const rock = o.mode === 'rock';
+  Object.assign(shader.uniforms, {
+    uSunDir: o.light.uSunDir,
+    uLightColor: o.light.uLightColor,
+    uTrans: { value: o.translucency ?? 0 },
+    uBranch: { value: o.branch ?? 0 },
+    uBump: { value: o.bump ?? 0 },
+    uMoss: { value: o.moss ?? 0 },
+    uSnow: { value: o.snow ?? 0 },
+    uBark: { value: o.bark ?? null },
+    uStone: { value: o.stone ?? null },
+  });
+  shader.vertexShader = shader.vertexShader
+    .replace(
+      'varying float vFade;',
+      `varying float vFade;
+      attribute vec2 aBarkUv;
+      attribute vec2 aCard;
+      uniform float uBranch;
+      varying vec2 vBarkUv;
+      varying float vBark;
+      varying float vAO;
+      varying vec3 vObjP;
+      varying vec3 vObjN;`,
+    )
+    .replace(
+      '#include <begin_vertex>',
+      `#include <begin_vertex>
+      vBarkUv = aBarkUv;
+      vBark = step(0.25, aBarkUv.x);
+      vAO = dot(color.rgb, vec3(0.3333));
+      ${
+        rock
+          ? `vObjN = normal;
+      vObjP = transformed * vec3(length(vec3(instanceMatrix[0])), length(vec3(instanceMatrix[1])), length(vec3(instanceMatrix[2])));`
+          : 'vObjN = normal; vObjP = transformed;'
+      }`,
+    );
+  if (tree) {
+    shader.vertexShader = shader.vertexShader.replace(
+      'vec2 bend = w * uSway * hk * hk * iH;',
+      `vec2 bend = w * uSway * hk * hk * iH;
+        bend += w * uBranch * aCard.y * aCard.y * iH * (0.55 + 0.45 * sin(uWindTime * 1.9 + aCard.x + iPos.x * 0.3));`,
+    );
+  }
+  const F = /* glsl */ `
+    uniform sampler2D uBark;
+    uniform sampler2D uStone;
+    uniform vec3 uSunDir;
+    uniform vec3 uLightColor;
+    uniform float uTrans;
+    uniform float uBump;
+    uniform float uMoss;
+    uniform float uSnow;
+    varying vec2 vBarkUv;
+    varying float vBark;
+    varying float vAO;
+    varying vec3 vObjP;
+    varying vec3 vObjN;
+    float surfH = 0.0;
+    vec3 perturbSurf(vec3 surfPos, vec3 surfNorm, vec2 dHdxy, float faceDirection) {
+      vec3 sx = normalize(dFdx(surfPos));
+      vec3 sy = normalize(dFdy(surfPos));
+      vec3 r1 = cross(sy, surfNorm);
+      vec3 r2 = cross(surfNorm, sx);
+      float det = dot(sx, r1) * faceDirection;
+      vec3 grad = sign(det) * (dHdxy.x * r1 + dHdxy.y * r2);
+      return normalize(abs(det) * surfNorm - grad);
+    }
+  `;
+  let mapFrag: string;
+  if (rock) {
+    mapFrag = `
+      vec3 bw = pow(abs(vObjN), vec3(4.0));
+      bw /= (bw.x + bw.y + bw.z + 1e-4);
+      vec3 sp = vObjP * 0.42;
+      vec3 stoneC = texture2D(uStone, sp.zy).rgb * bw.x + texture2D(uStone, sp.xz).rgb * bw.y + texture2D(uStone, sp.xy).rgb * bw.z;
+      float lum = dot(stoneC, vec3(0.3333));
+      surfH = lum;
+      float upN = normalize(vObjN).y;
+      float capAmt = smoothstep(0.42, 0.78, upN + (lum - 0.3) * 1.1);
+      vec3 albedo = stoneC * 2.1;
+      albedo = mix(albedo, vec3(0.05, 0.12, 0.022) * (0.5 + lum * 4.0), capAmt * uMoss);
+      albedo = mix(albedo, vec3(0.62, 0.66, 0.72), smoothstep(0.25, 0.6, upN + (lum - 0.3) * 0.9) * uSnow);
+      diffuseColor *= vec4(albedo, 1.0);
+    `;
+  } else {
+    mapFrag = `
+      #ifdef USE_MAP
+        vec4 sampledDiffuseColor = texture2D(map, vMapUv, -0.4);
+        if (vBark > 0.5) {
+          vec3 bk = texture2D(uBark, vBarkUv).rgb;
+          sampledDiffuseColor = vec4(bk, 1.0);
+          surfH = dot(bk, vec3(0.3333));
+        }
+        diffuseColor *= sampledDiffuseColor;
+      #endif
+    `;
+  }
+  const normalBegin = tree || o.mode === 'grass' ? THREE.ShaderChunk.normal_fragment_begin.replace('gl_FrontFacing ? 1.0 : - 1.0', '1.0') : '#include <normal_fragment_begin>';
+  shader.fragmentShader = shader.fragmentShader
+    .replace('#include <common>', `#include <common>
+${F}`)
+    .replace('#include <map_fragment>', mapFrag)
+    .replace('#include <normal_fragment_begin>', normalBegin)
+    .replace(
+      '#include <normal_fragment_maps>',
+      `#include <normal_fragment_maps>
+      #ifndef FLAT_SHADED
+        if (uBump > 0.0 && surfH > 0.0) {
+          float near = 1.0 - smoothstep(25.0, 70.0, length(vViewPosition));
+          normal = perturbSurf(-vViewPosition, normal, vec2(dFdx(surfH), dFdy(surfH)) * uBump * near, faceDirection);
+        }
+      #endif`,
+    )
+    .replace(
+      '#include <emissivemap_fragment>',
+      `#include <emissivemap_fragment>
+      ${
+        tree || o.mode === 'grass'
+          ? `if (uTrans > 0.0 && vBark < 0.5) {
+        vec3 sunV = normalize((viewMatrix * vec4(uSunDir, 0.0)).xyz);
+        vec3 vd = normalize(vViewPosition);
+        // Looking toward the sun through a leaf: light comes out of its far side.
+        float tr = pow(clamp(dot(vd, -sunV), 0.0, 1.0), 2.5) * clamp(uSunDir.y * 3.0 + 0.1, 0.0, 1.0);
+        totalEmissiveRadiance += diffuseColor.rgb * uLightColor * (tr * uTrans * vAO * vAO);
+      }`
+          : ''
+      }`,
+    );
+}
+
+export function createRichMaterial(o: RichOptions): ScatterMaterial {
+  const m = createScatterMaterial({ ...o, doubleSided: o.doubleSided ?? o.mode !== 'rock' });
+  if (o.atlas) {
+    m.map = o.atlas;
+    m.alphaTest = 0.42;
+  }
+  const base = m.onBeforeCompile;
+  m.onBeforeCompile = (shader, r) => {
+    base.call(m, shader, r);
+    applyRichShader(shader as never, o);
+  };
+  m.customProgramCacheKey = () => `lodestone-rich-1-${o.mode}-${o.doubleSided ?? o.mode !== 'rock' ? 'ds' : 'fs'}-${o.translucency ? 't' : ''}${o.bump ? 'b' : ''}`;
+  return m;
+}
+
 /**
  * Billboard impostors for trees beyond the mesh distance: one camera-facing
  * (cylindrical) quad per instance, textured from an impostor atlas rendered

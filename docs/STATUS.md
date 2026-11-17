@@ -1914,6 +1914,12 @@ Playtest feedback: "Make the assets in the world better and higher fidelity, lik
 - Interiors are still lit by the sky and the fixed light pool: candle flames and glass are emissive, nothing casts light.
 - 512 px textures add ~4 s of worker time at startup on high before towns appear.
 
+## Playtest 3: vegetation art (branch `pt3/vegetation`, CR 045)
+
+Works: rich trees (9 species x 2 variants x 2 LODs, bark, root flare, branching, ~250 alpha-tested leaf cards, translucency, branch and leaf wind, alpha shadows, impostors baked from them), bent-blade meadow grass with flowers, ferns, reeds, shrubs, scrub, heather, fractured stratified rocks with moss and snow, by tier (Low unchanged; Medium/High/Ultra 0.6/1/1.3 x cards), dense grass masked out of towns' roads, plazas and plots. Instancing and ids unchanged (`hide(id)` works). Evidence `docs/evidence/pt3-veg-{before,after}-*`; harness `client/src/world/bench/vegetation.mjs`.
+
+Gaps: no terrain surface change; forest draw calls 413 (> 400) and ~+1 M triangles; frame-time A/B was taken on a shared GPU (p50 12.0 vs 12.1 ms, noisy); no palms or sky/cave species (no scatter records for them).
+
 ## Playtest 3: Base building ✅ (branch `pt3/base-building`, CR 041)
 
 Playtest: "building your own base is a lot more desirable". Extends the camps (CR 025) instead of replacing them: a building piece is a camp piece (same table, events, chests, collision set, area streaming, zone ownership), so camps keep loading unchanged. Contract: `contracts/build.yaml` (appended into the camps tables by the generator), `docs/cr/041-base-building.md`; Events 1820-1821, Interact 90 actions 11-14, refusal reasons 24-34, record version 2, migration 0032, no protocol message.
