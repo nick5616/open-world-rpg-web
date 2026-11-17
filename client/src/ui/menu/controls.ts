@@ -102,6 +102,7 @@ export function controlGroups(debug: boolean, dev = false): ControlGroup[] {
           note: 'does what the [E] line under the crosshair says, one thing at a time; in the saddle E gets off',
           src: [['world/buildings/townHud.ts', "'KeyE'"], ['ui/inventory/LootHud.tsx', "'KeyE'"], ['world/caves/caveManager.ts', "'KeyE'"], ['ui/content/ContentHud.tsx', "'KeyE'"], ['ui/progression/ProgressionHud.tsx', "'KeyE'"], ['input/interact.ts', 'E_ORDER']],
         },
+        { keys: ['8'], action: 'Light or douse your torch', note: 'a torch from a general merchant (6 gold) or a workbench; it burns until the water puts it out, others see it and are lit by it. Familiar light spells (one per school of magic, learned early) float over your shoulder instead', src: [['world/lights/LightRig.tsx', 'TORCH_KEY']] },
         { keys: ['M'], action: 'Map', note: 'drag to pan, wheel to zoom, right-click to pin (Shift: for your party)', src: [['ui/map/ExplorationHud.tsx', "'KeyM'"]] },
         { keys: ['J'], action: 'Quest journal', note: 'bestiary, fish, lore, achievements, renown', src: [['ui/quests/QuestHud.tsx', "'KeyJ'"]] },
         { keys: ['Y'], action: 'Achievements', note: 'points, progress and the titles you can show; also in this menu and the character panel (with a duel challenge waiting, Y accepts it)', src: [['ui/achievements/AchievementsHud.tsx', "'KeyY'"]] },

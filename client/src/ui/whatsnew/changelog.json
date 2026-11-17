@@ -1,5 +1,14 @@
 [
   {
+    "id": "pt3-lights",
+    "date": "2026-11-17",
+    "title": "Light for dark places",
+    "items": [
+      "Press 8 to light your torch: a warm, gently flickering pool of light in your off hand. Everyone nearby sees it, and it lights their surroundings too. Torches are in the starter kit and cost 6 gold at general merchants; water puts them out.",
+      "Every school of magic has a cheap light spell, learnable from the start of its tree: Hearth Mote (fire), Rime Light (a spinning icicle), Dusk Lantern (shadow), Firefly Drift (earth), Static Orb (lightning), Zephyr Mote (wind), Lumen Wisp (light) and Starless Lamp (void). Cast one to call a floating light that follows you over your shoulder; cast it again to dismiss it. It costs a little mana a second while it burns."
+    ]
+  },
+  {
     "id": "pt2-vertical-world",
     "date": "2026-11-11",
     "title": "The world goes vertical",

@@ -27,6 +27,8 @@ import { BOW_MAX_DRAW, bowNock, FIST_WRIST, fistGeometry, forearmGeometry, GRIP_
 import { castHooks, castsFromWeapon } from '../fx/castOrigin';
 import { dressForearms } from '../armor/fp';
 import { ownAppearance } from '../armor/own';
+import { makeTorch, torchAnchors } from '../../world/lights/torchModel';
+import { useLights } from '../../world/lights/lightStore';
 
 /** The newest melee swing (CombatLayer writes it from the FX queue; the weapon reads it). */
 export const swing = { at: 0, dur: 0 };
@@ -232,6 +234,9 @@ export const CAST_UP = new THREE.Vector3(-0.21, -0.17, -0.5);
 /** The spell leaves just in front of the raised palm (so the hand stays visible behind it). */
 const CAST_FROM = new THREE.Vector3(-0.18, -0.11, -0.64);
 const CAST_MS = 520;
+/** CR 042: where the off hand holds a lit torch (camera space), and where it hangs when the weapon needs both hands. */
+const TORCH_HAND = new THREE.Vector3(-0.3, -0.34, -0.5);
+const TORCH_HIP = new THREE.Vector3(-0.36, -0.55, -0.35);
 const tipLocal = new THREE.Vector3();
 
 /** The bowstring is thin: the drawing hand closes on it tightly. */
@@ -356,6 +361,26 @@ export function FirstPersonWeapon() {
     rig.grip.add(p);
     return p;
   }, [rig]);
+  // CR 042: a lit torch in the off hand (a fist and forearm of its own, aimed at the left shoulder like the others)
+  const torch = useMemo(() => {
+    const model = makeTorch();
+    const mat = weaponMaterial();
+    const fist = new THREE.Mesh(fistGeometry(0.03), mat);
+    fist.scale.x = -1;
+    fist.frustumCulled = false;
+    const arm = new THREE.Mesh(forearmGeometry(), mat);
+    arm.scale.x = -1;
+    arm.frustumCulled = false;
+    fist.visible = arm.visible = false;
+    rig.root.add(fist, arm, model.root);
+    return { model, fist, arm };
+  }, [rig]);
+  useEffect(() => {
+    torchAnchors.fp = torch.model;
+    return () => {
+      if (torchAnchors.fp === torch.model) torchAnchors.fp = null;
+    };
+  }, [torch]);
   const st = useMemo(
     () => ({
       key: '',
@@ -532,8 +557,21 @@ export function FirstPersonWeapon() {
     // sword's free off hand rises into view and pushes when you cast; a
     // staff or wand casts out of its tip (castOrigin.ts; the flick above
     // thrusts it); a spear or bow casts from the off hand already on it.
+    // CR 042: a lit torch fills the off hand (a spear or bow needs both: the torch then hangs at the hip, unseen, and still lights).
+    const torchLit = useLights.getState().torch;
+    const twoHanded = st.kind === 'spear' || st.kind === 'bow';
+    torch.model.root.visible = torchLit && !twoHanded && rig.root.visible;
+    torch.fist.visible = torch.arm.visible = torch.model.root.visible;
+    {
+      const sway = Math.sin(now / 900) * 0.006;
+      const fp = torchLit && !twoHanded ? TORCH_HAND : TORCH_HIP;
+      torch.fist.position.set(fp.x + sway, fp.y + Math.sin(now / 1300) * 0.004, fp.z);
+      torch.model.root.position.copy(torch.fist.position);
+      torch.model.root.rotation.set(torchLit && !twoHanded ? -0.5 : -0.2, 0.08, 0.14);
+      if (torch.fist.visible) aimArm(rig, torch.fist, torch.arm, L_SHOULDER);
+    }
     const ct = now - castHooks.selfCastAt;
-    const handCast = st.kind === 'sword' && ct >= 0 && ct < CAST_MS;
+    const handCast = st.kind === 'sword' && ct >= 0 && ct < CAST_MS && !torchLit;
     rig.castFist.visible = rig.castArm.visible = handCast && rig.root.visible;
     if (handCast) {
       const k = smooth(0, 0.3, ct / CAST_MS) * (1 - smooth(0.65, 1, ct / CAST_MS));

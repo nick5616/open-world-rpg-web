@@ -100,6 +100,7 @@ export const BINDINGS: Binding[] = [
   W('Digit5', 'ui/mounts/MountHud.tsx', 'whistle for your steed'),
   W('Digit6', 'ui/pets/PetHud.tsx', 'send your pet (hold: pet wheel)'),
   W('Digit7', 'ui/pets/PetHud.tsx', 'pet: stay / follow'),
+  W('Digit8', 'world/lights/LightRig.tsx', 'light or douse your torch (CR 042)'),
   // Esc: one listener (ui/menu/EscMenu.tsx, first in the capture phase) closes the top panel, mode or wheel on
   // the stack (input/panelStack.ts), else opens the menu. Panels register there instead of listening for Esc.
   W('Escape', 'ui/menu/EscMenu.tsx', 'close the top panel (one at a time), else the Esc menu'),

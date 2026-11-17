@@ -31,6 +31,7 @@ import { attachInventory, LootLayer } from '../ui/inventory';
 // WP15: world clock, demons, town defense, chemistry (fire, ice, pillars, rain).
 import { attachNight, nightWorld } from '../systems/night';
 import { NightLayer } from '../systems/NightLayer';
+import { LightRig } from '../world/lights/LightRig';
 import { ensureQuestHook, unhookQuests } from '../ui/quests/link';
 import { QuestLayer } from '../ui/quests/QuestLayer';
 import { ensureContentHook } from '../ui/content/link'; // CR 023 content
@@ -219,6 +220,7 @@ export function NetPlay({ ready }: { ready: ReadySession }) {
           {/* WP14 */}
           <LootLayer />
           <NightLayer />
+          <LightRig session={session} />
           <QuestLayer />
           <ContentLayer />
           <CampLayer />

@@ -10,7 +10,7 @@
 //     bits 6-9   material code (1 + index in items.yaml materials, weapons/look.ts)
 //     bits 10-12 rarity (0 common .. 7 Bitchin')
 //     bits 13-16 gem: 1 + index in items.yaml gems (0 none)
-//   bits 51-63 zero: the value stays below 2^53, so a JS number holds it exactly.
+//   bits 51-56 the light (CR 042, world/lights): the decoder splits them off with BigInt, so this stays an exact number.
 
 import { ITEMS, type ItemDef } from '@lodestone/contracts';
 import { materialCode, materialKey } from '../weapons/look';

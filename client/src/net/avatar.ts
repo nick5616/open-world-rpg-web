@@ -37,6 +37,7 @@ import { acquireArmor, releaseArmor, type ArmorMeshes } from '../combat/armor/mo
 import { ARMOR_BONES, type ArmorBone } from '../combat/armor/spec';
 import { armorMaterial } from '../combat/armor/material';
 import { makePickaxe } from '../combat/weapons/pickaxe';
+import { makeTorch, type TorchModel } from '../world/lights/torchModel';
 
 export const LOD_MID_M = 25;
 export const LOD_LOW_M = 80;
@@ -422,6 +423,8 @@ function holdQuat(kind: WeaponKind): THREE.Quaternion {
 }
 
 const BOW_HOLD = holdQuat('bow');
+/** CR 042: the torch held up and forward in the left fist. */
+const TORCH_HOLD = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0.1, 0.55, -1).normalize());
 
 interface Arm {
   shoulder: THREE.Group;
@@ -473,6 +476,11 @@ export class Avatar {
   private instrumentProps = new Map<number, THREE.Object3D[]>();
   /** The weapon look typeId shown (pt/ux packLook; CR 022: the gem tints its swing FX). */
   weaponType = -1;
+  /** CR 042: the light this player carries (snapshot appearance bits 51-56: bit 0 torch, bits 1-5 familiar id). */
+  light = 0;
+  /** CR 042: the torch in the off hand (full rig) and on the mid figure; shown while lit. */
+  private torchHi: TorchModel;
+  private torchMid: TorchModel;
   /** The weapon kind in hand (classifies Event 214 actions). */
   weaponKind: WeaponKind | null = null;
   /** The three figures (high, mid, low); only the one in use is in the scene graph. */
@@ -678,6 +686,14 @@ export class Avatar {
     this.weaponHi.visible = false;
     this.weaponMid = new THREE.Mesh(undefined, weaponMaterial());
     this.weaponMid.visible = false;
+    // CR 042: a torch in the left hand (shown while lit; the bow takes both hands)
+    this.torchHi = makeTorch();
+    this.torchHi.root.quaternion.copy(TORCH_HOLD);
+    this.armL.hand.add(this.torchHi.root);
+    this.torchMid = makeTorch();
+    this.torchMid.root.quaternion.copy(TORCH_HOLD);
+    this.torchMid.root.position.set(0, MID_HAND_Y, 0);
+    this.midArmL.add(this.torchMid.root);
     // playtest 2 fishing: the rod rises from the right hand, forward and up; the catch hangs across both hands
     this.rod = new THREE.Mesh(r.rod, r.rodMat);
     this.rod.rotation.x = -2.3; // forward and up from the fist (the forearm points ahead)
@@ -849,6 +865,11 @@ export class Avatar {
     return this.armor?.spec ?? null;
   }
 
+  /** CR 042: the torch model to light from at this distance band (null when none is drawn: the low figure). */
+  activeTorch(): TorchModel | null {
+    return this.animLevel === 0 ? this.torchHi : this.animLevel === 1 ? this.torchMid : null;
+  }
+
   /** The weapon in the hand, for tests and captures (null when none). */
   get weaponMesh(): THREE.Mesh | null {
     return this.weaponHi.visible ? this.weaponHi : null;
@@ -871,6 +892,8 @@ export class Avatar {
     this.root.rotation.y = riding ? this.steedHeading(v, dt) : v.yaw;
     if (((v.typeId ?? 0) & ~TYPE_RIDING) !== (this.weaponType & ~TYPE_RIDING) || this.weaponType < 0) this.setWeapon((v.typeId ?? 0) & ~TYPE_RIDING);
     if ((v.appearance ?? 0) !== this.appearance) this.setAppearance(v.appearance ?? 0); // CR 034: only when it changes
+    this.light = v.light ?? 0; // CR 042: a torch and a familiar light (world/lights)
+    this.torchHi.root.visible = this.torchMid.root.visible = (this.light & 1) !== 0 && this.weaponKind !== 'bow'; // the bow takes both hands
 
     const d = camera.position.distanceTo(this.root.position);
     // 1 m of hysteresis at each band edge: no flicker for someone standing on it
