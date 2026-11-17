@@ -16,6 +16,8 @@
 import { CONVOS, h32 } from './npcLines';
 
 export const TAU = Math.PI * 2;
+/** npc/life.go StepOutM: the doorstep (2 m outside a building's door) villagers rest on and cats sit by. */
+export const STEP_OUT_M = 2;
 export const wrapPi = (a: number): number => {
   const x = (a + Math.PI) % TAU;
   return (x < 0 ? x + TAU : x) - Math.PI;

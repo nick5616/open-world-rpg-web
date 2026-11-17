@@ -52,6 +52,7 @@ import {
   LOOK_M,
   NPC_ROLE,
   PROP,
+  STEP_OUT_M,
   blinking,
   buildOf,
   carryProp,
@@ -102,7 +103,6 @@ export const LABEL_M = 15;
 /** Beyond this the fine animation (looking, gestures) is skipped. */
 const LIVELY_M = 60;
 const THREAT_M = 20;
-const KIND_BENCH = PROP_KINDS.indexOf('bench');
 const KIND_ANVIL = PROP_KINDS.indexOf('anvil');
 const FOCUS_KINDS = new Set<number>(['anvil', 'stall', 'counter', 'crops', 'workbench', 'board', 'forge'].map((k) => PROP_KINDS.indexOf(k as never)));
 
@@ -238,6 +238,7 @@ export class NpcRenderer {
   private readonly offlineY = new Map<number, number>();
   private readonly nameIdx = new Map<string, number[]>();
   private readonly propGrids = new Map<number, Map<number, number[]>>();
+  private stepGrid: Map<number, { x: number; z: number; yaw: number }[]> | null = null;
   private readonly chat = new Map<number, { partner: number; active: boolean; speaking: boolean }>();
   private readonly chatLast = new Map<number, number>();
   private chatAt = 0;
@@ -384,6 +385,35 @@ export class NpcRenderer {
     }
     a.last = nowMs;
     return a;
+  }
+
+  /** The doorstep within r m of (x, z): 2 m outside a building's door (the zone sends villagers there to rest), facing out. */
+  private stepNear(x: number, z: number, r: number): { x: number; z: number; yaw: number } | null {
+    if (!this.stepGrid) {
+      this.stepGrid = new Map();
+      for (const b of this.towns.buildings) {
+        if (b.floors === 0) continue;
+        const k = Math.floor(b.x / 24) * 100003 + Math.floor(b.z / 24);
+        const e = { x: b.x + b.doorU * b.c + (b.hz + STEP_OUT_M) * b.s, z: b.z + b.doorU * b.s - (b.hz + STEP_OUT_M) * b.c, yaw: Math.atan2(-b.c, b.s) };
+        const l = this.stepGrid.get(k);
+        if (l) l.push(e);
+        else this.stepGrid.set(k, [e]);
+      }
+    }
+    const cx = Math.floor(x / 24);
+    const cz = Math.floor(z / 24);
+    let best: { x: number; z: number; yaw: number } | null = null;
+    let bd = r;
+    for (let i = -1; i <= 1; i++)
+      for (let j = -1; j <= 1; j++)
+        for (const e of this.stepGrid.get((cx + i) * 100003 + (cz + j)) ?? []) {
+          const d = Math.hypot(e.x - x, e.z - z);
+          if (d < bd) {
+            bd = d;
+            best = e;
+          }
+        }
+    return best;
   }
 
   /** Nearest prop of the given kind within r m of (x, z), or null (towns props, bucketed in 8 m cells once per kind). */
@@ -533,9 +563,9 @@ export class NpcRenderer {
       // Sitting on a bench (idle villagers near one).
       let sitX = 0;
       let sitZ = 0;
-      if (!moving && near && role === NPC_ROLE.villager && (v.variant & 3) === 3) {
+      if (!moving && near && role === NPC_ROLE.villager) {
         if (nowMs > a.sitCheckAt || Math.hypot(v.x - a.sx, v.z - a.sz) > 0.6) {
-          a.sit = this.propNear(KIND_BENCH, v.x, v.z, 1.2);
+          a.sit = this.stepNear(v.x, v.z, 0.55);
           a.sx = v.x;
           a.sz = v.z;
           a.sitCheckAt = nowMs + 2000;
@@ -545,10 +575,12 @@ export class NpcRenderer {
       if (a.sit && a.sitW > 0.02) {
         sitX = a.sit.x - v.x;
         sitZ = a.sit.z - v.z;
-        const away = wrapPi(a.sit.yaw + Math.PI / 2 - v.yaw);
-        const alt = wrapPi(a.sit.yaw - Math.PI / 2 - v.yaw);
-        yawTarget = Math.abs(away) < Math.abs(alt) ? away : alt;
+        yawTarget = wrapPi(a.sit.yaw - v.yaw); // facing out, toward the street
         yawW = 1;
+        pose.prop = -1;
+        pose.rFwd = 0.95;
+        pose.lFwd = 0.95;
+        pose.bend = 0.12;
       }
 
       // Rain: a hand over the head, hurried steps.
@@ -660,7 +692,7 @@ export class NpcRenderer {
       const yaw = v.yaw + a.yawOff;
 
       // ---- Head and torso follow the player ---------------------------------
-      const watch = near && !talking && !cowers && !(chat && chat.active) && toPlayer < LOOK_M && dy < 4 && a.sitW < 0.5;
+      const watch = near && !talking && !cowers && !(chat && chat.active) && toPlayer < LOOK_M && dy < 4;
       let lookHead = pose.headYaw;
       let lookTorso = 0;
       if (watch) {

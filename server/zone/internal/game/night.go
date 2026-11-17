@@ -375,6 +375,8 @@ func (s *Server) dusk(idx int64) {
 	s.broadcast(&proto.Event{Kind: EventDusk, TargetID: uint32(idx), Value: int32(phase), Data: []byte(msg)}, movement.Vec3{}, 0)
 	s.planDefenses(idx)
 	s.achDusk(idx) // CR 031: nights seen through (achievements.go)
+	// CR 050: the guards' call and the town bell (npc_life.go).
+	s.townsDusk(idx)
 	s.log.Info("dusk", "night", idx, "moon", phase, "hunters/player", n.cfg.World.HuntersPerPlayer(idx), "defenses", len(n.planned))
 }
 

@@ -52,7 +52,7 @@ const (
 // extras are the places an NPC can go beyond its work spot and home, chosen
 // once in New.
 type extras struct {
-	inn     int // the settlement's inn building, -1 none
+	inn     int     // the settlement's inn building, -1 none
 	stepX   float64 // a doorstep to sit on (just outside a building's door)
 	stepZ   float64
 	step    bool

@@ -8,7 +8,7 @@
 //   node client/src/world/buildings/dev/lively-shots.mjs [--dev] [--prefix pt4-lively] [--only smith,chat,look,animals,bench]
 //
 // Writes docs/evidence/<prefix>-<name>.jpg (+ <prefix>-bench.json for `bench`).
-/* global requestAnimationFrame, window */
+/* global requestAnimationFrame */
 import { spawn, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import net from 'node:net';
@@ -203,7 +203,11 @@ if (want('chat')) {
   }
 }
 if (want('animals')) {
-  await standAt({ x: C.x + 12, z: C.z + 12 }, { x: C.x + 4, y: town.y + 0.4, z: C.z + 4 }, 4000);
+  // Chickens pecking by a farm (and whatever dog or cat is about).
+  const f = npcs.find((n) => n.role === 'farmer') ?? npcs[0];
+  const gy = await ground(f.x, f.z);
+  await standAt({ x: f.x + 4.5, z: f.z + 3 }, { x: f.x, y: gy + 0.4, z: f.z }, 3500);
+  say(`animals: ${JSON.stringify(await T(() => window.__lodestoneTowns.animals()))}`);
   await shot('animals');
 }
 let bench = null;

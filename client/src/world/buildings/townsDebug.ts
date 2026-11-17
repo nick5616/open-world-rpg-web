@@ -94,6 +94,7 @@ export function installTownsDebug(m: TownsManager): () => void {
     doorStats: () => (m.doorSync ? { ...m.doorSync.stats, active: m.doorSync.states.active, leaves: m.doorLeaves?.mesh.count ?? 0, online: m.doorSync.online } : null),
     // CR 050: lively townsfolk counters and what is being said (headless scripts).
     lively: () => ({ ...m.npcs.stats, lines: npcFocus.live().map(([k, l]) => ({ key: k, text: l.text, toYou: l.toYou })) }),
+    animals: () => ({ ...m.animals.stats }),
     sayNear: (key: number, text: string) => npcFocus.say(key, text, 6000, true),
     visibleNpcs: () => m.npcs.views.map((v) => ({ name: v.name, role: v.role, x: v.x, y: v.y, z: v.z, entityId: v.entityId })),
   };
