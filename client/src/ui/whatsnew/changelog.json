@@ -1,5 +1,13 @@
 [
   {
+    "id": "pt3-kill-flash",
+    "date": "2026-11-17",
+    "title": "Kill flash fix (Linux)",
+    "items": [
+      "Fixed the screen flashing or going black around kills for players on Linux (a shockwave shader divided into NaN on Mesa / NVIDIA graphics drivers)."
+    ]
+  },
+  {
     "id": "pt2-vertical-world",
     "date": "2026-11-11",
     "title": "The world goes vertical",
