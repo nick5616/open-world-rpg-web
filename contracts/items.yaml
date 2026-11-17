@@ -90,7 +90,7 @@ ores:
   voidglass: {name: Voidglass, smelt: 3}
 
 # Stacks: how many fit in one stack per category (1 = never stacks).
-stacks: {ore: 99, ingot: 99, gem: 99, food: 20, potion: 20, meat: 20, herb: 40, hide: 20, ammo: 99, tool: 1, seed: 20, blueprint: 1, tome: 1, currency: 1000000, weapon: 1, armor: 1, key: 1, quest: 10, wood: 50, camp: 5, fish: 20, instrument: 1}
+stacks: {ore: 99, ingot: 99, gem: 99, food: 20, potion: 20, meat: 20, herb: 40, hide: 20, ammo: 99, tool: 1, seed: 20, blueprint: 1, tome: 1, currency: 1000000, weapon: 1, armor: 1, key: 1, quest: 10, wood: 50, stone: 99, earth: 99, plant: 40, camp: 5, fish: 20, instrument: 1}
 
 # Where a category lives (spec 8: 40 slots plus a gem pouch and an ore pouch;
 # coins in a purse that takes no slot).
@@ -227,6 +227,15 @@ items:
   quest:dawnheart: {name: The Dawnheart, value: 0}
   # ---- camps (playtest 2, CR 025: contracts/camps.yaml): firewood (deadfall, merchants) and camp kits ----
   wood:firewood: {name: Firewood, value: 2}
+  # ---- playtest 3 world edits (CR 040): what chopping, breaking and digging yields; building uses them ----
+  wood:log: {name: Log, value: 3}
+  wood:stick: {name: Stick, value: 1}
+  wood:resin: {name: Resin, value: 4}
+  stone:stone: {name: Stone, value: 2}
+  stone:flint: {name: Flint, value: 5}
+  earth:dirt: {name: Dirt, value: 1}
+  plant:fiber: {name: Plant Fiber, value: 1}
+  plant:berries: {name: Wild Berries, value: 2}
   camp:campfire: {name: Campfire Kit, value: 10}
   camp:bedroll: {name: Bedroll Kit, value: 18}
   camp:chest: {name: Storage Chest Kit, value: 24}
@@ -242,6 +251,8 @@ items:
   tool:torch: {name: Torch, value: 6}
   tool:rope: {name: Rope, value: 10}
   tool:whetstone: {name: Whetstone, value: 8}
+  tool:axe: {name: Axe, value: 30}  # playtest 3 (CR 040): chops trees (and clears bushes)
+  tool:shovel: {name: Shovel, value: 28}  # playtest 3 (CR 040): digs and fills the ground
   tool:fishing_rod: {name: Fishing Rod, value: 25}  # playtest 2 fishing: needed to cast (bought from general and tools merchants, or forged)
   # playtest 2 mounts (CR 027): blow it (key 5) to bond with and call your spirit steed; general stores sell it
   tool:spirit_whistle: {name: Spirit Whistle, value: 40}
@@ -343,6 +354,10 @@ recipes:
   kit_chest: {station: camp, inputs: {wood:firewood: 8, ore:copper: 1}, output: camp:chest, xp: 8}
   kit_workbench: {station: camp, inputs: {wood:firewood: 10, tool:rope: 1}, output: camp:workbench, xp: 10}
   kit_signpost: {station: camp, inputs: {wood:firewood: 3}, output: camp:signpost, xp: 3}
+  # playtest 3 world edits (CR 040): replacement tools, made anywhere from what the world gives
+  kit_axe: {station: camp, inputs: {wood:log: 2, stone:stone: 2, plant:fiber: 1}, output: tool:axe, xp: 4}
+  kit_shovel: {station: camp, inputs: {wood:log: 2, stone:stone: 2, plant:fiber: 1}, output: tool:shovel, xp: 4}
+  kit_pickaxe: {station: camp, inputs: {wood:log: 2, stone:stone: 3, plant:fiber: 1}, output: tool:pickaxe, xp: 4}
   bench_torch: {station: workbench, inputs: {wood:firewood: 2}, output: tool:torch, xp: 2}
   bench_rope: {station: workbench, inputs: {hide:wolf: 1}, output: tool:rope, qty: 2, xp: 3}
   bench_whetstone: {station: workbench, inputs: {ore:copper: 1}, output: tool:whetstone, xp: 3}
@@ -378,7 +393,7 @@ recipes:
 # stand-in draught; granted once per character, exactly once). Playtest 2:
 # a pickaxe, because the starter quest's second step is "mine sunsteel ore"
 # (characters made before it get one once on join, marker starter:pickaxe).
-starter: {potion:health: 3, currency:gold: 20, tool:pickaxe: 1}
+starter: {potion:health: 3, currency:gold: 20, tool:pickaxe: 1, tool:axe: 1, tool:shovel: 1}
 
 # Loot tables (rolled by the zone per eligible player, spec 8 personal loot).
 loot:
