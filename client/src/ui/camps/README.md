@@ -20,3 +20,7 @@ placement and sends Interact 90. Names and numbers come from `contracts/camps.ya
 Controls: **P** camp menu (craft kits, Place). Placing: **wheel** or **R** turns 45 degrees, **left mouse** places
 (green only), **right mouse** or **Esc** cancels. **E** on a piece uses it (cook / light, rest, open, name);
 **hold E** on your own piece picks it up.
+
+CR 041 (base building) extends this folder's pieces with building kinds (ids 100+, 200+; look pieces up by `id`, not index):
+`events.ts` decodes record v2 (state, condition, may-modify) and Events 1820/1821, `collide.ts` carries their boxes and walkable
+surfaces, `store.ts` keeps `build` / `building` / `buildMenu`. The hammer, rules mirror and drawing live in `../build` (see its README).
