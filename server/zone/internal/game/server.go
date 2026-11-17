@@ -127,6 +127,10 @@ type Config struct {
 	PartyChat func(characterIDs []string, text string)
 	// Now is the wall clock (tickets, server time); tests override it.
 	Now func() time.Time
+
+	// Playtest 3 world edits (CR 040, worldedit.go): chopping, breaking and
+	// digging; nil = off.
+	WorldEdit *WorldEditSetup
 }
 
 // Server is one zone process's simulation.
@@ -167,6 +171,7 @@ type Server struct {
 	hist       snapshot.History // G5: the tick's states, shared by every client's encoder (snapshots.go)
 	saveDiv    uint32
 	mine       mining              // WP09 (mining.go)
+	we         worldEdits          // playtest 3 (worldedit.go)
 	calls      chan func()         // run on the tick goroutine (Do, caves.go)
 	env        movement.Env        // WP10: this tick's movement env (stepEnv)
 	hap        []explore.Happening // scratch for exploreTick

@@ -72,6 +72,7 @@ type Entity struct {
 	fallHit   float64   // CR 038: the hardest landing (impact m/s) since the last vertical phase
 	inLava    bool      // CR 038: burning in the Depths' lava (Event 1701 on change)
 	lastSwing time.Time // last accepted pickaxe swing
+	lastWork  time.Time // last accepted axe / shovel swing (worldedit.go)
 	// Pickups: personal drops only their owner sees and can take.
 	Owner     uint32
 	Item      string
