@@ -256,12 +256,13 @@ async function main(): Promise<void> {
     };
 
     // 1. A camp: monsters in the tunnel, then the folk.
-    const camp = await planRoute(false);
-    if (!camp) throw new Error('no camp reachable from a tunnel in this world');
-    await enter(camp);
+    const wantCamp = !only || only.has('cave-monsters') || only.has('camp-folk') || only.has('dwarf-closeup-camp');
+    const camp = wantCamp ? await planRoute(false) : null;
+    if (wantCamp && !camp) throw new Error('no camp reachable from a tunnel in this world');
+    if (camp) await enter(camp);
     let shotCave = false;
-    const midTunnel = Math.floor(route.tunnelPts * 0.45);
-    await walk(0, route.pts.length - 1, 600000, async (i) => {
+    const midTunnel = camp ? Math.floor(route.tunnelPts * 0.45) : 0;
+    if (camp) await walk(0, route.pts.length - 1, 600000, async (i) => {
       if (shotCave || i < midTunnel || (only && !only.has('cave-monsters'))) return;
       shotCave = true;
       await page.keyboard.up('KeyW');
@@ -289,7 +290,7 @@ async function main(): Promise<void> {
       await dev('/despawn');
       await page.keyboard.down('KeyW');
     });
-    if (!only || only.has('dwarf-closeup')) {
+    if (camp && only?.has('dwarf-closeup-camp')) {
       await sleep(9000); // the level-up banner fades
       const t = await approach((l) => l.find((n) => n.name === 'Thramund') ?? l.sort((a, b) => a.x - b.x)[0], 3.6, 0.02);
       console.log(`dwarf close-up: ${t ? `${t.name} at ${(await me()).x.toFixed(0)}` : 'no townsperson reachable'}`);
@@ -297,14 +298,14 @@ async function main(): Promise<void> {
       await shot('dwarf-closeup');
       await dev('/despawn');
     }
-    if (!only || only.has('camp-folk')) {
+    if (camp && (!only || only.has('camp-folk'))) {
       await faceNearest(5, -0.05);
       await sleep(800);
       await shot('camp-folk');
     }
 
     // 2. A stronghold: across its cavern and down the Deep Road to the market.
-    if (!only || only.has('stronghold-market')) {
+    if (!only || only.has('stronghold-market') || only.has('dwarf-closeup')) {
       const hold = await planRoute(true);
       if (!hold) console.log('no stronghold reachable from a tunnel through a vast cavern in this world');
       else {
@@ -315,7 +316,12 @@ async function main(): Promise<void> {
         const p = await me();
         console.log(`stronghold folk in view: ${(await drawn(5)).length} at (${p.x.toFixed(0)}, ${p.y.toFixed(0)}, ${p.z.toFixed(0)})`);
         await sleep(1000);
-        await shot('stronghold-market');
+        if (!only || only.has('stronghold-market')) await shot('stronghold-market');
+        // A dwarf close-up in the market: the nearest townsperson, 3.6 m away.
+        const t = await approach((l) => l.sort((a, b) => Math.hypot(a.x - (route.target.x), a.z - route.target.z) - Math.hypot(b.x - route.target.x, b.z - route.target.z))[0], 3.6, 0.02);
+        console.log(`dwarf close-up: ${t ? t.name : 'no townsperson reachable'}`);
+        await sleep(1200);
+        await shot('dwarf-closeup');
       }
     }
   } finally {
