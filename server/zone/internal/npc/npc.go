@@ -36,6 +36,8 @@ const (
 	GoalWork = iota
 	GoalHome
 	GoalWander
+	// GoalInn.. (life.go): lunch and evening at the inn or the square, guard
+	// beats, visits to neighbours, a rest on a bench.
 )
 
 // Hour of the in-game day (0..24) at time of day t seconds.
@@ -86,6 +88,10 @@ type World struct {
 	// zone glue (internal/game/doors.go) opens a closed door for the NPC and
 	// closes it behind them.
 	Doors DoorGate
+	// Rain sends villagers and farmers indoors (life.go). The zone glue sets it
+	// when the weather changes (never per NPC).
+	Rain bool
+	ex   []extras
 }
 
 // DoorGate lets the zone gate NPC walks through building doors.
@@ -115,6 +121,7 @@ func New(t *towns.Towns, seed uint64, sites []Site) *World {
 	for si := range t.Settlements {
 		w.graphs = append(w.graphs, buildGraph(t, si))
 	}
+	w.buildExtras()
 	w.NPCs = make([]State, len(t.NPCs))
 	for i := range t.NPCs {
 		w.NPCs[i] = State{Def: &t.NPCs[i]}
@@ -130,6 +137,9 @@ func (w *World) Works(i int, h float64) bool {
 		return true
 	case towns.RoleFarmer:
 		return h >= 6 && h < 18
+	}
+	if d.Role == towns.RoleMerchant {
+		return h >= marketFrom && h < marketTo // market hours
 	}
 	return h >= 7 && h < 19
 }
@@ -164,6 +174,8 @@ func (w *World) goalPoint(i, g int, todS float64) [2]float64 {
 	switch g {
 	case GoalHome:
 		return [2]float64{d.HomeX, d.HomeZ}
+	case GoalInn, GoalSquare, GoalBeat, GoalVisit, GoalStep:
+		return w.lifePoint(i, g, todS)
 	case GoalWander:
 		// A point within 5 m of the work spot, changing every ~25 s.
 		slot := int64(todS / 25)
@@ -177,13 +189,15 @@ func (w *World) goalPoint(i, g int, todS float64) [2]float64 {
 
 // Want is the goal NPC i should pursue at time of day t.
 func (w *World) Want(i int, todS float64) int {
-	if !w.Works(i, Hour(todS)) {
+	h := Hour(todS)
+	d := w.NPCs[i].Def
+	if !w.Works(i, h) {
+		if g := w.evening(i, h, d); g >= 0 {
+			return g
+		}
 		return GoalHome
 	}
-	if w.NPCs[i].Def.Role == towns.RoleVillager {
-		return GoalWander
-	}
-	return GoalWork
+	return w.lifeWant(i, h, todS, d)
 }
 
 // Place puts NPC i where it should be at time t (activation: an NPC
@@ -210,7 +224,7 @@ func (w *World) Place(i int, todS float64, ground func(x, y, z float64) float64,
 		s.Y = ground(s.X, s.Y, s.Z)
 	}
 	s.path, s.doors, s.pathI, s.target = nil, nil, 0, p
-	s.wanderSlot = int64(todS / 25)
+	s.wanderSlot = slotFor(s.Goal, todS)
 	s.VX, s.VZ = 0, 0
 	s.Yaw = s.Def.WorkYaw
 	s.At = true
@@ -221,8 +235,8 @@ func (w *World) Place(i int, todS float64, ground func(x, y, z float64) float64,
 func (w *World) Step(i int, todS, dt float64, ground func(x, y, z float64) float64) {
 	s := &w.NPCs[i]
 	g := w.Want(i, todS)
-	slot := int64(todS / 25)
-	if g != s.Goal || s.path == nil && !s.At || (g == GoalWander && slot != s.wanderSlot) {
+	slot := slotFor(g, todS)
+	if g != s.Goal || s.path == nil && !s.At || slot != s.wanderSlot {
 		s.Goal = g
 		s.wanderSlot = slot
 		s.target = w.goalPoint(i, g, todS)
