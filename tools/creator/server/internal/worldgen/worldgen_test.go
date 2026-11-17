@@ -40,7 +40,7 @@ func TestAtlasHashMatchesGolden(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer m.Close(ctx)
-	if m.GenVersionString() != "3" { // CR 038 (golden.json is genVersion 3)
+	if m.GenVersionString() != "4" { // CR 043 (golden.json is genVersion 4)
 		t.Fatalf("genVersion %s", m.GenVersionString())
 	}
 	b, err := os.ReadFile(filepath.Join("..", "..", "..", "..", "..", "worldgen", "golden", "golden.json"))

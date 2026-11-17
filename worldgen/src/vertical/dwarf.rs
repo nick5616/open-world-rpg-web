@@ -300,7 +300,7 @@ pub fn plan(a: &Atlas, cw: &CaveWorld, p: &mut Plan) {
         let ul = libm::sqrt(ux * ux + uz * uz);
         let dist = reach + 42.0 + seq.range(30.0, 130.0);
         let (x, z) = (sx + ux / ul * dist, sz + uz / ul * dist);
-        if tries % 6 == 0 && by_tunnel {
+        if tries.is_multiple_of(6) && by_tunnel {
             tun_i += 1;
         }
         if !clear(a, p, &boxes, x, z, reach) {

@@ -96,7 +96,7 @@ func TestCreatesWhenMissing(t *testing.T) {
 		t.Fatalf("%v %s %+v", err, action, w)
 	}
 	// Golden table: seed-7's spec_from_seed atlas.
-	if w.AtlasHash != "74516190aeb805df" {
-		t.Fatalf("atlas hash %s, golden 74516190aeb805df", w.AtlasHash)
+	if w.AtlasHash != "ce0b6451009659fd" {
+		t.Fatalf("atlas hash %s, golden ce0b6451009659fd", w.AtlasHash)
 	}
 }
