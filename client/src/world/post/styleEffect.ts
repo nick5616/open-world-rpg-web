@@ -41,7 +41,7 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
     c *= mix(1.0, (q * q) / max(l, 1e-4), 0.75);
   }
   if (uLook.y > 0.0) {
-    float v = smoothstep(0.95, 0.3, length((uv - 0.5) * vec2(1.0, 0.82)) * 1.35);
+    float v = (1.0 - smoothstep(0.3, 0.95, length((uv - 0.5) * vec2(1.0, 0.82)) * 1.35));
     c *= mix(1.0, v, uLook.y);
   }
   if (uLook.z > 0.0) {

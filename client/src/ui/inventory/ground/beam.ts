@@ -185,7 +185,7 @@ void main() {
   float top = 1.0 - smoothstep(0.3, 1.0, vUv.y);
   float land = 1.0 + 1.6 * (1.0 - smoothstep(0.0, 0.3, y)); // brightest where it lands (the bottom 30 cm)
   float pulse = 0.87 + 0.13 * sin(uTime * 1.5);
-  float k = top * land * pulse * vBeam.y * vFade * fogDim() * smoothstep(1.0, 0.85, x);
+  float k = top * land * pulse * vBeam.y * vFade * fogDim() * (1.0 - smoothstep(0.85, 1.0, x));
   vec3 col = vColor.a > 0.5 ? holoRgb(vUv.y * 1.6 - uTime * 0.18 + vUv.x * 0.15) : vColor.rgb;
   // premultiplied: the colour adds light, alpha dims what is behind a little
   // (so the beam keeps its colour against a bright sky)
@@ -229,10 +229,10 @@ void main() {
 #ifndef LOW
   for (int i = 0; i < 2; i++) {
     float ph = fract(uTime * 0.45 + float(i) * 0.5);
-    ripple += smoothstep(0.08, 0.0, abs(r - ph)) * (1.0 - ph) * 0.7;
+    ripple += (1.0 - smoothstep(0.0, 0.08, abs(r - ph))) * (1.0 - ph) * 0.7;
   }
 #else
-  ripple = smoothstep(0.1, 0.0, abs(r - fract(uTime * 0.45))) * 0.4;
+  ripple = (1.0 - smoothstep(0.0, 0.1, abs(r - fract(uTime * 0.45)))) * 0.4;
 #endif
   float a = (glow + ripple) * (1.0 - smoothstep(0.75, 1.0, r)) * vI * fogDim();
   vec3 col = vColor.a > 0.5 ? holoRgb(r * 0.8 - uTime * 0.2) : vColor.rgb;
@@ -258,7 +258,7 @@ void main() {
   vec4 mv = viewMatrix * vec4(wp, 1.0);
   gl_Position = projectionMatrix * mv;
   float d = length(cameraPosition - aBase);
-  vA = smoothstep(1.0, 0.75, k) * smoothstep(0.0, 0.08, k) * (1.0 - smoothstep(90.0, 130.0, d)) * aMote.z;
+  vA = (1.0 - smoothstep(0.75, 1.0, k)) * smoothstep(0.0, 0.08, k) * (1.0 - smoothstep(90.0, 130.0, d)) * aMote.z;
   gl_PointSize = aMote.y * (0.6 + 0.6 * k) * (420.0 / max(1.0, -mv.z));
   vColor = aColor;
   ${FOG_V}

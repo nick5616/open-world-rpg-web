@@ -46,7 +46,7 @@ const skyFragment = /* glsl */ `
   void main() {
     vec3 d = normalize(vDir);
     float h = d.y;
-    vec3 col = h > 0.0 ? mix(horizon, zenith, pow(h, 0.5)) : mix(horizon, horizon * 0.55, pow(-h, 0.4));
+    vec3 col = h > 0.0 ? mix(horizon, zenith, pow(max(h, 0.0), 0.5)) : mix(horizon, horizon * 0.55, pow(max(-h, 0.0), 0.4));
     float s = max(dot(d, sunDir), 0.0);
     col += vec3(1.0, 0.95, 0.85) * (pow(s, 1200.0) * 6.0 + pow(s, 24.0) * 0.18) * sunStrength;
     gl_FragColor = vec4(col, 1.0);

@@ -193,13 +193,19 @@ export function applyRichShader(shader: { uniforms: Record<string, THREE.IUnifor
     varying vec3 vObjN;
     float surfH = 0.0;
     vec3 perturbSurf(vec3 surfPos, vec3 surfNorm, vec2 dHdxy, float faceDirection) {
-      vec3 sx = normalize(dFdx(surfPos));
-      vec3 sy = normalize(dFdy(surfPos));
+      // normalize() of a zero vector is undefined (NaN on Mesa / NVIDIA GL): a sub-pixel or
+      // edge-on triangle has zero screen derivatives, and det = 0 zeroes the result below.
+      vec3 sx = dFdx(surfPos);
+      vec3 sy = dFdy(surfPos);
+      sx /= max(length(sx), 1e-12);
+      sy /= max(length(sy), 1e-12);
       vec3 r1 = cross(sy, surfNorm);
       vec3 r2 = cross(surfNorm, sx);
       float det = dot(sx, r1) * faceDirection;
       vec3 grad = sign(det) * (dHdxy.x * r1 + dHdxy.y * r2);
-      return normalize(abs(det) * surfNorm - grad);
+      vec3 bent = abs(det) * surfNorm - grad;
+      float bl = length(bent);
+      return bl > 1e-6 ? bent / bl : surfNorm;
     }
   `;
   let mapFrag: string;

@@ -65,8 +65,8 @@ varying float vAge;
 void main() {
   float d = length(vUv);
   // a soft lumpy puff: radial falloff broken by a little angular noise
-  float n = 0.9 + 0.1 * sin(atan(vUv.y, vUv.x) * 3.0 + vAge * 6.0);
-  float a = smoothstep(1.0, 0.1, d / n);
+  float n = 0.9 + 0.1 * sin(atan(vUv.y, vUv.x + 1e-6) * 3.0 + vAge * 6.0);
+  float a = (1.0 - smoothstep(0.1, 1.0, d / n));
   a *= a * 0.8 * vA;
   if (a < 0.004) discard;
   // fresh smoke is a little darker and warmer near the stack

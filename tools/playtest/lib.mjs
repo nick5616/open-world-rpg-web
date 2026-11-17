@@ -16,7 +16,7 @@ export async function launch(outDir, { width = 1600, height = 900 } = {}) {
   mkdirSync(outDir, { recursive: true });
   const browser = await chromium.launch({
     headless: true,
-    args: ['--use-angle=d3d11', '--enable-gpu', '--ignore-gpu-blocklist', '--autoplay-policy=no-user-gesture-required', '--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'],
+    args: [`--use-angle=${process.env.LODESTONE_ANGLE ?? 'd3d11'}`, '--enable-gpu', '--ignore-gpu-blocklist', '--autoplay-policy=no-user-gesture-required', '--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'],
   });
   const page = await browser.newPage({ viewport: { width, height } });
   const log = [];

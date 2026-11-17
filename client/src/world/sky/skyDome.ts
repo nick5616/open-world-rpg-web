@@ -47,7 +47,7 @@ void main() {
     vec3 sd = v * 220.0;
     vec3 cell = floor(sd);
     float hs = fract(sin(dot(cell, vec3(12.9898, 78.233, 37.719))) * 43758.5453);
-    float star = step(0.9965, hs) * smoothstep(0.5, 0.0, length(fract(sd) - 0.5));
+    float star = step(0.9965, hs) * (1.0 - smoothstep(0.0, 0.5, length(fract(sd) - 0.5)));
     col += vec3(0.9, 0.95, 1.0) * star * night * (0.6 + 0.4 * sin(uWindTime * 3.0 + hs * 50.0)) * 1.6 * smoothstep(0.0, 0.15, v.y);
   }
   // Sun disk (HDR) and moon.
@@ -82,7 +82,7 @@ void main() {
   col += vec3(0.5, 0.55, 0.75) * uWeatherSky.z * 0.6;
   if (uWeatherSky.w > 0.0) col = mix(col, vec3(0.78, 0.62, 0.42) * (0.25 + dot(col, vec3(0.33))), 0.7 * uWeatherSky.w);
   // Below the horizon: a dim mirror of the horizon colour (seen past the world's edge).
-  if (v.y < 0.0) col = mix(col, col * 0.4, smoothstep(0.0, -0.3, v.y));
+  if (v.y < 0.0) col = mix(col, col * 0.4, (1.0 - smoothstep(-0.3, 0.0, v.y)));
   col = lsSkyStyle(col, v.y);
   gl_FragColor = vec4(col, 1.0);
 }

@@ -19,6 +19,7 @@ import * as THREE from 'three';
 import { BlendFunction, BloomEffect, Effect, EffectAttribute, EffectComposer, EffectPass, FXAAEffect, GodRaysEffect, RenderPass, ToneMappingEffect, ToneMappingMode, type Pass } from 'postprocessing';
 import { SKY_GLSL, SKY_STYLE_GLSL } from '../sky/atmosphere';
 import { StyleEffect } from './styleEffect';
+import { FINITE_GLSL, guardLuminanceFragment } from './finiteGuard';
 // Playtest 2 photo mode: depth of field, vignette, grain (its own pass, off outside photo mode).
 import { PhotoEffect } from './photoEffect';
 // Playtest 2: spell shockwave distortion, shake and flashes (combat/fx/screen.ts).
@@ -49,6 +50,7 @@ uniform vec4 uWeatherDrift;
 uniform vec4 uCaveFog;
 ${SKY_GLSL}
 ${SKY_STYLE_GLSL}
+${FINITE_GLSL}
 vec3 fogColour(vec3 d) {
   vec3 c = lsSkyStyle(skyAmbient(normalize(vec3(d.x, max(d.y, 0.03), d.z)), uSunDir), d.y);
   // Blowing sand tints the air ochre.
@@ -80,13 +82,13 @@ float fogBank(vec3 d, float L) {
 void mainUv(inout vec2 uv) {
   // Heat shimmer: a fine wobble over the lower half of the view.
   if (uWeather.w > 0.0) {
-    float m = uWeather.w * smoothstep(0.62, 0.3, uv.y);
+    float m = uWeather.w * (1.0 - smoothstep(0.3, 0.62, uv.y));
     uv.x += sin(uv.y * 220.0 + uWeatherDrift.z * 5.0) * 0.0011 * m;
     uv.y += sin(uv.x * 160.0 + uWeatherDrift.z * 3.7) * 0.0008 * m;
   }
 }
 void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth, out vec4 outputColor) {
-  vec3 col = inputColor.rgb;
+  vec3 col = lsFinite(inputColor.rgb);
   if (depth < 0.999999) {
     vec4 vp = uInvProj * vec4(uv * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
     vp /= vp.w;
@@ -257,6 +259,10 @@ export class PostFX {
     }
     if (cfg.bloom) {
       this.bloom = new BloomEffect({ mipmapBlur: true, intensity: 0.45, luminanceThreshold: 1.25, luminanceSmoothing: 0.3, radius: 0.65 });
+      // One NaN pixel in the scene would be spread over the whole frame by the mip blur (finiteGuard.ts).
+      const lum = this.bloom.luminanceMaterial;
+      lum.fragmentShader = guardLuminanceFragment(lum.fragmentShader);
+      lum.needsUpdate = true;
       effects.push(this.bloom);
     }
     effects.push(new ToneMappingEffect({ mode: ToneMappingMode.ACES_FILMIC }));

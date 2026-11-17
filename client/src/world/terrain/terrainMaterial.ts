@@ -210,7 +210,8 @@ if (uTexReady < 0.5) {
       tnX = vec3(tnX.xy + Ng.zy, abs(tnX.z) * Ng.x);
       tnY = vec3(tnY.xy + Ng.xz, abs(tnY.z) * Ng.y);
       tnZ = vec3(tnZ.xy + Ng.xy, abs(tnZ.z) * Ng.z);
-      nsum += normalize(tnX.zyx * tw.x + tnY.xzy * tw.y + tnZ.xyz * tw.z) * bi;
+      vec3 tnW = tnX.zyx * tw.x + tnY.xzy * tw.y + tnZ.xyz * tw.z;
+      nsum += (tnW / max(length(tnW), 1e-4)) * bi;
       #else
       nsum += Ng * bi;
       #endif
@@ -219,7 +220,8 @@ if (uTexReady < 0.5) {
       #ifdef TERRAIN_NORMALS
       vec3 tn = unpackN(textureGrad(tNormal, vec3(uv, float(i)), dx, dy).rgb);
       // Planar xz frame: u = +x, image-up (green) = -z (flipY is off for KTX2).
-      vec3 T = normalize(vec3(1.0, 0.0, 0.0) - Ng * Ng.x);
+      vec3 T = vec3(1.0, 0.0, 0.0) - Ng * Ng.x;
+      T /= max(length(T), 1e-4); // a wall facing exactly east has no tangent: normalize(0) is NaN on GL
       vec3 B = cross(Ng, T);
       nsum += (T * tn.x + B * tn.y + Ng * tn.z) * bi;
       #else

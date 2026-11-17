@@ -83,7 +83,7 @@ export function layerRockMaterial(deep: boolean): THREE.MeshStandardMaterial {
   ${deep ? `// Magma veins in the basalt: a few glowing cracks low on the walls that breathe.
   float c = vtNoise(vVtWorld * 0.06);
   float crack = smoothstep(0.485, 0.5, c) * (1.0 - smoothstep(0.5, 0.515, c));
-  float low = smoothstep(0.85, 0.2, abs(vVtN.y)) * smoothstep(0.55, 0.8, vtNoise(vVtWorld * 0.02 + 3.0));
+  float low = (1.0 - smoothstep(0.2, 0.85, abs(vVtN.y))) * smoothstep(0.55, 0.8, vtNoise(vVtWorld * 0.02 + 3.0));
   totalEmissiveRadiance += vec3(1.0, 0.3, 0.05) * crack * low * (0.8 + 0.3 * sin(uTime * 1.3 + vVtWorld.x * 0.05)) * 1.2;` : ''}
 }`,
       );
@@ -124,7 +124,7 @@ export function islandMaterial(): THREE.MeshStandardMaterial {
         '#include <emissivemap_fragment>',
         `#include <emissivemap_fragment>
 // Undersides catch a little sky bounce (they would read black against the sky otherwise).
-totalEmissiveRadiance += diffuseColor.rgb * vec3(0.16, 0.19, 0.24) * uSkyFill * smoothstep(-0.2, -0.9, vVtN.y);`,
+totalEmissiveRadiance += diffuseColor.rgb * vec3(0.16, 0.19, 0.24) * uSkyFill * (1.0 - smoothstep(-0.9, -0.2, vVtN.y));`,
       );
   };
   m.customProgramCacheKey = () => 'vt-island-v1';

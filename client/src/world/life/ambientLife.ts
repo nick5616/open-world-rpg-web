@@ -166,7 +166,7 @@ varying float vSeed;
 void main() {
   vec2 c = gl_PointCoord - 0.5;
   float r = length(c);
-  float a = smoothstep(0.5, 0.0, r);
+  float a = (1.0 - smoothstep(0.0, 0.5, r));
   a *= a;
   gl_FragColor = vec4(uColor * (0.85 + 0.3 * vSeed), a * uOpacity * vA);
 }

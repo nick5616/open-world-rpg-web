@@ -54,7 +54,7 @@ varying float vA; varying vec3 vC;
 void main() {
   float d = length(gl_PointCoord - 0.5) * 2.0;
   if (d > 1.0) discard;
-  float c = smoothstep(1.0, 0.15, d);
+  float c = (1.0 - smoothstep(0.15, 1.0, d));
   gl_FragColor = vec4(vC, c * vA);
 }`;
 const FRAG_BIRD = /* glsl */ `

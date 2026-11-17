@@ -73,8 +73,8 @@ export const flameMat = new THREE.ShaderMaterial({
     void main() {
       vec2 c = vUv - vec2(0.5, 0.0);
       float w = 0.5 * (1.0 - vUv.y) + 0.04;
-      float edge = smoothstep(w, w * 0.25, abs(c.x + 0.06 * sin(uTime * 9.0 + vUv.y * 8.0 + vSeed * 20.0)));
-      float a = edge * smoothstep(1.0, 0.25, vUv.y) * smoothstep(0.0, 0.08, vUv.y);
+      float edge = (1.0 - smoothstep(w * 0.25, w, abs(c.x + 0.06 * sin(uTime * 9.0 + vUv.y * 8.0 + vSeed * 20.0))));
+      float a = edge * (1.0 - smoothstep(0.25, 1.0, vUv.y)) * smoothstep(0.0, 0.08, vUv.y);
       vec3 col = mix(vec3(1.0, 0.62, 0.18), vec3(0.9, 0.16, 0.02), vUv.y);
       gl_FragColor = vec4(col * 1.1 * a, a);
     }`,
