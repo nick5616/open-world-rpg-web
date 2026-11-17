@@ -364,6 +364,7 @@ export function FirstPersonWeapon() {
   // CR 042: a lit torch in the off hand (a fist and forearm of its own, aimed at the left shoulder like the others)
   const torch = useMemo(() => {
     const model = makeTorch();
+    model.root.scale.setScalar(0.85);
     const mat = weaponMaterial();
     const fist = new THREE.Mesh(fistGeometry(0.03), mat);
     fist.scale.x = -1;

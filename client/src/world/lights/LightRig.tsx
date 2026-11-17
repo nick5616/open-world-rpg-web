@@ -27,6 +27,7 @@ import type { ZoneSession } from '../../net/zoneSession';
 import { QUALITY_PRESETS, useQualityStore } from '../../stores/qualityStore';
 import { useAccessibility } from '../../stores/accessibility';
 import { notGameKey } from '../../input/useKeyboard';
+import { DEBUG } from '../../config';
 import { familiarById, TORCH, unpackLight, type FamiliarDef } from './familiars';
 import { makeFamiliarVisual, type FamiliarVisual } from './familiarModels';
 import { breathe, flameFlicker, flickerSwing } from './flicker';
@@ -38,7 +39,9 @@ import { torchAnchors, type TorchModel } from './torchModel';
 export const TORCH_KEY = 'Digit8';
 
 /** Familiars hover here, relative to their owner's feet and facing: over the right shoulder. */
-const SHOULDER = { right: 0.62, up: 1.95, back: -0.15 };
+const SHOULDER = { right: 0.62, up: 1.95, back: 0.1 };
+/** Your own, seen from inside your head: ahead and to the right, a little above the eye, so it is in view (not behind the lens). */
+const SHOULDER_FP = { right: 0.75, up: 1.98, back: -0.95 };
 const MAX_SOURCES = 24;
 
 interface Floater {
@@ -57,6 +60,7 @@ interface Slot {
 }
 
 const tmp = new THREE.Vector3();
+const fwd = new THREE.Vector3();
 
 export function LightRig({ session }: { session: ZoneSession }) {
   const scene = useThree((s) => s.scene);
@@ -68,7 +72,7 @@ export function LightRig({ session }: { session: ZoneSession }) {
     const root = new THREE.Group();
     root.name = 'light-rig';
     const slots: Slot[] = Array.from({ length: n }, () => {
-      const l = new THREE.PointLight('#ffffff', 0, 16, 2);
+      const l = new THREE.PointLight('#ffffff', 0, 16, 1.7); // decay 1.7: a candle-warm falloff that reaches farther than inverse-square
       l.castShadow = false;
       root.add(l);
       return { light: l, key: '', cur: 0 };
@@ -83,6 +87,18 @@ export function LightRig({ session }: { session: ZoneSession }) {
       scene.remove(rig.root);
       for (const f of rig.floaters.values()) f.vis.dispose();
       rig.floaters.clear();
+    };
+  }, [scene, rig]);
+
+  // Headless captures (debug builds): the pool's slots and how many three.js lights the scene holds.
+  useEffect(() => {
+    if (!DEBUG || typeof window === 'undefined') return;
+    (window as unknown as { __lodestoneLights?: unknown }).__lodestoneLights = () => {
+      let lights = 0;
+      scene.traverse((o) => {
+        if ((o as THREE.Light).isLight) lights++;
+      });
+      return { slots: rig.slots.map((s) => ({ key: s.key, intensity: +s.light.intensity.toFixed(2) })), lights, floaters: rig.floaters.size };
     };
   }, [scene, rig]);
 
@@ -143,7 +159,7 @@ export function LightRig({ session }: { session: ZoneSession }) {
       (torch.halo.material as THREE.SpriteMaterial).opacity = 0.42 + 0.1 * k;
       return tmp;
     };
-    const float = (id: string, def: FamiliarDef, ox: number, oy: number, oz: number, yaw: number, priority: number, seed: number) => {
+    const float = (id: string, def: FamiliarDef, ox: number, oy: number, oz: number, yaw: number, priority: number, seed: number, off = SHOULDER) => {
       let f = rig.floaters.get(id);
       if (f && f.def.id !== def.id) {
         rig.root.remove(f.vis.group);
@@ -162,9 +178,9 @@ export function LightRig({ session }: { session: ZoneSession }) {
       const sy = Math.sin(yaw);
       // over the right shoulder (right = (cos yaw, 0, -sin yaw)), bobbing
       const bob = Math.sin(t * 1.4 + seed) * 0.07;
-      const tx = ox + cy * SHOULDER.right + sy * SHOULDER.back;
-      const ty = oy + SHOULDER.up + bob;
-      const tz = oz - sy * SHOULDER.right + cy * SHOULDER.back;
+      const tx = ox + cy * off.right + sy * off.back;
+      const ty = oy + off.up + bob;
+      const tz = oz - sy * off.right + cy * off.back;
       if (!f.init) {
         f.pos.set(tx, ty, tz);
         f.init = true;
@@ -189,10 +205,21 @@ export function LightRig({ session }: { session: ZoneSession }) {
       const fb = tmp.set(view.eye.x, view.eye.y - 0.3, view.eye.z);
       const p = torchAt(model, fb, 1.3);
       const f = flameFlicker(t, 1.3, swing);
-      add('self:torch', p.x, p.y, p.z, TORCH.color, TORCH.intensity * f, TORCH.range, 0, 1.3, true);
+      let lx = p.x;
+      let ly = p.y;
+      let lz = p.z;
+      if (!third) {
+        // In first person the flame is half a metre from the lens: lit from there it would blow out the sword and the
+        // hand in front of it. The light sits a step ahead of the flame instead, so the world takes it, not the view model.
+        camera.getWorldDirection(fwd);
+        lx += fwd.x * 0.7;
+        ly += 0.15 + fwd.y * 0.7;
+        lz += fwd.z * 0.7;
+      }
+      add('self:torch', lx, ly, lz, TORCH.color, TORCH.intensity * f, TORCH.range, 0, 1.3, true);
     }
     const ownFam = own.familiar ? familiarById(own.familiar) : undefined;
-    if (ownFam) float('self:familiar', ownFam, view.feet.x, view.feet.y, view.feet.z, localPlayer.yaw, 0, 0.7);
+    if (ownFam) float('self:familiar', ownFam, view.feet.x, view.feet.y, view.feet.z, localPlayer.yaw, 0, 0.7, third ? SHOULDER : SHOULDER_FP);
 
     // ---- everyone else's
     for (const [id, a] of liveAvatars) {
@@ -229,7 +256,11 @@ export function LightRig({ session }: { session: ZoneSession }) {
           slot.key = src.key; // a new owner of this slot fades in from nothing
           slot.cur = 0;
         }
-        slot.cur += (src.intensity - slot.cur) * ease;
+        // A light within 3 m of the lens is dimmed (down to 40%): inverse-falloff would blow out the view model and the
+        // faces of whoever stands next to the bearer; the halo glow still shows in full.
+        const dc = Math.sqrt(src.d2);
+        const near = dc < 3 ? 0.4 + 0.6 * (dc / 3) : 1;
+        slot.cur += (src.intensity * near - slot.cur) * ease;
         slot.light.color.set(src.color);
         slot.light.position.set(src.x, src.y, src.z);
         slot.light.distance = src.range;
