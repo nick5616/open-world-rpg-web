@@ -34,7 +34,8 @@ describe('family -> model spec', () => {
       const s = modelSpec(info(e));
       expect(ALL_STYLES, e.key).toContain(s.style);
       // no enemy falls back to a generic look: a style named after it (or an explicit alias)
-      expect(s.style === e.key || ['sovereign', 'behemoth'].includes(s.style), e.key).toBe(true);
+      const cr43 = ['rock_troll', 'bone_crawler', 'tunnel_spider', 'cave_bat', 'deep_warden'].includes(e.key); // CR 043 cave variants share a model, told apart by colour and size
+      expect(s.style === e.key || cr43 || ['sovereign', 'behemoth'].includes(s.style), e.key).toBe(true);
       expect(famRig[e.family], `${e.key} (${e.family})`).toContain(s.rig);
       if (e.behavior === 'flyer') expect(['floater', 'winged'], e.key).toContain(s.rig);
     }

@@ -156,6 +156,12 @@ export const ALL_STYLES = Object.keys(STYLE_RIG) as Style[];
 const KEY_STYLE: Record<string, Style> = {
   starless_sovereign: 'sovereign',
   thornhide_behemoth: 'behemoth',
+  // CR 043 cave variants (their combat.yaml colours tell them from the originals).
+  rock_troll: 'crystal_golem',
+  bone_crawler: 'cave_crawler',
+  tunnel_spider: 'cave_crawler',
+  cave_bat: 'gloom_bat',
+  deep_warden: 'warden',
 };
 
 /** Fallback by family (an enemy added to combat.yaml without a model of its own). */
