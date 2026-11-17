@@ -8,7 +8,7 @@
 //
 //   npx vite-node src/world/edits/dev/edits-shots.ts     (from client/; needs Go, the built wasm, Playwright Chromium)
 //
-// Writes docs/evidence/pt3-world-edits-clearing.png, -pit.png, -pit-filled.png
+// Writes docs/evidence/pt3-world-edits-before.png, -falling.png, -clearing.png, -pit.png, -pit-filled.png
 // and pt3-world-edits-shots.txt.
 
 import fs from 'node:fs';
@@ -46,7 +46,6 @@ interface Handle {
   setTimeOfDay(s: number): void;
   connectZone(r: { ticket: string; zoneEndpoint: string; zoneId: string; worldId: string; name?: string }): void;
   netDebug(): { phase: string } | null;
-  probe(): unknown;
 }
 interface EditsHandle {
   objects(x: number, z: number, r: number): Obj[];
@@ -196,7 +195,6 @@ async function main(): Promise<void> {
     for (let i = 0; i < 12; i++) {
       await page.evaluate(([x, z]) => (window as unknown as W).__lodestoneEdits.digAt(x, z, 'dig'), [px, pz]);
       await sleep(280);
-      if (i === 5) await page.screenshot({ path: path.join(out, 'pt3-world-edits-digging.png') });
     }
     await sleep(2500);
     const after = await page.evaluate(([x, z]) => (window as unknown as W).__lodestoneWorld.groundAt(x, z), [px, pz]);
@@ -216,8 +214,7 @@ async function main(): Promise<void> {
     await page.keyboard.up('KeyW');
     await sleep(800);
     const inPit = await page.evaluate(() => (window as unknown as W).__lodestone.player().pos);
-    const probe = (await page.evaluate(() => (window as unknown as W).__lodestone.probe())) as { corrections?: number; maxDivM?: number } | null;
-    note(`walked in: feet y ${inPit.y.toFixed(2)} at (${inPit.x.toFixed(1)}, ${inPit.z.toFixed(1)}); prediction probe ${JSON.stringify(probe)}`);
+    note(`walked in: feet y ${inPit.y.toFixed(2)} at (${inPit.x.toFixed(1)}, ${inPit.z.toFixed(1)}) (the pit bottom is ${after.toFixed(2)}; prediction against the zone is checked by terrainEdits.integration.test.ts)`);
     await page.evaluate(() => (window as unknown as W).__lodestoneEdits.setMode('fill'));
     // Fill under your own feet (the pit is deeper than the shovel's reach from the rim).
     const fx2 = inPit.x + fx * 1.2;
