@@ -292,6 +292,24 @@ export class ScatterManager {
     return b && instance < b.count ? b.ids[instance] : null;
   }
 
+  /** Nearest loaded scatter record of a layer (and kind, if >= 0) to a point: dev tooling (evidence shots). */
+  findNear(layer: number, kind: number, x: number, z: number): { x: number; y: number; z: number; kind: number } | null {
+    let best: { x: number; y: number; z: number; kind: number } | null = null;
+    let bd = Infinity;
+    for (const c of this.chunks.values()) {
+      const rec = c.records;
+      for (let o = 0; o < rec.length; o += SCATTER_STRIDE) {
+        if (rec[o] !== layer || (kind >= 0 && rec[o + 1] !== kind)) continue;
+        const d = (rec[o + 3] - x) ** 2 + (rec[o + 5] - z) ** 2;
+        if (d < bd) {
+          bd = d;
+          best = { x: rec[o + 3], y: rec[o + 4], z: rec[o + 5], kind: rec[o + 1] };
+        }
+      }
+    }
+    return best;
+  }
+
   /** Hide one object by stable id (world edits: "tree 0x9f3a burned"). */
   hide(id: bigint): void {
     this.hidden.add(id);
