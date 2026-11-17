@@ -71,6 +71,8 @@ export interface Character {
   accountId?: string;
   profileId?: string;
   createdAt: string;
+  /** Account characters: the look stored at creation (CR 047). Local characters keep it in the save state. */
+  appearance?: unknown;
 }
 
 export interface CreateCharacterResponse {

@@ -95,7 +95,7 @@ browser stores it makes the stored one stale; spec 11's scheme has no ack.
 ## Discovery XP and the level curve
 
 Values in `internal/explore/explore.go` (`DiscoverXP`, `TowerClimbXP`) on
-wizard-wars' curve (60 + 40 x level per level): the spawn town (100) levels
-a new character once, a tower is 190 including its climb. WP13 owns combat
+wizard-wars' curve (60 + 40 x level, plus an early surcharge; level 2 = 360 XP): the spawn town (100) levels
+a new character about a third of the way to level 2, a tower is 190 including its climb. WP13 owns combat
 XP and may retune the curve; the `level` column is recomputed from XP on load
 so a curve change can't leave them inconsistent.

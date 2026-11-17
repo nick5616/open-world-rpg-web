@@ -85,7 +85,8 @@ type exploreState struct {
 	lastTravel time.Time
 	partyKey   string
 	lastIssue  time.Time
-	issued     bool // a blob issue is queued since the last change
+	issued     bool   // a blob issue is queued since the last change
+	look       uint32 // CR 047: the packed creation look (looks.go), 0 = none stored
 }
 
 // localSaveState is what a local profile's next blob is built from.
@@ -150,6 +151,11 @@ func (s *Server) loadExplore(c ticket.Claims, blob []byte, spawn *movement.Vec3,
 		s.loadLocalSave(ctx, c, blob, x, spawn, hinted)
 		return x
 	}
+	if ls, ok := s.cfg.Store.(LookStore); ok && s.cfg.Store != nil { // CR 047
+		if ap, err := ls.LoadAppearance(ctx, c.CharacterID); err == nil {
+			x.look = PackLook(ap)
+		}
+	}
 	ps, ok := s.cfg.Store.(ProgressStore)
 	if !ok || s.cfg.Store == nil {
 		return x
@@ -192,6 +198,7 @@ func (s *Server) loadLocalSave(ctx context.Context, c ticket.Claims, raw []byte,
 	}
 	p := explore.NewProgress()
 	p.Level, p.XP = max(1, st.Level), st.XP
+	p.KeepLevel() // CR 048: a curve change never demotes a saved character
 	p.Towers, p.Waypoints, p.Discoveries = st.Progress.Towers, st.Progress.Waypoints, st.Progress.Discoveries
 	p.Attuned = st.Progress.Attuned // playtest 1
 	p.LoadPinsJSON(st.Progress.Pins)
@@ -200,6 +207,7 @@ func (s *Server) loadLocalSave(ctx context.Context, c ticket.Claims, raw []byte,
 	}
 	x.prog = p
 	x.local = &localSaveState{profileID: c.ProfileID, state: st}
+	x.look = PackLook(st.Appearance) // CR 047
 	if !hinted && (st.Position != localsave.Vec3{}) {
 		*spawn = s.savedSpawn(c.CharacterID, movement.Vec3{X: st.Position.X, Y: st.Position.Y, Z: st.Position.Z})
 	}

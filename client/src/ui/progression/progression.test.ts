@@ -7,7 +7,7 @@ import { towerPrompt, type TowerLike } from './towerPrompt';
 
 const hex = (s: string) => Uint8Array.from(s.match(/../g)!.map((b) => parseInt(b, 16)));
 // The same vectors as server/zone/internal/game/progression_test.go.
-const STATS_HEX = '010104000100cc0100000000000028000000dc000000880079006a00f000050501010001';
+const STATS_HEX = '010104000100e80300000000000050000000f0000000880079006a00f000050501010001';
 const AREA_HEX = '01040300010f005665746572616e';
 
 const ev = (kind: number, value: number, targetId: number, data: Uint8Array): ZoneEvent => ({ type: 'Event', kind, entityId: 1, targetId, value, x: 1000, y: 0, z: 2000, data });
@@ -17,8 +17,8 @@ const empty = (): ProgressionState => ({ stats: null, area: null, fanfare: null,
 describe('progression wire (Go vectors)', () => {
   it('decodes character_stats', () => {
     const s = decodeStats(hex(STATS_HEX))!;
-    expect(s).toMatchObject({ reason: STATS_REASON.levelUp, level: 4, prevLevel: 1, xpInto: 40, xpNext: 220, healthMax: 136, manaMax: 121, staminaMax: 106, damagePct: 24, skillFree: 5, skillTotal: 5, attunedCount: 1 });
-    expect(s.xp).toBe(460n);
+    expect(s).toMatchObject({ reason: STATS_REASON.levelUp, level: 4, prevLevel: 1, xpInto: 80, xpNext: 240, healthMax: 136, manaMax: 121, staminaMax: 106, damagePct: 24, skillFree: 5, skillTotal: 5, attunedCount: 1 });
+    expect(s.xp).toBe(1000n);
     expect(Array.from(s.attuned)).toEqual([1]);
     const back = encodeStats({ ...s });
     expect(Buffer.from(back).toString('hex')).toBe(STATS_HEX);
@@ -72,7 +72,7 @@ describe('progression store', () => {
     expect(p.fanfare!.lines[0]).toBe(`+${3 * COMBAT.leveling.health.perLevel} health`);
   });
   it('a sync stats event does not', () => {
-    const d = encodeStats({ reason: 0, level: 4, prevLevel: 4, xp: 460n, xpInto: 40, xpNext: 220, healthMax: 136, manaMax: 121, staminaMax: 106, damagePct: 24, skillFree: 5, skillTotal: 5, attunedCount: 0 });
+    const d = encodeStats({ reason: 0, level: 4, prevLevel: 4, xp: 1000n, xpInto: 80, xpNext: 240, healthMax: 136, manaMax: 121, staminaMax: 106, damagePct: 24, skillFree: 5, skillTotal: 5, attunedCount: 0 });
     expect(reduceProgressionEvent(empty(), ev(PEV.characterStats, 4, 0, d), 1000)!.fanfare).toBeUndefined();
   });
   it('area notices: stamped by you, tier changes, the Haven', () => {

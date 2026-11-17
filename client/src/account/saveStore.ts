@@ -1,7 +1,7 @@
 // Local profile + signed saves in IndexedDB (spec 11). IndexedDB rather than
 // localStorage because saves can reach hundreds of KB and localStorage is
 // small and blocks the main thread.
-import { idbGet, idbGetAll, idbPut, openLodestoneDb } from './idb';
+import { idbDelete, idbGet, idbGetAll, idbPut, openLodestoneDb } from './idb';
 import type { SaveBlob } from './types';
 
 export interface LocalProfile {
@@ -87,6 +87,11 @@ export class SaveStore {
 
   async listSaves(profileId: string): Promise<StoredSave[]> {
     return idbGetAll<StoredSave>(await this.conn(), 'saves', 'byProfile', profileId);
+  }
+
+  /** Drops a deleted character's save (pt3 character select). */
+  async deleteSave(characterId: string): Promise<void> {
+    await idbDelete(await this.conn(), 'saves', characterId);
   }
 
   /**

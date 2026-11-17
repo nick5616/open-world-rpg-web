@@ -55,7 +55,7 @@ export const COMMANDS: CommandDef[] = [
   { name: 'speed', usage: '/speed <x>', does: 'fly speed multiplier (0.1-50)' },
   { name: 'freelearn', usage: '/freelearn [on|off]', does: 'skill tree: every tier, no points or prerequisites' },
   { name: 'freeze', usage: '/freeze [on|off]', does: 'freeze the world clock (zone-wide)' },
-  { name: 'tp', usage: '/tp <x> <z> | <tower, town or vault name>', does: 'teleport', arg: 'place', aliases: ['teleport'] },
+  { name: 'tp', usage: '/tp <x> <z> [y] | <tower, town or vault name>', does: 'teleport', arg: 'place', aliases: ['teleport'] },
   { name: 'time', usage: '/time <hour, e.g. 21.5 or 21:30>', does: 'set the time of day' },
   { name: 'weather', usage: '/weather <clear|rain|thunderstorm|snow|...|seeded>', does: 'force the weather everywhere (seeded: back to normal)', arg: 'weather' },
   { name: 'spawn', usage: '/spawn <enemy|boss> [count] [level] [fast|shielded|splitting]', does: 'spawn enemies or a boss ahead of you', arg: 'enemy' },
@@ -211,7 +211,7 @@ export function parseCommand(line: string, ctx: CmdCtx): CmdResult {
     case 'tp': {
       const x = num(a0);
       const z = num(args[1]);
-      if (x !== null && z !== null) return { sends: [teleportSend(x, z)] };
+      if (x !== null && z !== null) return { sends: [teleportSend(x, z, num(args[2]) ?? undefined)] }; // playtest 3: an optional height, for the Underground and the sky
       const pl = leading(
         ctx.places.map((p, i) => ({ ...p, key: `${p.kind}:${p.name}`, id: i })),
         args,

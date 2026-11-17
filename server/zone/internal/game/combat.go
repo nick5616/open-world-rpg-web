@@ -274,6 +274,9 @@ func (s *Server) combatFrame(sess *session, f proto.InputFrame) proto.InputFrame
 	s.nightAction(sess, r.Started) // WP15: Fire/Ice/Earth chemistry where it lands (night.go)
 	s.vaultMagic(sess, r.Started)  // CR 023: braziers and fonts of the sealed vaults (dungeons.go)
 	s.achCast(sess, r.Started)     // CR 031: spells cast per school (achievements.go)
+	if a := r.Started; a != nil && a.Legal && a.Spell != nil && a.Spell.Familiar != nil {
+		s.familiarCast(sess, a.Spell) // CR 042: a familiar light called or dismissed (lights.go)
+	}
 	return r.Frame
 }
 

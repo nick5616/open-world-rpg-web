@@ -161,6 +161,7 @@ type Server struct {
 	byChar   map[string]*session
 	parties  map[uint32][]*Entity
 	emoters  map[*session]struct{} // playtest 2: sessions holding a looping emote or a line (emotes.go)
+	lighted  map[*session]struct{} // playtest 3: sessions carrying a torch or a familiar light (lights.go)
 	bards    map[*session]struct{} // playtest 2: sessions playing an instrument (music.go)
 	grid     *aoi.Grid             // players (and anything with a party id): far ring reach
 	// gridOthers holds every other entity (WP19, snapshots.go gridFor):
@@ -386,6 +387,7 @@ func (s *Server) onTick() {
 	s.petsTick(tick)        // CR 029 pets: taming, knockouts, XP, the pet out (pets.go)
 	s.friendTravelTick(now) // playtest 2: travel-to-friend channels (friendtravel.go)
 	s.emotesTick(tick)      // playtest 2: looping emotes and lines in the water (emotes.go, fishing.go)
+	s.lightTick(tick)       // playtest 3: familiar upkeep, torches in the water (lights.go)
 	s.musicTick(tick)       // playtest 2: songs, the fireside, playing poses that ended (music.go)
 	s.weatherTick(tick)     // CR 030 weather: lightning, cold (weather.go)
 	s.devTick(tick)         // CR 032 dev console: god mode, infinite mana, no cooldowns, frozen time (devconsole.go)

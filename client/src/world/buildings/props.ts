@@ -14,6 +14,7 @@
 import { PROP_KINDS, type TownProp } from '@lodestone/worldgen';
 import { at, dirOf, frameOf, moved, turned, type Frame, type MeshBuilder, type V3 } from './meshBuilder';
 import { TEX, TILE_M, type TexName } from './textures';
+import { detail } from './detail';
 
 export const PK = Object.fromEntries(PROP_KINDS.map((k, i) => [k, i])) as Record<(typeof PROP_KINDS)[number], number>;
 
@@ -174,6 +175,17 @@ export function drawProp(mb: MeshBuilder, p: TownProp, d: PropDims, ctx: PropCtx
       mb.box(f, -d.hu + 0.05, d.hu - 0.05, y + 0.3, y + 0.46, -d.hv + 0.05, d.hv - 0.45);
       P(mb, 'cloth', W(0.95));
       mb.box(f, -d.hu + 0.08, d.hu - 0.08, y + 0.3, y + 0.5, d.hv - 0.42, d.hv - 0.1);
+      if (detail() >= 1) {
+        // Footboard, corner posts with finials, a folded blanket at the foot and a quilt stripe.
+        P(mb, 'wood');
+        mb.box(f, -d.hu, d.hu, y + 0.3, y + 0.5, -d.hv, -d.hv + 0.07, { bottom: false });
+        for (const su of [-1, 1]) {
+          mb.box(f, su * d.hu - (su > 0 ? 0.07 : 0), su * d.hu + (su < 0 ? 0.07 : 0), y, y + 1.05, d.hv - 0.07, d.hv, { top: true });
+          mb.cyl(f, su * (d.hu - 0.035), d.hv - 0.035, y + 1.05, y + 1.14, 0.05, 6, { r1: 0.03 });
+        }
+        P(mb, 'stripes', [blanket[(v8 + 1) & 3][0] * 0.9, blanket[(v8 + 1) & 3][1] * 0.9, blanket[(v8 + 1) & 3][2] * 0.9]);
+        mb.box(f, -d.hu + 0.04, d.hu - 0.04, y + 0.46, y + 0.49, -d.hv + 0.35, -d.hv + 0.65, { bottom: false });
+      }
       return;
     }
     case 'table': {
@@ -185,6 +197,20 @@ export function drawProp(mb: MeshBuilder, p: TownProp, d: PropDims, ctx: PropCtx
       mb.cyl(f, d.hu * 0.4, 0, y + d.h, y + d.h + 0.12, 0.05, 6);
       P(mb, 'plain', [0.85, 0.82, 0.76]);
       mb.cyl(f, -d.hu * 0.3, 0.05, y + d.h, y + d.h + 0.02, 0.13, 8);
+      if (detail() >= 1) {
+        // A cloth runner, a loaf, and on some tables a candle (flame: emissive, flickering, no light).
+        const runner: V3[] = [[0.85, 0.35, 0.3], [0.35, 0.5, 0.72], [0.9, 0.85, 0.7]];
+        P(mb, 'cloth', runner[v8 % 3]);
+        mb.box(f, -d.hu * 0.9, d.hu * 0.9, y + d.h, y + d.h + 0.008, -0.12, 0.12, { bottom: false, sides: false });
+        P(mb, 'wood', [1.1, 0.85, 0.55]);
+        mb.box(f, d.hu * 0.05, d.hu * 0.05 + 0.2, y + d.h + 0.008, y + d.h + 0.07, -0.07, 0.06);
+        if (detail() >= 2 && (v8 + p.index) % 2 === 0) {
+          P(mb, 'cloth', [1, 0.96, 0.85]);
+          mb.cyl(f, -d.hu * 0.65, -0.04, y + d.h + 0.008, y + d.h + 0.14, 0.028, 5);
+          const c = at(f, -d.hu * 0.65, y + d.h + 0.14, -0.04);
+          flame(mb, c[0], c[1], c[2], 0.06, 0.1, 210);
+        }
+      }
       return;
     }
     case 'bench': {
@@ -206,6 +232,18 @@ export function drawProp(mb: MeshBuilder, p: TownProp, d: PropDims, ctx: PropCtx
       mb.box(f, -d.hu * 0.6, d.hu * 0.6, y + d.h, y + d.h + 1.2, -d.hv, -d.hv + 0.45);
       P(mb, 'wood', W(0.45));
       mb.hcyl(f, -0.3, 0.3, y + 0.42, 0, 0.06, 5);
+      if (detail() >= 1) {
+        // A mantel board over the opening, a cauldron on a swing crane, split logs on the hearth stone.
+        P(mb, 'wood', W(0.55));
+        mb.box(f, -d.hu - 0.08, d.hu + 0.08, y + d.h + 0.0, y + d.h + 0.07, -d.hv - 0.04, d.hv + 0.12, { bottom: true });
+        mb.box(f, d.hu * 0.45, d.hu * 0.45 + 0.05, y + 0.4, y + d.h - 0.3, -d.hv + 0.2, -d.hv + 0.25);
+        mb.box(f, -0.1, d.hu * 0.45 + 0.05, y + d.h - 0.35, y + d.h - 0.3, -d.hv + 0.2, -d.hv + 0.25, { bottom: true });
+        P(mb, 'metal', W(0.55));
+        mb.cyl(f, -0.1, -d.hv + 0.22, y + 0.5, y + 0.76, 0.2, 7, { r1: 0.24, top: false });
+        mb.box(f, -0.11, -0.09, y + 0.76, y + d.h - 0.35, -d.hv + 0.21, -d.hv + 0.23, { top: false });
+        P(mb, 'logs', [0.7, 0.6, 0.5]);
+        mb.hcyl(turned(f, 0.15), -0.28, 0.28, y + 0.45, 0.15, 0.06, 5);
+      }
       const c = at(f, 0, y + 0.38, 0);
       flame(mb, c[0], c[1], c[2], 0.6, 0.5);
       ctx.light({ x: c[0], y: c[1] + 0.4, z: c[2], r: 1, g: 0.55, b: 0.25, range: 9 });
@@ -338,6 +376,28 @@ export function drawProp(mb: MeshBuilder, p: TownProp, d: PropDims, ctx: PropCtx
       const e = at(f, -hu - 0.2, y + 2.6, 1.8);
       mb.quad(a, b, c, e, [0, 1, 0]);
       mb.quad(a, b, c, e, [0, -1, 0]);
+      if (detail() >= 1) {
+        // A scalloped valance along the awning's front edge, strings of onions / garlic hung from the ridge
+        // beam, and a crate of produce in front of the counter.
+        const nv = Math.max(4, Math.round((hu * 2 + 0.4) / 0.28));
+        for (let i = 0; i < nv; i++) {
+          const ua = -hu - 0.2 + (i * (2 * hu + 0.4)) / nv;
+          const ub = -hu - 0.2 + ((i + 1) * (2 * hu + 0.4)) / nv;
+          P(mb, 'stripes', i & 1 ? tints[v8 & 3] : [1, 1, 0.95]);
+          const tri: V3[] = [at(f, ua, y + 2.6, 1.8), at(f, ub, y + 2.6, 1.8), at(f, (ua + ub) / 2, y + 2.36, 1.8)];
+          mb.poly(tri, dirOf(f, 0, 0, 1));
+          mb.poly(tri, dirOf(f, 0, 0, -1));
+        }
+        P(mb, 'plain', [0.9, 0.85, 0.7]);
+        for (let i = 0; i < 3; i++) {
+          const uu = -hu * 0.6 + i * hu * 0.6;
+          mb.cyl(f, uu, -d.hv - 0.3, y + 1.7, y + 2.2, 0.01, 5, { r1: 0.07, top: false });
+        }
+        P(mb, 'planks', [0.9, 0.75, 0.55]);
+        mb.box(f, hu * 0.3, hu * 0.3 + 0.45, y, y + 0.35, d.hv + 0.12, d.hv + 0.5);
+        P(mb, 'plain', [0.85, 0.35, 0.22]);
+        for (let i = 0; i < 3; i++) mb.cyl(f, hu * 0.3 + 0.12 + i * 0.1, d.hv + 0.31, y + 0.35, y + 0.46, 0.07, 5, { r1: 0.04 });
+      }
       // Wares on the counter.
       const ware: V3[] = [
         [0.85, 0.3, 0.2],
@@ -388,6 +448,19 @@ export function drawProp(mb: MeshBuilder, p: TownProp, d: PropDims, ctx: PropCtx
       mb.slopedBox(turned(f, Math.PI / 2), 0, 0.8, -r - 0.2, r + 0.2, y + 2.25, y + 2.75, y + 2.25);
       P(mb, 'wood', W(0.6));
       mb.cyl(f, 0.2, 0, y + 1.2, y + 1.45, 0.14, 6, { r1: 0.17 });
+      if (detail() >= 1) {
+        // Rope from the windlass to a bucket hanging in the shaft, a crank handle on the axle, a mossy cap course on the ring.
+        P(mb, 'plain', [0.7, 0.6, 0.42]);
+        mb.box(f, -0.2 - 0.012, -0.2 + 0.012, y + 1.0, y + 1.7, -0.012, 0.012, { top: false });
+        P(mb, 'wood', W(0.7));
+        mb.cyl(f, -0.2, 0, y + 0.78, y + 1.0, 0.1, 6, { r1: 0.13, top: false });
+        P(mb, 'metal');
+        mb.cyl(f, -0.2, 0, y + 0.86, y + 0.9, 0.115, 6, { top: false });
+        mb.box(f, r - 0.1, r + 0.12, y + 1.62, y + 1.66, 0.0, 0.04);
+        mb.box(f, r + 0.08, r + 0.12, y + 1.4, y + 1.66, 0.0, 0.04);
+        P(mb, 'mossStone', W(0.95));
+        mb.cyl(f, 0, 0, y + d.h - 0.12, y + d.h + 0.04, r + 0.05, 8, { a0: Math.PI / 8, top: false });
+      }
       return;
     }
     case 'lantern': {

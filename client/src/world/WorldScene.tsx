@@ -16,7 +16,8 @@ import { useQualityStore } from '../stores/qualityStore';
 import { getGraphics, useGraphics } from '../stores/graphics';
 import { useNightHud } from '../systems/night';
 import type { WorldRuntime } from './core/runtime';
-import { CAMERA_FAR } from './config';
+import { Clearance } from './buildings/clearance';
+import { CAMERA_FAR, WORLD_TIERS } from './config';
 import { TerrainManager } from './terrain/terrainManager';
 import { applyManifestMeans, makeTerrainShared } from './terrain/terrainMaterial';
 import { loadTerrainTextures, terrainManifest } from './terrain/terrainTextures';
@@ -124,6 +125,8 @@ export function WorldScene({ runtime }: Props) {
     const hemi = new THREE.HemisphereLight(0xcfe3ff, 0x4a5a3a, 1);
     const lightU = { uSunDir: waterU.uSunDir, uLightColor: waterU.uLightColor, uAmbient: waterU.uAmbient };
     const scatter = new ScatterManager(runtime.pool, gl, g0.world, lightU);
+    // Dense grass must not grow through streets, plazas and floors (CR 045; the towns manager hides the sparse scatter).
+    if (runtime.towns) scatter.setClearance(new Clearance(runtime.towns));
     const root = new THREE.Group();
     root.name = 'world';
     const rainStreaks = new RainStreaks();
@@ -208,9 +211,12 @@ export function WorldScene({ runtime }: Props) {
   const viewDistance = g.controls.viewDistance;
   useEffect(() => {
     world.terrain.setParams({ lodSplit: wt.lodSplit, viewDistance, uploadsPerFrame: wt.uploadsPerFrame, uploadBudgetMs: wt.uploadBudgetMs, normalMaps: g.normalMaps });
+    // Dev: ?veg=0..3 forces the vegetation art (before/after benchmarks on one build).
+    const vegOverride = DEBUG && typeof location !== 'undefined' ? new URLSearchParams(location.search).get('veg') : null;
+    world.scatter.setVegetation(vegOverride !== null ? Number(vegOverride) : WORLD_TIERS[g.shaderTier].vegetation);
     world.scatter.applyTier(wt);
     world.waterU.uDetail.value = wt.waterDetail ? 1 : 0;
-  }, [world, wt, viewDistance, g.normalMaps]);
+  }, [world, wt, viewDistance, g.normalMaps, g.shaderTier]);
   const { shadowCascades, shadowDistance, shadowMapSize, bloom, godRays, msaa, fxaa, spellScreen } = g;
   useEffect(() => {
     const sun = new SunShadows(world.root, camera, { cascades: shadowCascades, distance: shadowDistance, mapSize: shadowMapSize });

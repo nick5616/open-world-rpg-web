@@ -1,0 +1,379 @@
+# Base building (playtest 3, CR 041): structural pieces in three materials,
+# furnishings and the pieces that make a base worth coming home to. An
+# extension of the camps (contracts/camps.yaml, CR 025): every placed piece is
+# a camp piece (same table, same events, same collision twin); the generator
+# (contracts/codegen/lib/build.mjs) appends them to the camps tables.
+#
+# GRID: a cell is 2 m; a level is 2.5 m. Positions are whole metres or half
+# metres (furnishings), rotations are quarter turns (camps rot 0, 2, 4, 6).
+# All geometry below is metres in the piece's local frame (x along its length,
+# z across it, y up from its base); the generator turns it into integer
+# centimetres, so the zone and the client agree exactly.
+#
+# par: the parity of the piece's position (rot 0): odd = the middle of a cell
+#   (1, 3, 5 m...), even = on a grid line (0, 2, 4 m...). Turned a quarter, the
+#   two swap. Furnishings (no par) go on every 0.5 m.
+# Sockets are how pieces connect (matching points in space):
+#   up    points other pieces may rest on
+#   down  points this piece needs a supporter's `up` at (one match is enough)
+#   side  points shared with a neighbour at the same height (a floor held by its
+#         neighbour; the chain may reach `reach` cells from a real support)
+#   face  a wall face: wall decor (anchor: wall) hangs on a piece that has one
+# tokens: edges corners mid ends w e wc ec, or "x,z"; then @y (metres); join with +.
+# anchor: foundation (the ground, see build.foundation) | ground (the terrain at
+#   gpt) | sockets (held up by pieces) | surface (a floor or foundation top, or the
+#   ground) | wall (hangs on a wall face).
+# ids: structural piece i in material m is 100 + 4*i + m; furnishings have explicit ids.
+# APPEND ONLY: new pieces go at the end of their list, new materials at the end.
+version: 1
+
+grid: {cellM: 2, levelM: 2.5, maxLevels: 4}
+
+build:
+  budget: 450              # build pieces per character
+  areaBudget: 1600         # build pieces per 256 m area (all owners)
+  reachM: 9                # place, repair, deconstruct from this far
+  townMarginM: 24          # outside every settlement's radius + this
+  siteMarginM: 12          # outside every site's radius + this (ruins, shrines, camps, towers)
+  roadMarginM: 5           # off roads and footpaths (half their width + this)
+  otherBuildM: 3           # a foundation or ground piece this far from another player's pieces (their party excepted)
+  refundPct: 80            # deconstruct returns this much of the cost
+  repairPct: 30            # repairing a fully worn piece costs this much of its cost
+  weatherFloor: 20         # a piece never wears below this condition (percent)
+  mendPerDay: 6            # percent per in-game day inside a hearth's ward
+  decayDays: 30            # a base whose owner has not come within decay.visitM for this long is taken by the wilds
+  foundation:
+    maxSpreadM: 1.5        # the ground under a foundation may differ this much between its corners
+    maxBuriedM: 0.3        # ground may rise this far above a foundation's top
+    skirtM: 1.5            # and fall this far below it (the skirt reaches down)
+    snapM: 0.25            # foundation heights snap to this
+  maxHeightM: 12           # no piece higher than this above the ground
+
+hearth:
+  wardRadiusM: 20          # demons never rise within this of a hearth, never step into it, and leave players inside alone
+  warmthM: 10              # resting this close to a hearth rests longer (like a burning campfire)
+
+comfort:
+  radiusM: 12              # furnishings this close to a bed count
+  perKindCap: 2            # at most this many of one kind count
+  maxScore: 20
+  tiers: [{score: 0, name: Bare}, {score: 5, name: Cosy}, {score: 11, name: Homely}, {score: 17, name: Luxurious}]
+  durationPct: 2.5         # +this percent Rested duration per point
+  regenPct: 2              # +this percent on the health regen multiplier per point
+
+home:
+  cooldownS: 300           # home travel (the bed's Return home)
+
+materials:
+  wood: {name: Wood, perUnit: {'wood:log': 1}, weather: 1.0}
+  stone: {name: Stone, perUnit: {'stone:block': 1}, weather: 0.4}
+  sunsteel: {name: Sunsteel, perUnit: {'stone:block': 1, 'ingot:sunsteel': 0.25}, weather: 0.1}
+
+# Structural pieces. units = cost in material units (materials.perUnit);
+# extra = items added once per piece, whatever the material.
+structure:
+  foundation:
+    name: Foundation
+    desc: "A level base on the ground. Everything else is built on foundations."
+    par: [odd, odd]
+    fp: [2, 2]
+    occ: [-1, 1, -1, 1, -1.5, 0]
+    surface: {x: [-1, 1], z: [-1, 1], y: [0, 0]}
+    anchor: [foundation]
+    up: edges@0+corners@0
+    side: edges@0
+    units: 6
+  floor:
+    name: Floor
+    desc: "A floor tile. Needs a wall, pillar or beam under its edge, or a neighbour that has."
+    par: [odd, odd]
+    fp: [2, 2]
+    occ: [-1, 1, -1, 1, -0.2, 0]
+    surface: {x: [-1, 1], z: [-1, 1], y: [0, 0]}
+    anchor: [sockets]
+    down: edges@0+corners@0
+    up: edges@0+corners@0
+    side: edges@0
+    reach: 2
+    units: 4
+  wall:
+    name: Wall
+    desc: "A full wall."
+    par: [odd, even]
+    fp: [2, 0.2]
+    occ: [-0.9, 0.9, -0.1, 0.1, 0, 2.3]
+    boxes: [[-1, 1, -0.1, 0.1, 0, 2.5]]
+    anchor: [sockets]
+    down: mid@0
+    up: mid@2.5+ends@2.5
+    face: mid@0
+    units: 4
+  half_wall:
+    name: Half Wall
+    desc: "Waist high: you can see and shoot over it."
+    par: [odd, even]
+    fp: [2, 0.2]
+    occ: [-0.9, 0.9, -0.1, 0.1, 0, 1.1]
+    boxes: [[-1, 1, -0.1, 0.1, 0, 1.1]]
+    anchor: [sockets]
+    down: mid@0
+    face: mid@0
+    units: 2
+  window:
+    name: Window Wall
+    desc: "A wall with a window: a sill to climb over and light for the room."
+    par: [odd, even]
+    fp: [2, 0.2]
+    occ: [-0.9, 0.9, -0.1, 0.1, 0, 2.3]
+    boxes: [[-1, 1, -0.1, 0.1, 0, 0.9], [-1, 1, -0.1, 0.1, 1.9, 2.5]]
+    anchor: [sockets]
+    down: mid@0
+    up: mid@2.5+ends@2.5
+    units: 3
+  door:
+    name: Doorway
+    desc: "A wall with a door. E opens and closes it; only you (and your party, if you share) can."
+    par: [odd, even]
+    fp: [2, 0.2]
+    occ: [-0.9, 0.9, -0.1, 0.1, 0, 2.3]
+    boxes: [[-1, 1, -0.1, 0.1, 0, 2.5]]
+    openBoxes: [[-1, 1, -0.1, 0.1, 1.9, 2.5]]
+    state: door
+    anchor: [sockets]
+    down: mid@0
+    up: mid@2.5+ends@2.5
+    units: 4
+  stairs:
+    name: Stairs
+    desc: "Climb a whole level in two cells. The bottom meets a floor's edge or the ground."
+    par: [even, odd]
+    fp: [4, 2]
+    occ: [-2, 2, -1, 1, 0, 2.5]
+    surface: {x: [-2, 2], z: [-1, 1], y: [0, 2.5]}
+    anchor: [ground, sockets]
+    gpt: [-2, 0]
+    down: "-2,0@0"
+    up: "2,0@2.5"
+    units: 8
+  ramp:
+    name: Ramp
+    desc: "A short slope up a metre: onto a foundation from the ground."
+    par: [odd, odd]
+    fp: [2, 2]
+    occ: [-1, 1, -1, 1, 0, 1]
+    surface: {x: [-1, 1], z: [-1, 1], y: [0, 1]}
+    anchor: [ground, sockets]
+    gpt: [-1, 0]
+    down: "-1,0@0"
+    up: "1,0@1"
+    units: 4
+  roof:
+    name: Roof Slope
+    desc: "A sloped roof tile: the low edge rests on a wall or beam top."
+    par: [odd, odd]
+    fp: [2, 2]
+    occ: [-1, 1, -1, 1, 0, 1.25]
+    anchor: [sockets]
+    down: w@0
+    up: e@1.25+ec@1.25
+    units: 4
+    extra: {'wood:resin': 1}
+  roof_cap:
+    name: Ridge Cap
+    desc: "Caps the ridge where two roof slopes meet."
+    par: [odd, even]
+    fp: [2, 0.5]
+    occ: [-0.9, 0.9, -0.25, 0.25, 0, 0.3]
+    anchor: [sockets]
+    down: mid@0
+    units: 1
+  gable:
+    name: Gable
+    desc: "Fills the triangle under a roof's end."
+    par: [odd, even]
+    fp: [2, 0.2]
+    occ: [-0.9, 0.9, -0.1, 0.1, 0, 1.25]
+    coexist: [roof]
+    anchor: [sockets]
+    down: mid@0
+    face: mid@0
+    units: 2
+  pillar:
+    name: Pillar
+    desc: "A post on a corner: holds up beams, floors and walls above."
+    par: [even, even]
+    fp: [0.3, 0.3]
+    occ: [-0.1, 0.1, -0.1, 0.1, 0, 2.3]
+    boxes: [[-0.15, 0.15, -0.15, 0.15, 0, 2.5]]
+    anchor: [ground, sockets]
+    gpt: [0, 0]
+    down: mid@0
+    up: mid@2.5
+    units: 2
+  beam:
+    name: Beam
+    desc: "Spans two pillar tops; floors and roofs can rest on it."
+    par: [odd, even]
+    fp: [2, 0.2]
+    occ: [-0.9, 0.9, -0.1, 0.1, -0.4, -0.2]
+    coexist: [pillar]
+    anchor: [sockets]
+    down: ends@0
+    up: mid@0+ends@0
+    units: 2
+  fence:
+    name: Fence
+    desc: "Chest high. Stands on the ground or a floor."
+    par: [odd, even]
+    fp: [2, 0.15]
+    occ: [-0.9, 0.9, -0.075, 0.075, 0, 1.1]
+    boxes: [[-1, 1, -0.075, 0.075, 0, 1.1]]
+    anchor: [ground, sockets]
+    gpt: [0, 0]
+    down: mid@0
+    units: 2
+  gate:
+    name: Gate
+    desc: "A fence you can open. E opens and closes it."
+    par: [odd, even]
+    fp: [2, 0.15]
+    occ: [-0.9, 0.9, -0.075, 0.075, 0, 1.1]
+    boxes: [[-1, 1, -0.075, 0.075, 0, 1.1]]
+    openBoxes: []
+    state: door
+    anchor: [ground, sockets]
+    gpt: [0, 0]
+    down: mid@0
+    units: 3
+
+# Furnishings and base pieces. Explicit ids. cost: items. use: what E does
+# (bed | chest | forge | cook | workbench | hearth). comfort: points for the
+# bed's comfort score. light: a warm glow (pooled lights, never one per piece).
+furnish:
+  bench:
+    id: 200
+    name: Bench
+    desc: "Somewhere to sit. Comfort +2."
+    fp: [1.4, 0.5]
+    height: 0.5
+    cost: {'wood:log': 3}
+    comfort: 2
+  table:
+    id: 201
+    name: Table
+    desc: "A sturdy table. Comfort +3."
+    fp: [1.3, 0.8]
+    height: 0.8
+    boxes: [[-0.65, 0.65, -0.4, 0.4, 0, 0.8]]
+    cost: {'wood:log': 4}
+    comfort: 3
+  rug:
+    id: 202
+    name: Rug
+    desc: "Soft underfoot. Comfort +2."
+    fp: [2, 1.4]
+    height: 0.03
+    cost: {'hide:wolf': 2}
+    comfort: 2
+  banner:
+    id: 203
+    name: Banner
+    desc: "Hangs on a wall. Comfort +2."
+    anchor: [wall]
+    coexist: [wall, half_wall, gable]
+    fp: [0.8, 0.1]
+    height: 1.6
+    cost: {'wood:log': 1, 'hide:wolf': 1}
+    comfort: 2
+  lantern:
+    id: 204
+    name: Lantern
+    desc: "A steady warm light. Comfort +2."
+    fp: [0.4, 0.4]
+    height: 0.5
+    cost: {'wood:log': 1, 'ore:copper': 1}
+    comfort: 2
+    light: 1
+  wall_torch:
+    id: 205
+    name: Wall Torch
+    desc: "A torch in a sconce. Comfort +1."
+    anchor: [wall]
+    coexist: [wall, half_wall, gable]
+    fp: [0.3, 0.2]
+    height: 0.6
+    cost: {'wood:log': 1, 'wood:resin': 1}
+    comfort: 1
+    light: 1
+  trophy:
+    id: 206
+    name: Trophy Mount
+    desc: "A mounted pelt and horns. Comfort +3."
+    anchor: [wall]
+    coexist: [wall, half_wall, gable]
+    fp: [0.8, 0.3]
+    height: 0.8
+    cost: {'wood:log': 1, 'hide:wolf': 2}
+    comfort: 3
+  bed:
+    id: 207
+    name: Bed
+    desc: "Rest to become Rested. Sets your respawn point. Return home from it."
+    fp: [2, 1]
+    height: 0.6
+    cost: {'wood:log': 6, 'hide:wolf': 3}
+    use: bed
+    max: 2
+  big_chest:
+    id: 208
+    name: Large Chest
+    desc: "32 slots. Locked to you, or shared with your party."
+    fp: [1.6, 0.8]
+    height: 0.95
+    boxes: [[-0.8, 0.8, -0.4, 0.4, 0, 0.95]]
+    cost: {'wood:log': 8, 'ore:copper': 2}
+    use: chest
+    slots: 32
+    max: 4
+  forge:
+    id: 209
+    name: Home Forge
+    desc: "Smelt and smith at home."
+    fp: [1.6, 1.2]
+    height: 1.3
+    boxes: [[-0.8, 0.8, -0.6, 0.6, 0, 1.3]]
+    cost: {'stone:block': 14, 'ore:copper': 4}
+    use: forge
+    max: 1
+    light: 1
+  cook:
+    id: 210
+    name: Kitchen Hearth
+    desc: "Cook at home."
+    fp: [1.4, 0.9]
+    height: 1.0
+    boxes: [[-0.7, 0.7, -0.45, 0.45, 0, 1.0]]
+    cost: {'stone:block': 8, 'wood:log': 4}
+    use: cook
+    max: 1
+    light: 1
+  home_workbench:
+    id: 211
+    name: Carpenter's Bench
+    desc: "Make tools, arrows and rope at home."
+    fp: [1.9, 0.9]
+    height: 1.0
+    boxes: [[-0.95, 0.95, -0.45, 0.45, 0, 1.0]]
+    cost: {'wood:log': 8, 'tool:rope': 1}
+    use: workbench
+    max: 1
+  hearth:
+    id: 212
+    name: Warding Hearth
+    desc: "A fire that never goes out. Demons keep away from your home, and it slowly mends your pieces."
+    fp: [1.6, 1.0]
+    height: 1.2
+    cost: {'stone:block': 12, 'wood:log': 4, 'wood:resin': 2}
+    use: hearth
+    max: 1
+    light: 1

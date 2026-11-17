@@ -325,6 +325,8 @@
   "key": 1,
   "quest": 10,
   "wood": 50,
+  "stone": 99,
+  "earth": 99,
   "camp": 5,
   "fish": 20,
   "instrument": 1
@@ -1740,6 +1742,50 @@
    "pouch": "inv",
    "level": 1,
    "value": 2,
+   "sockets": 0
+  },
+  {
+   "key": "wood:log",
+   "name": "Log",
+   "category": "wood",
+   "kind": "material",
+   "stack": 50,
+   "pouch": "inv",
+   "level": 1,
+   "value": 3,
+   "sockets": 0
+  },
+  {
+   "key": "wood:resin",
+   "name": "Resin",
+   "category": "wood",
+   "kind": "material",
+   "stack": 50,
+   "pouch": "inv",
+   "level": 1,
+   "value": 4,
+   "sockets": 0
+  },
+  {
+   "key": "stone:block",
+   "name": "Stone",
+   "category": "stone",
+   "kind": "material",
+   "stack": 99,
+   "pouch": "inv",
+   "level": 1,
+   "value": 3,
+   "sockets": 0
+  },
+  {
+   "key": "earth:dirt",
+   "name": "Dirt",
+   "category": "earth",
+   "kind": "material",
+   "stack": 99,
+   "pouch": "inv",
+   "level": 1,
+   "value": 1,
    "sockets": 0
   },
   {
@@ -4157,6 +4203,10 @@
   },
   {
    "item": "tool:pickaxe",
+   "qty": 1
+  },
+  {
+   "item": "tool:torch",
    "qty": 1
   }
  ],

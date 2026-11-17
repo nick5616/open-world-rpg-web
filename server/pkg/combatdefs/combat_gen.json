@@ -1037,6 +1037,8 @@
    "lift": 0,
    "aim": "look",
    "exitSpeed": 18,
+   "minLevel": 15,
+   "tierName": "Full",
    "sustain": {
     "kind": "jet",
     "kindId": 1,
@@ -1061,6 +1063,80 @@
      "minFall": 14,
      "radius": 4.5,
      "damage": 45,
+     "status": "knockback"
+    }
+   }
+  },
+  {
+   "key": "magma_dash_lesser",
+   "id": 10,
+   "speed": 22,
+   "steps": 8,
+   "iframes": 4,
+   "lift": 0,
+   "aim": "look",
+   "exitSpeed": 14,
+   "minLevel": 1,
+   "tierName": "Lesser",
+   "tierOf": "magma_dash",
+   "sustain": {
+    "kind": "dash",
+    "kindId": 2,
+    "speed": 16,
+    "steer": 0,
+    "carrySteps": 4,
+    "blinkSpeed": 0,
+    "blinkEvery": 0,
+    "sink": 0,
+    "manaPerS": 40,
+    "healthPerS": 0
+   },
+   "trail": {
+    "radius": 1.4,
+    "damage": 8,
+    "lifesteal": 0,
+    "heal": 0,
+    "healRadius": 0,
+    "status": "burn",
+    "chem": "ignite"
+   }
+  },
+  {
+   "key": "magma_dash_honed",
+   "id": 11,
+   "speed": 27,
+   "steps": 10,
+   "iframes": 5,
+   "lift": 0,
+   "aim": "look",
+   "exitSpeed": 16,
+   "minLevel": 8,
+   "tierName": "Honed",
+   "tierOf": "magma_dash",
+   "sustain": {
+    "kind": "jet",
+    "kindId": 1,
+    "speed": 22,
+    "steer": 0.05,
+    "carrySteps": 4,
+    "blinkSpeed": 0,
+    "blinkEvery": 0,
+    "sink": 0,
+    "manaPerS": 32,
+    "healthPerS": 0
+   },
+   "trail": {
+    "radius": 1.6,
+    "damage": 11,
+    "lifesteal": 0,
+    "heal": 0,
+    "healRadius": 0,
+    "status": "burn",
+    "chem": "ignite",
+    "slam": {
+     "minFall": 14,
+     "radius": 3.5,
+     "damage": 30,
      "status": "knockback"
     }
    }
@@ -6831,6 +6907,374 @@
    "killsDemons": false,
    "mana": 3,
    "dash": 0
+  },
+  {
+   "key": "hearth_mote",
+   "name": "Hearth Mote",
+   "pending": true,
+   "element": 0,
+   "damage": 0,
+   "cooldownMs": 1200,
+   "cooldownSteps": 72,
+   "windupMs": 0,
+   "windupSteps": 0,
+   "durationMs": 0,
+   "durationSteps": 0,
+   "radius": 0,
+   "range": 0,
+   "speed": 0,
+   "gravity": 0,
+   "hits": 1,
+   "spread": 1,
+   "spreadDeg": 0,
+   "cone": 0,
+   "line": 0,
+   "chain": 0,
+   "lifesteal": 0,
+   "heal": 0,
+   "healRadius": 0,
+   "absorb": 0,
+   "pierce": false,
+   "selfCast": false,
+   "nonBossOnly": false,
+   "stripShield": false,
+   "id": 1020,
+   "tree": "fire",
+   "tier": 1,
+   "type": "defensive",
+   "mana": 4,
+   "color": "#ff9a3c",
+   "familiar": {
+    "id": 1,
+    "kind": "ember",
+    "upkeepPerS": 3,
+    "intensity": 16,
+    "range": 18
+   },
+   "killsDemons": false,
+   "dash": 0
+  },
+  {
+   "key": "rime_light",
+   "name": "Rime Light",
+   "pending": true,
+   "element": 1,
+   "damage": 0,
+   "cooldownMs": 1200,
+   "cooldownSteps": 72,
+   "windupMs": 0,
+   "windupSteps": 0,
+   "durationMs": 0,
+   "durationSteps": 0,
+   "radius": 0,
+   "range": 0,
+   "speed": 0,
+   "gravity": 0,
+   "hits": 1,
+   "spread": 1,
+   "spreadDeg": 0,
+   "cone": 0,
+   "line": 0,
+   "chain": 0,
+   "lifesteal": 0,
+   "heal": 0,
+   "healRadius": 0,
+   "absorb": 0,
+   "pierce": false,
+   "selfCast": false,
+   "nonBossOnly": false,
+   "stripShield": false,
+   "id": 1122,
+   "tree": "ice",
+   "tier": 1,
+   "type": "defensive",
+   "mana": 4,
+   "color": "#a0e8ff",
+   "familiar": {
+    "id": 2,
+    "kind": "icicle",
+    "upkeepPerS": 2.5,
+    "intensity": 13,
+    "range": 18
+   },
+   "killsDemons": false,
+   "dash": 0
+  },
+  {
+   "key": "dusk_lantern",
+   "name": "Dusk Lantern",
+   "pending": true,
+   "element": 6,
+   "damage": 0,
+   "cooldownMs": 1200,
+   "cooldownSteps": 72,
+   "windupMs": 0,
+   "windupSteps": 0,
+   "durationMs": 0,
+   "durationSteps": 0,
+   "radius": 0,
+   "range": 0,
+   "speed": 0,
+   "gravity": 0,
+   "hits": 1,
+   "spread": 1,
+   "spreadDeg": 0,
+   "cone": 0,
+   "line": 0,
+   "chain": 0,
+   "lifesteal": 0,
+   "heal": 0,
+   "healRadius": 0,
+   "absorb": 0,
+   "pierce": false,
+   "selfCast": false,
+   "nonBossOnly": false,
+   "stripShield": false,
+   "id": 1226,
+   "tree": "dark",
+   "tier": 1,
+   "type": "defensive",
+   "mana": 4,
+   "color": "#8a5cff",
+   "familiar": {
+    "id": 3,
+    "kind": "lantern",
+    "upkeepPerS": 2.5,
+    "intensity": 9,
+    "range": 13
+   },
+   "killsDemons": false,
+   "dash": 0
+  },
+  {
+   "key": "firefly_drift",
+   "name": "Firefly Drift",
+   "pending": true,
+   "element": 3,
+   "damage": 0,
+   "cooldownMs": 1200,
+   "cooldownSteps": 72,
+   "windupMs": 0,
+   "windupSteps": 0,
+   "durationMs": 0,
+   "durationSteps": 0,
+   "radius": 0,
+   "range": 0,
+   "speed": 0,
+   "gravity": 0,
+   "hits": 1,
+   "spread": 1,
+   "spreadDeg": 0,
+   "cone": 0,
+   "line": 0,
+   "chain": 0,
+   "lifesteal": 0,
+   "heal": 0,
+   "healRadius": 0,
+   "absorb": 0,
+   "pierce": false,
+   "selfCast": false,
+   "nonBossOnly": false,
+   "stripShield": false,
+   "id": 1329,
+   "tree": "earth",
+   "tier": 1,
+   "type": "defensive",
+   "mana": 4,
+   "color": "#c8ff6a",
+   "familiar": {
+    "id": 4,
+    "kind": "fireflies",
+    "upkeepPerS": 2.5,
+    "intensity": 12,
+    "range": 17
+   },
+   "killsDemons": false,
+   "dash": 0
+  },
+  {
+   "key": "static_orb",
+   "name": "Static Orb",
+   "pending": true,
+   "element": 2,
+   "damage": 0,
+   "cooldownMs": 1200,
+   "cooldownSteps": 72,
+   "windupMs": 0,
+   "windupSteps": 0,
+   "durationMs": 0,
+   "durationSteps": 0,
+   "radius": 0,
+   "range": 0,
+   "speed": 0,
+   "gravity": 0,
+   "hits": 1,
+   "spread": 1,
+   "spreadDeg": 0,
+   "cone": 0,
+   "line": 0,
+   "chain": 0,
+   "lifesteal": 0,
+   "heal": 0,
+   "healRadius": 0,
+   "absorb": 0,
+   "pierce": false,
+   "selfCast": false,
+   "nonBossOnly": false,
+   "stripShield": false,
+   "id": 1413,
+   "tree": "lightning",
+   "tier": 1,
+   "type": "defensive",
+   "mana": 4,
+   "color": "#ffe066",
+   "familiar": {
+    "id": 5,
+    "kind": "orb",
+    "upkeepPerS": 3,
+    "intensity": 14,
+    "range": 18
+   },
+   "killsDemons": false,
+   "dash": 0
+  },
+  {
+   "key": "zephyr_mote",
+   "name": "Zephyr Mote",
+   "pending": true,
+   "element": 4,
+   "damage": 0,
+   "cooldownMs": 1200,
+   "cooldownSteps": 72,
+   "windupMs": 0,
+   "windupSteps": 0,
+   "durationMs": 0,
+   "durationSteps": 0,
+   "radius": 0,
+   "range": 0,
+   "speed": 0,
+   "gravity": 0,
+   "hits": 1,
+   "spread": 1,
+   "spreadDeg": 0,
+   "cone": 0,
+   "line": 0,
+   "chain": 0,
+   "lifesteal": 0,
+   "heal": 0,
+   "healRadius": 0,
+   "absorb": 0,
+   "pierce": false,
+   "selfCast": false,
+   "nonBossOnly": false,
+   "stripShield": false,
+   "id": 1511,
+   "tree": "wind",
+   "tier": 1,
+   "type": "defensive",
+   "mana": 4,
+   "color": "#9fe8d8",
+   "familiar": {
+    "id": 6,
+    "kind": "zephyr",
+    "upkeepPerS": 2.5,
+    "intensity": 12,
+    "range": 17
+   },
+   "killsDemons": false,
+   "dash": 0
+  },
+  {
+   "key": "lumen_wisp",
+   "name": "Lumen Wisp",
+   "pending": true,
+   "element": 5,
+   "damage": 0,
+   "cooldownMs": 1200,
+   "cooldownSteps": 72,
+   "windupMs": 0,
+   "windupSteps": 0,
+   "durationMs": 0,
+   "durationSteps": 0,
+   "radius": 0,
+   "range": 0,
+   "speed": 0,
+   "gravity": 0,
+   "hits": 1,
+   "spread": 1,
+   "spreadDeg": 0,
+   "cone": 0,
+   "line": 0,
+   "chain": 0,
+   "lifesteal": 0,
+   "heal": 0,
+   "healRadius": 0,
+   "absorb": 0,
+   "pierce": false,
+   "selfCast": false,
+   "nonBossOnly": false,
+   "stripShield": false,
+   "id": 1612,
+   "tree": "light",
+   "tier": 1,
+   "type": "defensive",
+   "mana": 4,
+   "color": "#fff0b0",
+   "familiar": {
+    "id": 7,
+    "kind": "wisp",
+    "upkeepPerS": 3,
+    "intensity": 17,
+    "range": 20
+   },
+   "killsDemons": true,
+   "dash": 0
+  },
+  {
+   "key": "starless_lamp",
+   "name": "Starless Lamp",
+   "pending": true,
+   "element": 7,
+   "damage": 0,
+   "cooldownMs": 1200,
+   "cooldownSteps": 72,
+   "windupMs": 0,
+   "windupSteps": 0,
+   "durationMs": 0,
+   "durationSteps": 0,
+   "radius": 0,
+   "range": 0,
+   "speed": 0,
+   "gravity": 0,
+   "hits": 1,
+   "spread": 1,
+   "spreadDeg": 0,
+   "cone": 0,
+   "line": 0,
+   "chain": 0,
+   "lifesteal": 0,
+   "heal": 0,
+   "healRadius": 0,
+   "absorb": 0,
+   "pierce": false,
+   "selfCast": false,
+   "nonBossOnly": false,
+   "stripShield": false,
+   "id": 1710,
+   "tree": "void",
+   "tier": 1,
+   "type": "defensive",
+   "mana": 4,
+   "color": "#cbb8ff",
+   "familiar": {
+    "id": 8,
+    "kind": "lamp",
+    "upkeepPerS": 3,
+    "intensity": 11,
+    "range": 15
+   },
+   "killsDemons": false,
+   "dash": 0
   }
  ],
  "trees": [
@@ -6841,6 +7285,10 @@
    "nodes": [
     {
      "key": "ember_flick",
+     "prereqs": []
+    },
+    {
+     "key": "hearth_mote",
      "prereqs": []
     },
     {
@@ -6959,6 +7407,10 @@
    "nodes": [
     {
      "key": "frost_bite",
+     "prereqs": []
+    },
+    {
+     "key": "rime_light",
      "prereqs": []
     },
     {
@@ -7090,6 +7542,10 @@
    "nodes": [
     {
      "key": "void_touch",
+     "prereqs": []
+    },
+    {
+     "key": "dusk_lantern",
      "prereqs": []
     },
     {
@@ -7246,6 +7702,10 @@
    "nodes": [
     {
      "key": "thorn_dart",
+     "prereqs": []
+    },
+    {
+     "key": "firefly_drift",
      "prereqs": []
     },
     {
@@ -7421,6 +7881,10 @@
      "prereqs": []
     },
     {
+     "key": "static_orb",
+     "prereqs": []
+    },
+    {
      "key": "static_step",
      "prereqs": []
     },
@@ -7498,6 +7962,10 @@
      "prereqs": []
     },
     {
+     "key": "zephyr_mote",
+     "prereqs": []
+    },
+    {
      "key": "updraft",
      "prereqs": []
     },
@@ -7560,6 +8028,10 @@
    "nodes": [
     {
      "key": "glint",
+     "prereqs": []
+    },
+    {
+     "key": "lumen_wisp",
      "prereqs": []
     },
     {
@@ -7629,6 +8101,10 @@
    "nodes": [
     {
      "key": "rift_shot",
+     "prereqs": []
+    },
+    {
+     "key": "starless_lamp",
      "prereqs": []
     },
     {
@@ -7928,6 +8404,14 @@
   "guiding_motes": "Guiding Motes",
   "sunlit_sentinel": "Sunlit Sentinel",
   "starfall_hail": "Starfall Hail",
+  "hearth_mote": "Hearth Mote",
+  "rime_light": "Rime Light",
+  "dusk_lantern": "Dusk Lantern",
+  "firefly_drift": "Firefly Drift",
+  "static_orb": "Static Orb",
+  "zephyr_mote": "Zephyr Mote",
+  "lumen_wisp": "Lumen Wisp",
+  "starless_lamp": "Starless Lamp",
   "parry_riposte": "Parry Riposte",
   "dash_cut": "Dash Cut",
   "sword_form": "Elemental Form",
@@ -7967,7 +8451,15 @@
   "gale_phantom",
   "guiding_motes",
   "sunlit_sentinel",
-  "starfall_hail"
+  "starfall_hail",
+  "hearth_mote",
+  "rime_light",
+  "dusk_lantern",
+  "firefly_drift",
+  "static_orb",
+  "zephyr_mote",
+  "lumen_wisp",
+  "starless_lamp"
  ],
  "enemyAttacks": [
   {
@@ -10998,7 +11490,12 @@
    "umbral_stalker",
    "void_maw"
   ],
-  "lord": "starless_sovereign"
+  "lord": "starless_sovereign",
+  "ordinary": {
+   "halfFrom": 8,
+   "immuneFrom": 15,
+   "halfMult": 0.5
+  }
  },
  "leveling": {
   "health": {

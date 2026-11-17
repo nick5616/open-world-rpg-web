@@ -7,6 +7,7 @@
 
 import { COMBAT, type SpellDef, type TreeDef } from '@lodestone/contracts';
 import { tierLevel } from '../progression/gains';
+import { resolveDash } from '../../combat/dashes';
 
 export const spellByKey = new Map<string, SpellDef>(COMBAT.spells.map((s) => [s.key, s]));
 export const treeByKey = new Map<string, TreeDef>(COMBAT.trees.map((t) => [t.key, t]));
@@ -301,7 +302,7 @@ export interface Fact {
 }
 
 /** The numbers a node's tooltip lists (damage, cooldown, mana, type, status, kills demons...). */
-export function spellFacts(s: SpellDef): Fact[] {
+export function spellFacts(s: SpellDef, level = 1): Fact[] {
   const out: Fact[] = [{ label: 'Type', value: TYPE_LABEL[s.type] ?? cap(s.type) }];
   const tree = treeByKey.get(s.tree);
   if (s.type !== 'passive') {
@@ -320,8 +321,15 @@ export function spellFacts(s: SpellDef): Fact[] {
     if (s.heal > 0) out.push({ label: 'Heals', value: s.healRadius ? `${s.heal} (allies within ${s.healRadius} m)` : String(s.heal) });
     if (s.absorb > 0) out.push({ label: 'Shield', value: `${s.absorb} points` });
     if (s.type === 'mobility') {
-      const d = COMBAT.dashes.find((x) => x.key === s.key || x.id === s.dash);
+      const d = COMBAT.dashes.find((x) => x.id === resolveDash(s.dash, level)) ?? COMBAT.dashes.find((x) => x.key === s.key || x.id === s.dash);
       if (d) out.push({ label: 'Dash', value: `${d.lift ? `${d.lift} m/s upward` : `${d.speed} m/s`} · ${Math.round((d.iframes * 1000) / COMBAT.stepHz)} ms untouchable` });
+      if (d?.minLevel) {
+        // CR 048: the tier this level has, and what the next one needs.
+        const baseKey = COMBAT.dashes.find((b) => b.id === s.dash)?.key;
+        const next = COMBAT.dashes.filter((t) => t.minLevel && (t.id === s.dash || t.tierOf === baseKey) && t.minLevel > d.minLevel!).sort((a, b) => a.minLevel! - b.minLevel!)[0];
+        out.push({ label: 'Tier', value: `${d.tierName || 'Full'}${next ? ` (${next.tierName || 'Full'} at level ${next.minLevel})` : ' (best)'}`, accent: true });
+        if (d.sustain) out.push({ label: 'Hold drain', value: `${d.sustain.manaPerS} mana/s${d.sustain.kind === 'jet' ? ', thrust flight' : ', a steered run (no flight)'}` });
+      }
     }
     // CR 020 mechanics.
     if (s.auto) out.push({ label: 'Hold to fire', value: `${Math.round(COMBAT.stepHz / s.auto.intervalSteps)} shots/s · ${s.auto.manaPerShot} mana each`, accent: true });

@@ -20,6 +20,7 @@ const hspeed = (s: MoveState) => Math.hypot(s.vel.x, s.vel.z);
 describe('held dashes (CR 021)', () => {
   it('every mobility dash peaks at several times sprint speed', () => {
     for (const d of COMBAT.dashes) {
+      if (d.tierOf) continue; // CR 048: the lesser tiers are slower on purpose
       const peak = Math.max(d.speed, d.sustain?.speed ?? 0, d.sustain?.blinkSpeed ?? 0);
       expect(peak, d.key).toBeGreaterThanOrEqual(2.3 * SPRINT);
     }
