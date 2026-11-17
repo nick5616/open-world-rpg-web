@@ -213,7 +213,16 @@ dashes:
   # `lifesteal`), `heal` heals you and your party nearby every half second,
   # `chem` schedules ignite/freeze chemistry along the path, `slam` is a dive
   # into the ground (falling faster than minFall m/s) bursting there.
-  magma_dash: {id: 1, speed: 30, steps: 12, iframes: 6, lift: 0, aim: look, exitSpeed: 18, sustain: {kind: jet, speed: 36, steer: 0.09, carrySteps: 4, manaPerS: 24}, trail: {radius: 1.8, damage: 14, status: burn, chem: ignite, slam: {minFall: 14, radius: 4.5, damage: 45, status: knockback}}}
+  magma_dash: {id: 1, minLevel: 15, tierName: Full, speed: 30, steps: 12, iframes: 6, lift: 0, aim: look, exitSpeed: 18, sustain: {kind: jet, speed: 36, steer: 0.09, carrySteps: 4, manaPerS: 24}, trail: {radius: 1.8, damage: 14, status: burn, chem: ignite, slam: {minFall: 14, radius: 4.5, damage: 45, status: knockback}}}
+  # CR 048: the magma dash is level-tiered (playtest 3: it flew too well too soon). A row with
+  # `tierOf` is a lesser variant of that dash, usable from `minLevel`; the base dash carries the
+  # top tier's minLevel. The spell's dash is the variant with the highest minLevel the character
+  # level reaches (client timeline and zone resolve it from the same level, so the movement twins
+  # only ever see an ordinary variant id). Lesser: a short, low dash, no thrust (the hold is a
+  # steered run that falls), and a hold that drains mana at 1.7x. Honed: a thrust that barely
+  # holds you up, 1.3x drain.
+  magma_dash_lesser: {id: 10, tierOf: magma_dash, minLevel: 1, tierName: Lesser, speed: 22, steps: 8, iframes: 4, lift: 0, aim: look, exitSpeed: 14, sustain: {kind: dash, speed: 16, carrySteps: 4, manaPerS: 40}, trail: {radius: 1.4, damage: 8, status: burn, chem: ignite}}
+  magma_dash_honed: {id: 11, tierOf: magma_dash, minLevel: 8, tierName: Honed, speed: 27, steps: 10, iframes: 5, lift: 0, aim: look, exitSpeed: 16, sustain: {kind: jet, speed: 22, steer: 0.05, carrySteps: 4, manaPerS: 32}, trail: {radius: 1.6, damage: 11, status: burn, chem: ignite, slam: {minFall: 14, radius: 3.5, damage: 30, status: knockback}}}
   glacier_step: {id: 2, speed: 44, steps: 10, iframes: 8, lift: 0, exitSpeed: 16, sustain: {kind: skate, speed: 30, carrySteps: 4, manaPerS: 16}, trail: {radius: 1.6, damage: 8, status: slow, chem: freeze}}
   phase_slip: {id: 3, speed: 40, steps: 12, iframes: 12, lift: 0, exitSpeed: 16, sustain: {kind: dash, speed: 32, carrySteps: 4, manaPerS: 6, healthPerS: 14}, trail: {radius: 1.8, damage: 12, lifesteal: 0.6}}
   root_launch: {id: 4, speed: 30, steps: 8, iframes: 6, lift: 6, exitSpeed: 14, sustain: {kind: dash, speed: 26, carrySteps: 4, manaPerS: 18}, trail: {radius: 2.0, damage: 16, status: knockback}}

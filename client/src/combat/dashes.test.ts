@@ -32,6 +32,7 @@ describe('held dashes in the timeline (CR 021)', () => {
 
   it('names the dash every step, holds it with channel while the key is down, and pays mana per step', () => {
     const t = new CombatTimeline(); // the start loadout has Magma Dash in slot 3
+    t.charLevel = 20; // the full dash (CR 048)
     t.mana = 100;
     const { frames, s } = fly(t, 80, 61, 0.5);
     expect(frames[0].flags & InputFlag.dodge).toBeTruthy();
@@ -48,6 +49,7 @@ describe('held dashes in the timeline (CR 021)', () => {
 
   it('stops holding when the predicted mana runs out', () => {
     const t = new CombatTimeline();
+    t.charLevel = 20;
     t.mana = spell.mana + 10 * holdManaPerStep(jet) + 1e-9;
     const { frames } = fly(t, 40, 40);
     expect(frames.filter((f) => (f.flags & InputFlag.channel) !== 0).length).toBe(10);
@@ -61,6 +63,7 @@ describe('held dashes in the timeline (CR 021)', () => {
 
   it('a tap is the plain dash: no hold, castSlot only through the dash', () => {
     const t = new CombatTimeline();
+    t.charLevel = 20;
     t.mana = 100;
     const { frames } = fly(t, 30, 0);
     expect(frames.some((f) => (f.flags & InputFlag.channel) !== 0)).toBe(false);

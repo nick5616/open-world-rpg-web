@@ -411,8 +411,8 @@ func (p *Player) allowDash(variant int, seq uint32, r *FrameResult) bool {
 	lo := p.Loadout()
 	for _, k := range lo.Spells {
 		s := D.SpellByKey(k)
-		if s == nil || s.Type != "mobility" || s.Dash != variant || !p.Profile.Knows(k) {
-			continue
+		if s == nil || s.Type != "mobility" || s.Dash == 0 || D.ResolveDash(s.Dash, p.Level) != variant || !p.Profile.Knows(k) {
+			continue // CR 048: the variant is the spell's dash at the caster's level
 		}
 		cd := p.cooldownSteps(s.CooldownSteps)
 		if seq < p.readyAt[s.ID] || p.Mana < s.Mana {

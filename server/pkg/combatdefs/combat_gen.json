@@ -1037,6 +1037,8 @@
    "lift": 0,
    "aim": "look",
    "exitSpeed": 18,
+   "minLevel": 15,
+   "tierName": "Full",
    "sustain": {
     "kind": "jet",
     "kindId": 1,
@@ -1061,6 +1063,80 @@
      "minFall": 14,
      "radius": 4.5,
      "damage": 45,
+     "status": "knockback"
+    }
+   }
+  },
+  {
+   "key": "magma_dash_lesser",
+   "id": 10,
+   "speed": 22,
+   "steps": 8,
+   "iframes": 4,
+   "lift": 0,
+   "aim": "look",
+   "exitSpeed": 14,
+   "minLevel": 1,
+   "tierName": "Lesser",
+   "tierOf": "magma_dash",
+   "sustain": {
+    "kind": "dash",
+    "kindId": 2,
+    "speed": 16,
+    "steer": 0,
+    "carrySteps": 4,
+    "blinkSpeed": 0,
+    "blinkEvery": 0,
+    "sink": 0,
+    "manaPerS": 40,
+    "healthPerS": 0
+   },
+   "trail": {
+    "radius": 1.4,
+    "damage": 8,
+    "lifesteal": 0,
+    "heal": 0,
+    "healRadius": 0,
+    "status": "burn",
+    "chem": "ignite"
+   }
+  },
+  {
+   "key": "magma_dash_honed",
+   "id": 11,
+   "speed": 27,
+   "steps": 10,
+   "iframes": 5,
+   "lift": 0,
+   "aim": "look",
+   "exitSpeed": 16,
+   "minLevel": 8,
+   "tierName": "Honed",
+   "tierOf": "magma_dash",
+   "sustain": {
+    "kind": "jet",
+    "kindId": 1,
+    "speed": 22,
+    "steer": 0.05,
+    "carrySteps": 4,
+    "blinkSpeed": 0,
+    "blinkEvery": 0,
+    "sink": 0,
+    "manaPerS": 32,
+    "healthPerS": 0
+   },
+   "trail": {
+    "radius": 1.6,
+    "damage": 11,
+    "lifesteal": 0,
+    "heal": 0,
+    "healRadius": 0,
+    "status": "burn",
+    "chem": "ignite",
+    "slam": {
+     "minFall": 14,
+     "radius": 3.5,
+     "damage": 30,
      "status": "knockback"
     }
    }

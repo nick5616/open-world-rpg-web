@@ -88,6 +88,17 @@ export function parseCombat(doc, consts) {
   const walkBound = C.BASE_MOVE_SPEED * C.SPRINT_MULTIPLIER * 2; // movement.MaxLegitHorizontalSpeed
   const dashes = Object.entries(doc.dashes).map(([key, d]) => {
     const out = { key, id: d.id, speed: d.speed, steps: d.steps, iframes: d.iframes, lift: d.lift ?? 0, aim: d.aim ?? 'move', exitSpeed: d.exitSpeed ?? C.DASH_EXIT_SPEED };
+    // CR 048: level tiers. A tiered spell's dash is the variant with the highest minLevel <= the character level among the base dash and the rows naming it in tierOf.
+    if (d.minLevel !== undefined) {
+      if (!(Number.isInteger(d.minLevel) && d.minLevel >= 1 && d.minLevel <= 255)) fail(`dash ${key}: minLevel 1..255`);
+      out.minLevel = d.minLevel;
+      out.tierName = d.tierName ?? '';
+    }
+    if (d.tierOf !== undefined) {
+      if (d.minLevel === undefined) fail(`dash ${key}: tierOf needs minLevel`);
+      if (!(d.tierOf in doc.dashes) || doc.dashes[d.tierOf].tierOf !== undefined) fail(`dash ${key}: tierOf names an untiered base dash`);
+      out.tierOf = d.tierOf;
+    }
     if (!['move', 'look'].includes(out.aim)) fail(`dash ${key}: aim move | look`);
     if (!(out.exitSpeed > 0 && out.exitSpeed <= walkBound)) fail(`dash ${key}: exitSpeed 0 < v <= ${walkBound} (the zone's walk bound once the dash ends)`);
     if (d.sustain) {
@@ -499,6 +510,8 @@ export interface DashDef {
   /** CR 021: start along the 3D look direction (look) or the held keys (move); the carry speed when it ends. */
   aim: 'move' | 'look'; exitSpeed: number;
   sustain?: DashSustainDef; trail?: DashTrailDef;
+  /** CR 048: level tiers (see combat.yaml dashes): the base dash and each row with tierOf = its key carry minLevel and a tierName. */
+  minLevel?: number; tierName?: string; tierOf?: string;
 }
 export interface DashSustainDef { kind: 'jet' | 'dash' | 'skate' | 'blink' | 'glide' | 'phase'; kindId: number; speed: number; steer: number; carrySteps: number; blinkSpeed: number; blinkEvery: number; sink: number; manaPerS: number; healthPerS: number }
 export interface DashTrailDef { radius: number; damage: number; lifesteal: number; heal: number; healRadius: number; status?: string; chem?: 'ignite' | 'freeze'; slam?: { minFall: number; radius: number; damage: number; status?: string } }

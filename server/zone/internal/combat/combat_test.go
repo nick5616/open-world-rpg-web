@@ -289,7 +289,7 @@ func TestCooldownAndMana(t *testing.T) {
 	h.p.Profile.Loadouts[0].Spells[1] = "magma_dash"
 	h.p.Mana = 100
 	h.idle(5)
-	h.frame(proto.InputFlagDodge|proto.InputFlagForward, uint8(D.SpellByKey("magma_dash").Dash), 0)
+	h.frame(proto.InputFlagDodge|proto.InputFlagForward, uint8(D.ResolveDash(D.SpellByKey("magma_dash").Dash, h.p.Level)), 0)
 	if h.state.Dash == 0 {
 		t.Fatal("equipped mobility dash refused")
 	}

@@ -100,7 +100,7 @@ export function SpellDetail({ k, c, st, compact }: { k: string; c: CardCtx; st?:
   const d = spellCardData(k);
   if (!s || !d) return null;
   const state = st ?? nodeState(s.tree, k, c.knownSet, c.level, c.free);
-  const facts = spellFacts(s);
+  const facts = spellFacts(s, c.level);
   const passive = s.type === 'passive' ? passiveLines(s) : [];
   const hit = spellHitWith(s, c.view, c.activeLoadout, c.knownSet);
   const inSlots = slotsHolding(k, c.loadouts);
