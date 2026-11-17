@@ -37,6 +37,10 @@ for your package; document each kind's use of `entityId`, `targetId`, `value`,
 | 1840-1859 | Playtest 3 lights (CR 042: your torch and familiar light, refusals). 1842-1859 reserved |
 | 1860-1879 | Playtest 3 dwarves (CR 043: discovering a dwarven hall, cave chests, lore tablets, the lower halls' warden) |
 | 1900-1909 | Playtest 3 character looks (CR 047: a player's creation look, to the client that asked). 1901-1909 reserved |
+| 1910-1929 | Playtest 4 dialog (CR 049: conversations with townsfolk, topics, choices, rumours) |
+| 1930-1939 | Playtest 4 lively townsfolk (CR 050: 1930 `npc_bark`, an NPC saying a line out loud; the rest reserved) |
+| 1940-1949 | Playtest 4 the first hour (CR 051: the arrival, the mentor, the guided introductions) |
+| 1950-1959 | Playtest 4 in-world guidance (CR 052: signposts, the guiding wisp, landmarks) |
 
 ## Registered kinds
 
@@ -236,6 +240,7 @@ for your package; document each kind's use of `entityId`, `targetId`, `value`,
 | 1862 | `lore_tablet` | CR 043. To you, answering Interact 171: `targetId` = the tablet's decoration index, `value` = lore id, data = the text (UTF-8) |
 | 1863 | `lower_halls` | CR 043. To players within the boss event's radius + 40 m (at least 140 m of the warden), alongside Events 209 / 210 of the deep warden: `entityId` = the boss entity id, `targetId` = the lower_halls atlas site index, `value` = 0 the warden wakes (engaged) / 1 the warden falls, `x/y/z` = the warden (cm); no data |
 | 1900 | `look` | CR 047. To the client that asked (Interact 91): `entityId` = the player, `value` = the packed creation look (19 bits: bit 18 set, then build 2 bits at 0, skin 3 at 2, hairStyle 3 at 5, hairColor 4 at 8, beard 3 at 12, eyes 3 at 15; client/src/net/look.ts). Nothing is sent for a player with no stored look. |
+| 1930 | `npc_bark` | CR 050. A townsperson says a line out loud (a speech bubble over their head): to every player within 30 m, or to one player when the line is addressed to them. `entityId` = the NPC's entity id, `targetId` = the player addressed (0 nobody in particular), `value` = how long to show it (ms; 0 = the client's default), `data` = UTF-8 text. Sent by `server/zone/internal/game/npc_bark.go` `npcBark`; drawn via `client/src/world/buildings/npcFocus.ts` |
 | 1840 | `light_state` | CR 042. To you: your light changed (lit, doused, a familiar called or dismissed, or faded) and on request. `entityId` = you, `targetId` = the familiar light's spell id (the one that just ended when it went out; 0 none), `value` = the light bits (bit 0 a torch is lit, bits 1-5 the familiar id, combat.yaml `familiar.id`), `data` = [why]: 0 you asked, 1 the water put the torch out, 2 the familiar faded (out of mana), 3 you fell, 4 an answer to Interact 160 action 0, 5 the torch left your pack. Everyone else learns it from your snapshot record (EntityRecord.appearance bits 51-56), so there is no broadcast |
 | 1841 | `light_refused` | CR 042. To you: Interact 160 refused. `targetId` = 1 torch, `value` = reason: 1 no torch in the pack, 2 in the water, 3 downed, 4 too fast, 5 unknown action |
 | 1402 | `dev_places` | CR 032. To you, after Interact 250 action 26 (dev zones only): `data` = JSON `{towers, towns, vaults}`, each a list of `{n: name, x, z}` (m) for the console's teleport list |
