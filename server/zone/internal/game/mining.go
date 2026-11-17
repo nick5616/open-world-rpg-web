@@ -193,6 +193,9 @@ func (s *Server) vein(cw caveWorld, id uint64) (caves.Vein, *veinState, bool) {
 
 func (s *Server) sendEventTo(e *Entity, ev *proto.Event) {
 	if sess := s.byChar[e.CharacterID]; sess != nil && sess.ent == e {
+		if sess.dlg != nil && sess.dlg.cap != nil && sess.dlg.capture(ev) {
+			return // CR 049: a talk opening inside a conversation (dialog.go)
+		}
 		_ = sess.conn.SendReliable(proto.Encode(ev))
 	}
 }

@@ -64,6 +64,7 @@ import { WeatherHud } from '../systems/weather/WeatherHud';
 import { StoryHud } from '../ui/story/StoryHud';
 // Playtest 2: spell FX (online it is CombatLayer's; debug solo mounts it for the FX gallery and cast-spam bench).
 import { SpellFxLayer } from '../combat/fx/SpellFxLayer';
+import { DialogOverlay } from '../ui/dialog/DialogOverlay'; // CR 049: conversations with townsfolk
 // `?nofx`: solo without the FX layer (the A/B of the spell FX benchmark, combat/fx/dev/fx-bench.mjs).
 const NO_FX = typeof location !== 'undefined' && new URLSearchParams(location.search).has('nofx');
 
@@ -125,6 +126,7 @@ export default function PlayScreen() {
       {DEBUG && <DevConsole />}
       <WeatherHud />
       <StoryHud />
+      <DialogOverlay />
     </>
   );
 }

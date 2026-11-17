@@ -111,6 +111,13 @@ export function controlGroups(debug: boolean, dev = false): ControlGroup[] {
       ],
     },
     {
+      title: 'Talking to people',
+      rows: [
+        { keys: ['1', '2', '3', '4', '5', '6'], action: 'Pick an answer', note: 'or click it; the person turns to you and the camera frames them', src: [['ui/dialog/store.ts', "'Digit1'"]] },
+        { keys: ['E', 'Space', 'Enter'], action: 'Skip the typing, then go on', note: 'when there is only one thing to say; Esc ends the conversation. Ask "Heard anything interesting?" and use "Mark it on my map"', src: [['ui/dialog/DialogOverlay.tsx', "'KeyE'"], ['ui/dialog/DialogOverlay.tsx', "'Space'"], ['ui/dialog/DialogOverlay.tsx', "'Enter'"]] },
+      ],
+    },
+    {
       title: 'Photo mode',
       rows: [
         { keys: ['L'], action: 'Photo mode on / off', note: 'free camera, no HUD; Esc also leaves', src: [['ui/photo/PhotoMode.tsx', "'KeyL'"]] },

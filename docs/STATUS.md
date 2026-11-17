@@ -1994,3 +1994,21 @@ Nicole: "Continue with the underground content. Caves should have stuff and mons
 - The night safe rule is wider than halls: nothing hunts underground at night.
 - Evidence: the cave-monsters shot is weak (monsters far away), no close-up of a dwarf NPC, no stronghold market shot; the stronghold floor is a plain orange; glowworms do not sway; rails clip on slopes.
 - Postgres-backed tests time out when the shared database is slow (accountapi, some mintdb, zone game PG tests); the mintdb renewal tests pass when run alone.
+
+## Playtest 4: dialog (branch `pt4/dialog`, CR 049)
+
+Nicole: "make NPCs more lively, and have dialog. That would probably help." Interact 180, Events 1910-1913, What's new `pt4-dialog`; no migration (memory rides the content state).
+
+**Works**
+- Talking to a townsperson is a conversation: they hold still and turn to you, the camera frames their face, the HUD dims, a lower third types the line with a quiet per-person murmur, answers are numbered (1-6 or click), Esc leaves; the line also shows as their speech bubble. Services (shop, bounties, rest, forge) open from "work" choices in the usual panels and the conversation returns when they close.
+- Every NPC is a person: a temperament, a quirk, family, origin, hopes and a confidence from pools by id, role and town; the Haven's keeper, the meadows quest giver, the smith and bounty keeper, the Act IV captain and the Act V master smith are hand-written; dwarven halls have their own voice.
+- Greetings vary with first meeting vs met (your name), time, weather, night and a town defense, your level and gear, deeds the zone knows, the story act, a world event. People remember you per character (talks, warmth, topics heard).
+- "Heard anything interesting?" points at real places you have not done (caves, shafts, dwarven halls, bandit camps, towers, sky islands and palaces, Depths shrines, vaults, herb patches, water, a steed merchant, a world event); "Mark it on my map" sets a personal pin that shows on the map and compass.
+- Talk steps, the starter Ward and every other quest offer a talk makes play inside the conversation ("I'll do it" / "Not now"); the offer card stays for the board and old clients.
+- Go: `internal/dialog` and `internal/game` tests (full `server/zone` suite passes); vitest for the store, keys, camera, voice and offline. Evidence: `docs/evidence/pt4-dialog-*.jpg` (`tools/playtest/dialog-shots.mjs`).
+
+**Gaps**
+- The camera only turns the view toward the face (third person gets the over-the-shoulder frame for free from the boom); no zoom or depth of field.
+- Rumours do not know about fishing legends or stables beyond the nearest general-merchant town; herb patches ignore what you can already name; "camp cleared" is the camp's current state, not yours.
+- Only the Interact 30 legacy path shows the old panel; sky-town people share the generic pools (no sky voice).
+- The forge choice only opens the smithing panel when you stand at a forge or anvil; otherwise they point you at it.

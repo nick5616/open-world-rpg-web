@@ -69,8 +69,8 @@ const (
 	// npcReachM: talking to a person reaches further (playtest 2: a farmer
 	// at home stood behind his hearth, 4.7 m from the closest spot a player
 	// could stand, so the first quest couldn't be started).
-	npcReachM = 6.5
-	shaftReachM    = 8
+	npcReachM   = 6.5
+	shaftReachM = 8
 )
 
 // Stations is the forge/anvil hook (WP14: smelting, forging, socketing).
@@ -151,6 +151,13 @@ func (s *Server) townsTick(tick uint32, now time.Time) {
 				case !on && near < npcActivateM:
 					s.activateNPC(i, tod)
 				case on && near > npcDeactivateM:
+					if s.dlg.held[i] > 0 {
+						for sess := range s.dlg.open {
+							if sess.dlg != nil && sess.dlg.npc == i {
+								s.dialogClose(sess, DialogEndGone) // CR 049
+							}
+						}
+					}
 					s.removeEntity(e)
 					delete(t.byEnt, e.ID)
 					delete(t.active, i)
@@ -160,14 +167,23 @@ func (s *Server) townsTick(tick uint32, now time.Time) {
 	}
 	dt := 1.0 / 30
 	for i, e := range t.active {
-		w.Step(i, tod, dt, s.npcGround)
 		st := &w.NPCs[i]
+		if len(s.dlg.held) > 0 && s.dlg.held[i] > 0 {
+			// CR 049: someone is talking to this person: stand still, face them.
+			if p := s.dlg.talker[i]; p != nil {
+				st.Yaw = math.Atan2(p.Move.Pos.Z-st.Z, p.Move.Pos.X-st.X)
+			}
+			st.VX, st.VZ = 0, 0
+		} else {
+			w.Step(i, tod, dt, s.npcGround)
+		}
 		e.Move.Pos = movement.Vec3{X: st.X, Y: st.Y, Z: st.Z}
 		e.Move.Vel = movement.Vec3{X: st.VX, Z: st.VZ}
 		e.Yaw = wireYaw(st.Yaw)
 		e.prevValid = e.Move
 	}
-	s.doorsTick(tick) // building doors: settle changes, baselines, NPCs closing behind them (doors.go)
+	s.dialogTick(tick, now) // CR 049: conversations that ended by walking away or going quiet (dialog.go)
+	s.doorsTick(tick)       // building doors: settle changes, baselines, NPCs closing behind them (doors.go)
 }
 
 // wireYaw turns a worldgen heading (radians from +x toward +z: forward =

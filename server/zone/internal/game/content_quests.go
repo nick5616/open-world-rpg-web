@@ -150,6 +150,7 @@ func (s *Server) contentQuestHappened(sess *session, h quests.Happening) {
 	case quests.KindSide:
 		sess.cnt.st.Add("side", 1)
 		if q.GiverNPC > 0 {
+			s.dialogQuestDone(sess, q) // CR 049: the giver warms to you
 			sess.cnt.st.GiverDone(q.Settlement, q.GiverNPC-1, q.Seq)
 		}
 	case quests.KindStory:

@@ -189,6 +189,7 @@ type Server struct {
 	town       townsState    // WP20 (towns.go)
 	itm        itemsState    // WP14 (items.go)
 	night      nightState    // WP15 (night.go)
+	dlg        dialogState   // playtest 4 dialog (CR 049): dialog.go
 	diff       diffState     // playtest 1 (difficulty.go)
 	qst        questsGlue    // playtest 1: quest logs (quests.go)
 	obst       obstacleState // enemies respect buildings (obstacles.go)
@@ -587,6 +588,7 @@ func (s *Server) leave(sess *session) {
 	s.emotesLeave(sess)  // playtest 2: emotes, fishing (emotes.go)
 	s.musicLeave(sess)   // playtest 2: instruments (music.go)
 	s.storyLeave(sess)   // CR 035 (story.go)
+	s.dialogLeave(sess)  // CR 049: the person walks on (dialog.go)
 	if s.cfg.Queue != nil {
 		s.checkpoint(e)
 	}

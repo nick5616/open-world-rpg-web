@@ -82,6 +82,7 @@ type session struct {
 	light            *lightState        // playtest 3 torch and familiar light (lights.go); nil until the first Interact 160 or familiar cast
 	music            *musicState        // playtest 2 instruments (music.go); nil until the first Interact 120
 	dev              *devSess           // CR 032 dev console (devconsole.go); nil until the first dev command
+	dlg              *dlgSess           // CR 049 an open conversation with a townsperson (dialog.go); nil none
 
 	// Reader-owned.
 	buckets    [256]*ratelimit.Bucket
@@ -416,6 +417,10 @@ func (s *Server) drainTaken(sess *session, now time.Time) {
 			}
 			if it.TargetKind == InteractCaveChest || it.TargetKind == InteractLoreTablet {
 				s.caveInteract(sess, it) // CR 043: cave chests and lore tablets (dwarves.go)
+				continue
+			}
+			if it.TargetKind == InteractDialog {
+				s.dialogInteract(sess, it, now) // CR 049: conversations with townsfolk (dialog.go)
 				continue
 			}
 			if it.TargetKind == InteractLight {

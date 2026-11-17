@@ -1,5 +1,17 @@
 [
   {
+    "id": "pt4-dialog",
+    "date": "2026-11-17",
+    "title": "Talk to people",
+    "items": [
+      "Talking to a townsperson is a real conversation now: they turn to you, speak, and you answer.",
+      "Ask \"Heard anything interesting?\" and they point you at real places nearby: caves, towers, camps, vaults, herb patches.",
+      "Pick \"Mark it on my map\" and the place shows on your map and compass.",
+      "Everyone has their own temperament, family and secrets, and remembers you. Be kind and they open up.",
+      "Quests are offered right in the conversation. Press 1-6 or click to answer, Esc to leave."
+    ]
+  },
+  {
     "id": "pt3-sky-depths",
     "date": "2026-11-17",
     "title": "Sky palaces, glide races and new creatures",

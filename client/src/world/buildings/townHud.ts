@@ -25,6 +25,7 @@ import { useMapWorld } from '../../ui/map/world';
 import { setMapOpen } from '../../ui/map/store';
 import { setQuestPreview } from '../../ui/quests/store';
 import { whereText, type QuestMarker } from '../../ui/quests/events';
+import { dialogController, ensureDialogHook } from '../../ui/dialog/link'; // CR 049: conversations with townsfolk
 import { ACT, BOUNTY_KIND_LABEL, decodeBounties, decodeShop, EV, INTERACT, itemName, MERCHANT_LABEL, NPC_ROLE_LABEL, REFUSAL, utf8, type Bounty, type ShopItem } from './townEvents';
 
 interface PanelState {
@@ -40,16 +41,6 @@ interface PanelState {
   canRest: boolean;
   offline: boolean;
 }
-
-const OFFLINE_LINES: Record<number, string[]> = {
-  0: ['Fine day for a walk, traveller.', 'Mind the road after dark. The demons keep to the wilds, mostly.', 'The well water is the sweetest this side of the hills.'],
-  1: ['Have a look, have a look! Fair prices for fair folk.', 'Fresh stock this morning, straight off the cart.'],
-  2: ['Bring me ore and I will make it worth carrying.', 'Careful, the forge bites.'],
-  3: ['A warm bed and a hot meal: that is all anyone needs.', 'Rest a while, the road will keep.'],
-  4: ['The board is full again. Folk need brave hands.', 'Bandits to the north, a demon by the mill... take your pick.'],
-  5: ['The barley is coming in nicely this year.', 'Crows again. Always the crows.'],
-  6: ['Keep the peace and we will get along.', 'Move along, nothing to see.'],
-};
 
 /**
  * Playtest 1: where a board job takes you (distance and direction from
@@ -72,12 +63,6 @@ function bountyPlace(b: Bounty, board: Candidate | null): { text: string; marker
   }
   return null;
 }
-
-const hashStr = (s: string) => {
-  let h = 2166136261;
-  for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
-  return h >>> 0;
-};
 
 export class TownHud {
   target: Candidate | null = null;
@@ -164,6 +149,7 @@ export class TownHud {
     });
     document.body.append(this.prompt, this.toastEl, this.panelEl);
     window.addEventListener('keydown', this.onKey);
+    dialogController.setPanelProbe(() => this.panel !== null); // CR 049: a service panel parks the conversation
     this.panelEl.addEventListener('click', this.onClick);
   }
 
@@ -179,6 +165,7 @@ export class TownHud {
   /** Per frame: the current target (picked by the manager), session hook, prompt and toasts. */
   update(target: Candidate | null): void {
     this.target = target;
+    ensureDialogHook(); // CR 049
     const s = netRuntime.session;
     if (s && s !== this.hooked) {
       this.hooked?.eventListeners.delete(this.listener);
@@ -213,8 +200,7 @@ export class TownHud {
       switch (c.kind) {
         case 'npc':
           if (c.entityId === null) break;
-          s.sendInteract(INTERACT.npc, BigInt(c.entityId), ACT.talk, 0);
-          this.open(this.npcPanel(c, '...', false));
+          dialogController.open(c); // CR 049: a conversation (Interact 180), not the one-line panel
           break;
         case 'board':
           s.sendInteract(INTERACT.board, c.stableId, ACT.read, 0);
@@ -235,15 +221,9 @@ export class TownHud {
     // Offline: the same flow with local lines.
     this.lastAction = `offline ${c.kind}`;
     switch (c.kind) {
-      case 'npc': {
-        const lines = OFFLINE_LINES[c.role] ?? OFFLINE_LINES[0];
-        const p = this.npcPanel(c, `${lines[hashStr(c.name) % lines.length]}`, true);
-        if (c.role === 1) p.station = `(offline) ${c.name} sells ${MERCHANT_LABEL[c.merchant] ?? 'goods'}. Connect to a zone to see the wares.`;
-        if (c.role === 4) p.station = '(offline) Connect to a zone to see today\'s bounties.';
-        if (c.role === 3) p.station = '(offline) Connect to a zone to rest at the inn.';
-        this.open(p);
+      case 'npc':
+        dialogController.open(c); // CR 049: a small local conversation (ui/dialog/offline.ts)
         break;
-      }
       case 'board':
         this.open({ ...this.blank('Bounty board', 'Notices pinned in the square'), line: '(offline) The board is covered in notices: bandits, deliveries, a demon by the mill. Connect to a zone to see and accept today\'s bounties.', offline: true });
         break;
@@ -279,6 +259,7 @@ export class TownHud {
     hidePanel('town');
     this.pending = null;
     this.panelEl.style.display = 'none';
+    dialogController.panelClosed(); // CR 049: back to the conversation, if one is waiting
   }
 
   private render(): void {

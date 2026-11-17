@@ -25,6 +25,8 @@ import { localPlayer, view, type MoveMode } from '../state/live';
 import { useGround } from './groundContext';
 import { useViewStore } from '../stores/viewStore';
 import { lookRouter } from '../input/lookRouter';
+import { dialogCam, dialogCamStep } from '../ui/dialog/camera';
+import { prefersReducedMotion } from '../combat/flashSafety';
 import { drawnRemotes } from '../net/netStore';
 import { enemyInfo } from '../combat/events';
 import { aimFromEye, Boom, CameraProbe, crosshairDistance, forwardOf, THIRD, type AimSphere, type Vec3 as V3 } from './thirdPerson';
@@ -166,6 +168,8 @@ export function PlayerController({ onStep, driver }: Props) {
       lk.yaw -= d.x * MOUSE_SENSITIVITY;
       lk.pitch = Math.max(-PITCH_LIMIT, Math.min(PITCH_LIMIT, lk.pitch - d.y * MOUSE_SENSITIVITY));
     }
+    // CR 049: a conversation frames the person's face (ui/dialog/camera.ts), then eases back.
+    if (dialogCam.phase !== 'off') dialogCamStep(lk, view.eye, delta, prefersReducedMotion());
     // Keep yaw bounded so float precision never degrades over a long session.
     lk.yaw = Math.atan2(Math.sin(lk.yaw), Math.cos(lk.yaw));
 
