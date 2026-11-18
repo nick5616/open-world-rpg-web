@@ -92,6 +92,8 @@ interface Falling {
 }
 
 const TOOL_LABEL: Record<WorkMode, string> = { off: '', harvest: 'Chop and break', dig: 'Dig', fill: 'Fill' };
+/** Where a dig stops: said, and drawn (tileEdits bedrock). */
+const BEDROCK_TEXT = 'You have hit bedrock. It will not go any deeper here';
 const TOOL_ITEM: Record<WorkMode, string> = { off: '', harvest: 'Axe, pickaxe', dig: 'Shovel', fill: 'Shovel' };
 
 export class WorldEditManager {
@@ -312,7 +314,8 @@ export class WorldEditManager {
         break;
       case 1806: {
         const msg: Record<number, string> = { 1: 'Too far to reach', 2: 'You need a shovel', 3: 'The ground here is protected', 5: ev.targetId === 2 ? 'Nothing to fill here' : 'It will not go any deeper here', 6: 'You have no dirt or stone to fill with', 7: 'Too much of the world has been reshaped', 8: 'Nothing to dig there', 9: 'That would shift too much earth at once' };
-        if (msg[ev.value]) this.toast(msg[ev.value]);
+        if (ev.value === 5 && ev.targetId !== 2 && this.target?.kind === 'ground' && this.atBedrock(this.target.x, this.target.z)) this.toast(BEDROCK_TEXT);
+        else if (msg[ev.value]) this.toast(msg[ev.value]);
         break;
       }
       case 1807:
@@ -512,7 +515,7 @@ export class WorldEditManager {
   private soloEarth(t: Target, op: 'dig' | 'fill'): void {
     const { plan, reason } = planSwing(this.soloWorld(), op, t.x, t.z);
     if (!plan) {
-      this.toast(reason === 'forbidden' ? 'The ground here is protected' : reason === 'big' ? 'That would shift too much earth at once' : op === 'fill' ? 'Nothing to fill here' : 'It will not go any deeper here');
+      this.toast(reason === 'bedrock' ? BEDROCK_TEXT : reason === 'forbidden' ? 'The ground here is protected' : reason === 'big' ? 'That would shift too much earth at once' : op === 'fill' ? 'Nothing to fill here' : 'It will not go any deeper here');
       return;
     }
     const by = new Map<number, { cx: number; cz: number; es: { i: number; d: number }[] }>();
@@ -695,6 +698,11 @@ export class WorldEditManager {
 
   // ---- HUD
 
+  /** The ground at (x, z) is dug to the cap: the vertex nearest the strike is at -MAX_DELTA (the terrain shows bedrock there). */
+  private atBedrock(x: number, z: number): boolean {
+    return this.overlay.delta(Math.round(x), Math.round(z)) <= -MAX_DELTA;
+  }
+
   private toast(text: string): void {
     if (!text) return;
     this.toasts.push({ text, until: performance.now() + 2200 });
@@ -729,6 +737,7 @@ export class WorldEditManager {
       else if (t?.kind === 'ground') {
         const dl = Math.round(this.overlay.delta(Math.round(t.x), Math.round(t.z)) * STEP_M * 10) / 10;
         line += ` &middot; ${dl > 0 ? '+' : ''}${dl} m (limit &plusmn;${MAX_DELTA * STEP_M} m)`;
+        if (mode === 'dig' && this.atBedrock(t.x, t.z)) line += ' &middot; <b>bedrock</b>';
       }
       html = line;
     }

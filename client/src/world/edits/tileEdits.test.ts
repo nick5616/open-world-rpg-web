@@ -3,7 +3,8 @@ import { parseChunk } from '@lodestone/worldgen';
 import { WorldGround } from '../core/ground';
 import { hasWasm, testWorld } from '../testing/wasm';
 import { buildTileMesh, S } from '../terrain/tileMesh';
-import { applyTileEdits, editedOutside } from './tileEdits';
+import { MAX_DELTA } from './overlay';
+import { applyTileEdits, bedrockShare, editedOutside } from './tileEdits';
 
 describe.skipIf(!hasWasm)('terrain edits in a tile build', () => {
   it('an edited LOD 0 tile is exactly the edited collision surface, seams included', async () => {
@@ -49,5 +50,35 @@ describe.skipIf(!hasWasm)('terrain edits in a tile build', () => {
     const z0 = chunk.cz * 64;
     const n = applyTileEdits(chunk, Int32Array.from([x0 + 2, z0 + 4, -6, x0 + 3, z0 + 4, -6, x0 + 100, z0 + 10, 4]));
     expect(n).toBe(2); // the odd-x vertex is not on the 2 m lattice
+  });
+
+  // Playtest 5 ("the underground has an invisible floor"): a pit's bottom at the dig cap is drawn as bedrock.
+  it('the bottom of a dig is bedrock: dirt grades into rock down to the cap', async () => {
+    const { wg, atlas } = await testWorld();
+    const chunk = parseChunk(wg.buildChunkBytes(atlas, 27, 32, 0));
+    const x0 = chunk.cx * 64;
+    const z0 = chunk.cz * 64;
+    expect(applyTileEdits(chunk, Int32Array.from([x0 + 5, z0 + 5, -2, x0 + 9, z0 + 5, -MAX_DELTA / 2, x0 + 13, z0 + 5, -MAX_DELTA]))).toBe(3);
+    const at = (x: number) => 5 * S + (x - x0);
+    const rock = (x: number) => chunk.splatA[at(x) * 4 + 2];
+    const dirt = (x: number) => chunk.splatA[at(x) * 4 + 1];
+    expect(rock(x0 + 5), 'a shallow dig is soil').toBe(0);
+    expect(dirt(x0 + 5)).toBeGreaterThan(200);
+    expect(rock(x0 + 9), 'half way is part rock').toBeGreaterThan(0);
+    expect(rock(x0 + 9)).toBeLessThan(dirt(x0 + 9) + rock(x0 + 9));
+    expect(rock(x0 + 13), 'the cap is all rock').toBe(255);
+    expect(dirt(x0 + 13)).toBe(0);
+    for (const x of [5, 9, 13]) {
+      const v = at(x0 + x) * 4;
+      expect(chunk.splatA[v] + chunk.splatA[v + 1] + chunk.splatA[v + 2] + chunk.splatA[v + 3] + chunk.splatB[v] + chunk.splatB[v + 1]).toBe(255);
+    }
+  });
+
+  it('bedrockShare: none above a third of the cap, all at it', () => {
+    expect(bedrockShare(0)).toBe(0);
+    expect(bedrockShare(4)).toBe(0);
+    expect(bedrockShare(-MAX_DELTA / 3)).toBe(0);
+    expect(bedrockShare(-MAX_DELTA / 2)).toBeGreaterThan(0);
+    expect(bedrockShare(-MAX_DELTA)).toBe(1);
   });
 });

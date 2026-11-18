@@ -25,6 +25,11 @@ const (
 	PushStep  = 0.5
 	PushSteps = 24
 	ShaftBand = 2.5
+	// Bedrock is the bottom of the world (playtest 5): under the Depths'
+	// deepest floor (about -455 m) and its Ext snap band. The ground is never
+	// lower, so a fall no layer or cave catches ends here instead of going on
+	// for ever. TS: VC.bedrock.
+	Bedrock = -500.0
 )
 
 // Source is the collision value of a surface at (x, z): the wasm
@@ -183,7 +188,10 @@ func (g *Ground) FloorAt(x, y, z float64) float64 {
 	if l, f := g.Resolve(x, y, z); l != LayerSurface {
 		return f
 	}
-	return g.baseLevel(y).HeightAt(x, z)
+	if h := g.baseLevel(y).HeightAt(x, z); h >= Bedrock {
+		return h
+	}
+	return Bedrock
 }
 
 // WaterAtLevel is the water (or lava) for feet at y: the layer's underground,

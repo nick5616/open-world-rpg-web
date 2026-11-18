@@ -488,7 +488,7 @@ func (s *Server) earthwork(sess *session, e *Entity, in *proto.Interact, now tim
 	case worldedit.Forbidden:
 		s.earthRefuse(e, in.Action, EarthForbidden)
 		return
-	case worldedit.AtLimit:
+	case worldedit.AtLimit, worldedit.Bedrock:
 		s.earthRefuse(e, in.Action, EarthNoChange)
 		return
 	case worldedit.TooBig:
