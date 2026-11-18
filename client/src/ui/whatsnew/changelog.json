@@ -1,5 +1,17 @@
 [
   {
+    "id": "pt5-conversations",
+    "date": "2026-11-18",
+    "title": "Real conversations with townsfolk",
+    "items": [
+      "Talking to someone now opens a proper dialogue box: their name, role and town, a scrolling record of what you both said, their line typing out, and your answers underneath.",
+      "Your answers are in your own voice, with a tag up front: [Barter], [Rumour], [Work], [Mark], [Leave]. Keys 1-6 or a click choose; E, Space or Enter skips the typing.",
+      "Some answers depend on you: [Mage], [Warmth ♥♥♥], [Level 10], [Sunsteel]. Pass one for a discount, a secret rumour, a better reward or a trade secret. Fall short and they refuse in character, with the tag dimmed as too low.",
+      "Conversations end when you say goodbye. They answer, then the box closes. Walk away (or press Esc) and they call after you.",
+      "Their line is a speech bubble over their head and yours is one over you, for the players standing near you too."
+    ]
+  },
+  {
     "id": "pt4-music",
     "date": "2026-11-18",
     "title": "Nicole's new music",

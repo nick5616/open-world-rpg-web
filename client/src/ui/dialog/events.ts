@@ -56,7 +56,9 @@ const dec = new TextDecoder();
 export function decodeNode(data: Uint8Array): DialogNode | null {
   try {
     const n = JSON.parse(dec.decode(data)) as DialogNode;
-    if (!n || typeof n.line !== 'string' || !Array.isArray(n.choices)) return null;
+    if (!n || typeof n.line !== 'string') return null;
+    if (n.choices == null) n.choices = []; // the farewell has none
+    if (!Array.isArray(n.choices)) return null;
     return n;
   } catch {
     return null;

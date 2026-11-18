@@ -299,7 +299,7 @@ func (s *Server) dialogSend(sess *session, d *dlgSess, n dialog.Node, mem dialog
 	if !n.Bye {
 		n.Choices = dialog.Finish(n.Choices, d.person, mem)
 	} else {
-		n.Choices = nil
+		n.Choices = []dialog.Choice{} // [] on the wire, never null
 	}
 	for k := range n.Choices {
 		n.Choices[k].ID = k + 1

@@ -130,6 +130,7 @@ describe('keys and advancing', () => {
     const n = decodeNode(enc.encode(JSON.stringify({ ...node, bye: true, choices: [], check: { tag: 'Sunsteel', pass: false } })))!;
     expect(n.bye).toBe(true);
     expect(n.check?.tag).toBe('Sunsteel');
+    expect(decodeNode(enc.encode(JSON.stringify({ ...node, bye: true, choices: null })))?.choices).toEqual([]); // robust to a null list
     const m = decodeNode(enc.encode(JSON.stringify(node)))!;
     expect(m.choices[1]).toMatchObject({ kind: 'check', tag: 'Warmth ♥♥♥', low: true });
     expect(m.choices.at(-1)?.kind).toBe('leave');

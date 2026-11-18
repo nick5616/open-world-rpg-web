@@ -36,7 +36,8 @@ body[data-dialog] canvas { filter: saturate(0.92) contrast(1.03); }
 .ls-dlg-box::after { right: calc(var(--u) * -6); bottom: calc(var(--u) * -6); border-left: none; border-top: none; }
 .ls-dlg-head { display: flex; align-items: baseline; gap: calc(var(--u) * 12); padding-bottom: calc(var(--u) * 6); border-bottom: 1px solid rgba(184,146,62,0.45); flex: none; }
 .ls-dlg-name { font: 600 calc(var(--u) * 22) Georgia, serif; color: #f3d48a; letter-spacing: .4px; }
-.ls-dlg-role { font: calc(var(--u) * 13) system-ui, sans-serif; opacity: .75; text-transform: capitalize; }
+.ls-dlg-role { font: calc(var(--u) * 13) system-ui, sans-serif; opacity: .75; }
+.ls-dlg-role::first-letter { text-transform: uppercase; }
 .ls-dlg-hearts { font: calc(var(--u) * 13) system-ui, sans-serif; color: #e58a8a; letter-spacing: 1px; }
 .ls-dlg-walk { margin-left: auto; font: 600 calc(var(--u) * 12) system-ui, sans-serif; padding: calc(var(--u) * 3) calc(var(--u) * 9); border-radius: 4px; border: 1px solid rgba(232,196,106,0.4); background: rgba(24,20,16,0.6); color: #d9cdb2; cursor: pointer; }
 .ls-dlg-walk:hover { background: rgba(70,52,24,0.8); color: #fff; }

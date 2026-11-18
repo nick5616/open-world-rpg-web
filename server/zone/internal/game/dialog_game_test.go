@@ -27,6 +27,9 @@ func (cl *client) dialogNode(t *testing.T) dlgWire {
 	if err := json.Unmarshal(ev.Data, &w); err != nil {
 		t.Fatal(err)
 	}
+	if strings.Contains(string(ev.Data), `"choices":null`) {
+		t.Fatalf("choices is null on the wire (a client wants []): %s", ev.Data)
+	}
 	// CR 053: no node dead-ends. Every one but the farewell ends with the way out.
 	if w.Bye {
 		if len(w.Choices) != 0 {
