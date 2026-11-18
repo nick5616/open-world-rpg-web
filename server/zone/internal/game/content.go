@@ -40,6 +40,7 @@ import (
 	"lodestone/server/pkg/writebehind"
 	"lodestone/server/zone/internal/combat"
 	"lodestone/server/zone/internal/content"
+	"lodestone/server/zone/internal/dialog"
 	"lodestone/server/zone/internal/items"
 	"lodestone/server/zone/internal/npc"
 	"lodestone/server/zone/internal/quests"
@@ -571,8 +572,8 @@ func (s *Server) contentOnKill(k combat.KillInfo) {
 	if en == nil || en.Def == nil || !s.contentOn() {
 		return
 	}
-	s.eventsOnKill(k) // worldevents.go
-	s.vaultsOnKill(k) // dungeons.go
+	s.eventsOnKill(k)  // worldevents.go
+	s.vaultsOnKill(k)  // dungeons.go
 	s.palacesOnKill(k) // palace.go (CR 044)
 	demon := en.Demon != nil
 	for _, id := range k.Eligible {
@@ -869,6 +870,22 @@ func (s *Server) sendPlaces(sess *session, ax, az int) {
 // waresFor is NPC i's shop for e: the WP20 stock plus what e's reputation
 // with the settlement unlocks (content.yaml reputation.wares).
 func (s *Server) waresFor(e *Entity, i int) []npc.Ware {
+	ws := s.waresForFull(e, i)
+	if ws == nil || e == nil {
+		return ws
+	}
+	// CR 053: a price you talked down in a conversation (dialog.go) lasts a while.
+	if sess := s.byChar[e.CharacterID]; sess != nil && sess.dlgDisc.npc == i+1 && s.cfg.Now().Before(sess.dlgDisc.until) {
+		out := append([]npc.Ware(nil), ws...)
+		for k := range out {
+			out[k].Price = uint32(dialog.Discount(int(out[k].Price), sess.dlgDisc.pct))
+		}
+		return out
+	}
+	return ws
+}
+
+func (s *Server) waresForFull(e *Entity, i int) []npc.Ware {
 	w := s.cfg.Towns
 	base := w.Wares(i)
 	if base == nil || e == nil {

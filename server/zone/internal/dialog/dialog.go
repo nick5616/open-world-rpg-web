@@ -56,7 +56,9 @@ func (m *Memory) Talked(day int) {
 type Choice struct {
 	ID   int    `json:"id"`
 	Text string `json:"text"`
-	Kind string `json:"kind"` // topic, rumour, work, mark, quest, more, leave
+	Kind string `json:"kind"`          // topic, rumour, work, mark, quest, more, leave, check
+	Tag  string `json:"tag,omitempty"` // the bracket in front: Leave, Quest, Barter, Rumour, Work, Mark, or a check (Mage, Warmth ♥♥♥, Level 10, Sunsteel)
+	Low  bool   `json:"low,omitempty"` // a check you do not meet (the tag is dimmed)
 	Act  string `json:"-"`
 }
 
@@ -66,6 +68,11 @@ type Node struct {
 	Mood    string   `json:"mood,omitempty"`
 	Choices []Choice `json:"choices"`
 	Rumour  *Rumour  `json:"rumour,omitempty"`
+	// Check is the check you just tried (a chip in the transcript).
+	Check *CheckResult `json:"check,omitempty"`
+	// Bye marks the farewell: the box closes by itself after it.
+	Bye  bool  `json:"bye,omitempty"`
+	Perk *Perk `json:"-"` // what the glue applies (a discount)
 }
 
 // Open is the opening node: the greeting and the topics. It does not change
@@ -75,34 +82,28 @@ func Open(p Person, m Memory, ctx Context) Node {
 	return Node{Line: Greeting(p, ps, m, ctx), Mood: ps.Temper.Mood(), Choices: Menu(p, ps, m, ctx)}
 }
 
-// Menu is the topics under a line.
+// Menu is the topics under a line, in your own voice. At most MaxChoices
+// with the way out last; when the list is full the least useful topics give
+// way (services, rumours and who they are come first).
 func Menu(p Person, ps Persona, m Memory, ctx Context) []Choice {
 	var cs []Choice
 	add := func(text, kind, act string) { cs = append(cs, Choice{Text: text, Kind: kind, Act: act}) }
 	w := ctx.Work
 	if w.Shop {
-		switch p.Role {
-		case RoleBlacksmith:
-			add("What have you got on the anvil?", "work", "work:shop")
-		case RoleInnkeeper:
-			add("What's on the menu?", "work", "work:shop")
-		default:
-			add("Let me see what you've got.", "work", "work:shop")
-		}
+		add(shopAsk(p), "work", "work:shop")
 	}
 	if w.Bounty {
-		add("Any work on the board?", "work", "work:bounty")
+		add("I could use some work.", "work", "work:bounty")
 	}
 	if w.Rest {
 		add("I could do with a rest.", "work", "work:rest")
 	}
 	if w.Forge {
-		add("Can I use your forge?", "work", "work:forge")
+		add("Mind if I use your forge?", "work", "work:forge")
 	}
-	add("Heard anything interesting?", "rumour", "topic:rumour")
-	add("Tell me about this place.", "topic", "topic:place")
+	add("Heard anything strange lately?", "rumour", "topic:rumour")
 	if !m.Has("t:who") {
-		add("Who are you?", "topic", "topic:who")
+		add("Who are you, exactly?", "topic", "topic:who")
 	} else {
 		for _, pt := range personal {
 			if !m.Has("t:"+pt.Key) && m.Affinity >= pt.Need {
@@ -111,8 +112,22 @@ func Menu(p Person, ps Persona, m Memory, ctx Context) []Choice {
 			}
 		}
 	}
-	add("Goodbye.", "leave", "bye")
-	return cs
+	// Room for one check (two when the list is short), then the place and small talk.
+	nck := 1
+	if MaxChoices-1-len(cs) >= 4 {
+		nck = 2
+	}
+	cs = append(cs, checkChoices(p, ps, m, ctx, nck)...)
+	add("What's "+placeWord(p)+" like?", "topic", "topic:place")
+	add(chatAsk(p), "topic", "topic:chat")
+	return Finish(cs, p, m)
+}
+
+func placeWord(p Person) string {
+	if p.Town == "" {
+		return "this place"
+	}
+	return p.Town
 }
 
 // Reply answers a topic. m is updated (the topic is heard).
@@ -126,6 +141,9 @@ func Reply(p Person, m *Memory, ctx Context, topic string) Node {
 	case "place":
 		n.Line = Place(p, ps)
 		m.Hear("t:place")
+	case "chat":
+		n.Line = ChatLine(p, ps, *m)
+		m.Hear("t:chat")
 	case "rumour":
 		r, ok := PickRumour(p, ps, *m, ctx.Sites)
 		if !ok {
@@ -136,14 +154,21 @@ func Reply(p Person, m *Memory, ctx Context, topic string) Node {
 		n.Line = r.Text
 		n.Rumour = &r
 		if r.Pos {
-			n.Choices = append(n.Choices, Choice{Text: "Mark it on my map.", Kind: "mark", Act: "mark:" + r.Key})
+			n.Choices = append(n.Choices, Choice{Text: "Mark that on my map, would you?", Kind: "mark", Act: "mark:" + r.Key})
 		}
 		if _, more := PickRumour(p, ps, *m, ctx.Sites); more {
-			n.Choices = append(n.Choices, Choice{Text: "Anything else?", Kind: "more", Act: "topic:rumour"})
+			n.Choices = append(n.Choices, Choice{Text: "Anything else you've heard?", Kind: "more", Act: "topic:rumour"})
 		}
-		n.Choices = append(n.Choices, Choice{Text: "Thanks, I'll look into it.", Kind: "topic", Act: "menu"})
+		n.Choices = append(n.Choices, Choice{Text: "Thanks. I'll look into it.", Kind: "topic", Act: "menu"})
+		n.Choices = Finish(n.Choices, p, *m)
 		return n
 	default:
+		if c, ok := checkOf(p, ps, ctx, topic); ok {
+			n = checkReply(p, ps, m, ctx, c)
+			n.Choices = append(n.Choices, Choice{Text: "Thanks. Back to what I was saying.", Kind: "topic", Act: "menu"})
+			n.Choices = Finish(n.Choices, p, *m)
+			return n
+		}
 		layer := personalLayer(topic)
 		if layer == 0 {
 			n.Line = "Hm? I don't follow."
