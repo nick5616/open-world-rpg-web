@@ -1,4 +1,4 @@
-/* global window */
+/* global requestAnimationFrame */
 // Playtest 5 town life (CR 054): the real client against a private stack
 // (node tools/playtest/stack.mjs; the dev console is on). Real key presses
 // (E), real frames. Evidence goes to docs/evidence/pt5-town-life-*.jpg and

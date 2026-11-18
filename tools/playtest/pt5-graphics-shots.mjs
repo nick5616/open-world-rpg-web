@@ -1,3 +1,4 @@
+/* global localStorage, requestAnimationFrame */
 // Playtest 5 (CR 057) evidence: the same spots at the same time of day on one tier, as
 // docs/evidence/pt5-graphics-<label>-<shot>-<tier>.jpg plus frame stats (draw calls,
 // triangles, frame time, GPU uncapped) in pt5-graphics-<label>-<tier>.json.
@@ -50,7 +51,7 @@ await page.waitForSelector('[data-testid="world-loading"]', { timeout: 120000 })
 await page.waitForSelector('[data-testid="world-loading"]', { state: 'detached', timeout: 240000 });
 await page.waitForFunction(() => !!window.__lodestoneTowns, null, { timeout: 60000 });
 await sleep(800);
-const spawn = (await page.evaluate(() => window.__lodestoneWorld.stats())).spawn;
+const _spawn = (await page.evaluate(() => window.__lodestoneWorld.stats())).spawn;
 await page.evaluate(() => {
   window.__lodestone.setFreezeTime(true);
   window.__lodestone.setTimeOfDay(0.42 * 3600);

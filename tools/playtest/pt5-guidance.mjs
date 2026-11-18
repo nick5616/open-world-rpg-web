@@ -1,3 +1,4 @@
+/* global getComputedStyle */
 // Playtest 5 (CR 055) evidence, real client on a private dev stack:
 //   1. a new character talks to the mentor (Tammir): the controls toast after the conversation closes, with its bar
 //   2. the stables marked in a conversation: named pin on the compass and the map, "Guide me" from the journal

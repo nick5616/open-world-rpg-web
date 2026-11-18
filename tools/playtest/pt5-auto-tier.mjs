@@ -1,3 +1,4 @@
+/* global localStorage */
 // Playtest 5 (CR 057): Auto quality in the real client (solo build, real GPU, vsync on like a player's display).
 //   A  fresh profile: starts optimistic (High on this GPU), the governor measures ~28 s and settles, the one-time notice shows
 //   B  a slow machine (CPU throttled 12x after load): steps down, and the notice names the tier it settled on

@@ -1,3 +1,4 @@
+/* global localStorage */
 // Playtest 5 (CR 057): switch the graphics tier live (low -> medium -> high -> low ...) in a
 // solo build and fail on any page error or console error. Regression check for the
 // "Cannot read properties of undefined (reading 'toArray')" crash.
