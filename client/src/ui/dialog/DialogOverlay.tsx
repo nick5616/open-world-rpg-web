@@ -13,6 +13,7 @@
 // 2 px, so it reads from small windows to 4K.
 
 import { useEffect, useRef, useState } from 'react';
+import { ToastBar } from '../toast/ToastBar';
 import { npcFocus } from '../../world/buildings/npcFocus';
 import { notGameKey } from '../../input/useKeyboard';
 import { usePanelEsc } from '../../input/panelStack';
@@ -186,8 +187,9 @@ export function DialogOverlay() {
   const showToast = toast && performance.now() - toast.at < 2600 && !open;
   if (!live) {
     return showToast ? (
-      <div data-dialog-ui data-testid="dialog-toast" style={{ position: 'fixed', left: '50%', bottom: '22%', transform: 'translateX(-50%)', zIndex: 44, color: '#f4efe2', font: '600 14px system-ui, sans-serif', textShadow: '0 1px 3px #000', pointerEvents: 'none' }}>
+      <div data-dialog-ui data-testid="dialog-toast" style={{ position: 'fixed', left: '50%', bottom: '22%', transform: 'translateX(-50%)', zIndex: 44, paddingBottom: 6, color: '#f4efe2', font: '600 14px system-ui, sans-serif', textShadow: '0 1px 3px #000', pointerEvents: 'none' }}>
         {toast.text}
+        <ToastBar at={toast.at} durationMs={2600} />
       </div>
     ) : null;
   }
