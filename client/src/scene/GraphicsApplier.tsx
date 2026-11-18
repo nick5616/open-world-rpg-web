@@ -32,6 +32,7 @@ export function GraphicsApplier() {
   }, [gl, retro]);
 
   const gov = useRef<AutoGovernor | null>(null);
+  const waited = useRef(0);
   useFrame((_, delta) => {
     const q = useQualityStore.getState();
     if (q.setting !== 'auto') {
@@ -40,15 +41,17 @@ export function GraphicsApplier() {
     }
     if (worldDebug.firstPlayableMs === null || document.hidden) return;
     if (gov.current?.done) return;
+    // The first seconds of a fresh world are terrain streaming, town building and shader compiles: not what this machine
+    // sustains. Measure once the tile queue is empty (or after 25 s of waiting, whatever it is doing).
+    const t = worldDebug.terrain?.stats;
+    waited.current += delta * 1000;
+    if (t && (t.queued + t.inFlight > 0 || t.missingWanted > 0) && waited.current < 25000) return;
     gov.current ??= new AutoGovernor(q.tier);
     const step = gov.current.add(delta * 1000);
     if (!step) return;
     const changed = q.autoApply(step.tier, step.p50);
-    if (changed) worldDebug.autoTierLog.push({ atMs: Math.round(performance.now()), kind: step.kind, tier: step.tier, p50: step.p50, p90: step.p90 });
-    if (step.kind === 'settled') {
-      worldDebug.autoTierLog.push({ atMs: Math.round(performance.now()), kind: 'settled', tier: step.tier, p50: step.p50, p90: step.p90 });
-      announceAutoTier(step.tier);
-    }
+    if (changed || step.kind === 'settled') worldDebug.autoTierLog.push({ atMs: Math.round(performance.now()), kind: step.kind, tier: step.tier, p50: step.p50, p90: step.p90, changed });
+    if (step.kind === 'settled') announceAutoTier(step.tier);
   });
   return null;
 }

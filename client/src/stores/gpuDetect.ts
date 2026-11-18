@@ -68,7 +68,7 @@ export function classifyGpu(p: GpuProbe): QualityTier {
 const ORDER: QualityTier[] = ['low', 'medium', 'high', 'ultra'];
 
 /** Frame-time budgets of the governor (ms). p90 over the down budget = steps down; p90 at or under the up budget = tries one tier up. */
-export const AUTO_BUDGET = { downP90Ms: 25, upP90Ms: 18.5, hitchMs: 250 } as const;
+export const AUTO_BUDGET = { downP90Ms: 28, upP90Ms: 18.5, stallMs: 500 } as const;
 
 export interface GovernorStep {
   kind: 'down' | 'up' | 'settled';
@@ -85,16 +85,19 @@ const pctile = (sorted: number[], p: number) => sorted[Math.min(sorted.length - 
  * play; it skips the first `skipMs` (streaming and shader warm-up), then judges windows of
  * `windowMs`: p90 over the down budget steps one tier down (and forbids going up again), p90
  * at or under the up budget with the tier below `maxTier` tries one tier up, a calm window
- * counts toward settling. It settles after `totalMs` or three calm windows. Long hitches
- * (alt-tab, a load) are left out of the numbers; a window that is mostly hitches is discarded.
+ * counts toward settling. It settles after `totalMs` or three calm windows. Up to three
+ * stalls (frames over 500 ms: alt-tab, a load) in a window are left out of its numbers, and a
+ * window that is mostly stall is discarded; more than that is the machine, and counts.
  * Pure state machine: the caller applies the returned tier.
  */
 export class AutoGovernor {
   private elapsed = 0;
   private win: number[] = [];
   private winMs = 0;
-  private hitchMs = 0;
   private calm = 0;
+  private bad = 0;
+  private stallRun = 0;
+  private win0: number[] = [];
   private noUp = false;
   done = false;
   constructor(
@@ -108,24 +111,39 @@ export class AutoGovernor {
     this.elapsed += dtMs;
     if (this.elapsed < this.opt.skipMs) return null;
     this.winMs += dtMs;
-    if (dtMs > AUTO_BUDGET.hitchMs) this.hitchMs += dtMs;
-    else this.win.push(dtMs);
+    this.win.push(dtMs);
     if (this.winMs < this.opt.windowMs) return null;
-    const hitchy = this.hitchMs > this.winMs * 0.4 || this.win.length < 20;
-    const s = [...this.win].sort((a, b) => a - b);
-    const p50 = s.length ? pctile(s, 50) : 0;
-    const p90 = s.length ? pctile(s, 90) : 0;
+    // A few huge frames are stalls (alt-tab, a load, a GC pause), not the machine: leave them out. Many are the machine.
+    const stalls = this.win.filter((d) => d > AUTO_BUDGET.stallMs);
+    const few = stalls.length <= 3;
+    const frames = few ? this.win.filter((d) => d <= AUTO_BUDGET.stallMs) : this.win;
+    const stallMs = few ? stalls.reduce((x, y) => x + y, 0) : 0;
+    const hitchy = frames.length < 6 || stallMs > this.winMs * 0.5;
+    const sorted = [...frames].sort((x, y) => x - y);
+    let p50 = sorted.length ? pctile(sorted, 50) : 0;
+    let p90 = sorted.length ? pctile(sorted, 90) : 0;
+    this.win0 = this.win;
     this.win = [];
     this.winMs = 0;
-    this.hitchMs = 0;
-    if (hitchy) return this.elapsed >= this.opt.totalMs ? this.finish(p50, p90) : null;
+    // A window lost to load hitches is not a verdict: keep measuring for up to twice the time before settling blind.
+    // But windows made only of stalls, one after another, are a machine at under 2 fps: that counts as bad (twice = down).
+    if (hitchy) {
+      this.stallRun = stalls.length > 0 || frames.length === 0 ? this.stallRun + 1 : 0;
+      if (this.stallRun < 2) return this.elapsed >= this.opt.totalMs * 2 ? this.finish(p50, p90) : null;
+      const all = [...this.win0].sort((x, y) => x - y);
+      p50 = p90 = all.length ? pctile(all, 50) : AUTO_BUDGET.stallMs;
+    } else this.stallRun = 0;
     const i = ORDER.indexOf(this.tier);
     if (p90 > AUTO_BUDGET.downP90Ms && i > 0) {
+      // Two bad windows in a row: one window of a fast machine can be 10 % missed vsyncs from a chunk upload or a shader compile.
+      if (++this.bad < 2) return null;
+      this.bad = 0;
       this.tier = ORDER[i - 1];
       this.noUp = true;
       this.calm = 0;
       return this.verdict('down', p50, p90);
     }
+    this.bad = 0;
     if (p90 <= AUTO_BUDGET.upP90Ms && !this.noUp && i < ORDER.indexOf(this.maxTier) && this.elapsed < this.opt.totalMs - this.opt.windowMs) {
       this.tier = ORDER[i + 1];
       this.calm = 0;

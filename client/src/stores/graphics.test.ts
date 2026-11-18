@@ -144,7 +144,7 @@ describe('auto-detect', () => {
     };
     it('skips the warm-up, then steps down when p90 is over budget and never climbs back', () => {
       const g = new AutoGovernor('high');
-      const v = feed(g, 30000, (i) => (i < 20 ? 200 : 36));
+      const v = feed(g, 45000, (i) => (i < 20 ? 200 : 36));
       expect(v[0]).toMatchObject({ kind: 'down', tier: 'medium' });
       expect(v[1]).toMatchObject({ kind: 'down', tier: 'low' });
       expect(v[v.length - 1]).toMatchObject({ kind: 'settled', tier: 'low' });
@@ -185,9 +185,21 @@ describe('auto-detect', () => {
       expect(v.every((s) => s.kind === 'settled')).toBe(true);
       expect(v[0].tier).toBe('high');
     });
-    it('a window that is mostly stall is discarded, not judged', () => {
+    it('one window that is a few long stalls (a load, alt-tab) is discarded, not judged', () => {
       const g = new AutoGovernor('high');
-      expect(feed(g, 12000, () => 400)).toHaveLength(0);
+      const v = feed(g, 40000, (i) => (i < 3 ? 3000 : 16.7));
+      expect(v.some((x) => x.kind === 'down')).toBe(false);
+      expect(v[v.length - 1]).toMatchObject({ kind: 'settled', tier: 'high' });
+    });
+    it('stall after stall (under 1 fps) is the machine: it steps down', () => {
+      const g = new AutoGovernor('high');
+      const v = feed(g, 60000, () => 1600);
+      expect(v[0]).toMatchObject({ kind: 'down', tier: 'medium' });
+    });
+    it('sustained slowness (4 fps) is the machine, not a stall: it steps down', () => {
+      const g = new AutoGovernor('high');
+      const v = feed(g, 45000, () => 250 + 300);
+      expect(v[0]).toMatchObject({ kind: 'down', tier: 'medium' });
     });
     it('budgets: down is above up', () => {
       expect(AUTO_BUDGET.downP90Ms).toBeGreaterThan(AUTO_BUDGET.upP90Ms);

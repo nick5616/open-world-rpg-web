@@ -5,7 +5,6 @@
 
 import { Suspense, useEffect, useState, type ReactNode } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
-import { PerformanceMonitor } from '@react-three/drei';
 import { useQualityStore, QUALITY_PRESETS } from '../stores/qualityStore';
 // Playtest 2 graphics settings: resolved knobs and the style hooks in every
 // lit material (the chunk patch must run before the first program compiles).
@@ -89,13 +88,6 @@ export function GameCanvas({ ground = DEFAULT_GROUND, terrain, onStep, driver, c
         if (DEBUG) (window as unknown as { __r3f?: unknown }).__r3f = state;
       }}
     >
-      <PerformanceMonitor
-        flipflops={3}
-        onDecline={() => useQualityStore.getState().stepDown()}
-        onIncline={() => useQualityStore.getState().stepUp()}
-        // Sustained misses only: a lone hitch must not drop the whole tier.
-        onFallback={() => useQualityStore.getState().stepDown()}
-      />
       <GraphicsApplier />
       <GroundContext.Provider value={ground}>
         <CameraInScene />

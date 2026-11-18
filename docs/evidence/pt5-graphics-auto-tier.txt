@@ -1,0 +1,22 @@
+--- A: fresh profile, no throttle
+{"start":{"setting":"auto","tier":"high","shaderTier":"high","detected":{"renderer":"ANGLE (NVIDIA, NVIDIA GeForce RTX 3070 (0x00002488) Direct3D11 vs_5_0 ps_5_0, D3D11)","gpuTier":"high","frameMs":null,"tier":"high"}},"end":{"setting":"auto","tier":"high","shaderTier":"high","detected":{"renderer":"ANGLE (NVIDIA, NVIDIA GeForce RTX 3070 (0x00002488) Direct3D11 vs_5_0 ps_5_0, D3D11)","gpuTier":"high","frameMs":17.1,"tier":"high"},"log":[{"atMs":48753,"kind":"settled","tier":"high","p50":17.1,"p90":25.1,"changed":false}]},"noticeText":"Graphics set to High; F10 to change","errors":[]}
+PASS  starts at High on this GPU (high, renderer ANGLE (NVIDIA, NVIDIA GeForce RTX 3070 (0x00002488)
+PASS  the governor settled within 75 s of play
+PASS  a smooth machine stays on High (high, p50 17.1 ms, p90 25.1 ms)
+PASS  one-time notice shown: "Graphics set to High; F10 to change"
+PASS  no page errors
+--- B: Auto on a slow machine (CPU throttled 12x)
+{"start":{"setting":"auto","tier":"high","shaderTier":"high","detected":{"renderer":"ANGLE (NVIDIA, NVIDIA GeForce RTX 3070 (0x00002488) Direct3D11 vs_5_0 ps_5_0, D3D11)","gpuTier":"high","frameMs":null,"tier":"high"}},"end":{"setting":"auto","tier":"medium","shaderTier":"medium","detected":{"renderer":"ANGLE (NVIDIA, NVIDIA GeForce RTX 3070 (0x00002488) Direct3D11 vs_5_0 ps_5_0, D3D11)","gpuTier":"high","frameMs":17.1,"tier":"medium"},"log":[{"atMs":48914,"kind":"down","tier":"medium","p50":384,"p90":726.6,"changed":true},{"atMs":61764,"kind":"settled","tier":"medium","p50":17.1,"p90":17.1,"changed":false}]},"noticeText":"Graphics set to Medium; F10 to change","errors":[]}
+PASS  started optimistic at High
+PASS  stepped down
+PASS  the governor settled on medium (effective tier medium, shader tier medium)
+PASS  the shader tier (art, shadows, post) is the verdict
+PASS  notice names the tier: "Graphics set to Medium; F10 to change"
+PASS  no page errors across the live tier steps
+--- C: explicit High on the same slow machine
+{"start":{"setting":"high","tier":"high","shaderTier":"high","detected":null},"end":{"setting":"high","tier":"high","shaderTier":"high","detected":null,"log":[]},"noticeText":null,"errors":[]}
+PASS  an explicit High is never lowered
+PASS  no governor verdict and no notice for an explicit choice
+--- D: saved as Auto by the old rules (stored detection Low)
+{"start":{"setting":"auto","tier":"high","shaderTier":"high","detected":{"renderer":"ANGLE (NVIDIA, NVIDIA GeForce RTX 3070 (0x00002488) Direct3D11 vs_5_0 ps_5_0, D3D11)","gpuTier":"high","frameMs":null,"tier":"high"}},"end":{"setting":"auto","tier":"high","shaderTier":"high","detected":{"renderer":"ANGLE (NVIDIA, NVIDIA GeForce RTX 3070 (0x00002488) Direct3D11 vs_5_0 ps_5_0, D3D11)","gpuTier":"high","frameMs":null,"tier":"high"},"log":[]},"noticeText":null,"errors":[]}
+PASS  re-evaluated: starts at high, not the stored Low
