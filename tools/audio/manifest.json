@@ -1456,6 +1456,84 @@
   "seconds": 134.22
  },
  {
+  "id": "menu_theme",
+  "kind": "music",
+  "files": [
+   "music/menu_theme"
+  ],
+  "sources": [
+   "MP3S:main menu theme.aif"
+  ],
+  "bytes": 1274403,
+  "lufs": -16,
+  "seconds": 59.05
+ },
+ {
+  "id": "crystal_cave_1",
+  "kind": "music",
+  "files": [
+   "music/crystal_cave_1"
+  ],
+  "sources": [
+   "MP3S:crystal cave 1.aif"
+  ],
+  "bytes": 1292091,
+  "lufs": -18,
+  "seconds": 60.96
+ },
+ {
+  "id": "crystal_cave_2",
+  "kind": "music",
+  "files": [
+   "music/crystal_cave_2"
+  ],
+  "sources": [
+   "MP3S:crystal cave 2.aif"
+  ],
+  "bytes": 1285075,
+  "lufs": -18,
+  "seconds": 60.96
+ },
+ {
+  "id": "crystal_cave_3",
+  "kind": "music",
+  "files": [
+   "music/crystal_cave_3"
+  ],
+  "sources": [
+   "MP3S:crystal cave 3.aif"
+  ],
+  "bytes": 1290290,
+  "lufs": -21,
+  "seconds": 60.96
+ },
+ {
+  "id": "main_theme",
+  "kind": "music",
+  "files": [
+   "music/main_theme"
+  ],
+  "sources": [
+   "MP3S:main theme.aif"
+  ],
+  "bytes": 4107094,
+  "lufs": -16,
+  "seconds": 196.41
+ },
+ {
+  "id": "night_2",
+  "kind": "music",
+  "files": [
+   "music/night_2"
+  ],
+  "sources": [
+   "RPG:night theme 2 (more lively).aif"
+  ],
+  "bytes": 2201226,
+  "lufs": -18,
+  "seconds": 96.01
+ },
+ {
   "id": "time_crunch_intro",
   "kind": "music",
   "files": [
