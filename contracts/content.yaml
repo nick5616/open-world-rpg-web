@@ -479,6 +479,7 @@ emotes:
     show_catch: {id: 21, name: Show a catch, durS: 2.6, system: true}
     playing: {id: 22, name: Playing music, loop: true, system: true}   # CR 028: value = the instrument id
     pet: {id: 25, name: Pet your companion, durS: 2.2, system: true}
+    pet_animal: {id: 26, name: Pet a town animal, durS: 2.5, system: true}   # CR 054: sent by the zone as Event 1970, posed by the client
 
 # ---- instruments (playtest 2, CR 028; docs/cr/028-instruments.md) ----
 # Carry one (items.yaml instrument:*: the merchants below, a camp workbench,

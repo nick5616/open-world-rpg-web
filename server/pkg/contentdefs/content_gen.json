@@ -4867,6 +4867,14 @@
     "durS": 2.2,
     "loop": false,
     "system": true
+   },
+   {
+    "key": "pet_animal",
+    "id": 26,
+    "name": "Pet a town animal",
+    "durS": 2.5,
+    "loop": false,
+    "system": true
    }
   ]
  },
