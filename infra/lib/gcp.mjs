@@ -62,6 +62,10 @@ export function deployGcp(r, cfg, { only } = {}) {
 
   // Values later steps need; real queries outside dry run, placeholders in it.
   const clientOrigin = process.env.LODESTONE_CLIENT_ORIGIN ?? `https://${cfg.netlify.clientSite}.netlify.app`;
+  // Browsers may reach the client on a custom domain (LODESTONE_CLIENT_ORIGIN) and on the
+  // Netlify site name; the director, account, zone and social accept both (comma list).
+  const netlifyOrigin = `https://${cfg.netlify.clientSite}.netlify.app`;
+  const corsOrigins = [...new Set([clientOrigin, netlifyOrigin])].join(',');
   const creatorOrigin = process.env.LODESTONE_CREATOR_ORIGIN ?? `https://${cfg.netlify.creatorSite}.netlify.app`;
   let externalIp = '203.0.113.10';
   let internalIp = '10.128.0.50';
@@ -228,7 +232,7 @@ export function deployGcp(r, cfg, { only } = {}) {
       `LODESTONE_TAG=${cfg.tag}`,
       `LODESTONE_REGISTRY=${cfg.registry}`,
       `LODESTONE_GAME_HOST=${gameHost}`,
-      `LODESTONE_CORS_ORIGIN=${clientOrigin}`,
+      `LODESTONE_CORS_ORIGIN=${corsOrigins}`,
       'LODESTONE_ZONE_ID=zone-1',
       `LODESTONE_WORLD_SEED=${cfg.worldSeed}`,
       'LODESTONE_LIVEKIT_EXTERNAL_IP=true',
@@ -310,7 +314,7 @@ export function deployGcp(r, cfg, { only } = {}) {
     ];
     const envs = (o) => `^@^${Object.entries(o).map(([k, v]) => `${k}=${v}`).join('@')}`;
     const secs = (o) => Object.entries(o).map(([k, v]) => `${k}=${v}:latest`).join(',');
-    const base = { LODESTONE_ENV: 'production', LODESTONE_LAZY_DEPS: '1', LODESTONE_REDIS_ADDR: `${internalIp}:6379`, LODESTONE_CORS_ORIGIN: clientOrigin };
+    const base = { LODESTONE_ENV: 'production', LODESTONE_LAZY_DEPS: '1', LODESTONE_REDIS_ADDR: `${internalIp}:6379`, LODESTONE_CORS_ORIGIN: corsOrigins };
     r.run([
       ...common(cfg.services.director, cfg.sa.director, 8090, '512Mi'), '--image', img('director'),
       '--set-env-vars', envs({

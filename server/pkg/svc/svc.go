@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/signal"
 	"sort"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"syscall"
@@ -119,10 +120,21 @@ func New(name, addr string) *Server {
 }
 
 // CORS wraps a handler with CORS for the browser client, which runs on another
-// origin in dev. Production narrows origin via LODESTONE_CORS_ORIGIN.
+// origin in dev. Production narrows origin via LODESTONE_CORS_ORIGIN, which may
+// list several origins separated by commas (the Netlify site and its custom
+// domain): the request's Origin is echoed when it is one of them.
 func CORS(origin string, h http.Handler) http.Handler {
+	var list []string
+	for _, o := range strings.Split(origin, ",") {
+		if o = strings.TrimRight(strings.TrimSpace(o), "/"); o != "" {
+			list = append(list, o)
+		}
+	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", origin)
+		w.Header().Set("Access-Control-Allow-Origin", allowOrigin(list, r.Header.Get("Origin")))
+		if len(list) > 1 {
+			w.Header().Add("Vary", "Origin")
+		}
 		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		if r.Method == http.MethodOptions {
@@ -131,6 +143,24 @@ func CORS(origin string, h http.Handler) http.Handler {
 		}
 		h.ServeHTTP(w, r)
 	})
+}
+
+// allowOrigin picks the Access-Control-Allow-Origin value: "*" (or nothing
+// configured) allows any; one origin is sent as is; with several, the request's
+// own Origin when listed, else the first (the browser then refuses it).
+func allowOrigin(list []string, reqOrigin string) string {
+	if len(list) == 0 {
+		return "*"
+	}
+	for _, o := range list {
+		if o == "*" {
+			return "*"
+		}
+		if o == reqOrigin {
+			return o
+		}
+	}
+	return list[0]
 }
 
 // Run serves until SIGINT/SIGTERM, then shuts down gracefully. onStop runs
