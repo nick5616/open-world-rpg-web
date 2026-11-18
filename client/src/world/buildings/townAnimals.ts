@@ -27,6 +27,8 @@ import { kindOrdinals, nameAll } from './animalNames';
 import { PET_DUR_S, PET_REACH_M, PET_STAND_M, animalKey, forwardOfYaw, petBeat, petState, rollAngle, rollsOver, type RemotePet } from './petting';
 import { PetHearts } from './petHearts';
 import { drawnRemotes } from '../../net/netStore';
+import { view } from '../../state/live';
+import { useViewStore } from '../../stores/viewStore';
 
 const ACTIVE_M = 95;
 const MAX_CHICKEN = 48;
@@ -136,6 +138,9 @@ interface Animal {
   roll: number;
   wag: number;
   heartAt: number;
+  /** Where the petter stands (the head turns toward it). */
+  lookX: number;
+  lookZ: number;
 }
 
 interface Settle {
@@ -214,7 +219,7 @@ export class TownAnimals {
       const idx = (spec.kind << 6) | ords[pi]; // the wire key's low byte: stable on every quality tier
       const tint = (spec.kind === ANIMAL.chicken ? CHICKEN_TINT : spec.kind === ANIMAL.dog ? DOG_TINT : CAT_TINT)[spec.seed % (spec.kind === ANIMAL.chicken ? 5 : spec.kind === ANIMAL.dog ? 4 : 5)];
       const home = spec.kind === ANIMAL.chicken ? farms[spec.home] : { x: spec.x, z: spec.z };
-      return { spec, si, x: spec.x, y: 0, z: spec.z, yaw: (spec.seed % 628) / 100, tx: spec.x, tz: spec.z, moving: false, until: 0, ph: (spec.seed % 100) / 10, peckT: (spec.seed % 50) / 10, rng: spec.seed || 1, follow: 0, cooldown: 0, hx: home.x, hz: home.z, tint, yAt: -1e9, idx, name: names[pi], remote: null, petStart: 0, petPlan: false, wasPet: false, joy: 0, sit: 0, roll: 0, wag: (spec.seed % 100) / 7, heartAt: 0 };
+      return { spec, si, x: spec.x, y: 0, z: spec.z, yaw: (spec.seed % 628) / 100, tx: spec.x, tz: spec.z, moving: false, until: 0, ph: (spec.seed % 100) / 10, peckT: (spec.seed % 50) / 10, rng: spec.seed || 1, follow: 0, cooldown: 0, hx: home.x, hz: home.z, tint, yAt: -1e9, idx, name: names[pi], remote: null, petStart: 0, petPlan: false, wasPet: false, joy: 0, sit: 0, roll: 0, wag: (spec.seed % 100) / 7, heartAt: 0, lookX: 0, lookZ: 0 };
     });
     return { animals, streets };
   }
@@ -237,7 +242,14 @@ export class TownAnimals {
     // Head: turns about the neck; tilts and nods up into the hand when happy.
     const tilt = a.joy * (0.34 + 0.07 * Math.sin(nowMs / 520 + a.spec.seed));
     const nod = a.moving ? 0.05 * Math.sin(a.ph * 2) : a.joy * (0.12 + 0.05 * Math.sin(nowMs / 260)) + sit * 0.08;
-    hm.copy(bm).multiply(tmp.makeTranslation(NECK[0], NECK[1], 0)).multiply(tmp2.makeRotationX(tilt)).multiply(tmp.makeRotationZ(nod));
+    // Turn toward whoever is petting it (in the dog's own frame: its heading is a.yaw).
+    let turn = 0;
+    if (a.joy > 0.05) {
+      let d = Math.atan2(a.lookZ - a.z, a.lookX - a.x) - a.yaw;
+      d = Math.atan2(Math.sin(d), Math.cos(d));
+      turn = Math.max(-1.1, Math.min(1.1, d)) * Math.min(1, a.joy * 1.4);
+    }
+    hm.copy(bm).multiply(tmp.makeTranslation(NECK[0], NECK[1], 0)).multiply(tmp2.makeRotationY(-turn)).multiply(tmp2.makeRotationX(tilt)).multiply(tmp.makeRotationZ(nod));
     this.dogHeads.setMatrixAt(i, hm);
     this.dogHeads.setColorAt(i, a.tint);
     // Tail: a lazy wag, a brisk one on the move, a fast wide one when petted.
@@ -434,10 +446,12 @@ export class TownAnimals {
     const pet = kind === ANIMAL.chicken ? null : this.petOf(a, nowMs, pl);
     this.petMood(a, pet, dt, nowMs);
     if (pet) {
-      // Being petted: walk to a spot in front of the petter, face them, and stay (a dog sits, a cat arches).
+      // Being petted: walk to a spot in front of the petter, turn side-on and stay (a dog sits, a cat arches).
       a.follow = 0;
-      const gx = pet.px + pet.fx * PET_STAND_M;
-      const gz = pet.pz + pet.fz * PET_STAND_M;
+      // In third person the camera hangs behind your shoulder: stand it a little to the other side so the body does not hide it.
+      const side = !pet.remote && view.third ? -useViewStore.getState().shoulder * 0.65 : 0;
+      const gx = pet.px + pet.fx * PET_STAND_M + pet.fz * side;
+      const gz = pet.pz + pet.fz * PET_STAND_M - pet.fx * side;
       const dg = Math.hypot(gx - a.x, gz - a.z);
       if (pet.remote && dg > 14) {
         a.x = gx;
@@ -448,10 +462,13 @@ export class TownAnimals {
       a.moving = a.moving ? dg > 0.15 : dg > 0.3;
       if (a.moving) speed = kind === ANIMAL.cat ? 3 : 2.4;
       else {
-        let dy = Math.atan2(pet.pz - a.z, pet.px - a.x) - a.yaw;
+        // Stand side-on to the petter, head to their left (so the strokes sweep across their view), the head turned toward them.
+        let dy = Math.atan2(-pet.fx, pet.fz) - a.yaw; // heading of the petter's left: (fz, -fx)
         dy = Math.atan2(Math.sin(dy), Math.cos(dy));
-        a.yaw += dy * Math.min(1, dt * 7);
+        a.yaw += dy * Math.min(1, dt * 6);
       }
+      a.lookX = pet.px;
+      a.lookZ = pet.pz;
     } else if (kind === ANIMAL.chicken) {
       a.peckT += dt;
       if (a.moving) speed = 1.0;

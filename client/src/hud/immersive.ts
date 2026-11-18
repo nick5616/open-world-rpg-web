@@ -119,6 +119,16 @@ export function trackerExpanded(i: { immersive: boolean; now: number; stepAt: nu
   return i.tabHeld || i.journalOpen || i.now - i.stepAt < TRACKER_LINGER_MS;
 }
 
+/** CR 054: the sundial clock beside the compass: how long it stays bright after the hour turns, and how soft it rests. */
+export const DIAL_LINGER_MS = 6000;
+export const DIAL_QUIET_OPACITY = 0.5;
+
+/** Pure: the sundial clock's opacity. Like the compass it is always there; with the setting on it rests soft and brightens for a few seconds when the hour turns or Tab is held. */
+export function dialOpacity(i: { immersive: boolean; now: number; hourAt: number; tabHeld: boolean }): number {
+  if (!i.immersive) return 1;
+  return i.tabHeld || i.now - i.hourAt < DIAL_LINGER_MS ? 1 : DIAL_QUIET_OPACITY;
+}
+
 /** Pure: records one bar sample, returns true when it counted as a change (so the bars row lingers). */
 export function sampleBars(now: number, hp: number, mana: number, stamina: number): boolean {
   const a = hudActivity;

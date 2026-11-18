@@ -54,7 +54,7 @@ export function pickTarget(eye: { x: number; y: number; z: number }, fwd: { x: n
     if (cos < lim) continue;
     // Playtest 2: a blacksmith stands at her anvil; looking roughly at both,
     // talking to the person wins (about 12 degrees of aim).
-    const score = cos * 4 - d * 0.1 + (c.kind === 'npc' ? 0.6 : 0);
+    const score = cos * 4 - d * 0.1 + (c.kind === 'npc' ? 0.6 : c.kind === 'animal' ? 0.9 : 0); // CR 054: a dog at your feet beats a person behind it
     if (score > bestScore) {
       bestScore = score;
       best = c;

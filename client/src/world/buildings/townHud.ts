@@ -28,7 +28,7 @@ import { whereText, type QuestMarker } from '../../ui/quests/events';
 import { dialogController, ensureDialogHook } from '../../ui/dialog/link'; // CR 049: conversations with townsfolk
 import { setBoardPapers } from '../signposts/boardPapers';
 import { startPetting } from './petControl'; // CR 054: petting town dogs and cats
-import { EV_ANIMAL_PET, EV_ANIMAL_PET_REFUSED } from './petting';
+import { EV_ANIMAL_PET, EV_ANIMAL_PET_REFUSED, petState } from './petting';
 import { ACT, BOUNTY_KIND_LABEL, decodeBounties, decodeShop, EV, INTERACT, itemName, MERCHANT_LABEL, NPC_ROLE_LABEL, REFUSAL, utf8, type Bounty, type ShopItem } from './townEvents';
 
 interface PanelState {
@@ -177,7 +177,7 @@ export class TownHud {
       s.eventListeners.add(this.listener);
       this.hooked = s;
     }
-    const text = !this.panel && target && eFree('town') ? promptFor(target, (r) => NPC_ROLE_LABEL[r] ?? 'villager') : '';
+    const text = !this.panel && !petState.active && target && eFree('town') ? promptFor(target, (r) => NPC_ROLE_LABEL[r] ?? 'villager') : '';
     if (this.prompt.textContent !== text) this.prompt.textContent = text;
     const now = performance.now();
     if (this.toasts.length) {

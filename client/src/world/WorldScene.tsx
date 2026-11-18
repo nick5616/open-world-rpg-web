@@ -44,6 +44,10 @@ import { LodOverlay } from './debug/lodOverlay';
 import { CaveManager } from './caves/caveManager';
 import { WorldEditManager } from './edits/worldEdits'; // CR 040: chopping, breaking, digging
 import { audioWorld } from '../audio/bridge';
+import { ShelterIndex } from '../audio/shelter';
+import { CAMPS } from '@lodestone/contracts';
+import { useCamps } from '../ui/camps/store';
+import { baseRoofCover, exposureTarget, liveExposure, lightningThrough, WeatherExposure, type PlacedPiece } from './sky/exposure';
 // CR 038: sky archipelagos, the Underground and the Depths.
 import { VerticalManager } from './vertical/verticalManager';
 import { usePalace } from './palace/palaceStore';
@@ -83,6 +87,16 @@ function inSettlement(towns: { settlements: { x: number; z: number; radius: numb
     if ((x - t.x) ** 2 + (z - t.z) ** 2 < r * r) return true;
   }
   return false;
+}
+
+/** CR 054: the roofs of player-built bases (CR 041 roof, ridge cap and gable pieces) near you, for the weather's cover test. */
+const ROOF_KINDS = new Set(CAMPS.pieces.filter((p) => p.build && ['roof', 'roof_cap', 'gable'].includes(p.build.base)).map((p) => p.id));
+function* placedRoofs(): Generator<PlacedPiece> {
+  const pieces = useCamps.getState().pieces;
+  for (const k in pieces) {
+    const p = pieces[k];
+    if (ROOF_KINDS.has(p.kind)) yield { x: p.x, y: p.y, z: p.z, roof: true };
+  }
 }
 
 export function WorldScene({ runtime }: Props) {
@@ -153,7 +167,7 @@ export function WorldScene({ runtime }: Props) {
     const windBase = 3 + (runtime.data.params[PARAM.stormFrequency] ?? 0.3) * 4;
     setPrevailingWind(runtime.data.params[PARAM.windDirDeg] ?? 0, windBase);
     setWeatherWorld(runtime.data, runtime.data.params[PARAM.windDirDeg] ?? 0); // CR 030: the climate per weather cell
-    return { shared, waterU, terrain, sea, sky, hemi, scatter, caves, edits, vertical, root, lighting: makeSkyLighting(), horizon: null as THREE.Mesh | null, rain: 0, capAcc: 0, rainStreaks, snow, sand, bolts, life, windBase, drift: new THREE.Vector2() };
+    return { shared, waterU, terrain, sea, sky, hemi, scatter, caves, edits, vertical, root, lighting: makeSkyLighting(), horizon: null as THREE.Mesh | null, rain: 0, capAcc: 0, exposure: new WeatherExposure(), shelter: null as ShelterIndex | null, shelterFor: null as unknown, rainStreaks, snow, sand, bolts, life, windBase, drift: new THREE.Vector2() };
     // Built once per runtime; tier changes go through setParams/applyTier below.
   }, [runtime, gl]);
 
@@ -349,6 +363,17 @@ export function WorldScene({ runtime }: Props) {
     const wm = liveWeather.mix;
     const look = WEATHER_LOOK[q.style] ?? WEATHER_LOOK.lodestone;
     const above = 1 - under;
+    // CR 054: no weather indoors, under a base's roof or underground: the camera's exposure (eased over 0.5 s).
+    if (world.shelterFor !== runtime) {
+      world.shelterFor = runtime;
+      world.shelter = runtime.towns && runtime.townCollision ? new ShelterIndex(runtime.towns.buildings, runtime.townCollision) : null;
+    }
+    const expo = world.exposure.update(dt, () => {
+      const f = localPlayer.pos;
+      const sh = world.shelter ? world.shelter.probe(f.x, f.y, f.z) : { roof: 0, indoors: 0 };
+      return exposureTarget(sh, under, baseRoofCover(f.x, f.y + 1.9, f.z, placedRoofs()));
+    });
+    liveExposure.value = expo;
     const rain = Math.min(1, wm.rain);
     const storm = Math.min(1, wm.storm * look.stormDark);
     // Lightning no longer flashes the whole world (Nicole, prod: "the screen
@@ -362,18 +387,18 @@ export function WorldScene({ runtime }: Props) {
     world.rain = rain;
     world.shared.uWet.value = liveWeather.wet * above;
     world.shared.uSnowCover.value = liveWeather.snowCover * above;
-    world.rainStreaks.update(camera, dt, rain * above);
-    world.snow.update(camera, dt, wm.snow * above, wm.wind, size.height, look.flake, look.square);
-    world.sand.update(camera, dt, wm.dust * above, wm.wind, size.height);
-    world.bolts.update(camera, liveWeather.bolts, now, look.boltWidth, look.boltIntensity);
+    world.rainStreaks.update(camera, dt, rain * above * expo);
+    world.snow.update(camera, dt, wm.snow * above * expo, wm.wind, size.height, look.flake, look.square);
+    world.sand.update(camera, dt, wm.dust * above * expo, wm.wind, size.height);
+    world.bolts.update(camera, liveWeather.bolts, now, look.boltWidth, look.boltIntensity * lightningThrough(expo));
     world.life.update({
       camera,
       dt,
       hour: (tod / DAY_LENGTH_S) * 24,
       day: L.day,
-      rain,
-      snow: Math.min(1, wm.snow),
-      under,
+      rain: rain * expo,
+      snow: Math.min(1, wm.snow) * expo,
+      under: Math.max(under, 1 - expo), // no leaves, birds or butterflies indoors either
       inTown: inSettlement(runtime.towns, camera.position.x, camera.position.z),
       biomeAt: (x, z) => {
         const d = runtime.data;
@@ -386,7 +411,7 @@ export function WorldScene({ runtime }: Props) {
       viewportH: size.height,
     });
     world.sky.uniforms.uCloudCover.value = 0.42 + 0.5 * Math.min(1, wm.cloud);
-    world.sky.uniforms.uWeatherSky.value.set(storm * above, liveWeather.rainbow * look.rainbow, flash, Math.min(1, wm.dust));
+    world.sky.uniforms.uWeatherSky.value.set(storm * above * expo, liveWeather.rainbow * look.rainbow, flash, Math.min(1, wm.dust));
     // A gale bends the grass (online the chemistry wind reset it this frame; solo the WorldSpec's).
     windState.speed = (night.online ? windState.speed : world.windBase) * (1 + 1.4 * wm.wind);
     world.drift.x += windState.dirX * (0.002 + 0.01 * wm.wind) * dt;
@@ -404,8 +429,8 @@ export function WorldScene({ runtime }: Props) {
     liveStyle.torch = st.torch;
     world.sky.uniforms.uSkyStyle.value.set(st.skySat * (1 - 0.35 * overcast), st.skyBright * (1 - 0.25 * overcast), st.skyBands, st.retro ? 0 : 0.6 * (1 - overcast));
     world.waterU.uWaterStyle.value.set(st.waterTurquoise * (1 - 0.6 * overcast), st.waterFoam, st === STYLES.lodestone ? 0.25 : 0, 0);
-    L.lightIntensity *= (1 - 0.55 * overcast) * (1 - 0.35 * storm);
-    L.hemiIntensity = L.hemiIntensity * (1 - 0.2 * overcast) * (1 - 0.35 * storm) + flash * 1.4; // a strike lights the world for a blink
+    L.lightIntensity *= (1 - 0.55 * overcast) * (1 - 0.35 * storm * expo);
+    L.hemiIntensity = L.hemiIntensity * (1 - 0.2 * overcast) * (1 - 0.35 * storm * expo) + flash * 1.4; // a strike lights the world for a blink
     world.sky.uniforms.uSunDir.value.copy(L.sunDir);
     world.sky.mesh.position.copy(camera.position);
     world.hemi.color.copy(L.skyColor);
@@ -436,20 +461,20 @@ export function WorldScene({ runtime }: Props) {
       // strongly distance dissolves into the sky (aerial perspective).
       const dusk = Math.exp(-(((hour - 18.8) / 1.6) ** 2));
       const nightFog = st.nightFog * Math.max(dusk, 1 - L.day);
-      fogU.u('uFogDensity').value = ((0.0004 + 0.0045 * morning + 0.0015 * evening) * st.fog + st.fogFloor + nightFog + 0.0035 * rain + 0.003 * wm.snow + 0.006 * wm.dust) * (1 - under);
+      fogU.u('uFogDensity').value = ((0.0004 + 0.0045 * morning + 0.0015 * evening) * st.fog + st.fogFloor + nightFog + (0.0035 * rain + 0.003 * wm.snow + 0.006 * wm.dust) * expo) * (1 - under);
       fogU.u('uFogFalloff').value = 1 / 38;
       fogU.u('uFogBase').value = runtime.seaY + 18;
-      fogU.u('uHaze').value = (st.haze / 14000) * (1 + 1.5 * rain + 0.8 * wm.snow + 2.5 * wm.dust + 1.2 * wm.haze) * (1 - under);
+      fogU.u('uHaze').value = (st.haze / 14000) * (1 + (1.5 * rain + 0.8 * wm.snow + 2.5 * wm.dust + 1.2 * wm.haze) * expo) * (1 - under);
       // CR 030: fog banks (view distance ~100 m inside one), blowing sand, the strike's flash, heat shimmer.
       // CR 038: the Depths shimmer with heat.
-      (fogU.u('uWeather').value as THREE.Vector4).set(Math.min(1, wm.fog) * look.fogBank * above, Math.min(1, wm.dust) * above, flash, wm.haze * look.shimmer * above + (world.vertical ? world.vertical.depths * 0.55 : 0));
-      (fogU.u('uWeatherDrift').value as THREE.Vector4).set(world.drift.x, world.drift.y, now / 1000, storm * above);
+      (fogU.u('uWeather').value as THREE.Vector4).set(Math.min(1, wm.fog) * look.fogBank * above * expo, Math.min(1, wm.dust) * above * expo, flash, wm.haze * look.shimmer * above * expo + (world.vertical ? world.vertical.depths * 0.55 : 0));
+      (fogU.u('uWeatherDrift').value as THREE.Vector4).set(world.drift.x, world.drift.y, now / 1000, storm * above * expo);
       (fogU.u('uMoonColor').value as THREE.Color).setRGB(0.012, 0.018, 0.034).multiplyScalar((1 - L.day) * (1 - under) * (st.nightFog > 0 ? 1 : 0));
       (fogU.u('uSkyStyle').value as THREE.Vector4).copy(world.sky.uniforms.uSkyStyle.value);
       const fr = fogU.u('uFogRange').value as THREE.Vector4;
       // Retro's short fog, pushed out as you go underground (a cave keeps its
       // own darkness, never the sky's fog colour); a fog bank pulls it in.
-      if (st.fogRange && above > 0.02) fr.set(st.fogRange[0] / above, (st.fogRange[1] * (1 - 0.3 * rain - 0.55 * Math.min(1, wm.fog + wm.dust))) / above, above, 0);
+      if (st.fogRange && above > 0.02) fr.set(st.fogRange[0] / above, (st.fogRange[1] * (1 - (0.3 * rain + 0.55 * Math.min(1, wm.fog + wm.dust)) * expo)) / above, above, 0);
       else fr.set(0, 0, 0, 0);
       fogU.u('uExposure').value = (1.0 + (1 - L.day) * 1.6 * st.nightExposure) * (1 - under) + (world.vertical && world.vertical.cavern + world.vertical.depths > 0.2 ? 1.2 : 1.6) * under;
       // CR 038: the air of the vast caverns (teal haze) and the Depths (ember red).

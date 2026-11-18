@@ -129,7 +129,7 @@ export function LocalAvatar() {
     a.update(v, camera, delta);
     if (typeof window !== 'undefined') {
       // CR 022 parity runs: what your own body is doing (the remote avatars' twin is __lodestoneAvatars).
-      (window as unknown as { __lodestoneLocalAvatar?: unknown }).__lodestoneLocalAvatar = () => ({ action: a!.anim.current, held: a!.anim.heldSpec?.kind ?? null, glow: a!.pose.glow, bodyPitch: a!.pose.bodyPitch, armR: a!.pose.armR.swing });
+      (window as unknown as { __lodestoneLocalAvatar?: unknown }).__lodestoneLocalAvatar = () => ({ action: a!.anim.current, held: a!.anim.heldSpec?.kind ?? null, glow: a!.pose.glow, bodyPitch: a!.pose.bodyPitch, armR: a!.pose.armR.swing, emote: a!.anim.currentEmote, bodyY: a!.pose.bodyY, torsoPitch: a!.pose.torsoPitch });
     }
   });
 

@@ -38,6 +38,8 @@ import { petBeat } from '../world/buildings/petting';
 
 /** Playtest 2 emotes (CR 026, contracts/content.yaml emotes): id -> definition. */
 const EMOTE_BY_ID = new Map(CONTENT.emotes.list.map((e) => [e.id, e]));
+// CR 054: the pose exists whatever contracts build the client resolved (content.yaml `pet_animal` is the same entry).
+if (!EMOTE_BY_ID.has(26)) EMOTE_BY_ID.set(26, { key: 'pet_animal', id: 26, name: 'Pet a town animal', durS: 2.5, loop: false, system: true } as (typeof CONTENT.emotes.list)[number]);
 /** The zone's fishing pose (the line is out) and "showing a catch" (Event 1090 ids 20, 21). */
 export const EMOTE_FISHING = 20;
 export const EMOTE_SHOW_CATCH = 21;

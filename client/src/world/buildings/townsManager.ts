@@ -39,6 +39,7 @@ import { geometryOf, makeTownMaterials, townTexture, type TownMaterials } from '
 import { NpcRenderer } from './npcs';
 import { TownAnimals } from './townAnimals';
 import { AnimalPlate } from './animalPlate';
+import { TownSundials } from './sundialMesh';
 import { OwnerBarks, keeperIndex, type BarkAnimal } from './animalBarks';
 import { onPetEvent, tickPetting } from './petControl';
 import { petState } from './petting';
@@ -109,6 +110,7 @@ export class TownsManager {
   private debugLines: THREE.LineSegments | null = null;
   private readonly t0 = performance.now();
   private readonly plate = new AnimalPlate();
+  readonly sundials: TownSundials;
   private readonly barks = new OwnerBarks();
   private readonly keepers = new Map<number, number>();
   private petSeen = 0;
@@ -127,6 +129,8 @@ export class TownsManager {
     this.group.add(this.npcs.group);
     this.animals = new TownAnimals(this.towns, runtime.ground as never, (si) => runtime.data.sites[this.towns.settlements[si]?.site]?.layer === 2);
     this.group.add(this.animals.group);
+    this.sundials = new TownSundials(this.towns, runtime.ground as never, runtime.townCollision, (si) => runtime.data.sites[this.towns.settlements[si]?.site]?.layer === 2);
+    this.group.add(this.sundials.group);
     this.group.add(this.smoke.mesh);
     this.hud = new TownHud();
     this.hud.petEvent = (e) => onPetEvent(e, this.animals);
@@ -397,6 +401,9 @@ export class TownsManager {
     this.smoke.update(camera, dt, (worldClock.timeOfDayS / DAY_LENGTH_S) * 24, L.day, Math.min(1, liveWeather.mix.rain), 0, this.smokeList);
     this.npcs.update(camera, dt, (now - this.t0) / 1000);
     this.animals.update(camera, dt, now, (worldClock.timeOfDayS / DAY_LENGTH_S) * 24, Math.min(1, liveWeather.mix.rain), useQualityStore.getState().tier === 'low', { x: localPlayer.pos.x, y: localPlayer.pos.y, z: localPlayer.pos.z, vx: localPlayer.vel.x, vz: localPlayer.vel.z, yaw: localPlayer.yaw });
+    // CR 054: the sundials cast the renderer's sun (dimmer in cloud and rain, none at night).
+    const rain = Math.min(1, liveWeather.mix.rain);
+    this.sundials.update(camera, L.sunDir, L.day * (1 - 0.8 * Math.max(rain, liveWeather.mix.storm, liveWeather.mix.cloud * 0.5)));
     // CR 054: your petting (the clock, what ends it), the nameplate of the animal you look at, owners saying their names.
     tickPetting(now);
     this.plate.update(camera, this.animals);
@@ -435,6 +442,11 @@ export class TownsManager {
     this.stats.cells = this.cells.size;
     this.stats.inFlight = this.inflight.size;
     if (this.showBoxes !== !!this.debugLines) this.toggleBoxes(cam);
+  }
+
+  /** The nameplate's text on show (debug). */
+  plateText(): string {
+    return this.plate.text;
   }
 
   private tickBarks(now: number, petted: number | null): void {
@@ -520,6 +532,7 @@ export class TownsManager {
     this.npcs.dispose();
     this.animals.dispose();
     this.plate.dispose();
+    this.sundials.dispose();
     this.smoke.dispose();
     this.hud.dispose();
     this.doorSync?.follow(null);

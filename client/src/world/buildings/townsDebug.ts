@@ -2,6 +2,10 @@
 // and the browser console. Debug builds only, like window.__lodestoneWorld.
 
 import { npcFocus } from './npcFocus';
+import { petState } from './petting';
+import { liveExposure } from '../sky/exposure';
+import { localPlayer } from '../../state/live';
+import { ANIMAL } from './animalsPlan';
 import { BUILDING_ROLES, BUILDING_STYLES, NPC_ROLES, SETTLEMENT_SIZES, TOWN_STRUCTURE_KINDS } from '@lodestone/worldgen';
 import { DEBUG } from '../../config';
 import { useDebugStore } from '../../stores/debugStore';
@@ -101,6 +105,13 @@ export function installTownsDebug(m: TownsManager): () => void {
       m.animals.group.visible = on;
     },
     animals: () => ({ ...m.animals.stats }),
+    // CR 054: names, petting, the sundials, the weather exposure (headless scripts).
+    animalList: () => m.animals.named().map((a) => ({ key: a.key, kind: a.kind === ANIMAL.dog ? 'dog' : 'cat', name: a.name, x: a.x, z: a.z })),
+    pettables: () => m.animals.pettables(localPlayer.pos.x, localPlayer.pos.z, 3).map((a) => ({ key: a.key, kind: a.kind, name: a.name, x: a.x, y: a.y, z: a.z })),
+    pet: () => ({ active: petState.active, name: petState.name, t: petState.t, beat: { ...petState.beat }, finished: petState.finished, head: { ...petState.head }, back: { ...petState.back } }),
+    plate: () => m.plateText(),
+    sundial: () => ({ ...m.sundials.last, nearest: m.sundials.nearest(localPlayer.pos.x, localPlayer.pos.z) }),
+    exposure: () => liveExposure.value,
     sayNear: (key: number, text: string) => npcFocus.say(key, text, 6000, true),
     visibleNpcs: () => m.npcs.views.map((v) => ({ name: v.name, role: v.role, x: v.x, y: v.y, z: v.z, entityId: v.entityId })),
   };

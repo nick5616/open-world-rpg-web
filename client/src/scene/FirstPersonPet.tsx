@@ -38,8 +38,9 @@ export function crouchCamera(cam: V3, at: V3, k: number, out: V3): V3 {
   return out;
 }
 
-const REST = new THREE.Vector3(0.3, -0.62, -0.3);
-const SHOULDER = new THREE.Vector3(0.28, -0.44, 0.0);
+const REST = new THREE.Vector3(0.6, -0.95, -0.1);
+/** The right shoulder, in camera space: well to the right and behind, so the forearm comes in diagonally and reads as an arm, not a stump. */
+const SHOULDER = new THREE.Vector3(1.0, -0.9, 0.15);
 
 function buildHand() {
   const hand = new THREE.Group();
@@ -83,7 +84,7 @@ export function FirstPersonPet() {
       k: 0,
       reach: 0,
       lastBeat: null as PetBeat | null,
-      look: new THREE.Object3D(),
+      lookQ: new THREE.Quaternion(),
       tmp: new THREE.Vector3(),
       tgt: new THREE.Vector3(),
       m: new THREE.Matrix4(),
@@ -121,11 +122,11 @@ export function FirstPersonPet() {
     crouchCamera(cam, petState.centre, st.k, st.c);
     cam.set(st.c.x, st.c.y, st.c.z);
     const aim = st.tgt.set((petState.head.x + petState.back.x) / 2, (petState.head.y + petState.back.y) / 2, (petState.head.z + petState.back.z) / 2);
-    st.look.position.copy(cam);
-    st.look.lookAt(aim);
+    st.m.lookAt(cam, aim, st.up); // a camera's -z toward the aim (Object3D.lookAt would flip it)
+    st.lookQ.setFromRotationMatrix(st.m);
     st.dir.set(0, 0, -1).applyQuaternion(camera.quaternion);
     const toAim = st.tmp.copy(aim).sub(cam).normalize();
-    if (st.dir.dot(toAim) > 0.35) camera.quaternion.slerp(st.look.quaternion, 0.62 * st.k); // only when you were already looking roughly at it
+    if (st.dir.dot(toAim) > 0.35) camera.quaternion.slerp(st.lookQ, 0.62 * st.k); // only when you were already looking roughly at it
     camera.updateMatrixWorld(true);
     // The hand: from below the view up to the animal, on its head, down its back.
     const b = st.lastBeat;
