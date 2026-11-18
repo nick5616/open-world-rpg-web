@@ -419,6 +419,10 @@ func (s *Server) drainTaken(sess *session, now time.Time) {
 				s.caveInteract(sess, it) // CR 043: cave chests and lore tablets (dwarves.go)
 				continue
 			}
+			if it.TargetKind == InteractPlacePin {
+				s.placePinInteract(sess, it) // CR 055: the journal's Info tab marks a town's service (guidance.go)
+				continue
+			}
 			if it.TargetKind == InteractDialog {
 				s.dialogInteract(sess, it, now) // CR 049: conversations with townsfolk (dialog.go)
 				continue

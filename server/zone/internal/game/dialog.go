@@ -448,11 +448,23 @@ func (s *Server) forgeNear(e *Entity, si int) *towns.Prop {
 // personal pin (the pins Event 605 and the ordinary pin UI); returns the
 // note the dialog shows.
 func (s *Server) dialogMark(sess *session, st dialog.Site) string {
+	name := st.Name
+	if name == "" {
+		name = "the place"
+	}
+	return s.placePin(sess, cm(st.X), cm(st.Z), dialogPinLabel(st, name), EventDialogMark)
+}
+
+// placePin puts a named personal pin at (xc, zc) cm in the first free slot
+// (all taken: replaces the last), saves it, sends the pins list (605) and
+// event ev (Data = the label); returns the note to show ("" when there is
+// nothing to say). Shared by a conversation's "Mark it on my map" (1913) and
+// the journal's Info tab (Interact 185, Event 1980).
+func (s *Server) placePin(sess *session, xc, zc int32, label string, ev uint16) string {
 	x := sess.x
 	if x == nil || s.cfg.Explore == nil {
 		return ""
 	}
-	xc, zc := cm(st.X), cm(st.Z)
 	for _, p := range x.prog.Pins {
 		if p.XCm == xc && p.ZCm == zc {
 			return "Already on your map."
@@ -469,17 +481,12 @@ func (s *Server) dialogMark(sess *session, st dialog.Site) string {
 			break
 		}
 	}
-	name := st.Name
-	if name == "" {
-		name = "the place"
-	}
-	label := dialogPinLabel(st, name)
 	if !x.prog.SetLabeledPin(slot, dialogPinColor, xc, zc, label) {
 		return ""
 	}
 	s.sendPins(sess)
 	s.saveProgressSoon(sess, false)
-	s.sendEvent(sess, &proto.Event{Kind: EventDialogMark, EntityID: sess.ent.ID, TargetID: uint32(slot), X: xc, Z: zc, Data: []byte(label)})
+	s.sendEvent(sess, &proto.Event{Kind: ev, EntityID: sess.ent.ID, TargetID: uint32(slot), X: xc, Z: zc, Data: []byte(label)})
 	return "Marked on your map: " + label + "."
 }
 
