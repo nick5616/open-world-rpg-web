@@ -1,5 +1,14 @@
 [
   {
+    "id": "pt5-interact-stuck",
+    "date": "2026-11-18",
+    "title": "E works again after long sessions",
+    "items": [
+      "E no longer goes quiet after a while: the welcome and What's new card that pops up when you stand still used to hold E (and the mouse) with nothing saying how to close it. It now waits while you are at something to use, frees the mouse, and closes with E, Enter or Esc.",
+      "A leftover prompt, or a conversation that was never answered, now lets go of the E key by itself."
+    ]
+  },
+  {
     "id": "pt5-guidance",
     "date": "2026-11-18",
     "title": "Clearer guidance",

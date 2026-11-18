@@ -40,9 +40,11 @@ export interface DialogState {
   history: TranscriptEntry[];
   /** Lines heard this session (stats, tests). */
   lines: number;
+  /** performance.now() of the last thing that moved the conversation on (asked, a node, a choice, parked or unparked): the watchdog's clock. */
+  at: number;
 }
 
-const initial = (): DialogState => ({ open: false, parked: false, awaitingWork: false, key: null, focus: null, node: null, lineAt: 0, toast: null, offline: false, history: [], lines: 0 });
+const initial = (): DialogState => ({ open: false, parked: false, awaitingWork: false, key: null, focus: null, node: null, lineAt: 0, toast: null, offline: false, history: [], lines: 0, at: 0 });
 
 export const useDialog = create<DialogState>(() => initial());
 
@@ -54,7 +56,7 @@ export function reduceDialogEvent(s: DialogState, ev: ZoneEvent, now: number): P
       if (!n) return null;
       // The line they just finished joins the transcript; the new one types out below it.
       const history = s.node ? pushHistory(s.history, { who: 'npc', text: s.node.line, check: s.node.check }) : s.history;
-      return { open: true, parked: s.awaitingWork, awaitingWork: false, key: s.key ?? n.npc.id, node: n, lineAt: now, history, lines: s.lines + 1 };
+      return { open: true, parked: s.awaitingWork, awaitingWork: false, key: s.key ?? n.npc.id, node: n, lineAt: now, history, lines: s.lines + 1, at: now };
     }
     case DLG_EV.end: {
       const text = END_REASON[ev.value] ?? '';
@@ -111,6 +113,34 @@ export function resetDialog(): void {
   useDialog.setState(initial());
 }
 
+/** How long a conversation may wait for something before the client lets go of it (playtest 5, "E stopped working"). */
+export const DIALOG_STALE = {
+  /** E was pressed and the zone has not answered with a first line (or a refusal). */
+  noAnswerMs: 5000,
+  /** The services panel was asked for but never opened, or closed without telling us. */
+  parkedMs: 3000,
+  /** Nobody picked an answer: the zone ends it itself at 90 s (dialogIdle), this is a little behind it. */
+  idleMs: 100_000,
+} as const;
+
+/**
+ * Pure: what the watchdog should do to a conversation that has gone quiet.
+ *   'close'  : let go (the zone never answered, or its End event never came);
+ *   'unpark' : show the conversation again (its services panel is not there);
+ *   null     : leave it.
+ * A conversation that is stuck on is not harmless: it holds the camera, the movement lock and the person's
+ * attention, and the zone-side may have long forgotten it.
+ */
+export function staleDialogAction(s: Pick<DialogState, 'open' | 'parked' | 'awaitingWork' | 'node' | 'at'>, now: number, panelUp: boolean): 'close' | 'unpark' | null {
+  if (!s.open) return null;
+  const quiet = now - s.at;
+  if (!s.node && !s.parked) return quiet > DIALOG_STALE.noAnswerMs ? 'close' : null;
+  if (s.parked || s.awaitingWork) {
+    if (panelUp) return null; // the shop or board is on screen: take your time
+    return quiet > DIALOG_STALE.parkedMs ? 'unpark' : null;
+  }
+  return quiet > DIALOG_STALE.idleMs ? 'close' : null;
+}
 
 /** The number keys that pick an answer, in order. */
 export const CHOICE_KEYS = ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Digit6'] as const;

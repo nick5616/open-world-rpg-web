@@ -19,7 +19,7 @@ import { openStationOffline } from '../../ui/inventory/store'; // WP14
 // Playtest 1: bounty locations and map previews.
 import { localPlayer } from '../../state/live';
 import { notGameKey } from '../../input/useKeyboard';
-import { eFree } from '../../input/interact';
+import { eFree, PROMPT_FRESH_MS, stampPrompt } from '../../input/interact';
 import { hidePanel, syncPanel } from '../../input/panelStack';
 import { useMapWorld } from '../../ui/map/world';
 import { setMapOpen } from '../../ui/map/store';
@@ -67,6 +67,8 @@ function bountyPlace(b: Bounty, board: Candidate | null): { text: string; marker
 
 export class TownHud {
   target: Candidate | null = null;
+  /** performance.now() of the last update(): E acts on a target only while the per-frame update is alive (playtest 5). */
+  private targetAt = 0;
   private panel: PanelState | null = null;
   private pending: Candidate | null = null;
   private readonly prompt: HTMLDivElement;
@@ -86,7 +88,7 @@ export class TownHud {
     const el = document.activeElement;
     if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) return;
     if (this.panel) this.close();
-    else if (this.target && eFree('town')) this.act(this.target); // not in the saddle or under a panel (input/interact.ts)
+    else if (this.target && performance.now() - this.targetAt <= PROMPT_FRESH_MS && eFree('town')) this.act(this.target); // not in the saddle or under a panel (input/interact.ts)
   };
 
   private readonly onClick = (e: MouseEvent) => {
@@ -166,6 +168,7 @@ export class TownHud {
   /** Per frame: the current target (picked by the manager), session hook, prompt and toasts. */
   update(target: Candidate | null): void {
     this.target = target;
+    this.targetAt = performance.now();
     ensureDialogHook(); // CR 049
     const s = netRuntime.session;
     if (s && s !== this.hooked) {
@@ -175,6 +178,7 @@ export class TownHud {
     }
     const text = !this.panel && target && eFree('town') ? promptFor(target, (r) => NPC_ROLE_LABEL[r] ?? 'villager') : '';
     if (this.prompt.textContent !== text) this.prompt.textContent = text;
+    stampPrompt(this.prompt, text); // playtest 5: a prompt nobody refreshes stops owning E (input/interact.ts)
     const now = performance.now();
     if (this.toasts.length) {
       this.toasts = this.toasts.filter((t) => t.until > now);

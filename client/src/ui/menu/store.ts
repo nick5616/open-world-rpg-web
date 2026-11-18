@@ -78,3 +78,12 @@ export function escAction(s: { menuOpen: boolean; stacked: boolean; panelOpen: b
 export function unlockOpensMenu(s: { panelOpen: boolean; typing: boolean; focused: boolean; menuOpen: boolean; requestedMs: number }): boolean {
   return !s.menuOpen && !s.panelOpen && !s.typing && s.focused && s.requestedMs > 600;
 }
+
+/**
+ * Playtest 5: while the menu is "open" every non-movement key is swallowed (panel hotkeys wait), E included. A
+ * menu the store believes is open but that is not on screen would mute the game for good, so a key press that
+ * finds it open, long enough for React to have drawn it, and not in the page, closes it.
+ */
+export function menuStale(s: { open: boolean; openForMs: number; rendered: boolean }): boolean {
+  return s.open && !s.rendered && s.openForMs > 1500;
+}

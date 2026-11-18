@@ -10,7 +10,8 @@ import { registerMenuEntry, useMenu } from '../menu/store';
 import { useIntro } from '../intro/queue';
 import { useCombatHud } from '../../combat/store';
 import { usePanelEsc } from '../../input/panelStack';
-import { uiPanelUp } from '../../input/interact';
+import { anyEPromptUp, uiPanelUp } from '../../input/interact';
+import { notGameKey } from '../../input/useKeyboard';
 import raw from './changelog.json';
 import { cardMayShow, RETURNING_AT_LOAD, readSeen, validEntries, whatsNew, writeSeen, type ChangelogEntry, type WhatsNew as Shown } from './news';
 import { cinematicActive } from '../story/cinematicMode';
@@ -52,6 +53,21 @@ export function EntryList({ entries }: { entries: readonly ChangelogEntry[] }) {
 
 function Panel({ shown, onClose }: { shown: Exclude<Shown, { kind: 'none' }>; onClose: () => void }) {
   usePanelEsc('whatsnew', true, onClose); // Esc closes it when it is the top panel (input/panelStack.ts)
+  // Playtest 5 ("can't press E on anything"): the card comes up on its own once you stand still, usually with the
+  // mouse captured, so its button could not be clicked, and while it is up every E and hotbar key is a panel's
+  // (uiPanelUp). Free the mouse like every other panel, and let E or Enter close it: those are the keys a player
+  // standing at a pickup or a person is pressing when it appears.
+  useEffect(() => {
+    if (typeof document !== 'undefined' && document.pointerLockElement) document.exitPointerLock();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.repeat || notGameKey(e) || (e.code !== 'KeyE' && e.code !== 'Enter')) return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      onClose();
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [onClose]);
   useEffect(() => {
     // Never trap a player in a fight behind it (playtest: a slime pack
     // downed a new character while the welcome card ate every click).
@@ -86,6 +102,7 @@ function Panel({ shown, onClose }: { shown: Exclude<Shown, { kind: 'none' }>; on
               {shown.kind === 'news' && shown.more > 0 ? `${shown.more} more: Esc, What's new` : "The full list: Esc, What's new"}
             </span>
           )}
+          <span data-testid="whatsnew-hint" style={{ fontSize: 12, opacity: 0.55 }}>E, Enter or Esc</span>
           <button data-testid="whatsnew-close" onMouseDown={(e) => e.preventDefault()} onClick={onClose} style={{ ...BTN, marginLeft: 'auto' }}>
             {welcome ? "Let's go" : 'Got it'}
           </button>
@@ -121,7 +138,7 @@ function WhatsNewInner() {
       const now = performance.now();
       if (localPlayer.mode !== 'idle') stillSince = now; // playtest 2 polish: not in the middle of a walk
       const intro = useIntro.getState();
-      const busy = !!intro.current || intro.queue.length > 0 || useMenu.getState().open || useCombatHud.getState().downedUntil > 0 || cinematicActive();
+      const busy = !!intro.current || intro.queue.length > 0 || useMenu.getState().open || useCombatHud.getState().downedUntil > 0 || cinematicActive() || anyEPromptUp(); // playtest 5: not while the player stands at something to use
       // Never on top of a shop, the inventory or any other open panel (playtest 2 integration QA:
       // the welcome card covered a new player's first talk with the smith): wait for it to close.
       const held = firstHourHold(useQuests.getState().log.quests, (now - t0) / 1000); // CR 051: not over a new character's first quest

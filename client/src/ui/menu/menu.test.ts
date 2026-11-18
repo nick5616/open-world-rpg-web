@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { controlGroups, keyLabel, movementKeys } from './controls';
-import { escAction, registerMenuEntry, sortEntries, unlockOpensMenu, useMenu } from './store';
+import { escAction, menuStale, registerMenuEntry, sortEntries, unlockOpensMenu, useMenu } from './store';
 
 const SRC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
@@ -108,5 +108,14 @@ describe('plug-in entries', () => {
     useMenu.getState().setOpen(true);
     expect(useMenu.getState().page).toBe('main');
     useMenu.getState().setOpen(false);
+  });
+});
+
+describe('a menu that is open in the store but not on screen (playtest 5)', () => {
+  it('lets go once React has had time to draw it', () => {
+    expect(menuStale({ open: true, openForMs: 5000, rendered: false })).toBe(true);
+    expect(menuStale({ open: true, openForMs: 200, rendered: false })).toBe(false); // just opened: not drawn yet
+    expect(menuStale({ open: true, openForMs: 5000, rendered: true })).toBe(false);
+    expect(menuStale({ open: false, openForMs: 5000, rendered: false })).toBe(false);
   });
 });
