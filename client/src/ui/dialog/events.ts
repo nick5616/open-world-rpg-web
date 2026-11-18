@@ -2,17 +2,22 @@
 // and Events 1910-1913 (contracts/events.md); the zone's words come from
 // server/zone/internal/dialog and server/zone/internal/game/dialog.go.
 
-export const DLG_EV = { node: 1910, end: 1911, refused: 1912, mark: 1913 } as const;
+export const DLG_EV = { node: 1910, end: 1911, refused: 1912, mark: 1913, say: 1960 } as const;
 export const DLG_INTERACT = 180;
 export const DLG_ACT = { open: 1, choose: 2, close: 3 } as const;
 
 /** What a choice does (colours the line and picks the little glyph). */
-export type ChoiceKind = 'topic' | 'rumour' | 'work' | 'mark' | 'quest' | 'more' | 'leave';
+export type ChoiceKind = 'topic' | 'rumour' | 'work' | 'mark' | 'quest' | 'more' | 'check' | 'leave';
 
 export interface DialogChoice {
   id: number;
+  /** What your character says (CR 053), in your own voice. */
   text: string;
   kind: ChoiceKind | string;
+  /** The bracket in front: Leave, Quest, Barter, Rumour, Work, Mark, or a check (Mage, Warmth ♥♥♥, Level 10, Sunsteel). */
+  tag?: string;
+  /** A check you do not meet: the tag is dimmed and says so. */
+  low?: boolean;
 }
 
 export interface DialogQuest {
@@ -39,6 +44,10 @@ export interface DialogNode {
   /** A gesture hint: warm, stern, uneasy, bright, tired, lean, wry, proud. */
   mood?: string;
   choices: DialogChoice[];
+  /** The farewell: no answers; the zone closes the box itself shortly (or press on). */
+  bye?: boolean;
+  /** The check this line answers (a chip: passed / too low). */
+  check?: { tag: string; pass: boolean };
   rumour?: { Key: string; Kind: string; Name: string; X: number; Z: number; Pos: boolean };
 }
 

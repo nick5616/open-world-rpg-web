@@ -23,8 +23,8 @@ const hashStr = (s: string) => {
 };
 
 const CHOICES: DialogChoice[] = [
-  { id: 1, text: 'Heard anything interesting?', kind: 'rumour' },
-  { id: 2, text: 'Goodbye.', kind: 'leave' },
+  { id: 1, text: 'Heard anything strange lately?', kind: 'rumour', tag: 'Rumour' },
+  { id: 2, text: 'Take care.', kind: 'leave', tag: 'Leave' },
 ];
 
 export function offlineNode(c: Candidate): DialogNode {
@@ -41,13 +41,14 @@ export function offlineNode(c: Candidate): DialogNode {
   };
 }
 
-/** The local reply to a choice (null: the conversation ends). */
-export function offlineReply(from: DialogNode, ch: DialogChoice): DialogNode | null {
-  if (ch.kind === 'leave') return null;
+/** The local reply to a choice: a farewell (the box closes after it) for the way out. */
+export function offlineReply(from: DialogNode, ch: DialogChoice): DialogNode {
+  if (ch.kind === 'leave') return { ...from, seq: from.seq + 1, line: 'Safe travels.', bye: true, check: undefined, choices: [] };
   return {
     ...from,
     seq: from.seq + 1,
     line: '(offline) I would point you at something real, but I only know what the zone tells me. Connect to a zone and ask again.',
-    choices: [{ id: 2, text: 'Goodbye.', kind: 'leave' }],
+    check: undefined,
+    choices: [{ id: 2, text: 'Take care.', kind: 'leave', tag: 'Leave' }],
   };
 }

@@ -30,6 +30,37 @@ export function blipHz(id: number, ch: string, index: number): number {
   return basePitch(id) * v * wob;
 }
 
+/**
+ * A soft two-note chime as the box opens (rising) or closes (falling), on the
+ * UI bus (CR 053). Quiet, short, and silent when sound is off.
+ */
+export function dialogChime(kind: 'open' | 'close'): void {
+  const ctx = getAudioContext();
+  const bus = busInput('ui');
+  if (!ctx || !bus || ctx.state !== 'running') return;
+  const st = useAudioSettings.getState();
+  if (st.muted || st.volumes.ui <= 0 || st.volumes.master <= 0) return;
+  const t0 = ctx.currentTime;
+  const notes = kind === 'open' ? [392, 587.33] : [523.25, 349.23];
+  notes.forEach((f, i) => {
+    const t = t0 + i * 0.09;
+    const g = ctx.createGain();
+    const o = ctx.createOscillator();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(f, t);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.05, t + 0.015);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.28);
+    o.connect(g).connect(bus);
+    o.start(t);
+    o.stop(t + 0.3);
+    o.onended = () => {
+      o.disconnect();
+      g.disconnect();
+    };
+  });
+}
+
 /** Whether a letter makes a blip: every third letter, letters only (punctuation and spaces are the pauses). */
 export function blipsAt(ch: string, index: number): boolean {
   return /[a-z]/i.test(ch) && index % 3 === 0;

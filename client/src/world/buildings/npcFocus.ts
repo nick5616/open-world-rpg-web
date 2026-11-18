@@ -35,6 +35,31 @@ export function lineMs(text: string): number {
   return Math.min(9000, Math.max(2200, 900 + text.length * 55));
 }
 
+/**
+ * What players say aloud in a conversation (playtest 5, CR 053, Event 1960):
+ * the answer you chose is a bubble over your own character and over you for
+ * the players near you. Keys are entity ids. `toYou` here means "this is the
+ * local player's own line".
+ */
+const playerLines = new Map<number, NpcLine>();
+
+export const playerFocus = {
+  say(id: number, text: string, mine = false, ms = 0, now = performance.now()): void {
+    playerLines.set(id, { text, from: now, until: now + (ms > 0 ? ms : Math.min(5200, Math.max(2200, 1000 + text.length * 50))), toYou: mine });
+  },
+  live(now = performance.now()): [number, NpcLine][] {
+    const out: [number, NpcLine][] = [];
+    for (const [k, l] of playerLines) {
+      if (now >= l.until) playerLines.delete(k);
+      else out.push([k, l]);
+    }
+    return out;
+  },
+  reset(): void {
+    playerLines.clear();
+  },
+};
+
 export const npcFocus = {
   /** The NPC the local player is in a conversation with (null none). */
   get talkingTo(): number | null {
