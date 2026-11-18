@@ -32,6 +32,9 @@ import { Ambience } from './ambience';
 import { MovementSounds } from './movement';
 import { MusicDirector, type MusicInputs, type TimedInput } from './music/director';
 import { MusicPlayer } from './music/player';
+import { releaseTitleMusic, titleMusicStatus } from './music/titleMusic';
+import { arrivalAnthem } from '../ui/tips/firstHour';
+import { useQuests } from '../ui/quests/store';
 import { runTrigger, runZoneEvent, type TriggerApi, type TriggerName, type TriggerPayload } from './triggers';
 import { caveLeak, duckLevels, interiorMix, RainIntensity, Smooth, weatherMix } from './acoustics';
 import { LoopVoices } from './loops';
@@ -50,8 +53,9 @@ import { composerHook } from './composer/hook';
 import { smithNear } from '../world/buildings/smithLink';
 
 /** What the Heartfall asks of the music (playtest 2 immersion pass; director.ts `finale`). */
-function finaleMusic(): 'intro' | 'fight' | 'won' | null {
+function finaleMusic(): 'intro' | 'fight' | 'won' | 'ending' | null {
   const s = useStory.getState();
+  if (s.ending) return 'ending'; // playtest 4: the ending and its credits play the anthem
   if (s.cinematic) return 'intro';
   const f = s.finale;
   if (!f) return null;
@@ -114,6 +118,7 @@ export class AudioEngine {
   /** Forced music state for tests and the debug handle (null = follow the world). */
   forced: Partial<MusicInputs> | null = null;
   private voidUntil = 0;
+  private titleReleased = false;
   private lastInputs: MusicInputs | null = null;
 
   readonly api: TriggerApi = {
@@ -308,8 +313,10 @@ export class AudioEngine {
     audioWorld.inTown = this.inTown();
     const hud = useCombatHud.getState();
     const hour = worldClock.timeOfDayS / HOUR_S;
+    const playing = worldDebug.firstPlayableMs !== null;
+    if (playing) this.mem.playStartMs ??= nowMs;
     let inputs: MusicInputs = {
-      playing: worldDebug.firstPlayableMs !== null,
+      playing,
       hour,
       underground: audioWorld.underground,
       inTown: audioWorld.inTown,
@@ -318,6 +325,8 @@ export class AudioEngine {
       voidMoment: this.voidUntil > nowMs,
       timed: this.timed(nowMs),
       finale: finaleMusic(),
+      // Playtest 4: a new character's first minutes play the anthem (ui/tips/firstHour.ts)
+      arrival: playing && arrivalAnthem(useQuests.getState().log.quests, (nowMs - (this.mem.playStartMs ?? nowMs)) / 1000),
       ...this.forced,
     };
     const ch = composerHook.current;
@@ -333,6 +342,11 @@ export class AudioEngine {
       /* a dev tool must never stop the game's music */
     }
     this.music.apply(takeover ? { ...decision, state: 'silence', timedPhase: null } : decision);
+    // The title theme crossfades into the world's music (title and character screens: music/titleMusic.ts).
+    if (decision.state !== 'silence' && !this.titleReleased) {
+      this.titleReleased = true;
+      releaseTitleMusic(4);
+    }
 
     this.applyDucks(nowMs);
   }
@@ -540,6 +554,8 @@ function installDebug(): void {
   if (typeof window === 'undefined') return;
   (window as unknown as { __lodestoneAudio?: unknown }).__lodestoneAudio = {
     state: () => engine?.debug() ?? { ctxState: getAudioContext()?.state ?? 'none' },
+    /** The title screen's looping theme (playing, loop length in samples, position, wraps). */
+    title: () => titleMusicStatus(),
     play: (cue: CueId, at?: Vec3) => engine?.play(cue, at ? { at } : undefined),
     trigger: (name: TriggerName, payload: TriggerPayload = {}) => engine?.trigger(name, payload),
     /** Run a zone Event through the trigger map, as if the zone sent it (data: bytes or a JSON value). */

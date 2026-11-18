@@ -16,7 +16,7 @@
 import { DAWN_HOUR, DUSK_HOUR } from '@lodestone/contracts';
 import { isNightHour, type MusicInputs, type MusicState } from '../music/director';
 
-export const MUSIC_STATES: readonly MusicState[] = ['day', 'night', 'town', 'cave', 'void', 'combat', 'timed', 'silence'];
+export const MUSIC_STATES: readonly MusicState[] = ['day', 'night', 'town', 'cave', 'void', 'combat', 'anthem', 'timed', 'silence'];
 
 export interface LoopSection {
   /** Seconds into the track. */
@@ -71,7 +71,7 @@ export function reduceOverride(o: MusicOverride, cmd: OverrideCmd): MusicOverrid
 
 /** The director inputs that land it in `state` (and hold it there). */
 export function inputsForState(state: MusicState, intensity: number | null, base: MusicInputs): MusicInputs {
-  const calm: MusicInputs = { ...base, playing: true, hour: 12, underground: 0, inTown: false, combat: false, voidMoment: false, timed: null, finale: null };
+  const calm: MusicInputs = { ...base, playing: true, hour: 12, underground: 0, inTown: false, combat: false, voidMoment: false, timed: null, finale: null, arrival: false };
   switch (state) {
     case 'silence':
       return { ...calm, playing: false };
@@ -85,6 +85,8 @@ export function inputsForState(state: MusicState, intensity: number | null, base
       return { ...calm, underground: 1 };
     case 'void':
       return { ...calm, voidMoment: true };
+    case 'anthem':
+      return { ...calm, arrival: true };
     case 'combat':
       return { ...calm, combat: true };
     case 'timed': {
@@ -131,7 +133,7 @@ export interface VibeContext {
   intensity: number;
 }
 
-const STATE_BASE: Record<MusicState, number> = { silence: 0, day: 0.25, town: 0.2, night: 0.35, cave: 0.45, void: 0.75, combat: 0.75, timed: 0.9 };
+const STATE_BASE: Record<MusicState, number> = { silence: 0, day: 0.25, town: 0.2, night: 0.35, cave: 0.45, void: 0.75, combat: 0.75, anthem: 0.4, timed: 0.9 };
 const ROUGH_WEATHER: Record<string, number> = { thunderstorm: 0.1, snowstorm: 0.1, sandstorm: 0.1, rain: 0.05, windy: 0.05, fog: 0.05 };
 
 /**

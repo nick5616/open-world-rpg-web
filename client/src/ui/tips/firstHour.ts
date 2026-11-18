@@ -22,3 +22,18 @@ export const SAID_BY_PEOPLE: readonly TipId[] = ['talk'];
 export function firstHourHold(quests: readonly { key: string }[], playedS: number): boolean {
   return playedS < HOLD_S && quests.some((q) => q.key === FIRST_QUEST_KEY);
 }
+
+/** Playtest 4 (Nicole's music): how long the anthem may play over a new character's arrival (s of play). */
+export const ARRIVAL_ANTHEM_S = 180;
+
+/**
+ * Whether a new character is still arriving: the first quest is in the log
+ * with its first (talk) step not yet done, in the first ARRIVAL_ANTHEM_S
+ * seconds of the session. The music director plays the anthem then
+ * (client/src/audio/music/director.ts `arrival`).
+ */
+export function arrivalAnthem(quests: readonly { key: string; steps?: readonly { done: boolean }[] }[], playedS: number): boolean {
+  if (playedS >= ARRIVAL_ANTHEM_S) return false;
+  const q = quests.find((x) => x.key === FIRST_QUEST_KEY);
+  return !!q && q.steps?.[0]?.done === false;
+}
