@@ -41,7 +41,7 @@ const PROMPT: Record<EUser, string> = {
  * a layer that went away with its text still up) would own E for good and mute everything below it. The
  * writers stamp `data-e-at` (performance.now) every frame they show text; one older than this is a leftover.
  */
-export const PROMPT_FRESH_MS = 2000;
+export const PROMPT_FRESH_MS = 3000;
 
 /** The writer's "still showing this" stamp (townHud, caveManager). */
 export function stampPrompt(el: HTMLElement, text: string, now = performance.now()): void {
@@ -56,6 +56,11 @@ export function ePromptUp(u: EUser, now = typeof performance !== 'undefined' ? p
   if (!el || !(el.textContent ?? '').includes('[E]') || el.style.visibility === 'hidden' || el.style.display === 'none') return false;
   const at = el.dataset?.eAt;
   return !(at !== undefined && now - Number(at) > PROMPT_FRESH_MS);
+}
+
+/** Whether any "[E] ..." prompt is up: the player is about to use something (a notice card waits for them). */
+export function anyEPromptUp(): boolean {
+  return E_ORDER.some((u) => ePromptUp(u));
 }
 
 /**
