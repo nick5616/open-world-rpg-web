@@ -1,5 +1,16 @@
 [
   {
+    "id": "pt4-music",
+    "date": "2026-11-18",
+    "title": "Nicole's new music",
+    "items": [
+      "The title screen and character creation now have their own theme, and it starts as soon as you click.",
+      "A new character arrives to the main theme.",
+      "Caves, the Underground and the dwarven halls have new crystal cave music.",
+      "Nights have a livelier song, and the main theme joins the days and the ending."
+    ]
+  },
+  {
     "id": "pt4-linux-gpu",
     "date": "2026-11-17",
     "title": "Fixed a blank screen outside town on some Linux setups",
