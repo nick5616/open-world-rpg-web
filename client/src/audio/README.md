@@ -29,7 +29,8 @@ included.
 | `bells.ts` | Playtest 2 immersion pass: the Heartfall's bells, synthesized (inharmonic bell partials, each a beating pair, high ones dying first, a metallic strike, a long fade) and rendered once through an OfflineAudioContext; `synth:<bell>` files in a cue are rendered by `sfx.ts` instead of fetched. |
 | `worldProbe.ts` | The engine's view of the loaded world (towns, terrain, water, atlas biome, chemistry fire) feeding the pure modules. |
 | `music/director.ts` | Pure state machine: which musical state the world asks for (unit-tested). |
-| `music/player.ts`, `music/tracks.ts` | Crossfading playback: long tracks streamed through media elements, short loops (combat, time crunch) decoded and looped sample-exact. |
+| `music/player.ts`, `music/tracks.ts` | Crossfading playback: long tracks streamed through media elements, short loops (combat, time crunch) decoded and looped sample-exact. `pickTrack` never repeats a state's last track. |
+| `music/titleMusic.ts` | Playtest 4: the main menu theme for the title and character screens. In the main bundle (the engine is a lazy chunk that loads after the first playable frame): starts on the first click or key, a decoded sample-exact loop through the music bus, handed over to the world's music by the engine (4 s crossfade). `window.__lodestoneAudio.title()` reads it. |
 | `ambience.ts` | Synthesized beds: wind, rain, rain on the roof, thunder, night insects, underwater hush, cave drips; wind, open-air rain, thunder and insects through one shelter-controlled "weather" submix. WP19b: the noise buffers (~1 M samples) are synthesized in slices and each bed joins its chain when ready: in one go it was a 67-86 ms long task when the engine booted (traversal benchmark). |
 | `movement.ts` | Footsteps (on the sampled surface), jumps, landings, splashes, glider, climbing from `localPlayer` state (unit-tested). |
 | `assets/` | Built files (Ogg Opus + AAC each), imported through Vite: content-hashed `/assets/` names, immutable cache, never inlined. |
@@ -38,8 +39,9 @@ included.
 Budgets (spec 12): nothing audio is in the first-frame download. The
 main bundle gains the context and settings (+1.4 KB gzip of JS in all);
 the engine and every asset load after the first playable frame. One
-codec per browser is fetched: 6.8 MB of Opus music for all 8 tracks
-(streamed, only the tracks heard) and 1.0 MB of SFX: the instant set
+codec per browser is fetched: 11.7 MB of Opus music for all 14 tracks
+(AAC: 14.8 MB; streamed, only the tracks heard; the title theme, 0.55 MB, is
+fetched at the first click on the title) and 1.0 MB of SFX: the instant set
 (UI, steps, swings, hits, first spells) is decoded at once (about 8 MB
 of PCM); everything else downloads in the background but stays
 compressed and decodes on first play (all 161 files decoded would be
@@ -119,14 +121,16 @@ the results, so nothing clicks or zippers.
 | State | When (priority, highest first) | Plays |
 | --- | --- | --- |
 | timed | Town defense: warning countdown, waves; a boss's last phase (enrage) | **time crunch**: *intro* at the warning, then *loop*; *5 sec left* when 5 s remain before the first wave, when the ward is under 30 %, or a boss under 15 %. Intro, loop and final run phase-locked, so switches are seamless |
-| void | A Void domain (6 s) | **void realm**, open |
-| cave | Underground (latched in at 0.55, out at 0.35) | **void realm**, low-passed at 6 kHz |
+| void | A Void domain (6 s), the Depths (layer 3) | **void realm**, open |
+| cave | Underground (latched in at 0.55, out at 0.35): natural caves, the Underground layer, dwarven halls | **crystal cave 1, 3, 2, 3** (playtest 4: 1 and 2 are takes of one arrangement, 3 is sparser; consecutive tracks always differ), a touch off the top (14 kHz; the old 6 kHz roll-off was for the void realm) |
 | combat | Hit or hurt in the last seconds, a telegraph within 18 m, a boss bar | **combat**: 16 bars of the Novation Analog Synthwave pack (134 bpm), gapless |
 | silence | The Hush's entrance (CR 035: it is the silence; its toll and the lord's sting carry the moment) | nothing |
 | void (the Heartfall) | The Hush's fight and its choir (finale phases 2 and 4) | **void realm**; the endless night's countdown is a timed objective (the time crunch, "5 sec left" before it falls); the dawn after the victory switches to the day at once |
-| night | 18:30-06:00 (in towns too) | **night**: see "Gaps"; plays the nocturne cut of future land 2 for now |
+| anthem | A new character's arrival (playtest 4): the first quest (`story:meadows`) in the log with its talk step not done, in the first 3 minutes of play (`ui/tips/firstHour.ts arrivalAnthem`, input `arrival`); the ending and its credits (`finale: 'ending'`, over everything but a timed event) | **main theme** (196 s, ends on its own fade-out). Below combat, caves, void and timed; above night, town and day. The window closing is not a cut: the main theme is also a day track, so it carries on (in a town it crossfades to the town voicing) |
+| night | 18:30-06:00 (in towns too) | **night theme 2 (more lively)** and the nocturne cut of future land 2, alternating at every track end |
 | town | Inside a settlement by day | **future land**, warmer (3.2 kHz low-pass) and softer |
-| day | Otherwise | **future land 1** and **future land 2**, alternating each time day music comes back and at every track end |
+| day | Otherwise | **future land 1**, **future land 2** and the **main theme**, rotating each time day music comes back and at every track end |
+| (title) | Title screen, account step, character select and creation, and the world's loading screen | **main menu theme**, outside the director (`music/titleMusic.ts`): fades in from the first click or key, loops with no seam, fades out into the world's music |
 
 Rising priority switches at once; falling back waits 4 s (no flapping at
 a cave mouth or a town wall). Changes crossfade (1-5 s by state); a
@@ -405,16 +409,28 @@ The design is data in `tools/audio/cues.config.mjs` (layers, slices,
 filters, gains); the builder needs ffmpeg with libopus and the source
 folders (`LODESTONE_AUDIO_RPG`, `LODESTONE_AUDIO_SAMPLES`), and rewrites
 `assets/`, `cueFiles.gen.ts`, `tools/audio/manifest.json` and the audio
-block of `CREDITS.md`. Drop-in fixes: when the night theme is re-exported,
-change the `night` entry in `MUSIC` to `{ id: 'night', src: RPG('night overworld theme'), lufs: -18 }`
-and rebuild with `--only night`.
+block of `CREDITS.md`. Sources: `RPG()` (`LODESTONE_AUDIO_RPG`, Documents/ableton/rpg) and
+`MP3S()` (`LODESTONE_AUDIO_MP3S`, Documents/ableton/mp3s, the .aif masters). Playtest 4's
+tracks: `node tools/audio/build-audio.mjs --only menu_theme,crystal_cave_1,crystal_cave_2,crystal_cave_3,main_theme,night_2`.
+Loudness per track (`lufs`): menu theme and main theme -16, crystal caves 1 and 2 -18, crystal
+cave 3 -21 (sparser, kept quieter), night theme 2 -18 (as the nocturne cut). A music entry with
+`fold: <samples>` is made into a seamless loop: the menu theme render starts cold (no wrapped
+reverb tails, a 15 dB dip and a click at the join), so the last 84000 samples (4 beats) are
+blended equal-power into the first and the file starts at sample 84000; it wraps with no seam
+(2604000 samples, 59.05 s). AAC (Safari) priming/padding may leave a few ms at the join.
 
 ## Gaps
 
-- **"night overworld theme" is silent**: both the .aif and the .mp3 are
-  2.4 s of near-silence (-90 dBFS), an export problem. Night plays a
-  nocturne cut of future land 2 (its quiet middle, two semitones down,
-  darker and roomier) until it is re-exported; see above for the one-line swap.
+- **Night** (playtest 4): "night theme 2 (more lively)", the November
+  track that was never used, now plays at night, alternating with the nocturne
+  cut of future land 2 (its quiet middle, two semitones down, darker and
+  roomier), which was the stand-in while the old "night overworld theme"
+  export was silent (2.4 s of -90 dBFS; that file is still unusable).
+- The title theme plays from the first click or key (autoplay rules): a
+  visitor who clicks Play as the very first gesture hears it from the
+  character screen, not the title. Solo builds (no character screen) go
+  straight to the world and never play it. Crystal cave 1 and 2 are two takes of
+  one arrangement, so a long cave stay hears the same material every other track.
 - Remote players' footsteps are not voiced (crowds); remote attacks and
   casts are (Event 214, spatial).
 - Smiths hammer at every forge by day whether or not the blacksmith NPC is

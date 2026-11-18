@@ -14,6 +14,8 @@
 
 export const ROOTS = {
   RPG: process.env.LODESTONE_AUDIO_RPG ?? 'C:/Users/nickb/Documents/ableton/rpg',
+  // Playtest 4: Nicole's newer tracks (main menu theme, crystal caves, main theme) live in her mp3s folder (the .aif masters).
+  MP3S: process.env.LODESTONE_AUDIO_MP3S ?? 'C:/Users/nickb/Documents/ableton/mp3s',
   SAMPLES: process.env.LODESTONE_AUDIO_SAMPLES ?? 'C:/Samples',
 };
 
@@ -39,6 +41,7 @@ export const PACKS = {
   [`${D3}Acid Techno (Ab, 131bpm)/`]: 'Novation Anniversary (3rd Drop): Acid Techno',
   [`${D3}EBM Energy (Fm, 120bpm)/`]: 'Novation Anniversary (3rd Drop): EBM Energy',
   'RPG:': "Nicole's original tracks for Lodestone (Documents/ableton/rpg)",
+  'MP3S:': "Nicole's original tracks for Lodestone (Documents/ableton/mp3s)",
 };
 
 // Source files
@@ -59,6 +62,7 @@ const AT = (n) => `${D3}Acid Techno (Ab, 131bpm)/FX/${n}.wav`;
 const EB1 = `${D3}EBM Energy (Fm, 120bpm)/FX/FX 0001 [2022-10-20 204338].wav`;
 const EB15 = `${D3}EBM Energy (Fm, 120bpm)/FX/FX 0015 [2022-10-23 003255].wav`;
 const RPG = (n) => `RPG:${n}.aif`;
+const MP3S = (n) => `MP3S:${n}.aif`;
 
 const CARVE_SFX = HT('Carve SFX_FX_SFX_16-00_Retrigger_Bar_None [2020-10-26 153328].wav');
 const CARVE_FX = HT('Carve Effects_FX_Effects_16-00_Retrigger_Bar_None [2020-10-26 153327].wav');
@@ -271,6 +275,19 @@ export const MUSIC = [
   // plays at night until it is re-exported.
   { id: 'night', src: RPG('future land 2'), ss: 100, t: 58, af: 'asetrate=44100*0.8909,aresample=44100,lowpass=f=2200,aecho=0.8:0.7:140|260:0.35|0.25', fadeIn: 3, fadeOut: 4, lufs: -18 },
   { id: 'void_realm', src: RPG('void realm'), lufs: -17 },
+  // Playtest 4 (Nicole's new music). The menu theme is a 128-beat render (60.95 s) that starts cold (its reverb
+  // tails were not wrapped), so as a raw loop it clicks and dips 15 dB at the join. `fold` (samples) crossfades the
+  // last N samples into the first N (equal power) and starts at sample N: a loop that wraps with no seam,
+  // 4 beats shorter. Title and character creation (client/src/audio/music/titleMusic.ts).
+  { id: 'menu_theme', src: MP3S('main menu theme'), fold: 84000, lufs: -16, exact: true },
+  // The caves, the Underground and the dwarven halls: 1 and 2 are two takes of one arrangement, 3 is sparser and quieter (kept quieter).
+  { id: 'crystal_cave_1', src: MP3S('crystal cave 1'), lufs: -18 },
+  { id: 'crystal_cave_2', src: MP3S('crystal cave 2'), lufs: -18 },
+  { id: 'crystal_cave_3', src: MP3S('crystal cave 3'), lufs: -21 },
+  // The anthem: a new character's arrival, the ending and its credits, a third day track. 196 s, ends on its own fade-out.
+  { id: 'main_theme', src: MP3S('main theme'), lufs: -16 },
+  // The night theme of November, never used until now (the old export of "night overworld theme" was silent): rotates with the nocturne cut above.
+  { id: 'night_2', src: RPG('night theme 2 (more lively)'), lufs: -18 },
   { id: 'time_crunch_intro', src: RPG('time crunch intro'), gainDb: 3.5, exact: true },
   { id: 'time_crunch_loop', src: RPG('time crunch loop'), gainDb: 3.5, exact: true },
   { id: 'time_crunch_final', src: RPG('time crunch 5 sec left'), gainDb: 3.5, exact: true },

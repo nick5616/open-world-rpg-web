@@ -1,0 +1,19 @@
+[01:15:31] PASS title is silent before any gesture (title {"playing":false,"track":"music/menu_theme","loop":false,"length":null,"seconds":null,"position":0,"wraps":0,"gain":0} ctx none)
+[01:15:31] PASS first click starts the menu theme ({"playing":true,"track":"music/menu_theme","loop":true,"length":2604000,"seconds":59.04761904761905,"position":0.29024943310657597,"wraps":0,"gain":0.09867706894874573})
+[01:15:31] PASS it is a sample-exact loop (looping buffer source over the whole buffer) (length 2604000 samples, 59.0476 s)
+[01:15:35] PASS fades in to its gain (gain 0.850 position 3.8 s)
+[01:15:35] asset {"url":"menu_theme.ogg","sr":44100,"n":2604000,"seconds":59.04761904761905,"around":[-18,-19,-19,-21,-23,-23,-21,-19],"jump":0.061284348368644714,"maxDelta":0.17768280440941453}
+[01:15:35] PASS the wrap has no seam: no step beyond the music's own slope, no dip around the join (wrap step 0.061 vs max slope 0.178; 10 ms rms around the join -18 -19 -19 -21 -23 -23 -21 -19 dB)
+[01:15:36] PASS still playing on the character screens (position 5.3 s, wraps 0)
+[01:16:08] first world music {"director":"anthem","track":"music/main_theme","arrival":true} after 31.4 s
+[01:16:09] PASS a brand-new character hears the anthem (main theme) (anthem music/main_theme arrival=true)
+[01:16:11] PASS the title theme was handed over (released)
+[01:16:18] PASS after the first quest the anthem gives way to the town (by day) music, the arrival is over (town music/future_land_2)
+[01:16:19] PASS night plays night theme 2 or the nocturne cut (music/night_2)
+[01:16:20] PASS the night rotates to the other night track at the end of one (music/night_2 -> music/night)
+[01:16:28] underground 0.74
+[01:16:28] PASS a cave plays a crystal cave track (music/crystal_cave_3 lowpass 14 kHz)
+[01:16:39] cave sequence crystal_cave_3 -> crystal_cave_2 -> crystal_cave_3 -> crystal_cave_2 -> crystal_cave_3
+[01:16:39] PASS consecutive cave tracks differ
+[01:16:40] PASS the Depths (layer 3) keep the void realm (music/void_realm)
+[01:16:41] PASS the ending and its credits play the anthem (music/main_theme finale=ending)

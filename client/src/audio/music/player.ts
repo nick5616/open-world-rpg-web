@@ -13,7 +13,7 @@
 
 import { assetUrl } from '../assets';
 import type { MusicDecision, MusicState, TimedPhase } from './director';
-import { END_CROSSFADE_S, STATE_MUSIC, TIMED_MUSIC } from './tracks';
+import { END_CROSSFADE_S, pickTrack, STATE_MUSIC, TIMED_MUSIC } from './tracks';
 
 interface Deck {
   el: HTMLAudioElement;
@@ -101,9 +101,13 @@ export class MusicPlayer {
     this.tickDecks();
   }
 
-  private pick(state: Exclude<MusicState, 'silence' | 'timed'>, offset = 0): string {
-    const t = STATE_MUSIC[state].tracks;
-    return t[(this.rotation + offset) % t.length];
+  /** The last track that played in each state (pickTrack never repeats it when there is another). */
+  private lastByState: Partial<Record<MusicState, string>> = {};
+
+  private pick(state: Exclude<MusicState, 'silence' | 'timed'>): string {
+    const track = pickTrack(STATE_MUSIC[state].tracks, this.rotation, this.lastByState[state]);
+    this.lastByState[state] = track;
+    return track;
   }
 
   private playState(state: Exclude<MusicState, 'silence' | 'timed'>, prev: MusicState): void {

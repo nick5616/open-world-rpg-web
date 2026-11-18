@@ -4,13 +4,14 @@
 // playing and which track of that state, and the player (player.ts)
 // crossfades to it.
 //
-// Priority (highest first): timed event > void moment > cave > combat >
-// night > town (by day) > day. Hysteresis and dwell times keep it from flapping at
+// Priority (highest first): timed event > the ending (the anthem) > void
+// moment > cave > combat > anthem (a new character's arrival) > night > town
+// (by day) > day. Hysteresis and dwell times keep it from flapping at
 // a cave mouth, a town wall or the edge of a fight.
 
 import { DAWN_HOUR, DUSK_HOUR } from '@lodestone/contracts';
 
-export type MusicState = 'silence' | 'day' | 'night' | 'cave' | 'town' | 'combat' | 'timed' | 'void';
+export type MusicState = 'silence' | 'day' | 'night' | 'cave' | 'town' | 'combat' | 'timed' | 'void' | 'anthem';
 
 /** A timed objective (town defense countdown/waves, boss enrage...). */
 export interface TimedInput {
@@ -41,9 +42,16 @@ export interface MusicInputs {
    * Playtest 2 immersion pass: the Heartfall (CR 035). 'intro': the Hush's
    * entrance silences the music (it is the silence); 'fight': the void realm;
    * 'won': back to the day at once (the dawn). The endless night comes in as
-   * `timed` (its countdown).
+   * `timed` (its countdown). Playtest 4: 'ending': the ending and its credits
+   * (the anthem, over everything but a timed event).
    */
-  finale?: 'intro' | 'fight' | 'won' | null;
+  finale?: 'intro' | 'fight' | 'won' | 'ending' | null;
+  /**
+   * Playtest 4: a brand-new character's arrival (the first quest's talk step
+   * not done yet, the first minutes of play): the anthem instead of the day
+   * or town music. Fights, caves, void moments and timed events still win.
+   */
+  arrival?: boolean;
   /** CR 038: the vertical layer (0 surface, 1 sky, 2 the Underground, 3 the Depths); the Depths play the void realm. */
   layer?: number;
 }
@@ -66,7 +74,7 @@ export const CAVE_EXIT = 0.35;
 export const DWELL_S = 4;
 export const FINAL_SECONDS = 5;
 
-const PRIORITY: Record<MusicState, number> = { silence: 0, day: 1, town: 2, night: 3, combat: 4, cave: 5, void: 6, timed: 7 };
+const PRIORITY: Record<MusicState, number> = { silence: 0, day: 1, town: 2, night: 3, anthem: 4, combat: 5, cave: 6, void: 7, timed: 8 };
 
 export function isNightHour(hour: number): boolean {
   return hour >= DUSK_HOUR || hour < DAWN_HOUR;
@@ -89,11 +97,13 @@ export class MusicDirector {
     if (!i.playing) return 'silence';
     if (i.finale === 'intro') return 'silence';
     if (i.timed) return 'timed';
+    if (i.finale === 'ending') return 'anthem';
     if (i.finale === 'fight') return 'void';
     if (i.finale === 'won') return 'day';
     if (i.voidMoment || i.layer === 3) return 'void';
     if (this.caveLatched ? i.underground > CAVE_EXIT : i.underground >= CAVE_ENTER) return 'cave';
     if (i.combat) return 'combat';
+    if (i.arrival) return 'anthem';
     // Night is night in town too (the town voicing is a daytime thing).
     if (isNightHour(i.hour)) return 'night';
     return i.inTown ? 'town' : 'day';
@@ -108,7 +118,7 @@ export class MusicDirector {
     }
     // Rising priority (a fight starts, a countdown begins, you step into a
     // cave) follows at once; falling back waits out the dwell time.
-    const immediate = this.state === 'silence' || want === 'silence' || PRIORITY[want] > PRIORITY[this.state] || i.finale === 'won';
+    const immediate = this.state === 'silence' || want === 'silence' || PRIORITY[want] > PRIORITY[this.state] || i.finale === 'won' || i.finale === 'ending';
     let changed = false;
     if (want !== this.state && (immediate || nowS - this.candidateSince >= DWELL_S)) {
       // Day comes back as the other day track each time (rotation).
