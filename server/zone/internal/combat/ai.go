@@ -259,6 +259,9 @@ func (w *World) acquire(e *Enemy, mult float64) *Player {
 		if d > e.Def.Aggro*mult && th == 0 {
 			return
 		}
+		if !w.notices(e, p) {
+			return // CR 056: behind a wall and out of earshot
+		}
 		score := th + 100/(d+1)
 		if score > bestScore || (score == bestScore && best != nil && p.ID < best.ID) {
 			best, bestScore = p, score
@@ -338,6 +341,22 @@ func (w *World) chase(e *Enemy) {
 		e.State, e.stateAt, e.Target = Return, tick, 0
 		return
 	}
+	// CR 056: a target it has neither seen nor heard for a few seconds is lost
+	// (until then it walks the nav path round whatever hides it).
+	if e.seenTarget != p.ID {
+		e.seenTarget, e.lastSeen = p.ID, tick
+	}
+	if w.notices(e, p) {
+		e.lastSeen = tick
+	} else if tick-e.lastSeen > secondsToTicks(sightMemoS) && !(e.nav != nil && tick-e.lastSeen <= secondsToTicks(sightPathMemoS)) {
+		if np := w.acquire(e, 1.5); np != nil && np.ID != p.ID && hdist(e.Pos, e.Home) <= e.leash() && !e.navUnreachable() {
+			e.Target = np.ID
+			w.engage(e, np)
+			return
+		}
+		e.State, e.stateAt, e.Target = Return, tick, 0
+		return
+	}
 	if e.taunt != (movement.Vec3{}) && e.has("taunt", tick) {
 		w.moveToward(e, e.taunt, 1)
 		return
@@ -362,6 +381,10 @@ func (w *World) chase(e *Enemy) {
 	}
 	if e.nav != nil && e.navWalled(d) {
 		w.moveToward(e, p.Pos, 1) // a wall between: round it, not through it (navai.go)
+		return
+	}
+	if !w.sees(e, p) {
+		w.moveToward(e, p.Pos, 1) // CR 056: it does not swing or shoot at a wall; it paths round it
 		return
 	}
 	if a := w.pickAttack(e, d); a != nil {
@@ -541,7 +564,7 @@ func (w *World) strikeArea(e *Enemy, a *combatdefs.EnemyAttack, area attackArea,
 		if p.Downed || (already != nil && already[p.ID]) {
 			continue
 		}
-		if area.contains(p.Pos, playerRadius+strikeSlack) {
+		if area.contains(p.Pos, playerRadius+strikeSlack) && !w.strikeBlocked(area.center, p) { // CR 056: no hit through a wall
 			w.queueStrike(e, a, p, area)
 			if already != nil {
 				already[p.ID] = true
@@ -986,11 +1009,23 @@ func (w *World) stepShots() {
 		alive := true
 		for sub := 0; sub < 2 && alive; sub++ {
 			h := dt / 2
+			prev := s.pos
 			s.pos.X += s.vel.X * h
 			s.pos.Y += s.vel.Y * h
 			s.pos.Z += s.vel.Z * h
 			s.left -= math.Hypot(math.Hypot(s.vel.X, s.vel.Z), s.vel.Y) * h
-			if s.left <= 0 || s.pos.Y < w.ground.HeightAt(s.pos.X, s.pos.Z) {
+			if s.left <= 0 {
+				alive = false
+				break
+			}
+			// CR 056: a wall, rock or the ground ends the shot where it enters
+			// them; the client stops the drawn one there (EvShotWall).
+			if at, hit := w.rayHit(prev, s.pos, 0); hit || w.solidAt(s.pos.X, s.pos.Y, s.pos.Z, 0) {
+				if !hit {
+					at = s.pos
+				}
+				w.Stats.ShotsWalled++
+				w.near(at, telegraphRadius, 0, Out{Ev: ev(EvShotWall, s.enemy.ID, uint32(s.att.ID), 0, at, nil)})
 				alive = false
 				break
 			}

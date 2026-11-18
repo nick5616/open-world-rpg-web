@@ -377,18 +377,9 @@ func (w *World) lineOfSight(start, now, tp movement.Vec3, h float64) bool {
 	return false
 }
 
-func (w *World) clear(a, b movement.Vec3) bool {
-	d := hdist(a, b)
-	n := int(d / losStep)
-	for i := 1; i < n; i++ {
-		t := float64(i) / float64(n)
-		x, y, z := a.X+(b.X-a.X)*t, a.Y+(b.Y-a.Y)*t, a.Z+(b.Z-a.Z)*t
-		if w.ground.HeightAt(x, z) > y+0.3 {
-			return false
-		}
-	}
-	return true
-}
+// clear: no terrain, cave rock or wall on the segment (CR 056, sight.go: the
+// same query the monsters see through; the terrain's 0.3 m slack as before).
+func (w *World) clear(a, b movement.Vec3) bool { return w.rayClear(a, b) }
 
 // geometryOK checks one target sample (radius and centre height: an
 // enemy's, or a player's for PvP) against the action's shape.

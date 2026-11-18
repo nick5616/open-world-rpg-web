@@ -109,6 +109,11 @@ type Enemy struct {
 	aiTick     uint32
 	gone       bool // removed from the World (removeEnemy)
 	aiOut      aiRange
+	// CR 056 line of sight (sight.go): the last two looks, the tick the
+	// target was last noticed and whom that was about.
+	sight      [2]sightMemo
+	lastSeen   uint32
+	seenTarget uint32
 	wantAttack *combatdefs.EnemyAttack
 	windStart  uint32
 	// CR 020: an ally (summon.go; never in World.enemies) and a brand (detonate.go).
