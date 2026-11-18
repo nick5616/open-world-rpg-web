@@ -301,6 +301,11 @@ export const VC = {
   pushSteps: 24,
   /** Shaft walls hold you within this far outside the shaft radius. */
   shaftBand: 2.5,
+  /**
+   * The bottom of the world (playtest 5): bedrock, under the Depths' deepest floor (about -455 m) and its 40 m snap band. The ground
+   * is never lower than this, so a fall that no layer or cave catches ends here instead of going on for ever.
+   */
+  bedrock: -500,
 } as const;
 
 export interface VCollideResult {
@@ -423,7 +428,8 @@ export class VerticalGroundCore {
   floorAt(x: number, y: number, z: number): number {
     if (this.resolve(x, y, z) !== 0) return this.rf;
     const bv = this.base.atLevel ? this.base.atLevel(y) : this.base;
-    return bv.heightAt(x, z);
+    const h = bv.heightAt(x, z);
+    return h < VC.bedrock ? VC.bedrock : h;
   }
 
   /** Water (or lava) at (x, z) for feet at y: the layer's in the Underground / Depths, none on an island. */
