@@ -1,0 +1,34 @@
+# pt5-town-life: real client, private stack (tools/playtest/stack.mjs --zone-env LODESTONE_ZONE_DEV=1),
+# tools/playtest/pt5-town-life.mjs, headless Chromium 1280x720 on the shared GPU, real E key presses and
+# real frames, the dev console only for /time, /weather and /tp. The starting town is Draedmore (2 dogs:
+# Barley, Fennel; 4 cats: Mortimer, Marmalade, Cinders, Tansy).
+# Run in several invocations (names; pet; cat; third; sundial; weather). The first full run's "names"
+# step failed because the dog trotted off between my reach check and the key (a timing bug in the script,
+# fixed); the rerun passed. The E-target check also found a real bug on the way (a villager standing
+# behind the dog won the E, fixed in interact.ts) and a missing emote definition (the worktree's client
+# resolved the main checkout's contracts, see CR 054).
+PASS the town has named dogs (Barley, Fennel)
+PASS stood within reach of a dog
+PASS the E target is the dog ({"kind":"animal","name":"Barley","role":1,"entityId":null,"stableId":"2368"})
+PASS prompt text "[E] Pet Barley"
+PASS the nameplate shows the dog's name (Barley)
+PASS in reach of a dog
+PASS E started a petting and the body crouched
+PASS took the reach and mid-stroke pictures
+PASS the hand stroked more than once
+PASS the petting ended by itself with a finish
+PASS walking away cancelled it (active true -> false)
+PASS back on my feet
+PASS in reach of a cat (it let me walk up slowly)
+PASS E on Mortimer the cat started a petting
+PASS in reach again (third person)
+PASS your avatar's right arm is reaching down (swing 0.30)
+PASS third person petting running
+PASS a sundial stands in the town square
+PASS the gnomon casts a shadow by day (lit true, phi 2.59, len 0.47)
+PASS the shadow moved by 15:00 (phi 2.59 -> 0.34)
+PASS the HUD dial reads the time (hour 15.01)
+PASS no shadow at night
+PASS outside in the rain: exposure 1
+PASS inside: exposure 0
+PASS the rain faded out over 488 ms, biggest frame step 0.06
