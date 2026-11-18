@@ -43,6 +43,11 @@ const (
 	AtLimit   Refusal = 2 // already at the +-6 m cap or the water line: nothing would change
 	TooBig    Refusal = 3 // the slope cascade would reach too far
 	Full      Refusal = 4 // zone edit storage full (set by the caller)
+	// Bedrock: a dig where the ground already sits at the -MaxDelta cap (6 m
+	// down). The zone sends it as the same "no change" refusal (Event 1806
+	// value 5); the client tells it from the water line by the delta it can
+	// see, says so ("You have hit bedrock") and the terrain shows bedrock there.
+	Bedrock Refusal = 5
 )
 
 // World is what the planner needs from the host.
@@ -122,6 +127,16 @@ func (p *planner) floor(x, z int32) int8 {
 	return int8(lowest)
 }
 
+// noChange is the refusal for a swing that would change nothing: a dig
+// whose strike vertex is already at the cap is Bedrock, else AtLimit (the
+// water line, or a fill at its cap).
+func (p *planner) noChange(op Op, cx, cz int32) Refusal {
+	if op == Dig && p.get(cx, cz) <= -MaxDelta {
+		return Bedrock
+	}
+	return AtLimit
+}
+
 var nbrs = [8][3]int32{{1, 0, 3}, {-1, 0, 3}, {0, 1, 3}, {0, -1, 3}, {1, 1, 4}, {-1, 1, 4}, {1, -1, 4}, {-1, -1, 4}}
 
 // Plan computes one swing at world point (px, pz). The Overlay is not
@@ -165,7 +180,7 @@ func PlanSwing(o *Overlay, w World, op Op, px, pz float64) (Plan, Refusal) {
 		}
 	}
 	if len(p.queue) == 0 {
-		return Plan{}, AtLimit
+		return Plan{}, p.noChange(op, cx, cz)
 	}
 	// Slope cascade: spread the change outward until every neighbour pair is walkable.
 	for len(p.queue) > 0 {
@@ -214,7 +229,7 @@ func PlanSwing(o *Overlay, w World, op Op, px, pz float64) (Plan, Refusal) {
 		}
 	}
 	if len(pl.Changes) == 0 {
-		return Plan{}, AtLimit
+		return Plan{}, p.noChange(op, cx, cz)
 	}
 	sortChanges(pl.Changes)
 	return pl, OK

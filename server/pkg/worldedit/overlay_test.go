@@ -216,3 +216,54 @@ func TestItemsFor(t *testing.T) {
 		t.Fatal("cost")
 	}
 }
+
+// Playtest 5: "the underground has an invisible floor that prevents you from
+// going deeper". Digging stops 6 m down; that stop is bedrock, said as such,
+// and is told apart from the water line.
+func TestDigStopsAtBedrockNotAnInvisiblePlane(t *testing.T) {
+	o := New()
+	w := fakeWorld{base: 50, water: 0}
+	for i := 0; i < 80; i++ {
+		p, r := PlanSwing(o, w, Dig, 300.2, 410.6)
+		if r != OK {
+			if r != Bedrock {
+				t.Fatalf("swing %d: dug to the cap and then refused with %d, want Bedrock (%d)", i, r, Bedrock)
+			}
+			if d := o.Delta(300, 411); d != -MaxDelta {
+				t.Fatalf("Bedrock before the cap: centre %d", d)
+			}
+			return
+		}
+		apply(t, o, p)
+	}
+	t.Fatal("never reached bedrock")
+}
+
+func TestWaterLineIsNotBedrock(t *testing.T) {
+	o := New()
+	w := fakeWorld{base: 1.0, water: 0}
+	var last Refusal
+	for i := 0; i < 40; i++ {
+		p, r := PlanSwing(o, w, Dig, 200.5, 200.5)
+		last = r
+		if r != OK {
+			break
+		}
+		apply(t, o, p)
+	}
+	if last != AtLimit {
+		t.Fatalf("a dig stopped by the water line is AtLimit (%d), got %d", AtLimit, last)
+	}
+	hi := New()
+	wf := fakeWorld{base: 50, water: 0}
+	for i := 0; i < 200; i++ {
+		p, r := PlanSwing(hi, wf, Fill, 400.5, 400.5)
+		if r != OK {
+			if r == Bedrock {
+				t.Fatal("a fill at its cap must not be Bedrock")
+			}
+			return
+		}
+		apply(t, hi, p)
+	}
+}

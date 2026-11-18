@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { harvestDef, maxHp, rollDrops, scaleFactor } from './harvestDefs';
-import { TerrainOverlay } from './overlay';
+import { MAX_DELTA, TerrainOverlay } from './overlay';
 import { costFor, itemsFor, planSwing, type PlanWorld } from './planner';
 
 const goldenPath = fileURLToPath(new URL('../../../../contracts/golden/world_edits_plan.json', import.meta.url));
@@ -30,7 +30,7 @@ describe('dig planner (twin of server/pkg/worldedit/dig.go)', () => {
     const w = fake(o, (x) => x < 8);
     for (const s of g.steps) {
       const { plan, reason } = planSwing(w, s.op, s.x, s.z);
-      const refused = reason === 'ok' ? 0 : reason === 'forbidden' ? 1 : reason === 'limit' ? 2 : 3;
+      const refused = reason === 'ok' ? 0 : reason === 'forbidden' ? 1 : reason === 'limit' ? 2 : reason === 'bedrock' ? 5 : 3;
       expect(refused, `${s.op} ${s.x},${s.z}`).toBe(s.refused);
       if (!plan) continue;
       expect([plan.lowered, plan.raised], `${s.op} ${s.x},${s.z}`).toEqual([s.lowered, s.raised]);
@@ -83,5 +83,34 @@ describe('harvest rules', () => {
     const rnd = () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);
     for (let i = 0; i < 100; i++) n += rollDrops(harvestDef(1, 3)!, 200, rnd).filter((d) => d.item === 'wood:log').reduce((a, d) => a + d.qty, 0);
     expect(n).toBeGreaterThanOrEqual(200);
+  });
+});
+
+describe('bedrock (playtest 5: the invisible floor)', () => {
+  it('a dig that has reached the cap is refused as bedrock, not as the water line', () => {
+    const o = new TerrainOverlay();
+    const w = fake(o);
+    let last = 'ok';
+    for (let i = 0; i < 80; i++) {
+      const { plan, reason } = planSwing(w, 'dig', 300.2, 410.6);
+      last = reason;
+      if (!plan) break;
+      applyPlan(o, plan.changes);
+    }
+    expect(last).toBe('bedrock');
+    expect(o.delta(300, 411)).toBe(-MAX_DELTA);
+  });
+
+  it('the water line is still just a limit, and so is a fill', () => {
+    const o = new TerrainOverlay();
+    const w = { ...fake(o, () => false, 49.9), base: () => 50 } as PlanWorld;
+    let last = 'ok';
+    for (let i = 0; i < 40; i++) {
+      const { plan, reason } = planSwing(w, 'dig', 200.5, 200.5);
+      last = reason;
+      if (!plan) break;
+      applyPlan(o, plan.changes);
+    }
+    expect(last).toBe('limit');
   });
 });

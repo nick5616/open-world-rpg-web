@@ -12,7 +12,8 @@ export const WATER_MARGIN = 0.3;
 export const STEPS_PER_ITEM = 6;
 
 export type Op = 'dig' | 'fill';
-export type Refusal = 'ok' | 'forbidden' | 'limit' | 'big';
+/** 'bedrock': a dig whose strike vertex already sits at the -MAX_DELTA cap (the Go twin's Bedrock); 'limit' is the water line or a fill's cap. */
+export type Refusal = 'ok' | 'forbidden' | 'limit' | 'big' | 'bedrock';
 
 export interface PlanWorld {
   /** The generated lattice height at a vertex. */
@@ -86,7 +87,8 @@ export function planSwing(w: PlanWorld, op: Op, px: number, pz: number): { plan:
       if (!set(x, z, nd)) return { plan: null, reason };
     }
   }
-  if (!queue.length) return { plan: null, reason: 'limit' };
+  const noChange = (): Refusal => (op === 'dig' && get(cx, cz) <= -MAX_DELTA ? 'bedrock' : 'limit');
+  if (!queue.length) return { plan: null, reason: noChange() };
   while (queue.length) {
     const [x, z] = queue.shift()!;
     const d = cur.get(k(x, z))!;
@@ -116,7 +118,7 @@ export function planSwing(w: PlanWorld, op: Op, px: number, pz: number): { plan:
     if (nd < od) plan.lowered += od - nd;
     else plan.raised += nd - od;
   }
-  if (!plan.changes.length) return { plan: null, reason: 'limit' };
+  if (!plan.changes.length) return { plan: null, reason: noChange() };
   plan.changes.sort((a, b) => a.z - b.z || a.x - b.x);
   return { plan, reason: 'ok' };
 }

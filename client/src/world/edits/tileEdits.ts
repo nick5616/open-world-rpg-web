@@ -5,7 +5,7 @@
 // (overlay.ts lift), so the mesh stays exactly the collision surface at LOD 0.
 // Edited ground also turns to bare soil in the splat weights.
 import type { ChunkData } from '@lodestone/worldgen';
-import { lift, STEP_M } from './overlay';
+import { lift, MAX_DELTA, STEP_M } from './overlay';
 
 /** How far an edit reaches past a tile (m): edge normals look one sample out, coarse normals two. */
 export const EDIT_PAD_STEPS = 2;
@@ -19,6 +19,12 @@ export function editedOutside(base: (x: number, z: number) => number, edits: Int
     const d = Number.isInteger(x) && Number.isInteger(z) ? m.get(z * 65536 + x) : undefined;
     return d ? lift(h, d) : h;
   };
+}
+
+/** How much of a dug vertex's soil is bedrock: 0 down to a third of the dig cap, 1 at the cap (delta -MAX_DELTA). */
+export function bedrockShare(d: number): number {
+  if (d >= 0) return 0;
+  return Math.min(1, Math.max(0, (-d - MAX_DELTA / 3) / ((MAX_DELTA * 2) / 3)));
 }
 
 /**
@@ -51,12 +57,18 @@ export function applyTileEdits(c: ChunkData, edits: Int32Array): number {
     const t = Math.min(1, 0.6 + 0.1 * Math.abs(d));
     const a = v * 4;
     const g = Math.round(c.splatA[a] * (1 - t));
-    const r = Math.round(c.splatA[a + 2] * (1 - t));
+    // Bedrock (playtest 5): the last third of the dig depth turns the bare soil to rock, all of it at the cap, so the bottom of a pit is a
+    // visible floor with a name, not an invisible plane in dirt.
+    const bed = bedrockShare(d);
+    const rockIn = Math.round(c.splatA[a + 2] * (1 - t));
     const sn = Math.round(c.splatA[a + 3] * (1 - t));
     const sa = Math.round(c.splatB[a] * (1 - t));
     const mu = Math.round(c.splatB[a + 1] * (1 - t));
+    const soil = Math.max(0, 255 - g - rockIn - sn - sa - mu);
+    const toRock = Math.round(soil * bed);
+    const r = rockIn + toRock;
     c.splatA[a] = g;
-    c.splatA[a + 1] = Math.max(0, 255 - g - r - sn - sa - mu);
+    c.splatA[a + 1] = soil - toRock;
     c.splatA[a + 2] = r;
     c.splatA[a + 3] = sn;
     c.splatB[a] = sa;
