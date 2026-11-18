@@ -38,6 +38,11 @@ import { boxAt, BK } from './kit';
 import { geometryOf, makeTownMaterials, townTexture, type TownMaterials } from './townMaterial';
 import { NpcRenderer } from './npcs';
 import { TownAnimals } from './townAnimals';
+import { AnimalPlate } from './animalPlate';
+import { TownSundials } from './sundialMesh';
+import { OwnerBarks, keeperIndex, type BarkAnimal } from './animalBarks';
+import { onPetEvent, tickPetting } from './petControl';
+import { petState } from './petting';
 import { useQualityStore } from '../../stores/qualityStore';
 import { TownHud } from './townHud';
 import { pickTarget, type Candidate } from './interact';
@@ -104,6 +109,11 @@ export class TownsManager {
   private pendingHides: bigint[] = [];
   private debugLines: THREE.LineSegments | null = null;
   private readonly t0 = performance.now();
+  private readonly plate = new AnimalPlate();
+  readonly sundials: TownSundials;
+  private readonly barks = new OwnerBarks();
+  private readonly keepers = new Map<number, number>();
+  private petSeen = 0;
   private disposed = false;
   showBoxes = false;
 
@@ -119,8 +129,11 @@ export class TownsManager {
     this.group.add(this.npcs.group);
     this.animals = new TownAnimals(this.towns, runtime.ground as never, (si) => runtime.data.sites[this.towns.settlements[si]?.site]?.layer === 2);
     this.group.add(this.animals.group);
+    this.sundials = new TownSundials(this.towns, runtime.ground as never, runtime.townCollision, (si) => runtime.data.sites[this.towns.settlements[si]?.site]?.layer === 2);
+    this.group.add(this.sundials.group);
     this.group.add(this.smoke.mesh);
     this.hud = new TownHud();
+    this.hud.petEvent = (e) => onPetEvent(e, this.animals);
     if (runtime.doors && runtime.doorStates) {
       const sync = new DoorSync(runtime.doors, runtime.doorStates);
       sync.localSeq = () => localPlayer.seq;
@@ -387,7 +400,15 @@ export class TownsManager {
     // Playtest 2 immersion pass: smoke from the chimneys (busiest at breakfast and supper).
     this.smoke.update(camera, dt, (worldClock.timeOfDayS / DAY_LENGTH_S) * 24, L.day, Math.min(1, liveWeather.mix.rain), 0, this.smokeList);
     this.npcs.update(camera, dt, (now - this.t0) / 1000);
-    this.animals.update(camera, dt, now, (worldClock.timeOfDayS / DAY_LENGTH_S) * 24, Math.min(1, liveWeather.mix.rain), useQualityStore.getState().tier === 'low', { x: localPlayer.pos.x, y: localPlayer.pos.y, z: localPlayer.pos.z, vx: localPlayer.vel.x, vz: localPlayer.vel.z });
+    this.animals.update(camera, dt, now, (worldClock.timeOfDayS / DAY_LENGTH_S) * 24, Math.min(1, liveWeather.mix.rain), useQualityStore.getState().tier === 'low', { x: localPlayer.pos.x, y: localPlayer.pos.y, z: localPlayer.pos.z, vx: localPlayer.vel.x, vz: localPlayer.vel.z, yaw: localPlayer.yaw });
+    // CR 054: the sundials cast the renderer's sun (dimmer in cloud and rain, none at night).
+    const rain = Math.min(1, liveWeather.mix.rain);
+    this.sundials.update(camera, L.sunDir, L.day * (1 - 0.8 * Math.max(rain, liveWeather.mix.storm, liveWeather.mix.cloud * 0.5)));
+    // CR 054: your petting (the clock, what ends it), the nameplate of the animal you look at, owners saying their names.
+    tickPetting(now);
+    this.plate.update(camera, this.animals);
+    this.tickBarks(now, petState.finished !== this.petSeen ? petState.key : null);
+    this.petSeen = petState.finished;
     // Interaction target.
     const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
     const cands: Candidate[] = [];
@@ -395,6 +416,10 @@ export class TownsManager {
     for (const v of this.npcs.views) {
       if (Math.abs(v.x - cam.x) > 6 || Math.abs(v.z - cam.z) > 6) continue;
       cands.push({ kind: 'npc', x: v.x, y: v.y + 1.25, z: v.z, entityId: v.entityId, stableId: v.index >= 0 ? this.towns.npcs[v.index].id : 0n, index: v.index, name: v.name, role: v.role, merchant: v.merchant, settlement: v.settlement });
+    }
+    // CR 054: a dog or cat within reach can be petted (E).
+    for (const an of this.animals.pettables(localPlayer.pos.x, localPlayer.pos.z)) {
+      cands.push({ kind: 'animal', x: an.x, y: an.y, z: an.z, entityId: null, stableId: BigInt(an.key), index: an.seed, name: an.name, role: an.kind, merchant: 255, settlement: an.settlement });
     }
     const ds = this.doorSync;
     if (ds) {
@@ -417,6 +442,25 @@ export class TownsManager {
     this.stats.cells = this.cells.size;
     this.stats.inFlight = this.inflight.size;
     if (this.showBoxes !== !!this.debugLines) this.toggleBoxes(cam);
+  }
+
+  /** The nameplate's text on show (debug). */
+  plateText(): string {
+    return this.plate.text;
+  }
+
+  private tickBarks(now: number, petted: number | null): void {
+    const list: BarkAnimal[] = [];
+    for (const a of this.animals.named()) {
+      let keeper = this.keepers.get(a.key);
+      if (keeper === undefined) {
+        const st = this.towns.settlements[a.si];
+        keeper = st ? keeperIndex(Number(st.id & 0xffffffffn), a.idx, this.towns.npcs, st.npcFirst, st.npcCount) : -1;
+        this.keepers.set(a.key, keeper);
+      }
+      list.push({ key: a.key, kind: a.kind, name: a.name, x: a.x, z: a.z, seed: a.seed, keeper });
+    }
+    if (list.length) this.barks.update(now, localPlayer.pos, list, this.npcs.views, petted);
   }
 
   /** Debug: wireframes of the collision boxes within 150 m (to check geometry against collision). */
@@ -487,6 +531,8 @@ export class TownsManager {
     this.cells.clear();
     this.npcs.dispose();
     this.animals.dispose();
+    this.plate.dispose();
+    this.sundials.dispose();
     this.smoke.dispose();
     this.hud.dispose();
     this.doorSync?.follow(null);

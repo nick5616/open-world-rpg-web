@@ -9,6 +9,7 @@ import { DEBUG } from '../../config';
 import { isChatShortcut } from '../../input/useKeyboard';
 import { localPlayer } from '../../state/live';
 import { Compass, compassMarks } from './Compass';
+import { SundialClock } from '../../hud/SundialClock'; // CR 054
 import { MapScreen, mapView } from './MapScreen';
 import { pruneToasts, setMapOpen, TOAST_MS, useExploration, type Toast } from './store';
 import { installPlaceMarks } from './placeMarks';
@@ -153,6 +154,7 @@ export function ExplorationHud() {
   return (
     <>
       <Compass />
+      <SundialClock />
       <Toasts />
       <DiscoveryIntro />
       <MapScreen />

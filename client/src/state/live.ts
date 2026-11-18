@@ -64,6 +64,8 @@ export const view = {
   fpProp: false,
   /** Playtest 2 emotes: a first-person hand gesture is up (the weapon view model steps aside). */
   fpGesture: false,
+  /** Playtest 5 petting (CR 054): your own hand is stroking an animal in first person (the weapon and arms step aside). */
+  fpPet: false,
   /** Playtest 2 instruments (CR 028): an instrument is held up in first person (the weapon and the arms step aside). */
   fpInstrument: false,
 };

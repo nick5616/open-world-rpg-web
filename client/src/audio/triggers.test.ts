@@ -7,6 +7,7 @@ import { ELEMENTS, TRIGGERS, ZONE_EVENTS, achievementCue, castCue, impactCue, le
 import { loadAudioPrefs, DEFAULT_AUDIO_PREFS } from './settings';
 import { sliderToGain } from './context';
 import { BELLS, BELL_PARTIALS, partialDecay, partialLevel, synthName } from './bells';
+import { ANIMAL_SYNTH } from './animalSynth';
 import { COMBAT } from '@lodestone/contracts';
 
 function api(selfId = 7) {
@@ -33,7 +34,7 @@ describe('trigger map', () => {
     for (const [id, def] of Object.entries(CUES)) {
       expect(def.files.length, `${id} has no files (run tools/audio/build-audio.mjs)`).toBeGreaterThan(0);
       // synth:<bell> files are rendered at run time (bells.ts), not built
-      for (const f of def.files) expect(names.has(f) || !!BELLS[synthName(f) ?? ''], `${id}: ${f} missing`).toBe(true);
+      for (const f of def.files) expect(names.has(f) || !!BELLS[synthName(f) ?? ''] || !!ANIMAL_SYNTH[synthName(f) ?? ''], `${id}: ${f} missing`).toBe(true);
     }
     // and nothing built is orphaned
     for (const id of Object.keys(CUE_FILES)) expect(CUES[id as CueId], `cueFiles.gen has unknown cue ${id}`).toBeDefined();

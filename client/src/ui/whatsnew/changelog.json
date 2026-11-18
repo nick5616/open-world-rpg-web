@@ -1,5 +1,16 @@
 [
   {
+    "id": "pt5-town-life",
+    "date": "2026-11-18",
+    "title": "Town life",
+    "items": [
+      "The town dogs and cats have names now. Look at one and its name shows; the villagers who keep them call them by name.",
+      "Press E on a dog or cat to pet it: you crouch and lean in and stroke its head and back, and it sits, wags and leans into your hand. Cats arch and purr, and some dogs roll over. Other players see it too. Walk away to stop.",
+      "A sundial stands in every town square. Its shadow tells the time of day, and there is a little sundial clock under the compass.",
+      "No more rain, snow or leaves falling inside buildings, under a built roof or underground. A lightning flash through a window is only dim."
+    ]
+  },
+  {
     "id": "pt5-graphics",
     "date": "2026-11-18",
     "title": "A world worth looking at",

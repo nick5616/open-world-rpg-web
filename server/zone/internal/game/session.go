@@ -78,6 +78,9 @@ type session struct {
 	doors            *sessDoors         // building doors: settlements known, frame ground (doors.go)
 	fish             *fishState         // playtest 2 fishing (fishing.go); nil until the first cast
 	emotes           *emoteState        // playtest 2 emotes (emotes.go); nil until the first emote
+	petAt            time.Time          // CR 054: when this player last started petting a town animal (animal_pet.go)
+	petOn            bool               // CR 054: a petting is running
+	petKey           uint32             // CR 054: its animal key
 	looks            *lookState         // CR 047: Interact 91 limiter (looks.go)
 	light            *lightState        // playtest 3 torch and familiar light (lights.go); nil until the first Interact 160 or familiar cast
 	music            *musicState        // playtest 2 instruments (music.go); nil until the first Interact 120
@@ -442,6 +445,10 @@ func (s *Server) drainTaken(sess *session, now time.Time) {
 			}
 			if it.TargetKind == InteractLook {
 				s.lookInteract(sess, it, now) // CR 047: a client asks for a player's look (looks.go)
+				continue
+			}
+			if it.TargetKind == InteractPetAnimal {
+				s.animalPetInteract(sess, it, now) // CR 054: petting a town dog or cat (animal_pet.go)
 				continue
 			}
 			if it.TargetKind == InteractEmote {
