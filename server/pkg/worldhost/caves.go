@@ -592,3 +592,42 @@ func (ct *CaveTerrain) WantCaves(x, y, z, r float64) { ct.Caves.WantCaves(x, y, 
 
 // CaveStats exposes the cave cache counters.
 func (ct *CaveTerrain) CaveStats() CaveStats { return ct.Caves.Stats() }
+
+// Sight classifies a point for line of sight (CR 056): 1 inside solid rock or
+// an island's body, 0 open air in a cave or a vertical layer (the surface
+// heightfield does not apply there), -1 on or above the open surface (the
+// heightfield decides). Read-only, same rules the movement step collides
+// with (caves.Rock; the vertical layers' floors, ceilings and island bodies).
+func (ct *CaveTerrain) Sight(x, y, z float64) int8 {
+	if ct.V != nil {
+		src := ct.V.Src
+		switch l, _ := ct.V.Resolve(x, y, z); l {
+		case vertical.LayerSky:
+			t, b := src.LayerHeight(vertical.SurfSkyTop, x, z), src.LayerHeight(vertical.SurfSkyBottom, x, z)
+			if t-b > vertical.SolidEps && y < t-0.1 && y > b {
+				return 1
+			}
+			return 0
+		case vertical.LayerUnder, vertical.LayerDepths:
+			cs, fs := vertical.SurfUCeil, vertical.SurfUFloor
+			if l == vertical.LayerDepths {
+				cs, fs = vertical.SurfDCeil, vertical.SurfDFloor
+			}
+			c, f := src.LayerHeight(cs, x, z), src.LayerHeight(fs, x, z)
+			if y < f-0.3 || (c < vertical.OpenHalf && c > f && y > c) {
+				return 1
+			}
+			return 0
+		}
+	}
+	if y > ct.g.Height(x, z)+0.5 {
+		return -1 // in the air above a mouth hole
+	}
+	if ct.g.InCave(x, y, z) {
+		if caves.Rock(ct.Caves, x, y, z) {
+			return 1
+		}
+		return 0
+	}
+	return -1
+}

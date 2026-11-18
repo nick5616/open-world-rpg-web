@@ -200,7 +200,11 @@ type World struct {
 	nav         *navWorld
 	navWanted   bool
 	navOff      bool // tests and benchmarks: no pathfinding (the old straight steering)
+	// NoSight turns the line-of-sight rules off (CR 056: tests of other
+	// systems that force a target across a wall; an operator's A/B switch).
+	NoSight bool
 	caveQ       caveQuery
+	sightQ      sightQuery // CR 056 (sight.go)
 	levelGround bool
 }
 
@@ -209,6 +213,7 @@ type Stats struct {
 	ClaimsAccepted, ClaimsRefused, Kills, PlayerHits, Evaded, Downs int64
 	PvPHits                                                         int64 // playtest 2: accepted player-vs-player claims
 	HeldEvents                                                      int64 // CR 022: Event 226 sends (held.go)
+	ShotsWalled                                                     int64 // CR 056: enemy projectiles that ended against a wall, rock or the ground
 	RefusedBy                                                       [24]int64
 }
 
@@ -224,6 +229,7 @@ func NewWorld(cfg Config, ground movement.Ground, alloc func() uint32) *World {
 	}
 	w := &World{cfg: cfg, ground: ground, groupAt: map[[2]int][]*Group{}, enemies: map[uint32]*Enemy{}, players: map[uint32]*Player{}, alloc: alloc, rng: cfg.Seed | 1}
 	w.caveQ, _ = ground.(caveQuery)
+	w.sightQ, _ = ground.(sightQuery)
 	_, w.levelGround = ground.(movement.LevelGround)
 	return w
 }

@@ -49,6 +49,7 @@ func newTownCrowd(nav bool, par Parallel, workers int) *townCrowd {
 	w := NewWorld(Config{Seed: 11, NoWildPacks: true}, movement.Flat{Y: 5}, func() uint32 { id++; return id })
 	w.SetParallel(par, workers)
 	w.navOff = !nav
+	w.NoSight = true // the crowd is told where its player is: this tests the pathing
 	shut := false
 	var town navBoxes
 	const bx, bz = 18.0, 16.0 // block pitch (house + street)

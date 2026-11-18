@@ -239,6 +239,7 @@ func navCrowd(n int, par Parallel, workers int) (*World, []*handPlayer) {
 	w := NewWorld(Config{Seed: 7, NoWildPacks: true}, movement.Flat{Y: 5}, func() uint32 { id++; return id })
 	wall := navBoxes{{1009.8, 885, 1010.2, 985, nil}}
 	w.Obstacles = wall.blocked
+	w.NoSight = true // the pack is told where the player is: this tests the pathing
 	w.SetParallel(par, workers)
 	var hs []*handPlayer
 	for k := 0; k < 10; k++ {

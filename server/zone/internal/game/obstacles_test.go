@@ -65,6 +65,7 @@ func TestEnemiesDoNotWalkThroughBuildings(t *testing.T) {
 			if !hook {
 				h.srv.cbt.w.Obstacles = nil
 			}
+			h.srv.cbt.w.NoSight = true // CR 056: out of sight behind the house they would not hunt you; this test is about walls and pathing (sight_test.go covers the sight)
 			h.srv.cbt.w.TestGroup(movement.Vec3{X: bx, Z: bz}, []string{"wolf", "wolf"}, 1, "")
 		})
 		wasClear := map[uint32]bool{} // spawned members may land on a neighbour's box; only moving into one counts
