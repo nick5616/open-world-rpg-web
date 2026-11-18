@@ -176,7 +176,7 @@ func TestDialogRumourPointsAtARealPlaceAndMarksIt(t *testing.T) {
 	a.take(EventPins, 3*time.Second)
 	h.do(func() {
 		pins := h.srv.byChar[char].x.prog.Pins
-		if len(pins) != 1 || pins[0].XCm != mk.X || pins[0].ZCm != mk.Z {
+		if len(pins) != 1 || pins[0].XCm != mk.X || pins[0].ZCm != mk.Z || pins[0].Label == "" || pins[0].Label != string(mk.Data) {
 			t.Errorf("pins %+v", pins)
 		}
 	})

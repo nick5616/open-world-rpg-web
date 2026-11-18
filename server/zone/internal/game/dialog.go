@@ -427,7 +427,7 @@ func (s *Server) dialogWork(sess *session, d *dlgSess, kind string, ne *Entity, 
 			s.stationInteract(e, &proto.Interact{TargetKind: InteractStation, TargetID: p.ID, Action: 1})
 			return
 		}
-		s.townEvent(e, &proto.Event{Kind: EventNPCSay, EntityID: ne.ID, TargetID: uint32(nd.Role), Value: 1, Data: []byte("The forge is just there. Walk up to it and press E.")})
+		s.townEvent(e, &proto.Event{Kind: EventNPCSay, EntityID: ne.ID, TargetID: uint32(nd.Role), Value: 1, Data: []byte("The forge is just there. Walk right up to it.")})
 	}
 }
 
@@ -469,17 +469,32 @@ func (s *Server) dialogMark(sess *session, st dialog.Site) string {
 			break
 		}
 	}
-	if !x.prog.SetPin(slot, dialogPinColor, xc, zc) {
-		return ""
-	}
-	s.sendPins(sess)
-	s.saveProgressSoon(sess, false)
 	name := st.Name
 	if name == "" {
 		name = "the place"
 	}
-	s.sendEvent(sess, &proto.Event{Kind: EventDialogMark, EntityID: sess.ent.ID, TargetID: uint32(slot), X: xc, Z: zc, Data: []byte(name)})
-	return "Marked on your map: " + name + "."
+	label := dialogPinLabel(st, name)
+	if !x.prog.SetLabeledPin(slot, dialogPinColor, xc, zc, label) {
+		return ""
+	}
+	s.sendPins(sess)
+	s.saveProgressSoon(sess, false)
+	s.sendEvent(sess, &proto.Event{Kind: EventDialogMark, EntityID: sess.ent.ID, TargetID: uint32(slot), X: xc, Z: zc, Data: []byte(label)})
+	return "Marked on your map: " + label + "."
+}
+
+// dialogPinLabel is the name a marked place carries on the map and the
+// compass (CR 055): "Stables, Kudrogair", "Tower, The Spire", "Fishing spot".
+func dialogPinLabel(st dialog.Site, name string) string {
+	switch st.Kind {
+	case dialog.KindStable:
+		return "Stables, " + name
+	case dialog.KindFish:
+		return "Fishing spot"
+	case dialog.KindTower:
+		return "Tower, " + name
+	}
+	return name
 }
 
 // dialogClose ends the conversation and lets the person walk on.
