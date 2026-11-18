@@ -166,8 +166,8 @@ describe('nature textures', () => {
 });
 
 describe('quality tiers', () => {
-  it('Low keeps the original vegetation, higher tiers get the rich set with more cards', () => {
-    expect(WORLD_TIERS.low.vegetation).toBe(0);
+  it('every tier draws the rich vegetation (Low since playtest 5), with more cards on higher tiers', () => {
+    expect(WORLD_TIERS.low.vegetation).toBe(0.5);
     expect(WORLD_TIERS.medium.vegetation).toBe(1);
     expect(WORLD_TIERS.high.vegetation).toBe(2);
     expect(WORLD_TIERS.ultra.vegetation).toBe(3);

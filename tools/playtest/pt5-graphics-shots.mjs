@@ -101,18 +101,22 @@ const tree = (await near(1, -1, forest.x, forest.z)) ?? forest;
 await shoot('tree', tp(tree.x + 7, tree.z + 7, Math.atan2(7, 7), 0.25));
 await shoot('forest-far', `(() => { const L = window.__lodestone; L.setFly(true); L.teleport({ x: ${forest.x - 60}, y: window.__lodestoneWorld.groundAt(${forest.x - 60}, ${forest.z - 60}) + 28, z: ${forest.z - 60} }); L.setLook(${-Math.PI * 0.75}, -0.12); })()`);
 // Town: the largest settlement, a street view and a house close-up from the front.
-const ti = await page.evaluate(() => window.__lodestoneTowns.largestTown());
-const town = (await page.evaluate(() => window.__lodestoneTowns.settlements()))[ti];
-const houses = (await page.evaluate((i) => window.__lodestoneTowns.buildings(i), ti)).filter((b) => b.role === 'house' || b.role === 'cottage' || b.role === 'home');
-const bl = houses.length ? houses : await page.evaluate((i) => window.__lodestoneTowns.buildings(i), ti);
-const h = bl[Math.min(bl.length - 1, 3)];
-const hl = Math.hypot(h.frontX, h.frontZ) || 1;
-const fx = h.frontX / hl;
-const fz = h.frontZ / hl;
-const sx = h.x + fx * (Math.max(h.hx, h.hz) + 7);
-const sz = h.z + fz * (Math.max(h.hx, h.hz) + 7);
+// A surface timber / cottage / stone town (the biggest settlement is a dwarven hall under the mountain), the house in
+// it nearest the town centre with a door on the street side.
+const all = await page.evaluate(() => window.__lodestoneTowns.settlements());
+const cands = all.filter((s) => s.y > 0 && ['timber', 'cottage', 'log', 'stone'].includes(s.style) && s.buildings >= 8).sort((a, b) => b.buildings - a.buildings);
+const town = cands[0] ?? all[0];
+const bl = (await page.evaluate((i) => window.__lodestoneTowns.buildings(i), town.index)).filter((b) => b.role === 'house' && b.floors > 0);
+bl.sort((a, b) => Math.hypot(a.x - town.x, a.z - town.z) - Math.hypot(b.x - town.x, b.z - town.z));
+const h = bl[Math.min(bl.length - 1, Number(process.env.HOUSE_I ?? 4))];
+const fl = Math.hypot(h.frontX - h.x, h.frontZ - h.z) || 1;
+const fx = (h.frontX - h.x) / fl;
+const fz = (h.frontZ - h.z) / fl;
+const sx = h.x + fx * (Math.max(h.hx, h.hz) + 6);
+const sz = h.z + fz * (Math.max(h.hx, h.hz) + 6);
+console.log('house', h.index, h.style, 'town', town.index, town.style, town.name, 'stand', sx.toFixed(1), sz.toFixed(1));
 await shoot('house', tp(sx, sz, Math.atan2(-(h.x - sx), -(h.z - sz)), 0.12));
-await shoot('town-street', tp(town.x + 12, town.z + 10, Math.atan2(-(-12), -(-10)), -0.04));
+await shoot('town-street', tp(sx + fx * 11 + fz * 5, sz + fz * 11 - fx * 5, Math.atan2(-(h.x - sx - fx * 11 - fz * 5), -(h.z - sz - fz * 11 + fx * 5)), 0.02));
 stats.errors = errors;
 writeFileSync(path.join(out, `pt5-graphics-${label}-${tier}.json`), JSON.stringify(stats, null, 2) + '\n');
 await browser.close();

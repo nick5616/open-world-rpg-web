@@ -18,15 +18,19 @@ export function townLightCount(maxLights: number): number {
 
 export function TownsLayer({ runtime }: { runtime: WorldRuntime }) {
   const camera = useThree((s) => s.camera);
+  // Playtest 5: the art level (and the light pool) follow the shader tier, so a live Low -> High switch rebuilds the
+  // town meshes at the new detail instead of keeping the first mount's. Auto's governor sets the shader tier once, in
+  // the first seconds of play (stores/qualityStore.ts autoApply), so that is at most one rebuild.
+  const shaderTier = useQualityStore((s) => s.shaderTier);
   const manager = useMemo(() => {
     if (!runtime.towns) return null;
     try {
-      return new TownsManager(runtime, townLightCount(QUALITY_PRESETS[useQualityStore.getState().shaderTier].maxLights), detailOfTier(useQualityStore.getState().tier));
+      return new TownsManager(runtime, townLightCount(QUALITY_PRESETS[shaderTier].maxLights), detailOfTier(shaderTier));
     } catch (err) {
       console.warn('[towns] layer unavailable', err);
       return null;
     }
-  }, [runtime]);
+  }, [runtime, shaderTier]);
 
   useEffect(() => {
     if (!manager) return;

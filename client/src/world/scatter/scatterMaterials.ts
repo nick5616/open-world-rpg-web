@@ -68,7 +68,12 @@ export function createScatterMaterial(o: ScatterMaterialOptions): ScatterMateria
           vColor *= color;
         #endif
         #ifdef USE_INSTANCING_COLOR
-          vColor.rgb *= mix(vec3(1.0), instanceColor.rgb, aFoliage);
+          // Playtest 5: every tree has its own green (hashed from where it stands): some yellower, some bluer and darker.
+          vec2 ip = vec2(instanceMatrix[3].x, instanceMatrix[3].z);
+          float vh1 = fract(sin(dot(ip, vec2(12.9898, 78.233))) * 43758.5453);
+          float vh2 = fract(sin(dot(ip, vec2(39.346, 11.135))) * 24634.6345);
+          vec3 treeVar = vec3(0.86 + 0.28 * vh1, 0.93 + 0.13 * vh2, 0.72 + 0.42 * vh2 * (1.0 - vh1));
+          vColor.rgb *= mix(vec3(1.0), instanceColor.rgb * treeVar, aFoliage);
         #endif`,
       )
       .replace(
@@ -230,8 +235,17 @@ export function applyRichShader(shader: { uniforms: Record<string, THREE.IUnifor
         vec4 sampledDiffuseColor = texture2D(map, vMapUv, -0.4);
         if (vBark > 0.5) {
           vec3 bk = texture2D(uBark, vBarkUv).rgb;
-          sampledDiffuseColor = vec4(bk, 1.0);
           surfH = dot(bk, vec3(0.3333));
+          ${
+            tree
+              ? `// Playtest 5: bark depth and grime. Grooves (dark texels) go darker, ridges catch light, and the base of the
+          // trunk is damp: darker, greener, a little moss on the side facing away from the sun.
+          bk *= 0.62 + 0.9 * smoothstep(0.04, 0.34, surfH);
+          float baseK = 1.0 - smoothstep(0.0, 0.1, vObjP.y);
+          bk = mix(bk, bk * vec3(0.5, 0.66, 0.34), baseK * 0.75);`
+              : ''
+          }
+          sampledDiffuseColor = vec4(bk, 1.0);
         }
         diffuseColor *= sampledDiffuseColor;
       #endif
@@ -262,8 +276,14 @@ ${F}`)
         vec3 sunV = normalize((viewMatrix * vec4(uSunDir, 0.0)).xyz);
         vec3 vd = normalize(vViewPosition);
         // Looking toward the sun through a leaf: light comes out of its far side.
-        float tr = pow(clamp(dot(vd, -sunV), 0.0, 1.0), 2.5) * clamp(uSunDir.y * 3.0 + 0.1, 0.0, 1.0);
+        float sunUp = clamp(uSunDir.y * 3.0 + 0.1, 0.0, 1.0);
+        float tr = pow(clamp(dot(vd, -sunV), 0.0, 1.0), 2.5) * sunUp;
+        // Playtest 5: subsurface. Leaves on the side facing away from the sun glow yellow-green with the light that came through
+        // them even when you are not looking at the sun, and sun-facing interior leaves stay in shade (occlusion from the baked tone).
+        float away = clamp(0.5 - 0.5 * dot(normalize(normal), sunV), 0.0, 1.0);
+        vec3 sss = diffuseColor.rgb * vec3(1.12, 1.0, 0.42);
         totalEmissiveRadiance += diffuseColor.rgb * uLightColor * (tr * uTrans * vAO * vAO);
+        totalEmissiveRadiance += sss * uLightColor * (away * away * sunUp * uTrans * 0.38 * smoothstep(0.25, 0.8, vAO));
       }`
           : ''
       }`,
@@ -290,16 +310,18 @@ export function createRichMaterial(o: RichOptions): ScatterMaterial {
  * (cylindrical) quad per instance, textured from an impostor atlas rendered
  * at load (impostors.ts), lit with the sun and sky ambient.
  */
-export function createBillboardMaterial(atlas: THREE.Texture, tile: number, tiles: number, fade: THREE.Vector4, light: { uSunDir: { value: THREE.Vector3 }; uLightColor: { value: THREE.Color }; uAmbient: { value: THREE.Color } }): ScatterMaterial {
+export function createBillboardMaterial(atlas: THREE.Texture, tile: number, tiles: number, fade: THREE.Vector4, light: { uSunDir: { value: THREE.Vector3 }; uLightColor: { value: THREE.Color }; uAmbient: { value: THREE.Color } }, views = 1): ScatterMaterial {
   const fadeU = { value: fade.clone() };
   const m = new THREE.ShaderMaterial({
-    uniforms: { ...windUniforms, ...light, uAtlas: { value: atlas }, uTile: { value: tile }, uTiles: { value: tiles }, uFade: fadeU },
+    uniforms: { ...windUniforms, ...light, uAtlas: { value: atlas }, uTile: { value: tile }, uTiles: { value: tiles }, uFade: fadeU, uViews: { value: views } },
     vertexShader: /* glsl */ `
       ${WIND_GLSL}
       uniform vec4 uFade;
+      uniform float uViews;
       varying vec2 vUv;
       varying float vFade;
       varying vec3 vTint;
+      varying float vView;
       void main() {
         vec3 iPos = vec3(instanceMatrix[3]);
         float sx = length(vec3(instanceMatrix[0]));
@@ -313,6 +335,17 @@ export function createBillboardMaterial(atlas: THREE.Texture, tile: number, tile
         vec3 p = iPos + right * position.x * sx * 1.1 + vec3(0.0, position.y * sy * 1.1, 0.0);
         p.xz += windAt(iPos.xz) * 0.012 * position.y * sy * position.y;
         vUv = vec2(position.x + 0.5, position.y);
+        // Which baked view: the camera's direction in the tree's own frame (the instance yaw), as a fraction of the view ring.
+        vView = 0.0;
+        if (uViews > 1.5) {
+          vec3 ax = vec3(instanceMatrix[0]);
+          vec3 az = vec3(instanceMatrix[2]);
+          vec3 tc = cameraPosition - iPos;
+          vec2 d = vec2(dot(tc, ax) / max(dot(ax, ax), 1e-6), dot(tc, az) / max(dot(az, az), 1e-6));
+          d /= max(length(d), 1e-5);
+          float th = atan(-d.x, d.y + 1e-6);
+          vView = fract(th / 6.2831853) * uViews;
+        }
         #ifdef USE_INSTANCING_COLOR
           vTint = instanceColor;
         #else
@@ -325,15 +358,22 @@ export function createBillboardMaterial(atlas: THREE.Texture, tile: number, tile
       uniform sampler2D uAtlas;
       uniform float uTile;
       uniform float uTiles;
+      uniform float uViews;
       uniform vec3 uSunDir;
       uniform vec3 uLightColor;
       uniform vec3 uAmbient;
       varying vec2 vUv;
       varying float vFade;
       varying vec3 vTint;
+      varying float vView;
       ${DITHER}
       void main() {
-        vec4 c = texture2D(uAtlas, vec2((uTile + vUv.x) / uTiles, vUv.y));
+        // Two neighbouring baked views, picked per pixel by dither so the cut-out alpha stays a clean edge.
+        float v0 = floor(vView);
+        float fv = vView - v0;
+        float row = v0;
+        if (uViews > 1.5 && bayer4(gl_FragCoord.xy + vec2(2.0, 1.0)) < fv) row = mod(v0 + 1.0, uViews);
+        vec4 c = texture2D(uAtlas, vec2((uTile + vUv.x) / uTiles, (row + vUv.y) / max(uViews, 1.0)));
         if (c.a < 0.5) discard;
         if (vFade < 0.999 && bayer4(gl_FragCoord.xy) >= vFade) discard;
         // At impostor distance the trunk is a few pixels: tinting the whole card is fine.

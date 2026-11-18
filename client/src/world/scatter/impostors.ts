@@ -9,9 +9,15 @@ import * as THREE from 'three';
 
 export const IMPOSTOR_PX = 256;
 
-export function renderImpostorAtlas(renderer: THREE.WebGLRenderer, geometries: THREE.BufferGeometry[], material?: THREE.Material | THREE.Material[]): THREE.WebGLRenderTarget {
+/**
+ * One column per tree, `views` rows per tree (playtest 5, CR 057): the tree seen from 0, 90, 180, 270 degrees
+ * of yaw (row k = the tree turned k * 360 / views about its own axis in front of the camera). The billboard
+ * shader picks the two rows nearest the viewing angle and blends between them, so a distant forest no longer
+ * shows the same side of every tree and the canopy shape turns as you walk past. views = 1 is the old atlas.
+ */
+export function renderImpostorAtlas(renderer: THREE.WebGLRenderer, geometries: THREE.BufferGeometry[], material?: THREE.Material | THREE.Material[], views = 1): THREE.WebGLRenderTarget {
   const n = geometries.length;
-  const rt = new THREE.WebGLRenderTarget(IMPOSTOR_PX * n, IMPOSTOR_PX, { generateMipmaps: true, minFilter: THREE.LinearMipmapLinearFilter, magFilter: THREE.LinearFilter });
+  const rt = new THREE.WebGLRenderTarget(IMPOSTOR_PX * n, IMPOSTOR_PX * views, { generateMipmaps: true, minFilter: THREE.LinearMipmapLinearFilter, magFilter: THREE.LinearFilter });
   const scene = new THREE.Scene();
   const mat = material ?? new THREE.MeshBasicMaterial({ vertexColors: true });
   const matFor = (i: number) => (Array.isArray(mat) ? mat[i] : mat);
@@ -32,12 +38,15 @@ export function renderImpostorAtlas(renderer: THREE.WebGLRenderer, geometries: T
   geometries.forEach((g, i) => {
     const mesh = new THREE.Mesh(g, matFor(i));
     scene.add(mesh);
-    rt.viewport.set(i * IMPOSTOR_PX, 0, IMPOSTOR_PX, IMPOSTOR_PX);
-    renderer.setRenderTarget(rt);
-    renderer.render(scene, cam);
+    for (let k = 0; k < views; k++) {
+      mesh.rotation.y = (k / views) * Math.PI * 2;
+      rt.viewport.set(i * IMPOSTOR_PX, k * IMPOSTOR_PX, IMPOSTOR_PX, IMPOSTOR_PX);
+      renderer.setRenderTarget(rt);
+      renderer.render(scene, cam);
+    }
     scene.remove(mesh);
   });
-  rt.viewport.set(0, 0, IMPOSTOR_PX * n, IMPOSTOR_PX);
+  rt.viewport.set(0, 0, IMPOSTOR_PX * n, IMPOSTOR_PX * views);
   renderer.setRenderTarget(prevTarget);
   renderer.setClearColor(prevColor, prevAlpha);
   renderer.autoClear = prevAutoClear;

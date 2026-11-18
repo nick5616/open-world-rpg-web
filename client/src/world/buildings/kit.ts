@@ -278,6 +278,12 @@ function drawDoorDressing(mb: MeshBuilder, b: Building, F: Frame, wt: number): v
   gb(mb, G, -dw / 2 - 0.18, dw / 2 + 0.18, y0 + 2.53, y0 + 2.64, 0, 0.1, { bottom: true });
   const porch = (b.flags & BUILDING_FLAG.porch) !== 0;
   const side = hash(b.index, 41) > 0.5 ? 1 : -1;
+  if (!porch && b.style !== STYLE.stilt && b.style !== STYLE.dwarf) {
+    // Playtest 5: a worn threshold stone under the door (5 cm above the floor, sunk into the ground below), wider than the
+    // frame; the leaf, the collision and the walk-in are untouched.
+    P(mb, 'stone', [0.82, 0.78, 0.72]);
+    gb(mb, G, -dw / 2 - 0.2, dw / 2 + 0.2, y0 - 0.5, y0 + 0.05, 0.07, 0.46, { top: true });
+  }
   if (b.role === ROLE.inn) {
     // Hanging sign: from the awning's front edge on a porch, else on a bracket arm from the wall.
     const u = -side * (dw / 2 + 1.35);
@@ -475,6 +481,26 @@ function drawSkirt(mb: MeshBuilder, wb: WallBox, b: Building, y0: number): void 
 
 type WallBox = (u0: number, u1: number, y0: number, y1: number, d0: number, d1: number, o?: { top?: boolean; bottom?: boolean; sides?: boolean }) => void;
 
+/**
+ * Weathering toward the ground (playtest 5, CR 057): rising damp and splashed mud above the stone skirt, as two stepped
+ * bands of the wall's own material in a darker, greener tone, broken into 0.5-1.4 m runs that each reach a different height.
+ * Slabs 1 cm proud (front and ends, no top): 6 triangles a run, no collision.
+ */
+function drawGrime(mb: MeshBuilder, wb: WallBox, b: Building, tex: TexName, tint: V3, y0: number, a0: number, a1: number): void {
+  let u = a0;
+  for (let i = 0; u < a1 - 0.05 && i < 12; i++) {
+    const u1 = Math.min(a1, u + 0.5 + 0.9 * hash(b.index * 57 + i, 11));
+    const h = 0.45 + 0.5 * hash(b.index * 57 + i, 12);
+    const damp = 0.6 + 0.16 * hash(b.index * 57 + i, 13);
+    const yb = y0 + 0.42;
+    P(mb, tex, mul(tint, [damp * 0.96, damp, damp * 0.84]));
+    wb(u, u1, yb, yb + h * 0.55, 0, 0.011, { top: false });
+    P(mb, tex, mul(tint, [damp * 1.12, damp * 1.15, damp * 1.0]));
+    wb(u, u1, yb + h * 0.55, yb + h, 0, 0.008, { top: false });
+    u = u1;
+  }
+}
+
 /** A wall box: style face outside, inner finish inside, windows on long enough walls. */
 function drawWall(mb: MeshBuilder, t: Towns, b: Building, bx: Box, look: Look, tint: V3, wt: number): void {
   const D = detail();
@@ -536,7 +562,10 @@ function drawWall(mb: MeshBuilder, t: Towns, b: Building, bx: Box, look: Look, t
     if (frontBack) mb.box(F, a0, a1, ya, yb, p0, p1, { ...o, skip: [back] });
     else mb.box(F, p0, p1, ya, yb, a0, a1, { ...o, skip: [back] });
   };
-  if (D >= 1 && b.style !== STYLE.stilt) drawSkirt(mb, wb, b, y0);
+  if (D >= 1 && b.style !== STYLE.stilt) {
+    drawSkirt(mb, wb, b, y0);
+    if (b.style !== STYLE.dwarf) drawGrime(mb, wb, b, wallTex, wtint, y0, (frontBack ? lu : lv) - (frontBack ? bx.hx : bx.hz), (frontBack ? lu : lv) + (frontBack ? bx.hx : bx.hz));
+  }
   // Windows (none on the open front of a forge; storehouses keep their ground floor blind).
   const noWindows = b.role === ROLE.forge && frontBack && sgn < 0;
   const along = frontBack ? lu : lv;
@@ -611,6 +640,12 @@ function drawWall(mb: MeshBuilder, t: Towns, b: Building, bx: Box, look: Look, t
       gb(mb, G, -ww / 2 - fw, -ww / 2, sill - 0.02, wtop + 0.02, 0, 0.06, { top: false });
       gb(mb, G, ww / 2, ww / 2 + fw, sill - 0.02, wtop + 0.02, 0, 0.06, { top: false });
       gb(mb, G, -ww / 2 - fw - 0.03, ww / 2 + fw + 0.03, wtop, wtop + 0.1, 0, 0.1, { bottom: true });
+      // Playtest 5: a stepped reveal. An inner lip in a darker tone stands inside the frame, so the opening reads as set
+      // back into the wall (frame 6 cm proud, lip 5 cm, glass 1.5 cm) instead of a picture on it.
+      P(mb, look.wall === 'stone' ? 'stone' : look.wall === 'adobe' ? 'adobe' : 'wood', mul(frameT, [0.55, 0.52, 0.5]));
+      gb(mb, G, -ww / 2, -ww / 2 + 0.035, sill, wtop, 0, 0.05, { top: false });
+      gb(mb, G, ww / 2 - 0.035, ww / 2, sill, wtop, 0, 0.05, { top: false });
+      gb(mb, G, -ww / 2 + 0.035, ww / 2 - 0.035, wtop - 0.035, wtop, 0, 0.05, { top: false, bottom: true });
       // Inner reveal and seat (the leaded panes and their cross are in the window picture).
       const GI = wallFrame(F, frontBack, -sgn, innerPlane, m);
       if (D >= 2) {
@@ -693,14 +728,23 @@ function drawTimbering(mb: MeshBuilder, wb: WallBox, wpoly: (pts: [number, numbe
   P(mb, 'wood', timber);
   const e = 1e9;
   wb(-e, e, y0 + 0.42, y0 + 0.58, 0.01, 0.07, { bottom: true }); // sill plate (over the stone skirt)
-  wb(-e, e, top - 0.24, top, 0.01, 0.075, { bottom: true }); // head plate
+  wb(-e, e, top - 0.24, top, 0.01, 0.055, { bottom: true }); // head plate (bevelled: a lighter chamfer on the face)
+  P(mb, 'wood', mul(timber, [1.16, 1.14, 1.1]));
+  wb(-e, e, top - 0.2, top - 0.03, 0.055, 0.075, { bottom: true });
+  P(mb, 'wood', timber);
   for (let k = 1; k < b.floors; k++) {
     const y = b.floorY + k * b.storey;
     wb(-e, e, y - 0.1, y + 0.1, 0.01, 0.07, { bottom: true });
   }
   for (let j = 0; j <= n; j++) {
     const s = a + (j * len) / n;
-    if (windows || (j > 0 && j < n)) wb(s - 0.07, s + 0.07, y0 + 0.42, top, 0.01, 0.065, { top: false });
+    if (windows || (j > 0 && j < n)) {
+      // Bevelled post (playtest 5): a broad base and a narrower, lighter chamfer cap, so each beam catches light on its edge.
+      wb(s - 0.07, s + 0.07, y0 + 0.42, top, 0.01, 0.05, { top: false });
+      P(mb, 'wood', mul(timber, [1.16, 1.14, 1.1]));
+      wb(s - 0.05, s + 0.05, y0 + 0.42, top, 0.05, 0.068, { top: false });
+      P(mb, 'wood', timber);
+    }
     // Knee braces from the post up to the head plate, alternating direction.
     if (j > 0 && j < n && top - y0 > 2.4) {
       const dir = j & 1 ? 1 : -1;
@@ -741,6 +785,24 @@ function drawRoofHalf(mb: MeshBuilder, bx: Box, roofTex: TexName, look: Look, ti
   // Surface (exactly on the walkable roof top over the box).
   P(mb, roofTex, rt);
   mb.poly([at(f, ue, ye, -V), at(f, r, topY, -V), at(f, r, topY, V), at(f, ue, ye, V)], [0, 1, 0]);
+  // Playtest 5 (CR 057): laid pieces. Each course edge is a thin board standing proud of the surface with its own tone,
+  // so shingles, tiles and slates read as individual pieces with thickness and a shadow line, not a printed texture.
+  if (D >= 1 && !thatch) {
+    const L = Math.hypot(r - ue, topY - ye);
+    const step = roofTex === 'clayTile' ? 0.36 : roofTex === 'slate' ? 0.32 : roofTex === 'planks' ? 0.42 : 0.27;
+    const nC = Math.max(2, Math.floor(L / step));
+    const dirU = Math.sign(r - ue) || 1;
+    const run = ridgePos ? 1 : 2;
+    for (let c = 1; c < nC; c++) {
+      const t = c / nC;
+      const u = ue + (r - ue) * t;
+      const y = ye + (topY - ye) * t;
+      const tone = 0.82 + 0.3 * hash(b.index * 97 + c, run) - 0.1 * (c === 1 ? 1 : 0);
+      const moss = hash(b.index * 31 + c, 7) > 0.86 ? 0.82 : 1; // an odd mossy course
+      P(mb, roofTex, mul(rt, [tone * moss, tone, tone * moss * 0.97]));
+      mb.box(f, Math.min(u, u + dirU * 0.07), Math.max(u, u + dirU * 0.07), y - 0.006, y + 0.045, -V, V, { bottom: false, top: true });
+    }
+  }
   // Underside and trim.
   P(mb, 'planks', [0.55, 0.45, 0.35]);
   mb.poly([at(f, ue, ye - th, -V), at(f, r, topY - th, -V), at(f, r, topY - th, V), at(f, ue, ye - th, V)], [0, -1, 0]);

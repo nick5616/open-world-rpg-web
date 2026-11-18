@@ -25,8 +25,8 @@ export const setDetail = (d: Detail): void => {
   level = d;
 };
 
-/** Quality tier -> detail level (low = the old cost, medium trims, high/ultra everything). */
-export const detailOfTier = (tier: QualityTier): Detail => (tier === 'low' ? 0 : tier === 'medium' ? 1 : 2);
+/** Quality tier -> detail level. Playtest 5 (CR 057): Low shares Medium's art (frames, shutters, skirts, half-timber, courses, grime: it is baked geometry, a one-off build per settlement, not per-frame cost); high/ultra add the dressing and 512 px textures. Level 0 stays for tests and the creator. */
+export const detailOfTier = (tier: QualityTier): Detail => (tier === 'high' || tier === 'ultra' ? 2 : 1);
 
 /** Texture size by detail (the array is 33 layers: 256 px = 8.6 MB, 512 px = 34 MB before mips). */
 export const textureSizeOf = (d: Detail): number => (d >= 2 ? 512 : 256);
