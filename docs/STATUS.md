@@ -2192,3 +2192,23 @@ Nicole: "revamp NPC conversations entirely. Like make it dialogue boxes, speech 
 
 **Gaps**
 - A passing check was not captured in the real client (the dev character holds a non-mage weapon and no sunsteel, and warmth needs several visits); passing is covered by Go tests only. Your own bubble is not seen in first person (shown in third person and to others). The haggle bonus is paid once per quest id. Class comes from the active loadout's weapon (the game has no classes). Two vitest integration tests (`doorWalk`, `walkIntoBuilding`, which spawn a real zone) fail on prediction divergence in this worktree; they do not touch conversations and were not investigated. The full `go test ./internal/game` (230 pass, 11 minutes) has two failures outside conversations, `TestEnemiesDoNotWalkThroughBuildings` (the mobs-through-walls branch's area) and `TestHighLevelExplorerStampsAHarderArea` (night demons for a level 15); not investigated, and not compared against main.
+
+## Playtest 5: Guidance fixes (branch `pt5/guidance-ui`)
+
+Nicole: "How does Tammir know directly about the controls? It should toast the controls after exiting the conversation with Tammir." / "Marking on your map didn't work for pointing out where the horse stables are. Could also be under an info tab in the journal." / "Tip toasts should have a linear progress bar along the bottom that shows how long you have to look at them." CR: `docs/cr/055-guidance-fixes.md`. Interact 185, Events 1980-1981; no migration (pin labels ride the pins JSON).
+
+**Works**
+- **People speak in the world**: no key or control names in the slimes quest, the six errands, the Ward's notes, the mentor's second call or the smith's forge line (Go test over every errand, with and without the talk step). The old steed line said H (the emote wheel); the whistle is 5.
+- **Controls toast after the conversation**: `ui/tips/controlTips.ts` looks each control up in `input/bindings.ts` (a test moves a binding and the toast follows); `controlLink.ts` watches the dialog and the quest log (the dialog code is untouched) and toasts the group for the quest that moved on, was accepted in the conversation or was handed in, once per character.
+- **Stables**: reproduced; the pin existed but was an anonymous purple drop on blank paper with no name on the map or compass and nothing to lead you there. Pins now carry a name ("Stables, Kudrogair"), drawn on the map, shown on the compass and kept in the save; "Guide me" and the guide key lead to a marked place; pins can be named by the zone from the journal (Interact 185).
+- **Info tab** in the journal: each discovered town's stables, smith, inn, storage, bounty board, merchants, nearest shrine and tower, each with Mark on map and Guide me.
+- **Toast bar**: `ui/toast/ToastBar.tsx`, a 3 px linear bar on tips, controls toasts, quest notices, exploration toasts, combat toasts, loot toasts and the guide's line; hover pauses the bar (and the clock of tips and controls toasts); `prefers-reduced-motion` steps it.
+- **Verified in the real client** (private stack, dev console, `tools/playtest/pt5-guidance.mjs`, `pt5-guide.mjs`, `docs/evidence/pt5-guidance-*.jpg`): the mentor's line has no key words; no toast while talking, a "Controls: Fighting the slimes" toast (LMB, 1-4, F, R) right after closing with its bar draining (computed transform 0.47 after 5 s of a 12 s toast, linear); a merchant's rumour marked: note "Marked on your map: Stables, Kudrogair", the pin has its label, the compass shows "Stables, Kudrogair 289 m", the map draws the name; the Info tab lists 10 services of Draedmore; Mark on map added "Smith, Draedmore" as a named pin; Guide me on the tower started the wisp (route 512 m, head visible).
+
+**Gaps**
+- The dialog's "why it ended" toast has no bar (it is in `ui/dialog`, another branch's); the large discovery intros have none.
+- Key rebinding exists only for the two voice keys, so "respects rebinding" means the toasts read the bindings table, not a settings screen for the other keys. Touch or gamepad layouts would need their own table.
+- The controls toast sits in the tips' slot and can overlap the "[E] Talk" prompt for a few seconds; tips wait while it is up.
+- Info tab: the stables are the general merchant (the game has no stable building); a town without a smith, inn or board lists fewer rows; shrine and tower are the nearest within 900 m, found or not.
+- The wisp's route on a far service was checked by state (active, length, head visible), not by watching it walk.
+- `go test ./...` in server/zone was run for `internal/quests`, `internal/explore` and the `internal/game` dialog, pin, errand and meadows tests, not the whole module (see the final report).

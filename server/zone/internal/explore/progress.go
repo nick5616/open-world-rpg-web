@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"math"
+	"unicode/utf8"
 )
 
 // Bitset is a per-character set of atlas site indices, stored as bytes
@@ -46,6 +47,11 @@ type Pin struct {
 	Color uint8 `json:"color"`
 	XCm   int32 `json:"x"`
 	ZCm   int32 `json:"z"`
+	// Label names a pin a conversation or the journal placed ("Stables,
+	// Kudrogair"); empty for a pin the player dropped by hand. Playtest 5,
+	// CR 055: an unnamed purple drop on blank parchment told nobody it was the
+	// stables. It rides in the JSON blob of the pins column, so no migration.
+	Label string `json:"label,omitempty"`
 }
 
 // Progress is one character's exploration state: spec 11's
@@ -137,19 +143,40 @@ func (p *Progress) AddXP(xp int64) bool {
 
 // SetPin places or moves personal pin slot (0..MaxPersonalPins-1).
 func (p *Progress) SetPin(slot, color uint8, xCm, zCm int32) bool {
+	return p.SetLabeledPin(slot, color, xCm, zCm, "")
+}
+
+// MaxPinLabel is the longest label kept (bytes, cut on a rune boundary).
+const MaxPinLabel = 48
+
+// SetLabeledPin is SetPin with a name for the pin (CR 055).
+func (p *Progress) SetLabeledPin(slot, color uint8, xCm, zCm int32, label string) bool {
 	if int(slot) >= MaxPersonalPins {
 		return false
 	}
+	label = ClipLabel(label)
 	for i := range p.Pins {
 		if p.Pins[i].Slot == slot {
-			p.Pins[i] = Pin{slot, color, xCm, zCm}
+			p.Pins[i] = Pin{slot, color, xCm, zCm, label}
 			p.dirty = true
 			return true
 		}
 	}
-	p.Pins = append(p.Pins, Pin{slot, color, xCm, zCm})
+	p.Pins = append(p.Pins, Pin{slot, color, xCm, zCm, label})
 	p.dirty = true
 	return true
+}
+
+// ClipLabel cuts a label to MaxPinLabel bytes without splitting a rune.
+func ClipLabel(s string) string {
+	if len(s) <= MaxPinLabel {
+		return s
+	}
+	s = s[:MaxPinLabel]
+	for len(s) > 0 && !utf8.ValidString(s) {
+		s = s[:len(s)-1]
+	}
+	return s
 }
 
 // ClearPin removes personal pin slot; false if it wasn't set.
@@ -249,14 +276,14 @@ type PinView struct {
 	Color uint8
 	XCm   int32
 	ZCm   int32
-	Owner string // party pins: who placed it
+	Owner string // party pins: who placed it; personal pins: their label (CR 055), "" for one dropped by hand
 }
 
 // EncodePins is the pins (605) Event data: the full list the player should
 // show (personal + party), replacing the previous list:
 //
 //	u8 version (1) | u8 count | count x (u8 flags (bit 0 party) | u8 slot
-//	| u8 color | i32 xCm | i32 zCm | u16 len + UTF-8 owner)
+//	| u8 color | i32 xCm | i32 zCm | u16 len + UTF-8 owner (a personal pin: its label))
 func EncodePins(pins []PinView) []byte {
 	b := []byte{1, uint8(min(len(pins), 255))}
 	for i, p := range pins {

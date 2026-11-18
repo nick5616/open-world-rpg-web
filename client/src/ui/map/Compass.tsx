@@ -58,7 +58,7 @@ export function compassMarks(): CompassMark[] {
     }
   }
   for (const p of st.pins) {
-    out.push({ rel: wrapAngle(bearing(px, pz, p.x, p.z) - head), dist: Math.hypot(p.x - px, p.z - pz), color: PIN_COLORS[p.color % PIN_COLORS.length], label: p.party ? p.owner : '', kind: 'pin' });
+    out.push({ rel: wrapAngle(bearing(px, pz, p.x, p.z) - head), dist: Math.hypot(p.x - px, p.z - pz), color: PIN_COLORS[p.color % PIN_COLORS.length], label: p.party ? p.owner : p.label, kind: 'pin' });
   }
   // Playtest 1: the tracked quest's current markers (an area counts from its edge).
   // Only the nearest one is labelled (markers of one step are often close together).

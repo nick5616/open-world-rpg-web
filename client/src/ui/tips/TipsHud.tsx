@@ -16,8 +16,14 @@ import { useSocialStore } from '../../social/store';
 import { isNight } from '../../systems/clock';
 import { useMenu } from '../menu/store';
 import { ABOVE_HOTBAR } from '../../hud/layout';
-import { browserKV, cliffAhead, IDLE_CONTEXT, loadSeen, nextTip, saveSeen, settled, tipById, type TipContext, type TipId } from './tips';
+import { browserKV, cliffAhead, IDLE_CONTEXT, loadSeen, nextTip, saveSeen, settled, tipById, TIP_SHOW_S, type TipContext, type TipId } from './tips';
 import { useTips } from './store';
+import { ToastBar } from '../toast/ToastBar';
+import { ControlToasts } from './ControlToasts';
+import { installControlLink } from './controlLink';
+
+/** The pointer is over the tip: its clock and bar stand still (CR 055). */
+const tipHover = { on: false };
 
 const ENEMY = 2;
 const DEMON = 6;
@@ -50,7 +56,7 @@ function sample(startedAt: number, hurtUntil: number): TipContext {
     ...IDLE_CONTEXT,
     firstHour: firstHourHold(useQuests.getState().log.quests, (now - startedAt) / 1000),
     playingS: (now - startedAt) / 1000,
-    busy: panelUp() || useMenu.getState().open || useSocialStore.getState().open || c.downedUntil > 0,
+    busy: panelUp() || useMenu.getState().open || useSocialStore.getState().open || c.downedUntil > 0 || useTips.getState().controls.length > 0,
     questTracked: !!trackedQuest(),
     nearPerson: /^\[E\] Talk/.test(prompt),
     enemyNear,
@@ -97,6 +103,10 @@ export function TipsHud() {
       lastHealth = ctx.health;
       const cur = useTips.getState().current;
       if (cur) {
+        if (tipHover.on && !ctx.busy) {
+          useTips.setState({ current: { ...cur, at: cur.at + 250 } }); // hovering holds the clock
+          return;
+        }
         if (ctx.busy || settled(cur.id, ctx, (now - cur.at) / 1000)) {
           // A panel that opened over a tip that had barely shown (the What's new welcome) doesn't use it up.
           if (ctx.busy && now - cur.at < 4000) {
@@ -122,6 +132,9 @@ export function TipsHud() {
     };
   }, [enabled, character, epoch]);
 
+  // CR 055: the controls toast after a conversation (keys from the live bindings).
+  useEffect(() => installControlLink(character), [character]);
+
   // Re-render once a second while a tip is up (nothing per frame).
   useEffect(() => {
     if (!current) return;
@@ -129,19 +142,26 @@ export function TipsHud() {
     return () => clearInterval(id);
   }, [current]);
 
-  if (!enabled || !current) return null;
-  const tip = tipById(current.id);
-  return <TipCard id={current.id} title={tip.title} keys={tip.keys} text={tip.text} />;
+  const tip = enabled && current ? tipById(current.id) : null;
+  return (
+    <>
+      {current && tip && <TipCard key={current.id} id={current.id} title={tip.title} keys={tip.keys} text={tip.text} at={current.at} />}
+      <ControlToasts />
+    </>
+  );
 }
 
 const CAP: React.CSSProperties = { display: 'inline-block', minWidth: 14, padding: '0 5px', marginRight: 4, border: '1px solid rgba(255,255,255,0.45)', borderBottomWidth: 2, borderRadius: 4, background: 'rgba(255,255,255,0.08)', font: '600 11px/17px system-ui, sans-serif', textAlign: 'center' };
 
-function TipCard({ id, title, keys, text }: { id: TipId; title: string; keys: string[]; text: string }) {
+function TipCard({ id, title, keys, text, at }: { id: TipId; title: string; keys: string[]; text: string; at: number }) {
   return (
     <div
       data-testid="tip"
       data-tip={id}
-      style={{ position: 'fixed', left: '50%', bottom: `calc(${ABOVE_HOTBAR} + var(--ls-hint-h, 0px) + 10px)`, transform: 'translateX(-50%)', width: 'max-content', maxWidth: 'min(460px, calc(100vw - 32px))', boxSizing: 'border-box', padding: '7px 30px 8px 12px', borderRadius: 6, background: 'rgba(10,13,20,0.82)', border: '1px solid rgba(255,209,102,0.35)', color: '#e9ecef', font: '13px/1.4 system-ui, sans-serif', zIndex: 13, pointerEvents: 'auto', animation: 'lsTipIn 220ms ease-out' }}
+      className="ls-timed"
+      onMouseEnter={() => (tipHover.on = true)}
+      onMouseLeave={() => (tipHover.on = false)}
+      style={{ overflow: 'hidden', position: 'fixed', left: '50%', bottom: `calc(${ABOVE_HOTBAR} + var(--ls-hint-h, 0px) + 10px)`, transform: 'translateX(-50%)', width: 'max-content', maxWidth: 'min(460px, calc(100vw - 32px))', boxSizing: 'border-box', padding: '7px 30px 11px 12px', borderRadius: 6, background: 'rgba(10,13,20,0.82)', border: '1px solid rgba(255,209,102,0.35)', color: '#e9ecef', font: '13px/1.4 system-ui, sans-serif', zIndex: 13, pointerEvents: 'auto', animation: 'lsTipIn 220ms ease-out' }}
     >
       <style>{'@keyframes lsTipIn { from { opacity: 0; transform: translate(-50%, 6px) } to { opacity: 1; transform: translate(-50%, 0) } }'}</style>
       <div style={{ color: '#ffd166', font: '600 11px system-ui, sans-serif', letterSpacing: 0.4, textTransform: 'uppercase', marginBottom: 2 }}>Tip · {title}</div>
@@ -164,6 +184,7 @@ function TipCard({ id, title, keys, text }: { id: TipId; title: string; keys: st
       >
         ×
       </button>
+      <ToastBar at={at} durationMs={TIP_SHOW_S * 1000} />
     </div>
   );
 }

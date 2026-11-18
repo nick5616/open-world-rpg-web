@@ -192,32 +192,32 @@ func Errand(id string, p *ErrandPlaces, withTalk bool, nowMs int64) (*Quest, str
 			return nil, ""
 		}
 		title = "First ore"
-		say = fmt.Sprintf("%s says you can swing a sword. Lovely. Swords come out of rock, though. There's a pickaxe in your pack: the cave mouth %s has copper and iron in its walls. Break three veins, hold E on the bright bits, and bring me the ore. Then my forge will show you the rest.", nameOr(p.Mentor.Name, "The farmer"), where(p.OreMouth))
+		say = fmt.Sprintf("%s says you can swing a sword. Lovely. Swords come out of rock, though. There's a pickaxe in your pack: the cave mouth %s has copper and iron in its walls. Break three veins loose, working at the bright bits until they give, and bring me the ore. Then my forge will show you the rest.", nameOr(p.Mentor.Name, "The farmer"), where(p.OreMouth))
 		mid = []Step{
-			{Text: "Mine 3 veins in the cave with your pickaxe", Note: "Aim at a bright vein and hold E until it breaks, then pick up what falls. It is dark in there: your torch is key 8.",
+			{Text: "Mine 3 veins in the cave with your pickaxe", Note: "Work at a bright vein with the pickaxe until it breaks, then pick up what falls. It is dark in there, so keep your torch handy.",
 				Obj: do(DeedMine, 3), Markers: append(place(p.OreMouth, 0, "Cave mouth"), place(p.OreVeins, math.Max(p.OreVeins.R, 20), "Ore in the walls")...)},
-			{Text: "Smelt ore into an ingot at the forge", Note: "At the forge press E, choose a smelt recipe: two ore make one ingot.",
+			{Text: "Smelt ore into an ingot at the forge", Note: "Step up to the forge and choose a smelt recipe: two ore make one ingot.",
 				Obj: do(DeedSmelt, 1), Markers: place(p.Forge, 0, "Forge, "+p.Town)},
 		}
-		last = "There. Metal, from rock, by your own hands. I'd made this one up for you while you were away: copper, honest, not pretty. Put it on from your pack (I). And come back when you want to hear about the sunsteel."
+		last = "There. Metal, from rock, by your own hands. I'd made this one up for you while you were away: copper, honest, not pretty. Put it on from your pack. And come back when you want to hear about the sunsteel."
 	case ErrandTimber:
 		title = "Timber"
-		say = "Slimes gone, cabbages saved, and you're not even winded. Right then: a favour that's more fun than it sounds. Take the axe from your pack, fell three trees (hold E on a trunk), then take the hammer, key 9, and put something up a little way out of town. Everyone should build one crooked thing."
+		say = "Slimes gone, cabbages saved, and you're not even winded. Right then: a favour that's more fun than it sounds. Take the axe from your pack, fell three trees, then take up the hammer and put something up a little way out of town. Everyone should build one crooked thing."
 		mid = []Step{
-			{Text: "Fell 3 trees with your axe", Note: "Hold E on a trunk until it comes down, then pick up the logs. Any three trees will do.",
+			{Text: "Fell 3 trees with your axe", Note: "Chop at a trunk until it comes down, then pick up the logs. Any three trees will do.",
 				Obj: do(DeedFell, 3), Markers: g.marker("")},
-			{Text: "Build something with the hammer (key 9)", Note: "Press 9, pick a piece (a foundation, a floor or a wall) and place it a short walk outside the town and off the roads. I gave you logs to start.",
+			{Text: "Build something with the hammer", Note: "Pick a piece (a foundation, a floor or a wall) and place it a short walk outside the town and off the roads. I gave you logs to start.",
 				Obj: do(DeedBuild, 1), Markers: g.marker("")},
 		}
-		last = "Would you look at that. Crooked, proud and yours. Here: a bedroll for it. Place it from your pack (P) and sleep on it with E, and you wake up Rested: faster healing for a good while."
+		last = "Would you look at that. Crooked, proud and yours. Here: a bedroll for it. Lay it out from your camp things and sleep on it, and you wake up Rested: faster healing for a good while."
 	case ErrandTorch:
 		if !p.DarkMouth.OK {
 			return nil, ""
 		}
 		title = "The dark mouth"
-		say = fmt.Sprintf("See that hole %s? Folk go in, folk come out strange. I'd go myself if I weren't on duty. Light your torch (key 8, it's in your pack) and walk right up to the mouth. Carry that light in and see how far it reaches. Then tell me it isn't scary.", where(p.DarkMouth))
+		say = fmt.Sprintf("See that hole %s? Folk go in, folk come out strange. I'd go myself if I weren't on duty. Light the torch from your pack and walk right up to the mouth. Carry that light in and see how far it reaches. Then tell me it isn't scary.", where(p.DarkMouth))
 		mid = []Step{
-			{Text: "Light your torch (key 8)", Note: "Key 8 lights and douses it. It burns until you put it out or go for a swim.", Obj: do(DeedTorch, 1), Markers: g.marker("")},
+			{Text: "Light your torch", Note: "It burns until you douse it or go for a swim.", Obj: do(DeedTorch, 1), Markers: g.marker("")},
 			{Text: "Carry the light to the cave mouth", Note: "Walk up to the marked mouth. Inside, caves are dark; your torch shows the walls and the veins.",
 				Obj: Objective{Kind: ObjReach, X: p.DarkMouth.X, Z: p.DarkMouth.Z, R: 14, Settlement: -1, Site: -1}, Markers: place(p.DarkMouth, 0, "Cave mouth")},
 		}
@@ -227,18 +227,18 @@ func Errand(id string, p *ErrandPlaces, withTalk bool, nowMs int64) (*Quest, str
 			return nil, ""
 		}
 		title = "Something for the pot"
-		say = fmt.Sprintf("The trout's off the menu because nobody brings me any. Here's a rod, on the house. Deep water %s: face it, press E to cast, and when the float dips and a '!' shows, E again. Bring back whatever bites.", where(p.Water))
+		say = fmt.Sprintf("The trout's off the menu because nobody brings me any. Here's a rod, on the house. Deep water %s: face it and cast, and when the float dips and a '!' shows, strike. Bring back whatever bites.", where(p.Water))
 		mid = []Step{
-			{Text: "Catch a fish", Note: "Face deep water and press E to cast. When the float goes under, press E, Space or the left button, then hold E to reel.",
+			{Text: "Catch a fish", Note: "Face deep water and cast. When the float goes under, strike, then reel in steadily and let the line rest when it strains.",
 				Obj: do(DeedFish, 1), Markers: place(p.Water, math.Max(p.Water.R, 25), "Fishing water")},
 		}
-		last = "Would you look at that, a real fish. Put it on the hearth over there (E) and it heals you better than any draught I sell. Don't tell the cook."
+		last = "Would you look at that, a real fish. Put it on the hearth over there and it heals you better than any draught I sell. Don't tell the cook."
 	case ErrandSteed:
 		title = "Faster legs"
-		say = "Forty gold, that whistle, to anyone else. You've been good for my trade, so it's yours. Blow it with H out in the open and wait: something old comes galloping. Then E beside it to climb up. Hold on."
+		say = "Forty gold, that whistle, to anyone else. You've been good for my trade, so it's yours. Blow it out in the open and wait: something old comes galloping. Then climb up beside it. Hold on."
 		mid = []Step{
-			{Text: "Whistle for your steed (H), out in the open", Note: "H calls it. It gallops in from a way off and stands beside you.", Obj: do(DeedSteed, 1), Markers: g.marker("")},
-			{Text: "Climb on (E beside it)", Note: "E mounts, E again (or Space at a standstill) gets off. You can't swing a sword up there, but spells work.", Obj: do(DeedRide, 1)},
+			{Text: "Whistle for your steed, out in the open", Note: "It gallops in from a way off and stands beside you.", Obj: do(DeedSteed, 1), Markers: g.marker("")},
+			{Text: "Climb on", Note: "Mount beside it, and dismount when you are done. You can't swing a sword up there, but spells work.", Obj: do(DeedRide, 1)},
 		}
 		last = "Ha! You sat that like you were born in the saddle. Mind the night: demons spook it."
 	case ErrandTower:
@@ -246,9 +246,9 @@ func Errand(id string, p *ErrandPlaces, withTalk bool, nowMs int64) (*Quest, str
 			return nil, ""
 		}
 		title = "A view of the land"
-		say = fmt.Sprintf("You've run all of our small errands. Here's the big one: %s, %s. A tower you can climb. Reach the top and put your hand to the crystal and the land opens up on your map. Walk up the spiral; the glider (G) gets you down.", nameOr(p.TowerName, "the tower"), where(p.Tower))
+		say = fmt.Sprintf("You've run all of our small errands. Here's the big one: %s, %s. A tower you can climb. Reach the top and put your hand to the crystal and the land opens up on your map. Walk up the spiral; your glider gets you down.", nameOr(p.TowerName, "the tower"), where(p.Tower))
 		mid = []Step{
-			{Text: fmt.Sprintf("Climb %s and attune to its crystal", nameOr(p.TowerName, "the tower")), Note: "Climb to the top and press E at the crystal. Attuning reveals the map around it and makes you a little stronger.",
+			{Text: fmt.Sprintf("Climb %s and attune to its crystal", nameOr(p.TowerName, "the tower")), Note: "Climb to the top and lay your hand on the crystal. Attuning reveals the map around it and makes you a little stronger.",
 				Obj: Objective{Kind: ObjAttune, Site: p.TowerSite, Settlement: -1}, Markers: place(p.Tower, math.Max(p.Tower.R, 15), nameOr(p.TowerName, "Tower"))},
 		}
 		last = "I could see you up there, a speck. Now you have a map and a head start. Go and sit with the innkeeper: there's an old story in this town that has been waiting for someone with your boots. And ask around: people here know of places you'd never find alone."
@@ -259,7 +259,7 @@ func Errand(id string, p *ErrandPlaces, withTalk bool, nowMs int64) (*Quest, str
 	if withTalk {
 		steps = append(steps, Step{
 			Text: fmt.Sprintf("Talk to %s, the %s of %s", g.Name, g.Title, p.Town),
-			Note: "Walk up to them and press E.",
+			Note: "Walk up to them and talk.",
 			Say:  say,
 			Obj:  g.talk(p.Settlement), Markers: g.marker(g.Title),
 		})

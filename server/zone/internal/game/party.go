@@ -281,7 +281,7 @@ func (s *Server) setParty(e *Entity, key string) {
 func (s *Server) pinViews(sess *session) []explore.PinView {
 	var out []explore.PinView
 	for _, p := range sess.x.prog.Pins {
-		out = append(out, explore.PinView{Slot: p.Slot, Color: p.Color, XCm: p.XCm, ZCm: p.ZCm})
+		out = append(out, explore.PinView{Slot: p.Slot, Color: p.Color, XCm: p.XCm, ZCm: p.ZCm, Owner: p.Label})
 	}
 	if k := sess.x.partyKey; k != "" {
 		for i, p := range s.party.pins[k] {

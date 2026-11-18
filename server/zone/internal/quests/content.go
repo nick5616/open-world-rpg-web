@@ -65,7 +65,7 @@ func Ward(p WardPlaces, nowMs int64) *Quest {
 	// Playtest 2: say where the pickaxe is (every character carries one,
 	// items.yaml starter) and that the seam is deep, at the bottom of the
 	// sunlit shaft, not on the surface under the marker.
-	const pick = "Take the pickaxe from your pack: aim at the bright vein and press E until it breaks, then pick up the ore."
+	const pick = "Take the pickaxe from your pack: work at the bright vein until it breaks, then pick up the ore."
 	oreNote := "Sunsteel only forms where daylight reaches into a cave: look at the bottom of sunlit shafts. " + pick
 	var oreMarkers []Marker
 	if p.Ore.OK {
@@ -75,7 +75,7 @@ func Ward(p WardPlaces, nowMs int64) *Quest {
 		}
 		route := "Walk in from the cave mouth and follow the tunnels down."
 		if p.Shaft.OK {
-			route = "Walk in from the cave mouth and follow the tunnels down, or jump down the shaft (G opens your glider)."
+			route = "Walk in from the cave mouth and follow the tunnels down, or jump down the shaft (your glider will slow the fall)."
 		}
 		oreNote = fmt.Sprintf("Sunsteel glints in %s (%s), %s. %s %s One vein gives enough ore for a blade.", nameOr(p.Ore.Name, "the cave"), p.Ore.Where, deep, route, pick)
 		oreMarkers = append(oreMarkers, Marker{X: p.Ore.X, Z: p.Ore.Z, R: math.Max(p.Ore.R, 20), Label: "Sunsteel ore (deep below)"})
@@ -116,7 +116,7 @@ func Ward(p WardPlaces, nowMs int64) *Quest {
 		},
 		{
 			Text:    "Forge the Sunsteel Blade",
-			Note:    "At the forge (E): smelt 2 sunsteel ingots from the ore, then forge the blade. Equip it from your inventory (I).",
+			Note:    "At the forge: smelt 2 sunsteel ingots from the ore, then forge the blade. Wield it from your pack.",
 			Obj:     Objective{Kind: ObjHave, Items: []ItemQty{{"weapon:sunsteel_blade", 1}}, Settlement: -1, Site: -1},
 			Markers: forgeMarker,
 		},
@@ -135,7 +135,7 @@ func Ward(p WardPlaces, nowMs int64) *Quest {
 	}
 	steps = append(steps, Step{
 		Text: "Learn Light magic: read the Tome of Glint",
-		Note: "Open your inventory (I) and Learn the tome. Glint fills an empty spell slot; Light spells kill demons like sunsteel does.",
+		Note: "Open your pack and learn from the tome. Glint fills an empty spell slot; Light spells kill demons like sunsteel does.",
 		Obj:  Objective{Kind: ObjKnow, Spell: LightSpell, Settlement: -1, Site: -1},
 	})
 	return &Quest{ID: WardID, Key: WardKey, Kind: KindStory, Title: "Ward against the night", Giver: smith + ", blacksmith of " + p.Town,
@@ -195,21 +195,21 @@ func Meadows(p MeadowsPlaces, nowMs int64) *Quest {
 	steps := []Step{
 		{
 			Text:    fmt.Sprintf("Talk to %s, the %s of %s", p.Giver, p.GiverTitle, p.Town),
-			Note:    "Walk up to them and press E to talk. Townsfolk give quests and trade.",
-			Say:     fmt.Sprintf("You're new here? Then you're just in time. The slimes have crept out of the meadows again and they're eating everything green. Thin them out for me: five should teach them.%s Left click swings your sword, 1 to 4 cast the spells you know, F dodges. They're slow and soft; you'll be fine.", where),
+			Note:    "Walk up to them and talk. Townsfolk give quests and trade.",
+			Say:     fmt.Sprintf("You're new here? Then you're just in time. The slimes have crept out of the meadows again and they're eating everything green. Thin them out for me: five should teach them.%s Swing your sword, cast what spells you know, and step out of the way when they lunge. They're slow and soft; you'll be fine.", where),
 			Obj:     talk,
 			Markers: giver,
 		},
 		{
 			Text:    fmt.Sprintf("Kill %d slimes in the meadows around %s", MeadowsSlimes, p.Town),
-			Note:    "The marked meadows have slimes. Left click attacks, 1-4 cast spells, F dodges. Health comes back out of combat; R drinks a draught.",
+			Note:    "The marked meadows have slimes. Fight, cast, and dodge. Health comes back out of combat; a draught helps in a pinch.",
 			Obj:     Objective{Kind: ObjKill, Family: MeadowsFamily, N: MeadowsSlimes, Settlement: -1, Site: -1},
 			Markers: packs,
 		},
 		{
 			Text:    fmt.Sprintf("Return to %s in %s", p.Giver, p.Town),
 			Note:    "Your reward waits in town.",
-			Say:     fmt.Sprintf("Ha! That'll keep them off the cabbages. Here's your pay, a couple of draughts for the road, and my old cap: wear it (I, your pack). Now, if you mean to stay out after dark, go and see %s at the forge. Slimes are nothing next to what walks at night.", smith),
+			Say:     fmt.Sprintf("Ha! That'll keep them off the cabbages. Here's your pay, a couple of draughts for the road, and my old cap: wear it, it's in your pack. Now, if you mean to stay out after dark, go and see %s at the forge. Slimes are nothing next to what walks at night.", smith),
 			Obj:     talk,
 			Markers: giver,
 			Grant:   MeadowsReward,

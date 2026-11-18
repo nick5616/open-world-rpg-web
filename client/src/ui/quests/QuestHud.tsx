@@ -18,7 +18,8 @@ import { ITEMS } from '@lodestone/contracts';
 import { JournalContentTab, JournalTabBar, type JournalTab } from '../content/JournalTabs';
 import { liveMarkers } from './live';
 import { StoryJournalBar, StoryPartyLine } from '../story/StoryHud'; // CR 035
-import { dismissOffer, offerMarkers, pruneNotes, setJournalOpen, setQuestPreview, trackedQuest, useQuests } from './store';
+import { dismissOffer, noteTtl, offerMarkers, pruneNotes, setJournalOpen, setQuestPreview, trackedQuest, useQuests } from './store';
+import { ToastBar } from '../toast/ToastBar';
 import { trackPanel } from '../../input/panelStack';
 import { hudActivity, NOTES_MAX_IMMERSIVE, trackerExpanded, useHudSettings } from '../../hud/immersive';
 
@@ -103,9 +104,10 @@ function Notes() {
   return (
     <div style={{ position: 'fixed', top: 168, right: 14, width: 'min(300px, 34vw)', display: 'flex', flexDirection: 'column', gap: 6, pointerEvents: 'none', zIndex: 13 }}>
       {notes.map((n) => (
-        <div key={n.id} data-testid={`quest-note-${n.kind}`} style={{ ...PANEL, padding: '7px 11px', borderColor: n.kind === 'done' ? '#9fd38a' : n.kind === 'refused' ? '#ff922b' : 'rgba(255,209,102,0.55)', animation: 'lsQuestNote 0.3s ease-out' }}>
+        <div key={n.id} data-testid={`quest-note-${n.kind}`} className="ls-timed" style={{ ...PANEL, position: 'relative', overflow: 'hidden', padding: '7px 11px 9px', borderColor: n.kind === 'done' ? '#9fd38a' : n.kind === 'refused' ? '#ff922b' : 'rgba(255,209,102,0.55)', animation: 'lsQuestNote 0.3s ease-out' }}>
           <div style={{ font: '600 13px Georgia, serif', color: n.kind === 'done' ? '#b8f0a0' : GOLD }}>{n.title}</div>
           {n.text && <div style={{ fontSize: 12, opacity: 0.85 }}>{n.text}</div>}
+          <ToastBar at={n.at} durationMs={noteTtl()} color={n.kind === 'done' ? '#9fd38a' : n.kind === 'refused' ? '#ff922b' : undefined} />
         </div>
       ))}
       <style>{'@keyframes lsQuestNote { from { opacity: 0; transform: translateX(12px) } to { opacity: 1; transform: none } }'}</style>

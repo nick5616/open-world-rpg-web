@@ -30,7 +30,8 @@ describe('event payloads (Go vectors)', () => {
   });
   it('pins decode (incl. UTF-8 owner)', () => {
     const pins = decodePins(fromHex(vectors.Pins.Hex));
-    expect(pins).toEqual(vectors.Pins.Pins.map((p) => ({ party: p.Party, slot: p.Slot, color: p.Color, x: p.XCm / 100, z: p.ZCm / 100, owner: p.Owner })));
+    // CR 055: a personal pin's name field is its label.
+    expect(pins).toEqual(vectors.Pins.Pins.map((p) => ({ party: p.Party, slot: p.Slot, color: p.Color, x: p.XCm / 100, z: p.ZCm / 100, owner: p.Party ? p.Owner : '', label: p.Party ? '' : p.Owner })));
     expect(() => decodePins(fromHex(vectors.Pins.Hex).slice(0, -1))).toThrow();
   });
   it('pin positions pack like the Go side', () => {

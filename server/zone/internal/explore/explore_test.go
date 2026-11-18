@@ -209,7 +209,7 @@ func TestPinsPersonal(t *testing.T) {
 		t.Fatal("an 11th pin is refused")
 	}
 	p.SetPin(3, 2, 7, 7) // move
-	if len(p.Pins) != MaxPersonalPins || p.Pins[3] != (Pin{3, 2, 7, 7}) {
+	if len(p.Pins) != MaxPersonalPins || p.Pins[3] != (Pin{3, 2, 7, 7, ""}) {
 		t.Fatalf("%+v", p.Pins)
 	}
 	q := NewProgress()

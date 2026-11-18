@@ -1,5 +1,16 @@
 [
   {
+    "id": "pt5-guidance",
+    "date": "2026-11-18",
+    "title": "Clearer guidance",
+    "items": [
+      "People in town now speak like people: no more key names in their lines. When you finish talking, the controls for the job appear as a small toast, with your own keys.",
+      "Marked places keep their name (Stables, Kudrogair) on the map and the compass, and the guiding wisp leads to the place you just marked.",
+      "The journal has a new Info tab: every town you have found, its stables, smith, inn, storage, bounty board and merchants, each with Mark on map and Guide me.",
+      "Tips and notices now carry a thin bar along the bottom that drains while you read; hover a tip to pause it."
+    ]
+  },
+  {
     "id": "pt5-conversations",
     "date": "2026-11-18",
     "title": "Real conversations with townsfolk",

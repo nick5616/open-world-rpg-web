@@ -23,6 +23,8 @@ export interface ExplorationActions {
   fastTravel(site: number): void;
   setPin(x: number, z: number, party: boolean, color: number, slot?: number): void;
   clearPin(pin: Pin): void;
+  /** CR 055: mark a town service (Interact 185); the zone names the pin and answers Event 1980. */
+  placeService(settlement: number, kind: number, x: number, z: number): void;
 }
 
 export interface ExplorationState {
@@ -40,7 +42,7 @@ export interface ExplorationState {
 }
 
 let toastId = 1;
-const TOAST_MS = 5000;
+export const TOAST_MS = 5000;
 
 function toast(kind: ToastKind, title: string, detail: string | undefined, now: number): Toast {
   return { id: toastId++, kind, title, detail, at: now };
