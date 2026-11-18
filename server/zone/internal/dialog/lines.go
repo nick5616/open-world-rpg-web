@@ -31,14 +31,14 @@ var greetMet = [numTempers][]string{
 }
 
 var farewells = [numTempers][]string{
-	Warm:     {"Take care of yourself out there. Come back safe.", "Safe roads, {name}. And eat something."},
-	Gruff:    {"Off with you, then.", "Mind yourself. Don't die. It's untidy."},
-	Nervous:  {"Oh, you're going? Be careful. Careful. Please.", "Goodbye! Stay away from the dark. And, you know, things."},
-	Cheerful: {"Off you pop! Bring me a story when you're back!", "Cheerio! Tell the road I said hello!"},
-	Weary:    {"Go on, then. I'll be here. I'm always here.", "Safe travels. I'd come with you but my feet have filed a complaint."},
-	Gossipy:  {"Come back soon and tell me everything! Everything!", "Off you go, then! I'll just tell the others about you. Kindly."},
-	Wry:      {"Farewell. Try not to become a cautionary tale.", "Goodbye. Do come back, I haven't been entertained since spring."},
-	Proud:    {"Go well, {name}. {town} will keep your seat warm.", "Farewell. May your road be worthy of you."},
+	Warm:     {"Take care of yourself out there. Come back safe.", "Safe roads, {name}. And eat something.", "Don't be a stranger, {name}. The door sticks, but it opens.", "Go gently. Something warm will be waiting."},
+	Gruff:    {"Off with you, then.", "Mind yourself. Don't die. It's untidy.", "Hm. Go on.", "Don't come back with a limp. I'm not a healer."},
+	Nervous:  {"Oh, you're going? Be careful. Careful. Please.", "Goodbye! Stay away from the dark. And, you know, things.", "Oh. Goodbye. Good-bye! I'll be here. Locked in. Er, safely.", "Be careful of... everything, really. Everything. Bye."},
+	Cheerful: {"Off you pop! Bring me a story when you're back!", "Cheerio! Tell the road I said hello!", "Ta-ta! Come back with mud on your boots and a grin on your face!", "Away with you! The road is bored without you!"},
+	Weary:    {"Go on, then. I'll be here. I'm always here.", "Safe travels. I'd come with you but my feet have filed a complaint.", "Mm. Off you go. Wake me if the sky falls.", "Walk well. I'll sit."},
+	Gossipy:  {"Come back soon and tell me everything! Everything!", "Off you go, then! I'll just tell the others about you. Kindly.", "Oh, you are going to be talked about, I'll make sure of it!", "Go, go! And tell me what the baker said, I know you'll pass his stall."},
+	Wry:      {"Farewell. Try not to become a cautionary tale.", "Goodbye. Do come back, I haven't been entertained since spring.", "Well. That was almost a conversation. Come back and we'll finish the job.", "Goodbye. Try to have a more interesting day than mine."},
+	Proud:    {"Go well, {name}. {town} will keep your seat warm.", "Farewell. May your road be worthy of you.", "We part with honour. Go.", "Remember {town}, wherever you walk."},
 }
 
 // Farewell is the goodbye line.
@@ -64,6 +64,7 @@ type Context struct {
 	Deeds   []Deed
 	Sites   []Site // real places nearby, for rumours
 	Work    Work   // what this person can do for you
+	Char    Char   // who you are: class and what you carry (CR 053 checks)
 }
 
 // Deed is something the zone knows this player did.
@@ -385,7 +386,7 @@ var personal = []struct {
 	Need int
 }{
 	{"family", "Do you have family here?", 1},
-	{"origin", "Where are you from?", 2},
+	{"origin", "Where are you from, originally?", 2},
 	{"wants", "What do you hope for?", 4},
 	{"secret", "You seem like you're holding something back.", 7},
 }

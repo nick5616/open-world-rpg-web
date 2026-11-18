@@ -16,6 +16,7 @@ import (
 	"lodestone/server/pkg/movement"
 	"lodestone/server/pkg/proto"
 	"lodestone/server/pkg/towns"
+	"lodestone/server/zone/internal/dialog"
 	"lodestone/server/zone/internal/quests"
 )
 
@@ -25,6 +26,17 @@ func (cl *client) dialogNode(t *testing.T) dlgWire {
 	ev := cl.take(EventDialogNode, 3*time.Second)
 	if err := json.Unmarshal(ev.Data, &w); err != nil {
 		t.Fatal(err)
+	}
+	if strings.Contains(string(ev.Data), `"choices":null`) {
+		t.Fatalf("choices is null on the wire (a client wants []): %s", ev.Data)
+	}
+	// CR 053: no node dead-ends. Every one but the farewell ends with the way out.
+	if w.Bye {
+		if len(w.Choices) != 0 {
+			t.Fatalf("the farewell offers answers: %+v", w.Choices)
+		}
+	} else if n := len(w.Choices); n == 0 || n > dialog.MaxChoices || w.Choices[n-1].Kind != "leave" || w.Choices[n-1].Tag != "Leave" {
+		t.Fatalf("node without an exit: %q %+v", w.Line, w.Choices)
 	}
 	return w
 }
@@ -96,7 +108,13 @@ func TestDialogStepLineAndTopicsInsideTheConversation(t *testing.T) {
 		}
 	})
 	a.dialogDo(DialogChoose, uint64(gid), n.choice(t, "leave", ""))
-	a.take(EventDialogEnd, 3*time.Second)
+	bye := a.dialogNode(t)
+	if !bye.Bye || bye.Line == "" {
+		t.Fatalf("no farewell: %+v", bye)
+	}
+	if ev := a.take(EventDialogEnd, 8*time.Second); ev.Value != DialogEndGoodbye {
+		t.Fatalf("end reason %d, want goodbye", ev.Value)
+	}
 	// Second visit: met before.
 	a.dialogDo(DialogOpen, uint64(gid), 0)
 	n = a.dialogNode(t)
@@ -232,10 +250,20 @@ func TestDialogHoldsThePersonStillAndReleasesThem(t *testing.T) {
 	// Walking away ends it.
 	a.dialogDo(DialogOpen, uint64(gid), 0)
 	a.dialogNode(t)
+	a.drainFor(200 * time.Millisecond)
+	// 7 m away is still a conversation; past 8 m it ends and they call after you.
+	h.teleport(char, h.srv.cfg.Towns.NPCs[gi].X+7, h.srv.cfg.Towns.NPCs[gi].Z)
+	a.drainFor(1200 * time.Millisecond)
+	if len(a.eventsOf(EventDialogEnd)) != 0 {
+		t.Fatal("ended at 7 m")
+	}
 	h.teleport(char, h.srv.cfg.Towns.NPCs[gi].X+30, h.srv.cfg.Towns.NPCs[gi].Z)
 	ev := a.take(EventDialogEnd, 3*time.Second)
 	if ev.Value != DialogEndWalked {
 		t.Fatalf("end reason %d", ev.Value)
+	}
+	if bk := a.take(EventNPCBark, time.Second); len(bk.Data) == 0 || bk.EntityID != gid {
+		t.Fatalf("they did not call after you: %+v", bk)
 	}
 	h.do(func() {
 		if len(h.srv.dlg.held) != 0 {

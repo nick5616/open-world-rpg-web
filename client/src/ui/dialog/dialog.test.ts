@@ -3,7 +3,7 @@ import type { Event as ZoneEvent } from '@lodestone/contracts';
 import { aimAt, dialogCam, dialogCamBegin, dialogCamEnd, dialogCamReset, dialogCamStep, turnTo } from './camera';
 import { DLG_EV, decodeNode } from './events';
 import { offlineNode, offlineReply } from './offline';
-import { advanceAction, choiceForKey, reduceDialogEvent, typedChars, useDialog, type DialogState } from './store';
+import { advanceAction, bubbleText, checkWords, choiceForKey, pushHistory, recordAnswer, reduceDialogEvent, typedChars, useDialog, type DialogState } from './store';
 import { basePitch, blipHz, blipsAt } from './voice';
 
 const enc = new TextEncoder();
@@ -19,12 +19,13 @@ const node = {
   line: 'Come in, come in, mind the cat.',
   mood: 'warm',
   choices: [
-    { id: 1, text: 'Heard anything interesting?', kind: 'rumour' },
-    { id: 2, text: 'Goodbye.', kind: 'leave' },
+    { id: 1, text: 'Heard anything strange lately?', kind: 'rumour', tag: 'Rumour' },
+    { id: 3, text: 'You can tell me the real story.', kind: 'check', tag: 'Warmth ♥♥♥', low: true },
+    { id: 2, text: 'Take care.', kind: 'leave', tag: 'Leave' },
   ],
 };
 
-const base = (): DialogState => ({ ...useDialog.getState(), open: false, parked: false, awaitingWork: false, key: null, focus: null, node: null, lineAt: 0, toast: null, offline: false, lines: 0 });
+const base = (): DialogState => ({ ...useDialog.getState(), open: false, parked: false, awaitingWork: false, key: null, focus: null, node: null, lineAt: 0, toast: null, offline: false, history: [], lines: 0 });
 
 describe('dialog store', () => {
   it('a node opens the conversation and starts the line', () => {
@@ -84,6 +85,57 @@ describe('keys and advancing', () => {
     expect(advanceAction(false, [{ id: 9 }])).toEqual({ kind: 'skip' });
   });
 
+  it('E goes on past a "Go on" with the way out beside it, but never says goodbye by accident; the farewell closes on E', () => {
+    const goOn = [{ id: 1, kind: 'more' }, { id: 2, kind: 'leave' }];
+    expect(advanceAction(true, goOn)).toEqual({ kind: 'choose', id: 1 });
+    expect(advanceAction(true, [{ id: 1, kind: 'topic' }, { id: 2, kind: 'leave' }])).toEqual({ kind: 'none' });
+    expect(advanceAction(true, [{ id: 2, kind: 'leave' }])).toEqual({ kind: 'none' });
+    expect(advanceAction(false, [], true)).toEqual({ kind: 'skip' });
+    expect(advanceAction(true, [], true)).toEqual({ kind: 'close' });
+  });
+
+  it('the transcript: their finished line joins it when the next node arrives, then your answers', () => {
+    const first = reduceDialogEvent(base(), ev(DLG_EV.node, node, { entityId: 77 }), 1)!;
+    expect(first.history).toEqual([]); // the current line types below the transcript
+    const s1 = { ...base(), ...first } as DialogState;
+    const second = reduceDialogEvent(s1, ev(DLG_EV.node, { ...node, line: 'Mind the cat.', check: { tag: 'Mage', pass: true } }), 2)!;
+    expect(second.history).toEqual([{ who: 'npc', text: node.line, check: undefined }]);
+    const third = reduceDialogEvent({ ...s1, ...second } as DialogState, ev(DLG_EV.node, node), 3)!;
+    expect(third.history?.map((h) => h.text)).toEqual([node.line, 'Mind the cat.']);
+    expect(third.history?.[1].check).toEqual({ tag: 'Mage', pass: true });
+    // an end wipes it
+    const end = reduceDialogEvent({ ...s1, ...third } as DialogState, ev(DLG_EV.end, '', { value: 4 }), 4)!;
+    expect(end.history).toEqual([]);
+    expect(pushHistory(Array.from({ length: 60 }, () => ({ who: 'npc' as const, text: 'x' })), { who: 'you', text: 'y' })).toHaveLength(60);
+    useDialog.setState({ history: [] });
+    recordAnswer({ text: 'Take care.', tag: 'Leave' });
+    expect(useDialog.getState().history).toEqual([{ who: 'you', text: 'Take care.', tag: 'Leave', low: undefined }]);
+    useDialog.setState({ history: [] });
+  });
+
+  it('a long line is a short bubble over their head, cut at a sentence', () => {
+    const long = 'Well, hello there. I do not think we have met. I am Mira, and I have kept this inn for longer than most of these walls have stood, and I mean to keep it longer still.';
+    const b = bubbleText(long);
+    expect(b.length).toBeLessThan(long.length);
+    expect(long.startsWith(b.replace(/\s*…$/, ''))).toBe(true);
+    expect(bubbleText('Short one.')).toBe('Short one.');
+  });
+
+  it('a check chip says passed or too low', () => {
+    expect(checkWords({ tag: 'Level 10', pass: false })).toBe('[Level 10] too low');
+    expect(checkWords({ tag: 'Mage', pass: true })).toBe('[Mage] passed');
+  });
+
+  it('decodes tags, a low check, the farewell and a check result from the zone', () => {
+    const n = decodeNode(enc.encode(JSON.stringify({ ...node, bye: true, choices: [], check: { tag: 'Sunsteel', pass: false } })))!;
+    expect(n.bye).toBe(true);
+    expect(n.check?.tag).toBe('Sunsteel');
+    expect(decodeNode(enc.encode(JSON.stringify({ ...node, bye: true, choices: null })))?.choices).toEqual([]); // robust to a null list
+    const m = decodeNode(enc.encode(JSON.stringify(node)))!;
+    expect(m.choices[1]).toMatchObject({ kind: 'check', tag: 'Warmth ♥♥♥', low: true });
+    expect(m.choices.at(-1)?.kind).toBe('leave');
+  });
+
   it('the typewriter reveals over time, pauses on punctuation and ends', () => {
     const t = 'Hello, friend. Sit.';
     expect(typedChars(t, 0)).toBe(0);
@@ -120,7 +172,7 @@ describe('conversation camera', () => {
     expect(dialogCam.phase).toBe('in');
     for (let i = 0; i < 120; i++) dialogCamStep(lk, eye, 1 / 60);
     expect(Math.abs(turnTo(lk.yaw, 0))).toBeLessThan(0.01);
-    expect(Math.abs(lk.pitch)).toBeLessThan(0.01);
+    expect(Math.abs(lk.pitch + dialogCam.lift)).toBeLessThan(0.01); // the face rides above the middle (the box covers the lower part)
     dialogCamEnd();
     expect(dialogCam.phase).toBe('out');
     let driving = true;
@@ -169,8 +221,10 @@ describe('voice and offline', () => {
     const n = offlineNode(c as never);
     expect(n.npc.name).toBe('Mira');
     expect(n.line.length).toBeGreaterThan(10);
-    const r = offlineReply(n, n.choices[0])!;
+    const r = offlineReply(n, n.choices[0]);
     expect(r.line).toMatch(/offline/);
-    expect(offlineReply(n, n.choices[1])).toBeNull();
+    const bye = offlineReply(n, n.choices[1]);
+    expect(bye.bye).toBe(true);
+    expect(bye.choices).toEqual([]);
   });
 });

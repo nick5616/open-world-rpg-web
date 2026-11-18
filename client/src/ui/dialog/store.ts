@@ -6,6 +6,19 @@ import { create } from 'zustand';
 import type { Event as ZoneEvent } from '@lodestone/contracts';
 import { decodeNode, DLG_EV, END_REASON, REFUSAL, type DialogNode } from './events';
 
+/** One line of the transcript. */
+export interface TranscriptEntry {
+  who: 'npc' | 'you';
+  text: string;
+  /** Your answer's tag ([Barter], [Mage]...). */
+  tag?: string;
+  low?: boolean;
+  /** A check their line answered. */
+  check?: { tag: string; pass: boolean };
+}
+
+const HISTORY_MAX = 60;
+
 export interface DialogState {
   /** A conversation is on (a node is shown, or the request is out). */
   open: boolean;
@@ -23,11 +36,13 @@ export interface DialogState {
   /** Why it ended / what was refused, shown briefly. */
   toast: { text: string; at: number } | null;
   offline: boolean;
+  /** This conversation so far (CR 053): their lines and your answers, oldest first; the current line is not in it yet. */
+  history: TranscriptEntry[];
   /** Lines heard this session (stats, tests). */
   lines: number;
 }
 
-const initial = (): DialogState => ({ open: false, parked: false, awaitingWork: false, key: null, focus: null, node: null, lineAt: 0, toast: null, offline: false, lines: 0 });
+const initial = (): DialogState => ({ open: false, parked: false, awaitingWork: false, key: null, focus: null, node: null, lineAt: 0, toast: null, offline: false, history: [], lines: 0 });
 
 export const useDialog = create<DialogState>(() => initial());
 
@@ -37,7 +52,9 @@ export function reduceDialogEvent(s: DialogState, ev: ZoneEvent, now: number): P
     case DLG_EV.node: {
       const n = decodeNode(ev.data);
       if (!n) return null;
-      return { open: true, parked: s.awaitingWork, awaitingWork: false, key: s.key ?? n.npc.id, node: n, lineAt: now, lines: s.lines + 1 };
+      // The line they just finished joins the transcript; the new one types out below it.
+      const history = s.node ? pushHistory(s.history, { who: 'npc', text: s.node.line, check: s.node.check }) : s.history;
+      return { open: true, parked: s.awaitingWork, awaitingWork: false, key: s.key ?? n.npc.id, node: n, lineAt: now, history, lines: s.lines + 1 };
     }
     case DLG_EV.end: {
       const text = END_REASON[ev.value] ?? '';
@@ -51,6 +68,38 @@ export function reduceDialogEvent(s: DialogState, ev: ZoneEvent, now: number): P
     default:
       return null;
   }
+}
+
+/** Pure: the transcript with one more entry (capped). */
+export function pushHistory(h: TranscriptEntry[], e: TranscriptEntry): TranscriptEntry[] {
+  const out = [...h, e];
+  return out.length > HISTORY_MAX ? out.slice(out.length - HISTORY_MAX) : out;
+}
+
+/** You said this: it joins the transcript. */
+export function recordAnswer(c: { text: string; tag?: string; low?: boolean }): void {
+  const s = useDialog.getState();
+  useDialog.setState({ history: pushHistory(s.history, { who: 'you', text: c.text, tag: c.tag, low: c.low }) });
+}
+
+/** What a speech bubble shows of a long line: the first sentences up to ~110 characters (the box has all of it). */
+export function bubbleText(line: string, max = 110): string {
+  if (line.length <= max) return line;
+  const sentences = line.match(/[^.!?]+[.!?]+["')\]]*\s*|[^.!?]+$/g) ?? [line];
+  let out = '';
+  for (const s of sentences) {
+    if (out && out.length + s.length > max) break;
+    out += s;
+  }
+  out = out.trim();
+  if (out.length > max + 30) out = out.slice(0, max).replace(/\s+\S*$/, '') + '…';
+  else if (out.length < line.trim().length) out += ' …';
+  return out;
+}
+
+/** A check chip's words: "[Mage] passed", "[Level 10] too low". */
+export function checkWords(c: { tag: string; pass: boolean }): string {
+  return `[${c.tag}] ${c.pass ? 'passed' : 'too low'}`;
 }
 
 export function applyDialogEvent(ev: ZoneEvent, now = performance.now()): void {
@@ -73,9 +122,13 @@ export function choiceForKey(code: string, count: number): number | null {
 }
 
 /** What E, Space, Enter and a click on the line do: skip the typing; once shown, go on if there is only one thing to say. */
-export function advanceAction(typed: boolean, choices: { id: number }[]): { kind: 'skip' } | { kind: 'choose'; id: number } | { kind: 'none' } {
+export function advanceAction(typed: boolean, choices: { id: number; kind?: string }[], bye = false): { kind: 'skip' } | { kind: 'choose'; id: number } | { kind: 'close' } | { kind: 'none' } {
   if (!typed) return { kind: 'skip' };
-  if (choices.length === 1) return { kind: 'choose', id: choices[0].id };
+  if (bye) return { kind: 'close' }; // the farewell has been read: press on to close at once
+  // Only a "go on" besides the way out: E goes on (never E on the goodbye itself).
+  const rest = choices.filter((c) => c.kind !== 'leave');
+  if (rest.length === 1 && rest[0].kind === 'more') return { kind: 'choose', id: rest[0].id };
+  if (choices.length === 1 && choices[0].kind !== 'leave') return { kind: 'choose', id: choices[0].id };
   return { kind: 'none' };
 }
 

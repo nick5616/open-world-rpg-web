@@ -83,6 +83,7 @@ type session struct {
 	music            *musicState        // playtest 2 instruments (music.go); nil until the first Interact 120
 	dev              *devSess           // CR 032 dev console (devconsole.go); nil until the first dev command
 	dlg              *dlgSess           // CR 049 an open conversation with a townsperson (dialog.go); nil none
+	dlgDisc          dlgDiscount        // CR 053 a price you haggled at one townsperson (dialog.go waresFor)
 
 	// Reader-owned.
 	buckets    [256]*ratelimit.Bucket

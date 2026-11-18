@@ -7,7 +7,7 @@
 // a touch more weight.
 
 import * as THREE from 'three';
-import { npcFocus } from './npcFocus';
+import { npcFocus, playerFocus } from './npcFocus';
 import { BUBBLE_M, BUBBLE_MAX, bubbleAlpha, selectBubbles, type BubbleCandidate } from './npcLife';
 
 interface Cand extends BubbleCandidate {
@@ -25,9 +25,12 @@ export interface BubbleSubject {
 }
 
 const BASE =
-  'position:absolute;transform:translate(-50%,-100%);max-width:230px;padding:5px 10px 6px;border-radius:10px;font:500 13px/1.25 system-ui,sans-serif;text-align:center;pointer-events:none;will-change:opacity,transform;white-space:normal;';
+  'position:absolute;transform:translate(-50%,-100%);max-width:clamp(230px,18vw,420px);padding:5px 10px 6px;border-radius:10px;font:500 clamp(13px,0.8vw + 0.35vh,20px)/1.25 system-ui,sans-serif;text-align:center;pointer-events:none;will-change:opacity,transform;white-space:normal;';
 
 export class BubbleLayer {
+  /** npc: townsfolk lines (npcFocus); player: what players say in a conversation (Event 1960, CR 053). */
+  constructor(private readonly kind: 'npc' | 'player' = 'npc') {}
+
   private root: HTMLDivElement | null = null;
   private readonly els: HTMLDivElement[] = [];
   private readonly cands: Cand[] = [];
@@ -42,11 +45,11 @@ export class BubbleLayer {
    */
   update(camera: THREE.Camera, subject: (key: number) => BubbleSubject | undefined, nowMs: number, headY = 2.35): void {
     this.shown.clear();
-    const live = npcFocus.live(nowMs);
+    const live = this.kind === 'player' ? playerFocus.live(nowMs) : npcFocus.live(nowMs);
     if (!live.length && !this.els.some((e) => e.style.display !== 'none')) return;
     if (!this.root) {
       this.root = document.createElement('div');
-      this.root.dataset.testid = 'npc-bubbles';
+      this.root.dataset.testid = this.kind === 'player' ? 'player-bubbles' : 'npc-bubbles';
       this.root.setAttribute('aria-hidden', 'true');
       Object.assign(this.root.style, { position: 'fixed', inset: '0', pointerEvents: 'none', zIndex: '16', overflow: 'hidden' });
       document.body.appendChild(this.root);
@@ -81,7 +84,11 @@ export class BubbleLayer {
         el.dataset.kind = key;
         el.style.cssText =
           BASE +
-          (c.toYou
+          (this.kind === 'player'
+            ? c.toYou
+              ? 'background:#e6f1ff;color:#10233a;border:2px solid #5fa0e0;box-shadow:0 2px 10px #0008,0 0 12px #8fc4ff66;font-weight:600;font-style:italic;'
+              : 'background:#e9eef4;color:#1d2a38;border:1px solid #7a8da3;box-shadow:0 2px 8px #0007;font-style:italic;'
+            : c.toYou
             ? 'background:#fff6dc;color:#2a1c0c;border:2px solid #d9a441;box-shadow:0 2px 10px #0008,0 0 12px #f3d48a66;font-weight:600;'
             : 'background:#f3ecdc;color:#2a2418;border:1px solid #8a7a58;box-shadow:0 2px 8px #0007;');
       }

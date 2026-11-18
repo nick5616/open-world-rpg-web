@@ -1,0 +1,37 @@
+{
+  "steps": [
+    "22 townsfolk: Selina/2, Fenia/1, Coreth/1, Caeleth/1, Kelmir/4, Wyndra/0, Ulia/0, Roseth/0, Oria/0, Garra/0, Pelmir/0, Tammir/5, Bramus/5, Peleth/0, Fenen/6, Ulus/3, Jormir/0, Iseik/0, Aldor/0, Caelia/0, Quila/6, Garmir/0",
+    "shot typing",
+    "shot box",
+    "Fenia: Well, look who's wandered in! I'm Fenia, and I'm delighted. Thunder always makes the stew taste better. Don't ask me why.",
+    "answers: work: 1[Barter] Let's see your wares. | rumour: 2[Rumour] Heard anything strange lately? | topic: 3Who are you, exactly? | check(low): 4[Warmth ♥♥] We're friends by now. Surely a friend gets a better price?too low | topic: 5What's Draedmore like? | leave: 6[Leave] That's all for now. Thanks.",
+    "B sees bubbles: [\"Well, look who's wandered in! I'm Fenia, and I'm delighted. Thunder always makes the stew taste better. Don't ask me why.\"]",
+    "shot bystander-npc-bubble",
+    "shot bystander-player-bubble",
+    "B sees player bubbles: [\"Heard anything strange lately?\"]",
+    "shot own-bubble",
+    "A sees player bubbles: []",
+    "shot transcript",
+    "transcript: You: [Rumour] Heard anything strange lately?Fenia: Well, look who's wandered in! I'm Fenia, and I'm delighted. Thunder always makes the stew taste better. Don't ask me why.",
+    "shot check-tag",
+    "check: 4[Mage] I can feel something humming under this place. Can you?too low low=true",
+    "check result: [Mage] too low / Ha, not your trade, friend! Ask me something I'm allowed to say![Mage] too low",
+    "shot check-result",
+    "farewell: Away with you! The road is bored without you! (bye hint true)",
+    "shot goodbye",
+    "box closed by itself: true",
+    "shot after-goodbye",
+    "after walking 14 m away: open=false",
+    "bubbles A: [\"Bye, bye! Tell the hills I said hello!\"]",
+    "shot walked-away"
+  ],
+  "checks": {
+    "lastIsLeave": true,
+    "bystanderSawNpcBubble": true,
+    "bystanderSawPlayerBubble": true,
+    "checkChip": "[Mage] too low",
+    "byeShown": true,
+    "closedByItself": true,
+    "walkedAwayClosed": true
+  }
+}

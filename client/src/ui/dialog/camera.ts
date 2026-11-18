@@ -29,6 +29,8 @@ export const dialogCam = {
   savedPitch: 0,
   /** Ease time constant, seconds. */
   tau: 0.2,
+  /** Radians the face is carried above the middle of the view (the dialogue box covers the lower part of the screen). */
+  lift: 0.1,
 };
 
 /** Frame `target` (the person's face); remembers the current view to restore. */
@@ -52,10 +54,15 @@ export function dialogCamReset(): void {
   dialogCam.phase = 'off';
 }
 
+function liftedAim(eye: { x: number; y: number; z: number }): Aim {
+  const a = aimAt(eye, dialogCam.target);
+  return { yaw: a.yaw, pitch: a.pitch - dialogCam.lift };
+}
+
 /** One frame: moves lk toward the framing (or back); true while it drives the view. */
 export function dialogCamStep(lk: Aim, eye: { x: number; y: number; z: number }, dt: number, reducedMotion = false): boolean {
   if (dialogCam.phase === 'off') return false;
-  const goal = dialogCam.phase === 'in' ? aimAt(eye, dialogCam.target) : { yaw: dialogCam.savedYaw, pitch: dialogCam.savedPitch };
+  const goal = dialogCam.phase === 'in' ? liftedAim(eye) : { yaw: dialogCam.savedYaw, pitch: dialogCam.savedPitch };
   const k = reducedMotion ? 1 : 1 - Math.exp(-Math.min(dt, 0.25) / dialogCam.tau);
   const dy = turnTo(lk.yaw, goal.yaw);
   const dp = goal.pitch - lk.pitch;

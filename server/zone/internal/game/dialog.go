@@ -53,6 +53,21 @@ const (
 	EventDialogMark    = 1913
 )
 
+// Event kinds 1960-1969 (CR 053 conversations revamp).
+const (
+	// EventDialogSay: a player's line in a conversation, to the players within
+	// 20 m of them (and to them): `entityId` = the speaker, `value` = how long
+	// to show it (ms; 0 the client's default), `data` = UTF-8 text.
+	EventDialogSay = 1960
+)
+
+// dlgDiscount is a haggled price at one NPC (npc is the towns NPC index + 1).
+type dlgDiscount struct {
+	npc   int
+	pct   int
+	until time.Time
+}
+
 // Dialog refusals (Event 1912 value).
 const (
 	DialogRefuseUnknown = 1
@@ -72,11 +87,13 @@ const (
 )
 
 const (
-	dialogMarginM    = 3.0              // you may drift this far past the reach before it ends
-	dialogIdle       = 90 * time.Second // the NPC waits this long for you
-	dialogEveryTicks = 15               // the walked-away / idle check, twice a second
-	dialogSiteRangeM = 3200.0           // rumours reach this far from the person
-	dialogPinColor   = 4                // the personal pin colour a rumour uses
+	dialogWalkM       = 8.0              // walk further than this from them and it ends (they call after you)
+	dialogHearM       = 20.0             // players this close see both sides of the talk as speech bubbles (Event 1960, 1930)
+	dialogDiscountFor = 10 * time.Minute // a haggled price lasts this long
+	dialogIdle        = 90 * time.Second // the NPC waits this long for you
+	dialogEveryTicks  = 15               // the walked-away / idle check, twice a second
+	dialogSiteRangeM  = 3200.0           // rumours reach this far from the person
+	dialogPinColor    = 4                // the personal pin colour a rumour uses
 )
 
 type dialogState struct {
@@ -97,6 +114,12 @@ type dlgSess struct {
 	cap     *dlgCapture
 	person  dialog.Person
 	pinned  map[string]bool
+	// CR 053: the farewell is up; the box closes at closeAt (zero: not saying goodbye).
+	closeAt time.Time
+	offer   *dlgQuest       // the quest on offer now (a haggle is about it)
+	haggled map[uint32]bool // quests you haggled a better purse for
+	// haggleTried: one attempt per conversation.
+	haggleTried bool
 }
 
 type dlgQueued struct {
@@ -203,7 +226,7 @@ func (s *Server) dialogOpen(sess *session, entID uint32, now time.Time) {
 	if sess.dlg != nil {
 		s.dialogClose(sess, DialogEndYou)
 	}
-	d := &dlgSess{npc: i, ent: ne.ID, last: now, pinned: map[string]bool{}}
+	d := &dlgSess{npc: i, ent: ne.ID, last: now, pinned: map[string]bool{}, haggled: map[uint32]bool{}}
 	sess.dlg = d
 	s.dlg.open[sess] = true
 	s.dlg.held[i]++
@@ -254,22 +277,34 @@ func (s *Server) dialogSendQueued(sess *session, d *dlgSess, mem dialog.Memory) 
 	d.queue = d.queue[1:]
 	ps := dialog.PersonaOf(d.person)
 	n := dialog.Node{Line: q.line, Mood: ps.Temper.Mood()}
+	d.offer = q.quest
 	if q.quest != nil {
-		n.Choices = []dialog.Choice{
-			{Text: "I'll do it.", Kind: "quest", Act: "accept:" + strconv.FormatUint(uint64(q.quest.ID), 10)},
-			{Text: "Not now.", Kind: "quest", Act: "decline"},
+		lvl := 1
+		if sess.x != nil {
+			lvl = max(1, sess.x.prog.Level)
 		}
+		// A quest that pays gold can be haggled over once per conversation (a level check).
+		can := q.quest.Gold > 0 && !d.haggleTried && !d.haggled[q.quest.ID]
+		n.Choices = dialog.QuestChoices(d.person, ps, mem, dialog.Context{Level: lvl}, strconv.FormatUint(uint64(q.quest.ID), 10), can)
 	} else {
 		n.Choices = []dialog.Choice{{Text: "Go on.", Kind: "more", Act: "next"}}
 	}
 	s.dialogSend(sess, d, n, mem, "", q.quest)
 }
 
-// dialogSend numbers the choices and sends Event 1910.
+// dialogSend numbers the choices (always ending with a way out, unless this
+// is the farewell) and sends Event 1910; the line is also a bubble for the
+// players near you.
 func (s *Server) dialogSend(sess *session, d *dlgSess, n dialog.Node, mem dialog.Memory, note string, q *dlgQuest) {
+	if !n.Bye {
+		n.Choices = dialog.Finish(n.Choices, d.person, mem)
+	} else {
+		n.Choices = []dialog.Choice{} // [] on the wire, never null
+	}
 	for k := range n.Choices {
 		n.Choices[k].ID = k + 1
 	}
+	s.dialogOverhear(sess, d, n.Line)
 	d.choices = n.Choices
 	d.seq++
 	tw := s.cfg.Towns
@@ -312,18 +347,34 @@ func (s *Server) dialogChoose(sess *session, id int, now time.Time) {
 	menu := func(line, note string) {
 		s.dialogSend(sess, d, dialog.Node{Line: line, Mood: ps.Temper.Mood(), Choices: dialog.Menu(d.person, ps, mem, ctx)}, mem, note, nil)
 	}
+	// What you said is a bubble over you for the players near you (CR 053).
+	s.dialogSay(sess, ch.Text)
 	switch act {
 	case "topic":
 		n := dialog.Reply(d.person, &mem, ctx, arg)
 		s.dialogSetMem(sess, d.person.ID, mem)
+		if n.Perk != nil && n.Perk.Kind == dialog.PerkDiscount {
+			sess.dlgDisc = dlgDiscount{npc: d.npc + 1, pct: n.Perk.Pct, until: now.Add(dialogDiscountFor)}
+		}
 		s.dialogSend(sess, d, n, mem, "", nil)
+	case "haggle":
+		qid, _ := strconv.ParseUint(arg, 10, 32)
+		n, pass := dialog.HaggleReply(d.person, ps, mem, ctx)
+		if pass {
+			d.haggled[uint32(qid)] = true
+		}
+		d.haggleTried = true
+		mem.Hear("t:haggle")
+		s.dialogSetMem(sess, d.person.ID, mem)
+		n.Choices = dialog.QuestChoices(d.person, ps, mem, ctx, arg, false)
+		s.dialogSend(sess, d, n, mem, "", d.offer)
 	case "menu":
-		menu(dialogMenuLine(d.person, mem), "")
+		menu(dialog.MenuLine(d.person, ps, mem), "")
 	case "next":
 		if len(d.queue) > 0 {
 			s.dialogSendQueued(sess, d, mem)
 		} else {
-			menu(dialogMenuLine(d.person, mem), "")
+			menu(dialog.MenuLine(d.person, ps, mem), "")
 		}
 	case "mark":
 		note := ""
@@ -332,11 +383,11 @@ func (s *Server) dialogChoose(sess *session, id int, now time.Time) {
 				note = s.dialogMark(sess, st)
 			}
 		}
-		menu(dialogMenuLine(d.person, mem), note)
+		menu(dialog.MenuLine(d.person, ps, mem), note)
 	case "work":
 		s.dialogWork(sess, d, arg, ne, now)
 		// The shop, board or forge opens in its panel; the person waits.
-		menu(dialogWorkLine(arg, ps.Temper), "")
+		menu(dialog.WorkLine(d.person, ps, arg), "")
 	case "accept":
 		qid, _ := strconv.ParseUint(arg, 10, 32)
 		s.questInteract(sess, &proto.Interact{TargetKind: InteractQuest, TargetID: qid, Action: QuestActAccept})
@@ -347,6 +398,12 @@ func (s *Server) dialogChoose(sess *session, id int, now time.Time) {
 			mem.Add(1)
 			s.dialogSetMem(sess, d.person.ID, mem)
 			line = dialogAcceptLine(ps.Temper)
+			if d.haggled[uint32(qid)] && d.offer != nil && d.offer.ID == uint32(qid) {
+				// A passed haggle: a bonus on top of the quest's gold, once per quest.
+				bonus := max(5, d.offer.Gold*dialog.HaggleBonusPct/100)
+				s.questGrant(sess, []quests.ItemQty{{Item: "currency:gold", Qty: bonus}}, "dlg:haggle:"+arg, "dialog haggle")
+				line += " And here's the extra I promised."
+			}
 		}
 		if len(d.queue) > 0 {
 			s.dialogSendQueued(sess, d, mem)
@@ -360,27 +417,19 @@ func (s *Server) dialogChoose(sess *session, id int, now time.Time) {
 		}
 		menu("Another time, then. The offer stands.", "")
 	case "bye":
-		line := dialog.Farewell(d.person, ps, mem, e.Name)
-		s.dialogClose(sess, DialogEndGoodbye)
-		s.npcBark(d.npc, line, e, 0)
+		// The person answers with a farewell and the box closes after it
+		// (dialogTick), or at once if you press on.
+		d.queue = nil
+		n := dialog.ByeNode(d.person, ps, mem, e.Name)
+		s.dialogSend(sess, d, n, mem, "", nil)
+		d.closeAt = now.Add(dialogByeFor(n.Line))
 	}
 	_ = nd
 }
 
-func dialogMenuLine(p dialog.Person, m dialog.Memory) string {
-	return []string{"Anything else?", "What else is on your mind?", "Go on, ask."}[(p.ID+uint64(m.Talks))%3]
-}
-
-func dialogWorkLine(kind string, t dialog.Temper) string {
-	switch kind {
-	case "shop":
-		return "Take a look. Take your time."
-	case "bounty":
-		return "There. Pick something that won't kill you."
-	case "rest":
-		return "Sit, breathe, mend."
-	}
-	return "Mind the sparks."
+// dialogByeFor is how long the farewell stays up before the box closes.
+func dialogByeFor(line string) time.Duration {
+	return min(5*time.Second, 1800*time.Millisecond+time.Duration(len(line))*45*time.Millisecond)
 }
 
 func dialogAcceptLine(t dialog.Temper) string {
@@ -530,14 +579,52 @@ func (s *Server) dialogTick(tick uint32, now time.Time) {
 		switch {
 		case e == nil || ne == nil:
 			end, why = append(end, sess), append(why, DialogEndGone)
-		case math.Hypot(e.Move.Pos.X-ne.Move.Pos.X, e.Move.Pos.Z-ne.Move.Pos.Z) > npcReachM+dialogMarginM:
+		case !d.closeAt.IsZero() && !now.Before(d.closeAt):
+			end, why = append(end, sess), append(why, DialogEndGoodbye)
+		case math.Hypot(e.Move.Pos.X-ne.Move.Pos.X, e.Move.Pos.Z-ne.Move.Pos.Z) > dialogWalkM:
 			end, why = append(end, sess), append(why, DialogEndWalked)
 		case now.Sub(d.last) > dialogIdle:
 			end, why = append(end, sess), append(why, DialogEndIdle)
 		}
 	}
 	for k, sess := range end {
+		if why[k] == DialogEndWalked {
+			// They call after you (a speech bubble, to you and the players near).
+			d := sess.dlg
+			mem := s.dialogMem(sess, d.person.ID)
+			ps := dialog.PersonaOf(d.person)
+			s.npcBark(d.npc, dialog.PartingLine(d.person, ps, mem, sess.ent.Name), nil, 0)
+		}
 		s.dialogClose(sess, why[k])
+	}
+}
+
+// dialogSay shows a line you said as a speech bubble over you, for you and
+// the players within dialogHearM (Event 1960; clients draw it over the avatar).
+func (s *Server) dialogSay(sess *session, text string) {
+	e := sess.ent
+	if e == nil || text == "" {
+		return
+	}
+	ev := &proto.Event{Kind: EventDialogSay, EntityID: e.ID, Data: []byte(text)}
+	for _, o := range s.playersNear(e.Move.Pos.X, e.Move.Pos.Z, dialogHearM) {
+		s.sendEventTo(o, ev)
+	}
+}
+
+// dialogOverhear shows the person's line as a bubble over their head for the
+// players near the talk other than the one talking (their own box already
+// carries it), through the ordinary bark Event 1930.
+func (s *Server) dialogOverhear(sess *session, d *dlgSess, line string) {
+	ne := s.town.active[d.npc]
+	if ne == nil || line == "" || sess.ent == nil {
+		return
+	}
+	ev := &proto.Event{Kind: EventNPCBark, EntityID: ne.ID, Data: []byte(line)}
+	for _, o := range s.playersNear(ne.Move.Pos.X, ne.Move.Pos.Z, dialogHearM) {
+		if o != sess.ent {
+			s.sendEventTo(o, ev)
+		}
 	}
 }
 
@@ -683,7 +770,16 @@ func (s *Server) dialogContext(sess *session, i int, p dialog.Person, open bool,
 	} else if s.rainingAt(px, pz, t) {
 		ctx.Weather = "rain"
 	}
+	if c := e.cbt; c != nil && c.Profile != nil && c.Profile.Active >= 0 && c.Profile.Active < len(c.Profile.Loadouts) {
+		ctx.Char.Class = dialog.ClassOfWeapon(c.Profile.Loadouts[c.Profile.Active].Weapon)
+	}
 	if ci := sess.items; ci != nil {
+		if ci.inv.Count("ingot:sunsteel") > 0 {
+			ctx.Char.Sunsteel = true
+		}
+		if wp := ci.inv.InSlot("eq:main0"); wp != nil && strings.Contains(wp.Base, "sunsteel") {
+			ctx.Char.Sunsteel = true
+		}
 		if wp := ci.inv.InSlot("eq:main0"); wp != nil {
 			ctx.Gear = 1
 			r := wp.Rarity

@@ -20,7 +20,8 @@ import { lookRouter } from '../../input/lookRouter';
 import { dialogCamBegin, dialogCamEnd } from './camera';
 import { DLG_ACT, DLG_EV, DLG_INTERACT, type DialogNode } from './events';
 import { offlineNode, offlineReply } from './offline';
-import { applyDialogEvent, resetDialog, useDialog } from './store';
+import { applyDialogEvent, bubbleText, recordAnswer, resetDialog, useDialog } from './store';
+import { dialogChime } from './voice';
 
 const FACE_RAISE_M = 0.45;
 
@@ -30,12 +31,17 @@ let panelOpenFn: () => boolean = () => false;
 
 const listener = (e: ZoneEvent) => {
   if (e.kind < 1910 || e.kind > 1929) return;
+  const before = useDialog.getState();
   applyDialogEvent(e);
   const s = useDialog.getState();
   if (e.kind === DLG_EV.node && s.node && s.open) {
-    if (s.key !== null) npcFocus.say(s.key, s.node.line, 0, true);
+    if (!before.node) dialogChime('open');
+    if (s.key !== null) npcFocus.say(s.key, bubbleText(s.node.line), 0, true);
   }
-  if (!s.open) finish();
+  if (!s.open) {
+    if (before.open && before.node) dialogChime('close');
+    finish();
+  }
 };
 
 function session(): ZoneSession | null {
@@ -98,7 +104,8 @@ export const dialogController = {
     }
     const node = offlineNode(c);
     useDialog.setState({ open: true, key, focus, node, lineAt: performance.now(), offline: true, lines: 1 });
-    npcFocus.say(key, node.line, 0, true);
+    npcFocus.say(key, bubbleText(node.line), 0, true);
+    dialogChime('open');
   },
 
   /** Pick choice id (a number key or a click). */
@@ -107,19 +114,22 @@ export const dialogController = {
     const node = st.node;
     if (!st.open || !node) return;
     const ch = node.choices.find((c) => c.id === id);
-    if (!ch) return;
+    if (!ch || node.bye) return;
     if (st.offline) {
+      recordAnswer(ch);
       const next = offlineReply(node, ch);
-      if (!next) return dialogController.close();
-      useDialog.setState({ node: next, lineAt: performance.now(), lines: st.lines + 1 });
-      if (st.key !== null) npcFocus.say(st.key, next.line, 0, true);
+      const cur = useDialog.getState();
+      useDialog.setState({ node: next, lineAt: performance.now(), lines: st.lines + 1, history: [...cur.history, { who: 'npc', text: node.line, check: node.check }] });
+      if (st.key !== null) npcFocus.say(st.key, bubbleText(next.line), 0, true);
+      if (next.bye) setTimeout(() => dialogController.close(), 2600);
       return;
     }
     const s = session();
     if (!s) return;
+    recordAnswer(ch);
     s.sendInteract(DLG_INTERACT, BigInt(node.npc.id), DLG_ACT.choose, id);
     if (ch.kind === 'leave') {
-      // The zone says goodbye as a speech bubble and ends the conversation.
+      // The zone answers with their farewell and closes the box after it (Event 1910 bye, then 1911).
       return;
     }
     if (ch.kind === 'work') {
@@ -137,6 +147,7 @@ export const dialogController = {
     if (!st.open) return;
     const s = session();
     if (s && !st.offline && st.node) s.sendInteract(DLG_INTERACT, BigInt(st.node.npc.id), DLG_ACT.close, 0);
+    if (st.node) dialogChime('close');
     resetDialog();
     finish();
   },

@@ -15,7 +15,9 @@ import { useEffect, useMemo } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { EntityKind, type Event as ZoneEvent } from '@lodestone/contracts';
-import { netStats } from '../state/live';
+import { netStats, view } from '../state/live';
+import { BubbleLayer } from '../world/buildings/npcBubbles';
+import { playerFocus } from '../world/buildings/npcFocus';
 import { Avatar, FullRigBudget } from './avatar';
 import { EV_MINE_SWING, followCaster, followEmote, followMusic } from './avatarAnim';
 import { liveAvatars } from './avatar';
@@ -59,6 +61,20 @@ export function RemotePlayers({ session }: { session: ZoneSession }) {
   const seen = useMemo(() => new Set<number>(), []);
   const hud = useMemo(() => ({ last: 0 }), []);
   const looks = useMemo(() => new LookBook(), []); // CR 047: other players' creation looks
+  const bubbles = useMemo(() => new BubbleLayer('player'), []); // CR 053: what players say in a conversation (Event 1960)
+
+  useEffect(() => {
+    const selfId = () => session.welcome?.entityId ?? 0;
+    const l = (e: ZoneEvent) => {
+      if (e.kind === 1960 && e.data.length > 0) playerFocus.say(e.entityId, new TextDecoder().decode(e.data), e.entityId === selfId(), e.value);
+    };
+    session.eventListeners.add(l);
+    return () => {
+      session.eventListeners.delete(l);
+      playerFocus.reset();
+      bubbles.dispose();
+    };
+  }, [session, bubbles]);
   const budget = useMemo(() => ({ rigs: new FullRigBudget(), full: 0 }), []);
 
   useEffect(() => {
@@ -148,6 +164,9 @@ export function RemotePlayers({ session }: { session: ZoneSession }) {
         looks.forget(id);
       }
     }
+    // CR 053: speech bubbles over players mid-conversation (yours from the local view, theirs from their avatar).
+    const self = session.welcome?.entityId ?? 0;
+    bubbles.update(camera, (id) => (id === self ? view.feet : avatars.get(id)?.root.position), now, 2.25);
     drawnRemotes.views = views.map((v) => ({ ...v }));
     for (const [id, a] of avatars) drawnRemotes.lod[id] = a.lodLevel;
 
