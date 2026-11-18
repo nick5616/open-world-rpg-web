@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ANIMAL, planAnimals } from './animalsPlan';
-import { CAT_NAMES, DOG_NAMES, animalName, nameAll, ownerLine, ownerOf, petPrompt } from './animalNames';
+import { CAT_NAMES, DOG_NAMES, animalName, kindOrdinals, nameAll, ownerLine, ownerOf, petPrompt } from './animalNames';
 
 describe('animal names', () => {
   it('are deterministic per settlement and animal', () => {
@@ -24,6 +24,18 @@ describe('animal names', () => {
         expect(list.every((n) => n.length > 0)).toBe(true);
       }
     }
+  });
+  it('do not depend on the quality tier or on how many chickens there are', () => {
+    const base = { id: 91, size: 2, x: 0, z: 0, doors: Array.from({ length: 30 }, (_, i) => ({ x: i, z: 0 })) };
+    const hi = planAnimals({ ...base, farms: [{ x: 5, z: 5 }, { x: 9, z: 9 }] }, false);
+    const lo = planAnimals({ ...base, farms: [{ x: 5, z: 5 }] }, true);
+    const named = (plan: typeof hi) => {
+      const ord = kindOrdinals(plan.map((p) => p.kind));
+      const nm = nameAll(plan.map((p) => p.kind), 91);
+      return plan.map((p, i) => `${p.kind}:${ord[i]}:${nm[i]}`).filter((x) => !x.startsWith('0:'));
+    };
+    const h = named(hi);
+    for (const x of named(lo)) expect(h).toContain(x);
   });
   it('probes past taken names', () => {
     const first = animalName(ANIMAL.dog, 5, 0);

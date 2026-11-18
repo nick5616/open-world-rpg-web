@@ -7,6 +7,15 @@
 // legs, cats), halved in number on the Low tier. Original blocky models in
 // the townsfolk's style, tinted per animal. Chickens roost at night and in
 // the rain, cats shelter in the rain.
+//
+// Playtest 5 (CR 054): dogs and cats have names (animalNames.ts) and can be
+// petted (petting.ts): the animal walks to a spot in front of you, sits (a
+// dog) or arches (a cat), leans in, wags its tail faster, tilts its head,
+// and now and then rolls over; hearts rise. A dog's head and tail are their
+// own instanced meshes so they can tilt and wag: six draws in all with dogs
+// in view (chickens, dog bodies, legs, heads, tails, cats) plus the hearts.
+// Another player's petting (Event 1970) brings this client's copy of that
+// animal over to them the same way.
 
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
@@ -14,6 +23,10 @@ import type { Towns } from '@lodestone/worldgen';
 import type { GroundQuery } from '../../sim/ground';
 import { ANIMAL, followGoal, peckPitch, planAnimals, trotLeg, type AnimalSpec } from './animalsPlan';
 import { STEP_OUT_M } from './npcLife';
+import { kindOrdinals, nameAll } from './animalNames';
+import { PET_DUR_S, PET_REACH_M, PET_STAND_M, animalKey, forwardOfYaw, petBeat, petState, rollAngle, rollsOver, type RemotePet } from './petting';
+import { PetHearts } from './petHearts';
+import { drawnRemotes } from '../../net/netStore';
 
 const ACTIVE_M = 95;
 const MAX_CHICKEN = 48;
@@ -65,16 +78,19 @@ const chickenGeo = () =>
     cbox(0.02, 0.15, 0.02, 0.02, 0.075, 0.045, [0.9, 0.7, 0.3]),
     cbox(0.02, 0.15, 0.02, 0.02, 0.075, -0.045, [0.9, 0.7, 0.3]),
   ]);
-const dogBodyGeo = () =>
+/** Neck pivot (the head turns about it) and tail root (the tail wags about it), in the dog's frame. */
+const NECK: [number, number] = [0.28, 0.6];
+const TAIL_ROOT: [number, number] = [-0.36, 0.62];
+const dogBodyGeo = () => merged([cbox(0.6, 0.26, 0.24, 0, 0.5, 0, W)]);
+const dogHeadGeo = () =>
   merged([
-    cbox(0.6, 0.26, 0.24, 0, 0.5, 0, W),
-    cbox(0.22, 0.2, 0.18, 0.38, 0.64, 0, W),
-    cbox(0.14, 0.1, 0.11, 0.52, 0.6, 0, [0.75, 0.7, 0.66]),
-    cbox(0.04, 0.05, 0.06, 0.6, 0.62, 0, [0.15, 0.12, 0.12]),
-    cbox(0.06, 0.12, 0.04, 0.34, 0.78, 0.08, [0.7, 0.66, 0.62]),
-    cbox(0.06, 0.12, 0.04, 0.34, 0.78, -0.08, [0.7, 0.66, 0.62]),
-    cbox(0.3, 0.06, 0.07, -0.43, 0.66, 0, [0.9, 0.86, 0.8], 0.65),
+    cbox(0.22, 0.2, 0.18, 0.38 - NECK[0], 0.64 - NECK[1], 0, W),
+    cbox(0.14, 0.1, 0.11, 0.52 - NECK[0], 0.6 - NECK[1], 0, [0.75, 0.7, 0.66]),
+    cbox(0.04, 0.05, 0.06, 0.6 - NECK[0], 0.62 - NECK[1], 0, [0.15, 0.12, 0.12]),
+    cbox(0.06, 0.12, 0.04, 0.34 - NECK[0], 0.78 - NECK[1], 0.08, [0.7, 0.66, 0.62]),
+    cbox(0.06, 0.12, 0.04, 0.34 - NECK[0], 0.78 - NECK[1], -0.08, [0.7, 0.66, 0.62]),
   ]);
+const dogTailGeo = () => merged([cbox(0.3, 0.06, 0.07, -0.43 - TAIL_ROOT[0], 0.66 - TAIL_ROOT[1], 0, [0.9, 0.86, 0.8], 0.65)]);
 const dogLegGeo = () => merged([cbox(0.075, 0.34, 0.075, 0, -0.17, 0, [0.82, 0.78, 0.74])]);
 const catGeo = () =>
   merged([
@@ -107,6 +123,19 @@ interface Animal {
   hz: number;
   tint: THREE.Color;
   yAt: number;
+  /** Index in the settlement's plan (the wire key's low byte) and name ('' chickens). */
+  idx: number;
+  name: string;
+  /** Petting (CR 054): from another player (Event 1970), joy and sit blend 0..1, the roll angle, wag and head clocks. */
+  remote: RemotePet | null;
+  petStart: number;
+  petPlan: boolean;
+  wasPet: boolean;
+  joy: number;
+  sit: number;
+  roll: number;
+  wag: number;
+  heartAt: number;
 }
 
 interface Settle {
@@ -124,6 +153,15 @@ export class TownAnimals {
   private readonly chickens = mesh(chickenGeo(), 'animals-chickens', MAX_CHICKEN);
   private readonly dogs = mesh(dogBodyGeo(), 'animals-dogs', MAX_DOG);
   private readonly dogLegs = mesh(dogLegGeo(), 'animals-dog-legs', MAX_DOG * 4);
+  private readonly dogHeads = mesh(dogHeadGeo(), 'animals-dog-heads', MAX_DOG);
+  private readonly dogTails = mesh(dogTailGeo(), 'animals-dog-tails', MAX_DOG);
+  private readonly hearts = new PetHearts();
+  private readonly bm = new THREE.Matrix4();
+  private readonly hm = new THREE.Matrix4();
+  private readonly lm = new THREE.Matrix4();
+  private readonly tmp = new THREE.Matrix4();
+  private readonly tmp2 = new THREE.Matrix4();
+  private readonly v3 = new THREE.Vector3();
   private readonly cats = mesh(catGeo(), 'animals-cats', MAX_CAT);
   private readonly settles = new Map<number, Settle>();
   private readonly m = new THREE.Matrix4();
@@ -143,7 +181,7 @@ export class TownAnimals {
     private readonly isDwarf: (settlement: number) => boolean,
   ) {
     this.group.name = 'town-animals';
-    this.group.add(this.chickens, this.dogs, this.dogLegs, this.cats);
+    this.group.add(this.chickens, this.dogs, this.dogLegs, this.dogHeads, this.dogTails, this.cats, this.hearts.object);
   }
 
   private plan(si: number, low: boolean): Settle {
@@ -168,12 +206,135 @@ export class TownAnimals {
       if (rd.cls !== 1) continue;
       for (let k = 0; k + 2 < rd.points.length; k += 3 * 2) streets.push(rd.points[k], rd.points[k + 2]);
     }
-    const animals = planAnimals({ id: Number(st.id & 0xffffffffn), size: st.size, x: st.x, z: st.z, farms, doors }, low).map((spec): Animal => {
+    const sid = Number(st.id & 0xffffffffn);
+    const plan = planAnimals({ id: sid, size: st.size, x: st.x, z: st.z, farms, doors }, low);
+    const names = nameAll(plan.map((p) => p.kind), sid);
+    const ords = kindOrdinals(plan.map((p) => p.kind));
+    const animals = plan.map((spec, pi): Animal => {
+      const idx = (spec.kind << 6) | ords[pi]; // the wire key's low byte: stable on every quality tier
       const tint = (spec.kind === ANIMAL.chicken ? CHICKEN_TINT : spec.kind === ANIMAL.dog ? DOG_TINT : CAT_TINT)[spec.seed % (spec.kind === ANIMAL.chicken ? 5 : spec.kind === ANIMAL.dog ? 4 : 5)];
       const home = spec.kind === ANIMAL.chicken ? farms[spec.home] : { x: spec.x, z: spec.z };
-      return { spec, si, x: spec.x, y: 0, z: spec.z, yaw: (spec.seed % 628) / 100, tx: spec.x, tz: spec.z, moving: false, until: 0, ph: (spec.seed % 100) / 10, peckT: (spec.seed % 50) / 10, rng: spec.seed || 1, follow: 0, cooldown: 0, hx: home.x, hz: home.z, tint, yAt: -1e9 };
+      return { spec, si, x: spec.x, y: 0, z: spec.z, yaw: (spec.seed % 628) / 100, tx: spec.x, tz: spec.z, moving: false, until: 0, ph: (spec.seed % 100) / 10, peckT: (spec.seed % 50) / 10, rng: spec.seed || 1, follow: 0, cooldown: 0, hx: home.x, hz: home.z, tint, yAt: -1e9, idx, name: names[pi], remote: null, petStart: 0, petPlan: false, wasPet: false, joy: 0, sit: 0, roll: 0, wag: (spec.seed % 100) / 7, heartAt: 0 };
     });
     return { animals, streets };
+  }
+
+  /** The dog, in whatever it is doing: trotting, standing, sitting, leaning in with a tilted head and a wagging tail, or rolled onto its back. */
+  private drawDog(a: Animal, i: number, nowMs: number): void {
+    const { q, p, s, up, bm, hm, lm, tmp, tmp2 } = this;
+    const SIT = 0.75;
+    const sit = a.sit * (1 - a.roll / Math.PI);
+    const bob = a.moving ? Math.abs(Math.sin(a.ph)) * 0.035 : 0;
+    q.setFromAxisAngle(up, -a.yaw);
+    bm.compose(p.set(a.x, a.y + bob, a.z), q, s.set(1, 1, 1));
+    if (sit > 0.001) {
+      // Tip about the rump's bottom edge (the haunches settle) and sink onto the ground.
+      bm.multiply(tmp.makeTranslation(0, -0.31 * sit, 0)).multiply(tmp.makeTranslation(-0.3, 0.37, 0)).multiply(tmp2.makeRotationZ(SIT * sit)).multiply(tmp.makeTranslation(0.3, -0.37, 0));
+    }
+    if (a.roll > 0.001) bm.multiply(tmp.makeTranslation(0, 0.4, 0)).multiply(tmp2.makeRotationX(a.roll)).multiply(tmp.makeTranslation(0, -0.4, 0));
+    this.dogs.setMatrixAt(i, bm);
+    this.dogs.setColorAt(i, a.tint);
+    // Head: turns about the neck; tilts and nods up into the hand when happy.
+    const tilt = a.joy * (0.34 + 0.07 * Math.sin(nowMs / 520 + a.spec.seed));
+    const nod = a.moving ? 0.05 * Math.sin(a.ph * 2) : a.joy * (0.12 + 0.05 * Math.sin(nowMs / 260)) + sit * 0.08;
+    hm.copy(bm).multiply(tmp.makeTranslation(NECK[0], NECK[1], 0)).multiply(tmp2.makeRotationX(tilt)).multiply(tmp.makeRotationZ(nod));
+    this.dogHeads.setMatrixAt(i, hm);
+    this.dogHeads.setColorAt(i, a.tint);
+    // Tail: a lazy wag, a brisk one on the move, a fast wide one when petted.
+    const amp = (a.moving ? 0.35 : 0.2) + 0.55 * a.joy;
+    lm.copy(bm).multiply(tmp.makeTranslation(TAIL_ROOT[0], TAIL_ROOT[1], 0)).multiply(tmp2.makeRotationY(Math.sin(a.wag) * amp)).multiply(tmp.makeRotationZ(0.35 * a.joy));
+    this.dogTails.setMatrixAt(i, lm);
+    this.dogTails.setColorAt(i, a.tint);
+    const flat = a.roll / Math.PI;
+    for (let leg = 0; leg < 4; leg++) {
+      const front = leg < 2;
+      let ang = (a.moving ? trotLeg(a.ph, leg) : 0) * (1 - sit);
+      ang += front ? -SIT * sit : 0.65 * sit;
+      if (flat > 0.01) ang += Math.sin(nowMs / 110 + leg * 1.7) * 0.55 * flat;
+      lm.copy(bm).multiply(tmp.makeTranslation(front ? 0.22 : -0.22, 0.38, leg % 2 === 0 ? 0.08 : -0.08)).multiply(tmp2.makeRotationZ(ang));
+      this.dogLegs.setMatrixAt(i * 4 + leg, lm);
+      this.dogLegs.setColorAt(i * 4 + leg, a.tint);
+    }
+    this.publish(a, hm, 0.1, 0.18, bm, -0.12, 0.68);
+    this.maybeHeart(a, nowMs, hm, 0.12, 0.26);
+  }
+
+  /** The head-top and rump anchors (world) of the animal the local player is petting; the camera and hand follow them. */
+  private publish(a: Animal, headM: THREE.Matrix4, hx: number, hy: number, backM: THREE.Matrix4, bx: number, by: number): void {
+    if (!petState.active || petState.key !== animalKey(a.si, a.idx)) return;
+    const v = this.v3;
+    v.set(hx, hy, 0).applyMatrix4(headM);
+    petState.head.x = v.x;
+    petState.head.y = v.y;
+    petState.head.z = v.z;
+    v.set(bx, by, 0).applyMatrix4(backM);
+    petState.back.x = v.x;
+    petState.back.y = v.y;
+    petState.back.z = v.z;
+    petState.centre.x = a.x;
+    petState.centre.y = a.y;
+    petState.centre.z = a.z;
+  }
+
+  /** A heart now and then from a happy animal's head (headM * (x, y, 0)). */
+  private maybeHeart(a: Animal, nowMs: number, headM: THREE.Matrix4, x: number, y: number): void {
+    if (a.joy < 0.45 || nowMs < a.heartAt) return;
+    a.heartAt = nowMs + 260 + (a.spec.seed % 90);
+    const v = this.v3.set(x, y, 0).applyMatrix4(headM);
+    this.hearts.spawn(v.x, v.y, v.z, ((a.spec.seed >> 3) % 7) / 3 - 1);
+  }
+
+  /** The animals within `reach` m (horizontal) of (x, z) that can be petted now: dogs and cats that are not running off. */
+  pettables(x: number, z: number, reach = PET_REACH_M): { key: number; kind: number; name: string; x: number; y: number; z: number; settlement: number; seed: number }[] {
+    const out: { key: number; kind: number; name: string; x: number; y: number; z: number; settlement: number; seed: number }[] = [];
+    for (const [si, S] of this.settles) {
+      for (const a of S.animals) {
+        if (a.spec.kind === ANIMAL.chicken) continue;
+        if (Math.abs(a.x - x) > reach || Math.abs(a.z - z) > reach || Math.hypot(a.x - x, a.z - z) > reach) continue;
+        if (a.spec.kind === ANIMAL.cat && a.moving && a.sit < 0.5 && a.joy < 0.1) continue; // a cat streaking away
+        out.push({ key: animalKey(si, a.idx), kind: a.spec.kind, name: a.name, x: a.x, y: a.y + (a.spec.kind === ANIMAL.dog ? 0.45 : 0.25), z: a.z, settlement: si, seed: a.spec.seed });
+      }
+    }
+    return out;
+  }
+
+  /** Every dog and cat of the active settlements (owners' barks). */
+  named(): { key: number; kind: number; name: string; x: number; z: number; seed: number; si: number; idx: number }[] {
+    const out: { key: number; kind: number; name: string; x: number; z: number; seed: number; si: number; idx: number }[] = [];
+    for (const [si, S] of this.settles) for (const a of S.animals) if (a.name) out.push({ key: animalKey(si, a.idx), kind: a.spec.kind, name: a.name, x: a.x, z: a.z, seed: a.spec.seed, si, idx: a.idx });
+    return out;
+  }
+
+  /** Another player started (`on`) or stopped petting animal `key`: this client's copy goes to them, or lets go. */
+  remotePet(key: number, entityId: number, on: boolean, x: number, z: number, nowMs: number): void {
+    const si = key >>> 8;
+    const S = this.settles.get(si);
+    const a = S?.animals.find((an) => animalKey(an.si, an.idx) === key);
+    if (!a) return; // not planned here (this client has not met that town yet): nothing to move
+    if (on) a.remote = { entityId, from: nowMs, until: nowMs + PET_DUR_S * 1000, x, z };
+    else if (a.remote && a.remote.entityId === entityId) a.remote.until = nowMs;
+  }
+
+  /** The name of the animal a look ray points at within `maxM` (for the nameplate), with a point above its head. */
+  lookedAt(eye: THREE.Vector3, fwd: THREE.Vector3, maxM = 8): { name: string; kind: number; x: number; y: number; z: number; d: number } | null {
+    let best: { name: string; kind: number; x: number; y: number; z: number; d: number } | null = null;
+    let bestScore = 0.93;
+    for (const S of this.settles.values()) {
+      for (const a of S.animals) {
+        if (a.spec.kind === ANIMAL.chicken || !a.name) continue;
+        const hy = a.y + (a.spec.kind === ANIMAL.dog ? 0.55 + 0.25 * a.sit : 0.3);
+        const dx = a.x - eye.x;
+        const dy = hy - eye.y;
+        const dz = a.z - eye.z;
+        const d = Math.hypot(dx, dy, dz);
+        if (d > maxM || d < 0.3) continue;
+        const cos = (dx * fwd.x + dy * fwd.y + dz * fwd.z) / d;
+        if (cos < bestScore) continue;
+        bestScore = cos;
+        best = { name: a.name, kind: a.spec.kind, x: a.x, y: hy + (a.spec.kind === ANIMAL.dog ? 0.42 : 0.3), z: a.z, d };
+      }
+    }
+    return best;
   }
 
   private groundY(x: number, z: number): number {
@@ -182,7 +343,7 @@ export class TownAnimals {
   }
 
   /** Per frame. `hour` 0-24, `rain` 0..1, `player` the local player's feet and velocity. */
-  update(camera: THREE.Camera, dt: number, nowMs: number, hour: number, rain: number, low: boolean, player: { x: number; y: number; z: number; vx: number; vz: number }): void {
+  update(camera: THREE.Camera, dt: number, nowMs: number, hour: number, rain: number, low: boolean, player: { x: number; y: number; z: number; vx: number; vz: number; yaw: number }): void {
     const cam = camera.position;
     if (low !== this.lowSeen) {
       this.settles.clear(); // the tier changed: plan again with the other counts
@@ -223,27 +384,22 @@ export class TownAnimals {
           this.chickens.setColorAt(nc++, a.tint);
         } else if (k === ANIMAL.dog) {
           if (nd >= MAX_DOG) continue;
-          const bob = a.moving ? Math.abs(Math.sin(a.ph)) * 0.035 : 0;
-          q.setFromAxisAngle(up, -a.yaw);
-          m.compose(p.set(a.x, a.y + bob, a.z), q, s.set(1, 1, 1));
-          this.dogs.setMatrixAt(nd, m);
-          this.dogs.setColorAt(nd, a.tint);
-          for (let leg = 0; leg < 4; leg++) {
-            const ang = a.moving ? trotLeg(a.ph, leg) : 0;
-            const lm = this.dogLegs;
-            const x = leg < 2 ? 0.22 : -0.22;
-            const z = leg % 2 === 0 ? 0.08 : -0.08;
-            r.copy(m).multiply(t.makeTranslation(x, 0.38, z)).multiply(this.r2.makeRotationZ(ang));
-            lm.setMatrixAt(nd * 4 + leg, r);
-            lm.setColorAt(nd * 4 + leg, a.tint);
-          }
+          this.drawDog(a, nd, nowMs);
           nd++;
         } else {
           if (wet || nk >= MAX_CAT) continue;
-          // Sitting cats breathe; a fleeing cat is a low streak.
+          // Sitting cats breathe; a fleeing cat is a low streak; a petted cat arches its back into the hand, purring.
           const breathe = 1 + Math.sin(nowMs / 700 + a.spec.seed) * 0.015;
+          const purr = a.joy > 0.2 ? Math.sin(nowMs / 28) * 0.006 * a.joy : 0;
           q.setFromAxisAngle(up, -a.yaw);
-          m.compose(p.set(a.x, a.y, a.z), q, a.moving ? s.set(1.25, 0.65, 1) : s.set(1, breathe, 1));
+          const arch = a.joy;
+          m.compose(p.set(a.x, a.y, a.z), q, a.moving ? s.set(1.25, 0.65, 1) : s.set(1 - 0.14 * arch, breathe + 0.2 * arch + purr, 1 + 0.06 * arch));
+          if (arch > 0.01) {
+            // Lean into the hand: tip the shoulders toward it about the hips.
+            m.multiply(t.makeTranslation(-0.05, 0.05, 0)).multiply(r.makeRotationZ(0.16 * arch)).multiply(t.makeTranslation(0.05, -0.05, 0));
+            this.publish(a, m, 0.07, 0.42, m, -0.06, 0.3);
+            this.maybeHeart(a, nowMs, m, 0.07, 0.46);
+          }
           this.cats.setMatrixAt(nk, m);
           this.cats.setColorAt(nk++, a.tint);
         }
@@ -252,6 +408,9 @@ export class TownAnimals {
     this.finish(this.chickens, nc);
     this.finish(this.dogs, nd);
     this.finish(this.dogLegs, nd * 4);
+    this.finish(this.dogHeads, nd);
+    this.finish(this.dogTails, nd);
+    this.hearts.update(dt);
     this.finish(this.cats, nk);
     this.stats.chickens = nc;
     this.stats.dogs = nd;
@@ -268,11 +427,32 @@ export class TownAnimals {
   }
 
   /** One animal's behaviour: chickens peck and shuffle about their farm, dogs trot between street points (and tag along), cats sit and slip away from close visitors. */
-  private step(a: Animal, S: Settle, dt: number, nowMs: number, pl: { x: number; z: number; vx: number; vz: number }, dc: number): void {
+  private step(a: Animal, S: Settle, dt: number, nowMs: number, pl: { x: number; z: number; vx: number; vz: number; yaw: number }, dc: number): void {
     const kind = a.spec.kind;
     const toP = Math.hypot(a.x - pl.x, a.z - pl.z);
     let speed = 0;
-    if (kind === ANIMAL.chicken) {
+    const pet = kind === ANIMAL.chicken ? null : this.petOf(a, nowMs, pl);
+    this.petMood(a, pet, dt, nowMs);
+    if (pet) {
+      // Being petted: walk to a spot in front of the petter, face them, and stay (a dog sits, a cat arches).
+      a.follow = 0;
+      const gx = pet.px + pet.fx * PET_STAND_M;
+      const gz = pet.pz + pet.fz * PET_STAND_M;
+      const dg = Math.hypot(gx - a.x, gz - a.z);
+      if (pet.remote && dg > 14) {
+        a.x = gx;
+        a.z = gz;
+      }
+      a.tx = gx;
+      a.tz = gz;
+      a.moving = a.moving ? dg > 0.15 : dg > 0.3;
+      if (a.moving) speed = kind === ANIMAL.cat ? 3 : 2.4;
+      else {
+        let dy = Math.atan2(pet.pz - a.z, pet.px - a.x) - a.yaw;
+        dy = Math.atan2(Math.sin(dy), Math.cos(dy));
+        a.yaw += dy * Math.min(1, dt * 7);
+      }
+    } else if (kind === ANIMAL.chicken) {
       a.peckT += dt;
       if (a.moving) speed = 1.0;
       else if (nowMs > a.until) {
@@ -335,7 +515,7 @@ export class TownAnimals {
       }
     } else {
       // Cats: sit; a close visitor sends them trotting 6 m off, where they sit again.
-      if (toP < 2.4 && !a.moving) {
+      if (!a.moving && ((toP < 2.4 && Math.hypot(pl.vx, pl.vz) > 2.2) || toP < 0.9)) {
         const away = Math.atan2(a.z - pl.z, a.x - pl.x) + (rand(a) - 0.5);
         a.tx = a.x + Math.cos(away) * 6;
         a.tz = a.z + Math.sin(away) * 6;
@@ -364,7 +544,56 @@ export class TownAnimals {
     void dc;
   }
 
+  /** The petting this animal is in, from you (petState) or another player (Event 1970): seconds in, where the petter stands, which way they face. */
+  private petOf(a: Animal, nowMs: number, pl: { x: number; z: number; yaw: number }): { t: number; px: number; pz: number; fx: number; fz: number; remote: boolean } | null {
+    if (petState.active && petState.key === animalKey(a.si, a.idx)) {
+      const f = forwardOfYaw(pl.yaw);
+      if (!a.wasPet) {
+        a.petStart = petState.startedAt;
+        a.petPlan = rollsOver(a.spec.seed, a.petStart, a.spec.kind);
+      }
+      return { t: petState.t, px: pl.x, pz: pl.z, fx: f.x, fz: f.z, remote: false };
+    }
+    const r = a.remote;
+    if (!r) return null;
+    if (nowMs >= r.until) {
+      a.remote = null;
+      return null;
+    }
+    const v = drawnRemotes.views.find((x) => x.id === r.entityId);
+    const px = v ? v.x : r.x;
+    const pz = v ? v.z : r.z;
+    const f = v ? forwardOfYaw(v.yaw) : { x: Math.cos(a.yaw + Math.PI), z: Math.sin(a.yaw + Math.PI) };
+    if (!a.wasPet) {
+      a.petStart = r.from;
+      a.petPlan = rollsOver(a.spec.seed, r.from, a.spec.kind);
+    }
+    return { t: (nowMs - r.from) / 1000, px, pz, fx: f.x, fz: f.z, remote: true };
+  }
+
+  /** Contentment, sitting, the roll and the wag clock, eased toward what the petting asks. */
+  private petMood(a: Animal, pet: { t: number } | null, dt: number, nowMs: number): void {
+    const dog = a.spec.kind === ANIMAL.dog;
+    let joyT = 0;
+    if (pet) {
+      joyT = petBeat(pet.t).joy;
+      a.wasPet = true;
+      a.roll = a.petPlan ? rollAngle(pet.t) : 0;
+    } else {
+      if (a.wasPet) {
+        a.wasPet = false;
+        a.until = nowMs + 1800; // sit a moment longer, then wander on
+      }
+      a.roll += (0 - a.roll) * Math.min(1, dt * 6);
+    }
+    const settled = pet ? !a.moving : a.joy > 0.12;
+    a.joy += (joyT - a.joy) * Math.min(1, dt * 5);
+    a.sit += ((dog && settled ? 1 : 0) - a.sit) * Math.min(1, dt * 4);
+    a.wag += dt * (a.moving ? 9 : 4 + 11 * a.joy);
+  }
+
   dispose(): void {
+    this.hearts.dispose();
     this.group.traverse((o) => {
       const mm = o as THREE.InstancedMesh;
       if (mm.isInstancedMesh) {

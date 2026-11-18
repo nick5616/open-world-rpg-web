@@ -22,6 +22,7 @@ import { SYNTH_SLICE, yieldToLoop } from './synth';
 import { CUES, type CueDef, type CueId } from './cues';
 import { airLowpassHz, distanceGain, LOWPASS_BYPASS_HZ, occlusion, SPACE_OUTDOORS, type Occlusion } from './spatial';
 import { renderBell, synthName } from './bells';
+import { isAnimalSynth, renderAnimal } from './animalSynth';
 import { pickVariant, variation, VoiceLimiter } from './voiceLimit';
 
 export interface PlayOpts {
@@ -157,7 +158,7 @@ export class SfxEngine {
     // Playtest 2 immersion pass: `synth:<bell>` files are rendered (bells.ts), not fetched.
     const synth = synthName(name);
     if (synth) {
-      const q = renderBell(synth)
+      const q = (isAnimalSynth(synth) ? renderAnimal(synth) : renderBell(synth))
         .then((b) => {
           this.buffers.set(name, b);
           return b;

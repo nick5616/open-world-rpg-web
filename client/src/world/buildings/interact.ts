@@ -7,7 +7,9 @@
 // nearer. Signposts are read-only (no Interact) and use a slightly longer
 // reach so the HUD can show the destinations as you walk up.
 
-export type TargetKind = 'npc' | 'board' | 'forge' | 'anvil' | 'shaft' | 'sign' | 'door';
+import { petPrompt } from './animalNames';
+
+export type TargetKind = 'npc' | 'board' | 'forge' | 'anvil' | 'shaft' | 'sign' | 'door' | 'animal';
 
 export interface Candidate {
   kind: TargetKind;
@@ -48,7 +50,7 @@ export function pickTarget(eye: { x: number; y: number; z: number }, fwd: { x: n
     // Standing right on top of it: always "facing".
     const cos = d < 0.4 ? 1 : (dx * fwd.x + dy * fwd.y + dz * fwd.z) / d;
     // Close things subtend more of the view: widen the cone a little up close.
-    const lim = d < 1.5 ? cosMin - 0.15 : cosMin;
+    const lim = c.kind === 'animal' ? cosMin - 0.3 : d < 1.5 ? cosMin - 0.15 : cosMin; // a dog at your feet is well below the crosshair (CR 054)
     if (cos < lim) continue;
     // Playtest 2: a blacksmith stands at her anvil; looking roughly at both,
     // talking to the person wins (about 12 degrees of aim).
@@ -78,5 +80,7 @@ export function promptFor(c: Candidate, roleLabel: (role: number) => string): st
       return c.name;
     case 'door':
       return c.role === 1 ? '[E] Close door' : '[E] Open door';
+    case 'animal':
+      return petPrompt(c.role, c.name); // CR 054: role = the animal kind (1 dog, 2 cat)
   }
 }

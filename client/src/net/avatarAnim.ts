@@ -34,6 +34,7 @@ import { Activity, COMBAT, CONTENT, DODGE_SPEED, MOVE_STEP_HZ, SPRINT_MULTIPLIER
 import type { WeaponKind } from '../combat/weapons/look';
 import { ELEMENT_COLORS } from '../combat/events';
 import { CAST_FX_MINE, type CasterState } from '../combat/castState';
+import { petBeat } from '../world/buildings/petting';
 
 /** Playtest 2 emotes (CR 026, contracts/content.yaml emotes): id -> definition. */
 const EMOTE_BY_ID = new Map(CONTENT.emotes.list.map((e) => [e.id, e]));
@@ -42,6 +43,8 @@ export const EMOTE_FISHING = 20;
 export const EMOTE_SHOW_CATCH = 21;
 /** CR 029: petting your pet (Event 1090 id 25, sent by the zone; value = the pet's entity id). */
 export const EMOTE_PET = 25;
+/** CR 054: kneeling to stroke a town dog or cat (Event 1970 posed by the client; content.yaml emote 26). */
+export const EMOTE_PET_ANIMAL = 26;
 /** Playtest 2 instruments (CR 028): playing; the emote value is the instrument id. */
 export const EMOTE_PLAYING = 22;
 const INSTRUMENT_POSE = new Map(CONTENT.instruments.list.map((i) => [i.id, i.pose]));
@@ -817,6 +820,20 @@ export class AvatarAnimator {
         set(LL, 0.35 * k, 0.16, 1.4 * k);
         set(R, 0.9 + 0.25 * stroke, 0.1, 0.25 + 0.2 * stroke);
         set(L, 0.6, -0.1, 1.3);
+        break;
+      }
+      case EMOTE_PET_ANIMAL: {
+        // CR 054: down on one knee, leaning over the animal; the right hand glides head to rump in three slow strokes
+        // (petBeat: the same clock the first-person camera and the dog follow), the left rests on the knee.
+        const b = petBeat(e);
+        const k = b.crouch;
+        bodyY = p.bodyY - 0.52 * k;
+        torsoPitch = -0.7 * k;
+        headPitch = -0.4 * k;
+        set(LR, 1.4 * k, 0.1, 2.0 * k); // the front foot planted, thigh forward, knee bent
+        set(LL, -0.3 * k, 0.12, 2.1 * k); // the back knee down, shin trailing
+        set(R, 0.1 + b.reach * (0.2 + 0.32 * b.s - 2.0 * (b.lift - 0.012)), 0.08, 0.3 + 0.2 * b.reach);
+        set(L, 0.35 * k, 0.16, 1.1 * k);
         break;
       }
       default:

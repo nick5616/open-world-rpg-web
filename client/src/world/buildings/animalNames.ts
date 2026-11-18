@@ -36,13 +36,27 @@ export function animalName(kind: number, id: number, index: number, taken: Reado
   return pool[start];
 }
 
+/**
+ * The ordinal of each animal within its kind (dogs 0, 1; cats 0, 1, 2, 3; others 0..): the same on
+ * every client whatever the quality tier (Low drops chickens and trailing dogs and cats only).
+ */
+export function kindOrdinals(kinds: readonly number[]): number[] {
+  const n = new Map<number, number>();
+  return kinds.map((k) => {
+    const v = n.get(k) ?? 0;
+    n.set(k, v + 1);
+    return v;
+  });
+}
+
 /** Names for a whole plan (kinds in plan order), unique per kind within the settlement. */
 export function nameAll(kinds: readonly number[], id: number): string[] {
   const takenDog = new Set<string>();
   const takenCat = new Set<string>();
+  const ord = kindOrdinals(kinds);
   return kinds.map((kind, i) => {
     const set = kind === ANIMAL.dog ? takenDog : takenCat;
-    const n = animalName(kind, id, i, set);
+    const n = animalName(kind, id, ord[i], set);
     if (n) set.add(n);
     return n;
   });

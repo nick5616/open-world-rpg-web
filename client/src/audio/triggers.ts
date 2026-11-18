@@ -484,6 +484,9 @@ export const TRIGGERS = {
     a.play('heartbeat', { volume: v });
     a.play('heartbeat', { volume: 0.7 * v, delay: 0.24, rate: 0.9 });
   },
+  // CR 054: petting a town dog or cat (the panting bark, the purr), where the animal is
+  pet_dog: (p, a) => a.play('pet_dog', at(p)),
+  pet_cat: (p, a) => a.play('pet_cat', at(p)),
   // CR 031: an achievement toast appears (ui/achievements/AchievementsHud.tsx)
   achievement: (p, a) => a.play(achievementCue(p.tier ?? 0)),
 } satisfies Record<string, TriggerFn>;

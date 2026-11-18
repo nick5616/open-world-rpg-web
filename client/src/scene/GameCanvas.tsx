@@ -24,6 +24,7 @@ import { LocalAvatar } from './LocalAvatar';
 // Playtest 2: photo mode's free camera, first-person emote feedback, fishing lines (after PlayerController: they adjust its camera).
 import { PhotoRig } from '../ui/photo/PhotoRig';
 import { FirstPersonEmote } from '../ui/emotes/FirstPersonEmote';
+import { FirstPersonPet } from './FirstPersonPet';
 import { FishingLayer } from '../ui/fishing/FishingLayer';
 import { FirstPersonInstrument } from '../ui/music/FirstPersonInstrument';
 import { SkyAndSun } from './SkyAndSun';
@@ -110,6 +111,7 @@ export function GameCanvas({ ground = DEFAULT_GROUND, terrain, onStep, driver, c
         {/* playtest 2: your own body in third person */}
         <LocalAvatar />
         <FirstPersonEmote />
+        <FirstPersonPet />
         <FishingLayer />
         <FirstPersonInstrument />
         <PhotoRig />

@@ -27,6 +27,8 @@ import { setQuestPreview } from '../../ui/quests/store';
 import { whereText, type QuestMarker } from '../../ui/quests/events';
 import { dialogController, ensureDialogHook } from '../../ui/dialog/link'; // CR 049: conversations with townsfolk
 import { setBoardPapers } from '../signposts/boardPapers';
+import { startPetting } from './petControl'; // CR 054: petting town dogs and cats
+import { EV_ANIMAL_PET, EV_ANIMAL_PET_REFUSED } from './petting';
 import { ACT, BOUNTY_KIND_LABEL, decodeBounties, decodeShop, EV, INTERACT, itemName, MERCHANT_LABEL, NPC_ROLE_LABEL, REFUSAL, utf8, type Bounty, type ShopItem } from './townEvents';
 
 interface PanelState {
@@ -79,6 +81,8 @@ export class TownHud {
   lastAction: string | null = null;
   /** E on a door (TownsManager: DoorSync.toggle; Interact 34 online, local offline). */
   doorAct: ((door: number) => void) | null = null;
+  /** Events 1970 / 1971 (TownsManager: petControl.onPetEvent); returns a toast line. */
+  petEvent: ((e: ZoneEvent) => string | null) | null = null;
 
   private readonly onKey = (e: KeyboardEvent) => {
     if (e.repeat || notGameKey(e)) return; // typing in chat: E is the text box's
@@ -190,6 +194,12 @@ export class TownHud {
   /** E on a target: Interact online, a local line offline. */
   act(c: Candidate): void {
     if (c.kind === 'sign') return;
+    if (c.kind === 'animal') {
+      const why = startPetting(c);
+      if (why) this.toast(why);
+      this.lastAction = `pet ${c.name}`;
+      return;
+    }
     if (c.kind === 'door') {
       this.doorAct?.(c.index);
       this.lastAction = `door ${c.index} ${c.role === 1 ? 'close' : 'open'}`;
@@ -294,6 +304,11 @@ export class TownHud {
 
   /** Zone events 800-807 (contracts/events.md). */
   private onEvent(e: ZoneEvent): void {
+    if (e.kind === EV_ANIMAL_PET || e.kind === EV_ANIMAL_PET_REFUSED) {
+      const line = this.petEvent?.(e);
+      if (line) this.toast(line);
+      return;
+    }
     if (e.kind < 800 || e.kind > 899) return;
     try {
       switch (e.kind) {
