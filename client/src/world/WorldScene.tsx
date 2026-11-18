@@ -235,6 +235,11 @@ export function WorldScene({ runtime }: Props) {
         o.material.needsUpdate = true;
       }
     });
+    // Playtest 5 (CR 057): materials that already had a program for this cascade
+    // count (a tier visited before) keep the previous compile's uniform arrays,
+    // which are sized for the other count ("reading 'toArray'" on the next frame
+    // when Medium -> High). Re-size every cascade uniform now, not at the next resize.
+    sun.updateFrustums();
     gl.shadowMap.enabled = shadowCascades > 0;
     // Playtest 2 spell screen effect (shockwave/shake/flash): medium and up, never in Retro (it is meant to be cheap).
     const post = new PostFX(gl, scene, camera, { multisampling: msaa, bloom, godRays, fxaa, spellScreen });
