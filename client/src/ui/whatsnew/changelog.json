@@ -1,5 +1,14 @@
 [
   {
+    "id": "pt5-interact-stuck",
+    "date": "2026-11-18",
+    "title": "E works again after long sessions",
+    "items": [
+      "Talking, picking things up, doors and stations no longer go quiet after a long play session: a leftover prompt or a conversation that was never answered now lets go of the E key by itself.",
+      "A conversation the zone never answers closes after a few seconds instead of holding the camera and the person."
+    ]
+  },
+  {
     "id": "pt4-music",
     "date": "2026-11-18",
     "title": "Nicole's new music",
