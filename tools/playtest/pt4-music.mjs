@@ -1,4 +1,4 @@
-/* global performance, AudioContext, OfflineAudioContext */
+/* global AudioContext */
 // Playtest 4 (Nicole's new music) in the real client, read off the audio debug handle
 // (window.__lodestoneAudio), not by ear. Default autoplay policy (no flags), so the
 // "first gesture" rule is real.
