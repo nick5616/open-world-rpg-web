@@ -24,7 +24,7 @@ import { useTips } from '../tips/store';
 import { useAutoLoot } from '../inventory/ground/autoLoot';
 import { controlGroups } from './controls';
 import { useDev } from '../devconsole/store';
-import { closeMenu, escAction, openMenu, unlockOpensMenu, useMenu, type MenuEntry } from './store';
+import { closeMenu, escAction, menuStale, openMenu, unlockOpensMenu, useMenu, type MenuEntry } from './store';
 import { closeTopPanel, openPanels } from '../../input/panelStack';
 
 const MENU_KEY = 'Escape';
@@ -73,6 +73,7 @@ function relock(): void {
 let keysActive = false;
 let unlockedAt = -1e9;
 let poppedAt = -1e9;
+let menuOpenedAt = -1e9;
 
 /** A field the player types into (a slider or checkbox in a panel is not: Esc still closes the panel). */
 function typingIn(t: EventTarget | null): boolean {
@@ -84,7 +85,12 @@ function typingIn(t: EventTarget | null): boolean {
 
 function onMenuKey(e: KeyboardEvent): void {
   if (!keysActive) return;
-  const m = useMenu.getState();
+  let m = useMenu.getState();
+  // Playtest 5: an "open" menu that is not on screen would swallow E and every other hotkey for good (menuStale).
+  if (m.open && menuStale({ open: true, openForMs: performance.now() - menuOpenedAt, rendered: !!document.querySelector('[data-testid="esc-menu"]') })) {
+    closeMenu();
+    m = useMenu.getState();
+  }
   if (e.code !== MENU_KEY) {
     // While the menu is up, panel hotkeys wait (movement keeps working: the world doesn't pause).
     if (m.open && !isTextTarget(e.target) && !KEY_MAP[e.code]) e.stopImmediatePropagation();
@@ -107,6 +113,9 @@ function onMenuKey(e: KeyboardEvent): void {
     else closeMenu();
   }
 }
+useMenu.subscribe((s, prev) => {
+  if (s.open && !prev.open) menuOpenedAt = performance.now();
+});
 if (typeof window !== 'undefined') {
   const w = window as Window & { __lsMenuKey?: (e: KeyboardEvent) => void };
   if (w.__lsMenuKey) window.removeEventListener('keydown', w.__lsMenuKey, true); // a hot reload of this module

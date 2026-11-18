@@ -3,7 +3,7 @@ import type { Event as ZoneEvent } from '@lodestone/contracts';
 import { aimAt, dialogCam, dialogCamBegin, dialogCamEnd, dialogCamReset, dialogCamStep, turnTo } from './camera';
 import { DLG_EV, decodeNode } from './events';
 import { offlineNode, offlineReply } from './offline';
-import { advanceAction, choiceForKey, reduceDialogEvent, typedChars, useDialog, type DialogState } from './store';
+import { advanceAction, choiceForKey, DIALOG_STALE, reduceDialogEvent, staleDialogAction, typedChars, useDialog, type DialogState } from './store';
 import { basePitch, blipHz, blipsAt } from './voice';
 
 const enc = new TextEncoder();
@@ -24,7 +24,7 @@ const node = {
   ],
 };
 
-const base = (): DialogState => ({ ...useDialog.getState(), open: false, parked: false, awaitingWork: false, key: null, focus: null, node: null, lineAt: 0, toast: null, offline: false, lines: 0 });
+const base = (): DialogState => ({ ...useDialog.getState(), open: false, parked: false, awaitingWork: false, key: null, focus: null, node: null, lineAt: 0, toast: null, offline: false, lines: 0, at: 0 });
 
 describe('dialog store', () => {
   it('a node opens the conversation and starts the line', () => {
@@ -172,5 +172,43 @@ describe('voice and offline', () => {
     const r = offlineReply(n, n.choices[0])!;
     expect(r.line).toMatch(/offline/);
     expect(offlineReply(n, n.choices[1])).toBeNull();
+  });
+});
+
+// Playtest 5 ("can't pick anything up after a while, you can't press E on anything"): a conversation the zone
+// never answers, or whose End event is lost, used to stay on for ever (camera, movement lock, the person held).
+describe('dialog watchdog', () => {
+  const open = (p: Partial<DialogState> = {}) => ({ ...base(), open: true, key: 77, at: 1000, ...p });
+  const withNode = { node: node as never };
+
+  it('a conversation nobody started or that already ended is left alone', () => {
+    expect(staleDialogAction(base(), 1e9, false)).toBeNull();
+  });
+
+  it('an open request the zone never answers is let go after a few seconds', () => {
+    expect(staleDialogAction(open(), 1000 + DIALOG_STALE.noAnswerMs - 1, false)).toBeNull();
+    expect(staleDialogAction(open(), 1000 + DIALOG_STALE.noAnswerMs + 1, false)).toBe('close');
+  });
+
+  it('a first line that arrived keeps the conversation (nobody is rushed while reading)', () => {
+    expect(staleDialogAction(open(withNode), 1000 + 60_000, false)).toBeNull();
+  });
+
+  it('a conversation nobody answers is let go just after the zone gives up on it', () => {
+    expect(staleDialogAction(open(withNode), 1000 + DIALOG_STALE.idleMs + 1, false)).toBe('close');
+  });
+
+  it('parked behind a services panel that is not there: it comes back; with the panel up it waits', () => {
+    const parked = open({ ...withNode, parked: true });
+    expect(staleDialogAction(parked, 1000 + DIALOG_STALE.parkedMs + 1, true)).toBeNull();
+    expect(staleDialogAction(parked, 1000 + 500, false)).toBeNull();
+    expect(staleDialogAction(parked, 1000 + DIALOG_STALE.parkedMs + 1, false)).toBe('unpark');
+    // a service asked for whose node never came
+    expect(staleDialogAction(open({ ...withNode, awaitingWork: true }), 1000 + DIALOG_STALE.parkedMs + 1, false)).toBe('unpark');
+  });
+
+  it('the reducer stamps the clock on every node', () => {
+    const p = reduceDialogEvent(open(), ev(DLG_EV.node, node, { entityId: 77 }), 4321)!;
+    expect(p.at).toBe(4321);
   });
 });

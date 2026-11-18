@@ -20,7 +20,7 @@ import { lookRouter } from '../../input/lookRouter';
 import { dialogCamBegin, dialogCamEnd } from './camera';
 import { DLG_ACT, DLG_EV, DLG_INTERACT, type DialogNode } from './events';
 import { offlineNode, offlineReply } from './offline';
-import { applyDialogEvent, resetDialog, useDialog } from './store';
+import { applyDialogEvent, resetDialog, staleDialogAction, useDialog } from './store';
 
 const FACE_RAISE_M = 0.45;
 
@@ -45,6 +45,7 @@ function session(): ZoneSession | null {
 
 /** Hook the live session if it changed (townHud calls this every frame; cheap). */
 export function ensureDialogHook(): void {
+  watchdog();
   const s = netRuntime.session;
   if (s === hooked) return;
   hooked?.eventListeners.delete(listener);
@@ -54,6 +55,17 @@ export function ensureDialogHook(): void {
     worldOn = true;
     useDialog.subscribe(syncWorld);
   }
+}
+
+/** Playtest 5: a conversation that went quiet lets go on its own (see staleDialogAction). */
+function watchdog(now = performance.now()): void {
+  const s = useDialog.getState();
+  if (!s.open) return;
+  const act = staleDialogAction(s, now, panelOpenFn());
+  if (act === 'close') {
+    dialogController.close();
+    useDialog.setState({ toast: { text: s.node ? 'The conversation drifted off.' : 'No answer.', at: now } });
+  } else if (act === 'unpark') useDialog.setState({ parked: false, awaitingWork: false, at: now });
 }
 
 /** The world follows the store: framing, mouse, standing still, who is talking. */
@@ -93,11 +105,11 @@ export const dialogController = {
     resetDialog();
     if (s && c.entityId !== null) {
       s.sendInteract(DLG_INTERACT, BigInt(c.entityId), DLG_ACT.open, 0);
-      useDialog.setState({ open: true, key, focus, offline: false });
+      useDialog.setState({ open: true, key, focus, offline: false, at: performance.now() });
       return;
     }
     const node = offlineNode(c);
-    useDialog.setState({ open: true, key, focus, node, lineAt: performance.now(), offline: true, lines: 1 });
+    useDialog.setState({ open: true, key, focus, node, lineAt: performance.now(), offline: true, lines: 1, at: performance.now() });
     npcFocus.say(key, node.line, 0, true);
   },
 
@@ -111,7 +123,7 @@ export const dialogController = {
     if (st.offline) {
       const next = offlineReply(node, ch);
       if (!next) return dialogController.close();
-      useDialog.setState({ node: next, lineAt: performance.now(), lines: st.lines + 1 });
+      useDialog.setState({ node: next, lineAt: performance.now(), lines: st.lines + 1, at: performance.now() });
       if (st.key !== null) npcFocus.say(st.key, next.line, 0, true);
       return;
     }
@@ -123,10 +135,10 @@ export const dialogController = {
       return;
     }
     if (ch.kind === 'work') {
-      useDialog.setState({ awaitingWork: true });
+      useDialog.setState({ awaitingWork: true, at: performance.now() });
       setTimeout(() => {
         const cur = useDialog.getState();
-        if (cur.open && cur.parked && !panelOpenFn()) useDialog.setState({ parked: false });
+        if (cur.open && cur.parked && !panelOpenFn()) useDialog.setState({ parked: false, at: performance.now() });
       }, 900);
     }
   },
@@ -144,7 +156,7 @@ export const dialogController = {
   /** The services panel closed: back to the conversation. */
   panelClosed(): void {
     const st = useDialog.getState();
-    if (st.open && st.parked) useDialog.setState({ parked: false });
+    if (st.open && st.parked) useDialog.setState({ parked: false, at: performance.now() });
   },
 
   get node(): DialogNode | null {

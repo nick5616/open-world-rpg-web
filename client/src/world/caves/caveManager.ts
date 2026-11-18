@@ -39,7 +39,7 @@ import type { ResultMsg } from '../core/protocol';
 import { localActions, localPlayer, view } from '../../state/live';
 import { netRuntime } from '../../net/netStore';
 import { notGameKey } from '../../input/useKeyboard';
-import { eFree } from '../../input/interact';
+import { eFree, stampPrompt } from '../../input/interact';
 import type { CaveGround } from './caveGround';
 import type { CaveCellStore, StoredCell } from './caveStore';
 import { CaveAudio } from './caveAudio';
@@ -658,6 +658,7 @@ export class CaveManager {
       const pct = Math.max(0, Math.min(1, hp[0] / Math.max(1, hp[1] || v.hp)));
       this.hud.innerHTML = `<div><b>[E]</b> mine ${veinMaterialName(v)}${v.kind === 'gem' ? '' : ' ore'}</div><div style="margin:4px auto 0;width:120px;height:4px;background:#0008"><div style="width:${Math.round(pct * 100)}%;height:4px;background:#e8c46a"></div></div>`;
     } else this.hud.textContent = '';
+    stampPrompt(this.hud, this.hud.textContent ?? ''); // playtest 5: refreshed every frame, or it stops owning E (input/interact.ts)
     const now = performance.now();
     this.toasts = this.toasts.filter((t) => t.until > now);
     if (this.toastEl) this.toastEl.textContent = this.toasts.map((t) => t.text).join('  ·  ');
