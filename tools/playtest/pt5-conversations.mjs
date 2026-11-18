@@ -1,4 +1,3 @@
-/* global document, window */
 // Playtest 5 conversations revamp (CR 053) evidence: two real browsers on a
 // dev zone. Player A talks to a townsperson: the framed box (name, role,
 // town, transcript, typed line, tagged answers), a check answer, a goodbye
