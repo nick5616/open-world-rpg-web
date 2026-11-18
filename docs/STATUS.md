@@ -2235,3 +2235,25 @@ Also looked at and found fine: the panel stack (it never gates E, only Esc), `np
 **Tests**: `ui/dialog/dialog.test.ts` (watchdog: unanswered request, reading time, idle, parked with and without a panel, clock stamped on every node), `input/interact.test.ts` (new: a prompt whose writer stopped hands E back; unstamped React prompts unchanged; stamp cleared with the text), `ui/menu/menu.test.ts` (`menuStale`).
 
 **Gaps**: other time-triggered panels were not checked for the same flaw (the quest offer card, tips); if E still sticks, open the console after it sticks and read `window.__lodestonePanels.open()` and look for `[data-ui-panel]` and `[data-testid$="-prompt"]` elements, which is what the soak's DIAG dump prints. A frame hitch longer than 3 s makes one E press do nothing (the freshness guard); that is deliberate.
+
+## Playtest 5: Graphics you can actually see (branch `pt5/graphics`)
+
+Nicole: "I don't see the awesome graphics and trees my friend is seeing." and "Make the assets in the world better and higher fidelity, like that would make you want to live in this world, super immersive. For example, trees suck, houses are just okay." CR: `docs/cr/057-graphics-you-can-see.md`. Client only; no protocol, Event, migration or worldgen change. What's new: `pt5-graphics`.
+
+**Cause**: the CR 045 vegetation and CR 046 towns art were tier-gated. Low drew the original blob trees and flat houses, and Auto could settle on Low for good (its first-run frame sample ran during world streaming and was persisted). Nicole was on Low; her friend was not.
+
+**Works**
+- **Every tier draws the rich art**: Low gets the rich trees (0.5 card budget) and Medium's town art; no tier shows the plain low-poly set any more.
+- **Trees**: leaf clumps with shared tone and gaps showing branches, per-tree taper and surface roots, bark grooves and a damp trunk foot, subsurface leaf shading, per-tree colour, 4-view impostors baked from the full tree.
+- **Houses**: roof courses with thickness on shingle, tile and slate, bevelled half-timber, rising damp and mud toward the ground, a stepped window reveal, a worn doorstep; the town meshes follow the shader tier live.
+- **Auto quality**: optimistic start (High on discrete and modern integrated GPUs), a frame-time governor over the first ~28 s of steady play (p90 over 28 ms for two windows steps down, one try up under 18.5 ms), explicit tiers never touched, a one-time "Graphics set to High; F10 to change" notice, and players saved as Auto are re-evaluated (persist version 2).
+- **Live tier switching**: the `toArray` crash is fixed (stale `CSM_cascades` uniform arrays when a material returned to a program it already had; `sun.updateFrustums()` after the new rig). `tools/playtest/pt5-tier-switch-stack.mjs`: 11 switches with teleports on a real stack, 0 page errors (220 before).
+
+**Numbers and evidence**: `docs/evidence/pt5-graphics-{before,after}-{forest,tree,forest-far,house,town-street}-{low,high}.jpg` and the JSON next to them; table in the CR. Low: about +20 draw calls (122 -> 145 in the forest) and +0.2 M triangles, still about 150 calls and under 1 M tris; High: +0 to +2 calls, +3-8 % triangles (High was already over the 400-call / 1.5 M-triangle soft budgets from CR 045 and still is).
+
+**Gaps**
+- Fidelity on High is a moderate step over CR 045; the large change is for Low and Auto players. Leaves are still stylised cards, bark is a texture, roof courses are boxes not rotated to the slope, thatch, dwarven and stilt houses get no courses or grime.
+- Frame times are noisy (the GPU was shared with other agents); read calls and triangles.
+- A changed shader tier (an Auto verdict or a live switch) rebuilds the town meshes once.
+- The governor sees vsync-capped frame times and cannot tell a 90 fps machine from a 61 fps one; it tries one step up and backs out if that fails.
+- Not verified on a real integrated GPU or a real Linux / Mesa machine; the slow-machine case is a 12x CPU throttle on the RTX 3070.

@@ -122,28 +122,61 @@ function crownNormal(c: Ctx, at: THREE.Vector3): THREE.Vector3 {
   return n.normalize();
 }
 
-export function leafCards(c: Ctx, o: { count: number; size: number; spread: number; flat?: number; hang?: number; outward?: number; fill?: number }): void {
+/** A leaf mass: cards gather round one point on the branch hierarchy with a shared tone, so the crown reads as separate clumps with light and gaps between them (playtest 5). */
+interface Clump {
+  tip: Tip;
+  p: THREE.Vector3;
+  rad: number;
+  tone: number;
+  hue: number;
+}
+
+export function leafCards(c: Ctx, o: { count: number; size: number; spread: number; flat?: number; hang?: number; outward?: number; fill?: number; clumps?: number }): void {
   const { b, r, sp } = c;
   if (!c.tips.length || o.count <= 0) return;
   const cell = cellUv(LEAF_CELLS[sp.leaf]);
   const lc = col(...sp.leafCol);
+  // Clump centres sit on the outer tips (of two random tips, the one farther from the crown centre), nudged outward.
+  const clumps: Clump[] = [];
+  for (let j = 0; j < (o.clumps ?? 0); j++) {
+    const t1 = c.tips[Math.floor(r() * c.tips.length)];
+    const t2 = c.tips[Math.floor(r() * c.tips.length)];
+    const tip = t1.p.distanceToSquared(c.cc) > t2.p.distanceToSquared(c.cc) ? t1 : t2;
+    const p = tip.p.clone().add(randDir(r).multiplyScalar(o.spread * 0.3));
+    p.y += (o.flat ?? 1) < 1 ? 0 : o.spread * 0.15;
+    clumps.push({ tip, p, rad: o.spread * (0.85 + 0.75 * r()), tone: 0.72 + 0.5 * r(), hue: (r() - 0.5) * 0.2 });
+  }
+  const fillN = o.fill ? o.count * o.fill : 0;
   for (let i = 0; i < o.count; i++) {
     // Most cards hang on branch tips; a share fills the crown volume so it reads as a mass, not a sprig per twig.
     let tip = c.tips[Math.floor(r() * c.tips.length)];
+    let clump: Clump | null = null;
     const off = randDir(r).multiplyScalar(o.spread * (0.3 + 0.7 * r()));
     off.y *= o.flat ?? 1;
     let at = tip.p.clone().add(off);
-    if (o.fill && i < o.count * o.fill) {
+    if (i < fillN) {
       const dir = randDir(r);
       const k = Math.cbrt(r()) * 0.85 + 0.15;
       at = V(c.cc.x + dir.x * c.cr.x * k, c.cc.y + dir.y * c.cr.y * k * (o.flat ?? 1), c.cc.z + dir.z * c.cr.z * k);
       tip = { p: at, d: dir, flex: 0.35 + 0.5 * k };
+    } else if (clumps.length) {
+      clump = clumps[i % clumps.length];
+      tip = clump.tip;
+      const d = randDir(r);
+      d.y *= o.flat ?? 1;
+      // A squashed ball, denser in the middle.
+      at = clump.p.clone().addScaledVector(d, clump.rad * Math.pow(r(), 0.7));
     }
     // Outerness drives shade: leaves in the crown's interior are dark, sun-side leaves bright.
     const rel = V((at.x - c.cc.x) / c.cr.x, (at.y - c.cc.y) / c.cr.y, (at.z - c.cc.z) / c.cr.z);
     const outer = clamp01(rel.length());
     const sunSide = clamp01(0.5 + rel.y * 0.5 + rel.x * 0.1);
-    const k = 0.34 + 0.5 * outer + 0.3 * sunSide * outer + (r() - 0.5) * 0.14;
+    let k = 0.34 + 0.5 * outer + 0.3 * sunSide * outer + (r() - 0.5) * 0.14;
+    if (clump) {
+      // Each clump has its own tone, lit on top and dark underneath (self-occlusion inside the mass).
+      const top = clamp01(0.5 + (at.y - clump.p.y) / (clump.rad * 2.2));
+      k *= clump.tone * (0.62 + 0.62 * top);
+    }
     const up =
       o.hang !== undefined
         ? V((r() - 0.5) * 0.3, -1, (r() - 0.5) * 0.3).normalize()
@@ -160,7 +193,7 @@ export function leafCards(c: Ctx, o: { count: number; size: number; spread: numb
     const c0 = col(lc.r * k * 0.82, lc.g * k * 0.82, lc.b * k * 0.82);
     const c1 = col(lc.r * k * 1.08, lc.g * k * 1.08, lc.b * k * 1.0);
     // Per-card hue drift: a tree is never one green.
-    const hue = (r() - 0.5) * 0.16;
+    const hue = (r() - 0.5) * 0.1 + (clump?.hue ?? (r() - 0.5) * 0.08);
     c0.r *= 1 + hue;
     c1.r *= 1 + hue;
     c0.b *= 1 - hue;
@@ -177,16 +210,38 @@ function trunk(c: Ctx, top: THREE.Vector3, r0: number, r1: number, o: { bend: nu
   const bx = (r() - 0.5) * o.bend;
   const bz = (r() - 0.5) * o.bend;
   const n = o.points;
+  // Taper varies per tree: some trunks hold their girth and narrow late, some narrow early; a slow swell or two.
+  const taper = 0.75 + r() * 0.65;
+  const swellPhase = r() * 6.28;
+  const swell = 0.04 + r() * 0.07;
   for (let i = 0; i <= n; i++) {
     const t = i / n;
     const w = Math.sin(t * Math.PI) * 0.6 + t * 0.4;
     pts.push(V(lerp(0, top.x, t) + bx * w, lerp(-0.012, top.y, t), lerp(0, top.z, t) + bz * w));
     // Root flare: the base spreads to ~2x over the first few percent of height.
     const flare = 1 + o.flare * Math.exp(-(t * top.y) / 0.035);
-    rad.push(lerp(r0, r1, t) * flare);
+    rad.push(lerp(r0, r1, Math.pow(t, taper)) * flare * (1 + swell * Math.sin(t * 7 + swellPhase) * t));
   }
   c.b.tube(pts, rad, { seg: c.d.lod === 0 ? Math.max(c.seg, 6) : 4, c0: WOOD_ROOT, c1: WOOD, flex0: 0, flex1: 0.12, vScale: 16, uRep: 2, lobe: { amount: 0.28, k: 5, fade: 1.3 }, capTop: true });
+  roots(c, r0 * (1 + o.flare * 0.5));
   return pts;
+}
+
+/** Surface roots: a handful of tapering arms that leave the flared base, hump over the ground and dive into it. Near mesh only. */
+export function roots(c: Ctx, base: number): void {
+  if (c.d.lod !== 0) return;
+  const { r, b } = c;
+  const n = 3 + Math.floor(r() * 3);
+  const a0 = r() * 6.28;
+  for (let j = 0; j < n; j++) {
+    const a = a0 + (j / n) * 6.283 + (r() - 0.5) * 0.7;
+    const ca = Math.cos(a);
+    const sa = Math.sin(a);
+    const len = base * (2.4 + r() * 1.8);
+    const wob = (r() - 0.5) * 0.5;
+    const pts = [V(ca * base * 0.5, 0.045, sa * base * 0.5), V(ca * base * 1.2 - sa * wob * base * 0.3, 0.014, sa * base * 1.2 + ca * wob * base * 0.3), V(ca * len * 0.7 + sa * wob * base, 0.006, sa * len * 0.7 - ca * wob * base), V(ca * len, -0.03, sa * len)];
+    b.tube(pts, [base * 0.5, base * 0.36, base * 0.2, base * 0.07], { seg: 4, c0: WOOD_ROOT, c1: WOOD_ROOT.clone().multiplyScalar(0.8), flex0: 0, flex1: 0, vScale: 6, uRep: 1 });
+  }
 }
 
 function buildBroad(c: Ctx, birch: boolean): void {
@@ -212,7 +267,9 @@ function buildBroad(c: Ctx, birch: boolean): void {
   c.tips.push({ p: top.clone(), d: V(0, 1, 0), flex: 0.3 });
   const N = Math.round(c.sp.cards * d.scale * (hi ? 1 : 0.1));
   const size = c.sp.card * (hi ? 1 : 2.7);
-  leafCards(c, { count: N, size, spread: birch ? 0.1 : 0.12 + (hi ? 0 : 0.03), outward: 0.35, fill: birch ? 0.3 : 0.4 });
+  // Playtest 5: leaf masses. About a fifth of the cards fill the crown core; the rest gather in clumps (~11 cards each) on the outer tips, so branches show between them.
+  const fillB = birch ? 0.16 : 0.2;
+  leafCards(c, { count: N, size, spread: birch ? 0.11 : 0.13 + (hi ? 0 : 0.03), outward: 0.35, fill: fillB, clumps: Math.max(5, Math.round((N * (1 - fillB)) / 11)) });
 }
 
 function buildUmbrella(c: Ctx): void {
@@ -230,7 +287,7 @@ function buildUmbrella(c: Ctx): void {
     limb(c, pts[pts.length - 1], dir, 0.2 + r() * 0.06, 0.02, 0.006, { n: hi ? 4 : 3, curl: 0.25, up: 0.25, depth: 0, maxDepth: hi ? 2 : 0, subs: 2, subLen: 0.55, flex: 0.3 });
   }
   const N = Math.round(c.sp.cards * d.scale * (hi ? 1 : 0.1));
-  leafCards(c, { count: N, size: c.sp.card * (hi ? 1 : 2.6), spread: 0.1, flat: 0.35, outward: 0.9, fill: 0.25 });
+  leafCards(c, { count: N, size: c.sp.card * (hi ? 1 : 2.6), spread: 0.11, flat: 0.35, outward: 0.9, fill: 0.15, clumps: Math.max(5, Math.round((N * 0.85) / 11)) });
 }
 
 function buildWillow(c: Ctx): void {
@@ -270,6 +327,7 @@ function buildConifer(c: Ctx): void {
     rad.push(lerp(0.042, 0.003, Math.pow(t, 0.85)) * (1 + 1.0 * Math.exp(-(t * topY) / 0.035)));
   }
   b.tube(pts, rad, { seg: hi ? 7 : 4, c0: WOOD_ROOT, c1: WOOD, flex0: 0, flex1: 0.3, vScale: 16, uRep: 2, lobe: { amount: 0.22, k: 5, fade: 1.2 }, capTop: true });
+  roots(c, 0.07);
   const whorls = hi ? cone.whorls : Math.ceil(cone.whorls * 0.5);
   const golden = 2.399963;
   let az = r() * 6.28;

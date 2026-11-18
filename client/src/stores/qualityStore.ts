@@ -17,8 +17,11 @@
 //              preset clears them; any override makes the preset read "Custom".
 //   style      the art direction (world/style/styles.ts), independent of quality.
 //   effects    spell FX quality ('auto' follows the graphics tier).
-//   detected   the first-run guess (gpuDetect.ts): GPU class, refined by a
-//              frame-time sample. Only 'auto' uses it; the player's choice wins.
+//   detected   the first-run guess (gpuDetect.ts): GPU class, then the tier the
+//              frame-time governor settled on. Only 'auto' uses it; the
+//              player's choice wins (autoApply never touches an explicit one).
+//   autoNoticed the tier the player was last told Auto had picked (the
+//              one-time "Graphics set to High" notice).
 //
 // resolveGraphics() turns all of that into the numbers the renderer reads
 // (one function, tested), so nothing else re-derives a knob from a tier name.
@@ -116,6 +119,7 @@ interface QualityState {
   style: VisualStyle;
   effects: EffectsSetting;
   detected: DetectedGpu | null;
+  autoNoticed: QualityTier | null;
   /** Pick a preset (clears the individual overrides). */
   setSetting: (s: QualitySetting) => void;
   setControl: <K extends keyof GraphicsControls>(k: K, v: GraphicsControls[K]) => void;
@@ -124,6 +128,14 @@ interface QualityState {
   setEffects: (e: EffectsSetting) => void;
   /** First-run detection result (and the frame-sample refinement). */
   setDetected: (d: DetectedGpu) => void;
+  /**
+   * Playtest 5: the governor's verdict. Auto only (an explicit tier is never touched):
+   * sets the effective tier AND the shader tier (shadows, vegetation art, post), because
+   * a measured step has to change what is drawn; the one-off recompile is paid in the
+   * first seconds of play. Returns whether anything changed.
+   */
+  autoApply: (tier: QualityTier, frameMs: number | null) => boolean;
+  setAutoNoticed: (t: QualityTier) => void;
   /** Auto mode only: move one step down/up (cheap knobs only). No-ops at the ends or when pinned. */
   stepDown: () => void;
   stepUp: () => void;
@@ -163,15 +175,19 @@ export interface PersistedQuality {
   style: VisualStyle;
   effects: EffectsSetting;
   detected: DetectedGpu | null;
+  autoNoticed: QualityTier | null;
 }
 
 export const QUALITY_STORAGE_KEY = 'lodestone_quality_settings';
-export const QUALITY_STORAGE_VERSION = 1;
+export const QUALITY_STORAGE_VERSION = 2;
 
 /**
  * Persisted state of any earlier version -> the current shape. Version 0 (WP02
  * to playtest 1) stored only `{ setting: 'auto'|'low'|'medium'|'high' }`; a
  * bare string (hand-written by older scripts) is read as that setting.
+ * Version 2 (playtest 5): a player saved as Auto has their stored detection
+ * thrown away, so the optimistic GPU guess and the governor run again (the old
+ * rules could have left them on Low for good); an explicit tier is kept.
  * Anything unreadable falls back to the defaults. Pure.
  */
 export function migrateQuality(persisted: unknown, version: number): PersistedQuality {
@@ -179,13 +195,14 @@ export function migrateQuality(persisted: unknown, version: number): PersistedQu
   if (typeof p === 'string') p = { setting: p };
   const r = (p && typeof p === 'object' ? p : {}) as Record<string, unknown>;
   const setting = isSetting(r.setting) ? r.setting : 'auto';
-  if (version < 1) return { setting, overrides: {}, style: DEFAULT_STYLE, effects: 'auto', detected: null };
+  if (version < 1) return { setting, overrides: {}, style: DEFAULT_STYLE, effects: 'auto', detected: null, autoNoticed: null };
   return {
     setting,
     overrides: sanitizeOverrides(r.overrides),
     style: isStyle(r.style) ? r.style : DEFAULT_STYLE,
     effects: isEffects(r.effects) ? r.effects : 'auto',
-    detected: sanitizeDetected(r.detected),
+    detected: version < 2 ? null : sanitizeDetected(r.detected),
+    autoNoticed: isTier(r.autoNoticed) && version >= 2 ? r.autoNoticed : null,
   };
 }
 
@@ -246,6 +263,7 @@ export const useQualityStore = create<QualityState>()(
       style: DEFAULT_STYLE,
       effects: 'auto',
       detected: null,
+      autoNoticed: null,
       setSetting: (setting) => {
         if (setting === 'auto' && !get().detected) detectGpu();
         const tier = tierForSetting(setting, get().detected);
@@ -256,6 +274,19 @@ export const useQualityStore = create<QualityState>()(
       setStyle: (style) => set({ style }),
       setEffects: (effects) => set({ effects }),
       setDetected: (detected) => set({ detected }),
+      autoApply: (tier, frameMs) => {
+        const { setting, tier: cur, shaderTier, detected } = get();
+        if (setting !== 'auto') return false;
+        const t = TIER_ORDER.indexOf(tier) > TIER_ORDER.indexOf(AUTO_MAX_TIER) ? AUTO_MAX_TIER : tier;
+        const d = detected ? { ...detected, tier: t, frameMs: frameMs ?? detected.frameMs } : null;
+        if (t === cur && t === shaderTier) {
+          if (d) set({ detected: d });
+          return false;
+        }
+        set({ tier: t, shaderTier: t, ...(d ? { detected: d } : {}) });
+        return true;
+      },
+      setAutoNoticed: (autoNoticed) => set({ autoNoticed }),
       stepDown: () => {
         const { setting, tier } = get();
         if (setting !== 'auto') return;
@@ -274,7 +305,7 @@ export const useQualityStore = create<QualityState>()(
       version: QUALITY_STORAGE_VERSION,
       storage: createJSONStorage(() => storage),
       // The player's choices persist; an auto tier is re-derived per session.
-      partialize: (s): PersistedQuality => ({ setting: s.setting, overrides: s.overrides, style: s.style, effects: s.effects, detected: s.detected }),
+      partialize: (s): PersistedQuality => ({ setting: s.setting, overrides: s.overrides, style: s.style, effects: s.effects, detected: s.detected, autoNoticed: s.autoNoticed }),
       migrate: (persisted, version) => migrateQuality(persisted, version),
       merge: (persisted, current) => {
         const p = migrateQuality(persisted, QUALITY_STORAGE_VERSION);

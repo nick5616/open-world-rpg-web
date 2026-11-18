@@ -44,6 +44,8 @@ class WorldDebug {
   shadersWarm = false;
   /** WP19b: the last warm-up's result (ms, programs, done). */
   warmup: { ms: number; programs: number; done: boolean } | null = null;
+  /** Playtest 5: what Auto quality's governor decided (scene/GraphicsApplier.tsx), in order. */
+  autoTierLog: { atMs: number; kind: 'down' | 'up' | 'settled'; tier: string; p50: number; p90: number; changed?: boolean }[] = [];
 
   attach(r: WorldRuntime, t: TerrainManager, s: ScatterManager) {
     this.runtime = r;

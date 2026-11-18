@@ -1,0 +1,56 @@
+{
+  "tier": "low",
+  "label": "after",
+  "when": "2026-11-18T03:43:50.730Z",
+  "forest": {
+    "frames": 468,
+    "meanMs": 6.33,
+    "p50": 6.1,
+    "p95": 9.8,
+    "calls": 145,
+    "tris": 836948,
+    "shadowTris": 0,
+    "scatterTris": 350511
+  },
+  "tree": {
+    "frames": 239,
+    "meanMs": 12.7,
+    "p50": 9.3,
+    "p95": 25.1,
+    "calls": 151,
+    "tris": 853346,
+    "shadowTris": 0,
+    "scatterTris": 337216
+  },
+  "forest-far": {
+    "frames": 777,
+    "meanMs": 3.87,
+    "p50": 3.7,
+    "p95": 5.5,
+    "calls": 155,
+    "tris": 957301,
+    "shadowTris": 0,
+    "scatterTris": 225119
+  },
+  "house": {
+    "frames": 783,
+    "meanMs": 3.84,
+    "p50": 3.6,
+    "p95": 5.4,
+    "calls": 160,
+    "tris": 744692,
+    "shadowTris": 0,
+    "scatterTris": 32893
+  },
+  "town-street": {
+    "frames": 600,
+    "meanMs": 5.03,
+    "p50": 4.3,
+    "p95": 8.1,
+    "calls": 170,
+    "tris": 812417,
+    "shadowTris": 0,
+    "scatterTris": 29812
+  },
+  "errors": []
+}

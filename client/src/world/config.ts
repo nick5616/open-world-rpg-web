@@ -43,8 +43,8 @@ export interface WorldTier {
   godRays: boolean;
   /** Animated water normals and sun glints. */
   waterDetail: boolean;
-  /** Vegetation art (scatter/): 0 the original low-poly set, 1..3 the rich set with growing leaf-card counts (playtest 3, CR 045). */
-  vegetation: 0 | 1 | 2 | 3;
+  /** Vegetation art (scatter/): 0 the original low-poly set, 0.5..3 the rich set with growing leaf-card counts (playtest 3, CR 045; Low = 0.5 since playtest 5, CR 057: no tier draws the plain low-poly trees any more). */
+  vegetation: 0 | 0.5 | 1 | 2 | 3;
 }
 
 export const WORLD_TIERS: Record<QualityTier, WorldTier> = {
@@ -62,7 +62,7 @@ export const WORLD_TIERS: Record<QualityTier, WorldTier> = {
     bloom: false,
     godRays: false,
     waterDetail: false,
-    vegetation: 0,
+    vegetation: 0.5,
   },
   medium: {
     lodSplit: 1.1,

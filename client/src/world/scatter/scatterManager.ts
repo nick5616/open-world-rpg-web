@@ -345,7 +345,7 @@ export class ScatterManager {
    */
   setVegetation(level: number): void {
     if (this.disposed) return;
-    const lv = Math.max(0, Math.min(3, Math.round(level)));
+    const lv = Math.max(0, Math.min(3, Math.round(level * 2) / 2)); // 0.5 = Low's rich set (playtest 5)
     if (lv === this.vegLevel && (lv === 0 || this.kit)) return;
     this.vegLevel = lv;
     this.disposeKit();
@@ -367,7 +367,8 @@ export class ScatterManager {
   }
 
   private buildKit(level: number): Kit {
-    const scale = level === 1 ? 0.6 : level === 2 ? 1 : 1.3;
+    // Card budget per tier: Low 0.5 (playtest 5: Low gets the rich trees, with 4-view impostors), Medium 0.6, High 1, Ultra 1.3.
+    const scale = level <= 0.5 ? 0.5 : level === 1 ? 0.6 : level === 2 ? 1 : 1.3;
     const atlas = leafAtlas();
     const stone = stoneTexture();
     const light = this.light;
@@ -377,17 +378,22 @@ export class ScatterManager {
     // Trees.
     const lod0 = TREE_SPECIES.map((_, si) => richTree(si, 0, { lod: 0, scale }));
     const barks = TREE_SPECIES.map((sp) => barkTexture(sp.bark));
+    // Impostors are baked from the full-density tree whatever the tier's card budget (Low's thin 0.4 trees
+    // would otherwise bake as sparse, see-through billboards), from 4 yaw views each (impostors.ts).
+    const IMP_VIEWS = 4;
+    const bakeGeoms = scale >= 1 ? lod0 : TREE_SPECIES.map((_, si) => richTree(si, 0, { lod: 0, scale: 1 }));
     const impostors = renderImpostorAtlas(
       this.renderer,
-      lod0,
+      bakeGeoms,
       barks.map((b) => createBakeMaterial(atlas, b)),
+      IMP_VIEWS,
     );
     const quad = billboardQuad();
     const trees: Kit['trees'] = TREE_SPECIES.map((sp, si) => {
       const base = { light, mode: 'tree' as const, atlas, bark: barks[si], translucency: 0.55, bump: 1.4 };
       const m0 = this.richMat({ ...base, fade: new THREE.Vector4(-1, 0, LOD0_RICH_M - BAND, LOD0_RICH_M + BAND), sway: 0.006, flutter: 0.004, branch: sp.habit === 'conifer' ? 0.006 : 0.012 }, mats);
       const m1 = this.richMat({ ...base, bump: 0, translucency: 0.45, fade: new THREE.Vector4(LOD0_RICH_M - BAND, LOD0_RICH_M + BAND, 0, 0), sway: 0.006, flutter: 0.002, branch: 0.008 }, mats);
-      const bb = createBillboardMaterial(impostors.texture, si, TREE_SPECIES.length, new THREE.Vector4(0, 0, 0, 0), light);
+      const bb = createBillboardMaterial(impostors.texture, si, TREE_SPECIES.length, new THREE.Vector4(0, 0, 0, 0), light, IMP_VIEWS);
       this.materials.push(bb);
       mats.push(bb);
       // Variants differ only in the near mesh: past 60 m one grown shape per species is enough

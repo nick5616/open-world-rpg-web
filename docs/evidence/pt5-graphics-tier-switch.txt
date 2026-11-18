@@ -1,0 +1,12 @@
+[04:30:51] low (0,0): tier low/low cascades 0, page errors so far 0
+[04:30:55] medium (0,0): tier medium/medium cascades 2, page errors so far 0
+[04:30:59] high (0,0): tier high/high cascades 3, page errors so far 0
+[04:31:03] medium (700,300): tier medium/medium cascades 2, page errors so far 0
+[04:31:08] high (700,300): tier high/high cascades 3, page errors so far 0
+[04:31:12] low (700,300): tier low/low cascades 0, page errors so far 0
+[04:31:16] high (-400,500): tier high/high cascades 3, page errors so far 0
+[04:31:20] medium (-400,500): tier medium/medium cascades 2, page errors so far 0
+[04:31:24] low (0,0): tier low/low cascades 0, page errors so far 0
+[04:31:28] high (0,0): tier high/high cascades 3, page errors so far 0
+[04:31:31] auto (0,0): tier high/high cascades 3, page errors so far 0
+[04:31:31] PASS: no page errors across the tier switches

@@ -1,5 +1,17 @@
 [
   {
+    "id": "pt5-graphics",
+    "date": "2026-11-18",
+    "title": "A world worth looking at",
+    "items": [
+      "Trees look like trees on every graphics setting: branches you can see through the leaves, leaf clumps with light and shade, roots gripping the ground, and each tree its own shade of green.",
+      "Distant forests turn as you walk past instead of showing one side.",
+      "Houses have laid roof tiles and shingles, beams with an edge, damp and dirt at their feet, set-back windows and a worn doorstep.",
+      "Auto graphics now starts high and checks how your computer copes in the first half minute, lowering itself only if it has to. It tells you what it picked; F10 changes it.",
+      "Switching graphics quality in play no longer breaks the view."
+    ]
+  },
+  {
     "id": "pt5-interact-stuck",
     "date": "2026-11-18",
     "title": "E works again after long sessions",
