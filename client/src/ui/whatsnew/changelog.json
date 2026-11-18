@@ -1,5 +1,15 @@
 [
   {
+    "id": "pt5-underground",
+    "date": "2026-11-18",
+    "title": "Digging finds bedrock",
+    "items": [
+      "Dig a pit with the shovel and the bottom is now bedrock: the ground turns to grey rock near the floor and you are told so, instead of just stopping.",
+      "The shovel's bottom shows in the tool line too, next to how deep you have dug.",
+      "The world now has a true floor under the Depths, so nothing can fall for ever."
+    ]
+  },
+  {
     "id": "pt4-music",
     "date": "2026-11-18",
     "title": "Nicole's new music",
