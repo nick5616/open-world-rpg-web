@@ -7,6 +7,7 @@ import { useAppStore, type Screen } from './stores/appStore';
 import { useDebugStore, type TeleportTarget } from './stores/debugStore';
 import { useQualityStore, type GraphicsControls, type QualitySetting, type VisualStyle } from './stores/qualityStore';
 import { getGraphics } from './stores/graphics';
+import { worldDebug } from './world/debug/worldDebug';
 import { worldClockState } from './systems/clock';
 import { localPlayer, netStats, view, worldClock } from './state/live';
 import { useViewStore } from './stores/viewStore';
@@ -70,7 +71,7 @@ export function installDevHandle(): void {
       if (o === null) q.resetControls();
       else for (const [k, v] of Object.entries(o)) q.setControl(k as keyof GraphicsControls, v as never);
     },
-    graphics: () => JSON.parse(JSON.stringify({ ...getGraphics(), setting: useQualityStore.getState().setting, detected: useQualityStore.getState().detected })) as unknown,
+    graphics: () => JSON.parse(JSON.stringify({ ...getGraphics(), setting: useQualityStore.getState().setting, detected: useQualityStore.getState().detected, autoTierLog: worldDebug.autoTierLog })) as unknown,
     /** Force rain on/off (null: the weather decides). Online, the zone's next clock event overrides it. */
     setRain: (v: boolean | null) => {
       worldClockState.rain = v;

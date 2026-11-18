@@ -4,7 +4,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CONTROL_PRESETS, QUALITY_PRESETS, QUALITY_STORAGE_KEY, TIER_ORDER, migrateQuality, sanitizeOverrides, tierForSetting, type QualityTier } from './qualityStore';
 import { grassFor, pixelRatioFor, resolveGraphics } from './graphics';
-import { FrameSampler, classifyGpu, refineTier } from './gpuDetect';
+import { AUTO_BUDGET, AutoGovernor, classifyGpu } from './gpuDetect';
 import { STYLES, STYLE_ORDER } from '../world/style/styles';
 import { WORLD_TIERS } from '../world/config';
 
@@ -113,6 +113,10 @@ describe('auto-detect', () => {
     expect(probe('ANGLE (NVIDIA, NVIDIA GeForce RTX 3070 (0x00002488) Direct3D11 vs_5_0 ps_5_0, D3D11)')).toBe('high');
     expect(probe('ANGLE (AMD, AMD Radeon RX 6700 XT Direct3D11 vs_5_0 ps_5_0, D3D11)')).toBe('high');
     expect(probe('ANGLE (Intel, Intel(R) UHD Graphics 620 Direct3D11 vs_5_0 ps_5_0, D3D11)')).toBe('medium');
+    // Optimistic start (playtest 5): modern integrated GPUs begin at High; the governor steps down if they cannot hold it.
+    expect(probe('ANGLE (Intel, Intel(R) Iris(R) Xe Graphics Direct3D11 vs_5_0 ps_5_0, D3D11)')).toBe('high');
+    expect(probe('ANGLE (AMD, AMD Radeon(TM) Graphics Direct3D11 vs_5_0 ps_5_0, D3D11)')).toBe('high');
+    expect(probe('ANGLE (Intel, Intel(R) UHD Graphics 770 Direct3D11 vs_5_0 ps_5_0, D3D11)')).toBe('high');
     expect(probe('Apple GPU')).toBe('high');
     expect(probe('Apple GPU', { mobile: true })).toBe('low');
     expect(probe('Mali-G78')).toBe('low');
@@ -125,19 +129,69 @@ describe('auto-detect', () => {
     for (const r of ['NVIDIA GeForce RTX 4090', 'Apple M3 Max', 'AMD Radeon RX 7900 XTX']) expect(probe(r)).not.toBe('ultra');
     expect(tierForSetting('auto', { renderer: '', gpuTier: 'ultra', tier: 'ultra', frameMs: null })).toBe('high');
   });
-  it('the frame sample only ever lowers the GPU guess', () => {
-    expect(refineTier('high', 16.7)).toBe('high');
-    expect(refineTier('high', 30)).toBe('medium');
-    expect(refineTier('medium', 30)).toBe('low');
-    expect(refineTier('high', 55)).toBe('low');
-    expect(refineTier('low', 8)).toBe('low');
-  });
-  it('the sampler drops the warm-up frames and takes the median', () => {
-    const s = new FrameSampler(5, 2);
-    expect(s.add(500)).toBeNull();
-    expect(s.add(400)).toBeNull();
-    for (const v of [10, 50, 20, 30]) expect(s.add(v)).toBeNull();
-    expect(s.add(40)).toBe(30);
+  describe('AutoGovernor (frame times in real play)', () => {
+    type Step = ReturnType<AutoGovernor['add']>;
+    /** Feed frames for `ms` of play; returns every verdict. */
+    const feed = (g: AutoGovernor, ms: number, frame: (i: number) => number) => {
+      const out: NonNullable<Step>[] = [];
+      for (let t = 0, i = 0; t < ms; i++) {
+        const dt = frame(i);
+        t += dt;
+        const v = g.add(dt);
+        if (v) out.push(v);
+      }
+      return out;
+    };
+    it('skips the warm-up, then steps down when p90 is over budget and never climbs back', () => {
+      const g = new AutoGovernor('high');
+      const v = feed(g, 30000, (i) => (i < 20 ? 200 : 36));
+      expect(v[0]).toMatchObject({ kind: 'down', tier: 'medium' });
+      expect(v[1]).toMatchObject({ kind: 'down', tier: 'low' });
+      expect(v[v.length - 1]).toMatchObject({ kind: 'settled', tier: 'low' });
+      expect(g.done).toBe(true);
+    });
+    it('keeps a smooth 60 fps High and settles without changing it', () => {
+      const g = new AutoGovernor('high');
+      const v = feed(g, 40000, () => 16.7);
+      expect(v).toHaveLength(1);
+      expect(v[0]).toMatchObject({ kind: 'settled', tier: 'high' });
+    });
+    it("steps up from a lower start when there is headroom, but never above Auto's max", () => {
+      const g = new AutoGovernor('low');
+      const v = feed(g, 40000, () => 8);
+      expect(v[0]).toMatchObject({ kind: 'up', tier: 'medium' });
+      expect(v[1]).toMatchObject({ kind: 'up', tier: 'high' });
+      expect(v[v.length - 1]).toMatchObject({ kind: 'settled', tier: 'high' });
+      expect(v.some((s) => s.tier === 'ultra')).toBe(false);
+    });
+    it('a failed step up goes back down once and stays there', () => {
+      const g = new AutoGovernor('medium');
+      let onHigh = false;
+      const v: NonNullable<Step>[] = [];
+      for (let t = 0; t < 40000; ) {
+        const dt = onHigh ? 40 : 10;
+        t += dt;
+        const s = g.add(dt);
+        if (s) {
+          v.push(s);
+          onHigh = s.tier === 'high';
+        }
+      }
+      expect(v.map((s) => s.kind + ':' + s.tier).slice(0, 3)).toEqual(['up:high', 'down:medium', 'settled:medium']);
+    });
+    it('hitches (alt-tab, loads) are not frame times', () => {
+      const g = new AutoGovernor('high');
+      const v = feed(g, 40000, (i) => (i % 40 === 0 ? 600 : 16.7));
+      expect(v.every((s) => s.kind === 'settled')).toBe(true);
+      expect(v[0].tier).toBe('high');
+    });
+    it('a window that is mostly stall is discarded, not judged', () => {
+      const g = new AutoGovernor('high');
+      expect(feed(g, 12000, () => 400)).toHaveLength(0);
+    });
+    it('budgets: down is above up', () => {
+      expect(AUTO_BUDGET.downP90Ms).toBeGreaterThan(AUTO_BUDGET.upP90Ms);
+    });
   });
   it("the player's choice wins over detection", () => {
     const d = { renderer: 'x', gpuTier: 'low' as QualityTier, tier: 'low' as QualityTier, frameMs: 50 };
@@ -150,7 +204,7 @@ describe('auto-detect', () => {
 describe('migration of the stored value', () => {
   it('version 0 ({ setting }) keeps the setting and gets the new defaults', () => {
     for (const setting of ['auto', 'low', 'medium', 'high'] as const) {
-      expect(migrateQuality({ setting }, 0)).toEqual({ setting, overrides: {}, style: 'lodestone', effects: 'auto', detected: null });
+      expect(migrateQuality({ setting }, 0)).toEqual({ setting, overrides: {}, style: 'lodestone', effects: 'auto', detected: null, autoNoticed: null });
     }
   });
   it('a bare tier string and junk are read safely', () => {
@@ -159,13 +213,25 @@ describe('migration of the stored value', () => {
     expect(migrateQuality(42, 0).setting).toBe('auto');
     expect(migrateQuality(undefined, 0).setting).toBe('auto');
   });
+  it('version 1 -> 2 (playtest 5): Auto is re-evaluated, an explicit tier is kept', () => {
+    const detected = { renderer: 'r', gpuTier: 'low', tier: 'low', frameMs: 40 };
+    const auto = migrateQuality({ setting: 'auto', detected }, 1);
+    expect(auto.setting).toBe('auto');
+    expect(auto.detected).toBeNull(); // the old rules' verdict is thrown away, so the optimistic guess and the governor run again
+    expect(migrateQuality({ setting: 'low', detected }, 1).setting).toBe('low');
+    // Current-version detection and the told tier survive.
+    const v2 = migrateQuality({ setting: 'auto', detected: { ...detected, tier: 'high' }, autoNoticed: 'high' }, 2);
+    expect(v2.detected?.tier).toBe('high');
+    expect(v2.autoNoticed).toBe('high');
+  });
   it('version 1 values are validated and clamped', () => {
     const m = migrateQuality({ setting: 'ultra', style: 'retro', effects: 'low', overrides: { renderScale: 0.1, viewDistance: 99999, shadows: 'max', antialias: 'msaa2', post: 'yes', maxFps: 60 }, detected: { renderer: 'r', gpuTier: 'high', tier: 'medium', frameMs: 27 } }, 1);
     expect(m.setting).toBe('ultra');
     expect(m.style).toBe('retro');
     expect(m.effects).toBe('low');
     expect(m.overrides).toEqual({ renderScale: 0.5, viewDistance: 3000, antialias: 'msaa2', maxFps: 60 });
-    expect(m.detected?.tier).toBe('medium');
+    expect(m.detected).toBeNull(); // version 1 detection is dropped (see above)
+    expect(migrateQuality({ detected: { renderer: 'r', gpuTier: 'high', tier: 'medium', frameMs: 27 } }, 2).detected?.tier).toBe('medium');
     expect(migrateQuality({ style: 'queens' }, 1).style).toBe('lodestone');
     expect(sanitizeOverrides({ foliage: Number.NaN })).toEqual({});
   });
@@ -225,7 +291,7 @@ describe('persistence (localStorage)', () => {
     store.getState().setStyle('grim');
     store.getState().setEffects('medium');
     const saved = JSON.parse(mem.get(QUALITY_STORAGE_KEY)!);
-    expect(saved.version).toBe(1);
+    expect(saved.version).toBe(2);
     expect(saved.state).toMatchObject({ setting: 'ultra', overrides: { shadows: 'low', maxFps: 90 }, style: 'grim', effects: 'medium' });
     store = await fresh();
     const s = store.getState();
@@ -245,7 +311,7 @@ describe('persistence (localStorage)', () => {
     expect(store.getState().tier).toBe('high');
   });
   it('a stored detection sets where auto starts', async () => {
-    mem.set(QUALITY_STORAGE_KEY, JSON.stringify({ state: { setting: 'auto', detected: { renderer: 'Intel', gpuTier: 'medium', tier: 'medium', frameMs: 21 } }, version: 1 }));
+    mem.set(QUALITY_STORAGE_KEY, JSON.stringify({ state: { setting: 'auto', detected: { renderer: 'Intel', gpuTier: 'medium', tier: 'medium', frameMs: 21 } }, version: 2 }));
     const s = (await fresh()).getState();
     expect(s.tier).toBe('medium');
     expect(s.shaderTier).toBe('medium');

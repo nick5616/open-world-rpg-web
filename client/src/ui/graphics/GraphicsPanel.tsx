@@ -8,6 +8,7 @@
 import { useEffect, type CSSProperties, type ReactNode } from 'react';
 import { create } from 'zustand';
 import { usePanelEsc } from '../../input/panelStack';
+import { NOTICE_MS, useAutoTierNotice } from './autoTierNotice';
 import {
   AA_MODES,
   CONTROL_RANGES,
@@ -59,19 +60,44 @@ const AA_LABEL: Record<AntiAlias, string> = { off: 'Off', fxaa: 'FXAA', msaa2: '
 const FX_LABEL: Record<EffectsSetting, string> = { auto: 'Auto', low: 'Low', medium: 'Medium', high: 'High', ultra: 'Ultra' };
 const FPS_CHOICES = [0, 30, 60, 90, 120, 144];
 
+/** The one-time "Graphics set to High; F10 to change" note under the Graphics button (playtest 5). */
+function AutoTierNotice() {
+  const text = useAutoTierNotice((s) => s.text);
+  const at = useAutoTierNotice((s) => s.at);
+  useEffect(() => {
+    if (!text) return;
+    const t = setTimeout(() => useAutoTierNotice.getState().clear(), Math.max(0, NOTICE_MS - (Date.now() - at)));
+    return () => clearTimeout(t);
+  }, [text, at]);
+  if (!text) return null;
+  return (
+    <div
+      data-testid="graphics-auto-notice"
+      role="status"
+      onClick={() => useAutoTierNotice.getState().clear()}
+      style={{ ...glass, position: 'fixed', right: GRAPHICS_BUTTON_RIGHT, top: TOP_BUTTON_TOP + 36, zIndex: 31, padding: '5px 10px', fontSize: 12, maxWidth: 260, boxSizing: 'border-box', cursor: 'pointer' }}
+    >
+      {text}
+    </div>
+  );
+}
+
 export function GraphicsButton() {
   const open = useGraphicsUi((s) => s.open);
   return (
-    <button
-      data-testid="graphics-toggle"
-      title="Graphics settings (F10)"
-      tabIndex={-1}
-      onMouseDown={(e) => e.preventDefault()}
-      onClick={() => setGraphicsOpen(!open)}
-      style={{ ...glass, position: 'fixed', right: GRAPHICS_BUTTON_RIGHT, top: TOP_BUTTON_TOP, width: GRAPHICS_BUTTON_W, boxSizing: 'border-box', textAlign: 'center', zIndex: 31, padding: '5px 9px', cursor: 'pointer', opacity: 0.8 }}
-    >
-      Graphics
-    </button>
+    <>
+      <AutoTierNotice />
+      <button
+        data-testid="graphics-toggle"
+        title="Graphics settings (F10)"
+        tabIndex={-1}
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={() => setGraphicsOpen(!open)}
+        style={{ ...glass, position: 'fixed', right: GRAPHICS_BUTTON_RIGHT, top: TOP_BUTTON_TOP, width: GRAPHICS_BUTTON_W, boxSizing: 'border-box', textAlign: 'center', zIndex: 31, padding: '5px 9px', cursor: 'pointer', opacity: 0.8 }}
+      >
+        Graphics
+      </button>
+    </>
   );
 }
 
