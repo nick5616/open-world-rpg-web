@@ -1,5 +1,15 @@
 [
   {
+    "id": "pt5-walls",
+    "date": "2026-11-18",
+    "title": "Monsters can't see through walls",
+    "items": [
+      "Monsters no longer notice you, chase you or hit you through a wall: if a house, a base wall, cave rock or a hill is in the way, they lose you.",
+      "Arrows and bolts shot at you stop at walls and rock instead of flying through them.",
+      "Stand close and they can still hear you, and they will walk round the building to find you."
+    ]
+  },
+  {
     "id": "pt4-music",
     "date": "2026-11-18",
     "title": "Nicole's new music",

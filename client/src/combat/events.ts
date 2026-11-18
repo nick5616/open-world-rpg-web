@@ -33,6 +33,8 @@ export const EV = {
   summonAttack: 225,
   // CR 022 shared spell visuals: the precise aim of a held action (and a keepalive)
   held: 226,
+  // CR 056 line of sight: an enemy shot ended against a wall, rock or the ground
+  shotWall: 1990,
 } as const;
 
 export const INTERACT_COMBAT = 50;

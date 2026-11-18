@@ -60,6 +60,7 @@ export const spellFx = {
   shieldPoints: (...a: Args<'shieldPoints'>) => call('shieldPoints', ...a),
   remoteCast: (...a: Args<'remoteCast'>) => call('remoteCast', ...a),
   enemyProjectile: (...a: Args<'enemyProjectile'>) => call('enemyProjectile', ...a),
+  enemyShotWall: (...a: Args<'enemyShotWall'>) => call('enemyShotWall', ...a), // CR 056
   // CR 020 mechanics
   projectileMove: (...a: Args<'projectileMove'>) => call('projectileMove', ...a),
   streamStart: (...a: Args<'streamStart'>) => call('streamStart', ...a),

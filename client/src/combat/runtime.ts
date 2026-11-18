@@ -870,6 +870,10 @@ export class CombatRuntime {
         spellFx.enemyProjectile(ev.entityId, Number(ev.targetId), ev.x / 100, ev.y / 100, ev.z / 100, vx, vy, vz, d.getUint16(6, true) / 100, range);
         return;
       }
+      case EV.shotWall:
+        // CR 056: the zone stopped an enemy shot at a wall: the drawn one stops there too.
+        spellFx.enemyShotWall(ev.x / 100, ev.y / 100, ev.z / 100);
+        return;
       case EV.cast:
       case EV.held:
         // Another player's attack, cast, form, dash or guard (214, with its exact aim; a released

@@ -1,0 +1,14 @@
+house 153 of "Draedmore" at (1887.1, 2253.0): 7.9 x 6.3 m, door on its -v wall
+1. 5 monsters spawned on the far side of the house; after 8 s the one that moved most went 0.0 m, the nearest was 7.7 m from me; shot pt5-mob-walls-behind-wall.jpg
+PASS: they did not notice me through the wall
+2. stepped out where the garden is in view: noticed = true after 4.3 s; shot pt5-mob-walls-in-view.jpg
+PASS: line of sight decides
+
+zone log (dev commands, errors):
+{"time":"2026-11-17T19:35:22.0619398-08:00","level":"INFO","msg":"dev command","svc":"zone","character":"pt5-walls-1794972835332","action":"flags","target":0,"arg":1,"code":0,"result":"on: god"}
+{"time":"2026-11-17T19:35:22.4643156-08:00","level":"INFO","msg":"dev command","svc":"zone","character":"pt5-walls-1794972835332","action":"flags","target":0,"arg":5,"code":0,"result":"on: god, infinite stamina"}
+{"time":"2026-11-17T19:35:23.0279116-08:00","level":"INFO","msg":"dev command","svc":"zone","character":"pt5-walls-1794972835332","action":"teleport","target":968686924128960,"arg":0,"code":0,"result":"teleported to 1891 82 2255"}
+{"time":"2026-11-17T19:35:25.3279645-08:00","level":"INFO","msg":"dev command","svc":"zone","character":"pt5-walls-1794972835332","action":"spawn","target":2,"arg":3,"code":0,"result":"3 x wolf (level 1) at 1883 2250"}
+{"time":"2026-11-17T19:35:25.7280418-08:00","level":"INFO","msg":"dev command","svc":"zone","character":"pt5-walls-1794972835332","action":"spawn","target":11,"arg":2,"code":0,"result":"2 x archer (level 1) at 1883 2250"}
+{"time":"2026-11-17T19:35:35.1278847-08:00","level":"INFO","msg":"dev command","svc":"zone","character":"pt5-walls-1794972835332","action":"teleport","target":970233112354170,"arg":0,"code":0,"result":"teleported to 1878 83 2259"}
+{"time":"2026-11-17T19:35:40.0948339-08:00","level":"INFO","msg":"dev command","svc":"zone","character":"pt5-walls-1794972835332","action":"despawn","target":0,"arg":0,"code":0,"result":"removed the console's spawns (5 alive)"}

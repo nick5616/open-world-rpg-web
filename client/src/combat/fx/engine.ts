@@ -24,6 +24,7 @@
 // per-frame particle budget; past a cap the oldest is recycled. Effects
 // beyond 90 m are skipped, and far ones emit fewer particles.
 
+import { shotAtWall } from './shotWall';
 import * as THREE from 'three';
 import type { SpellDef, FormDef } from '@lodestone/contracts';
 import { drawnRemotes } from '../../net/netStore';
@@ -618,6 +619,17 @@ export class SpellFxEngine {
       this.hand.pulse = 1;
     }
     return s.handle;
+  }
+
+  /** Event 1990 (CR 056): the zone ended an enemy shot against a wall, rock or the ground: the drawn shot nearest to the impact stops there. */
+  enemyShotWall(x: number, y: number, z: number): void {
+    const i = shotAtWall(this.projs.map((p) => ({ on: p.on, local: p.local, collide: p.collide, x: p.mesh.position.x, y: p.mesh.position.y, z: p.mesh.position.z })), x, y, z);
+    if (i < 0) return;
+    const s = this.projs[i];
+    s.px = x;
+    s.py = y;
+    s.pz = z;
+    this.endProj(s, 'ground');
   }
 
   /** The runtime's own shot ended (hit, ground, range): impact there (an explosion when `explode` > 0). */
