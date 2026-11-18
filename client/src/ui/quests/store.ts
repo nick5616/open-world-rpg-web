@@ -42,6 +42,11 @@ export interface QuestState {
 }
 
 const NOTE_MS = 6000;
+
+/** How long a quest notice stays up now (the immersive HUD shortens it): the toast bar drains over this. */
+export function noteTtl(): number {
+  return isImmersive() ? NOTE_MS_IMMERSIVE : NOTE_MS;
+}
 let noteId = 1;
 
 /** Pure: the state change for one zone Event (null = not ours). */
@@ -112,7 +117,7 @@ export function dismissOffer(): void {
 
 export function pruneNotes(now = performance.now()): void {
   const n = useQuests.getState().notes;
-  const ttl = isImmersive() ? NOTE_MS_IMMERSIVE : NOTE_MS;
+  const ttl = noteTtl();
   const keep = n.filter((x) => now - x.at < ttl);
   if (keep.length !== n.length) useQuests.setState({ notes: keep });
 }

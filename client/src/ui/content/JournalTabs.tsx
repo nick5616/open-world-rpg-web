@@ -12,13 +12,15 @@ import { abilityOf, foodsText, tameableEnemy } from '../pets/events';
 import { AchievementsBody } from '../achievements/AchievementsScreen';
 import { openAchievements } from '../achievements/store';
 import { setJournalOpen } from '../quests/store';
+import { InfoTab } from '../quests/InfoTab';
 
 const GOLD = '#ffd166';
 const ELEMENTS = ['fire', 'ice', 'lightning', 'earth', 'wind', 'light', 'dark', 'void'];
 
-export type JournalTab = 'quests' | 'bestiary' | 'fish' | 'lore' | 'achievements' | 'renown';
+export type JournalTab = 'quests' | 'info' | 'bestiary' | 'fish' | 'lore' | 'achievements' | 'renown';
 export const JOURNAL_TABS: { key: JournalTab; label: string }[] = [
   { key: 'quests', label: 'Quests' },
+  { key: 'info', label: 'Info' },
   { key: 'bestiary', label: 'Bestiary' },
   { key: 'fish', label: 'Fish' },
   { key: 'lore', label: 'Lore' },
@@ -262,6 +264,8 @@ export function JournalContentTab({ tab }: { tab: Exclude<JournalTab, 'quests'> 
     actions?.sync();
   }, [tab, actions]);
   switch (tab) {
+    case 'info':
+      return <InfoTab />;
     case 'bestiary':
       return <Bestiary />;
     case 'fish':

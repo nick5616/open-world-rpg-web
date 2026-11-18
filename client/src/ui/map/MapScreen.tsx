@@ -16,7 +16,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { Site } from '@lodestone/worldgen';
 import { localPlayer } from '../../state/live';
 import { drawnRemotes } from '../../net/netStore';
-import { hasBit, MAX_PERSONAL_PINS, PIN_COLORS, type Pin } from './events';
+import { hasBit, MAX_PERSONAL_PINS, PIN_COLORS, pinName, type Pin } from './events';
 import { setMapOpen, useExploration } from './store';
 import { mapTerrain, useMapWorld } from './world';
 import { anyExploredIn, currentExplored, exploredMask } from './explored';
@@ -251,6 +251,17 @@ function MapView() {
         const y = sy(p.z);
         drawPin(ctx, x, y, PIN_COLORS[p.color % PIN_COLORS.length], p.party ? (p.owner[0] ?? '?').toUpperCase() : '');
         out.push({ x, y: y - 12, r: 10, pin: p });
+        if (p.label) {
+          // CR 055: a named pin (the stables a conversation marked) says what it is.
+          ctx.font = '600 12px Georgia, serif';
+          ctx.textAlign = 'left';
+          ctx.lineWidth = 3;
+          ctx.strokeStyle = 'rgba(244,236,214,0.9)';
+          ctx.strokeText(p.label, x + 10, y - 10);
+          ctx.fillStyle = 'rgba(30,20,10,0.95)';
+          ctx.fillText(p.label, x + 10, y - 10);
+          ctx.textAlign = 'center';
+        }
       }
 
       // Playtest 1: quest markers (every active quest's current step; the
@@ -359,7 +370,7 @@ function MapView() {
     }
     const w = toWorld(e.clientX, e.clientY);
     const h = hitAt(w.lx, w.ly);
-    setHover(h?.site ? siteName(h.site, data?.sites) : h?.pin ? (h.pin.party ? `Party pin (${h.pin.owner})` : 'Your pin') : null);
+    setHover(h?.site ? siteName(h.site, data?.sites) : h?.pin ? pinName(h.pin) : null);
   };
   const onPointerUp = (e: React.PointerEvent) => {
     const d = view.current.drag;

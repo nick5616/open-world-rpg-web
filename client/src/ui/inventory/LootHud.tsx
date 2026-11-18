@@ -26,6 +26,7 @@ import { BITCHIN_MS, openStationOffline, pushToast, TOAST_MS, useInventory, type
 import { CORNER_BOTTOM_RIGHT } from '../../hud/layout'; // playtest 1: clear of the lifted voice corner
 import { worldDebug } from '../../world/debug/worldDebug';
 import { ensureInventoryStyles } from './styles';
+import { ToastBar } from '../toast/ToastBar';
 
 export const CLAIM_M = 2.5;
 
@@ -165,11 +166,12 @@ export function LootHud() {
 function Toast({ t }: { t: LootToast }) {
   const color = t.kind === 'warn' ? '#ff9a7a' : (t.color ?? '#ffe9b0');
   return (
-    <div className="ls-toast" style={{ background: 'rgba(16,14,12,0.82)', borderLeft: `3px solid ${t.holo ? '#ff6be6' : color}`, borderRadius: 4, padding: '5px 12px 5px 10px', font: '600 14px system-ui, sans-serif', color: '#efe6d2', textShadow: '0 1px 2px #000', maxWidth: 360 }}>
+    <div className="ls-toast ls-timed" style={{ position: 'relative', overflow: 'hidden', background: 'rgba(16,14,12,0.82)', borderLeft: `3px solid ${t.holo ? '#ff6be6' : color}`, borderRadius: 4, padding: '5px 12px 5px 10px', font: '600 14px system-ui, sans-serif', color: '#efe6d2', textShadow: '0 1px 2px #000', maxWidth: 360 }}>
       <span className={t.holo ? 'ls-holo-text' : undefined} style={{ color }}>
         {t.text}
       </span>
       {t.detail && <span style={{ opacity: 0.6, fontWeight: 400, fontSize: 12 }}> · {t.detail}</span>}
+      <ToastBar at={t.at} durationMs={TOAST_MS} color={color} />
     </div>
   );
 }

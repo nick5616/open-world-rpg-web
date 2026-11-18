@@ -7,12 +7,44 @@ import { create } from 'zustand';
 /** How long a wisp that started by itself (a new quest step) guides you (ms). */
 export const AUTO_GUIDE_MS = 20000;
 
+/** A place the wisp can lead to (CR 055: a marked service, a pin). */
+export interface PlaceGoal {
+  x: number;
+  z: number;
+  label: string;
+}
+
 export const guide = {
   /** The key was pressed: toggle on the next frame. */
   toggle: false,
   /** A new quest step asked for a short guide. */
   auto: false,
+  /** CR 055: "Guide me" on a place: start (or re-aim) the wisp at `target` on the next frame. */
+  go: false,
+  target: null as PlaceGoal | null,
+  /** CR 055: the place a conversation or the journal just marked: the next press of the key leads there. */
+  marked: null as (PlaceGoal & { at: number }) | null,
 };
+
+/** How long a marked place is what the key leads to (ms); after that the tracked quest comes first again. */
+export const MARK_GUIDE_MS = 120000;
+
+/** "Guide me": the wisp leads to this place (a pin, a town's stables). */
+export function guideTo(x: number, z: number, label: string): void {
+  guide.target = { x, z, label };
+  guide.go = true;
+}
+
+/** A conversation or the journal marked a place: remember it for the key. */
+export function noteMarked(x: number, z: number, label: string, now = performance.now()): void {
+  guide.marked = { x, z, label, at: now };
+}
+
+/** The recently marked place, if the key should lead to it. */
+export function markedGoal(now = performance.now()): PlaceGoal | null {
+  const m = guide.marked;
+  return m && now - m.at < MARK_GUIDE_MS ? m : null;
+}
 
 export function toggleGuide(): void {
   guide.toggle = true;

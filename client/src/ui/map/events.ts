@@ -15,6 +15,10 @@ export const EV = {
   fastTravelDenied: 606,
   party: 607,
   respawnPoint: 608,
+  /** CR 055: the pins a conversation (1913) or the journal's Info tab (1980) placed: x / z in cm, data = the label. */
+  dialogMark: 1913,
+  placeMarked: 1980,
+  placeRefused: 1981,
 } as const;
 
 export const INTERACT = {
@@ -25,6 +29,9 @@ export const INTERACT = {
   pinClear: 2,
   partyPinSet: 3,
   partyPinClear: 4,
+  /** CR 055: mark a town service (Info tab). */
+  placePin: 185,
+  placeService: 1,
 } as const;
 
 export const TRAVEL_DENIED: Record<number, string> = { 1: 'Not a fast-travel point', 2: 'Not unlocked yet', 3: 'Too soon: wait a moment' };
@@ -74,8 +81,16 @@ export interface Pin {
   /** Meters (wire is cm). */
   x: number;
   z: number;
-  /** Party pins: who placed it. */
+  /** Party pins: who placed it. For a personal pin the wire carries its label here (CR 055). */
   owner: string;
+  /** CR 055: what a personal pin is ("Stables, Kudrogair"); '' for one dropped by hand and for party pins. */
+  label: string;
+}
+
+/** What to call a pin: its label, "Party pin (name)" or "Your pin". */
+export function pinName(p: Pick<Pin, 'party' | 'owner' | 'label'>): string {
+  if (p.party) return `Party pin (${p.owner})`;
+  return p.label || 'Your pin';
 }
 
 /** pins (605) payload: the full list to show, replacing the previous one. */
@@ -90,7 +105,12 @@ export function decodePins(data: Uint8Array): Pin[] {
     if (o + 13 > data.length) throw new Error('pins payload truncated');
     const len = dv.getUint16(o + 11, true);
     if (o + 13 + len > data.length) throw new Error('pins payload truncated');
-    out.push({ party: (data[o] & 1) !== 0, slot: data[o + 1], color: data[o + 2], x: dv.getInt32(o + 3, true) / 100, z: dv.getInt32(o + 7, true) / 100, owner: td.decode(data.subarray(o + 13, o + 13 + len)) });
+    out.push({ party: (data[o] & 1) !== 0, slot: data[o + 1], color: data[o + 2], x: dv.getInt32(o + 3, true) / 100, z: dv.getInt32(o + 7, true) / 100, owner: td.decode(data.subarray(o + 13, o + 13 + len)), label: '' });
+    const last = out[out.length - 1];
+    if (!last.party) {
+      last.label = last.owner;
+      last.owner = '';
+    }
     o += 13 + len;
   }
   return out;

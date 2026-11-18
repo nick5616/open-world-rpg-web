@@ -5,7 +5,7 @@
 // 1024 x 1024 software render takes ~150 ms; nobody should pay it at load).
 
 import { create } from 'zustand';
-import type { AtlasData, VerticalWorld } from '@lodestone/worldgen';
+import type { AtlasData, Towns, VerticalWorld } from '@lodestone/worldgen';
 import type { RadialStructure } from '../../world/structures/overlay';
 import { renderTerrain } from './mapRender';
 import { setTowerShelters } from '../../sim/shelter';
@@ -23,12 +23,14 @@ interface MapWorldState {
   terrain: HTMLCanvasElement | null;
   /** CR 038: the vertical world (the map's Sky / Underground / Depths layers), null before genVersion 3. */
   vertical: VerticalWorld | null;
+  /** CR 055: the towns buffer (the journal's Info tab lists each discovered town's services), null before it loads. */
+  towns: Towns | null;
 }
 
-export const useMapWorld = create<MapWorldState>(() => ({ data: null, towers: [], terrain: null, vertical: null }));
+export const useMapWorld = create<MapWorldState>(() => ({ data: null, towers: [], terrain: null, vertical: null, towns: null }));
 
-export function setMapWorld(data: AtlasData | null, towers: MapTower[] = [], vertical: VerticalWorld | null = null): void {
-  useMapWorld.setState({ data, towers, terrain: null, vertical });
+export function setMapWorld(data: AtlasData | null, towers: MapTower[] = [], vertical: VerticalWorld | null = null, towns: Towns | null = null): void {
+  useMapWorld.setState({ data, towers, terrain: null, vertical, towns });
   setTowerShelters(towers.map((t) => t.shape)); // playtest 2 co-op: dry tower walls (sim/shelter.ts)
 }
 

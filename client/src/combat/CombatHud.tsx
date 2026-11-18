@@ -16,6 +16,7 @@ import { BELOW_CLOCK, useHudHeight } from '../hud/layout';
 import { useInventory } from '../ui/inventory/store';
 import { loadoutWeaponLabel } from '../ui/inventory/items';
 import { audioWorld } from '../audio/bridge';
+import { ToastBar } from '../ui/toast/ToastBar';
 import { barsVisible, hotbarVisible, hudActivity, installHudActivity, isImmersive, sampleBars } from '../hud/immersive';
 
 const spellByKey = new Map(COMBAT.spells.map((s) => [s.key, s]));
@@ -165,8 +166,9 @@ export function CombatHud() {
         <div ref={hintRow} data-testid="combat-hint" style={{ opacity: 0.6, transition: 'opacity 450ms ease', fontSize: 11, lineHeight: '14px', textAlign: 'center', textShadow: '0 1px 2px #000' }}>{COMBAT_HINT}</div>
       </div>
       {toastMsg && now - toastMsg.at < TOAST_MS && (
-        <div key={toastMsg.at} style={{ position: 'absolute', top: '38%', left: '50%', transform: 'translateX(-50%)', fontSize: 20, fontWeight: 700, textShadow: '0 0 6px #000' }}>
+        <div key={toastMsg.at} className="ls-timed" style={{ position: 'absolute', top: '38%', left: '50%', transform: 'translateX(-50%)', padding: '0 14px 8px', overflow: 'hidden', fontSize: 20, fontWeight: 700, textShadow: '0 0 6px #000' }}>
           {toastMsg.text}
+          <ToastBar at={toastMsg.at} durationMs={TOAST_MS} color="rgba(255,255,255,0.75)" />
         </div>
       )}
       <DownedOverlay />

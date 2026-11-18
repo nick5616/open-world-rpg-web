@@ -10,7 +10,9 @@ import { isChatShortcut } from '../../input/useKeyboard';
 import { localPlayer } from '../../state/live';
 import { Compass, compassMarks } from './Compass';
 import { MapScreen, mapView } from './MapScreen';
-import { pruneToasts, setMapOpen, useExploration, type Toast } from './store';
+import { pruneToasts, setMapOpen, TOAST_MS, useExploration, type Toast } from './store';
+import { installPlaceMarks } from './placeMarks';
+import { ToastBar } from '../toast/ToastBar';
 import { trackPanel } from '../../input/panelStack';
 
 // Esc closes the map when it is the top panel (input/panelStack.ts).
@@ -43,12 +45,13 @@ function Toasts() {
       {toasts.filter((t) => !INTRO_TOAST_KINDS.has(t.kind)).map((t) => {
         const s = TOAST_STYLE[t.kind];
         return (
-          <div key={t.id} data-testid={`toast-${t.kind}`} style={{ minWidth: 260, padding: '8px 16px', background: 'rgba(12,14,20,0.78)', borderTop: `2px solid ${s.accent}`, borderRadius: 3, color: '#f1f3f5', textAlign: 'center', font: '15px Georgia, serif', boxShadow: '0 4px 14px rgba(0,0,0,0.35)', animation: 'wp12toast 0.35s ease-out' }}>
+          <div key={t.id} data-testid={`toast-${t.kind}`} className="ls-timed" style={{ position: 'relative', overflow: 'hidden', minWidth: 260, padding: '8px 16px', background: 'rgba(12,14,20,0.78)', borderTop: `2px solid ${s.accent}`, borderRadius: 3, color: '#f1f3f5', textAlign: 'center', font: '15px Georgia, serif', boxShadow: '0 4px 14px rgba(0,0,0,0.35)', animation: 'wp12toast 0.35s ease-out' }}>
             <div style={{ letterSpacing: 0.5 }}>
               <span style={{ color: s.accent, marginRight: 8 }}>{s.icon}</span>
               {t.title}
             </div>
             {t.detail && <div style={{ font: '12px system-ui, sans-serif', opacity: 0.75, marginTop: 2 }}>{t.detail}</div>}
+            <ToastBar at={t.at} durationMs={TOAST_MS} color={s.accent} />
           </div>
         );
       })}
@@ -144,6 +147,7 @@ export function ExplorationHud() {
   useMapHotkeys();
   useExploredTracking();
   useEffect(() => {
+    installPlaceMarks();
     if (DEBUG) installMapHandle();
   }, []);
   return (

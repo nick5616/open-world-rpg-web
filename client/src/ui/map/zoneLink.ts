@@ -41,6 +41,7 @@ export function attachExploration(session: ZoneSession, ready: ReadySession): ()
       if (s < 0) return;
       session.sendInteract(INTERACT.pin, packPinPos(x, z), INTERACT.pinSet, (s & 0xff) | ((color & 0xff) << 8));
     },
+    placeService: (settlement, kind, x, z) => session.sendInteract(INTERACT.placePin, packPinPos(x, z), INTERACT.placeService, (settlement & 0xffff) | ((kind & 0xff) << 16)),
     clearPin: (pin) => {
       // Each member owns (and can remove) only their own party pin.
       if (pin.party) {

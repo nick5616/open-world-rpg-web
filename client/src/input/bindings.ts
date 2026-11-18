@@ -162,6 +162,7 @@ export const NOT_HANDLERS: Record<string, string> = {
   'ui/menu/controls.ts': "the Esc menu's key reference",
   'ui/music/theory.ts': "the instrument's note rows (context 'instrument': every key is a note)",
   'ui/tips/tips.ts': 'key names in tip text',
+  'ui/tips/controlTips.ts': 'the controls toasts after a conversation name a handler file and key code and look the keys up in this table (CR 055)',
   'ui/devconsole/DevConsole.tsx#Enter': "the dev console's command line (a text field): run",
   'ui/devconsole/DevConsole.tsx#Tab': "the dev console's command line: complete",
   'ui/devconsole/DevConsole.tsx#ArrowUp': "the dev console's command line: history",

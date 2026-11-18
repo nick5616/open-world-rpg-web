@@ -26,6 +26,8 @@ const (
 	// placePinSlackM: a service may stand this far outside the settlement's radius (the forge or the board
 	// at the edge, a stable yard beyond the last house).
 	placePinSlackM = 160
+	// placePinNearM: a shrine or a tower "near" the town is listed up to this far from its centre.
+	placePinNearM = 900
 )
 
 // Service kinds (the client's ui/quests/townInfo.ts SERVICE_KINDS, same order, from 1).
@@ -82,7 +84,11 @@ func (s *Server) placePinInteract(sess *session, m *proto.Interact) {
 	}
 	xc, zc, ok := explore.UnpackPinPos(m.TargetID, s.cfg.Explore.Atlas.WorldSize)
 	st := &w.T.Settlements[si]
-	if !ok || math.Hypot(float64(xc)/100-st.X, float64(zc)/100-st.Z) > float64(st.Radius)+placePinSlackM {
+	reach := float64(st.Radius) + placePinSlackM
+	if kind == 5 || kind == 6 {
+		reach = placePinNearM
+	}
+	if !ok || math.Hypot(float64(xc)/100-st.X, float64(zc)/100-st.Z) > reach {
 		refuse(placeFar)
 		return
 	}

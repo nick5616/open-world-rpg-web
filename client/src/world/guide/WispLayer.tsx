@@ -18,7 +18,7 @@ import { hudActivity } from '../../hud/immersive';
 import { emitSound } from '../../audio/bridge';
 import { useMenu } from '../../ui/menu/store';
 import { useQualityStore } from '../../stores/qualityStore';
-import { AUTO_GUIDE_MS, guide, guideNote, installGuideKey } from './guideStore';
+import { AUTO_GUIDE_MS, guide, guideNote, installGuideKey, markedGoal } from './guideStore';
 import { buildRoadGraph, newWisp, nearestNode, planRoute, pointAt, SNAP_M, stepWisp, type Route, type RoadGraph, type WispState } from './route';
 import { pickGuideGoal, type GuideGoal } from './target';
 import { diegeticDebug } from '../diegeticDebug';
@@ -149,7 +149,10 @@ export function WispLayer({ runtime }: { runtime: WorldRuntime }) {
 
     const start = (auto: boolean): boolean => {
       const q = trackedQuest(useQuests.getState());
-      const goal = pickGuideGoal({ x: me.x, z: me.z }, liveMarkers(q), useExploration.getState().pins);
+      // CR 055: "Guide me" on a place, or the place just marked in a conversation or the journal, comes before the quest.
+      const place = guide.target ?? (auto ? null : markedGoal(now));
+      guide.target = null;
+      const goal: GuideGoal | null = place ? { x: place.x, z: place.z, kind: 'pin', label: place.label } : pickGuideGoal({ x: me.x, z: me.z }, liveMarkers(q), useExploration.getState().pins);
       if (!goal) {
         if (!auto) guideNote('Nothing to follow yet: track a quest (J) or set a pin on the map (M)');
         return false;
@@ -172,6 +175,11 @@ export function WispLayer({ runtime }: { runtime: WorldRuntime }) {
       return true;
     };
 
+    if (guide.go) {
+      guide.go = false;
+      if (!away) start(false);
+      else guideNote('The wisp keeps to the surface');
+    }
     if (guide.toggle) {
       guide.toggle = false;
       if (run.active && !run.auto) run.active = false; // pressed again: put it away

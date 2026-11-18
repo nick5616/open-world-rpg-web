@@ -149,7 +149,7 @@ export function StructuresLayer({ runtime }: { runtime: WorldRuntime }) {
 
   // The map draws this world.
   useEffect(() => {
-    setMapWorld(runtime.data, towers.towers.map((shape, i) => ({ site: towers.sites[i].index, shape })), runtime.vertical);
+    setMapWorld(runtime.data, towers.towers.map((shape, i) => ({ site: towers.sites[i].index, shape })), runtime.vertical, runtime.towns);
     return () => setMapWorld(null);
   }, [runtime, towers]);
 
