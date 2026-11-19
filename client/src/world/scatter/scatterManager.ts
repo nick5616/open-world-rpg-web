@@ -311,7 +311,7 @@ export class ScatterManager {
           gl_Position = projectionMatrix * mvPosition;`,
         );
     };
-    m.customProgramCacheKey = () => 'lodestone-grass-2';
+    m.customProgramCacheKey = () => 'lodestone-grass-3'; // 3: snow (scatterMaterials snowMix)
     return m;
   }
 

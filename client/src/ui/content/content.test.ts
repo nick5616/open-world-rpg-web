@@ -1,7 +1,7 @@
 import { describe, expect, it, beforeEach } from 'vitest';
 import { CONTENT, type Event as ZoneEvent } from '@lodestone/contracts';
 import { CEV, EVENT_PHASE, decodePlaces, eventStatus } from './events';
-import { codexEntries, emptySync, nearestEvent, reduceContentEvent, resetContent, useContent, applyContentEvent, type ContentState } from './store';
+import { codexEntries, emptySync, EVENT_CARD_MS, EVENT_HIDE_M, EVENT_NEAR_M, eventCardMode, nearestEvent, reduceContentEvent, resetContent, useContent, applyContentEvent, type ContentState } from './store';
 import { playerTitles, titleOf } from './titles';
 import { findContentTarget } from './ContentHud';
 import { weaknesses } from './JournalTabs';
@@ -107,6 +107,38 @@ describe('content events', () => {
     s = { ...s, ...reduceContentEvent(s, ev(CEV.worldEvent, { ...data, text: 'The caravan rolls on.' }, { targetId: 7, value: EVENT_PHASE.won }), 2000) };
     expect(s.events[7].phase).toBe(EVENT_PHASE.won);
     expect(s.notes.at(-1)?.title).toBe('Caravan Ambush: won');
+  });
+
+  it('shows the full event card only for a few seconds, else a chip, nothing far away (playtest 2 co-op)', () => {
+    const e = { id: 7, phase: EVENT_PHASE.active, r: 26 };
+    // Far away: nothing at all.
+    let c = eventCardMode(e, EVENT_HIDE_M + 1, 0, null);
+    expect(c.mode).toBe('hidden');
+    // It comes within range: the full card, then the chip.
+    c = eventCardMode(e, 420, 1000, c.memo);
+    expect(c.mode).toBe('full');
+    c = eventCardMode(e, 400, 1000 + EVENT_CARD_MS - 1, c.memo);
+    expect(c.mode).toBe('full');
+    c = eventCardMode(e, 380, 1000 + EVENT_CARD_MS + 1, c.memo);
+    expect(c.mode).toBe('chip');
+    // An update (progress) is not a new phase.
+    c = eventCardMode({ ...e, phase: EVENT_PHASE.updated }, 300, 20000, c.memo);
+    expect(c.mode).toBe('chip');
+    // Walking into it: the full card again, then the chip while you stay.
+    c = eventCardMode(e, e.r + EVENT_NEAR_M, 30000, c.memo);
+    expect(c.mode).toBe('full');
+    c = eventCardMode(e, 10, 30000 + EVENT_CARD_MS + 1, c.memo);
+    expect(c.mode).toBe('chip');
+    // Won: the full card again.
+    c = eventCardMode({ ...e, phase: EVENT_PHASE.won }, 10, 50000, c.memo);
+    expect(c.mode).toBe('full');
+    c = eventCardMode({ ...e, phase: EVENT_PHASE.won }, 10, 50000 + EVENT_CARD_MS + 1, c.memo);
+    expect(c.mode).toBe('chip');
+    // Wandering off and back does not re-announce the same event; a new one does.
+    c = eventCardMode(e, 900, 70000, eventCardMode(e, 300, 60000, { id: 7, phase: EVENT_PHASE.active, inside: false, fullUntil: 0 }).memo);
+    expect(c.mode).toBe('hidden');
+    expect(eventCardMode(e, 500, 71000, c.memo).mode).toBe('chip');
+    expect(eventCardMode({ ...e, id: 8 }, 500, 71000, c.memo).mode).toBe('full');
   });
 
   it('finds what E would do next to you', () => {

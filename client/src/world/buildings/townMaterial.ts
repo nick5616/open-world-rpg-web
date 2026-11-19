@@ -3,17 +3,24 @@
 // vertex, so buildings, interiors, windows, lanterns and fires of a whole
 // town are one material and one draw call each (spec 12: <= 400 per frame).
 //
-// Per-vertex `aLG` = (layer, glow). glow 1..127: a window that lights up at
-// night (warm, scaled by uNight); 128..255: always on (fire, lantern glass,
+// Per-vertex `aLG` = (layer, glow). glow 1..126: a window that lights up at
+// night (warm, scaled by uNight); 127 (GLOW_DAYLIGHT): a window's inner pane,
+// soft sky-white by day (scaled by 1 - uNight), so a room sees daylight
+// through its windows, dark at night; 128..255: always on (fire, lantern glass,
 // crystals: texel colour x vertex tint). The texture's alpha masks which
 // texels may emit (glass panes, not their frames). The surface stays opaque.
 
 import * as THREE from 'three';
-import type { MeshData } from './meshBuilder';
+import { GLOW_DAYLIGHT, type MeshData } from './meshBuilder';
 import { TEX } from './textures';
 
 /** The fire picture's layer (props.ts flame): its always-on quads sway and flicker (playtest 2 immersion pass). */
 const FIRE_LAYER = TEX.fire.toFixed(1);
+/** Daylight panes: their colour (a bright sky) and strength at full day. */
+export const DAYLIGHT_PANE_RGB = [0.82, 0.9, 1.0] as const;
+export const DAYLIGHT_PANE_K = 1.6;
+/** The program cache key; bump with any shader change (warmExtras compiles these same materials). */
+export const TOWN_PROGRAM_KEY = 'lodestone-town-v5';
 
 export interface TownMaterials {
   /** Buildings, interiors, structures, bridges: lit, casts and receives shadows. */
@@ -102,17 +109,20 @@ totalEmissiveRadiance += diffuseColor.rgb * vec3(1.0, 0.82, 0.62) * uCaveFill;
   float g = floor(vGlowV + 0.5);
   if (g > 0.5) {
     float always = step(127.5, g);
-    float k = (g - 128.0 * always) / 16.0;
+    float daylight = abs(g - ${GLOW_DAYLIGHT.toFixed(1)}) < 0.5 ? 1.0 : 0.0;
+    float k = mix((g - 128.0 * always) / 16.0, ${DAYLIGHT_PANE_K.toFixed(2)}, daylight);
     vec3 warm = vec3(1.0, 0.62, 0.3);
-    vec3 col = mix(warm, townTexel.rgb * vColor.rgb, always);
+    vec3 col = mix(mix(warm, townTexel.rgb * vColor.rgb, always), vec3(${DAYLIGHT_PANE_RGB.map((v) => v.toFixed(2)).join(', ')}), daylight);
     // flames breathe a little (±8 %, 1-2 Hz: a flicker, never a strobe)
     float fl = vFirePh >= 0.0 ? 0.94 + 0.05 * sin(uTownTime * 8.3 + vFirePh) + 0.03 * sin(uTownTime * 13.1 + vFirePh * 2.0) : 1.0;
-    totalEmissiveRadiance += col * k * townTexel.a * mix(uNight, 1.0, always) * uGlow * fl;
+    // night windows follow uNight, daylight panes its opposite, fires are always on
+    float on = mix(mix(uNight, 1.0, always), 1.0 - uNight, daylight);
+    totalEmissiveRadiance += col * k * townTexel.a * on * uGlow * fl;
   }
 }`,
       );
   };
-  m.customProgramCacheKey = () => 'lodestone-town-v4';
+  m.customProgramCacheKey = () => TOWN_PROGRAM_KEY;
 }
 
 export function makeTownMaterials(tex: THREE.DataArrayTexture): TownMaterials {

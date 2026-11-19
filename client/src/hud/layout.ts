@@ -59,7 +59,7 @@ body:has([data-testid="levelup-fanfare"], [data-testid="discovery-intro"], [data
 /* Left column: content notes (top), the vault puzzle, the pet card under it (--ls-vault-h), the
    Rested strip (bottom). A centred panel or the instrument overlay covers them at 1280 wide. */
 body:has([data-testid="vault-panel"]) [data-testid="pet-card"] { top: calc(min(46vh, 420px) + var(--ls-vault-h, 130px) + 8px) !important; }
-body:has(${CENTRE_PANELS}, [data-testid="music-overlay"], [data-testid="character-panel"]) :is([data-testid="content-notes"], [data-testid="vault-panel"], [data-testid="pet-card"], [data-testid="camp-strips"], [data-testid="pet-notes"], [data-testid="steed-notes"]) { visibility: hidden; }
+body:has(${CENTRE_PANELS}, [data-testid="music-overlay"], [data-testid="character-panel"]) :is([data-testid="content-notes"], [data-testid="world-event-chip"], [data-testid="vault-panel"], [data-testid="pet-card"], [data-testid="camp-strips"], [data-testid="pet-notes"], [data-testid="steed-notes"]) { visibility: hidden; }
 /* The character panel (spell cards, 604 px from the left edge) reaches the clock pill below ~1450 px wide and the world event tracker below ~1680 px: they wait. */
 @media (max-width: 1450px) { body:has([data-testid="character-panel"]) [data-testid="night-hud"] { visibility: hidden; } }
 @media (max-width: 1680px) { body:has([data-testid="character-panel"]) [data-testid="world-event"] { visibility: hidden; } }
@@ -92,6 +92,8 @@ export const FRIENDS_BUTTON_RIGHT = GRAPHICS_BUTTON_RIGHT + GRAPHICS_BUTTON_W + 
 export const CHAT_WIDTH = 'var(--ls-chat-w, 400px)';
 /** Top of the world event tracker: under the clock pill, its forecast line and night notices (--ls-clock-h). */
 export const BELOW_CLOCK = 'calc(56px + var(--ls-clock-h, 30px) + 6px)';
+/** Top of the world event chip (playtest 2 co-op): the left column, right above the content notes (top 150). */
+export const EVENT_CHIP_TOP = 118;
 /** Bottom offset right above the centre stack (hotbar + hint). */
 export const ABOVE_HOTBAR = 'calc(var(--ls-hotbar-h, 0px) + 14px)';
 

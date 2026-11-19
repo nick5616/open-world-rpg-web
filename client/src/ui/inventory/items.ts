@@ -326,3 +326,114 @@ export function smithingView(kind: StationKind, stationLevel: number | null, syn
   }
   return stationLevel !== null ? { level: stationLevel, progress: null } : null;
 }
+
+/**
+ * What one weapon or armour piece adds up to, twinning the zone
+ * (server/zone/internal/items/gear.go): a weapon's mult is its material x
+ * (1 + 0.02 x item levels above the base's level); an armour piece's health
+ * is round(health x material mult x (1 + 0.05 x levels above base)) and its
+ * armorPct the base's; affixes, uniques and socketed utility gems add their
+ * stats on top.
+ */
+export interface GearStats {
+  kind: 'weapon' | 'armor';
+  weaponMult: number;
+  damagePct: number;
+  critPct: number;
+  spellPowerPct: number;
+  health: number;
+  armorPct: number;
+}
+
+const materialMult = (key: string | undefined) => ITEMS.materials.find((m) => m.key === key)?.mult ?? 1;
+
+export function gearStats(it: { b: string; l: number; a?: WireAffix[]; u?: string[]; k?: string[] } | null, kind: 'weapon' | 'armor'): GearStats {
+  const g: GearStats = { kind, weaponMult: 1, damagePct: 0, critPct: 0, spellPowerPct: 0, health: 0, armorPct: 0 };
+  const d = it ? itemDef(it.b) : undefined;
+  if (!it || !d) return g; // an empty slot (an empty main hand wields the training weapon: mult 1)
+  const add = (stat: string, v: number) => {
+    if (stat === 'damagePct' || stat === 'critPct' || stat === 'spellPowerPct' || stat === 'health' || stat === 'armorPct') g[stat] += v;
+  };
+  const above = Math.max(0, it.l - d.level);
+  if (d.kind === 'weapon') {
+    g.weaponMult = materialMult(d.material) * (1 + 0.02 * above);
+    for (const s of it.k ?? []) {
+      const [, gem, cut] = s.split(':');
+      const gd = gemDefs.get(gem);
+      const cd = cutDefs.get(cut);
+      if (gd?.stat && cd) add(gd.stat, cd.utility);
+    }
+  } else if (d.kind === 'armor') {
+    g.health += Math.round((d.health ?? 0) * materialMult(d.material) * (1 + 0.05 * above));
+    g.armorPct += d.armorPct ?? 0;
+  }
+  for (const a of it.a ?? []) add(a.s, a.v);
+  for (const u of it.u ?? []) for (const [s, v] of Object.entries(uniqueDefs.get(u)?.stats ?? {})) add(s, v as number);
+  return g;
+}
+
+/** Reference health the armour comparison weighs armorPct against (about a mid-level traveller). */
+export const ARMOR_REF_HEALTH = 400;
+
+/**
+ * One number to rank gear in the same slot: a weapon's expected hit
+ * (mult x (1 + damage %) x the average crit bonus: 5 % base + critPct at
+ * x1.5, the zone's combat validate.go), an armour piece's effective health
+ * on top of ARMOR_REF_HEALTH.
+ */
+export function gearScore(g: GearStats): number {
+  if (g.kind === 'weapon') return g.weaponMult * (1 + g.damagePct / 100) * (1 + 0.5 * Math.min(1, 0.05 + g.critPct / 100));
+  return (ARMOR_REF_HEALTH + g.health) / (1 - Math.min(60, g.armorPct) / 100);
+}
+
+export interface GearCompare {
+  /** 1 better, -1 worse, 0 about the same. */
+  verdict: 1 | 0 | -1;
+  /** "+18% weapon damage vs your Sunsteel Blade". */
+  text: string;
+}
+
+/**
+ * Playtest 2 (co-op): which bag gear beats what you wear. A weapon compares
+ * against the main hand of the loadout holding the same weapon type (else
+ * Loadout 1's main hand; an empty hand is the training weapon), an armour
+ * piece against its slot. Null for anything else, or for equipped items.
+ */
+export function compareToEquipped(it: WireItem, items: readonly WireItem[]): GearCompare | null {
+  const d = itemDef(it.b);
+  if (!d || isEquipped(it) || (d.kind !== 'weapon' && d.kind !== 'armor')) return null;
+  const kind = d.kind;
+  let cur: WireItem | null;
+  let vs: string;
+  if (kind === 'weapon') {
+    const hand = (l: number) => items.find((x) => x.s === `eq:main${l}`) ?? null;
+    const typeOf = (l: number) => {
+      const h = hand(l);
+      return h ? itemDef(h.b)?.weapon : defaultWeapon(l);
+    };
+    const l = typeOf(0) === d.weapon ? 0 : typeOf(1) === d.weapon ? 1 : 0;
+    cur = hand(l);
+    vs = `your ${cur ? displayName(cur) : trainingWeaponName(defaultWeapon(l))}`;
+  } else {
+    if (!d.armor) return null;
+    cur = items.find((x) => x.s === `eq:${d.armor}`) ?? null;
+    vs = cur ? `your ${displayName(cur)}` : `an empty ${d.armor} slot`;
+  }
+  const a = gearStats(it, kind);
+  const b = gearStats(cur, kind);
+  const ratio = gearScore(a) / gearScore(b);
+  const verdict = ratio > 1.005 ? 1 : ratio < 0.995 ? -1 : 0;
+  const signed = (v: number, pct: boolean) => `${v < 0 ? '-' : '+'}${num(Math.abs(v))}${pct ? '%' : ''}`;
+  const parts: string[] = [];
+  if (kind === 'weapon') {
+    const dmg = Math.round((ratio - 1) * 100);
+    if (dmg) parts.push(`${signed(dmg, true)} weapon damage`);
+  }
+  const health = Math.round(a.health - b.health);
+  if (health) parts.push(`${signed(health, false)} health`);
+  const armor = Math.round((a.armorPct - b.armorPct) * 10) / 10;
+  if (armor) parts.push(`${signed(armor, true)} armour`);
+  const spell = Math.round(a.spellPowerPct - b.spellPowerPct);
+  if (spell) parts.push(`${signed(spell, true)} spell power`);
+  return { verdict, text: parts.length ? `${parts.join(', ')} vs ${vs}` : `About the same as ${vs}` };
+}

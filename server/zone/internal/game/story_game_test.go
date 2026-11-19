@@ -229,17 +229,17 @@ func TestMainStoryTwoPlayersEndToEnd(t *testing.T) {
 		t.Fatal("the keeper's fork was not handed to both")
 	}
 
-	// ---- Act II: the gate (level 5: Act I's rewards may already be enough), three forks ----
-	// A grows to level 15 here; B keeps its own pace and passes the later
+	// ---- Act II: the gate (level 6: Act I's rewards may already be enough), three forks ----
+	// A grows to level 24 here; B keeps its own pace and passes the later
 	// gates beside A.
-	h.do(func() { h.srv.devSetXP(h.srv.byChar[A], explore.XPForLevel(15)) })
+	h.do(func() { h.srv.devSetXP(h.srv.byChar[A], explore.XPForLevel(24)) })
 	h.do(func() { h.srv.byChar[A].quests.recheck = true })
 	waitStory(t, h, A, 2, 1, both...)
 	waitStory(t, h, B, 2, 1, both...)
 	var lvA, lvB int
 	h.do(func() { lvA, lvB = h.srv.storyLevel(h.srv.byChar[A]), h.srv.storyLevel(h.srv.byChar[B]) })
 	t.Logf("levels after Act I: A %d (dev XP), B %d", lvA, lvB)
-	if lvA < 14 {
+	if lvA < 23 {
 		t.Fatalf("level A %d", lvA)
 	}
 	for i := 1; i <= 3; i++ {
@@ -328,7 +328,7 @@ func TestMainStoryTwoPlayersEndToEnd(t *testing.T) {
 	waitStory(t, h, B, 4, 5, both...)
 	talk(p.Captain)
 	waitStory(t, h, A, 5, 1, both...)
-	waitStory(t, h, B, 5, 1, both...) // Act V's gate (12) opened for B beside A
+	waitStory(t, h, B, 5, 1, both...) // Act V's gate (18) opened for B beside A
 	h.do(func() { lvB = h.srv.storyLevel(h.srv.byChar[B]) })
 	t.Logf("B is level %d at Act V", lvB)
 

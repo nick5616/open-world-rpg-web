@@ -3,11 +3,11 @@
 // dial on the HUD is hud/SundialClock.tsx.
 //
 // The world's sun is `sunDirection(timeOfDayS)` (scene/SkyAndSun.ts): it
-// rises in +x at 06:00, is highest at 12:00 tilted a little toward +z, and
-// sets in -x at 18:00. A vertical gnomon of height h on a level plate casts
+// rises in +x at 06:00, is highest at 12:30 tilted a little toward +z, and
+// sets in -x at 19:00 ("dusk is golden", SUNRISE_HOUR / SUNSET_HOUR). A vertical gnomon of height h on a level plate casts
 // its shadow along -(sun.x, sun.z) with length h * |(sun.x, sun.z)| / sun.y.
 // The dial reads the shadow's DIRECTION: the plate angle `phi` runs from PI
-// (06:00, the shadow points west) over PI/2 (noon, north) to 0 (18:00, east),
+// (06:00, the shadow points west) over PI/2 (12:30, north) to 0 (19:00, east),
 // measured from +x toward north (-z). The hour marks are carved at the angle
 // the shadow really has at that hour, so what the stone shows is what the
 // sun does, whatever tilt the sky has. At night nothing is readable.
@@ -22,7 +22,7 @@ export const DIAL_R = 0.95;
 export const GNOMON_H = 0.7;
 /** The first and last hours carved. */
 export const DIAL_FROM = 6;
-export const DIAL_TO = 18;
+export const DIAL_TO = 19;
 /** Below this sun height (sin of elevation) the shadow is not drawn: dawn, dusk and the night. */
 export const SUN_MIN_Y = 0.045;
 
@@ -53,7 +53,7 @@ export function shadowOf(sun: Vec3, h = GNOMON_H, maxLen = DIAL_R): Shadow {
 /** Sun direction at `hour` (0-24), through the renderer's own function. */
 export type SunAt = (hour: number) => Vec3;
 
-/** The carved hour marks: hour and plate angle, 06:00 .. 18:00. */
+/** The carved hour marks: hour and plate angle, 06:00 .. 19:00. */
 export function hourMarks(sunAt: SunAt): { hour: number; phi: number }[] {
   const out: { hour: number; phi: number }[] = [];
   for (let h = DIAL_FROM; h <= DIAL_TO; h++) {
@@ -74,12 +74,13 @@ export function readHour(phi: number, marks: { hour: number; phi: number }[]): n
   return null;
 }
 
-/** The HUD dial: where a sun or moon glyph sits on the half-arc (0 = left end, 1 = right end) at an hour, and whether it is the sun. Day 06:00-18:00 is the upper arc, night wraps over a dim one. */
+/** The HUD dial: where a sun or moon glyph sits on the half-arc (0 = left end, 1 = right end) at an hour, and whether it is the sun. Day 06:00-19:00 is the upper arc (the top at 12:30), night wraps over a dim one. */
 export function arcAt(hour: number): { t: number; sun: boolean } {
   const h = ((hour % 24) + 24) % 24;
-  if (h >= 6 && h < 18) return { t: (h - 6) / 12, sun: true };
-  const n = h >= 18 ? h - 18 : h + 6; // 0..12 across the night
-  return { t: n / 12, sun: false };
+  const day = DIAL_TO - DIAL_FROM;
+  if (h >= DIAL_FROM && h < DIAL_TO) return { t: (h - DIAL_FROM) / day, sun: true };
+  const n = h >= DIAL_TO ? h - DIAL_TO : h + 24 - DIAL_TO; // 0..11 across the night
+  return { t: n / (24 - day), sun: false };
 }
 
 /** A 12-hour clock string for a world hour: "6:30 am". */

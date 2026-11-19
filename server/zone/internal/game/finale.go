@@ -9,9 +9,9 @@ package game
 //     into the arena. The intro: the Hush rises, untouchable and still for
 //     finaleIntroS while a title card plays (Event 1604), then fights.
 //   - Phase 1 (100-70 %): its own attacks, and every ~26 s the shroud: a
-//     ward of silence (8 % of its health) that only sunsteel or Light can
-//     break (ordinary hits do nothing). Broken: it staggers and takes 1.5x
-//     damage for a few seconds. Unbroken after 10 s: the Long Quiet, a
+//     ward of silence (3 + 3 sunsteel or Light hits per player; it stands
+//     still 2.5 s drawing it) that ordinary hits cannot touch. Broken: it staggers and takes 1.5x
+//     damage for a few seconds. Unbroken after 12 s: the Long Quiet, a
 //     blow to everyone in the arena and the Hush heals.
 //   - Phase 2 (70-35 %): the choir. The Hush is untouchable at the heart
 //     of the arena while its Hollow Bells (party size + 1, 2-4, around the
@@ -43,16 +43,17 @@ import (
 )
 
 const (
-	heartfallR      = 30.0 // the arena (combat.yaml bosses.the_hush.arenaRadius)
-	finaleIntroS    = 7.0
-	finaleRearmS    = 8.0
-	finaleShroudS   = 26.0 // between shrouds (Starless: 20)
-	finaleShroudUp  = 10.0 // to break it
-	finaleChorusS   = 7.0  // between chorus strikes while bells toll (Starless: 5.5)
-	finaleNightS    = 30.0 // between endless nights (Starless: 24)
-	finaleNightWarn = 7.0
-	finaleWellR     = 3.5
-	finaleDawnS     = 60.0 // the arena's dawn glow after a victory
+	heartfallR         = 30.0 // the arena (combat.yaml bosses.the_hush.arenaRadius)
+	finaleIntroS       = 7.0
+	finaleRearmS       = 8.0
+	finaleShroudS      = 26.0 // between shrouds (Starless: 20)
+	finaleShroudUp     = 12.0 // to break it
+	finaleShroudStillS = 2.5  // it stands still drawing it (no attacks): close in
+	finaleChorusS      = 7.0  // between chorus strikes while bells toll (Starless: 5.5)
+	finaleNightS       = 30.0 // between endless nights (Starless: 24)
+	finaleNightWarn    = 7.0
+	finaleWellR        = 3.5
+	finaleDawnS        = 60.0 // the arena's dawn glow after a victory
 )
 
 // Finale phases (Event 1603 value).
@@ -106,12 +107,37 @@ func (s *Server) finaleSecs(sec float64) uint32 { return uint32(math.Round(sec *
 // spell: two level 30 players needed 450 damage a second from those alone
 // in 10 s, never broke it, ate the Long Quiet every 26 s and watched the
 // Hush heal. A count of hits is a test of focus, the same at any level.
+//
+// Co-op polish: 3 + 3 per player (Starless 4 + 5) over 12 s, and the Hush
+// stands still for finaleShroudStillS while it draws the shroud: a clear
+// window to close in and strike. Two average players (the fight sims,
+// internal/combat/hush_sim_test.go) failed a third of the 4 + 4 shrouds in
+// 10 s and ate the Long Quiet four times a fight.
 func finaleShroudHits(players int, hard bool) float64 {
-	per := 4
+	base, per := 3, 3
 	if hard {
-		per = 6
+		base, per = 4, 5
 	}
-	return float64(4 + per*max(1, players))
+	return float64(base + per*max(1, players))
+}
+
+// finaleLevel is the Hush's level for the players who wake it: the party's
+// mean level (rounded) + 1, at least 12; the Starless Vow adds 4. Co-op
+// polish: it was the highest level + 1, so a friend a few levels behind
+// fought a Hush scaled to the other.
+func finaleLevel(levels []int, hard bool) int {
+	sum := 0
+	for _, l := range levels {
+		sum += l
+	}
+	level := 12
+	if len(levels) > 0 {
+		level = max(12, int(math.Round(float64(sum)/float64(len(levels))))+1)
+	}
+	if hard {
+		level += 4
+	}
+	return level
 }
 
 // finaleMayFight: a character who may wake the Hush.
@@ -183,6 +209,9 @@ func (s *Server) finaleTick(tick uint32) {
 		s.finaleReset("The Hush sinks back into the silence. The Heartfall waits.")
 		return
 	}
+	if tick%15 == 7 {
+		s.finaleClearStrays(r) // co-op polish: the arena is the Hush's, from the entrance on
+	}
 	if now < r.introUntil {
 		return
 	}
@@ -217,6 +246,7 @@ func (s *Server) finaleTick(tick uint32) {
 		r.shroud = r.shroudMax
 		r.shroudEnd = now + s.finaleSecs(finaleShroudUp)
 		r.nextShroud = now + s.finaleSecs(s.finaleEvery(finaleShroudS, 20))
+		w.Hold(r.hush, finaleShroudStillS)
 		s.finaleSay(hf, "", "The Hush draws the silence around itself. Break the shroud with sunsteel or Light!")
 		s.finaleTellAll()
 	}
@@ -270,6 +300,40 @@ func (s *Server) finaleTick(tick uint32) {
 	}
 }
 
+// storyArenaR: the Heartfall and this much around it belong to the Hush:
+// no night hunters rise there and none stand in it during the fight.
+const storyArenaMarginM = 40.0
+
+// storyArenaAt: (x, z) is in the Heartfall's arena (or its margin).
+func (s *Server) storyArenaAt(x, z float64) bool {
+	p := s.storyPlaces()
+	if p == nil || !p.Heartfall.OK {
+		return false
+	}
+	return math.Hypot(x-p.Heartfall.X, z-p.Heartfall.Z) <= p.Heartfall.R+storyArenaMarginM
+}
+
+// finaleClearStrays sends away every enemy in the arena that is not the
+// Hush's: the night's hunters, a wandering pack. Co-op polish: two
+// Gloamlings stood in the arena through the entrance (the title card, the
+// Hush's lines) and fought on into the first phase.
+func (s *Server) finaleClearStrays(r *finaleRun) {
+	hf := s.storyPlaces().Heartfall
+	w := s.cbt.w
+	for _, e := range w.EnemiesNear(hf.X, hf.Z, hf.R+10) {
+		if !e.Alive() || e == r.hush || e.Group == r.g {
+			continue
+		}
+		bell := false
+		for _, g := range r.bells {
+			bell = bell || e.Group == g
+		}
+		if !bell {
+			w.Despawn(e)
+		}
+	}
+}
+
 func (s *Server) finaleEvery(normal, hard float64) float64 {
 	if r := s.sty.fin.run; r != nil && r.hard {
 		return hard
@@ -282,14 +346,13 @@ func (s *Server) finaleArm(who []*session) {
 	p := s.storyPlaces()
 	hf := p.Heartfall
 	w := s.cbt.w
-	level, hard := 12, false
+	hard := false
+	var levels []int
 	for _, sess := range who {
-		level = max(level, s.storyLevel(sess)+1)
+		levels = append(levels, s.storyLevel(sess))
 		hard = hard || (sess.cnt != nil && sess.cnt.st.Stat("vow") > 0 && sess.cnt.st.Stat("finale") > 0)
 	}
-	if hard {
-		level += 4
-	}
+	level := finaleLevel(levels, hard)
 	center := movement.Vec3{X: hf.X, Y: s.cfg.Ground.HeightAt(hf.X, hf.Z), Z: hf.Z}
 	arena := combat.Arena{Center: center, Radius: heartfallR, Kind: "test"}
 	g := w.AddGroup(&combat.Group{Kind: combat.GroupBoss, Anchor: center, Radius: heartfallR, Element: 8, Level: level, Site: -1, Boss: "the_hush", Arena: &arena, Name: "The Heartfall"})
@@ -306,6 +369,7 @@ func (s *Server) finaleArm(who []*session) {
 	w.Hold(hush, finaleIntroS)
 	hush.Guard = s.finaleGuard
 	s.sty.fin.run = r
+	s.finaleClearStrays(r) // nothing else stands in the arena for the entrance
 	s.sty.fin.dawnTil = 0
 	sub := "Mother of the Unsung"
 	if hard {

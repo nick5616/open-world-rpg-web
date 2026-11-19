@@ -17,9 +17,28 @@ import { localPlayer, worldClock } from '../state/live';
 import { useDebugStore } from '../stores/debugStore';
 import { QUALITY_PRESETS, useQualityStore } from '../stores/qualityStore';
 
+/** The sun crosses the horizon rising at SUNRISE_HOUR and setting at SUNSET_HOUR. */
+export const SUNRISE_HOUR = 6;
+export const SUNSET_HOUR = 19;
+
+/**
+ * Playtest 2 "dusk is golden": the sun's angle round its circle for an hour
+ * of the day (0 = rising on the horizon, pi/2 = highest, pi = setting).
+ * Piecewise linear: 06:00-19:00 sweeps the day half of the circle, 19:00-06:00
+ * the night half, so evenings last (golden light 18:00-19:00, demons rise at
+ * DUSK_HOUR 18.5 in a low gold sun, full night ~19:40) while dawn stays at
+ * 06:00 when they burn. Continuous everywhere, including midnight; the noon
+ * peak moves to 12:30.
+ */
+export function sunAngle(hour: number): number {
+  const dayLen = SUNSET_HOUR - SUNRISE_HOUR;
+  const h = (((hour - SUNRISE_HOUR) % 24) + 24) % 24; // hours since sunrise, 0..24
+  return h <= dayLen ? (h / dayLen) * Math.PI : Math.PI + ((h - dayLen) / (24 - dayLen)) * Math.PI;
+}
+
 /** Unit vector toward the sun at a time of day (0 = midnight). Rises in +x, sets in -x, tilted toward +z. */
 export function sunDirection(timeOfDayS: number, out = new THREE.Vector3()): THREE.Vector3 {
-  const a = (timeOfDayS / DAY_LENGTH_S) * Math.PI * 2 - Math.PI / 2; // 06:00 -> 0 (horizon), 12:00 -> pi/2
+  const a = sunAngle((timeOfDayS / DAY_LENGTH_S) * 24); // 06:00 -> 0 (horizon), 12:30 -> pi/2, 19:00 -> pi
   return out.set(Math.cos(a), Math.sin(a), Math.sin(a) * 0.35).normalize();
 }
 

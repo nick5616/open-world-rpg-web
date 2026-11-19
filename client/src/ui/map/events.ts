@@ -15,6 +15,7 @@ export const EV = {
   fastTravelDenied: 606,
   party: 607,
   respawnPoint: 608,
+  partyTowers: 609,
   /** CR 055: the pins a conversation (1913) or the journal's Info tab (1980) placed: x / z in cm, data = the label. */
   dialogMark: 1913,
   placeMarked: 1980,
@@ -55,6 +56,22 @@ export const emptyProgress = (): Progress => ({ xp: 0n, level: 1, lastWaypoint: 
 /** Bit i of a site bitset (LSB first, like the Go Bitset). */
 export function hasBit(b: Uint8Array, i: number): boolean {
   return i >= 0 && i >> 3 < b.length && (b[i >> 3] & (1 << (i & 7))) !== 0;
+}
+
+/** Union of two site bitsets. */
+export function orBits(a: Uint8Array, b: Uint8Array): Uint8Array {
+  if (!b.length) return a;
+  const out = new Uint8Array(Math.max(a.length, b.length));
+  out.set(a);
+  for (let i = 0; i < b.length; i++) out[i] |= b[i];
+  return out;
+}
+
+/** party_towers (609) payload: towers your party members unlocked and you did not (co-op polish: lent for fast travel). */
+export function decodePartyTowers(data: Uint8Array): Uint8Array {
+  if (data.length < 3 || data[0] !== 1) return new Uint8Array(0);
+  const n = data[1] | (data[2] << 8);
+  return data.slice(3, 3 + n);
 }
 
 /** progress_sync (603) payload. */

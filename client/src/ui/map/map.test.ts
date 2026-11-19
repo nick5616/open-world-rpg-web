@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import type { Event as ZoneEvent } from '@lodestone/contracts';
 import type { Site } from '@lodestone/worldgen';
-import { decodePins, decodeProgress, emptyProgress, EV, hasBit, packPinPos } from './events';
+import { decodePartyTowers, decodePins, decodeProgress, emptyProgress, EV, hasBit, orBits, packPinPos } from './events';
 import { reduceEvent, type ExplorationState } from './store';
 import { bearing, headingOf, wrapAngle } from './Compass';
 import { canFastTravel, siteVisibility } from './MapScreen';
@@ -40,7 +40,7 @@ describe('event payloads (Go vectors)', () => {
 });
 
 const ev = (kind: number, extra: Partial<ZoneEvent> = {}): ZoneEvent => ({ type: 'Event', kind, entityId: 1, targetId: 0, value: 0, x: 0, y: 0, z: 0, data: new Uint8Array(0), ...extra });
-const base = (): ExplorationState => ({ progress: emptyProgress(), pins: [], partyId: 0, toasts: [], mapOpen: false, respawnName: '', stats: { events: 0, discoveries: 0, towers: 0, xpGained: 0, teleports: 0 }, actions: null });
+const base = (): ExplorationState => ({ progress: emptyProgress(), pins: [], partyId: 0, toasts: [], mapOpen: false, respawnName: '', partyTowers: new Uint8Array(0), stats: { events: 0, discoveries: 0, towers: 0, xpGained: 0, teleports: 0 }, actions: null });
 
 describe('reducer', () => {
   it('discovery and tower toasts, stats', () => {
@@ -103,5 +103,22 @@ describe('map visibility', () => {
     expect(canFastTravel(site('waypoint', 6), bits(5), none)).toBe(false);
     expect(canFastTravel(site('waypoint', 6), none, bits(6))).toBe(true);
     expect(canFastTravel(site('settlement', 5), bits(5), bits(5))).toBe(false);
+  });
+});
+
+describe('party towers (co-op polish, Event 609)', () => {
+  it('decodes, reduces and lends towers for fast travel', () => {
+    const data = Uint8Array.from([1, 2, 0, 0b0010_0000, 0b0000_0001]); // sites 5 and 8
+    const lent = decodePartyTowers(data);
+    expect(hasBit(lent, 5) && hasBit(lent, 8) && !hasBit(lent, 6)).toBe(true);
+    expect(decodePartyTowers(Uint8Array.from([2, 0, 0])).length).toBe(0);
+    const r = reduceEvent(base(), ev(EV.partyTowers, { value: 2, data }), 0)!;
+    expect(hasBit(r.partyTowers!, 8)).toBe(true);
+    const none = new Uint8Array(0);
+    const tower = { kind: 'tower', index: 5, x: 0, z: 0, region: 0 } as unknown as Site;
+    expect(canFastTravel(tower, none, none)).toBe(false);
+    expect(canFastTravel(tower, none, none, lent)).toBe(true);
+    const u = orBits(Uint8Array.from([1]), lent);
+    expect(hasBit(u, 0) && hasBit(u, 8)).toBe(true);
   });
 });

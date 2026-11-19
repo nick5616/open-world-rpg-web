@@ -24,6 +24,7 @@ import { loadTerrainTextures, terrainManifest } from './terrain/terrainTextures'
 import { createHorizonMesh } from './terrain/horizon';
 import { atlasHeightTexture, createSeaPlane, createWaterMaterial, makeWaterUniforms } from './water/water';
 import { ScatterManager } from './scatter/scatterManager';
+import { scatterSnowUniforms } from './scatter/scatterMaterials';
 import { createSkyDome } from './sky/skyDome';
 import { makeSkyLighting, skyLighting, sunVisibility } from './sky/atmosphere';
 import { SunShadows } from './sky/sunShadows';
@@ -392,6 +393,7 @@ export function WorldScene({ runtime }: Props) {
     world.rain = rain;
     world.shared.uWet.value = liveWeather.wet * above;
     world.shared.uSnowCover.value = liveWeather.snowCover * above;
+    scatterSnowUniforms.uSnowCover.value = world.shared.uSnowCover.value; // grass and trees whiten with the ground
     world.rainStreaks.update(camera, dt, rain * above * expo);
     world.snow.update(camera, dt, wm.snow * above * expo, wm.wind, size.height, look.flake, look.square);
     world.sand.update(camera, dt, wm.dust * above * expo, wm.wind, size.height);
@@ -447,6 +449,7 @@ export function WorldScene({ runtime }: Props) {
     w.uLightColor.value.copy(L.lightColor).multiplyScalar(L.lightIntensity / 3);
     w.uAmbient.value.copy(L.skyColor).multiplyScalar(L.hemiIntensity * (1 - 0.9 * under));
     w.uTime.value += dt;
+    w.uRain.value = rain * above; // rain rings the water
     world.sea.position.set(Math.round(camera.position.x / 64) * 64, runtime.seaY, Math.round(camera.position.z / 64) * 64);
     world.sea.updateMatrixWorld();
 

@@ -60,14 +60,17 @@ type ActInfo struct {
 	Roll     int // rolled rare-or-better items on completion
 }
 
-// ActList is every act (index act-1).
+// ActList is every act (index act-1). Co-op polish: the gates follow the
+// pace the two-player playthrough actually had at each act's start (8, 11,
+// 18, 27, 30) at about two thirds (they were 5, 8, 10, 12, 14 and never
+// bound); a gate met by a party member beside you opens for you too.
 var ActList = [Acts]ActInfo{
 	{Title: "The Fading Hum", Subtitle: "The Lodestone's song is going quiet", Level: 0, Gold: 60, XP: 250},
-	{Title: "The Tuning Forks", Subtitle: "Wake the crystals that answer the hum", Level: 5, Gold: 120, XP: 500},
-	{Title: "Verses in the Deep", Subtitle: "The keepers sealed the words away", Level: 8, Gold: 200, XP: 700, Roll: 1},
-	{Title: "The Night Unsung", Subtitle: "Keep the vigil. The Starless walks", Level: 10, Gold: 260, XP: 900, Roll: 1},
-	{Title: "Dawnforged", Subtitle: "A heart of sunsteel to carry the song", Level: 12, Gold: 320, XP: 1000, Roll: 1},
-	{Title: "The Heartfall", Subtitle: "Where the Lodestone broke, the Hush waits", Level: 14, Gold: 600, XP: 2000, Roll: 2},
+	{Title: "The Tuning Forks", Subtitle: "Wake the crystals that answer the hum", Level: 6, Gold: 120, XP: 500},
+	{Title: "Verses in the Deep", Subtitle: "The keepers sealed the words away", Level: 9, Gold: 200, XP: 700, Roll: 1},
+	{Title: "The Night Unsung", Subtitle: "Keep the vigil. The Starless walks", Level: 13, Gold: 260, XP: 900, Roll: 1},
+	{Title: "Dawnforged", Subtitle: "A heart of sunsteel to carry the song", Level: 18, Gold: 320, XP: 1000, Roll: 1},
+	{Title: "The Heartfall", Subtitle: "Where the Lodestone broke, the Hush waits", Level: 22, Gold: 600, XP: 2000, Roll: 2},
 }
 
 // Key is act n's quest key; ID its wire id ("MN" + act).

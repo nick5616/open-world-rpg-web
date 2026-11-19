@@ -28,6 +28,35 @@ export function groundAt(g: GroundQuery, x: number, y: number, z: number): numbe
   return atLevel(g, y).heightAt(x, z);
 }
 
+/** How far under the raw surface a step may end before surfaceGuard calls it a wall (the caves' UnderM). */
+export const SURFACE_GUARD_M = 1;
+
+/**
+ * A step that starts on the open surface never ends inside the terrain
+ * (playtest 2 co-op polish: the rider who fell 330 m). The level view comes
+ * from the step's START feet height, so a probe one fast step ahead where a
+ * cliff already stands more than UnderM above those feet was read by the
+ * cave rules (open cave air: no floor; rock: the feet's own height) and the
+ * step went into the hill. The way ahead is a wall: keep the start x, z,
+ * drop the horizontal speed. Twin of surfaceGuard in
+ * server/pkg/movement/caves.go; grounds without levels never reach it.
+ */
+export function surfaceGuard(raw: GroundQuery, lv: GroundQuery, s: MoveState, out: MoveState, eps: number): MoveState {
+  if (!raw.atLevel || s.mode === MoveMode.climb || out.mode === MoveMode.climb || out.mode === MoveMode.swim) return out;
+  const h0 = raw.heightAt(s.pos.x, s.pos.z);
+  if (s.pos.y < h0 - SURFACE_GUARD_M || lv.heightAt(s.pos.x, s.pos.z) !== h0 || out.pos.y >= raw.heightAt(out.pos.x, out.pos.z) - SURFACE_GUARD_M) return out;
+  const pos = { x: s.pos.x, y: out.pos.y, z: s.pos.z };
+  const vel = { x: 0, y: out.vel.y, z: 0 };
+  let mode = out.mode;
+  const fy = lv.heightAt(s.pos.x, s.pos.z);
+  if (pos.y <= fy + eps) {
+    pos.y = fy;
+    if (vel.y < 0) vel.y = 0;
+    mode = MoveMode.ground;
+  }
+  return { ...out, pos, vel, mode };
+}
+
 const R: CollideResult = { x: 0, y: 0, z: 0, pushX: 0, pushZ: 0, ceiling: false };
 
 /** Cave push-out on a mode step's result; g is the level view the step used. Mutates and returns out. */

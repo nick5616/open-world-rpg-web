@@ -20,6 +20,7 @@ import { EV, INTERACT_COMBAT, ACT, ELEMENT_COLORS, decodeSync, decodeTelegraph, 
 import { fxQueue, pushNumber, toast, useCombatHud } from './store';
 import { GRACE_MS, killerName, respawnSiteName } from './downed';
 import { CombatProbe } from './probe';
+import { SeenTelegraphs } from './dodged';
 import { nextSelection, validSelection, WheelStepper } from './spellSelect';
 import { emitSound } from '../audio/bridge';
 import { isHostilePlayer } from '../ui/pvp/hostile';
@@ -95,6 +96,8 @@ interface Active {
 export class CombatRuntime {
   readonly timeline = new CombatTimeline();
   readonly probe = new CombatProbe();
+  /** Telegraphs you saw, so "Dodged!" only toasts for strikes you could see (playtest 2 co-op). */
+  private readonly seenTelegraphs = new SeenTelegraphs();
   private buttons: CombatButtons = blankButtons();
   private actives: Active[] = [];
   private shots: LocalShot[] = [];
@@ -854,7 +857,10 @@ export class CombatRuntime {
         return;
       case EV.telegraph: {
         const t = decodeTelegraph(ev);
-        if (t) fxQueue.push({ t: 'telegraph', ...t, at: now });
+        if (t) {
+          fxQueue.push({ t: 'telegraph', ...t, at: now });
+          this.seenTelegraphs.record(t, localPlayer.pos.x, localPlayer.pos.y, localPlayer.pos.z, now);
+        }
         this.probe.telegraph(ev.value, now);
         return;
       }
@@ -942,7 +948,8 @@ export class CombatRuntime {
       case EV.evaded:
         if (ev.value === 2) fxQueue.push({ t: 'enemy', what: 'parried', enemy: Number(ev.targetId), value: 0, at: now }); // the attacker reels
         if (ev.entityId === self) {
-          toast(ev.value === 2 ? 'Parried!' : 'Dodged!');
+          const msg = this.seenTelegraphs.evadedToast(ev.value, Number(ev.targetId), now); // null: a strike you never saw (lightning, a far boss strike)
+          if (msg) toast(msg);
           this.probe.strike(now, true);
         }
         return;

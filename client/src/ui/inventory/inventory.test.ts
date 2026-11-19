@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { COMBAT, ITEMS, type Event as ZoneEvent } from '@lodestone/contracts';
 import { decodeBitchin, decodeContainers, decodeCrafted, decodeInventory, decodeLootGranted, decodeRefusedTarget, decodeStationOpened, encodeContainers, EV, LOOT_SOURCE, stationKind805, u64 } from './events';
-import { affixLine, baseName, countOf, defaultWeapon, displayName, formatStat, isHolo, itemDef, kindLabel, loadoutWeaponLabel, parseSlot, rarityColor, rarityDef, recipeGroup, recipesFor, recipeStatus, smithingView, socketTarget, trainingEquipArg, trainingWeaponName, uniqueInfo, type WireItem } from './items';
+import { affixLine, baseName, compareToEquipped, countOf, defaultWeapon, gearScore, gearStats, displayName, formatStat, isHolo, itemDef, kindLabel, loadoutWeaponLabel, parseSlot, rarityColor, rarityDef, recipeGroup, recipesFor, recipeStatus, smithingView, socketTarget, trainingEquipArg, trainingWeaponName, uniqueInfo, type WireItem } from './items';
 import { initialInventoryState, reduceItemEvent, type InventoryState } from './store';
 import { mockItems } from './dev';
 
@@ -256,5 +256,56 @@ describe('crafting panel Smithing', () => {
     expect(smithingView('cook', 4, true, 40)).toEqual({ level: 3, progress: null });
     expect(smithingView('cook', 4, false, undefined)).toEqual({ level: 4, progress: null });
     expect(smithingView('forge', null, false, undefined)).toBeNull();
+  });
+});
+
+describe('better gear in the bag (playtest 2 co-op)', () => {
+  const blade = item('weapon:sunsteel_blade', 'eq:main0', { h: 1, l: 10 });
+  it('twins the zone gear numbers (items/gear.go)', () => {
+    // Weapon: material mult x (1 + 0.02 x levels above the base level).
+    expect(gearStats(item('weapon:sunsteel_blade', 'inv:0', { l: 20 }), 'weapon').weaponMult).toBeCloseTo(1.2 * 1.2);
+    expect(gearStats(item('weapon:sunsteel_blade', 'inv:0', { l: 5 }), 'weapon').weaponMult).toBeCloseTo(1.2);
+    // Armour: round(health x mult x (1 + 0.05 x levels above base)) + affixes.
+    const helm = gearStats(item('armor:iron_helm', 'inv:0', { l: 30, a: [{ k: 'sturdy', s: 'health', v: 9 }] }), 'armor');
+    expect(helm.health).toBe(23 + 9);
+    expect(helm.armorPct).toBe(3);
+    expect(gearStats(item('armor:silver_cuirass', 'inv:0', { l: 8 }), 'armor').health).toBe(Math.round(28 * 1.1));
+    // Uniques add their stats; crit and damage raise the expected hit.
+    const ember = gearStats(item('weapon:starmetal_sword', 'inv:0', { l: 14, u: ['emberheart'] }), 'weapon');
+    expect(ember.damagePct).toBe(20);
+    expect(ember.critPct).toBe(4);
+    expect(gearScore(ember)).toBeGreaterThan(gearScore(gearStats(item('weapon:starmetal_sword', 'inv:0', { l: 14 }), 'weapon')));
+  });
+  it('compares a weapon with the main hand holding the same type', () => {
+    const star = item('weapon:starmetal_sword', 'inv:0', { h: 2, l: 14 });
+    let c = compareToEquipped(star, [blade, star])!;
+    expect(c.verdict).toBe(1);
+    expect(c.text).toBe('+13% weapon damage vs your Sunsteel Blade'); // 1.35 / 1.2
+    const iron = item('weapon:iron_sword', 'inv:1', { h: 3, l: 4 });
+    c = compareToEquipped(iron, [blade, iron])!;
+    expect(c.verdict).toBe(-1);
+    expect(c.text).toBe('-17% weapon damage vs your Sunsteel Blade');
+    // A staff goes against Loadout 2 (its empty main hand is the training staff).
+    const staff = item('weapon:oak_staff', 'inv:2', { h: 4, l: 1 });
+    c = compareToEquipped(staff, [blade, staff])!;
+    expect(c).toEqual({ verdict: 0, text: 'About the same as your Training Staff' });
+    c = compareToEquipped({ ...staff, a: [{ k: 'brutal', s: 'damagePct', v: 8 }] }, [blade])!;
+    expect(c.verdict).toBe(1);
+    // No loadout holds a bow: Loadout 1's main hand.
+    c = compareToEquipped(item('weapon:oak_bow', 'inv:3', { h: 5 }), [blade])!;
+    expect(c.text).toMatch(/vs your Sunsteel Blade$/);
+    expect(c.verdict).toBe(-1);
+  });
+  it('compares armour with its slot, an empty slot as nothing', () => {
+    const cap = item('armor:leather_cap', 'eq:head', { h: 6, l: 1 });
+    const helm = item('armor:iron_helm', 'inv:4', { h: 7, l: 30 });
+    expect(compareToEquipped(helm, [blade, cap, helm])).toEqual({ verdict: 1, text: '+17 health, +1% armour vs your Leather Cap' });
+    expect(compareToEquipped(item('armor:leather_cap', 'inv:5', { l: 1 }), [item('armor:iron_helm', 'eq:head', { l: 4 })])).toEqual({ verdict: -1, text: '-4 health, -1% armour vs your Iron Helm' });
+    expect(compareToEquipped(item('armor:leather_leggings', 'inv:6', { l: 1 }), [cap])).toEqual({ verdict: 1, text: '+8 health, +3% armour vs an empty legs slot' });
+  });
+  it('ignores equipped items and anything that is not gear', () => {
+    expect(compareToEquipped(blade, [blade])).toBeNull();
+    expect(compareToEquipped(item('food:bread', 'inv:0'), [blade])).toBeNull();
+    expect(compareToEquipped(item('gem:topaz:cut', 'gem:0'), [blade])).toBeNull();
   });
 });

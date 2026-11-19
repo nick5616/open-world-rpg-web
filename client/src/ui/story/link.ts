@@ -9,14 +9,14 @@ import { netRuntime } from '../../net/netStore';
 import type { ZoneSession } from '../../net/zoneSession';
 import { useCombatHud } from '../../combat/store';
 import { pushIntro } from '../intro/queue';
-import { SEV, STORY_ACT, STORY_INTERACT, decodeJSON, type ReviveWindow, type StoryIntro } from './events';
+import { SEV, STORY_ACT, STORY_INTERACT, actSubtitle, decodeJSON, type ReviveWindow, type StoryIntro } from './events';
 import { applyStoryEvent, resetStory, setStoryActions, setStorySelf, useStory, type StoryActions } from './store';
 
 function sideEffects(e: ZoneEvent): void {
   const now = performance.now();
   if (e.kind === SEV.intro) {
     const c = decodeJSON<StoryIntro>(e);
-    if (c) pushIntro({ key: `act:${c.act}:${Math.round(now / 60000)}`, variant: 'region', eyebrow: c.eyebrow, title: c.title, subtitle: c.subtitle, accent: '#ffd166' });
+    if (c) pushIntro({ key: `act:${c.act}:${Math.round(now / 60000)}`, variant: 'region', eyebrow: c.eyebrow, title: c.title, subtitle: actSubtitle(c), accent: '#ffd166' });
   } else if (e.kind === SEV.reviveWindow) {
     const w = decodeJSON<ReviveWindow>(e);
     if (w && w.id === useStory.getState().self && useCombatHud.getState().downedUntil > 0) useCombatHud.getState().set({ downedUntil: now + w.ms });

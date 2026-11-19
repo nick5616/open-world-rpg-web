@@ -6,7 +6,7 @@
 
 import { create } from 'zustand';
 import type { Event as ZoneEvent } from '@lodestone/contracts';
-import { decodePins, decodeProgress, emptyProgress, EV, TRAVEL_DENIED, type Pin, type Progress } from './events';
+import { decodePartyTowers, decodePins, decodeProgress, emptyProgress, EV, TRAVEL_DENIED, type Pin, type Progress } from './events';
 
 export type ToastKind = 'discovery' | 'tower' | 'waypoint' | 'level' | 'info' | 'warn';
 
@@ -30,6 +30,8 @@ export interface ExplorationActions {
 export interface ExplorationState {
   progress: Progress;
   pins: Pin[];
+  /** Co-op polish (Event 609): towers a party member unlocked that you did not: lent for fast travel. */
+  partyTowers: Uint8Array;
   /** Snapshot partyId of my party (0 = none): remote entities with the same id are party members. */
   partyId: number;
   toasts: Toast[];
@@ -60,6 +62,8 @@ export function reduceEvent(s: ExplorationState, ev: ZoneEvent, now: number): Pa
       return { progress: decodeProgress(ev.data), stats };
     case EV.pins:
       return { pins: decodePins(ev.data), stats };
+    case EV.partyTowers:
+      return { partyTowers: decodePartyTowers(ev.data), stats };
     case EV.party:
       return { partyId: ev.value >>> 0, stats };
     case EV.discovery:
@@ -87,6 +91,7 @@ const initial = (): Omit<ExplorationState, 'actions'> => ({
   progress: emptyProgress(),
   pins: [],
   partyId: 0,
+  partyTowers: new Uint8Array(0),
   toasts: [],
   mapOpen: false,
   respawnName: '',
