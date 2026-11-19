@@ -470,6 +470,7 @@ start:
   loadouts:
     - {weapon: sword, spells: [ember_flick, frost_bite, magma_dash, null]}
     - {weapon: staff, spells: [ember_flick, frost_bite, magma_dash, null]}
+    - {weapon: bow, spells: [null, null, null, null]} # CR 039: the third loadout (opens at level 20)
   consumable: {charges: 3, heal: 40}   # healing draught: WP14 replaces it with real items
 
 names:
@@ -1017,6 +1018,12 @@ leveling:
   # First attunement of each tower crystal (Interact 10 action 2 on its top):
   # a permanent boon (spec 8: stamina upgrades come from rare finds at towers).
   attune: {stamina: 8, health: 5, skillPoints: 1, xp: 100}
+  # Playtest 2 (CR 039, "Hotbar slots"): every slotEveryLevels character
+  # levels (10, 20, 30, 40) open one more spell slot in every loadout, from
+  # baseSlots up to maxSlots; loadoutLevels[i] is the level loadout i opens at
+  # (the third, the training bow in hand, at 20). The zone refuses a cast, an
+  # equip or a swap into anything not open yet (combat.Profile, Player).
+  hotbar: {baseSlots: 4, slotEveryLevels: 10, maxSlots: 8, loadoutLevels: [1, 1, 20]}
 
 difficulty:
   # Playtest 1 (CR 012, decision 0021): discovery-stamped area difficulty.

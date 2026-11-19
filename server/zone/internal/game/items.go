@@ -185,7 +185,7 @@ type charItems struct {
 	gearVer    int
 	apVer      int // CR 034: the inventory version the entity's Appearance was computed at
 	gearActive int
-	synced     [2]string // weapon type WP14 last put in each loadout
+	synced     [constants.MaxLoadouts]string // weapon type WP14 last put in each loadout
 	charges    int
 	station    *openStation
 	contChunk  [2]int32
@@ -686,7 +686,7 @@ func (s *Server) applyGear(sess *session) {
 		return
 	}
 	changed := false
-	for l := 0; l < 2; l++ {
+	for l := 0; l < constants.MaxLoadouts; l++ {
 		w := ci.inv.InSlot(items.MainSlot(l))
 		lo := &pr.Loadouts[l]
 		if w != nil {
@@ -762,7 +762,7 @@ func defaultWeapon(l int) string {
 // loadoutDrift: a combat Interact changed a loadout's weapon away from the
 // item WP14 put there.
 func (s *Server) loadoutDrift(ci *charItems, pr *combat.Profile) bool {
-	for l := 0; l < 2; l++ {
+	for l := 0; l < constants.MaxLoadouts; l++ {
 		if ci.synced[l] != "" && pr.Loadouts[l].Weapon != ci.synced[l] {
 			return true
 		}
@@ -917,7 +917,7 @@ func (s *Server) itemAction(sess *session, m *proto.Interact) {
 		s.setAutoLoot(sess, m.Arg != 0)
 		return
 	case ItemActUnequip:
-		slots := []string{items.EqMain0, items.EqMain1, items.EqHead, items.EqBody, items.EqLegs}
+		slots := []string{items.EqMain0, items.EqMain1, items.EqHead, items.EqBody, items.EqLegs, items.EqMain2} // CR 039: main2 appended
 		if int(m.Arg) >= len(slots) {
 			s.refuseItem(sess, kind, act, ItemRefuseNotAllow)
 			return
@@ -974,7 +974,12 @@ func (s *Server) itemAction(sess *session, m *proto.Interact) {
 			return
 		case ItemActEquip:
 			def := it.Def()
-			slot := items.MainSlot(int(m.Arg & 1))
+			l := int(m.Arg & 3)
+			if l >= constants.MaxLoadouts || (def.Kind != "armor" && sess.ent.cbt != nil && l >= combatdefs.D.LoadoutsOpen(sess.ent.cbt.Level)) {
+				s.refuseItem(sess, kind, act, ItemRefuseNotAllow) // CR 039: the third loadout opens at level 20
+				return
+			}
+			slot := items.MainSlot(l)
 			if def.Kind == "armor" {
 				slot = items.ArmorSlot(def)
 			}

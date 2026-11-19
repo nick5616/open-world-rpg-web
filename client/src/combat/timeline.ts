@@ -17,6 +17,7 @@
 import { COMBAT, INPUT_BUFFER_MS, InputFlag, MOVE_STEP_HZ, type MoveDef, type SpellDef, type WeaponDef, type FormDef } from '@lodestone/contracts';
 import type { MoveState } from '../sim/movement';
 import { dashStep, resolveDash, startDashHold, type DashHold } from './dashes';
+import { castSlotOf } from './hotbar';
 
 /** CR 027: riding the spirit steed (sim/ride.ts MOUNTED, SelfState flags bit 3). */
 function riding(s: MoveState): boolean {
@@ -90,7 +91,7 @@ export interface CombatButtons {
   altPress: number;
   altRelease: number;
   dodgePress: number;
-  castPress: (number | null)[]; // slot presses (0..3)
+  castPress: (number | null)[]; // slot presses (0..7, CR 039: the slots the level opened)
   /** CR 020: the slot's key (or RMB with the slot selected) is held down now (streams, charges, sustained dashes). */
   castHeld: boolean[];
   formPress: number;
@@ -428,7 +429,7 @@ export class CombatTimeline {
           this.dashHold = startDashHold(x.slot, variant, seq); // CR 021: hold the key to sustain it (dashes.ts)
         } else {
           out.flags |= InputFlag.cast;
-          out.castSlot = x.slot;
+          out.castSlot = castSlotOf(x.slot); // CR 039: slots 5-8 travel as 6-9
         }
         if (s.auto || s.charge) {
           // CR 020: a stream (shots pay as they fire) or a charge (paid now, fires on release).

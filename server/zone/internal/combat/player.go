@@ -35,6 +35,9 @@ const (
 	// form and the weapon's heavy technique (beyond the four spell slots).
 	FormSlot      = 4
 	TechniqueSlot = 5
+	// CastSlotExtra is the castSlot of spell slot 5 (CR 039): slots 5..8
+	// (0-based 4..7) travel as 6..9, past the form and the technique.
+	CastSlotExtra = 6
 	// MaxMeleeTargets caps how many enemies one swing can hit.
 	MaxMeleeTargets = 5
 )
@@ -107,6 +110,7 @@ type Player struct {
 	// Boons are permanent rewards outside the level curve (playtest 1:
 	// tower attunements add health and skill points; CR 012).
 	Boons     Boons
+	Rift      RiftMods // CR 040: run perks (rift.go); zero = none
 	OnDrink   func() (heal float64, ok bool)
 	drinkHeal float64
 	// Playtest 2 camps (CR 025): the Rested buff multiplies health and mana
@@ -262,6 +266,9 @@ func (p *Player) SetLevel(level int) {
 		frac = p.HP / p.HPMax
 	}
 	p.HPMax = D.MaxHealth(p.Level) + p.Gear.Health + p.Boons.Health
+	if p.Rift.HealthMult > 0 {
+		p.HPMax *= p.Rift.HealthMult // CR 040: Deep Breath, Glass Fury
+	}
 	p.HP = math.Min(p.HPMax, p.HPMax*frac)
 	p.ManaMax = D.MaxMana(p.Level)
 	p.Mana = math.Min(p.Mana, p.ManaMax)
@@ -527,17 +534,43 @@ func (p *Player) startMove(f proto.InputFrame, before movement.State, w *combatd
 	return la
 }
 
-// startCast logs a spell (slots 0..3), the elemental form (FormSlot) or the
-// weapon's heavy technique (TechniqueSlot).
+// SpellSlotOf is the spell slot (0-based) a cast step's castSlot names
+// (CR 039: 0..3, then CastSlotExtra.. for slots 5..8); -1 for the form, the
+// technique or anything else.
+func SpellSlotOf(castSlot uint8) int {
+	switch c := int(castSlot); {
+	case c < constants.MaxEquippedSpells:
+		return c
+	case c >= CastSlotExtra && c < CastSlotExtra+constants.MaxSpellSlots-constants.MaxEquippedSpells:
+		return c - CastSlotExtra + constants.MaxEquippedSpells
+	}
+	return -1
+}
+
+// CastSlotOf is the castSlot that names spell slot i (the inverse).
+func CastSlotOf(i int) uint8 {
+	if i < constants.MaxEquippedSpells {
+		return uint8(i)
+	}
+	return uint8(i - constants.MaxEquippedSpells + CastSlotExtra)
+}
+
+// startCast logs a spell (slots 0..3, CR 039: 6..9 for slots 5..8), the
+// elemental form (FormSlot) or the weapon's heavy technique (TechniqueSlot).
 func (p *Player) startCast(f proto.InputFrame, before movement.State, w *combatdefs.Weapon, tick uint32, r *FrameResult) *Action {
 	seq := f.Seq
 	a := Action{Seq: seq, Tick: tick, Weapon: w, Pos: before.Pos, Yaw: proto.U16ToYaw(f.Yaw), Pitch: proto.I16ToPitch(f.Pitch), Legal: true}
-	switch slot := int(f.CastSlot); {
-	case slot < 4:
-		key := p.Loadout().Spells[slot]
+	switch slot, spell := int(f.CastSlot), SpellSlotOf(f.CastSlot); {
+	case spell >= 0:
+		key := p.Loadout().Spells[spell]
 		s := D.SpellByKey(key)
 		if s == nil {
 			return nil
+		}
+		if spell >= D.SpellSlots(p.Level) {
+			a.Kind, a.ID, a.Spell = ActSpell, s.ID, s
+			a.Legal, a.Refusal = false, RefuseIllegal // CR 039: a slot this level has not opened
+			return p.log(a)
 		}
 		a.Kind, a.ID, a.Spell = ActSpell, s.ID, s
 		switch {

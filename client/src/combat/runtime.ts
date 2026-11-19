@@ -17,6 +17,7 @@ import { drawnRemotes } from '../net/netStore';
 import { localPlayer } from '../state/live';
 import { CombatTimeline, shotRange, shotSpeed, spellById, weaponById, type CombatButtons, type Started } from './timeline';
 import { EV, INTERACT_COMBAT, ACT, ELEMENT_COLORS, decodeSync, decodeTelegraph, enemyInfo } from './events';
+import { MAX_SPELL_SLOTS, loadoutsOpen, mouseCode, slotForEvent, slotForKey, spellSlots } from './hotbar';
 import { fxQueue, pushNumber, toast, useCombatHud } from './store';
 import { GRACE_MS, killerName, respawnSiteName } from './downed';
 import { CombatProbe } from './probe';
@@ -138,7 +139,21 @@ export class CombatRuntime {
       this.buttons.altDown = false;
       this.buttons.altRelease++;
     };
+    // CR 039: a spell slot key (hotbar.ts: 1-4, 8, 9, -, = or what the player chose).
+    const slotDown = (slot: number, t: number) => {
+      if (slot >= this.openSlots()) return;
+      if (this.timeline.loadout.spells[slot]) useCombatHud.getState().set({ selected: slot });
+      if (heldBlocked()) return; // under the Esc menu or a panel a slot key only picks the right button's slot
+      this.buttons.castPress[slot] = t;
+      this.buttons.castHeld[slot] = true; // CR 020: streams and charges run while held
+    };
     const onDown = (e: MouseEvent) => {
+      const side = mouseCode(e.button);
+      if (side && slotForKey(side) >= 0 && !isCaptureClick()) {
+        e.preventDefault(); // a side button bound to a slot never pages back
+        slotDown(slotForKey(side), now());
+        return;
+      }
       if ((e.target as HTMLElement | null)?.tagName !== 'CANVAS') return;
       // Playtest 2 polish: the click that captures the mouse (input/useMouseLook.ts) neither swings nor casts,
       // and nothing is drawn, streamed or charged under the Esc menu or a panel (input/held.ts).
@@ -161,6 +176,12 @@ export class CombatRuntime {
       // for anyone without a weapon technique; techniques are on Tab).
     };
     const onUp = (e: MouseEvent) => {
+      const side = mouseCode(e.button);
+      if (side && slotForKey(side) >= 0) {
+        e.preventDefault();
+        this.buttons.castHeld[slotForKey(side)] = false;
+        return;
+      }
       if (e.button === 0) this.buttons.attackDown = false;
       if (e.button === 2) {
         if (rmbCast) {
@@ -179,11 +200,18 @@ export class CombatRuntime {
     };
     const onKeyUp = (e: KeyboardEvent) => {
       if (e.code === 'KeyZ' && this.buttons.altDown) altUp();
-      if (/^Digit[1-4]$/.test(e.code)) this.buttons.castHeld[Number(e.code.slice(5)) - 1] = false; // CR 020
+      const up = slotForKey(e.code); // CR 039: the slot keys (hotbar.ts)
+      if (up >= 0) this.buttons.castHeld[up] = false; // CR 020
     };
     const onKey = (e: KeyboardEvent) => {
       if (isText(e.target) || isChatShortcut(e) || e.repeat) return; // "/" is chat's (Shift+7, Hebrew Q: input/useKeyboard.ts)
       const t = now();
+      const slotKey = slotForEvent(e);
+      if (slotKey >= 0) {
+        e.preventDefault();
+        slotDown(slotKey, t);
+        return;
+      }
       switch (e.code) {
         case 'KeyF':
         case 'AltLeft':
@@ -191,17 +219,6 @@ export class CombatRuntime {
           this.buttons.dodgePress++;
           this.probe.press('dodge', t);
           break;
-        case 'Digit1':
-        case 'Digit2':
-        case 'Digit3':
-        case 'Digit4': {
-          const slot = Number(e.code.slice(5)) - 1;
-          if (this.timeline.loadout.spells[slot]) useCombatHud.getState().set({ selected: slot });
-          if (heldBlocked()) break; // under the Esc menu or a panel 1-4 only pick the right button's slot
-          this.buttons.castPress[slot] = t;
-          this.buttons.castHeld[slot] = true; // CR 020: streams and charges run while held
-          break;
-        }
         case 'KeyZ':
           if (!heldBlocked()) altDown();
           break;
@@ -233,7 +250,7 @@ export class CombatRuntime {
       if (this.buttons.attackDown && this.timeline.weapon().key === 'bow') this.buttons.altPress++;
       this.buttons.attackDown = false;
       this.buttons.altDown = false;
-      this.buttons.castHeld = [false, false, false, false];
+      this.buttons.castHeld = blankButtons().castHeld;
       rmbCast = false;
     };
     target.addEventListener('mousedown', onDown);
@@ -322,9 +339,14 @@ export class CombatRuntime {
     else this.press('alt');
   }
 
+  /** CR 039: spell slots open at the character's level. */
+  openSlots(): number {
+    return spellSlots(useCombatHud.getState().level);
+  }
+
   swapLoadout(): void {
     const hud = useCombatHud.getState();
-    const next = hud.activeLoadout === 0 ? 1 : 0;
+    const next = (hud.activeLoadout + 1) % loadoutsOpen(hud.level); // CR 039: X cycles 1 -> 2 (-> 3 from level 20)
     this.link.sendInteract(INTERACT_COMBAT, 0n, ACT.swapLoadout, next);
     hud.set({ activeLoadout: next });
     this.applyLoadout();
@@ -333,7 +355,8 @@ export class CombatRuntime {
   private applyLoadout(): void {
     const hud = useCombatHud.getState();
     const lo = hud.loadouts[hud.activeLoadout];
-    if (lo) this.timeline.loadout = { weapon: lo.weapon, spells: lo.spells, gem: lo.gem };
+    const open = spellSlots(hud.level); // CR 039: a slot the level has not opened never casts
+    if (lo) this.timeline.loadout = { weapon: lo.weapon, spells: lo.spells.map((s, i) => (i < open ? s : null)), gem: lo.gem };
     castHooks.selfGem = this.timeline.loadout.gem; // CR 022: your swings' tint (others read it from your weapon look)
     castHooks.selfWeapon = this.timeline.loadout.weapon as WeaponKind;
     const sel = validSelection(hud.selected, this.timeline.loadout.spells);
@@ -1035,7 +1058,7 @@ export class CombatRuntime {
 }
 
 function blankButtons(): CombatButtons {
-  return { attackDown: false, altDown: false, attackPress: 0, altPress: 0, altRelease: 0, dodgePress: 0, castPress: [null, null, null, null], castHeld: [false, false, false, false], formPress: 0, techniquePress: 0, drinkPress: 0 };
+  return { attackDown: false, altDown: false, attackPress: 0, altPress: 0, altRelease: 0, dodgePress: 0, castPress: new Array<number | null>(MAX_SPELL_SLOTS).fill(null), castHeld: new Array<boolean>(MAX_SPELL_SLOTS).fill(false), formPress: 0, techniquePress: 0, drinkPress: 0 };
 }
 
 export function levelFor(xp: number): number {

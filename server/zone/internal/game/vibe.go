@@ -76,6 +76,7 @@ var VibeLandmarks = []string{
 	"archipelago", "sky_town", "sky_palace", "sky_ruin", "sky_lift",
 	// CR 043, the dwarves.
 	"dwarf_camp", "dwarf_stronghold", "dwarf_door", "lower_halls",
+	"rift", // CR 040: an open rift portal
 }
 
 // VibeLayers are the layer filter's keys (CR 038); a filter's id is index + 1 (0 any).
@@ -394,6 +395,9 @@ func (s *Server) vibeSpots() []vibeSpot {
 		if !w.done {
 			out = append(out, vibeSpot{kind: "event", name: w.kind.Name, x: w.pos.X, z: w.pos.Z, near: true})
 		}
+	}
+	for _, p := range s.rift.portals { // CR 040
+		out = append(out, vibeSpot{kind: "rift", name: "Rift: " + p.Name, x: p.X, z: p.Z, near: true})
 	}
 	return out
 }

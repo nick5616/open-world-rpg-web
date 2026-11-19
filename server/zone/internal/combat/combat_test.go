@@ -172,7 +172,8 @@ func TestOnlyEnemiesCallHurtPlayer(t *testing.T) {
 				ok := (f == "ai.go" && (strings.Contains(fn, "hurtPlayer(") || strings.Contains(fn, "downPlayer("))) ||
 					(f == "pvp.go" && strings.Contains(fn, "hurtByPlayer(")) ||
 					(f == "dashes.go" && strings.Contains(fn, "payBlood(")) || // CR 021: the blood dash costs your own health
-					(f == "weather.go" && (strings.Contains(fn, "HurtByWeather(") || strings.Contains(fn, "HurtByEnvironment("))) // CR 030: lightning; CR 038: hard landings, the Depths' lava
+					(f == "weather.go" && (strings.Contains(fn, "HurtByWeather(") || strings.Contains(fn, "HurtByEnvironment("))) || // CR 030: lightning; CR 038: hard landings, the Depths' lava
+					(f == "rift.go" && strings.Contains(fn, "HurtPlayerRift(")) // rift runs: a bullet volley's hit (the game layer resolves it)
 				if !ok {
 					t.Errorf("%s: player health lowered outside hurtPlayer/hurtByPlayer: %s (in %s)", f, strings.TrimSpace(line), fn)
 				}

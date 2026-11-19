@@ -610,8 +610,9 @@ func TestG4LoopForgeSunsteelBlade(t *testing.T) {
 		}
 	}
 	sync := p.last(212, 3*time.Second).Data
-	gemEl := int8(sync[2+1+8]) // combat_sync: version, active, loadout 0: weapon id, 4 x u16 spells, i8 gem
-	logf("equipped in %s with sockets %v; combat_sync loadout 1: weapon id %d, socketed gem element %d (%s)", eq.S, eq.K, sync[2], gemEl, combatdefs.D.Elements[max(0, int(gemEl))])
+	// combat_sync v2 (CR 039): version, active, nLoadouts, nSlots, loadout 0: weapon id, nSlots x u16 spells, i8 gem
+	gemEl := int8(sync[4+1+2*int(sync[3])])
+	logf("equipped in %s with sockets %v; combat_sync loadout 1: weapon id %d, socketed gem element %d (%s)", eq.S, eq.K, sync[4], gemEl, combatdefs.D.Elements[max(0, int(gemEl))])
 	if eq.S != "eq:main0" || len(eq.K) == 0 || eq.K[0] != gemKey || int(gemEl) != itemdefs.D.Gem(gem.v.MaterialName()).Element {
 		t.Fatalf("equip/socket: %+v gem el %d", eq, gemEl)
 	}

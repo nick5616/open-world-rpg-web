@@ -541,8 +541,14 @@ const InventorySlots = 40
 // PickupDespawnS: Dropped items despawn after 10 minutes.
 const PickupDespawnS = 600
 
-// MaxEquippedSpells: Off-hand spell slots.
+// MaxEquippedSpells: Off-hand spell slots every character has (CR 039: more open with level, up to MAX_SPELL_SLOTS).
 const MaxEquippedSpells = 4
+
+// MaxSpellSlots: CR 039: the most spell slots a loadout can have (combat.yaml leveling.hotbar.maxSlots is at most this). Slots 5-8 travel as castSlot 6-9 (4 and 5 are the elemental form and the technique).
+const MaxSpellSlots = 8
+
+// MaxLoadouts: CR 039: weapon loadouts a character can have (the third opens at combat.yaml leveling.hotbar.loadoutLevels[2]).
+const MaxLoadouts = 3
 
 // MaxPersonalPins: Map pins per player.
 const MaxPersonalPins = 10

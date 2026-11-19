@@ -51,6 +51,7 @@ export const SHARED: Record<string, string> = {
 
 const W = (code: string, file: string, does: string): Binding => ({ code, ctx: 'world', file, does });
 const COMBAT = 'combat/runtime.ts';
+const HOTBAR = 'combat/hotbar.ts';
 
 const movement: Binding[] = Object.entries(KEY_MAP).map(([code, b]) => ({ code, ctx: b === 'crouch' ? 'debug' : 'world', file: 'input/useKeyboard.ts', does: b === 'crouch' ? 'fly down (debug fly)' : b }));
 
@@ -59,10 +60,15 @@ export const BINDINGS: Binding[] = [
   // fighting
   W('KeyF', COMBAT, 'dodge'),
   W('AltLeft', COMBAT, 'dodge'),
-  W('Digit1', COMBAT, 'cast slot 1 (hold: streams, charges)'),
-  W('Digit2', COMBAT, 'cast slot 2'),
-  W('Digit3', COMBAT, 'cast slot 3'),
-  W('Digit4', COMBAT, 'cast slot 4'),
+  // CR 039: spell slot keys live in combat/hotbar.ts (read by combat/runtime.ts), rebindable on the Esc menu's Controls page.
+  W('Digit1', HOTBAR, 'cast slot 1 (hold: streams, charges)'),
+  W('Digit2', HOTBAR, 'cast slot 2'),
+  W('Digit3', HOTBAR, 'cast slot 3'),
+  W('Digit4', HOTBAR, 'cast slot 4'),
+  W('Minus', HOTBAR, 'cast slot 5 (opens at level 10)'),
+  W('BracketLeft', HOTBAR, 'cast slot 6 (opens at level 20)'),
+  W('BracketRight', HOTBAR, 'cast slot 7 (opens at level 30)'),
+  W('Backslash', HOTBAR, 'cast slot 8 (opens at level 40)'),
   W('KeyZ', COMBAT, "the weapon's secondary (hold); a bow: lower the draw"), // CR 033: the bow draws on the left button
   W('KeyQ', COMBAT, 'elemental form'),
   W('Tab', COMBAT, 'weapon technique'),
@@ -80,6 +86,7 @@ export const BINDINGS: Binding[] = [
   W('KeyE', 'ui/mounts/MountHud.tsx', 'ride / get off'),
   W('KeyE', 'ui/pets/PetHud.tsx', 'feed a calm creature, pet your pet'),
   W('KeyE', 'ui/story/StoryHud.tsx', 'raise a fallen friend (hold)'), // CR 035
+  W('KeyE', 'rift/RiftHud.tsx', 'enter a rift'), // CR 040
   // screens and the world
   W('Equal', 'world/edits/worldEdits.ts', 'work tool: chop and break, dig, fill, away (cycles; CR 040)'),
   W('KeyT', 'hud/ViewHud.tsx', 'first / third person'),
@@ -167,6 +174,11 @@ export const NOT_HANDLERS: Record<string, string> = {
   'ui/music/theory.ts': "the instrument's note rows (context 'instrument': every key is a note)",
   'ui/tips/tips.ts': 'key names in tip text',
   'ui/tips/controlTips.ts': 'the controls toasts after a conversation name a handler file and key code and look the keys up in this table (CR 055)',
+  'combat/hotbar.ts#Escape': 'the slot keys refuse Esc (the menu)',
+  'combat/HotbarKeys.tsx#Escape': 'the slot key capture lets Esc through to the Esc menu (cancels the capture, goes back a page)',
+  'combat/HotbarKeys.tsx#Slash': "the slot key capture refuses chat's key",
+  'combat/HotbarKeys.tsx#Enter': "the slot key capture refuses chat's key",
+  'combat/HotbarKeys.tsx#Tab': 'the slot key capture refuses the technique key',
   'ui/devconsole/DevConsole.tsx#Enter': "the dev console's command line (a text field): run",
   'ui/devconsole/DevConsole.tsx#Tab': "the dev console's command line: complete",
   'ui/devconsole/DevConsole.tsx#ArrowUp': "the dev console's command line: history",

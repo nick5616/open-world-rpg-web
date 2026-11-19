@@ -1,10 +1,11 @@
-// Combat HUD (WP13): health and mana, the active loadout's weapon and four
-// spell slots with cooldown sweeps, drink charges, the boss bar with its
+// Combat HUD (WP13): health and mana, the active loadout's weapon and its
+// spell slots (four; CR 039: one more every ten levels, two rows of four
+// past four) with their keys and cooldown sweeps, drink charges, the boss bar with its
 // phase, toasts ("Dodged!", phase changes) and the downed overlay. Health
 // and cooldowns are read on the HUD's own rAF (refs, not React state), like
 // the debug HUD, so combat never re-renders React per frame.
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useReducer, useRef, useState } from 'react';
 import { COMBAT } from '@lodestone/contracts';
 import { localPlayer } from '../state/live';
 import { combatRuntime } from './link';
@@ -18,9 +19,9 @@ import { loadoutWeaponLabel } from '../ui/inventory/items';
 import { audioWorld } from '../audio/bridge';
 import { ToastBar } from '../ui/toast/ToastBar';
 import { barsVisible, hotbarVisible, hudActivity, installHudActivity, isImmersive, sampleBars } from '../hud/immersive';
+import { hotbarKey, keyName, loadoutsOpen, onHotbarKeys, spellSlots } from './hotbar';
 
 const spellByKey = new Map(COMBAT.spells.map((s) => [s.key, s]));
-const KEYS = ['1', '2', '3', '4'];
 
 /** Playtest 1 controls (client/src/combat/README.md "Controls"). */
 export const COMBAT_HINT = 'LMB attack (bow: hold to draw) · Wheel select · RMB use selected · Z parry/charge/lower the bow · 1-4 cast · F dodge · Q form · N skills · B build';
@@ -64,7 +65,10 @@ export function CombatHud() {
   }, [toastMsg]);
   const charges = useCombatHud((s) => s.charges);
   const selected = useCombatHud((s) => s.selected);
+  const level = useCombatHud((s) => s.level);
   const invItems = useInventory((s) => s.inv?.items);
+  const [, keysChanged] = useReducer((n: number) => n + 1, 0);
+  useEffect(() => onHotbarKeys(keysChanged), []); // CR 039: rebound slot keys relabel the slots
   const root = useRef<HTMLDivElement>(null);
   const stack = useRef<HTMLDivElement>(null);
   const hotbarRow = useRef<HTMLDivElement>(null);
@@ -120,6 +124,9 @@ export function CombatHud() {
   if (!active) return null;
   const lo = loadouts[activeLoadout];
   const now = performance.now();
+  const open = spellSlots(level); // CR 039
+  const twoRows = open > 4;
+  const nLoadouts = loadoutsOpen(level);
   return (
     <div ref={root} data-testid="combat-hud" style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 12, font: '13px system-ui, sans-serif', color: '#e9ecef' }}>
       {boss && (
@@ -135,25 +142,28 @@ export function CombatHud() {
       {/* Playtest 1 layout (hud/layout.ts): one centre stack at the bottom, measured into --ls-hotbar-h so the lock hint, chat and voice stack around it. */}
       <div ref={stack} data-testid="combat-stack" style={{ position: 'absolute', bottom: 10, left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, maxWidth: 'calc(2 * var(--ls-center-half, 260px))', width: 'max-content', paddingTop: 10 }}>
         <div ref={hotbarRow} data-testid="hotbar" style={{ display: 'flex', gap: 6, transition: 'opacity 450ms ease' }}>
-          <div data-testid="slot-weapon" data-selected={selected < 0 ? 'true' : 'false'} style={{ position: 'relative', padding: '6px 10px', background: 'rgba(8,10,16,0.6)', borderRadius: 4, minWidth: 74, textAlign: 'center', boxSizing: 'border-box', ...(selected < 0 ? SELECTED_STYLE : { border: '1px solid transparent' }) }} title="X swaps loadouts · Z (or right mouse while selected): parry / draw / charge / heavy">
+          <div data-testid="slot-weapon" data-selected={selected < 0 ? 'true' : 'false'} style={{ position: 'relative', padding: '6px 10px', background: 'rgba(8,10,16,0.6)', borderRadius: 4, minWidth: 74, textAlign: 'center', boxSizing: 'border-box', ...(selected < 0 ? SELECTED_STYLE : { border: '1px solid transparent' }) }} title={`X swaps loadouts (${nLoadouts}) · Z (or right mouse while selected): parry / draw / charge / heavy`}>
             {selected < 0 && <RmbBadge />}
             <div data-testid="weapon-name" style={{ fontWeight: 600, maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{lo ? loadoutWeaponLabel(lo.weapon, activeLoadout, invItems) : '-'}</div>
             <div style={{ opacity: 0.6, fontSize: 11 }}>{SECONDARY[lo?.weapon ?? ''] ?? 'secondary'} · Z</div>
+            {nLoadouts > 2 && <div data-testid="loadout-index" style={{ opacity: 0.7, fontSize: 10 }}>loadout {activeLoadout + 1}/{nLoadouts}</div>}
           </div>
-          {(lo?.spells ?? []).map((k, i) => {
-            const sp = k ? spellByKey.get(k) : undefined;
-            const sel = selected === i && !!sp;
-            return (
-              <div key={i} data-testid={`slot-spell-${i}`} data-selected={sel ? 'true' : 'false'} style={{ position: 'relative', width: 66, height: 46, background: 'rgba(8,10,16,0.6)', border: `1px solid ${sp?.color ?? 'rgba(255,255,255,0.15)'}`, borderRadius: 4, padding: 3, boxSizing: 'border-box', ...(sel ? SELECTED_STYLE : {}) }}>
-                <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', borderRadius: 4 }}>
-                  <div data-cd={i} style={{ position: 'absolute', left: 0, bottom: 0, width: '100%', height: 0, background: 'rgba(0,0,0,0.6)' }} />
+          <div data-testid="spell-slots" data-open={open} style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(4, open)}, auto)`, gap: twoRows ? 3 : 6 }}>
+            {(lo?.spells ?? []).slice(0, open).map((k, i) => {
+              const sp = k ? spellByKey.get(k) : undefined;
+              const sel = selected === i && !!sp;
+              return (
+                <div key={i} data-testid={`slot-spell-${i}`} data-selected={sel ? 'true' : 'false'} style={{ position: 'relative', width: twoRows ? 60 : 66, height: twoRows ? 34 : 46, background: 'rgba(8,10,16,0.6)', border: `1px solid ${sp?.color ?? 'rgba(255,255,255,0.15)'}`, borderRadius: 4, padding: twoRows ? '1px 3px' : 3, boxSizing: 'border-box', ...(sel ? SELECTED_STYLE : {}) }}>
+                  <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', borderRadius: 4 }}>
+                    <div data-cd={i} style={{ position: 'absolute', left: 0, bottom: 0, width: '100%', height: 0, background: 'rgba(0,0,0,0.6)' }} />
+                  </div>
+                  {sel && <RmbBadge />}
+                  <div data-testid={`slot-key-${i}`} style={{ position: 'relative', fontSize: 10, opacity: 0.6, lineHeight: twoRows ? '11px' : undefined }}>{keyName(hotbarKey(i))}</div>
+                  <div style={{ position: 'relative', fontSize: twoRows ? 10 : 11, lineHeight: twoRows ? '11px' : '12px', overflow: 'hidden', maxHeight: twoRows ? 22 : undefined }}>{sp?.name ?? ''}</div>
                 </div>
-                {sel && <RmbBadge />}
-                <div style={{ position: 'relative', fontSize: 10, opacity: 0.6 }}>{KEYS[i]}</div>
-                <div style={{ position: 'relative', fontSize: 11, lineHeight: '12px' }}>{sp?.name ?? ''}</div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
           <div style={{ padding: '6px 10px', background: 'rgba(8,10,16,0.6)', borderRadius: 4, textAlign: 'center' }} title="R drinks a healing draught">
             <div style={{ fontWeight: 600 }}>{charges}</div>
             <div style={{ opacity: 0.6, fontSize: 11 }}>draught · R</div>

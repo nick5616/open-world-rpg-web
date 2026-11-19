@@ -325,6 +325,7 @@ export function parseCombat(doc, consts) {
   for (const s of spells) if (!trees.find((t) => t.key === s.tree)?.nodes.some((n) => n.key === s.key)) fail(`spell ${s.key} is in no tree`);
 
   for (const sp of doc.start.spells) if (!spellKeys.has(sp)) fail(`start: unknown spell ${sp}`);
+  if (doc.start.loadouts.length < 2 || doc.start.loadouts.length > C.MAX_LOADOUTS) fail(`start: 2..${C.MAX_LOADOUTS} loadouts (CR 039)`);
   for (const l of doc.start.loadouts) {
     if (!weapons.some((w) => w.key === l.weapon)) fail(`start: unknown weapon ${l.weapon}`);
     if (l.spells.length !== C.MAX_EQUIPPED_SPELLS) fail(`start: a loadout has exactly ${C.MAX_EQUIPPED_SPELLS} spell slots`);
@@ -423,7 +424,17 @@ export function parseCombat(doc, consts) {
     .map(([tier, level]) => ({ tier: Number(tier), level: num(level, `leveling.spellTierLevels.${tier}`) }))
     .sort((a, b) => a.tier - b.tier);
   for (let i = 1; i < spellTierLevels.length; i++) if (spellTierLevels[i].level < spellTierLevels[i - 1].level) fail('leveling.spellTierLevels: levels must not decrease with the tier');
+  // CR 039: a spell slot every slotEveryLevels, loadouts by level.
+  const h = lv.hotbar;
+  if (!h) fail('leveling.hotbar: missing (CR 039)');
+  const hotbar = { baseSlots: num(h.baseSlots, 'leveling.hotbar.baseSlots'), slotEveryLevels: num(h.slotEveryLevels, 'leveling.hotbar.slotEveryLevels'), maxSlots: num(h.maxSlots, 'leveling.hotbar.maxSlots'), loadoutLevels: (h.loadoutLevels ?? []).map((v, i) => num(v, `leveling.hotbar.loadoutLevels.${i}`)) };
+  if (hotbar.baseSlots !== C.MAX_EQUIPPED_SPELLS) fail('leveling.hotbar.baseSlots must equal MAX_EQUIPPED_SPELLS');
+  if (hotbar.maxSlots < hotbar.baseSlots || hotbar.maxSlots > C.MAX_SPELL_SLOTS) fail('leveling.hotbar.maxSlots: baseSlots..MAX_SPELL_SLOTS');
+  if (hotbar.slotEveryLevels < 1) fail('leveling.hotbar.slotEveryLevels: at least 1');
+  if (hotbar.loadoutLevels.length !== doc.start.loadouts.length) fail('leveling.hotbar.loadoutLevels: one level per start loadout');
+  if (hotbar.loadoutLevels[0] !== 1 || hotbar.loadoutLevels[1] !== 1) fail('leveling.hotbar.loadoutLevels: the first two loadouts are open from level 1');
   const leveling = {
+    hotbar,
     health: { base: num(lv.health.base, 'leveling.health.base'), perLevel: num(lv.health.perLevel, 'leveling.health.perLevel') },
     damagePctPerLevel: num(lv.damagePctPerLevel, 'leveling.damagePctPerLevel'),
     stamina: { perLevel: num(lv.stamina.perLevel, 'leveling.stamina.perLevel'), max: num(lv.stamina.max, 'leveling.stamina.max') },
@@ -591,6 +602,8 @@ export interface LevelingDef {
   health: { base: number; perLevel: number }; damagePctPerLevel: number; stamina: { perLevel: number; max: number };
   skillPoints: { base: number; perLevel: number }; spellTierLevels: { tier: number; level: number }[];
   attune: { stamina: number; health: number; skillPoints: number; xp: number };
+  /** CR 039: spell slots every slotEveryLevels, loadouts by level. */
+  hotbar: { baseSlots: number; slotEveryLevels: number; maxSlots: number; loadoutLevels: number[] };
 }
 export interface DifficultyTierDef { key: string; name: string; minLevel: number; beginner: number; elite: number; demons: number; greater: number; demonSpeed: number; lords: boolean; bosses: boolean; defense: boolean }
 export interface DifficultyDef {

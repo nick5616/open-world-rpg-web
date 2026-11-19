@@ -187,7 +187,7 @@ describe('build overview', () => {
     expect(l1.main.sockets).toEqual([{ key: 'gem:topaz:cut', name: 'Cut Topaz', color: expect.any(String), effect: 'Lightning element, form x1.25' }]);
     expect(l1.main.sub).toBe('Sunsteel · item level 11 · Rare');
     expect(l1.form).toMatchObject({ element: 'lightning', name: COMBAT.names.form_lightning, unlocked: true, damage: Math.round(45 * 1.34 * 1.224 * 1.084 * 1.25 * 2.1) });
-    expect(l1.spells.map((s) => s.key)).toEqual(MOCK.loadouts[0].spells);
+    expect(l1.spells.map((s) => s.key).slice(0, 4)).toEqual(MOCK.loadouts[0].spells);
     expect(l2).toMatchObject({ active: false, weapon: 'staff', weaponName: 'Oak Staff', form: null });
     expect(l2.demons).toBe('Only Light spells kill the strongest demons with this loadout');
     expect(v.armor.map((a) => a.name)).toEqual(['Iron Helm', 'Silver Cuirass', 'Leather Leggings']);

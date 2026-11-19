@@ -59,9 +59,10 @@ describe('saved voice settings', () => {
 
   it('a stored voice key that clashes (or duplicates the other) falls back to the default', () => {
     expect(loadPrefs(JSON.stringify({ pttKey: 'KeyE' })).pttKey).toBe(DEFAULT_PTT_KEY); // E talks to people
-    expect(loadPrefs(JSON.stringify({ pttKey: 'Mouse4', muteKey: 'Minus' }))).toMatchObject({ pttKey: 'Mouse4', muteKey: 'Minus' });
-    const same = loadPrefs(JSON.stringify({ pttKey: 'Minus', muteKey: 'Minus' }));
-    expect(same).toMatchObject({ pttKey: DEFAULT_PTT_KEY, muteKey: 'Minus' });
+    expect(loadPrefs(JSON.stringify({ pttKey: 'Mouse4', muteKey: 'Semicolon' }))).toMatchObject({ pttKey: 'Mouse4', muteKey: 'Semicolon' });
+    const same = loadPrefs(JSON.stringify({ pttKey: 'Comma', muteKey: 'Comma' }));
+    expect(same).toMatchObject({ pttKey: DEFAULT_PTT_KEY, muteKey: 'Comma' });
+    expect(loadPrefs(JSON.stringify({ muteKey: 'Minus' })).muteKey).toBe(DEFAULT_MUTE_KEY); // CR 039: - casts spell slot 5
     const swapped = loadPrefs(JSON.stringify({ pttKey: 'Digit0', muteKey: 'Digit0' }));
     expect(swapped.pttKey).not.toBe(swapped.muteKey);
   });
@@ -304,7 +305,9 @@ describe('voice keys', () => {
   });
 
   it('accepts free keys and mouse side buttons', () => {
-    for (const k of ['Minus', 'Mouse3', 'Mouse4', 'CapsLock', 'Backslash', 'F6', 'Numpad0']) expect(validateVoiceKey(k, 'ptt', DEFAULT_MUTE_KEY), k).toEqual({ ok: true });
+    for (const k of ['Comma', 'Semicolon', 'Mouse3', 'Mouse4', 'CapsLock', 'F6', 'Numpad0']) expect(validateVoiceKey(k, 'ptt', DEFAULT_MUTE_KEY), k).toEqual({ ok: true });
+    const slot = validateVoiceKey('BracketLeft', 'ptt', DEFAULT_MUTE_KEY); // CR 039: the spell slot keys
+    expect(!slot.ok && slot.reason).toMatch(/spell slot 6/);
     expect(voiceKeyLabel('Mouse3')).toBe('Mouse back');
     expect(voiceKeyLabel('KeyV')).toBe('V');
     expect(voiceKeyLabel('Digit0')).toBe('0');

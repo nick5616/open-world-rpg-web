@@ -23,6 +23,7 @@ import { DEBUG } from '../../config';
 import { useTips } from '../tips/store';
 import { useAutoLoot } from '../inventory/ground/autoLoot';
 import { controlGroups } from './controls';
+import { HotbarKeys } from '../../combat/HotbarKeys';
 import { useDev } from '../devconsole/store';
 import { closeMenu, escAction, menuStale, openMenu, unlockOpensMenu, useMenu, type MenuEntry } from './store';
 import { closeTopPanel, openPanels } from '../../input/panelStack';
@@ -253,6 +254,7 @@ function Controls() {
           Back
         </button>
       </div>
+      <HotbarKeys />
       <div style={{ columns: '2 360px', columnGap: 28 }}>
         {groups.map((g) => (
           <div key={g.title} style={{ breakInside: 'avoid', marginBottom: 12 }}>

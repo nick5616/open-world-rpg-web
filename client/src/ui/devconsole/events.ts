@@ -34,7 +34,11 @@ export const DEV_ACT = {
   places: 26,
   achieve: 27,
   story: 28, // CR 035 main story: arg = DEV_STORY, target = act | step << 8 (jump) or percent (hush)
+  rift: 36, // CR 040 rift runs: arg = DEV_RIFT | chapter << 4 | stage << 8
 } as const;
+
+/** /rift sub-commands (Interact 250/36 arg low nibble; game/rift_dev.go). */
+export const DEV_RIFT = { spawn: 1, go: 2, win: 3, leave: 4, list: 5 } as const;
 
 export const DEV_EV = { status: 1400, result: 1401, places: 1402 } as const;
 
@@ -98,7 +102,7 @@ export function giveSend(key: string, o: GiveOpts = {}): DevSend {
     (BigInt(Math.max(0, Math.min(15, (o.gem ?? -1) + 1))) << 44n) |
     (BigInt(Math.max(0, Math.min(3, o.cut ?? 0))) << 48n) |
     (BigInt(Math.max(0, Math.min(255, (o.affix ?? -1) + 1))) << 50n);
-  const arg = Math.max(1, Math.min(0xffff, o.qty ?? 1)) | (o.equip ? 1 << 16 : 0) | ((o.loadout ?? 0) & 1 ? 1 << 17 : 0);
+  const arg = Math.max(1, Math.min(0xffff, o.qty ?? 1)) | (o.equip ? 1 << 16 : 0) | (((o.loadout ?? 0) & 3) << 17); // CR 039: loadout 3 too
   return send(DEV_ACT.give, t, arg);
 }
 /** Interact 250/14: x, z in metres (cm, u32 each); y 0 = the ground. */

@@ -8261,6 +8261,15 @@
      "magma_dash",
      null
     ]
+   },
+   {
+    "weapon": "bow",
+    "spells": [
+     null,
+     null,
+     null,
+     null
+    ]
    }
   ],
   "consumable": {
@@ -11635,6 +11644,16 @@
   }
  },
  "leveling": {
+  "hotbar": {
+   "baseSlots": 4,
+   "slotEveryLevels": 10,
+   "maxSlots": 8,
+   "loadoutLevels": [
+    1,
+    1,
+    20
+   ]
+  },
   "health": {
    "base": 100,
    "perLevel": 12

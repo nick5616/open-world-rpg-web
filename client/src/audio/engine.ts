@@ -46,6 +46,7 @@ import { WorldProbe } from './worldProbe';
 import { useStory } from '../ui/story/store';
 import { wildlifeTargets } from './wildlife';
 import { FINALE } from '../ui/story/events';
+import { riftRuntime } from '../rift/store';
 // Playtest 2 weather (CR 030): rain level, wind, storm, sand, thunder from real strikes.
 import { liveWeather, weatherOn } from '../systems/weather/runtime';
 // Playtest 2 vibe explorer: the composer aids' seam (dev builds; nothing registers otherwise).
@@ -324,7 +325,7 @@ export class AudioEngine {
       combat: audioWorld.combatUntil > nowMs || !!hud.boss,
       voidMoment: this.voidUntil > nowMs,
       timed: this.timed(nowMs),
-      finale: finaleMusic(),
+      finale: finaleMusic() ?? (riftRuntime.arena ? 'fight' : null), // CR 040: a rift plays the void realm
       // Playtest 4: a new character's first minutes play the anthem (ui/tips/firstHour.ts)
       arrival: playing && arrivalAnthem(useQuests.getState().log.quests, (nowMs - (this.mem.playStartMs ?? nowMs)) / 1000),
       ...this.forced,

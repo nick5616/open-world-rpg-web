@@ -356,8 +356,12 @@ export const MOON_CYCLE_NIGHTS = 8;
 export const INVENTORY_SLOTS = 40;
 /** Dropped items despawn after 10 minutes. */
 export const PICKUP_DESPAWN_S = 600;
-/** Off-hand spell slots. */
+/** Off-hand spell slots every character has (CR 039: more open with level, up to MAX_SPELL_SLOTS). */
 export const MAX_EQUIPPED_SPELLS = 4;
+/** CR 039: the most spell slots a loadout can have (combat.yaml leveling.hotbar.maxSlots is at most this). Slots 5-8 travel as castSlot 6-9 (4 and 5 are the elemental form and the technique). */
+export const MAX_SPELL_SLOTS = 8;
+/** CR 039: weapon loadouts a character can have (the third opens at combat.yaml leveling.hotbar.loadoutLevels[2]). */
+export const MAX_LOADOUTS = 3;
 /** Map pins per player. */
 export const MAX_PERSONAL_PINS = 10;
 /** WP10 weather stub (until WP15): world time is cut into windows this long; each is rainy or dry from a hash of (seed, window). */

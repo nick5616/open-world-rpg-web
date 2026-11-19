@@ -17,7 +17,8 @@ import { setPanelOpen } from '../progression/store';
 import { skillProgress } from '../progression/gains';
 import { fmt, treeDamageMults, type LoadoutView, type SlotView, type StatLine } from './build';
 import { equipSpell as equip, learnSpell as learn, useChar, type Char } from './char';
-import { SlotCard, SpellDetail, SpellTooltip } from '../spellcards/SpellCards';
+import { LockedSlotCard, SlotCard, SpellDetail, SpellTooltip } from '../spellcards/SpellCards';
+import { MAX_SPELL_SLOTS, loadoutLevel, loadoutsOpen, slotLevel, spellSlots } from '../../combat/hotbar';
 import { TEXT_3 } from '../spellcards/theme';
 import { castable, cap, ELEMENT_COLOR, layoutTree, learnedCounts, nodeState, SKILL_EFFECT, SKILL_NAMES, spellByKey, spellName, TECHNIQUE_INFO, TREE_ORDER, treeByKey, type NodeState, type TreeLayout } from './tree';
 import { closeSkillScreen, setSkillTab, toggleSkillScreen, useSkillScreen } from './store';
@@ -76,7 +77,7 @@ function SlotRow({ c, picked }: { c: Char; picked: string | null }) {
   return (
     <div style={{ marginBottom: 8 }}>
       <div role="tablist" aria-label="Loadouts" style={{ display: 'flex', gap: 4, marginBottom: 4 }}>
-        {c.loadouts.map((l, i) => (
+        {c.loadouts.slice(0, loadoutsOpen(c.level)).map((l, i) => (
           <button
             key={i}
             role="tab"
@@ -92,7 +93,8 @@ function SlotRow({ c, picked }: { c: Char; picked: string | null }) {
       </div>
       {/* The character panel's slot cards (ui/spellcards), two by two in the sidebar. */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 4 }}>
-        {[0, 1, 2, 3].map((i) => {
+        {Array.from({ length: Math.min(MAX_SPELL_SLOTS, spellSlots(c.level) + 1) }, (_, i) => i).map((i) => {
+          if (i >= spellSlots(c.level)) return <LockedSlotCard key={i} index={i} loadout={loadout} level={slotLevel(i)} />; // CR 039
           const k = lo?.spells[i] ?? null;
           const s = k ? spellByKey.get(k) : undefined;
           return (
@@ -306,7 +308,7 @@ function TreeTab({ tree, c }: { tree: string; c: Char }) {
         <div style={CARD}>
           <H right="drag a learned spell here">Spell slots</H>
           <SlotRow c={c} picked={pickedInTree} />
-          <div style={{ fontSize: 11, color: DIM }}>Cast with 1-4 or the wheel + right mouse. X swaps loadouts.</div>
+          <div style={{ fontSize: 11, color: DIM }}>Cast with the slot keys (1-4, then 8 9 - =: Esc menu, Controls) or the wheel + right mouse. X swaps loadouts. A new slot every ten levels, a third loadout at {loadoutLevel(2)}.</div>
         </div>
         <div style={{ ...CARD, flex: 'none' }} data-testid="skill-picked">
           {pickedInTree && pickedState ? (
@@ -321,7 +323,7 @@ function TreeTab({ tree, c }: { tree: string; c: Char }) {
                 {pickedState.status === 'learned' && castable(pickedInTree) && (
                   <>
                     <span style={{ fontSize: 11, color: DIM, alignSelf: 'center' }}>Put in slot:</span>
-                    {[0, 1, 2, 3].map((i) => (
+                    {Array.from({ length: spellSlots(c.level) }, (_, i) => i).map((i) => (
                       <button key={i} data-testid={`skill-assign-${i}`} disabled={!c.online} onClick={() => equip(c.activeLoadout, i, pickedInTree)} style={{ ...BTN, padding: '4px 10px' }}>
                         {i + 1}
                       </button>

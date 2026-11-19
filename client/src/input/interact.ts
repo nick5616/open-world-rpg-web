@@ -17,7 +17,7 @@
 import { localPlayer } from '../state/live';
 
 /** Who answers E, first wins. */
-export const E_ORDER = ['town', 'cave', 'tower', 'revive', 'loot', 'content', 'vertical', 'camp', 'fish', 'tame', 'pet', 'steed'] as const;
+export const E_ORDER = ['town', 'cave', 'tower', 'revive', 'rift', 'loot', 'content', 'vertical', 'camp', 'fish', 'tame', 'pet', 'steed'] as const;
 export type EUser = (typeof E_ORDER)[number];
 
 const PROMPT: Record<EUser, string> = {
@@ -25,6 +25,7 @@ const PROMPT: Record<EUser, string> = {
   cave: 'cave-hud',
   tower: 'tower-prompt-attune',
   revive: 'revive-prompt', // CR 035: raise a fallen friend (ui/story)
+  rift: 'rift-prompt', // CR 040: enter a rift (rift/RiftHud.tsx)
   loot: 'loot-prompt',
   content: 'content-prompt',
   vertical: 'vertical-prompt', // CR 038: the sky palace doors, a sky town's activity spot (world/vertical)

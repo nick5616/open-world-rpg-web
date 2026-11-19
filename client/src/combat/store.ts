@@ -2,7 +2,7 @@
 // non-reactive FX queue the 3D layer drains every frame.
 
 import { create } from 'zustand';
-import { COMBAT } from '@lodestone/contracts';
+import { COMBAT, MAX_SPELL_SLOTS } from '@lodestone/contracts';
 
 export interface DamageNumber {
   id: number;
@@ -47,13 +47,14 @@ export interface CombatHudState {
   graceUntil: number;
   toast: { text: string; at: number } | null;
   refused: { id: number; at: number } | null;
-  /** Playtest 1: what the right mouse button uses: -1 the weapon secondary, 0-3 a spell slot (wheel cycles; spellSelect.ts). */
+  /** Playtest 1: what the right mouse button uses: -1 the weapon secondary, 0-7 a spell slot (wheel cycles; spellSelect.ts). */
   selected: number;
   selectedAt: number;
   set: (p: Partial<CombatHudState>) => void;
 }
 
-const start = COMBAT.start.loadouts.map((l) => ({ weapon: l.weapon, spells: [...l.spells], gem: -1 }));
+// CR 039: three loadouts of MAX_SPELL_SLOTS slots (the level opens them: hotbar.ts).
+const start = COMBAT.start.loadouts.map((l) => ({ weapon: l.weapon, spells: Array.from({ length: MAX_SPELL_SLOTS }, (_, i): string | null => l.spells[i] ?? null), gem: -1 }));
 
 export const useCombatHud = create<CombatHudState>()((set) => ({
   active: false,

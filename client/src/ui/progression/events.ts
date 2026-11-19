@@ -27,7 +27,8 @@ export function equipSpellArg(loadout: number, slot: number, spellId: number): n
   return (loadout & 0xf) | ((slot & 0xf) << 4) | (spellId << 8);
 }
 
-export const STATS_REASON = { sync: 0, levelUp: 1, attuned: 2 } as const;
+/** Event 900 reasons; hotbar (CR 039): once after a join, spell slots / a loadout the level opened that you were never told about. */
+export const STATS_REASON = { sync: 0, levelUp: 1, attuned: 2, hotbar: 3 } as const;
 
 export const ATTUNE_REFUSED: Record<number, string> = {
   1: 'Stand on the top of the tower, beside the crystal',

@@ -249,7 +249,7 @@ func (s *Server) sendCombatSync(sess *session) {
 	// (weaponlook.go) and, per loadout, at the end of combat_sync for you.
 	mats, look := weaponLooks(sess)
 	e.TypeID = look | e.pvpTypeBits() | e.TypeID&TypeRiding // playtest 2: bits 12-13 are the PvP flag and dueling (pvp.go); CR 027: 14 riding (mounts.go)
-	s.sendEvent(sess, &proto.Event{Kind: combat.EvCombatSync, EntityID: e.ID, Value: int32(e.cbt.Profile.Active), Data: append(combat.EncodeSync(e.cbt), mats[0], mats[1])})
+	s.sendEvent(sess, &proto.Event{Kind: combat.EvCombatSync, EntityID: e.ID, Value: int32(e.cbt.Profile.Active), Data: append(combat.EncodeSync(e.cbt), mats[:]...)})
 	s.questsChanged(sess) // quests.go: "know a spell" objectives
 }
 
@@ -354,7 +354,7 @@ func (s *Server) handleCombatInteract(sess *session, m *proto.Interact) {
 	ok := false
 	switch m.Action {
 	case combat.ActSwapLoadout:
-		ok = pr.Swap(int(m.Arg & 1))
+		ok = pr.SwapAt(int(m.Arg&3), p.Level) // CR 039: the third loadout opens at level 20
 	case combat.ActEquipWeapon:
 		if w := combatdefs.D.WeaponByID(int(m.Arg >> 8)); w != nil {
 			ok = pr.EquipWeapon(int(m.Arg&0xff), w.Key)
@@ -364,7 +364,7 @@ func (s *Server) handleCombatInteract(sess *session, m *proto.Interact) {
 		if sp := combatdefs.D.SpellByID(int(m.Arg >> 8)); sp != nil {
 			key = sp.Key
 		}
-		ok = pr.EquipSpell(int(m.Arg&0xf), int(m.Arg>>4&0xf), key)
+		ok = pr.EquipSpellAt(int(m.Arg&0xf), int(m.Arg>>4&0xf), key, p.Level) // CR 039: open slots only
 	case combat.ActLearn:
 		if sp := combatdefs.D.SpellByID(int(m.Arg)); sp != nil {
 			if s.devFreeLearn(sess) {
@@ -441,7 +441,7 @@ func (s *Server) combatTick(tick uint32) {
 	s.achTick()         // CR 031: metres dashed, magma jet flight (achievements.go)
 	events, spawned, removed, xp, respawn, synced := w.Drain()
 	for _, en := range spawned {
-		ent := &Entity{ID: en.ID, Kind: proto.EntityKindEnemy, Name: en.Name, Level: uint8(min(255, en.Level)), npc: en, TypeID: en.TypeID()}
+		ent := &Entity{ID: en.ID, Kind: proto.EntityKindEnemy, Name: en.Name, Level: uint8(min(255, en.Level)), npc: en, TypeID: en.TypeID(), riftID: s.riftTagOf(en.ID)}
 		if en.Owner() != 0 {
 			ent.Kind, ent.Name = proto.EntityKindEffect, s.summonName(en) // CR 020: an ally (summons.go)
 			if en.IsPet() {

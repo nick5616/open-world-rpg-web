@@ -18,7 +18,7 @@
 import { useEffect, useRef, useState, type DragEvent, type ReactNode } from 'react';
 import { ITEM_ACT } from './events';
 import { ItemIcon } from './ItemIcon';
-import { affixLine, baseLine, baseName, compareToEquipped, defaultWeapon, displayName, EQ_LABEL, EQ_SLOTS, trainingWeaponName, gemEffect, INV_COLS, INV_SLOTS, isArmor, isConsumable, isEquipped, isGem, isHolo, isWeapon, itemDef, kindLabel, parseSlot, rarityColor, rarityDef, uniqueInfo, type EqSlot, type WireItem } from './items';
+import { affixLine, baseLine, baseName, compareToEquipped, defaultWeapon, displayName, eqDisplay, mainLoadout, EQ_LABEL, EQ_SLOTS, trainingWeaponName, gemEffect, INV_COLS, INV_SLOTS, isArmor, isConsumable, isEquipped, isGem, isHolo, isWeapon, itemDef, kindLabel, parseSlot, rarityColor, rarityDef, uniqueInfo, type EqSlot, type WireItem } from './items';
 import { installInventoryDebug } from './dev';
 import { pushToast, setInventoryOpen, useInventory } from './store';
 import { trackPanel } from '../../input/panelStack';
@@ -28,6 +28,7 @@ trackPanel(useInventory, (s) => s.invOpen, 'inventory', () => setInventoryOpen(f
 import { ensureInventoryStyles, GOLD, PANEL_BG, PANEL_BORDER, TEXT } from './styles';
 import { notGameKey } from '../../input/useKeyboard';
 import { useCombatHud } from '../../combat/store';
+import { loadoutsOpen } from '../../combat/hotbar';
 import { enterPlay, instrumentItem } from '../music/link';
 import { CharacterPreview } from './CharacterPreview';
 
@@ -230,6 +231,7 @@ function InventoryPanel() {
   const selected = useInventory((s) => s.selected);
   const socketPick = useInventory((s) => s.socketPick);
   const online = useInventory((s) => !!s.actions);
+  const nLoadouts = loadoutsOpen(useCombatHud((s) => s.level)); // CR 039: the third main hand from level 20
   const act = useActions();
   const [hover, setHover] = useState<number | null>(null);
   const drag = useRef<number | null>(null);
@@ -281,9 +283,9 @@ function InventoryPanel() {
       socketInto(target, it);
       return;
     }
-    if (slot === 'eq:main0' || slot === 'eq:main1') {
+    if (mainLoadout(slot) >= 0) {
       if (!isWeapon(it)) return pushToast('warn', 'Only weapons go in a main hand');
-      act((a) => a.item(it.h, ITEM_ACT.equip, slot === 'eq:main0' ? 0 : 1));
+      act((a) => a.item(it.h, ITEM_ACT.equip, mainLoadout(slot)));
     } else {
       if (!isArmor(it) || `eq:${itemDef(it.b)?.armor}` !== slot) return pushToast('warn', `That does not go on your ${slot.slice(3)}`);
       act((a) => a.item(it.h, ITEM_ACT.equip, 0));
@@ -368,7 +370,7 @@ function InventoryPanel() {
           {/* Equipment */}
           <div style={{ width: 196 }}>
             <Section title="Equipment">
-              {EQ_SLOTS.map((slot) => {
+              {eqDisplay(nLoadouts).map((slot) => {
                 const it = at(slot);
                 return (
                   <div key={slot} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
@@ -379,8 +381,8 @@ function InventoryPanel() {
                         <div className={isHolo(it.r) ? 'ls-holo-text' : undefined} style={{ color: rarityColor(it.r), fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 134 }}>
                           {displayName(it)}
                         </div>
-                      ) : slot === 'eq:main0' || slot === 'eq:main1' ? (
-                        <TrainingWeapon loadout={slot === 'eq:main0' ? 0 : 1} />
+                      ) : mainLoadout(slot) >= 0 ? (
+                        <TrainingWeapon loadout={mainLoadout(slot)} />
                       ) : (
                         <div style={{ opacity: 0.4 }}>empty</div>
                       )}
@@ -453,6 +455,7 @@ function TrainingWeapon({ loadout }: { loadout: number }) {
 
 function ItemActions({ item, quick }: { item: WireItem; quick: string }) {
   const act = useActions();
+  const nLoadouts = loadoutsOpen(useCombatHud((s) => s.level));
   const def = itemDef(item.b);
   const eq = isEquipped(item);
   const send = (action: number, arg = 0) => act((a) => a.item(item.h, action, arg));
@@ -463,13 +466,14 @@ function ItemActions({ item, quick }: { item: WireItem; quick: string }) {
         {label}
       </button>,
     );
-  if (eq && (item.s === 'eq:main0' || item.s === 'eq:main1')) {
-    const lo = item.s === 'eq:main0' ? 0 : 1;
-    b('unequip', `Unequip · use ${trainingWeaponName(defaultWeapon(lo))}`, () => send(ITEM_ACT.unequip, lo), { title: 'Back to your starting weapon; this one goes to the bag' });
+  if (eq && mainLoadout(item.s) >= 0) {
+    const lo = mainLoadout(item.s);
+    b('unequip', `Unequip · use ${trainingWeaponName(defaultWeapon(lo))}`, () => send(ITEM_ACT.unequip, EQ_SLOTS.indexOf(item.s as EqSlot)), { title: 'Back to your starting weapon; this one goes to the bag' });
   } else if (eq) b('unequip', 'Unequip', () => send(ITEM_ACT.unequip, EQ_SLOTS.indexOf(item.s as EqSlot)));
   else if (isWeapon(item)) {
     b('equip1', 'Equip · Loadout 1', () => send(ITEM_ACT.equip, 0));
     b('equip2', 'Equip · Loadout 2', () => send(ITEM_ACT.equip, 1));
+    if (nLoadouts > 2) b('equip3', 'Equip · Loadout 3', () => send(ITEM_ACT.equip, 2)); // CR 039
   } else if (isArmor(item)) b('equip', 'Equip', () => send(ITEM_ACT.equip, 0));
   if (isConsumable(item)) {
     b('use', 'Use', () => send(ITEM_ACT.use));
