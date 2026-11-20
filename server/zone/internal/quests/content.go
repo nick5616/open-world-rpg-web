@@ -256,9 +256,27 @@ func BountyKey(settlement int, id uint32) string { return fmt.Sprintf("bounty:%d
 // BountyXP is the XP a bounty pays on top of its gold.
 func BountyXP(reward uint32) int64 { return 40 + int64(reward)/2 }
 
+// bountyTitle is a held job's short name in the tracker and the journal (playtest 6 polish: the title was the
+// notice's sentence, "Find out what lies in X, south-west of here.", whose "of here" went stale once you left
+// the board). The step keeps the full notice.
+func bountyTitle(b BountyInfo) string {
+	if b.SiteName == "" {
+		return b.Text
+	}
+	switch b.Kind {
+	case BountyExplore:
+		return "Explore " + b.SiteName
+	case BountyClear:
+		return "Clear " + b.SiteName
+	case BountySlay:
+		return "The demon of " + b.SiteName
+	}
+	return b.Text
+}
+
 // FromBounty turns an accepted board job into a quest.
 func FromBounty(b BountyInfo, nowMs int64) *Quest {
-	q := &Quest{ID: b.ID, Key: BountyKey(b.Settlement, b.ID), Kind: KindBounty, Title: b.Text, Giver: "Bounty board, " + b.Town,
+	q := &Quest{ID: b.ID, Key: BountyKey(b.Settlement, b.ID), Kind: KindBounty, Title: bountyTitle(b), Giver: "Bounty board, " + b.Town,
 		Settlement: b.Settlement, Gold: int(b.Reward), XP: BountyXP(b.Reward), Accepted: nowMs}
 	area := func(label string) []Marker {
 		if !b.Target.OK {
