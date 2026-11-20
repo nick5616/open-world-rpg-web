@@ -296,7 +296,10 @@ export class EnemyRenderer {
       if (v.kind !== 2 && v.kind !== 7) continue;
       let e = this.enemies.get(v.id);
       const ally = v.kind === 7;
-      if (e && e.typeId !== (v.typeId ?? 0)) {
+      // Playtest 6 polish: an ally whose view dropped out for a moment (you teleported and your pet followed a
+      // tick later) started fading out; when the view came back the same entry was reused, dead, and the pet
+      // stayed invisible for good (its "[E] Pet" prompt still up). A view that returns gets a fresh body.
+      if (e && (e.typeId !== (v.typeId ?? 0) || (e.gone && !e.anim.alive))) {
         this.drop(e);
         e = undefined;
       }
