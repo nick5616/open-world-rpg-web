@@ -99,6 +99,8 @@ body:has([data-testid="emote-wheel"], [data-testid="pet-wheel"]) :is([data-testi
 body:has([data-testid="music-overlay"]) :is([data-testid="chat-open"], [data-testid="chat-toast"]) { visibility: hidden; }
 /* A shop / NPC dialogue sits on the right: loot toasts (a purchase, a quest reward) move to its left. */
 body:has([data-testid="town-panel"]:not([style*="display: none"])) [data-testid="loot-toasts"] { right: calc(4% + min(380px, 86vw) + 14px) !important; }
+/* Playtest 6 polish: and the quest notes ("New quest: ..." from the board you are reading) step left of it too. */
+body:has([data-testid="town-panel"]:not([style*="display: none"])) [data-testid="quest-notes"] { right: calc(4% + min(380px, 86vw) + 14px) !important; }
 @media (max-width: ${NARROW_PX}px) {
   :root {
     --ls-corner-bottom: calc(var(--ls-hotbar-h) + var(--ls-hint-h) + 20px);
