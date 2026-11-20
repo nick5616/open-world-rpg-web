@@ -56,6 +56,12 @@ body:has([data-testid="rift-hud"]) :is([data-testid="night-hud"], [data-testid="
 body:has([data-testid="town-prompt"][data-e-at]) [data-testid="rift-prompt"] { visibility: hidden !important; }
 /* The graphics and sound panels reach the bottom right at 720 px tall: the voice buttons wait under them (they showed through the glass). */
 body:has([data-testid="graphics-settings"], [data-testid="sound-settings"]) :is([data-testid="voice-ptt"], [data-testid="voice-settings-toggle"], [data-testid="voice-hud-status"], [data-testid="voice-hud-notice"]) { visibility: hidden; }
+/* Playtest 6 polish: the left column's content note (a world event, a codex entry: top 150 px) and the area notice (28%)
+   met at 720 px tall and printed over each other: the area notice steps below one or two notes. */
+body:has([data-testid="content-notes"] > :nth-child(1)) [data-testid="area-notices"] { top: max(28%, 232px) !important; }
+body:has([data-testid="content-notes"] > :nth-child(2)) [data-testid="area-notices"] { top: max(28%, 312px) !important; }
+/* The rift's "Out of the rift" summary sits where the world event banner does. */
+body:has([data-testid="rift-left"]) [data-testid="world-event"] { visibility: hidden; }
 /* The "[E] ..." prompt is noise once the thing it offers is open. */
 body:has([data-ui-panel]:not([style*="display: none"])) [data-testid="town-prompt"] { visibility: hidden; }
 /* Playtest 2 integration QA (tools/playtest/sp13.mjs: every playtest 2 overlay at once at

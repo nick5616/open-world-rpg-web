@@ -449,7 +449,7 @@ function updateRig(rig: Rig, a: Arena, nowMs: number, elapsed: number): void {
   let tells = 0;
   let lasers = 0;
   let drops = 0;
-  for (const lv of riftRuntime.volleys) {
+  for (const lv of fade > 0.01 ? riftRuntime.volleys : []) {
     const v = lv.v;
     const t = (tick - v.fire) / TICK_HZ;
     const c = v.kind === KIND_SEEKER ? col.set('#d58bff') : col.copy(tint);
@@ -528,7 +528,7 @@ function updateRig(rig: Rig, a: Arena, nowMs: number, elapsed: number): void {
 
 function placeOrb(rig: Rig, i: number, x: number, z: number, r: number, c: THREE.Color, fade: number): void {
   // the core is the shot's hit radius (what you must dodge); the halo only a little wider
-  const s = Math.max(0.06, r) * (0.55 + 0.45 * fade);
+  const s = Math.max(0.06, r) * (0.3 + 0.7 * fade);
   m4.compose(v3.set(x, BULLET_Y, z), q.identity(), scl.set(s, s, s));
   rig.orbs.setMatrixAt(i, m4);
   const h = s * 1.45;

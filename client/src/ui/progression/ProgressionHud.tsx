@@ -100,7 +100,7 @@ function AreaNotices() {
   const panelOpen = useProgression((s) => s.panelOpen);
   if (panelOpen) return null; // the panel sits where the notices do
   return (
-    <div style={{ position: 'fixed', left: 18, top: '28%', display: 'flex', flexDirection: 'column', gap: 8, zIndex: 13, pointerEvents: 'none', maxWidth: 380 }}>
+    <div data-testid="area-notices" style={{ position: 'fixed', left: 18, top: '28%', display: 'flex', flexDirection: 'column', gap: 8, zIndex: 13, pointerEvents: 'none', maxWidth: 380, transition: 'top 0.25s ease' }}>
       {notices.map((n) => (
         <div key={n.id} data-testid={`progression-notice-${n.kind}`} className="pt-notice" style={{ ...PANEL, borderLeft: `3px solid ${NOTICE_ACCENT[n.kind]}`, padding: '8px 12px' }}>
           <div style={{ font: '15px Georgia, serif', color: NOTICE_ACCENT[n.kind] }}>{n.title}</div>
