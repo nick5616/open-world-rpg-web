@@ -12,7 +12,7 @@
 
 import type { Event as ZoneEvent } from '@lodestone/contracts';
 import type { ZoneSession } from '../../net/zoneSession';
-import { netRuntime } from '../../net/netStore';
+import { drawnRemotes, netRuntime } from '../../net/netStore';
 import { promptFor, type Candidate } from './interact';
 import { escapeHtml } from './npcs';
 import { openStationOffline } from '../../ui/inventory/store'; // WP14
@@ -332,7 +332,9 @@ export class TownHud {
             this.panel.shop = items;
             this.render();
           } else {
-            this.open({ ...this.blank('Merchant', MERCHANT_LABEL[e.value] ?? 'goods'), npcEntityId: e.entityId, shop: items });
+            // playtest 6 polish: the shop is the person's ("Fenia, merchant, general goods"), not a "Merchant" sign
+            const who = drawnRemotes.views.find((v) => v.id === e.entityId)?.name;
+            this.open({ ...this.blank(who || 'Merchant', `${who ? 'merchant, ' : ''}${MERCHANT_LABEL[e.value] ?? 'goods'}`), npcEntityId: e.entityId, shop: items });
           }
           break;
         }
