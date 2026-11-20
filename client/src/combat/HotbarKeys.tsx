@@ -9,7 +9,7 @@ import { BINDINGS } from '../input/bindings';
 import { KEY_MAP } from '../input/useKeyboard';
 import { useVoiceStore } from '../voice/store';
 import { useCombatHud } from './store';
-import { MAX_SPELL_SLOTS, hotbarKey, keyName, mouseCode, onHotbarKeys, resetHotbarKeys, setHotbarKey, slotLevel, spellSlots } from './hotbar';
+import { DEFAULT_KEYS, MAX_SPELL_SLOTS, hotbarKey, hotbarKeyLabels, keyName, mouseCode, onHotbarKeys, resetHotbarKeys, setHotbarKey, slotLevel, spellSlots } from './hotbar';
 
 /** What a world key already does (null: free for a spell slot). Slot keys themselves are not "taken" (they swap). */
 export function takenBy(code: string): string | null {
@@ -67,7 +67,7 @@ export function HotbarKeys() {
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 6 }}>
         <span style={{ color: '#ffd166', font: '600 12px system-ui, sans-serif', letterSpacing: 0.5, textTransform: 'uppercase' }}>Spell slot keys</span>
         <span style={{ fontSize: 11.5, opacity: 0.65 }}>click a slot, then press a key or a mouse side button · a new slot every ten levels</span>
-        <button data-testid="hotbar-keys-reset" tabIndex={-1} onClick={() => (resetHotbarKeys(), setMsg('Back to 1 2 3 4 8 9 - ='))} style={{ ...KEYCAP, marginLeft: 'auto', font: '12px system-ui, sans-serif', padding: '1px 8px' }}>
+        <button data-testid="hotbar-keys-reset" tabIndex={-1} onClick={() => (resetHotbarKeys(), setMsg(`Back to ${hotbarKeyLabels(DEFAULT_KEYS)}`))} style={{ ...KEYCAP, marginLeft: 'auto', font: '12px system-ui, sans-serif', padding: '1px 8px' }}>
           Defaults
         </button>
       </div>

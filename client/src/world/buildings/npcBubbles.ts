@@ -9,6 +9,7 @@
 import * as THREE from 'three';
 import { npcFocus, playerFocus } from './npcFocus';
 import { BUBBLE_M, BUBBLE_MAX, bubbleAlpha, selectBubbles, type BubbleCandidate } from './npcLife';
+import type { LabelBox } from './labelDeclutter';
 
 interface Cand extends BubbleCandidate {
   text: string;
@@ -37,6 +38,8 @@ export class BubbleLayer {
   private readonly p = new THREE.Vector3();
   /** Keys that have a bubble this frame (the name labels step aside for them). */
   readonly shown = new Set<number>();
+  /** Screen boxes of the bubbles drawn this frame (x centre, y bottom incl. the tail): other names keep clear of them. */
+  readonly boxes: LabelBox[] = [];
 
   /**
    * Per frame: draw the live lines. `subject(key)` gives a speaker's position
@@ -45,6 +48,7 @@ export class BubbleLayer {
    */
   update(camera: THREE.Camera, subject: (key: number) => BubbleSubject | undefined, nowMs: number, headY = 2.35): void {
     this.shown.clear();
+    this.boxes.length = 0;
     const live = this.kind === 'player' ? playerFocus.live(nowMs) : npcFocus.live(nowMs);
     if (!live.length && !this.els.some((e) => e.style.display !== 'none')) return;
     if (!this.root) {
@@ -78,7 +82,10 @@ export class BubbleLayer {
         this.root.appendChild(el);
       }
       const span = el.firstChild as HTMLSpanElement;
-      if (span.textContent !== c.text) span.textContent = c.text;
+      if (span.textContent !== c.text) {
+        span.textContent = c.text;
+        el.dataset.w = '';
+      }
       const key = c.toYou ? 'y' : 'n';
       if (el.dataset.kind !== key) {
         el.dataset.kind = key;
@@ -98,6 +105,12 @@ export class BubbleLayer {
       el.style.top = `${(c.sy + rise).toFixed(1)}px`;
       el.style.opacity = a.toFixed(2);
       el.style.display = '';
+      if (!el.dataset.w) {
+        // measured once per line (playtest 6 polish: names under a bubble make room)
+        el.dataset.w = String(el.offsetWidth);
+        el.dataset.h = String(el.offsetHeight);
+      }
+      this.boxes.push({ x: c.sx, y: c.sy + rise + 5, w: +el.dataset.w, h: +(el.dataset.h ?? 0) + 5 });
       this.shown.add(c.key);
       k++;
     }

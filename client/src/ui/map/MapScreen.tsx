@@ -228,6 +228,12 @@ function MapView() {
       const showLayer = layerPick === 'auto' ? (audioWorld.layer as MapLayer) : layerPick;
       drawLayerOverlay(ctx, vertical, showLayer, sx, sy, k, w, h, (i) => (i >= 0 && i < data.sites.length && siteVisibility(data.sites[i], revealed, towers, waypoints, discoveries) !== 'hidden' ? data.sites[i].name : null));
 
+      // Labels drawn so far this frame: later quest and event labels stack clear of them
+      // (playtest 6 polish: "Tammir, farmer" printed over "Draedmore" and your arrow).
+      const placed: { x: number; y: number }[] = [];
+      const px = sx(localPlayer.pos.x);
+      const py = sy(localPlayer.pos.z);
+      placed.push({ x: px, y: py });
       // Sites.
       const order = (s: Site) => (s.kind === 'tower' ? 3 : s.category === 'settlement' ? 2 : s.kind === 'waypoint' ? 1 : 0);
       const sites = data.sites.filter((s) => siteOnLayer(s, showLayer)).sort((a, b) => order(a) - order(b));
@@ -241,9 +247,14 @@ function MapView() {
         out.push({ x, y, r: 10, site: s });
         if ((vis === 'known' || vis === 'unlocked') && s.name && (s.kind === 'tower' || s.category === 'settlement' || v.zoom > 2)) {
           ctx.font = '12px Georgia, serif';
-          ctx.fillStyle = 'rgba(30,20,10,0.9)';
           ctx.textAlign = 'center';
+          // a paper halo keeps the name readable over terrain, rivers and your arrow (playtest 6 polish)
+          ctx.lineWidth = 3;
+          ctx.strokeStyle = 'rgba(244,236,214,0.75)';
+          ctx.strokeText(s.name, x, y + 20);
+          ctx.fillStyle = 'rgba(30,20,10,0.9)';
           ctx.fillText(s.name, x, y + 20);
+          placed.push({ x, y: y + 16 });
         }
       }
 
@@ -269,7 +280,6 @@ function MapView() {
       // Playtest 1: quest markers (every active quest's current step; the
       // tracked one in gold) and a preview of where an offer would take you.
       const qs = useQuests.getState();
-      const placed: { x: number; y: number }[] = [];
       for (const q of qs.log.quests) {
         const tracked = q.id === (trackedQuest(qs)?.id ?? -1);
         for (const m of q.markers) drawQuestMarker(ctx, sx(m.x), sy(m.z), (m.r ?? 0) * k, tracked ? '#ffd166' : '#e8a33d', tracked ? m.label : '', tracked ? 1 : 0.6, false, placed);
@@ -304,8 +314,6 @@ function MapView() {
       }
 
       // You: an arrow along the view direction (yaw 0 faces -z = up).
-      const px = sx(localPlayer.pos.x);
-      const py = sy(localPlayer.pos.z);
       const fx = -Math.sin(localPlayer.yaw);
       const fz = -Math.cos(localPlayer.yaw);
       ctx.save();

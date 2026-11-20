@@ -51,6 +51,12 @@ type Rumour struct {
 	Pos  bool // there is somewhere to put a marker
 }
 
+// herbNamedTexts tell of a forage patch by what grows there ({thing}: "heartleaf").
+var herbNamedTexts = []string{"there's {thing} growing {where}. Nobody's picked it clean. Not yet.", "a patch of {thing} grows {where}, thick and untouched. Good for potions. Good for the purse."}
+
+// deadfallTexts tell of a deadfall patch (it gives firewood, not herbs).
+var deadfallTexts = []string{"there's dry deadfall {where}: good firewood, free for whoever carries it.", "the wind brought branches down {where}. Dry firewood, and nobody's gathered it yet."}
+
 var rumourTexts = map[string][]string{
 	KindCave:     {"there's a cave mouth {where}{named}. Folk say it goes deeper than it should. Bring a torch.", "an old cave {where}{named} breathes cold air on warm days. Something down there is exhaling.", "there's a cave {where}{named} nobody has properly mapped. I'd go myself, if I were twenty years younger and less sensible."},
 	KindShaft:    {"there's an old mineshaft {where}{named}, with a winch and a long rope. Folk drop pebbles down it and never hear them land.", "the miners left a shaft {where}{named}. They left in a hurry, and they left their lanterns.", "a shaft goes down {where}{named}. It connects to caves, if the stories are true. Mind the rope."},
@@ -139,6 +145,17 @@ func tell(p Person, ps Persona, s Site) Rumour {
 	named := ""
 	if s.Name != "" {
 		named = ", " + s.Name
+	}
+	if s.Kind == KindHerb && s.Name != "" {
+		// A forage patch's name is what grows there (Heartleaf, Firewood), not a
+		// place: say what it is instead of ", Firewood" after the direction.
+		named = ""
+		tx := herbNamedTexts
+		thing := strings.ToLower(s.Name)
+		if thing == "firewood" {
+			tx = deadfallTexts
+		}
+		t = strings.ReplaceAll(pick(tx, p.ID, hstr(s.Key)), "{thing}", thing)
 	}
 	t = strings.NewReplacer("{where}", where, "{named}", named, "{detail}", s.Detail).Replace(t)
 	t = strings.TrimSpace(t)

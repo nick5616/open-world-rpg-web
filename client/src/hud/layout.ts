@@ -44,6 +44,8 @@ export const HUD_CSS = `
 body:has([data-ui-panel]:not([style*="display: none"])) [data-testid="lock-hint"] { display: none !important; }
 /* The sound, graphics and friends panels open under the top-right buttons, over the quest tracker. */
 body:has([data-testid="sound-settings"], [data-testid="graphics-settings"], [data-testid="friends-panel"], [data-testid="craft-panel"]) [data-testid="quest-tracker"] { visibility: hidden; }
+/* Playtest 6 polish: the one-time "Graphics set to High; F10 to change" note sits under the Graphics button, on the tracker's title: the tracker steps down for its few seconds. */
+body:has([data-testid="graphics-auto-notice"]) [data-testid="quest-tracker"] { top: 92px !important; }
 /* The "[E] ..." prompt is noise once the thing it offers is open. */
 body:has([data-ui-panel]:not([style*="display: none"])) [data-testid="town-prompt"] { visibility: hidden; }
 /* Playtest 2 integration QA (tools/playtest/sp13.mjs: every playtest 2 overlay at once at

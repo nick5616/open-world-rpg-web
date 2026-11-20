@@ -139,7 +139,7 @@ export class CombatRuntime {
       this.buttons.altDown = false;
       this.buttons.altRelease++;
     };
-    // CR 039: a spell slot key (hotbar.ts: 1-4, 8, 9, -, = or what the player chose).
+    // CR 039: a spell slot key (hotbar.ts: 1-4, - [ ] \ or what the player chose).
     const slotDown = (slot: number, t: number) => {
       if (slot >= this.openSlots()) return;
       if (this.timeline.loadout.spells[slot]) useCombatHud.getState().set({ selected: slot });

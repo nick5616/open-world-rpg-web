@@ -18,7 +18,7 @@ import { skillProgress } from '../progression/gains';
 import { fmt, treeDamageMults, type LoadoutView, type SlotView, type StatLine } from './build';
 import { equipSpell as equip, learnSpell as learn, useChar, type Char } from './char';
 import { LockedSlotCard, SlotCard, SpellDetail, SpellTooltip } from '../spellcards/SpellCards';
-import { MAX_SPELL_SLOTS, loadoutLevel, loadoutsOpen, slotLevel, spellSlots } from '../../combat/hotbar';
+import { MAX_SPELL_SLOTS, hotbarKeyLabels, loadoutLevel, loadoutsOpen, slotLevel, spellSlots } from '../../combat/hotbar';
 import { TEXT_3 } from '../spellcards/theme';
 import { castable, cap, ELEMENT_COLOR, layoutTree, learnedCounts, nodeState, SKILL_EFFECT, SKILL_NAMES, spellByKey, spellName, TECHNIQUE_INFO, TREE_ORDER, treeByKey, type NodeState, type TreeLayout } from './tree';
 import { closeSkillScreen, setSkillTab, toggleSkillScreen, useSkillScreen } from './store';
@@ -308,7 +308,7 @@ function TreeTab({ tree, c }: { tree: string; c: Char }) {
         <div style={CARD}>
           <H right="drag a learned spell here">Spell slots</H>
           <SlotRow c={c} picked={pickedInTree} />
-          <div style={{ fontSize: 11, color: DIM }}>Cast with the slot keys (1-4, then 8 9 - =: Esc menu, Controls) or the wheel + right mouse. X swaps loadouts. A new slot every ten levels, a third loadout at {loadoutLevel(2)}.</div>
+          <div style={{ fontSize: 11, color: DIM }}>Cast with the slot keys ({hotbarKeyLabels()}; rebind them under Esc menu, Controls) or the wheel + right mouse. X swaps loadouts. A new slot every ten levels, a third loadout at {loadoutLevel(2)}.</div>
         </div>
         <div style={{ ...CARD, flex: 'none' }} data-testid="skill-picked">
           {pickedInTree && pickedState ? (

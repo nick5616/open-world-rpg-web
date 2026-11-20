@@ -35,6 +35,7 @@ import { EntityKind, type Event as ZoneEvent } from '@lodestone/contracts';
 import { PROP_KINDS, type Towns } from '@lodestone/worldgen';
 import { drawnRemotes, netRuntime } from '../../net/netStore';
 import type { GroundQuery } from '../../sim/ground';
+import { declutterLabels, type LabelBox } from './labelDeclutter';
 import { NPC_ROLE_LABEL } from './townEvents';
 import { emoteOf } from '../../ui/emotes/store';
 import { localPlayer, worldClock } from '../../state/live';
@@ -938,6 +939,7 @@ export class NpcRenderer {
     const w = window.innerWidth;
     const h = window.innerHeight;
     let k = 0;
+    const boxes: LabelBox[] = [];
     for (const { v, d } of near) {
       p.set(v.x, v.y + 2.15, v.z).project(camera);
       if (p.z > 1 || p.z < -1 || Math.abs(p.x) > 1.1 || Math.abs(p.y) > 1.1) continue;
@@ -949,16 +951,28 @@ export class NpcRenderer {
         this.labelRoot.appendChild(el);
       }
       const role = NPC_ROLE_LABEL[v.role] ?? 'villager';
-      const text = `${v.name}\n${role}`;
+      const text = `${v.name}
+${role}`;
+      el.style.display = '';
       if (el.dataset.text !== text) {
         el.dataset.text = text;
         el.innerHTML = `${escapeHtml(v.name)}<div style="font-weight:400;font-size:11px;opacity:.8">${role}</div>`;
+        // measured once per text change (playtest 6: labels make room for each other)
+        el.dataset.w = String(el.offsetWidth || 8 * text.length);
+        el.dataset.h = String(el.offsetHeight || 30);
       }
-      el.style.left = `${((p.x + 1) / 2) * w}px`;
-      el.style.top = `${((1 - p.y) / 2) * h}px`;
+      const x = ((p.x + 1) / 2) * w;
+      const y = ((1 - p.y) / 2) * h;
+      boxes.push({ x, y, w: +(el.dataset.w ?? 60), h: +(el.dataset.h ?? 30) });
+      el.style.left = `${x}px`;
       el.style.opacity = String(Math.max(0, Math.min(1, (LABEL_M - d) / 3)));
-      el.style.display = '';
       k++;
+    }
+    const placed = declutterLabels(boxes, 40, this.bubbles.boxes); // last frame's bubbles: a frame late is invisible
+    for (let i = 0; i < k; i++) {
+      const el = this.labels[i];
+      if (placed[i].hidden) el.style.display = 'none';
+      else el.style.top = `${boxes[i].y - placed[i].lift}px`;
     }
     for (let i = k; i < this.labels.length; i++) this.labels[i].style.display = 'none';
   }

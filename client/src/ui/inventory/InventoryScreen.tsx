@@ -44,7 +44,13 @@ function useActions() {
   };
 }
 
-function Tile({ item, selected, better, dropTarget, onPick, onHover, onDragStart, onDragEnd, onDrop, title }: { item: WireItem | null; selected?: boolean; better?: boolean; dropTarget?: boolean; onPick?: () => void; onHover?: (h: number | null) => void; onDragStart?: () => void; onDragEnd?: () => void; onDrop?: () => void; title?: string }) {
+/** What an empty equipment slot shows faintly: the training weapon a main hand wields, or the armor piece's outline. */
+function eqGhost(slot: EqSlot, wieldedOf: (loadout: number) => string): { weapon?: string; armor?: string } {
+  const lo = mainLoadout(slot);
+  return lo >= 0 ? { weapon: wieldedOf(lo) } : { armor: slot.slice(3) };
+}
+
+function Tile({ item, ghost, selected, better, dropTarget, onPick, onHover, onDragStart, onDragEnd, onDrop, title }: { item: WireItem | null; ghost?: { weapon?: string; armor?: string }; selected?: boolean; better?: boolean; dropTarget?: boolean; onPick?: () => void; onHover?: (h: number | null) => void; onDragStart?: () => void; onDragEnd?: () => void; onDrop?: () => void; title?: string }) {
   const [over, setOver] = useState(false);
   const holo = item ? isHolo(item.r) : false;
   const cls = ['ls-tile', item ? '' : 'ls-empty', selected ? 'ls-sel' : '', holo ? 'ls-holo-border' : '', over && dropTarget ? 'ls-drop' : ''].filter(Boolean).join(' ');
@@ -87,6 +93,12 @@ function Tile({ item, selected, better, dropTarget, onPick, onHover, onDragStart
       {...dropProps}
     >
       {item && <ItemIcon itemKey={item.b} />}
+      {!item && ghost && (
+        // playtest 6 polish: an empty equipment slot shows what goes there (faint)
+        <span data-testid="inv-ghost" style={{ opacity: 0.28, filter: 'grayscale(0.6)' }}>
+          <ItemIcon itemKey="" weapon={ghost.weapon} armor={ghost.armor} />
+        </span>
+      )}
       {item && item.q > 1 && <span className="ls-qty">{item.q > 9999 ? `${Math.floor(item.q / 1000)}k` : item.q}</span>}
       {better && (
         <span className="ls-better" data-testid="inv-better" title="Better than what you wear">
@@ -232,6 +244,8 @@ function InventoryPanel() {
   const socketPick = useInventory((s) => s.socketPick);
   const online = useInventory((s) => !!s.actions);
   const nLoadouts = loadoutsOpen(useCombatHud((s) => s.level)); // CR 039: the third main hand from level 20
+  const loadoutWeapons = useCombatHud((s) => s.loadouts);
+  const wieldedOf = (lo: number) => loadoutWeapons[lo]?.weapon ?? defaultWeapon(lo);
   const act = useActions();
   const [hover, setHover] = useState<number | null>(null);
   const drag = useRef<number | null>(null);
@@ -374,7 +388,7 @@ function InventoryPanel() {
                 const it = at(slot);
                 return (
                   <div key={slot} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                    <Tile {...tileProps(it, () => dropOnEq(slot))} onDrop={() => dropOnEq(slot)} />
+                    <Tile {...tileProps(it, () => dropOnEq(slot))} ghost={eqGhost(slot, wieldedOf)} onDrop={() => dropOnEq(slot)} />
                     <div style={{ fontSize: 11, lineHeight: 1.25, minWidth: 0 }}>
                       <div style={{ opacity: 0.6 }}>{EQ_LABEL[slot]}</div>
                       {it ? (

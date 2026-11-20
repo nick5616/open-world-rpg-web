@@ -5,8 +5,8 @@
 // LoadoutsOpen), so the HUD never offers a slot the zone would refuse.
 //
 // Keys: slots 1-4 stay on 1-4. 5-7 belong to the steed's whistle and the
-// pet, the letters are all taken, so slots 5-8 default to 8, 9, - and =
-// (the rest of the number row) and every slot key can be changed in the Esc
+// pet, 8, 9 and = the torch, the hammer and the work tool, and the letters
+// are all taken, so slots 5-8 default to - [ ] and \; every slot key can be changed in the Esc
 // menu's Controls (stored in this browser; a mouse side button works too).
 //
 // Wire: castSlot 0-3 name slots 1-4, 4 and 5 are the elemental form and the
@@ -131,7 +131,7 @@ export function setHotbarKey(i: number, code: string, taken: KeyCheck = () => nu
   return null;
 }
 
-/** Back to 1-4, 8, 9, -, =. */
+/** Back to 1-4, then - [ ] \. */
 export function resetHotbarKeys(): void {
   keys = [...DEFAULT_KEYS];
   save();
@@ -161,6 +161,11 @@ export function keyName(code: string): string {
   if (/^Digit\d$/.test(code)) return code.slice(5);
   if (/^Numpad\d$/.test(code)) return `Num ${code.slice(6)}`;
   return code;
+}
+
+/** Every slot key as keycap labels, spaced ("1 2 3 4 - [ ] \\"), for help text that must follow rebinding. */
+export function hotbarKeyLabels(list: readonly string[] = keys): string {
+  return list.map(keyName).join(' ');
 }
 
 /** The key code for a mouse button (side buttons only; null otherwise). */
