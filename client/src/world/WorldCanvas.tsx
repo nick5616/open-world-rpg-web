@@ -75,6 +75,7 @@ export function WorldCanvas({ spawnOnLand = SOLO, seed, genVersion, onRuntime, .
   useEffect(() => {
     if (!runtime || playable) return;
     const t0 = performance.now();
+    let groundAt = 0;
     const id = setInterval(() => {
       const p = localPlayer.pos;
       const under = worldDebug.terrain?.drawnTiles().some((t) => {
@@ -83,7 +84,15 @@ export function WorldCanvas({ spawnOnLand = SOLO, seed, genVersion, onRuntime, .
       });
       // WP19b: and the shader warm-up done (warmup.ts), so play starts with
       // every program compiled instead of compiling them in the first frames.
-      if ((under && worldDebug.textureBytes > 0 && (worldDebug.shadersWarm || new URLSearchParams(location.search).has('nowarmup'))) || performance.now() - t0 > 15000) {
+      const ground = under && worldDebug.textureBytes > 0 && (worldDebug.shadersWarm || new URLSearchParams(location.search).has('nowarmup'));
+      // Playtest 6 polish: and the town around you built (a new character arrived to townsfolk standing on bare
+      // grass while the houses popped in a second later), for at most 6 s more.
+      if (ground && !groundAt) {
+        groundAt = performance.now();
+        setStatus('Settling in');
+      }
+      const towns = !worldDebug.townsIdle || worldDebug.townsIdle() || performance.now() - groundAt > 6000;
+      if ((ground && towns) || performance.now() - t0 > 15000) {
         worldDebug.firstPlayableMs = performance.now();
         setPlayable(true);
       }
