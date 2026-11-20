@@ -306,7 +306,10 @@ export class TownHud {
         // Playtest 1: where the job takes you, before you accept (and a map preview).
         const where = bountyPlace(b, this.pending);
         const state = b.done ? '<span style="color:#9fd38a">Completed</span>' : b.accepted ? '<span style="color:#9fd38a">Accepted</span>' : btn('accept', b.id, 'Accept');
-        h += `<div data-bounty="${b.id}" style="padding:5px 0;border-bottom:1px solid #ffffff14"><div><b>${BOUNTY_KIND_LABEL[b.kind] ?? 'Job'}</b>: ${escapeHtml(b.text)}</div>`;
+        // playtest 6 polish: no "Slay: Slay the demon..." (the label only when the notice doesn't already start with it)
+        const lab = BOUNTY_KIND_LABEL[b.kind] ?? 'Job';
+        const head = b.text.toLowerCase().startsWith(lab.toLowerCase()) ? '' : `<b>${lab}</b>: `;
+        h += `<div data-bounty="${b.id}" style="padding:5px 0;border-bottom:1px solid #ffffff14"><div>${head}${escapeHtml(b.text)}</div>`;
         if (where) h += `<div data-testid="bounty-where" style="display:flex;justify-content:space-between;align-items:center;gap:6px;font-size:12px;color:#d9c79c;margin:2px 0"><span>&#9673; ${escapeHtml(where.text)}</span>${btn('preview', b.id, 'Show on map')}</div>`;
         h += `<div style="display:flex;justify-content:space-between;align-items:center;opacity:.9"><span>Reward ${b.reward} g${b.qty > 1 ? ` · x${b.qty}` : ''}</span>${state}</div></div>`;
       }
