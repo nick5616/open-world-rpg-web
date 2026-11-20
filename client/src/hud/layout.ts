@@ -69,6 +69,9 @@ body:has([data-testid="rift-left"]) [data-testid="world-event"] { visibility: hi
 body:has([data-testid="discovery-intro"]) [data-testid="vertical-banner"] { visibility: hidden; }
 body:has([data-testid="palace-panel"]) [data-testid="world-event"] { visibility: hidden; }
 body:has([data-testid="boss-bar"]) [data-testid="palace-panel"] { visibility: hidden; }
+/* Playtest 6 polish: the journal (centre, up to 760 x 520) cut through the clock pill, the sundial and, below ~1390 px wide, the quest
+   tracker it already shows in full: they wait while it is open. */
+body:has([data-testid="quest-journal"]) :is([data-testid="night-hud"], [data-testid="sundial-clock"], [data-testid="quest-tracker"]) { visibility: hidden; }
 /* The "[E] ..." prompt is noise once the thing it offers is open. */
 body:has([data-ui-panel]:not([style*="display: none"])) [data-testid="town-prompt"] { visibility: hidden; }
 /* Playtest 2 integration QA (tools/playtest/sp13.mjs: every playtest 2 overlay at once at
