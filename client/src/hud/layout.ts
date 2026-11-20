@@ -54,6 +54,8 @@ body:has([data-testid="dialog"]) :is([data-testid="quest-notes"], [data-testid="
 body:has([data-testid="rift-hud"]) :is([data-testid="night-hud"], [data-testid="sundial-clock"], [data-testid="compass"], [data-testid="world-event-chip"], [data-testid="world-event"], [data-testid="quest-tracker"], [data-testid="vertical-banner"], [data-testid="vertical-fall"], [data-testid="content-notes"], [data-testid^="progression-notice-area"], [data-testid^="progression-notice-safe"], [data-testid^="progression-notice-danger"]) { visibility: hidden !important; }
 /* The rift prompt re-renders 4 times a second, the town prompt every frame: while a town prompt is up (it owns E, input/interact.ts) the rift's waits. */
 body:has([data-testid="town-prompt"][data-e-at]) [data-testid="rift-prompt"] { visibility: hidden !important; }
+/* The graphics and sound panels reach the bottom right at 720 px tall: the voice buttons wait under them (they showed through the glass). */
+body:has([data-testid="graphics-settings"], [data-testid="sound-settings"]) :is([data-testid="voice-ptt"], [data-testid="voice-settings-toggle"], [data-testid="voice-hud-status"], [data-testid="voice-hud-notice"]) { visibility: hidden; }
 /* The "[E] ..." prompt is noise once the thing it offers is open. */
 body:has([data-ui-panel]:not([style*="display: none"])) [data-testid="town-prompt"] { visibility: hidden; }
 /* Playtest 2 integration QA (tools/playtest/sp13.mjs: every playtest 2 overlay at once at
