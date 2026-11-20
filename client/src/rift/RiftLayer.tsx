@@ -479,8 +479,8 @@ function updateRig(rig: Rig, a: Arena, nowMs: number, elapsed: number): void {
       if (!L.live && !aiming) continue;
       const m = rig.lasers[lasers++];
       const mat = m.material as THREE.MeshBasicMaterial;
-      mat.color.copy(c).lerp(ocol.set('#ffffff'), L.live ? 0.5 : 0);
-      mat.opacity = (L.live ? 0.95 : 0.35 + 0.2 * Math.sin(elapsed * 25)) * fade;
+      mat.color.copy(c).lerp(ocol.set('#ffffff'), L.live ? 0.25 : 0);
+      mat.opacity = (L.live ? 0.75 : 0.35 + 0.2 * Math.sin(elapsed * 25)) * fade;
       const w = L.live ? Math.max(0.25, v.radius * 2) : 0.06;
       m.scale.set(L.length, w, w);
       m.position.set(v.ox, BULLET_Y, v.oz);
