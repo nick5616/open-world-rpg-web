@@ -62,6 +62,13 @@ body:has([data-testid="content-notes"] > :nth-child(1)) [data-testid="area-notic
 body:has([data-testid="content-notes"] > :nth-child(2)) [data-testid="area-notices"] { top: max(28%, 312px) !important; }
 /* The rift's "Out of the rift" summary sits where the world event banner does. */
 body:has([data-testid="rift-left"]) [data-testid="world-event"] { visibility: hidden; }
+/* Playtest 6 polish (pt4 playcheck "not fixed" 1): at a sky palace the place banner, the region card, the ward line and the boss
+   drew over each other. One title at a time: the region card (it names the same place) holds the layer banner back; the palace
+   panel sits under the clock like the boss bar, the world event waits under it, and once the guardian's own boss bar is up the
+   panel's duplicate bar steps aside. */
+body:has([data-testid="discovery-intro"]) [data-testid="vertical-banner"] { visibility: hidden; }
+body:has([data-testid="palace-panel"]) [data-testid="world-event"] { visibility: hidden; }
+body:has([data-testid="boss-bar"]) [data-testid="palace-panel"] { visibility: hidden; }
 /* The "[E] ..." prompt is noise once the thing it offers is open. */
 body:has([data-ui-panel]:not([style*="display: none"])) [data-testid="town-prompt"] { visibility: hidden; }
 /* Playtest 2 integration QA (tools/playtest/sp13.mjs: every playtest 2 overlay at once at
