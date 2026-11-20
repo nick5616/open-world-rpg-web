@@ -162,7 +162,7 @@ function CampMenu() {
   const mine = useCamps((s) => s.mine);
   const craft = (id: number) => useInventory.getState().actions?.craft(id);
   return (
-    <div data-testid="camp-menu" data-ui-panel style={{ ...panel, left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: 'min(560px, 94vw)' }}>
+    <div data-testid="camp-menu" data-ui-panel className="ls-inv" style={{ ...panel, left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: 'min(560px, 94vw)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
         <div>
           <div style={{ font: '700 18px Georgia, serif', color: GOLD }}>Make camp</div>
@@ -247,7 +247,7 @@ function ChestPanel() {
   const close = () => useCamps.setState({ chest: null });
   const pack = items.filter((it) => !it.s.startsWith('eq:') && it.s !== 'purse');
   return (
-    <div data-testid="camp-chest" data-ui-panel style={{ ...panel, left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: 'min(640px, 96vw)' }}>
+    <div data-testid="camp-chest" data-ui-panel className="ls-inv" style={{ ...panel, left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: 'min(640px, 96vw)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
         <div>
           <div style={{ font: '700 18px Georgia, serif', color: GOLD }}>{chest.mine ? 'Your storage chest' : `${chest.owner}'s storage chest`}</div>
@@ -315,7 +315,7 @@ function LabelDialog() {
     useCamps.setState({ labeling: null });
   };
   return (
-    <div data-testid="camp-label" data-ui-panel style={{ ...panel, left: '50%', top: '40%', transform: 'translate(-50%, -50%)', width: 'min(360px, 92vw)' }}>
+    <div data-testid="camp-label" data-ui-panel className="ls-inv" style={{ ...panel, left: '50%', top: '40%', transform: 'translate(-50%, -50%)', width: 'min(360px, 92vw)' }}>
       <div style={{ font: '700 16px Georgia, serif', color: GOLD }}>Name your signpost</div>
       <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 8 }}>It shows on your map and your party&apos;s.</div>
       <input

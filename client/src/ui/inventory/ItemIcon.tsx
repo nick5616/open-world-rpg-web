@@ -222,6 +222,7 @@ function instrumentIcon(key: string): JSX.Element {
 function toolIcon(key: string): JSX.Element {
   const handle = '#8a6a44';
   const steel = '#a9adb3';
+  if (key.startsWith('camp:')) return campIcon(key.slice(5));
   switch (key) {
     case 'tool:axe':
       return (
@@ -460,14 +461,7 @@ function materialIcon(key: string): JSX.Element {
         );
       return <path d="M8 28 Q10 16 6 5 M14 28 Q15 15 13 4 M20 28 Q19 16 22 5 M25 28 Q23 18 27 8" stroke="#8fae5a" strokeWidth="1.6" fill="none" strokeLinecap="round" />;
     case 'camp':
-      return (
-        <g>
-          <rect x="6" y="11" width="20" height="15" rx="2" fill="#8a6a44" />
-          <path d="M6 15 L26 15" stroke="#6a4a2a" strokeWidth="1.2" />
-          <path d="M14 11 L14 26 M18 11 L18 26" stroke="#c9a650" strokeWidth="1.6" />
-          <path d="M11 11 L16 5 L21 11" fill="none" stroke="#c9a650" strokeWidth="1.4" />
-        </g>
-      );
+      return campIcon(k);
     case 'seed':
       return (
         <g>
@@ -487,5 +481,62 @@ function materialIcon(key: string): JSX.Element {
       );
     default:
       return <circle cx="16" cy="16" r="8" fill="#b0a890" />;
+  }
+}
+
+/** Camp kits (CR 025) by what they build: a campfire, a bedroll, a chest, a workbench, a signpost. */
+function campIcon(k: string): JSX.Element {
+  switch (k) {
+    case 'campfire':
+      return (
+        <g strokeLinecap="round">
+          <path d="M6 27 L24 21 M8 21 L26 27" stroke="#6a4426" strokeWidth="3" />
+          <path d="M16 5 Q24 13 21 20 Q16 24 11 20 Q8 13 16 5 Z" fill="#ff8a2a" />
+          <path d="M16 11 Q20 15 18.5 19 Q16 21 13.5 19 Q12 15 16 11 Z" fill="#ffe08a" />
+        </g>
+      );
+    case 'bedroll':
+      return (
+        <g>
+          <rect x="4" y="15" width="22" height="10" rx="5" fill="#6a7fa8" />
+          <circle cx="24" cy="20" r="5" fill="#8fa3c8" />
+          <circle cx="24" cy="20" r="2.4" fill="none" stroke="#4a5a7a" strokeWidth="1" />
+          <path d="M10 15 L10 25 M15 15 L15 25" stroke="#c9a650" strokeWidth="1.6" />
+        </g>
+      );
+    case 'chest':
+      return (
+        <g>
+          <path d="M5 14 Q5 7 16 7 Q27 7 27 14 Z" fill="#9a6a3a" />
+          <rect x="5" y="14" width="22" height="13" fill="#8a5a2e" />
+          <path d="M5 14 L27 14 M10 7.5 L10 27 M22 7.5 L22 27" stroke="#c9a650" strokeWidth="1.4" />
+          <rect x="14" y="13" width="4" height="5" rx="1" fill="#e8c47a" />
+        </g>
+      );
+    case 'workbench':
+      return (
+        <g strokeLinecap="round">
+          <rect x="4" y="12" width="24" height="4" fill="#a77b4f" />
+          <path d="M7 16 L7 27 M25 16 L25 27" stroke="#8a5a34" strokeWidth="2.6" />
+          <path d="M12 11 L17 5" stroke="#8a6a44" strokeWidth="2" />
+          <rect x="15" y="3" width="6" height="3.4" rx="0.8" fill="#a9adb3" transform="rotate(40 18 5)" />
+        </g>
+      );
+    case 'signpost':
+      return (
+        <g>
+          <path d="M15 8 L15 29" stroke="#8a5a34" strokeWidth="2.6" strokeLinecap="round" />
+          <path d="M6 7 L23 7 L27 11 L23 15 L6 15 Z" fill="#c9a06a" stroke="#6a4426" strokeWidth="1" />
+          <path d="M9 11 L19 11" stroke="#6a4426" strokeWidth="1" />
+        </g>
+      );
+    default:
+      return (
+        <g>
+          <rect x="6" y="11" width="20" height="15" rx="2" fill="#8a6a44" />
+          <path d="M6 15 L26 15" stroke="#6a4a2a" strokeWidth="1.2" />
+          <path d="M14 11 L14 26 M18 11 L18 26" stroke="#c9a650" strokeWidth="1.6" />
+        </g>
+      );
   }
 }
