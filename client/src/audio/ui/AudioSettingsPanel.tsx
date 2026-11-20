@@ -55,7 +55,7 @@ export function AudioSettingsPanel() {
   const s = useAudioSettings();
   if (!s.panelOpen) return null;
   return (
-    <div data-testid="sound-settings" data-ui-panel style={{ ...glass, position: 'fixed', right: 12, top: 46, zIndex: 31, padding: '10px 14px', width: 240 }}>
+    <div data-testid="sound-settings" data-ui-panel style={{ ...glass, position: 'fixed', right: 12, top: 46, zIndex: 31, padding: '10px 14px', width: 260, boxSizing: 'border-box' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
         <strong>Sound</strong>
         <label style={{ display: 'flex', gap: 6, alignItems: 'center', cursor: 'pointer' }}>
@@ -66,7 +66,7 @@ export function AudioSettingsPanel() {
       {BUSES.map((b) => (
         <label key={b} style={{ display: 'grid', gridTemplateColumns: '80px 1fr 34px', alignItems: 'center', gap: 6, margin: '4px 0', opacity: s.muted && b !== 'master' ? 0.5 : 1 }}>
           <span>{LABELS[b]}</span>
-          <input data-testid={`sound-${b}`} type="range" min={0} max={100} value={Math.round(s.volumes[b] * 100)} onChange={(e) => s.setVolume(b, Number(e.target.value) / 100)} />
+          <input data-testid={`sound-${b}`} type="range" min={0} max={100} value={Math.round(s.volumes[b] * 100)} onChange={(e) => s.setVolume(b, Number(e.target.value) / 100)} style={{ width: '100%', minWidth: 0, margin: 0 } /* playtest 6 polish: a range's default width pushed the numbers past the panel's edge */} />
           <span style={{ textAlign: 'right', opacity: 0.7 }}>{Math.round(s.volumes[b] * 100)}</span>
         </label>
       ))}
