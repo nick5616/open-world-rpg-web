@@ -15,7 +15,8 @@ import type { ZoneSession } from '../../net/zoneSession';
 import { drawnRemotes, netRuntime } from '../../net/netStore';
 import { promptFor, type Candidate } from './interact';
 import { escapeHtml } from './npcs';
-import { openStationOffline } from '../../ui/inventory/store'; // WP14
+import { openStationOffline, useInventory } from '../../ui/inventory/store'; // WP14
+import { useDialog } from '../../ui/dialog/store';
 // Playtest 1: bounty locations and map previews.
 import { localPlayer } from '../../state/live';
 import { notGameKey } from '../../input/useKeyboard';
@@ -126,6 +127,8 @@ export class TownHud {
     }
   };
 
+  private readonly unStation: () => void;
+
   constructor() {
     this.prompt = document.createElement('div');
     this.prompt.dataset.testid = 'town-prompt';
@@ -156,7 +159,15 @@ export class TownHud {
     });
     document.body.append(this.prompt, this.toastEl, this.panelEl);
     window.addEventListener('keydown', this.onKey);
-    dialogController.setPanelProbe(() => this.panel !== null); // CR 049: a service panel parks the conversation
+    dialogController.setPanelProbe(() => this.panel !== null || useInventory.getState().station !== null); // CR 049: a service panel parks the conversation
+    // Playtest 6 polish: "[Forge] Mind if I use your forge?" opened the forge under the conversation (the probe only knew
+    // the town panel, so the conversation unparked over it). A station panel parks the conversation and closing it brings it back.
+    this.unStation = useInventory.subscribe((st, prev) => {
+      if (st.station && !prev.station) {
+        const d = useDialog.getState();
+        if (d.open && !d.parked) useDialog.setState({ parked: true, at: performance.now() });
+      } else if (!st.station && prev.station) dialogController.panelClosed();
+    });
     this.panelEl.addEventListener('click', this.onClick);
   }
 
@@ -387,6 +398,7 @@ export class TownHud {
   dispose(): void {
     hidePanel('town');
     window.removeEventListener('keydown', this.onKey);
+    this.unStation();
     this.hooked?.eventListeners.delete(this.listener);
     this.prompt.remove();
     this.toastEl.remove();
