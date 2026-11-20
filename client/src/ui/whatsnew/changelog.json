@@ -1,5 +1,20 @@
 [
   {
+    "id": "pt6-polish",
+    "date": "2026-11-20",
+    "title": "Polish",
+    "items": [
+      "Rift runs you can see: the room floats in a starlit void in its chapter's colour, with its pillars, pools, spike strips and door, and every shot, laser beam and falling strike is drawn, with a warning ring before it fires. An open rift is a swirling tear you can spot across town.",
+      "Inside a rift the overworld's clock, compass, weather haze and area cards stay out of the way.",
+      "Townsfolk names make room for each other and for speech bubbles instead of printing on top of one another.",
+      "Tools, food, fish, wood, stone, herbs and camp kits have their own icons, and empty equipment slots show what goes there.",
+      "Lost the connection or your pass ran out? The game reconnects on its own and says what happened in plain words.",
+      "One level-up announcement instead of two, five spell slots fit one row, and build costs name the material.",
+      "Quest rewards handed out mid-conversation wait for you to finish talking.",
+      "Smaller fixes: the graphics panel fits on one screen, the sky palace's titles no longer pile up, map and compass labels stay readable, and dialogue checks say why you don't meet them."
+    ]
+  },
+  {
     "id": "pt5-hotbar-slots",
     "date": "2026-11-19",
     "title": "More room on your hotbar",
