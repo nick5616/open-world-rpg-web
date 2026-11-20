@@ -121,7 +121,7 @@ function EventTracker() {
     );
   }
   return (
-    <div data-testid="world-event" style={{ position: 'fixed', top: BELOW_CLOCK, left: '50%', transform: 'translateX(-50%)', width: 'min(440px, 70vw)', textAlign: 'center', pointerEvents: 'none', zIndex: 14, color: '#f8efe0', textShadow: '0 1px 3px #000, 0 0 8px rgba(0,0,0,0.8)' }}>
+    <div data-testid="world-event" style={{ position: 'fixed', top: `max(${BELOW_CLOCK}, 118px)` /* playtest 6 polish: clear of the sundial's foot */, left: '50%', transform: 'translateX(-50%)', width: 'min(440px, 70vw)', textAlign: 'center', pointerEvents: 'none', zIndex: 14, color: '#f8efe0', textShadow: '0 1px 3px #000, 0 0 8px rgba(0,0,0,0.8)' }}>
       <div style={{ font: '700 12px system-ui', letterSpacing: 3, textTransform: 'uppercase', color }}>{done ? (e.phase === EVENT_PHASE.won ? 'World event won' : 'World event over') : 'World event'}</div>
       <div style={{ font: '600 20px Georgia, serif', color: '#ffe2c4' }}>✦ {e.name}</div>
       <div style={{ fontSize: 13, opacity: 0.92 }}>{e.text}</div>
