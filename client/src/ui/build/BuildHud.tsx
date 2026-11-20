@@ -134,6 +134,8 @@ function Chips({ lines }: { lines: { item: string; need: number; have: number }[
         <span key={l.item} style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: l.have >= l.need ? '#a7dd93' : '#ff8a7a' }} title={`${itemLabel(l.item)}: ${l.have} of ${l.need}`}>
           <ItemIcon itemKey={l.item} size={16} />
           {Math.min(l.have, 999)}/{l.need}
+          {/* playtest 6 polish: name what it costs (a wolf pelt and a log drew the same tiny chip) */}
+          <span style={{ opacity: 0.8 }}>{itemLabel(l.item)}</span>
         </span>
       ))}
     </span>
