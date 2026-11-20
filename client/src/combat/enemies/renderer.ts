@@ -460,7 +460,8 @@ export class EnemyRenderer {
         if (bars >= this.barCap) this.growOverlays(this.barCap * 2);
         const w = e.ally ? 0.7 : Math.max(1, s * 0.6);
         // Roughly constant on-screen size: shrinks up close (a thick block filled the view at 1-2 m), grows far out.
-        const sc = Math.min(Math.max(0.3, dist / 12), Math.max(1, dist / 18));
+        // (playtest 6 polish: the floor was 0.3, so a pet at your heel in third person wore a nameplate as wide as the HUD)
+        const sc = Math.min(Math.max(0.12, dist / 12), Math.max(1, dist / 18));
         const y = e.y - (sp.flyer ? m.flyLift * s : 0) + m.height * s + 0.25;
         _q.copy(camera.quaternion);
         _root.compose(_p.set(e.x, y, e.z), _q, _s.set(w * sc, sc, 1));
