@@ -45,7 +45,15 @@ body:has([data-ui-panel]:not([style*="display: none"])) [data-testid="lock-hint"
 /* The sound, graphics and friends panels open under the top-right buttons, over the quest tracker. */
 body:has([data-testid="sound-settings"], [data-testid="graphics-settings"], [data-testid="friends-panel"], [data-testid="craft-panel"]) [data-testid="quest-tracker"] { visibility: hidden; }
 /* Playtest 6 polish: the one-time "Graphics set to High; F10 to change" note sits under the Graphics button, on the tracker's title: the tracker steps down for its few seconds. */
-body:has([data-testid="graphics-auto-notice"]) [data-testid="quest-tracker"] { top: 92px !important; }
+body:has([data-testid="graphics-auto-notice"]) :is([data-testid="quest-tracker"], [data-testid="rift-spoils"]) { top: 92px !important; }
+/* Playtest 6 polish: a quest handed in mid-conversation ("Quest complete", the reward items) showed its notes under the conversation's dark vignette, and they ran out before you left: they sit above it. */
+body:has([data-testid="dialog"]) :is([data-testid="quest-notes"], [data-testid="loot-toasts"]) { z-index: 46 !important; }
+body:has([data-testid="dialog"]) :is([data-testid="quest-notes"], [data-testid="loot-toasts"]) .ls-toast-bar { animation-play-state: paused; }
+/* Playtest 6 polish: inside a rift run (its own realm, a 20 x 28 m room) the overworld's clock pill and forecast, the sundial,
+   the compass with its far-away marks, the world event chip and the quest tracker drew under and over the room line and the spoils. */
+body:has([data-testid="rift-hud"]) :is([data-testid="night-hud"], [data-testid="sundial-clock"], [data-testid="compass"], [data-testid="world-event-chip"], [data-testid="world-event"], [data-testid="quest-tracker"], [data-testid="vertical-banner"], [data-testid="vertical-fall"], [data-testid="content-notes"], [data-testid^="progression-notice-area"], [data-testid^="progression-notice-safe"], [data-testid^="progression-notice-danger"]) { visibility: hidden !important; }
+/* The rift prompt re-renders 4 times a second, the town prompt every frame: while a town prompt is up (it owns E, input/interact.ts) the rift's waits. */
+body:has([data-testid="town-prompt"][data-e-at]) [data-testid="rift-prompt"] { visibility: hidden !important; }
 /* The "[E] ..." prompt is noise once the thing it offers is open. */
 body:has([data-ui-panel]:not([style*="display: none"])) [data-testid="town-prompt"] { visibility: hidden; }
 /* Playtest 2 integration QA (tools/playtest/sp13.mjs: every playtest 2 overlay at once at

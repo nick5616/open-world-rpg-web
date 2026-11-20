@@ -48,6 +48,7 @@ import { audioWorld } from '../audio/bridge';
 import { ShelterIndex } from '../audio/shelter';
 import { CAMPS } from '@lodestone/contracts';
 import { useCamps } from '../ui/camps/store';
+import { inRift } from '../rift/store';
 import { baseRoofCover, exposureTarget, liveExposure, lightningThrough, WeatherExposure, type PlacedPiece } from './sky/exposure';
 // CR 038: sky archipelagos, the Underground and the Depths.
 import { VerticalManager } from './vertical/verticalManager';
@@ -377,7 +378,8 @@ export function WorldScene({ runtime }: Props) {
     const expo = world.exposure.update(dt, () => {
       const f = localPlayer.pos;
       const sh = world.shelter ? world.shelter.probe(f.x, f.y, f.z) : { roof: 0, indoors: 0 };
-      return exposureTarget(sh, under, baseRoofCover(f.x, f.y + 1.9, f.z, placedRoofs()));
+      // playtest 6 polish: a rift is its own realm (the zone has no weather there): no sandstorm haze over the arena
+      return exposureTarget(sh, inRift() ? 1 : under, baseRoofCover(f.x, f.y + 1.9, f.z, placedRoofs()));
     });
     liveExposure.value = expo;
     const rain = Math.min(1, wm.rain);

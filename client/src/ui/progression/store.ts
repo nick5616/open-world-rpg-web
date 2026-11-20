@@ -8,6 +8,7 @@ import { COMBAT, type Event as ZoneEvent } from '@lodestone/contracts';
 import { ATTUNE_REFUSED, decodeArea, decodeStats, PEV, STATS_REASON, type Area, type Stats } from './events';
 import { gainLines } from './gains';
 import { hotbarLines } from '../../combat/hotbar';
+import { inRift } from '../../rift/store';
 
 export interface Fanfare {
   id: number;
@@ -81,6 +82,8 @@ export function reduceProgressionEvent(s: ProgressionState, ev: ZoneEvent, now: 
       if (!a) return null;
       const prev = s.area;
       const patch: Partial<ProgressionState> = { area: a };
+      // playtest 6 polish: a rift's arena hangs in the sky over the portal; its "area" is not a place you came to
+      if (inRift()) return patch;
       if (a.byYou) {
         patch.notices = push({ kind: 'area', title: `First to set foot here: the land takes your measure`, detail: `Area level ${a.level} · ${a.tierName}. ${tierDetail(a)}` });
       } else if (!prev || prev.tierIndex !== a.tierIndex) {

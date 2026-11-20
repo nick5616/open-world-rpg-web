@@ -122,6 +122,12 @@ export function pruneNotes(now = performance.now()): void {
   if (keep.length !== n.length) useQuests.setState({ notes: keep });
 }
 
+/** Hold every note's clock for `ms` (playtest 6 polish: notes wait while a conversation is open). */
+export function holdNotes(ms: number): void {
+  const n = useQuests.getState().notes;
+  if (n.length) useQuests.setState({ notes: n.map((x) => ({ ...x, at: x.at + ms })) });
+}
+
 /** The tracked quest (or the first one). */
 export function trackedQuest(s: Pick<QuestState, 'log'> = useQuests.getState()): QuestView | null {
   return s.log.quests.find((q) => q.id === s.log.tracked) ?? s.log.quests[0] ?? null;

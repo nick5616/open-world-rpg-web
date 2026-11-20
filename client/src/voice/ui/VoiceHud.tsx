@@ -78,14 +78,23 @@ export const STATUS_LINE_MS = 10000;
 export function VoiceHud() {
   const s = useVoiceStore();
   // The status line shows for a while each time voice goes down, not for good.
+  // Retries flip error -> connecting -> error; the line shows once per outage (until voice connects again).
   const [lineUntil, setLineUntil] = useState(0);
+  const announced = useRef(false);
   const down = s.status === 'error' || s.status === 'unavailable';
   useEffect(() => {
-    if (!down) return;
+    if (s.status === 'connected') announced.current = false;
+  }, [s.status]);
+  useEffect(() => {
+    if (!down || announced.current) return;
+    announced.current = true;
     setLineUntil(Date.now() + STATUS_LINE_MS);
-    const id = setTimeout(() => setLineUntil(0), STATUS_LINE_MS);
-    return () => clearTimeout(id);
   }, [down]);
+  useEffect(() => {
+    if (!lineUntil) return;
+    const id = setTimeout(() => setLineUntil(0), Math.max(0, lineUntil - Date.now()));
+    return () => clearTimeout(id);
+  }, [lineUntil]);
   const statusLine = hudStatusLine(s.status, s.statusText);
   const showLine = statusLine !== '' && (!down || lineUntil > 0);
   // The Esc menu's Voice row (works offline too: devices and the mic test).

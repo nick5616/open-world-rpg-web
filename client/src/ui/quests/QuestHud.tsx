@@ -18,7 +18,7 @@ import { ITEMS } from '@lodestone/contracts';
 import { JournalContentTab, JournalTabBar, type JournalTab } from '../content/JournalTabs';
 import { liveMarkers } from './live';
 import { StoryJournalBar, StoryPartyLine } from '../story/StoryHud'; // CR 035
-import { dismissOffer, noteTtl, offerMarkers, pruneNotes, setJournalOpen, setQuestPreview, trackedQuest, useQuests } from './store';
+import { dismissOffer, noteTtl, holdNotes, offerMarkers, pruneNotes, setJournalOpen, setQuestPreview, trackedQuest, useQuests } from './store';
 import { ToastBar } from '../toast/ToastBar';
 import { trackPanel } from '../../input/panelStack';
 import { hudActivity, NOTES_MAX_IMMERSIVE, trackerExpanded, useHudSettings } from '../../hud/immersive';
@@ -95,14 +95,15 @@ function Notes() {
   const all = useQuests((s) => s.notes);
   const immersive = useHudSettings((s) => s.immersive);
   useEffect(() => {
-    const id = setInterval(() => pruneNotes(), 500);
+    // a note that arrives mid-conversation (a quest handed in) waits until you walk away
+    const id = setInterval(() => (document.querySelector('[data-testid="dialog"]') ? holdNotes(500) : pruneNotes()), 500);
     return () => clearInterval(id);
   }, []);
   // CR 052: fewer notices; a step's news is the tracker opening, so its note is dropped.
   const notes = immersive ? all.filter((n) => n.kind !== 'step').slice(-NOTES_MAX_IMMERSIVE) : all;
   if (!notes.length) return null;
   return (
-    <div style={{ position: 'fixed', top: 168, right: 14, width: 'min(300px, 34vw)', display: 'flex', flexDirection: 'column', gap: 6, pointerEvents: 'none', zIndex: 13 }}>
+    <div data-testid="quest-notes" style={{ position: 'fixed', top: 168, right: 14, width: 'min(300px, 34vw)', display: 'flex', flexDirection: 'column', gap: 6, pointerEvents: 'none', zIndex: 13 }}>
       {notes.map((n) => (
         <div key={n.id} data-testid={`quest-note-${n.kind}`} className="ls-timed" style={{ ...PANEL, position: 'relative', overflow: 'hidden', padding: '7px 11px 9px', borderColor: n.kind === 'done' ? '#9fd38a' : n.kind === 'refused' ? '#ff922b' : 'rgba(255,209,102,0.55)', animation: 'lsQuestNote 0.3s ease-out' }}>
           <div style={{ font: '600 13px Georgia, serif', color: n.kind === 'done' ? '#b8f0a0' : GOLD }}>{n.title}</div>
