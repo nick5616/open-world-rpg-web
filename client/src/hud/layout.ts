@@ -73,7 +73,7 @@ body:has([data-testid="boss-bar"]) [data-testid="palace-panel"] { visibility: hi
    tracker it already shows in full: they wait while it is open. */
 body:has([data-testid="quest-journal"]) :is([data-testid="night-hud"], [data-testid="sundial-clock"], [data-testid="quest-tracker"]) { visibility: hidden; }
 /* The "[E] ..." prompt is noise once the thing it offers is open. */
-body:has([data-ui-panel]:not([style*="display: none"])) [data-testid="town-prompt"] { visibility: hidden; }
+body:has([data-ui-panel]:not([style*="display: none"])) :is([data-testid="town-prompt"], [data-testid="pet-prompt"], [data-testid="steed-prompt"], [data-testid="tame-prompt"], [data-testid="fish-prompt"], [data-testid="camp-prompt"], [data-testid="rift-prompt"]) { visibility: hidden; }
 /* Playtest 2 integration QA (tools/playtest/sp13.mjs: every playtest 2 overlay at once at
    1920x1080, 1600x900 and 1280x720). Top centre: the world event tracker sits under the clock
    pill and its forecast line (--ls-clock-h, measured), and steps aside for the big centre cards
