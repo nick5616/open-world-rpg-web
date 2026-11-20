@@ -122,6 +122,8 @@ export const CHAT_WIDTH = 'var(--ls-chat-w, 400px)';
 export const BELOW_CLOCK = 'calc(56px + var(--ls-clock-h, 30px) + 6px)';
 /** Top of the world event chip (playtest 2 co-op): the left column, right above the content notes (top 150). */
 export const EVENT_CHIP_TOP = 118;
+/** Top of the exploration toasts (respawn point set, waypoint, fast travel refused): the discovery card sits below them. */
+export const EXPLORATION_TOASTS_TOP = 96;
 /** Bottom offset right above the centre stack (hotbar + hint). */
 export const ABOVE_HOTBAR = 'calc(var(--ls-hotbar-h, 0px) + 14px)';
 
