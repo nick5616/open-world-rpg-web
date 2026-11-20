@@ -565,3 +565,121 @@ export function RiftLayer() {
   });
   return null;
 }
+
+// ---- the portals in the overworld ----
+// An open rift is a torn, swirling oval standing over the ground in its
+// chapter's colour with a soft glow under it: before this the "[E] Enter the rift" prompt hung over an empty
+// field.
+
+const PORTAL_FRAG = `
+uniform vec3 uColor;
+uniform float uTime;
+uniform float uSeed;
+varying vec2 vUv;
+void main() {
+  vec2 p = (vUv * 2.0 - 1.0) * vec2(1.0, 1.0);
+  float r = length(p);
+  float ang = atan(p.y, p.x + 1e-6);
+  // a ragged rim: the oval's edge wobbles
+  float rim = 0.86 + 0.06 * sin(ang * 7.0 + uTime * 1.7 + uSeed) + 0.04 * sin(ang * 13.0 - uTime * 2.3);
+  if (r > rim + 0.08) discard;
+  float edge = 1.0 - smoothstep(rim - 0.1, rim + 0.06, r);
+  float swirl = 0.5 + 0.5 * sin(ang * 3.0 + r * 9.0 - uTime * 2.6 + uSeed);
+  float core = 1.0 - smoothstep(0.0, rim, r);
+  vec3 c = mix(vec3(0.03, 0.02, 0.06), uColor, swirl * 0.55 * (1.0 - core * 0.5));
+  c += uColor * smoothstep(rim - 0.18, rim, r) * edge * 1.6;
+  c += vec3(1.0) * pow(core, 6.0) * 0.5;
+  gl_FragColor = vec4(c, edge);
+}`;
+
+const PORTAL_MAX = 4;
+const PORTAL_SHOW_M = 320;
+
+interface PortalRig {
+  root: THREE.Group;
+  items: { g: THREE.Group; face: THREE.Mesh; glow: THREE.Mesh; color: { value: THREE.Color }; seed: { value: number } }[];
+  time: { value: number };
+  dispose: () => void;
+}
+
+function buildPortals(): PortalRig {
+  const root = new THREE.Group();
+  root.name = 'rift-portals';
+  const time = { value: 0 };
+  const faceGeo = new THREE.PlaneGeometry(2.6, 3.6);
+  faceGeo.translate(0, 2.05, 0);
+  const glowGeo = new THREE.PlaneGeometry(2, 2).rotateX(-Math.PI / 2);
+  const mats: THREE.Material[] = [];
+  const items = Array.from({ length: PORTAL_MAX }, (_, i) => {
+    const color = { value: new THREE.Color('#ff8a3d') };
+    const seed = { value: i * 1.7 };
+    const faceMat = unlit(PORTAL_FRAG, { uColor: color, uTime: time, uSeed: seed }, { transparent: true, depthWrite: false, side: THREE.DoubleSide });
+    const glowMat = unlit(RING_FRAG, { uColor: color, uFill: { value: 1 }, uAlpha: { value: 0.35 } }, { transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
+    mats.push(faceMat, glowMat);
+    const g = new THREE.Group();
+    const face = new THREE.Mesh(faceGeo, faceMat);
+    face.renderOrder = 6;
+    // the ground glow: a flat disc lifted clear of uneven ground
+    const glow = new THREE.Mesh(glowGeo, glowMat);
+    glow.scale.set(1.6, 1, 1.6);
+    glow.position.y = 0.35;
+    glow.renderOrder = 5;
+    g.add(face, glow);
+    g.visible = false;
+    root.add(g);
+    return { g, face, glow, color, seed };
+  });
+  return {
+    root,
+    items,
+    time,
+    dispose: () => {
+      faceGeo.dispose();
+      glowGeo.dispose();
+      for (const m of mats) m.dispose();
+    },
+  };
+}
+
+function updatePortals(pr: PortalRig, camera: THREE.Camera, elapsed: number): void {
+  pr.time.value = elapsed;
+  const cam = camera.position;
+  const now = performance.now();
+  const open = riftRuntime.arena
+    ? []
+    : useRift
+        .getState()
+        .portals.filter((p) => p.endsInMs - (now - p.at) > 0)
+        .map((p) => ({ p, d: Math.hypot(p.x - cam.x, p.z - cam.z) }))
+        .filter((e) => e.d < PORTAL_SHOW_M)
+        .sort((a, b) => a.d - b.d)
+        .slice(0, PORTAL_MAX);
+  pr.items.forEach((it, i) => {
+    const e = open[i];
+    it.g.visible = !!e;
+    if (!e) return;
+    it.color.value.set(e.p.color || '#ff8a3d');
+    it.seed.value = e.p.id * 1.37;
+    it.g.position.set(e.p.x, e.p.y, e.p.z);
+    // the oval turns to face you (about the vertical), breathing a little
+    it.face.rotation.y = Math.atan2(cam.x - e.p.x, cam.z - e.p.z);
+    const s = 1 + 0.03 * Math.sin(elapsed * 1.3 + i);
+    it.face.scale.set(s, s, s);
+  });
+}
+
+/** The portals of open rifts in the overworld (hidden while you are in one). */
+export function RiftPortals() {
+  const scene = useThree((s) => s.scene);
+  const camera = useThree((s) => s.camera);
+  const pr = useMemo(buildPortals, []);
+  useEffect(() => {
+    scene.add(pr.root);
+    return () => {
+      scene.remove(pr.root);
+      pr.dispose();
+    };
+  }, [scene, pr]);
+  useFrame((state) => updatePortals(pr, camera, state.clock.elapsedTime));
+  return null;
+}

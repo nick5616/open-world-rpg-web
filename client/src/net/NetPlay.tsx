@@ -51,7 +51,7 @@ import { NightHud } from '../systems/NightHud';
 import { attachProgression } from '../ui/progression';
 // Playtest 2: opt-in PvP and party duels (Events 990-997, Interact 70; CR 019).
 import { attachPvp, DuelRing } from '../ui/pvp';
-import { RiftLayer } from '../rift/RiftLayer'; // playtest 6 polish: the rift arena and its shots, drawn
+import { RiftLayer, RiftPortals } from '../rift/RiftLayer'; // playtest 6 polish: the rift arena and its shots, drawn
 
 type Phase = { kind: 'connecting' } | { kind: 'playing'; welcome: Welcome } | { kind: 'ended'; end: SessionEnd } | { kind: 'error'; message: string };
 
@@ -256,6 +256,7 @@ export function NetPlay({ ready }: { ready: ReadySession }) {
           <FinaleLayer />
           <DuelRing />
           <RiftLayer />
+          <RiftPortals />
         </WorldCanvas>
       )}
       {driver && session && <NightHud />}
