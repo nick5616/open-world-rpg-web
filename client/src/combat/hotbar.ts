@@ -55,7 +55,7 @@ export function spellSlotOf(c: number): number {
 /** Hotbar unlocks between two levels, as fanfare lines. */
 export function hotbarLines(from: number, to: number): string[] {
   const out: string[] = [];
-  for (let i = spellSlots(from); i < spellSlots(to); i++) out.push(`New spell slot! Slot ${i + 1} (${keyName(hotbarKey(i))})`);
+  for (let i = spellSlots(from); i < spellSlots(to); i++) out.push(`New spell slot! Slot ${i + 1}, key ${keyName(hotbarKey(i))}`);
   for (let i = loadoutsOpen(from); i < loadoutsOpen(to); i++) out.push(`New weapon loadout! Loadout ${i + 1} (X cycles)`);
   return out;
 }

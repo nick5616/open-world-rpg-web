@@ -51,8 +51,11 @@ describe('reducer', () => {
     expect(s.toasts.map((t) => t.kind)).toEqual(['discovery', 'tower']);
     expect(s.stats).toMatchObject({ discoveries: 1, towers: 1, xpGained: 40, events: 2 });
     // Old toasts expire on the next push.
-    s = { ...s, ...reduceEvent(s, ev(EV.levelUp, { value: 2 }), 10000)! };
-    expect(s.toasts.map((t) => t.title)).toEqual(['Level 2']);
+    s = { ...s, ...reduceEvent(s, ev(EV.waypoint, { data: new TextEncoder().encode('Mossgate') }), 10000)! };
+    expect(s.toasts.map((t) => t.title)).toEqual(['Waypoint activated: Mossgate']);
+    // A level-up has its own card (ui/progression): no toast here (playtest 6 polish).
+    s = { ...s, ...reduceEvent(s, ev(EV.levelUp, { value: 2 }), 10001)! };
+    expect(s.toasts.map((t) => t.kind)).toEqual(['waypoint']);
   });
   it('progress, pins and party replace state', () => {
     let s = base();

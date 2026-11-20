@@ -75,7 +75,9 @@ export function reduceEvent(s: ExplorationState, ev: ZoneEvent, now: number): Pa
     case EV.respawnPoint:
       return { stats, respawnName: name, toasts: push(toast('info', 'Respawn point set', name || undefined, now)) };
     case EV.levelUp:
-      return { stats, toasts: push(toast('level', `Level ${ev.value}`, undefined, now)) };
+      // Playtest 6 polish: the level-up card (ui/progression, Event 900), the glow and the sound announce it; a
+      // second "★ Level n" toast here stacked under the card and, on two quick level-ups, printed over it.
+      return { stats };
     case EV.fastTravelDenied:
       return { stats, toasts: push(toast('warn', 'Fast travel refused', TRAVEL_DENIED[ev.value] ?? `code ${ev.value}`, now)) };
     case EV.notice:

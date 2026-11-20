@@ -85,8 +85,8 @@ describe('slot keys', () => {
 describe('the fanfare and the hotbar card', () => {
   beforeEach(() => _resetForTest());
   it('says "New spell slot!" at 10 and "New weapon loadout!" at 20, first', () => {
-    expect(gainLines(9, 10)[0]).toBe('New spell slot! Slot 5 (-)');
-    expect(gainLines(19, 20).slice(0, 2)).toEqual(['New spell slot! Slot 6 ([)', 'New weapon loadout! Loadout 3 (X cycles)']);
+    expect(gainLines(9, 10)[0]).toBe('New spell slot! Slot 5, key -');
+    expect(gainLines(19, 20).slice(0, 2)).toEqual(['New spell slot! Slot 6, key [', 'New weapon loadout! Loadout 3 (X cycles)']);
     expect(gainLines(10, 11).some((l) => l.startsWith('New'))).toBe(false);
     expect(hotbarLines(1, 23)).toHaveLength(3);
   });
@@ -96,7 +96,7 @@ describe('the fanfare and the hotbar card', () => {
     const base = { stats: null, area: null, fanfare: null, notices: [], attuned: null, panelOpen: false, actions: null };
     const p = reduceProgressionEvent(base, ev as never, 1000)!;
     expect(p.fanfare?.hotbar).toBe(true);
-    expect(p.fanfare?.lines).toEqual(['New spell slot! Slot 5 (-)', 'New spell slot! Slot 6 ([)', 'New weapon loadout! Loadout 3 (X cycles)']);
+    expect(p.fanfare?.lines).toEqual(['New spell slot! Slot 5, key -', 'New spell slot! Slot 6, key [', 'New weapon loadout! Loadout 3 (X cycles)']);
   });
 });
 

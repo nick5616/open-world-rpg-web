@@ -125,7 +125,10 @@ export function CombatHud() {
   const lo = loadouts[activeLoadout];
   const now = performance.now();
   const open = spellSlots(level); // CR 039
-  const twoRows = open > 4;
+  // Playtest 6 polish: five slots still fit one row (the fifth sat alone under the first);
+  // from six they fold into two even rows (3 + 3, 4 + 3, 4 + 4) of compact slots.
+  const twoRows = open > 5;
+  const cols = twoRows ? Math.ceil(open / 2) : open;
   const nLoadouts = loadoutsOpen(level);
   return (
     <div ref={root} data-testid="combat-hud" style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 12, font: '13px system-ui, sans-serif', color: '#e9ecef' }}>
@@ -148,7 +151,7 @@ export function CombatHud() {
             <div style={{ opacity: 0.6, fontSize: 11 }}>{SECONDARY[lo?.weapon ?? ''] ?? 'secondary'} · Z</div>
             {nLoadouts > 2 && <div data-testid="loadout-index" style={{ opacity: 0.7, fontSize: 10 }}>loadout {activeLoadout + 1}/{nLoadouts}</div>}
           </div>
-          <div data-testid="spell-slots" data-open={open} style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(4, open)}, auto)`, gap: twoRows ? 3 : 6 }}>
+          <div data-testid="spell-slots" data-open={open} style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, auto)`, gap: twoRows ? 3 : 6 }}>
             {(lo?.spells ?? []).slice(0, open).map((k, i) => {
               const sp = k ? spellByKey.get(k) : undefined;
               const sel = selected === i && !!sp;
