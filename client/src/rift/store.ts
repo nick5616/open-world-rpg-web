@@ -302,7 +302,7 @@ export function setArena(st: RiftStage | null): void {
 function addVolley(id: number, data: Uint8Array): void {
   const v = decodeVolley(id, data);
   if (!v || !riftRuntime.arena) return;
-  riftRuntime.volleys.push({ v, seekers: v.kind === 7 ? seekers(v) : null, stepped: v.fire });
+  riftRuntime.volleys.push({ v, seekers: v.kind === 7 ? seekers(v) : null, stepped: v.fire - 1 }); // the zone steps on the fire tick itself
 }
 
 /** Drop volleys whose shots are all over (renderer, every frame). */

@@ -67,7 +67,8 @@ function micLabel(s: ReturnType<typeof useVoiceStore.getState>): string {
  * voice settings' diagnostics.
  */
 export function hudStatusLine(status: string, statusText: string): string {
-  if (!statusText || status === 'connected' || status === 'off') return '';
+  // (connecting / reconnecting: the button's own label says so; a retry cycle must not bring a line back)
+  if (!statusText || status === 'connected' || status === 'off' || status === 'connecting' || status === 'reconnecting') return '';
   if (status === 'error') return "Can't reach voice chat; trying again. Voice button: details";
   return statusText;
 }
@@ -83,7 +84,7 @@ export function VoiceHud() {
   const announced = useRef(false);
   const down = s.status === 'error' || s.status === 'unavailable';
   useEffect(() => {
-    if (s.status === 'connected') announced.current = false;
+    if (s.status === 'connected' || s.status === 'off') announced.current = false;
   }, [s.status]);
   useEffect(() => {
     if (!down || announced.current) return;

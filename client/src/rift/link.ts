@@ -39,8 +39,15 @@ export function ensureRiftHook(): void {
   bulletClock.reset();
   if (s) {
     s.eventListeners.add(listener);
-    setRiftActions(riftActionsFor(s));
-    if (s.welcome) setRiftSelf(s.welcome.entityId);
+    const actions = riftActionsFor(s);
+    setRiftActions(actions);
+    if (s.welcome) {
+      setRiftSelf(s.welcome.entityId);
+      // Playtest 6 polish: hooked after the zone's join list went by (a reconnect, a remount): ask for the
+      // open rifts (the board request answers with every chapter's board and the portals), or none show
+      // until the next window.
+      actions.board(0);
+    }
   } else setRiftActions(null);
 }
 

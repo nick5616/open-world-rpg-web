@@ -108,3 +108,12 @@ describe('the third main hand', () => {
     expect(['eq:main2', 'eq:head'].map(mainLoadout)).toEqual([2, -1]);
   });
 });
+
+describe('the combat hint line (playtest 6 polish)', async () => {
+  const { castKeysText } = await import('./CombatHud');
+  it('names the open slots\' keys', () => {
+    expect(castKeysText(4, DEFAULT_KEYS)).toBe('1-4');
+    expect(castKeysText(6, DEFAULT_KEYS)).toBe('1-4 - [');
+    expect(castKeysText(4, ['KeyR', 'Digit2', 'Digit3', 'Digit4'])).toBe('R 2 3 4');
+  });
+});

@@ -47,6 +47,8 @@ const q = new THREE.Quaternion();
 const m4 = new THREE.Matrix4();
 const scl = new THREE.Vector3(1, 1, 1);
 const col = new THREE.Color();
+const vcol = new THREE.Color();
+const ocol = new THREE.Color();
 
 // ---- materials ----
 
@@ -110,7 +112,8 @@ void main() {
   float edge = 1.0 - smoothstep(0.0, 1.6, min(e.x, e.y));
   c += uTint * edge * 0.35;
   // the way to the door brightens once the room is clear
-  float path = (1.0 - smoothstep(0.6, 1.4, abs(p.x))) * (1.0 - smoothstep(-uHalf.y, uHalf.y, p.y));
+  // (local +y is world -z: the door end)
+  float path = (1.0 - smoothstep(0.6, 1.4, abs(p.x))) * smoothstep(-uHalf.y, uHalf.y, p.y);
   c += uTint * path * uClear * (0.18 + 0.08 * sin(uTime * 3.0 - p.y));
   gl_FragColor = vec4(c, 1.0);
 }`;
@@ -339,6 +342,7 @@ function buildRoom(rig: Rig, a: Arena): void {
     rig.room.remove(c);
     c.traverse((o) => {
       const m = o as THREE.Mesh;
+      if ((o as THREE.InstancedMesh).isInstancedMesh) (o as THREE.InstancedMesh).dispose(); // its instance buffer
       if (m.geometry) m.geometry.dispose();
       const mat = m.material as THREE.Material | undefined;
       mat?.dispose();
@@ -398,7 +402,7 @@ function stepSeekers(lv: LiveVolley, tick: number, a: Arena, self: number): void
   let n = 0;
   while (lv.stepped < Math.floor(tick) && n++ < 90) {
     lv.stepped++;
-    if (lv.stepped <= lv.v.fire) continue;
+    if (lv.stepped < lv.v.fire) continue; // run.go steps a seeker from its fire tick (vt >= 0)
     const [tx, tz] = target();
     for (const s of lv.seekers) {
       if (Number.isNaN(tx)) seekerStep(lv.v, s, s.x + Math.cos(s.a), s.z + Math.sin(s.a), a.layout);
@@ -452,7 +456,7 @@ function updateRig(rig: Rig, a: Arena, nowMs: number, elapsed: number): void {
   for (const lv of fade > 0.01 ? riftRuntime.volleys : []) {
     const v = lv.v;
     const t = (tick - v.fire) / TICK_HZ;
-    const c = v.kind === KIND_SEEKER ? col.set('#d58bff') : col.copy(tint);
+    const c = v.kind === KIND_SEEKER ? vcol.set('#d58bff') : vcol.copy(tint); // the volley's colour (col is scratch)
     // The telegraph: a ring at the source filling over the windup.
     if (t < 0 && v.windup > 0 && v.kind !== KIND_RAIN && tells < MAX_TELL) {
       const p = 1 + t / (v.windup / 1000);
@@ -475,7 +479,7 @@ function updateRig(rig: Rig, a: Arena, nowMs: number, elapsed: number): void {
       if (!L.live && !aiming) continue;
       const m = rig.lasers[lasers++];
       const mat = m.material as THREE.MeshBasicMaterial;
-      mat.color.copy(c).lerp(col.set('#ffffff'), L.live ? 0.5 : 0);
+      mat.color.copy(c).lerp(ocol.set('#ffffff'), L.live ? 0.5 : 0);
       mat.opacity = (L.live ? 0.95 : 0.35 + 0.2 * Math.sin(elapsed * 25)) * fade;
       const w = L.live ? Math.max(0.25, v.radius * 2) : 0.06;
       m.scale.set(L.length, w, w);
@@ -534,7 +538,7 @@ function placeOrb(rig: Rig, i: number, x: number, z: number, r: number, c: THREE
   const h = s * 1.45;
   m4.compose(v3.set(x, BULLET_Y, z), q.identity(), scl.set(h, h, h));
   rig.halos.setMatrixAt(i, m4);
-  rig.halos.setColorAt(i, col.copy(c).multiplyScalar(fade));
+  rig.halos.setColorAt(i, ocol.copy(c).multiplyScalar(fade));
 }
 
 export function RiftLayer() {

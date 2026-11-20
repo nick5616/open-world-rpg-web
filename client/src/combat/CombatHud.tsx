@@ -19,12 +19,24 @@ import { loadoutWeaponLabel } from '../ui/inventory/items';
 import { audioWorld } from '../audio/bridge';
 import { ToastBar } from '../ui/toast/ToastBar';
 import { barsVisible, hotbarVisible, hudActivity, installHudActivity, isImmersive, sampleBars } from '../hud/immersive';
-import { hotbarKey, keyName, loadoutsOpen, onHotbarKeys, spellSlots } from './hotbar';
+import { hotbarKey, hotbarKeys, keyName, loadoutsOpen, onHotbarKeys, spellSlots } from './hotbar';
 
 const spellByKey = new Map(COMBAT.spells.map((s) => [s.key, s]));
 
 /** Playtest 1 controls (client/src/combat/README.md "Controls"). */
 export const COMBAT_HINT = 'LMB attack (bow: hold to draw) · Wheel select · RMB use selected · Z parry/charge/lower the bow · 1-4 cast · F dodge · Q form · N skills · B build';
+
+/** The open slots' cast keys for the hint line ("1-4", "1-4 - [", or rebound keys as they are). */
+export function castKeysText(open: number, keys: readonly string[] = hotbarKeys()): string {
+  const labels = keys.slice(0, open).map(keyName);
+  if (labels.length >= 4 && labels.slice(0, 4).join('') === '1234') return ['1-4', ...labels.slice(4)].join(' ');
+  return labels.join(' ');
+}
+
+/** Playtest 6 polish: the hint said "1-4 cast" with eight slots open and after the keys were rebound. */
+export function combatHint(open: number): string {
+  return COMBAT_HINT.replace('1-4 cast', `${castKeysText(open)} cast`);
+}
 const SECONDARY: Record<string, string> = { sword: 'parry', spear: 'charge', bow: 'lower', staff: 'heavy', wand: 'heavy' };
 const SELECTED_STYLE: React.CSSProperties = { border: '1px solid #ffd166', boxShadow: '0 0 0 2px rgba(255,209,102,0.55), 0 0 12px rgba(255,209,102,0.45)', transform: 'translateY(-3px)', transition: 'transform 90ms ease-out, box-shadow 90ms' };
 
@@ -176,7 +188,7 @@ export function CombatHud() {
           <Bar id="hp" color="linear-gradient(#e05050, #a02020)" width={250} label={<span data-hp />} />
           <Bar id="mana" color="linear-gradient(#5aa0ff, #2050c0)" width={170} />
         </div>
-        <div ref={hintRow} data-testid="combat-hint" style={{ opacity: 0.6, transition: 'opacity 450ms ease', fontSize: 11, lineHeight: '14px', textAlign: 'center', textShadow: '0 1px 2px #000' }}>{COMBAT_HINT}</div>
+        <div ref={hintRow} data-testid="combat-hint" style={{ opacity: 0.6, transition: 'opacity 450ms ease', fontSize: 11, lineHeight: '14px', textAlign: 'center', textShadow: '0 1px 2px #000' }}>{combatHint(open)}</div>
       </div>
       {toastMsg && now - toastMsg.at < TOAST_MS && (
         <div key={toastMsg.at} className="ls-timed" style={{ position: 'absolute', top: '38%', left: '50%', transform: 'translateX(-50%)', padding: '0 14px 8px', overflow: 'hidden', fontSize: 20, fontWeight: 700, textShadow: '0 0 6px #000' }}>
