@@ -329,6 +329,9 @@ export class VerticalManager {
         }
       }
     }
+    // Playtest 6 polish: leaving the sky (a fall, a teleport, a fast travel) leaves the palace too; the
+    // palace panel stayed up over the ground because only the sky layer asked.
+    if (this.layer !== LAYER_SKY && usePalace.getState().near) usePalace.setState({ near: false });
     if (this.layer === LAYER_SKY) {
       use = this.palacePrompt(feet);
       for (const p of this.activities) {
