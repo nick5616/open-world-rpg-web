@@ -27,6 +27,7 @@ import { HotbarKeys } from '../../combat/HotbarKeys';
 import { useDev } from '../devconsole/store';
 import { closeMenu, escAction, menuStale, openMenu, unlockOpensMenu, useMenu, type MenuEntry } from './store';
 import { closeTopPanel, openPanels } from '../../input/panelStack';
+import { escStaysInFullscreen, isFullscreen, lastExitRequestAt, requestCapture, setFullscreen, watchExitRequests } from '../../input/mouseCapture';
 
 const MENU_KEY = 'Escape';
 
@@ -39,33 +40,9 @@ function panelUp(): boolean {
   return false;
 }
 
-// Code that frees the mouse on purpose (a panel opening, chat) calls
-// document.exitPointerLock; the browser's own Esc doesn't. Wrapped once so
-// a lost lock can tell the two apart.
-let exitRequestedAt = -1e9;
-function watchExitRequests(): void {
-  const d = document as Document & { __lsExitWatched?: boolean };
-  if (d.__lsExitWatched || typeof d.exitPointerLock !== 'function') return;
-  const orig = d.exitPointerLock.bind(d);
-  d.exitPointerLock = () => {
-    exitRequestedAt = performance.now();
-    return orig();
-  };
-  d.__lsExitWatched = true;
-}
-
 /** Recapture the mouse on the game canvas (Resume is a click: a user gesture). */
 function relock(): void {
-  let best: HTMLCanvasElement | null = null;
-  for (const c of document.querySelectorAll('canvas')) if (!best || c.width * c.height > best.width * best.height) best = c;
-  if (!best) return;
-  type Req = (o?: { unadjustedMovement?: boolean }) => Promise<void> | undefined;
-  const req = best.requestPointerLock as unknown as Req;
-  try {
-    req.call(best, { unadjustedMovement: true })?.catch?.(() => (req.call(best) as Promise<void> | undefined)?.catch?.(() => {}));
-  } catch {
-    /* the lock hint offers a click */
-  }
+  requestCapture({ soft: true });
 }
 
 // The key listener is installed when this module loads, before any panel
@@ -133,7 +110,7 @@ function useMenuKeys(): void {
       if (document.pointerLockElement) return;
       const now = performance.now();
       unlockedAt = now;
-      const requestedMs = Math.min(now - exitRequestedAt, now - poppedAt); // an Esc that closed a panel is not a request for the menu
+      const requestedMs = Math.min(now - lastExitRequestAt(), now - poppedAt); // an Esc that closed a panel is not a request for the menu
       clearTimeout(timer);
       // Let a panel that freed the mouse render first.
       timer = window.setTimeout(() => {
@@ -169,6 +146,31 @@ function MenuButton({ id, onClick, children, hint }: { id: string; onClick: () =
       {children}
       {hint && <span style={{ float: 'right', fontWeight: 400, opacity: 0.55, fontSize: 12 }}>{hint}</span>}
     </button>
+  );
+}
+
+/**
+ * Playtest 6: full screen. Where the browser can lock the keyboard (Chrome,
+ * Edge), Esc then stays in the game: it opens and closes this menu and the
+ * panels, and the mouse comes back by itself; holding Esc leaves full screen.
+ */
+function FullscreenRow() {
+  const [on, setOn] = useState(isFullscreen);
+  useEffect(() => {
+    const sync = () => setOn(isFullscreen());
+    document.addEventListener('fullscreenchange', sync);
+    return () => document.removeEventListener('fullscreenchange', sync);
+  }, []);
+  if (typeof document === 'undefined' || typeof document.documentElement.requestFullscreen !== 'function') return null;
+  const esc = escStaysInFullscreen();
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '12px 0 4px' }} title={esc ? 'Esc opens this menu and closes panels without letting go of the mouse; hold Esc to leave full screen.' : 'Esc leaves full screen.'}>
+      <span style={{ fontSize: 13 }}>Full screen</span>
+      <button data-testid="menu-fullscreen-toggle" tabIndex={-1} onClick={() => void setFullscreen(!on)} style={{ ...SMALL, background: on ? '#2b4f7a' : SMALL.background }}>
+        {on ? 'On' : 'Off'}
+      </button>
+      {esc && <span style={{ fontSize: 11, opacity: 0.55 }}>{on ? 'hold Esc to leave' : 'Esc stays in the game'}</span>}
+    </div>
   );
 }
 
@@ -208,6 +210,7 @@ function Main({ entries }: { entries: MenuEntry[] }) {
           {e.label}
         </MenuButton>
       ))}
+      <FullscreenRow />
       <div style={{ margin: '12px 0 4px', fontSize: 12, opacity: 0.7 }}>Camera</div>
       <CameraSettings compact />
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '12px 0 4px' }}>

@@ -32,7 +32,7 @@ export interface Tip {
 export const TIPS: Tip[] = [
   { id: 'heal', title: 'Low health', keys: ['R'], text: 'drinks a healing draught. Out of draughts? Back off: health comes back out of combat.' },
   { id: 'fight', title: 'Enemy nearby', keys: ['LMB', '1-4', 'F'], text: 'attack, cast a spell, dodge. The wheel picks what the right button uses.' },
-  { id: 'look', title: 'Getting around', keys: ['WASD', 'Space', 'Shift'], text: 'walk, jump, sprint. Click the game to look with the mouse. Esc: menu and all controls.' },
+  { id: 'look', title: 'Getting around', keys: ['WASD', 'Space', 'Shift'], text: 'walk, jump, sprint; the mouse looks around. Esc: menu and all controls.' },
   { id: 'quest', title: 'Your quest', keys: ['J', 'M'], text: 'journal and map. Follow the gold diamond on the compass and the beam of light.' },
   { id: 'talk', title: 'Townsfolk', keys: ['E'], text: 'talks to people: quests, shops and advice.' },
   { id: 'climb', title: 'A cliff', keys: ['W'], text: 'hold it into the rock to climb (stamina wheel by the crosshair). Space leaps up.' },

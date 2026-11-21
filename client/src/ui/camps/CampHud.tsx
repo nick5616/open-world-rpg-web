@@ -226,7 +226,7 @@ function PlacementBar() {
   const g = campGhost;
   const ok = g.active && g.reason === 0;
   return (
-    <div data-testid="camp-placing" data-ui-panel style={{ position: 'fixed', left: '50%', bottom: 96, transform: 'translateX(-50%)', padding: '8px 14px', borderRadius: 8, background: 'rgba(14,12,10,0.78)', border: `1px solid ${ok ? '#7dff8a88' : '#ff6a5a88'}`, color: TEXT, font: '13px system-ui, sans-serif', textAlign: 'center', zIndex: 30, pointerEvents: 'none' }}>
+    <div data-testid="camp-placing" data-ui-panel data-wants-mouse style={{ position: 'fixed', left: '50%', bottom: 96, transform: 'translateX(-50%)', padding: '8px 14px', borderRadius: 8, background: 'rgba(14,12,10,0.78)', border: `1px solid ${ok ? '#7dff8a88' : '#ff6a5a88'}`, color: TEXT, font: '13px system-ui, sans-serif', textAlign: 'center', zIndex: 30, pointerEvents: 'none' }}>
       <div style={{ font: '600 15px Georgia, serif', color: ok ? '#a8ffb0' : '#ffb0a5' }}>
         {def?.name}: {ok ? 'place it here' : (CAMP_REFUSAL[g.reason] ?? 'finding ground...')}
       </div>

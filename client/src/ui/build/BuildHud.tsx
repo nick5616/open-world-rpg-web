@@ -164,7 +164,7 @@ function BuildBar() {
   const refund = aim && aimDef?.build ? refundLines(aim.kind) : [];
   const repair = aim && aimDef?.build && aim.cond < 100 ? repairLines(aim.kind, aim.cond) : [];
   return (
-    <div data-testid="build-bar" data-ui-panel style={{ position: 'fixed', left: '50%', bottom: 28, transform: 'translateX(-50%)', width: 'min(760px, 96vw)', textAlign: 'center', zIndex: 30, pointerEvents: 'none', color: TEXT, font: '13px system-ui, sans-serif' }}>
+    <div data-testid="build-bar" data-ui-panel data-wants-mouse style={{ position: 'fixed', left: '50%', bottom: 28, transform: 'translateX(-50%)', width: 'min(760px, 96vw)', textAlign: 'center', zIndex: 30, pointerEvents: 'none', color: TEXT, font: '13px system-ui, sans-serif' }}>
       {aim && aimDef?.build && (
         <div style={{ ...box, marginBottom: 6, display: 'inline-block' }}>
           <b>{aimDef.name}</b>

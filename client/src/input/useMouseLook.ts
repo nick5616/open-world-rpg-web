@@ -6,6 +6,7 @@
 
 import { useEffect, useRef } from 'react';
 import { useAppStore } from '../stores/appStore';
+import { installAutoCapture, installFullscreenPreference, noteLockRefused, pointerLockState, requestCapture } from './mouseCapture';
 
 /**
  * Chrome on Windows occasionally reports a single bogus mousemove under
@@ -51,6 +52,10 @@ export class LookSpikeFilter {
   }
 }
 
+// The capture rules live in input/mouseCapture.ts (playtest 6: the game takes
+// the mouse back whenever the browser allows); re-exported for older imports.
+export { pointerLockState } from './mouseCapture';
+
 /**
  * Playtest 2 polish: the click that captures the mouse is the game's, not an
  * attack or a cast (combat/runtime.ts asks before it swings). A click on the
@@ -59,8 +64,6 @@ export class LookSpikeFilter {
  * the browser keeps refusing the lock (some headless or embedded browsers),
  * clicks fight unlocked after two refusals in a row instead of never.
  */
-export const pointerLockState = { refusals: 0 };
-
 export function isCaptureClick(): boolean {
   if (typeof document === 'undefined' || typeof document.exitPointerLock !== 'function') return false;
   return !document.pointerLockElement && pointerLockState.refusals < 2;
@@ -93,24 +96,7 @@ export function useMouseLook() {
       // Only the canvas acquires the lock, so clicks on overlays (debug panel,
       // menus) still work normally.
       if (!document.pointerLockElement && e.target instanceof HTMLCanvasElement && e.button === 0) {
-        // Chrome returns a promise and rejects if the user just exited lock
-        // (it enforces a short cooldown); that is harmless, so swallow it.
-        // Raw (unaccelerated) mouse input where supported: OS pointer
-        // acceleration makes equal hand motions turn by different amounts and
-        // is where Chrome's bogus large deltas come from. Fall back to the
-        // plain lock if the option is rejected (older browsers, some setups).
-        const el = e.target;
-        type LockOpts = { unadjustedMovement?: boolean };
-        const req = el.requestPointerLock as unknown as (o?: LockOpts) => Promise<void> | undefined;
-        const plain = () => (req.call(el) as Promise<void> | undefined)?.catch?.(() => {});
-        try {
-          const p = req.call(el, { unadjustedMovement: true });
-          p?.catch?.((err: unknown) => {
-            if ((err as { name?: string } | null)?.name === 'NotSupportedError') plain();
-          });
-        } catch {
-          plain();
-        }
+        requestCapture({ soft: false, el: e.target });
       }
     };
     const onLock = () => {
@@ -119,9 +105,7 @@ export function useMouseLook() {
       delta.current.y = 0;
       useAppStore.getState().setPointerLocked(!!document.pointerLockElement);
     };
-    const onLockError = () => {
-      pointerLockState.refusals++;
-    };
+    const onLockError = () => noteLockRefused();
     const onContext = (e: Event) => {
       if (blocksContextMenu(e.target)) e.preventDefault();
     };
@@ -130,7 +114,11 @@ export function useMouseLook() {
     document.addEventListener('mousedown', onDown);
     document.addEventListener('pointerlockchange', onLock);
     document.addEventListener('contextmenu', onContext);
+    const offAuto = installAutoCapture();
+    const offFs = installFullscreenPreference();
     return () => {
+      offAuto();
+      offFs();
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('pointerlockerror', onLockError);
       document.removeEventListener('mousedown', onDown);

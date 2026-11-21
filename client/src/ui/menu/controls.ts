@@ -78,7 +78,7 @@ export function controlGroups(debug: boolean, dev = false): ControlGroup[] {
       title: 'Moving',
       rows: [
         { keys: [mv('forward')[0], mv('left')[0], mv('back')[0], mv('right')[0]], action: 'Walk', note: 'arrow keys work too' },
-        { keys: ['Mouse'], action: 'Look around', note: 'click the game first to capture the mouse' },
+        { keys: ['Mouse'], action: 'Look around', note: 'click the game or start walking to capture the mouse; panels free it and it comes back when they close' },
         { keys: mv('sprint'), action: 'Sprint (hold)', note: 'uses stamina, the wheel by the crosshair' },
         { keys: mv('jump'), action: 'Jump', note: 'again in the air: double jump, then again: glide' },
         { keys: mv('glide'), action: 'Open or close the glider' },

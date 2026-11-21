@@ -34,7 +34,8 @@ export function LockHint() {
       style={{ position: 'fixed', left: '50%', bottom: ABOVE_HOTBAR, transform: 'translateX(-50%)', width: 'max-content', maxWidth: 'min(calc(2 * var(--ls-center-half, 260px)), calc(100vw - 32px))', boxSizing: 'border-box', padding: '6px 12px', borderRadius: 4, background: 'rgba(8,10,16,0.6)', color: '#e9ecef', font: '13px/1.35 system-ui, sans-serif', textAlign: 'center', pointerEvents: 'none', zIndex: 10 }}
     >
       {/* Playtest 2 onboarding: one short line; the key reference lives in the Esc menu and tips show keys when they matter (ui/tips). */}
-      <b>Click to look around</b> · Esc: menu and controls
+      {/* Playtest 6: a key press takes the mouse too (input/mouseCapture.ts). */}
+      <b>Click or start walking to look around</b> · Esc: menu and controls
     </div>
   );
 }

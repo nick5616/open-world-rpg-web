@@ -117,6 +117,8 @@ export const BINDINGS: Binding[] = [
   // Esc: one listener (ui/menu/EscMenu.tsx, first in the capture phase) closes the top panel, mode or wheel on
   // the stack (input/panelStack.ts), else opens the menu. Panels register there instead of listening for Esc.
   W('Escape', 'ui/menu/EscMenu.tsx', 'close the top panel (one at a time), else the Esc menu'),
+  // Playtest 6: in full screen (Esc menu) the Keyboard Lock API keeps Esc a game key (Chrome, Edge); holding it leaves full screen.
+  W('Escape', 'input/mouseCapture.ts', 'locked in full screen so it reaches the game (hold: leave full screen)'),
   // modes
   { code: 'KeyU', ctx: 'instrument', file: 'ui/music/InstrumentHud.tsx', does: 'every letter, digit and punctuation key is a note (ui/music/theory.ts)' },
   { code: 'Escape', ctx: 'instrument', file: 'ui/music/InstrumentHud.tsx', does: 'passed to the Esc menu: put the instrument away (panel stack)' },
