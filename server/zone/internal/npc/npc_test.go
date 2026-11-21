@@ -179,3 +179,23 @@ func TestBountiesDeterministicAndEncoded(t *testing.T) {
 		t.Fatal("compass")
 	}
 }
+
+// Playtest 6 polish: one board never lists the same job twice (same kind, same place), even with one site around.
+func TestBountiesNoDuplicateJobs(t *testing.T) {
+	tw := officialTowns(t)
+	sites := []Site{{Index: 5, Category: 2, Kind: towns.StructBanditCamp, X: tw.Settlements[0].X + 400, Z: tw.Settlements[0].Z - 300, Name: "Grimhollow"}}
+	w := New(tw, 20261108, sites)
+	for day := 0; day < 200; day++ {
+		seen := map[[2]int]bool{}
+		for _, b := range w.Bounties(0, day) {
+			if b.Site < 0 {
+				continue
+			}
+			k := [2]int{int(b.Kind), b.Site}
+			if seen[k] {
+				t.Fatalf("day %d: the same job twice: %q", day, b.Text)
+			}
+			seen[k] = true
+		}
+	}
+}

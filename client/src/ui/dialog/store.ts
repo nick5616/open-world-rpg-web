@@ -101,7 +101,20 @@ export function bubbleText(line: string, max = 110): string {
 
 /** A check chip's words: "[Mage] passed", "[Level 10] too low". */
 export function checkWords(c: { tag: string; pass: boolean }): string {
-  return `[${c.tag}] ${c.pass ? 'passed' : 'too low'}`;
+  return `[${c.tag}] ${c.pass ? 'passed' : notMet(c.tag)}`;
+}
+
+/**
+ * Why a check is not met, in the check's own terms (playtest 6 polish: every unmet one said "too low",
+ * also "[Sunsteel] too low" and "[Mage] too low"): a level is too low, warmth is not there yet,
+ * an item is not in your pack, a class is not yours (your weapon decides it).
+ */
+export function notMet(tag: string): string {
+  if (tag.startsWith('Level')) return 'too low';
+  if (tag.startsWith('Warmth')) return 'not yet';
+  if (tag === 'Sunsteel') return 'none on you';
+  if (/^(Knight|Lancer|Archer|Mage)$/.test(tag)) return 'not your weapon';
+  return 'not yet';
 }
 
 export function applyDialogEvent(ev: ZoneEvent, now = performance.now()): void {

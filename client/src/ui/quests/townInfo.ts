@@ -108,9 +108,10 @@ export function townServices(towns: Towns, si: number, sites: readonly Site[], s
     return best ? { site: best, d: bd } : null;
   };
   const shrine = nearest('shrine');
-  if (shrine) add('shrine', `${siteName(shrine.site)}, ${Math.round(shrine.d / 10) * 10} m away`, shrine.site.x, shrine.site.z);
+  // ("m from town": the row also says how far it is from you; "100 m away · 130 m south-west" read as a contradiction)
+  if (shrine) add('shrine', `${siteName(shrine.site)}, ${Math.round(shrine.d / 10) * 10} m from town`, shrine.site.x, shrine.site.z);
   const tower = nearest('tower');
-  if (tower) add('tower', `${siteName(tower.site)}, ${Math.round(tower.d / 10) * 10} m away`, tower.site.x, tower.site.z);
+  if (tower) add('tower', `${siteName(tower.site)}, ${Math.round(tower.d / 10) * 10} m from town`, tower.site.x, tower.site.z);
   return out;
 }
 

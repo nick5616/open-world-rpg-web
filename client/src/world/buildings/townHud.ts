@@ -12,10 +12,11 @@
 
 import type { Event as ZoneEvent } from '@lodestone/contracts';
 import type { ZoneSession } from '../../net/zoneSession';
-import { netRuntime } from '../../net/netStore';
+import { drawnRemotes, netRuntime } from '../../net/netStore';
 import { promptFor, type Candidate } from './interact';
 import { escapeHtml } from './npcs';
-import { openStationOffline } from '../../ui/inventory/store'; // WP14
+import { openStationOffline, useInventory } from '../../ui/inventory/store'; // WP14
+import { useDialog } from '../../ui/dialog/store';
 // Playtest 1: bounty locations and map previews.
 import { localPlayer } from '../../state/live';
 import { notGameKey } from '../../input/useKeyboard';
@@ -29,7 +30,7 @@ import { dialogController, ensureDialogHook } from '../../ui/dialog/link'; // CR
 import { setBoardPapers } from '../signposts/boardPapers';
 import { startPetting } from './petControl'; // CR 054: petting town dogs and cats
 import { EV_ANIMAL_PET, EV_ANIMAL_PET_REFUSED, petState } from './petting';
-import { ACT, BOUNTY_KIND_LABEL, decodeBounties, decodeShop, EV, INTERACT, itemName, MERCHANT_LABEL, NPC_ROLE_LABEL, REFUSAL, utf8, type Bounty, type ShopItem } from './townEvents';
+import { ACT, BOUNTY_KIND_LABEL, decodeBounties, decodeShop, EV, INTERACT, itemName, MERCHANT_LABEL, NPC_ROLE_LABEL, REFUSAL, shopNote, utf8, type Bounty, type ShopItem } from './townEvents';
 
 interface PanelState {
   title: string;
@@ -126,6 +127,8 @@ export class TownHud {
     }
   };
 
+  private readonly unStation: () => void;
+
   constructor() {
     this.prompt = document.createElement('div');
     this.prompt.dataset.testid = 'town-prompt';
@@ -156,7 +159,15 @@ export class TownHud {
     });
     document.body.append(this.prompt, this.toastEl, this.panelEl);
     window.addEventListener('keydown', this.onKey);
-    dialogController.setPanelProbe(() => this.panel !== null); // CR 049: a service panel parks the conversation
+    dialogController.setPanelProbe(() => this.panel !== null || useInventory.getState().station !== null); // CR 049: a service panel parks the conversation
+    // Playtest 6 polish: "[Forge] Mind if I use your forge?" opened the forge under the conversation (the probe only knew
+    // the town panel, so the conversation unparked over it). A station panel parks the conversation and closing it brings it back.
+    this.unStation = useInventory.subscribe((st, prev) => {
+      if (st.station && !prev.station) {
+        const d = useDialog.getState();
+        if (d.open && !d.parked) useDialog.setState({ parked: true, at: performance.now() });
+      } else if (!st.station && prev.station) dialogController.panelClosed();
+    });
     this.panelEl.addEventListener('click', this.onClick);
   }
 
@@ -286,7 +297,7 @@ export class TownHud {
     if (p.shop) {
       h += `<div style="margin-top:8px;font-weight:600;color:#f3d48a">Wares</div>`;
       if (!p.shop.length) h += '<div style="opacity:.7">Nothing for sale today.</div>';
-      for (const it of p.shop) h += `<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid #ffffff14"><span>${escapeHtml(itemName(it.item))} <span style="opacity:.6">${it.stock} in stock</span>${it.item.startsWith('blueprint:') ? '<div style="opacity:.6;font-size:11px">Teaches the forge recipe; not the item itself</div>' : ''}</span><span>${it.price} g ${btn('buy', it.index, 'Buy', it.stock === 0)}</span></div>`;
+      for (const it of p.shop) h += `<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid #ffffff14"><span>${escapeHtml(itemName(it.item))}${shopNote(it) ? `<div style="opacity:.6;font-size:11px">${escapeHtml(shopNote(it))}</div>` : ''}</span><span>${it.price} g ${btn('buy', it.index, 'Buy', it.stock === 0)}</span></div>`;
     }
     if (p.bounties) {
       h += `<div style="margin-top:8px;font-weight:600;color:#f3d48a">Bounties</div>`;
@@ -295,7 +306,10 @@ export class TownHud {
         // Playtest 1: where the job takes you, before you accept (and a map preview).
         const where = bountyPlace(b, this.pending);
         const state = b.done ? '<span style="color:#9fd38a">Completed</span>' : b.accepted ? '<span style="color:#9fd38a">Accepted</span>' : btn('accept', b.id, 'Accept');
-        h += `<div data-bounty="${b.id}" style="padding:5px 0;border-bottom:1px solid #ffffff14"><div><b>${BOUNTY_KIND_LABEL[b.kind] ?? 'Job'}</b>: ${escapeHtml(b.text)}</div>`;
+        // playtest 6 polish: no "Slay: Slay the demon..." (the label only when the notice doesn't already start with it)
+        const lab = BOUNTY_KIND_LABEL[b.kind] ?? 'Job';
+        const head = b.text.toLowerCase().startsWith(lab.toLowerCase()) ? '' : `<b>${lab}</b>: `;
+        h += `<div data-bounty="${b.id}" style="padding:5px 0;border-bottom:1px solid #ffffff14"><div>${head}${escapeHtml(b.text)}</div>`;
         if (where) h += `<div data-testid="bounty-where" style="display:flex;justify-content:space-between;align-items:center;gap:6px;font-size:12px;color:#d9c79c;margin:2px 0"><span>&#9673; ${escapeHtml(where.text)}</span>${btn('preview', b.id, 'Show on map')}</div>`;
         h += `<div style="display:flex;justify-content:space-between;align-items:center;opacity:.9"><span>Reward ${b.reward} g${b.qty > 1 ? ` · x${b.qty}` : ''}</span>${state}</div></div>`;
       }
@@ -332,7 +346,9 @@ export class TownHud {
             this.panel.shop = items;
             this.render();
           } else {
-            this.open({ ...this.blank('Merchant', MERCHANT_LABEL[e.value] ?? 'goods'), npcEntityId: e.entityId, shop: items });
+            // playtest 6 polish: the shop is the person's ("Fenia, merchant, general goods"), not a "Merchant" sign
+            const who = drawnRemotes.views.find((v) => v.id === e.entityId)?.name;
+            this.open({ ...this.blank(who || 'Merchant', `${who ? 'merchant, ' : ''}${MERCHANT_LABEL[e.value] ?? 'goods'}`), npcEntityId: e.entityId, shop: items });
           }
           break;
         }
@@ -385,6 +401,7 @@ export class TownHud {
   dispose(): void {
     hidePanel('town');
     window.removeEventListener('keydown', this.onKey);
+    this.unStation();
     this.hooked?.eventListeners.delete(this.listener);
     this.prompt.remove();
     this.toastEl.remove();

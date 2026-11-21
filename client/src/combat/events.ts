@@ -1,7 +1,7 @@
 // WP13 Event kinds (contracts/events.md 200-399), the Interact verbs and
 // payload decoders. Mirrors server/zone/internal/combat/events.go.
 
-import { COMBAT, type Event as ZoneEvent } from '@lodestone/contracts';
+import { COMBAT, type Event as ZoneEvent, MAX_SPELL_SLOTS } from '@lodestone/contracts';
 
 export const EV = {
   damage: 200,
@@ -55,24 +55,36 @@ export interface SyncState {
   charges: number;
   skillPoints: number;
   level: number;
+  /** CR 039: spell slots and loadouts the level opened (the zone's count). */
+  slotsOpen: number;
+  loadoutsOpen: number;
 }
 
-/** combat_sync payload (server EncodeSync). */
+/**
+ * combat_sync payload (server EncodeSync). CR 039 version 2: u8 nLoadouts |
+ * u8 nSlots after the active loadout (3 x 8), and the open slot and
+ * loadout counts after the level; version 1 (2 x 4) still decodes. Spells
+ * are padded to MAX_SPELL_SLOTS either way.
+ */
 export function decodeSync(d: Uint8Array): SyncState | null {
-  if (d.length < 2 || d[0] !== 1) return null;
+  if (d.length < 2 || (d[0] !== 1 && d[0] !== 2)) return null;
+  const ver = d[0];
   const v = new DataView(d.buffer, d.byteOffset, d.byteLength);
   let o = 1;
   const active = d[o++];
+  const nl = ver === 2 ? d[o++] : 2;
+  const nSlots = ver === 2 ? d[o++] : 4;
   const loadouts: SyncState['loadouts'] = [];
-  for (let l = 0; l < 2; l++) {
+  for (let l = 0; l < nl; l++) {
     const weapon = weaponById.get(d[o++]) ?? 'sword';
     const spells: (string | null)[] = [];
-    for (let k = 0; k < 4; k++) {
+    for (let k = 0; k < nSlots; k++) {
       const id = v.getUint16(o, true);
       o += 2;
       spells.push(id ? spellById.get(id) ?? null : null);
     }
     const gem = v.getInt8(o++);
+    while (spells.length < MAX_SPELL_SLOTS) spells.push(null);
     loadouts.push({ weapon, spells, gem });
   }
   const nk = v.getUint16(o, true);
@@ -96,9 +108,11 @@ export function decodeSync(d: Uint8Array): SyncState | null {
   const skillPoints = v.getUint16(o, true);
   o += 2;
   const level = d[o++] ?? 1;
-  // pt/ux: 2 x u8 weapon look material code (weapons/look.ts), absent from older zones.
-  for (let l = 0; l < 2 && o < d.length; l++) loadouts[l].material = d[o++];
-  return { active, loadouts, known, skillXp, manaMax, charges, skillPoints, level };
+  const slotsOpen = ver === 2 ? d[o++] : 4;
+  const loadoutsOpen = ver === 2 ? d[o++] : 2;
+  // pt/ux: a u8 weapon look material code (weapons/look.ts) per loadout, absent from older zones.
+  for (let l = 0; l < nl && o < d.length; l++) loadouts[l].material = d[o++];
+  return { active, loadouts, known, skillXp, manaMax, charges, skillPoints, level, slotsOpen, loadoutsOpen };
 }
 
 export interface TelegraphView {

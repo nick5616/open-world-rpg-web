@@ -167,8 +167,9 @@ export function Compass() {
         ctx.fillStyle = '#f1f3f5';
         const dist = m.dist >= 1000 ? `${(m.dist / 1000).toFixed(1)} km` : `${Math.round(m.dist)} m`;
         const text = `${edge ? (m.rel < 0 ? '‹ ' : '') : ''}${m.label ? m.label + ' ' : ''}${dist}${edge && m.rel > 0 ? ' ›' : ''}`;
-        const tx = Math.max(40, Math.min(W - 40, x));
+        // Keep the whole label on the strip (playtest 6 polish: "ndering Behemoth 313 m" at the left end).
         const half = ctx.measureText(text).width / 2 + 4;
+        const tx = Math.max(half, Math.min(W - half, x));
         if (placed.some(([l, r]) => tx - half < r && tx + half > l)) continue;
         placed.push([tx - half, tx + half]);
         ctx.fillText(text, tx, 41);

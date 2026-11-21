@@ -294,3 +294,24 @@ func TestNeverPanicsOnAnyIDOrContext(t *testing.T) {
 		}
 	}
 }
+
+// Playtest 6 polish: a forage patch is told by what grows there, never as
+// "south-east, Firewood" (the name read like a place).
+func TestHerbRumourNamesWhatGrows(t *testing.T) {
+	for id := uint64(1); id < 40; id++ {
+		p := person(id, RoleFarmer)
+		ps := PersonaOf(p)
+		for _, name := range []string{"Heartleaf", "Firewood"} {
+			r := tell(p, ps, Site{Kind: KindHerb, Key: "herb:7", Name: name, X: 10, Z: 10, DX: 120, DZ: 40})
+			if strings.Contains(r.Text, ", "+name) || strings.Contains(r.Text, "{") {
+				t.Fatalf("%s: %q", name, r.Text)
+			}
+			if name == "Firewood" && (strings.Contains(r.Text, "herb") || !strings.Contains(r.Text, "firewood")) {
+				t.Fatalf("deadfall told as herbs: %q", r.Text)
+			}
+			if name == "Heartleaf" && !strings.Contains(r.Text, "heartleaf") {
+				t.Fatalf("herb not named: %q", r.Text)
+			}
+		}
+	}
+}

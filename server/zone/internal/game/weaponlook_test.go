@@ -82,12 +82,12 @@ func TestRemoteObserverSeesTheWeaponChange(t *testing.T) {
 		t.Fatalf("kind %v", got.Kind)
 	}
 
-	// The owner's combat_sync carries the material codes (2 trailing bytes);
+	// The owner's combat_sync carries the material codes (CR 039: 3 trailing bytes);
 	// a no-op swap to the active loadout asks for a fresh one.
 	b.send(&proto.Interact{TargetKind: combat.InteractCombat, Action: combat.ActSwapLoadout, Arg: 0})
 	last := b.event(combat.EvCombatSync, 3*time.Second)
-	if n := len(last.Data); last.Data[n-2] != LookMaterialCode("sunsteel") || last.Data[n-1] != 0 {
-		t.Fatalf("combat_sync material codes % x", last.Data[n-2:])
+	if n := len(last.Data); last.Data[n-3] != LookMaterialCode("sunsteel") || last.Data[n-2] != 0 || last.Data[n-1] != 0 {
+		t.Fatalf("combat_sync material codes % x", last.Data[n-3:])
 	}
 
 	// Swapping to loadout 1 shows its weapon instead.

@@ -1,4 +1,4 @@
-/* global getComputedStyle */
+/* global getComputedStyle, KeyboardEvent, setInterval */
 // Helpers for coop-driver.mjs (re-imported on every command). Each takes a
 // Playwright page; the pages carry __who ('A' or 'B'). Honest play: keys,
 // mouse, the look handle (headless has no pointer lock). The dev console
@@ -238,18 +238,17 @@ export async function fight(page, { x, z, r = 30, ms = 90000, spells = ['Digit1'
   const anchor = async () => (x === undefined ? (await pl(page)).pos : { x, z });
   while (Date.now() - t0 < ms && !aborted()) {
     if (swings % 10 === 0) await dismiss(page);
-    // A wind-up aimed at me (EvTelegraph 204): dodge back out of it, as a player reads the tell.
+    // Wind-ups are read in the page by installReflexes (an average human's
+    // reaction); while it is getting out of one, this loop keeps its hands off.
     if (dodge) {
-      const tell = await page.evaluate((since) => { const me = window.__lodestoneStory?.state?.().self; const t = window.__lodestone.tapped([204], since); return me ? t.events.filter((e) => e.targetId === me).length : 0; }, lastTell);
-      lastTell = Date.now();
-      if (tell > 0) {
-        await page.keyboard.down('KeyS');
-        await page.keyboard.press('KeyF');
-        await sleep(350);
-        await page.keyboard.up('KeyS');
-        dodges++;
+      const ev = await page.evaluate(() => (window.__reflex?.evadeUntil ?? 0) - performance.now());
+      if (ev > 0) {
+        await sleep(Math.min(600, ev + 30));
+        dodges = await page.evaluate(() => window.__reflex?.dodged ?? 0);
+        continue;
       }
     }
+    void lastTell;
     // A fallen friend nearby (waiting to be raised): go and hold E beside them.
     if (partner && swings % 3 === 0) {
       const down = await partner.evaluate(() => { const st = window.__lodestoneStory?.state?.(); const h = window.__lodestone.selfHealth(); return h && h.health <= 0 && st && st.reviveUntil > performance.now() ? window.__lodestone.player().pos : null; });
@@ -296,7 +295,7 @@ export async function fight(page, { x, z, r = 30, ms = 90000, spells = ['Digit1'
     const dy = e.y - myY;
     if (Math.abs(dy) > 1.4 && e.d < 6) {
       // On a ledge above (or below) it: step off toward it, casting meanwhile.
-      if (s.mana > 15) await page.keyboard.press(spells[swings % spells.length]);
+      if (spells.length && s.mana > 15) await page.keyboard.press(spells[swings % spells.length]);
       await page.keyboard.down('KeyW');
       if (dy > 1.4) await page.keyboard.press('Space');
       await sleep(450);
@@ -329,6 +328,148 @@ export async function fight(page, { x, z, r = 30, ms = 90000, spells = ['Digit1'
     if (swings % 23 === 0) await page.keyboard.press('KeyF');
   }
   return { kills, swings, lowHp: Math.round(lowHp * 100), draughts, downs, dodges, ms: Date.now() - t0, seen: seen.size };
+}
+
+/**
+ * Playtest 2 co-op polish: read enemy wind-ups like an average human, in the
+ * page (so the bot's own command latency doesn't count): every telegraph
+ * (Event 204) is noticed after reactMs +- jitterMs (at least 150 ms), missPct
+ * of them never; a noticed one whose area holds you is answered by a dodge
+ * (F) toward the shortest way out of the area, keys held until the strike
+ * has passed. The same model as the Go fight sims (combatbot.AverageHuman).
+ * Counters in window.__reflex; fight({ dodge: true }) waits while evading.
+ */
+export async function installReflexes(page, { reactMs = 380, jitterMs = 100, missPct = 0.2 } = {}) {
+  return page.evaluate(
+    async ({ reactMs, jitterMs, missPct }) => {
+      if (window.__reflex?.installed) {
+        Object.assign(window.__reflex, { reactMs, jitterMs, missPct });
+        return { installed: true };
+      }
+      const { netRuntime } = await import('/src/net/netStore.ts');
+      const { decodeTelegraph } = await import('/src/combat/events.ts');
+      const { telegraphContains } = await import('/src/combat/dodged.ts');
+      const R = (window.__reflex = { installed: true, reactMs, jitterMs, missPct, seen: 0, threatened: 0, missed: 0, dodged: 0, evadeUntil: 0, session: null });
+      const key = (type, code) => window.dispatchEvent(new KeyboardEvent(type, { code, key: code.replace('Key', '').toLowerCase(), bubbles: true }));
+      const gauss = () => Math.sqrt(-2 * Math.log(1 - Math.random())) * Math.cos(2 * Math.PI * Math.random());
+      const react = (t) => {
+        const p = window.__lodestone.player();
+        if (!telegraphContains(t, p.pos.x, p.pos.y, p.pos.z, 0.6)) return; // already out
+        // The shortest way out: 16 headings, step 0.25 m.
+        let best = 0;
+        let bestD = Infinity;
+        for (let i = 0; i < 16; i++) {
+          const a = (i * Math.PI) / 8;
+          const dx = Math.cos(a);
+          const dz = Math.sin(a);
+          let d = 0;
+          while (d < 12 && telegraphContains(t, p.pos.x + dx * d, p.pos.y, p.pos.z + dz * d, 0.6)) d += 0.25;
+          if (d < bestD) {
+            bestD = d;
+            best = a;
+          }
+        }
+        // World heading -> WASD relative to the look yaw (forward = (-sin yaw, -cos yaw)).
+        const fwd = { x: -Math.sin(p.yaw), z: -Math.cos(p.yaw) };
+        const right = { x: Math.cos(p.yaw), z: -Math.sin(p.yaw) };
+        const dir = { x: Math.cos(best), z: Math.sin(best) };
+        const f = dir.x * fwd.x + dir.z * fwd.z;
+        const r = dir.x * right.x + dir.z * right.z;
+        const keys = [];
+        if (f > 0.38) keys.push('KeyW');
+        if (f < -0.38) keys.push('KeyS');
+        if (r > 0.38) keys.push('KeyD');
+        if (r < -0.38) keys.push('KeyA');
+        const holdMs = Math.max(350, t.windupMs + 250 - (performance.now() - t.at));
+        R.evadeUntil = performance.now() + holdMs;
+        for (const k of keys) key('keydown', k);
+        key('keydown', 'KeyF');
+        setTimeout(() => key('keyup', 'KeyF'), 60);
+        setTimeout(() => {
+          for (const k of keys) key('keyup', k);
+        }, holdMs);
+        R.dodged++;
+      };
+      const listen = () => {
+        const s = netRuntime.session;
+        if (!s || R.session === s) return;
+        R.session = s;
+        s.eventListeners.add((ev) => {
+          if (ev.kind !== 204) return;
+          const t = decodeTelegraph(ev);
+          if (!t || t.shape === 4) return; // projectiles: not modelled
+          t.at = performance.now();
+          R.seen++;
+          const p = window.__lodestone.player();
+          if (!telegraphContains(t, p.pos.x, p.pos.y, p.pos.z, 0.6)) return;
+          R.threatened++;
+          if (Math.random() < R.missPct) {
+            R.missed++;
+            return;
+          }
+          setTimeout(() => react(t), Math.max(150, R.reactMs + gauss() * R.jitterMs));
+        });
+      };
+      listen();
+      setInterval(listen, 2000); // a reconnect or handoff makes a new session
+      return { installed: true };
+    },
+    { reactMs, jitterMs, missPct },
+  );
+}
+
+/**
+ * Co-op polish: fight the Hush as a pair that plays its mechanics: the Hush
+ * (and its adds) by default, the Hollow Bells while the choir sings, each to
+ * a well of their own when the stars go out, and raising the other when they
+ * fall (fight's partner rule). Wind-ups are dodged by installReflexes. Ends
+ * on the ending (won), a reset (lost) or maxMs.
+ */
+export async function hushFight(A, B, { maxMs = 12 * 60000, log = () => {} } = {}) {
+  await Promise.all([installReflexes(A), installReflexes(B)]);
+  const t0 = Date.now();
+  const st = (p) => p.evaluate(() => { const s = window.__lodestoneStory.state(); return { f: s.finale, ending: !!s.ending }; });
+  let result = null;
+  let last = '';
+  const one = async (page, partner, idx) => {
+    while (!result && Date.now() - t0 < maxMs && !aborted()) {
+      const { f, ending } = await st(page);
+      if (ending || (f && f.phase === 3)) {
+        result ??= { won: true, secs: Math.round((Date.now() - t0) / 1000) };
+        break;
+      }
+      if (!f || f.phase === 0) {
+        if (Date.now() - t0 > 20000) result ??= { won: false, secs: Math.round((Date.now() - t0) / 1000), why: 'reset' };
+        await sleep(500);
+        continue;
+      }
+      const line = `ph${f.phase} shroud ${f.shroud} bells ${f.bells} wells ${f.wells.length} night ${f.nightMs}`;
+      if (idx === 0 && line !== last) {
+        last = line;
+        log(`hush +${Math.round((Date.now() - t0) / 1000)}s ${line}`);
+      }
+      const down = await page.evaluate(() => (window.__lodestone.selfHealth()?.health ?? 1) <= 0);
+      if (down) {
+        await sleep(500);
+        continue;
+      }
+      if (f.nightMs > 0 && f.wells.length) {
+        const w = f.wells[idx % f.wells.length];
+        await walkTo(page, w.x, w.z, { stopAt: 1.2, timeoutMs: Math.max(1500, f.nightMs) });
+        await sleep(Math.min(1500, f.nightMs));
+        continue;
+      }
+      if (f.bells > 0) {
+        const bells = (await drawn(page, 80)).filter((e) => /Bell/.test(e.name ?? '') && e.hp > 0).map((e) => e.id);
+        await fight(page, { x: f.x, z: f.z, r: f.r + 8, ms: 3500, onlyIds: bells.length ? bells : null, partner, dodge: true, spells: [] });
+        continue;
+      }
+      await fight(page, { x: f.x, z: f.z, r: f.r + 6, ms: 3500, partner, dodge: true, spells: [] });
+    }
+  };
+  await Promise.all([one(A, B, 0), one(B, A, 1)]);
+  const reflex = await Promise.all([A, B].map((p) => p.evaluate(() => { const r = window.__reflex; return { seen: r.seen, threatened: r.threatened, missed: r.missed, dodged: r.dodged }; })));
+  return { ...(result ?? { won: false, secs: Math.round((Date.now() - t0) / 1000), why: 'timeout' }), reflex };
 }
 
 /** Both fight around the same anchor. */

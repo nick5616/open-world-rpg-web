@@ -7,6 +7,7 @@
 // ("Mouse3" = back, "Mouse4" = forward), the usual push-to-talk buttons.
 
 import { BINDINGS, type Binding } from '../input/bindings';
+import { slotForKey } from '../combat/hotbar';
 import { isChatShortcut, isTextTarget } from '../input/useKeyboard';
 import { keyLabel } from '../ui/menu/controls';
 
@@ -39,7 +40,10 @@ export type KeyCheck = { ok: true } | { ok: false; reason: string };
 export function validateVoiceKey(code: string, role: VoiceKeyRole, otherVoiceKey: string, bindings: Binding[] = BINDINGS): KeyCheck {
   if (!BINDABLE.test(code)) return { ok: false, reason: `${voiceKeyLabel(code)} can't be a voice key (Esc, Enter, Tab, Space, Shift, Ctrl, Alt and the arrows are reserved).` };
   if (code === otherVoiceKey) return { ok: false, reason: `${voiceKeyLabel(code)} is already your key to ${ROLE_LABEL[role === 'ptt' ? 'mute' : 'ptt']}.` };
-  const clash = bindings.find((b) => b.code === code && (b.ctx === 'world' || b.ctx === 'menu') && !b.file.startsWith('voice/'));
+  // CR 039: the spell slot keys are rebindable: what they are now counts, not their defaults.
+  const slot = slotForKey(code);
+  if (slot >= 0) return { ok: false, reason: `${voiceKeyLabel(code)} casts spell slot ${slot + 1} (Esc menu, Controls). Pick another key.` };
+  const clash = bindings.find((b) => b.code === code && (b.ctx === 'world' || b.ctx === 'menu') && !b.file.startsWith('voice/') && b.file !== 'combat/hotbar.ts');
   if (clash) return { ok: false, reason: `${voiceKeyLabel(code)} already does "${clash.does}". Pick another key.` };
   return { ok: true };
 }

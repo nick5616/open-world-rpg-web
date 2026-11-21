@@ -43,7 +43,7 @@ interface ControlDef {
 
 const CONTROLS: Record<ControlId, ControlDef> = {
   attack: { mouse: ['LMB'], text: 'swings your weapon.' },
-  spells: { bind: [{ file: 'combat/runtime.ts', code: 'Digit1' }, { file: 'combat/runtime.ts', code: 'Digit4' }], text: 'cast the spells in your slots.' },
+  spells: { bind: [{ file: 'combat/hotbar.ts', code: 'Digit1' }, { file: 'combat/hotbar.ts', code: 'Digit4' }], text: 'cast the spells in your slots.' },
   dodge: { bind: [{ file: 'combat/runtime.ts', code: 'KeyF' }], text: 'dodges: a moment nothing can hit you.' },
   draught: { bind: [{ file: 'combat/runtime.ts', code: 'KeyR' }], text: 'drinks a healing draught.' },
   interact: { bind: [{ file: 'world/caves/caveManager.ts', code: 'KeyE' }], text: 'does what the line under the crosshair says: hold it to mine, chop, fish or climb on.' },

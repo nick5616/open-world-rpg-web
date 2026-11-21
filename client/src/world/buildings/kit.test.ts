@@ -11,9 +11,12 @@ import fs from 'node:fs';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { BOX_FLAG, BUILDING_FLAG, loadWorldgen, parseTowns, townsBytes, type Building, type Towns } from '@lodestone/worldgen';
 import { hasWasm, testWorld, wasmPath } from '../testing/wasm';
-import { BK, boxAt, buildSettlementMesh, drawBuildingShell, drawSteps, wallThickness, type Box } from './kit';
-import { MeshBuilder, type MeshData } from './meshBuilder';
+import * as THREE from 'three';
+import { BK, SKY_GLOW_HOUSE, SKY_GLOW_INN, boxAt, buildSettlementMesh, drawBuildingShell, drawSteps, wallThickness, type Box } from './kit';
+import { GLOW_DAYLIGHT, MeshBuilder, type MeshData } from './meshBuilder';
 import { buildStructureMesh } from './structures';
+import { TEX } from './textures';
+import { makeTownMaterials, townTexture, TOWN_PROGRAM_KEY } from './townMaterial';
 
 type V = [number, number, number];
 
@@ -179,6 +182,60 @@ describe.skipIf(!hasWasm)('building kit vs collision boxes', () => {
       expect(m.shell.indexCount, `structure ${st.index}`).toBeGreaterThan(0);
       expect(m.shell.position.every(Number.isFinite)).toBe(true);
     }
+  });
+
+  it('windows: inner panes carry the daylight class, outer panes keep their night glow', () => {
+    const nightGlows = new Set([0, SKY_GLOW_HOUSE, SKY_GLOW_INN]);
+    let inner = 0;
+    let outer = 0;
+    let outerLit = 0;
+    for (const b of official.buildings.filter((x) => x.floors > 0).slice(0, 60)) {
+      const mb = new MeshBuilder();
+      drawBuildingShell(mb, official, b, () => b.floorY - 1);
+      const m = mb.data();
+      for (let i = 0; i < m.vertexCount; i++) {
+        if (m.lg[i * 2] !== TEX.window) continue;
+        const glow = m.lg[i * 2 + 1];
+        // Which way the pane looks: away from the building's middle (outside) or toward it (inside).
+        const facing = (m.position[i * 3] - b.x) * m.normal[i * 3] + (m.position[i * 3 + 2] - b.z) * m.normal[i * 3 + 2];
+        if (glow === GLOW_DAYLIGHT) {
+          expect(facing, `building ${b.index}: daylight pane faces in`).toBeLessThan(0);
+          inner++;
+        } else {
+          expect(nightGlows.has(glow), `building ${b.index}: window glow ${glow}`).toBe(true);
+          expect(facing, `building ${b.index}: night pane faces out`).toBeGreaterThan(0);
+          outer++;
+          if (glow > 0) outerLit++;
+        }
+      }
+    }
+    expect(inner).toBeGreaterThan(0);
+    expect(inner).toBe(outer); // one inner pane per outer pane
+    expect(outerLit).toBeGreaterThan(0);
+  });
+});
+
+describe('daylight panes (playtest 2: windows light the room by day)', () => {
+  it('127 is reserved: no night window or always-on light uses it', () => {
+    expect(GLOW_DAYLIGHT).toBe(127);
+    expect(SKY_GLOW_HOUSE).toBeLessThan(GLOW_DAYLIGHT);
+    expect(SKY_GLOW_INN).toBeLessThan(GLOW_DAYLIGHT);
+    for (const f of ['kit.ts', 'props.ts', 'structures.ts']) {
+      const src = fs.readFileSync(new URL(`./${f}`, import.meta.url), 'utf8');
+      expect(src, f).not.toMatch(/\],\s*127\s*\)/);
+    }
+  });
+
+  it('the town shader lights daylight panes by (1 - uNight) and has a new cache key', () => {
+    const mats = makeTownMaterials(townTexture(new Uint8Array(4), 1, 1));
+    const shader = { uniforms: {} as Record<string, THREE.IUniform>, vertexShader: THREE.ShaderLib.standard.vertexShader, fragmentShader: THREE.ShaderLib.standard.fragmentShader };
+    mats.solid.onBeforeCompile(shader as never, null as never);
+    expect(shader.fragmentShader).toContain('float daylight = abs(g - 127.0) < 0.5 ? 1.0 : 0.0;');
+    expect(shader.fragmentShader).toContain('float on = mix(mix(uNight, 1.0, always), 1.0 - uNight, daylight);');
+    expect(shader.fragmentShader).toContain('* townTexel.a * on * uGlow');
+    expect(mats.solid.customProgramCacheKey()).toBe('lodestone-town-v5');
+    expect(mats.decal.customProgramCacheKey()).toBe(TOWN_PROGRAM_KEY);
+    mats.dispose();
   });
 });
 

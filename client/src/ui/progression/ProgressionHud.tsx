@@ -76,17 +76,17 @@ function LevelUpFanfare() {
   }
   return (
     <div key={f.id} data-testid="levelup-fanfare" className="pt-fanfare" style={{ position: 'fixed', top: '15%', left: '50%', transform: 'translateX(-50%)', zIndex: 20, pointerEvents: 'none', textAlign: 'center', ['--pt-ms' as string]: `${FANFARE_MS}ms` }}>
-      <div style={{ font: '600 15px Georgia, serif', letterSpacing: 6, color: GOLD, textShadow: '0 0 12px rgba(255,209,102,0.7)' }}>LEVEL UP</div>
+      <div style={{ font: '600 15px Georgia, serif', letterSpacing: 6, color: GOLD, textShadow: '0 0 12px rgba(255,209,102,0.7)' }}>{f.hotbar ? 'NEW SLOTS' : 'LEVEL UP'}</div>
       <div style={{ font: '700 64px Georgia, serif', color: '#fff8e1', lineHeight: 1.05, textShadow: '0 0 24px rgba(255,209,102,0.9), 0 2px 4px #000' }}>Level {f.level}</div>
-      <div style={{ font: 'italic 16px Georgia, serif', color: '#f1f3f5', margin: '4px 0 10px', textShadow: '0 1px 3px #000' }}>You feel stronger.</div>
+      <div style={{ font: 'italic 16px Georgia, serif', color: '#f1f3f5', margin: '4px 0 10px', textShadow: '0 1px 3px #000' }}>{f.hotbar ? 'Your level has opened more of your hotbar.' : 'You feel stronger.'}</div>
       <div style={{ display: 'inline-flex', flexWrap: 'wrap', justifyContent: 'center', gap: '6px 8px', maxWidth: 560 }}>
         {f.lines.map((l) => (
-          <span key={l} style={{ ...PANEL, padding: '4px 10px', font: '13px system-ui, sans-serif', color: l.startsWith('Unlocked') ? GOLD : '#e9ecef' }}>
+          <span key={l} data-hotbar-line={l.startsWith('New ') ? 'true' : undefined} style={{ ...PANEL, padding: '4px 10px', font: l.startsWith('New ') ? '700 14px system-ui, sans-serif' : '13px system-ui, sans-serif', color: l.startsWith('Unlocked') || l.startsWith('New ') ? GOLD : '#e9ecef', border: l.startsWith('New ') ? `1px solid ${GOLD}` : undefined }}>
             {l}
           </span>
         ))}
       </div>
-      <div style={{ font: '12px system-ui, sans-serif', opacity: 0.75, marginTop: 8, textShadow: '0 1px 2px #000' }}>Health and stamina restored · C character · N skill tree</div>
+      <div style={{ font: '12px system-ui, sans-serif', opacity: 0.75, marginTop: 8, textShadow: '0 1px 2px #000' }}>{f.hotbar ? 'C character: put spells in the new slots · Esc menu, Controls: slot keys' : 'Health and stamina restored · C character · N skill tree'}</div>
     </div>
   );
 }
@@ -100,7 +100,7 @@ function AreaNotices() {
   const panelOpen = useProgression((s) => s.panelOpen);
   if (panelOpen) return null; // the panel sits where the notices do
   return (
-    <div style={{ position: 'fixed', left: 18, top: '28%', display: 'flex', flexDirection: 'column', gap: 8, zIndex: 13, pointerEvents: 'none', maxWidth: 380 }}>
+    <div data-testid="area-notices" style={{ position: 'fixed', left: 18, top: '28%', display: 'flex', flexDirection: 'column', gap: 8, zIndex: 13, pointerEvents: 'none', maxWidth: 380, transition: 'top 0.25s ease' }}>
       {notices.map((n) => (
         <div key={n.id} data-testid={`progression-notice-${n.kind}`} className="pt-notice" style={{ ...PANEL, borderLeft: `3px solid ${NOTICE_ACCENT[n.kind]}`, padding: '8px 12px' }}>
           <div style={{ font: '15px Georgia, serif', color: NOTICE_ACCENT[n.kind] }}>{n.title}</div>

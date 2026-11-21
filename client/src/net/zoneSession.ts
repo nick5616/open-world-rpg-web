@@ -124,6 +124,8 @@ export class ZoneSession {
   readonly prediction: ClientPrediction;
   readonly interp: EntityInterpolation;
   latestFrame: Frame | null = null;
+  /** CR 040: the newest predicted frame's seq (the rift's bullet clock, rift/clock.ts). */
+  lastStepSeq = 0;
 
   onWelcome: ((w: Welcome) => void) | null = null;
   onEnd: ((e: SessionEnd) => void) | null = null;
@@ -226,6 +228,7 @@ export class ZoneSession {
     // where we were, not where the new zone put us).
     if (this.failingOver || this.forceOnNextSnapshot || this.prediction.awaitingForced) return;
     this.prediction.store({ seq, input, state, env });
+    this.lastStepSeq = seq;
     this.prediction.notePredicted(state);
     this.frames.push({ seq, flags: input.flags, yaw: input.yaw, pitch: input.pitch, castSlot: input.castSlot ?? 0 });
     if (this.frames.length > 64) this.frames.splice(0, this.frames.length - 64);

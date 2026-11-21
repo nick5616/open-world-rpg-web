@@ -1,7 +1,7 @@
 // The HUD's sundial clock (playtest 5, CR 054: "add a sundial style clock"):
 // a small half-dial under the compass, left of the clock chip (systems/NightHud.tsx, which keeps the numbers). A sun (a moon at night) travels the
-// arc from the left (dawn, 06:00) over the top (noon) to the right (dusk,
-// 18:00); the hour ticks are the dial's, a thin shadow ray runs from the
+// arc from the left (dawn, 06:00) over the top (12:30) to the right (dusk,
+// 19:00); the hour ticks are the dial's, a thin shadow ray runs from the
 // gnomon to the glyph, and a word under it says the time of day ("Mid-morning").
 // It is as quiet as the compass and follows the immersive HUD rules
 // (hud/immersive.ts dialOpacity): soft at rest, bright for a few seconds when
@@ -10,7 +10,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { DAY_LENGTH_S } from '@lodestone/contracts';
 import { worldClock } from '../state/live';
-import { arcAt, clockText } from '../world/buildings/sundial';
+import { arcAt, clockText, DIAL_FROM, DIAL_TO } from '../world/buildings/sundial';
 import { dialOpacity, hudActivity, useHudSettings } from './immersive';
 
 const CX = 48;
@@ -38,7 +38,7 @@ export function glyphAt(hour: number): { x: number; y: number; sun: boolean } {
 }
 
 const tick = (h: number) => {
-  const ang = Math.PI * (1 - (h - 6) / 12);
+  const ang = Math.PI * (1 - (h - DIAL_FROM) / (DIAL_TO - DIAL_FROM));
   const c = Math.cos(ang);
   const s = Math.sin(ang);
   const major = h % 6 === 0;

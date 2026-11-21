@@ -374,7 +374,7 @@ func equipFits(it *Item, slot string) bool {
 		return false
 	}
 	switch slot {
-	case EqMain0, EqMain1:
+	case EqMain0, EqMain1, EqMain2:
 		return def.Kind == "weapon"
 	case EqHead:
 		return def.Armor == "head"
@@ -399,7 +399,7 @@ func ArmorSlot(def *itemdefs.Item) string {
 	return ""
 }
 
-// Equip puts a weapon into a loadout's main hand (slot EqMain0/1) or armor
+// Equip puts a weapon into a loadout's main hand (slot EqMain0/1/2) or armor
 // into its slot; the previous occupant takes the item's old slot.
 func (inv *Inventory) Equip(it *Item, slot string, d *Delta) error {
 	if it.Slot == slot {

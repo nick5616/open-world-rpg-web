@@ -296,7 +296,10 @@ export class EnemyRenderer {
       if (v.kind !== 2 && v.kind !== 7) continue;
       let e = this.enemies.get(v.id);
       const ally = v.kind === 7;
-      if (e && e.typeId !== (v.typeId ?? 0)) {
+      // Playtest 6 polish: an ally whose view dropped out for a moment (you teleported and your pet followed a
+      // tick later) started fading out; when the view came back the same entry was reused, dead, and the pet
+      // stayed invisible for good (its "[E] Pet" prompt still up). A view that returns gets a fresh body.
+      if (e && (e.typeId !== (v.typeId ?? 0) || (e.ally && e.gone && !e.anim.alive && v.healthPct > 0))) {
         this.drop(e);
         e = undefined;
       }
@@ -457,7 +460,8 @@ export class EnemyRenderer {
         if (bars >= this.barCap) this.growOverlays(this.barCap * 2);
         const w = e.ally ? 0.7 : Math.max(1, s * 0.6);
         // Roughly constant on-screen size: shrinks up close (a thick block filled the view at 1-2 m), grows far out.
-        const sc = Math.min(Math.max(0.3, dist / 12), Math.max(1, dist / 18));
+        // (playtest 6 polish: the floor was 0.3, so a pet at your heel in third person wore a nameplate as wide as the HUD)
+        const sc = Math.min(Math.max(0.12, dist / 12), Math.max(1, dist / 18));
         const y = e.y - (sp.flyer ? m.flyLift * s : 0) + m.height * s + 0.25;
         _q.copy(camera.quaternion);
         _root.compose(_p.set(e.x, y, e.z), _q, _s.set(w * sc, sc, 1));

@@ -16,6 +16,7 @@ package game
 
 import (
 	"lodestone/server/pkg/combatdefs"
+	"lodestone/server/pkg/constants"
 	"lodestone/server/pkg/itemdefs"
 	"lodestone/server/zone/internal/items"
 )
@@ -66,7 +67,7 @@ func loadoutMaterial(sess *session, l int) string {
 
 // weaponLooks: the material code of each loadout's weapon and the active
 // loadout's packed look.
-func weaponLooks(sess *session) (mats [2]uint8, active uint16) {
+func weaponLooks(sess *session) (mats [constants.MaxLoadouts]uint8, active uint16) {
 	pr := sess.ent.cbt.Profile
 	for l := range mats {
 		mats[l] = LookMaterialCode(loadoutMaterial(sess, l))

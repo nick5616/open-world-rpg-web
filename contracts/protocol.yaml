@@ -55,7 +55,7 @@ flags:
     #   dodge      set on exactly one step per dodge or mobility spell; castSlot
     #              then carries the dash variant (0 = plain dodge, else
     #              combat.yaml dashes id). The shared movement step applies it.
-    #   cast       set on exactly one step per spell cast; castSlot = 0..3
+    #   cast       set on exactly one step per spell cast; castSlot = 0..3 (CR 039: 6..9 = spell slots 5..8; 4 and 5 are the form and the technique)
     #   interact   set on one step per consumable use (WP13 healing draught)
     #   channel    (CR 020) HELD while the cast key of a hold-to-fire (auto) or
     #              hold-to-empower (charge) spell stays down after the `cast`
@@ -83,7 +83,7 @@ structs:
       flags: u16
       yaw: u16          # yaw / 2pi * 65536 (u16 for your own input: aim precision matters)
       pitch: i16        # pitch / (pi/2) * 32767
-      castSlot: u8      # which equipped spell when `cast` is set (0..3); with `dodge`, the dash variant (WP13)
+      castSlot: u8      # which equipped spell when `cast` is set (0..3, CR 039: 6..9 for slots 5..8); with `dodge`, the dash variant (WP13)
 
   EntityRecord:
     doc: Another entity in your interest set. Only changed fields are sent.

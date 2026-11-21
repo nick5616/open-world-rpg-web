@@ -1,0 +1,6 @@
+plaza names: 3 shown, 0 overlapping pairs
+inventory: 5 empty equipment slots show what goes there
+rumour: obably.You: [Rumour] Anything else you've heard?Tammir: Hm. The wind brought branches down just a short walk south-east. Dry firewood, and nobody's gathered it yet. That's all I know. I'd go myself, but my feet disagree.
+level 10: 0 extra level toasts (want 0)
+rift: The Hollow Star; compass hidden inside
+page errors: 0

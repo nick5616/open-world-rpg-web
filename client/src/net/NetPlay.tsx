@@ -4,7 +4,7 @@
 // connection it offers a reconnect (fresh ticket from the director: zone
 // tickets live 60 s) or a way back to character select.
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import type { Welcome } from '@lodestone/contracts';
 import type { ReadySession } from '../account/types';
 import { WorldCanvas } from '../world/WorldCanvas';
@@ -21,6 +21,7 @@ import { RemotePlayers } from './RemotePlayers';
 import { envAt } from '../sim/stepEnv';
 import { withDevMove } from '../sim/devStep';
 import { ZoneSession, type SessionEnd } from './zoneSession';
+import { AUTO_RETRY_DELAYS_MS, endCopy } from './endCopy'; // playtest 6 polish: friendly words, retries on their own
 // WP12: exploration Events, map actions, re-issued local save blobs.
 import { attachExploration } from '../ui/map/zoneLink';
 // WP13: combat (input, predicted hits, HitClaims, enemies, HUD state).
@@ -50,6 +51,7 @@ import { NightHud } from '../systems/NightHud';
 import { attachProgression } from '../ui/progression';
 // Playtest 2: opt-in PvP and party duels (Events 990-997, Interact 70; CR 019).
 import { attachPvp, DuelRing } from '../ui/pvp';
+import { RiftLayer, RiftPortals } from '../rift/RiftLayer'; // playtest 6 polish: the rift arena and its shots, drawn
 
 type Phase = { kind: 'connecting' } | { kind: 'playing'; welcome: Welcome } | { kind: 'ended'; end: SessionEnd } | { kind: 'error'; message: string };
 
@@ -65,6 +67,10 @@ function Overlay({ children }: { children: ReactNode }) {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center', maxWidth: 460, textAlign: 'center' }}>{children}</div>
     </div>
   );
+}
+
+function endButton(primary: boolean): CSSProperties {
+  return { font: '600 13px system-ui, sans-serif', padding: '6px 16px', borderRadius: 6, cursor: 'pointer', border: '1px solid #c9a650', background: primary ? '#5a4626' : 'rgba(255,255,255,0.06)', color: '#f6e7c0' };
 }
 
 /**
@@ -181,6 +187,16 @@ export function NetPlay({ ready }: { ready: ReadySession }) {
     };
   }, [ready, ground]);
 
+  // Playtest 6 polish: an expired ticket or a lost connection reconnects on its
+  // own a few times (a fresh ticket each try) before the screen waits for a click.
+  const [autoTries, setAutoTries] = useState(0);
+  const ended = phase.kind === 'ended' || phase.kind === 'error';
+  const copy = ended ? endCopy(phase.kind === 'ended' ? { kick: phase.end.kick?.name, reason: phase.end.reason || `code ${phase.end.code}` } : { reason: phase.message }) : null;
+  const willRetry = !!copy?.autoRetry && autoTries < AUTO_RETRY_DELAYS_MS.length;
+  useEffect(() => {
+    if (phase.kind === 'playing') setAutoTries(0);
+  }, [phase.kind]);
+
   const reconnect = useCallback(async () => {
     setPhase({ kind: 'connecting' });
     setSession(null);
@@ -192,6 +208,15 @@ export function NetPlay({ ready }: { ready: ReadySession }) {
     }
     setAttempt((a) => a + 1);
   }, [ready]);
+
+  useEffect(() => {
+    if (!ended || !willRetry) return;
+    const t = setTimeout(() => {
+      setAutoTries((n) => n + 1);
+      void reconnect();
+    }, AUTO_RETRY_DELAYS_MS[autoTries]);
+    return () => clearTimeout(t);
+  }, [ended, willRetry, autoTries, reconnect]);
 
   const driver = useMemo<PlayerDriver | undefined>(() => {
     if (!session || phase.kind !== 'playing') return undefined;
@@ -230,6 +255,8 @@ export function NetPlay({ ready }: { ready: ReadySession }) {
           <PetLayer />
           <FinaleLayer />
           <DuelRing />
+          <RiftLayer />
+          <RiftPortals />
         </WorldCanvas>
       )}
       {driver && session && <NightHud />}
@@ -239,17 +266,31 @@ export function NetPlay({ ready }: { ready: ReadySession }) {
           <div style={{ opacity: 0.6, fontSize: 13 }}>{ready.character.name}</div>
         </Overlay>
       )}
-      {(phase.kind === 'ended' || phase.kind === 'error') && (
+      {ended && copy && (
         <Overlay>
-          <div data-testid="net-ended" style={{ fontSize: 18 }}>
-            {phase.kind === 'ended' && phase.end.kick ? `Disconnected: ${phase.end.kick.name.replace('_', ' ')}` : 'Connection lost'}
+          <div data-testid="net-ended" style={{ fontSize: 19, fontFamily: 'Georgia, serif', color: '#f3d48a' }}>
+            {copy.title}
           </div>
-          <div style={{ opacity: 0.7, fontSize: 13 }}>{phase.kind === 'ended' ? phase.end.reason || `code ${phase.end.code}` : phase.message}</div>
-          <div style={{ display: 'flex', gap: 10 }}>
-            <button onClick={() => setScreen('account')}>Characters</button>
-            <button data-testid="net-reconnect" onClick={reconnect}>
-              Reconnect
-            </button>
+          <div style={{ opacity: 0.8, fontSize: 14 }}>{willRetry ? (autoTries > 0 ? `Trying again (${autoTries + 1} of ${AUTO_RETRY_DELAYS_MS.length})…` : copy.detail) : copy.autoRetry ? 'Could not get back in. Try again in a moment.' : copy.detail}</div>
+          {!willRetry && (
+            <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
+              <button style={endButton(false)} onClick={() => setScreen('account')}>
+                Characters
+              </button>
+              {copy.reload ? (
+                <button style={endButton(true)} onClick={() => location.reload()}>
+                  Reload
+                </button>
+              ) : (
+                <button data-testid="net-reconnect" style={endButton(true)} onClick={() => (setAutoTries(0), void reconnect())}>
+                  Reconnect
+                </button>
+              )}
+            </div>
+          )}
+          {/* the wire's words, small, for bug reports */}
+          <div data-testid="net-ended-reason" style={{ opacity: 0.4, fontSize: 11 }}>
+            {phase.kind === 'ended' ? [phase.end.kick?.name, phase.end.reason || `code ${phase.end.code}`].filter(Boolean).join(': ') : phase.kind === 'error' ? phase.message : ''}
           </div>
         </Overlay>
       )}

@@ -32,7 +32,7 @@ export interface Tip {
 export const TIPS: Tip[] = [
   { id: 'heal', title: 'Low health', keys: ['R'], text: 'drinks a healing draught. Out of draughts? Back off: health comes back out of combat.' },
   { id: 'fight', title: 'Enemy nearby', keys: ['LMB', '1-4', 'F'], text: 'attack, cast a spell, dodge. The wheel picks what the right button uses.' },
-  { id: 'look', title: 'Getting around', keys: ['WASD', 'Space', 'Shift'], text: 'walk, jump, sprint. Click the game to look with the mouse. Esc: menu and all controls.' },
+  { id: 'look', title: 'Getting around', keys: ['WASD', 'Space', 'Shift'], text: 'walk, jump, sprint; the mouse looks around. Esc: menu and all controls.' },
   { id: 'quest', title: 'Your quest', keys: ['J', 'M'], text: 'journal and map. Follow the gold diamond on the compass and the beam of light.' },
   { id: 'talk', title: 'Townsfolk', keys: ['E'], text: 'talks to people: quests, shops and advice.' },
   { id: 'climb', title: 'A cliff', keys: ['W'], text: 'hold it into the rock to climb (stamina wheel by the crosshair). Space leaps up.' },
@@ -66,9 +66,20 @@ export interface TipContext {
   freePoints: number;
   /** CR 051: a new character on the first quest: only the primary tips (firstHour.ts). */
   firstHour: boolean;
+  /** You lost health in the last HURT_S seconds. */
+  hurt: boolean;
+  /** In a fight: hurt recently, a boss bar is up, or you are downed (playtest 2 co-op: tips popped mid-fight). */
+  inCombat: boolean;
 }
 
-export const IDLE_CONTEXT: TipContext = { firstHour: false, playingS: 0, busy: false, questTracked: false, nearPerson: false, enemyNear: false, health: 1, draughts: 0, night: false, cliff: false, falling: false, freePoints: 0 };
+export const IDLE_CONTEXT: TipContext = { firstHour: false, playingS: 0, busy: false, questTracked: false, nearPerson: false, enemyNear: false, health: 1, draughts: 0, night: false, cliff: false, falling: false, freePoints: 0, hurt: false, inCombat: false };
+
+/** Seconds after losing health that you count as in a fight. */
+export const HURT_S = 6;
+/** A non-urgent tip up for less than this when a fight starts is withdrawn (and shows later). */
+export const TIP_WITHDRAW_S = 4;
+
+const URGENT = (id: TipId) => id === 'heal' || id === 'fight';
 
 /** Whether a tip is relevant right now. */
 export function relevant(id: TipId, c: TipContext): boolean {
@@ -103,17 +114,28 @@ export const TIP_GAP_S = 2.5;
 /**
  * The tip to show next: the first relevant one not yet seen, never while
  * busy and never within TIP_GAP_S of the last one closing. Urgent tips
- * (low health, an enemy) skip the gap.
+ * (low health, an enemy) skip the gap. Nothing in a fight, except the
+ * 'fight' tip before you have been hit (it introduces the keys as an enemy
+ * approaches).
  */
 export function nextTip(c: TipContext, seen: ReadonlySet<TipId>, sinceLastS: number): TipId | null {
   if (c.busy) return null;
   for (const t of TIPS) {
     if (seen.has(t.id) || !relevant(t.id, c)) continue;
-    const urgent = t.id === 'heal' || t.id === 'fight';
+    if (c.inCombat && !(t.id === 'fight' && !c.hurt)) continue;
+    const urgent = URGENT(t.id);
     if (!urgent && sinceLastS < TIP_GAP_S) return null;
     return t.id;
   }
   return null;
+}
+
+/**
+ * A fight started under a non-urgent tip that has barely shown: take it
+ * down and forget it was seen, so it shows again later.
+ */
+export function withdrawForCombat(id: TipId, c: TipContext, shownS: number): boolean {
+  return c.inCombat && !URGENT(id) && shownS < TIP_WITHDRAW_S;
 }
 
 /** A shown tip closes early once it has been read and its moment passed. */

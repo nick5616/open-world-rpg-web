@@ -8261,6 +8261,15 @@
      "magma_dash",
      null
     ]
+   },
+   {
+    "weapon": "bow",
+    "spells": [
+     null,
+     null,
+     null,
+     null
+    ]
    }
   ],
   "consumable": {
@@ -9666,7 +9675,7 @@
    "key": "hush_rend",
    "radius": 0,
    "reach": 5,
-   "arc": 150,
+   "arc": 130,
    "width": 0,
    "speed": 0,
    "minRange": 0,
@@ -9676,12 +9685,12 @@
    "everyone": false,
    "id": 89,
    "shape": "cone",
-   "windupMs": 550,
-   "windupSteps": 33,
+   "windupMs": 600,
+   "windupSteps": 36,
    "activeMs": 150,
    "activeSteps": 9,
-   "recoveryMs": 700,
-   "recoverySteps": 42,
+   "recoveryMs": 1000,
+   "recoverySteps": 60,
    "cooldownMs": 3200,
    "cooldownSteps": 192,
    "damage": 24,
@@ -9689,7 +9698,7 @@
   },
   {
    "key": "hush_toll",
-   "radius": 7.5,
+   "radius": 6.5,
    "reach": 0,
    "arc": 0,
    "width": 0,
@@ -9705,8 +9714,8 @@
    "windupSteps": 36,
    "activeMs": 150,
    "activeSteps": 9,
-   "recoveryMs": 900,
-   "recoverySteps": 54,
+   "recoveryMs": 1300,
+   "recoverySteps": 78,
    "cooldownMs": 8000,
    "cooldownSteps": 480,
    "damage": 22,
@@ -11635,6 +11644,16 @@
   }
  },
  "leveling": {
+  "hotbar": {
+   "baseSlots": 4,
+   "slotEveryLevels": 10,
+   "maxSlots": 8,
+   "loadoutLevels": [
+    1,
+    1,
+    20
+   ]
+  },
   "health": {
    "base": 100,
    "perLevel": 12

@@ -42,6 +42,8 @@ class WorldDebug {
   firstPlayableMs: number | null = null;
   /** WP19b: the shader warm-up for the current post chain is done (warmup.ts). */
   shadersWarm = false;
+  /** Playtest 6 polish: whether the towns layer has built everything it queued (TownsLayer sets it; the loading veil waits on it). */
+  townsIdle: (() => boolean) | null = null;
   /** WP19b: the last warm-up's result (ms, programs, done). */
   warmup: { ms: number; programs: number; done: boolean } | null = null;
   /** Playtest 5: what Auto quality's governor decided (scene/GraphicsApplier.tsx), in order. */

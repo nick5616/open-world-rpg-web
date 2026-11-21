@@ -159,7 +159,9 @@ func (c *Context) remarks(p Person, ps Persona, m Memory) []string {
 	switch c.Gear {
 	case 0:
 		if c.Level >= 2 {
-			out = append(out, "Where's your weapon? Walking around bare-handed... either you're very brave or you've left it somewhere. Please say you've left it somewhere.")
+			// Gear 0 is the loadout's training weapon (nothing equipped from the pack), not empty hands
+			// (playtest 6 polish: "Walking around bare-handed" to a player holding the training sword).
+			out = append(out, "Still carrying the training weapon they hand out to new folk? It'll do for slimes. A real one, from a smith or off the road, will serve you better after dark.")
 		}
 	case 3:
 		out = append(out, "That's a fine piece of kit you're carrying. Whoever made it knew their work.")

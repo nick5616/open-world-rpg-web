@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"math"
 
+	"lodestone/server/pkg/constants"
 	"lodestone/server/pkg/movement"
 	"lodestone/server/pkg/proto"
 )
@@ -52,9 +53,9 @@ const (
 const (
 	InteractCombat = 50
 
-	ActSwapLoadout = 1 // arg = loadout (0/1)
+	ActSwapLoadout = 1 // arg = loadout (0/1; CR 039: 2 from level 20)
 	ActEquipWeapon = 2 // arg = loadout | weapon id << 8
-	ActEquipSpell  = 3 // arg = loadout | slot << 4 | spell id << 8 (spell id 0 clears)
+	ActEquipSpell  = 3 // arg = loadout | slot << 4 | spell id << 8 (spell id 0 clears; CR 039: slot < D.SpellSlots(level))
 	ActLearn       = 4 // arg = spell id
 	ActSetGem      = 5 // arg = loadout | (element + 1) << 8 (0 = none); dev builds only (WP14 sockets)
 	ActSetMaterial = 6 // WP15: arg = loadout | material id << 8 (0 = ordinary); dev builds only (WP14 equips forged items)
@@ -109,13 +110,17 @@ func projectileData(v movement.Vec3, radius, rng float64) []byte {
 	return b
 }
 
-// EncodeSync is the combat_sync payload: u8 version(1) | u8 active |
-// 2 x loadout (u8 weapon id | 4 x u16 spell id (0 empty) | i8 gem element) |
-// u16 nKnown + n x u16 spell id | u8 nSkills + n x (u8 skill id | u32 xp) |
-// u16 mana max x10 | u8 charges | u16 skill points left | u8 level.
+// EncodeSync is the combat_sync payload (CR 039: version 2): u8 version(2)
+// | u8 active | u8 nLoadouts | u8 nSlots | nLoadouts x loadout (u8 weapon id
+// | nSlots x u16 spell id (0 empty) | i8 gem element) | u16 nKnown + n x u16
+// spell id | u8 nSkills + n x (u8 skill id | u32 xp) | u16 mana max x10 | u8
+// charges | u16 skill points left | u8 level | u8 open spell slots | u8 open
+// loadouts. Every loadout and slot is sent (MaxLoadouts x MaxSpellSlots), the
+// open counts say which the level has opened. Version 1 had 2 x 4 and
+// ended at the level.
 func EncodeSync(p *Player) []byte {
 	pr := p.Profile
-	b := []byte{1, uint8(pr.Active)}
+	b := []byte{2, uint8(pr.Active), constants.MaxLoadouts, constants.MaxSpellSlots}
 	for _, lo := range pr.Loadouts {
 		w := D.WeaponByKey(lo.Weapon)
 		b = append(b, uint8(w.ID))
@@ -141,5 +146,6 @@ func EncodeSync(p *Player) []byte {
 	b = append(b, uint8(p.Charges))
 	b = binary.LittleEndian.AppendUint16(b, uint16(max(0, p.SkillPointsTotal()-pr.Spent())))
 	b = append(b, uint8(min(255, p.Level)))
+	b = append(b, uint8(D.SpellSlots(p.Level)), uint8(D.LoadoutsOpen(p.Level)))
 	return b
 }

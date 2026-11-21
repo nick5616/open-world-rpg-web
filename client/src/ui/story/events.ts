@@ -80,6 +80,17 @@ export interface StoryIntro {
   eyebrow: string;
   title: string;
   subtitle: string;
+  /** Co-op polish: the act's level gate (0 none) and your level when it began. */
+  level?: number;
+  you?: number;
+}
+
+/** The act card's line: its subtitle and, for a gated act, the level it asks for. */
+export function actSubtitle(c: StoryIntro): string {
+  const lv = c.level ?? 0;
+  if (lv <= 0) return c.subtitle;
+  if ((c.you ?? 0) >= lv) return `${c.subtitle} · level ${lv}+`;
+  return `${c.subtitle} · first reach level ${lv} (you are ${c.you ?? 1}; a party member at it opens it for you)`;
 }
 
 export interface FinaleView {

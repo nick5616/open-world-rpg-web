@@ -16,7 +16,7 @@ import { useSocialStore } from '../../social/store';
 import { isNight } from '../../systems/clock';
 import { useMenu } from '../menu/store';
 import { ABOVE_HOTBAR } from '../../hud/layout';
-import { browserKV, cliffAhead, IDLE_CONTEXT, loadSeen, nextTip, saveSeen, settled, tipById, TIP_SHOW_S, type TipContext, type TipId } from './tips';
+import { browserKV, cliffAhead, HURT_S, IDLE_CONTEXT, loadSeen, nextTip, saveSeen, settled, tipById, TIP_SHOW_S, withdrawForCombat, type TipContext, type TipId } from './tips';
 import { useTips } from './store';
 import { ToastBar } from '../toast/ToastBar';
 import { ControlToasts } from './ControlToasts';
@@ -39,7 +39,8 @@ function sample(startedAt: number, hurtUntil: number): TipContext {
   const self = netRuntime.session?.latestFrame?.self;
   const health = self && self.healthMax > 0 ? self.health / self.healthMax : 1;
   const c = useCombatHud.getState();
-  let enemyNear = now < hurtUntil;
+  const hurt = now < hurtUntil;
+  let enemyNear = hurt;
   if (!enemyNear) {
     for (const v of drawnRemotes.views) {
       if ((v.kind === ENEMY || v.kind === DEMON) && v.healthPct > 0 && Math.hypot(v.x - p.pos.x, v.z - p.pos.z) < 18) {
@@ -66,6 +67,8 @@ function sample(startedAt: number, hurtUntil: number): TipContext {
     cliff,
     falling: p.mode === 'glide' || (p.mode === 'air' && p.vel.y < -11),
     freePoints: c.active ? c.skillPoints : (useProgression.getState().stats?.skillFree ?? 0),
+    hurt,
+    inCombat: hurt || !!c.boss || c.downedUntil > 0,
   };
 }
 
@@ -99,17 +102,19 @@ export function TipsHud() {
         for (const id of SAID_BY_PEOPLE) seen.add(id); // the mentor says it (CR 051)
         saveSeen(kv, character, seen);
       }
-      if (ctx.health < lastHealth - 0.001) hurtUntil = now + 5000;
+      if (ctx.health < lastHealth - 0.001) hurtUntil = now + HURT_S * 1000;
       lastHealth = ctx.health;
       const cur = useTips.getState().current;
       if (cur) {
-        if (tipHover.on && !ctx.busy) {
+        const shownS = (now - cur.at) / 1000;
+        const withdraw = withdrawForCombat(cur.id, ctx, shownS); // playtest 2 co-op: a fight started under a fresh tip
+        if (tipHover.on && !ctx.busy && !withdraw) {
           useTips.setState({ current: { ...cur, at: cur.at + 250 } }); // hovering holds the clock
           return;
         }
-        if (ctx.busy || settled(cur.id, ctx, (now - cur.at) / 1000)) {
-          // A panel that opened over a tip that had barely shown (the What's new welcome) doesn't use it up.
-          if (ctx.busy && now - cur.at < 4000) {
+        if (ctx.busy || withdraw || settled(cur.id, ctx, shownS)) {
+          // A panel (the What's new welcome) or a fight that opened over a tip that had barely shown doesn't use it up.
+          if ((ctx.busy && now - cur.at < 4000) || withdraw) {
             seen.delete(cur.id);
             saveSeen(kv, character, seen);
           }

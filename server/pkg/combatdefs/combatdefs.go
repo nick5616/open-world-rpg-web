@@ -820,6 +820,13 @@ func (d *Defs) ManaRegen(level int) float64 {
 
 // Leveling is what a character level gives (combat.yaml leveling, CR 012).
 type Leveling struct {
+	// Hotbar (CR 039): spell slots and loadouts that open with level.
+	Hotbar struct {
+		BaseSlots       int   `json:"baseSlots"`
+		SlotEveryLevels int   `json:"slotEveryLevels"`
+		MaxSlots        int   `json:"maxSlots"`
+		LoadoutLevels   []int `json:"loadoutLevels"`
+	} `json:"hotbar"`
 	Health struct {
 		Base     float64 `json:"base"`
 		PerLevel float64 `json:"perLevel"`
@@ -924,6 +931,34 @@ func (d *Defs) StaminaBonus(level int) float64 {
 // SkillPointsFor is the spell skill points a character level grants.
 func (d *Defs) SkillPointsFor(level int) int {
 	return d.Leveling.SkillPoints.Base + d.Leveling.SkillPoints.PerLevel*max(1, level)
+}
+
+// SpellSlots is how many spell slots a loadout has at a character level
+// (CR 039): baseSlots, plus one every slotEveryLevels, up to maxSlots.
+func (d *Defs) SpellSlots(level int) int {
+	h := &d.Leveling.Hotbar
+	return min(h.MaxSlots, h.BaseSlots+max(0, level)/max(1, h.SlotEveryLevels))
+}
+
+// LoadoutsOpen is how many weapon loadouts a character level has (CR 039).
+func (d *Defs) LoadoutsOpen(level int) int {
+	n := 0
+	for _, l := range d.Leveling.Hotbar.LoadoutLevels {
+		if level >= l {
+			n++
+		}
+	}
+	return max(2, n)
+}
+
+// SlotLevel is the character level spell slot i (0-based) opens at (1 for
+// the base slots).
+func (d *Defs) SlotLevel(i int) int {
+	h := &d.Leveling.Hotbar
+	if i < h.BaseSlots {
+		return 1
+	}
+	return (i - h.BaseSlots + 1) * max(1, h.SlotEveryLevels)
 }
 
 // TierLevel is the character level a spell tree tier needs for skill-point

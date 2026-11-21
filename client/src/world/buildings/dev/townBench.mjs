@@ -127,7 +127,7 @@ const T = (fn, arg) => page.evaluate(fn, arg);
 await page.keyboard.press('F3');
 await page.addStyleTag({ content: '[data-wp20-hidden]{display:none!important}' });
 await T(() => {
-  for (const el of document.querySelectorAll('div')) if (el.childElementCount === 0 && el.textContent?.startsWith('Click to look around')) (el.parentElement?.childElementCount === 1 ? el.parentElement : el).setAttribute('data-wp20-hidden', '');
+  for (const el of document.querySelectorAll('div')) if (el.childElementCount === 0 && el.textContent?.includes('to look around')) (el.parentElement?.childElementCount === 1 ? el.parentElement : el).setAttribute('data-wp20-hidden', '');
 });
 await T(() => {
   window.__lodestone.setFreezeTime(true);

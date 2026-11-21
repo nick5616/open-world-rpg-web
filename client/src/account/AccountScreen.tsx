@@ -48,7 +48,12 @@ function levelOf(c: Character, save: SaveBlob | undefined): number {
 }
 
 function message(e: unknown): string {
+  // Playtest 6 polish: "cannot reach http://127.0.0.1:25977: Failed to fetch" is for logs; the player gets a sentence.
+  if (e instanceof ApiError && e.code === 'network') return "Can't reach the server. Check your connection and try again.";
   if (e instanceof ApiError) return e.message;
+  // Playtest 6 polish: the browser's own words for a dropped request ("Failed to fetch", "NetworkError when
+  // attempting to fetch resource", "Load failed") mean the same thing to a player.
+  if (e instanceof TypeError && /fetch|network|load failed/i.test(e.message)) return "Can't reach the server. Check your connection and try again.";
   return e instanceof Error ? e.message : String(e);
 }
 
@@ -82,7 +87,7 @@ export function AccountScreen({ onReady, urls }: AccountScreenProps) {
         setExistingProfile(await st.getProfile());
         setPhase('choose');
       })
-      .catch((e) => setError(`Cannot reach the account service: ${message(e)}`));
+      .catch((e) => setError(e instanceof ApiError && e.code !== 'network' ? `Cannot reach the account service: ${message(e)}` : message(e)));
     return () => {
       live = false;
       cancelWake.current = true;

@@ -114,7 +114,7 @@ function Seg<T extends string | number>({ value, options, label, onChange, testi
           style={{
             ...glass,
             borderRadius: 5,
-            padding: '3px 8px',
+            padding: '3px 6px',
             fontSize: 12,
             cursor: disabled ? 'default' : 'pointer',
             background: o === value ? 'rgba(120,170,255,0.32)' : 'rgba(255,255,255,0.05)',
@@ -130,7 +130,7 @@ function Seg<T extends string | number>({ value, options, label, onChange, testi
 
 function Row({ name, hint, children, dim }: { name: string; hint?: string; children: ReactNode; dim?: boolean }) {
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '112px 1fr', alignItems: 'center', gap: 8, margin: '6px 0', opacity: dim ? 0.55 : 1 }} title={hint}>
+    <div style={{ display: 'grid', gridTemplateColumns: '104px 1fr', alignItems: 'center', gap: 8, margin: '6px 0', opacity: dim ? 0.55 : 1 }} title={hint}>
       <span>{name}</span>
       <div>{children}</div>
     </div>
@@ -176,7 +176,7 @@ export function GraphicsPanel() {
   const det = q.detected;
   const rings = Math.round(c.viewDistance / 64);
   return (
-    <div data-testid="graphics-settings" data-ui-panel style={{ ...glass, position: 'fixed', right: 12, top: 46, zIndex: 32, padding: '10px 14px 12px', width: 360, maxWidth: 'calc(100vw - 24px)', maxHeight: 'calc(100vh - 60px)', overflowY: 'auto', boxSizing: 'border-box' }}>
+    <div data-testid="graphics-settings" data-ui-panel style={{ ...glass, position: 'fixed', right: 12, top: 46, zIndex: 32, padding: '10px 14px 12px', width: 410 /* playtest 6 polish: every row's choices on one line (Max FPS, anti-aliasing, spell effects wrapped at 360) */, maxWidth: 'calc(100vw - 24px)', maxHeight: 'calc(100vh - 60px)', overflowY: 'auto', boxSizing: 'border-box' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <strong style={{ fontSize: 14 }}>Graphics</strong>
         <button data-silent data-testid="graphics-close" onClick={() => setGraphicsOpen(false)} style={{ ...glass, padding: '1px 8px', cursor: 'pointer' }} aria-label="Close">

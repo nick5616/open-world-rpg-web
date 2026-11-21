@@ -24,6 +24,7 @@ import { loadTerrainTextures, terrainManifest } from './terrain/terrainTextures'
 import { createHorizonMesh } from './terrain/horizon';
 import { atlasHeightTexture, createSeaPlane, createWaterMaterial, makeWaterUniforms } from './water/water';
 import { ScatterManager } from './scatter/scatterManager';
+import { scatterSnowUniforms } from './scatter/scatterMaterials';
 import { createSkyDome } from './sky/skyDome';
 import { makeSkyLighting, skyLighting, sunVisibility } from './sky/atmosphere';
 import { SunShadows } from './sky/sunShadows';
@@ -47,6 +48,7 @@ import { audioWorld } from '../audio/bridge';
 import { ShelterIndex } from '../audio/shelter';
 import { CAMPS } from '@lodestone/contracts';
 import { useCamps } from '../ui/camps/store';
+import { inRift } from '../rift/store';
 import { baseRoofCover, exposureTarget, liveExposure, lightningThrough, WeatherExposure, type PlacedPiece } from './sky/exposure';
 // CR 038: sky archipelagos, the Underground and the Depths.
 import { VerticalManager } from './vertical/verticalManager';
@@ -376,7 +378,8 @@ export function WorldScene({ runtime }: Props) {
     const expo = world.exposure.update(dt, () => {
       const f = localPlayer.pos;
       const sh = world.shelter ? world.shelter.probe(f.x, f.y, f.z) : { roof: 0, indoors: 0 };
-      return exposureTarget(sh, under, baseRoofCover(f.x, f.y + 1.9, f.z, placedRoofs()));
+      // playtest 6 polish: a rift is its own realm (the zone has no weather there): no sandstorm haze over the arena
+      return exposureTarget(sh, inRift() ? 1 : under, baseRoofCover(f.x, f.y + 1.9, f.z, placedRoofs()));
     });
     liveExposure.value = expo;
     const rain = Math.min(1, wm.rain);
@@ -392,6 +395,7 @@ export function WorldScene({ runtime }: Props) {
     world.rain = rain;
     world.shared.uWet.value = liveWeather.wet * above;
     world.shared.uSnowCover.value = liveWeather.snowCover * above;
+    scatterSnowUniforms.uSnowCover.value = world.shared.uSnowCover.value; // grass and trees whiten with the ground
     world.rainStreaks.update(camera, dt, rain * above * expo);
     world.snow.update(camera, dt, wm.snow * above * expo, wm.wind, size.height, look.flake, look.square);
     world.sand.update(camera, dt, wm.dust * above * expo, wm.wind, size.height);
@@ -447,6 +451,7 @@ export function WorldScene({ runtime }: Props) {
     w.uLightColor.value.copy(L.lightColor).multiplyScalar(L.lightIntensity / 3);
     w.uAmbient.value.copy(L.skyColor).multiplyScalar(L.hemiIntensity * (1 - 0.9 * under));
     w.uTime.value += dt;
+    w.uRain.value = rain * above; // rain rings the water
     world.sea.position.set(Math.round(camera.position.x / 64) * 64, runtime.seaY, Math.round(camera.position.z / 64) * 64);
     world.sea.updateMatrixWorld();
 

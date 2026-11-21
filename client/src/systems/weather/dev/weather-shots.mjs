@@ -109,7 +109,7 @@ const cleanHud = (page) =>
   L(page, () => {
     document.querySelector('[data-testid="debug-hud"]')?.setAttribute('style', 'display:none');
     document.querySelector('[data-testid="lock-hint"]')?.setAttribute('style', 'display:none');
-    for (const el of document.querySelectorAll('div')) if (el.childElementCount === 0 && /Click to look around/.test(el.textContent ?? '')) el.style.display = 'none';
+    for (const el of document.querySelectorAll('div')) if (el.childElementCount === 0 && /to look around/.test(el.textContent ?? '')) el.style.display = 'none';
   });
 
 /** Places: the meadow by the spawn, and the middle of a cold and an arid weather cell (dry land nearby). */

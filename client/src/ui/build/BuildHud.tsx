@@ -134,6 +134,8 @@ function Chips({ lines }: { lines: { item: string; need: number; have: number }[
         <span key={l.item} style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: l.have >= l.need ? '#a7dd93' : '#ff8a7a' }} title={`${itemLabel(l.item)}: ${l.have} of ${l.need}`}>
           <ItemIcon itemKey={l.item} size={16} />
           {Math.min(l.have, 999)}/{l.need}
+          {/* playtest 6 polish: name what it costs (a wolf pelt and a log drew the same tiny chip) */}
+          <span style={{ opacity: 0.8 }}>{itemLabel(l.item)}</span>
         </span>
       ))}
     </span>
@@ -162,7 +164,7 @@ function BuildBar() {
   const refund = aim && aimDef?.build ? refundLines(aim.kind) : [];
   const repair = aim && aimDef?.build && aim.cond < 100 ? repairLines(aim.kind, aim.cond) : [];
   return (
-    <div data-testid="build-bar" data-ui-panel style={{ position: 'fixed', left: '50%', bottom: 28, transform: 'translateX(-50%)', width: 'min(760px, 96vw)', textAlign: 'center', zIndex: 30, pointerEvents: 'none', color: TEXT, font: '13px system-ui, sans-serif' }}>
+    <div data-testid="build-bar" data-ui-panel data-wants-mouse style={{ position: 'fixed', left: '50%', bottom: 28, transform: 'translateX(-50%)', width: 'min(760px, 96vw)', textAlign: 'center', zIndex: 30, pointerEvents: 'none', color: TEXT, font: '13px system-ui, sans-serif' }}>
       {aim && aimDef?.build && (
         <div style={{ ...box, marginBottom: 6, display: 'inline-block' }}>
           <b>{aimDef.name}</b>
@@ -210,6 +212,12 @@ function BuildBar() {
   );
 }
 
+/** A tab or material choice: the chosen one lit gold, the others quiet (playtest 6 polish: these were browser-default
+ * white buttons, and the chosen one's gold text on white could not be read). */
+function choice(on: boolean): CSSProperties {
+  return on ? { background: '#6a5330', borderColor: GOLD, color: GOLD } : { background: 'rgba(255,255,255,0.04)', borderColor: '#5a4c34', color: TEXT };
+}
+
 const box: CSSProperties = { padding: '7px 14px', borderRadius: 8, background: 'rgba(14,12,10,0.8)', border: '1px solid rgba(232,196,106,0.3)', display: 'inline-block', maxWidth: '100%', boxSizing: 'border-box' };
 
 // ---- the menu ----
@@ -225,7 +233,7 @@ function BuildMenu() {
   const shown = CATALOGUE.find((b) => b.base === hover) ?? list[0];
   const cd = info ? Math.max(0, info.homeCdMs - (performance.now() - (info.at ?? performance.now()))) : 0;
   return (
-    <div data-testid="build-menu" data-ui-panel style={{ ...panel, left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: 'min(680px, 96vw)' }}>
+    <div data-testid="build-menu" data-ui-panel className="ls-inv" style={{ ...panel, left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: 'min(680px, 96vw)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
         <div>
           <div style={{ font: '700 18px Georgia, serif', color: GOLD }}>Build</div>
@@ -251,7 +259,7 @@ function BuildMenu() {
       )}
       <div style={{ display: 'flex', gap: 6, margin: '8px 0' }}>
         {CATEGORIES.map((c) => (
-          <button key={c} data-testid={`build-cat-${c}`} onClick={() => setCat(c)} style={{ flex: 1, borderColor: c === cat ? GOLD : undefined, color: c === cat ? GOLD : undefined }}>
+          <button key={c} data-testid={`build-cat-${c}`} onClick={() => setCat(c)} style={{ flex: 1, ...choice(c === cat) }}>
             {c}
           </button>
         ))}
@@ -260,7 +268,7 @@ function BuildMenu() {
         <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 8, fontSize: 12 }}>
           Material:
           {CAMPS.build.materials.map((m) => (
-            <button key={m.key} data-testid={`build-mat-${m.key}`} onClick={() => setMat(m.index)} style={{ borderColor: m.index === mat ? GOLD : undefined, color: m.index === mat ? GOLD : undefined }}>
+            <button key={m.key} data-testid={`build-mat-${m.key}`} onClick={() => setMat(m.index)} style={choice(m.index === mat)}>
               {m.name}
             </button>
           ))}

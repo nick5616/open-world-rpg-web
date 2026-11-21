@@ -25,6 +25,7 @@ import { DiscoveryIntro } from '../intro/DiscoveryIntro';
 import { INTRO_TOAST_KINDS } from '../intro/intros';
 import { useNetStore } from '../../net/netStore';
 import { exploredFor, markExplored, saveExplored } from './explored';
+import { EXPLORATION_TOASTS_TOP } from '../../hud/layout';
 
 const TOAST_STYLE: Record<Toast['kind'], { accent: string; icon: string }> = {
   discovery: { accent: '#ffd166', icon: '✦' },
@@ -42,7 +43,7 @@ function Toasts() {
     return () => clearInterval(id);
   }, []);
   return (
-    <div style={{ position: 'fixed', top: 96, left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center', pointerEvents: 'none', zIndex: 13 }}>
+    <div data-testid="exploration-toasts" style={{ position: 'fixed', top: EXPLORATION_TOASTS_TOP, left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center', pointerEvents: 'none', zIndex: 13 }}>
       {toasts.filter((t) => !INTRO_TOAST_KINDS.has(t.kind)).map((t) => {
         const s = TOAST_STYLE[t.kind];
         return (

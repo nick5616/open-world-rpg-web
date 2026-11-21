@@ -10,6 +10,7 @@ import { QUALITY_PRESETS, useQualityStore } from '../../stores/qualityStore';
 import { TownsManager } from './townsManager';
 import { installTownsDebug } from './townsDebug';
 import { detailOfTier } from './detail';
+import { worldDebug } from '../debug/worldDebug';
 
 /** Night light pool by quality tier (fixed for the session: changing it would recompile every lit material). */
 export function townLightCount(maxLights: number): number {
@@ -35,7 +36,9 @@ export function TownsLayer({ runtime }: { runtime: WorldRuntime }) {
   useEffect(() => {
     if (!manager) return;
     const uninstall = installTownsDebug(manager);
+    worldDebug.townsIdle = () => manager.idle();
     return () => {
+      if (worldDebug.townsIdle) worldDebug.townsIdle = null;
       uninstall();
       manager.dispose();
     };

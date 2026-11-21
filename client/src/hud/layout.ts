@@ -44,8 +44,36 @@ export const HUD_CSS = `
 body:has([data-ui-panel]:not([style*="display: none"])) [data-testid="lock-hint"] { display: none !important; }
 /* The sound, graphics and friends panels open under the top-right buttons, over the quest tracker. */
 body:has([data-testid="sound-settings"], [data-testid="graphics-settings"], [data-testid="friends-panel"], [data-testid="craft-panel"]) [data-testid="quest-tracker"] { visibility: hidden; }
+/* Playtest 6 polish: the one-time "Graphics set to High; F10 to change" note sits under the Graphics button, on the tracker's title: the tracker steps down for its few seconds. */
+body:has([data-testid="graphics-auto-notice"]) :is([data-testid="quest-tracker"], [data-testid="rift-spoils"]) { top: 92px !important; }
+/* Playtest 6 polish: a quest handed in mid-conversation ("Quest complete", the reward items) showed its notes under the conversation's dark vignette, and they ran out before you left: they sit above it. */
+body:has([data-testid="dialog"]) :is([data-testid="quest-notes"], [data-testid="loot-toasts"]) { z-index: 46 !important; }
+body:has([data-testid="dialog"]) :is([data-testid="quest-notes"], [data-testid="loot-toasts"]) .ls-toast-bar { animation-play-state: paused; }
+/* Playtest 6 polish: inside a rift run (its own realm, a 20 x 28 m room) the overworld's clock pill and forecast, the sundial,
+   the compass with its far-away marks, the world event chip and the quest tracker drew under and over the room line and the spoils. */
+body:has([data-testid="rift-hud"]) :is([data-testid="night-hud"], [data-testid="sundial-clock"], [data-testid="compass"], [data-testid="world-event-chip"], [data-testid="world-event"], [data-testid="quest-tracker"], [data-testid="vertical-banner"], [data-testid="vertical-fall"], [data-testid="content-notes"], [data-testid^="progression-notice-area"], [data-testid^="progression-notice-safe"], [data-testid^="progression-notice-danger"]) { visibility: hidden !important; }
+/* The rift prompt re-renders 4 times a second, the town prompt every frame: while a town prompt is up (it owns E, input/interact.ts) the rift's waits. */
+body:has([data-testid="town-prompt"][data-e-at]) [data-testid="rift-prompt"] { visibility: hidden !important; }
+/* The graphics and sound panels reach the bottom right at 720 px tall: the voice buttons wait under them (they showed through the glass). */
+body:has([data-testid="graphics-settings"], [data-testid="sound-settings"]) :is([data-testid="voice-ptt"], [data-testid="voice-settings-toggle"], [data-testid="voice-hud-status"], [data-testid="voice-hud-notice"]) { visibility: hidden; }
+/* Playtest 6 polish: the left column's content note (a world event, a codex entry: top 150 px) and the area notice (28%)
+   met at 720 px tall and printed over each other: the area notice steps below one or two notes. */
+body:has([data-testid="content-notes"] > :nth-child(1)) [data-testid="area-notices"] { top: max(28%, 232px) !important; }
+body:has([data-testid="content-notes"] > :nth-child(2)) [data-testid="area-notices"] { top: max(28%, 312px) !important; }
+/* The rift's "Out of the rift" summary sits where the world event banner does. */
+body:has([data-testid="rift-left"]) [data-testid="world-event"] { visibility: hidden; }
+/* Playtest 6 polish (pt4 playcheck "not fixed" 1): at a sky palace the place banner, the region card, the ward line and the boss
+   drew over each other. One title at a time: the region card (it names the same place) holds the layer banner back; the palace
+   panel sits under the clock like the boss bar, the world event waits under it, and once the guardian's own boss bar is up the
+   panel's duplicate bar steps aside. */
+body:has([data-testid="discovery-intro"]) [data-testid="vertical-banner"] { visibility: hidden; }
+body:has([data-testid="palace-panel"]) [data-testid="world-event"] { visibility: hidden; }
+body:has([data-testid="boss-bar"]) [data-testid="palace-panel"] { visibility: hidden; }
+/* Playtest 6 polish: the journal (centre, up to 760 x 520) cut through the clock pill, the sundial and, below ~1390 px wide, the quest
+   tracker it already shows in full: they wait while it is open. */
+body:has([data-testid="quest-journal"]) :is([data-testid="night-hud"], [data-testid="sundial-clock"], [data-testid="quest-tracker"]) { visibility: hidden; }
 /* The "[E] ..." prompt is noise once the thing it offers is open. */
-body:has([data-ui-panel]:not([style*="display: none"])) [data-testid="town-prompt"] { visibility: hidden; }
+body:has([data-ui-panel]:not([style*="display: none"])) :is([data-testid="town-prompt"], [data-testid="pet-prompt"], [data-testid="steed-prompt"], [data-testid="tame-prompt"], [data-testid="fish-prompt"], [data-testid="rift-prompt"]) { visibility: hidden; }
 /* Playtest 2 integration QA (tools/playtest/sp13.mjs: every playtest 2 overlay at once at
    1920x1080, 1600x900 and 1280x720). Top centre: the world event tracker sits under the clock
    pill and its forecast line (--ls-clock-h, measured), and steps aside for the big centre cards
@@ -59,9 +87,9 @@ body:has([data-testid="levelup-fanfare"], [data-testid="discovery-intro"], [data
 /* Left column: content notes (top), the vault puzzle, the pet card under it (--ls-vault-h), the
    Rested strip (bottom). A centred panel or the instrument overlay covers them at 1280 wide. */
 body:has([data-testid="vault-panel"]) [data-testid="pet-card"] { top: calc(min(46vh, 420px) + var(--ls-vault-h, 130px) + 8px) !important; }
-body:has(${CENTRE_PANELS}, [data-testid="music-overlay"], [data-testid="character-panel"]) :is([data-testid="content-notes"], [data-testid="vault-panel"], [data-testid="pet-card"], [data-testid="camp-strips"], [data-testid="pet-notes"], [data-testid="steed-notes"]) { visibility: hidden; }
+body:has(${CENTRE_PANELS}, [data-testid="music-overlay"], [data-testid="character-panel"]) :is([data-testid="content-notes"], [data-testid="world-event-chip"], [data-testid="vault-panel"], [data-testid="pet-card"], [data-testid="camp-strips"], [data-testid="pet-notes"], [data-testid="steed-notes"]) { visibility: hidden; }
 /* The character panel (spell cards, 604 px from the left edge) reaches the clock pill below ~1450 px wide and the world event tracker below ~1680 px: they wait. */
-@media (max-width: 1450px) { body:has([data-testid="character-panel"]) [data-testid="night-hud"] { visibility: hidden; } }
+@media (max-width: 1450px) { body:has([data-testid="character-panel"]) :is([data-testid="night-hud"], [data-testid="sundial-clock"]) { visibility: hidden; } }
 @media (max-width: 1680px) { body:has([data-testid="character-panel"]) [data-testid="world-event"] { visibility: hidden; } }
 /* The level-up and arrival cards (a few seconds) do not sit on a panel you opened. */
 body:has(${CENTRE_PANELS}, [data-testid="character-panel"]) :is([data-testid="levelup-fanfare"], [data-testid="discovery-intro"]) { visibility: hidden !important; }
@@ -71,6 +99,8 @@ body:has([data-testid="emote-wheel"], [data-testid="pet-wheel"]) :is([data-testi
 body:has([data-testid="music-overlay"]) :is([data-testid="chat-open"], [data-testid="chat-toast"]) { visibility: hidden; }
 /* A shop / NPC dialogue sits on the right: loot toasts (a purchase, a quest reward) move to its left. */
 body:has([data-testid="town-panel"]:not([style*="display: none"])) [data-testid="loot-toasts"] { right: calc(4% + min(380px, 86vw) + 14px) !important; }
+/* Playtest 6 polish: and the quest notes ("New quest: ..." from the board you are reading) step left of it too. */
+body:has([data-testid="town-panel"]:not([style*="display: none"])) [data-testid="quest-notes"] { right: calc(4% + min(380px, 86vw) + 14px) !important; }
 @media (max-width: ${NARROW_PX}px) {
   :root {
     --ls-corner-bottom: calc(var(--ls-hotbar-h) + var(--ls-hint-h) + 20px);
@@ -92,6 +122,10 @@ export const FRIENDS_BUTTON_RIGHT = GRAPHICS_BUTTON_RIGHT + GRAPHICS_BUTTON_W + 
 export const CHAT_WIDTH = 'var(--ls-chat-w, 400px)';
 /** Top of the world event tracker: under the clock pill, its forecast line and night notices (--ls-clock-h). */
 export const BELOW_CLOCK = 'calc(56px + var(--ls-clock-h, 30px) + 6px)';
+/** Top of the world event chip (playtest 2 co-op): the left column, right above the content notes (top 150). */
+export const EVENT_CHIP_TOP = 118;
+/** Top of the exploration toasts (respawn point set, waypoint, fast travel refused): the discovery card sits below them. */
+export const EXPLORATION_TOASTS_TOP = 96;
 /** Bottom offset right above the centre stack (hotbar + hint). */
 export const ABOVE_HOTBAR = 'calc(var(--ls-hotbar-h, 0px) + 14px)';
 

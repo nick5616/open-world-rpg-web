@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Event as ZoneEvent } from '@lodestone/contracts';
 import { CONTENT, COMBAT, ITEMS } from '@lodestone/contracts';
-import { FINALE, SEV, memberLine, roman, secsLeft } from './events';
+import { FINALE, SEV, actSubtitle, memberLine, roman, secsLeft } from './events';
 import { emptyStory, pruneStory, reduceStoryEvent, reviveTarget, LINE_MS } from './store';
 import { creditRoll, parseCredits } from './credits';
 import { E_ORDER } from '../../input/interact';
@@ -11,6 +11,15 @@ const enc = new TextEncoder();
 function ev(kind: number, data: unknown, extra: Partial<ZoneEvent> = {}): ZoneEvent {
   return { kind, entityId: 0, targetId: 0, value: 0, x: 0, y: 0, z: 0, data: data === undefined ? new Uint8Array() : enc.encode(typeof data === 'string' ? data : JSON.stringify(data)), ...extra } as ZoneEvent;
 }
+
+describe('act card gates (co-op polish)', () => {
+  it('shows the level an act asks for', () => {
+    const c = { act: 6, eyebrow: 'The Last Song · Act VI', title: 'The Heartfall', subtitle: 'The Hush waits' };
+    expect(actSubtitle(c)).toBe('The Hush waits');
+    expect(actSubtitle({ ...c, level: 22, you: 30 })).toBe('The Hush waits · level 22+');
+    expect(actSubtitle({ ...c, level: 22, you: 19 })).toContain('first reach level 22 (you are 19');
+  });
+});
 
 describe('main story (CR 035)', () => {
   it('keeps the story sync, the party, the finale and the ending', () => {

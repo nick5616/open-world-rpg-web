@@ -7,6 +7,7 @@
 
 import { KEY_MAP } from '../../input/useKeyboard';
 import type { HeldButtons } from '../../sim/inputFrame';
+import { hotbarKeys, keyName } from '../../combat/hotbar';
 
 export interface ControlRow {
   /** Keys as shown ("W", "Shift", "Left mouse"). */
@@ -38,6 +39,10 @@ const LABEL: Record<string, string> = {
   Delete: 'Delete',
   Equal: '=',
   Period: '.',
+  Minus: '-', // CR 039: spell slot 5
+  BracketLeft: '[', // CR 039: spell slot 6
+  BracketRight: ']', // CR 039: spell slot 7
+  Backslash: '\\', // CR 039: spell slot 8
 };
 
 /** "KeyW" -> "W", "Digit1" -> "1", "ShiftLeft" -> "Shift". */
@@ -60,6 +65,7 @@ export function movementKeys(button: keyof HeldButtons): string[] {
 }
 
 const C = 'combat/runtime.ts';
+const H = 'combat/hotbar.ts'; // CR 039: the spell slot keys
 
 /**
  * Every control in the game, grouped. `debug` adds the dev-build tools;
@@ -72,7 +78,7 @@ export function controlGroups(debug: boolean, dev = false): ControlGroup[] {
       title: 'Moving',
       rows: [
         { keys: [mv('forward')[0], mv('left')[0], mv('back')[0], mv('right')[0]], action: 'Walk', note: 'arrow keys work too' },
-        { keys: ['Mouse'], action: 'Look around', note: 'click the game first to capture the mouse' },
+        { keys: ['Mouse'], action: 'Look around', note: 'click the game or start walking to capture the mouse; panels free it and it comes back when they close' },
         { keys: mv('sprint'), action: 'Sprint (hold)', note: 'uses stamina, the wheel by the crosshair' },
         { keys: mv('jump'), action: 'Jump', note: 'again in the air: double jump, then again: glide' },
         { keys: mv('glide'), action: 'Open or close the glider' },
@@ -87,12 +93,13 @@ export function controlGroups(debug: boolean, dev = false): ControlGroup[] {
         { keys: ['Mouse wheel'], action: 'Pick what the right button uses', note: 'your weapon or a spell slot', src: [[C, 'onWheel']] },
         { keys: ['Right mouse'], action: 'Use the picked spell or weapon move', src: [[C, 'e.button === 2']] },
         { keys: ['Z'], action: 'Parry / charge / heavy (hold); a bow: lower the draw', note: "always your weapon's move, whatever the wheel picked; with a bow it lets the string down without shooting", src: [[C, "'KeyZ'"]] },
-        { keys: ['1', '2', '3', '4'], action: 'Cast the spell in that slot', note: 'also picks it for the right button; hold for streams and charges', src: [[C, "'Digit1'"], [C, "'Digit4'"]] },
+        { keys: hotbarKeys().slice(0, 4).map(keyName), action: 'Cast the spell in that slot', note: 'also picks it for the right button; hold for streams and charges; change the keys above', src: [[H, "'Digit1'"], [H, "'Digit4'"]] },
+        { keys: hotbarKeys().slice(4).map(keyName), action: 'Cast spell slots 5-8', note: 'a new slot every ten levels (5 at level 10, 6 at 20, 7 at 30, 8 at 40)', src: [[H, "'Minus'"], [H, "'BracketLeft'"]] },
         { keys: ['F', 'Alt'], action: 'Dodge', note: 'a short moment nothing can hit you', src: [[C, "'KeyF'"], [C, "'AltLeft'"]] },
         { keys: ['Q'], action: 'Elemental form', note: 'with a gem socketed in your weapon', src: [[C, "'KeyQ'"]] },
         { keys: ['Tab'], action: 'Weapon technique', note: 'once your weapon skill has one (V is push to talk); with a panel open Tab moves between its buttons', src: [[C, "'Tab'"]] },
         { keys: ['R'], action: 'Drink a healing draught', src: [[C, "'KeyR'"]] },
-        { keys: ['X'], action: 'Swap loadout (weapon + 4 spells)', src: [[C, "'KeyX'"]] },
+        { keys: ['X'], action: 'Swap loadout (weapon + its spells)', note: 'cycles your loadouts: two, a third from level 20', src: [[C, "'KeyX'"]] },
       ],
     },
     {
@@ -100,9 +107,9 @@ export function controlGroups(debug: boolean, dev = false): ControlGroup[] {
       rows: [
         {
           keys: ['E'],
-          action: 'Talk, trade, open doors, use forges, mine, take loot, cook, read tablets, gather herbs, attune',
+          action: 'Talk, trade, open doors, use forges, mine, take loot, cook, read tablets, gather herbs, attune, enter a rift',
           note: 'does what the [E] line under the crosshair says, one thing at a time; in the saddle E gets off',
-          src: [['world/buildings/townHud.ts', "'KeyE'"], ['ui/inventory/LootHud.tsx', "'KeyE'"], ['world/caves/caveManager.ts', "'KeyE'"], ['ui/content/ContentHud.tsx', "'KeyE'"], ['ui/progression/ProgressionHud.tsx', "'KeyE'"], ['input/interact.ts', 'E_ORDER']],
+          src: [['world/buildings/townHud.ts', "'KeyE'"], ['ui/inventory/LootHud.tsx', "'KeyE'"], ['world/caves/caveManager.ts', "'KeyE'"], ['ui/content/ContentHud.tsx', "'KeyE'"], ['ui/progression/ProgressionHud.tsx', "'KeyE'"], ['rift/RiftHud.tsx', "'KeyE'"], ['input/interact.ts', 'E_ORDER']],
         },
         { keys: ['8'], action: 'Light or douse your torch', note: 'a torch from a general merchant (6 gold) or a workbench; it burns until the water puts it out, others see it and are lit by it. Familiar light spells (one per school of magic, learned early) float over your shoulder instead', src: [['world/lights/LightRig.tsx', 'TORCH_KEY']] },
         { keys: ['M'], action: 'Map', note: 'drag to pan, wheel to zoom, right-click to pin (Shift: for your party)', src: [['ui/map/ExplorationHud.tsx', "'KeyM'"]] },

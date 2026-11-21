@@ -103,7 +103,7 @@ const T = (fn, a) => page.evaluate(fn, a);
 await page.keyboard.press('F3');
 await page.addStyleTag({ content: '[data-pt-hidden]{display:none!important}' });
 await T(() => {
-  for (const el of document.querySelectorAll('div')) if (el.childElementCount === 0 && el.textContent?.startsWith('Click to look around')) (el.parentElement?.childElementCount === 1 ? el.parentElement : el).setAttribute('data-pt-hidden', '');
+  for (const el of document.querySelectorAll('div')) if (el.childElementCount === 0 && el.textContent?.includes('to look around')) (el.parentElement?.childElementCount === 1 ? el.parentElement : el).setAttribute('data-pt-hidden', '');
   window.__lodestone.setFreezeTime(true);
   window.__lodestone.setTimeOfDay(3600 * 0.42);
 });
@@ -146,7 +146,7 @@ const shot = async (name) => {
   const f = `pt-towns-${TAG}-${name}.png`;
   // Clean frames: no controls hint, discovery banner or sound button.
   await T(() => {
-    for (const el of document.querySelectorAll('div')) if (el.childElementCount <= 4 && el.textContent?.startsWith('Click to look around')) el.setAttribute('data-pt-hidden', '');
+    for (const el of document.querySelectorAll('div')) if (el.childElementCount <= 4 && el.textContent?.includes('to look around')) el.setAttribute('data-pt-hidden', '');
     for (const sel of ['[data-testid="discovery-intro"]', '[data-testid="sound-toggle"]']) document.querySelector(sel)?.setAttribute('data-pt-hidden', '');
   });
   await page.screenshot({ path: path.join(evidence, f) });

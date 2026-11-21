@@ -244,3 +244,16 @@ func TestWhere(t *testing.T) {
 		t.Fatal(s)
 	}
 }
+
+// Playtest 6 polish: a held job's title is short and has no "of here"; the step keeps the notice.
+func TestBountyTitleIsShort(t *testing.T) {
+	b := BountyInfo{ID: 7, Kind: BountyExplore, Site: 3, SiteName: "Watchtower of Brekolaick", Text: "Find out what lies in Watchtower of Brekolaick, south-west of here."}
+	q := FromBounty(b, 0)
+	if q.Title != "Explore Watchtower of Brekolaick" || q.Steps[0].Text != b.Text {
+		t.Fatalf("title %q, step %q", q.Title, q.Steps[0].Text)
+	}
+	b.SiteName = ""
+	if q := FromBounty(b, 0); q.Title != b.Text {
+		t.Fatalf("unnamed: %q", q.Title)
+	}
+}

@@ -185,7 +185,10 @@ func (w *World) think(e *Enemy) {
 		w.striking(e)
 	case Recover:
 		if e.attack == nil || tick-e.stateAt >= ticksOf(e.attack.RecoverySteps) {
-			if e.Def.Behavior == "melee" && e.Boss == nil {
+			// Melee enemies hit and run; a ranged boss (the Archon) steps back
+			// after each attack instead of kiting: co-op polish, a melee pair
+			// spent its fight chasing one that backed off whenever they closed.
+			if (e.Def.Behavior == "melee" && e.Boss == nil) || (e.Boss != nil && e.Def.KeepAway > 0) {
 				e.State, e.stateAt = Reposition, tick
 			} else {
 				e.State, e.stateAt = Chase, tick
@@ -404,7 +407,7 @@ func (w *World) chase(e *Enemy) {
 	switch {
 	case d > want+0.5:
 		w.moveToward(e, p.Pos, 1)
-	case e.Def.KeepAway > 0 && d < want-3:
+	case e.Def.KeepAway > 0 && d < want-3 && e.Boss == nil: // a ranged boss stands and fights (see Recover)
 		fx, fz := (e.Pos.X-p.Pos.X)/math.Max(d, 0.01), (e.Pos.Z-p.Pos.Z)/math.Max(d, 0.01)
 		w.moveAway(e, movement.Vec3{X: e.Pos.X + fx*4, Z: e.Pos.Z + fz*4}, 0.8)
 	default:

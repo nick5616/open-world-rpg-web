@@ -18,7 +18,7 @@ import { npcFocus } from '../../world/buildings/npcFocus';
 import { notGameKey } from '../../input/useKeyboard';
 import { usePanelEsc } from '../../input/panelStack';
 import { dialogController } from './link';
-import { advanceAction, checkWords, choiceForKey, typedChars, useDialog } from './store';
+import { advanceAction, checkWords, choiceForKey, notMet, typedChars, useDialog } from './store';
 import { blipsAt, speakBlip } from './voice';
 import type { DialogChoice } from './events';
 
@@ -253,7 +253,7 @@ export function DialogOverlay() {
                   ) : null}
                   {c.text}
                 </span>
-                {c.low ? <span className="ls-dlg-low">too low</span> : null}
+                {c.low ? <span className="ls-dlg-low">{notMet(c.tag ?? '')}</span> : null}
               </button>
             ))}
           </div>

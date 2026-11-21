@@ -11,7 +11,7 @@ const sunAt = (h: number) => sunDirection((h / 24) * DAY_LENGTH_S);
 describe('the sundial shadow', () => {
   it('points west in the morning, north at noon, east at dusk (the renderer\'s own sun)', () => {
     const am = shadowOf(sunAt(8));
-    const noon = shadowOf(sunAt(12));
+    const noon = shadowOf(sunAt(12.5)); // the sun peaks at 12:30 (sets at 19:00)
     const pm = shadowOf(sunAt(16));
     expect(am.lit && noon.lit && pm.lit).toBe(true);
     expect(am.dx).toBeLessThan(-0.5); // the sun is in +x, the shadow falls toward -x
@@ -38,13 +38,13 @@ describe('the sundial shadow', () => {
     }
   });
   it('has no shadow at night or at the very edge of dawn and dusk', () => {
-    for (const h of [0, 3, 5.5, 18.6, 22]) expect(shadowOf(sunAt(h)).lit).toBe(false);
+    for (const h of [0, 3, 5.5, 19.6, 22]) expect(shadowOf(sunAt(h)).lit).toBe(false);
     expect(shadowOf({ x: 1, y: SUN_MIN_Y - 0.001, z: 0 }).lit).toBe(false);
     expect(shadowOf({ x: 1, y: SUN_MIN_Y + 0.01, z: 0 }).lit).toBe(true);
   });
   it('reads the hour: every carved mark is where the shadow falls at that hour, and between marks it interpolates', () => {
     const marks = hourMarks(sunAt);
-    expect(marks.map((m) => m.hour)).toEqual([6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]);
+    expect(marks.map((m) => m.hour)).toEqual([6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]);
     for (let i = 1; i < marks.length; i++) expect(marks[i].phi).toBeLessThan(marks[i - 1].phi);
     for (const h of [7, 8, 10, 12, 14, 16, 17]) expect(readHour(shadowOf(sunAt(h)).phi, marks)).toBeCloseTo(h, 5);
     for (const h of [7.5, 9.25, 13.5, 16.75]) expect(Math.abs((readHour(shadowOf(sunAt(h)).phi, marks) ?? -1) - h)).toBeLessThan(0.08);
@@ -59,18 +59,18 @@ describe('the sundial shadow', () => {
 });
 
 describe('the HUD sundial', () => {
-  it('moves the sun over the arc from left at 06:00 to right at 18:00, the moon through the night', () => {
+  it('moves the sun over the arc from left at 06:00 to right at 19:00, the moon through the night', () => {
     expect(arcAt(6)).toEqual({ t: 0, sun: true });
-    expect(arcAt(12).t).toBeCloseTo(0.5, 5);
-    expect(arcAt(17.99).t).toBeGreaterThan(0.99);
-    expect(arcAt(18).sun).toBe(false);
-    expect(arcAt(0).t).toBeCloseTo(0.5, 5);
+    expect(arcAt(12.5).t).toBeCloseTo(0.5, 5);
+    expect(arcAt(18.99).t).toBeGreaterThan(0.99);
+    expect(arcAt(19).sun).toBe(false);
+    expect(arcAt(0.5).t).toBeCloseTo(0.5, 5);
     expect(arcAt(5.99).sun).toBe(false);
-    const noon = glyphAt(12);
+    const noon = glyphAt(12.5);
     expect(noon.x).toBeCloseTo(48, 3);
     expect(noon.y).toBeLessThan(10);
     expect(glyphAt(6).x).toBeLessThan(15);
-    expect(glyphAt(17.5).x).toBeGreaterThan(80);
+    expect(glyphAt(18.5).x).toBeGreaterThan(80);
   });
   it('names the time of day and tells it', () => {
     expect(periodWord(6)).toBe('Dawn');

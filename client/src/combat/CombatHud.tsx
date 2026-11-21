@@ -1,10 +1,11 @@
-// Combat HUD (WP13): health and mana, the active loadout's weapon and four
-// spell slots with cooldown sweeps, drink charges, the boss bar with its
+// Combat HUD (WP13): health and mana, the active loadout's weapon and its
+// spell slots (four; CR 039: one more every ten levels, two rows of four
+// past four) with their keys and cooldown sweeps, drink charges, the boss bar with its
 // phase, toasts ("Dodged!", phase changes) and the downed overlay. Health
 // and cooldowns are read on the HUD's own rAF (refs, not React state), like
 // the debug HUD, so combat never re-renders React per frame.
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useReducer, useRef, useState } from 'react';
 import { COMBAT } from '@lodestone/contracts';
 import { localPlayer } from '../state/live';
 import { combatRuntime } from './link';
@@ -18,12 +19,24 @@ import { loadoutWeaponLabel } from '../ui/inventory/items';
 import { audioWorld } from '../audio/bridge';
 import { ToastBar } from '../ui/toast/ToastBar';
 import { barsVisible, hotbarVisible, hudActivity, installHudActivity, isImmersive, sampleBars } from '../hud/immersive';
+import { hotbarKey, hotbarKeys, keyName, loadoutsOpen, onHotbarKeys, spellSlots } from './hotbar';
 
 const spellByKey = new Map(COMBAT.spells.map((s) => [s.key, s]));
-const KEYS = ['1', '2', '3', '4'];
 
 /** Playtest 1 controls (client/src/combat/README.md "Controls"). */
 export const COMBAT_HINT = 'LMB attack (bow: hold to draw) · Wheel select · RMB use selected · Z parry/charge/lower the bow · 1-4 cast · F dodge · Q form · N skills · B build';
+
+/** The open slots' cast keys for the hint line ("1-4", "1-4 - [", or rebound keys as they are). */
+export function castKeysText(open: number, keys: readonly string[] = hotbarKeys()): string {
+  const labels = keys.slice(0, open).map(keyName);
+  if (labels.length >= 4 && labels.slice(0, 4).join('') === '1234') return ['1-4', ...labels.slice(4)].join(' ');
+  return labels.join(' ');
+}
+
+/** Playtest 6 polish: the hint said "1-4 cast" with eight slots open and after the keys were rebound. */
+export function combatHint(open: number): string {
+  return COMBAT_HINT.replace('1-4 cast', `${castKeysText(open)} cast`);
+}
 const SECONDARY: Record<string, string> = { sword: 'parry', spear: 'charge', bow: 'lower', staff: 'heavy', wand: 'heavy' };
 const SELECTED_STYLE: React.CSSProperties = { border: '1px solid #ffd166', boxShadow: '0 0 0 2px rgba(255,209,102,0.55), 0 0 12px rgba(255,209,102,0.45)', transform: 'translateY(-3px)', transition: 'transform 90ms ease-out, box-shadow 90ms' };
 
@@ -64,7 +77,10 @@ export function CombatHud() {
   }, [toastMsg]);
   const charges = useCombatHud((s) => s.charges);
   const selected = useCombatHud((s) => s.selected);
+  const level = useCombatHud((s) => s.level);
   const invItems = useInventory((s) => s.inv?.items);
+  const [, keysChanged] = useReducer((n: number) => n + 1, 0);
+  useEffect(() => onHotbarKeys(keysChanged), []); // CR 039: rebound slot keys relabel the slots
   const root = useRef<HTMLDivElement>(null);
   const stack = useRef<HTMLDivElement>(null);
   const hotbarRow = useRef<HTMLDivElement>(null);
@@ -120,6 +136,12 @@ export function CombatHud() {
   if (!active) return null;
   const lo = loadouts[activeLoadout];
   const now = performance.now();
+  const open = spellSlots(level); // CR 039
+  // Playtest 6 polish: five slots still fit one row (the fifth sat alone under the first);
+  // from six they fold into two even rows (3 + 3, 4 + 3, 4 + 4) of compact slots.
+  const twoRows = open > 5;
+  const cols = twoRows ? Math.ceil(open / 2) : open;
+  const nLoadouts = loadoutsOpen(level);
   return (
     <div ref={root} data-testid="combat-hud" style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 12, font: '13px system-ui, sans-serif', color: '#e9ecef' }}>
       {boss && (
@@ -135,25 +157,28 @@ export function CombatHud() {
       {/* Playtest 1 layout (hud/layout.ts): one centre stack at the bottom, measured into --ls-hotbar-h so the lock hint, chat and voice stack around it. */}
       <div ref={stack} data-testid="combat-stack" style={{ position: 'absolute', bottom: 10, left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, maxWidth: 'calc(2 * var(--ls-center-half, 260px))', width: 'max-content', paddingTop: 10 }}>
         <div ref={hotbarRow} data-testid="hotbar" style={{ display: 'flex', gap: 6, transition: 'opacity 450ms ease' }}>
-          <div data-testid="slot-weapon" data-selected={selected < 0 ? 'true' : 'false'} style={{ position: 'relative', padding: '6px 10px', background: 'rgba(8,10,16,0.6)', borderRadius: 4, minWidth: 74, textAlign: 'center', boxSizing: 'border-box', ...(selected < 0 ? SELECTED_STYLE : { border: '1px solid transparent' }) }} title="X swaps loadouts · Z (or right mouse while selected): parry / draw / charge / heavy">
+          <div data-testid="slot-weapon" data-selected={selected < 0 ? 'true' : 'false'} style={{ position: 'relative', padding: '6px 10px', background: 'rgba(8,10,16,0.6)', borderRadius: 4, minWidth: 74, textAlign: 'center', boxSizing: 'border-box', ...(selected < 0 ? SELECTED_STYLE : { border: '1px solid transparent' }) }} title={`X swaps loadouts (${nLoadouts}) · Z (or right mouse while selected): parry / draw / charge / heavy`}>
             {selected < 0 && <RmbBadge />}
             <div data-testid="weapon-name" style={{ fontWeight: 600, maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{lo ? loadoutWeaponLabel(lo.weapon, activeLoadout, invItems) : '-'}</div>
             <div style={{ opacity: 0.6, fontSize: 11 }}>{SECONDARY[lo?.weapon ?? ''] ?? 'secondary'} · Z</div>
+            {nLoadouts > 2 && <div data-testid="loadout-index" style={{ opacity: 0.7, fontSize: 10 }}>loadout {activeLoadout + 1}/{nLoadouts}</div>}
           </div>
-          {(lo?.spells ?? []).map((k, i) => {
-            const sp = k ? spellByKey.get(k) : undefined;
-            const sel = selected === i && !!sp;
-            return (
-              <div key={i} data-testid={`slot-spell-${i}`} data-selected={sel ? 'true' : 'false'} style={{ position: 'relative', width: 66, height: 46, background: 'rgba(8,10,16,0.6)', border: `1px solid ${sp?.color ?? 'rgba(255,255,255,0.15)'}`, borderRadius: 4, padding: 3, boxSizing: 'border-box', ...(sel ? SELECTED_STYLE : {}) }}>
-                <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', borderRadius: 4 }}>
-                  <div data-cd={i} style={{ position: 'absolute', left: 0, bottom: 0, width: '100%', height: 0, background: 'rgba(0,0,0,0.6)' }} />
+          <div data-testid="spell-slots" data-open={open} style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, auto)`, gap: twoRows ? 3 : 6 }}>
+            {(lo?.spells ?? []).slice(0, open).map((k, i) => {
+              const sp = k ? spellByKey.get(k) : undefined;
+              const sel = selected === i && !!sp;
+              return (
+                <div key={i} data-testid={`slot-spell-${i}`} data-selected={sel ? 'true' : 'false'} style={{ position: 'relative', width: twoRows ? 60 : 66, height: twoRows ? 34 : 46, background: 'rgba(8,10,16,0.6)', border: `1px solid ${sp?.color ?? 'rgba(255,255,255,0.15)'}`, borderRadius: 4, padding: twoRows ? '1px 3px' : 3, boxSizing: 'border-box', ...(sel ? SELECTED_STYLE : {}) }}>
+                  <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', borderRadius: 4 }}>
+                    <div data-cd={i} style={{ position: 'absolute', left: 0, bottom: 0, width: '100%', height: 0, background: 'rgba(0,0,0,0.6)' }} />
+                  </div>
+                  {sel && <RmbBadge />}
+                  <div data-testid={`slot-key-${i}`} style={{ position: 'relative', fontSize: 10, opacity: 0.6, lineHeight: twoRows ? '11px' : undefined }}>{keyName(hotbarKey(i))}</div>
+                  <div style={{ position: 'relative', fontSize: twoRows ? 10 : 11, lineHeight: twoRows ? '11px' : '12px', overflow: 'hidden', maxHeight: twoRows ? 22 : undefined }}>{sp?.name ?? ''}</div>
                 </div>
-                {sel && <RmbBadge />}
-                <div style={{ position: 'relative', fontSize: 10, opacity: 0.6 }}>{KEYS[i]}</div>
-                <div style={{ position: 'relative', fontSize: 11, lineHeight: '12px' }}>{sp?.name ?? ''}</div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
           <div style={{ padding: '6px 10px', background: 'rgba(8,10,16,0.6)', borderRadius: 4, textAlign: 'center' }} title="R drinks a healing draught">
             <div style={{ fontWeight: 600 }}>{charges}</div>
             <div style={{ opacity: 0.6, fontSize: 11 }}>draught · R</div>
@@ -163,7 +188,7 @@ export function CombatHud() {
           <Bar id="hp" color="linear-gradient(#e05050, #a02020)" width={250} label={<span data-hp />} />
           <Bar id="mana" color="linear-gradient(#5aa0ff, #2050c0)" width={170} />
         </div>
-        <div ref={hintRow} data-testid="combat-hint" style={{ opacity: 0.6, transition: 'opacity 450ms ease', fontSize: 11, lineHeight: '14px', textAlign: 'center', textShadow: '0 1px 2px #000' }}>{COMBAT_HINT}</div>
+        <div ref={hintRow} data-testid="combat-hint" style={{ opacity: 0.6, transition: 'opacity 450ms ease', fontSize: 11, lineHeight: '14px', textAlign: 'center', textShadow: '0 1px 2px #000' }}>{combatHint(open)}</div>
       </div>
       {toastMsg && now - toastMsg.at < TOAST_MS && (
         <div key={toastMsg.at} className="ls-timed" style={{ position: 'absolute', top: '38%', left: '50%', transform: 'translateX(-50%)', padding: '0 14px 8px', overflow: 'hidden', fontSize: 20, fontWeight: 700, textShadow: '0 0 6px #000' }}>

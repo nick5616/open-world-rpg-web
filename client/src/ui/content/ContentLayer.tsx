@@ -306,7 +306,9 @@ export function ContentLayer() {
       if (bm) {
         const d = Math.hypot(e.x - px, e.z - pz);
         const mat = bm.material as THREE.MeshBasicMaterial;
-        mat.opacity = e.phase === EVENT_PHASE.active ? Math.min(0.55, Math.max(0.08, (d - 20) / 120)) : 0.1;
+        // playtest 6 polish: standing at the event (a rift's portal) put you inside the column, a pale wall over the view: it fades out within ~10 m
+        const inside = Math.min(1, Math.max(0, (d - 4) / 6));
+        mat.opacity = (e.phase === EVENT_PHASE.active ? Math.min(0.55, Math.max(0.08, (d - 20) / 120)) : 0.1) * inside;
       }
       const sh = o.getObjectByName('shard');
       if (sh) sh.rotation.y = t * 0.8;

@@ -28,6 +28,7 @@ import { advanceIntro, introHistory, pushIntro, resetIntros, skipCurrentIntro, u
 import { installStingUnlock, setStingVolume, stingVolume, type StingKind } from './sting';
 import { emitSound } from '../../audio/bridge';
 import { useHudSettings } from '../../hud/immersive';
+import { EXPLORATION_TOASTS_TOP } from '../../hud/layout';
 
 const FONT_HREF = 'https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&display=swap';
 /** Fraunces from Google Fonts; offline (or blocked) it falls back to Georgia. */
@@ -304,8 +305,9 @@ export function DiscoveryIntro() {
     // A new object (new endsAt) when the queue collapses this intro.
   }, [current]);
 
-  // Top third, under the compass (8-60 px) and any WP12 toasts still drawn at top: 64.
-  const top = `max(18vh, ${64 + toastCount * 58 + 12}px)`;
+  // Top third, under the compass (8-60 px) and any WP12 toasts still drawn (playtest 6 polish: they moved to 96 px and
+  // this still counted from 64, so "Respawn point set" covered the region's name).
+  const top = `max(18vh, ${EXPLORATION_TOASTS_TOP + toastCount * 58 + 12}px)`;
   return (
     <div style={{ position: 'fixed', left: 0, right: 0, top, display: 'flex', justifyContent: 'center', pointerEvents: 'none', zIndex: 14, userSelect: 'none' }}>
       <style>{KEYFRAMES}</style>

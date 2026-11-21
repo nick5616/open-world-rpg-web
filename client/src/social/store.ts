@@ -158,6 +158,9 @@ export function reduce(s: SocialState, msg: S2C): Partial<SocialState> {
     case 'relations':
       return { relations: { muted: msg.muted, blocked: msg.blocked, profanityFilter: msg.profanityFilter } };
     case 'error': {
+      // Playtest 6 polish: a stale ticket is refused and the socket reconnects with a fresh one on its own;
+      // the refusal ("invalid or expired ticket") is not news for the chat log.
+      if (msg.code === 'bad_auth') return {};
       if (msg.code === 'unknown_target' && s.activeTab.startsWith('w:') && (s.tabs[s.activeTab]?.length ?? 0) === 0) {
         // "/w Nobody hi" opened an empty tab for a name that doesn't exist: drop it.
         const tabs = { ...s.tabs };

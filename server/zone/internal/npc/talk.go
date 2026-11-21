@@ -163,6 +163,11 @@ func (w *World) Bounties(si, day int) []Bounty {
 		}
 	}
 	var out []Bounty
+	type usedKey struct {
+		kind uint8
+		site int
+	}
+	used := map[usedKey]bool{}
 	for k := 0; k < n; k++ {
 		r := mix(h + uint64(k+1)*0x9E3779B97F4A7C15)
 		b := Bounty{ID: uint32(r>>32) | 1, Site: -1, Settlement: si}
@@ -178,7 +183,25 @@ func (w *World) Bounties(si, day int) []Bounty {
 			b.Reward = uint32(b.Qty) * (8 + uint32((r>>24)%8))
 			b.Text = fmt.Sprintf("Bring %d %s.", b.Qty, it.name)
 		default:
-			c := near[int((r>>8)%uint64(min(len(near), 4)))]
+			// Playtest 6 polish: two jobs of the same kind at the same place read as a duplicate notice
+			// ("Find out what lies in X" twice, 94 g and 74 g): take the next nearby place instead, or a delivery.
+			pool := min(len(near), 4)
+			pick := int((r >> 8) % uint64(pool))
+			for t := 0; t < pool && used[usedKey{kind, near[pick].s.Index}]; t++ {
+				pick = (pick + 1) % pool
+			}
+			if used[usedKey{kind, near[pick].s.Index}] {
+				it := deliverItems[(r>>8)%uint64(len(deliverItems))]
+				b.Item = it.id
+				b.Qty = uint16(3 + (r>>16)%6)
+				b.Reward = uint32(b.Qty) * (8 + uint32((r>>24)%8))
+				b.Text = fmt.Sprintf("Bring %d %s.", b.Qty, it.name)
+				b.Kind = BountyDeliver
+				out = append(out, b)
+				continue
+			}
+			c := near[pick]
+			used[usedKey{kind, c.s.Index}] = true
 			b.Site = c.s.Index
 			dir := compass(c.s.X-st.X, c.s.Z-st.Z)
 			what := siteNoun(c.s)

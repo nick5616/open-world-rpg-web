@@ -104,9 +104,12 @@ export function LootHud() {
         last = t;
         setTarget(t);
       }
-      // Expire toasts / the banner.
+      // Expire toasts / the banner (playtest 6 polish: they wait while a conversation is open,
+      // where a quest's reward items arrive).
       const now = performance.now();
-      if (s.toasts.some((x) => now - x.at >= TOAST_MS) || (s.bitchin && now - s.bitchin.at >= BITCHIN_MS)) {
+      if (s.toasts.length && document.querySelector('[data-testid="dialog"]')) {
+        useInventory.setState({ toasts: s.toasts.map((x) => ({ ...x, at: x.at + 120 })) });
+      } else if (s.toasts.some((x) => now - x.at >= TOAST_MS) || (s.bitchin && now - s.bitchin.at >= BITCHIN_MS)) {
         useInventory.setState({ toasts: s.toasts.filter((x) => now - x.at < TOAST_MS), bitchin: s.bitchin && now - s.bitchin.at < BITCHIN_MS ? s.bitchin : null });
       }
     }, 120);

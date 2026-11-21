@@ -7,6 +7,8 @@ import { create } from 'zustand';
 import { COMBAT, type Event as ZoneEvent } from '@lodestone/contracts';
 import { ATTUNE_REFUSED, decodeArea, decodeStats, PEV, STATS_REASON, type Area, type Stats } from './events';
 import { gainLines } from './gains';
+import { hotbarLines } from '../../combat/hotbar';
+import { inRift } from '../../rift/store';
 
 export interface Fanfare {
   id: number;
@@ -14,6 +16,8 @@ export interface Fanfare {
   prev: number;
   lines: string[];
   at: number;
+  /** CR 039: the hotbar card (Event 900 reason 3) instead of a level-up. */
+  hotbar?: boolean;
 }
 
 export interface Notice {
@@ -67,6 +71,9 @@ export function reduceProgressionEvent(s: ProgressionState, ev: ZoneEvent, now: 
       const patch: Partial<ProgressionState> = { stats: st };
       if (st.reason === STATS_REASON.levelUp && st.level > st.prevLevel) {
         patch.fanfare = { id: nextId++, level: st.level, prev: st.prevLevel, lines: gainLines(st.prevLevel, st.level), at: now };
+      } else if (st.reason === STATS_REASON.hotbar && st.level > st.prevLevel) {
+        const lines = hotbarLines(st.prevLevel, st.level);
+        if (lines.length) patch.fanfare = { id: nextId++, level: st.level, prev: st.prevLevel, lines, at: now, hotbar: true };
       }
       return patch;
     }
@@ -75,6 +82,8 @@ export function reduceProgressionEvent(s: ProgressionState, ev: ZoneEvent, now: 
       if (!a) return null;
       const prev = s.area;
       const patch: Partial<ProgressionState> = { area: a };
+      // playtest 6 polish: a rift's arena hangs in the sky over the portal; its "area" is not a place you came to
+      if (inRift()) return patch;
       if (a.byYou) {
         patch.notices = push({ kind: 'area', title: `First to set foot here: the land takes your measure`, detail: `Area level ${a.level} · ${a.tierName}. ${tierDetail(a)}` });
       } else if (!prev || prev.tierIndex !== a.tierIndex) {

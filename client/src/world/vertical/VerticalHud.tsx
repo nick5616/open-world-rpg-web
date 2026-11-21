@@ -10,6 +10,7 @@ import { notGameKey } from '../../input/useKeyboard';
 import { nightRuntime } from '../../systems/night';
 import { usePalace } from '../palace/palaceStore';
 import { useRace } from './race';
+import { BELOW_CLOCK } from '../../hud/layout'; // playtest 6 polish: the palace panel sat on the clock pill
 
 export interface VerticalHudState {
   /** 0 surface, 1 sky, 2 Underground, 3 Depths. */
@@ -66,7 +67,7 @@ function PalacePanel() {
   if (!st.near || st.phase < 1) return null;
   const names = ['Sun', 'Moon', 'Wind'];
   return (
-    <div style={{ ...card, top: '9%', fontSize: 14 }} data-testid="palace-panel">
+    <div style={{ ...card, top: BELOW_CLOCK, fontSize: 14, padding: '6px 16px 8px', borderRadius: 8, background: 'rgba(12,14,20,0.5)' /* readable over pale marble */ }} data-testid="palace-panel">
       <div style={{ fontSize: 16, letterSpacing: 3, textTransform: 'uppercase', opacity: 0.9 }}>{st.name || 'The Sky Palace'}</div>
       {st.phase === 1 && (
         <div style={{ marginTop: 6, display: 'flex', gap: 14, justifyContent: 'center' }}>

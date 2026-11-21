@@ -47,7 +47,41 @@ const (
 	StatsSync    = 0
 	StatsLevelUp = 1
 	StatsAttuned = 2
+	// StatsHotbar (CR 039): once after a join, when the character's level
+	// opened spell slots or a loadout it was never told about (a character
+	// saved before CR 039); previous level = the level last told.
+	StatsHotbar = 3
 )
+
+// hotbarNews reports whether going from level from to level to opens a
+// spell slot or a loadout (CR 039).
+func hotbarNews(from, to int) bool {
+	d := combatdefs.D
+	return d.SpellSlots(to) > d.SpellSlots(from) || d.LoadoutsOpen(to) > d.LoadoutsOpen(from)
+}
+
+// hotbarJoin is CR 039's migration: a character whose level opened spell
+// slots or the third loadout before it was ever told (saved before CR 039,
+// or levelled on a zone that never said) hears it once, in Event 900
+// reason 3; the level told is saved with the loadouts.
+func (s *Server) hotbarJoin(sess *session) {
+	e := sess.ent
+	if e == nil || e.x == nil || e.cbt == nil {
+		return
+	}
+	pr, lvl := e.cbt.Profile, e.x.prog.Level
+	seen := max(1, pr.HotbarSeen)
+	if lvl <= pr.HotbarSeen {
+		return
+	}
+	news := hotbarNews(seen, lvl)
+	pr.SeeHotbar(lvl)
+	if news {
+		s.sendStats(sess, StatsHotbar, seen)
+		s.log.Info("hotbar unlocks told", "entity", e.ID, "level", lvl, "since", seen, "slots", combatdefs.D.SpellSlots(lvl), "loadouts", combatdefs.D.LoadoutsOpen(lvl))
+	}
+	s.saveCombat(sess, false)
+}
 
 // attunedCount is the number of tower crystals a character attuned.
 func attunedCount(p *explore.Progress) int { return explore.Bitset(p.Attuned).Count() }
@@ -100,6 +134,7 @@ func (s *Server) progressionJoin(sess *session) {
 	}
 	s.applyProgression(e, false)
 	s.sendStats(sess, StatsSync, int(e.Level))
+	s.hotbarJoin(sess) // CR 039
 }
 
 // levelChanged is every level-up's path (discovery, combat XP, attunement,
@@ -114,6 +149,7 @@ func (s *Server) levelChanged(sess *session, before int) {
 	s.sendEvent(sess, &proto.Event{Kind: EventLevelUp, EntityID: e.ID, Value: int32(e.x.prog.Level)})
 	s.applyProgression(e, true)
 	if e.cbt != nil {
+		e.cbt.Profile.SeeHotbar(e.x.prog.Level) // CR 039: the fanfare tells new spell slots and loadouts
 		s.sendCombatSync(sess)
 	}
 	s.sendStats(sess, StatsLevelUp, before)

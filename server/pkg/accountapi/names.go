@@ -22,7 +22,14 @@ const (
 // ErrNameInvalid explains why a name was rejected; the message is shown to players.
 type ErrNameInvalid struct{ Reason string }
 
-func (e ErrNameInvalid) Error() string { return "invalid name: " + e.Reason }
+// Error is the sentence the character screen shows ("Names are 3 to 16 characters."; playtest 6 polish: it
+// printed "invalid name: names are 3 to 16 characters").
+func (e ErrNameInvalid) Error() string {
+	if e.Reason == "" {
+		return "That name can't be used."
+	}
+	return strings.ToUpper(e.Reason[:1]) + e.Reason[1:] + "."
+}
 
 // reservedNames could be mistaken for staff or system messages in chat.
 var reservedNames = []string{"admin", "administrator", "system", "server", "moderator", "mod", "gm", "staff", "lodestone", "support", "official", "everyone", "party", "global", "zone", "local", "whisper"}

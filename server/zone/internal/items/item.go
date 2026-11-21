@@ -61,7 +61,7 @@ type Item struct {
 	Uniques   []string // unique effect keys (legendary+)
 	Name      string   // generated name (mythic+), "" otherwise
 	Sockets   []string // one entry per socket: "" empty or a gem key
-	Slot      string   // inv:N, gem:N, ore:N, purse, eq:main0|main1|head|body|legs; "" in the world
+	Slot      string   // inv:N, gem:N, ore:N, purse, eq:main0|main1|main2|head|body|legs; "" in the world
 	Seed      int64    // the roll seed (spec 8: logged for audit)
 	Tradeable bool
 	Verified  bool
@@ -212,6 +212,7 @@ const (
 const (
 	EqMain0 = "eq:main0"
 	EqMain1 = "eq:main1"
+	EqMain2 = "eq:main2" // CR 039: the third loadout's weapon (level 20)
 	EqHead  = "eq:head"
 	EqBody  = "eq:body"
 	EqLegs  = "eq:legs"
@@ -219,8 +220,11 @@ const (
 
 // MainSlot is the equipment slot of a loadout's weapon.
 func MainSlot(loadout int) string {
-	if loadout == 1 {
+	switch loadout {
+	case 1:
 		return EqMain1
+	case 2:
+		return EqMain2
 	}
 	return EqMain0
 }

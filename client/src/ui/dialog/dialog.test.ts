@@ -123,6 +123,10 @@ describe('keys and advancing', () => {
 
   it('a check chip says passed or too low', () => {
     expect(checkWords({ tag: 'Level 10', pass: false })).toBe('[Level 10] too low');
+    // playtest 6 polish: each kind of check says why in its own terms
+    expect(checkWords({ tag: 'Sunsteel', pass: false })).toBe('[Sunsteel] none on you');
+    expect(checkWords({ tag: 'Mage', pass: false })).toBe('[Mage] not your weapon');
+    expect(checkWords({ tag: 'Warmth ♥♥', pass: false })).toBe('[Warmth ♥♥] not yet');
     expect(checkWords({ tag: 'Mage', pass: true })).toBe('[Mage] passed');
   });
 

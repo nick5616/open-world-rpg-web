@@ -167,7 +167,8 @@ export const dialogController = {
   /** The services panel closed: back to the conversation. */
   panelClosed(): void {
     const st = useDialog.getState();
-    if (st.open && st.parked) useDialog.setState({ parked: false, at: performance.now() });
+    // (playtest 6 polish: two kinds of panel can park it now, the town's and a station's: only when both are shut)
+    if (st.open && st.parked && !panelOpenFn()) useDialog.setState({ parked: false, at: performance.now() });
   },
 
   get node(): DialogNode | null {

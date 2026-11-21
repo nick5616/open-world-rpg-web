@@ -16,7 +16,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { Site } from '@lodestone/worldgen';
 import { localPlayer } from '../../state/live';
 import { drawnRemotes } from '../../net/netStore';
-import { hasBit, MAX_PERSONAL_PINS, PIN_COLORS, pinName, type Pin } from './events';
+import { hasBit, MAX_PERSONAL_PINS, orBits, PIN_COLORS, pinName, type Pin } from './events';
 import { setMapOpen, useExploration } from './store';
 import { mapTerrain, useMapWorld } from './world';
 import { anyExploredIn, currentExplored, exploredMask } from './explored';
@@ -51,8 +51,9 @@ export function siteVisibility(s: Site, revealed: number, towers: Uint8Array, wa
   return 'hidden';
 }
 
-export function canFastTravel(s: Site, towers: Uint8Array, waypoints: Uint8Array): boolean {
-  return (s.kind === 'tower' && hasBit(towers, s.index)) || (s.kind === 'waypoint' && hasBit(waypoints, s.index));
+/** lent: towers a party member unlocked (Event 609): the zone lets you travel there too. */
+export function canFastTravel(s: Site, towers: Uint8Array, waypoints: Uint8Array, lent: Uint8Array = new Uint8Array(0)): boolean {
+  return (s.kind === 'tower' && (hasBit(towers, s.index) || hasBit(lent, s.index))) || (s.kind === 'waypoint' && hasBit(waypoints, s.index));
 }
 
 export function MapScreen() {
@@ -144,7 +145,8 @@ function MapView() {
       if (!ctx) return;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       const st = useExploration.getState();
-      const { revealed, towers, waypoints, discoveries } = st.progress;
+      const { revealed, waypoints, discoveries } = st.progress;
+      const towers = orBits(st.progress.towers, st.partyTowers); // co-op polish: lent towers draw unlocked
       const v = view.current;
       const side = Math.min(w, h);
       const k = (side / data.worldSize) * v.zoom;
@@ -226,6 +228,12 @@ function MapView() {
       const showLayer = layerPick === 'auto' ? (audioWorld.layer as MapLayer) : layerPick;
       drawLayerOverlay(ctx, vertical, showLayer, sx, sy, k, w, h, (i) => (i >= 0 && i < data.sites.length && siteVisibility(data.sites[i], revealed, towers, waypoints, discoveries) !== 'hidden' ? data.sites[i].name : null));
 
+      // Labels drawn so far this frame: later quest and event labels stack clear of them
+      // (playtest 6 polish: "Tammir, farmer" printed over "Draedmore" and your arrow).
+      const placed: { x: number; y: number }[] = [];
+      const px = sx(localPlayer.pos.x);
+      const py = sy(localPlayer.pos.z);
+      placed.push({ x: px, y: py });
       // Sites.
       const order = (s: Site) => (s.kind === 'tower' ? 3 : s.category === 'settlement' ? 2 : s.kind === 'waypoint' ? 1 : 0);
       const sites = data.sites.filter((s) => siteOnLayer(s, showLayer)).sort((a, b) => order(a) - order(b));
@@ -239,9 +247,14 @@ function MapView() {
         out.push({ x, y, r: 10, site: s });
         if ((vis === 'known' || vis === 'unlocked') && s.name && (s.kind === 'tower' || s.category === 'settlement' || v.zoom > 2)) {
           ctx.font = '12px Georgia, serif';
-          ctx.fillStyle = 'rgba(30,20,10,0.9)';
           ctx.textAlign = 'center';
+          // a paper halo keeps the name readable over terrain, rivers and your arrow (playtest 6 polish)
+          ctx.lineWidth = 3;
+          ctx.strokeStyle = 'rgba(244,236,214,0.75)';
+          ctx.strokeText(s.name, x, y + 20);
+          ctx.fillStyle = 'rgba(30,20,10,0.9)';
           ctx.fillText(s.name, x, y + 20);
+          placed.push({ x, y: y + 16 });
         }
       }
 
@@ -267,7 +280,6 @@ function MapView() {
       // Playtest 1: quest markers (every active quest's current step; the
       // tracked one in gold) and a preview of where an offer would take you.
       const qs = useQuests.getState();
-      const placed: { x: number; y: number }[] = [];
       for (const q of qs.log.quests) {
         const tracked = q.id === (trackedQuest(qs)?.id ?? -1);
         for (const m of q.markers) drawQuestMarker(ctx, sx(m.x), sy(m.z), (m.r ?? 0) * k, tracked ? '#ffd166' : '#e8a33d', tracked ? m.label : '', tracked ? 1 : 0.6, false, placed);
@@ -302,8 +314,6 @@ function MapView() {
       }
 
       // You: an arrow along the view direction (yaw 0 faces -z = up).
-      const px = sx(localPlayer.pos.x);
-      const py = sy(localPlayer.pos.z);
       const fx = -Math.sin(localPlayer.yaw);
       const fz = -Math.cos(localPlayer.yaw);
       ctx.save();
@@ -401,7 +411,9 @@ function MapView() {
 
   const progress = useExploration((s) => s.progress);
   const personal = pins.filter((p) => !p.party).length;
-  const travel = selected && canFastTravel(selected, progress.towers, progress.waypoints);
+  const lent = useExploration((s) => s.partyTowers);
+  const travel = selected && canFastTravel(selected, progress.towers, progress.waypoints, lent);
+  const lentOnly = !!selected && selected.kind === 'tower' && !hasBit(progress.towers, selected.index) && hasBit(lent, selected.index);
 
   return (
     <div data-testid="map-screen" data-ui-panel style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(10,8,6,0.82)', display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 260px', font: '14px system-ui, sans-serif', color: '#2b2116' }}>
@@ -471,7 +483,7 @@ function MapView() {
             <div style={{ fontSize: 12, opacity: 0.8, marginBottom: 8 }}>{selected.kind.replace('_', ' ')} · {data?.regions[selected.region]?.name}</div>
             {travel ? (
               <button data-testid="map-travel" onClick={() => { actions?.fastTravel(selected.index); setMapOpen(false); }} disabled={!actions}>
-                Fast travel here
+                {lentOnly ? 'Fast travel here (your party climbed it)' : 'Fast travel here'}
               </button>
             ) : (
               <div style={{ fontSize: 12 }}>{selected.kind === 'tower' ? 'Climb this tower to unlock fast travel.' : selected.kind === 'waypoint' ? 'Touch this waypoint stone to unlock it.' : ''}</div>

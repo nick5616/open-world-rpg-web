@@ -5,7 +5,7 @@
 // to the DOM by levels.ts (CSS --lvl, data-speaking), so talking never
 // re-renders this component.
 
-import { useEffect, useRef, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { SELF, voiceLevels } from '../levels';
 import { useVoiceStore, type SpeakerInfo } from '../store';
 import { voiceKeyLabel } from '../keys';
@@ -59,8 +59,45 @@ function micLabel(s: ReturnType<typeof useVoiceStore.getState>): string {
   return s.pttMode === 'toggle' ? `Press ${key} to talk` : `Hold ${key} to talk`;
 }
 
+/**
+ * The short line under the voice buttons while voice is not connected
+ * (playtest 6 polish: the corner showed the raw LiveKit error, "could not
+ * establish signal connection: Failed to fetch; retrying in 30 s", for as
+ * long as voice was down). The raw reason stays in the tooltip and in the
+ * voice settings' diagnostics.
+ */
+export function hudStatusLine(status: string, statusText: string): string {
+  // (connecting / reconnecting: the button's own label says so; a retry cycle must not bring a line back)
+  if (!statusText || status === 'connected' || status === 'off' || status === 'connecting' || status === 'reconnecting') return '';
+  if (status === 'error') return "Can't reach voice chat; trying again. Voice button: details";
+  return statusText;
+}
+
+/** How long the status line stays after voice goes down (ms); the label keeps saying "Voice offline". */
+export const STATUS_LINE_MS = 10000;
+
 export function VoiceHud() {
   const s = useVoiceStore();
+  // The status line shows for a while each time voice goes down, not for good.
+  // Retries flip error -> connecting -> error; the line shows once per outage (until voice connects again).
+  const [lineUntil, setLineUntil] = useState(0);
+  const announced = useRef(false);
+  const down = s.status === 'error' || s.status === 'unavailable';
+  useEffect(() => {
+    if (s.status === 'connected' || s.status === 'off') announced.current = false;
+  }, [s.status]);
+  useEffect(() => {
+    if (!down || announced.current) return;
+    announced.current = true;
+    setLineUntil(Date.now() + STATUS_LINE_MS);
+  }, [down]);
+  useEffect(() => {
+    if (!lineUntil) return;
+    const id = setTimeout(() => setLineUntil(0), Math.max(0, lineUntil - Date.now()));
+    return () => clearTimeout(id);
+  }, [lineUntil]);
+  const statusLine = hudStatusLine(s.status, s.statusText);
+  const showLine = statusLine !== '' && (!down || lineUntil > 0);
   // The Esc menu's Voice row (works offline too: devices and the mic test).
   useEffect(() => registerMenuEntry({ id: 'voice', label: 'Voice', order: 11, open: () => openVoiceSettings() }), []);
   // A runtime notice (mic muted, device unplugged) fades after a few seconds while the settings are closed.
@@ -111,7 +148,11 @@ export function VoiceHud() {
               Voice
             </button>
           </div>
-          {s.statusText && s.status !== 'connected' && <div style={{ ...glass, padding: '3px 8px', fontSize: 11, opacity: 0.8, maxWidth: 260 }}>{s.statusText}</div>}
+          {showLine && (
+            <div data-testid="voice-hud-status" title={s.statusText} style={{ ...glass, padding: '3px 8px', fontSize: 11, opacity: 0.8, maxWidth: 260 }}>
+              {statusLine}
+            </div>
+          )}
         </div>
       )}
     </>

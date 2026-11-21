@@ -245,6 +245,7 @@ func StepEnv(s State, flags uint16, yaw float64, g Ground, env Env) State {
 // dodge flag is set, WP13 dash.go) and pitch (CR 021: a jet dash flies
 // along the look).
 func stepFull(s State, flags uint16, castSlot uint8, yaw, pitch float64, g Ground, env Env) State {
+	raw := g
 	g = AtLevel(g, s.Pos.Y) // WP09: caves see the ground at the player's level (caves.go)
 	env = env.resolve(s.Pos) // CR 030: the weather where the step starts
 	wx, wz := wishDir(flags, yaw)
@@ -283,7 +284,8 @@ func stepFull(s State, flags uint16, castSlot uint8, yaw, pitch float64, g Groun
 		}
 	}
 	out.Dash, out.IFrames = s.Dash, s.IFrames
-	out = collideStep(g, out) // WP09: cave walls and ceilings (caves.go)
+	out = surfaceGuard(raw, g, s0, out) // playtest 2 co-op polish: never into the hill (caves.go)
+	out = collideStep(g, out)           // WP09: cave walls and ceilings (caves.go)
 	out = collideHead(g, out) // CR 027: the steed's chest (ride.go)
 	return finish(s0, out)
 }

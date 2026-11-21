@@ -6,7 +6,7 @@
 
 import { create } from 'zustand';
 import type { Event as ZoneEvent } from '@lodestone/contracts';
-import { decodePins, decodeProgress, emptyProgress, EV, TRAVEL_DENIED, type Pin, type Progress } from './events';
+import { decodePartyTowers, decodePins, decodeProgress, emptyProgress, EV, TRAVEL_DENIED, type Pin, type Progress } from './events';
 
 export type ToastKind = 'discovery' | 'tower' | 'waypoint' | 'level' | 'info' | 'warn';
 
@@ -30,6 +30,8 @@ export interface ExplorationActions {
 export interface ExplorationState {
   progress: Progress;
   pins: Pin[];
+  /** Co-op polish (Event 609): towers a party member unlocked that you did not: lent for fast travel. */
+  partyTowers: Uint8Array;
   /** Snapshot partyId of my party (0 = none): remote entities with the same id are party members. */
   partyId: number;
   toasts: Toast[];
@@ -60,6 +62,8 @@ export function reduceEvent(s: ExplorationState, ev: ZoneEvent, now: number): Pa
       return { progress: decodeProgress(ev.data), stats };
     case EV.pins:
       return { pins: decodePins(ev.data), stats };
+    case EV.partyTowers:
+      return { partyTowers: decodePartyTowers(ev.data), stats };
     case EV.party:
       return { partyId: ev.value >>> 0, stats };
     case EV.discovery:
@@ -71,7 +75,9 @@ export function reduceEvent(s: ExplorationState, ev: ZoneEvent, now: number): Pa
     case EV.respawnPoint:
       return { stats, respawnName: name, toasts: push(toast('info', 'Respawn point set', name || undefined, now)) };
     case EV.levelUp:
-      return { stats, toasts: push(toast('level', `Level ${ev.value}`, undefined, now)) };
+      // Playtest 6 polish: the level-up card (ui/progression, Event 900), the glow and the sound announce it; a
+      // second "★ Level n" toast here stacked under the card and, on two quick level-ups, printed over it.
+      return { stats };
     case EV.fastTravelDenied:
       return { stats, toasts: push(toast('warn', 'Fast travel refused', TRAVEL_DENIED[ev.value] ?? `code ${ev.value}`, now)) };
     case EV.notice:
@@ -87,6 +93,7 @@ const initial = (): Omit<ExplorationState, 'actions'> => ({
   progress: emptyProgress(),
   pins: [],
   partyId: 0,
+  partyTowers: new Uint8Array(0),
   toasts: [],
   mapOpen: false,
   respawnName: '',

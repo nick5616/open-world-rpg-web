@@ -68,12 +68,14 @@ type Entity struct {
 	viewOff   movement.Vec3  // decaying horizontal easing offset
 
 	// Caves and mining (WP09).
-	caveSys   int       // cave system this tick (-1 surface), for interest clipping
-	layer     int8      // CR 038: vertical layer this tick (0 surface, 1 sky, 2 Underground, 3 Depths)
-	fallHit   float64   // CR 038: the hardest landing (impact m/s) since the last vertical phase
-	inLava    bool      // CR 038: burning in the Depths' lava (Event 1701 on change)
-	lastSwing time.Time // last accepted pickaxe swing
-	lastWork  time.Time // last accepted axe / shovel swing (worldedit.go)
+	caveSys   int         // cave system this tick (-1 surface), for interest clipping
+	layer     int8        // CR 038: vertical layer this tick (0 surface, 1 sky, 2 Underground, 3 Depths)
+	fallHit   float64     // CR 038: the hardest landing (impact m/s) since the last vertical phase
+	inLava    bool        // CR 038: burning in the Depths' lava (Event 1701 on change)
+	riftID    uint32      // CR 040: the rift run it is in (rift.go; 0 = the world): seen only by its run
+	riftG     *riftGround // CR 040: its arena (players in a run), for the view's extrapolation
+	lastSwing time.Time   // last accepted pickaxe swing
+	lastWork  time.Time   // last accepted axe / shovel swing (worldedit.go)
 	// Pickups: personal drops only their owner sees and can take.
 	Owner     uint32
 	Item      string

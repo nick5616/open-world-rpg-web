@@ -11,7 +11,7 @@
 // data-testid="content-prompt" so the ones below it yield.
 
 import { useEffect, useRef, useState } from 'react';
-import { BELOW_CLOCK, useHudHeight } from '../../hud/layout';
+import { BELOW_CLOCK, EVENT_CHIP_TOP, useHudHeight } from '../../hud/layout';
 import { CONTENT } from '@lodestone/contracts';
 import { DEBUG } from '../../config';
 import { notGameKey } from '../../input/useKeyboard';
@@ -20,7 +20,7 @@ import { localPlayer } from '../../state/live';
 import { distanceText, compassWord } from '../quests/events';
 import { ensureContentHook } from './link';
 import { EVENT_PHASE, GLYPHS, eventStatus, type VaultPart, type VaultView } from './events';
-import { closeTablet, nearestEvent, pruneContentNotes, useContent } from './store';
+import { closeTablet, eventCardMode, nearestEvent, pruneContentNotes, useContent, type EventCardMemo } from './store';
 import { trackPanel } from '../../input/panelStack';
 
 // Esc closes the tablet when it is the top panel (input/panelStack.ts).
@@ -100,14 +100,28 @@ function useTicker(ms: number) {
 function EventTracker() {
   useTicker(500);
   const events = useContent((s) => s.events);
+  const memo = useRef<EventCardMemo | null>(null);
   const now = performance.now();
   const e = nearestEvent({ events }, localPlayer.pos.x, localPlayer.pos.z);
   if (!e) return null;
   const d = Math.hypot(e.x - localPlayer.pos.x, e.z - localPlayer.pos.z);
+  // Playtest 2 (co-op): the full card only for a few seconds (it appears, is won or over, you walk in); else a chip in the left column.
+  const card = eventCardMode(e, d, now, memo.current);
+  memo.current = card.memo;
+  if (card.mode === 'hidden') return null;
   const done = e.phase !== EVENT_PHASE.active;
   const color = done ? (e.phase === EVENT_PHASE.won ? '#9fe08a' : '#ff9a7a') : '#ff8f6b';
+  if (card.mode === 'chip') {
+    const where = d > e.r ? `${distanceText(d)} ${compassWord(localPlayer.pos.x, localPlayer.pos.z, e.x, e.z)}` : eventStatus(e, now);
+    return (
+      <div data-testid="world-event-chip" style={{ ...PANEL, position: 'fixed', top: EVENT_CHIP_TOP, left: 14, maxWidth: 'min(300px, 34vw)', padding: '3px 10px', fontSize: 12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', pointerEvents: 'none', zIndex: 13, borderColor: color }}>
+        <span style={{ color }}>✦</span> {e.name}
+        {done ? ` · ${e.phase === EVENT_PHASE.won ? 'won' : 'over'}` : ` · ${where}`}
+      </div>
+    );
+  }
   return (
-    <div data-testid="world-event" style={{ position: 'fixed', top: BELOW_CLOCK, left: '50%', transform: 'translateX(-50%)', width: 'min(440px, 70vw)', textAlign: 'center', pointerEvents: 'none', zIndex: 14, color: '#f8efe0', textShadow: '0 1px 3px #000, 0 0 8px rgba(0,0,0,0.8)' }}>
+    <div data-testid="world-event" style={{ position: 'fixed', top: `max(${BELOW_CLOCK}, 118px)` /* playtest 6 polish: clear of the sundial's foot */, left: '50%', transform: 'translateX(-50%)', width: 'min(440px, 70vw)', textAlign: 'center', pointerEvents: 'none', zIndex: 14, color: '#f8efe0', textShadow: '0 1px 3px #000, 0 0 8px rgba(0,0,0,0.8)' }}>
       <div style={{ font: '700 12px system-ui', letterSpacing: 3, textTransform: 'uppercase', color }}>{done ? (e.phase === EVENT_PHASE.won ? 'World event won' : 'World event over') : 'World event'}</div>
       <div style={{ font: '600 20px Georgia, serif', color: '#ffe2c4' }}>✦ {e.name}</div>
       <div style={{ fontSize: 13, opacity: 0.92 }}>{e.text}</div>
